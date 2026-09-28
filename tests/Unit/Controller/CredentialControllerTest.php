@@ -56,6 +56,17 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class CredentialControllerTest extends TestCase {
+
+	/** @var integer How many times update() saved the credential object. */
+	private int $saves = 0;
+
+	/** @var array<int, string> Every error the controller logged. */
+	private array $errors = [];
+
+	protected function setUp(): void {
+		$this->saves = 0;
+		$this->errors = [];
+	}
 	/**
 	 * The github catalogue entry used across the happy-path tests.
 	 *
@@ -162,7 +173,8 @@ class CredentialControllerTest extends TestCase {
 			$broker,
 			$this->createMock(CredentialAppTokenService::class),
 			$this->createMock(OrganisationService::class),
-			new SharePrincipalDeriver()
+			new SharePrincipalDeriver(),
+			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);
 	}//end makeController()
 
@@ -382,16 +394,18 @@ class CredentialControllerTest extends TestCase {
 
 	/**
 	 * A vault fault during a rotation answers a static 500 rather than escaping to
-	 * Nextcloud's handler, whose trace log would carry the rotated secret.
+	 * Nextcloud's handler, whose trace log would carry the rotated secret. The
+	 * secret is written first, so nothing else was saved either, and the fault's
+	 * class reaches the log.
 	 */
-	public function testAFailedRotationAnswersAStatic500(): void {
+	public function testAFailedRotationChangesNothingAndIsLogged(): void {
 		$store = $this->createMock(CredentialStore::class);
 		$store->method('put')->willThrowException(new \RuntimeException('the vault is down'));
 
 		$controller = $this->makeUpdateController(
 			ownerUid: 'alice',
 			credData: ['name' => 'My GitHub', 'provider' => 'github', 'allowedApps' => ['hermiq']],
-			params: ['secret' => 'gho_rotated'],
+			params: ['name' => 'Renamed', 'secret' => 'gho_rotated'],
 			store: $store
 		);
 
@@ -399,7 +413,37 @@ class CredentialControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
 		$this->assertSame(['message' => 'Unable to update credential'], $response->getData());
-	}//end testAFailedRotationAnswersAStatic500()
+		$this->assertSame(0, $this->saves, 'the metadata is not saved when the secret could not be');
+		$this->assertCount(1, $this->errors);
+		$this->assertStringContainsString('RuntimeException', $this->errors[0]);
+		$this->assertStringNotContainsString('gho_rotated', $this->errors[0]);
+	}//end testAFailedRotationChangesNothingAndIsLogged()
+
+	/**
+	 * When the metadata cannot be saved after the secret was rotated, the answer
+	 * says the secret did change, so it agrees with what is stored.
+	 */
+	public function testAFailedSaveAfterARotationSaysTheSecretChanged(): void {
+		$store = $this->createMock(CredentialStore::class);
+		$store->expects($this->once())->method('put');
+
+		$controller = $this->makeUpdateController(
+			ownerUid: 'alice',
+			credData: ['name' => 'My GitHub', 'provider' => 'github', 'allowedApps' => ['hermiq']],
+			params: ['name' => 'Renamed', 'secret' => 'gho_rotated'],
+			store: $store,
+			saveFails: true
+		);
+
+		$response = $controller->update('cred-1');
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$this->assertSame(
+			['message' => 'The secret was rotated, but the other changes could not be saved'],
+			$response->getData()
+		);
+		$this->assertCount(1, $this->errors);
+	}//end testAFailedSaveAfterARotationSaysTheSecretChanged()
 
 	/**
 	 * Build a CredentialController for exercising update() — an owned personal
@@ -410,6 +454,7 @@ class CredentialControllerTest extends TestCase {
 	 * @param array<string, mixed> $credData The existing credential's property bag.
 	 * @param array<string, mixed> $params The request body params (e.g. `secret`).
 	 * @param CredentialStore&\PHPUnit\Framework\MockObject\MockObject $store The vault mock.
+	 * @param bool $saveFails Whether saving the metadata fails.
 	 *
 	 * @return CredentialController The wired controller.
 	 */
@@ -418,6 +463,7 @@ class CredentialControllerTest extends TestCase {
 		array $credData,
 		array $params,
 		CredentialStore $store,
+		bool $saveFails = false,
 	): CredentialController {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($ownerUid);
@@ -431,7 +477,12 @@ class CredentialControllerTest extends TestCase {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('find')->willReturn($entity);
 		$objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ...$rest) {
+			function (array $object, ...$rest) use ($saveFails) {
+				$this->saves++;
+				if ($saveFails === true) {
+					throw new \RuntimeException('the object store is down');
+				}
+
 				$saved = new ObjectEntity();
 				$saved->setObject($object);
 				return $saved;
@@ -442,6 +493,13 @@ class CredentialControllerTest extends TestCase {
 		$request->method('getParam')->willReturnCallback(
 			static function (string $key, $default = null) use ($params) {
 				return array_key_exists($key, $params) ? $params[$key] : $default;
+			}
+		);
+
+		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+		$logger->method('error')->willReturnCallback(
+			function (string $message): void {
+				$this->errors[] = $message;
 			}
 		);
 
@@ -456,7 +514,8 @@ class CredentialControllerTest extends TestCase {
 			$this->createMock(CredentialBrokerService::class),
 			$this->createMock(CredentialAppTokenService::class),
 			$this->createMock(OrganisationService::class),
-			new SharePrincipalDeriver()
+			new SharePrincipalDeriver(),
+			$logger
 		);
 	}//end makeUpdateController()
 
@@ -501,7 +560,8 @@ class CredentialControllerTest extends TestCase {
 			$this->createMock(CredentialBrokerService::class),
 			$tokens,
 			$this->createMock(OrganisationService::class),
-			new SharePrincipalDeriver()
+			new SharePrincipalDeriver(),
+			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);
 	}//end makeAdminController()
 }//end class

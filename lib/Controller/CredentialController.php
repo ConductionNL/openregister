@@ -56,6 +56,7 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -95,6 +96,7 @@ class CredentialController extends Controller {
 	 * @param CredentialAppTokenService $tokenService Per-app signing-secret registry + token verify.
 	 * @param OrganisationService $organisationService Organisation membership + admin authority resolution.
 	 * @param SharePrincipalDeriver $shareDeriver Validates share lists and derives the principal lists RBAC matches.
+	 * @param LoggerInterface $logger Records a failed update by class, never with its trace.
 	 *
 	 * @return void
 	 *
@@ -112,6 +114,7 @@ class CredentialController extends Controller {
 		private readonly CredentialAppTokenService $tokenService,
 		private readonly OrganisationService $organisationService,
 		private readonly SharePrincipalDeriver $shareDeriver,
+		private readonly LoggerInterface $logger,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -357,6 +360,23 @@ class CredentialController extends Controller {
 			return new JSONResponse(['message' => 'Invalid credential request'], Http::STATUS_BAD_REQUEST);
 		}
 
+		// The secret is written before the metadata, as OAuth2RefreshService::persist
+		// does: a failed rotation then leaves the whole credential as it was, so the
+		// 500 is true. Caught, and logged by class only: a vault fault escaping here
+		// would reach Nextcloud's own handler, which logs the trace with its
+		// arguments, and the core CredentialsManager::store frame below put() holds
+		// the secret unredacted.
+		$rotated = $update->rotatedSecret();
+		if ($rotated !== null) {
+			try {
+				$this->credentialStore->put($id, $rotated, $scope);
+			} catch (Throwable $e) {
+				$this->logger->error('[CredentialController] could not rotate a credential secret: ' . $e::class, ['credentialId' => $id]);
+
+				return new JSONResponse(['message' => 'Unable to update credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
+			}
+		}
+
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $data,
@@ -365,19 +385,15 @@ class CredentialController extends Controller {
 				uuid: $id
 			);
 		} catch (Throwable $e) {
-			return new JSONResponse(['message' => 'Unable to update credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
-		}
+			$this->logger->error('[CredentialController] could not save a credential update: ' . $e::class, ['credentialId' => $id]);
 
-		$rotated = $update->rotatedSecret();
-		if ($rotated !== null) {
-			// Caught like create(): a vault fault escaping here would reach Nextcloud's
-			// own handler, which logs the trace with its arguments, and the core
-			// CredentialsManager::store frame below put() holds the secret unredacted.
-			try {
-				$this->credentialStore->put($id, $rotated, $scope);
-			} catch (Throwable $e) {
-				return new JSONResponse(['message' => 'Unable to update credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
+			// The secret is already rotated, so say that rather than "nothing changed".
+			$message = 'Unable to update credential';
+			if ($rotated !== null) {
+				$message = 'The secret was rotated, but the other changes could not be saved';
 			}
+
+			return new JSONResponse(['message' => $message], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
 		return new JSONResponse($this->serialise(object: $saved));

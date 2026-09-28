@@ -301,7 +301,8 @@ class CredentialControllerOrganisationTest extends TestCase {
 			$broker,
 			$this->createMock(CredentialAppTokenService::class),
 			$this->orgService,
-			new SharePrincipalDeriver()
+			new SharePrincipalDeriver(),
+			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);
 	}
 }//end class
