@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -111,14 +113,36 @@ class RevertController extends Controller {
 			);
 
 			return new JSONResponse(data: $revertedObject->jsonSerialize());
-		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-		} catch (NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403);
-		} catch (LockedException $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 423);
 		} catch (\Exception $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+			return $this->errorResponse(exception: $e);
 		}//end try
 	}//end revert()
+
+	/**
+	 * The response for a revert that failed.
+	 *
+	 * An archived or frozen object refuses the revert with 409, and restored
+	 * data the schema no longer accepts with 400 (openregister#4105).
+	 *
+	 * @param \Exception $exception What the revert threw.
+	 *
+	 * @return JSONResponse The error response.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function errorResponse(\Exception $exception): JSONResponse {
+		if ($exception instanceof DoesNotExistException) {
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		}
+
+		$status = match (true) {
+			$exception instanceof NotAuthorizedException => 403,
+			$exception instanceof LockedException => 423,
+			$exception instanceof ObjectStateWriteException => ObjectStateWriteException::HTTP_STATUS,
+			$exception instanceof ValidationException => 400,
+			default => 500,
+		};
+
+		return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: $status);
+	}//end errorResponse()
 }//end class

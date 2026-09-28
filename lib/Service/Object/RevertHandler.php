@@ -30,6 +30,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\ObjectRevertedEvent;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Container\ContainerInterface;
@@ -82,6 +85,20 @@ class RevertHandler {
 	private PermissionHandler $permissionHandler;
 
 	/**
+	 * Validates the restored data against the current schema.
+	 *
+	 * @var ValidateObject
+	 */
+	private ValidateObject $validateObject;
+
+	/**
+	 * Settings, for whether audit trails are on.
+	 *
+	 * @var SettingsService
+	 */
+	private SettingsService $settingsService;
+
+	/**
 	 * RevertHandler constructor.
 	 *
 	 * @param AuditTrailMapper $auditTrailMapper Audit trail mapper.
@@ -89,6 +106,8 @@ class RevertHandler {
 	 * @param IEventDispatcher $eventDispatcher Event dispatcher.
 	 * @param MagicMapper $objectEntityMapper Object entity mapper.
 	 * @param PermissionHandler $permissionHandler Permission handler for RBAC.
+	 * @param ValidateObject $validateObject Validator for the restored data.
+	 * @param SettingsService $settingsService Settings, for the audit trail switch.
 	 */
 	public function __construct(
 		AuditTrailMapper $auditTrailMapper,
@@ -96,12 +115,16 @@ class RevertHandler {
 		IEventDispatcher $eventDispatcher,
 		MagicMapper $objectEntityMapper,
 		PermissionHandler $permissionHandler,
+		ValidateObject $validateObject,
+		SettingsService $settingsService,
 	) {
 		$this->auditTrailMapper = $auditTrailMapper;
 		$this->container = $container;
 		$this->eventDispatcher = $eventDispatcher;
 		$this->objectEntityMapper = $objectEntityMapper;
 		$this->permissionHandler = $permissionHandler;
+		$this->validateObject = $validateObject;
+		$this->settingsService = $settingsService;
 	}//end __construct()
 
 	/**
@@ -121,6 +144,7 @@ class RevertHandler {
 	 * @throws \Exception If reversion fails
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean needed to control version overwrite behavior
+	 * @SuppressWarnings(PHPMD.StaticAccess)        The named constructors of ObjectStateWriteException, as SaveObject uses them
 	 *
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
@@ -166,12 +190,25 @@ class RevertHandler {
 			);
 		}
 
+		// A revert is a write like any other, so the archive and the freeze
+		// refuse it as SaveObject refuses every other write (openregister#4105).
+		if ($object->isArchived() === true) {
+			throw ObjectStateWriteException::archived($object);
+		}
+
+		if ($object->isFrozen() === true) {
+			throw ObjectStateWriteException::frozen($object);
+		}
+
 		// Get the reverted object using AuditTrailMapper.
 		$revertedObject = $this->auditTrailMapper->revertObject(
 			identifier: $id,
 			until: $until,
 			overwriteVersion: $overwriteVersion
 		);
+
+		// Old data may no longer fit the schema it is written back into.
+		$this->validateRestoredData(object: $revertedObject, schema: $schemaEntity);
 
 		// Save the reverted object (with register/schema context for magic mapper routing).
 		$savedObject = $this->objectEntityMapper->update(
@@ -180,11 +217,60 @@ class RevertHandler {
 			schema: $schemaEntity
 		);
 
+		// Record who rolled back what, as the content-versioning spec requires.
+		if ($this->isAuditTrailsEnabled() === true) {
+			$this->auditTrailMapper->createAuditTrail(old: $object, new: $savedObject, action: 'revert');
+		}
+
 		// Dispatch revert event.
 		$this->eventDispatcher->dispatchTyped(new ObjectRevertedEvent(object: $savedObject, until: $until));
 
 		return $savedObject;
 	}//end revert()
+
+	/**
+	 * Refuse restored data the current schema does not accept.
+	 *
+	 * Mirrors ObjectService's save path: validation runs when the schema asks
+	 * for hard validation, and a failure is a ValidationException (400).
+	 *
+	 * @param ObjectEntity $object The object as it will be written back.
+	 * @param Schema       $schema The schema it is written into.
+	 *
+	 * @return void
+	 *
+	 * @throws ValidationException When the restored data does not validate.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function validateRestoredData(ObjectEntity $object, Schema $schema): void {
+		if ($schema->getHardValidation() !== true) {
+			return;
+		}
+
+		$result = $this->validateObject->validateObject(object: ($object->getObject() ?? []), schema: $schema);
+		if ($result->isValid() === false) {
+			throw new ValidationException(
+				message: $this->validateObject->generateErrorMessage(result: $result),
+				errors: $result->error()
+			);
+		}
+	}//end validateRestoredData()
+
+	/**
+	 * Whether audit trails are on, defaulting to on as SaveObject does.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function isAuditTrailsEnabled(): bool {
+		try {
+			return (bool) ($this->settingsService->getRetentionSettingsOnly()['auditTrailsEnabled'] ?? true);
+		} catch (\Exception) {
+			return true;
+		}
+	}//end isAuditTrailsEnabled()
 
 	/**
 	 * The flow run this write is being made for, or null when a person is
