@@ -60,19 +60,29 @@ class LlmSettingsHandler {
 	private string $appName;
 
 	/**
+	 * Records every save on the audit trail (openregister#4100).
+	 *
+	 * @var OwnSettingsChangeRecorder|null
+	 */
+	private ?OwnSettingsChangeRecorder $changeRecorder;
+
+	/**
 	 * Constructor for LlmSettingsHandler
 	 *
 	 * @param IAppConfig $appConfig Configuration service.
 	 * @param string $appName Application name.
+	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IAppConfig $appConfig,
 		string $appName = 'openregister',
+		?OwnSettingsChangeRecorder $changeRecorder = null,
 	) {
 		$this->appConfig = $appConfig;
 		$this->appName = $appName;
+		$this->changeRecorder = $changeRecorder;
 	}//end __construct()
 
 	/**
@@ -216,7 +226,12 @@ class LlmSettingsHandler {
 				],
 			];
 
+			$before = $this->changeRecorder?->snapshot(keys: ['llm']);
 			$this->appConfig->setValueString($this->appName, 'llm', json_encode($llmConfig));
+			if ($before !== null) {
+				$this->changeRecorder?->record(before: $before, keys: ['llm']);
+			}
+
 			return $llmConfig;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to update LLM settings: ' . $e->getMessage());
