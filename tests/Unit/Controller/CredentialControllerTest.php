@@ -381,6 +381,27 @@ class CredentialControllerTest extends TestCase {
 	}//end testUpdateWithWhitespaceOnlySecretNeverTouchesTheVault()
 
 	/**
+	 * A vault fault during a rotation answers a static 500 rather than escaping to
+	 * Nextcloud's handler, whose trace log would carry the rotated secret.
+	 */
+	public function testAFailedRotationAnswersAStatic500(): void {
+		$store = $this->createMock(CredentialStore::class);
+		$store->method('put')->willThrowException(new \RuntimeException('the vault is down'));
+
+		$controller = $this->makeUpdateController(
+			ownerUid: 'alice',
+			credData: ['name' => 'My GitHub', 'provider' => 'github', 'allowedApps' => ['hermiq']],
+			params: ['secret' => 'gho_rotated'],
+			store: $store
+		);
+
+		$response = $controller->update('cred-1');
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$this->assertSame(['message' => 'Unable to update credential'], $response->getData());
+	}//end testAFailedRotationAnswersAStatic500()
+
+	/**
 	 * Build a CredentialController for exercising update() — an owned personal
 	 * credential, a stub saveObject() that echoes the merged property bag back,
 	 * and a caller-supplied CredentialStore mock to assert the vault write.

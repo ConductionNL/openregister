@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2ConnectionRepository
@@ -85,15 +86,30 @@ class OAuth2ConnectionRepositoryTest extends TestCase {
 		$this->assertSame(['custody:cred-1:personal', 'object:cred-1'], $this->calls);
 	}
 
+	public function testADiscardWhoseSecretCannotBeDeletedKeepsTheObject(): void {
+		$repository = $this->makeRepository(activeOrganisation: null, isAdmin: false, custodyFails: true);
+
+		try {
+			$repository->discard(credentialId: 'cred-1', scope: 'organisation');
+			$this->fail('a custody failure must reach the caller');
+		} catch (RuntimeException $failure) {
+			$this->assertSame('the vault is down', $failure->getMessage());
+		}
+
+		// The object stays, so the secret it names is still findable and removable.
+		$this->assertSame(['custody:cred-1:organisation'], $this->calls);
+	}
+
 	/**
 	 * Build the repository over a scripted organisation service, store and object service.
 	 *
 	 * @param string|null $activeOrganisation The caller's active organisation uuid, or null.
 	 * @param bool $isAdmin Whether the caller administers it.
+	 * @param bool $custodyFails Whether deleting the secret from custody fails.
 	 *
 	 * @return OAuth2ConnectionRepository The repository under test.
 	 */
-	private function makeRepository(?string $activeOrganisation, bool $isAdmin): OAuth2ConnectionRepository {
+	private function makeRepository(?string $activeOrganisation, bool $isAdmin, bool $custodyFails = false): OAuth2ConnectionRepository {
 		$organisations = $this->createMock(OrganisationService::class);
 		if ($activeOrganisation === null) {
 			$organisations->method('getActiveOrganisation')->willReturn(null);
@@ -107,8 +123,11 @@ class OAuth2ConnectionRepositoryTest extends TestCase {
 
 		$store = $this->createMock(CredentialStore::class);
 		$store->method('delete')->willReturnCallback(
-			function (string $uuid, string $scope): void {
+			function (string $uuid, string $scope) use ($custodyFails): void {
 				$this->calls[] = 'custody:' . $uuid . ':' . $scope;
+				if ($custodyFails === true) {
+					throw new RuntimeException('the vault is down');
+				}
 			}
 		);
 

@@ -146,8 +146,8 @@ class CredentialOauth2Controller extends Controller {
 	 * with a 500: 400 for a request that names no usable provider or host, 403
 	 * for a guard that refuses the caller, 409 when the provider has no OAuth2
 	 * client configured on this server, and 502 when a per-instance provider's
-	 * server will not register a client. A client credential this start minted
-	 * is removed again when a later step fails.
+	 * server will not register a client. A client credential this start minted,
+	 * and the pending state it stored, are removed again when a later step fails.
 	 *
 	 * @return JSONResponse `{authorizationUrl, expiresIn}`, or a static error.
 	 *
@@ -177,8 +177,10 @@ class CredentialOauth2Controller extends Controller {
 				host: $host
 			);
 		} catch (CredentialAccessDeniedException $denied) {
-			$this->logger->info(
-				'[CredentialOauth2Controller] refused a connection start',
+			// A warning, so it reaches a default install's log: this is where an admin
+			// looks when a person cannot connect a shared account. The reason is static.
+			$this->logger->warning(
+				'[CredentialOauth2Controller] refused a connection start: ' . $denied->getMessage(),
 				['uid' => $uid, 'provider' => $providerId]
 			);
 
@@ -192,6 +194,7 @@ class CredentialOauth2Controller extends Controller {
 		// This server's own setup and the provider's: nothing here is the caller's
 		// fault, so anything but the two named states is a 500.
 		$minted = '';
+		$nonce = '';
 		try {
 			// A per-instance provider has no application to bring, so one is created at
 			// the account's own server HERE, before the URL that names its client id is
@@ -206,6 +209,7 @@ class CredentialOauth2Controller extends Controller {
 			unset($claims[OAuth2InstanceClient::MINTED_KEY]);
 
 			$issued = $this->states->issue(claims: $claims);
+			$nonce = $issued['nonce'];
 			$url = $this->connect->authorizationUrl(
 				provider: $provider,
 				claims: $claims,
@@ -214,6 +218,7 @@ class CredentialOauth2Controller extends Controller {
 				challenge: $issued['challenge']
 			);
 		} catch (OAuth2ClientNotConfiguredException $notConfigured) {
+			$this->withdrawState(nonce: $nonce);
 			$this->discardMintedClient(credentialId: $minted, scope: $requestedScope);
 
 			return new JSONResponse(['message' => 'This provider is not configured on this server'], Http::STATUS_CONFLICT);
@@ -222,6 +227,7 @@ class CredentialOauth2Controller extends Controller {
 
 			return new JSONResponse(['message' => 'The provider server did not accept the connection'], Http::STATUS_BAD_GATEWAY);
 		} catch (Throwable $failure) {
+			$this->withdrawState(nonce: $nonce);
 			$this->discardMintedClient(credentialId: $minted, scope: $requestedScope);
 
 			return $this->startFailed(failure: $failure);
@@ -248,6 +254,31 @@ class CredentialOauth2Controller extends Controller {
 
 		return new JSONResponse(['message' => 'Unable to start the connection'], Http::STATUS_INTERNAL_SERVER_ERROR);
 	}//end startFailed()
+
+	/**
+	 * Remove the pending state a failed start stored, so it does not linger.
+	 *
+	 * Only the callback's consume() deletes a pending record otherwise, and a start
+	 * that failed hands out no state for a callback to bring back. Best effort, as
+	 * for the minted client: a cleanup fault is logged by class and not raised.
+	 *
+	 * @param string $nonce The nonce of the issued state, or an empty string when none was issued.
+	 *
+	 * @return void
+	 */
+	private function withdrawState(string $nonce): void {
+		if ($nonce === '') {
+			return;
+		}
+
+		try {
+			$this->states->withdraw(nonce: $nonce);
+		} catch (Throwable $failure) {
+			$this->logger->warning(
+				'[CredentialOauth2Controller] could not remove the pending state of a failed start: ' . $failure::class
+			);
+		}
+	}//end withdrawState()
 
 	/**
 	 * Remove the client credential a failed start minted, so it does not linger.

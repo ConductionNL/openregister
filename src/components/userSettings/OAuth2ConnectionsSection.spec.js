@@ -173,7 +173,8 @@ describe('OAuth2ConnectionsSection', () => {
 				busy: false,
 				error: '',
 				navigateTo: jest.fn(),
-				startFailureMessage: OAuth2ConnectionsSection.methods.startFailureMessage,
+				startFailureMessage:
+					OAuth2ConnectionsSection.methods.startFailureMessage,
 			}
 		}
 

@@ -70,11 +70,17 @@ class CredentialOauth2ControllerTest extends TestCase {
 	/** @var array<int, array<string, mixed>> Every local disable performed. */
 	private array $disables = [];
 
-	/** @var array<int, string> Every minted client credential a failed start removed. */
+	/** @var array<int, array{0: string, 1: string}> Every minted client credential a failed start removed, with its scope. */
 	private array $discards = [];
 
 	/** @var array<int, array<string, mixed>> The claims every issued state was signed over. */
 	private array $issuedClaims = [];
+
+	/** @var array<int, string> The nonce of every pending state a failed start withdrew. */
+	private array $withdrawals = [];
+
+	/** @var array<int, string> Every warning the controller logged. */
+	private array $warnings = [];
 
 	protected function setUp(): void {
 		$this->attempts = 0;
@@ -82,6 +88,8 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$this->disables = [];
 		$this->discards = [];
 		$this->issuedClaims = [];
+		$this->withdrawals = [];
+		$this->warnings = [];
 	}
 
 	public function testARelayForwardsToAnAllowListedTenantAndExchangesNothing(): void {
@@ -228,6 +236,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 		)->start();
 
 		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		$this->assertSame(['n'], $this->withdrawals, 'a 409 leaves no pending state behind');
 	}
 
 	public function testStartAnswers502WhenTheProviderServerWillNotRegisterAClient(): void {
@@ -237,6 +246,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 		)->start();
 
 		$this->assertSame(Http::STATUS_BAD_GATEWAY, $response->getStatus());
+		$this->assertSame([], $this->issuedClaims, 'a 502 comes before any state is stored');
 	}
 
 	public function testStartAnswers403WhenAGuardRefusesTheCaller(): void {
@@ -246,6 +256,8 @@ class CredentialOauth2ControllerTest extends TestCase {
 		)->start();
 
 		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$this->assertCount(1, $this->warnings, 'a refusal reaches a default install\'s log');
+		$this->assertStringContainsString('only an organisation administrator', $this->warnings[0]);
 	}
 
 	public function testStartAnswers403ForACredentialTheCallerMayNotReauthorise(): void {
@@ -295,6 +307,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 		$this->assertArrayNotHasKey(OAuth2InstanceClient::MINTED_KEY, $this->issuedClaims[0]);
 		$this->assertSame('minted-client', $this->issuedClaims[0]['cr']);
 		$this->assertSame([], $this->discards, 'a start that succeeds keeps the client it minted');
+		$this->assertSame([], $this->withdrawals, 'a start that succeeds keeps its pending state');
 	}
 
 	public function testAStartThatFailsAfterMintingAClientRemovesIt(): void {
@@ -311,7 +324,64 @@ class CredentialOauth2ControllerTest extends TestCase {
 
 		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $vaultDown->getStatus());
 		$this->assertSame(Http::STATUS_CONFLICT, $notConfigured->getStatus());
-		$this->assertSame(['minted-client', 'second-client'], $this->discards);
+		$this->assertSame([['minted-client', 'personal'], ['second-client', 'personal']], $this->discards);
+	}
+
+	public function testAnOrganisationStartRemovesTheClientFromTheOrganisationScope(): void {
+		// The secret was minted under the organisation's vault owner; removing it from
+		// the user's vault instead would leave it with nothing pointing at it.
+		$response = $this->makeController(
+			params: ['provider' => 'mastodon', 'scope' => 'organisation'],
+			startThrows: ['authorizationUrl' => new RuntimeException('the catalogue entry is broken')],
+			mintsClient: 'org-client',
+		)->start();
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$this->assertSame([['org-client', 'organisation']], $this->discards);
+	}
+
+	public function testAFailedCleanupKeepsTheRefusalAndIsLogged(): void {
+		$response = $this->makeController(
+			params: ['provider' => 'mastodon'],
+			startThrows: ['authorizationUrl' => new OAuth2ClientNotConfiguredException('no OAuth2 client id is configured for provider mastodon')],
+			mintsClient: 'minted-client',
+			discardFails: true,
+		)->start();
+
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		$this->assertCount(1, $this->warnings);
+		$this->assertStringContainsString('could not remove the client credential', $this->warnings[0]);
+	}
+
+	public function testAStartThatFailsAfterStoringItsStateWithdrawsIt(): void {
+		$response = $this->makeController(
+			params: ['provider' => 'linkedin'],
+			startThrows: ['authorizationUrl' => new RuntimeException('the catalogue entry is broken')],
+		)->start();
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$this->assertSame(['n'], $this->withdrawals);
+	}
+
+	public function testAStartWhoseStateWasNeverStoredHasNothingToWithdraw(): void {
+		$this->makeController(
+			params: ['provider' => 'linkedin'],
+			startThrows: ['issue' => new RuntimeException('the vault insert failed')],
+		)->start();
+
+		$this->assertSame([], $this->withdrawals);
+	}
+
+	public function testAFailedWithdrawalKeepsTheRefusalAndIsLogged(): void {
+		$response = $this->makeController(
+			params: ['provider' => 'linkedin'],
+			startThrows: ['authorizationUrl' => new OAuth2ClientNotConfiguredException('no OAuth2 client id is configured for provider linkedin')],
+			withdrawFails: true,
+		)->start();
+
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		$this->assertCount(1, $this->warnings);
+		$this->assertStringContainsString('could not remove the pending state', $this->warnings[0]);
 	}
 
 	public function testAFailedStartLeavesAClientItDidNotMintAlone(): void {
@@ -392,6 +462,10 @@ class CredentialOauth2ControllerTest extends TestCase {
 	 * @param array<string, mixed>|null $manageable The stored connection a disconnect targets, or null when there is none.
 	 * @param string|null $revokeResult What the upstream revoke reports, or null to have it throw.
 	 * @param boolean $disableFails Whether the local disable fails.
+	 * @param array<string, \Throwable> $startThrows A failure per start collaborator method, by method name.
+	 * @param string|null $mintsClient The client credential a per-instance start mints, or null when it mints none.
+	 * @param boolean $discardFails Whether removing a minted client fails.
+	 * @param boolean $withdrawFails Whether withdrawing a pending state fails.
 	 *
 	 * @return CredentialOauth2Controller The controller under test.
 	 */
@@ -407,6 +481,8 @@ class CredentialOauth2ControllerTest extends TestCase {
 		bool $disableFails = false,
 		array $startThrows = [],
 		?string $mintsClient = null,
+		bool $discardFails = false,
+		bool $withdrawFails = false,
 	): CredentialOauth2Controller {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParam')->willReturnCallback(
@@ -425,6 +501,15 @@ class CredentialOauth2ControllerTest extends TestCase {
 				}
 
 				return ['state' => 'STATE', 'nonce' => 'n', 'verifier' => 'v', 'challenge' => 'CHALLENGE'];
+			}
+		);
+		$states->method('withdraw')->willReturnCallback(
+			function (string $nonce) use ($withdrawFails): void {
+				if ($withdrawFails === true) {
+					throw new RuntimeException('the vault is down');
+				}
+
+				$this->withdrawals[] = $nonce;
 			}
 		);
 
@@ -518,8 +603,12 @@ class CredentialOauth2ControllerTest extends TestCase {
 		}
 
 		$connections->method('discard')->willReturnCallback(
-			function (string $credentialId): void {
-				$this->discards[] = $credentialId;
+			function (string $credentialId, string $scope) use ($discardFails): void {
+				if ($discardFails === true) {
+					throw new RuntimeException('the object store is down');
+				}
+
+				$this->discards[] = [$credentialId, $scope];
 			}
 		);
 
@@ -542,6 +631,13 @@ class CredentialOauth2ControllerTest extends TestCase {
 			}
 		);
 
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			function (string $message): void {
+				$this->warnings[] = $message;
+			}
+		);
+
 		$session = $this->createMock(IUserSession::class);
 		if ($authenticated === true) {
 			$user = $this->createMock(\OCP\IUser::class);
@@ -561,7 +657,7 @@ class CredentialOauth2ControllerTest extends TestCase {
 			$endpoints,
 			$session,
 			$throttler,
-			$this->createMock(LoggerInterface::class)
+			$logger
 		);
 	}
 }

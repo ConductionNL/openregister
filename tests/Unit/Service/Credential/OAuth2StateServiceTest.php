@@ -168,7 +168,8 @@ class OAuth2StateServiceTest extends TestCase {
 	/**
 	 * The pending record's key fits Nextcloud's credential vault, whose
 	 * `oc_storages_credentials.identifier` column holds 64 characters. A longer
-	 * key fails the insert, and with it every connect start.
+	 * key fails the insert, and with it every connect start, wherever the length
+	 * is enforced (PostgreSQL, MySQL in strict mode).
 	 *
 	 * @return void
 	 */
@@ -179,6 +180,21 @@ class OAuth2StateServiceTest extends TestCase {
 		foreach (array_keys($this->vault) as $identifier) {
 			self::assertLessThanOrEqual(64, strlen($identifier), $identifier);
 		}
+	}
+
+	/**
+	 * A withdrawn flow leaves nothing in the vault, and its state no longer redeems.
+	 *
+	 * @return void
+	 */
+	public function testAWithdrawnStateLeavesNothingBehindAndCannotBeRedeemed(): void {
+		$service = $this->makeService();
+		$issued = $service->issue(claims: ['sub' => 'user-1']);
+
+		$service->withdraw(nonce: $issued['nonce']);
+
+		self::assertSame([], $this->vault);
+		self::assertNull($service->consume(state: $issued['state']));
 	}
 
 	/**

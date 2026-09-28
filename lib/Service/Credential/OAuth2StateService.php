@@ -136,6 +136,22 @@ class OAuth2StateService {
 	}//end issue()
 
 	/**
+	 * Withdraw a flow that will never be redeemed: delete its pending record.
+	 *
+	 * For a start that failed after issue(): its state never reached the person,
+	 * so no callback will consume the record, and nothing else would remove it.
+	 *
+	 * @param string $nonce The nonce issue() returned.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
+	 */
+	public function withdraw(string $nonce): void {
+		$this->vault->delete(self::SYSTEM_IDENTITY, self::PENDING_PREFIX . $nonce);
+	}//end withdraw()
+
+	/**
 	 * Read a state's claims WITHOUT verifying its signature.
 	 *
 	 * For the RELAY only, which cannot verify a signature it does not hold the key

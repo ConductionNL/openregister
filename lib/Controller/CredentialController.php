@@ -370,7 +370,14 @@ class CredentialController extends Controller {
 
 		$rotated = $update->rotatedSecret();
 		if ($rotated !== null) {
-			$this->credentialStore->put($id, $rotated, $scope);
+			// Caught like create(): a vault fault escaping here would reach Nextcloud's
+			// own handler, which logs the trace with its arguments, and the core
+			// CredentialsManager::store frame below put() holds the secret unredacted.
+			try {
+				$this->credentialStore->put($id, $rotated, $scope);
+			} catch (Throwable $e) {
+				return new JSONResponse(['message' => 'Unable to update credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
+			}
 		}
 
 		return new JSONResponse($this->serialise(object: $saved));
