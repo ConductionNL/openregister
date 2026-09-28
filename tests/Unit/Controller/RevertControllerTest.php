@@ -9,6 +9,8 @@ use OCA\OpenRegister\Controller\RevertController;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Object\RevertHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IRequest;
@@ -124,6 +126,28 @@ class RevertControllerTest extends TestCase {
 		$result = $this->controller->revert('reg', 'schema', 'uuid-123');
 
 		$this->assertSame(423, $result->getStatus());
+	}
+
+	public function testRevertReturns409WhenFrozen(): void {
+		$this->request->method('getParams')->willReturn(['version' => '1.0.1']);
+		$frozen = new ObjectEntity();
+		$frozen->setFrozen(['by' => 'bob', 'at' => '2026-09-01']);
+		$this->revertService->method('revert')
+			->willThrowException(ObjectStateWriteException::frozen($frozen));
+
+		$result = $this->controller->revert('reg', 'schema', 'uuid-123');
+
+		$this->assertSame(409, $result->getStatus());
+	}
+
+	public function testRevertReturns400WhenRestoredDataFailsTheSchema(): void {
+		$this->request->method('getParams')->willReturn(['version' => '1.0.1']);
+		$this->revertService->method('revert')
+			->willThrowException(new ValidationException(message: 'title is required'));
+
+		$result = $this->controller->revert('reg', 'schema', 'uuid-123');
+
+		$this->assertSame(400, $result->getStatus());
 	}
 
 	public function testRevertReturns500OnGenericException(): void {

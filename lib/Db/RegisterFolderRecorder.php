@@ -11,7 +11,9 @@
  * fresh instance (portaliq#29). This write touches the one column, dispatches no
  * register-updated event, and only lands while the stored value is still empty
  * or what the caller read, so it can never repoint a folder another request
- * recorded first (register-folder-on-first-upload).
+ * recorded first (register-folder-on-first-upload). It also answers whether
+ * another register records a folder id, so a register delete removes only a
+ * folder no live register holds (openregister#4107).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -36,7 +38,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 
 /**
- * Writes a register's folder id, and nothing else, with a compare-and-set.
+ * Writes a register's folder id, and nothing else, with a compare-and-set; and says who else holds one.
  *
  * @spec openspec/changes/register-folder-on-first-upload/specs/file-actions/spec.md#requirement-recording-a-registers-folder-id-is-bookkeeping-req-rffu-002
  */
@@ -85,4 +87,34 @@ class RegisterFolderRecorder {
 
 		return $qb->executeStatement() > 0;
 	}//end record()
+
+	/**
+	 * Whether a register other than the given one records this folder id.
+	 *
+	 * Two registers of one title are handed the same folder, so a register
+	 * delete asks this before removing its folder. Read without RBAC or
+	 * organisation filters on purpose: a register the deleting user cannot see
+	 * still holds the folder.
+	 *
+	 * @param string $folderId The folder id the deleted register recorded.
+	 * @param int $registerId The register being deleted.
+	 *
+	 * @return bool True when another register row holds the same folder id.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function isRecordedByAnotherRegister(string $folderId, int $registerId): bool {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id')
+			->from(self::TABLE)
+			->where($qb->expr()->eq('folder', $qb->createNamedParameter($folderId)))
+			->andWhere($qb->expr()->neq('id', $qb->createNamedParameter($registerId, IQueryBuilder::PARAM_INT)))
+			->setMaxResults(1);
+
+		$result = $qb->executeQuery();
+		$found = $result->fetchOne();
+		$result->closeCursor();
+
+		return $found !== false;
+	}//end isRecordedByAnotherRegister()
 }//end class

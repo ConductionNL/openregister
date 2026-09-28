@@ -843,6 +843,21 @@ class FileService {
 	}//end getRegisterFolderById()
 
 	/**
+	 * Remove the folder of a register whose row was just deleted.
+	 *
+	 * @param Register $register The deleted register.
+	 *
+	 * @return bool True when the folder was removed.
+	 *
+	 * @throws NotPermittedException When Nextcloud refuses to delete the folder.
+	 *
+	 * @spec openspec/specs/file-actions/spec.md
+	 */
+	public function deleteRegisterFolder(Register $register): bool {
+		return $this->folderManagementHandler->deleteRegisterFolder(register: $register);
+	}//end deleteRegisterFolder()
+
+	/**
 	 * Get an object folder by its stored ID.
 	 *
 	 * @param ObjectEntity|string $objectEntity The object entity to get the folder for
