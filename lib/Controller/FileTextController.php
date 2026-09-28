@@ -139,23 +139,39 @@ class FileTextController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with file text or error
 	 *
-	 * @no-admin-idor-exempt Deprecated no-op stub: returns HTTP 404 unconditionally
-	 *   and performs no file/object read; there is no per-object resource to guard.
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+	 * @spec openspec/specs/api-test-coverage/spec.md
 	 */
 	public function getFileText(int $fileId): JSONResponse {
+		// IDOR guard: the text of a file is its content, so it is served only
+		// to a caller who can open the file. 404 either way, so the answer
+		// does not tell a stranger which file ids exist.
+		if ($this->hasFileAccess(fileId: $fileId) === false) {
+			return new JSONResponse(
+				data: ['success' => false, 'message' => 'File not found or access denied', 'file_id' => $fileId],
+				statusCode: 404
+			);
+		}
+
 		try {
-			// TextExtractionService works with chunks, not FileText entities.
-			// For now, return a message indicating this endpoint needs to be updated.
-			// TODO: Implement chunk retrieval for file text display.
+			$text = $this->textExtractor->getExtractedText(fileId: $fileId);
+			if ($text === null) {
+				return new JSONResponse(
+					data: [
+						'success' => false,
+						'message' => 'No text has been extracted from this file yet. Extract it with POST /api/files/{fileId}/extract.',
+						'file_id' => $fileId,
+					],
+					statusCode: 404
+				);
+			}
+
 			return new JSONResponse(
 				data: [
-					'success' => false,
-					'message' => 'This endpoint is deprecated. Use chunk-based endpoints instead.',
+					'success' => true,
 					'file_id' => $fileId,
-				],
-				statusCode: 404
+					'text' => $text,
+					'length' => strlen($text),
+				]
 			);
 		} catch (\Exception $e) {
 			$this->logger->error(
