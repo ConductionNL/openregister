@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Deletion;
 
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -136,6 +137,58 @@ class DeletedObjectAuthorizer {
 			return false;
 		}
 	}//end userMayActOnDeletedObject()
+
+	/**
+	 * Whether the caller may read one destruction record.
+	 *
+	 * A destruction record outlives its object, so there is no object left to
+	 * ask the schema's read rule about. The record is served to an
+	 * administrator and to the person it names as the one who destroyed the
+	 * object (the record manager in REQ-DWD-002), and to nobody else. That is
+	 * the same line the readable audit trail draws: an entry whose object is
+	 * gone stays on the admin surface (openregister#4078).
+	 *
+	 * @param AuditTrail $record The destruction record.
+	 *
+	 * @return bool True when the caller may read it.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function userMayReadDestructionRecord(AuditTrail $record): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
+
+		if ($this->isCurrentUserAdmin() === true) {
+			return true;
+		}
+
+		$actor = $record->getUser();
+
+		return ($actor !== null && $actor !== '' && $actor === $user->getUID());
+	}//end userMayReadDestructionRecord()
+
+	/**
+	 * The destruction records the caller may read, in their original order.
+	 *
+	 * A record the caller may not read is left out rather than refused, so the
+	 * answer does not reveal that it exists.
+	 *
+	 * @param array<int, AuditTrail> $records The destruction records of one object.
+	 *
+	 * @return array<int, AuditTrail> The readable ones.
+	 *
+	 * @spec openspec/changes/delete-window-and-recorded-destruction/specs/deletion-audit-trail/spec.md
+	 */
+	public function readableDestructionRecords(array $records): array {
+		return array_values(
+			array_filter(
+				$records,
+				fn (AuditTrail $record): bool => $this->userMayReadDestructionRecord(record: $record)
+			)
+		);
+	}//end readableDestructionRecords()
 
 	/**
 	 * Resolve a soft-deleted object's schema, or null when it cannot be found.

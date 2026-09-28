@@ -22,10 +22,13 @@ namespace OCA\OpenRegister\Service\File;
 
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCP\IUserSession;
 use OCP\SystemTag\ISystemTag;
 use OCP\SystemTag\ISystemTagManager;
 use OCP\SystemTag\ISystemTagObjectMapper;
 use OCP\SystemTag\TagAlreadyExistsException;
+use OCP\SystemTag\TagCreationForbiddenException;
 use OCP\SystemTag\TagNotFoundException;
 use Psr\Log\LoggerInterface;
 
@@ -66,11 +69,13 @@ class TaggingHandler {
 	 * @param ISystemTagManager $systemTagManager System tag manager.
 	 * @param ISystemTagObjectMapper $systemTagMapper System tag object mapper.
 	 * @param LoggerInterface $logger Logger for logging operations.
+	 * @param IUserSession $userSession The caller whose tag rights Nextcloud decides.
 	 */
 	public function __construct(
 		private readonly ISystemTagManager $systemTagManager,
 		private readonly ISystemTagObjectMapper $systemTagMapper,
 		private readonly LoggerInterface $logger,
+		private readonly IUserSession $userSession,
 	) {
 	}//end __construct()
 
@@ -305,7 +310,13 @@ class TaggingHandler {
 	 * @spec openspec/specs/file-actions/spec.md
 	 */
 	public function addObjectTag(string $objectUuid, string $tagName): void {
-		$tag = $this->findOrCreateTag(tagName: $tagName);
+		try {
+			$tag = $this->findOrCreateTag(tagName: $tagName);
+		} catch (TagCreationForbiddenException $e) {
+			throw new NotAuthorizedException(message: 'You may not create the tag \'' . $tagName . '\'.');
+		}
+
+		$this->assertMayAssign(tag: $tag);
 		$this->systemTagMapper->assignTags(
 			objId: $objectUuid,
 			objectType: self::OBJECT_TAG_TYPE,
@@ -329,6 +340,7 @@ class TaggingHandler {
 		$allTags = $this->systemTagManager->getAllTags(visibilityFilter: null, nameSearchPattern: $tagName);
 		foreach ($allTags as $tag) {
 			if ($tag->getName() === $tagName) {
+				$this->assertMayAssign(tag: $tag);
 				$this->systemTagMapper->unassignTags(
 					objId: $objectUuid,
 					objectType: self::OBJECT_TAG_TYPE,
@@ -340,6 +352,34 @@ class TaggingHandler {
 
 		throw new Exception('Tag not found: ' . $tagName);
 	}//end removeObjectTag()
+
+	/**
+	 * Refuse a tag the signed-in caller may not assign or remove.
+	 *
+	 * Tags are looked up with no visibility filter and assigned through the
+	 * object mapper, which does not ask Nextcloud's rule for restricted and
+	 * invisible tags. This asks it, so an admin-only tag cannot be put on or
+	 * taken off an object by anyone else (openregister#4096). A call without
+	 * a session (a background job or occ) is not a user Nextcloud can refuse.
+	 *
+	 * @param ISystemTag $tag The tag.
+	 *
+	 * @return void
+	 *
+	 * @throws NotAuthorizedException When Nextcloud does not let the caller assign it.
+	 *
+	 * @spec openspec/changes/flow-tag-object-step/proposal.md
+	 */
+	private function assertMayAssign(ISystemTag $tag): void {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return;
+		}
+
+		if ($this->systemTagManager->canUserAssignTag($tag, $user) === false) {
+			throw new NotAuthorizedException(message: 'You may not assign or remove the tag \'' . $tag->getName() . '\'.');
+		}
+	}//end assertMayAssign()
 
 	/**
 	 * Get all system tags.

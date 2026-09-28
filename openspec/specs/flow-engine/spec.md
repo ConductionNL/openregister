@@ -105,8 +105,15 @@ action matrix and MUST be enforced by `FlowController`. Before them the flow
 endpoints were `@NoAdminRequired` and scoped only by organisation, so any member
 could do all four and no admin could narrow it.
 
+`flow.read` guards a flow's version history, a past version, its preview and
+its BPMN export, and MUST be seeded the same way: anyone who may edit a flow
+could always read it.
+
 They MUST be seeded `@authenticated` — the explicit "any signed-in user" grant —
-because that is exactly the access that already exists. A seed defaulting to
+because that is exactly the access that already exists. The seed repair MUST add
+a seeded action that an existing matrix lacks, and MUST NOT change an entry the
+matrix already has, so an instance seeded before a right existed gains it on
+upgrade and an admin's narrowing survives. A seed defaulting to
 admin-only would lock out every non-admin flow author on upgrade: a breaking
 change wearing a feature's clothes.
 
