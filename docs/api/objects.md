@@ -572,6 +572,8 @@ files/Open Registers/{Register Name}/{object-uuid}/{fieldName}_{timestamp}_{hash
 
 For **unauthenticated** (public) requests, files are stored under the OpenRegister system user account. For authenticated requests, files are stored under the requesting user's account.
 
+The register's folder is made by the first upload into that register, whoever sends it, including a request without a Nextcloud session such as a portal upload. The upload does not need permission to edit the register: the folder's id is saved as bookkeeping. When two first uploads arrive together, both use the same folder.
+
 ### Accessing Files
 
 Each stored file has:

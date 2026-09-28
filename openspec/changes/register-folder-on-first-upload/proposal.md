@@ -32,5 +32,6 @@ The chain is in the issue: `FileService::addFile()` reaches `FolderManagementHan
 - `lib/Service/File/FolderManagementHandler.php`: `createRegisterFolderById()` records through the recorder instead of `RegisterMapper::update()`; `createFolderPath()` takes a folder a concurrent request just created instead of failing. The constructor takes the recorder.
 - `lib/AppInfo/Application.php`: the manual registration of `FolderManagementHandler` passes the recorder.
 - Tests: a first-upload test with a fake root that has no folder yet and a session-less request, a recorder test, a wiring test for the registration closure, and the three existing handler tests that expected `update()`.
+- `docs/api/objects.md`: one paragraph under File Storage on who makes the register folder.
 - No route, schema, migration or dependency change.
 - Consumer: portaliq can drop its E2E exclusion (`GREP_INVERT` in `tests/e2e/playwright.config.ts`) once this lands; that is portaliq#29's gate-side definition of done.
