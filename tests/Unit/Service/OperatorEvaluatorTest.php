@@ -70,8 +70,9 @@ class OperatorEvaluatorTest extends TestCase {
 		$this->assertFalse($this->evaluator->valueMatchesOperator('a', ['$nin' => ['a', 'b', 'c']]));
 	}
 
-	public function testNinReturnsTrueForNonArrayOperand(): void {
-		$this->assertTrue($this->evaluator->valueMatchesOperator('a', ['$nin' => 'not-an-array']));
+	public function testNinDeniesANonArrayOperand(): void {
+		// A malformed operand denies, as the list query does (openregister#4089).
+		$this->assertFalse($this->evaluator->valueMatchesOperator('a', ['$nin' => 'not-an-array']));
 	}
 
 	// ── $contains ──

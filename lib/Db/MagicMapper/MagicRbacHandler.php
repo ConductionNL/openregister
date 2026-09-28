@@ -1017,27 +1017,43 @@ class MagicRbacHandler {
 	/**
 	 * Build SQL condition for operator-based match
 	 *
+	 * Every operator of the property is applied (AND), as OperatorEvaluator
+	 * does on find: `{"$gte": 18, "$lt": 65}` used to list on its first
+	 * operator alone. An operator that cannot be built emits the impossible
+	 * predicate instead of being dropped, so a malformed rule denies on the
+	 * list as it does on find (openregister#4089).
+	 *
 	 * @param IQueryBuilder $qb Query builder
 	 * @param string $columnName Column name
 	 * @param array $operators Operator conditions
 	 *
-	 * @return mixed SQL expression or null
+	 * @return mixed SQL expression or null when there are no operators
 	 */
 	private function buildOperatorCondition(IQueryBuilder $qb, string $columnName, array $operators): mixed {
+		$conditions = [];
 		foreach ($operators as $operator => $operand) {
-			$result = $this->buildSingleOperatorCondition(
-				qb: $qb,
-				columnName: $columnName,
-				operator: $operator,
-				operand: $operand
-			);
-
-			if ($result !== null) {
-				return $result;
+			$result = null;
+			if (is_string($operator) === true) {
+				$result = $this->buildSingleOperatorCondition(
+					qb: $qb,
+					columnName: $columnName,
+					operator: $operator,
+					operand: $operand
+				);
 			}
+
+			$conditions[] = ($result ?? $this->impossibleCondition(qb: $qb));
 		}//end foreach
 
-		return null;
+		if (empty($conditions) === true) {
+			return null;
+		}
+
+		if (count($conditions) === 1) {
+			return $conditions[0];
+		}
+
+		return $qb->expr()->andX(...$conditions);
 	}//end buildOperatorCondition()
 
 	/**
@@ -1186,15 +1202,27 @@ class MagicRbacHandler {
 			return null;
 		}
 
-		if (is_array($operand) === true && empty($operand) === false) {
-			$method = $arrayMap[$operator];
-			return $qb->expr()->{$method}(
-				"t.{$columnName}",
-				$qb->createNamedParameter($operand, IQueryBuilder::PARAM_STR_ARRAY)
-			);
+		// A map or a scalar is not a list of values: `in('Array')` matched
+		// nothing by accident and `$nin` over it matched everything
+		// (openregister#4089). Deny, as OperatorEvaluator does on find.
+		if (is_array($operand) === false || array_is_list($operand) === false) {
+			return $this->impossibleCondition(qb: $qb);
 		}
 
-		return null;
+		// An empty list: nothing is in it, and every present value is not.
+		if (empty($operand) === true) {
+			if ($operator === '$in') {
+				return $this->impossibleCondition(qb: $qb);
+			}
+
+			return $qb->expr()->isNotNull("t.{$columnName}");
+		}
+
+		$method = $arrayMap[$operator];
+		return $qb->expr()->{$method}(
+			"t.{$columnName}",
+			$qb->createNamedParameter($operand, IQueryBuilder::PARAM_STR_ARRAY)
+		);
 	}//end buildArrayOperatorCondition()
 
 	/**
@@ -2033,19 +2061,38 @@ class MagicRbacHandler {
 	 * @return string|null SQL expression or null.
 	 */
 	private function buildOperatorConditionSql(string $columnName, array $operators): ?string {
+		// Every operator applies (AND) and an unbuildable one denies; see
+		// buildOperatorCondition() (openregister#4089).
+		$conditions = [];
 		foreach ($operators as $operator => $operand) {
-			$result = $this->buildSingleOperatorConditionSql(
-				columnName: $columnName,
-				operator: $operator,
-				operand: $operand
-			);
-
-			if ($result !== null) {
-				return $result;
+			$result = null;
+			if (is_string($operator) === true) {
+				$result = $this->buildSingleOperatorConditionSql(
+					columnName: $columnName,
+					operator: $operator,
+					operand: $operand
+				);
 			}
+
+			if ($result === null) {
+				$this->logger->warning(
+					message: '[MagicRbacHandler] Unknown operator or operand — emitting an impossible predicate',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
+				);
+			}
+
+			$conditions[] = ($result ?? self::IMPOSSIBLE_SQL_CONDITION);
 		}//end foreach
 
-		return null;
+		if (empty($conditions) === true) {
+			return null;
+		}
+
+		if (count($conditions) === 1) {
+			return $conditions[0];
+		}
+
+		return '(' . implode(' AND ', $conditions) . ')';
 	}//end buildOperatorConditionSql()
 
 	/**
@@ -2171,13 +2218,22 @@ class MagicRbacHandler {
 			return null;
 		}
 
-		if (is_array($operand) === true && empty($operand) === false) {
-			$sqlKeyword = $arrayMap[$operator];
-			$quotedValues = array_map(fn ($val) => $this->quoteValue(value: $val), $operand);
-			return "{$columnName} {$sqlKeyword} (" . implode(', ', $quotedValues) . ')';
+		// Not a list: deny, as the QueryBuilder path and find do (openregister#4089).
+		if (is_array($operand) === false || array_is_list($operand) === false) {
+			return self::IMPOSSIBLE_SQL_CONDITION;
 		}
 
-		return null;
+		if (empty($operand) === true) {
+			if ($operator === '$in') {
+				return self::IMPOSSIBLE_SQL_CONDITION;
+			}
+
+			return "{$columnName} IS NOT NULL";
+		}
+
+		$sqlKeyword = $arrayMap[$operator];
+		$quotedValues = array_map(fn ($val) => $this->quoteValue(value: $val), $operand);
+		return "{$columnName} {$sqlKeyword} (" . implode(', ', $quotedValues) . ')';
 	}//end buildArrayOperatorConditionSql()
 
 	/**

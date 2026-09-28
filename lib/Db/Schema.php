@@ -911,6 +911,16 @@ class Schema extends Entity implements JsonSerializable {
 	public const LENS_ANNOTATION = 'x-openregister-lenses';
 
 	/**
+	 * The operators an authorization `match` may use (openregister#4089).
+	 *
+	 * Exactly the set OperatorEvaluator and MagicRbacHandler both evaluate; a
+	 * schema naming any other `$` operator in a match is refused at save.
+	 *
+	 * @var string[]
+	 */
+	public const MATCH_OPERATORS = ['$eq', '$ne', '$in', '$nin', '$contains', '$exists', '$gt', '$gte', '$lt', '$lte'];
+
+	/**
 	 * The list-surface annotation: declared columns and search fields.
 	 *
 	 * A list page written per object type is a list page that drifts per object
@@ -1571,6 +1581,8 @@ class Schema extends Entity implements JsonSerializable {
 						"Conditional authorization 'match' for action '{$action}' in {$context} must be an array"
 					);
 				}
+
+				$this->validateMatchOperators(match: $rule['match'], action: $action, context: $context);
 			}
 
 			return;
@@ -1581,6 +1593,81 @@ class Schema extends Entity implements JsonSerializable {
 			"Authorization rule for action '{$action}' in {$context} must be a string or conditional object"
 		);
 	}//end validateAuthorizationRule()
+
+	/**
+	 * Refuse a match operator or operand the evaluators cannot handle (openregister#4089).
+	 *
+	 * An unknown operator such as `$lookup`, or an `$in`/`$nin` whose operand is
+	 * not a list, used to save cleanly and then deny every caller at runtime
+	 * without a word. The operators accepted here are exactly the ones both
+	 * {@see \OCA\OpenRegister\Service\OperatorEvaluator} and the list query in
+	 * MagicRbacHandler evaluate. An `$in`/`$nin` operand may also be a dynamic
+	 * token such as `$user.groups`, which resolves to a list at runtime.
+	 *
+	 * @param array  $match   The match clause of one conditional rule.
+	 * @param string $action  The action the rule belongs to, for the message.
+	 * @param string $context The block being validated, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When an operator or operand is not supported.
+	 *
+	 * @spec openspec/specs/rbac-zaaktype/spec.md
+	 */
+	private function validateMatchOperators(array $match, string $action, string $context): void {
+		foreach ($match as $property => $value) {
+			if (is_array($value) === false) {
+				continue;
+			}
+
+			foreach ($value as $operator => $operand) {
+				if (is_string($operator) === true && str_starts_with($operator, '$') === true) {
+					$this->validateMatchOperator(
+						operator: $operator,
+						operand: $operand,
+						where: "action '{$action}' in {$context}, property '{$property}'"
+					);
+				}
+			}
+		}
+	}//end validateMatchOperators()
+
+	/**
+	 * Refuse one unsupported match operator, or a non-list `$in`/`$nin` operand.
+	 *
+	 * @param string $operator The `$` operator.
+	 * @param mixed  $operand  Its operand.
+	 * @param string $where    Where it sits, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the operator or its operand is not supported.
+	 *
+	 * @spec openspec/specs/rbac-zaaktype/spec.md
+	 */
+	private function validateMatchOperator(string $operator, mixed $operand, string $where): void {
+		if (in_array($operator, self::MATCH_OPERATORS, true) === false) {
+			throw new InvalidArgumentException(
+				"Authorization match for {$where} uses the unsupported operator '{$operator}'; supported are "
+				.implode(', ', self::MATCH_OPERATORS)
+			);
+		}
+
+		if ($operator !== '$in' && $operator !== '$nin') {
+			return;
+		}
+
+		// A dynamic token such as `$user.groups` resolves to a list at runtime.
+		if (is_string($operand) === true && str_starts_with($operand, '$') === true) {
+			return;
+		}
+
+		if (is_array($operand) === false || array_is_list($operand) === false) {
+			throw new InvalidArgumentException(
+				"Authorization match for {$where} needs a list as the '{$operator}' operand"
+			);
+		}
+	}//end validateMatchOperator()
 
 	/**
 	 * Check if a user group has permission for a specific CRUD action
