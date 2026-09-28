@@ -33,6 +33,10 @@ use Psr\Log\NullLogger;
  * Seed step coverage.
  *
  * @covers \OCA\OpenRegister\Repair\SeedCaseFixtures
+ * @uses \OCA\OpenRegister\Db\CaseItem
+ * @uses \OCA\OpenRegister\Db\CaseItemAudit
+ * @uses \OCA\OpenRegister\Db\CaseItemAuditMapper
+ * @uses \OCA\OpenRegister\Db\CaseItemMapper
  */
 class SeedCaseFixturesTest extends TestCase {
 

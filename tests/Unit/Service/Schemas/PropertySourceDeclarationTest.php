@@ -41,6 +41,7 @@ use PHPUnit\Framework\TestCase;
  * `x-openregister-property-source`.
  *
  * @covers \OCA\OpenRegister\Service\Schemas\PropertySourceDeclaration
+ * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
  */
 class PropertySourceDeclarationTest extends TestCase {
 

@@ -26,6 +26,7 @@ use stdClass;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\NotSuppliedHandler
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 final class NotSuppliedHandlerTest extends TestCase {
 

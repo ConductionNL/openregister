@@ -47,6 +47,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
  * @covers \OCA\OpenRegister\Service\Flow\Timer\SlaCalculator
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaDeclaration
  */
 class WorkingCalendarYearBoundaryTest extends TestCase {
 

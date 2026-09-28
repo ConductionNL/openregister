@@ -58,6 +58,10 @@ final class TestLeadSearchProvider extends AbstractSchemaSearchProvider {
  * Tests for AbstractSchemaSearchProvider.
  *
  * @covers \OCA\OpenRegister\AppHost\Search\AbstractSchemaSearchProvider
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter
+ * @uses \OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter
  */
 class AbstractSchemaSearchProviderTest extends TestCase {
 

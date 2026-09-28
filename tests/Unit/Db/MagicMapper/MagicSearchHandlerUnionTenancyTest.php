@@ -43,6 +43,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 

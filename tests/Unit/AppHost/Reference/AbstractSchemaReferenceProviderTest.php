@@ -56,6 +56,10 @@ final class TestLeadReferenceProvider extends AbstractSchemaReferenceProvider {
  * Tests for AbstractSchemaReferenceProvider.
  *
  * @covers \OCA\OpenRegister\AppHost\Reference\AbstractSchemaReferenceProvider
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\MdiIconRenderer
+ * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter
  */
 class AbstractSchemaReferenceProviderTest extends TestCase {
 

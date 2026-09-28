@@ -31,6 +31,10 @@ use PHPUnit\Framework\TestCase;
  * Coverage of CasePlanDefinition.
  *
  * @covers \OCA\OpenRegister\Service\Case\CasePlanDefinition
+ * @uses \OCA\OpenRegister\Db\CaseItem
+ * @uses \OCA\OpenRegister\Service\Case\CaseSentryEvaluator
+ * @uses \OCA\OpenRegister\Service\Flow\EventCatalogService
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
  */
 class CasePlanDefinitionTest extends TestCase {
 

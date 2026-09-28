@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Middleware\PublicApiCorsMiddleware
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningPolicy
  */
 class PublicApiCorsMiddlewareTest extends TestCase {
 

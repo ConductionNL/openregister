@@ -31,6 +31,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ValidateObject
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 final class ValidateObjectImmutableTest extends TestCase {
 

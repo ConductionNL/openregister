@@ -39,6 +39,9 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ApiCallersController
+ * @uses \OCA\OpenRegister\Db\ApiCallRecord
+ * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersion
+ * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue
  */
 class ApiCallersControllerTest extends TestCase {
 

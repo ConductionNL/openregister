@@ -53,6 +53,9 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowRunMigrationService
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Db\FlowVersion
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunMigrationValidator
  *
  * @spec openspec/changes/migrate-run-between-versions/specs/flow-definition-versioning/spec.md
  */

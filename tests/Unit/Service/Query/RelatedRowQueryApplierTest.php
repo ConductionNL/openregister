@@ -42,6 +42,11 @@ use Psr\Log\NullLogger;
  * `RelatedRowQueryApplier`.
  *
  * @covers \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowExistsClause
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilterParser
  */
 class RelatedRowQueryApplierTest extends TestCase {
 

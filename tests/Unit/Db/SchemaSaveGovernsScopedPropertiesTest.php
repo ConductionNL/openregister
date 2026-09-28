@@ -46,6 +46,10 @@ use ReflectionMethod;
  * `SchemaMapper::assertScopedPropertiesAreGoverned()`.
  *
  * @covers \OCA\OpenRegister\Db\SchemaMapper
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler
+ * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
+ * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance
  */
 class SchemaSaveGovernsScopedPropertiesTest extends TestCase {
 

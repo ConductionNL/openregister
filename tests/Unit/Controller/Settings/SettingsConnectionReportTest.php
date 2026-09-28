@@ -56,6 +56,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Controller\Settings\LlmSettingsController
  * @covers \OCA\OpenRegister\Controller\Settings\ApiTokenSettingsController
  * @covers \OCA\OpenRegister\Controller\Settings\EdepotSettingsController
+ * @uses \OCA\OpenRegister\Service\Connection\ConnectionReporter
  */
 class SettingsConnectionReportTest extends TestCase {
 

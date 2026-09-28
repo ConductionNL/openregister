@@ -47,6 +47,16 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
  * @covers \OCA\OpenRegister\Service\PropertyRbacHandler
  * @covers \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Archival\ArchivalDecisionResolver
+ * @uses \OCA\OpenRegister\Service\Archival\UnestablishedValues
+ * @uses \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRules
+ * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
+ * @uses \OCA\OpenRegister\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class RenderObjectNestedWriteOnlyPathsTest extends TestCase {
 	use BuildsStateFieldRuleResolver;

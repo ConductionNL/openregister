@@ -54,6 +54,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\TaskSequence
  * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext
+ * @uses \OCA\OpenRegister\Service\Lifecycle\LifecycleTransitionResolver
  */
 class ApprovalChainGateListenerTest extends TestCase {
 	private SchemaMapper&MockObject $schemaMapper;

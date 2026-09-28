@@ -40,6 +40,7 @@ use Psr\Log\NullLogger;
  * Tasks 8.1 and 8.3: what is stored, and what a rule change reports.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\DerivedGrantStore
+ * @uses \OCA\OpenRegister\Service\Rbac\DerivedGrantResolver
  */
 class DerivedGrantStoreTest extends TestCase {
 

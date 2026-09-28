@@ -57,6 +57,14 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UserTaskPerformers
  * @uses \OCA\OpenRegister\Event\AgentRunRequestedEvent
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalReference
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Service\Flow\FlowAdvanceBudget
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeResumeState
+ * @uses \OCA\OpenRegister\Service\Flow\FlowResumeState
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
+ * @uses \OCA\OpenRegister\Service\Flow\FlowValueTemplate
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\UserTaskConfig
+ * @uses \OCA\OpenRegister\Service\Task\TaskForm
  */
 final class UserTaskAgentPerformerTest extends TestCase {
 

@@ -49,6 +49,10 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\MoveObject
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
  *
  * @spec openspec/changes/identity-survives-a-move/specs/objects-crud/spec.md
  */

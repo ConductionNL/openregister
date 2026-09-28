@@ -45,6 +45,8 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler
+ * @uses \OCA\OpenRegister\Formats\BsnFormat
+ * @uses \OCA\OpenRegister\Service\TextExtraction\PatternSet\NlPatternSet
  */
 class BsnDetectionTest extends TestCase {
 

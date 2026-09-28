@@ -43,6 +43,10 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\Case\CasePlanStateMachine
  * @covers \OCA\OpenRegister\Event\CaseItemTransitionedEvent
  * @covers \OCA\OpenRegister\Db\CaseItemAudit
+ * @uses \OCA\OpenRegister\Db\CaseItem
+ * @uses \OCA\OpenRegister\Db\CaseItemAuditMapper
+ * @uses \OCA\OpenRegister\Db\CaseItemMapper
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanTransitions
  */
 class CasePlanStateMachineTest extends TestCase {
 

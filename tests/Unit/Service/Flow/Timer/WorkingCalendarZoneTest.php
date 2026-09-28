@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
  * The zone, its default, and what it refuses.
  *
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
  */
 class WorkingCalendarZoneTest extends TestCase {
 	/**

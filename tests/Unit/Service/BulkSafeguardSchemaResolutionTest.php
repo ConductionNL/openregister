@@ -53,6 +53,7 @@ use ReflectionMethod;
  * The bulk safeguard's behaviour when the default schema cannot be resolved.
  *
  * @covers \OCA\OpenRegister\Service\Object\SaveObjects
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class BulkSafeguardSchemaResolutionTest extends TestCase {
 

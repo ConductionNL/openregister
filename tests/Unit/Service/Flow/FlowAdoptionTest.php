@@ -63,6 +63,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\Flow
  * @uses \OCA\OpenRegister\Db\FlowVersion
  * @uses \OCA\OpenRegister\Service\Flow\FlowLocator
+ * @uses \OCA\OpenRegister\Service\Flow\FlowCaller
  */
 class FlowAdoptionTest extends TestCase {
 

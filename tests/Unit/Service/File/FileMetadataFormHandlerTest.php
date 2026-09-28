@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\File\FileMetadataFormHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 final class FileMetadataFormHandlerTest extends TestCase {
 

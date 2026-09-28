@@ -49,6 +49,13 @@ use ReflectionClass;
  *
  * @covers \OCA\OpenRegister\Db\RegisterMapper
  * @covers \OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Event\PermissionsDeclaringEvent
+ * @uses \OCA\OpenRegister\Exception\AuthorizationBlockException
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  */
 class SaveTimeRefusalsInEveryModeTest extends TestCase {
 

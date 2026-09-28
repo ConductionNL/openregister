@@ -48,6 +48,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ConflictReport
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
  *
  * @spec openspec/changes/a-conflicting-save-shows-the-other-value/specs/objects-crud/spec.md
  */

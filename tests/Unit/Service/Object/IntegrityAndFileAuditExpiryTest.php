@@ -61,6 +61,11 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
  * @covers \OCA\OpenRegister\Service\File\FileAuditHandler
  * @covers \OCA\OpenRegister\Db\AuditTrailMapper
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Dto\DeletionAnalysis
+ * @uses \OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard
+ * @uses \OCA\OpenRegister\Service\AuditRetentionResolver
  */
 class IntegrityAndFileAuditExpiryTest extends TestCase {
 

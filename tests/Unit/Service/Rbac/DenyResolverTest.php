@@ -39,6 +39,7 @@ use PHPUnit\Framework\TestCase;
  * Pins the deny grammar every enforcement path reads.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
  */
 class DenyResolverTest extends TestCase {
 

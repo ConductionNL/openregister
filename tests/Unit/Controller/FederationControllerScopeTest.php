@@ -46,6 +46,8 @@ use Psr\Log\LoggerInterface;
  * Object-scope enforcement on the single-object federation endpoints.
  *
  * @covers \OCA\OpenRegister\Controller\FederationController
+ * @uses \OCA\OpenRegister\Db\FederatedShare
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class FederationControllerScopeTest extends TestCase {
 

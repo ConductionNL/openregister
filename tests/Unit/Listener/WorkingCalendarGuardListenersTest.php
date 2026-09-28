@@ -46,6 +46,13 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Listener\WorkingCalendarValidationListener
  * @covers \OCA\OpenRegister\Listener\WorkingCalendarDeleteGuardListener
  * @covers \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendarWriteGuard
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\ObjectCreatingEvent
+ * @uses \OCA\OpenRegister\Event\ObjectDeletingEvent
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatingEvent
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar
  */
 class WorkingCalendarGuardListenersTest extends TestCase {
 

@@ -40,6 +40,7 @@ use Psr\Log\LoggerInterface;
  * Unit tests for LinkedEntityService.
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\LinkedEntityService
+ * @uses \OCA\OpenRegister\Service\LinkedEntityService
  */
 class LinkedEntityServiceTest extends TestCase {
 

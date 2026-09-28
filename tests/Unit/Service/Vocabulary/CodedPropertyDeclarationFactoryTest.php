@@ -43,6 +43,7 @@ use PHPUnit\Framework\TestCase;
  * The factory reads both spellings, and refuses both at once.
  *
  * @covers \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclaration
  */
 class CodedPropertyDeclarationFactoryTest extends TestCase {
 

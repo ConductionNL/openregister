@@ -63,6 +63,14 @@ use UnexpectedValueException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowNodePreflight
+ * @uses \OCA\OpenRegister\Service\Flow\FlowConnectivity
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Flow\FlowGraph
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeRegistry
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeTaxonomyResolver
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\RouterNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode
+ * @uses \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent
  */
 class FlowNodeConfigDialectTest extends TestCase {
 	use FiltersFlowLevelFindings;

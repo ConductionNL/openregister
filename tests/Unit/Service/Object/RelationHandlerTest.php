@@ -45,6 +45,7 @@ use ReflectionClass;
  * Unit tests for RelationHandler.
  *
  * @covers \OCA\OpenRegister\Service\Object\RelationHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class RelationHandlerTest extends TestCase {
 	private RelationHandler $handler;

@@ -34,6 +34,7 @@ use stdClass;
 
 /**
  * @covers \OCA\OpenRegister\Service\File\RegisterFolderProvisioner
+ * @uses \OCA\OpenRegister\Db\Register
  */
 class RegisterFolderProvisionerTest extends TestCase {
 
