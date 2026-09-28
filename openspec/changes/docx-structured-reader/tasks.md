@@ -13,4 +13,4 @@
 ## 3. Docs and verification
 
 - [x] 3.1 Add a "Structured document reading" section to `docs/Features/text-extraction-vectorization-ner.md` next to the presentation section; verify the section names the result fields, the bounds and the formats
-- [ ] 3.2 Run `composer check:strict`, `npm run lint` and the hydra gates once before push, and record each exit code in the PR body
+- [x] 3.2 Run `composer check:strict`, `npm run lint` and the hydra gates once before push, and record each exit code in the PR body

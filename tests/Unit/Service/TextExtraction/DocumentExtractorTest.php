@@ -34,6 +34,7 @@ use Exception;
 use OCA\OpenRegister\Service\TextExtraction\DocumentBodyParser;
 use OCA\OpenRegister\Service\TextExtraction\DocumentContentReader;
 use OCA\OpenRegister\Service\TextExtraction\DocumentExtractor;
+use OCA\OpenRegister\Service\TextExtraction\DocumentStyleMap;
 use OCA\OpenRegister\Service\TextExtraction\WordExtractor;
 use OCP\Files\File;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -608,6 +609,40 @@ class DocumentExtractorTest extends TestCase {
 		);
 
 		$this->assertSame(['Rondje'], $this->paragraphTexts($result));
+	}
+
+	/**
+	 * A basedOn chain is followed up to MAX_STYLE_CHAIN steps and no further.
+	 *
+	 * @return void
+	 */
+	public function testAStyleChainIsFollowedOnlyUpToItsCap(): void {
+		// Style 0 is based on 1, 1 on 2, and so on; only the last one is a heading.
+		$build = static function (int $length): array {
+			$styles = [];
+			for ($index = 0; $index < $length; $index++) {
+				$styles[] = ['S' . $index, 'Stijl ' . $index, 'S' . ($index + 1)];
+			}
+
+			$styles[] = ['S' . $length, 'heading 2'];
+			return $styles;
+		};
+
+		$within = $this->extract(
+			$this->docx(
+				body: $this->p(text: 'Binnen de grens', style: 'S0'),
+				parts: ['word/styles.xml' => $this->styles($build(DocumentStyleMap::MAX_STYLE_CHAIN - 1))]
+			)
+		);
+		$beyond = $this->extract(
+			$this->docx(
+				body: $this->p(text: 'Voorbij de grens', style: 'S0'),
+				parts: ['word/styles.xml' => $this->styles($build(DocumentStyleMap::MAX_STYLE_CHAIN))]
+			)
+		);
+
+		$this->assertSame([['Binnen de grens', 2]], $this->headings($within));
+		$this->assertSame(['Voorbij de grens'], $this->paragraphTexts($beyond));
 	}
 
 	// ------------------------------------------------------------------
