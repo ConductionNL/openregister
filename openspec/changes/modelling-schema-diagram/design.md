@@ -20,6 +20,22 @@ uuid and a numeric id all resolve the same way they do on save. A ref that does 
 resolve is returned as a dangling edge, so the diagram shows the broken link instead
 of hiding it.
 
+## D-1a: declared relations are edges too
+
+Added 28 Sep 2026 for buildiq `data-model-diagram`. A schema's configuration may
+carry `x-openregister-relations`, a list of `{ name, target, cardinality,
+inverseOf }` entries written by buildiq's relation editor
+(buildiq `src/components/schema-editor/RelationEditor.vue:235-251`). OpenRegister
+keeps the block (`Schema::ANNOTATION_VOCABULARY`, `lib/Db/Schema.php:3110` at
+555af7212) and reads it only in `NotificationRecipientResolver.php:205`.
+`RegisterModelService` adds one edge per entry: from the schema, to `target`
+(resolved by id, slug or uuid like a `$ref`), labelled `name`, `one` or `many`
+from `cardinality`, with `inverseOf` as the inverse label, and `source:
+declared` so the view can tell it from a property link. An entry whose target
+does not resolve becomes a dangling edge, like a broken `$ref`. When a
+declared relation and a `$ref` property describe the same link (same target
+and a property of the same name), one edge is drawn.
+
 ## D-2: RBAC
 
 The endpoint answers only for a register the caller may read, and lists only the

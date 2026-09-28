@@ -3,6 +3,7 @@
 ## 1. Model endpoint
 
 - [ ] 1.1 `RegisterModelService` building nodes and edges from `$ref`, `items.$ref` and `inversedBy`, with external and dangling edges. Verify: `RegisterModelServiceTest` with a three-schema register, one cross-register ref and one broken ref.
+- [ ] 1.1a Edges from `x-openregister-relations` entries (design D-1a), deduplicated against `$ref` links of the same name and target. Verify: `RegisterModelServiceTest` with one declared relation, one declared relation that duplicates a `$ref`, and one whose target does not resolve.
 - [ ] 1.2 `GET /api/registers/{id}/model` in `RegistersController` with the same read checks as `registers#schemas`; route in `appinfo/routes.php`. Verify: API test, and a user without access to the other register sees an untitled external node.
 
 ## 2. Diagram view

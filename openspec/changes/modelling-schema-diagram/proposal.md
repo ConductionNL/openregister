@@ -62,6 +62,17 @@ schema at a time. Nobody puts them on one screen.
   needs to see what links to what before changing it (see also
   `modelling-rename-without-loss` in this pass).
 - stackiq, where an architect documents a landscape and wants the model as a picture.
+- buildiq, whose merged change `data-model-diagram` (buildiq `development`
+  974af86, row `data-model-diagram`, 3 competitors yes) draws its data model from
+  this endpoint and names one addition (added 28 Sep 2026 by the owner moves
+  pass): "buildiq's relation editor writes relations as `x-openregister-relations`
+  entries with `name`, `target`, `cardinality` and `inverseOf`
+  (`RelationEditor.vue:235-251`), and the model change reads only `$ref`,
+  `items.$ref` and `inversedBy`. OpenRegister keeps the key
+  (`openregister/lib/Db/Schema.php:3097`) but reads it only in
+  `NotificationRecipientResolver.php:205`. Without the addition every relation a
+  maker drew in buildiq is missing from the diagram." The endpoint therefore also
+  draws the schema's `x-openregister-relations` entries as edges.
 
 ## ADRs
 

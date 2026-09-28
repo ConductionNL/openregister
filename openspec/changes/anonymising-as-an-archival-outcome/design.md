@@ -56,3 +56,18 @@ not.
 - The recorded destruction path of `delete-window-and-recorded-destruction`:
   reused for the record of the act.
 - No second retention engine and no second anonymiser.
+
+## D-6: the profile may sit beside the `archive` block too
+
+Added 28 Sep 2026 for pipelinq `platform-client-retention` (design D6). The
+planner reads the profile only from `x-openregister-archival.anonymisation`
+(`AnonymisationPlanner::profileOf()`, `lib/Service/Archival/AnonymisationPlanner.php:53`
+at 555af7212), and the annotation validator refuses that block without a
+`retention` object (`ArchivalAnnotationValidator.php:163-168`). A schema that
+archives through the `archive` block (`Schema::getArchive()`,
+`lib/Db/Schema.php:1071`), as pipelinq's `client` and `contact` do, has no
+`retention` block to give, so it cannot declare a profile at all. The profile
+is therefore read from `archive.anonymisation` as well, with the same shape and
+the same schema-save check. A schema that declares it in both places is
+refused at save, naming both, so there is never a question which one wins.
+
