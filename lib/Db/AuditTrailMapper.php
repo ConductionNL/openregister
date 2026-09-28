@@ -1027,6 +1027,41 @@ class AuditTrailMapper extends QBMapper {
 		// future purge is explainable from the row itself. Both fields are set
 		// BEFORE the row is sealed: `expires` is part of the canonical JSON the
 		// hash covers, so writing it after sealing would invalidate the hash.
+		$this->applyRetentionExpiry(auditTrail: $auditTrail, objectEntity: $objectEntity);
+
+		return $auditTrail;
+	}//end buildAuditTrail()
+
+	/**
+	 * Stamp an audit row's expiry and retention source from the retention of
+	 * the object it describes.
+	 *
+	 * The one place every audit writer takes its expiry from. Rows built here
+	 * got it in or#2265; the referential-integrity rows and the file audit
+	 * rows kept a flat `+30 days` until or#4101, so the record of why a
+	 * reference was cleared, or which file of a record under legal hold was
+	 * renamed, was purged a month later. A writer that builds its own row
+	 * calls this before inserting it, so the expiry is part of the sealed
+	 * canonical JSON.
+	 *
+	 * Without an object (it could not be found) the row is retained
+	 * indefinitely: the failure being guarded against is evidence
+	 * disappearing, not disk filling.
+	 *
+	 * @param AuditTrail $auditTrail The row to stamp.
+	 * @param ObjectEntity|null $objectEntity The object the row describes, or null when it could not be found.
+	 *
+	 * @return AuditTrail The same row, stamped.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	public function applyRetentionExpiry(AuditTrail $auditTrail, ?ObjectEntity $objectEntity): AuditTrail {
+		if ($objectEntity === null) {
+			$auditTrail->setExpires(null);
+			$auditTrail->setRetentionPeriod('object-unavailable:indefinite');
+			return $auditTrail;
+		}
+
 		$resolvedRetention = $this->resolveAuditExpiry(
 			objectEntity: $objectEntity,
 			createdAt: ($auditTrail->getCreated() ?? new DateTime())
@@ -1035,7 +1070,7 @@ class AuditTrailMapper extends QBMapper {
 		$auditTrail->setRetentionPeriod($resolvedRetention['source']);
 
 		return $auditTrail;
-	}//end buildAuditTrail()
+	}//end applyRetentionExpiry()
 
 	/**
 	 * Resolve the audit row's expiry from the object's retention policy.

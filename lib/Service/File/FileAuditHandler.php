@@ -171,7 +171,8 @@ class FileAuditHandler {
 			}
 
 			$auditTrail->setCreated(new DateTime());
-			$auditTrail->setExpires(new DateTime('+30 days'));
+			// Expiry follows the record's retention, not a flat 30 days (or#4101).
+			$this->auditTrailMapper->applyRetentionExpiry(auditTrail: $auditTrail, objectEntity: $object);
 			$auditTrail->setSize(14);
 
 			return $this->auditTrailMapper->insert($auditTrail);
@@ -244,7 +245,8 @@ class FileAuditHandler {
 			}
 
 			$auditTrail->setCreated(new DateTime());
-			$auditTrail->setExpires(new DateTime('+30 days'));
+			// Expiry follows the record's retention, not a flat 30 days (or#4101).
+			$this->auditTrailMapper->applyRetentionExpiry(auditTrail: $auditTrail, objectEntity: $object);
 			// Minimum default size from AuditTrailMapper::createAuditTrail.
 			$auditTrail->setSize(14);
 
