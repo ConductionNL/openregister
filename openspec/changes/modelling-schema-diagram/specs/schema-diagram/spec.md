@@ -32,6 +32,22 @@ MUST NOT read objects.
 - **THEN** the external node carries no title and no properties
 - @e2e exclude {specified only; task 1.2 adds the API test}
 
+### Requirement: Relations declared in the schema are edges of the model
+
+The model SHALL also draw an edge for every entry of a schema's
+`x-openregister-relations` block, from the schema to the entry's `target`,
+labelled with its `name`, marked one or many from its `cardinality`, with
+`inverseOf` as the inverse label and marked as declared. A declared relation
+that duplicates a `$ref` link of the same name and target SHALL be drawn once,
+and one whose target does not resolve SHALL be drawn as a dangling edge.
+
+#### Scenario: a relation a maker drew in buildiq appears in the diagram
+
+- **GIVEN** a register whose schema `order` has no `$ref` property but carries `x-openregister-relations: [{ "name": "klant", "target": "customer", "cardinality": "one", "inverseOf": "orders" }]`
+- **WHEN** a functional administrator reads `GET /api/registers/{id}/model`
+- **THEN** the edges include one from `order` to `customer` labelled `klant`, cardinality one, inverse `orders`, marked declared
+- @e2e exclude {specified only; covered by RegisterModelServiceTest in task 1.1a}
+
 ### Requirement: The register page draws the model
 
 The register detail page SHALL offer a Diagram view that draws the model, opens a
