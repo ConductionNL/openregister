@@ -180,9 +180,14 @@ function main() {
 		console.error('in English inside an otherwise translated form.')
 		console.error('')
 		console.error(
-			'Add them to l10n/en.json (identity) and l10n/nl.json (translated), then',
+			'Add them to l10n/en.json (identity) and l10n/nl.json (translated). The',
 		)
-		console.error('run `npm run l10n:build`. See what is uncovered with:')
+		console.error(
+			'browser reads l10n/*.js, a separate catalogue: add a string the frontend',
+		)
+		console.error(
+			'renders there too, with `node scripts/l10n-ai.js add`. See what is uncovered with:',
+		)
 		console.error('  node scripts/check-schema-l10n.js --list')
 		process.exit(1)
 	}
