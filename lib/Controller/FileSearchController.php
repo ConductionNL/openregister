@@ -24,6 +24,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ChunkMapper;
+use OCA\OpenRegister\Service\File\FileReadScope;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
@@ -51,6 +52,7 @@ class FileSearchController extends Controller {
 	 * @param VectorizationService $vectorService Vectorization service
 	 * @param ChunkMapper $chunkMapper Chunk mapper (ranked keyword arm)
 	 * @param LoggerInterface $logger Logger
+	 * @param FileReadScope $readScope Keeps only the hits on files the caller may open
 	 */
 	public function __construct(
 		string $appName,
@@ -58,6 +60,7 @@ class FileSearchController extends Controller {
 		private readonly VectorizationService $vectorService,
 		private readonly ChunkMapper $chunkMapper,
 		private readonly LoggerInterface $logger,
+		private readonly FileReadScope $readScope,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -99,10 +102,14 @@ class FileSearchController extends Controller {
 			// File-only scope: `entity_type` (snake_case) is the key
 			// VectorSearchHandler::fetchVectors() actually reads — the former
 			// `entityType` key was silently ignored (or#277).
-			$results = $this->vectorService->semanticSearch(
-				query: $query,
-				limit: $limit,
-				filters: ['entity_type' => 'file']
+			// A chunk carries the file's text, so only files the caller can
+			// open in Nextcloud are returned (openregister#4097).
+			$results = $this->readScope->readableResults(
+				results: $this->vectorService->semanticSearch(
+					query: $query,
+					limit: $limit,
+					filters: ['entity_type' => 'file']
+				)
 			);
 
 			return new JSONResponse(
@@ -170,10 +177,15 @@ class FileSearchController extends Controller {
 
 			// Real keyword arm: ranked ts_rank results over file chunks,
 			// fetched with the same candidate-pool size as the vector leg.
-			$keywordResults = $this->chunkMapper->searchByKeyword(
-				query: $query,
-				limit: $limit * 2,
-				filters: ['source_type' => 'file']
+			// Scoped before fusion, so an unreadable file cannot lift a readable
+			// one's rank, and again after, because the vector arm searches every
+			// entity type (openregister#4097).
+			$keywordResults = $this->readScope->readableResults(
+				results: $this->chunkMapper->searchByKeyword(
+					query: $query,
+					limit: $limit * 2,
+					filters: ['source_type' => 'file']
+				)
 			);
 
 			$serviceResponse = $this->vectorService->hybridSearch(
@@ -183,12 +195,14 @@ class FileSearchController extends Controller {
 				weights: ['keyword' => $keywordWeight, 'vector' => $semanticWeight]
 			);
 
+			$results = $this->readScope->readableResults(results: ($serviceResponse['results'] ?? []));
+
 			return new JSONResponse(
 				data: [
 					'success' => true,
 					'query' => $query,
-					'results' => $serviceResponse['results'] ?? [],
-					'total' => $serviceResponse['total'] ?? count($serviceResponse['results'] ?? []),
+					'results' => $results,
+					'total' => count($results),
 					'search_time_ms' => $serviceResponse['search_time_ms'] ?? null,
 					'source_breakdown' => $serviceResponse['source_breakdown'] ?? [],
 					'weights' => $serviceResponse['weights'] ?? [

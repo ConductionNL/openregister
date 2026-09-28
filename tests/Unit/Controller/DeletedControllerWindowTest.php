@@ -175,7 +175,8 @@ final class DeletedControllerWindowTest extends TestCase {
 			$session,
 			$this->auditTrails,
 			$deletion,
-			$authorizer
+			$authorizer,
+			$this->createMock(\OCA\OpenRegister\Service\Object\RenderObject::class)
 		);
 	}//end setUp()
 

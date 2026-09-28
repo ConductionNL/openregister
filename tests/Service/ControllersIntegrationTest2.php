@@ -1016,7 +1016,7 @@ class ControllersIntegrationTest2 extends TestCase {
 	// ─── FileTextController ──────────────────────────────────────────────
 
 	/**
-	 * Test FileTextController::getFileText (deprecated endpoint)
+	 * Test FileTextController::getFileText answers 404 for a file with no extracted text
 	 *
 	 * @return void
 	 */
