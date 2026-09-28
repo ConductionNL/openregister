@@ -40,7 +40,7 @@ Until that changes, writing the map fails validation on **every** save
 save that changed nothing. Reads still accept either shape, so an agent written structured by an
 earlier build keeps working.
 
-## ADDED Requirements
+## Requirements
 
 <!--
   RELOCATED SUBSET — the canonical home for this capability is hermiq.
