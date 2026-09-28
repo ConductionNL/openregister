@@ -1921,6 +1921,8 @@ class Schema extends Entity implements JsonSerializable {
 			$object['configuration'] = $existingConfig;
 		}
 
+		$object = $this->foldTopLevelExportable(object: $object);
+
 		foreach ($object as $key => $value) {
 			// Special handling for 'required' field - must always be an array, never NULL.
 			if ($key === 'required') {
@@ -2088,6 +2090,10 @@ class Schema extends Entity implements JsonSerializable {
 			'sharedWith' => ($this->sharedWith ?? []),
 			'deleted' => $deleted,
 			'configuration' => $this->configuration,
+			// Mirror of `configuration.exportable`, the one place the flag is
+			// stored, served at the top level too because that is where the
+			// index page's Export menu reads it (or#4103).
+			'exportable' => (($this->configuration['exportable'] ?? false) === true),
 			'allOf' => $this->allOf,
 			'oneOf' => $this->oneOf,
 			'anyOf' => $this->anyOf,
@@ -2667,6 +2673,49 @@ class Schema extends Entity implements JsonSerializable {
 	}//end parseConfigurationInput()
 
 	/**
+	 * Fold a top-level `exportable` into `configuration.exportable`.
+	 *
+	 * The entity has no `exportable` field, so a top-level flag used to fall
+	 * through to a `setExportable()` that does not exist and be swallowed by
+	 * hydrate()'s silent catch (or#4103). It is folded into the configuration
+	 * instead, the same way `x-schema-org` is: an explicit
+	 * `configuration.exportable` wins. A top-level `false` with no
+	 * configuration value is not written, because absent already means not
+	 * exportable and the serialised schema carries the mirror on every read,
+	 * so a read-and-save round trip would otherwise add the key to every
+	 * schema. When the payload carries no configuration the stored one is
+	 * the base, so a partial write of the flag keeps the rest.
+	 *
+	 * @param array $object The hydrate payload.
+	 *
+	 * @return array The payload without a top-level `exportable`.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function foldTopLevelExportable(array $object): array {
+		if (array_key_exists('exportable', $object) === false) {
+			return $object;
+		}
+
+		$exportable = $object['exportable'];
+		unset($object['exportable']);
+
+		$config = ($object['configuration'] ?? $this->configuration ?? []);
+		if (is_string($config) === true) {
+			$config = json_decode($config, true);
+		}
+
+		if (is_array($config) === false || array_key_exists('exportable', $config) === true || $exportable === false) {
+			return $object;
+		}
+
+		$config['exportable'] = $exportable;
+		$object['configuration'] = $config;
+
+		return $object;
+	}//end foldTopLevelExportable()
+
+	/**
 	 * Validate configuration array
 	 *
 	 * @param array $configuration Configuration array to validate
@@ -2680,7 +2729,10 @@ class Schema extends Entity implements JsonSerializable {
 	private function validateConfigurationArray(array $configuration): array {
 		$validatedConfig = [];
 		$stringFields = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
-		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
+		// `exportable` opts the schema into nextcloud-vue's native Export menu
+		// on an index page (or#4103). Off the allowlist it was dropped without
+		// a log line, so `allowExport: true` on every app page was a no-op.
+		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare', 'exportable'];
 		// `implements` + `x-schema-org` carry the cross-app semantic-type
 		// markers (ADR-048); they must round-trip through the configuration
 		// column so SemanticTypeResolver can discover the schema. Their IRI
