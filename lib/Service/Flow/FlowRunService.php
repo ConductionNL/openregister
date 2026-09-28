@@ -108,6 +108,16 @@ class FlowRunService {
 	public const RUN_AS_CONTEXT_KEY = 'runAs';
 
 	/**
+	 * The context key the run's FLOW id travels under.
+	 *
+	 * Stamped from the run, like the acting identity, so a node can name the
+	 * flow it belongs to (a sent-email event does) without a lookup.
+	 *
+	 * @var string
+	 */
+	public const FLOW_ID_CONTEXT_KEY = 'flowId';
+
+	/**
 	 * The trigger a direct node invocation carries (or-flow-run-node).
 	 *
 	 * Unlike {@see FlowRunVersionPin::TRIGGER_TEST}, this trigger is NOT
@@ -445,6 +455,7 @@ class FlowRunService {
 	 * run being reported into the context, not a mode switch on this method.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
 	private function baseContextFor(FlowRun $run, bool $resuming): array {
 		$context = ($run->getContext() ?? []);
@@ -457,6 +468,7 @@ class FlowRunService {
 		// carries. See the docblock — a context-supplied acting identity would be
 		// an authoring-time privilege escalation.
 		$context[self::RUN_AS_CONTEXT_KEY] = $run->getRunAs();
+		$context[self::FLOW_ID_CONTEXT_KEY] = $run->getFlowId();
 
 		return $context;
 	}//end baseContextFor()

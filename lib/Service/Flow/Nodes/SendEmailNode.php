@@ -120,9 +120,10 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 * @return array<int, string> The accepted config keys.
 	 *
 	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	public function configKeys(): array {
-		return ['recipients', 'subject', 'body'];
+		return ['recipients', 'subject', 'body', 'externalRecipients'];
 	}//end configKeys()
 
 	/**
@@ -132,9 +133,11 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 *
 	 * @return void
 	 *
-	 * @throws UnexpectedValueException When the body or the recipients are empty.
+	 * @throws UnexpectedValueException When the body or the recipients are empty, or
+	 *                                   `externalRecipients` is not a known mode.
 	 *
 	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	public function validateConfig(array $config): void {
 		if (trim((string)($config['body'] ?? '')) === '') {
@@ -153,6 +156,13 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 		if ($recipients === []) {
 			throw new UnexpectedValueException($this->l10n->t('An email needs at least one recipient.'));
 		}
+
+		$mode = trim((string)($config['externalRecipients'] ?? ''));
+		if ($mode !== '' && in_array(strtolower($mode), FlowMessagingService::EXTERNAL_RECIPIENT_MODES, true) === false) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('External recipients must be none, object or any, not "%s".', [$mode])
+			);
+		}
 	}//end validateConfig()
 
 	/**
@@ -161,6 +171,7 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 * @return array<int, array<string, mixed>> The field descriptions.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	public function configForm(): array {
 		return [
@@ -168,8 +179,18 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 				'key' => 'recipients',
 				'label' => $this->l10n->t('Who to mail'),
 				'type' => 'text',
-				'help' => $this->l10n->t('User or group ids, or a field on the item such as {{ assignee }}. Groups are expanded.'),
+				'help' => $this->l10n->t(
+					'User or group ids, email addresses, or a field on the item such as {{ assignee }} or {{ contacts }}. Groups are expanded. Addresses are sent to only as far as external recipients allows.'
+				),
 				'required' => true,
+			],
+			[
+				'key' => 'externalRecipients',
+				'label' => $this->l10n->t('External recipients'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'Whether email addresses outside Nextcloud may be mailed: none (the default) refuses them, object only mails addresses found on the item itself, any mails every valid address. A refused address is listed in the run log.'
+				),
 			],
 			[
 				'key' => 'subject',
