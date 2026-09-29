@@ -4414,6 +4414,22 @@ class SaveObject {
 			incoming: $data
 		);
 
+		// A property the writer may not read was stripped from what they were
+		// shown, so omitting it is not a request to clear it: it is carried
+		// forward the same way (openregister#4170).
+		$omittedWriteOnly = array_values(
+			array_unique(
+				array_merge(
+					$omittedWriteOnly,
+					$this->propertyRbacHandler->collectOmittedUnreadableProperties(
+						schema: $schema,
+						incoming: $data,
+						stored: ($oldData ?? [])
+					)
+				)
+			)
+		);
+
 		// Prepare the data.
 		$preparedData = $this->prepareObjectData(objectEntity: $existingObject, schema: $schema, data: $data);
 
