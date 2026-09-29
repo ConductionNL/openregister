@@ -28,6 +28,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use DateTime;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -372,6 +373,31 @@ class ExportService {
 
 		return $this->renderPdfDocument(sections: [$section]);
 	}//end exportToPdf()
+
+	/**
+	 * Render rows the caller already fetched as a PDF table
+	 *
+	 * For a caller whose read is not a Nextcloud user's search, such as a
+	 * portal resident's scoped collection (portaliq#765): exportToPdf() fetches
+	 * its own objects with the Nextcloud user's RBAC and only `@self.` filters,
+	 * so it cannot render that read. This renders what it is given, through the
+	 * same Dompdf sandbox and under the same row cap, and reads nothing itself.
+	 *
+	 * @param string                           $title   The heading above the table.
+	 * @param array<int|string, string>        $columns Column keys to labels, or a list of keys that are their own labels.
+	 * @param array<int, array<string, mixed>> $rows    The rows, each keyed by column key.
+	 *
+	 * @return string The PDF bytes.
+	 *
+	 * @throws ExportTooLargeException When there are more rows than {@see self::MAX_PDF_EXPORT_ROWS}.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	public function renderRowsToPdf(string $title, array $columns, array $rows): string {
+		$this->guardPdfRowCap(rowCount: count($rows));
+
+		return $this->renderPdfDocument(sections: [(new RowsPdfSection())->build(title: $title, columns: $columns, rows: $rows)]);
+	}//end renderRowsToPdf()
 
 	/**
 	 * Build one PDF section per schema for a register-level export (no

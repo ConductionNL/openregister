@@ -454,6 +454,48 @@ class PropertyRbacHandler {
 	}//end collectOmittedWriteOnlyPaths()
 
 	/**
+	 * Properties an update payload omits that the writer may not read (openregister#4170).
+	 *
+	 * The read path strips a property whose `authorization.read` the caller
+	 * fails, so a caller doing the natural GET, edit, PUT round trip sends a
+	 * body without it, and the PUT null-fill would erase a value the caller was
+	 * never shown. These are carried forward exactly as omitted write-only
+	 * values are, through {@see restoreWriteOnlyValues()}.
+	 *
+	 * Read access is decided against the STORED object, since that is the
+	 * object the caller read. A caller who can read the property and leaves it
+	 * out still clears it, as a PUT does. Call it on the RAW payload, for the
+	 * reason {@see collectOmittedWriteOnlyPaths()} gives.
+	 *
+	 * @param Schema $schema   Schema whose property authorization applies.
+	 * @param array  $incoming The raw incoming update payload.
+	 * @param array  $stored   The raw stored object.
+	 *
+	 * @return array<int, string> Top-level property names to carry forward (possibly empty).
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 */
+	public function collectOmittedUnreadableProperties(Schema $schema, array $incoming, array $stored): array {
+		if ($schema->hasPropertyAuthorization() === false || $this->isAdmin() === true) {
+			return [];
+		}
+
+		$omitted = [];
+		foreach (array_keys($schema->getPropertiesWithAuthorization()) as $propertyName) {
+			$propertyName = (string) $propertyName;
+			if (array_key_exists($propertyName, $incoming) === true || array_key_exists($propertyName, $stored) === false) {
+				continue;
+			}
+
+			if ($this->canReadProperty(schema: $schema, property: $propertyName, object: $stored) === false) {
+				$omitted[] = $propertyName;
+			}
+		}
+
+		return $omitted;
+	}//end collectOmittedUnreadableProperties()
+
+	/**
 	 * Carry stored write-only values forward onto an update payload that omitted them.
 	 *
 	 * The application half of the save-side preserve rule (openregister#463). Restores
