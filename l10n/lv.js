@@ -3240,7 +3240,9 @@ OC.L10N.register(
         "This record has no visible fields.": "Šim ierakstam nav redzamu lauku.",
         "Upload": "Augšupielādēt",
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Šis pakalpojuma sniedzējs šajā serverī vēl nav iestatīts. Palūdz administratoram to konfigurēt.",
-        "The provider's server did not accept the connection. Try again later.": "Pakalpojuma sniedzēja serveris nepieņēma savienojumu. Mēģini vēlreiz vēlāk."
+        "The provider's server did not accept the connection. Try again later.": "Pakalpojuma sniedzēja serveris nepieņēma savienojumu. Mēģini vēlreiz vēlāk.",
+        "Consequence": "Sekas",
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Kas notiks, ja puse neatbildēs, pakāpei pēc termiņa."
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);"
 )
