@@ -56,6 +56,8 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 
 	private IEventDispatcher&MockObject $events;
 
+	private Register $register;
+
 	private Schema $schema;
 
 	private ObjectEntity $current;
@@ -70,10 +72,12 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
-		$register = new Register();
-		$register->setId(5);
+		$this->register = new Register();
+		$this->register->setId(5);
+		$this->register->setSlug('lp-register');
 		$this->schema = new Schema();
 		$this->schema->setId(7);
+		$this->schema->setSlug('lp-item');
 		$this->schema->setHardValidation(true);
 
 		$this->current = new ObjectEntity();
@@ -90,7 +94,7 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 
 		$this->magic = $this->createMock(MagicMapper::class);
 		$this->magic->method('findAcrossAllSources')->willReturn(
-			['object' => $this->current, 'register' => $register, 'schema' => $this->schema]
+			['object' => $this->current, 'register' => $this->register, 'schema' => $this->schema]
 		);
 
 		$this->audit = $this->createMock(AuditTrailMapper::class);
@@ -226,4 +230,32 @@ final class RevertHandlerWriteGuardsTest extends TestCase {
 
 		$this->handler()->revert(register: '5', schema: '7', id: self::OBJ, until: '1.0.1');
 	}//end testSoftValidationSchemaSkipsValidation()
+
+	/**
+	 * The route may name the register and schema by slug, as every other object route allows (#4161).
+	 *
+	 * @return void
+	 */
+	public function testRevertAcceptsRegisterAndSchemaSlugs(): void {
+		$this->validator->method('validateObject')->willReturn($this->valid());
+		$this->magic->expects($this->once())->method('update')->willReturn($this->reverted);
+		$this->audit->method('createAuditTrail')->willReturn(new AuditTrail());
+
+		$saved = $this->handler()->revert(register: 'lp-register', schema: 'lp-item', id: self::OBJ, until: '1.0.1');
+
+		$this->assertSame($this->reverted, $saved);
+	}//end testRevertAcceptsRegisterAndSchemaSlugs()
+
+	/**
+	 * A slug of another register still answers not found.
+	 *
+	 * @return void
+	 */
+	public function testRevertRefusesAnotherRegistersSlug(): void {
+		$this->magic->expects($this->never())->method('update');
+
+		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+
+		$this->handler()->revert(register: 'other-register', schema: 'lp-item', id: self::OBJ, until: '1.0.1');
+	}//end testRevertRefusesAnotherRegistersSlug()
 }//end class
