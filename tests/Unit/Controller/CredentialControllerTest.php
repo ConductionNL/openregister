@@ -481,6 +481,7 @@ class CredentialControllerTest extends TestCase {
 			'a 256-character name'             => [['name' => str_repeat('a', 256)]],
 			'a 65-character allowed app'       => [['allowedApps' => ['hermiq', str_repeat('a', 65)]]],
 			'256 multibyte characters of name' => [['name' => str_repeat('é', 256)]],
+			'a 65-character multibyte app'     => [['allowedApps' => [str_repeat('é', 65)]]],
 		];
 	}//end outOfBoundsUpdates()
 
@@ -523,7 +524,7 @@ class CredentialControllerTest extends TestCase {
 			credData: ['name' => 'My GitHub', 'provider' => 'github', 'allowedApps' => ['hermiq']],
 			params: [
 				'name'        => str_repeat('é', 255),
-				'allowedApps' => [str_repeat('a', 64)],
+				'allowedApps' => [str_repeat('é', 64)],
 				'secret'      => 'gho_rotated',
 			],
 			store: $store
