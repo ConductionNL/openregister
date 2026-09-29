@@ -431,7 +431,8 @@ class SchemaTool extends AbstractTool {
 				schemaId: (int)$schema->getId(),
 				version: $schema->getVersion(),
 				changeSet: $changeSet,
-				acknowledged: false
+				acknowledged: false,
+				origin: 'agent tool'
 			);
 		}
 
