@@ -1474,4 +1474,43 @@ class SchemasControllerTest extends TestCase {
 		$this->assertSame(200, $response->getStatus());
 		$this->assertFalse($response->getData()['resolved']);
 	}//end testResolveByImplementsWithoutAUriIsUnresolved()
+	/**
+	 * An unsupported match operator is refused with 400 naming the operator, not a bare 500 (#4162).
+	 *
+	 * The exception is the real one: the mapper double hydrates a real Schema,
+	 * which is where the save path validates the authorization block.
+	 */
+	public function testCreateRefusesAnUnsupportedMatchOperatorWith400NamingIt(): void {
+		$payload = [
+			'title' => 'LP b3 bad',
+			'properties' => ['title' => ['type' => 'string']],
+			'authorization' => ['read' => [['group' => 'authenticated', 'match' => ['title' => ['$regex' => '^a']]]]],
+		];
+		$this->request->method('getParams')->willReturn($payload);
+		$this->schemaMapper->method('createFromArray')->willReturnCallback(
+			static fn (array $data) => (new \OCA\OpenRegister\Db\Schema())->hydrate($data)
+		);
+
+		$result = $this->controller->create();
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertStringContainsString("unsupported operator '\$regex'", $result->getData()['error']);
+	}//end testCreateRefusesAnUnsupportedMatchOperatorWith400NamingIt()
+
+	/**
+	 * The same refusal on an update, which PATCH routes to (#4162).
+	 */
+	public function testUpdateRefusesANonListInOperandWith400NamingIt(): void {
+		$this->request->method('getParams')->willReturn(
+			['authorization' => ['read' => [['group' => 'authenticated', 'match' => ['status' => ['$in' => 'open']]]]]]
+		);
+		$this->schemaMapper->method('updateFromArray')->willReturnCallback(
+			static fn (int $id, array $data) => (new \OCA\OpenRegister\Db\Schema())->hydrate($data)
+		);
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(400, $result->getStatus());
+		$this->assertStringContainsString("'\$in' operand", $result->getData()['error']);
+	}//end testUpdateRefusesANonListInOperandWith400NamingIt()
 }//end class
