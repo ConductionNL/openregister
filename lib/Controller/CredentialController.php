@@ -356,7 +356,7 @@ class CredentialController extends Controller {
 		$update = new CredentialUpdateRequest(request: $this->request);
 		$data = $update->applyTo(data: $data);
 
-		if ($update->wouldRepointHost(data: $data) === true) {
+		if ($update->wouldRepointHost(data: $data) === true || $update->exceedsBounds(data: $data) === true) {
 			return new JSONResponse(['message' => 'Invalid credential request'], Http::STATUS_BAD_REQUEST);
 		}
 

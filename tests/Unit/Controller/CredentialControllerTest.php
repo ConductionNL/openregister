@@ -45,6 +45,7 @@ use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -60,7 +61,7 @@ class CredentialControllerTest extends TestCase {
 	/** @var integer How many times update() saved the credential object. */
 	private int $saves = 0;
 
-	/** @var array<int, string> Every error the controller logged. */
+	/** @var array<int, array{message: string, context: array<string, mixed>}> Every error the controller logged. */
 	private array $errors = [];
 
 	protected function setUp(): void {
@@ -415,8 +416,9 @@ class CredentialControllerTest extends TestCase {
 		$this->assertSame(['message' => 'Unable to update credential'], $response->getData());
 		$this->assertSame(0, $this->saves, 'the metadata is not saved when the secret could not be');
 		$this->assertCount(1, $this->errors);
-		$this->assertStringContainsString('RuntimeException', $this->errors[0]);
-		$this->assertStringNotContainsString('gho_rotated', $this->errors[0]);
+		$this->assertStringContainsString('RuntimeException', $this->errors[0]['message']);
+		$this->assertStringNotContainsString('gho_rotated', $this->errors[0]['message']);
+		$this->assertSame(['credentialId' => 'cred-1'], $this->errors[0]['context'], 'no exception in the context: its trace holds the secret');
 	}//end testAFailedRotationChangesNothingAndIsLogged()
 
 	/**
@@ -443,7 +445,95 @@ class CredentialControllerTest extends TestCase {
 			$response->getData()
 		);
 		$this->assertCount(1, $this->errors);
+		$this->assertSame(['credentialId' => 'cred-1'], $this->errors[0]['context'], 'no exception in the context: its trace holds the secret');
 	}//end testAFailedSaveAfterARotationSaysTheSecretChanged()
+
+	/**
+	 * A failed save without a rotation says nothing changed, because nothing did.
+	 */
+	public function testAFailedSaveWithoutARotationSaysNothingChanged(): void {
+		$store = $this->createMock(CredentialStore::class);
+		$store->expects($this->never())->method('put');
+
+		$controller = $this->makeUpdateController(
+			ownerUid: 'alice',
+			credData: ['name' => 'My GitHub', 'provider' => 'github', 'allowedApps' => ['hermiq']],
+			params: ['name' => 'Renamed'],
+			store: $store,
+			saveFails: true
+		);
+
+		$response = $controller->update('cred-1');
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$this->assertSame(['message' => 'Unable to update credential'], $response->getData());
+		$this->assertCount(1, $this->errors);
+		$this->assertSame(['credentialId' => 'cred-1'], $this->errors[0]['context']);
+	}//end testAFailedSaveWithoutARotationSaysNothingChanged()
+
+	/**
+	 * Requests whose metadata breaks a schema length bound.
+	 *
+	 * @return array<string, array{0: array<string, mixed>}>
+	 */
+	public static function outOfBoundsUpdates(): array {
+		return [
+			'a 256-character name'             => [['name' => str_repeat('a', 256)]],
+			'a 65-character allowed app'       => [['allowedApps' => ['hermiq', str_repeat('a', 65)]]],
+			'256 multibyte characters of name' => [['name' => str_repeat('é', 256)]],
+		];
+	}//end outOfBoundsUpdates()
+
+	/**
+	 * The save is where the schema validates, and the secret is written before it.
+	 * A request the schema would refuse is answered 400 before anything is written,
+	 * so it never rotates the secret.
+	 *
+	 * @param array<string, mixed> $params The metadata the request carries.
+	 */
+	#[DataProvider('outOfBoundsUpdates')]
+	public function testAnUpdateTheSchemaWouldRefuseRotatesNothing(array $params): void {
+		$store = $this->createMock(CredentialStore::class);
+		$store->expects($this->never())->method('put');
+
+		$controller = $this->makeUpdateController(
+			ownerUid: 'alice',
+			credData: ['name' => 'My GitHub', 'provider' => 'github', 'allowedApps' => ['hermiq']],
+			params: array_merge($params, ['secret' => 'gho_rotated']),
+			store: $store
+		);
+
+		$response = $controller->update('cred-1');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame(['message' => 'Invalid credential request'], $response->getData());
+		$this->assertSame(0, $this->saves);
+	}//end testAnUpdateTheSchemaWouldRefuseRotatesNothing()
+
+	/**
+	 * Metadata exactly at the bounds, counted in characters rather than bytes, is
+	 * accepted and rotates the secret.
+	 */
+	public function testAnUpdateAtTheBoundsIsAccepted(): void {
+		$store = $this->createMock(CredentialStore::class);
+		$store->expects($this->once())->method('put');
+
+		$controller = $this->makeUpdateController(
+			ownerUid: 'alice',
+			credData: ['name' => 'My GitHub', 'provider' => 'github', 'allowedApps' => ['hermiq']],
+			params: [
+				'name'        => str_repeat('é', 255),
+				'allowedApps' => [str_repeat('a', 64)],
+				'secret'      => 'gho_rotated',
+			],
+			store: $store
+		);
+
+		$response = $controller->update('cred-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(1, $this->saves);
+	}//end testAnUpdateAtTheBoundsIsAccepted()
 
 	/**
 	 * Build a CredentialController for exercising update() — an owned personal
@@ -498,8 +588,8 @@ class CredentialControllerTest extends TestCase {
 
 		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
 		$logger->method('error')->willReturnCallback(
-			function (string $message): void {
-				$this->errors[] = $message;
+			function (string $message, array $context = []): void {
+				$this->errors[] = ['message' => $message, 'context' => $context];
 			}
 		);
 
