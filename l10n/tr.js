@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Bu bağlantı parola ile korunuyor",
         "This link is open until {date}.": "Bu bağlantı {date} tarihine kadar açık.",
         "This record has no visible fields.": "Bu kaydın görünür alanı yok.",
-        "Upload": "Yükle"
+        "Upload": "Yükle",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Bu sağlayıcı henüz bu sunucuda yapılandırılmamış. Yöneticinizden yapılandırmasını isteyin.",
+        "The provider's server did not accept the connection. Try again later.": "Sağlayıcının sunucusu bağlantıyı kabul etmedi. Daha sonra yeniden deneyin."
     },
     "nplurals=2; plural=(n != 1);"
 )

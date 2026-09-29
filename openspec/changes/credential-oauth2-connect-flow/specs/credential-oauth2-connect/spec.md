@@ -8,6 +8,8 @@ Defines how a tenant connects a provider account to the credential broker: the a
 
 `POST /api/credentials/oauth2/start` SHALL be available to an authenticated user only. It SHALL accept a catalogue provider identifier whose entry declares `kind: "oauth2-token-set"`, the scopes to request, a desired credential scope of `personal` or `organisation`, an optional `credentialRef` naming a tenant-supplied `generic-oauth2` client secret, an optional instance host for a provider whose catalogue entry declares `baseUrlFrom`, an optional existing credential id to re-authorise, and a return URL. It SHALL return the provider's authorization URL carrying a `state` value, and a PKCE code challenge for every provider whose catalogue entry declares PKCE support. A code verifier SHALL be generated and held for every start, whether or not the provider consumes it. An organisation-scoped start SHALL be refused unless the caller administers the organisation the credential would belong to.
 
+A refused start SHALL answer with the status of its cause: 400 for a request that names no usable provider or host, 403 when a guard refuses the caller, 409 when the provider has no OAuth2 client configured on the instance, 502 when a per-instance provider's server does not register a client, and 500 only for a fault of the instance itself. A client credential registered during a start that then fails SHALL be removed again, and so SHALL the pending state that start stored.
+
 `@e2e tests/e2e/credential-oauth2-connect.spec.ts`
 
 #### Scenario: A start returns a provider URL and never a secret
@@ -19,12 +21,35 @@ Defines how a tenant connects a provider account to the credential broker: the a
 #### Scenario: An unsupported provider is refused
 
 - **WHEN** a start names a provider that is absent from the catalogue or whose entry is not an OAuth2 token set
-- **THEN** the request is refused and no state is issued
+- **THEN** the request is refused with 400 and no state is issued
 
 #### Scenario: An organisation start needs organisation administration
 
 - **WHEN** a member who does not administer the organisation starts an organisation-scoped connection
-- **THEN** the request is refused
+- **THEN** the request is refused with 403
+
+#### Scenario: A provider with no configured client answers 409
+
+- **WHEN** a start names a provider for which neither the request nor the instance configures an OAuth2 client
+- **THEN** the request is refused with 409, because the fault is the instance's configuration and not the caller's request
+- **AND** no pending state is left behind
+
+#### Scenario: A refusing instance server answers 502
+
+- **WHEN** a per-instance provider's server refuses to register a client, cannot be reached, or answers without a client id
+- **THEN** the request is refused with 502
+
+#### Scenario: A start that fails after registering a client removes it
+
+- **WHEN** a start registers a new client at a per-instance provider's server and a later step fails
+- **THEN** the client credential that start minted is deleted, its stored secret first
+- **AND** a client the start reused rather than minted is left in place
+
+#### Scenario: A start that fails after storing its state withdraws it
+
+- **WHEN** a start stores its pending state and a later step fails
+- **THEN** the pending record is deleted, since no callback will ever redeem it
+- **AND** a failure to delete it does not change the status of the refusal
 
 ### Requirement: The state value is signed, single-use and short-lived
 

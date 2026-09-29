@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Ta povezava je zaščitena z geslom",
         "This link is open until {date}.": "Ta povezava je odprta do {date}.",
         "This record has no visible fields.": "Ta zapis nima vidnih polj.",
-        "Upload": "Naloži"
+        "Upload": "Naloži",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ta ponudnik na tem strežniku še ni nastavljen. Prosi skrbnika, naj ga nastavi.",
+        "The provider's server did not accept the connection. Try again later.": "Strežnik ponudnika povezave ni sprejel. Poskusi znova pozneje."
     },
     "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);"
 )

@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Ovaj link je zaštićen lozinkom",
         "This link is open until {date}.": "Ovaj link je otvoren do {date}.",
         "This record has no visible fields.": "Ovaj zapis nema vidljivih polja.",
-        "Upload": "Otpremi"
+        "Upload": "Otpremi",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ovaj pružalac još nije postavljen na ovom serveru. Zamoli administratora da ga konfiguriše.",
+        "The provider's server did not accept the connection. Try again later.": "Server pružaoca nije prihvatio povezivanje. Pokušaj ponovo kasnije."
     },
     "nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;"
 )

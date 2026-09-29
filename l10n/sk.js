@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Tento odkaz je chránený heslom",
         "This link is open until {date}.": "Tento odkaz je otvorený do {date}.",
         "This record has no visible fields.": "Tento záznam nemá žiadne viditeľné polia.",
-        "Upload": "Nahrať"
+        "Upload": "Nahrať",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Tento poskytovateľ zatiaľ nie je na tomto serveri nastavený. Požiadajte správcu, aby ho nastavil.",
+        "The provider's server did not accept the connection. Try again later.": "Server poskytovateľa pripojenie neprijal. Skúste to znova neskôr."
     },
     "nplurals=4; plural=(n % 1 == 0 && n == 1 ? 0 : n % 1 == 0 && n >= 2 && n <= 4 ? 1 : n % 1 != 0 ? 2: 3);"
 )

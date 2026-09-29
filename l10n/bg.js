@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Тази връзка е защитена с парола",
         "This link is open until {date}.": "Тази връзка е отворена до {date}.",
         "This record has no visible fields.": "Този запис няма видими полета.",
-        "Upload": "Качване"
+        "Upload": "Качване",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Този доставчик все още не е настроен на този сървър. Помолете администратора си да го конфигурира.",
+        "The provider's server did not accept the connection. Try again later.": "Сървърът на доставчика не прие свързването. Опитайте отново по-късно."
     },
     "nplurals=2; plural=(n != 1);"
 )

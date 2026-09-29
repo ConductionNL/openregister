@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Эта ссылка защищена паролем",
         "This link is open until {date}.": "Эта ссылка открыта до {date}.",
         "This record has no visible fields.": "У этой записи нет видимых полей.",
-        "Upload": "Загрузить"
+        "Upload": "Загрузить",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Этот поставщик ещё не настроен на этом сервере. Попросите администратора настроить его.",
+        "The provider's server did not accept the connection. Try again later.": "Сервер поставщика не принял подключение. Попробуйте позже."
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

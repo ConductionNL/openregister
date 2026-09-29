@@ -462,10 +462,9 @@ jobs:
       # call in src/, while `test:l10n:parity` asks whether every locale matches
       # en.js key-for-key. One passing tells you nothing about the other.
       #
-      # `check:l10n-js` is a THIRD question again: whether the generated browser
-      # catalogues (l10n/*.js) are in step with their .json sources. Both sides
-      # of this merge added one of these; neither replaces the other.
-      frontend-checks: '["check:specs", "test:l10n", "test:l10n:parity", "format", "check:schema-l10n", "check:l10n-js"]'
+      # There is no .js/.json parity leg: l10n/*.js is the browser catalogue and
+      # l10n/*.json the PHP one, separate sets with separate consumers.
+      frontend-checks: '["check:specs", "test:l10n", "test:l10n:parity", "format", "check:schema-l10n"]'
       # ── Cost controls (see ConductionNL/.github#596, #599) ───────────────
       #
       # The fleet's CI was not slow, it was QUEUED. A Code Quality run does

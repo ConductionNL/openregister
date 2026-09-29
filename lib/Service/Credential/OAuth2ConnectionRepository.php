@@ -119,7 +119,8 @@ class OAuth2ConnectionRepository {
 	 *
 	 * @return string|null The organisation UUID, or null for a personal connect.
 	 *
-	 * @throws InvalidArgumentException When there is no active organisation, or the caller does not administer it.
+	 * @throws InvalidArgumentException When there is no active organisation.
+	 * @throws CredentialAccessDeniedException When the caller does not administer the organisation.
 	 *
 	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
@@ -134,7 +135,7 @@ class OAuth2ConnectionRepository {
 		}
 
 		if ($this->organisationService->isOrganisationAdmin($uuid, $uid) === false) {
-			throw new InvalidArgumentException(message: 'only an organisation administrator may connect a shared account');
+			throw new CredentialAccessDeniedException(message: 'only an organisation administrator may connect a shared account');
 		}
 
 		return $uuid;
@@ -171,4 +172,32 @@ class OAuth2ConnectionRepository {
 			_multitenancy: false
 		);
 	}//end disable()
+
+	/**
+	 * Delete a credential outright: its stored secret, then the object.
+	 *
+	 * For a client credential a connect start minted and then could not use. The
+	 * secret goes first, for the reason disable() gives: a failure halfway leaves
+	 * an object that holds nothing, never a secret nothing points at.
+	 *
+	 * @param string $credentialId The credential UUID.
+	 * @param string $scope The scope its secret is stored in.
+	 *
+	 * @return void
+	 *
+	 * @throws Throwable When the custody delete or the object delete fails.
+	 *
+	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
+	 */
+	public function discard(string $credentialId, string $scope): void {
+		$this->credentialStore->delete($credentialId, $scope);
+
+		$this->objectService->deleteObject(
+			uuid: $credentialId,
+			register: CredentialBrokerService::REGISTER,
+			schema: CredentialBrokerService::SCHEMA,
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end discard()
 }//end class

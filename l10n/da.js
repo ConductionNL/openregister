@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Dette link er beskyttet med en adgangskode",
         "This link is open until {date}.": "Dette link er åbent indtil {date}.",
         "This record has no visible fields.": "Denne post har ingen synlige felter.",
-        "Upload": "Overfør"
+        "Upload": "Overfør",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Denne udbyder er endnu ikke sat op på denne server. Bed din administrator om at konfigurere den.",
+        "The provider's server did not accept the connection. Try again later.": "Udbyderens server accepterede ikke forbindelsen. Prøv igen senere."
     },
     "nplurals=2; plural=(n != 1);"
 )

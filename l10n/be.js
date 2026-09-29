@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Гэтая спасылка абаронена паролем",
         "This link is open until {date}.": "Гэтая спасылка адкрыта да {date}.",
         "This record has no visible fields.": "У гэтага запісу няма бачных палёў.",
-        "Upload": "Запампаваць"
+        "Upload": "Запампаваць",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Гэты пастаўшчык яшчэ не наладжаны на гэтым серверы. Папрасіце адміністратара наладзіць яго.",
+        "The provider's server did not accept the connection. Try again later.": "Сервер пастаўшчыка не прыняў падлучэнне. Паспрабуйце пазней."
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

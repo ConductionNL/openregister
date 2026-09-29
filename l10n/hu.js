@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Ez a hivatkozás jelszóval védett",
         "This link is open until {date}.": "Ez a hivatkozás {date}-ig nyitva van.",
         "This record has no visible fields.": "Ennek a rekordnak nincsenek látható mezői.",
-        "Upload": "Feltöltés"
+        "Upload": "Feltöltés",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ez a szolgáltató még nincs beállítva ezen a kiszolgálón. Kérd meg a rendszergazdát, hogy állítsa be.",
+        "The provider's server did not accept the connection. Try again later.": "A szolgáltató kiszolgálója nem fogadta el a kapcsolatot. Próbáld újra később."
     },
     "nplurals=2; plural=(n != 1);"
 )

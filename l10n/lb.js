@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Dëse Link ass mat engem Passwuert geschützt",
         "This link is open until {date}.": "Dëse Link ass op bis {date}.",
         "This record has no visible fields.": "Dësen Datesaz huet keng siichtbar Felder.",
-        "Upload": "Eroplueden"
+        "Upload": "Eroplueden",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Dëse Fournisseur ass op dësem Server nach net ageriicht. Fro däin Administrateur, fir en anzeriichten.",
+        "The provider's server did not accept the connection. Try again later.": "De Server vum Fournisseur huet d'Verbindung net ugeholl. Probéier méi spéit nach eng Kéier."
     },
     "nplurals=2; plural=(n != 1);"
 )

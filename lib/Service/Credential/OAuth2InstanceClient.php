@@ -40,7 +40,6 @@ namespace OCA\OpenRegister\Service\Credential;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClientService;
-use RuntimeException;
 use Throwable;
 
 /**
@@ -50,6 +49,17 @@ use Throwable;
  * stateless security predicate; injecting it would make the host-lock substitutable.
  */
 class OAuth2InstanceClient {
+	/**
+	 * Claims key naming the client credential this call minted.
+	 *
+	 * Set only when ensure() registered a new client, never for one it reused,
+	 * so a caller whose later step fails knows exactly what to remove. It is not
+	 * a claim: the caller takes it out before the claims are signed.
+	 *
+	 * @var string
+	 */
+	public const MINTED_KEY = '_minted';
+
 	/**
 	 * Constructor.
 	 *
@@ -73,9 +83,10 @@ class OAuth2InstanceClient {
 	 * @param array<string, mixed> $claims The claims assembled so far.
 	 * @param string $redirectUri The callback to register.
 	 *
-	 * @return array<string, mixed> The claims, carrying a client id and its credentialRef.
+	 * @return array<string, mixed> The claims, carrying a client id and its credentialRef, and
+	 *                              MINTED_KEY when a new client was registered.
 	 *
-	 * @throws RuntimeException When the account's server refuses the registration.
+	 * @throws OAuth2RegistrationFailedException When the account's server refuses the registration.
 	 *
 	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
@@ -104,7 +115,14 @@ class OAuth2InstanceClient {
 			organisation: ($claims['o'] ?? null)
 		);
 
-		return array_merge($claims, ['cl' => $registered['clientId'], 'cr' => $registered['clientCredentialRef']]);
+		return array_merge(
+			$claims,
+			[
+				'cl' => $registered['clientId'],
+				'cr' => $registered['clientCredentialRef'],
+				self::MINTED_KEY => $registered['clientCredentialRef'],
+			]
+		);
 	}//end ensure()
 
 	/**
@@ -120,7 +138,7 @@ class OAuth2InstanceClient {
 	 *
 	 * @return array{clientId: string, clientCredentialRef: string} The client id and the secret's credentialRef.
 	 *
-	 * @throws RuntimeException When the server refuses the registration.
+	 * @throws OAuth2RegistrationFailedException When the server refuses the registration.
 	 *
 	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
@@ -152,11 +170,11 @@ class OAuth2InstanceClient {
 		} catch (Throwable $failure) {
 			// The class name and nothing else: a registration failure can quote the
 			// server's own words, and those words can contain the request that was made.
-			throw new RuntimeException(message: 'application registration failed: ' . $failure::class, previous: $failure);
+			throw new OAuth2RegistrationFailedException(message: 'application registration failed: ' . $failure::class, previous: $failure);
 		}
 
 		if (is_array($decoded) === false || is_string(($decoded['client_id'] ?? null)) === false) {
-			throw new RuntimeException(message: 'application registration returned no client id');
+			throw new OAuth2RegistrationFailedException(message: 'application registration returned no client id');
 		}
 
 		$minted = $this->broker->mint(
