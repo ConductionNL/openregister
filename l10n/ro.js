@@ -3240,7 +3240,9 @@ OC.L10N.register(
         "This record has no visible fields.": "Această înregistrare nu are câmpuri vizibile.",
         "Upload": "Încărcați",
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Acest furnizor nu este încă configurat pe acest server. Roagă-ți administratorul să îl configureze.",
-        "The provider's server did not accept the connection. Try again later.": "Serverul furnizorului nu a acceptat conexiunea. Încearcă din nou mai târziu."
+        "The provider's server did not accept the connection. Try again later.": "Serverul furnizorului nu a acceptat conexiunea. Încearcă din nou mai târziu.",
+        "Consequence": "Consecință",
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Ce se întâmplă dacă partea nu răspunde, pentru o treaptă după termen."
     },
     "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));"
 )

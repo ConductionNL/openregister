@@ -3240,7 +3240,9 @@ OC.L10N.register(
         "This record has no visible fields.": "Þessi færsla hefur engin sýnileg svæði.",
         "Upload": "Hlaða upp",
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Þessi þjónustuaðili hefur ekki enn verið settur upp á þessum þjóni. Biddu kerfisstjórann þinn að stilla hann.",
-        "The provider's server did not accept the connection. Try again later.": "Þjónn þjónustuaðilans tók ekki við tengingunni. Reyndu aftur síðar."
+        "The provider's server did not accept the connection. Try again later.": "Þjónn þjónustuaðilans tók ekki við tengingunni. Reyndu aftur síðar.",
+        "Consequence": "Afleiðing",
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Hvað gerist ef aðilinn svarar ekki, fyrir þrep eftir frestinn."
     },
     "nplurals=2; plural=(n != 1);"
 )

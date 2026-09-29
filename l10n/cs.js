@@ -3240,7 +3240,9 @@ OC.L10N.register(
         "This record has no visible fields.": "Tento záznam nemá žádná viditelná pole.",
         "Upload": "Nahrát",
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Tento poskytovatel zatím na tomto serveru není nastaven. Požádejte správce, aby ho nastavil.",
-        "The provider's server did not accept the connection. Try again later.": "Server poskytovatele připojení nepřijal. Zkuste to později znovu."
+        "The provider's server did not accept the connection. Try again later.": "Server poskytovatele připojení nepřijal. Zkuste to později znovu.",
+        "Consequence": "Důsledek",
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Co se stane, když strana neodpoví, pro stupeň po uplynutí lhůty."
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 )

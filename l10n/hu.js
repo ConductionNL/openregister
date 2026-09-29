@@ -3240,7 +3240,9 @@ OC.L10N.register(
         "This record has no visible fields.": "Ennek a rekordnak nincsenek látható mezői.",
         "Upload": "Feltöltés",
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ez a szolgáltató még nincs beállítva ezen a kiszolgálón. Kérd meg a rendszergazdát, hogy állítsa be.",
-        "The provider's server did not accept the connection. Try again later.": "A szolgáltató kiszolgálója nem fogadta el a kapcsolatot. Próbáld újra később."
+        "The provider's server did not accept the connection. Try again later.": "A szolgáltató kiszolgálója nem fogadta el a kapcsolatot. Próbáld újra később.",
+        "Consequence": "Következmény",
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mi történik, ha a fél nem válaszol, a határidő utáni lépcsőnél."
     },
     "nplurals=2; plural=(n != 1);"
 )
