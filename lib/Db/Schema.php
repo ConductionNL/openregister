@@ -1304,13 +1304,13 @@ class Schema extends Entity implements JsonSerializable {
 			if (in_array($action, $validActions) === false) {
 				$validList = implode(', ', $validActions);
 				$msg = "Invalid authorization action '{$action}' in {$context}. Must be one of: {$validList}";
-				throw new InvalidAuthorizationRuleException($msg);
+				throw new InvalidAuthorizationRuleException(message: $msg);
 			}
 
 			// Validate rules is an array.
 			if (is_array($rules) === false) {
 				throw new InvalidAuthorizationRuleException(
-					"Authorization rules for action '{$action}' in {$context} must be an array"
+					message: "Authorization rules for action '{$action}' in {$context} must be an array"
 				);
 			}
 
@@ -1348,7 +1348,7 @@ class Schema extends Entity implements JsonSerializable {
 		if (in_array($action, $reservedFlags, true) === true) {
 			if (is_bool($value) === false) {
 				throw new InvalidAuthorizationRuleException(
-					"Authorization flag '{$action}' in {$context} must be a boolean"
+					message: "Authorization flag '{$action}' in {$context} must be a boolean"
 				);
 			}
 
@@ -1428,14 +1428,14 @@ class Schema extends Entity implements JsonSerializable {
 	private function validateRolesAssignment(mixed $roles, string $context): void {
 		if (is_array($roles) === false) {
 			throw new InvalidAuthorizationRuleException(
-				"Authorization '" . self::ROLES_KEY . "' in {$context} must be a map of role name to group ids"
+				message: "Authorization '" . self::ROLES_KEY . "' in {$context} must be a map of role name to group ids"
 			);
 		}
 
 		foreach ($roles as $roleName => $groups) {
 			if (is_string($roleName) === false || trim($roleName) === '') {
 				throw new InvalidAuthorizationRuleException(
-					"Authorization '" . self::ROLES_KEY . "' in {$context} names a role with no name"
+					message: "Authorization '" . self::ROLES_KEY . "' in {$context} names a role with no name"
 				);
 			}
 
@@ -1457,14 +1457,14 @@ class Schema extends Entity implements JsonSerializable {
 	private function validateRoleGroups(string $roleName, mixed $groups, string $context): void {
 		if (is_array($groups) === false || $groups === []) {
 			throw new InvalidAuthorizationRuleException(
-				"Role '{$roleName}' in {$context} must list at least one group id"
+				message: "Role '{$roleName}' in {$context} must list at least one group id"
 			);
 		}
 
 		foreach ($groups as $group) {
 			if (is_string($group) === false || trim($group) === '') {
 				throw new InvalidAuthorizationRuleException(
-					"Role '{$roleName}' in {$context} lists a group id that is not a non-empty string"
+					message: "Role '{$roleName}' in {$context} lists a group id that is not a non-empty string"
 				);
 			}
 		}
@@ -1490,7 +1490,7 @@ class Schema extends Entity implements JsonSerializable {
 		if (in_array($scope, $validScopes, true) === false) {
 			$scopeList = implode(', ', $validScopes);
 			throw new InvalidAuthorizationRuleException(
-				"Authorization scope in {$context} must be one of: {$scopeList}"
+				message: "Authorization scope in {$context} must be one of: {$scopeList}"
 			);
 		}
 	}//end validateScopeValue()
@@ -1522,7 +1522,7 @@ class Schema extends Entity implements JsonSerializable {
 
 			if (is_array($authorization) === false) {
 				throw new InvalidAuthorizationRuleException(
-					"Authorization for property '{$propertyName}' must be an array"
+					message: "Authorization for property '{$propertyName}' must be an array"
 				);
 			}
 
@@ -1553,7 +1553,7 @@ class Schema extends Entity implements JsonSerializable {
 		if (is_string($rule) === true) {
 			if (trim($rule) === '') {
 				throw new InvalidAuthorizationRuleException(
-					"Group ID in authorization for action '{$action}' in {$context} must be a non-empty string"
+					message: "Group ID in authorization for action '{$action}' in {$context} must be a non-empty string"
 				);
 			}
 
@@ -1565,13 +1565,13 @@ class Schema extends Entity implements JsonSerializable {
 			// Validate 'group' key exists and is a non-empty string.
 			if (isset($rule['group']) === false) {
 				throw new InvalidAuthorizationRuleException(
-					"Conditional authorization rule for action '{$action}' in {$context} must have a 'group' key"
+					message: "Conditional authorization rule for action '{$action}' in {$context} must have a 'group' key"
 				);
 			}
 
 			if (is_string($rule['group']) === false || trim($rule['group']) === '') {
 				throw new InvalidAuthorizationRuleException(
-					"Conditional authorization 'group' for action '{$action}' in {$context} must be a non-empty string"
+					message: "Conditional authorization 'group' for action '{$action}' in {$context} must be a non-empty string"
 				);
 			}
 
@@ -1579,7 +1579,7 @@ class Schema extends Entity implements JsonSerializable {
 			if (isset($rule['match']) === true) {
 				if (is_array($rule['match']) === false) {
 					throw new InvalidAuthorizationRuleException(
-						"Conditional authorization 'match' for action '{$action}' in {$context} must be an array"
+						message: "Conditional authorization 'match' for action '{$action}' in {$context} must be an array"
 					);
 				}
 
@@ -1591,7 +1591,7 @@ class Schema extends Entity implements JsonSerializable {
 
 		// Invalid rule type.
 		throw new InvalidAuthorizationRuleException(
-			"Authorization rule for action '{$action}' in {$context} must be a string or conditional object"
+			message: "Authorization rule for action '{$action}' in {$context} must be a string or conditional object"
 		);
 	}//end validateAuthorizationRule()
 
@@ -1649,7 +1649,7 @@ class Schema extends Entity implements JsonSerializable {
 	private function validateMatchOperator(string $operator, mixed $operand, string $where): void {
 		if (in_array($operator, self::MATCH_OPERATORS, true) === false) {
 			throw new InvalidAuthorizationRuleException(
-				"Authorization match for {$where} uses the unsupported operator '{$operator}'; supported are "
+				message: "Authorization match for {$where} uses the unsupported operator '{$operator}'; supported are "
 				.implode(', ', self::MATCH_OPERATORS)
 			);
 		}
@@ -1665,7 +1665,7 @@ class Schema extends Entity implements JsonSerializable {
 
 		if (is_array($operand) === false || array_is_list($operand) === false) {
 			throw new InvalidAuthorizationRuleException(
-				"Authorization match for {$where} needs a list as the '{$operator}' operand"
+				message: "Authorization match for {$where} needs a list as the '{$operator}' operand"
 			);
 		}
 	}//end validateMatchOperator()
