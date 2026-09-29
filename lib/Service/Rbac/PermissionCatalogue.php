@@ -151,6 +151,13 @@ class PermissionCatalogue {
 		// comment above records cost a whole change; this is the same shape,
 		// and the list is the cure.
 		TokenGrantNarrower::MARKER,
+		// `audit: true` on a PROPERTY's block asks for every reveal of that
+		// value to be recorded (RevealCollector, sensitive-field-reveal-audit).
+		// It is a flag, not a verb: read as a verb it refused every schema that
+		// declared it with "Invalid authorization action 'audit'", so the
+		// feature could be declared nowhere. SchemaMapper::validateRevealAudit()
+		// still checks its shape (only on a property with a read rule).
+		RevealCollector::AUDIT_KEY,
 	];
 
 	/**

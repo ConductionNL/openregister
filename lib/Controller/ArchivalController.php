@@ -474,7 +474,7 @@ class ArchivalController extends Controller {
 			}
 
 			$object = $this->objectMapper->find($objectId);
-			$result = $this->legalHoldService->placeHold($object, $reason);
+			$result = $this->legalHoldService->placeHold($object, $reason, $this->ownerKeyParam(params: $params));
 
 			return new JSONResponse(
 				data: [
@@ -530,7 +530,7 @@ class ArchivalController extends Controller {
 
 		try {
 			$object = $this->objectMapper->find($id);
-			$result = $this->legalHoldService->releaseHold($object, $reason);
+			$result = $this->legalHoldService->releaseHold($object, $reason, $this->ownerKeyParam(params: $params));
 
 			return new JSONResponse(
 				data: [
@@ -547,6 +547,22 @@ class ArchivalController extends Controller {
 			);
 		}
 	}//end releaseLegalHold()
+
+	/**
+	 * The matter a hold request speaks for, when it names one (#4172)
+	 *
+	 * @param array $params The request parameters.
+	 *
+	 * @return string|null The owner key, or null for a manual hold.
+	 */
+	private function ownerKeyParam(array $params): ?string {
+		$ownerKey = ($params['ownerKey'] ?? null);
+		if (is_string($ownerKey) === false || trim($ownerKey) === '') {
+			return null;
+		}
+
+		return trim($ownerKey);
+	}//end ownerKeyParam()
 
 	/**
 	 * List active legal holds.

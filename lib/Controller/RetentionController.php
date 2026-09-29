@@ -380,7 +380,7 @@ class RetentionController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
-			$this->retentionService->placeLegalHold($object, $reason);
+			$this->retentionService->placeLegalHold($object, $reason, $this->ownerKeyParam());
 			$this->objectMapper->update($object);
 
 			// Create audit trail.
@@ -429,7 +429,7 @@ class RetentionController extends Controller {
 				return new JSONResponse(['error' => 'Object not found'], 404);
 			}
 
-			$this->retentionService->releaseLegalHold($object, $reason);
+			$this->retentionService->releaseLegalHold($object, $reason, $this->ownerKeyParam());
 			$this->objectMapper->update($object);
 
 			// Create audit trail.
@@ -449,6 +449,20 @@ class RetentionController extends Controller {
 			return new JSONResponse(['error' => $e->getMessage()], 500);
 		}//end try
 	}//end releaseLegalHold()
+
+	/**
+	 * The matter a hold request speaks for, when it names one (#4172)
+	 *
+	 * @return string|null The owner key, or null for a manual hold.
+	 */
+	private function ownerKeyParam(): ?string {
+		$ownerKey = $this->request->getParam('ownerKey');
+		if (is_string($ownerKey) === false || trim($ownerKey) === '') {
+			return null;
+		}
+
+		return trim($ownerKey);
+	}//end ownerKeyParam()
 
 	/**
 	 * Place a bulk legal hold on all objects in a schema.
