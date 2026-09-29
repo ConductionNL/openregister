@@ -1535,11 +1535,17 @@ class AuditTrailMapper extends QBMapper {
 			->orderBy('id', 'DESC')
 			->setMaxResults(1);
 
+		// A semantic version matches the version column, anything else is an audit trail id.
+		$column = 'id';
+		$value  = (int) $until;
+		$type   = IQueryBuilder::PARAM_INT;
 		if ($this->payloadHelper->isSemanticVersion(version: $until) === true) {
-			$qb->andWhere($qb->expr()->eq('version', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR)));
-		} else {
-			$qb->andWhere($qb->expr()->eq('id', $qb->createNamedParameter((int) $until, IQueryBuilder::PARAM_INT)));
+			$column = 'version';
+			$value  = $until;
+			$type   = IQueryBuilder::PARAM_STR;
 		}
+
+		$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value, $type)));
 
 		$result = $qb->executeQuery();
 		try {
