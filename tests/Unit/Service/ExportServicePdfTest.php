@@ -391,4 +391,48 @@ class ExportServicePdfTest extends TestCase {
 		$this->assertStringContainsString('My Schema', $html);
 		$this->assertStringContainsString('Objects: 2', $html);
 	}
+
+	/**
+	 * A caller that fetched its own rows gets them rendered as a PDF (portaliq#765).
+	 */
+	public function testRenderRowsToPdfRendersRowsTheCallerFetched(): void {
+		$pdf = $this->service->renderRowsToPdf(
+			title: 'My statements',
+			columns: ['period' => 'Period', 'amount' => 'Amount'],
+			rows: [['period' => '2026-08', 'amount' => 12.5], ['period' => '2026-09', 'amount' => null]]
+		);
+
+		$this->assertStringStartsWith('%PDF-', $pdf);
+	}//end testRenderRowsToPdfRendersRowsTheCallerFetched()
+
+	/**
+	 * The row cap applies to rows handed in, before anything is rendered.
+	 */
+	public function testRenderRowsToPdfRefusesMoreRowsThanTheCap(): void {
+		$rows = array_fill(0, ExportService::MAX_PDF_EXPORT_ROWS + 1, ['a' => 'x']);
+
+		$this->expectException(ExportTooLargeException::class);
+
+		$this->service->renderRowsToPdf(title: 'Too long', columns: ['a' => 'A'], rows: $rows);
+	}//end testRenderRowsToPdfRefusesMoreRowsThanTheCap()
+
+	/**
+	 * The table holds the labels in column order, one cell per column, escaped,
+	 * and a list of column keys doubles as their labels.
+	 */
+	public function testRowsSectionFollowsTheColumnsAndEscapesEveryCell(): void {
+		$method = new ReflectionMethod(ExportService::class, 'buildRowsPdfSection');
+		$html = $method->invoke(
+			$this->service,
+			'Cases <b>',
+			['status', 'title'],
+			[['title' => '<script>x</script>', 'status' => ['open', 'late'], 'extra' => 'not a column'], ['status' => true]]
+		);
+
+		$this->assertStringContainsString('<h1>Cases &lt;b&gt;</h1>', $html);
+		$this->assertStringContainsString('<th>status</th><th>title</th>', $html);
+		$this->assertStringContainsString('<td>open, late</td><td>&lt;script&gt;x&lt;/script&gt;</td>', $html);
+		$this->assertStringContainsString('<td>true</td><td></td>', $html);
+		$this->assertStringNotContainsString('not a column', $html);
+	}//end testRowsSectionFollowsTheColumnsAndEscapesEveryCell()
 }//end class
