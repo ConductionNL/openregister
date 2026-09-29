@@ -77,8 +77,19 @@ class ImportHandlerSchemaVersioningTest extends TestCase {
 		);
 		$this->schemaMapper->method('update')->willReturnArgument(0);
 
-		$this->handler = new ImportHandler(
-			schemaMapper: $this->schemaMapper,
+		$this->handler = $this->handlerOver(schemaMapper: $this->schemaMapper);
+	}//end setUp()
+
+	/**
+	 * An import handler over the given schema mapper, with the real versioning service.
+	 *
+	 * @param SchemaMapper $schemaMapper The schema mapper double.
+	 *
+	 * @return ImportHandler
+	 */
+	private function handlerOver(SchemaMapper $schemaMapper): ImportHandler {
+		$handler = new ImportHandler(
+			schemaMapper: $schemaMapper,
 			registerMapper: $this->createMock(RegisterMapper::class),
 			objectEntityMapper: $this->createMock(MagicMapper::class),
 			configurationMapper: $this->createMock(ConfigurationMapper::class),
@@ -91,7 +102,7 @@ class ImportHandlerSchemaVersioningTest extends TestCase {
 			objectService: $this->createMock(ObjectService::class)
 		);
 
-		$this->handler->setSchemaVersioning(
+		$handler->setSchemaVersioning(
 			new SchemaVersioningService(
 				diffService: new SchemaDiffService(),
 				changelogMapper: $this->changelogMapper,
@@ -101,7 +112,9 @@ class ImportHandlerSchemaVersioningTest extends TestCase {
 				logger: $this->logger
 			)
 		);
-	}//end setUp()
+
+		return $handler;
+	}//end handlerOver()
 
 	/**
 	 * A stored schema.
@@ -243,4 +256,55 @@ class ImportHandlerSchemaVersioningTest extends TestCase {
 
 		$this->assertSame('1.0.1', $this->written['version']);
 	}//end testANewerVersionWithTheSameDefinitionRecordsNothing()
+
+	/**
+	 * Pass 2 of a configuration import keeps the version Pass 1 bumped to (#4163).
+	 *
+	 * importFromJson() imports every schema twice: Pass 1 classifies and bumps,
+	 * Pass 2 re-imports the same incoming data with force to resolve references.
+	 * By then the stored definition equals the incoming one, nothing is
+	 * classified, and the incoming (older) version was written back over the
+	 * bump, so the schema and its changelog disagreed. The mapper double here
+	 * keeps state between the passes, as the table does.
+	 *
+	 * @return void
+	 */
+	public function testPassTwoOfAnImportKeepsTheBumpPassOneRecorded(): void {
+		$stored = $this->schema(
+			id: 12,
+			version: '1.0.0',
+			properties: ['title' => ['type' => 'string'], 'status' => ['type' => 'string']],
+			required: ['status']
+		);
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('find')->willReturnCallback(static function () use (&$stored): Schema {
+			return $stored;
+		});
+		// Pass 2 resolves the schema within the ids Pass 1 left, as the real mapper does.
+		$schemaMapper->method('findBySlugInIds')->willReturnCallback(static function () use (&$stored): ?Schema {
+			return $stored;
+		});
+		$schemaMapper->method('updateFromArray')->willReturnCallback(
+			function (int $id, array $object) use (&$stored): Schema {
+				$stored = $this->schema(id: $id, version: (string)($object['version'] ?? '0.0.0'), properties: $object['properties'] ?? [], required: $object['required'] ?? []);
+				return $stored;
+			}
+		);
+		$schemaMapper->method('update')->willReturnArgument(0);
+		$handler = $this->handlerOver(schemaMapper: $schemaMapper);
+
+		$this->changelogMapper->expects($this->once())
+			->method('createFromArray')
+			->with($this->callback(static fn (array $entry): bool => $entry['classification'] === 'breaking' && $entry['version'] === '2.0.0'))
+			->willReturn(new SchemaChangelog());
+
+		$incoming = ['slug' => 'case', 'title' => 'Case', 'version' => '1.0.0', 'properties' => ['title' => ['type' => 'string']], 'required' => []];
+
+		// Pass 1, then Pass 2 exactly as importFromJson() calls it.
+		$handler->importSchema(data: $incoming, slugsAndIdsMap: []);
+		$result = $handler->importSchema(data: $incoming, slugsAndIdsMap: [], force: true, registerSchemaIds: [12]);
+
+		$this->assertSame('2.0.0', $result->getVersion());
+		$this->assertSame('2.0.0', $stored->getVersion());
+	}//end testPassTwoOfAnImportKeepsTheBumpPassOneRecorded()
 }//end class
