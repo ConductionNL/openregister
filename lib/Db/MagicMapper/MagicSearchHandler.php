@@ -2348,9 +2348,9 @@ class MagicSearchHandler {
 		$properties = $schema->getProperties();
 
 		// Fail loud BEFORE any query work rather than silently returning zero rows:
-		// an encrypted property's value is ciphertext (and, since
-		// buildTableColumnsFromSchema() gives it no dedicated column, may not even be
-		// a real column at all), so a plaintext filter against it can never mean what
+		// an encrypted property's value is ciphertext (its column, see
+		// MagicMapper::buildTableColumnsFromSchema(), is an unindexed TEXT column
+		// holding the envelope), so a plaintext filter against it can never mean what
 		// the caller intended. Checked up-front, ahead of platform detection and SQL
 		// building, so the rejection is unconditional and cheap.
 		foreach ($filters as $field => $value) {
@@ -3067,12 +3067,11 @@ class MagicSearchHandler {
 		// Skip date/time formatted fields — PostgreSQL LOWER() only works on text columns.
 		$dateFormats = ['date', 'date-time', 'time'];
 		foreach ($properties ?? [] as $field => $propertyConfig) {
-			// Encrypted properties get no dedicated magic-table column (see
-			// MagicMapper::buildTableColumnsFromSchema()); including one in a LIKE
-			// full-text scan would either hit a non-existent column or, if a
-			// legacy column still exists from before the flag was set, scan
-			// ciphertext that can never match a plaintext search term. Skip
-			// explicitly rather than let it silently fail to match.
+			// An encrypted property's column holds ciphertext (see
+			// MagicMapper::buildTableColumnsFromSchema()); including it in a LIKE
+			// full-text scan would scan envelopes that can never match a
+			// plaintext search term. Skip explicitly rather than let it
+			// silently fail to match.
 			if (($propertyConfig['x-openregister-encrypted'] ?? false) === true) {
 				continue;
 			}
