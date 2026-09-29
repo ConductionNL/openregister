@@ -3240,7 +3240,9 @@ OC.L10N.register(
         "This record has no visible fields.": "Sellel kirjel pole nähtavaid välju.",
         "Upload": "Laadi üles",
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "See teenusepakkuja pole selles serveris veel seadistatud. Palu administraatoril see seadistada.",
-        "The provider's server did not accept the connection. Try again later.": "Teenusepakkuja server ei võtnud ühendust vastu. Proovi hiljem uuesti."
+        "The provider's server did not accept the connection. Try again later.": "Teenusepakkuja server ei võtnud ühendust vastu. Proovi hiljem uuesti.",
+        "Consequence": "Tagajärg",
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mis juhtub, kui osapool ei vasta, tähtaja järgse astme puhul."
     },
     "nplurals=2; plural=(n != 1);"
 )

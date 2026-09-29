@@ -724,7 +724,8 @@ class FlowTimerService {
 					rungKey: (string)$rung['key'],
 					recipients: $recipients,
 					priority: (string)$rung['priority'],
-					message: $rung['message']
+					message: $rung['message'],
+					consequence: ($rung['consequence'] ?? null)
 				)
 			);
 		}//end foreach

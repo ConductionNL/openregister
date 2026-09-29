@@ -3240,7 +3240,9 @@ OC.L10N.register(
         "This record has no visible fields.": "Αυτή η εγγραφή δεν έχει ορατά πεδία.",
         "Upload": "Μεταφόρτωση",
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Αυτός ο πάροχος δεν έχει ρυθμιστεί ακόμα σε αυτόν τον διακομιστή. Ζητήστε από τον διαχειριστή σας να τον ρυθμίσει.",
-        "The provider's server did not accept the connection. Try again later.": "Ο διακομιστής του παρόχου δεν αποδέχτηκε τη σύνδεση. Δοκιμάστε ξανά αργότερα."
+        "The provider's server did not accept the connection. Try again later.": "Ο διακομιστής του παρόχου δεν αποδέχτηκε τη σύνδεση. Δοκιμάστε ξανά αργότερα.",
+        "Consequence": "Συνέπεια",
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Τι θα συμβεί αν το μέρος δεν απαντήσει, για ένα βήμα μετά την προθεσμία."
     },
     "nplurals=2; plural=(n != 1);"
 )

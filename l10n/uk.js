@@ -3240,7 +3240,9 @@ OC.L10N.register(
         "This record has no visible fields.": "Цей запис не має видимих полів.",
         "Upload": "Вивантажити",
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Цього постачальника ще не налаштовано на цьому сервері. Попросіть адміністратора налаштувати його.",
-        "The provider's server did not accept the connection. Try again later.": "Сервер постачальника не прийняв підключення. Спробуйте пізніше."
+        "The provider's server did not accept the connection. Try again later.": "Сервер постачальника не прийняв підключення. Спробуйте пізніше.",
+        "Consequence": "Наслідок",
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Що станеться, якщо сторона не відповість, для щабля після строку."
     },
     "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 )

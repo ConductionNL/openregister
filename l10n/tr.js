@@ -3240,7 +3240,9 @@ OC.L10N.register(
         "This record has no visible fields.": "Bu kaydın görünür alanı yok.",
         "Upload": "Yükle",
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Bu sağlayıcı henüz bu sunucuda yapılandırılmamış. Yöneticinizden yapılandırmasını isteyin.",
-        "The provider's server did not accept the connection. Try again later.": "Sağlayıcının sunucusu bağlantıyı kabul etmedi. Daha sonra yeniden deneyin."
+        "The provider's server did not accept the connection. Try again later.": "Sağlayıcının sunucusu bağlantıyı kabul etmedi. Daha sonra yeniden deneyin.",
+        "Consequence": "Sonuç",
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Taraf yanıt vermezse ne olacağı, süre sonrasındaki bir basamak için."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -67,11 +67,18 @@ class EscalationLadderService {
 	public const TRIGGER_BREACHED = 'slaBreached';
 
 	/**
+	 * A rung after the deadline addressed to the party: an overdue notice, not
+	 * an inward escalation (#4166). It falls at the same instant a slaBreached
+	 * rung with the same offset would.
+	 */
+	public const TRIGGER_POST_BREACH = 'postBreach';
+
+	/**
 	 * The trigger vocabulary.
 	 *
 	 * @var array<int, string>
 	 */
-	public const TRIGGERS = [self::TRIGGER_PRE_BREACH, self::TRIGGER_BREACHED];
+	public const TRIGGERS = [self::TRIGGER_PRE_BREACH, self::TRIGGER_BREACHED, self::TRIGGER_POST_BREACH];
 
 	/**
 	 * The rung priority scale.
@@ -461,6 +468,7 @@ class EscalationLadderService {
 			'escalateToRole' => $this->roleList(value: ($rule['escalateToRole'] ?? []), field: 'escalateToRole', index: $index),
 			'priority' => $priority,
 			'message' => $this->stringOrNull(value: ($rule['message'] ?? null)),
+			'consequence' => $this->stringOrNull(value: ($rule['consequence'] ?? null)),
 			'openIncident' => (($rule['openIncident'] ?? false) === true),
 		];
 	}//end normaliseRule()
