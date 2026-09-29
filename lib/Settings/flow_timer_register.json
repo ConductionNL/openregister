@@ -3,7 +3,7 @@
   "info": {
     "title": "Flow Timers",
     "description": "Configuration data for the business-timer store (flow-business-timers): named working calendars whose non-working dates are COMPUTED from rules so they never expire, and escalation ladders whose rungs are editable data rather than a compiled-in constant (ADR-001, ADR-031). Materialised by the SeedFlowTimerRegister repair step; OpenRegister does not self-import its own register JSON at boot (ADR-037).",
-    "version": "1.2.0"
+    "version": "1.3.0"
   },
   "x-openregister": {
     "type": "core",
@@ -17,7 +17,7 @@
       "flow-timers": {
         "slug": "flow-timers",
         "title": "Flow Timers",
-        "version": "1.2.0",
+        "version": "1.3.0",
         "description": "Working calendars and escalation ladders consumed by the business-timer store. The timers themselves live in openregister_flow_timers, not here.",
         "authorization": {
           "scope": "private",
@@ -252,7 +252,7 @@
       "escalation-ladder": {
         "slug": "escalation-ladder",
         "title": "Escalation ladder",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "published": "2026-09-01T00:00:00+00:00",
         "summary": "An ordered set of rungs, each a distance from the deadline with the roles, priority and message identity to raise.",
         "description": "Editable escalation data for the business-timer store. Each rung fires at most once per timer, decided by the unique fire ledger. The rung's roles are resolved against the subject's performer (handler = the assignee) or through roleBindings; the message value is an identity the notification subsystem resolves. Nothing here renders or sends.",
@@ -315,7 +315,8 @@
                   "type": "string",
                   "enum": [
                     "preBreach",
-                    "slaBreached"
+                    "slaBreached",
+                    "postBreach"
                   ],
                   "description": "preBreach fires before the deadline, slaBreached at or after it."
                 },
@@ -367,6 +368,11 @@
                   "title": "Message",
                   "type": "string",
                   "description": "A message identity the notification subsystem resolves."
+                },
+                "consequence": {
+                  "title": "Consequence",
+                  "type": "string",
+                  "description": "What the party is told will happen if they do not respond, for a rung after the deadline."
                 },
                 "openIncident": {
                   "title": "Open incident",

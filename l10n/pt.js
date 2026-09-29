@@ -3240,7 +3240,9 @@ OC.L10N.register(
         "This record has no visible fields.": "Este registo não tem campos visíveis.",
         "Upload": "Carregar",
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Este fornecedor ainda não está configurado neste servidor. Peça ao seu administrador para o configurar.",
-        "The provider's server did not accept the connection. Try again later.": "O servidor do fornecedor não aceitou a ligação. Tente novamente mais tarde."
+        "The provider's server did not accept the connection. Try again later.": "O servidor do fornecedor não aceitou a ligação. Tente novamente mais tarde.",
+        "Consequence": "Consequência",
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "O que acontece se a parte não responder, para um degrau após o prazo."
     },
     "nplurals=2; plural=(n != 1);"
 )
