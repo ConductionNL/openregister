@@ -28,6 +28,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use DateTime;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -395,72 +396,8 @@ class ExportService {
 	public function renderRowsToPdf(string $title, array $columns, array $rows): string {
 		$this->guardPdfRowCap(rowCount: count($rows));
 
-		return $this->renderPdfDocument(sections: [$this->buildRowsPdfSection(title: $title, columns: $columns, rows: $rows)]);
+		return $this->renderPdfDocument(sections: [(new RowsPdfSection())->build(title: $title, columns: $columns, rows: $rows)]);
 	}//end renderRowsToPdf()
-
-	/**
-	 * Build one PDF section from caller-supplied rows
-	 *
-	 * @param string                           $title   The heading.
-	 * @param array<int|string, string>        $columns Column keys to labels, or a list of keys.
-	 * @param array<int, array<string, mixed>> $rows    The rows.
-	 *
-	 * @return string The section HTML, every value escaped.
-	 */
-	private function buildRowsPdfSection(string $title, array $columns, array $rows): string {
-		if (array_is_list($columns) === true) {
-			$columns = array_combine(array_map('strval', $columns), array_map('strval', $columns));
-		}
-
-		$html = '<div class="pdf-section">';
-		$html .= '<h1>' . htmlspecialchars($title, ENT_QUOTES, 'UTF-8') . '</h1>';
-		$html .= '<p class="meta">Exported: ' . htmlspecialchars((new DateTime())->format('Y-m-d H:i:s'), ENT_QUOTES, 'UTF-8')
-			. ' &middot; Rows: ' . count($rows) . '</p>';
-		$html .= '<table><thead><tr>';
-		foreach ($columns as $label) {
-			$html .= '<th>' . htmlspecialchars((string) $label, ENT_QUOTES, 'UTF-8') . '</th>';
-		}
-
-		$html .= '</tr></thead><tbody>';
-		foreach ($rows as $row) {
-			$html .= '<tr>';
-			foreach (array_keys($columns) as $key) {
-				$cell = $this->rowCellText(value: (is_array($row) === true ? ($row[$key] ?? null) : null));
-				$html .= '<td>' . htmlspecialchars($this->truncatePdfCellValue(value: $cell), ENT_QUOTES, 'UTF-8') . '</td>';
-			}
-
-			$html .= '</tr>';
-		}
-
-		return $html . '</tbody></table></div>';
-	}//end buildRowsPdfSection()
-
-	/**
-	 * The text of one caller-supplied cell
-	 *
-	 * @param mixed $value The cell value.
-	 *
-	 * @return string|null The text, or null for an empty cell.
-	 */
-	private function rowCellText(mixed $value): ?string {
-		if ($value === null) {
-			return null;
-		}
-
-		if (is_bool($value) === true) {
-			return $value === true ? 'true' : 'false';
-		}
-
-		if (is_array($value) === true && array_is_list($value) === true) {
-			return implode(', ', array_map(fn (mixed $item): string => (string) $this->rowCellText(value: $item), $value));
-		}
-
-		if (is_scalar($value) === true) {
-			return (string) $value;
-		}
-
-		return (string) json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-	}//end rowCellText()
 
 	/**
 	 * Build one PDF section per schema for a register-level export (no

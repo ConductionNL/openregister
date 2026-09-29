@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace Unit\Service;
 
+use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -421,12 +422,10 @@ class ExportServicePdfTest extends TestCase {
 	 * and a list of column keys doubles as their labels.
 	 */
 	public function testRowsSectionFollowsTheColumnsAndEscapesEveryCell(): void {
-		$method = new ReflectionMethod(ExportService::class, 'buildRowsPdfSection');
-		$html = $method->invoke(
-			$this->service,
-			'Cases <b>',
-			['status', 'title'],
-			[['title' => '<script>x</script>', 'status' => ['open', 'late'], 'extra' => 'not a column'], ['status' => true]]
+		$html = (new RowsPdfSection())->build(
+			title: 'Cases <b>',
+			columns: ['status', 'title'],
+			rows: [['title' => '<script>x</script>', 'status' => ['open', 'late'], 'extra' => 'not a column'], ['status' => true]]
 		);
 
 		$this->assertStringContainsString('<h1>Cases &lt;b&gt;</h1>', $html);
