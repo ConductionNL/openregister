@@ -247,4 +247,35 @@ class EscalationLadderServiceTest extends TestCase {
 		$this->ladder->validateAgainstTimeline(rungs: [$rung], anchorAt: $this->at('2026-09-19 12:00'), fireAt: $this->at('2026-09-20 12:00'), calendar: $this->calendar);
 		self::assertInstanceOf(DateTime::class, new DateTime());
 	}//end testSlaBreachedRungFallsAfterTheDeadline()
+	/**
+	 * A postBreach rung falls after the deadline and carries the consequence the case type words (#4166).
+	 */
+	public function testAPostBreachRungFallsAfterTheDeadlineAndCarriesItsConsequence(): void {
+		$rungs = $this->ladder->normaliseRules(
+			rules: [[
+				'trigger' => 'postBreach',
+				'offset' => 2,
+				'offsetUnit' => 'calendarDays',
+				'notifyRole' => ['handler'],
+				'consequence' => 'we decide on what we have',
+			]],
+			sla: ['value' => 14, 'unit' => 'calendarDays']
+		);
+
+		self::assertSame('postBreach:2:calendarDays', $rungs[0]['key']);
+		self::assertSame('we decide on what we have', $rungs[0]['consequence']);
+		$fireAt = $this->at('2026-09-20 12:00');
+		self::assertSame('2026-09-22 12:00', $this->ladder->rungInstant(rung: $rungs[0], fireAt: $fireAt, calendar: $this->calendar)->format('Y-m-d H:i'));
+	}//end testAPostBreachRungFallsAfterTheDeadlineAndCarriesItsConsequence()
+
+	/**
+	 * The shipped register schema accepts the rung the service now accepts (#4166).
+	 */
+	public function testTheLadderSchemaAcceptsAPostBreachRung(): void {
+		$data = json_decode((string)file_get_contents(__DIR__ . '/../../../../../lib/Settings/flow_timer_register.json'), true);
+		$rung = $data['components']['schemas']['escalation-ladder']['properties']['rungs']['items'];
+
+		self::assertContains('postBreach', $rung['properties']['trigger']['enum']);
+		self::assertSame('string', $rung['properties']['consequence']['type']);
+	}//end testTheLadderSchemaAcceptsAPostBreachRung()
 }//end class

@@ -315,7 +315,8 @@
                   "type": "string",
                   "enum": [
                     "preBreach",
-                    "slaBreached"
+                    "slaBreached",
+                    "postBreach"
                   ],
                   "description": "preBreach fires before the deadline, slaBreached at or after it."
                 },
@@ -367,6 +368,11 @@
                   "title": "Message",
                   "type": "string",
                   "description": "A message identity the notification subsystem resolves."
+                },
+                "consequence": {
+                  "title": "Consequence",
+                  "type": "string",
+                  "description": "What the party is told will happen if they do not respond, for a rung after the deadline."
                 },
                 "openIncident": {
                   "title": "Open incident",

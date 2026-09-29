@@ -65,6 +65,7 @@ class FlowTimerFiredEvent extends Event {
 		private readonly array $recipients,
 		private readonly ?string $priority,
 		private readonly ?string $message,
+		private readonly ?string $consequence = null,
 	) {
 		parent::__construct();
 
@@ -146,4 +147,15 @@ class FlowTimerFiredEvent extends Event {
 	public function getMessage(): ?string {
 		return $this->message;
 	}//end getMessage()
+
+	/**
+	 * The consequence a postBreach rung tells the party, as the case type words it.
+	 *
+	 * @return string|null The consequence line, or null when the rung carries none.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-overdue-path-is-consumed-from-flow-business-timers-never-rebuilt
+	 */
+	public function getConsequence(): ?string {
+		return $this->consequence;
+	}//end getConsequence()
 }//end class

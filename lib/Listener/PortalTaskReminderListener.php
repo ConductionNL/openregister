@@ -81,6 +81,11 @@ class PortalTaskReminderListener implements IEventListener {
 	public const TRIGGER_BREACHED = 'slaBreached';
 
 	/**
+	 * A rung after the deadline addressed to the party: recorded as an overdue delivery (#4166).
+	 */
+	public const TRIGGER_POST_BREACH = 'postBreach';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param PortalTaskDeliveryService $delivery Records the reminder for the portal.
@@ -138,9 +143,14 @@ class PortalTaskReminderListener implements IEventListener {
 		}
 
 		$rungKey = (string)$this->read(source: $event, method: 'getRungKey');
-		if ($this->triggerOf(rungKey: $rungKey) !== self::TRIGGER_PRE_BREACH) {
+		$kind = match ($this->triggerOf(rungKey: $rungKey)) {
+			self::TRIGGER_PRE_BREACH => PortalTaskDelivery::KIND_REMINDER,
+			self::TRIGGER_POST_BREACH => PortalTaskDelivery::KIND_OVERDUE,
 			// A slaBreached rung (and anything unknown) escalates inward.
 			// Deliberately no delivery to the party here.
+			default => null,
+		};
+		if ($kind === null) {
 			return;
 		}
 
@@ -158,7 +168,12 @@ class PortalTaskReminderListener implements IEventListener {
 		$message['rungKey'] = $rungKey;
 		$message['priority'] = $this->read(source: $event, method: 'getPriority');
 		$message['messageKey'] = $this->read(source: $event, method: 'getMessage');
-		$this->delivery->request(task: $task, kind: PortalTaskDelivery::KIND_REMINDER, message: $message);
+		if ($kind === PortalTaskDelivery::KIND_OVERDUE) {
+			// The line portaliq shows as "If you do not respond: ...".
+			$message['consequence'] = $this->consequenceOf(event: $event);
+		}
+
+		$this->delivery->request(task: $task, kind: $kind, message: $message);
 	}//end remind()
 
 	/**
@@ -168,6 +183,28 @@ class PortalTaskReminderListener implements IEventListener {
 	 *
 	 * @return string `preBreach`, `slaBreached`, or whatever an author keyed it.
 	 */
+	/**
+	 * The consequence line a postBreach rung carries, when the event has one.
+	 *
+	 * @param Event $event The fired timer event.
+	 *
+	 * @return string|null The consequence, or null when there is none.
+	 *
+	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-the-overdue-path-is-consumed-from-flow-business-timers-never-rebuilt
+	 */
+	private function consequenceOf(Event $event): ?string {
+		if (method_exists($event, 'getConsequence') === false) {
+			return null;
+		}
+
+		$consequence = $this->read(source: $event, method: 'getConsequence');
+		if (is_string($consequence) === false || trim($consequence) === '') {
+			return null;
+		}
+
+		return $consequence;
+	}//end consequenceOf()
+
 	private function triggerOf(string $rungKey): string {
 		$segments = explode(':', $rungKey, 2);
 
@@ -210,7 +247,10 @@ class PortalTaskReminderListener implements IEventListener {
 	 */
 	private function subjectTask(Event $event): ?Task {
 		$timer = $this->read(source: $event, method: 'getTimer');
-		if (is_object($timer) === false || method_exists($timer, 'getSubjectType') === false || method_exists($timer, 'getSubjectUuid') === false) {
+		// is_callable, not method_exists: FlowTimer's getters are Entity::__call
+		// magic, so method_exists() said no on every real timer and no reminder
+		// ever reached a party; only a fake timer with real methods passed (#4166).
+		if (is_object($timer) === false || is_callable([$timer, 'getSubjectType']) === false || is_callable([$timer, 'getSubjectUuid']) === false) {
 			return null;
 		}
 
