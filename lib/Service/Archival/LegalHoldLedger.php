@@ -179,7 +179,14 @@ class LegalHoldLedger {
 	 */
 	private function write(array $retention, array $holds): array {
 		$history = ($retention['legalHold']['history'] ?? []);
-		$latest = ($holds === [] ? null : $holds[count($holds) - 1]);
+		$latest = null;
+		if ($holds !== []) {
+			$latest = $holds[count($holds) - 1];
+		}
+
+		if (is_array($history) === false) {
+			$history = [];
+		}
 
 		$retention['legalHold'] = [
 			'active' => ($holds !== []),
@@ -187,7 +194,7 @@ class LegalHoldLedger {
 			'placedBy' => ($latest['placedBy'] ?? null),
 			'placedDate' => ($latest['placedDate'] ?? null),
 			'holds' => array_values($holds),
-			'history' => (is_array($history) === true ? $history : []),
+			'history' => $history,
 		];
 
 		return $retention;
