@@ -541,7 +541,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "Types/formats (email, uri, date, file, oneOf, Nc*) chosen in EditSchemaProperty.vue:1185-1250; record form src/modals/object/ViewObject.vue:2997 getPropertyInputComponent gives own editors only to boolean and date/time, email/url as input types (:2979); enum choice lists and file fields render a plain text field"
+    "evidence": "Types/formats (email, uri, date, file, oneOf, Nc*) chosen in EditSchemaProperty.vue:1185-1250; record form src/modals/object/ViewObject.vue:2997 getPropertyInputComponent gives own editors only to boolean and date/time, email/url as input types (:2979); enum choice lists and file fields render a plain text field",
+    "change": "records-form-and-cell-editors"
    },
    "reachedOn": "/schemas/:id and /objects (edit dialog)",
    "provider": "openregister",
@@ -654,7 +655,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Service/Schema/SchemaVersioningService.php diffs, semver-bumps and records a changelog on every schema update (SchemasController.php:184); changelog API routes.php:1634. No draft state: grep 'draft' in lib/Db/Schema.php and SchemasController.php finds only JSON Schema draft-2020-12 refs; Corrections round 8 (2026-09-28), openregister#4102: the version bump and changelog run only on PUT /api/schemas/{id}, lib/Controller/SchemasController.php:1140-1182 is the only caller of SchemaVersioningService, while a configuration or app import saves the schema through schemaMapper->update() with no classification, version bump or changelog entry, lib/Service/Configuration/ImportHandler.php:2210 and :2224 at 555af72."
+    "evidence": "lib/Service/Schema/SchemaVersioningService.php diffs, semver-bumps and records a changelog on every schema update (SchemasController.php:184); changelog API routes.php:1634. No draft state: grep 'draft' in lib/Db/Schema.php and SchemasController.php finds only JSON Schema draft-2020-12 refs; Corrections round 8 (2026-09-28), openregister#4102: the version bump and changelog run only on PUT /api/schemas/{id}, lib/Controller/SchemasController.php:1140-1182 is the only caller of SchemaVersioningService, while a configuration or app import saves the schema through schemaMapper->update() with no classification, version bump or changelog entry, lib/Service/Configuration/ImportHandler.php:2210 and :2224 at 555af72.",
+    "change": "modelling-schema-draft"
    },
    "reachedOn": "API only: GET /api/schemas/{id}/changelog",
    "provider": "openregister",
@@ -910,7 +912,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "Geometry stored in a JSON property and served by ObjectsController.php:2188 geoJson / wfs / geo-search (routes.php:1166-1168, lib/Service/Geo/*); src/views/object/MapView.vue:61 states it has no route or importer; GeoJsonGeometryValidator has no caller in lib"
+    "evidence": "Geometry stored in a JSON property and served by ObjectsController.php:2188 geoJson / wfs / geo-search (routes.php:1166-1168, lib/Service/Geo/*); src/views/object/MapView.vue:61 states it has no route or importer; GeoJsonGeometryValidator has no caller in lib",
+    "change": "geometry-on-a-map"
    },
    "reachedOn": "API only: GET /api/geo/{register}/{schema}/geojson",
    "provider": "openregister",
@@ -938,7 +941,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "Saved views (query + presentation) lib/Db/View.php:150, ViewsController routes.php:1781-1785, used in src/views/search/SearchIndex.vue and src/modals/view/EditView.vue; no read-only schema defined by a query (searched 'virtual schema', 'materialized view', 'x-openregister-view' in lib)"
+    "evidence": "Saved views (query + presentation) lib/Db/View.php:150, ViewsController routes.php:1781-1785, used in src/views/search/SearchIndex.vue and src/modals/view/EditView.vue; no read-only schema defined by a query (searched 'virtual schema', 'materialized view', 'x-openregister-view' in lib)",
+    "change": "modelling-query-backed-type"
    },
    "reachedOn": "/tables (saved views)",
    "provider": "openregister",
@@ -1021,7 +1025,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "Only inside the record modal: src/modals/object/ViewObject.vue:2688 handleRowClick edits a property row in the Properties tab. The list table src/views/search/SearchIndex.vue:593 opens the modal on row click (:384), no cell editing. Searched src for inlineEdit/cellEdit/contenteditable."
+    "evidence": "Only inside the record modal: src/modals/object/ViewObject.vue:2688 handleRowClick edits a property row in the Properties tab. The list table src/views/search/SearchIndex.vue:593 opens the modal on row click (:384), no cell editing. Searched src for inlineEdit/cellEdit/contenteditable.",
+    "change": "records-form-and-cell-editors"
    },
    "reachedOn": "/tables (record modal Properties tab)",
    "provider": "openregister",
@@ -1076,7 +1081,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "Board renders: src/views/search/SearchIndex.vue:662 CnObjectKanban, data GET /api/views/{id}/kanban appinfo/routes.php:1790 -> lib/Service/ViewPresentationService.php:125, drag :519. No screen sets presentation.viewType: git grep viewType in src finds only readers."
+    "evidence": "Board renders: src/views/search/SearchIndex.vue:662 CnObjectKanban, data GET /api/views/{id}/kanban appinfo/routes.php:1790 -> lib/Service/ViewPresentationService.php:125, drag :519. No screen sets presentation.viewType: git grep viewType in src finds only readers.",
+    "change": "object-views-kanban-calendar"
    },
    "reachedOn": "/tables with a saved view whose presentation is kanban",
    "provider": "openregister",
@@ -1104,7 +1110,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "Calendar renders: src/views/search/SearchIndex.vue:679 CnObjectCalendar, GET /api/views/{id}/calendar appinfo/routes.php:1791 -> lib/Service/ViewPresentationService.php:229. No screen sets presentation.viewType=calendar. Also ICS feed appinfo/routes.php:1024."
+    "evidence": "Calendar renders: src/views/search/SearchIndex.vue:679 CnObjectCalendar, GET /api/views/{id}/calendar appinfo/routes.php:1791 -> lib/Service/ViewPresentationService.php:229. No screen sets presentation.viewType=calendar. Also ICS feed appinfo/routes.php:1024.",
+    "change": "object-views-kanban-calendar"
    },
    "reachedOn": "/tables with a saved view whose presentation is calendar",
    "provider": "openregister",
@@ -1132,7 +1139,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "API: GET /api/integrations/maps/overviews/{register}/{schema}/points appinfo/routes.php:1010 -> lib/Controller/MapsOverviewController.php:148. src/views/object/MapView.vue exists but git grep MapView in src finds no importer; no manifest page."
+    "evidence": "API: GET /api/integrations/maps/overviews/{register}/{schema}/points appinfo/routes.php:1010 -> lib/Controller/MapsOverviewController.php:148. src/views/object/MapView.vue exists but git grep MapView in src finds no importer; no manifest page.",
+    "change": "geometry-on-a-map"
    },
    "reachedOn": "API only: GET /api/integrations/maps/overviews/{register}/{schema}/points",
    "provider": "openregister",
@@ -1160,7 +1168,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "Searched src and lib for gallery/cover/coverImage/CnCardGrid; card viewMode exists only for registers, schemas, sources, configurations (src/store/modules/register.js:20), not records. SearchIndex.vue presentations are table/kanban/calendar only (:211)."
+    "evidence": "Searched src and lib for gallery/cover/coverImage/CnCardGrid; card viewMode exists only for registers, schemas, sources, configurations (src/store/modules/register.js:20), not records. SearchIndex.vue presentations are table/kanban/calendar only (:211).",
+    "change": "records-gallery-view"
    },
    "reachedOn": "none",
    "provider": "openregister",
@@ -1188,7 +1197,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "Mass delete and mass copy on /tables: src/views/search/SearchIndex.vue:626 showMassDelete, :420 handleMassDelete; export disabled :620 showMassExport=false. Mass change only via API bulk#save appinfo/routes.php:1282 and bulk-jobs :1292 (committed from /operations)."
+    "evidence": "Mass delete and mass copy on /tables: src/views/search/SearchIndex.vue:626 showMassDelete, :420 handleMassDelete; export disabled :620 showMassExport=false. Mass change only via API bulk#save appinfo/routes.php:1282 and bulk-jobs :1292 (committed from /operations).",
+    "change": "bulk-action-jobs"
    },
    "reachedOn": "/tables (delete, copy); API only for bulk change/export",
    "provider": "openregister",
@@ -1274,7 +1284,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "Searched appinfo/routes.php for object publish/depublish/draft (only flow#publish :854 and config draft-sets :526); lib/Db/ObjectEntity.php has no published/depublished field; no draft copy in lib/Service/Object*."
+    "evidence": "Searched appinfo/routes.php for object publish/depublish/draft (only flow#publish :854 and config draft-sets :526); lib/Db/ObjectEntity.php has no published/depublished field; no draft copy in lib/Service/Object*.",
+    "change": "records-draft-versions"
    },
    "reachedOn": "none",
    "provider": "openregister",
@@ -1302,7 +1313,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "Searched lib and appinfo/routes.php for promote/workingCopy/change request/named version on objects; only flow versions (appinfo/routes.php:852) and config draft-sets exist."
+    "evidence": "Searched lib and appinfo/routes.php for promote/workingCopy/change request/named version on objects; only flow versions (appinfo/routes.php:852) and config draft-sets exist.",
+    "change": "records-draft-versions"
    },
    "reachedOn": "none",
    "provider": "openregister",
@@ -1330,7 +1342,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "POST /api/objects/{register}/{schema}/{id}/revert appinfo/routes.php:1450 -> lib/Controller/RevertController.php:80 revertService->revert. git grep revert in src finds no caller."
+    "evidence": "POST /api/objects/{register}/{schema}/{id}/revert appinfo/routes.php:1450 -> lib/Controller/RevertController.php:80 revertService->revert. git grep revert in src finds no caller.",
+    "change": "history-revert-through-the-save-path"
    },
    "reachedOn": "API only: POST /api/objects/{register}/{schema}/{id}/revert",
    "provider": "openregister",
@@ -1385,7 +1398,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "TasksProvider registered lib/AppInfo/Application.php:2127; lib/Controller/TasksController.php:314 create writes a VTODO with DUE lib/Service/TaskService.php:425; tab via CnIntegrationWidget src/views/object/ObjectDetails.vue:413. Assignee is only an opaque X-OPENREGISTER-DATA blob :433, VTODO lands in the creator's calendar."
+    "evidence": "TasksProvider registered lib/AppInfo/Application.php:2127; lib/Controller/TasksController.php:314 create writes a VTODO with DUE lib/Service/TaskService.php:425; tab via CnIntegrationWidget src/views/object/ObjectDetails.vue:413. Assignee is only an opaque X-OPENREGISTER-DATA blob :433, VTODO lands in the creator's calendar.",
+    "change": "flow-task-entity"
    },
    "reachedOn": "/objects/:register/:schema/:id (Integrations tab)",
    "provider": "openregister",
@@ -1416,7 +1430,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "API: star/unstar appinfo/routes.php:167 -> lib/Controller/ObjectFavouriteController.php:87; view recorded lib/Controller/ObjectsController.php:3034 recordObjectView; list filters _favourite/_recent lib/Service/Object/SearchQueryHandler.php:325. git grep favourite/recent in src: no star or recents UI."
+    "evidence": "API: star/unstar appinfo/routes.php:167 -> lib/Controller/ObjectFavouriteController.php:87; view recorded lib/Controller/ObjectsController.php:3034 recordObjectView; list filters _favourite/_recent lib/Service/Object/SearchQueryHandler.php:325. git grep favourite/recent in src: no star or recents UI.",
+    "change": "favourites-and-recent"
    },
    "reachedOn": "API only: PUT /api/objects/{r}/{s}/{id}/favourite, GET /api/objects?_favourite / _recent",
    "provider": "openregister",
@@ -1443,7 +1458,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "API: PUT .../watch appinfo/routes.php:127 -> lib/Controller/ObjectWatchersController.php:98; notify only when a schema notification rule names {\"watchers\": true} lib/Service/Notification/NotificationRecipientResolver.php:163. No follow button in src (git grep /watch)."
+    "evidence": "API: PUT .../watch appinfo/routes.php:127 -> lib/Controller/ObjectWatchersController.php:98; notify only when a schema notification rule names {\"watchers\": true} lib/Service/Notification/NotificationRecipientResolver.php:163. No follow button in src (git grep /watch).",
+    "change": "object-watchers"
    },
    "reachedOn": "API only: PUT /api/objects/{r}/{s}/{id}/watch",
    "provider": "openregister",
@@ -1471,7 +1487,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "API: PUT/GET .../presence appinfo/routes.php:1233-1235 -> lib/Controller/ObjectsController.php:5284 presenceBeat, :5368 presenceList. git grep presence in src: no heartbeat or avatar display."
+    "evidence": "API: PUT/GET .../presence appinfo/routes.php:1233-1235 -> lib/Controller/ObjectsController.php:5284 presenceBeat, :5368 presenceList. git grep presence in src: no heartbeat or avatar display.",
+    "change": "object-presence"
    },
    "reachedOn": "API only: GET /api/objects/{r}/{s}/{id}/presence",
    "provider": "openregister",
@@ -1498,7 +1515,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "Anonymous create: lib/Controller/ObjectsController.php:3250 create is @PublicPage with AnonRateLimit, gated by schema RBAC; route appinfo/routes.php:1171. No public form page: templates/ holds only index.php and settings; formLinks (appinfo/routes.php:1104) only links NC Forms, no submission-to-record path."
+    "evidence": "Anonymous create: lib/Controller/ObjectsController.php:3250 create is @PublicPage with AnonRateLimit, gated by schema RBAC; route appinfo/routes.php:1171. No public form page: templates/ holds only index.php and settings; formLinks (appinfo/routes.php:1104) only links NC Forms, no submission-to-record path.",
+    "change": "or-form-and-journey-registry"
    },
    "reachedOn": "API only: POST /api/objects/{register}/{schema} (anonymous)",
    "provider": "openregister",
@@ -1526,7 +1544,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "POST .../links appinfo/routes.php:105 -> lib/Controller/ObjectSharingController.php:241 createLink with expiration; access links with expiry appinfo/routes.php:1052,1066 -> lib/Controller/AccessLinkController.php:299; recipient read lib/Controller/ObjectShareLinkController.php:129 returns JSON. Shares tab src/views/object/ObjectDetails.vue:438 (CnObjectAccessTab, nextcloud-vue)."
+    "evidence": "POST .../links appinfo/routes.php:105 -> lib/Controller/ObjectSharingController.php:241 createLink with expiration; access links with expiry appinfo/routes.php:1052,1066 -> lib/Controller/AccessLinkController.php:299; recipient read lib/Controller/ObjectShareLinkController.php:129 returns JSON. Shares tab src/views/object/ObjectDetails.vue:438 (CnObjectAccessTab, nextcloud-vue).",
+    "change": "access-by-link-not-by-account"
    },
    "reachedOn": "/objects/:register/:schema/:id (Shares tab); recipient: API only GET /api/shared/{token}",
    "provider": "openregister",
@@ -1557,7 +1576,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "Negotiation executes: lib/Middleware/LanguageMiddleware.php:101 registered lib/AppInfo/Application.php:657, projection lib/Service/Object/RenderObject.php:658 resolveTranslationsForRows called lib/Controller/ObjectsController.php:1090; register languages editor src/sidebars/register/RegisterSideBar.vue:220. src/components/i18n/TranslationFieldEditor.vue is imported nowhere."
+    "evidence": "Negotiation executes: lib/Middleware/LanguageMiddleware.php:101 registered lib/AppInfo/Application.php:657, projection lib/Service/Object/RenderObject.php:658 resolveTranslationsForRows called lib/Controller/ObjectsController.php:1090; register languages editor src/sidebars/register/RegisterSideBar.vue:220. src/components/i18n/TranslationFieldEditor.vue is imported nowhere.",
+    "change": "records-form-and-cell-editors"
    },
    "reachedOn": "API (Accept-Language) and /registers sidebar for languages; no per-field language editor",
    "provider": "openregister",
@@ -1585,7 +1605,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "POST .../move appinfo/routes.php:1242 -> lib/Controller/ObjectsController.php:5176 keeps uuid and history. UI src/modals/object/MigrationObject.vue is mounted in src/modals/Modals.vue:27 but git grep migrationObject finds no setModal opener."
+    "evidence": "POST .../move appinfo/routes.php:1242 -> lib/Controller/ObjectsController.php:5176 keeps uuid and history. UI src/modals/object/MigrationObject.vue is mounted in src/modals/Modals.vue:27 but git grep migrationObject finds no setModal opener.",
+    "change": "identity-survives-a-move"
    },
    "reachedOn": "API only: POST /api/objects/{register}/{schema}/{id}/move",
    "provider": "openregister",
@@ -1613,7 +1634,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "API: read-state appinfo/routes.php:189-202 -> lib/Controller/ObjectReadStateController.php:96/142; list filter _unread lib/Service/Object/SearchQueryHandler.php:275. git grep read-state/_unread in src finds nothing."
+    "evidence": "API: read-state appinfo/routes.php:189-202 -> lib/Controller/ObjectReadStateController.php:96/142; list filter _unread lib/Service/Object/SearchQueryHandler.php:275. git grep read-state/_unread in src finds nothing.",
+    "change": "object-read-state"
    },
    "reachedOn": "API only: GET /api/objects/{r}/{s}?_unread=true",
    "provider": "openregister",
@@ -1721,7 +1743,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "GraphiQL explorer lib/Controller/GraphQLController.php:155 route appinfo/routes.php:1991 lets you run queries; REST docs open in external read-only Redoc (src/components/cards/RegisterSchemaCard.vue:910). No REST try-it, no generated code samples"
+    "evidence": "GraphiQL explorer lib/Controller/GraphQLController.php:155 route appinfo/routes.php:1991 lets you run queries; REST docs open in external read-only Redoc (src/components/cards/RegisterSchemaCard.vue:910). No REST try-it, no generated code samples",
+    "change": "api-explorer-in-the-app"
    },
    "reachedOn": "/api/graphql/explorer (not linked from any src page); /registers -> external Redoc",
    "provider": "openregister",
@@ -1749,7 +1772,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Db/MagicMapper/MagicSearchHandler.php:92 operators gte/lte/gt/lt/in/notIn/ne/isnull, applied per property at :2347 applyObjectFilters (gte+lte = between). No per-field substring 'contains'/like operator on text properties; only array-contains and global _search"
+    "evidence": "lib/Db/MagicMapper/MagicSearchHandler.php:92 operators gte/lte/gt/lt/in/notIn/ne/isnull, applied per property at :2347 applyObjectFilters (gte+lte = between). No per-field substring 'contains'/like operator on text properties; only array-contains and global _search",
+    "change": "search-quality-operators-and-facets"
    },
    "reachedOn": "API only: GET /api/objects/{register}/{schema}?field[gte]=...",
    "provider": "openregister",
@@ -1776,7 +1800,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Service/Query/RelatedRowFilterParser.php (_related[schema][fk][field]=v) applied via lib/Db/MagicMapper/MagicSearchHandler.php:548/563; plus _relations.<field>=id at :2915. Only reverse direction (rows pointing AT the record); no filter on a field of a forward-referenced record"
+    "evidence": "lib/Service/Query/RelatedRowFilterParser.php (_related[schema][fk][field]=v) applied via lib/Db/MagicMapper/MagicSearchHandler.php:548/563; plus _relations.<field>=id at :2915. Only reverse direction (rows pointing AT the record); no filter on a field of a forward-referenced record",
+    "change": "query-related-schema-rows"
    },
    "reachedOn": "API only: GET /api/objects/{register}/{schema}?_related[...]",
    "provider": "openregister",
@@ -1884,7 +1909,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Controller/BulkController.php:559 save, route appinfo/routes.php:1282. Not all-or-nothing: docblock :476-477 'Rows that DID write are not rolled back — this endpoint has never been transactional'; only per-chunk transactions lib/Db/MagicMapper/MagicBulkHandler.php:491"
+    "evidence": "lib/Controller/BulkController.php:559 save, route appinfo/routes.php:1282. Not all-or-nothing: docblock :476-477 'Rows that DID write are not rolled back — this endpoint has never been transactional'; only per-chunk transactions lib/Db/MagicMapper/MagicBulkHandler.php:491",
+    "change": "api-atomic-batch"
    },
    "reachedOn": "API only: POST /api/bulk/{register}/{schema}/save",
    "provider": "openregister",
@@ -1966,7 +1992,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "Nextcloud app passwords give an outside system its own credential with the user's full rights. OR's scoped path is dead: AuthorizationService.php:257 authorizeJwt / :506 authorizeApiKey have no caller in lib/, so TokenGrantSource::bindFromConsumer (only called at :376) never runs; Consumers CRUD route appinfo/routes.php:13"
+    "evidence": "Nextcloud app passwords give an outside system its own credential with the user's full rights. OR's scoped path is dead: AuthorizationService.php:257 authorizeJwt / :506 authorizeApiKey have no caller in lib/, so TokenGrantSource::bindFromConsumer (only called at :376) never runs; Consumers CRUD route appinfo/routes.php:13",
+    "change": "scoped-api-tokens"
    },
    "reachedOn": "Nextcloud personal security settings (app passwords); API /api/consumers",
    "provider": "nextcloud",
@@ -1994,7 +2021,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "Searched repo root, package.json, git ls-files for sdk/client packages: none. Only an openapi.json and the in-app JS stores"
+    "evidence": "Searched repo root, package.json, git ls-files for sdk/client packages: none. Only an openapi.json and the in-app JS stores",
+    "change": "api-client-libraries"
    },
    "reachedOn": "none",
    "provider": "openregister",
@@ -2075,7 +2103,7 @@
    "source": "competitor-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "Endpoints CRUD appinfo/routes.php:11 + test :240 -> lib/Service/EndpointService.php:143 testEndpoint/:212 executeEndpoint. No route serves a defined endpoint to outside callers; executeEndpoint is only reached from testEndpoint"
    },
@@ -2093,7 +2121,8 @@
     "pocketbase": "source read at v0.40.4, not driven: custom endpoints need hand-written code: Go router pocketbase:apis/base.go:39 via OnServe, or JS pocketbase:plugins/jsvm/binds.go:151 routerAdd in pb_hooks; nothing is configured in the dashboard. A view collection pocketbase:core/collection_model_view_options.go:11 serves a chosen SQL query as a read-only endpoint without code",
     "objects-api": "source read at 4.2.1, not driven: routes are fixed (objects-api:src/objects/api/v2/urls.py:20); searched \"custom endpoint|mapping|view\" in src/objects/core, api: no configurable endpoints",
     "nocodb": "source read at 2026.09.0, not driven: searched \"customEndpoint|custom endpoint\" in packages/nocodb/src/controllers and services: no user-defined endpoints; only SQL views over the API (sql-views.controller.ts:21) and shared views"
-   }
+   },
+   "note": "Decided no (build-all 2026-09-28): Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says."
   },
   {
    "id": "api-urn",
@@ -2156,7 +2185,7 @@
    "source": "competitor-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "_search across properties lib/Db/MagicMapper/MagicSearchHandler.php:1235-1377 (ILIKE); page /tables (SearchIndex) and appinfo/routes.php:1748 /api/search. Ranking only on request (_order[_relevance]) and only by pg_trgm similarity on _name (:3219-3227), PostgreSQL only; default order is not by relevance"
    },
@@ -2174,7 +2203,8 @@
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/database/src/query/helpers/search.ts:44 _q search is ILIKE '%term%' over string columns (:16 searchable attributes), LIKE on sqlite :55 and mysql; no ranking, no index; strapi:packages/core/utils/src/convert-query-params.ts:140 _q param",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nc-gui/components/smartsheet/toolbar/SearchData.vue toolbar search; nocodb:packages/nc-gui/composables/useFieldQuery.ts:44,164 turns it into a 'like' filter on one field or all fields; no ranking, per table only. Docs https://nocodb.com/docs/product/account-settings/cloud-enterprise-edition/community-vs-paid-editions rate Search as 'Limited' in both editions",
     "pocketbase": "source read at v0.40.4, not driven: pocketbase:tools/search/filter.go:193 ~ operator is a SQL LIKE substring match; no ranking and no FTS index (searched \"fts5|match(|rank\" in tools/search and core: none); dashboard searchbar pocketbase:ui/src/records/recordsSearchbar.js:22"
-   }
+   },
+   "note": "Decided no (build-all 2026-09-28): No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says."
   },
   {
    "id": "srch-facets",
@@ -2216,7 +2246,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Controller/FileSearchController.php:154 hybridSearch (ts_rank keyword + vector over file chunks) route appinfo/routes.php:1844. Returns file chunks, not the owning record; no screen; needs extraction+vectorisation"
+    "evidence": "lib/Controller/FileSearchController.php:154 hybridSearch (ts_rank keyword + vector over file chunks) route appinfo/routes.php:1844. Returns file chunks, not the owning record; no screen; needs extraction+vectorisation",
+    "change": "unified-search-file-content"
    },
    "reachedOn": "API only: POST /api/search/files/hybrid",
    "provider": "openregister",
@@ -2241,7 +2272,7 @@
    "source": "own-code-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/VectorizationService.php:468 semanticSearch via lib/Controller/SettingsController.php:1007 route appinfo/routes.php:357 (no NoAdminRequired, so admin-only); users get it only indirectly through chat RAG lib/Service/Chat/ContextRetrievalHandler.php:216"
    },
@@ -2259,7 +2290,8 @@
     "strapi": "source read at v5.55.1, not driven: searched \"embedding|vector|semantic\" in packages: no match",
     "nocodb": "source read at 2026.09.0, not driven: searched \"embedding|vector|pgvector\" in packages/nocodb/src: only unrelated hits (attachments.service.ts, formula types), no semantic index",
     "pocketbase": "source read at v0.40.4, not driven: searched \"embedding|vector|semantic\" in the whole repo Go and ui/src: none"
-   }
+   },
+   "note": "Decided no (build-all 2026-09-28): No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says."
   },
   {
    "id": "srch-unified",
@@ -2331,7 +2363,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "isPublic sharing works (lib/Controller/ViewsController.php:578). Group sharing: read side lib/Db/ViewMapper.php:312 findAllFor, but nothing writes it: View::setSharedWith (lib/Db/View.php:274) has no caller, update() at ViewsController.php:573 omits it, and EditView.vue:463 sends sharedGroups/sharedUsers which the backend ignores"
+    "evidence": "isPublic sharing works (lib/Controller/ViewsController.php:578). Group sharing: read side lib/Db/ViewMapper.php:312 findAllFor, but nothing writes it: View::setSharedWith (lib/Db/View.php:274) has no caller, update() at ViewsController.php:573 omits it, and EditView.vue:463 sends sharedGroups/sharedUsers which the backend ignores",
+    "change": "view-group-share"
    },
    "reachedOn": "/tables (share with everyone only)",
    "provider": "openregister",
@@ -2362,7 +2395,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/BackgroundJob/ViewAlertSweepJob.php:149 (job in appinfo/info.xml:136) evaluates view.alert, but View::setAlert has no caller (git grep setAlert lib/), no UI field in src/modals/view or src/sidebars/search, and ViewAlertCrossedEvent (dispatched :191) has no listener"
+    "evidence": "lib/BackgroundJob/ViewAlertSweepJob.php:149 (job in appinfo/info.xml:136) evaluates view.alert, but View::setAlert has no caller (git grep setAlert lib/), no UI field in src/modals/view or src/sidebars/search, and ViewAlertCrossedEvent (dispatched :191) has no listener",
+    "change": "saved-view-count-alert"
    },
    "reachedOn": "none",
    "provider": "openregister",
@@ -2390,7 +2424,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Controller/ObjectsController.php:2129 geoSearch (GeoJSON within/intersects) route appinfo/routes.php:1166, plus geojson/wfs :1167-1168. src/views/object/MapView.vue is imported by nothing, so no map screen"
+    "evidence": "lib/Controller/ObjectsController.php:2129 geoSearch (GeoJSON within/intersects) route appinfo/routes.php:1166, plus geojson/wfs :1167-1168. src/views/object/MapView.vue is imported by nothing, so no map screen",
+    "change": "geometry-on-a-map"
    },
    "reachedOn": "API only: POST /api/objects/{register}/{schema}/geo-search",
    "provider": "openregister",
@@ -2688,7 +2723,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "matrix compiled into scopes lib/Service/Object/PermissionHandler.php:2699 compileDepartmentMatrix called from resolveAuthorization :2609; validated lib/Db/SchemaMapper.php:2360. No matrix editor in src (grep department/matrix key)"
+    "evidence": "matrix compiled into scopes lib/Service/Object/PermissionHandler.php:2699 compileDepartmentMatrix called from resolveAuthorization :2609; validated lib/Db/SchemaMapper.php:2360. No matrix editor in src (grep department/matrix key)",
+    "change": "rbac-department-role-matrix"
    },
    "reachedOn": "none as a screen; declared in schema authorization JSON ('matrix' key)",
    "provider": "openregister",
@@ -2830,14 +2866,14 @@
    ],
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "Searched lib/ and src/ for restricted/locked-entry/placeholder-row patterns (_restricted, locked entr, stub, discover); MagicRbacHandler.php filters unreadable rows out of the SQL, nothing renders them as locked"
    },
    "reachedOn": "none",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "_locked is the edit-lock column, not a visibility placeholder.",
+   "note": "_locked is the edit-lock column, not a visibility placeholder. Decided no (build-all 2026-09-28): No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -2886,14 +2922,14 @@
    "source": "own-code-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "grants with expiry lib/Db/DelegationGrant.php:291; consent API lib/Controller/DelegationController.php:157, routes.php:2200-2203; consumed only by flows lib/Service/Flow/FlowRunService.php:723"
    },
    "reachedOn": "API only: /api/delegations; used when a flow runs as another user",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Delegation lets automations act as a user; a person cannot act on behalf of a colleague in the UI.",
+   "note": "Delegation lets automations act as a user; a person cannot act on behalf of a colleague in the UI. Decided no (build-all 2026-09-28): No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -3057,14 +3093,14 @@
    "source": "competitor-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/RevertController.php:80 revert to a datetime/version (routes.php:1450) rebuilds from the audit trail; no read-only as-of view; grep src for revert found none"
    },
    "reachedOn": "API only: POST /api/objects/{register}/{schema}/{id}/revert",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "You can only restore a past state, not look at one without writing it back.",
+   "note": "You can only restore a past state, not look at one without writing it back. Decided no (build-all 2026-09-28): Only objects-api rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says.",
    "objects-api": "yes",
    "directus": "no",
    "strapi": "partial",
@@ -3085,14 +3121,14 @@
    "source": "competitor-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "corrections as their own recorded verb lib/Service/Object/CorrectionService.php:123, routes.php:1275; no valid-time on objects (validFrom only in lib/Db/ContactLink.php:209)"
    },
    "reachedOn": "API only: POST /api/objects/{register}/{schema}/{id}/correct",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Correcting the past is recorded; there is no separate 'true from' time axis.",
+   "note": "Correcting the past is recorded; there is no separate 'true from' time axis. Decided no (build-all 2026-09-28): Only objects-api rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says.",
    "objects-api": "yes",
    "directus": "no",
    "strapi": "no",
@@ -3167,7 +3203,7 @@
    "source": "own-code-derived",
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "No @PublicPage on any method in lib/Controller/AuditTrailController.php; routes.php:1341-1359 all session-bound. Only a public timeline projection exists (lib/Service/Timeline/PublicTimeline.php) via access links"
    },
@@ -3185,7 +3221,8 @@
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/admin/ee/server/src/audit-logs/routes/audit-logs.ts:21 admin routes only, permission admin::audit-logs.read; no content API route",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/controllers/internal/modules/RecordAuditList.operations.ts:18-22 recordAuditList is explicitly blocked for public shared-base sessions (publicBaseBlockedOperations); searched \"audit\" in packages/nocodb/src/controllers/public-datas.controller.ts: none",
     "pocketbase": "source read at v0.40.4, not driven: logs routes require superuser auth pocketbase:apis/logs.go:14; no public audit endpoint"
-   }
+   },
+   "note": "Decided no (build-all 2026-09-28): No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible."
   },
   {
    "id": "ret-period",
@@ -3452,7 +3489,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "subject-scoped pseudonymise lib/Service/Gdpr/DataSubjectRequestService.php:240 via erase (default mode) routes.php:490; file anonymise routes.php:1826. lib/Service/Archival/AnonymisationSweep.php has no caller (git grep -w)"
+    "evidence": "subject-scoped pseudonymise lib/Service/Gdpr/DataSubjectRequestService.php:240 via erase (default mode) routes.php:490; file anonymise routes.php:1826. lib/Service/Archival/AnonymisationSweep.php has no caller (git grep -w)",
+    "change": "anonymising-as-an-archival-outcome"
    },
    "reachedOn": "API: POST /api/gdpr/erase; /avg erasure",
    "provider": "openregister",
@@ -3560,14 +3598,14 @@
    "source": "competitor-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/FilesController.php:2098-2101 takes width/height query params and returns a Nextcloud preview; route appinfo/routes.php:1470. No format parameter."
    },
    "reachedOn": "API only: GET /api/objects/{r}/{s}/{id}/files/{fileId}/preview?width=&height=",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Resizing works through the URL; format conversion does not exist.",
+   "note": "Resizing works through the URL; format conversion does not exist. Decided no (build-all 2026-09-28): Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "partial",
@@ -3588,7 +3626,7 @@
    "source": "own-code-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "POST /api/files/{fileId}/anonymize appinfo/routes.php:1826 -> lib/Controller/FileTextController.php:433 -> lib/Service/File/DocumentProcessingHandler.php:362 (PdfTextReplacer for PDF :789). Replaces detected entities with '[type: key]' text :96, not black boxes. No UI trigger: git grep anonymizeFile in src finds nothing; sidebar only shows status src/components/files-sidebar/ExtractionTab.vue:134."
    },
@@ -3606,7 +3644,8 @@
     "strapi": "source read at v5.55.1, not driven: searched \"redact|blackout|anonymi\" in packages/core/upload: no match",
     "nocodb": "source read at 2026.09.0, not driven: searched \"redact\" in packages/nocodb/src and nc-gui: only error and log redaction (utils/errorRedaction.ts), no PDF redaction; image annotations are Enterprise and do not redact",
     "pocketbase": "source read at v0.40.4, not driven: searched \"redact|blackout\" in the repo: none"
-   }
+   },
+   "note": "Decided no (build-all 2026-09-28): No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says."
   },
   {
    "id": "file-where-used",
@@ -3647,7 +3686,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "Mail: src/mail-sidebar/components/ActionsTab.vue:70 linkObject -> emailLinks#link appinfo/routes.php:682, injected via MailAppScriptListener lib/AppInfo/Application.php:3584. Files sidebar RegisterObjectsTab only lists links. Talk linking only from the record side appinfo/routes.php:747."
+    "evidence": "Mail: src/mail-sidebar/components/ActionsTab.vue:70 linkObject -> emailLinks#link appinfo/routes.php:682, injected via MailAppScriptListener lib/AppInfo/Application.php:3584. Files sidebar RegisterObjectsTab only lists links. Talk linking only from the record side appinfo/routes.php:747.",
+    "change": "files-leaf-save-to-object"
    },
    "reachedOn": "Nextcloud Mail sidebar; files and chats only from the record side",
    "provider": "openregister",
@@ -3784,7 +3824,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Service/WebhookService.php:1022 applies a Mapping via applyMappingTransformation :1090 (lib/Db/Webhook.php:237 mapping id); src/modals/webhook/EditWebhook.vue has no mapping field (only responseMapping :507), so it is set over PUT /api/webhooks/{id} (routes.php:1918)"
+    "evidence": "lib/Service/WebhookService.php:1022 applies a Mapping via applyMappingTransformation :1090 (lib/Db/Webhook.php:237 mapping id); src/modals/webhook/EditWebhook.vue has no mapping field (only responseMapping :507), so it is set over PUT /api/webhooks/{id} (routes.php:1918)",
+    "change": "webhook-payload-mapping-picker"
    },
    "reachedOn": "API only: PUT /api/webhooks/{id}",
    "provider": "openregister",
@@ -3869,14 +3910,14 @@
    ],
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Flow/Bpmn/FlowBpmnImporter.php:120 import and FlowBpmnExporter, routes appinfo/routes.php:825-826; the imported model becomes a native flow run by lib/Service/Flow/FlowEngine.php, edited on the flow canvas, no BPMN modeller page"
    },
    "reachedOn": "API only: POST /api/flows/import/bpmn, GET /api/flows/{id}/bpmn",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "BPMN is an interchange format here, not the engine or the editor.",
+   "note": "BPMN is an interchange format here, not the engine or the editor. Decided no (build-all 2026-09-28): BPMN is an interchange format here by design (flow-bpmn-interchange: import and export, not an engine or editor). No competitor rates it yes and no demand row asks for a BPMN engine. Reversible. The built half stays and works as the evidence says.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -3899,7 +3940,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "approval as flow steps: lib/Service/Flow/Nodes/UserTaskNode.php and AwaitSignalNode.php, task inbox src/manifest.json flow-task-inbox (/flow-tasks); destruction-list approval appinfo/routes.php:2001. Not shown that a record change is held until approved: the save commits first (lib/Service/Object/SaveObject.php)"
+    "evidence": "approval as flow steps: lib/Service/Flow/Nodes/UserTaskNode.php and AwaitSignalNode.php, task inbox src/manifest.json flow-task-inbox (/flow-tasks); destruction-list approval appinfo/routes.php:2001. Not shown that a record change is held until approved: the save commits first (lib/Service/Object/SaveObject.php)",
+    "change": "records-change-held-for-approval"
    },
    "reachedOn": "/flow-tasks",
    "provider": "openregister",
@@ -3924,14 +3966,14 @@
    "source": "own-code-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Lifecycle/TransitionEngine.php:295 transition() enforces declared transitions, route appinfo/routes.php:613 POST /api/objects/{id}/transition; searched SaveObject.php and lib/Listener for a refusal of a plain PUT that changes the state field and found none"
    },
    "reachedOn": "API only: POST /api/objects/{id}/transition",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "The transition endpoint guards the graph; a direct write to the state field was not shown to be refused.",
+   "note": "The transition endpoint guards the graph; a direct write to the state field was not shown to be refused. Decided no (build-all 2026-09-28): No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says.",
    "objects-api": "no",
    "directus": "partial",
    "strapi": "partial",
@@ -4009,7 +4051,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Controller/ObjectsController.php:3269 interceptRequest(eventType 'object.creating') lets a pre-event webhook rewrite the payload (lib/Service/WebhookService.php:1383); only on create, and an interceptor failure is caught and logged (:3277) so it cannot refuse the save"
+    "evidence": "lib/Controller/ObjectsController.php:3269 interceptRequest(eventType 'object.creating') lets a pre-event webhook rewrite the payload (lib/Service/WebhookService.php:1383); only on create, and an interceptor failure is caught and logged (:3277) so it cannot refuse the save",
+    "change": "flow-code-step-in-a-sidecar"
    },
    "reachedOn": "API only: webhook with interception",
    "provider": "openregister",
@@ -4034,14 +4077,14 @@
    "source": "own-code-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "only through the generic webhook (lib/Listener/WebhookEventListener.php:146) aimed at an n8n webhook trigger; git grep -i n8n in lib finds one comment (lib/Service/Flow/FlowEngine.php:474), no n8n connector or node"
    },
    "reachedOn": "/webhooks",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "The research files still describe an n8n integration that the tree no longer carries.",
+   "note": "The research files still describe an n8n integration that the tree no longer carries. Decided no (build-all 2026-09-28): Recorded non-goal: ADR-065 makes OpenRegister the only flow engine in the fleet, and the open change retire-external-workflow-engines removes the n8n and windmill adapters. Handing changes to an outside workflow tool is what webhooks already do. The built half stays and works as the evidence says.",
    "objects-api": "partial",
    "directus": "yes",
    "strapi": "partial",
@@ -4121,7 +4164,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "src/modals/register/ImportRegister.vue:409 accepts .csv/.xlsx -> registers#import routes.php:1656; dryRun preview only as API param RegistersController.php:1490 -> ImportService.php:473; grep dryRun/preview in ImportRegister.vue finds nothing"
+    "evidence": "src/modals/register/ImportRegister.vue:409 accepts .csv/.xlsx -> registers#import routes.php:1656; dryRun preview only as API param RegistersController.php:1490 -> ImportService.php:473; grep dryRun/preview in ImportRegister.vue finds nothing",
+    "change": "import-preview-and-conflict-policy"
    },
    "reachedOn": "/registers (Import); preview API only",
    "provider": "openregister",
@@ -4176,7 +4220,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "PDF list export RegistersController.php:1055 -> ExportService.php:332 (Dompdf) via GET /api/registers/{id}/export?format=pdf (routes.php:1655); ExportRegister.vue:90 offers only Excel/CSV; ReportView.vue:47 PDF is for reports, not records; no single-record PDF found"
+    "evidence": "PDF list export RegistersController.php:1055 -> ExportService.php:332 (Dompdf) via GET /api/registers/{id}/export?format=pdf (routes.php:1655); ExportRegister.vue:90 offers only Excel/CSV; ReportView.vue:47 PDF is for reports, not records; no single-record PDF found",
+    "change": "export-pdf-house-style"
    },
    "reachedOn": "API only: GET /api/registers/{id}/export?format=pdf",
    "provider": "openregister",
@@ -4201,14 +4246,14 @@
    "source": "own-code-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/BackgroundJob/SyncDataJob.php:91 hourly harvest of sync-enabled sources (appinfo/info.xml:147) via RestApiSourceFetcher only (Application.php:918); sync now/status routes.php:222-223; no UI sets syncEnabled/syncInterval (EditSource.vue has none)"
    },
    "reachedOn": "API only: POST /api/sources/{id}/sync",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Only REST API sources; scheduling cannot be switched on from a screen.",
+   "note": "Only REST API sources; scheduling cannot be switched on from a screen. Decided no (build-all 2026-09-28): No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says.",
    "objects-api": "no",
    "directus": "partial",
    "strapi": "no",
@@ -4284,14 +4329,14 @@
    "source": "own-code-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "OCM provider lib/Federation/OpenRegisterCloudFederationProvider.php records incoming shares (Application.php:5155); serving FederationController.php:238 (routes.php:20-22); FederatedObjectSourceProvider.php:117 reads remote live but only for a hand-bound shadow schema; no src/ file references federation"
    },
    "reachedOn": "API only: /api/federation/shares",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Nothing creates the shadow schema automatically when a share is accepted.",
+   "note": "Nothing creates the shadow schema automatically when a share is accepted. Decided no (build-all 2026-09-28): No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -4314,7 +4359,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "No importer for another product's base: git grep -i 'airtable|baserow|nocodb' in lib, src and appinfo finds none. The only neighbour is lib/Service TablesSchemaSyncService, which mounts a Nextcloud Tables table as a read-only virtual schema (occ openregister:tables:sync), not an import."
+    "evidence": "No importer for another product's base: git grep -i 'airtable|baserow|nocodb' in lib, src and appinfo finds none. The only neighbour is lib/Service TablesSchemaSyncService, which mounts a Nextcloud Tables table as a read-only virtual schema (occ openregister:tables:sync), not an import.",
+    "change": "import-preview-and-conflict-policy"
    },
    "reachedOn": "none",
    "provider": "openregister",
@@ -4342,7 +4388,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "Per-configuration export with includeObjects ExportConfiguration.vue:23 (routes.php:1715) and re-import ImportRegister.vue:508 (routes.php:1656); no all-data backup/restore (grep -i backup in lib/Controller, lib/Command finds none)"
+    "evidence": "Per-configuration export with includeObjects ExportConfiguration.vue:23 (routes.php:1715) and re-import ImportRegister.vue:508 (routes.php:1656); no all-data backup/restore (grep -i backup in lib/Controller, lib/Command finds none)",
+    "change": "exchange-encrypted-instance-export"
    },
    "reachedOn": "/configurations, /registers",
    "provider": "openregister",
@@ -4368,7 +4415,7 @@
    "source": "own-code-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "MigrationPacksController CRUD/import/export routes.php:1963-1969; applied on import via packId RegistersController.php:1489-1494 -> ImportService.php:472; grep packId/migration-pack in src finds nothing"
    },
@@ -4386,7 +4433,8 @@
     "strapi": "source read at v5.55.1, not driven: searched \"mapping|field map|migration map\" in packages/core/data-transfer/src: transfer requires identical schemas, no mapping",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nc-gui/components/dlg/QuickImport.vue:261-262 maps columns per import session only; searched \"mappingTemplate|saved mapping\" in nc-gui and nocodb/src: none",
     "pocketbase": "source read at v0.40.4, not driven: searched \"mapping|transform\" in core and apis: none"
-   }
+   },
+   "note": "Decided no (build-all 2026-09-28): No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says."
   },
   {
    "id": "ai-mcp",
@@ -4422,7 +4470,7 @@
    "source": "competitor-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Controller/ChatController.php:415 sendMessage + streaming, routes appinfo/routes.php:1794-1803, RAG lib/Service/Chat/ContextRetrievalHandler.php:216. No chat screen in the app: src/components/AgentSelector.vue is imported by nothing, no manifest page"
    },
@@ -4440,7 +4488,8 @@
     "objects-api": "source read at 4.2.1, not driven: searched \"llm|chat|openai\" in src/objects: no match",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/content-type-builder/admin/src/components/AIChat/lib/constants.ts:14 the only chat posts schemas to the Strapi AI schema endpoint (/schemas/chat) to design types, it does not answer questions over record data; searched \"chat\" in packages/core/content-manager/admin/src: no match",
     "pocketbase": "source read at v0.40.4, not driven: searched \"llm|openai|anthropic|chat|assistant\" in the repo Go and ui/src: none"
-   }
+   },
+   "note": "Decided no (build-all 2026-09-28): Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says."
   },
   {
    "id": "ai-embeddings",
@@ -4503,7 +4552,7 @@
    "source": "competitor-derived",
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "git grep for x-openregister-ai/aiPrompt/TaskProcessing/TextProcessing in lib/: nothing; lib/Service/Flow/Nodes has no AI/LLM node; LLPhant used only in Chat, Tool, Vectorization, TextExtraction"
    },
@@ -4521,7 +4570,8 @@
     "directus": "source read at v12.4.1, not driven: no configured AI field that fills itself: searched \"ai.*interface|prompt field\" in app/src/interfaces: only translations uses /ai/object (app/src/interfaces/translations/use-translation-job.ts:222, gated by ai_translations_enabled, false in Core). The chat assistant can read and set the open form's values on request (directus:app/src/components/v-form/composables/use-ai-tools.ts:26 read-form-values, :47 set-form-values)",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/upload/server/src/services/ai-metadata.ts:80 AI captions and alt text for media; strapi:packages/plugins/i18n/server/src/services/ai-localizations.ts AI fills other-locale fields on save (i18n en.json:46); both need the Strapi AI licence feature 'cms-ai' (strapi:packages/core/admin/server/src/ai/services/ai.ts:7); no user-defined prompt over other fields",
     "pocketbase": "source read at v0.40.4, not driven: no AI integration; field types listed in pocketbase:core/field_*.go have no generated value type besides autodate and regex autogenerate pocketbase:core/field_text.go:105"
-   }
+   },
+   "note": "Decided no (build-all 2026-09-28): No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible."
   },
   {
    "id": "ai-platform-assistant",
@@ -4560,7 +4610,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "Agent tools and views enforced in chat: lib/Service/Chat/ToolManagementHandler.php:119, lib/Service/Chat/ContextRetrievalHandler.php:141; agents API appinfo/routes.php:10. No agent screen in src; MCP callers get the user's full rights (lib/Service/Capability/ToolGrantResolver.php only referenced by its own siblings)"
+    "evidence": "Agent tools and views enforced in chat: lib/Service/Chat/ToolManagementHandler.php:119, lib/Service/Chat/ContextRetrievalHandler.php:141; agents API appinfo/routes.php:10. No agent screen in src; MCP callers get the user's full rights (lib/Service/Capability/ToolGrantResolver.php only referenced by its own siblings)",
+    "change": "ai-agent-limits-screen"
    },
    "reachedOn": "API only: /api/agents",
    "provider": "openregister",
@@ -4752,7 +4803,7 @@
    ],
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "src/views/reports/ReportView.vue:82 renders chart widgets, render/preview appinfo/routes.php:1885-1886 via lib/Service/Reporting/ReportRenderService.php; a report is authored as an object in a reports register imported from a template (src/views/reports/ReportsIndex.vue:48), no report builder"
    },
@@ -4770,7 +4821,8 @@
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/content-manager/admin/src/components/Widgets.tsx:396 only a fixed entries-by-status chart; searched \"report builder|chart builder|pivot\" in packages/core: no match",
     "nocodb": "source read at 2026.09.0, not driven: CE: footer and group-by aggregations in the grid (nc-gui/components/smartsheet/grid/Aggregation.vue, data-table.controller.ts:132 aggregate route); charts (bar, line, pie, donut, number) live in Enterprise dashboards (https://nocodb.com/docs/product/dashboards/widgets, https://nocodb.com/docs/product/account-settings/cloud-enterprise-edition/community-vs-paid-editions), code not public",
     "pocketbase": "source read at v0.40.4, not driven: searched \"chart|report\" in ui/src/records and apis: charts exist only for request logs pocketbase:ui/src/logs/logsChart.js:303"
-   }
+   },
+   "note": "Decided no (build-all 2026-09-28): Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says."
   },
   {
    "id": "op-bi-feed",
@@ -4781,7 +4833,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "export profiles appinfo/routes.php:1938-1944, run returns CSV lib/Controller/ExportProfilesController.php:290 at a stable URL a BI tool can pull; no OData or direct connector (grep -i odata in appinfo/routes.php finds none)"
+    "evidence": "export profiles appinfo/routes.php:1938-1944, run returns CSV lib/Controller/ExportProfilesController.php:290 at a stable URL a BI tool can pull; no OData or direct connector (grep -i odata in appinfo/routes.php finds none)",
+    "change": "rapportage-bi-export"
    },
    "reachedOn": "API only: GET /api/export-profiles/{id}/run",
    "provider": "openregister",
@@ -4916,7 +4969,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "an organisation carries an OTAP environment (lib/Db/Organisation.php:271) that changes quota behaviour (lib/Middleware/TenantQuotaMiddleware.php:289); configuration drafts deploy with preview and rollback appinfo/routes.php:526-530; git grep -i promot in lib finds no promotion between environments"
+    "evidence": "an organisation carries an OTAP environment (lib/Db/Organisation.php:271) that changes quota behaviour (lib/Middleware/TenantQuotaMiddleware.php:289); configuration drafts deploy with preview and rollback appinfo/routes.php:526-530; git grep -i promot in lib finds no promotion between environments",
+    "change": "configuration-as-a-deployment"
    },
    "reachedOn": "API only: /api/configuration/draft-sets",
    "provider": "openregister",
@@ -4941,7 +4995,7 @@
    "source": "competitor-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "another Nextcloud app from the app store can add flow steps through lib/Service/Flow/RegisterFlowNodesEvent.php:49 and bulk actions through the BulkAction registry; no field-type extension point and no in-app marketplace"
    },
@@ -4959,7 +5013,8 @@
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/controllers/plugins.controller.ts App Store of plugins limited to storage, email and chat adapters (packages/nocodb/src/plugins/); extensions that add screens are Enterprise (nc-gui/extensions/ holds only data-exporter and json-exporter; https://nocodb.com/docs/product/account-settings/cloud-enterprise-edition/community-vs-paid-editions lists Extensions as Enterprise). No custom field type plugins",
     "objects-api": "source read at 4.2.1, not driven: no extension mechanism; searched \"plugin|extension|entry_points\" in src/objects: no match. The open-objecten/objecttypes GitHub library offers type schemas only",
     "pocketbase": "source read at v0.40.4, not driven: no marketplace; experimental dashboard UI extensions are loaded from the Go app only pocketbase:core/events.go:140 UIExtension and pocketbase:apis/extensions.go:19 (undocumented per changelog v0.37.0)"
-   }
+   },
+   "note": "Decided no (build-all 2026-09-28): Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says."
   },
   {
    "id": "op-cli",
@@ -5000,7 +5055,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "subsystems switch on or off in admin settings, e.g. src/views/settings/sections/MultitenancyConfiguration.vue:47 and RbacConfiguration.vue:44; no general per-feature toggle (grep -i 'feature flag|featureToggle' in lib/Service/SettingsService.php and appinfo/routes.php finds none)"
+    "evidence": "subsystems switch on or off in admin settings, e.g. src/views/settings/sections/MultitenancyConfiguration.vue:47 and RbacConfiguration.vue:44; no general per-feature toggle (grep -i 'feature flag|featureToggle' in lib/Service/SettingsService.php and appinfo/routes.php finds none)",
+    "change": "feature-toggle-surface"
    },
    "reachedOn": "/settings/admin/openregister",
    "provider": "openregister",
@@ -5025,7 +5081,7 @@
    "source": "competitor-derived",
    "openregister": "no",
    "built": {
-    "state": "none",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "Searched lib/ and routes for generateSchema/draftSchema/suggestSchema: none. schemas#explore (appinfo/routes.php:1631, lib/Service/SchemaService.php:117) infers properties from existing data, not from a plain-language description"
    },
@@ -5043,7 +5099,8 @@
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/content-type-builder/admin/src/components/AIChat/lib/constants.ts:14 Strapi AI schema chat drafts content types (en.json:277 \"Ask Strapi AI...\"), also from code or Figma uploads (UploadCodeModal.tsx, UploadFigmaModal.tsx); gated by strapi:packages/core/admin/ee/admin/src/hooks/useAIAvailability.ts:2 isEE and ai.enabled, enterprise licence feature 'cms-ai'",
     "nocodb": "source read at 2026.09.0, not driven: no table generation in the public repo (nc-gui/components/ai/WizardCard.vue and WizardTabs.vue are wizard shells, the AI integration list is empty, nocodb/src/integrations/index.ts:8); NocoAI builds tables and fields from a prompt (https://nocodb.com/docs/product/noco-ai/create-table), paid tier, code not public",
     "pocketbase": "source read at v0.40.4, not driven: no AI integration (see ai-mcp); searched \"llm|openai|generate schema\" in the repo: none"
-   }
+   },
+   "note": "Decided no (build-all 2026-09-28): Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible."
   },
   {
    "id": "ai-summarise",
@@ -5052,7 +5109,7 @@
    "source": "competitor-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "decided-no",
     "owner": "ConductionNL/openregister",
     "evidence": "No summarise action; only possible by asking a chat agent that reads the record/files via tools (lib/Tool/ObjectsTool.php, RAG lib/Service/Chat/ContextRetrievalHandler.php:216) through appinfo/routes.php:1794"
    },
@@ -5070,7 +5127,8 @@
     "strapi": "source read at v5.55.1, not driven: searched \"summar\" in packages/core/content-manager, packages/core/upload, packages/plugins/i18n: no match",
     "nocodb": "source read at 2026.09.0, not driven: NocoAI 'Find, count and summarise records' (https://nocodb.com/docs/product/noco-ai/capabilities line 77) and AI Text field prompts (UITypes.ts:112) are paid; CE only exposes readAttachment over MCP to an outside agent (mcp.service.ts:346), which can then summarise",
     "pocketbase": "source read at v0.40.4, not driven: no AI integration (see ai-mcp)"
-   }
+   },
+   "note": "Decided no (build-all 2026-09-28): Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says."
   },
   {
    "id": "mod-rename-lossless",
@@ -5084,7 +5142,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "appinfo/routes.php:1639 POST /api/schemas/{id}/migrations -> lib/Controller/SchemaMigrationController.php:359 migrate -> lib/Service/Schema/SchemaMigrationPlanner.php:174 'rename' op, :222 applyRename moves the value per object, with preview (routes.php:1638) and rollback (routes.php:1640); lib/Service/Schema/SchemaDiffService.php:97 classifies a declared rename as one breaking change"
+    "evidence": "appinfo/routes.php:1639 POST /api/schemas/{id}/migrations -> lib/Controller/SchemaMigrationController.php:359 migrate -> lib/Service/Schema/SchemaMigrationPlanner.php:174 'rename' op, :222 applyRename moves the value per object, with preview (routes.php:1638) and rollback (routes.php:1640); lib/Service/Schema/SchemaDiffService.php:97 classifies a declared rename as one breaking change",
+    "change": "modelling-rename-without-loss"
    },
    "reachedOn": "API only: POST /api/schemas/{id}/migrations",
    "provider": "openregister",
@@ -5114,7 +5173,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "appinfo/routes.php:1171,1177 objects are addressed by {id} (uuid or slug) only; lib/Service/Import/MatchResolver.php:116 resolve() matches an import row on several declared properties, but only inside import previews (routes.php:1336), not as the record's identity in the API or in links"
+    "evidence": "appinfo/routes.php:1171,1177 objects are addressed by {id} (uuid or slug) only; lib/Service/Import/MatchResolver.php:116 resolve() matches an import row on several declared properties, but only inside import previews (routes.php:1336), not as the record's identity in the API or in links",
+    "change": "modelling-composite-identity"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -5145,7 +5205,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "appinfo/routes.php:1171 POST /api/objects/{register}/{schema} -> lib/Controller/ObjectsController.php:3313 create is an upsert unless _failIfExists -> lib/Service/Object/SaveObject.php:3260 an existing identifier is updated; bulk: routes.php:1282 POST /api/bulk/{register}/{schema}/save; key-based matching only via lib/Service/Import/MatchResolver.php:116 in the two-step import preview (routes.php:1336 create, :1339 commit)"
+    "evidence": "appinfo/routes.php:1171 POST /api/objects/{register}/{schema} -> lib/Controller/ObjectsController.php:3313 create is an upsert unless _failIfExists -> lib/Service/Object/SaveObject.php:3260 an existing identifier is updated; bulk: routes.php:1282 POST /api/bulk/{register}/{schema}/save; key-based matching only via lib/Service/Import/MatchResolver.php:116 in the two-step import preview (routes.php:1336 create, :1339 commit)",
+    "change": "api-upsert-on-a-declared-key"
    },
    "reachedOn": "API only: POST /api/objects/{register}/{schema}",
    "provider": "openregister",
@@ -5176,7 +5237,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "src/modals/schema/EditSchemaProperty.vue:718-745 'Show the hierarchy' renders a code list's concepts as an indented, non-collapsible list via lib/Controller/VocabularyController.php:166 ?tree; no record list layout shows parent and child records as a tree (grep treeview/TreeView in src: no match)"
+    "evidence": "src/modals/schema/EditSchemaProperty.vue:718-745 'Show the hierarchy' renders a code list's concepts as an indented, non-collapsible list via lib/Controller/VocabularyController.php:166 ?tree; no record list layout shows parent and child records as a tree (grep treeview/TreeView in src: no match)",
+    "change": "records-tree-view"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -5236,7 +5298,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "appinfo/routes.php:573 POST /api/translations/object/{uuid}/bulk-translate -> lib/Service/BulkTranslationService.php:154 provider->translate; the only bound provider is lib/AppInfo/Application.php:661-666 IdentityTranslationProvider (a no-op); src/dialogs/i18n/BulkTranslateDialog.vue:278 has no opener anywhere in src; no glossary or style guide input (grep glossary in lib/Service/Translation: no match)"
+    "evidence": "appinfo/routes.php:573 POST /api/translations/object/{uuid}/bulk-translate -> lib/Service/BulkTranslationService.php:154 provider->translate; the only bound provider is lib/AppInfo/Application.php:661-666 IdentityTranslationProvider (a no-op); src/dialogs/i18n/BulkTranslateDialog.vue:278 has no opener anywhere in src; no glossary or style guide input (grep glossary in lib/Service/Translation: no match)",
+    "change": "ai-translation-with-a-glossary"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -5296,7 +5359,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "appinfo/routes.php:1051-1063 access links (/api/public/links/{anchor}) open one object for someone without an account, minted since #4061 from the object detail page (src/components/access-links/ObjectAccessLinks.vue) and opened on a public page (/links/{anchor}, lib/Controller/AccessLinkPageController.php, src/views/accessLink/AccessLinkPage.vue) -> lib/Db/AccessLink.php:140 CAPABILITIES are read, comment and upload only, no edit; appinfo/routes.php:211 objectShareLink#show is read-only; the only token-scoped write is appinfo/routes.php:28 federation#updateObject, a machine route between Open Register instances"
+    "evidence": "appinfo/routes.php:1051-1063 access links (/api/public/links/{anchor}) open one object for someone without an account, minted since #4061 from the object detail page (src/components/access-links/ObjectAccessLinks.vue) and opened on a public page (/links/{anchor}, lib/Controller/AccessLinkPageController.php, src/views/accessLink/AccessLinkPage.vue) -> lib/Db/AccessLink.php:140 CAPABILITIES are read, comment and upload only, no edit; appinfo/routes.php:211 objectShareLink#show is read-only; the only token-scoped write is appinfo/routes.php:28 federation#updateObject, a machine route between Open Register instances",
+    "change": "or-form-and-journey-registry"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -5356,7 +5420,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "src/modals/schema/EditSchemaProperty.vue:380 'Facetable' switch per property -> lib/Db/MagicMapper.php:3580-3584 createTableIndexes adds CREATE INDEX on each facetable column (and on relation columns :3552); runs on table creation lib/Db/MagicMapper.php:2309 and on resync src/components/cards/RegisterSchemaCard.vue:952 -> appinfo/routes.php:279 tables#sync -> lib/Controller/TablesController.php:140 -> lib/Db/MagicMapper/MagicTableHandler.php:473 updateTableIndexes"
+    "evidence": "src/modals/schema/EditSchemaProperty.vue:380 'Facetable' switch per property -> lib/Db/MagicMapper.php:3580-3584 createTableIndexes adds CREATE INDEX on each facetable column (and on relation columns :3552); runs on table creation lib/Db/MagicMapper.php:2309 and on resync src/components/cards/RegisterSchemaCard.vue:952 -> appinfo/routes.php:279 tables#sync -> lib/Controller/TablesController.php:140 -> lib/Db/MagicMapper/MagicTableHandler.php:473 updateTableIndexes",
+    "change": "modelling-property-index-switch"
    },
    "reachedOn": "schema property editor (Facetable) plus the register card's table sync",
    "provider": "openregister",
@@ -5386,7 +5451,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "src/views/search/SearchIndex.vue:398 opens src/modals/object/CopyObject.vue to start a record from a copy of an existing one; schema property defaults fill a new record lib/Service/Object/SaveObject.php:1544; src/views/templates/TemplatesIndex.vue:63 'Templates are coming soon' is about document templates and calls no route"
+    "evidence": "src/views/search/SearchIndex.vue:398 opens src/modals/object/CopyObject.vue to start a record from a copy of an existing one; schema property defaults fill a new record lib/Service/Object/SaveObject.php:1544; src/views/templates/TemplatesIndex.vue:63 'Templates are coming soon' is about document templates and calls no route",
+    "change": "records-saved-templates"
    },
    "reachedOn": "search page, copy action on a record",
    "provider": "openregister",
@@ -5506,7 +5572,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Service/Rbac/SettingsChangeAuditor.php:210 recordUpdate writes a masked before and after row to the audit trail, called from lib/AppHost/Service/AppHostSettingsService.php:197 (leaf app settings), lib/AppHost/Service/FeatureToggleService.php:106 (feature toggles) and, since #4060, lib/Service/Settings/OwnSettingsChangeRecorder.php for Open Register's own settings: every save door in lib/Service/Settings/ConfigurationSettingsHandler.php (updateSettings, updateRbacSettingsOnly, updateOrganisationSettingsOnly, updateMultitenancySettingsOnly) and lib/Service/Settings/ObjectRetentionHandler.php (object, retention, archival) snapshots before the write and records after it, one row per section.field; schema and register edits use the audit mapper for statistics only (lib/Controller/SchemasController.php:320); role and group changes go to Nextcloud's admin_audit log file (nextcloud/server apps/admin_audit)"
+    "evidence": "lib/Service/Rbac/SettingsChangeAuditor.php:210 recordUpdate writes a masked before and after row to the audit trail, called from lib/AppHost/Service/AppHostSettingsService.php:197 (leaf app settings), lib/AppHost/Service/FeatureToggleService.php:106 (feature toggles) and, since #4060, lib/Service/Settings/OwnSettingsChangeRecorder.php for Open Register's own settings: every save door in lib/Service/Settings/ConfigurationSettingsHandler.php (updateSettings, updateRbacSettingsOnly, updateOrganisationSettingsOnly, updateMultitenancySettingsOnly) and lib/Service/Settings/ObjectRetentionHandler.php (object, retention, archival) snapshots before the write and records after it, one row per section.field; schema and register edits use the audit mapper for statistics only (lib/Controller/SchemasController.php:320); role and group changes go to Nextcloud's admin_audit log file (nextcloud/server apps/admin_audit)",
+    "change": "history-schema-and-settings-edits-audited"
    },
    "reachedOn": "audit trail page (/api/audit-trails) for leaf app settings, feature toggles and Open Register's own RBAC, multitenancy, organisation, object, retention and archival settings",
    "provider": "openregister",
@@ -5536,7 +5603,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "no draft or preview state on records: grep draft in lib/Service/Object and lib/Db/ObjectEntity.php finds nothing of the kind, and the only preview routes are for erasure, configuration draft sets and imports (appinfo/routes.php:498, :536); no preview token for a public site"
+    "evidence": "no draft or preview state on records: grep draft in lib/Service/Object and lib/Db/ObjectEntity.php finds nothing of the kind, and the only preview routes are for erasure, configuration draft sets and imports (appinfo/routes.php:498, :536); no preview token for a public site",
+    "change": "records-draft-versions"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -5596,7 +5664,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Service/Object/ValidateObject.php:2144 generateErrorMessage builds fixed English strings such as :2186 'The required property ({property}) is missing'; grep errorMessage or x-error in ValidateObject.php and lib/Service/Schemas/PropertyValidatorHandler.php: no schema key for a custom message"
+    "evidence": "lib/Service/Object/ValidateObject.php:2144 generateErrorMessage builds fixed English strings such as :2186 'The required property ({property}) is missing'; grep errorMessage or x-error in ValidateObject.php and lib/Service/Schemas/PropertyValidatorHandler.php: no schema key for a custom message",
+    "change": "modelling-validation-messages"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -5626,7 +5695,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "no backup feature: grep backup in appinfo/routes.php finds no route, and the lib/Service hits (ChatService, SharedSchemaDedupeService, SchemaTableMigrator, BulkRelationHandler) are internal copies, not backups; Nextcloud's server-side encryption (nextcloud/server apps/encryption) covers stored files only, not the database tables that hold the records"
+    "evidence": "no backup feature: grep backup in appinfo/routes.php finds no route, and the lib/Service hits (ChatService, SharedSchemaDedupeService, SchemaTableMigrator, BulkRelationHandler) are internal copies, not backups; Nextcloud's server-side encryption (nextcloud/server apps/encryption) covers stored files only, not the database tables that hold the records",
+    "change": "exchange-encrypted-instance-export"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -5716,7 +5786,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "no SQL console: the Operations page (src/views/operations/OperationsConsoleIndex.vue:580 -> appinfo/routes.php:1311 operationsConsole#index) shows jobs and failures; ad hoc queries go through GraphQL, appinfo/routes.php:1990 POST /api/graphql and :1991 GET /api/graphql/explorer, and reports can run a GraphQL data source, src/store/modules/reports.js:56 -> src/views/reports/ReportView.vue:482"
+    "evidence": "no SQL console: the Operations page (src/views/operations/OperationsConsoleIndex.vue:580 -> appinfo/routes.php:1311 operationsConsole#index) shows jobs and failures; ad hoc queries go through GraphQL, appinfo/routes.php:1990 POST /api/graphql and :1991 GET /api/graphql/explorer, and reports can run a GraphQL data source, src/store/modules/reports.js:56 -> src/views/reports/ReportView.vue:482",
+    "change": "operate-admin-query-console"
    },
    "reachedOn": "GraphQL explorer page (/api/graphql/explorer) and report data sources",
    "provider": "openregister",
@@ -5776,7 +5847,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "grep diagram, mermaid, cytoscape, vis-network and erd in src: no diagram component (the two hits are wording in delete modals); the model is exported as OpenAPI per register (appinfo/routes.php:1667 oas#generate), not drawn"
+    "evidence": "grep diagram, mermaid, cytoscape, vis-network and erd in src: no diagram component (the two hits are wording in delete modals); the model is exported as OpenAPI per register (appinfo/routes.php:1667 oas#generate), not drawn",
+    "change": "modelling-schema-diagram"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -5836,7 +5908,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "no confidentiality field on a record type: lib/Db/Schema.php and lib/Db/Register.php carry none (Register.php:253 'classification' is the register type); confidentiality exists per record, read under three spellings by lib/Controller/FederationController.php:84-100 to keep non-public records out of federation shares"
+    "evidence": "no confidentiality field on a record type: lib/Db/Schema.php and lib/Db/Register.php carry none (Register.php:253 'classification' is the register type); confidentiality exists per record, read under three spellings by lib/Controller/FederationController.php:84-100 to keep non-public records out of federation shares",
+    "change": "modelling-type-catalogue-metadata"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -5866,7 +5939,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Db/Schema.php:161 description, :168 version, :255 owner, :269 organisation, :445 linked contact ids; the same on lib/Db/Register.php:137, :186, :200, :308; no contact role, source system, update frequency or documentation url field; served by appinfo/routes.php GET /api/schemas/{id} and edited in src/modals/schema/EditSchema.vue"
+    "evidence": "lib/Db/Schema.php:161 description, :168 version, :255 owner, :269 organisation, :445 linked contact ids; the same on lib/Db/Register.php:137, :186, :200, :308; no contact role, source system, update frequency or documentation url field; served by appinfo/routes.php GET /api/schemas/{id} and edited in src/modals/schema/EditSchema.vue",
+    "change": "modelling-type-catalogue-metadata"
    },
    "reachedOn": "schema edit modal and API only: GET /api/schemas/{id}",
    "provider": "openregister",
@@ -5896,7 +5970,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "requests are slowed or refused by rate: lib/Controller/ObjectsController.php:1400 #[UserRateLimit(limit: 600, period: 60)] (19 rate-limit attributes in that controller, enforced by Nextcloud core), per-caller ceilings lib/Middleware/ApiCallerMiddleware.php:136 -> lib/Service/ApiCaller/CallerRateLimiter.php:114 (registered lib/AppInfo/Application.php:752, fails open), tenant quotas lib/AppInfo/Application.php:670 TenantQuotaMiddleware; no circuit breaker on a failing dependency (the only 'circuit breaker' is a table-scan cap, lib/Service/LinkedEntityService.php:55)"
+    "evidence": "requests are slowed or refused by rate: lib/Controller/ObjectsController.php:1400 #[UserRateLimit(limit: 600, period: 60)] (19 rate-limit attributes in that controller, enforced by Nextcloud core), per-caller ceilings lib/Middleware/ApiCallerMiddleware.php:136 -> lib/Service/ApiCaller/CallerRateLimiter.php:114 (registered lib/AppInfo/Application.php:752, fails open), tenant quotas lib/AppInfo/Application.php:670 TenantQuotaMiddleware; no circuit breaker on a failing dependency (the only 'circuit breaker' is a table-scan cap, lib/Service/LinkedEntityService.php:55)",
+    "change": "operate-load-shedding"
    },
    "reachedOn": "API only: every /api/objects route",
    "provider": "openregister",
@@ -5927,7 +6002,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "a record's archive date can be derived from a linked record, lib/Service/Archival/ArchiveActionDateCalculator.php:178-179 brondatumFromRelation, but nothing compares destruction dates across linked records: grep related, relation, linked in lib/Service/Archival/DestructionService.php and DestructionReviewService.php finds nothing; the cascade wording in lib/Service/Archival/ArchivalRetentionGuard.php:134-141 (CONTEXT_CASCADE) has no caller outside the class"
+    "evidence": "a record's archive date can be derived from a linked record, lib/Service/Archival/ArchiveActionDateCalculator.php:178-179 brondatumFromRelation, but nothing compares destruction dates across linked records: grep related, relation, linked in lib/Service/Archival/DestructionService.php and DestructionReviewService.php finds nothing; the cascade wording in lib/Service/Archival/ArchivalRetentionGuard.php:134-141 (CONTEXT_CASCADE) has no caller outside the class",
+    "change": "retention-linked-destruction-conflict"
    },
    "reachedOn": "nothing",
    "provider": "openregister",
@@ -5958,7 +6034,8 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "appinfo/routes.php:1667 GET /api/registers/{id}/oas (called by the frontend) -> lib/Service/OasService.php:386 validateOasIntegrity -> validateNlGovRules, which checks two rules only, /core/http-methods (GET, POST, PUT, PATCH, DELETE, plus HEAD and OPTIONS per the rule's note) and /core/http-response-code, named by their NLGov API Design Rules 2.2.1 ids since #4059; addCrudPaths documents PATCH (merge patch) on every object path, matching objects#patch (appinfo/routes.php:1178); lib/Middleware/ApiVersionMiddleware.php:199 stamps the API-Version header (registered lib/AppInfo/Application.php:740)"
+    "evidence": "appinfo/routes.php:1667 GET /api/registers/{id}/oas (called by the frontend) -> lib/Service/OasService.php:386 validateOasIntegrity -> validateNlGovRules, which checks two rules only, /core/http-methods (GET, POST, PUT, PATCH, DELETE, plus HEAD and OPTIONS per the rule's note) and /core/http-response-code, named by their NLGov API Design Rules 2.2.1 ids since #4059; addCrudPaths documents PATCH (merge patch) on every object path, matching objects#patch (appinfo/routes.php:1178); lib/Middleware/ApiVersionMiddleware.php:199 stamps the API-Version header (registered lib/AppInfo/Application.php:740)",
+    "change": "api-nl-design-rules-conformance"
    },
    "reachedOn": "API only: GET /api/registers/{id}/oas and every API response header",
    "provider": "openregister",

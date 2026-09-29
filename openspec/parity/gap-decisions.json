@@ -18,26 +18,26 @@
   {
     "row": "acc-locked-rows",
     "matrix": "openregister",
-    "decision": "defer",
-    "reason": "No demand row and no competitor rated yes; access is outside the core area (modelling, records).",
+    "decision": "decided-no",
+    "reason": "Decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
     "change": null,
-    "decidedOn": "2026-09-27"
+    "decidedOn": "2026-09-28"
   },
   {
     "row": "ai-field",
     "matrix": "openregister",
-    "decision": "defer",
-    "reason": "No demand row and no competitor rated yes; the ai area is outside the core area.",
+    "decision": "decided-no",
+    "reason": "Decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
     "change": null,
-    "decidedOn": "2026-09-27"
+    "decidedOn": "2026-09-28"
   },
   {
     "row": "ai-generate-type",
     "matrix": "openregister",
-    "decision": "defer",
-    "reason": "Single competitor (directus) and no demand row; outside the core area.",
+    "decision": "decided-no",
+    "reason": "Decided no: Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
     "change": null,
-    "decidedOn": "2026-09-27"
+    "decidedOn": "2026-09-28"
   },
   {
     "row": "ai-translate",
@@ -98,10 +98,10 @@
   {
     "row": "hist-public-audit",
     "matrix": "openregister",
-    "decision": "defer",
-    "reason": "No demand row and no competitor rated yes; outside the core area.",
+    "decision": "decided-no",
+    "reason": "Decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
     "change": null,
-    "decidedOn": "2026-09-27"
+    "decidedOn": "2026-09-28"
   },
   {
     "row": "mod-catalogue-meta",
@@ -1444,6 +1444,470 @@
     "matrix": "pipelinq",
     "decision": "defer",
     "reason": "Decision table contains: pipelinq's merged change puts rules on words in the subject or text out of scope and names it a follow-up, so nothing depends on it. The tender rows behind it (req-mail-routing) ask for rules on address, domain and sender group, which the current comparison and set grammar expresses. No DMN change covers contains.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "mod-field-types",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: core area modelling. Specified in records-form-and-cell-editors.",
+    "change": "records-form-and-cell-editors",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "mod-type-versions",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: core area modelling. Specified in modelling-schema-draft.",
+    "change": "modelling-schema-draft",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "mod-geometry",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: core area modelling. Specified in geometry-on-a-map.",
+    "change": "geometry-on-a-map",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "mod-view-type",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: core area modelling. Specified in modelling-query-backed-type.",
+    "change": "modelling-query-backed-type",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-inline-edit",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: core area records. Specified in records-form-and-cell-editors.",
+    "change": "records-form-and-cell-editors",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-kanban",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change object-views-kanban-calendar covers it (the matrix now names it).",
+    "change": "object-views-kanban-calendar",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-calendar",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change object-views-kanban-calendar covers it (the matrix now names it).",
+    "change": "object-views-kanban-calendar",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-map",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: core area records. Specified in geometry-on-a-map.",
+    "change": "geometry-on-a-map",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-bulk",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change bulk-action-jobs covers it (the matrix now names it).",
+    "change": "bulk-action-jobs",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-revert",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change history-revert-through-the-save-path covers it (the matrix now names it).",
+    "change": "history-revert-through-the-save-path",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-tasks",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change flow-task-entity covers it (the matrix now names it).",
+    "change": "flow-task-entity",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-favourites",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change favourites-and-recent covers it (the matrix now names it).",
+    "change": "favourites-and-recent",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-follow",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change object-watchers covers it (the matrix now names it).",
+    "change": "object-watchers",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-presence",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change object-presence covers it (the matrix now names it).",
+    "change": "object-presence",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-public-form",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change or-form-and-journey-registry covers it (the matrix now names it).",
+    "change": "or-form-and-journey-registry",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-share-link",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change access-by-link-not-by-account covers it (the matrix now names it).",
+    "change": "access-by-link-not-by-account",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-translate",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: core area records. Specified in records-form-and-cell-editors.",
+    "change": "records-form-and-cell-editors",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-move",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change identity-survives-a-move covers it (the matrix now names it).",
+    "change": "identity-survives-a-move",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-unread",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change object-read-state covers it (the matrix now names it).",
+    "change": "object-read-state",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "api-try-docs",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: two or more competitors rate it yes. Specified in api-explorer-in-the-app.",
+    "change": "api-explorer-in-the-app",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "api-filter-ops",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change search-quality-operators-and-facets covers it (the matrix now names it).",
+    "change": "search-quality-operators-and-facets",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "api-filter-related",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change query-related-schema-rows covers it (the matrix now names it).",
+    "change": "query-related-schema-rows",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "api-batch",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: two or more competitors rate it yes. Specified in api-atomic-batch.",
+    "change": "api-atomic-batch",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "api-keys",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change scoped-api-tokens covers it (the matrix now names it).",
+    "change": "scoped-api-tokens",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "api-custom-endpoint",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "srch-fulltext",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "srch-file-content",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change unified-search-file-content covers it (the matrix now names it).",
+    "change": "unified-search-file-content",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "srch-semantic",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "srch-saved-shared",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change view-group-share covers it (the matrix now names it).",
+    "change": "view-group-share",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "srch-geo",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: two or more competitors rate it yes. Specified in geometry-on-a-map.",
+    "change": "geometry-on-a-map",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "acc-department-matrix",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change rbac-department-role-matrix covers it (the matrix now names it).",
+    "change": "rbac-department-role-matrix",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "acc-delegation",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "hist-as-of",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Only objects-api rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "hist-bitemporal",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Only objects-api rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "gdpr-anonymise",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change anonymising-as-an-archival-outcome covers it (the matrix now names it).",
+    "change": "anonymising-as-an-archival-outcome",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "file-image-transform",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "file-redact",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "file-save-to-record",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change files-leaf-save-to-object covers it (the matrix now names it).",
+    "change": "files-leaf-save-to-object",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-webhook-shape",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: two or more competitors rate it yes. Specified in webhook-payload-mapping-picker.",
+    "change": "webhook-payload-mapping-picker",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-bpmn",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: BPMN is an interchange format here by design (flow-bpmn-interchange: import and export, not an engine or editor). No competitor rates it yes and no demand row asks for a BPMN engine. Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-approval",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change records-change-held-for-approval covers it (the matrix now names it).",
+    "change": "records-change-held-for-approval",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-transitions",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-code-hooks",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change flow-code-step-in-a-sidecar covers it (the matrix now names it).",
+    "change": "flow-code-step-in-a-sidecar",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-external-workflow",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Recorded non-goal: ADR-065 makes OpenRegister the only flow engine in the fleet, and the open change retire-external-workflow-engines removes the n8n and windmill adapters. Handing changes to an outside workflow tool is what webhooks already do.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "x-import-file",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change import-preview-and-conflict-policy covers it (the matrix now names it).",
+    "change": "import-preview-and-conflict-policy",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "x-export-pdf",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change export-pdf-house-style covers it (the matrix now names it).",
+    "change": "export-pdf-house-style",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "x-harvest",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "x-federation",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "x-backup",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change exchange-encrypted-instance-export covers it (the matrix now names it).",
+    "change": "exchange-encrypted-instance-export",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "x-mapping-pack",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "ai-chat",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "ai-agent-limits",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: two or more competitors rate it yes. Specified in ai-agent-limits-screen.",
+    "change": "ai-agent-limits-screen",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "op-reports",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "op-bi-feed",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change rapportage-bi-export covers it (the matrix now names it).",
+    "change": "rapportage-bi-export",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "op-otap",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change configuration-as-a-deployment covers it (the matrix now names it).",
+    "change": "configuration-as-a-deployment",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "op-marketplace",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "op-feature-toggles",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change feature-toggle-surface covers it (the matrix now names it).",
+    "change": "feature-toggle-surface",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "ai-summarise",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
     "change": null,
     "decidedOn": "2026-09-28"
   }
