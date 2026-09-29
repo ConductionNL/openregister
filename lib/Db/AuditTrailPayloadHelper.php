@@ -25,7 +25,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db;
 
-use ReflectionClass;
 
 /**
  * Dependency-free helpers for audit-trail payload conversion and reversion.
@@ -95,27 +94,46 @@ class AuditTrailPayloadHelper {
 	}//end isSemanticVersion()
 
 	/**
-	 * Helper function to revert changes from an audit trail entry
+	 * Undo one audit trail entry on an object's data
+	 *
+	 * The change set is keyed by the object's data properties (it is a diff of
+	 * two `jsonSerialize()` outputs), so the old values go back into the data,
+	 * not onto entity properties: a reflection write to a property called
+	 * `title` threw on every revert (#4161). A property the entry added (old
+	 * value null) is removed again. The `@self` metadata and the top-level `id`
+	 * are not data and are left alone, and a create entry is never undone,
+	 * since that would empty the object instead of restoring a state of it.
 	 *
 	 * @param ObjectEntity $object The object to apply reversions to
-	 * @param AuditTrail $audit The audit trail entry
+	 * @param AuditTrail   $audit  The audit trail entry
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	public function revertChanges(ObjectEntity $object, AuditTrail $audit): void {
 		$changes = $audit->getChanged();
-
-		// Iterate through each change and apply the reverse.
-		foreach ($changes as $field => $change) {
-			if (($change['old'] ?? null) !== null) {
-				// Use reflection to set the value if it's a protected property.
-				$reflection = new ReflectionClass($object);
-				$property = $reflection->getProperty($field);
-
-				// Note: setAccessible() is no longer needed in PHP 8.1+ for same-class properties.
-				$property->setValue($object, $change['old']);
-			}
+		if (is_array($changes) === false || $audit->getAction() === 'create') {
+			return;
 		}
+
+		$data = ($object->getObject() ?? []);
+		foreach ($changes as $field => $change) {
+			if ($field === '@self' || $field === 'id' || is_array($change) === false
+				|| array_key_exists('old', $change) === false
+			) {
+				continue;
+			}
+
+			if ($change['old'] === null) {
+				unset($data[$field]);
+				continue;
+			}
+
+			$data[$field] = $change['old'];
+		}
+
+		$object->setObject($data);
 	}//end revertChanges()
 
 	/**
