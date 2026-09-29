@@ -110,26 +110,27 @@ class LegalHoldService {
 	 *
 	 * @param ObjectEntity $object The object to place a hold on.
 	 * @param string $reason The reason for the legal hold (e.g. WOO-verzoek reference).
+	 * @param string|null $ownerKey The matter placing it, e.g. `filinq:legalHoldCase:<uuid>`; null for a manual hold.
 	 *
 	 * @return ObjectEntity The updated object with legal hold applied.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function placeHold(ObjectEntity $object, string $reason): ObjectEntity {
+	public function placeHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
 		$userId = $this->getCurrentUserId();
-		$retention = $object->getRetention() ?? [];
 
-		$holdData = [
-			'active' => true,
-			'reason' => $reason,
-			'placedBy' => $userId,
-			'placedDate' => (new DateTime())->format('c'),
-			'history' => $retention['legalHold']['history'] ?? [],
-		];
-
-		$retention['legalHold'] = $holdData;
-		$object->setRetention($retention);
+		// One hold per matter (#4172): a second matter adds its own hold
+		// instead of overwriting the first one's reason.
+		$object->setRetention(
+			(new LegalHoldLedger())->place(
+				retention: ($object->getRetention() ?? []),
+				reason: $reason,
+				ownerKey: $ownerKey,
+				userId: $userId,
+				now: (new DateTime())->format('c')
+			)
+		);
 
 		$this->objectMapper->update($object);
 
@@ -140,6 +141,7 @@ class LegalHoldService {
 				'line' => __LINE__,
 				'objectId' => $object->getUuid(),
 				'reason' => $reason,
+				'ownerKey' => $ownerKey,
 				'placedBy' => $userId,
 			]
 		);
@@ -152,38 +154,27 @@ class LegalHoldService {
 	 *
 	 * @param ObjectEntity $object The object to release the hold from.
 	 * @param string $reason The reason for releasing the hold.
+	 * @param string|null $ownerKey The matter releasing its own hold; null lifts every hold.
 	 *
 	 * @return ObjectEntity The updated object with legal hold released.
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function releaseHold(ObjectEntity $object, string $reason): ObjectEntity {
+	public function releaseHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
 		$userId = $this->getCurrentUserId();
-		$retention = $object->getRetention() ?? [];
-		$legalHold = $retention['legalHold'] ?? [];
 
-		// Preserve the current hold in history.
-		$history = $legalHold['history'] ?? [];
-		$history[] = [
-			'active' => true,
-			'reason' => $legalHold['reason'] ?? 'unknown',
-			'placedBy' => $legalHold['placedBy'] ?? 'unknown',
-			'placedDate' => $legalHold['placedDate'] ?? null,
-			'releasedBy' => $userId,
-			'releasedDate' => (new DateTime())->format('c'),
-			'releaseReason' => $reason,
-		];
-
-		$retention['legalHold'] = [
-			'active' => false,
-			'reason' => $legalHold['reason'] ?? null,
-			'placedBy' => $legalHold['placedBy'] ?? null,
-			'placedDate' => $legalHold['placedDate'] ?? null,
-			'history' => $history,
-		];
-
-		$object->setRetention($retention);
+		// A matter lifts only its own hold (#4172); naming no matter lifts
+		// every hold, as a release always did.
+		$object->setRetention(
+			(new LegalHoldLedger())->release(
+				retention: ($object->getRetention() ?? []),
+				ownerKey: $ownerKey,
+				releaseReason: $reason,
+				userId: $userId,
+				now: (new DateTime())->format('c')
+			)
+		);
 		$this->objectMapper->update($object);
 
 		$this->logger->info(
@@ -193,6 +184,7 @@ class LegalHoldService {
 				'line' => __LINE__,
 				'objectId' => $object->getUuid(),
 				'releaseReason' => $reason,
+				'ownerKey' => $ownerKey,
 				'releasedBy' => $userId,
 			]
 		);
