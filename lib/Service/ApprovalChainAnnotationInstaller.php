@@ -62,6 +62,20 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 	public const TEMPLATE_VERSION = 1;
 
 	/**
+	 * Tiers mode: only the tier with the highest minAmount at or below the amount.
+	 *
+	 * @var string
+	 */
+	public const TIERS_HIGHEST = 'highest';
+
+	/**
+	 * Tiers mode: every tier at or below the amount, lowest first.
+	 *
+	 * @var string
+	 */
+	public const TIERS_CUMULATIVE = 'cumulative';
+
+	/**
 	 * Namespace prefix for the deterministic template id.
 	 *
 	 * @var string
@@ -163,6 +177,18 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 			return null;
 		}
 
+		// How amount tiers combine: `highest` (the one tier with the highest
+		// minAmount at or below the amount) or `cumulative` (every tier at or
+		// below it). An unknown mode is a misconfiguration: fail closed.
+		$tiers = (string)($spec['tiers'] ?? self::TIERS_HIGHEST);
+		if (in_array($tiers, [self::TIERS_HIGHEST, self::TIERS_CUMULATIVE], true) === false) {
+			$this->logger->error(
+				message: '[ApprovalChainAnnotationInstaller] Unknown tiers mode; the chain is not compiled.',
+				context: ['chain' => $chainKey, 'tiers' => $tiers]
+			);
+			return null;
+		}
+
 		return [
 			'templateId' => $this->templateIdFor(schemaId: (int)$schemaId, chainKey: $chainKey),
 			'templateVersion' => self::TEMPLATE_VERSION,
@@ -172,6 +198,7 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 			'separationOfDuties' => (($spec['separationOfDuties'] ?? true) !== false),
 			'onApprove' => (string)($spec['onApprove'] ?? ''),
 			'amountField' => (string)($spec['amountField'] ?? ''),
+			'tiers' => $tiers,
 			'positions' => $positions,
 		];
 	}//end compile()
