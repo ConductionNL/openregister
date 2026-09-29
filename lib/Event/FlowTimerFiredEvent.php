@@ -56,6 +56,7 @@ class FlowTimerFiredEvent extends Event {
 	 * @param array<int, array{type: string, id: string, role: string}> $recipients The resolved addressees.
 	 * @param string|null $priority The rung's priority.
 	 * @param string|null $message The message identity, resolved downstream.
+	 * @param string|null $consequence What the party is told will happen, for a postBreach rung.
 	 */
 	public function __construct(
 		private readonly FlowTimer $timer,

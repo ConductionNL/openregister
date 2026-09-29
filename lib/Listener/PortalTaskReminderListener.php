@@ -247,7 +247,7 @@ class PortalTaskReminderListener implements IEventListener {
 	 */
 	private function subjectTask(Event $event): ?Task {
 		$timer = $this->read(source: $event, method: 'getTimer');
-		// is_callable, not method_exists: FlowTimer's getters are Entity::__call
+		// Is_callable, not method_exists: FlowTimer's getters are Entity::__call
 		// magic, so method_exists() said no on every real timer and no reminder
 		// ever reached a party; only a fake timer with real methods passed (#4166).
 		if (is_object($timer) === false || is_callable([$timer, 'getSubjectType']) === false || is_callable([$timer, 'getSubjectUuid']) === false) {
