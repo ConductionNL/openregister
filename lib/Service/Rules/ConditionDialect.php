@@ -87,7 +87,7 @@ final class ConditionDialect {
 	 *   JSONLogic facade; calling it statically IS the reuse.
 	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
-	 * @spec openspec/changes/expression-value-sources/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function holds(mixed $node, array $document): bool {
 		if (is_array($node) === false || $node === []) {

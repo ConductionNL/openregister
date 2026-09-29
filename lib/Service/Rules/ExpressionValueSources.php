@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/expression-value-sources/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -70,7 +70,7 @@ class ExpressionValueSources {
 	 *
 	 * @return bool True when a source node is present.
 	 *
-	 * @spec openspec/changes/expression-value-sources/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function mentionsSource(mixed $node): bool {
 		if (is_array($node) === false) {
@@ -98,7 +98,7 @@ class ExpressionValueSources {
 	 * @return array{resolved: bool, node: mixed} The node with values in place,
 	 *                                            and false when any reference stayed unresolved.
 	 *
-	 * @spec openspec/changes/expression-value-sources/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function substitute(mixed $node): array {
 		if (is_array($node) === false) {
