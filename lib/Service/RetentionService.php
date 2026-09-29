@@ -412,10 +412,10 @@ class RetentionService {
 	/**
 	 * Place a legal hold on an object.
 	 *
-	 * @param ObjectEntity $object The object to place hold on
-	 * @param string $reason The reason for the legal hold
+	 * @param ObjectEntity $object   The object to place hold on
+	 * @param string       $reason   The reason for the legal hold
+	 * @param string|null  $ownerKey The matter placing or releasing its own hold; null for a manual hold, or to release every hold.
 	 *
-	 * @param string|null $ownerKey The matter placing or releasing its own hold; null for a manual hold, or to release every hold.
 	 * @return ObjectEntity The object with legal hold applied
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
@@ -444,10 +444,10 @@ class RetentionService {
 	/**
 	 * Release a legal hold on an object.
 	 *
-	 * @param ObjectEntity $object The object to release hold from
-	 * @param string $reason The reason for releasing the hold
+	 * @param ObjectEntity $object   The object to release hold from
+	 * @param string       $reason   The reason for releasing the hold
+	 * @param string|null  $ownerKey The matter placing or releasing its own hold; null for a manual hold, or to release every hold.
 	 *
-	 * @param string|null $ownerKey The matter placing or releasing its own hold; null for a manual hold, or to release every hold.
 	 * @return ObjectEntity The object with legal hold released
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
