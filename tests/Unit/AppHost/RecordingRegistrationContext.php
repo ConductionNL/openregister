@@ -107,6 +107,8 @@ final class RecordingRegistrationContext implements IRegistrationContext {
 	}
 	public function registerSetupCheck(string $setupCheckClass): void {
 	}
+	public function registerSystemReportSection(string $sectionClass): void {
+	}
 	public function registerDeclarativeSettings(string $declarativeSettingsClass): void {
 	}
 	public function registerTaskProcessingProvider(string $taskProcessingProviderClass): void {
