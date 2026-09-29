@@ -1776,12 +1776,26 @@ class ObjectService implements ObjectServiceInterface
             }
 
             // Reject UPDATE operations on append-only schemas (INSERT is still allowed).
+            //
+            // Carrying a uuid is not the same as updating. A caller may choose
+            // the identifier of a new object (an `id` in the body becomes the
+            // uuid above), and xAPI requires exactly that: a statement is stored
+            // under its own id. Treating every uuid as an update refused every
+            // such insert. So the question is whether the object EXISTS.
             if ($uuid !== null && $this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
-                $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
-                throw new AppendOnlyException(
-                    schemaIdentifier: $schemaSlug,
-                    operation: 'update'
-                );
+                if ($this->appendOnlyTargetExists(uuid: $uuid) === true) {
+                    $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
+                    throw new AppendOnlyException(
+                        schemaIdentifier: $schemaSlug,
+                        operation: 'update'
+                    );
+                }
+
+                // Not there now does not mean not there at write time. Make the
+                // write insert-only all the way down, so a concurrent insert of
+                // the same uuid loses at the `_uuid` unique constraint with a
+                // 409 (MagicMapper) instead of being applied as an update.
+                $failIfExists = true;
             }
 
             // Track if UUID was originally null (to distinguish user-provided vs auto-generated UUIDs).
@@ -3140,6 +3154,41 @@ class ObjectService implements ObjectServiceInterface
             // Object doesn't exist yet (new object), no check needed.
         }//end try
     }//end rejectIfTransferred()
+
+    /**
+     * Whether a write with this uuid on an append-only schema would touch a stored object.
+     *
+     * Asked with RBAC and multitenancy OFF and soft-deleted rows included: the
+     * save handler resolves the uuid the same unfiltered way, so an object the
+     * caller cannot see (another tenant's) would otherwise be the one it
+     * updates. The refusal the caller gets is the same whether the stored row
+     * is visible to them or not, so it says no more than the `_uuid` unique
+     * constraint would. Scoped to the register and schema being written to,
+     * like the permission lookup.
+     *
+     * @param string $uuid The uuid the write carries.
+     *
+     * @return bool True when an object with this identifier is stored.
+     *
+     * @spec exclude bug fix: append-only refused every insert carrying a caller-chosen uuid
+     */
+    private function appendOnlyTargetExists(string $uuid): bool
+    {
+        try {
+            $this->objectMapper->find(
+                identifier: $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                includeDeleted: true,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return false;
+        }
+
+        return true;
+    }//end appendOnlyTargetExists()
 
         /**
          * Get the active organization for the current user
