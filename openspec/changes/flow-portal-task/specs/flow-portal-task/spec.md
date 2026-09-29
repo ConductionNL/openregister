@@ -338,3 +338,16 @@ suspension requirement).
 - **THEN** the escalation MUST be addressed to the caseworker role
 - **AND** the party MUST NOT receive it
 - @e2e exclude covered by flow-business-timers rung-addressing unit tests
+
+#### Scenario: An overdue notice reaches the party after the deadline
+
+- **GIVEN** a portal task with a due date and a `postBreach` rung addressed
+  to the party, carrying a `consequence` the case type words
+- **WHEN** the rung fires after the deadline has passed
+- **THEN** an `overdue` delivery MUST be recorded through the portal delivery
+  seam for the matched party, its message carrying the task's title, due
+  date, the rung key and the `consequence`
+- **AND** a `postBreach` rung not addressed to the party MUST record nothing
+  for the party
+- @e2e exclude timer firing is flow-business-timers' surface; covered by
+  PortalTaskReminderListenerTest with the real FlowTimerFiredEvent (#4166)

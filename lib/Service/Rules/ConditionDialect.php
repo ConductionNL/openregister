@@ -59,12 +59,14 @@ final class ConditionDialect {
 	/**
 	 * Constructor.
 	 *
-	 * @param CalculationEvaluator $ast The JSON-AST evaluator.
+	 * @param CalculationEvaluator        $ast     The JSON-AST evaluator.
+	 * @param ExpressionValueSources|null $sources Integriq's value sources; null leaves source nodes unresolved.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly CalculationEvaluator $ast,
+		private readonly ?ExpressionValueSources $sources=null,
 	) {
 	}//end __construct()
 
@@ -85,10 +87,22 @@ final class ConditionDialect {
 	 *   JSONLogic facade; calling it statically IS the reuse.
 	 *
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function holds(mixed $node, array $document): bool {
 		if (is_array($node) === false || $node === []) {
 			return (bool)$node;
+		}
+
+		// A value source node is replaced by its value before either dialect
+		// sees it; an unresolved one fails closed (expression-value-sources D-1, D-3).
+		if ($this->sources !== null && $this->sources->mentionsSource(node: $node) === true) {
+			$substituted = $this->sources->substitute(node: $node);
+			if ($substituted['resolved'] === false) {
+				return false;
+			}
+
+			$node = $substituted['node'];
 		}
 
 		if ($this->isAst(op: (string)array_key_first($node)) === false) {

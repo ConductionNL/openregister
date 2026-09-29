@@ -3240,7 +3240,9 @@ OC.L10N.register(
         "This record has no visible fields.": "Cet enregistrement n'a aucun champ visible.",
         "Upload": "Téléverser",
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ce fournisseur n'est pas encore configuré sur ce serveur. Demandez à votre administrateur de le configurer.",
-        "The provider's server did not accept the connection. Try again later.": "Le serveur du fournisseur n'a pas accepté la connexion. Réessayez plus tard."
+        "The provider's server did not accept the connection. Try again later.": "Le serveur du fournisseur n'a pas accepté la connexion. Réessayez plus tard.",
+        "Consequence": "Conséquence",
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Ce qui se passera si la partie ne répond pas, pour un échelon après l’échéance."
     },
     "nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )

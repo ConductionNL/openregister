@@ -3240,7 +3240,9 @@ OC.L10N.register(
         "This record has no visible fields.": "Ky regjistrim nuk ka fusha të dukshme.",
         "Upload": "Ngarko",
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ky ofrues nuk është konfiguruar ende në këtë server. Kërkoji administratorit ta konfigurojë.",
-        "The provider's server did not accept the connection. Try again later.": "Serveri i ofruesit nuk e pranoi lidhjen. Provo sërish më vonë."
+        "The provider's server did not accept the connection. Try again later.": "Serveri i ofruesit nuk e pranoi lidhjen. Provo sërish më vonë.",
+        "Consequence": "Pasojë",
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Çfarë ndodh nëse pala nuk përgjigjet, për një shkallë pas afatit."
     },
     "nplurals=2; plural=(n != 1);"
 )

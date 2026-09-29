@@ -3240,7 +3240,9 @@ OC.L10N.register(
         "This record has no visible fields.": "Овој запис нема видливи полиња.",
         "Upload": "Прикачи",
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Овој давател сè уште не е поставен на овој сервер. Замоли го администраторот да го конфигурира.",
-        "The provider's server did not accept the connection. Try again later.": "Серверот на давателот не го прифати поврзувањето. Обиди се повторно подоцна."
+        "The provider's server did not accept the connection. Try again later.": "Серверот на давателот не го прифати поврзувањето. Обиди се повторно подоцна.",
+        "Consequence": "Последица",
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Што ќе се случи ако страната не одговори, за чекор по рокот."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -3240,7 +3240,9 @@ OC.L10N.register(
         "This record has no visible fields.": "Tällä tietueella ei ole näkyviä kenttiä.",
         "Upload": "Lähetä",
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Tätä palveluntarjoajaa ei ole vielä määritetty tälle palvelimelle. Pyydä järjestelmänvalvojaa määrittämään se.",
-        "The provider's server did not accept the connection. Try again later.": "Palveluntarjoajan palvelin ei hyväksynyt yhteyttä. Yritä myöhemmin uudelleen."
+        "The provider's server did not accept the connection. Try again later.": "Palveluntarjoajan palvelin ei hyväksynyt yhteyttä. Yritä myöhemmin uudelleen.",
+        "Consequence": "Seuraus",
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mitä tapahtuu, jos osapuoli ei vastaa, määräajan jälkeiselle portaalle."
     },
     "nplurals=2; plural=(n != 1);"
 )

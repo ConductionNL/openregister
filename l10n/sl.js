@@ -3240,7 +3240,9 @@ OC.L10N.register(
         "This record has no visible fields.": "Ta zapis nima vidnih polj.",
         "Upload": "Naloži",
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ta ponudnik na tem strežniku še ni nastavljen. Prosi skrbnika, naj ga nastavi.",
-        "The provider's server did not accept the connection. Try again later.": "Strežnik ponudnika povezave ni sprejel. Poskusi znova pozneje."
+        "The provider's server did not accept the connection. Try again later.": "Strežnik ponudnika povezave ni sprejel. Poskusi znova pozneje.",
+        "Consequence": "Posledica",
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Kaj se zgodi, če stranka ne odgovori, za stopnjo po roku."
     },
     "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);"
 )
