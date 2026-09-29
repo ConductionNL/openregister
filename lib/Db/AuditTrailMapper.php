@@ -1463,73 +1463,103 @@ class AuditTrailMapper extends QBMapper {
 	}//end readProcessingActivityFromRegister()
 
 	/**
-	 * Get audit trails for an object until a specific point or version
+	 * Get the audit trail entries made after a point in an object's history
 	 *
-	 * @param int $objectId The object ID
-	 * @param string $objectUuid The object UUID
-	 * @param DateTime|string|null $until DateTime, AuditTrail ID, or semantic version to get trails until
+	 * These are the entries a revert to that point undoes, newest first. The
+	 * object is matched on `object_uuid`: the table has no `object_id` column,
+	 * and a filter on one made every revert fail (#4161).
+	 *
+	 * - A DateTime returns the entries created at or after it.
+	 * - An audit trail id (int or numeric string) returns this object's entries
+	 *   after that entry, so a revert to it restores the state it recorded.
+	 * - A semantic version returns the entries after the last one that recorded
+	 *   that version.
+	 * - Null returns every entry of the object.
+	 *
+	 * @param string                   $objectUuid The object UUID
+	 * @param DateTime|int|string|null $until      DateTime, AuditTrail ID, or semantic version
 	 *
 	 * @return AuditTrail[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
 	 */
-	public function findByObjectUntil(int $objectId, string $objectUuid, $until = null): array {
+	public function findByObjectUntil(string $objectUuid, DateTime|int|string|null $until = null): array {
 		$qb = $this->db->getQueryBuilder();
 
-		// Base query.
 		$qb->select('*')
 			->from('openregister_audit_trails')
 			->where(
-				$qb->expr()->eq('object_id', $qb->createNamedParameter($objectId, IQueryBuilder::PARAM_INT))
-			)
-			->andWhere(
 				$qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid, IQueryBuilder::PARAM_STR))
 			)
-			->orderBy('created', 'DESC');
+			->orderBy('created', 'DESC')
+			->addOrderBy('id', 'DESC');
 
-		// Add condition based on until parameter.
-		if ($until instanceof \DateTime === true) {
+		if ($until instanceof DateTime === true) {
 			$qb->andWhere(
 				$qb->expr()->gte(
 					'created',
-					$qb->createNamedParameter(
-						$until->format('Y-m-d H:i:s'),
-						IQueryBuilder::PARAM_STR
-					)
+					$qb->createNamedParameter($until->format('Y-m-d H:i:s'), IQueryBuilder::PARAM_STR)
 				)
 			);
 		}
 
-		if (is_string($until) === true) {
-			if ($this->payloadHelper->isSemanticVersion(version: $until) === false) {
-				// Handle audit trail ID.
-				$qb->andWhere(
-					$qb->expr()->eq('id', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
-				);
-				// We want all entries up to and including this ID.
-				$qb->orWhere(
-					$qb->expr()->gt(
-						'created',
-						$qb->createFunction(
-							sprintf(
-								'(SELECT created FROM `*PREFIX*openregister_audit_trails` WHERE id = %s)',
-								$qb->createNamedParameter($until, IQueryBuilder::PARAM_STR)
-							)
-						)
-					)
-				);
+		if (is_int($until) === true || is_string($until) === true) {
+			$afterId = $this->auditIdOfRevertPoint(objectUuid: $objectUuid, until: (string) $until);
+			if ($afterId === null) {
+				return [];
 			}
 
-			if ($this->payloadHelper->isSemanticVersion(version: $until) === true) {
-				// Handle semantic version.
-				$qb->andWhere(
-					$qb->expr()->eq('version', $qb->createNamedParameter($until, IQueryBuilder::PARAM_STR))
-				);
-			}//end if
-		}//end if
+			$qb->andWhere($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)));
+		}
 
 		return $this->findEntities(query: $qb);
 	}//end findByObjectUntil()
+
+	/**
+	 * Resolve a revert point given as an audit trail id or a version to the id of its entry
+	 *
+	 * @param string $objectUuid The object UUID
+	 * @param string $until      An audit trail id or a semantic version
+	 *
+	 * @return int|null The entry id, or null when the object has no such entry
+	 */
+	private function auditIdOfRevertPoint(string $objectUuid, string $until): ?int {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('id')
+			->from('openregister_audit_trails')
+			->where(
+				$qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid, IQueryBuilder::PARAM_STR))
+			)
+			->orderBy('id', 'DESC')
+			->setMaxResults(1);
+
+		// A semantic version matches the version column, anything else is an audit trail id.
+		$column = 'id';
+		$value  = (int) $until;
+		$type   = IQueryBuilder::PARAM_INT;
+		if ($this->payloadHelper->isSemanticVersion(version: $until) === true) {
+			$column = 'version';
+			$value  = $until;
+			$type   = IQueryBuilder::PARAM_STR;
+		}
+
+		$qb->andWhere($qb->expr()->eq($column, $qb->createNamedParameter($value, $type)));
+
+		$result = $qb->executeQuery();
+		try {
+			$row = $result->fetch();
+		} finally {
+			$result->closeCursor();
+		}
+
+		if (is_array($row) === false) {
+			return null;
+		}
+
+		return (int) $row['id'];
+	}//end auditIdOfRevertPoint()
 
 	/**
 	 * Revert an object to a previous state
@@ -1552,7 +1582,6 @@ class AuditTrailMapper extends QBMapper {
 
 		// Get audit trail entries until the specified point.
 		$auditTrails = $this->findByObjectUntil(
-			objectId: $object->getId(),
 			objectUuid: $object->getUuid(),
 			until: $until
 		);
