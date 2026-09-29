@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -282,6 +283,40 @@ class SchemaKeepsTheRbacControlBlocksTest extends TestCase {
 			'a schema declaring a department matrix could not be saved at all'
 		);
 	}//end testADepartmentMatrixIsAcceptedByTheAuthorizationValidator()
+
+	/**
+	 * A property that audits its reveals can be saved.
+	 *
+	 * `audit: true` on a property's block is the sensitive-field-reveal-audit
+	 * flag RevealCollector reads. It was missing from the control keys, so it
+	 * was read as a verb and every schema declaring it was refused with
+	 * "Invalid authorization action 'audit'". Seen live 2026-09-29: learniq's
+	 * LearnerProfile (personalNumber, the BSN) could not be imported at all.
+	 *
+	 * @return void
+	 */
+	public function testAPropertyThatAuditsItsRevealsCanBeSaved(): void {
+		$this->assertContains(RevealCollector::AUDIT_KEY, PermissionCatalogue::CONTROL_KEYS);
+
+		$schema = new Schema();
+		$schema->setProperties(
+			[
+				'personalNumber' => [
+					'type' => 'string',
+					'authorization' => [
+						'read' => ['administration-managers'],
+						'update' => ['administration-managers'],
+						RevealCollector::AUDIT_KEY => true,
+					],
+				],
+			]
+		);
+
+		$this->assertTrue(
+			$schema->validateAuthorization(),
+			'a property declaring authorization.audit could not be saved at all'
+		);
+	}//end testAPropertyThatAuditsItsRevealsCanBeSaved()
 
 	/**
 	 * EVERY key the catalogue calls a control is accepted as a control.
