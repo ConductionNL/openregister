@@ -2,7 +2,7 @@
 
 ## ADDED Requirements
 
-### Requirement: REQ-010 Amount tiers can be cumulative
+### Requirement: REQ-011 Amount tiers can be cumulative
 
 A chain declaration with `amountField` MAY set `tiers` to `cumulative`. The gate SHALL then provision every approver entry whose `minAmount` is at or below the object's amount, ordered by `minAmount` from low to high, as consecutive steps. An amount below the lowest tier SHALL need no approval and the transition SHALL go ahead. Without `tiers`, or with `tiers: highest`, routing SHALL stay as REQ-008 describes. Any other value SHALL make the chain misconfigured and the gated transition SHALL be refused.
 
