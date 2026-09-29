@@ -177,13 +177,6 @@ class PortalTaskReminderListener implements IEventListener {
 	}//end remind()
 
 	/**
-	 * The rung's trigger: the first segment of its key.
-	 *
-	 * @param string $rungKey The rung key.
-	 *
-	 * @return string `preBreach`, `slaBreached`, or whatever an author keyed it.
-	 */
-	/**
 	 * The consequence line a postBreach rung carries, when the event has one.
 	 *
 	 * @param Event $event The fired timer event.
@@ -205,6 +198,13 @@ class PortalTaskReminderListener implements IEventListener {
 		return $consequence;
 	}//end consequenceOf()
 
+	/**
+	 * The rung's trigger: the first segment of its key.
+	 *
+	 * @param string $rungKey The rung key.
+	 *
+	 * @return string `preBreach`, `slaBreached`, or whatever an author keyed it.
+	 */
 	private function triggerOf(string $rungKey): string {
 		$segments = explode(':', $rungKey, 2);
 

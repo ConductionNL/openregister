@@ -32,6 +32,8 @@ use OCA\OpenRegister\Service\Flow\Timer\EscalationLadderService;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerDefinitionStore;
 use OCA\OpenRegister\Service\Flow\Timer\SlaCalculator;
 use OCA\OpenRegister\Service\Flow\Timer\WorkingCalendar;
+use Opis\JsonSchema\Errors\ErrorFormatter;
+use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -269,13 +271,70 @@ class EscalationLadderServiceTest extends TestCase {
 	}//end testAPostBreachRungFallsAfterTheDeadlineAndCarriesItsConsequence()
 
 	/**
-	 * The shipped register schema accepts the rung the service now accepts (#4166).
+	 * The shipped escalation-ladder schema validates a ladder with a postBreach rung (#4166).
+	 *
+	 * The payload is the one an administrator saves; the real JSON Schema validator
+	 * judges it against the real schema fragment, not a hand-read of its enum.
+	 *
+	 * @return void
 	 */
 	public function testTheLadderSchemaAcceptsAPostBreachRung(): void {
-		$data = json_decode((string)file_get_contents(__DIR__ . '/../../../../../lib/Settings/flow_timer_register.json'), true);
-		$rung = $data['components']['schemas']['escalation-ladder']['properties']['rungs']['items'];
+		$result = (new Validator())->validate($this->ladderPayload(trigger: 'postBreach'), $this->ladderSchema());
 
-		self::assertContains('postBreach', $rung['properties']['trigger']['enum']);
-		self::assertSame('string', $rung['properties']['consequence']['type']);
+		$errors = [];
+		if ($result->hasError() === true) {
+			$errors = (new ErrorFormatter())->format($result->error());
+		}
+
+		self::assertTrue($result->isValid(), (string)json_encode($errors));
 	}//end testTheLadderSchemaAcceptsAPostBreachRung()
+
+	/**
+	 * Control: the same schema refuses a trigger it does not know, so the test above can fail.
+	 *
+	 * @return void
+	 */
+	public function testTheLadderSchemaRefusesAnUnknownTrigger(): void {
+		self::assertFalse((new Validator())->validate($this->ladderPayload(trigger: 'afterBreach'), $this->ladderSchema())->isValid());
+	}//end testTheLadderSchemaRefusesAnUnknownTrigger()
+
+	/**
+	 * The escalation-ladder schema fragment as the register ships it.
+	 *
+	 * @return string
+	 */
+	private function ladderSchema(): string {
+		$data = json_decode((string)file_get_contents(__DIR__ . '/../../../../../lib/Settings/flow_timer_register.json'), true);
+
+		return (string)json_encode($data['components']['schemas']['escalation-ladder']);
+	}//end ladderSchema()
+
+	/**
+	 * A ladder with one rung after the deadline that carries a consequence.
+	 *
+	 * @param string $trigger The rung trigger.
+	 *
+	 * @return object
+	 */
+	private function ladderPayload(string $trigger): object {
+		return json_decode(
+			(string)json_encode(
+				[
+					'slug' => 'intake-ladder',
+					'rungs' => [
+						[
+							'key' => $trigger.':2:calendarDays',
+							'trigger' => $trigger,
+							'offset' => 2,
+							'offsetUnit' => 'calendarDays',
+							'notifyRole' => ['handler'],
+							'priority' => 'high',
+							'message' => 'portal.task.overdue',
+							'consequence' => 'we decide on what we have',
+						],
+					],
+				]
+			)
+		);
+	}//end ladderPayload()
 }//end class
