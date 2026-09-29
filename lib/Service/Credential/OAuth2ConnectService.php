@@ -112,9 +112,10 @@ class OAuth2ConnectService {
 	 * @param array<string, mixed> $claims The claims assembled so far.
 	 * @param string $redirectUri The callback to register.
 	 *
-	 * @return array<string, mixed> The claims, carrying a client id and its credentialRef.
+	 * @return array<string, mixed> The claims, carrying a client id and its credentialRef, and
+	 *                              OAuth2InstanceClient::MINTED_KEY when a new client was registered.
 	 *
-	 * @throws RuntimeException When the account's server refuses the registration.
+	 * @throws OAuth2RegistrationFailedException When the account's server refuses the registration.
 	 *
 	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */

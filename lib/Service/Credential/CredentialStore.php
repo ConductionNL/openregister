@@ -51,7 +51,7 @@ interface CredentialStore {
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
-	public function put(string $uuid, string $secret, string $scope = 'personal'): void;
+	public function put(string $uuid, #[\SensitiveParameter] string $secret, string $scope = 'personal'): void;
 
 	/**
 	 * Retrieve the secret for a credential, or null when none is stored.

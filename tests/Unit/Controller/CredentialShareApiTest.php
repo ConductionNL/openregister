@@ -369,7 +369,8 @@ class CredentialShareApiTest extends TestCase {
 			$this->createMock(CredentialBrokerService::class),
 			$this->createMock(CredentialAppTokenService::class),
 			$this->createMock(OrganisationService::class),
-			new SharePrincipalDeriver()
+			new SharePrincipalDeriver(),
+			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);
 	}
 }

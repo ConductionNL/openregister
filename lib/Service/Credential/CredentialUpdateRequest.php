@@ -22,9 +22,13 @@
  * nothing; it is a client that sent the field without meaning to, and honouring it
  * would break every call on the credential.
  *
+ * DOES IT FIT THE SCHEMA. The secret is written before the metadata is saved, and the
+ * save is where the schema validates. Its length bounds are checked here first, so a
+ * request refused for its input never rotates the secret.
+ *
  * It lives beside the controller rather than inside it because these are decisions
  * about a request, each with a stated reason, and a controller method that inlined
- * all three read as a list of ifs whose reasons had nowhere to live.
+ * all of them read as a list of ifs whose reasons had nowhere to live.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Credential
@@ -46,9 +50,19 @@ namespace OCA\OpenRegister\Service\Credential;
 use OCP\IRequest;
 
 /**
- * Reads the three decisions an update request carries.
+ * Reads the decisions an update request carries.
  */
 class CredentialUpdateRequest {
+	/**
+	 * The `brokeredcredential` schema's maxLength for `name`.
+	 */
+	public const NAME_MAX_LENGTH = 255;
+
+	/**
+	 * The `brokeredcredential` schema's maxLength for each `allowedApps` entry.
+	 */
+	public const APP_ID_MAX_LENGTH = 64;
+
 	/**
 	 * Constructor.
 	 *
@@ -98,6 +112,37 @@ class CredentialUpdateRequest {
 
 		return trim($proposed) !== (string)($data['instanceBaseUrl'] ?? '');
 	}//end wouldRepointHost()
+
+	/**
+	 * Whether the updated property bag breaks a length bound of the schema.
+	 *
+	 * Counted in characters, as JSON Schema's maxLength is, not in bytes.
+	 *
+	 * @param array<string, mixed> $data The property bag with the request's edits applied.
+	 *
+	 * @return boolean True when the name or an allowed app id is too long.
+	 *
+	 * @spec openspec/specs/credential-broker/spec.md
+	 */
+	public function exceedsBounds(array $data): bool {
+		$name = $data['name'] ?? '';
+		if (is_string($name) === true && mb_strlen($name) > self::NAME_MAX_LENGTH) {
+			return true;
+		}
+
+		$apps = $data['allowedApps'] ?? [];
+		if (is_array($apps) === false) {
+			return false;
+		}
+
+		foreach ($apps as $app) {
+			if (is_string($app) === true && mb_strlen($app) > self::APP_ID_MAX_LENGTH) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end exceedsBounds()
 
 	/**
 	 * The rotated secret this request carries, or null when it carries none.

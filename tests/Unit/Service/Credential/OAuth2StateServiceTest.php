@@ -38,7 +38,10 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2StateService
  */
 class OAuth2StateServiceTest extends TestCase {
-	/** @var array<string, string> The fake encrypted vault. */
+	/** @var string Separates the owner from the identifier in a fake vault key. */
+	private const OWNER_SEPARATOR = '|';
+
+	/** @var array<string, string> The fake encrypted vault, keyed by owner, separator and identifier. */
 	private array $vault = [];
 
 	protected function setUp(): void {
@@ -166,6 +169,39 @@ class OAuth2StateServiceTest extends TestCase {
 	}
 
 	/**
+	 * The pending record's key fits Nextcloud's credential vault, whose
+	 * `oc_storages_credentials.identifier` column holds 64 characters. A longer
+	 * key fails the insert, and with it every connect start, wherever the length
+	 * is enforced (PostgreSQL, MySQL in strict mode).
+	 *
+	 * @return void
+	 */
+	public function testThePendingRecordKeyFitsTheVaultIdentifierColumn(): void {
+		$this->makeService()->issue(claims: ['sub' => 'user-1']);
+
+		self::assertNotEmpty($this->vault);
+		foreach (array_keys($this->vault) as $key) {
+			$identifier = substr($key, (strpos($key, self::OWNER_SEPARATOR) + 1));
+			self::assertLessThanOrEqual(64, strlen($identifier), $identifier);
+		}
+	}
+
+	/**
+	 * A withdrawn flow leaves nothing in the vault, and its state no longer redeems.
+	 *
+	 * @return void
+	 */
+	public function testAWithdrawnStateLeavesNothingBehindAndCannotBeRedeemed(): void {
+		$service = $this->makeService();
+		$issued = $service->issue(claims: ['sub' => 'user-1']);
+
+		$service->withdraw(nonce: $issued['nonce']);
+
+		self::assertSame([], $this->vault);
+		self::assertNull($service->consume(state: $issued['state']));
+	}
+
+	/**
 	 * Build the service with a deterministic signer, random source and vault.
 	 *
 	 * @return OAuth2StateService The service under test.
@@ -186,18 +222,21 @@ class OAuth2StateServiceTest extends TestCase {
 		);
 
 		$vault = $this->createMock(ICredentialsManager::class);
+		// Keyed by owner AND identifier, as the real vault is: a call made under
+		// the wrong owner then misses the record instead of passing by accident.
 		$vault->method('store')->willReturnCallback(
 			function (string $user, string $identifier, $value): void {
-				$this->vault[$identifier] = (string)$value;
+				$this->vault[$user . self::OWNER_SEPARATOR . $identifier] = (string)$value;
 			}
 		);
 		$vault->method('retrieve')->willReturnCallback(
-			fn (string $user, string $identifier) => ($this->vault[$identifier] ?? null)
+			fn (string $user, string $identifier) => ($this->vault[$user . self::OWNER_SEPARATOR . $identifier] ?? null)
 		);
 		$vault->method('delete')->willReturnCallback(
 			function (string $user, string $identifier): int {
-				$existed = (int)array_key_exists($identifier, $this->vault);
-				unset($this->vault[$identifier]);
+				$key = $user . self::OWNER_SEPARATOR . $identifier;
+				$existed = (int)array_key_exists($key, $this->vault);
+				unset($this->vault[$key]);
 				return $existed;
 			}
 		);

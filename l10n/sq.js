@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Kjo lidhje është e mbrojtur me fjalëkalim",
         "This link is open until {date}.": "Kjo lidhje është e hapur deri më {date}.",
         "This record has no visible fields.": "Ky regjistrim nuk ka fusha të dukshme.",
-        "Upload": "Ngarko"
+        "Upload": "Ngarko",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ky ofrues nuk është konfiguruar ende në këtë server. Kërkoji administratorit ta konfigurojë.",
+        "The provider's server did not accept the connection. Try again later.": "Serveri i ofruesit nuk e pranoi lidhjen. Provo sërish më vonë."
     },
     "nplurals=2; plural=(n != 1);"
 )

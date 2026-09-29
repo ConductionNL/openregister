@@ -220,7 +220,8 @@ class CredentialBrokerActingUserTest extends TestCase {
 			$broker,
 			$tokenService,
 			$this->createMock(OrganisationService::class),
-			new SharePrincipalDeriver()
+			new SharePrincipalDeriver(),
+			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);
 
 		$response = $controller->brokerRequest(self::UUID);

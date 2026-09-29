@@ -3238,7 +3238,9 @@ OC.L10N.register(
         "This link is closed with a password": "Questa colliaziun è protegida cun in pled-clav",
         "This link is open until {date}.": "Questa colliaziun è averta fin ils {date}.",
         "This record has no visible fields.": "Quest register n'ha nagins champs visibels.",
-        "Upload": "Chargiar si"
+        "Upload": "Chargiar si",
+        "This provider is not set up on this server yet. Ask your administrator to configure it.": "Quest purschider n'è anc betg configurà sin quest server. Dumonda tes administratur da al configurar.",
+        "The provider's server did not accept the connection. Try again later.": "Il server dal purschider n'ha betg acceptà la colliaziun. Emprova pli tard anc ina giada."
     },
     "nplurals=2; plural=(n != 1);"
 )
