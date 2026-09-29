@@ -171,11 +171,18 @@ class MigratedSqliteDatabase {
 			class: ISchemaWrapper::class,
 			bridged: ['getTable', 'hasTable', 'createTable', 'dropTable', 'getTables', 'getTableNames', 'getTableNamesWithoutPrefix', 'getDatabasePlatform']
 		);
-		$wrapper->method('getTable')->willReturnCallback(fn ($name) => $schema->getTable($name));
+		$wrapper->method('getTable')->willReturnCallback(fn ($name) => self::table(table: $schema->getTable($name)));
 		$wrapper->method('hasTable')->willReturnCallback(fn ($name) => $schema->hasTable($name));
-		$wrapper->method('createTable')->willReturnCallback(fn ($name) => $schema->createTable($name));
-		$wrapper->method('dropTable')->willReturnCallback(fn ($name) => $schema->dropTable($name));
-		$wrapper->method('getTables')->willReturnCallback(fn () => $schema->getTables());
+		$wrapper->method('createTable')->willReturnCallback(fn ($name) => self::table(table: $schema->createTable($name)));
+		$wrapper->method('dropTable')->willReturnCallback(
+			function ($name) use ($schema, &$wrapper) {
+				$schema->dropTable($name);
+				return $wrapper;
+			}
+		);
+		$wrapper->method('getTables')->willReturnCallback(
+			fn () => array_values(array_map(fn ($table) => self::table(table: $table), $schema->getTables()))
+		);
 		$names = fn () => array_map(fn ($table) => $table->getName(), $schema->getTables());
 		$wrapper->method('getTableNames')->willReturnCallback($names);
 		$wrapper->method('getTableNamesWithoutPrefix')->willReturnCallback($names);
@@ -183,6 +190,39 @@ class MigratedSqliteDatabase {
 
 		return $wrapper;
 	}//end schemaWrapper()
+
+	/**
+	 * A table in the shape the running Nextcloud's ISchemaWrapper returns.
+	 *
+	 * Up to Nextcloud 34 the wrapper hands out the Doctrine table itself. From
+	 * Nextcloud 35 `getTable()`/`createTable()` are typed `OCP\DB\Schema\ITable`,
+	 * and the real wrapper wraps the Doctrine table in `OC\DB\Schema\Table`.
+	 * A mock returning the bare Doctrine table there fails its own return type,
+	 * which is how every test on this class errored on the stable35 CI cell.
+	 *
+	 * @param \Doctrine\DBAL\Schema\Table $table The Doctrine table.
+	 *
+	 * @return object The Doctrine table, or its NC 35 wrapper.
+	 */
+	private static function table(\Doctrine\DBAL\Schema\Table $table): object {
+		$returnType = (new \ReflectionMethod(ISchemaWrapper::class, 'createTable'))->getReturnType();
+		$wants      = null;
+		if ($returnType instanceof ReflectionNamedType) {
+			$wants = $returnType->getName();
+		}
+
+		if ($wants === null || $table instanceof $wants) {
+			return $table;
+		}
+
+		if (class_exists(\OC\DB\Schema\Table::class) === false) {
+			throw new \RuntimeException(
+				'ISchemaWrapper returns ' . $wants . ' but OC\\DB\\Schema\\Table is not loadable to wrap the Doctrine table.'
+			);
+		}
+
+		return new \OC\DB\Schema\Table($table);
+	}//end table()
 
 	/**
 	 * Instantiate a migration with mocks for its constructor arguments.
@@ -277,14 +317,31 @@ class MigratedSqliteDatabase {
 	 * @return IResult
 	 */
 	private function result(array $rows): IResult {
-		$result = self::mock(test: $this->test, class: IResult::class, bridged: ['fetch', 'fetchAll', 'closeCursor']);
-		$result->method('fetch')->willReturnCallback(
-			function () use (&$rows) {
-				$row = array_shift($rows);
-				return $row ?? false;
-			}
-		);
-		$result->method('fetchAll')->willReturnCallback(fn () => $rows);
+		// Nextcloud 35's QBMapper reads with fetchAssociative(); older releases
+		// use fetch(). Bridge whichever the loaded IResult declares, so the same
+		// test runs against both.
+		$single = array_values(array_filter(['fetch', 'fetchAssociative'], fn ($m) => method_exists(IResult::class, $m)));
+		$all    = array_values(array_filter(['fetchAll', 'fetchAllAssociative'], fn ($m) => method_exists(IResult::class, $m)));
+		$result = self::mock(test: $this->test, class: IResult::class, bridged: array_merge($single, $all, ['closeCursor']));
+		foreach ($single as $method) {
+			$result->method($method)->willReturnCallback(
+				function () use (&$rows) {
+					$row = array_shift($rows);
+					return $row ?? false;
+				}
+			);
+		}
+
+		foreach ($all as $method) {
+			$result->method($method)->willReturnCallback(
+				function () use (&$rows) {
+					$remaining = $rows;
+					$rows      = [];
+					return $remaining;
+				}
+			);
+		}
+
 		$result->method('closeCursor')->willReturn(true);
 
 		return $result;
