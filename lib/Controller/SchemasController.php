@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
@@ -980,6 +981,10 @@ class SchemasController extends Controller {
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
 			);
+		} catch (InvalidAuthorizationRuleException $e) {
+			// A malformed authorization rule names its action, property and
+			// operator; the author needs that, not a bare 500 (#4162).
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: InvalidAuthorizationRuleException::HTTP_STATUS);
 		} catch (DBException $e) {
 			// Handle database constraint violations with user-friendly messages.
 			$constraintException = DatabaseConstraintException::fromDatabaseException(dbException: $e, entityType: 'schema');
@@ -1283,6 +1288,10 @@ class SchemasController extends Controller {
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
 			);
+		} catch (InvalidAuthorizationRuleException $e) {
+			// A malformed authorization rule names its action, property and
+			// operator; the author needs that, not a bare 500 (#4162).
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: InvalidAuthorizationRuleException::HTTP_STATUS);
 		} catch (DBException $e) {
 			// Handle database constraint violations with user-friendly messages.
 			$constraintException = DatabaseConstraintException::fromDatabaseException(
@@ -1823,6 +1832,10 @@ class SchemasController extends Controller {
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
 			);
+		} catch (InvalidAuthorizationRuleException $e) {
+			// A malformed authorization rule names its action, property and
+			// operator; the author needs that, not a bare 500 (#4162).
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: InvalidAuthorizationRuleException::HTTP_STATUS);
 		} catch (DBException $e) {
 			// Handle database constraint violations with user-friendly messages.
 			$constraintException = DatabaseConstraintException::fromDatabaseException(
