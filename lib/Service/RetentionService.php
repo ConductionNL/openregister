@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Service;
 use DateInterval;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Service\Archival\LegalHoldLedger;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -411,30 +412,31 @@ class RetentionService {
 	/**
 	 * Place a legal hold on an object.
 	 *
-	 * @param ObjectEntity $object The object to place hold on
-	 * @param string $reason The reason for the legal hold
+	 * @param ObjectEntity $object   The object to place hold on
+	 * @param string       $reason   The reason for the legal hold
+	 * @param string|null  $ownerKey The matter placing or releasing its own hold; null for a manual hold, or to release every hold.
 	 *
 	 * @return ObjectEntity The object with legal hold applied
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function placeLegalHold(ObjectEntity $object, string $reason): ObjectEntity {
-		$retention = $object->getRetention() ?? [];
+	public function placeLegalHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
 		$user = $this->userSession->getUser();
 		$userId = 'system';
 		if ($user !== null) {
 			$userId = $user->getUID();
 		}
 
-		$retention['legalHold'] = [
-			'active' => true,
-			'reason' => $reason,
-			'placedBy' => $userId,
-			'placedDate' => (new DateTime())->format('c'),
-			'history' => $retention['legalHold']['history'] ?? [],
-		];
-
-		$object->setRetention($retention);
+		// One hold per matter, the same ledger LegalHoldService writes (#4172).
+		$object->setRetention(
+			(new LegalHoldLedger())->place(
+				retention: ($object->getRetention() ?? []),
+				reason: $reason,
+				ownerKey: $ownerKey,
+				userId: $userId,
+				now: (new DateTime())->format('c')
+			)
+		);
 
 		return $object;
 	}//end placeLegalHold()
@@ -442,18 +444,18 @@ class RetentionService {
 	/**
 	 * Release a legal hold on an object.
 	 *
-	 * @param ObjectEntity $object The object to release hold from
-	 * @param string $reason The reason for releasing the hold
+	 * @param ObjectEntity $object   The object to release hold from
+	 * @param string       $reason   The reason for releasing the hold
+	 * @param string|null  $ownerKey The matter placing or releasing its own hold; null for a manual hold, or to release every hold.
 	 *
 	 * @return ObjectEntity The object with legal hold released
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function releaseLegalHold(ObjectEntity $object, string $reason): ObjectEntity {
+	public function releaseLegalHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
 		$retention = $object->getRetention() ?? [];
-		$legalHold = $retention['legalHold'] ?? null;
-
-		if ($legalHold === null || ($legalHold['active'] ?? false) === false) {
+		$ledger = new LegalHoldLedger();
+		if ($ledger->activeHolds(retention: $retention) === []) {
 			return $object;
 		}
 
@@ -463,25 +465,15 @@ class RetentionService {
 			$userId = $user->getUID();
 		}
 
-		// Move current hold to history.
-		$historyEntry = [
-			'reason' => $legalHold['reason'] ?? '',
-			'placedBy' => $legalHold['placedBy'] ?? '',
-			'placedDate' => $legalHold['placedDate'] ?? '',
-			'releasedBy' => $userId,
-			'releasedDate' => (new DateTime())->format('c'),
-			'releaseReason' => $reason,
-		];
-
-		$history = $legalHold['history'] ?? [];
-		$history[] = $historyEntry;
-
-		$retention['legalHold'] = [
-			'active' => false,
-			'history' => $history,
-		];
-
-		$object->setRetention($retention);
+		$object->setRetention(
+			$ledger->release(
+				retention: $retention,
+				ownerKey: $ownerKey,
+				releaseReason: $reason,
+				userId: $userId,
+				now: (new DateTime())->format('c')
+			)
+		);
 
 		return $object;
 	}//end releaseLegalHold()
