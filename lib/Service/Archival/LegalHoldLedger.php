@@ -73,18 +73,19 @@ class LegalHoldLedger {
 		$holds = $this->holds(legalHold: ($retention['legalHold'] ?? null));
 
 		$index = $this->indexOf(holds: $holds, ownerKey: $ownerKey);
-		if ($index === null) {
-			$holds[] = [
-				'id' => Uuid::v4()->toRfc4122(),
-				'ownerKey' => $ownerKey,
-				'reason' => $reason,
-				'placedBy' => $userId,
-				'placedDate' => $now,
-			];
-		} else {
+		if ($index !== null) {
 			// The same matter restating its hold keeps its id and first placement.
 			$holds[$index]['reason'] = $reason;
+			return $this->write(retention: $retention, holds: $holds);
 		}
+
+		$holds[] = [
+			'id' => Uuid::v4()->toRfc4122(),
+			'ownerKey' => $ownerKey,
+			'reason' => $reason,
+			'placedBy' => $userId,
+			'placedDate' => $now,
+		];
 
 		return $this->write(retention: $retention, holds: $holds);
 	}//end place()
