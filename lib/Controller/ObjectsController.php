@@ -48,6 +48,7 @@ use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\LockedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ReferentialIntegrityException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
@@ -3760,6 +3761,10 @@ class ObjectsController extends Controller {
 				data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
 				statusCode: 422
 			);
+		} catch (ObjectStateWriteException $exception) {
+			// An archived or frozen object refuses the write with 409 and the
+			// reason, as a revert does; it fell into the generic handler (#4161).
+			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: ObjectStateWriteException::HTTP_STATUS);
 		} catch (LockedException $exception) {
 			// A lock taken between this handler's pre-read and the save reaches
 			// here as the service-layer guard's typed refusal. Caught before
@@ -3995,6 +4000,10 @@ class ObjectsController extends Controller {
 				data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
 				statusCode: 422
 			);
+		} catch (ObjectStateWriteException $exception) {
+			// An archived or frozen object refuses the write with 409 and the
+			// reason, as a revert does; it fell into the generic handler (#4161).
+			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: ObjectStateWriteException::HTTP_STATUS);
 		} catch (LockedException $exception) {
 			// A lock taken between this handler's pre-read and the save reaches
 			// here as the service-layer guard's typed refusal. Caught before
@@ -4156,6 +4165,10 @@ class ObjectsController extends Controller {
 				data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
 				statusCode: 422
 			);
+		} catch (ObjectStateWriteException $exception) {
+			// An archived or frozen object refuses the write with 409 and the
+			// reason, as a revert does; it fell into the generic handler (#4161).
+			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: ObjectStateWriteException::HTTP_STATUS);
 		} catch (LockedException $exception) {
 			// A lock taken between this handler's pre-read and the save reaches
 			// here as the service-layer guard's typed refusal. Caught before
