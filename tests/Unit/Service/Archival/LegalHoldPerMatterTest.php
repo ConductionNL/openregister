@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/legal-hold-per-matter/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
  */
 
 declare(strict_types=1);

@@ -34,7 +34,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/legal-hold-per-matter/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -66,7 +66,7 @@ class LegalHoldLedger {
 	 *
 	 * @return array The retention array with the hold in place.
 	 *
-	 * @spec openspec/changes/legal-hold-per-matter/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function place(array $retention, string $reason, ?string $ownerKey, string $userId, string $now): array {
 		$ownerKey = $this->owner(ownerKey: $ownerKey);
@@ -100,7 +100,7 @@ class LegalHoldLedger {
 	 *
 	 * @return array The retention array, the released holds moved to history.
 	 *
-	 * @spec openspec/changes/legal-hold-per-matter/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function release(array $retention, ?string $ownerKey, string $releaseReason, string $userId, string $now): array {
 		$holds = $this->holds(legalHold: ($retention['legalHold'] ?? null));
@@ -134,7 +134,7 @@ class LegalHoldLedger {
 	 *
 	 * @return array<int, array<string, mixed>> The active holds.
 	 *
-	 * @spec openspec/changes/legal-hold-per-matter/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function activeHolds(array $retention): array {
 		return $this->holds(legalHold: ($retention['legalHold'] ?? null));
