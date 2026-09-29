@@ -281,7 +281,7 @@ class ApprovalChainGateListener implements IEventListener {
 	 *
 	 * @return array<int, array<string, mixed>>|null The tier(s), or null for no routing.
 	 *
-	 * @spec openspec/changes/approval-cumulative-tiers/specs/approval-workflow/spec.md
+	 * @spec openspec/specs/approval-workflow/spec.md
 	 */
 	private function resolveTierPositions(array $template, array $newData): ?array {
 		$amountField = (string)($template['amountField'] ?? '');
@@ -331,7 +331,7 @@ class ApprovalChainGateListener implements IEventListener {
 	 *
 	 * @return array<int, array<string, mixed>> The positions to provision.
 	 *
-	 * @spec openspec/changes/approval-cumulative-tiers/specs/approval-workflow/spec.md
+	 * @spec openspec/specs/approval-workflow/spec.md
 	 */
 	private function resolveCumulativeTiers(array $positions, float $amount): array {
 		$applicable = [];
