@@ -157,7 +157,11 @@ class RevertHandler {
 		$schemaEntity = $context['schema'];
 
 		// Verify that the object belongs to the specified register and schema.
-		if ($object->getRegister() !== $register || $object->getSchema() !== $schema) {
+		// The route may name them by id, UUID or slug, as every other object
+		// route allows; a string compare with the numeric id refused every slug (#4161).
+		if ($this->namesEntity(given: $register, stored: (string) $object->getRegister(), entity: $registerEntity) === false
+			|| $this->namesEntity(given: $schema, stored: (string) $object->getSchema(), entity: $schemaEntity) === false
+		) {
 			throw new DoesNotExistException('Object not found in specified register/schema');
 		}
 
@@ -217,6 +221,29 @@ class RevertHandler {
 
 		return $savedObject;
 	}//end revert()
+
+	/**
+	 * Whether a route segment names the object's register or schema
+	 *
+	 * @param string      $given  The route segment: an id, a UUID or a slug.
+	 * @param string      $stored The id the object stores.
+	 * @param Register|Schema|null $entity The resolved register or schema, when known.
+	 *
+	 * @return bool True when the segment names the stored entity.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function namesEntity(string $given, string $stored, Register|Schema|null $entity): bool {
+		if ($given === $stored) {
+			return true;
+		}
+
+		if ($entity === null || (string) $entity->getId() !== $stored) {
+			return false;
+		}
+
+		return in_array($given, [(string) $entity->getUuid(), (string) $entity->getSlug()], true) === true && $given !== '';
+	}//end namesEntity()
 
 	/**
 	 * Validate restored data against the schema as it is now.

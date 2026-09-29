@@ -215,10 +215,7 @@ class ExportBundleService {
 
 		$history = [];
 		try {
-			$entries = $this->auditTrailMapper->findByObjectUntil(
-				objectId: (int)$case->getId(),
-				objectUuid: (string)$case->getUuid()
-			);
+			$entries = $this->auditTrailMapper->findByObjectUntil(objectUuid: (string)$case->getUuid());
 			foreach ($entries as $entry) {
 				$history[] = $entry->jsonSerialize();
 			}

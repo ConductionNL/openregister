@@ -224,4 +224,24 @@ class ObjectsControllerPatchConcurrencyTest extends TestCase {
 
 		$this->assertSame(200, $result->getStatus());
 	}//end testPatchSucceedsWhenExpectedUpdatedIsOmitted()
+	/**
+	 * A frozen object refuses a PATCH with 409 and the reason, as a revert does,
+	 * instead of a bare 500 (#4161).
+	 */
+	public function testPatchOnAFrozenObjectAnswers409NamingTheFreeze(): void {
+		$this->setupAdminUser();
+		$existing = $this->stubExistingObject('2026-07-01T10:00:00+00:00');
+
+		$this->request->method('getParams')->willReturn(['title' => 'Patched']);
+		$this->request->method('getHeader')->willReturn('application/json');
+		$this->mockExpectedUpdatedParam(null);
+
+		$refusal = \OCA\OpenRegister\Exception\ObjectStateWriteException::frozen($existing);
+		$this->objectService->method('saveObject')->willThrowException($refusal);
+
+		$result = $this->controller->patch('1', '2', 'uuid-123', $this->objectService);
+
+		$this->assertSame(409, $result->getStatus());
+		$this->assertSame($refusal->getMessage(), $result->getData()['error']);
+	}//end testPatchOnAFrozenObjectAnswers409NamingTheFreeze()
 }//end class
