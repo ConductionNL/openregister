@@ -2330,10 +2330,18 @@ class ImportHandler {
 				// logged rather than refused. The version the app ships is kept
 				// when it is newer; otherwise the classification decides it.
 				$changeSet = $this->classifyImportedSchemaChange(existing: $existingSchema, data: $data);
-				if ($changeSet !== null && $changeSet->hasChanges() === true
-					&& version_compare($incomingVersion, $existingVersion, '>') === false
-				) {
-					$data['version'] = $this->schemaVersioning->nextVersion(existing: $existingSchema, changeSet: $changeSet);
+				if (version_compare($incomingVersion, $existingVersion, '>') === false) {
+					// An import never moves a schema's version back. Pass 2 of
+					// importFromJson() re-imports the same data after Pass 1
+					// bumped it; nothing classifies then, and writing the
+					// incoming version back lost the bump the changelog names (#4163).
+					if ($existingSchema->getVersion() !== null) {
+						$data['version'] = $existingVersion;
+					}
+
+					if ($changeSet !== null && $changeSet->hasChanges() === true) {
+						$data['version'] = $this->schemaVersioning->nextVersion(existing: $existingSchema, changeSet: $changeSet);
+					}
 				}
 
 				$existingSchema = $this->schemaMapper->updateFromArray(id: $existingSchema->getId(), object: $data);
