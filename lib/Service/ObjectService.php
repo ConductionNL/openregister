@@ -2940,7 +2940,10 @@ class ObjectService implements ObjectServiceInterface
             \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.scope');
 
             // Reject deletion of transferred objects (archiefstatus = overgebracht).
-            $this->rejectIfTransferred(uuid: $uuid);
+            // Looked up with the caller's flags, so the guard sees the object the
+            // delete handler below would touch; with the session scope it missed
+            // an object outside it and let a `_multitenancy: false` delete through.
+            $this->rejectIfTransferred(uuid: $uuid, _rbac: $_rbac, _multitenancy: $_multitenancy);
 
             \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.transferred');
 
@@ -2975,11 +2978,17 @@ class ObjectService implements ObjectServiceInterface
             }
 
             try {
+                // With the caller's flags. The delete handler honours them, so a
+                // lookup that ignored them applied the session's RBAC and tenant
+                // scope to a caller that had turned them off, answered "not
+                // found" for an object that exists, and the handler never ran.
                 $objectToDelete = $this->objectMapper->find(
                     identifier: $uuid,
                     register: $scopedRegister,
                     schema: $scopedSchema,
-                    includeDeleted: true
+                    includeDeleted: true,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy
                 );
 
                 // If no schema was provided but we have an object, derive the schema from the object.
@@ -3114,7 +3123,9 @@ class ObjectService implements ObjectServiceInterface
      * Objects with archiefstatus 'overgebracht' are read-only. The authoritative
      * copy resides in the e-Depot and this system copy MUST NOT be modified.
      *
-     * @param string $uuid The object UUID to check.
+     * @param string $uuid          The object UUID to check.
+     * @param bool   $_rbac         Apply RBAC to the lookup (default: true, today's behaviour).
+     * @param bool   $_multitenancy Apply the tenant scope to the lookup (default: true).
      *
      * @return void
      *
@@ -3123,7 +3134,7 @@ class ObjectService implements ObjectServiceInterface
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
-    private function rejectIfTransferred(string $uuid): void
+    private function rejectIfTransferred(string $uuid, bool $_rbac=true, bool $_multitenancy=true): void
     {
         try {
             // Scoped to the register and schema currently in context: the only
@@ -3134,7 +3145,9 @@ class ObjectService implements ObjectServiceInterface
                 identifier: $uuid,
                 register: $this->currentRegister,
                 schema: $this->currentSchema,
-                includeDeleted: true
+                includeDeleted: true,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
             );
 
             $retention = ($object->getRetention() ?? []);
