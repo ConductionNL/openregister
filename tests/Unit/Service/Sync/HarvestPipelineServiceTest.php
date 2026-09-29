@@ -41,6 +41,10 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Sync\HarvestPipelineService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Source
+ * @uses \OCA\OpenRegister\Db\SyncRecord
+ * @uses \OCA\OpenRegister\Service\Sync\SyncConflictResolver
  */
 class HarvestPipelineServiceTest extends TestCase {
 

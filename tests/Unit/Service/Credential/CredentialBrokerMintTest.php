@@ -49,6 +49,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class CredentialBrokerMintTest extends TestCase {
 	/** @var array<string, mixed>|null Captured saveObject() property bag. */

@@ -30,6 +30,11 @@ use PHPUnit\Framework\TestCase;
  * validateLinkedTypesValue() works through the registry path.
  *
  * @coversDefaultClass \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\RegisterLeafProvidersEvent
+ * @uses \OCA\OpenRegister\Service\Integration\IntegrationRegistry
+ * @uses \OCA\OpenRegister\Service\Integration\LeafBundle
+ * @uses \OCA\OpenRegister\Service\Integration\LeafRegistry
  */
 class SchemaLinkedTypesCleanupTest extends TestCase {
 

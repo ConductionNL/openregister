@@ -46,6 +46,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Exception\ValidationException
  * @uses \OCA\OpenRegister\Exception\HookStoppedException
  * @uses \OCA\OpenRegister\Exception\TaskAccessDeniedException
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunContext
  */
 class TaskFormCompletionTest extends TestCase {
 

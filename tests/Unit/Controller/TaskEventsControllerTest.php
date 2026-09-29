@@ -54,6 +54,7 @@ use PHPUnit\Framework\TestCase;
  * Authorization and HTTP translation for /api/flow-tasks/{uuid}/events.
  *
  * @covers \OCA\OpenRegister\Controller\TaskEventsController
+ * @uses \OCA\OpenRegister\Db\Task
  */
 class TaskEventsControllerTest extends TestCase {
 

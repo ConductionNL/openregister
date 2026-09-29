@@ -41,6 +41,9 @@ use Psr\Log\LoggerInterface;
  * Tests for ObjectSearchResultFormatter.
  *
  * @covers \OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\MdiIconRenderer
+ * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter
  */
 class ObjectSearchResultFormatterTest extends TestCase {
 

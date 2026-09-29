@@ -49,6 +49,8 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Controller\FlowRunController
  * @uses \OCA\OpenRegister\Db\FlowRun
  * @uses \OCA\OpenRegister\Service\Flow\FlowRunAssignee
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunSignalService
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunnableGuard
  */
 class FlowRunSignalByKeyTest extends TestCase {
 

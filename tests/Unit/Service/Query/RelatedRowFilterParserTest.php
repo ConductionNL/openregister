@@ -39,6 +39,7 @@ use PHPUnit\Framework\TestCase;
  * The wire format, and everything it refuses.
  *
  * @covers \OCA\OpenRegister\Service\Query\RelatedRowFilterParser
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
  */
 class RelatedRowFilterParserTest extends TestCase {
 

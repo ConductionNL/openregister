@@ -45,8 +45,8 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2InstanceClient
- * @uses \OCA\OpenRegister\Service\Credential\OAuth2InstanceHost
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2InstanceHost
  */
 class OAuth2InstanceClientTest extends TestCase {
 	/** @var array<int, string> Every URL the service POSTed to. */

@@ -41,6 +41,8 @@ use PHPUnit\Framework\TestCase;
  * `ScopedPropertyGovernance`.
  *
  * @covers \OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
  */
 class ScopedPropertyGovernanceTest extends TestCase {
 

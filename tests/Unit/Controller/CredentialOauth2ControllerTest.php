@@ -54,8 +54,8 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialOauth2Controller
- * @uses \OCA\OpenRegister\Service\Credential\OAuth2Endpoints
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2Endpoints
  */
 class CredentialOauth2ControllerTest extends TestCase {
 	/** @var string This instance's own callback URL. */

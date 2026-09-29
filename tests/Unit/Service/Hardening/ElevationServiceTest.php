@@ -48,6 +48,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Hardening\ElevationService
+ * @uses \OCA\OpenRegister\Service\Hardening\ElevationRequiredException
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningPolicy
  */
 class ElevationServiceTest extends TestCase {
 

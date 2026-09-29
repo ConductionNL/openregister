@@ -46,6 +46,7 @@ use PHPUnit\Framework\TestCase;
  * One clause per filter, on each engine.
  *
  * @covers \OCA\OpenRegister\Service\Query\RelatedRowExistsClause
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
  */
 class RelatedRowExistsClauseTest extends TestCase {
 

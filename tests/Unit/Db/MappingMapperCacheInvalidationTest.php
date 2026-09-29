@@ -58,6 +58,7 @@ use ReflectionMethod;
  * Write-path cache invalidation for mappings.
  *
  * @covers \OCA\OpenRegister\Db\MappingMapper
+ * @uses \OCA\OpenRegister\Db\Mapping
  */
 class MappingMapperCacheInvalidationTest extends TestCase {
 

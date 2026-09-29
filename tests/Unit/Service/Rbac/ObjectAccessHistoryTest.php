@@ -35,6 +35,10 @@ use PHPUnit\Framework\TestCase;
  * Task 7.3: the access set at a past moment.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\ObjectAccessHistory
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectPermissionsResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  */
 class ObjectAccessHistoryTest extends TestCase {
 

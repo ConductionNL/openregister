@@ -50,6 +50,8 @@ use RuntimeException;
  * HTTP translation, route contract and structural absences.
  *
  * @covers \OCA\OpenRegister\Controller\CaseController
+ * @uses \OCA\OpenRegister\Db\CaseItem
+ * @uses \OCA\OpenRegister\Service\Case\ZaaktypeCaseSkeletonMapper
  */
 class CaseControllerTest extends TestCase {
 

@@ -28,6 +28,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ValidateObject::validateReadOnlyConstraints
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\ValidateObject
  */
 class Wave12ReadOnlyEnforcementTest extends TestCase {
 

@@ -40,6 +40,12 @@ use PHPUnit\Framework\TestCase;
  * Eviction on schema and register policy writes.
  *
  * @covers \OCA\OpenRegister\Listener\AuthorizationCacheInvalidationListener
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
+ * @uses \OCA\OpenRegister\Event\RegisterUpdatedEvent
+ * @uses \OCA\OpenRegister\Event\SchemaUpdatedEvent
  */
 class AuthorizationCacheInvalidationListenerTest extends TestCase {
 

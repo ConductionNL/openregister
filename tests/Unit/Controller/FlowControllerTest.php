@@ -55,6 +55,11 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\Flow
  * @uses \OCA\OpenRegister\Db\FlowState
  * @uses \OCA\OpenRegister\Service\Flow\FlowAdoptionRefused
+ * @uses \OCA\OpenRegister\Exception\BpmnSchemaInvalid
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnSchemaValidator
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter
+ * @uses \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnImporter
  */
 class FlowControllerTest extends TestCase {
 

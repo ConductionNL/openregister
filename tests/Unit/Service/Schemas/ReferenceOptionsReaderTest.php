@@ -40,6 +40,8 @@ use PHPUnit\Framework\TestCase;
  * `ReferenceOptionsReader`.
  *
  * @covers \OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration
  */
 class ReferenceOptionsReaderTest extends TestCase {
 

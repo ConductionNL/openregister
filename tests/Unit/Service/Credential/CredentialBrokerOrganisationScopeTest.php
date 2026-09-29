@@ -47,6 +47,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class CredentialBrokerOrganisationScopeTest extends TestCase {
 	private const UUID = 'cred-org-1';

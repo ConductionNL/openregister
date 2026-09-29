@@ -52,9 +52,9 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialController
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Credential\CredentialBrokerService
  * @uses \OCA\OpenRegister\Service\Credential\CredentialUpdateRequest
- * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class CredentialControllerTest extends TestCase {
 

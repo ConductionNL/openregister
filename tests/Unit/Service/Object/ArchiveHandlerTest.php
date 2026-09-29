@@ -38,6 +38,11 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\ArchiveHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Exception\ArchiveNotOfferedException
+ * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  */
 final class ArchiveHandlerTest extends TestCase {
 

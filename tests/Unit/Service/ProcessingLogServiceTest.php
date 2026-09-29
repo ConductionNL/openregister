@@ -51,6 +51,9 @@ use Psr\Log\NullLogger;
 
 /**
  * @covers \OCA\OpenRegister\Service\ProcessingLogService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\ProcessingLogEntry
+ * @uses \OCA\OpenRegister\Db\Verwerkingsactiviteit
  */
 class ProcessingLogServiceTest extends TestCase {
 

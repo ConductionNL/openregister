@@ -87,6 +87,22 @@ use UnexpectedValueException;
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowNodePreflight
  * @covers \OCA\OpenRegister\Service\Flow\FlowNodeRegistry
+ * @uses \OCA\OpenRegister\Service\Flow\FlowConnectivity
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeTaxonomyResolver
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\EndNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\FilterNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\LoopNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\MergeNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\RouterNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\SwitchNode
+ * @uses \OCA\OpenRegister\Service\Flow\Nodes\WaitNode
+ * @uses \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent
  */
 class FlowNodeConfigVocabularyTest extends TestCase {
 	use FiltersFlowLevelFindings;

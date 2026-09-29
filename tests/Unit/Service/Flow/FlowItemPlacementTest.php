@@ -34,6 +34,7 @@ use Symfony\Component\Workflow\Transition;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\FlowItemPlacement
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  */
 final class FlowItemPlacementTest extends TestCase {
 

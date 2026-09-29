@@ -28,6 +28,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\ApiCaller\CallerPolicy
+ * @uses \OCA\OpenRegister\Service\ApiCaller\IpRange
  */
 class CallerPolicyTest extends TestCase {
 

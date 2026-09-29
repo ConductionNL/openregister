@@ -43,6 +43,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\OAuth2TokenRefreshJob
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class OAuth2TokenRefreshJobTest extends TestCase {
 	/** @var array<int, string> Credential ids the sweep actually asked to refresh. */
