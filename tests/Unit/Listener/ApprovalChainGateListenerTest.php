@@ -96,7 +96,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 	 * Schema with a `submit` lifecycle transition and a declared
 	 * `submit-approval` chain gating it, amount-routed between two tiers.
 	 */
-	private function gatedSchema(array $approvers = null): Schema {
+	private function gatedSchema(array $approvers = null, ?string $tiers = null): Schema {
 		$schema = new Schema();
 		$schema->setId(5);
 		$schema->setSlug('test-commitment');
@@ -112,6 +112,7 @@ class ApprovalChainGateListenerTest extends TestCase {
 					'submit-approval' => [
 						'transition' => 'submit',
 						'amountField' => 'amount',
+						'tiers' => $tiers,
 						'separationOfDuties' => true,
 						'onApprove' => 'advanceTransition',
 						'approvers' => ($approvers ?? [
@@ -262,6 +263,81 @@ class ApprovalChainGateListenerTest extends TestCase {
 
 		$this->assertTrue($event->isPropagationStopped());
 	}//end testHighAmountObjectFreezesTheHigherTier()
+
+	/**
+	 * Cumulative tiers: an amount needs every tier at or below it, in amount order.
+	 * Ruben's decision of 29 Sep: 12,500 euro needs the team lead AND the facility manager.
+	 *
+	 * @return void
+	 */
+	public function testCumulativeTiersRequireEveryTierAtOrBelowTheAmount(): void {
+		$this->gatedSchema(
+			approvers: [
+				['role' => 'facility_manager', 'min' => 1, 'minAmount' => 1000000],
+				['role' => 'teamleider', 'min' => 1, 'minAmount' => 1],
+				['role' => 'procurement_manager', 'min' => 1, 'minAmount' => 5000000],
+			],
+			tiers: 'cumulative'
+		);
+		$event = $this->event(schemaSlug: 'test-commitment', oldStatus: 'draft', newStatus: 'submitted', amount: 1250000);
+
+		$this->sequenceMapper->method('findNewestForAnchor')->willReturn(null);
+		$this->sequenceService->expects($this->once())
+			->method('provision')
+			->with(
+				$this->anything(),
+				'obj-1',
+				'requester1',
+				[
+					['order' => 1, 'role' => 'teamleider', 'min' => 1, 'minAmount' => 1],
+					['order' => 2, 'role' => 'facility_manager', 'min' => 1, 'minAmount' => 1000000],
+				]
+			);
+
+		$this->listener->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+	}//end testCumulativeTiersRequireEveryTierAtOrBelowTheAmount()
+
+	/**
+	 * Cumulative tiers: an amount below the lowest tier needs no approval at all.
+	 *
+	 * @return void
+	 */
+	public function testCumulativeTiersBelowTheLowestTierNeedNoApproval(): void {
+		$this->gatedSchema(
+			approvers: [
+				['role' => 'teamleider', 'min' => 1, 'minAmount' => 1],
+				['role' => 'facility_manager', 'min' => 1, 'minAmount' => 1000000],
+			],
+			tiers: 'cumulative'
+		);
+		$event = $this->event(schemaSlug: 'test-commitment', oldStatus: 'draft', newStatus: 'submitted', amount: 0);
+
+		$this->sequenceMapper->method('findNewestForAnchor')->willReturn(null);
+		$this->sequenceService->expects($this->never())->method('provision');
+
+		$this->listener->handle($event);
+
+		$this->assertFalse($event->isPropagationStopped());
+	}//end testCumulativeTiersBelowTheLowestTierNeedNoApproval()
+
+	/**
+	 * An unknown tiers mode fails closed as a misconfigured chain.
+	 *
+	 * @return void
+	 */
+	public function testAnUnknownTiersModeFailsClosed(): void {
+		$this->gatedSchema(tiers: 'every-other');
+		$event = $this->event(schemaSlug: 'test-commitment', oldStatus: 'draft', newStatus: 'submitted');
+
+		$this->sequenceService->expects($this->never())->method('provision');
+
+		$this->listener->handle($event);
+
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame('approval-chain-misconfigured', $event->getErrors()['code']);
+	}//end testAnUnknownTiersModeFailsClosed()
 
 	public function testAnUncompilableChainFailsClosed(): void {
 		// Declared, but with no usable approver at all.

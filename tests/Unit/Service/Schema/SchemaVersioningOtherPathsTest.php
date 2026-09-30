@@ -83,16 +83,56 @@ class SchemaVersioningOtherPathsTest extends TestCase {
 	 *
 	 * @return SchemaVersioningService
 	 */
-	private function versioning(): SchemaVersioningService {
+	private function versioning(?LoggerInterface $logger = null): SchemaVersioningService {
 		return new SchemaVersioningService(
 			diffService: new SchemaDiffService(),
 			changelogMapper: $this->changelogMapper,
 			runMapper: $this->createMock(SchemaRunMapper::class),
 			runEntryMapper: $this->createMock(SchemaRunEntryMapper::class),
 			userSession: $this->userSession,
-			logger: $this->createMock(LoggerInterface::class)
+			logger: ($logger ?? $this->createMock(LoggerInterface::class))
 		);
 	}//end versioning()
+
+	/**
+	 * An unacknowledged breaking change from an agent is recorded AND logged, never refused
+	 * (Ruben, 29 Sep 2026: record and log, never refuse).
+	 *
+	 * @return void
+	 */
+	public function testAnAgentBreakingChangeIsLoggedNotRefused(): void {
+		$this->changelogMapper->method('createFromArray')->willReturn(new SchemaChangelog());
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())
+			->method('warning')
+			->with(
+				$this->stringContains('breaking'),
+				$this->callback(static fn (array $c): bool => $c['schema_id'] === 12 && $c['origin'] === 'agent tool' && $c['version'] === '2.0.0')
+			);
+
+		$tool = new SchemaTool($this->userSession, $this->createMock(LoggerInterface::class), $this->schemaMapper, $this->versioning(logger: $logger));
+		$result = $tool->updateSchema(id: '12', properties: ['title' => ['type' => 'string']], required: []);
+
+		$this->assertSame('2.0.0', $result['data']['version']);
+	}//end testAnAgentBreakingChangeIsLoggedNotRefused()
+
+	/**
+	 * A breaking change a person acknowledged is recorded without a warning.
+	 *
+	 * @return void
+	 */
+	public function testAnAcknowledgedBreakingChangeIsNotWarnedAbout(): void {
+		$this->changelogMapper->method('createFromArray')->willReturn(new SchemaChangelog());
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('warning');
+
+		$changeSet = new \OCA\OpenRegister\Service\Schema\SchemaChangeSet(
+			changes: [['type' => 'property_removed', 'property' => 'status']],
+			classification: 'breaking',
+			bump: 'major'
+		);
+		$this->versioning(logger: $logger)->recordChangelog(schemaId: 12, version: '2.0.0', changeSet: $changeSet, acknowledged: true);
+	}//end testAnAcknowledgedBreakingChangeIsNotWarnedAbout()
 
 	/**
 	 * The schema tool dropping a required property is recorded as breaking with a major bump.
