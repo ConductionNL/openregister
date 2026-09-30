@@ -51,14 +51,14 @@ class MigratedSqliteDatabase {
 	 */
 	private const BRIDGED = [
 		'select', 'from', 'where', 'andWhere', 'orWhere', 'orderBy', 'addOrderBy',
-		'setMaxResults', 'setFirstResult', 'createNamedParameter', 'createFunction',
+		'setMaxResults', 'setFirstResult', 'groupBy', 'createNamedParameter', 'createFunction',
 		'expr', 'executeQuery', 'getSQL',
 	];
 
 	/**
 	 * Expression-builder methods forwarded to Doctrine. Everything else throws.
 	 */
-	private const BRIDGED_EXPR = ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'isNull', 'isNotNull', 'in'];
+	private const BRIDGED_EXPR = ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'isNull', 'isNotNull', 'in', 'like'];
 
 	private Connection $connection;
 
@@ -128,8 +128,10 @@ class MigratedSqliteDatabase {
 	 * @return IDBConnection
 	 */
 	public function idbConnection(): IDBConnection {
-		$db = self::mock(test: $this->test, class: IDBConnection::class, bridged: ['getQueryBuilder']);
+		$db = self::mock(test: $this->test, class: IDBConnection::class, bridged: ['getQueryBuilder', 'escapeLikeParameter']);
 		$db->method('getQueryBuilder')->willReturnCallback(fn (): IQueryBuilder => $this->queryBuilder());
+		// As Nextcloud's Connection::escapeLikeParameter().
+		$db->method('escapeLikeParameter')->willReturnCallback(fn (string $param): string => addcslashes($param, '\\_%'));
 
 		return $db;
 	}//end idbConnection()
@@ -266,7 +268,7 @@ class MigratedSqliteDatabase {
 		$qb = self::mock(test: $this->test, class: IQueryBuilder::class, bridged: self::BRIDGED);
 		$expr = $this->expressionBuilder(inner: $inner);
 
-		foreach (['select', 'from', 'where', 'andWhere', 'orWhere', 'orderBy', 'addOrderBy', 'setMaxResults', 'setFirstResult'] as $method) {
+		foreach (['select', 'from', 'where', 'andWhere', 'orWhere', 'orderBy', 'addOrderBy', 'setMaxResults', 'setFirstResult', 'groupBy'] as $method) {
 			$qb->method($method)->willReturnCallback(
 				function (...$args) use ($inner, $method, $qb) {
 					$inner->$method(...array_map(fn ($arg) => self::sql($arg), $args));
@@ -305,6 +307,8 @@ class MigratedSqliteDatabase {
 		$expr->method('isNull')->willReturnCallback(fn ($x) => $doctrine->isNull(self::sql($x)));
 		$expr->method('isNotNull')->willReturnCallback(fn ($x) => $doctrine->isNotNull(self::sql($x)));
 		$expr->method('in')->willReturnCallback(fn ($x, $y) => $doctrine->in(self::sql($x), self::sql($y)));
+		// As Nextcloud's SqliteExpressionBuilder::like(): the backslash escapes `_` and `%`.
+		$expr->method('like')->willReturnCallback(fn ($x, $y) => $doctrine->like(self::sql($x), self::sql($y))." ESCAPE '\\'");
 
 		return $expr;
 	}//end expressionBuilder()

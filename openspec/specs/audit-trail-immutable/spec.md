@@ -271,6 +271,24 @@ object, and the admin-only index remains the only surface that carries them.
 - **THEN** the row carries its action, actor and changes, and carries no `session`, `request` or `ipAddress`
 - @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
 
+### Requirement: An app counts and lists the audit actions it writes under its own prefix
+
+An app that writes its own audit rows, such as portaliq's proof records (`portaliq.login`, `portaliq.download`), SHALL be able to count them per action without loading the rows, and an administrator SHALL be able to list every action of one prefix at once. `AuditTrailMapper::countByActionPrefix($prefix)` MUST answer the lifetime row count per full action for the actions that start with the prefix, in one grouped query. The list filter `action=<prefix>.*` MUST answer every row whose action starts with the prefix. The prefix MUST match literally: `_` and `%` are not wildcards. An exact `action` filter MUST keep filtering exactly. Source: DECISIONS row 5 (portaliq audit trail move).
+
+#### Scenario: counts per action of one prefix
+
+- **GIVEN** audit rows `portaliq.login` (twice), `portaliq.logout`, `portaliq.download`, `create` and `portal_q.login`
+- **WHEN** `countByActionPrefix('portaliq.')` is called
+- **THEN** it answers `portaliq.login` 2, `portaliq.logout` 1 and `portaliq.download` 1, and nothing else
+- @e2e exclude {mapper-level contract for sibling apps, asserted in tests/Unit/Db/AuditTrailActionPrefixTest.php}
+
+#### Scenario: the admin list filters on an action prefix
+
+- **GIVEN** the same rows
+- **WHEN** the audit trail is listed with `action=portaliq.*`
+- **THEN** it answers the four `portaliq.` rows only
+- @e2e exclude {filter semantics asserted against the migrated table in tests/Unit/Db/AuditTrailActionPrefixTest.php}
+
 ## Current Implementation Status
 - **Implemented:**
   - `AuditTrail` entity (`lib/Db/AuditTrail.php`) with fields: uuid, schema, register, object, objectUuid, registerUuid, schemaUuid, action, changed, user, userName, created, organisation, session, request, ipAddress, size, hash, previousHash
