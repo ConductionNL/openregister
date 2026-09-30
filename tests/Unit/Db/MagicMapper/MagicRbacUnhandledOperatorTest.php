@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Rbac\DenyEntryMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
+use OCP\DB\QueryBuilder\IParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -179,8 +180,17 @@ class MagicRbacUnhandledOperatorTest extends TestCase {
 
 		$qb = $this->createMock(IQueryBuilder::class);
 		$qb->method('expr')->willReturn($expr);
+		// A real IParameter, as the real builder returns; a string here let a
+		// helper typed to IParameter pass a test it would fail in production.
 		$qb->method('createNamedParameter')->willReturnCallback(
-			static fn ($value): string => ':'.json_encode($value)
+			static fn ($value): IParameter => new class(':'.json_encode($value)) implements IParameter {
+				public function __construct(private readonly string $sql) {
+				}
+
+				public function __toString(): string {
+					return $this->sql;
+				}
+			}
 		);
 
 		$method = new ReflectionMethod(MagicRbacHandler::class, 'buildOperatorCondition');
