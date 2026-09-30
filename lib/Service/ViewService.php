@@ -106,6 +106,24 @@ class ViewService {
 	}//end __construct()
 
 	/**
+	 * A view by id, without judging who asks.
+	 *
+	 * For a caller that resolves access itself, such as the views controller
+	 * through ViewerReachResolver::reaches().
+	 *
+	 * @param int|string $id The view id.
+	 *
+	 * @return View
+	 *
+	 * @throws DoesNotExistException When no view has this id.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function findById(int|string $id): View {
+		return $this->viewMapper->find($id);
+	}//end findById()
+
+	/**
 	 * Find a view by ID
 	 *
 	 * Retrieves view by ID and validates user access permissions.
