@@ -31,7 +31,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Add the group shares to a saved view.
  *
- * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 class Version1Date20260918183000 extends SimpleMigrationStep {
 
@@ -67,7 +67,7 @@ class Version1Date20260918183000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper The schema, changed or not.
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ISchemaWrapper {
 		/*
