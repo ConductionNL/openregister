@@ -459,16 +459,17 @@ export default {
 			this.error = null
 
 			try {
+				const sharedWith = this.selectedGroups.map((g) => ({
+					group: g.id,
+					mode: g.mode || 'read',
+				}))
 				const updateData = {
 					name: this.viewData.name.trim(),
 					description: this.viewData.description || '',
 					isPublic: this.viewData.isPublic,
 					isDefault: this.viewData.isDefault,
 					query: this.viewData.query,
-					sharedWith: this.selectedGroups.map((g) => ({
-						group: g.id,
-						mode: g.mode || 'read',
-					})),
+					sharedWith,
 					sharedUsers: this.selectedUsers.map((u) => u.id),
 				}
 
