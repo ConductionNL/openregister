@@ -526,6 +526,17 @@ class AuditTrailMapper extends QBMapper {
 			// Handle comma-separated values (e.g., action=create,update).
 			// Cast to string to handle integer filter values.
 			$valueStr = (string)$value;
+
+			// An action prefix (`action=portaliq.*`) lists every action an app
+			// writes under its own name, such as portaliq's proof records.
+			if ($field === 'action' && str_ends_with($valueStr, '.*') === true) {
+				$prefix = substr($valueStr, 0, -1);
+				$qb->andWhere(
+					$qb->expr()->like('action', $qb->createNamedParameter($this->db->escapeLikeParameter($prefix).'%'))
+				);
+				continue;
+			}
+
 			if (strpos($valueStr, ',') !== false) {
 				$values = array_map('trim', explode(',', $valueStr));
 				$qb->andWhere($qb->expr()->in($field, $qb->createNamedParameter($values, IQueryBuilder::PARAM_STR_ARRAY)));
@@ -1921,6 +1932,39 @@ class AuditTrailMapper extends QBMapper {
 			];
 		}//end try
 	}//end getDetailedStatistics()
+
+	/**
+	 * Lifetime row counts per action, for the actions that start with a prefix
+	 *
+	 * An app that writes its own audit actions, such as portaliq's
+	 * `portaliq.login`, counts them here in one grouped query instead of loading
+	 * every row. The prefix is matched literally: `_` and `%` are not wildcards.
+	 *
+	 * @param string $prefix The action prefix, for example `portaliq.`.
+	 *
+	 * @return array<string, int> Keyed by the full action, e.g. ['portaliq.login' => 1204].
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md
+	 */
+	public function countByActionPrefix(string $prefix): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('action', $qb->createFunction('COUNT(*) AS count'))
+			->from($this->getTableName())
+			->where(
+				$qb->expr()->like('action', $qb->createNamedParameter($this->db->escapeLikeParameter($prefix).'%'))
+			)
+			->groupBy('action');
+
+		$result = $qb->executeQuery();
+		$counts = [];
+		while (($row = $result->fetch()) !== false) {
+			$counts[(string) $row['action']] = (int) $row['count'];
+		}
+
+		$result->closeCursor();
+
+		return $counts;
+	}//end countByActionPrefix()
 
 	/**
 	 * Get lifetime audit trail counts grouped by action
