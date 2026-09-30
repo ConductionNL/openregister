@@ -48,7 +48,8 @@ class BulkControllerTest extends TestCase {
 			$this->registerMapper,
 			$this->schemaMapper,
 			$this->userSession,
-			$this->groupManager
+			$this->groupManager,
+			$this->createMock(\OCP\IDBConnection::class)
 		);
 	}
 
