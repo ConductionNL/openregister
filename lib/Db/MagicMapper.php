@@ -44,6 +44,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
+use RuntimeException;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
@@ -62,6 +63,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Support\QueryLimit;
@@ -2434,24 +2436,34 @@ class MagicMapper extends AbstractObjectMapper {
 					continue;
 				}
 
-				// Skip properties flagged `x-openregister-encrypted: true` (field-level-
-				// object-encryption): the value is ciphertext by the time it reaches this
-				// table sync, so a dedicated typed column would only ever hold an opaque
-				// string useless for filtering/sorting/faceting. The value still lives in
-				// the table's `object` JSON blob column; it simply gets no dedicated,
-				// independently-queryable column. This is what makes the field
-				// structurally unsearchable server-side (composes with the explicit
-				// filter-time rejection in MagicSearchHandler::applyObjectFilters()).
-				if (($propertyConfig['x-openregister-encrypted'] ?? false) === true) {
-					continue;
-				}
-
 				// Note: Schema properties do NOT conflict with metadata columns.
 				// Metadata columns have '_' prefix, schema properties don't.
 				// Both '_name' (metadata) and 'name' (schema property) can coexist.
 				// mapSchemaPropertyToColumn() returns a non-nullable array, so the
 				// emptiness guard that used to wrap this block was always true.
 				$column = $this->mapSchemaPropertyToColumn(propertyName: $propertyName, propertyConfig: $propertyConfig);
+
+				// A property flagged `x-openregister-encrypted: true` (field-level object
+				// encryption) reaches this table as an `openregister:enc:v1:` envelope,
+				// an opaque string whatever type the schema declares. So its column is
+				// plain nullable TEXT with no index: it can hold the ciphertext and is
+				// still useless for filtering, sorting and faceting (composes with the
+				// explicit filter-time rejection in MagicSearchHandler).
+				//
+				// These properties used to get NO column, on the belief that the value
+				// "still lives in the table's `object` JSON blob column". There is no
+				// such column. The write path (prepareObjectDataForTable) still named
+				// the property, so every single-object save of such a schema failed
+				// with "column ... does not exist", and the bulk path, which drops
+				// unknown columns, discarded the value in silence (#4197).
+				if (($propertyConfig['x-openregister-encrypted'] ?? false) === true) {
+					$column = [
+						'name'     => $column['name'],
+						'type'     => 'text',
+						'nullable' => true,
+						'comment'  => 'Encrypted value (x-openregister-encrypted)',
+					];
+				}
 
 				// BUG-DB-8: disambiguate column-name collisions deterministically.
 				if (isset($usedColumnNames[$column['name']]) === true) {
@@ -3863,6 +3875,10 @@ class MagicMapper extends AbstractObjectMapper {
 		$data = $objectData;
 		unset($data['@self']);
 
+		// An encrypted property is written only as an envelope, whichever path
+		// got here (see encryptFlaggedProperties()).
+		$data = $this->encryptFlaggedProperties(data: $data, schema: $schema);
+
 		// SECURITY (wave-7 CRITICAL C2 — @self allowlist enforcement):
 		// Clients must not be able to overwrite server-controlled fields via the @self
 		// block. The primary defence for field-level injection lives in
@@ -4180,6 +4196,78 @@ class MagicMapper extends AbstractObjectMapper {
 
 		return $preparedData;
 	}//end prepareObjectDataForTable()
+
+	/**
+	 * Replace every `x-openregister-encrypted` property value with its envelope.
+	 *
+	 * SaveObject encrypts on the single-object path, but the table is the one
+	 * place every write passes through. Encrypting here as well means no path
+	 * (bulk, import, a service writing an entity back) can put plaintext in an
+	 * encrypted column. FieldEncryptionHandler::encryptProperties() skips a value
+	 * that is already an envelope, so the second pass never double-encrypts.
+	 *
+	 * Fails closed: if the schema has encrypted properties and the handler
+	 * cannot be resolved, the write is refused rather than stored in the clear.
+	 *
+	 * @param array<string, mixed> $data   Property values, without `@self`.
+	 * @param Schema               $schema The schema being written to.
+	 *
+	 * @return array<string, mixed> The data with encrypted properties as envelopes.
+	 *
+	 * @throws RuntimeException When the schema needs encryption and no handler is available.
+	 *
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
+	 */
+	private function encryptFlaggedProperties(array $data, Schema $schema): array {
+		if ($schema->hasEncryptedProperties() === false) {
+			return $data;
+		}
+
+		$handler = $this->container->get(FieldEncryptionHandler::class);
+		if ($handler instanceof FieldEncryptionHandler === false) {
+			throw new RuntimeException(
+				'Schema "' . ($schema->getSlug() ?? (string) $schema->getId())
+				. '" has encrypted properties but no FieldEncryptionHandler is available; refusing to store them in the clear.'
+			);
+		}
+
+		return $handler->encryptProperties(data: $data, schema: $schema);
+	}//end encryptFlaggedProperties()
+
+	/**
+	 * Apply encryptFlaggedProperties() to every row of a bulk write.
+	 *
+	 * A bulk row carries its properties either under `object` or at the top
+	 * level beside `@self`, the two shapes MagicBulkHandler reads.
+	 *
+	 * @param array<int|string, mixed> $objects The rows.
+	 * @param Schema                   $schema  The schema being written to.
+	 *
+	 * @return array<int|string, mixed> The rows with encrypted properties as envelopes.
+	 *
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
+	 */
+	private function encryptFlaggedPropertiesInRows(array $objects, Schema $schema): array {
+		if ($schema->hasEncryptedProperties() === false) {
+			return $objects;
+		}
+
+		foreach ($objects as $key => $object) {
+			if (is_array($object) === false) {
+				continue;
+			}
+
+			if (isset($object['object']) === true && is_array($object['object']) === true) {
+				$object['object'] = $this->encryptFlaggedProperties(data: $object['object'], schema: $schema);
+			} else {
+				$object = $this->encryptFlaggedProperties(data: $object, schema: $schema);
+			}
+
+			$objects[$key] = $object;
+		}
+
+		return $objects;
+	}//end encryptFlaggedPropertiesInRows()
 
 	/**
 	 * Say so when a property the caller sent is about to be thrown away.
@@ -8131,6 +8219,11 @@ class MagicMapper extends AbstractObjectMapper {
 				'object_count' => count($objects),
 			]
 		);
+
+		// The bulk path never went through SaveObject's encryption step. An
+		// encrypted property used to have no column, so bulk dropped its value;
+		// now that it has one, encrypt here so it can only ever hold an envelope.
+		$objects = $this->encryptFlaggedPropertiesInRows(objects: $objects, schema: $schema);
 
 		try {
 			return $this->bulkHandler->bulkUpsert(
