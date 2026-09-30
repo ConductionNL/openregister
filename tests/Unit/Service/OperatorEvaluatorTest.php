@@ -298,4 +298,30 @@ class OperatorEvaluatorTest extends TestCase {
 		$this->assertFalse($this->evaluator->valueMatchesOperator(null, ['$exists' => true]));
 		$this->assertTrue($this->evaluator->valueMatchesOperator(null, ['$exists' => false]));
 	}
+
+	// A stored ISO 8601 date and the SQL-format `$now` ('Y-m-d H:i:s') must
+	// compare as instants. As strings, 'T' sorts after ' ', so every
+	// timestamp from today read as later than now and a publication dated
+	// today stayed unreadable on find() until tomorrow, while the SQL list
+	// path already showed it.
+	public function testSameDayIsoDateIsBeforeSqlNow(): void {
+		$this->assertTrue($this->evaluator->valueMatchesOperator('2026-09-30T20:00:00+00:00', ['$lte' => '2026-09-30 21:14:43']));
+		$this->assertTrue($this->evaluator->valueMatchesOperator('2026-09-30T20:00:00Z', ['$lt' => '2026-09-30 21:14:43']));
+		$this->assertFalse($this->evaluator->valueMatchesOperator('2026-09-30T20:00:00+00:00', ['$gte' => '2026-09-30 21:14:43']));
+	}
+
+	public function testSameDayIsoDateIsAfterSqlNow(): void {
+		$this->assertTrue($this->evaluator->valueMatchesOperator('2026-09-30T22:00:00Z', ['$gt' => '2026-09-30 21:14:43']));
+		$this->assertFalse($this->evaluator->valueMatchesOperator('2026-09-30T22:00:00Z', ['$lte' => '2026-09-30 21:14:43']));
+	}
+
+	public function testAnOffsetIsTakenIntoAccount(): void {
+		// 22:30 at +02:00 is 20:30 UTC, before 21:14 UTC.
+		$this->assertTrue($this->evaluator->valueMatchesOperator('2026-09-30T22:30:00+02:00', ['$lte' => '2026-09-30 21:14:43']));
+	}
+
+	public function testNonDateStringsStillCompareAsStrings(): void {
+		$this->assertTrue($this->evaluator->valueMatchesOperator('apple', ['$lt' => 'banana']));
+		$this->assertFalse($this->evaluator->valueMatchesOperator('b', ['$lte' => 'a']));
+	}
 }
