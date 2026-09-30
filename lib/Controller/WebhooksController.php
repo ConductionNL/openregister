@@ -60,8 +60,9 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The thirteenth class is the
+ *   unsaved Webhook entity the mapping preview builds from the dialog's fields.
  *
- * @spec openspec/specs/webhook-payload-mapping/spec.md
  * @spec openspec/specs/webhook-payload-mapping/spec.md
  */
 class WebhooksController extends Controller {
