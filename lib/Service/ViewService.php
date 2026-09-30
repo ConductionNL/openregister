@@ -264,6 +264,8 @@ class ViewService {
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Each optional field is null-means-untouched; a bag would lose that per field.
 	 */
 	public function update(
 		int|string $id,
