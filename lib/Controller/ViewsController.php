@@ -130,11 +130,8 @@ class ViewsController extends Controller {
 	}//end requireOwnedView()
 
 	/**
-	 * The view behind an id, when it reaches this caller at all.
-	 *
-	 * Owned, shared with one of the caller's groups, public, or the caller is
-	 * an administrator. Anything else is the same 404 as a view that does not
-	 * exist. What the caller may then CHANGE is the field guard's question.
+	 * The view behind an id when it reaches this caller (owned, shared with a
+	 * group, public, or admin); anything else is the 404 of a missing view.
 	 *
 	 * @param string $id     The view id.
 	 * @param string $userId The caller.
@@ -206,10 +203,8 @@ class ViewsController extends Controller {
 	 * refusal NAMES the fields, because the message a member needs is which
 	 * field was refused rather than that something was.
 	 *
-	 * Only the fields whose VALUE changes are judged: the edit screen sends the
-	 * whole view, and a field sent unchanged is not a change. A view that does
-	 * not reach the caller never gets here: the caller resolves it first with
-	 * requireReachableView(), which answers 404.
+	 * Only fields whose VALUE changes are judged: the edit screen sends the
+	 * whole view. The caller resolves the view with requireReachableView().
 	 *
 	 * @param View $view The stored view.
 	 * @param string $userId The caller.
@@ -220,15 +215,8 @@ class ViewsController extends Controller {
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	private function refuseForbiddenViewFields(View $view, string $userId, array $data): ?JSONResponse {
-		// 🔴 BOTH ARGUMENTS. `ViewService::find()` takes `(id, owner)` and both
-		// are required, so the one-argument call this method shipped with
-		// raised an `ArgumentCountError` that the catch below turned into a
-		// plausible `404 View not found` for EVERY update, the owner's own
-		// included. Nothing would have looked broken; views would simply have
-		// stopped saving.
-		// The request carries pagination and routing keys as well as fields.
-		// Only the ones that name a view property are judged, so a `_limit` on
-		// the body cannot refuse an update a member is entitled to make.
+		// Only keys that name a view property are judged, so a `_limit` or
+		// routing key on the body cannot refuse an update a member may make.
 		$fields = array_intersect_key(
 			$data,
 			array_flip(
@@ -652,8 +640,7 @@ class ViewsController extends Controller {
 				id: $id,
 				name: $data['name'],
 				description: $data['description'] ?? '',
-				// The view's own owner: a write member saves the owner's view,
-				// and the default-view bookkeeping belongs to that owner.
+				// A write member saves the OWNER's view (default-view bookkeeping too).
 				owner: $stored->getOwner(),
 				isPublic: $data['isPublic'] ?? false,
 				isDefault: $data['isDefault'] ?? false,
@@ -732,7 +719,6 @@ class ViewsController extends Controller {
 				);
 			}
 
-			// Get existing view: owned, shared with the caller's group, or public.
 			$view = $this->requireReachableView(id: $id, userId: $userId);
 
 			$data = $this->request->getParams();
