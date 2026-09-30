@@ -64,6 +64,11 @@ class DestructionListRepository {
 	public const OPEN_STATUSES = ['in_review', 'awaiting_second_approval'];
 
 	/**
+	 * The status DestructionExecutionJob gives a list it has carried out.
+	 */
+	public const EXECUTED_STATUS = 'executed';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param MagicMapper            $objectMapper    Destruction lists are register objects.
@@ -165,6 +170,61 @@ class DestructionListRepository {
 			return null;
 		}
 	}//end find()
+
+	/**
+	 * The destruction certificates stored for executed lists, newest first.
+	 *
+	 * DestructionExecutionJob stores one `verklaring_van_vernietiging` per
+	 * executed list and writes its uuid to the list as `certificateUuid`. An
+	 * executed list without a stored certificate (the save failed, or no
+	 * archival register was set) is named under `missing`: a statutory record
+	 * that is absent must not read as a list that never ran.
+	 *
+	 * @param string|null $listUuid Only this list's certificate, or null for all.
+	 *
+	 * @return array{results: array<int, array<string, mixed>>, missing: array<int, string>} Certificates and lists without one.
+	 *
+	 * @spec openspec/changes/archival-for-apps/specs/archival-destruction-workflow/spec.md
+	 */
+	public function findCertificates(?string $listUuid = null): array {
+		$results = [];
+		$missing = [];
+		foreach ($this->findLists(statuses: [self::EXECUTED_STATUS]) as $list) {
+			if ($listUuid !== null && $list->getUuid() !== $listUuid) {
+				continue;
+			}
+
+			$listData = ($list->getObject() ?? []);
+			$certUuid = ($listData['certificateUuid'] ?? null);
+			$certificate = null;
+			if (is_string($certUuid) === true && $certUuid !== '') {
+				$certificate = $this->find(uuid: $certUuid);
+			}
+
+			if ($certificate === null) {
+				$missing[] = (string)$list->getUuid();
+				continue;
+			}
+
+			$data = ($certificate->getObject() ?? []);
+			// The list's own uuid, not the certificate's copy: the job builds the
+			// certificate from list data that does not always carry it.
+			$results[] = array_merge(
+				$data,
+				['uuid' => $certificate->getUuid(), 'destructionListUuid' => $list->getUuid()]
+			);
+		}//end foreach
+
+		usort(
+			$results,
+			static fn (array $left, array $right): int => strcmp(
+				(string)($right['destructionDate'] ?? ''),
+				(string)($left['destructionDate'] ?? '')
+			)
+		);
+
+		return ['results' => $results, 'missing' => $missing];
+	}//end findCertificates()
 
 	/**
 	 * Write a destruction list's own data back.
