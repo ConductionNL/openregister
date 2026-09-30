@@ -2381,10 +2381,14 @@ class Schema extends Entity implements JsonSerializable {
 	 * table (see GetObject). Returns null when absent or when `provider` is not a
 	 * non-empty string.
 	 *
+	 * A schema declaring `x-openregister-view: {view: <id or uuid>}` and no object
+	 * source is served by the read-only `view` provider.
+	 *
 	 * @return array{provider: string, readOnly?: bool, config?: array}|null
 	 *                                                                       The parsed object-source declaration, or null when absent/invalid.
 	 *
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-2.2
+	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
 	public function getObjectSource(): ?array {
 		$configuration = $this->getConfiguration();
@@ -2395,7 +2399,15 @@ class Schema extends Entity implements JsonSerializable {
 
 		$source = ($configuration['x-openregister-object-source'] ?? null);
 
+		// A type backed by a saved view (x-openregister-view) reads through the
+		// built-in `view` provider and is never writable
+		// (modelling-query-backed-type). An explicit object source wins.
 		if (is_array($source) === false) {
+			$view = ($configuration['x-openregister-view']['view'] ?? null);
+			if ((is_string($view) === true && $view !== '') || is_int($view) === true) {
+				return ['provider' => 'view', 'config' => ['view' => $view], 'readOnly' => true];
+			}
+
 			return null;
 		}
 
@@ -3303,6 +3315,11 @@ class Schema extends Entity implements JsonSerializable {
 		// record that same loss three times.
 		'x-openregister-mdto-mapping',
 		'x-openregister-object-source',
+		// A type whose objects are the rows of a saved view: `{"view": "<id or
+		// uuid>"}` (modelling-query-backed-type). Read by getObjectSource().
+		// Absent from this list it would be dropped and the type would read as
+		// an ordinary, empty, writable schema.
+		'x-openregister-view',
 		'x-openregister-quality',
 		'x-openregister-dedup',
 		// Which properties a schema nominates as effectively unique, so a save

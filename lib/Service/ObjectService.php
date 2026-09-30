@@ -90,6 +90,7 @@ use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Service\Object\NotSuppliedHandler;
 use OCA\OpenRegister\Service\Object\RepeatingGroupValidator;
 use OCA\OpenRegister\Exception\AppendOnlyException;
+use OCA\OpenRegister\Exception\ReadOnlyTypeException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
@@ -1770,6 +1771,15 @@ class ObjectService implements ObjectServiceInterface
 
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions.check');
 
+            // A type backed by a saved view lists the view's rows; nothing is
+            // written to it (modelling-query-backed-type). 405, like append-only.
+            $viewWrite = 'update';
+            if ($uuid === null) {
+                $viewWrite = 'create';
+            }
+
+            $this->rejectIfViewBacked(operation: $viewWrite);
+
             // Reject updates to transferred objects (archiefstatus = overgebracht).
             if ($uuid !== null) {
                 $this->rejectIfTransferred(uuid: $uuid);
@@ -2947,6 +2957,9 @@ class ObjectService implements ObjectServiceInterface
 
             \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.transferred');
 
+            // A view-backed type holds no objects of its own to delete.
+            $this->rejectIfViewBacked(operation: 'delete');
+
             // Reject DELETE operations on append-only schemas.
             if ($this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
                 $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
@@ -3116,6 +3129,29 @@ class ObjectService implements ObjectServiceInterface
             operation: 'delete'
         );
     }//end rejectIfArchivalImmutable()
+
+    /**
+     * Refuse a write to a type whose objects are the rows of a saved view.
+     *
+     * @param string $operation The refused operation, for the message.
+     *
+     * @return void
+     *
+     * @throws ReadOnlyTypeException When the current schema is view-backed.
+     *
+     * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
+     */
+    private function rejectIfViewBacked(string $operation): void
+    {
+        if ($this->currentSchema === null || ($this->currentSchema->getObjectSource()['provider'] ?? null) !== 'view') {
+            return;
+        }
+
+        throw new ReadOnlyTypeException(
+            schemaIdentifier: ($this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId()),
+            operation: $operation
+        );
+    }//end rejectIfViewBacked()
 
     /**
      * Reject an operation if the object has been transferred to e-Depot.

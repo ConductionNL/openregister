@@ -193,3 +193,21 @@ A member with `write` SHALL be able to update the view's `query`,
 - **WHEN** the member sends `sharedWith` with a second group
 - **THEN** the response is 403 and `sharedWith` is unchanged
 - @e2e exclude {guard, covered by controller unit tests}
+
+### Requirement: REQ-QTYPE-001 A saved view can back a read-only record type
+
+A schema that declares `x-openregister-view: {"view": "<view id or uuid>"}` SHALL return the rows of that view's query as its objects: the view's one source register and schema, its facet filters and its search terms, narrowed by the caller's own filters and never widened by them, with the reader's access to the source rows still applied. Create, update and delete on it SHALL answer 405 with `SCHEMA_READ_ONLY`.
+
+#### Scenario: the type lists what the query finds
+
+- **GIVEN** a view "active permits" over schema `permit` filtering `status=active`, and a schema `active-permit` backed by it
+- **WHEN** a client lists objects of `active-permit`
+- **THEN** the result holds exactly the active permits
+- @e2e exclude {the query hand-over to the source table is asserted in tests/Unit/Service/ViewBackedTypeTest.php testTheTypeListsWhatTheQueryFinds; live-check recipe in the PR}
+
+#### Scenario: the type is read-only
+
+- **GIVEN** the same schema
+- **WHEN** a client posts an object to it
+- **THEN** the API answers 405
+- @e2e exclude {asserted through ObjectService in tests/Unit/Service/ViewBackedTypeTest.php testCreatingAnObjectOfTheTypeIsRefusedAs405}

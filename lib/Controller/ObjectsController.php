@@ -3432,6 +3432,11 @@ class ObjectsController extends Controller {
 				],
 				statusCode: 409
 			);
+		} catch (AppendOnlyException $exception) {
+			// A create on a type that takes none (a view-backed type,
+			// modelling-query-backed-type) is 405, like the other writes it
+			// refuses; the generic catch below would call it a permission 403.
+			return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
 		} catch (\Exception $exception) {
 			// Handle all other exceptions (including RBAC permission errors).
 			// Sanitized external-write failures carry their own 4xx status

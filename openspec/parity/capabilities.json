@@ -939,9 +939,9 @@
    "source": "competitor-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "Saved views (query + presentation) lib/Db/View.php:150, ViewsController routes.php:1781-1785, used in src/views/search/SearchIndex.vue and src/modals/view/EditView.vue; no read-only schema defined by a query (searched 'virtual schema', 'materialized view', 'x-openregister-view' in lib)",
+    "evidence": "A schema declaring x-openregister-view {view} lists the rows of that saved view's query (one source register and schema, facet filters, search terms; caller filters narrow, never widen; the reader's access to source rows applies) through the read-only view object source (lib/Service/ObjectSource/ViewObjectSourceProvider.php, Schema::getObjectSource). Create, update and delete answer 405 SCHEMA_READ_ONLY (ReadOnlyTypeException from ObjectService). tests/Unit/Service/ViewBackedTypeTest.php. Change modelling-query-backed-type archived 2026-09-30.",
     "change": "modelling-query-backed-type"
    },
    "reachedOn": "/tables (saved views)",
