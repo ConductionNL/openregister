@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "See teenusepakkuja pole selles serveris veel seadistatud. Palu administraatoril see seadistada.",
         "The provider's server did not accept the connection. Try again later.": "Teenusepakkuja server ei võtnud ühendust vastu. Proovi hiljem uuesti.",
         "Consequence": "Tagajärg",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mis juhtub, kui osapool ei vasta, tähtaja järgse astme puhul."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mis juhtub, kui osapool ei vasta, tähtaja järgse astme puhul.",
+        "Edit as draft": "Muuda mustandina",
+        "Edit draft": "Muuda mustandit",
+        "Save draft": "Salvesta mustand",
+        "Draft saved. Records are still checked against the published schema.": "Mustand salvestatud. Kirjeid kontrollitakse endiselt avaldatud skeemi järgi.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Sellel skeemil on avaldamata mustand. Kirjeid kontrollitakse avaldatud versiooni järgi, kuni selle avaldad.",
+        "Publish draft": "Avalda mustand",
+        "Publish anyway": "Avalda ikkagi",
+        "Discard draft": "Loobu mustandist"
     },
     "nplurals=2; plural=(n != 1);"
 )

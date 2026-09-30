@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Този доставчик все още не е настроен на този сървър. Помолете администратора си да го конфигурира.",
         "The provider's server did not accept the connection. Try again later.": "Сървърът на доставчика не прие свързването. Опитайте отново по-късно.",
         "Consequence": "Последица",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Какво ще се случи, ако страната не отговори, за стъпка след крайния срок."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Какво ще се случи, ако страната не отговори, за стъпка след крайния срок.",
+        "Edit as draft": "Редактиране като чернова",
+        "Edit draft": "Редактиране на черновата",
+        "Save draft": "Запазване на черновата",
+        "Draft saved. Records are still checked against the published schema.": "Черновата е запазена. Записите все още се проверяват спрямо публикуваната схема.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Тази схема има непубликувана чернова. Записите се проверяват спрямо публикуваната версия, докато не я публикувате.",
+        "Publish draft": "Публикуване на черновата",
+        "Publish anyway": "Публикуване въпреки това",
+        "Discard draft": "Отхвърляне на черновата"
     },
     "nplurals=2; plural=(n != 1);"
 )

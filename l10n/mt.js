@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Dan il-fornitur għadu mhux issettjat fuq dan is-server. Itlob lill-amministratur tiegħek biex jikkonfigurah.",
         "The provider's server did not accept the connection. Try again later.": "Is-server tal-fornitur ma aċċettax il-konnessjoni. Erġa' pprova aktar tard.",
         "Consequence": "Konsegwenza",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "X’se jiġri jekk il-parti ma twieġibx, għal pass wara l-iskadenza."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "X’se jiġri jekk il-parti ma twieġibx, għal pass wara l-iskadenza.",
+        "Edit as draft": "Editja bħala abbozz",
+        "Edit draft": "Editja l-abbozz",
+        "Save draft": "Issejvja l-abbozz",
+        "Draft saved. Records are still checked against the published schema.": "L-abbozz ġie ssejvjat. Ir-rekords għadhom jiġu ċċekkjati skont l-iskema ppubblikata.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Din l-iskema għandha abbozz mhux ippubblikat. Ir-rekords jiġu ċċekkjati skont il-verżjoni ppubblikata sakemm tippubblikah.",
+        "Publish draft": "Ippubblika l-abbozz",
+        "Publish anyway": "Ippubblika xorta waħda",
+        "Discard draft": "Armi l-abbozz"
     },
     "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);"
 )

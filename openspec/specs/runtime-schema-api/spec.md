@@ -171,3 +171,21 @@ Register's `schemas[]` field if not already present.
 - **THEN** no Register row is auto-created; the existing pre-spec
   behaviour is preserved
 
+
+### Requirement: REQ-SDRAFT-001 A schema edit can be held as a draft until it is published
+
+A schema SHALL accept a draft of its definition that does not affect validation of records until it is published. `PUT /api/schemas/{id}?draft=true` SHALL store the edit as the draft only. `POST /api/schemas/{id}/draft/publish` SHALL apply the draft through the normal update, with its breaking-change gate, version bump and one changelog entry, and SHALL clear it; a refused publish SHALL keep the draft. `DELETE /api/schemas/{id}/draft` SHALL remove it. An import SHALL NOT carry a draft.
+
+#### Scenario: a draft does not refuse live records
+
+- **GIVEN** a published schema and a draft that makes `email` required
+- **WHEN** a client saves a record without `email`
+- **THEN** the record is saved
+- @e2e exclude {asserted against the real versioning service and Opis in tests/Unit/Controller/SchemaDraftTest.php testADraftDoesNotRefuseLiveRecords}
+
+#### Scenario: publishing applies the draft
+
+- **GIVEN** the same draft
+- **WHEN** the administrator publishes it
+- **THEN** a record without `email` is refused, the schema version is bumped and the changelog has one entry for the change
+- @e2e exclude {asserted in tests/Unit/Controller/SchemaDraftTest.php testPublishingAppliesTheDraftOnceWithOneChangelogEntry}

@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ce fournisseur n'est pas encore configuré sur ce serveur. Demandez à votre administrateur de le configurer.",
         "The provider's server did not accept the connection. Try again later.": "Le serveur du fournisseur n'a pas accepté la connexion. Réessayez plus tard.",
         "Consequence": "Conséquence",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Ce qui se passera si la partie ne répond pas, pour un échelon après l’échéance."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Ce qui se passera si la partie ne répond pas, pour un échelon après l’échéance.",
+        "Edit as draft": "Modifier comme brouillon",
+        "Edit draft": "Modifier le brouillon",
+        "Save draft": "Enregistrer le brouillon",
+        "Draft saved. Records are still checked against the published schema.": "Brouillon enregistré. Les enregistrements sont toujours vérifiés selon le schéma publié.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Ce schéma a un brouillon non publié. Les enregistrements sont vérifiés selon la version publiée jusqu'à ce que vous le publiiez.",
+        "Publish draft": "Publier le brouillon",
+        "Publish anyway": "Publier quand même",
+        "Discard draft": "Abandonner le brouillon"
     },
     "nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )

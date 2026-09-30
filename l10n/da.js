@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Denne udbyder er endnu ikke sat op på denne server. Bed din administrator om at konfigurere den.",
         "The provider's server did not accept the connection. Try again later.": "Udbyderens server accepterede ikke forbindelsen. Prøv igen senere.",
         "Consequence": "Konsekvens",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Hvad der sker, hvis parten ikke svarer, for et trin efter fristen."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Hvad der sker, hvis parten ikke svarer, for et trin efter fristen.",
+        "Edit as draft": "Rediger som kladde",
+        "Edit draft": "Rediger kladde",
+        "Save draft": "Gem kladde",
+        "Draft saved. Records are still checked against the published schema.": "Kladde gemt. Poster kontrolleres stadig mod det publicerede skema.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Dette skema har en upubliceret kladde. Poster kontrolleres mod den publicerede version, indtil du publicerer den.",
+        "Publish draft": "Publicer kladde",
+        "Publish anyway": "Publicer alligevel",
+        "Discard draft": "Kassér kladde"
     },
     "nplurals=2; plural=(n != 1);"
 )

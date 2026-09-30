@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ovaj pružalac još nije postavljen na ovom serveru. Zamoli administratora da ga konfiguriše.",
         "The provider's server did not accept the connection. Try again later.": "Server pružaoca nije prihvatio povezivanje. Pokušaj ponovo kasnije.",
         "Consequence": "Posljedica",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Šta će se desiti ako strana ne odgovori, za korak nakon roka."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Šta će se desiti ako strana ne odgovori, za korak nakon roka.",
+        "Edit as draft": "Uredi kao nacrt",
+        "Edit draft": "Uredi nacrt",
+        "Save draft": "Sačuvaj nacrt",
+        "Draft saved. Records are still checked against the published schema.": "Nacrt je sačuvan. Zapisi se i dalje provjeravaju prema objavljenoj shemi.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Ova shema ima neobjavljeni nacrt. Zapisi se provjeravaju prema objavljenoj verziji dok ga ne objavite.",
+        "Publish draft": "Objavi nacrt",
+        "Publish anyway": "Ipak objavi",
+        "Discard draft": "Odbaci nacrt"
     },
     "nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;"
 )

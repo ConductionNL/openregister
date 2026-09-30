@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Šis pakalpojuma sniedzējs šajā serverī vēl nav iestatīts. Palūdz administratoram to konfigurēt.",
         "The provider's server did not accept the connection. Try again later.": "Pakalpojuma sniedzēja serveris nepieņēma savienojumu. Mēģini vēlreiz vēlāk.",
         "Consequence": "Sekas",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Kas notiks, ja puse neatbildēs, pakāpei pēc termiņa."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Kas notiks, ja puse neatbildēs, pakāpei pēc termiņa.",
+        "Edit as draft": "Rediģēt kā melnrakstu",
+        "Edit draft": "Rediģēt melnrakstu",
+        "Save draft": "Saglabāt melnrakstu",
+        "Draft saved. Records are still checked against the published schema.": "Melnraksts saglabāts. Ieraksti joprojām tiek pārbaudīti pret publicēto shēmu.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Šai shēmai ir nepublicēts melnraksts. Ieraksti tiek pārbaudīti pret publicēto versiju, līdz jūs to publicējat.",
+        "Publish draft": "Publicēt melnrakstu",
+        "Publish anyway": "Tomēr publicēt",
+        "Discard draft": "Atmest melnrakstu"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);"
 )

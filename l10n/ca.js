@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Aquest proveïdor encara no està configurat en aquest servidor. Demaneu a l'administrador que el configuri.",
         "The provider's server did not accept the connection. Try again later.": "El servidor del proveïdor no ha acceptat la connexió. Torneu-ho a provar més tard.",
         "Consequence": "Conseqüència",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Què passarà si la part no respon, per a un graó després del termini."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Què passarà si la part no respon, per a un graó després del termini.",
+        "Edit as draft": "Edita com a esborrany",
+        "Edit draft": "Edita l'esborrany",
+        "Save draft": "Desa l'esborrany",
+        "Draft saved. Records are still checked against the published schema.": "Esborrany desat. Els registres encara es comproven amb l'esquema publicat.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Aquest esquema té un esborrany sense publicar. Els registres es comproven amb la versió publicada fins que el publiqueu.",
+        "Publish draft": "Publica l'esborrany",
+        "Publish anyway": "Publica igualment",
+        "Discard draft": "Descarta l'esborrany"
     },
     "nplurals=2; plural=(n != 1);"
 )

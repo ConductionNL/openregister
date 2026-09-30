@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Þessi þjónustuaðili hefur ekki enn verið settur upp á þessum þjóni. Biddu kerfisstjórann þinn að stilla hann.",
         "The provider's server did not accept the connection. Try again later.": "Þjónn þjónustuaðilans tók ekki við tengingunni. Reyndu aftur síðar.",
         "Consequence": "Afleiðing",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Hvað gerist ef aðilinn svarar ekki, fyrir þrep eftir frestinn."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Hvað gerist ef aðilinn svarar ekki, fyrir þrep eftir frestinn.",
+        "Edit as draft": "Breyta sem drögum",
+        "Edit draft": "Breyta drögum",
+        "Save draft": "Vista drög",
+        "Draft saved. Records are still checked against the published schema.": "Drög vistuð. Færslur eru enn prófaðar gegn útgefnu skemanu.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Þetta skema hefur óútgefin drög. Færslur eru prófaðar gegn útgefnu útgáfunni þar til þú gefur þau út.",
+        "Publish draft": "Gefa út drög",
+        "Publish anyway": "Gefa samt út",
+        "Discard draft": "Henda drögum"
     },
     "nplurals=2; plural=(n != 1);"
 )

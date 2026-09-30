@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ta ponudnik na tem strežniku še ni nastavljen. Prosi skrbnika, naj ga nastavi.",
         "The provider's server did not accept the connection. Try again later.": "Strežnik ponudnika povezave ni sprejel. Poskusi znova pozneje.",
         "Consequence": "Posledica",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Kaj se zgodi, če stranka ne odgovori, za stopnjo po roku."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Kaj se zgodi, če stranka ne odgovori, za stopnjo po roku.",
+        "Edit as draft": "Uredi kot osnutek",
+        "Edit draft": "Uredi osnutek",
+        "Save draft": "Shrani osnutek",
+        "Draft saved. Records are still checked against the published schema.": "Osnutek je shranjen. Zapisi se še vedno preverjajo glede na objavljeno shemo.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Ta shema ima neobjavljen osnutek. Zapisi se preverjajo glede na objavljeno različico, dokler ga ne objavite.",
+        "Publish draft": "Objavi osnutek",
+        "Publish anyway": "Vseeno objavi",
+        "Discard draft": "Zavrzi osnutek"
     },
     "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);"
 )

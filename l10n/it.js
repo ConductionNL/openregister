@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Questo provider non è ancora configurato su questo server. Chiedi al tuo amministratore di configurarlo.",
         "The provider's server did not accept the connection. Try again later.": "Il server del provider non ha accettato la connessione. Riprova più tardi.",
         "Consequence": "Conseguenza",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Cosa succede se la parte non risponde, per un gradino dopo la scadenza."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Cosa succede se la parte non risponde, per un gradino dopo la scadenza.",
+        "Edit as draft": "Modifica come bozza",
+        "Edit draft": "Modifica bozza",
+        "Save draft": "Salva bozza",
+        "Draft saved. Records are still checked against the published schema.": "Bozza salvata. I record sono ancora verificati rispetto allo schema pubblicato.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Questo schema ha una bozza non pubblicata. I record sono verificati rispetto alla versione pubblicata finché non la pubblichi.",
+        "Publish draft": "Pubblica bozza",
+        "Publish anyway": "Pubblica comunque",
+        "Discard draft": "Scarta bozza"
     },
     "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )

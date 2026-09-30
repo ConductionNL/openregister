@@ -3302,7 +3302,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Deze provider is nog niet ingesteld op deze server. Vraag de beheerder om deze in te stellen.",
         "The provider's server did not accept the connection. Try again later.": "De server van de provider heeft de koppeling niet geaccepteerd. Probeer het later opnieuw.",
         "Consequence": "Gevolg",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Wat er gebeurt als de partij niet reageert, voor een trede na de termijn."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Wat er gebeurt als de partij niet reageert, voor een trede na de termijn.",
+        "Edit as draft": "Bewerken als concept",
+        "Edit draft": "Concept bewerken",
+        "Save draft": "Concept opslaan",
+        "Draft saved. Records are still checked against the published schema.": "Concept opgeslagen. Records worden nog gecontroleerd tegen het gepubliceerde schema.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Dit schema heeft een ongepubliceerd concept. Records worden gecontroleerd tegen de gepubliceerde versie tot je het publiceert.",
+        "Publish draft": "Concept publiceren",
+        "Publish anyway": "Toch publiceren",
+        "Discard draft": "Concept verwijderen"
     },
     "nplurals=2; plural=(n != 1);"
 )

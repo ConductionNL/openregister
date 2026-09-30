@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Den här leverantören är inte konfigurerad på den här servern än. Be din administratör att konfigurera den.",
         "The provider's server did not accept the connection. Try again later.": "Leverantörens server accepterade inte anslutningen. Försök igen senare.",
         "Consequence": "Konsekvens",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Vad som händer om parten inte svarar, för ett steg efter tidsfristen."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Vad som händer om parten inte svarar, för ett steg efter tidsfristen.",
+        "Edit as draft": "Redigera som utkast",
+        "Edit draft": "Redigera utkast",
+        "Save draft": "Spara utkast",
+        "Draft saved. Records are still checked against the published schema.": "Utkastet sparat. Poster kontrolleras fortfarande mot det publicerade schemat.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Det här schemat har ett opublicerat utkast. Poster kontrolleras mot den publicerade versionen tills du publicerar det.",
+        "Publish draft": "Publicera utkast",
+        "Publish anyway": "Publicera ändå",
+        "Discard draft": "Förkasta utkast"
     },
     "nplurals=2; plural=(n != 1);"
 )

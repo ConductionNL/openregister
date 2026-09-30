@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ez a szolgáltató még nincs beállítva ezen a kiszolgálón. Kérd meg a rendszergazdát, hogy állítsa be.",
         "The provider's server did not accept the connection. Try again later.": "A szolgáltató kiszolgálója nem fogadta el a kapcsolatot. Próbáld újra később.",
         "Consequence": "Következmény",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mi történik, ha a fél nem válaszol, a határidő utáni lépcsőnél."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mi történik, ha a fél nem válaszol, a határidő utáni lépcsőnél.",
+        "Edit as draft": "Szerkesztés piszkozatként",
+        "Edit draft": "Piszkozat szerkesztése",
+        "Save draft": "Piszkozat mentése",
+        "Draft saved. Records are still checked against the published schema.": "A piszkozat mentve. A rekordokat továbbra is a közzétett séma alapján ellenőrizzük.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Ennek a sémának van egy közzé nem tett piszkozata. A rekordokat a közzétett verzió alapján ellenőrizzük, amíg közzé nem teszi.",
+        "Publish draft": "Piszkozat közzététele",
+        "Publish anyway": "Közzététel mégis",
+        "Discard draft": "Piszkozat elvetése"
     },
     "nplurals=2; plural=(n != 1);"
 )

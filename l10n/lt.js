@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Šis tiekėjas šiame serveryje dar nesukonfigūruotas. Paprašykite administratoriaus jį sukonfigūruoti.",
         "The provider's server did not accept the connection. Try again later.": "Tiekėjo serveris nepriėmė jungimosi. Bandykite dar kartą vėliau.",
         "Consequence": "Pasekmė",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Kas nutiks, jei šalis neatsakys, pakopai po termino."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Kas nutiks, jei šalis neatsakys, pakopai po termino.",
+        "Edit as draft": "Redaguoti kaip juodraštį",
+        "Edit draft": "Redaguoti juodraštį",
+        "Save draft": "Įrašyti juodraštį",
+        "Draft saved. Records are still checked against the published schema.": "Juodraštis įrašytas. Įrašai vis dar tikrinami pagal paskelbtą schemą.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Ši schema turi nepaskelbtą juodraštį. Įrašai tikrinami pagal paskelbtą versiją, kol jį paskelbsite.",
+        "Publish draft": "Paskelbti juodraštį",
+        "Publish anyway": "Vis tiek paskelbti",
+        "Discard draft": "Atmesti juodraštį"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);"
 )

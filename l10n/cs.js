@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Tento poskytovatel zatím na tomto serveru není nastaven. Požádejte správce, aby ho nastavil.",
         "The provider's server did not accept the connection. Try again later.": "Server poskytovatele připojení nepřijal. Zkuste to později znovu.",
         "Consequence": "Důsledek",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Co se stane, když strana neodpoví, pro stupeň po uplynutí lhůty."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Co se stane, když strana neodpoví, pro stupeň po uplynutí lhůty.",
+        "Edit as draft": "Upravit jako koncept",
+        "Edit draft": "Upravit koncept",
+        "Save draft": "Uložit koncept",
+        "Draft saved. Records are still checked against the published schema.": "Koncept uložen. Záznamy se stále kontrolují podle zveřejněného schématu.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Toto schéma má nezveřejněný koncept. Záznamy se kontrolují podle zveřejněné verze, dokud jej nezveřejníte.",
+        "Publish draft": "Zveřejnit koncept",
+        "Publish anyway": "Přesto zveřejnit",
+        "Discard draft": "Zahodit koncept"
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 )

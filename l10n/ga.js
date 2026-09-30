@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Níl an soláthraí seo socraithe ar an bhfreastalaí seo fós. Iarr ar do riarthóir é a chumrú.",
         "The provider's server did not accept the connection. Try again later.": "Níor ghlac freastalaí an tsoláthraí leis an gceangal. Bain triail eile as ar ball.",
         "Consequence": "Iarmhairt",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Cad a tharlóidh mura bhfreagraíonn an páirtí, do chéim tar éis an spriocdháta."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Cad a tharlóidh mura bhfreagraíonn an páirtí, do chéim tar éis an spriocdháta.",
+        "Edit as draft": "Cuir in eagar mar dhréacht",
+        "Edit draft": "Cuir an dréacht in eagar",
+        "Save draft": "Sábháil an dréacht",
+        "Draft saved. Records are still checked against the published schema.": "Sábháladh an dréacht. Seiceáiltear taifid fós i gcoinne na scéimre foilsithe.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Tá dréacht neamhfhoilsithe ag an scéimre seo. Seiceáiltear taifid i gcoinne an leagain fhoilsithe go dtí go bhfoilsíonn tú é.",
+        "Publish draft": "Foilsigh an dréacht",
+        "Publish anyway": "Foilsigh mar sin féin",
+        "Discard draft": "Caith an dréacht i leataobh"
     },
     "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);"
 )

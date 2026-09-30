@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ky ofrues nuk është konfiguruar ende në këtë server. Kërkoji administratorit ta konfigurojë.",
         "The provider's server did not accept the connection. Try again later.": "Serveri i ofruesit nuk e pranoi lidhjen. Provo sërish më vonë.",
         "Consequence": "Pasojë",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Çfarë ndodh nëse pala nuk përgjigjet, për një shkallë pas afatit."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Çfarë ndodh nëse pala nuk përgjigjet, për një shkallë pas afatit.",
+        "Edit as draft": "Përpuno si draft",
+        "Edit draft": "Përpuno draftin",
+        "Save draft": "Ruaj draftin",
+        "Draft saved. Records are still checked against the published schema.": "Drafti u ruajt. Regjistrimet kontrollohen ende sipas skemës së publikuar.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Kjo skemë ka një draft të papublikuar. Regjistrimet kontrollohen sipas versionit të publikuar derisa ta publikoni.",
+        "Publish draft": "Publiko draftin",
+        "Publish anyway": "Publiko gjithsesi",
+        "Discard draft": "Hidh draftin"
     },
     "nplurals=2; plural=(n != 1);"
 )

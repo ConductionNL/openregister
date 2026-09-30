@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Цього постачальника ще не налаштовано на цьому сервері. Попросіть адміністратора налаштувати його.",
         "The provider's server did not accept the connection. Try again later.": "Сервер постачальника не прийняв підключення. Спробуйте пізніше.",
         "Consequence": "Наслідок",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Що станеться, якщо сторона не відповість, для щабля після строку."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Що станеться, якщо сторона не відповість, для щабля після строку.",
+        "Edit as draft": "Змінити як чернетку",
+        "Edit draft": "Змінити чернетку",
+        "Save draft": "Зберегти чернетку",
+        "Draft saved. Records are still checked against the published schema.": "Чернетку збережено. Записи й надалі перевіряються за опублікованою схемою.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Ця схема має неопубліковану чернетку. Записи перевіряються за опублікованою версією, доки ви її не опублікуєте.",
+        "Publish draft": "Опублікувати чернетку",
+        "Publish anyway": "Все одно опублікувати",
+        "Discard draft": "Відхилити чернетку"
     },
     "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 )

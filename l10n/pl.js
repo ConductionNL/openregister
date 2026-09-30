@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ten dostawca nie jest jeszcze skonfigurowany na tym serwerze. Poproś administratora o jego skonfigurowanie.",
         "The provider's server did not accept the connection. Try again later.": "Serwer dostawcy nie zaakceptował połączenia. Spróbuj ponownie później.",
         "Consequence": "Konsekwencja",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Co się stanie, jeśli strona nie odpowie, dla szczebla po terminie."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Co się stanie, jeśli strona nie odpowie, dla szczebla po terminie.",
+        "Edit as draft": "Edytuj jako wersję roboczą",
+        "Edit draft": "Edytuj wersję roboczą",
+        "Save draft": "Zapisz wersję roboczą",
+        "Draft saved. Records are still checked against the published schema.": "Wersja robocza zapisana. Rekordy są nadal sprawdzane według opublikowanego schematu.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Ten schemat ma nieopublikowaną wersję roboczą. Rekordy są sprawdzane według opublikowanej wersji, dopóki jej nie opublikujesz.",
+        "Publish draft": "Opublikuj wersję roboczą",
+        "Publish anyway": "Opublikuj mimo to",
+        "Discard draft": "Odrzuć wersję roboczą"
     },
     "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);"
 )

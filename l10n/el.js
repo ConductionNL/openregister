@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Αυτός ο πάροχος δεν έχει ρυθμιστεί ακόμα σε αυτόν τον διακομιστή. Ζητήστε από τον διαχειριστή σας να τον ρυθμίσει.",
         "The provider's server did not accept the connection. Try again later.": "Ο διακομιστής του παρόχου δεν αποδέχτηκε τη σύνδεση. Δοκιμάστε ξανά αργότερα.",
         "Consequence": "Συνέπεια",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Τι θα συμβεί αν το μέρος δεν απαντήσει, για ένα βήμα μετά την προθεσμία."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Τι θα συμβεί αν το μέρος δεν απαντήσει, για ένα βήμα μετά την προθεσμία.",
+        "Edit as draft": "Επεξεργασία ως πρόχειρο",
+        "Edit draft": "Επεξεργασία προχείρου",
+        "Save draft": "Αποθήκευση προχείρου",
+        "Draft saved. Records are still checked against the published schema.": "Το πρόχειρο αποθηκεύτηκε. Οι εγγραφές ελέγχονται ακόμη με βάση το δημοσιευμένο σχήμα.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Αυτό το σχήμα έχει μη δημοσιευμένο πρόχειρο. Οι εγγραφές ελέγχονται με βάση τη δημοσιευμένη έκδοση μέχρι να το δημοσιεύσετε.",
+        "Publish draft": "Δημοσίευση προχείρου",
+        "Publish anyway": "Δημοσίευση παρ’ όλα αυτά",
+        "Discard draft": "Απόρριψη προχείρου"
     },
     "nplurals=2; plural=(n != 1);"
 )

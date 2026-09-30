@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Гэты пастаўшчык яшчэ не наладжаны на гэтым серверы. Папрасіце адміністратара наладзіць яго.",
         "The provider's server did not accept the connection. Try again later.": "Сервер пастаўшчыка не прыняў падлучэнне. Паспрабуйце пазней.",
         "Consequence": "Наступства",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Што будзе, калі бок не адкажа, паведамляецца яму на прыступцы пасля тэрміну."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Што будзе, калі бок не адкажа, паведамляецца яму на прыступцы пасля тэрміну.",
+        "Edit as draft": "Змяніць як чарнавік",
+        "Edit draft": "Змяніць чарнавік",
+        "Save draft": "Захаваць чарнавік",
+        "Draft saved. Records are still checked against the published schema.": "Чарнавік захаваны. Запісы па-ранейшаму правяраюцца па апублікаванай схеме.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "У гэтай схемы ёсць неапублікаваны чарнавік. Запісы правяраюцца па апублікаванай версіі, пакуль вы яго не апублікуеце.",
+        "Publish draft": "Апублікаваць чарнавік",
+        "Publish anyway": "Усё роўна апублікаваць",
+        "Discard draft": "Адхіліць чарнавік"
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

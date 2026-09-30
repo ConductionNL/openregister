@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Acest furnizor nu este încă configurat pe acest server. Roagă-ți administratorul să îl configureze.",
         "The provider's server did not accept the connection. Try again later.": "Serverul furnizorului nu a acceptat conexiunea. Încearcă din nou mai târziu.",
         "Consequence": "Consecință",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Ce se întâmplă dacă partea nu răspunde, pentru o treaptă după termen."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Ce se întâmplă dacă partea nu răspunde, pentru o treaptă după termen.",
+        "Edit as draft": "Editează ca ciornă",
+        "Edit draft": "Editează ciorna",
+        "Save draft": "Salvează ciorna",
+        "Draft saved. Records are still checked against the published schema.": "Ciorna a fost salvată. Înregistrările sunt încă verificate după schema publicată.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Această schemă are o ciornă nepublicată. Înregistrările sunt verificate după versiunea publicată până când o publicați.",
+        "Publish draft": "Publică ciorna",
+        "Publish anyway": "Publică oricum",
+        "Discard draft": "Renunță la ciornă"
     },
     "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));"
 )

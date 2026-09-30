@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Bu sağlayıcı henüz bu sunucuda yapılandırılmamış. Yöneticinizden yapılandırmasını isteyin.",
         "The provider's server did not accept the connection. Try again later.": "Sağlayıcının sunucusu bağlantıyı kabul etmedi. Daha sonra yeniden deneyin.",
         "Consequence": "Sonuç",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Taraf yanıt vermezse ne olacağı, süre sonrasındaki bir basamak için."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Taraf yanıt vermezse ne olacağı, süre sonrasındaki bir basamak için.",
+        "Edit as draft": "Taslak olarak düzenle",
+        "Edit draft": "Taslağı düzenle",
+        "Save draft": "Taslağı kaydet",
+        "Draft saved. Records are still checked against the published schema.": "Taslak kaydedildi. Kayıtlar hâlâ yayımlanan şemaya göre denetleniyor.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Bu şemanın yayımlanmamış bir taslağı var. Siz yayımlayana kadar kayıtlar yayımlanan sürüme göre denetlenir.",
+        "Publish draft": "Taslağı yayımla",
+        "Publish anyway": "Yine de yayımla",
+        "Discard draft": "Taslağı at"
     },
     "nplurals=2; plural=(n != 1);"
 )

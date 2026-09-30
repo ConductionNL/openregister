@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Quest purschider n'è anc betg configurà sin quest server. Dumonda tes administratur da al configurar.",
         "The provider's server did not accept the connection. Try again later.": "Il server dal purschider n'ha betg acceptà la colliaziun. Emprova pli tard anc ina giada.",
         "Consequence": "Consequenza",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Tge che capita, sche la partida na respunda betg, per in stgalim suenter il termin."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Tge che capita, sche la partida na respunda betg, per in stgalim suenter il termin.",
+        "Edit as draft": "Modifitgar sco sboz",
+        "Edit draft": "Modifitgar il sboz",
+        "Save draft": "Memorisar il sboz",
+        "Draft saved. Records are still checked against the published schema.": "Sboz memorisà. Las datas vegnan anc adina controlladas tenor la schema publitgada.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Questa schema ha in sboz betg publitgà. Las datas vegnan controlladas tenor la versiun publitgada fin che ti al publitgeschas.",
+        "Publish draft": "Publitgar il sboz",
+        "Publish anyway": "Publitgar tuttina",
+        "Discard draft": "Stizzar il sboz"
     },
     "nplurals=2; plural=(n != 1);"
 )

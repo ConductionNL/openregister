@@ -3240,7 +3240,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "This provider is not set up on this server yet. Ask your administrator to configure it.",
         "The provider's server did not accept the connection. Try again later.": "The provider's server did not accept the connection. Try again later.",
         "Consequence": "Consequence",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "What the party is told will happen if they do not respond, for a rung after the deadline."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "What the party is told will happen if they do not respond, for a rung after the deadline.",
+        "Edit as draft": "Edit as draft",
+        "Edit draft": "Edit draft",
+        "Save draft": "Save draft",
+        "Draft saved. Records are still checked against the published schema.": "Draft saved. Records are still checked against the published schema.",
+        "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "This schema has an unpublished draft. Records are checked against the published version until you publish it.",
+        "Publish draft": "Publish draft",
+        "Publish anyway": "Publish anyway",
+        "Discard draft": "Discard draft"
     },
     "nplurals=2; plural=(n != 1);"
 )
