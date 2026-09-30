@@ -31,7 +31,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 
 declare(strict_types=1);
@@ -77,7 +77,7 @@ class ViewShareResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testTheOwnerHoldsOwnerAccess(): void {
 		$this->assertSame(
@@ -91,7 +91,7 @@ class ViewShareResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testAMemberHoldsTheSharesMode(): void {
 		$view = $this->view(['sharedWith' => [['group' => 'vth', 'mode' => 'read']]]);
@@ -112,7 +112,7 @@ class ViewShareResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testTheWidestShareWins(): void {
 		$view = $this->view(
@@ -138,7 +138,7 @@ class ViewShareResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testAStrangerHoldsNothing(): void {
 		$view = $this->view(['sharedWith' => [['group' => 'vth', 'mode' => 'write']]]);
@@ -152,7 +152,7 @@ class ViewShareResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testAPublicViewIsReadableAndNoMore(): void {
 		$view = $this->view(['isPublic' => true]);
@@ -171,7 +171,7 @@ class ViewShareResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testAnUnreadableShareGrantsNothing(): void {
 		$view = $this->view(
@@ -196,7 +196,7 @@ class ViewShareResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testAJsonEncodedShareListIsRead(): void {
 		$view = $this->view(['sharedWith' => '[{"group":"vth","mode":"write"}]']);
@@ -214,7 +214,7 @@ class ViewShareResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testAWriteMemberMayNotReshareRehomeOrDelete(): void {
 		$allowed = $this->resolver->refusedFields(
@@ -238,7 +238,7 @@ class ViewShareResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testAReadMemberMayChangeNothing(): void {
 		$refused = $this->resolver->refusedFields(
@@ -255,7 +255,7 @@ class ViewShareResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testTheOwnerAndAnAdministratorMayChangeEverything(): void {
 		$this->assertSame(
@@ -284,7 +284,7 @@ class ViewShareResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testAShareOnAnUnknownGroupIsRefused(): void {
 		$exists = static fn (string $gid): bool => ($gid === 'vth');
@@ -307,7 +307,7 @@ class ViewShareResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testAValidShareListPasses(): void {
 		$exists = static fn (string $gid): bool => true;
@@ -331,7 +331,7 @@ class ViewShareResolverTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function testTheShapeOfAShareListIsChecked(): void {
 		$exists = static fn (string $gid): bool => true;

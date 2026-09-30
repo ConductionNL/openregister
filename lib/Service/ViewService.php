@@ -170,7 +170,7 @@ class ViewService {
 	 *
 	 * @return array The views.
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function findAllFor(ViewerReach $reach): array {
 		return $this->viewMapper->findAllFor(reach: $reach);
@@ -189,6 +189,7 @@ class ViewService {
 	 * @param bool $isDefault Whether the view is the default view for the user
 	 * @param array<string, mixed> $query The query parameters (registers, schemas, filters)
 	 * @param array|null $presentation Presentation config (viewType + kanban/calendar config); null = table (default)
+	 * @param array|null $sharedWith Validated group shares, `[{group, mode}]`; null = none
 	 *
 	 * @return View The created view entity
 	 *
@@ -206,6 +207,7 @@ class ViewService {
 		bool $isDefault,
 		array $query,
 		?array $presentation = null,
+		?array $sharedWith = null,
 	): View {
 		try {
 			// Step 0: Reject a presentation config that cannot render before touching the DB.
@@ -227,6 +229,7 @@ class ViewService {
 			$view->setQuery($query);
 			$view->setPresentation($presentation);
 			$view->setFavoredBy([]);
+			$view->setSharedWith(array_values($sharedWith ?? []));
 
 			// Step 3: Insert view into database and return created entity.
 			return $this->viewMapper->insert($view);
@@ -252,6 +255,7 @@ class ViewService {
 	 * @param array $query The query parameters
 	 * @param array|null $favoredBy Array of user IDs who favor this view
 	 * @param array|null $presentation Presentation config (viewType + kanban/calendar config); null leaves the existing value untouched
+	 * @param array|null $sharedWith Validated group shares, `[{group, mode}]`; null leaves the existing shares untouched
 	 *
 	 * @return View The updated view
 	 *
@@ -260,6 +264,8 @@ class ViewService {
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Each optional field is null-means-untouched; a bag would lose that per field.
 	 */
 	public function update(
 		int|string $id,
@@ -271,6 +277,7 @@ class ViewService {
 		array $query,
 		?array $favoredBy = null,
 		?array $presentation = null,
+		?array $sharedWith = null,
 	): View {
 		try {
 			// Reject a presentation config that cannot render before touching the DB.
@@ -299,6 +306,12 @@ class ViewService {
 			// so a PATCH that doesn't mention presentation can't silently wipe it.
 			if ($presentation !== null) {
 				$view->setPresentation($presentation);
+			}
+
+			// The group shares, validated by the caller. Null leaves them as they
+			// were, so an update that does not mention sharing cannot drop them.
+			if ($sharedWith !== null) {
+				$view->setSharedWith(array_values($sharedWith));
 			}
 
 			return $this->viewMapper->update($view);

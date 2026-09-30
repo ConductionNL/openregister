@@ -196,7 +196,7 @@ class View extends Entity implements JsonSerializable {
 	 *
 	 * @var array|null The shares, or null when the view is shared with nobody.
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	protected ?array $sharedWith = [];
 
@@ -256,7 +256,7 @@ class View extends Entity implements JsonSerializable {
 	 *
 	 * @return array The shares, empty when it is shared with nobody.
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function getSharedWith(): array {
 		return ($this->sharedWith ?? []);
@@ -269,7 +269,7 @@ class View extends Entity implements JsonSerializable {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function setSharedWith(array $sharedWith): void {
 		$this->sharedWith = $sharedWith;
@@ -286,7 +286,7 @@ class View extends Entity implements JsonSerializable {
 	 *
 	 * @return string|null One of owner, write, read, or null when unresolved.
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function getAccess(): ?string {
 		return $this->access;
@@ -299,7 +299,7 @@ class View extends Entity implements JsonSerializable {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function setAccess(?string $access): void {
 		$this->access = $access;
