@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCP\DB\QueryBuilder\IParameter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
@@ -998,7 +999,7 @@ class MagicRbacHandler {
 
 		// Simple value: equals comparison.
 		if (is_string($resolvedValue) === true || is_numeric($resolvedValue) === true || is_bool($resolvedValue) === true) {
-			return $qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($resolvedValue));
+			return $qb->expr()->eq("t.{$columnName}", $this->bindScalar(qb: $qb, value: $resolvedValue));
 		}
 
 		// Operator object.
@@ -1174,8 +1175,34 @@ class MagicRbacHandler {
 		}
 
 		$method = $comparisonMap[$operator];
-		return $qb->expr()->{$method}("t.{$columnName}", $qb->createNamedParameter($resolvedOperand));
+		return $qb->expr()->{$method}("t.{$columnName}", $this->bindScalar(qb: $qb, value: $resolvedOperand));
 	}//end buildComparisonOperatorCondition()
+
+	/**
+	 * Bind a scalar match value with the parameter type its PHP type needs.
+	 *
+	 * A bool bound with the default PARAM_STR is cast to string by PDO, so
+	 * `false` reaches the database as '' and PostgreSQL refuses it for a boolean
+	 * column: `invalid input syntax for type boolean: ""`. That 500ed every
+	 * non-admin read of a schema whose read rule matches on `false` (hermiq's
+	 * agent, `{"isPrivate": false}`), while the raw-SQL list path already wrote
+	 * a FALSE literal. PARAM_BOOL sends a real boolean on PostgreSQL and 0/1 on
+	 * MySQL/MariaDB, where boolean columns are integers.
+	 *
+	 * @param IQueryBuilder $qb    The query builder.
+	 * @param mixed         $value The resolved scalar value.
+	 *
+	 * @return IParameter The named parameter placeholder.
+	 *
+	 * @spec exclude bug fix: a boolean RBAC match value was bound as the empty string on PostgreSQL
+	 */
+	private function bindScalar(IQueryBuilder $qb, mixed $value): IParameter {
+		if (is_bool($value) === true) {
+			return $qb->createNamedParameter($value, IQueryBuilder::PARAM_BOOL);
+		}
+
+		return $qb->createNamedParameter($value);
+	}//end bindScalar()
 
 	/**
 	 * Build array operator condition ($in, $nin) for QueryBuilder
