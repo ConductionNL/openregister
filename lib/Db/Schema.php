@@ -111,6 +111,8 @@ use stdClass;
  * @method void setTalk(?array $talk)
  * @method array|null getDeck()
  * @method void setDeck(?array $deck)
+ * @method array|null getDraft()
+ * @method void setDraft(?array $draft)
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
@@ -481,6 +483,16 @@ class Schema extends Entity implements JsonSerializable {
 	protected ?array $deck = null;
 
 	/**
+	 * A pending edit of this schema's definition, held beside the published one.
+	 *
+	 * Validation never reads it; publishing applies it through the normal update.
+	 * Only SchemasController's draft routes write it, never hydrate().
+	 *
+	 * @var array|null The draft body, or null when there is none
+	 */
+	protected ?array $draft = null;
+
+	/**
 	 * Constructor for the Schema class
 	 *
 	 * Sets up field types for all properties
@@ -526,6 +538,7 @@ class Schema extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'calendar', type: 'json');
 		$this->addType(fieldName: 'talk', type: 'json');
 		$this->addType(fieldName: 'deck', type: 'json');
+		$this->addType(fieldName: 'draft', type: 'json');
 	}//end __construct()
 
 	/**
@@ -1944,6 +1957,11 @@ class Schema extends Entity implements JsonSerializable {
 	public function hydrate(array $object, ?PropertyValidatorHandler $validator = null): static {
 		$jsonFields = $this->getJsonFields();
 
+		// A draft is written by the draft routes only. An import, a PUT body or a
+		// re-imported export carrying `draft` would otherwise set a pending edit
+		// nobody asked for (modelling-schema-draft).
+		unset($object['draft']);
+
 		if (isset($object['metadata']) === false) {
 			$object['metadata'] = [];
 		}
@@ -2194,6 +2212,7 @@ class Schema extends Entity implements JsonSerializable {
 			'_calendar' => $this->calendar,
 			'_talk' => $this->talk,
 			'_deck' => $this->deck,
+			'draft' => $this->draft,
 		];
 	}//end jsonSerialize()
 
