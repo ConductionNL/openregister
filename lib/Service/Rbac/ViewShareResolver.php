@@ -159,6 +159,82 @@ class ViewShareResolver {
 	}//end mayAdminister()
 
 	/**
+	 * The fields of an update whose value differs from the stored view.
+	 *
+	 * The edit screen sends the whole view on every save, so judging the fields
+	 * a body CARRIES would refuse a member on fields they never touched. The
+	 * comparison is by value: an equal `query` with its keys in another order,
+	 * or the same shares in another order, is not a change.
+	 *
+	 * @param array<string, mixed> $update The fields being written.
+	 * @param array<string, mixed> $view   The stored view, as the entity serialises it.
+	 *
+	 * @return array<string, mixed> The fields that change, with their new values.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function changedFields(array $update, array $view): array {
+		$changed = [];
+		foreach ($update as $field => $value) {
+			$field = (string)$field;
+			if ($this->canonical(field: $field, value: $value) !== $this->canonical(field: $field, value: ($view[$field] ?? null))) {
+				$changed[$field] = $value;
+			}
+		}
+
+		return $changed;
+	}//end changedFields()
+
+	/**
+	 * One field's value in a form two equal values share.
+	 *
+	 * @param string $field The field.
+	 * @param mixed  $value Its value.
+	 *
+	 * @return mixed
+	 */
+	private function canonical(string $field, mixed $value): mixed {
+		switch ($field) {
+			case 'name':
+			case 'description':
+			case 'owner':
+				return (string)($value ?? '');
+			case 'isPublic':
+			case 'isDefault':
+				return (bool)$value;
+			case 'sharedWith':
+				$shares = array_map(
+					fn (array $share): string => $share['group'].'|'.$share['mode'],
+					$this->sharesOf(view: ['sharedWith' => $value])
+				);
+				sort($shares);
+				return $shares;
+			default:
+				return $this->sortedKeys(value: $value);
+		}
+	}//end canonical()
+
+	/**
+	 * A value with every object's keys sorted; lists keep their order.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return mixed
+	 */
+	private function sortedKeys(mixed $value): mixed {
+		if (is_array($value) === false) {
+			return $value;
+		}
+
+		$value = array_map(fn ($item) => $this->sortedKeys(value: $item), $value);
+		if (array_is_list($value) === false) {
+			ksort($value);
+		}
+
+		return $value;
+	}//end sortedKeys()
+
+	/**
 	 * The fields of an update this caller is not allowed to have sent.
 	 *
 	 * Answering with the REFUSED FIELDS rather than a boolean is deliberate: a
