@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Rbac;
  * controller passed around, where a misspelt key read as "no groups" rather
  * than as an error.
  *
- * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 class ViewerReach {
 

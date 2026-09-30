@@ -123,11 +123,56 @@ class ViewsController extends Controller {
 	 *
 	 * @throws DoesNotExistException When the view is not this caller's.
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	private function requireOwnedView(string $id, string $userId): View {
 		return $this->viewService->find(id: $id, owner: $userId);
 	}//end requireOwnedView()
+
+	/**
+	 * Refuse a share list that names a group that does not exist, or is malformed.
+	 *
+	 * Absent `sharedWith` is not refused: it leaves the shares as they are.
+	 *
+	 * @param array $data The request body.
+	 *
+	 * @return JSONResponse|null A 400 naming the findings, or null when the shares may be stored.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	private function refuseInvalidShares(array $data): ?JSONResponse {
+		if (array_key_exists('sharedWith', $data) === false) {
+			return null;
+		}
+
+		$findings = $this->viewers->shareFindings(sharedWith: $data['sharedWith']);
+		if ($findings === []) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => 'The view cannot be shared this way: '.implode(' ', array_column($findings, 'message')),
+				'findings' => $findings,
+			],
+			statusCode: 400
+		);
+	}//end refuseInvalidShares()
+
+	/**
+	 * The validated share list from a request body, or null when it does not mention sharing.
+	 *
+	 * @param array $data The request body, already checked by refuseInvalidShares().
+	 *
+	 * @return array|null
+	 */
+	private function sharesFrom(array $data): ?array {
+		if (array_key_exists('sharedWith', $data) === false || $data['sharedWith'] === null) {
+			return null;
+		}
+
+		return $data['sharedWith'];
+	}//end sharesFrom()
 
 	/**
 	 * Refuse an update that changes fields this caller does not own.
@@ -145,7 +190,7 @@ class ViewsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal, or null when allowed.
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	private function refuseForbiddenViewFields(string $id, string $userId, array $data): ?JSONResponse {
 		// 🔴 BOTH ARGUMENTS. `ViewService::find()` takes `(id, owner)` and both
@@ -432,6 +477,11 @@ class ViewsController extends Controller {
 				$presentation = null;
 			}
 
+			$shareRefusal = $this->refuseInvalidShares(data: $data);
+			if ($shareRefusal !== null) {
+				return $shareRefusal;
+			}
+
 			$view = $this->viewService->create(
 				name: $data['name'],
 				description: $data['description'] ?? '',
@@ -439,7 +489,8 @@ class ViewsController extends Controller {
 				isPublic: $data['isPublic'] ?? false,
 				isDefault: $data['isDefault'] ?? false,
 				query: $query,
-				presentation: $presentation
+				presentation: $presentation,
+				sharedWith: $this->sharesFrom(data: $data)
 			);
 
 			return new JSONResponse(
@@ -570,6 +621,11 @@ class ViewsController extends Controller {
 				$presentation = null;
 			}
 
+			$shareRefusal = $this->refuseInvalidShares(data: $data);
+			if ($shareRefusal !== null) {
+				return $shareRefusal;
+			}
+
 			$view = $this->viewService->update(
 				id: $id,
 				name: $data['name'],
@@ -578,7 +634,8 @@ class ViewsController extends Controller {
 				isPublic: $data['isPublic'] ?? false,
 				isDefault: $data['isDefault'] ?? false,
 				query: $query,
-				presentation: $presentation
+				presentation: $presentation,
+				sharedWith: $this->sharesFrom(data: $data)
 			);
 
 			return new JSONResponse(
@@ -703,6 +760,11 @@ class ViewsController extends Controller {
 				$presentation = $data['presentation'];
 			}
 
+			$shareRefusal = $this->refuseInvalidShares(data: $data);
+			if ($shareRefusal !== null) {
+				return $shareRefusal;
+			}
+
 			// Update view.
 			$updatedView = $this->viewService->update(
 				id: $id,
@@ -713,7 +775,8 @@ class ViewsController extends Controller {
 				isDefault: $isDefault,
 				query: $query,
 				favoredBy: $favoredBy,
-				presentation: $presentation
+				presentation: $presentation,
+				sharedWith: $this->sharesFrom(data: $data)
 			);
 
 			return new JSONResponse(

@@ -37,7 +37,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 /**
  * Resolves a caller's access to a saved view, and validates a share list.
  *
- * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 class ViewShareResolver {
 
@@ -105,7 +105,7 @@ class ViewShareResolver {
 	 *
 	 * @return string|null One of owner, write, read, or null when the view grants nothing.
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function accessFor(array $view, string $userId, array $userGroups): ?string {
 		if ($userId !== '' && (string)($view['owner'] ?? '') === $userId) {
@@ -148,7 +148,7 @@ class ViewShareResolver {
 	 *
 	 * @return bool True for the owner and for an administrator.
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function mayAdminister(array $view, string $userId, bool $isAdmin): bool {
 		if ($isAdmin === true) {
@@ -172,7 +172,7 @@ class ViewShareResolver {
 	 *
 	 * @return string[] The refused field names, empty when the update is allowed.
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function refusedFields(array $update, string $access, bool $mayAdminister): array {
 		if ($mayAdminister === true) {
@@ -210,7 +210,7 @@ class ViewShareResolver {
 	 *
 	 * @return array<int, array{code: string, message: string}> The findings.
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function validateShares(mixed $sharedWith, callable $groupExists): array {
 		if ($sharedWith === null || $sharedWith === []) {
@@ -248,7 +248,7 @@ class ViewShareResolver {
 	 *
 	 * @return array<int, array{code: string, message: string}> The findings.
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	private function shareFindings(mixed $share, string|int $index, callable $groupExists, array &$seen): array {
 		if (is_array($share) === false) {
