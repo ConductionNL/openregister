@@ -283,11 +283,13 @@ export default {
 					// Convert string IDs to objects for NcSelect
 					// A view's group shares are `sharedWith: [{ group, mode }]`.
 					// The mode of an existing share is kept; a new group reads.
-					this.selectedGroups = (newView.sharedWith || []).map((share) => ({
-						id: share.group,
-						name: share.group,
-						mode: share.mode || 'read',
-					}))
+					this.selectedGroups = (newView.sharedWith || []).map(
+						(share) => ({
+							id: share.group,
+							name: share.group,
+							mode: share.mode || 'read',
+						}),
+					)
 					this.selectedUsers = (newView.sharedUsers || []).map((id) => ({
 						id,
 						name: id,
@@ -463,7 +465,10 @@ export default {
 					isPublic: this.viewData.isPublic,
 					isDefault: this.viewData.isDefault,
 					query: this.viewData.query,
-					sharedWith: this.selectedGroups.map((g) => ({ group: g.id, mode: g.mode || 'read' })),
+					sharedWith: this.selectedGroups.map((g) => ({
+						group: g.id,
+						mode: g.mode || 'read',
+					})),
 					sharedUsers: this.selectedUsers.map((u) => u.id),
 				}
 
