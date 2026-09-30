@@ -408,6 +408,10 @@ class BulkController extends Controller {
 		}
 
 		$data = $response->getData();
+		if (is_array($data) === false) {
+			$data = [];
+		}
+
 		if (($data['success'] ?? false) === true) {
 			$this->db->commit();
 			$data['atomic'] = true;
