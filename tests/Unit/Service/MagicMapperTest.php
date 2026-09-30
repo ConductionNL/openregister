@@ -178,6 +178,13 @@ class MagicMapperTest extends TestCase {
 	private TestableSchema $mockSchema;
 
 	/**
+	 * Whether the container hands out a FieldEncryptionHandler (off to test fail-closed).
+	 *
+	 * @var bool
+	 */
+	private bool $encryptionAvailable = true;
+
+	/**
 	 * Set up test environment before each test
 	 *
 	 * @return void
@@ -215,8 +222,19 @@ class MagicMapperTest extends TestCase {
 		$container = $this->createMock(ContainerInterface::class);
 		$conditionMatcher = $this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class);
 		$schemaTypeConverter = $this->createMock(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class);
+		// A real FieldEncryptionHandler over a fake ICrypto, so the envelope the
+		// mapper writes is the real format with a recognisable payload.
+		$crypto = $this->createMock(\OCP\Security\ICrypto::class);
+		$crypto->method('encrypt')->willReturnCallback(static fn (string $plain): string => 'CIPHER(' . strrev($plain) . ')');
+		$fieldEncryption = new \OCA\OpenRegister\Service\FieldEncryptionHandler(crypto: $crypto, logger: $this->mockLogger);
 		$container->method('get')->willReturnCallback(
-			function (string $id) use ($dateTimeNormalizer, $conditionMatcher, $schemaTypeConverter) {
+			function (string $id) use ($dateTimeNormalizer, $conditionMatcher, $schemaTypeConverter, $fieldEncryption) {
+				if ($id === \OCA\OpenRegister\Service\FieldEncryptionHandler::class) {
+					if ($this->encryptionAvailable === false) {
+						return null;
+					}
+					return $fieldEncryption;
+				}
 				if ($id === DateTimeNormalizer::class
 					|| $id === \OCA\OpenRegister\Service\DateTimeNormalizer::class
 				) {
@@ -736,6 +754,193 @@ class MagicMapperTest extends TestCase {
 		$this->assertFalse($warned, 'A fully declared payload must not warn.');
 
 	}//end testAFullyDeclaredPayloadReportsNoDrop()
+
+	/**
+	 * An encrypted property gets a column, so the write path can store it (#4197).
+	 *
+	 * The table sync skipped `x-openregister-encrypted` properties, saying the
+	 * value "still lives in the table's `object` JSON blob column". No such
+	 * column exists. prepareObjectDataForTable() kept naming the property, so a
+	 * single-object UPDATE (or INSERT) failed with "column personal_number does
+	 * not exist", and the bulk path, which drops unknown columns, silently threw
+	 * the value away. The invariant under test: every column the write path
+	 * names exists in the table the sync builds.
+	 *
+	 * Uses the real Schema entity, shaped like learniq's LearnerProfile.
+	 *
+	 * @return void
+	 */
+	public function testAnEncryptedPropertyGetsAColumnTheWritePathCanUse(): void {
+		$schema = new Schema();
+		$schema->setId(43);
+		$schema->setSlug('learner-profile');
+		$schema->setProperties(
+			[
+				'displayName'        => ['type' => 'string'],
+				'personalNumber'     => ['type' => 'string', 'x-openregister-encrypted' => true],
+				'personalNumberType' => ['type' => 'string', 'enum' => ['bsn', 'other']],
+				'birthYear'          => ['type' => 'integer', 'x-openregister-encrypted' => true],
+			]
+		);
+
+		$columns = $this->magicMapper->buildTableColumnsFromSchema(schema: $schema);
+		$tableColumns = array_column($columns, 'name');
+
+		$reflection = new \ReflectionClass($this->magicMapper);
+		$method = $reflection->getMethod('prepareObjectDataForTable');
+		$method->setAccessible(true);
+
+		// What SaveObject hands the mapper: the encrypted values are envelopes by now.
+		$prepared = $method->invoke(
+			$this->magicMapper,
+			[
+				'@self'              => ['uuid' => 'profile-1'],
+				'displayName'        => 'Learner One',
+				'personalNumber'     => 'openregister:enc:v1:ciphertext-for-the-bsn',
+				'personalNumberType' => 'bsn',
+				'birthYear'          => 'openregister:enc:v1:ciphertext-for-the-year',
+			],
+			$this->mockRegister,
+			$schema
+		);
+
+		foreach (array_keys($prepared) as $column) {
+			$this->assertContains(
+				$column,
+				$tableColumns,
+				'the write path names column "' . $column . '", which the table sync never creates'
+			);
+		}
+
+		$this->assertSame('openregister:enc:v1:ciphertext-for-the-bsn', $prepared['personal_number']);
+
+		// Ciphertext is an opaque string whatever the declared type, so the column
+		// is TEXT, nullable, and carries no index: it can hold the value and still
+		// cannot be searched, sorted or faceted on.
+		foreach (['personalNumber', 'birthYear'] as $property) {
+			$this->assertArrayHasKey($property, $columns);
+			$this->assertSame('text', $columns[$property]['type']);
+			$this->assertTrue($columns[$property]['nullable']);
+			$this->assertEmpty($columns[$property]['index'] ?? null);
+			$this->assertEmpty($columns[$property]['unique'] ?? null);
+		}
+
+		// CONTROL: the same property unencrypted keeps its ordinary typed column,
+		// so the TEXT above is the encryption flag's doing.
+		$plain = new Schema();
+		$plain->setId(44);
+		$plain->setProperties(['birthYear' => ['type' => 'integer']]);
+		$plainColumns = $this->magicMapper->buildTableColumnsFromSchema(schema: $plain);
+		$this->assertNotSame('text', $plainColumns['birthYear']['type']);
+	}//end testAnEncryptedPropertyGetsAColumnTheWritePathCanUse()
+
+	/**
+	 * A learner profile shaped like learniq's, with two encrypted properties.
+	 *
+	 * @return Schema
+	 */
+	private function encryptedLearnerProfile(): Schema {
+		$schema = new Schema();
+		$schema->setId(43);
+		$schema->setSlug('learner-profile');
+		$schema->setProperties(
+			[
+				'displayName'    => ['type' => 'string'],
+				'personalNumber' => ['type' => 'string', 'x-openregister-encrypted' => true],
+			]
+		);
+		return $schema;
+	}//end encryptedLearnerProfile()
+
+	/**
+	 * The single-object write path stores an encrypted property only as an envelope.
+	 *
+	 * SaveObject normally encrypts first; this proves the table itself refuses
+	 * plaintext too, and leaves an existing envelope untouched.
+	 *
+	 * @return void
+	 */
+	public function testTheSingleWritePathStoresAnEncryptedPropertyOnlyAsAnEnvelope(): void {
+		$schema = $this->encryptedLearnerProfile();
+		$method = (new \ReflectionClass($this->magicMapper))->getMethod('prepareObjectDataForTable');
+		$method->setAccessible(true);
+
+		$plain = $method->invoke(
+			$this->magicMapper,
+			['@self' => ['uuid' => 'p-1'], 'displayName' => 'Learner', 'personalNumber' => '123456782'],
+			$this->mockRegister,
+			$schema
+		);
+		$this->assertSame('openregister:enc:v1:CIPHER(287654321)', $plain['personal_number']);
+		$this->assertSame('Learner', $plain['display_name'] ?? $plain['displayName'] ?? null);
+
+		$envelope = $method->invoke(
+			$this->magicMapper,
+			['@self' => ['uuid' => 'p-1'], 'personalNumber' => 'openregister:enc:v1:already'],
+			$this->mockRegister,
+			$schema
+		);
+		$this->assertSame('openregister:enc:v1:already', $envelope['personal_number']);
+	}//end testTheSingleWritePathStoresAnEncryptedPropertyOnlyAsAnEnvelope()
+
+	/**
+	 * The bulk write path encrypts before the bulk handler sees a row.
+	 *
+	 * Bulk never ran SaveObject's encryption step. It used to drop the value for
+	 * lack of a column; with the column in place it must not store plaintext.
+	 * Both row shapes MagicBulkHandler reads are covered.
+	 *
+	 * @return void
+	 */
+	public function testTheBulkWritePathEncryptsBeforeTheHandlerSeesARow(): void {
+		$seen = [];
+		$bulk = $this->createMock(MagicMapper\MagicBulkHandler::class);
+		$bulk->method('bulkUpsert')->willReturnCallback(
+			static function (array $objects) use (&$seen): array {
+				$seen = $objects;
+				return [];
+			}
+		);
+		$property = (new \ReflectionClass($this->magicMapper))->getProperty('bulkHandler');
+		$property->setAccessible(true);
+		$property->setValue($this->magicMapper, $bulk);
+
+		$this->magicMapper->bulkUpsert(
+			objects: [
+				['@self' => ['uuid' => 'p-1'], 'personalNumber' => '123456782'],
+				['@self' => ['uuid' => 'p-2'], 'object' => ['personalNumber' => '999999990']],
+				['@self' => ['uuid' => 'p-3'], 'displayName' => 'No number'],
+			],
+			register: $this->mockRegister,
+			schema: $this->encryptedLearnerProfile(),
+			tableName: 'openregister_table_1_43'
+		);
+
+		$this->assertSame('openregister:enc:v1:CIPHER(287654321)', $seen[0]['personalNumber']);
+		$this->assertSame('openregister:enc:v1:CIPHER(099999999)', $seen[1]['object']['personalNumber']);
+		$this->assertArrayNotHasKey('personalNumber', $seen[2]);
+	}//end testTheBulkWritePathEncryptsBeforeTheHandlerSeesARow()
+
+	/**
+	 * Without an encryption handler the write is refused, never stored in the clear.
+	 *
+	 * @return void
+	 */
+	public function testAnEncryptedPropertyIsNeverWrittenInTheClearWhenEncryptionIsUnavailable(): void {
+		$this->encryptionAvailable = false;
+		$method = (new \ReflectionClass($this->magicMapper))->getMethod('prepareObjectDataForTable');
+		$method->setAccessible(true);
+
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionMessageMatches('/refusing to store them in the clear/');
+
+		$method->invoke(
+			$this->magicMapper,
+			['@self' => ['uuid' => 'p-1'], 'personalNumber' => '123456782'],
+			$this->mockRegister,
+			$this->encryptedLearnerProfile()
+		);
+	}//end testAnEncryptedPropertyIsNeverWrittenInTheClearWhenEncryptionIsUnavailable()
 
 	/**
 	 * Test clear cache functionality
