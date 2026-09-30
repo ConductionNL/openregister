@@ -10,6 +10,7 @@ retrofit: true
 Lets OpenRegister users save the configuration of an object search — selected registers and schemas, free-text search terms, facet filters, and enabled facets — as a reusable, named **view** backed by `/api/views`. Views can be marked public or default, favorited per user, and re-applied to the live search from the search sidebar. This capability describes the observed frontend contract of `src/sidebars/search/SearchSideBar.vue` and the `viewsStore` it drives. It was retrofitted under ADR-003 on 2026-05-25 (cluster `fe-sidebars`); requirements capture observed behavior rather than original intent.
 
 ## Requirements
+
 ### Requirement: REQ-001 — Saved view lifecycle through the views store and /api/views
 
 The search sidebar (`SearchSideBar.vue`) MUST expose a saved-view surface backed by `viewsStore` and the `/api/views` endpoints. A "view" persists a reusable query configuration — `registers`, `schemas`, `searchTerms`, `facetFilters`, and `enabledFacets` — under a user-supplied `name` and optional `description`, with `isPublic` and `isDefault` flags. The sidebar MUST support: listing available views (`viewOptions` / `selectedViewValue` computeds drawn from `viewsStore.getAllViews`), creating a view (`saveView` → `viewsStore.createView`), updating the active view (`updateActiveView` → `viewsStore.updateView`), activating a view (`handleViewChange` / `loadView` → `viewsStore.fetchView` then `applyViewConfiguration`), and deleting a view (`confirmDeleteView` / `confirmDeleteActiveView` stage `viewToDelete`; `handleDeleteClose` refreshes the list and clears the active view if it was deleted). Applying a view (`applyViewConfiguration`) MUST read the stored config (supporting both the new `query` and legacy `configuration` key), repopulate the sidebar's selection state, set it as the active view via `viewsStore.setActiveView`, and re-run the search when `canSearch` is satisfied. Only query parameters MUST be persisted — never transient UI state such as pagination, sorting, or visible columns.
@@ -158,3 +159,37 @@ re-implement the rendering locally.
 - **THEN** OpenRegister renders it via the nextcloud-vue `CnObjectKanban`
   component wired to the object store, not a bespoke OR-local kanban.
 
+### Requirement: A view can be shared with groups in read or write mode
+
+A View SHALL carry `sharedWith`, a list of `{group, mode}` with `mode`
+`read` or `write`, editable by the owner or an administrator. Listing views
+SHALL return the caller's own views, public views and views shared with a
+group the caller belongs to, each with `@self.access` of `owner`, `write`
+or `read`. Sharing with a group that does not exist SHALL be refused.
+
+#### Scenario: a department sees its view with its columns
+
+- **GIVEN** a view owned by A with `presentation.columns` set and shared `read` with group `handhaving`
+- **WHEN** a member of `handhaving` lists views
+- **THEN** the view is returned with `@self.access` `read` and its columns
+- @e2e exclude {proposal only; the nextcloud-vue change saved-views-shared-by-role adds the e2e when the control ships}
+
+#### Scenario: a non-member does not see it
+
+- **GIVEN** the same view and a user in no shared group
+- **WHEN** the user lists views
+- **THEN** the view is absent
+- @e2e exclude {list query, covered by ViewMapper unit tests}
+
+### Requirement: Write on a share changes the query, never the audience
+
+A member with `write` SHALL be able to update the view's `query`,
+`presentation` and `alert`, and SHALL NOT be able to change `sharedWith`,
+`owner` or delete the view.
+
+#### Scenario: a writer cannot widen the share
+
+- **GIVEN** a member with `write`
+- **WHEN** the member sends `sharedWith` with a second group
+- **THEN** the response is 403 and `sharedWith` is unchanged
+- @e2e exclude {guard, covered by controller unit tests}

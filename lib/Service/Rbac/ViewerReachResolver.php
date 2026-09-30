@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Throwable;
  * place to read when the answer is wrong, and one place a test can drive
  * without standing up a controller.
  *
- * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 class ViewerReachResolver {
 
@@ -68,6 +68,22 @@ class ViewerReachResolver {
 	}//end __construct()
 
 	/**
+	 * Findings for a share list about to be written, against the groups that exist.
+	 *
+	 * @param mixed $sharedWith The declared share list.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings; empty when the list may be stored.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function shareFindings(mixed $sharedWith): array {
+		return $this->shares->validateShares(
+			sharedWith: $sharedWith,
+			groupExists: fn (string $gid): bool => $this->groupManager->groupExists($gid)
+		);
+	}//end shareFindings()
+
+	/**
 	 * The signed-in caller's uid, or an empty string when nobody is signed in.
 	 *
 	 * An empty string rather than null because every call site turned null
@@ -76,7 +92,7 @@ class ViewerReachResolver {
 	 *
 	 * @return string The uid, or ''.
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function currentUid(): string {
 		$user = $this->userSession->getUser();
@@ -98,7 +114,7 @@ class ViewerReachResolver {
 	 *
 	 * @return ViewerReach The caller's reach.
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function reachOf(string $userId): ViewerReach {
 		$groups = [];
@@ -137,7 +153,7 @@ class ViewerReachResolver {
 	 *
 	 * @return array<int, string> The refused field names, empty when the update may proceed.
 	 *
-	 * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
 	public function refusedFields(array $view, ViewerReach $reach, array $update): array {
 		$mayAdminister = $this->shares->mayAdminister(

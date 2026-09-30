@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/view-group-share/specs/saved-search-views/spec.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 
 declare(strict_types=1);
