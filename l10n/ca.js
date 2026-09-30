@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Aquest proveïdor encara no està configurat en aquest servidor. Demaneu a l'administrador que el configuri.",
         "The provider's server did not accept the connection. Try again later.": "El servidor del proveïdor no ha acceptat la connexió. Torneu-ho a provar més tard.",
         "Consequence": "Conseqüència",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Què passarà si la part no respon, per a un graó després del termini."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Què passarà si la part no respon, per a un graó després del termini.",
+        "Payload mapping": "Mapatge de la càrrega útil",
+        "No mapping: send the standard payload": "Sense mapatge: envia la càrrega útil estàndard",
+        "Preview payload": "Previsualitza la càrrega útil",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "No s'ha pogut aplicar el mapatge, així que un lliurament envia la càrrega útil estàndard que es mostra a sota.",
+        "Could not preview the payload": "No s'ha pogut previsualitzar la càrrega útil"
     },
     "nplurals=2; plural=(n != 1);"
 )

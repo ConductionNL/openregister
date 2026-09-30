@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Bu sağlayıcı henüz bu sunucuda yapılandırılmamış. Yöneticinizden yapılandırmasını isteyin.",
         "The provider's server did not accept the connection. Try again later.": "Sağlayıcının sunucusu bağlantıyı kabul etmedi. Daha sonra yeniden deneyin.",
         "Consequence": "Sonuç",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Taraf yanıt vermezse ne olacağı, süre sonrasındaki bir basamak için."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Taraf yanıt vermezse ne olacağı, süre sonrasındaki bir basamak için.",
+        "Payload mapping": "Yük eşlemesi",
+        "No mapping: send the standard payload": "Eşleme yok: standart yükü gönder",
+        "Preview payload": "Yükü önizle",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Eşleme uygulanamadı, bu nedenle teslimat aşağıda gösterilen standart yükü gönderir.",
+        "Could not preview the payload": "Yük önizlenemedi"
     },
     "nplurals=2; plural=(n != 1);"
 )

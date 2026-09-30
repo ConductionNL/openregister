@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Dan il-fornitur għadu mhux issettjat fuq dan is-server. Itlob lill-amministratur tiegħek biex jikkonfigurah.",
         "The provider's server did not accept the connection. Try again later.": "Is-server tal-fornitur ma aċċettax il-konnessjoni. Erġa' pprova aktar tard.",
         "Consequence": "Konsegwenza",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "X’se jiġri jekk il-parti ma twieġibx, għal pass wara l-iskadenza."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "X’se jiġri jekk il-parti ma twieġibx, għal pass wara l-iskadenza.",
+        "Payload mapping": "Immappjar tal-kontenut",
+        "No mapping: send the standard payload": "L-ebda immappjar: ibgħat il-kontenut standard",
+        "Preview payload": "Ara l-kontenut minn qabel",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "L-immappjar ma setax jiġi applikat, għalhekk kunsinna tibgħat il-kontenut standard murija hawn taħt.",
+        "Could not preview the payload": "Il-kontenut ma setax jintwera minn qabel"
     },
     "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);"
 )

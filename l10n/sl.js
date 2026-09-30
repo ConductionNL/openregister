@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ta ponudnik na tem strežniku še ni nastavljen. Prosi skrbnika, naj ga nastavi.",
         "The provider's server did not accept the connection. Try again later.": "Strežnik ponudnika povezave ni sprejel. Poskusi znova pozneje.",
         "Consequence": "Posledica",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Kaj se zgodi, če stranka ne odgovori, za stopnjo po roku."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Kaj se zgodi, če stranka ne odgovori, za stopnjo po roku.",
+        "Payload mapping": "Preslikava vsebine",
+        "No mapping: send the standard payload": "Brez preslikave: pošlji standardno vsebino",
+        "Preview payload": "Predogled vsebine",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Preslikave ni bilo mogoče uporabiti, zato dostava pošlje standardno vsebino, prikazano spodaj.",
+        "Could not preview the payload": "Predogleda vsebine ni bilo mogoče prikazati"
     },
     "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);"
 )

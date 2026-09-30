@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Den här leverantören är inte konfigurerad på den här servern än. Be din administratör att konfigurera den.",
         "The provider's server did not accept the connection. Try again later.": "Leverantörens server accepterade inte anslutningen. Försök igen senare.",
         "Consequence": "Konsekvens",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Vad som händer om parten inte svarar, för ett steg efter tidsfristen."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Vad som händer om parten inte svarar, för ett steg efter tidsfristen.",
+        "Payload mapping": "Payload-mappning",
+        "No mapping: send the standard payload": "Ingen mappning: skicka standard-payload",
+        "Preview payload": "Förhandsgranska payload",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Mappningen kunde inte tillämpas, så en leverans skickar standard-payloaden som visas nedan.",
+        "Could not preview the payload": "Payloaden kunde inte förhandsgranskas"
     },
     "nplurals=2; plural=(n != 1);"
 )

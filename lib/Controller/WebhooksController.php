@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
+use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\WebhookService;
@@ -581,6 +582,69 @@ class WebhooksController extends Controller {
 			);
 		}//end try
 	}//end destroy()
+
+	/**
+	 * Preview the payload a webhook would send, with the mapping the dialog holds
+	 *
+	 * Body: the webhook fields as the dialog holds them (`mapping`,
+	 * `configuration`), `event` (an event class, default object created) and
+	 * `payload` (default a sample created object). Nothing is saved or sent.
+	 *
+	 * @return JSONResponse `{payload, mapped, event}`
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function preview(): JSONResponse {
+		// A mapping can read any field of the event, so the preview is as
+		// privileged as editing the webhook.
+		if ($this->isCurrentUserAdmin() === false) {
+			return $this->forbiddenResponse();
+		}
+
+		$data = $this->request->getParams();
+		$eventName = (string)($data['event'] ?? 'OCA\OpenRegister\Event\ObjectCreatedEvent');
+		$payload = $data['payload'] ?? null;
+		if (is_array($payload) === false) {
+			$payload = $this->samplePayload();
+		}
+
+		$webhook = new Webhook();
+		$webhook->hydrate(
+			[
+				'mapping' => ($data['mapping'] ?? null),
+				'configuration' => ($data['configuration'] ?? []),
+			]
+		);
+
+		$preview = $this->webhookService->previewPayload(webhook: $webhook, eventName: $eventName, payload: $payload);
+
+		return new JSONResponse(data: $preview + ['event' => $eventName]);
+	}//end preview()
+
+	/**
+	 * A created object, in the shape the webhook listener hands a delivery
+	 *
+	 * @return array
+	 */
+	private function samplePayload(): array {
+		$uuid = '00000000-0000-4000-8000-000000000000';
+
+		return [
+			'objectType' => 'object',
+			'action' => 'create',
+			'object' => ['id' => $uuid, 'title' => 'Sample object'],
+			'objectUuid' => $uuid,
+			'register' => null,
+			'schema' => null,
+			'timestamp' => date('c'),
+		];
+	}//end samplePayload()
 
 	/**
 	 * Test a webhook by sending a test payload

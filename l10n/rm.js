@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Quest purschider n'è anc betg configurà sin quest server. Dumonda tes administratur da al configurar.",
         "The provider's server did not accept the connection. Try again later.": "Il server dal purschider n'ha betg acceptà la colliaziun. Emprova pli tard anc ina giada.",
         "Consequence": "Consequenza",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Tge che capita, sche la partida na respunda betg, per in stgalim suenter il termin."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Tge che capita, sche la partida na respunda betg, per in stgalim suenter il termin.",
+        "Payload mapping": "Mapping dal payload",
+        "No mapping: send the standard payload": "Nagin mapping: trametter il payload standard",
+        "Preview payload": "Prevista dal payload",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Il mapping n'ha betg pudì vegnir applitgà, perquai trametta ina furniziun il payload standard mussà sutvart.",
+        "Could not preview the payload": "Il payload n'ha betg pudì vegnir mussà en prevista"
     },
     "nplurals=2; plural=(n != 1);"
 )

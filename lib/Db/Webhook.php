@@ -555,8 +555,12 @@ class Webhook extends Entity implements JsonSerializable {
 			}
 		}
 
-		if (($object['mapping'] ?? null) !== null) {
+		if (($object['mapping'] ?? null) !== null && $object['mapping'] !== '') {
 			$this->setMapping((int)$object['mapping']);
+		} elseif (array_key_exists('mapping', $object) === true) {
+			// Sent as null or empty: the administrator cleared the mapping. A body
+			// that leaves the key out keeps it.
+			$this->setMapping(null);
 		}
 
 		return $this;

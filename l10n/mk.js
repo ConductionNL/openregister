@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Овој давател сè уште не е поставен на овој сервер. Замоли го администраторот да го конфигурира.",
         "The provider's server did not accept the connection. Try again later.": "Серверот на давателот не го прифати поврзувањето. Обиди се повторно подоцна.",
         "Consequence": "Последица",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Што ќе се случи ако страната не одговори, за чекор по рокот."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Што ќе се случи ако страната не одговори, за чекор по рокот.",
+        "Payload mapping": "Мапирање на содржината",
+        "No mapping: send the standard payload": "Без мапирање: испрати ја стандардната содржина",
+        "Preview payload": "Преглед на содржината",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Мапирањето не можеше да се примени, па испораката ја испраќа стандардната содржина прикажана подолу.",
+        "Could not preview the payload": "Прегледот на содржината не можеше да се прикаже"
     },
     "nplurals=2; plural=(n != 1);"
 )

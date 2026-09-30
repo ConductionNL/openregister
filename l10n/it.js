@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Questo provider non è ancora configurato su questo server. Chiedi al tuo amministratore di configurarlo.",
         "The provider's server did not accept the connection. Try again later.": "Il server del provider non ha accettato la connessione. Riprova più tardi.",
         "Consequence": "Conseguenza",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Cosa succede se la parte non risponde, per un gradino dopo la scadenza."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Cosa succede se la parte non risponde, per un gradino dopo la scadenza.",
+        "Payload mapping": "Mappatura del payload",
+        "No mapping: send the standard payload": "Nessuna mappatura: invia il payload standard",
+        "Preview payload": "Anteprima del payload",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Non è stato possibile applicare la mappatura, quindi una consegna invia il payload standard mostrato sotto.",
+        "Could not preview the payload": "Impossibile mostrare l'anteprima del payload"
     },
     "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )

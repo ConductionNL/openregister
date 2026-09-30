@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Šis pakalpojuma sniedzējs šajā serverī vēl nav iestatīts. Palūdz administratoram to konfigurēt.",
         "The provider's server did not accept the connection. Try again later.": "Pakalpojuma sniedzēja serveris nepieņēma savienojumu. Mēģini vēlreiz vēlāk.",
         "Consequence": "Sekas",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Kas notiks, ja puse neatbildēs, pakāpei pēc termiņa."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Kas notiks, ja puse neatbildēs, pakāpei pēc termiņa.",
+        "Payload mapping": "Kravas kartēšana",
+        "No mapping: send the standard payload": "Nav kartēšanas: sūtīt standarta kravu",
+        "Preview payload": "Priekšskatīt kravu",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Kartēšanu nevarēja piemērot, tāpēc piegāde nosūta tālāk redzamo standarta kravu.",
+        "Could not preview the payload": "Kravu nevarēja priekšskatīt"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);"
 )

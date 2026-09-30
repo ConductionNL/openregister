@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Þessi þjónustuaðili hefur ekki enn verið settur upp á þessum þjóni. Biddu kerfisstjórann þinn að stilla hann.",
         "The provider's server did not accept the connection. Try again later.": "Þjónn þjónustuaðilans tók ekki við tengingunni. Reyndu aftur síðar.",
         "Consequence": "Afleiðing",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Hvað gerist ef aðilinn svarar ekki, fyrir þrep eftir frestinn."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Hvað gerist ef aðilinn svarar ekki, fyrir þrep eftir frestinn.",
+        "Payload mapping": "Vörpun farms",
+        "No mapping: send the standard payload": "Engin vörpun: senda staðlaðan farm",
+        "Preview payload": "Forskoða farm",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Ekki tókst að beita vörpuninni, svo sending sendir staðlaða farminn sem sýndur er hér að neðan.",
+        "Could not preview the payload": "Ekki tókst að forskoða farminn"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -22,7 +22,9 @@ This spec documents an already-implemented system and validates its behavior:
 - **Multi-tenancy (fully implemented)**: Organisation scoping via `MultiTenancyTrait` on WebhookMapper.
 - **Database migration (fully implemented)**: `Version1Date20260308120000` adds nullable `mapping` column.
 - **What could be extended**: Batch delivery (multiple events per HTTP request), dead-letter queue with admin UI, payload format versioning.
+
 ## Requirements
+
 ### Requirement: Webhook registration MUST capture URL, events, secret, and delivery configuration
 The Webhook entity MUST store all information needed to deliver events to a subscriber, including the target URL, subscribed event classes, optional HMAC secret, HTTP method, custom headers, timeout, and retry policy.
 
@@ -610,6 +612,17 @@ The webhook delivery layer MUST initialize an HTTP client tolerant of webhook en
 - **GIVEN** an intercepted HTTP request being formatted as a CloudEvent
 - **WHEN** `CloudEventFormatter::getContentTypeHeader()` runs
 - **THEN** it MUST return the request's `Content-Type` header when present, otherwise default to `application/json`
+
+### Requirement: REQ-WHMAP-001 A webhook payload mapping is chosen and previewed on screen
+
+The webhook dialog SHALL let an administrator choose the payload mapping and preview the mapped payload, and the preview SHALL equal what a delivery would send.
+
+#### Scenario: an administrator shapes the payload
+
+- **GIVEN** a mapping `to-zgw-notification` and a webhook on object creation
+- **WHEN** the administrator picks the mapping in the webhook dialog and presses preview
+- **THEN** the preview shows the mapped payload, and the next delivery sends the same shape
+- @e2e exclude {preview equals delivery asserted over the real services in tests/Unit/Controller/WebhookMappingPreviewTest.php; the dialog needs a live instance}
 
 ## Current Implementation Status
 

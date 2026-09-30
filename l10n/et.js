@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "See teenusepakkuja pole selles serveris veel seadistatud. Palu administraatoril see seadistada.",
         "The provider's server did not accept the connection. Try again later.": "Teenusepakkuja server ei võtnud ühendust vastu. Proovi hiljem uuesti.",
         "Consequence": "Tagajärg",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mis juhtub, kui osapool ei vasta, tähtaja järgse astme puhul."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mis juhtub, kui osapool ei vasta, tähtaja järgse astme puhul.",
+        "Payload mapping": "Kasuliku koormuse vastendus",
+        "No mapping: send the standard payload": "Vastendus puudub: saada standardne kasulik koormus",
+        "Preview payload": "Kasuliku koormuse eelvaade",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Vastendust ei saanud rakendada, seega saadab kohaletoimetamine allpool näidatud standardse kasuliku koormuse.",
+        "Could not preview the payload": "Kasuliku koormuse eelvaadet ei õnnestunud kuvada"
     },
     "nplurals=2; plural=(n != 1);"
 )

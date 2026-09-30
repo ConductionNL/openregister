@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Dëse Fournisseur ass op dësem Server nach net ageriicht. Fro däin Administrateur, fir en anzeriichten.",
         "The provider's server did not accept the connection. Try again later.": "De Server vum Fournisseur huet d'Verbindung net ugeholl. Probéier méi spéit nach eng Kéier.",
         "Consequence": "Konsequenz",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Wat geschitt, wann d’Partei net äntwert, fir eng Stuf no der Frist."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Wat geschitt, wann d’Partei net äntwert, fir eng Stuf no der Frist.",
+        "Payload mapping": "Payload-Mapping",
+        "No mapping: send the standard payload": "Keen Mapping: Standard-Payload schécken",
+        "Preview payload": "Payload-Virschau",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "D'Mapping konnt net ugewannt ginn, dofir schéckt eng Liwwerung d'Standard-Payload, déi hei ënnendrënner gewise gëtt.",
+        "Could not preview the payload": "D'Payload-Virschau konnt net gewise ginn"
     },
     "nplurals=2; plural=(n != 1);"
 )

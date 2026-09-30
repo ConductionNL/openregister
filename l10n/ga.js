@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Níl an soláthraí seo socraithe ar an bhfreastalaí seo fós. Iarr ar do riarthóir é a chumrú.",
         "The provider's server did not accept the connection. Try again later.": "Níor ghlac freastalaí an tsoláthraí leis an gceangal. Bain triail eile as ar ball.",
         "Consequence": "Iarmhairt",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Cad a tharlóidh mura bhfreagraíonn an páirtí, do chéim tar éis an spriocdháta."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Cad a tharlóidh mura bhfreagraíonn an páirtí, do chéim tar éis an spriocdháta.",
+        "Payload mapping": "Mapáil an ualaigh",
+        "No mapping: send the standard payload": "Gan mhapáil: seol an t-ualach caighdeánach",
+        "Preview payload": "Réamhamharc ar an ualach",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Níorbh fhéidir an mhapáil a chur i bhfeidhm, mar sin seolann seachadadh an t-ualach caighdeánach a thaispeántar thíos.",
+        "Could not preview the payload": "Níorbh fhéidir réamhamharc a thaispeáint ar an ualach"
     },
     "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);"
 )

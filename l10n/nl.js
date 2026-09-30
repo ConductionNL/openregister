@@ -3302,7 +3302,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Deze provider is nog niet ingesteld op deze server. Vraag de beheerder om deze in te stellen.",
         "The provider's server did not accept the connection. Try again later.": "De server van de provider heeft de koppeling niet geaccepteerd. Probeer het later opnieuw.",
         "Consequence": "Gevolg",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Wat er gebeurt als de partij niet reageert, voor een trede na de termijn."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Wat er gebeurt als de partij niet reageert, voor een trede na de termijn.",
+        "Payload mapping": "Payload-mapping",
+        "No mapping: send the standard payload": "Geen mapping: de standaard payload versturen",
+        "Preview payload": "Payload bekijken",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "De mapping kon niet worden toegepast, dus een aflevering verstuurt de standaard payload hieronder.",
+        "Could not preview the payload": "De payload kon niet worden getoond"
     },
     "nplurals=2; plural=(n != 1);"
 )

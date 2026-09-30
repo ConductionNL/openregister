@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Tätä palveluntarjoajaa ei ole vielä määritetty tälle palvelimelle. Pyydä järjestelmänvalvojaa määrittämään se.",
         "The provider's server did not accept the connection. Try again later.": "Palveluntarjoajan palvelin ei hyväksynyt yhteyttä. Yritä myöhemmin uudelleen.",
         "Consequence": "Seuraus",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mitä tapahtuu, jos osapuoli ei vastaa, määräajan jälkeiselle portaalle."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mitä tapahtuu, jos osapuoli ei vastaa, määräajan jälkeiselle portaalle.",
+        "Payload mapping": "Hyötykuorman mappaus",
+        "No mapping: send the standard payload": "Ei mappausta: lähetä vakiohyötykuorma",
+        "Preview payload": "Esikatsele hyötykuormaa",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Mappausta ei voitu soveltaa, joten toimitus lähettää alla näkyvän vakiohyötykuorman.",
+        "Could not preview the payload": "Hyötykuorman esikatselu epäonnistui"
     },
     "nplurals=2; plural=(n != 1);"
 )

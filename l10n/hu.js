@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ez a szolgáltató még nincs beállítva ezen a kiszolgálón. Kérd meg a rendszergazdát, hogy állítsa be.",
         "The provider's server did not accept the connection. Try again later.": "A szolgáltató kiszolgálója nem fogadta el a kapcsolatot. Próbáld újra később.",
         "Consequence": "Következmény",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mi történik, ha a fél nem válaszol, a határidő utáni lépcsőnél."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mi történik, ha a fél nem válaszol, a határidő utáni lépcsőnél.",
+        "Payload mapping": "Tartalomleképezés",
+        "No mapping: send the standard payload": "Nincs leképezés: a szabványos tartalom küldése",
+        "Preview payload": "Tartalom előnézete",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "A leképezést nem sikerült alkalmazni, ezért a kézbesítés az alább látható szabványos tartalmat küldi.",
+        "Could not preview the payload": "A tartalom előnézete nem jeleníthető meg"
     },
     "nplurals=2; plural=(n != 1);"
 )

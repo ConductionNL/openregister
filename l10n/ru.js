@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Этот поставщик ещё не настроен на этом сервере. Попросите администратора настроить его.",
         "The provider's server did not accept the connection. Try again later.": "Сервер поставщика не принял подключение. Попробуйте позже.",
         "Consequence": "Последствие",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Что произойдёт, если сторона не ответит, для ступени после срока."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Что произойдёт, если сторона не ответит, для ступени после срока.",
+        "Payload mapping": "Сопоставление полезной нагрузки",
+        "No mapping: send the standard payload": "Без сопоставления: отправлять стандартную полезную нагрузку",
+        "Preview payload": "Предпросмотр полезной нагрузки",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Не удалось применить сопоставление, поэтому доставка отправляет стандартную полезную нагрузку, показанную ниже.",
+        "Could not preview the payload": "Не удалось показать предпросмотр полезной нагрузки"
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

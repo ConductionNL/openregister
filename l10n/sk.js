@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Tento poskytovateľ zatiaľ nie je na tomto serveri nastavený. Požiadajte správcu, aby ho nastavil.",
         "The provider's server did not accept the connection. Try again later.": "Server poskytovateľa pripojenie neprijal. Skúste to znova neskôr.",
         "Consequence": "Dôsledok",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Čo sa stane, ak strana neodpovie, pre stupeň po uplynutí lehoty."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Čo sa stane, ak strana neodpovie, pre stupeň po uplynutí lehoty.",
+        "Payload mapping": "Mapovanie obsahu",
+        "No mapping: send the standard payload": "Bez mapovania: odoslať štandardný obsah",
+        "Preview payload": "Náhľad obsahu",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Mapovanie sa nepodarilo použiť, preto doručenie odošle štandardný obsah zobrazený nižšie.",
+        "Could not preview the payload": "Náhľad obsahu sa nepodarilo zobraziť"
     },
     "nplurals=4; plural=(n % 1 == 0 && n == 1 ? 0 : n % 1 == 0 && n >= 2 && n <= 4 ? 1 : n % 1 != 0 ? 2: 3);"
 )

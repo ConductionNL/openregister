@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Αυτός ο πάροχος δεν έχει ρυθμιστεί ακόμα σε αυτόν τον διακομιστή. Ζητήστε από τον διαχειριστή σας να τον ρυθμίσει.",
         "The provider's server did not accept the connection. Try again later.": "Ο διακομιστής του παρόχου δεν αποδέχτηκε τη σύνδεση. Δοκιμάστε ξανά αργότερα.",
         "Consequence": "Συνέπεια",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Τι θα συμβεί αν το μέρος δεν απαντήσει, για ένα βήμα μετά την προθεσμία."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Τι θα συμβεί αν το μέρος δεν απαντήσει, για ένα βήμα μετά την προθεσμία.",
+        "Payload mapping": "Αντιστοίχιση περιεχομένου",
+        "No mapping: send the standard payload": "Χωρίς αντιστοίχιση: αποστολή του τυπικού περιεχομένου",
+        "Preview payload": "Προεπισκόπηση περιεχομένου",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Η αντιστοίχιση δεν μπόρεσε να εφαρμοστεί, οπότε μια παράδοση στέλνει το τυπικό περιεχόμενο που φαίνεται παρακάτω.",
+        "Could not preview the payload": "Δεν ήταν δυνατή η προεπισκόπηση του περιεχομένου"
     },
     "nplurals=2; plural=(n != 1);"
 )

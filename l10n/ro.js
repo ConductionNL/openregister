@@ -3242,7 +3242,12 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Acest furnizor nu este încă configurat pe acest server. Roagă-ți administratorul să îl configureze.",
         "The provider's server did not accept the connection. Try again later.": "Serverul furnizorului nu a acceptat conexiunea. Încearcă din nou mai târziu.",
         "Consequence": "Consecință",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Ce se întâmplă dacă partea nu răspunde, pentru o treaptă după termen."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Ce se întâmplă dacă partea nu răspunde, pentru o treaptă după termen.",
+        "Payload mapping": "Maparea conținutului",
+        "No mapping: send the standard payload": "Fără mapare: trimite conținutul standard",
+        "Preview payload": "Previzualizează conținutul",
+        "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Maparea nu a putut fi aplicată, așa că o livrare trimite conținutul standard afișat mai jos.",
+        "Could not preview the payload": "Conținutul nu a putut fi previzualizat"
     },
     "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));"
 )
