@@ -44,6 +44,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
+use RuntimeException;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
@@ -4213,7 +4214,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return array<string, mixed> The data with encrypted properties as envelopes.
 	 *
-	 * @throws \RuntimeException When the schema needs encryption and no handler is available.
+	 * @throws RuntimeException When the schema needs encryption and no handler is available.
 	 *
 	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
 	 */
@@ -4224,7 +4225,7 @@ class MagicMapper extends AbstractObjectMapper {
 
 		$handler = $this->container->get(FieldEncryptionHandler::class);
 		if ($handler instanceof FieldEncryptionHandler === false) {
-			throw new \RuntimeException(
+			throw new RuntimeException(
 				'Schema "' . ($schema->getSlug() ?? (string) $schema->getId())
 				. '" has encrypted properties but no FieldEncryptionHandler is available; refusing to store them in the clear.'
 			);
