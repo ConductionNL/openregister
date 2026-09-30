@@ -139,6 +139,24 @@ class ViewerReachResolver {
 	}//end reachOf()
 
 	/**
+	 * Whether a view reaches this caller at all: owned, shared with one of their groups, public, or an administrator.
+	 *
+	 * @param array<string, mixed> $view  The serialised view.
+	 * @param ViewerReach          $reach The caller's reach.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function reaches(array $view, ViewerReach $reach): bool {
+		if ($reach->isAdmin === true) {
+			return true;
+		}
+
+		return $this->shares->accessFor(view: $view, userId: $reach->userId, userGroups: $reach->groups) !== null;
+	}//end reaches()
+
+	/**
 	 * The fields of an update this caller may NOT make to one view.
 	 *
 	 * The three questions the endpoint used to ask separately, answered
@@ -149,7 +167,7 @@ class ViewerReachResolver {
 	 *
 	 * @param array<string, mixed> $view   The serialised view.
 	 * @param ViewerReach          $reach  The caller's reach.
-	 * @param array<string, mixed> $update The fields the caller sent.
+	 * @param array<string, mixed> $update The fields the caller sent; only those whose value changes are judged.
 	 *
 	 * @return array<int, string> The refused field names, empty when the update may proceed.
 	 *
@@ -162,6 +180,12 @@ class ViewerReachResolver {
 			isAdmin: $reach->isAdmin
 		);
 
+		// An owner or an administrator may change everything: no difference
+		// to compute.
+		if ($mayAdminister === true) {
+			return [];
+		}
+
 		$access = $this->shares->accessFor(
 			view: $view,
 			userId: $reach->userId,
@@ -169,7 +193,7 @@ class ViewerReachResolver {
 		);
 
 		return $this->shares->refusedFields(
-			update: $update,
+			update: $this->shares->changedFields(update: $update, view: $view),
 			access: ($access ?? ''),
 			mayAdminister: $mayAdminister
 		);

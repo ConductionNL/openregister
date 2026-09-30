@@ -2361,9 +2361,9 @@
    ],
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "Group shares are written and listed: ViewsController create/update/patch pass sharedWith, refused 400 by ViewShareResolver::validateShares when a group does not exist (tests/Unit/Controller/ViewGroupShareWriteTest.php), ViewService stores it, lib/Db/ViewMapper.php findAllFor lists by group; EditView.vue sends sharedWith. Missing half: a write member still gets 404 on update (requireOwnedView), owned by change a-view-update-is-judged-by-what-changed. view-group-share archived 2026-09-30.",
+    "evidence": "Share a saved view with a group in read or write mode: ViewsController create/update/patch store sharedWith (400 for a group that does not exist, tests/Unit/Controller/ViewGroupShareWriteTest.php); ViewMapper::findAllFor lists views shared with the caller's groups; a write member saves query/presentation/alert and is refused 403 on name, owner, isPublic and sharedWith, judged on the fields whose value changed (tests/Unit/Controller/ViewUpdateJudgedByChangeTest.php). Changes view-group-share and a-view-update-is-judged-by-what-changed archived 2026-09-30.",
     "change": "a-view-update-is-judged-by-what-changed"
    },
    "reachedOn": "/tables (share with everyone only)",
