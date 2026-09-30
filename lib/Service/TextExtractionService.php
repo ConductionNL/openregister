@@ -234,6 +234,51 @@ class TextExtractionService {
 
 		// Extract and sanitize the source text payload (includes language metadata).
 		$payload = $this->extractSourceText(sourceType: 'file', sourceId: $fileId, sourceMeta: $ncFile);
+		$this->indexFilePayload(fileId: $fileId, payload: $payload, sourceTimestamp: $sourceTimestamp, entityTypes: $entityTypes);
+	}//end extractFile()
+
+	/**
+	 * Index text another app extracted from a file, such as OCR of a scan (#2033)
+	 *
+	 * The text takes the path of text this service extracts itself: sanitised,
+	 * chunked, stored for the file (replacing its chunks), then entity
+	 * recognition and the risk level when entity recognition is on. The file
+	 * must exist; its content is not read. The metadata chunk records the method as
+	 * `extraction_method`, so a reader can tell provided text from extracted text.
+	 *
+	 * @param int        $fileId      The Nextcloud file id the text belongs to.
+	 * @param string     $text        The text, as the caller extracted it.
+	 * @param array|null $entityTypes Entity types to detect, or null for all.
+	 * @param string     $method      How the text was obtained, for example `ocr`.
+	 *
+	 * @return void
+	 *
+	 * @throws NotFoundException When the file does not exist.
+	 * @throws Exception         When the text is empty after sanitising.
+	 *
+	 * @spec openspec/specs/text-extraction/spec.md
+	 */
+	public function extractFromProvidedText(int $fileId, string $text, ?array $entityTypes = null, string $method = 'ocr'): void {
+		$ncFile = $this->fileMapper->getFile($fileId);
+		if ($ncFile === null) {
+			throw new NotFoundException("File with ID {$fileId} not found in Nextcloud");
+		}
+
+		$payload = $this->payloadFromText(sourceType: 'file', sourceId: $fileId, sourceMeta: $ncFile, rawText: $text, method: $method);
+		$this->indexFilePayload(fileId: $fileId, payload: $payload, sourceTimestamp: (int)($ncFile['mtime'] ?? time()), entityTypes: $entityTypes);
+	}//end extractFromProvidedText()
+
+	/**
+	 * Chunk, store and run entity recognition over a file's text payload
+	 *
+	 * @param int        $fileId          The file id.
+	 * @param array      $payload         The text payload.
+	 * @param int        $sourceTimestamp The file's mtime.
+	 * @param array|null $entityTypes     Entity types to detect, or null for all.
+	 *
+	 * @return void
+	 */
+	private function indexFilePayload(int $fileId, array $payload, int $sourceTimestamp, ?array $entityTypes): void {
 		$chunks = $this->textToChunks(
 			payload: $payload,
 			options: [
@@ -330,7 +375,7 @@ class TextExtractionService {
 				'chunkCount' => count($chunks) + 1,
 			]
 		);
-	}//end extractFile()
+	}//end indexFilePayload()
 
 	/**
 	 * The text extracted from a file, read back from its stored chunks.
@@ -633,6 +678,23 @@ class TextExtractionService {
 			throw new Exception('Text extraction returned no result for source.');
 		}
 
+		return $this->payloadFromText(sourceType: $sourceType, sourceId: $sourceId, sourceMeta: $sourceMeta, rawText: $rawText, method: 'llphant');
+	}//end extractSourceText()
+
+	/**
+	 * Build the source payload from text, however it was obtained
+	 *
+	 * @param string $sourceType The source type.
+	 * @param int    $sourceId   The source id.
+	 * @param array  $sourceMeta The source metadata (file row).
+	 * @param string $rawText    The text, before sanitising.
+	 * @param string $method     How the text was obtained, recorded on the payload.
+	 *
+	 * @return array The payload.
+	 *
+	 * @throws Exception When the sanitised text is empty.
+	 */
+	private function payloadFromText(string $sourceType, int $sourceId, array $sourceMeta, string $rawText, string $method): array {
 		$cleanText = $this->sanitizeText(text: $rawText);
 		if ($cleanText === '') {
 			throw new Exception('Text extraction resulted in an empty payload.');
@@ -648,7 +710,7 @@ class TextExtractionService {
 			'length' => strlen($cleanText),
 			'checksum' => hash('sha256', $cleanText),
 			// Stable checksum to detect text mutations.
-			'method' => 'llphant',
+			'method' => $method,
 			'owner' => $sourceMeta['owner'] ?? null,
 			'organisation' => $sourceMeta['organisation'] ?? null,
 			'language' => $languageSignals['language'],
@@ -662,7 +724,7 @@ class TextExtractionService {
 				'file_size' => $sourceMeta['size'] ?? null,
 			],
 		];
-	}//end extractSourceText()
+	}//end payloadFromText()
 
 	/**
 	 * Lightweight placeholder for language detection.
@@ -979,6 +1041,9 @@ class TextExtractionService {
 			'language_level' => $payload['language_level'] ?? null,
 			'organisation' => $payload['organisation'] ?? null,
 			'owner' => $payload['owner'] ?? null,
+			// How the text was obtained: `llphant` when this service read the
+			// file, or what the caller named, such as `ocr` (#2033).
+			'extraction_method' => $payload['method'] ?? null,
 			'file_metadata' => $payload['metadata'] ?? [],
 		];
 	}//end summarizeMetadataPayload()
