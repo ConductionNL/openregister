@@ -140,3 +140,16 @@ the handler decomposition already used under `lib/Service/File/`.
 - **WHEN** the same file is extracted before and after the handler split
 - **THEN** the extracted text and chunk boundaries are identical
 
+### Requirement: Another app MAY hand in text it read from a file (REQ-004)
+
+`TextExtractionService::extractFromProvidedText($fileId, $text, $entityTypes, $method)` SHALL index text that another app extracted itself, such as OCR of a scan, for an existing Nextcloud file. The text MUST take the same path as extracted text: sanitised, chunked, stored for the file (replacing its chunks), then entity recognition and the risk level when entity recognition is on. The file content MUST NOT be read. The metadata chunk MUST record the method as `extraction_method` (`ocr` by default, `llphant` for text this service extracted), so a reader can tell provided text from extracted text. Source: issue #2033 (filinq ocr-trigger-surface).
+
+#### Scenario: Provided text is indexed for the file without reading it
+- **GIVEN** an existing file and text another app read from it by OCR
+- **WHEN** `extractFromProvidedText()` is called
+- **THEN** the text MUST be stored as the file's chunks, the file content MUST NOT be read, and the metadata chunk MUST carry `extraction_method` `ocr`
+
+#### Scenario: Text for a missing file is refused
+- **GIVEN** a file id that does not resolve
+- **WHEN** `extractFromProvidedText()` is called
+- **THEN** it MUST raise `NotFoundException` and store nothing
