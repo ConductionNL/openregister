@@ -4610,8 +4610,8 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "Agent tools and views enforced in chat: lib/Service/Chat/ToolManagementHandler.php:119, lib/Service/Chat/ContextRetrievalHandler.php:141; agents API appinfo/routes.php:10. No agent screen in src; MCP callers get the user's full rights (lib/Service/Capability/ToolGrantResolver.php only referenced by its own siblings)",
-    "change": "ai-agent-limits-screen"
+    "evidence": "Tool half built by change ai-agent-limits-screen (archived 2026-09-30): the agents screen (src/views/agents/AgentsIndex.vue) sets an agent's tools, and an MCP session that names an agent is held to its grant (lib/Service/Mcp/McpAgentScope.php, tests/Unit/Controller/McpAgentLimitsTest.php). Data half not built: ContextRetrievalHandler computes an agent's views and never applies them (TODO in retrieveContext).",
+    "change": "ai-agent-view-limits"
    },
    "reachedOn": "API only: /api/agents",
    "provider": "openregister",

@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Questo provider non è ancora configurato su questo server. Chiedi al tuo amministratore di configurarlo.",
         "The provider's server did not accept the connection. Try again later.": "Il server del provider non ha accettato la connessione. Riprova più tardi.",
         "Consequence": "Conseguenza",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Cosa succede se la parte non risponde, per un gradino dopo la scadenza."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Cosa succede se la parte non risponde, per un gradino dopo la scadenza.",
+        "Limits of {name}": "Limiti di {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Scegli quali strumenti può usare ogni agente IA. La chat e i client MCP che indicano l'agente ricevono gli stessi limiti.",
+        "No agents yet": "Ancora nessun agente",
+        "Could not load the agents": "Impossibile caricare gli agenti",
+        "Could not save the limits": "Impossibile salvare i limiti",
+        "Only the agent's owner can change its limits.": "Solo il proprietario dell'agente può modificarne i limiti.",
+        "This agent has a grant per app. Change it through the agents API.": "Questo agente ha un'autorizzazione per app. Modificala tramite l'API degli agenti.",
+        "Edit limits": "Modifica limiti"
     },
     "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )

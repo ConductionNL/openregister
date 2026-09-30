@@ -49,7 +49,7 @@ use Throwable;
  *
  * A session that declares no agent keeps the signed-in user's rights, as before.
  *
- * @spec openspec/changes/ai-agent-limits-screen/tasks.md#task-1
+ * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
  */
 class McpAgentScope {
 
@@ -94,7 +94,7 @@ class McpAgentScope {
 	 *
 	 * @throws InvalidArgumentException When the agent is unknown, inactive or not the user's to use
 	 *
-	 * @spec openspec/changes/ai-agent-limits-screen/tasks.md#task-1
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
 	 */
 	public function assertUsable(string $agentUuid, string $userId): void {
 		$this->loadAgent(agentUuid: $agentUuid, userId: $userId);
@@ -108,7 +108,7 @@ class McpAgentScope {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/ai-agent-limits-screen/tasks.md#task-1
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
 	 */
 	public function bind(string $sessionId, string $agentUuid): void {
 		$this->cache->set(key: $sessionId, value: $agentUuid, ttl: self::TTL);
@@ -123,7 +123,7 @@ class McpAgentScope {
 	 *
 	 * @return array{tools: array} The listing the session may see
 	 *
-	 * @spec openspec/changes/ai-agent-limits-screen/tasks.md#task-1
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
 	 */
 	public function filterListing(string $sessionId, string $userId, array $listing): array {
 		$agent = $this->sessionAgent(sessionId: $sessionId, userId: $userId);
@@ -154,7 +154,7 @@ class McpAgentScope {
 	 *
 	 * @throws InvalidArgumentException Naming the tool (and argument) the grant does not cover
 	 *
-	 * @spec openspec/changes/ai-agent-limits-screen/tasks.md#task-1
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
 	 */
 	public function assertMayCall(string $sessionId, string $userId, string $name, array $arguments): void {
 		$agent = $this->sessionAgent(sessionId: $sessionId, userId: $userId);

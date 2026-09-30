@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Tento poskytovatel zatím na tomto serveru není nastaven. Požádejte správce, aby ho nastavil.",
         "The provider's server did not accept the connection. Try again later.": "Server poskytovatele připojení nepřijal. Zkuste to později znovu.",
         "Consequence": "Důsledek",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Co se stane, když strana neodpoví, pro stupeň po uplynutí lhůty."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Co se stane, když strana neodpoví, pro stupeň po uplynutí lhůty.",
+        "Limits of {name}": "Omezení agenta {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Zvolte, které nástroje smí každý AI agent používat. Chat a MCP klienti, kteří agenta uvedou, dostanou stejná omezení.",
+        "No agents yet": "Zatím žádní agenti",
+        "Could not load the agents": "Agenty se nepodařilo načíst",
+        "Could not save the limits": "Omezení se nepodařilo uložit",
+        "Only the agent's owner can change its limits.": "Omezení agenta může změnit jen jeho vlastník.",
+        "This agent has a grant per app. Change it through the agents API.": "Tento agent má oprávnění pro každou aplikaci. Změňte je přes API agentů.",
+        "Edit limits": "Upravit omezení"
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 )

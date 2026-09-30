@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Denne leverandøren er ikke satt opp på denne serveren ennå. Be administratoren din om å konfigurere den.",
         "The provider's server did not accept the connection. Try again later.": "Leverandørens server godtok ikke tilkoblingen. Prøv igjen senere.",
         "Consequence": "Konsekvens",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Hva som skjer hvis parten ikke svarer, for et trinn etter fristen."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Hva som skjer hvis parten ikke svarer, for et trinn etter fristen.",
+        "Limits of {name}": "Grenser for {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Velg hvilke verktøy hver KI-agent kan bruke. Chat og MCP-klienter som navngir agenten får de samme grensene.",
+        "No agents yet": "Ingen agenter ennå",
+        "Could not load the agents": "Kunne ikke laste inn agentene",
+        "Could not save the limits": "Kunne ikke lagre grensene",
+        "Only the agent's owner can change its limits.": "Bare agentens eier kan endre grensene.",
+        "This agent has a grant per app. Change it through the agents API.": "Denne agenten har en tildeling per app. Endre den via agent-API-et.",
+        "Edit limits": "Rediger grenser"
     },
     "nplurals=2; plural=(n != 1);"
 )
