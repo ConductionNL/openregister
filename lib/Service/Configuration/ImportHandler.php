@@ -1573,27 +1573,18 @@ class ImportHandler {
 			return;
 		}
 
+		$origin = 'configuration import';
+		if ($appId !== null) {
+			$origin .= ' of '.$appId;
+		}
+
 		$this->schemaVersioning->recordChangelog(
 			schemaId: (int)$schema->getId(),
 			version: $schema->getVersion(),
 			changeSet: $changeSet,
-			acknowledged: false
+			acknowledged: false,
+			origin: $origin
 		);
-
-		if ($changeSet->isBreaking() === true) {
-			$this->logger->warning(
-				message: '[ImportHandler] A configuration import made a breaking change to a schema; recorded in its changelog.',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'schema_id' => $schema->getId(),
-					'schema_slug' => $schema->getSlug(),
-					'version' => $schema->getVersion(),
-					'app' => $appId,
-					'changes' => $changeSet->getChanges(),
-				]
-			);
-		}
 	}//end recordImportedSchemaChange()
 
 	/**

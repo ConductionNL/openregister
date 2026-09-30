@@ -148,17 +148,38 @@ class SchemaVersioningService {
 	 * @param string|null $version The resulting version.
 	 * @param SchemaChangeSet $changeSet The classified change set.
 	 * @param bool $acknowledged Whether the change was acknowledged.
+	 * @param string|null $origin Where the change came from (import, agent tool, source merge), for the log.
 	 *
 	 * @return SchemaChangelog|null The recorded entry, or null for a no-op.
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
 	 */
-	public function recordChangelog(int $schemaId, ?string $version, SchemaChangeSet $changeSet, bool $acknowledged): ?SchemaChangelog {
+	public function recordChangelog(
+		int $schemaId,
+		?string $version,
+		SchemaChangeSet $changeSet,
+		bool $acknowledged,
+		?string $origin = null
+	): ?SchemaChangelog {
 		if ($changeSet->hasChanges() === false) {
 			return null;
 		}
 
 		$actor = $this->currentActor();
+
+		if ($changeSet->isBreaking() === true && $acknowledged === false) {
+			// Paths without a person to ask are recorded and logged, never refused (decided 29 Sep 2026).
+			$this->logger->warning(
+				'[SchemaVersioningService] An unacknowledged breaking schema change was recorded, not refused.',
+				[
+					'schema_id' => $schemaId,
+					'version' => $version,
+					'origin' => $origin,
+					'actor' => $actor,
+					'changes' => $changeSet->getChanges(),
+				]
+			);
+		}
 
 		$data = [
 			'schemaId' => $schemaId,
