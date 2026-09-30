@@ -130,6 +130,31 @@ class ViewsController extends Controller {
 	}//end requireOwnedView()
 
 	/**
+	 * The view behind an id, when it reaches this caller at all.
+	 *
+	 * Owned, shared with one of the caller's groups, public, or the caller is
+	 * an administrator. Anything else is the same 404 as a view that does not
+	 * exist. What the caller may then CHANGE is the field guard's question.
+	 *
+	 * @param string $id     The view id.
+	 * @param string $userId The caller.
+	 *
+	 * @return View The view.
+	 *
+	 * @throws DoesNotExistException When the view does not reach this caller.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	private function requireReachableView(string $id, string $userId): View {
+		$view = $this->viewService->findById(id: $id);
+		if ($this->viewers->reaches(view: $view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId)) === false) {
+			throw new DoesNotExistException('View not found or access denied');
+		}
+
+		return $view;
+	}//end requireReachableView()
+
+	/**
 	 * Refuse a share list that names a group that does not exist, or is malformed.
 	 *
 	 * Absent `sharedWith` is not refused: it leaves the shares as they are.
@@ -181,10 +206,12 @@ class ViewsController extends Controller {
 	 * refusal NAMES the fields, because the message a member needs is which
 	 * field was refused rather than that something was.
 	 *
-	 * A view that cannot be read denies rather than falling through: an update
-	 * to a view nobody can resolve is not one this endpoint should guess about.
+	 * Only the fields whose VALUE changes are judged: the edit screen sends the
+	 * whole view, and a field sent unchanged is not a change. A view that does
+	 * not reach the caller never gets here: the caller resolves it first with
+	 * requireReachableView(), which answers 404.
 	 *
-	 * @param string $id The view id.
+	 * @param View $view The stored view.
 	 * @param string $userId The caller.
 	 * @param array<string, mixed> $data The request body.
 	 *
@@ -192,19 +219,13 @@ class ViewsController extends Controller {
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 */
-	private function refuseForbiddenViewFields(string $id, string $userId, array $data): ?JSONResponse {
+	private function refuseForbiddenViewFields(View $view, string $userId, array $data): ?JSONResponse {
 		// 🔴 BOTH ARGUMENTS. `ViewService::find()` takes `(id, owner)` and both
 		// are required, so the one-argument call this method shipped with
 		// raised an `ArgumentCountError` that the catch below turned into a
 		// plausible `404 View not found` for EVERY update, the owner's own
 		// included. Nothing would have looked broken; views would simply have
 		// stopped saving.
-		try {
-			$view = $this->requireOwnedView(id: $id, userId: $userId);
-		} catch (\Throwable $e) {
-			return new JSONResponse(data: ['error' => 'View not found'], statusCode: 404);
-		}
-
 		// The request carries pagination and routing keys as well as fields.
 		// Only the ones that name a view property are judged, so a `_limit` on
 		// the body cannot refuse an update a member is entitled to make.
@@ -564,7 +585,8 @@ class ViewsController extends Controller {
 			// shared view, rewrite its query, or un-publish it. The owner and
 			// an administrator are unaffected: `mayAdminister()` answers true
 			// for both and the guard returns null.
-			$refusal = $this->refuseForbiddenViewFields(id: $id, userId: $userId, data: $data);
+			$stored = $this->requireReachableView(id: $id, userId: $userId);
+			$refusal = $this->refuseForbiddenViewFields(view: $stored, userId: $userId, data: $data);
 			if ($refusal !== null) {
 				return $refusal;
 			}
@@ -630,7 +652,9 @@ class ViewsController extends Controller {
 				id: $id,
 				name: $data['name'],
 				description: $data['description'] ?? '',
-				owner: $userId,
+				// The view's own owner: a write member saves the owner's view,
+				// and the default-view bookkeeping belongs to that owner.
+				owner: $stored->getOwner(),
 				isPublic: $data['isPublic'] ?? false,
 				isDefault: $data['isDefault'] ?? false,
 				query: $query,
@@ -708,15 +732,15 @@ class ViewsController extends Controller {
 				);
 			}
 
-			// Get existing view.
-			$view = $this->requireOwnedView(id: $id, userId: $userId);
+			// Get existing view: owned, shared with the caller's group, or public.
+			$view = $this->requireReachableView(id: $id, userId: $userId);
 
 			$data = $this->request->getParams();
 
 			// The same guard as `update()`. Leaving it off here would have
 			// left the hole open behind a different verb, and this method
 			// additionally carries `@NoCSRFRequired`.
-			$refusal = $this->refuseForbiddenViewFields(id: $id, userId: $userId, data: $data);
+			$refusal = $this->refuseForbiddenViewFields(view: $view, userId: $userId, data: $data);
 			if ($refusal !== null) {
 				return $refusal;
 			}
@@ -770,7 +794,7 @@ class ViewsController extends Controller {
 				id: $id,
 				name: $name,
 				description: $description,
-				owner: $userId,
+				owner: $view->getOwner(),
 				isPublic: $isPublic,
 				isDefault: $isDefault,
 				query: $query,
