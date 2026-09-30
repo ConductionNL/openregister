@@ -184,7 +184,7 @@ class DestructionListRepository {
 	 *
 	 * @return array{results: array<int, array<string, mixed>>, missing: array<int, string>} Certificates and lists without one.
 	 *
-	 * @spec openspec/changes/archival-for-apps/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function findCertificates(?string $listUuid = null): array {
 		$results = [];

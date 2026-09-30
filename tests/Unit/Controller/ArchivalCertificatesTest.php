@@ -13,7 +13,7 @@
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  *
- * @spec openspec/changes/archival-for-apps/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
  */
 
 declare(strict_types=1);

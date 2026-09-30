@@ -626,7 +626,7 @@ class RetentionService {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One rule per branch; collapsing
 	 *              them would hide which rule rejected an object.
 	 *
-	 * @spec openspec/changes/archival-for-apps/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function destructionRefusal(ObjectEntity $object, string $today, array $excludeUuids): ?string {
 		$retention = ($object->getRetention() ?? []);

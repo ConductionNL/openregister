@@ -14,7 +14,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/archival-for-apps/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -75,7 +75,7 @@ class DestructionListCreator {
 	 *
 	 * @throws InvalidArgumentException When no destruction-list register and schema are configured.
 	 *
-	 * @spec openspec/changes/archival-for-apps/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function createFor(array $uuids): array {
 		$settings = $this->settingsHandler->getArchivalSettingsOnly();

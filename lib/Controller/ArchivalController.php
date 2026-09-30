@@ -65,6 +65,9 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Controller requires many service dependencies
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)   REST endpoints for full destruction workflow
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) The destruction-list, legal-hold, review
+ *              and certificate routes share one archivist check and one set of
+ *              collaborators; the length is their docblocks, one per route.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The complexity is one refusal per rule,
  *              spread over the endpoints rather than piled into one: 401, 403, 404, 409 and
  *              400 each say a different thing to a reviewer who was turned away. Each endpoint
@@ -141,6 +144,7 @@ class ArchivalController extends Controller {
 	 * @param AuditTrailMapper $auditMapper Records who signed off what.
 	 * @param ArchivalNominationService $nominations Derives and writes an archival nomination.
 	 * @param SchemaMapper $schemaMapper Loads the schema a nomination is derived from.
+	 * @param DestructionListCreator $creator Creates a destruction list for the objects an app names.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor; every parameter is a
 	 *              distinct collaborator, and four of them arrived with the review half of the
@@ -607,7 +611,7 @@ class ArchivalController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/archival-for-apps/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	#[NoAdminRequired]
 	public function listCertificates(): JSONResponse {
@@ -660,7 +664,7 @@ class ArchivalController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/archival-for-apps/specs/archival-destruction-workflow/spec.md
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	#[NoAdminRequired]
 	public function createDestructionList(): JSONResponse {

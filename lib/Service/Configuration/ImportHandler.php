@@ -53,6 +53,7 @@ use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
+use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
 use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\TaskService;
@@ -292,6 +293,13 @@ class ImportHandler {
 	private ?SchemaVersioningService $schemaVersioning = null;
 
 	/**
+	 * Writes the selectielijst categories an app ships; optional, set by the factory.
+	 *
+	 * @var SelectionListSeeder|null
+	 */
+	private ?SelectionListSeeder $selectionListSeeder = null;
+
+	/**
 	 * Collector for declared RBAC group ids. Dependency-free value object,
 	 * created lazily via {@see self::rbacGroupCollector()}.
 	 *
@@ -501,6 +509,21 @@ class ImportHandler {
 	public function setSchemaVersioning(?SchemaVersioningService $schemaVersioning): void {
 		$this->schemaVersioning = $schemaVersioning;
 	}//end setSchemaVersioning()
+
+	/**
+	 * Set the selectielijst seeder.
+	 *
+	 * Optional: when null, `components.selectionLists` is not imported.
+	 *
+	 * @param SelectionListSeeder|null $selectionListSeeder The seeder.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function setSelectionListSeeder(?SelectionListSeeder $selectionListSeeder): void {
+		$this->selectionListSeeder = $selectionListSeeder;
+	}//end setSelectionListSeeder()
 
 	/**
 	 * Lazily resolve the dependency-free RBAC group collector.
@@ -3135,6 +3158,19 @@ class ImportHandler {
 				]
 			);
 		}//end if
+
+		// Selectielijst categories the app ships (`components.selectionLists`),
+		// written as selectielijst register rows so its schemas' `archive.classification`
+		// resolves on a fresh install. A refused entry is named in the result;
+		// it never stops the rest of the import.
+		if (is_array($data['components']['selectionLists'] ?? null) === true
+			&& $this->selectionListSeeder !== null
+		) {
+			$result['selectionLists'] = $this->selectionListSeeder->seed(
+				entries: $data['components']['selectionLists'],
+				appId: $appId
+			);
+		}
 
 		// Resolve `@ref:<slug>` seed-reference tokens to concrete target UUIDs
 		// before the import loop. Seed objects reference siblings by slug; the
