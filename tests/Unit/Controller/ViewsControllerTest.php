@@ -160,6 +160,7 @@ class ViewsControllerTest extends TestCase {
 		$this->mockAuthenticatedUser();
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$result = $this->controller->show('1');
 
@@ -220,6 +221,7 @@ class ViewsControllerTest extends TestCase {
 		$this->mockAuthenticatedUser();
 		// The guard on update() resolves the view first; it is the caller's own.
 		$this->viewService->method('find')->willReturn($this->createViewEntity());
+		$this->viewService->method('findById')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Updated',
 			'query' => ['registers' => [1]],
@@ -237,6 +239,7 @@ class ViewsControllerTest extends TestCase {
 		$this->mockAuthenticatedUser();
 		// The guard on update() resolves the view first; it is the caller's own.
 		$this->viewService->method('find')->willReturn($this->createViewEntity());
+		$this->viewService->method('findById')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Updated',
 			'query' => ['registers' => [1]],
@@ -255,6 +258,7 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 		$this->viewService->method('update')->willReturn($view);
 
 		$result = $this->controller->patch('1');
@@ -549,6 +553,7 @@ class ViewsControllerTest extends TestCase {
 		$this->mockAuthenticatedUser();
 		// The guard on update() resolves the view first; it is the caller's own.
 		$this->viewService->method('find')->willReturn($this->createViewEntity());
+		$this->viewService->method('findById')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'query' => ['registers' => [1]],
 		]);
@@ -563,6 +568,7 @@ class ViewsControllerTest extends TestCase {
 		$this->mockAuthenticatedUser();
 		// The guard on update() resolves the view first; it is the caller's own.
 		$this->viewService->method('find')->willReturn($this->createViewEntity());
+		$this->viewService->method('findById')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Updated View',
 		]);
@@ -577,6 +583,7 @@ class ViewsControllerTest extends TestCase {
 		$this->mockAuthenticatedUser();
 		// The guard on update() resolves the view first; it is the caller's own.
 		$this->viewService->method('find')->willReturn($this->createViewEntity());
+		$this->viewService->method('findById')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Updated Config View',
 			'description' => 'Updated desc',
@@ -625,6 +632,7 @@ class ViewsControllerTest extends TestCase {
 		$this->mockAuthenticatedUser();
 		// The guard on update() resolves the view first; it is the caller's own.
 		$this->viewService->method('find')->willReturn($this->createViewEntity());
+		$this->viewService->method('findById')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Fail Update',
 			'query' => ['registers' => [1]],
@@ -646,6 +654,7 @@ class ViewsControllerTest extends TestCase {
 		$this->mockAuthenticatedUser();
 		// The guard on update() resolves the view first; it is the caller's own.
 		$this->viewService->method('find')->willReturn($this->createViewEntity());
+		$this->viewService->method('findById')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => '',
 			'query' => ['registers' => [1]],
@@ -688,6 +697,7 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 		$this->viewService->method('update')
 			->willThrowException(new \Exception('Patch failed'));
 
@@ -716,6 +726,7 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
@@ -753,6 +764,7 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
@@ -784,6 +796,7 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
@@ -814,6 +827,7 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
@@ -847,6 +861,7 @@ class ViewsControllerTest extends TestCase {
 		$view->setQuery(['registers' => [42]]);
 		$view->setFavoredBy(['userX']);
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
@@ -950,6 +965,7 @@ class ViewsControllerTest extends TestCase {
 		$this->mockAuthenticatedUser();
 		// The guard on update() resolves the view first; it is the caller's own.
 		$this->viewService->method('find')->willReturn($this->createViewEntity());
+		$this->viewService->method('findById')->willReturn($this->createViewEntity());
 		$this->request->method('getParams')->willReturn([
 			'name' => 'Kanban View',
 			'query' => ['registers' => [1], 'schemas' => [2]],
@@ -973,6 +989,7 @@ class ViewsControllerTest extends TestCase {
 		$view = $this->createViewEntity();
 		$view->setPresentation($existingPresentation);
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$updatedView = $this->createViewEntity();
 		$this->viewService->expects($this->once())
@@ -1023,6 +1040,7 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$board = [
 			'viewType' => 'kanban',
@@ -1045,6 +1063,7 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 		$this->viewPresentationService->method('getKanbanBoard')
 			->willThrowException(new \InvalidArgumentException('View is not a kanban view (viewType is "table")'));
 
@@ -1083,6 +1102,7 @@ class ViewsControllerTest extends TestCase {
 
 		$view = $this->createViewEntity();
 		$this->viewService->method('find')->willReturn($view);
+		$this->viewService->method('findById')->willReturn($view);
 
 		$calendarResult = [
 			'viewType' => 'calendar',
@@ -1174,6 +1194,7 @@ class ViewsControllerTest extends TestCase {
 		$published->setOwner('someone-else');
 		$published->setIsPublic(true);
 		$this->viewService->method('find')->willReturn($published);
+		$this->viewService->method('findById')->willReturn($published);
 		$this->viewService->method('update')->willReturn($published);
 
 		$this->request->method('getParams')->willReturn(
@@ -1209,6 +1230,7 @@ class ViewsControllerTest extends TestCase {
 		$published->setOwner('someone-else');
 		$published->setIsPublic(true);
 		$this->viewService->method('find')->willReturn($published);
+		$this->viewService->method('findById')->willReturn($published);
 		$this->viewService->method('update')->willReturn($published);
 
 		$this->request->method('getParams')->willReturn(['name' => 'Renamed by a stranger']);
@@ -1233,6 +1255,7 @@ class ViewsControllerTest extends TestCase {
 		$own = $this->createViewEntity();
 		$own->setIsPublic(true);
 		$this->viewService->method('find')->willReturn($own);
+		$this->viewService->method('findById')->willReturn($own);
 		$this->viewService->method('update')->willReturn($own);
 
 		$this->request->method('getParams')->willReturn(
