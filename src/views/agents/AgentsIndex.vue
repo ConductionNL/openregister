@@ -2,6 +2,10 @@
   The agents screen: every AI agent with the tools it may use.
 
   @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
+  @visual exclude an admin screen whose rows are the instance's own agents, and
+  the visual fixture seeds none, so a baseline would only ever capture the
+  empty state. Its behaviour (who may edit, list versus structured grants, the
+  saved row replacing the old one) is asserted in AgentsIndex.spec.js.
   SPDX-License-Identifier: EUPL-1.2
   SPDX-FileCopyrightText: 2026 Conduction B.V.
 -->
@@ -27,9 +31,17 @@
 			<table v-else class="agents__table">
 				<thead>
 					<tr>
-						<th>{{ t('openregister', 'Name') }}</th>
-						<th>{{ t('openregister', 'Tools') }}</th>
-						<th />
+						<th scope="col">
+							{{ t('openregister', 'Name') }}
+						</th>
+						<th scope="col">
+							{{ t('openregister', 'Tools') }}
+						</th>
+						<th scope="col">
+							<span class="hidden-visually">{{
+								t('openregister', 'Actions')
+							}}</span>
+						</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -124,6 +136,8 @@ export default {
 		 * Load the agents and the tool catalogue in one go.
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
 		 */
 		async load() {
 			this.loading = true
@@ -149,6 +163,8 @@ export default {
 		 *
 		 * @param {object} agent The agent
 		 * @return {boolean} True for the owner
+		 *
+		 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
 		 */
 		canEdit(agent) {
 			return this.isListGrant(agent) && agent.owner === getCurrentUser()?.uid
@@ -161,6 +177,8 @@ export default {
 		 *
 		 * @param {object} agent The agent
 		 * @return {boolean} True for no grant or a list grant
+		 *
+		 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
 		 */
 		isListGrant(agent) {
 			return (
@@ -176,6 +194,8 @@ export default {
 		 * @param {Array<string>|object|null} ids The stored ids (a structured grant reads as its app names)
 		 * @param {Array<{id: string, label: string}>} options Known options
 		 * @return {string} Comma-separated labels, or a dash for none
+		 *
+		 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
 		 */
 		labels(ids, options) {
 			if (ids && !Array.isArray(ids) && typeof ids === 'object') {
@@ -193,6 +213,8 @@ export default {
 		 * Replace the saved agent in the list and close the modal.
 		 *
 		 * @param {object} saved The agent as the API returned it
+		 *
+		 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
 		 */
 		onSaved(saved) {
 			this.agents = this.agents.map((a) => (a.id === saved.id ? saved : a))

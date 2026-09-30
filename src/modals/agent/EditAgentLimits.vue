@@ -83,6 +83,8 @@ export default {
 		 * Store the chosen tools on the agent.
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
 		 */
 		async save() {
 			this.saving = true
