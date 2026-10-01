@@ -9,8 +9,8 @@
   - all or nothing
   - row index in the refusal
   - events after commit only
-- [ ] Implement
-- [ ] Test (red first)
+- [x] Implement
+- [x] Test (red first): tests/Unit/Controller/BulkAtomicSaveTest.php, 3 of 5 red on development
 
 ## Verification
 
