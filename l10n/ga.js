@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Níl an soláthraí seo socraithe ar an bhfreastalaí seo fós. Iarr ar do riarthóir é a chumrú.",
         "The provider's server did not accept the connection. Try again later.": "Níor ghlac freastalaí an tsoláthraí leis an gceangal. Bain triail eile as ar ball.",
         "Consequence": "Iarmhairt",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Cad a tharlóidh mura bhfreagraíonn an páirtí, do chéim tar éis an spriocdháta."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Cad a tharlóidh mura bhfreagraíonn an páirtí, do chéim tar éis an spriocdháta.",
+        "Limits of {name}": "Teorainneacha {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Roghnaigh na huirlisí is féidir le gach gníomhaire IS a úsáid. Faigheann comhrá agus cliaint MCP a ainmníonn an gníomhaire na teorainneacha céanna.",
+        "No agents yet": "Níl aon ghníomhairí fós",
+        "Could not load the agents": "Níorbh fhéidir na gníomhairí a lódáil",
+        "Could not save the limits": "Níorbh fhéidir na teorainneacha a shábháil",
+        "Only the agent's owner can change its limits.": "Ní féidir ach le húinéir an ghníomhaire a theorainneacha a athrú.",
+        "This agent has a grant per app. Change it through the agents API.": "Tá deonú in aghaidh an aip ag an ngníomhaire seo. Athraigh é trí API na ngníomhairí.",
+        "Edit limits": "Cuir teorainneacha in eagar"
     },
     "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);"
 )

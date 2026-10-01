@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "See teenusepakkuja pole selles serveris veel seadistatud. Palu administraatoril see seadistada.",
         "The provider's server did not accept the connection. Try again later.": "Teenusepakkuja server ei võtnud ühendust vastu. Proovi hiljem uuesti.",
         "Consequence": "Tagajärg",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mis juhtub, kui osapool ei vasta, tähtaja järgse astme puhul."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mis juhtub, kui osapool ei vasta, tähtaja järgse astme puhul.",
+        "Limits of {name}": "{name} piirangud",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Vali, milliseid tööriistu iga tehisintellekti agent tohib kasutada. Vestlus ja agendi nimetavad MCP-kliendid saavad samad piirangud.",
+        "No agents yet": "Agente veel pole",
+        "Could not load the agents": "Agente ei õnnestunud laadida",
+        "Could not save the limits": "Piiranguid ei õnnestunud salvestada",
+        "Only the agent's owner can change its limits.": "Ainult agendi omanik saab selle piiranguid muuta.",
+        "This agent has a grant per app. Change it through the agents API.": "Sellel agendil on rakendusepõhine luba. Muuda seda agentide API kaudu.",
+        "Edit limits": "Muuda piiranguid"
     },
     "nplurals=2; plural=(n != 1);"
 )

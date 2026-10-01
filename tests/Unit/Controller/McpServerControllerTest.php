@@ -80,6 +80,7 @@ class McpServerControllerTest extends TestCase {
 	private McpToolsService&MockObject $toolsService;
 	private McpResourcesService&MockObject $resourcesService;
 	private LoggerInterface&MockObject $logger;
+	private \OCA\OpenRegister\Service\Mcp\McpAgentScope&MockObject $agentScope;
 
 	/**
 	 * Whether the php stream wrapper was overridden.
@@ -95,6 +96,10 @@ class McpServerControllerTest extends TestCase {
 		$this->resourcesService = $this->createMock(McpResourcesService::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
+		// A session without an agent: the scope passes every listing through.
+		$this->agentScope = $this->createMock(\OCA\OpenRegister\Service\Mcp\McpAgentScope::class);
+		$this->agentScope->method('filterListing')->willReturnArgument(2);
+
 		$this->controller = new McpServerController(
 			'openregister',
 			$this->request,
@@ -102,7 +107,8 @@ class McpServerControllerTest extends TestCase {
 			$this->toolsService,
 			$this->resourcesService,
 			$this->logger,
-			'admin'
+			'admin',
+			$this->agentScope
 		);
 	}
 
@@ -927,9 +933,15 @@ class McpServerControllerTest extends TestCase {
 	// ---------------------------------------------------------------
 
 	public function testHandleInitializeDoesNotRequireSession(): void {
-		// Ensure getHeader is never called for 'initialize'.
-		$this->request->expects($this->never())
-			->method('getHeader');
+		// Ensure the session header is never read for 'initialize' (the
+		// optional X-OpenRegister-Agent header may be).
+		$read = [];
+		$this->request->method('getHeader')->willReturnCallback(
+			static function (string $name) use (&$read): string {
+				$read[] = $name;
+				return '';
+			}
+		);
 
 		$initResult = [
 			'result' => ['protocolVersion' => '2025-03-26'],
@@ -951,6 +963,7 @@ class McpServerControllerTest extends TestCase {
 
 		$data = $result->getData();
 		$this->assertArrayHasKey('result', $data);
+		$this->assertNotContains('Mcp-Session-Id', $read);
 	}
 
 	// ---------------------------------------------------------------

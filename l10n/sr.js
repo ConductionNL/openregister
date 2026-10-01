@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Овај пружалац још није подешен на овом серверу. Замоли администратора да га подеси.",
         "The provider's server did not accept the connection. Try again later.": "Сервер пружаоца није прихватио повезивање. Покушај поново касније.",
         "Consequence": "Последица",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Шта ће се десити ако страна не одговори, за корак после рока."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Шта ће се десити ако страна не одговори, за корак после рока.",
+        "Limits of {name}": "Ограничења за {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Изаберите које алате сваки AI агент сме да користи. Ћаскање и MCP клијенти који наведу агента добијају иста ограничења.",
+        "No agents yet": "Још нема агената",
+        "Could not load the agents": "Агенти нису могли да се учитају",
+        "Could not save the limits": "Ограничења нису могла да се сачувају",
+        "Only the agent's owner can change its limits.": "Само власник агента може да промени његова ограничења.",
+        "This agent has a grant per app. Change it through the agents API.": "Овај агент има дозволу по апликацији. Промените је преко API-ја агената.",
+        "Edit limits": "Уреди ограничења"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 )
