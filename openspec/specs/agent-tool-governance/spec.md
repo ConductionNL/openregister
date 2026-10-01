@@ -270,6 +270,24 @@ An agent SHALL only call the tools its grant lists, in chat and over MCP alike. 
 - **THEN** the agent's grant no longer lists that tool, and an MCP session of that agent is refused it on its next call
 - @e2e exclude {covered by src/views/agents/AgentsIndex.spec.js (save) and McpAgentLimitsTest::testANarrowedGrantAppliesToAnOpenSession (refusal)}
 
+### Requirement: An agent reads only the views it is granted
+
+An agent with one or more views SHALL only find objects inside those views when its chat searches for context, and the agent's owner SHALL set those views on the agents screen. Membership is asked of the view-scoped object search with the user's RBAC on and the view as a required bound, so a view that cannot be resolved or does not narrow the search withholds the objects rather than widening it. A chat that picks only views the agent is not granted finds no objects. File results are not objects of a view and are not limited. Over MCP the data scope stays the user's until a view-scoped search tool exists.
+
+#### Scenario: an object outside the agent's views is not found
+
+- **GIVEN** an agent granted only the view `open-cases`
+- **WHEN** the agent's chat searches for context
+- **THEN** an object outside `open-cases` is not returned
+- @e2e exclude {covered by tests/Unit/Service/Chat/ContextRetrievalAgentViewsTest.php, which drives the real ContextRetrievalHandler; the chat context has no browser surface of its own}
+
+#### Scenario: the owner removes a view
+
+- **GIVEN** the agents screen and an agent the signed-in user owns
+- **WHEN** the owner removes a view and saves
+- **THEN** the agent no longer finds objects of that view
+- @e2e exclude {covered by src/views/agents/AgentsIndex.spec.js (the save sends the views) and ContextRetrievalAgentViewsTest (the search honours them)}
+
 ## Non-Functional Requirements
 
 - **Performance:** Constraint checking MUST complete before any dispatch, so a refused invocation

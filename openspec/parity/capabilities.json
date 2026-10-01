@@ -4608,9 +4608,9 @@
    "source": "own-code-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "Tool half built by change ai-agent-limits-screen (archived 2026-09-30): the agents screen (src/views/agents/AgentsIndex.vue) sets an agent's tools, and an MCP session that names an agent is held to its grant (lib/Service/Mcp/McpAgentScope.php, tests/Unit/Controller/McpAgentLimitsTest.php). Data half not built: ContextRetrievalHandler computes an agent's views and never applies them (TODO in retrieveContext).",
+    "evidence": "Tool half built by change ai-agent-limits-screen (archived 2026-09-30): the agents screen (src/views/agents/AgentsIndex.vue) sets an agent's tools, and an MCP session that names an agent is held to its grant (lib/Service/Mcp/McpAgentScope.php, tests/Unit/Controller/McpAgentLimitsTest.php). Data half built by change ai-agent-view-limits (archived 2026-10-01): the chat's context search keeps only objects inside the agent's views (lib/Service/Chat/ContextRetrievalHandler.php limitObjectsToViews, tests/Unit/Service/Chat/ContextRetrievalAgentViewsTest.php), and the agents screen sets the views.",
     "change": "ai-agent-view-limits"
    },
    "reachedOn": "API only: /api/agents",

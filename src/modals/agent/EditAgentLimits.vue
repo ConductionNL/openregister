@@ -1,13 +1,13 @@
 <!--
-  Edit which tools one AI agent may use.
+  Edit which tools one AI agent may use, and which views it may read.
 
-  The limit is the agent's own `tools` grant: the chat enforces it, and so does
-  the MCP server for a client that names the agent. Views are not offered here:
-  the chat does not apply an agent's views yet (ContextRetrievalHandler leaves
-  them as a TODO), and a limit the screen shows but nothing applies would lie.
-  Change ai-agent-view-limits builds that half.
+  The tool limit is the agent's own `tools` grant: the chat enforces it, and so
+  does the MCP server for a client that names the agent. The view limit is the
+  agent's `views`: its chat search only finds objects inside them
+  (ContextRetrievalHandler). Over MCP the data scope stays the user's.
 
   @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
+  @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-reads-only-the-views-it-is-granted
   SPDX-License-Identifier: EUPL-1.2
   SPDX-FileCopyrightText: 2026 Conduction B.V.
 -->
@@ -21,6 +21,15 @@
 				v-model="selectedTools"
 				:inputLabel="t('openregister', 'Tools')"
 				:options="toolOptions"
+				label="label"
+				trackBy="id"
+				:multiple="true"
+				keepOpen
+				:disabled="saving" />
+			<NcSelect
+				v-model="selectedViews"
+				:inputLabel="t('openregister', 'Views')"
+				:options="viewOptions"
 				label="label"
 				trackBy="id"
 				:multiple="true"
@@ -66,12 +75,14 @@ export default {
 	props: {
 		agent: { type: Object, required: true },
 		toolOptions: { type: Array, default: () => [] },
+		viewOptions: { type: Array, default: () => [] },
 	},
 
 	emits: ['close', 'saved'],
 	data() {
 		return {
 			selectedTools: toSelected(this.agent.tools, this.toolOptions),
+			selectedViews: toSelected(this.agent.views, this.viewOptions),
 			saving: false,
 			error: '',
 		}
@@ -80,11 +91,12 @@ export default {
 	methods: {
 		t,
 		/**
-		 * Store the chosen tools on the agent.
+		 * Store the chosen tools and views on the agent.
 		 *
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
+		 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-reads-only-the-views-it-is-granted
 		 */
 		async save() {
 			this.saving = true
@@ -94,7 +106,10 @@ export default {
 					generateUrl('/apps/openregister/api/agents/{id}', {
 						id: this.agent.id,
 					}),
-					{ tools: this.selectedTools.map((o) => o.id) },
+					{
+						tools: this.selectedTools.map((o) => o.id),
+						views: this.selectedViews.map((o) => o.id),
+					},
 				)
 				this.$emit('saved', data)
 			} catch (e) {

@@ -137,13 +137,16 @@ class ContextRetrievalHandler {
 		// Calculate total sources needed (will be filtered by type later).
 		$totalSources = max($numSourcesFiles, $numSourcesObjects);
 
-		// Get view filters if agent has views configured.
+		// Get view filters if agent has views configured. Null means no view
+		// bounds this search; an empty list means a view bounds it and none
+		// is left (the chat picked only views the agent is not granted).
+		$viewFilters = null;
 		if ($agent !== null && $agent->getViews() !== null && empty($agent->getViews()) === false) {
 			$agentViews = $agent->getViews();
 
 			// If selectedViews provided, filter to only those views.
 			if (empty($selectedViews) === false) {
-				$viewFilters = array_intersect($agentViews, $selectedViews);
+				$viewFilters = array_values(array_intersect($agentViews, $selectedViews));
 				$this->logger->info(
 					message: '[ContextRetrievalHandler] Using filtered views',
 					context: [
@@ -249,6 +252,11 @@ class ContextRetrievalHandler {
 			// array here, so the old gettype() fallback was unreachable.
 			$rawResultsCount = count($results);
 
+			// An agent with views reads only the objects inside them.
+			if ($viewFilters !== null) {
+				$results = $this->limitObjectsToViews(results: $results, views: $viewFilters);
+			}
+
 			// Filter and build context - track file and object counts separately.
 			$fileSourceCount = 0;
 			$objectSourceCount = 0;
@@ -287,8 +295,6 @@ class ContextRetrievalHandler {
 					continue;
 				}
 
-				// TODO: Apply view filters here when view filtering is implemented.
-				// For now, we'll skip view filtering and implement it later.
 				// Extract source information.
 				$source = [
 					'id' => $result['entity_id'] ?? null,
@@ -392,6 +398,93 @@ class ContextRetrievalHandler {
 	}//end retrieveContext()
 
 	/**
+	 * Drop every object result that lies outside the given views.
+	 *
+	 * Membership is asked of the view-scoped object search, with RBAC on and
+	 * the view as a required bound, so a view the user cannot read or that
+	 * cannot be resolved withholds the objects instead of widening the search.
+	 * File results are not objects of a view and pass unchanged.
+	 *
+	 * @param array    $results The search results (entity_type, entity_id, metadata).
+	 * @param string[] $views   The view ids that bound the search; empty means none is left.
+	 *
+	 * @return array The results without the objects outside the views.
+	 *
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-reads-only-the-views-it-is-granted
+	 */
+	private function limitObjectsToViews(array $results, array $views): array {
+		$uuids = [];
+		foreach ($results as $result) {
+			$uuid = $this->resultObjectUuid(result: $result);
+			if ($uuid !== null) {
+				$uuids[] = $uuid;
+			}
+		}
+
+		$uuids   = array_values(array_unique($uuids));
+		$allowed = [];
+		if ($uuids !== [] && $views !== []) {
+			try {
+				$found = $this->objectService->searchObjects(
+					query: ['_limit' => count($uuids)],
+					ids: $uuids,
+					views: array_values($views),
+					_viewScopeRequired: true
+				);
+				if (is_array($found) === false) {
+					$found = [];
+				}
+
+				foreach ($found as $object) {
+					$allowed[] = $object->getUuid();
+				}
+			} catch (Exception $e) {
+				$this->logger->warning(
+					message: '[ContextRetrievalHandler] Agent views could not be applied; objects withheld',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+				);
+			}
+		}
+
+		$kept = [];
+		foreach ($results as $result) {
+			$uuid = $this->resultObjectUuid(result: $result);
+			if ($uuid === null || in_array($uuid, $allowed, true) === true) {
+				$kept[] = $result;
+			}
+		}
+
+		return $kept;
+	}//end limitObjectsToViews()
+
+	/**
+	 * The object uuid of a search result, or null when the result is not an object.
+	 *
+	 * @param mixed $result One search result.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-reads-only-the-views-it-is-granted
+	 */
+	private function resultObjectUuid(mixed $result): ?string {
+		if (is_array($result) === false || ($result['entity_type'] ?? '') !== 'object') {
+			return null;
+		}
+
+		$metadata = ($result['metadata'] ?? []);
+		if (is_string($metadata) === true) {
+			$metadata = (json_decode($metadata, true) ?? []);
+		}
+
+		$uuid = ($metadata['uuid'] ?? $result['entity_id'] ?? null);
+		if ($uuid === null) {
+			return '';
+		}
+
+		return (string) $uuid;
+	}//end resultObjectUuid()
+
+	/**
 	 * Search using keyword only (database)
 	 *
 	 * Performs keyword-based search using the database without vector embeddings.
@@ -456,9 +549,10 @@ class ContextRetrievalHandler {
 
 		// Check metadata for object_title, file_name, etc.
 		if (empty($result['metadata']) === false) {
-			$metadata = json_decode($result['metadata'], true);
-			if (is_array($result['metadata']) === true) {
-				$metadata = $result['metadata'];
+			// Vector hits carry metadata already decoded; only a string is JSON.
+			$metadata = $result['metadata'];
+			if (is_string($metadata) === true) {
+				$metadata = json_decode($metadata, true);
 			}
 
 			if (empty($metadata['object_title']) === false) {

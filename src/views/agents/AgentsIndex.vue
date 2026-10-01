@@ -1,5 +1,5 @@
 <!--
-  The agents screen: every AI agent with the tools it may use.
+  The agents screen: every AI agent with the tools it may use and the views it may read.
 
   @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-is-held-to-its-tool-grant-on-every-path
   @visual exclude an admin screen whose rows are the instance's own agents, and
@@ -38,6 +38,9 @@
 							{{ t('openregister', 'Tools') }}
 						</th>
 						<th scope="col">
+							{{ t('openregister', 'Views') }}
+						</th>
+						<th scope="col">
 							<span class="hidden-visually">{{
 								t('openregister', 'Actions')
 							}}</span>
@@ -48,6 +51,7 @@
 					<tr v-for="agent in agents" :key="agent.id">
 						<td>{{ agent.name }}</td>
 						<td>{{ labels(agent.tools, toolOptions) }}</td>
+						<td>{{ labels(agent.views, viewOptions) }}</td>
 						<td>
 							<NcButton
 								v-if="canEdit(agent)"
@@ -86,6 +90,7 @@
 			v-if="editing"
 			:agent="editing"
 			:toolOptions="toolOptions"
+			:viewOptions="viewOptions"
 			@close="editing = null"
 			@saved="onSaved" />
 	</NcAppContent>
@@ -120,6 +125,7 @@ export default {
 		return {
 			agents: [],
 			toolOptions: [],
+			viewOptions: [],
 			loading: true,
 			error: '',
 			editing: null,
@@ -133,7 +139,7 @@ export default {
 	methods: {
 		t,
 		/**
-		 * Load the agents and the tool catalogue in one go.
+		 * Load the agents, the tool catalogue and the views in one go.
 		 *
 		 * @return {Promise<void>}
 		 *
@@ -143,14 +149,19 @@ export default {
 			this.loading = true
 			this.error = ''
 			try {
-				const [agents, tools] = await Promise.all([
+				const [agents, tools, views] = await Promise.all([
 					axios.get(generateUrl('/apps/openregister/api/agents')),
 					axios.get(generateUrl('/apps/openregister/api/agents/tools')),
+					axios.get(generateUrl('/apps/openregister/api/views')),
 				])
 				this.agents = agents.data?.results || []
 				this.toolOptions = Object.entries(tools.data?.results || {}).map(
 					([id, meta]) => ({ id, label: meta?.name || id }),
 				)
+				this.viewOptions = (views.data?.results || []).map((view) => ({
+					id: view.uuid,
+					label: view.name || view.uuid,
+				}))
 			} catch {
 				this.error = t('openregister', 'Could not load the agents')
 			} finally {

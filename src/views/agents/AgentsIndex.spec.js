@@ -101,7 +101,7 @@ describe('the agents screen', () => {
 		).toBe(false)
 	})
 
-	it('saves the chosen tools on the agent, and only the tools', async () => {
+	it('saves the chosen tools on the agent', async () => {
 		axios.patch.mockResolvedValue({ data: { id: 7, tools: ['x'] } })
 		const vm = {
 			agent: { id: 7, name: 'Helper', tools: ['old'] },
@@ -113,6 +113,7 @@ describe('the agents screen', () => {
 		await EditAgentLimits.methods.save.call(vm)
 		expect(axios.patch).toHaveBeenCalledWith('/apps/openregister/api/agents/7', {
 			tools: ['x'],
+			views: [],
 		})
 		expect(vm.$emit).toHaveBeenCalledWith('saved', { id: 7, tools: ['x'] })
 	})
@@ -128,6 +129,66 @@ describe('the agents screen', () => {
 		await EditAgentLimits.methods.save.call(vm)
 		expect(vm.error).toContain('permission')
 		expect(vm.$emit).not.toHaveBeenCalled()
+	})
+
+	it('loads the views the owner can grant (ai-agent-view-limits)', async () => {
+		axios.get.mockImplementation((url) =>
+			Promise.resolve({
+				data: url.endsWith('/tools')
+					? { results: {} }
+					: url.endsWith('/views')
+						? {
+								results: [
+									{ id: 3, uuid: 'v-open', name: 'Open cases' },
+								],
+							}
+						: { results: [] },
+			}),
+		)
+		const vm = { ...AgentsIndex.data(), ...AgentsIndex.methods }
+		await AgentsIndex.methods.load.call(vm)
+		expect(axios.get).toHaveBeenCalledWith('/apps/openregister/api/views')
+		expect(vm.viewOptions).toEqual([{ id: 'v-open', label: 'Open cases' }])
+	})
+
+	it('saves the chosen views with the tools (ai-agent-view-limits)', async () => {
+		axios.patch.mockResolvedValue({ data: { id: 7, tools: [], views: [] } })
+		const vm = {
+			agent: {
+				id: 7,
+				name: 'Helper',
+				tools: [],
+				views: ['v-open', 'v-closed'],
+			},
+			toolOptions: [],
+			viewOptions: [
+				{ id: 'v-open', label: 'Open cases' },
+				{ id: 'v-closed', label: 'Closed cases' },
+			],
+			$emit: jest.fn(),
+		}
+		Object.assign(vm, EditAgentLimits.data.call(vm))
+		expect(vm.selectedViews.map((o) => o.id)).toEqual(['v-open', 'v-closed'])
+		vm.selectedViews = [{ id: 'v-open', label: 'Open cases' }]
+		await EditAgentLimits.methods.save.call(vm)
+		expect(axios.patch).toHaveBeenCalledWith('/apps/openregister/api/agents/7', {
+			tools: [],
+			views: ['v-open'],
+		})
+	})
+
+	it("shows an agent's views by name in the list (ai-agent-view-limits)", () => {
+		const vm = { ...AgentsIndex.methods }
+		expect(
+			AgentsIndex.methods.labels.call(
+				vm,
+				['v-open'],
+				[{ id: 'v-open', label: 'Open cases' }],
+			),
+		).toBe('Open cases')
+		expect(
+			fs.readFileSync(path.join(__dirname, 'AgentsIndex.vue'), 'utf8'),
+		).toContain('labels(agent.views, viewOptions)')
 	})
 
 	it('keeps a stored tool id the catalogue no longer lists', () => {
