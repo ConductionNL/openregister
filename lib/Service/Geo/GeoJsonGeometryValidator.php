@@ -74,6 +74,62 @@ class GeoJsonGeometryValidator {
 	}//end isGeoType()
 
 	/**
+	 * The geo type a schema property declares, by `format` or by `type`, or null.
+	 *
+	 * @param mixed $property The property definition.
+	 *
+	 * @return string|null The geo type, lower-cased.
+	 *
+	 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md
+	 */
+	public function declaredGeoType(mixed $property): ?string {
+		if (is_array($property) === false) {
+			return null;
+		}
+
+		foreach (['format', 'type'] as $key) {
+			$declared = ($property[$key] ?? null);
+			if (is_string($declared) === true && $this->isGeoType(type: $declared) === true) {
+				return strtolower($declared);
+			}
+		}
+
+		return null;
+	}//end declaredGeoType()
+
+	/**
+	 * Validate every geometry property of an object, keyed by property name.
+	 *
+	 * A property counts as a geometry when its definition declares a geo type
+	 * by `format` (`{"type": "object", "format": "geo:polygon"}`, which a JSON
+	 * Schema validator accepts) or by `type` (`geo:point`, the older spelling).
+	 * An absent or null value is left to the required rule.
+	 *
+	 * @param array<string, mixed>          $object The object as it will be saved.
+	 * @param \OCA\OpenRegister\Db\Schema $schema The schema it is saved under.
+	 *
+	 * @return array<string, string[]> Errors per invalid property; empty when every geometry is valid.
+	 *
+	 * @spec openspec/changes/geometry-on-a-map/specs/geo-metadata-kaart/spec.md
+	 */
+	public function validateObject(array $object, \OCA\OpenRegister\Db\Schema $schema): array {
+		$errors = [];
+		foreach (($schema->getProperties() ?? []) as $name => $property) {
+			$type = $this->declaredGeoType(property: $property);
+			if ($type === null || isset($object[$name]) === false) {
+				continue;
+			}
+
+			$found = $this->validate(type: $type, value: $object[$name]);
+			if ($found !== []) {
+				$errors[(string)$name] = $found;
+			}
+		}
+
+		return $errors;
+	}//end validateObject()
+
+	/**
 	 * Validate a value for a given geo property type.
 	 *
 	 * Returns a list of human-readable error strings; an empty list
