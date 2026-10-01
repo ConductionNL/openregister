@@ -421,30 +421,7 @@ class ContextRetrievalHandler {
 			}
 		}
 
-		$uuids   = array_values(array_unique($uuids));
-		$allowed = [];
-		if ($uuids !== [] && $views !== []) {
-			try {
-				$found = $this->objectService->searchObjects(
-					query: ['_limit' => count($uuids)],
-					ids: $uuids,
-					views: array_values($views),
-					_viewScopeRequired: true
-				);
-				if (is_array($found) === false) {
-					$found = [];
-				}
-
-				foreach ($found as $object) {
-					$allowed[] = $object->getUuid();
-				}
-			} catch (Exception $e) {
-				$this->logger->warning(
-					message: '[ContextRetrievalHandler] Agent views could not be applied; objects withheld',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-				);
-			}
-		}
+		$allowed = $this->uuidsInsideViews(uuids: array_values(array_unique($uuids)), views: $views);
 
 		$kept = [];
 		foreach ($results as $result) {
@@ -456,6 +433,49 @@ class ContextRetrievalHandler {
 
 		return $kept;
 	}//end limitObjectsToViews()
+
+	/**
+	 * The uuids among the given ones that lie inside the views.
+	 *
+	 * Asked of the view-scoped object search with RBAC on and the view as a
+	 * required bound; a failing search withholds every object (fail closed).
+	 *
+	 * @param string[] $uuids The object uuids of the hits.
+	 * @param string[] $views The view ids that bound the search; empty means none is left.
+	 *
+	 * @return string[] The uuids inside the views.
+	 *
+	 * @spec openspec/specs/agent-tool-governance/spec.md#requirement-an-agent-reads-only-the-views-it-is-granted
+	 */
+	private function uuidsInsideViews(array $uuids, array $views): array {
+		if ($uuids === [] || $views === []) {
+			return [];
+		}
+
+		$allowed = [];
+		try {
+			$found = $this->objectService->searchObjects(
+				query: ['_limit' => count($uuids)],
+				ids: $uuids,
+				views: array_values($views),
+				_viewScopeRequired: true
+			);
+			if (is_array($found) === false) {
+				$found = [];
+			}
+
+			foreach ($found as $object) {
+				$allowed[] = $object->getUuid();
+			}
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[ContextRetrievalHandler] Agent views could not be applied; objects withheld',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+			);
+		}
+
+		return $allowed;
+	}//end uuidsInsideViews()
 
 	/**
 	 * The object uuid of a search result, or null when the result is not an object.
