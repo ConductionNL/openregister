@@ -286,6 +286,7 @@ class MagicFacetHandler {
 	 * @return array Facet results with buckets.
 	 *
 	 * @throws \OCP\DB\Exception If a database error occurs.
+	 * @spec openspec/changes/property-read-rules-hold-on-every-route/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
 	public function getSimpleFacets(
 		string $tableName,
@@ -364,6 +365,16 @@ class MagicFacetHandler {
 		);
 
 		foreach ($objectFacetConfig as $field => $config) {
+			// 🔴 AN EXPLICITLY REQUESTED FACET OBEYS THE READ RULE TOO. The
+			// guard in expandFacetConfig() covers only the auto-discovered
+			// `facetable` loop; a caller who names the property in
+			// `_facets[<prop>][type]=terms` skipped it and got the column's
+			// distinct values back (found live on the Rotterdam stack: an
+			// anonymous call listed a property ruled `authenticated`).
+			if ($this->callerMayFacet(schema: $schema, property: (string)$field) === false) {
+				continue;
+			}
+
 			$facetStart = microtime(true);
 			$type = $config['type'] ?? 'terms';
 			// Sanitize field name to match database column (camelCase -> snake_case).
@@ -421,6 +432,7 @@ class MagicFacetHandler {
 	 * @param array $query The search query with filters and facet config.
 	 *
 	 * @return array Merged facet results across all tables.
+	 * @spec openspec/changes/property-read-rules-hold-on-every-route/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
 	public function getSimpleFacetsUnion(array $tableConfigs, array $query): array {
 		$startTime = microtime(true);
@@ -469,6 +481,14 @@ class MagicFacetHandler {
 		);
 
 		foreach ($objectFacetConfig as $field => $config) {
+			// Same read rule as the single-table path: a facet across several
+			// schemas is omitted when ANY of them withholds the property from
+			// this caller, because the union would hand back that schema's
+			// values among the others.
+			if ($this->callerMayFacetOnEveryTable(tableConfigs: $tableConfigs, property: (string)$field) === false) {
+				continue;
+			}
+
 			$facetStart = microtime(true);
 			$type = $config['type'] ?? 'terms';
 			$columnName = $this->sanitizeColumnName(name: $field);
@@ -1199,6 +1219,27 @@ class MagicFacetHandler {
 			return false;
 		}
 	}//end callerMayFacet()
+
+	/**
+	 * Whether the caller may facet a property on every table of a union.
+	 *
+	 * @param array  $tableConfigs Entries of ['tableName' => string, 'register' => Register, 'schema' => Schema].
+	 * @param string $property     The property being faceted.
+	 *
+	 * @return bool False when any table's schema withholds the property.
+	 *
+	 * @spec openspec/changes/property-read-rules-hold-on-every-route/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 */
+	private function callerMayFacetOnEveryTable(array $tableConfigs, string $property): bool {
+		foreach ($tableConfigs as $tableConfig) {
+			$schema = ($tableConfig['schema'] ?? null);
+			if ($schema instanceof Schema && $this->callerMayFacet(schema: $schema, property: $property) === false) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end callerMayFacetOnEveryTable()
 
 	/**
 	 * Determine facet type based on property definition.

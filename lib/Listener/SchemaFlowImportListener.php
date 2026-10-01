@@ -233,8 +233,52 @@ class SchemaFlowImportListener implements IEventListener {
 		}
 
 		$this->flows->update($flow);
+		$this->publishShippedUpdate(flow: $flow);
 
 	}//end upsert()
+
+	/**
+	 * Publish a changed declaration as the flow's next version.
+	 *
+	 * Runs walk the PUBLISHED version, so an app upgrade that fixed a shipped
+	 * flow but only rewrote its head changed nothing that ran. The rules for
+	 * when an upgrade may publish live in
+	 * {@see \OCA\OpenRegister\Service\Flow\FlowVersionService::publishShippedUpdate()}.
+	 *
+	 * Never raises, for the same reason as {@see self::publishVersionOne()}:
+	 * a flow must not abort a schema import. A refusal leaves the published
+	 * version serving and the shipped graph on the head.
+	 *
+	 * @param Flow $flow The updated flow.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/shipped-flow-update-is-published/specs/flow-definition-versioning/spec.md#requirement-a-changed-shipped-flow-is-published-as-the-next-version
+	 */
+	private function publishShippedUpdate(Flow $flow): void {
+		if ($this->container === null) {
+			return;
+		}
+
+		try {
+			$version = $this->container->get('OCA\OpenRegister\Service\Flow\FlowVersionService')
+				->publishShippedUpdate(flow: $flow);
+			if ($version !== null) {
+				$this->logger->info(
+					message: '[SchemaFlowImport] Published the updated declaration of flow "' . $flow->getUuid()
+						. '" as version ' . $version->getVersion() . '.'
+				);
+			}
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[SchemaFlowImport] The updated declaration of flow "' . $flow->getUuid()
+					. '" could not be published: ' . $e->getMessage()
+					. '. The previous version keeps serving.',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
+			);
+		}
+
+	}//end publishShippedUpdate()
 
 	/**
 	 * Publish version 1 of a freshly imported flow.
