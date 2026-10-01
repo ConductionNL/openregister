@@ -47,6 +47,7 @@ use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
+use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
@@ -313,6 +314,17 @@ class TaskFormCompletion {
 			throw $this->refusal(refused: $refused, declared: null);
 		} catch (NotAuthorizedException $denied) {
 			throw new TaskAccessDeniedException(message: $denied->getMessage());
+		} catch (LifecycleSubjectNotFoundException $missing) {
+			// The engine reports a subject the caller may not READ as "not
+			// found", so the object endpoints do not leak its existence. The
+			// task endpoint has already shown this performer the task, so it
+			// keeps answering a read denial as the access denial it was.
+			$cause = $missing->getPrevious();
+			if ($cause instanceof NotAuthorizedException) {
+				throw new TaskAccessDeniedException(message: $cause->getMessage());
+			}
+
+			throw new TaskSubjectWriteRefusedException(message: $missing->getMessage(), previous: $missing);
 		} catch (HookStoppedException | ValidationException | CustomValidationException | RuntimeException $refused) {
 			throw new TaskSubjectWriteRefusedException(message: $refused->getMessage(), previous: $refused);
 		}

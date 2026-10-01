@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Šis pakalpojuma sniedzējs šajā serverī vēl nav iestatīts. Palūdz administratoram to konfigurēt.",
         "The provider's server did not accept the connection. Try again later.": "Pakalpojuma sniedzēja serveris nepieņēma savienojumu. Mēģini vēlreiz vēlāk.",
         "Consequence": "Sekas",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Kas notiks, ja puse neatbildēs, pakāpei pēc termiņa."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Kas notiks, ja puse neatbildēs, pakāpei pēc termiņa.",
+        "Limits of {name}": "{name} ierobežojumi",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Izvēlieties, kādus rīkus katrs MI aģents drīkst izmantot. Tērzēšana un MCP klienti, kas nosauc aģentu, saņem tos pašus ierobežojumus.",
+        "No agents yet": "Vēl nav aģentu",
+        "Could not load the agents": "Aģentus nevarēja ielādēt",
+        "Could not save the limits": "Ierobežojumus nevarēja saglabāt",
+        "Only the agent's owner can change its limits.": "Tikai aģenta īpašnieks var mainīt tā ierobežojumus.",
+        "This agent has a grant per app. Change it through the agents API.": "Šim aģentam ir atļauja katrai lietotnei. Mainiet to ar aģentu API.",
+        "Edit limits": "Rediģēt ierobežojumus"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);"
 )

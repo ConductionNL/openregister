@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Dëse Fournisseur ass op dësem Server nach net ageriicht. Fro däin Administrateur, fir en anzeriichten.",
         "The provider's server did not accept the connection. Try again later.": "De Server vum Fournisseur huet d'Verbindung net ugeholl. Probéier méi spéit nach eng Kéier.",
         "Consequence": "Konsequenz",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Wat geschitt, wann d’Partei net äntwert, fir eng Stuf no der Frist."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Wat geschitt, wann d’Partei net äntwert, fir eng Stuf no der Frist.",
+        "Limits of {name}": "Limitte vun {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Wielt, wéi eng Tools all KI-Agent benotze dierf. De Chat an MCP-Clienten, déi den Agent nennen, kréien déiselwecht Limitten.",
+        "No agents yet": "Nach keng Agenten",
+        "Could not load the agents": "D'Agente konnten net geluede ginn",
+        "Could not save the limits": "D'Limitte konnten net gespäichert ginn",
+        "Only the agent's owner can change its limits.": "Just den Eegentümer vum Agent kann seng Limitte änneren.",
+        "This agent has a grant per app. Change it through the agents API.": "Dësen Agent huet eng Autorisatioun pro App. Ännert se iwwer d'Agenten-API.",
+        "Edit limits": "Limitten änneren"
     },
     "nplurals=2; plural=(n != 1);"
 )

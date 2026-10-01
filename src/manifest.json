@@ -250,6 +250,14 @@
       "_note": "Bespoke webhook pipeline configuration UI."
     },
     {
+      "id": "agents",
+      "route": "/agents",
+      "type": "custom",
+      "title": "Agents",
+      "component": "AgentsIndex",
+      "_note": "The tools each AI agent may use (ai-agent-limits-screen). The same grant holds in chat and over MCP for a client that names the agent."
+    },
+    {
       "id": "webhooks-logs",
       "route": "/webhooks/logs",
       "type": "custom",
@@ -591,6 +599,13 @@
           "icon": "AccountOutline",
           "route": "entities",
           "order": 95
+        },
+        {
+          "id": "Agents",
+          "label": "Agents",
+          "icon": "RobotOutline",
+          "route": "agents",
+          "order": 96
         },
         {
           "id": "Avg",

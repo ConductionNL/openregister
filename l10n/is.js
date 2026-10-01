@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Þessi þjónustuaðili hefur ekki enn verið settur upp á þessum þjóni. Biddu kerfisstjórann þinn að stilla hann.",
         "The provider's server did not accept the connection. Try again later.": "Þjónn þjónustuaðilans tók ekki við tengingunni. Reyndu aftur síðar.",
         "Consequence": "Afleiðing",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Hvað gerist ef aðilinn svarar ekki, fyrir þrep eftir frestinn."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Hvað gerist ef aðilinn svarar ekki, fyrir þrep eftir frestinn.",
+        "Limits of {name}": "Takmörk {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Veldu hvaða verkfæri hver gervigreindarfulltrúi má nota. Spjall og MCP-biðlar sem nefna fulltrúann fá sömu takmörk.",
+        "No agents yet": "Engir fulltrúar enn",
+        "Could not load the agents": "Ekki tókst að hlaða fulltrúunum",
+        "Could not save the limits": "Ekki tókst að vista takmörkin",
+        "Only the agent's owner can change its limits.": "Aðeins eigandi fulltrúans getur breytt takmörkum hans.",
+        "This agent has a grant per app. Change it through the agents API.": "Þessi fulltrúi hefur heimild fyrir hvert forrit. Breyttu henni í gegnum API fulltrúa.",
+        "Edit limits": "Breyta takmörkum"
     },
     "nplurals=2; plural=(n != 1);"
 )
