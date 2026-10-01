@@ -2378,6 +2378,7 @@ class AggregationRunner {
 	 *                         the two MUST agree
 	 *                         bucket-for- bucket
 	 *                         (design D3).
+	 * @param bool $rowRbac Apply the caller's read-rule row predicate (false only for bypassRbac callers).
 	 *
 	 * @return array{value: int|float|null}
 	 *                                      |array{values: array<string, int|float|null>}
@@ -2936,6 +2937,7 @@ class AggregationRunner {
 	 * @param array<string, mixed> $filter Already placeholder-resolved filter map.
 	 * @param array<string, mixed>|null $groupBy Optional group spec (see {@see tryNativeAggregation()}).
 	 * @param array<int, array{metric: string, field: ?string}> $metrics Requested metric entries (>1).
+	 * @param bool $rowRbac Apply the caller's read-rule row predicate (false only for bypassRbac callers).
 	 *
 	 * @return array{values: AggValues}
 	 *                                  |array{groups: array<int, array{key?: mixed, keys?: array<string, mixed>, values: AggValues}>}
@@ -3860,6 +3862,7 @@ class AggregationRunner {
 	 * @param array<string, mixed> $filter Placeholder-resolved filter for the joined schema.
 	 * @param array<int, string> $joinedFields Joined-side join key field(s).
 	 * @param array<int, array{alias: string, field: string, metric: string}> $selectEntries Parsed select entries.
+	 * @param bool $rowRbac Apply the caller's read-rule row predicate (false only for bypassRbac callers).
 	 *
 	 * @return array{values: array<string, array<string, int|float|null>>, backend: string, truncated: bool}
 	 *         Lookup keyed by {@see joinTupleKey()} → alias → value.
