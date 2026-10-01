@@ -39,10 +39,12 @@ class OperatorEvaluator {
 	/**
 	 * Constructor for OperatorEvaluator
 	 *
-	 * @param LoggerInterface $logger Logger for debugging
+	 * @param LoggerInterface    $logger   Logger for debugging
+	 * @param ComparableInstants $instants Compares two dates as UTC instants
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
+		private readonly ComparableInstants $instants=new ComparableInstants(),
 	) {
 	}//end __construct()
 
@@ -302,7 +304,9 @@ class OperatorEvaluator {
 			return false;
 		}
 
-		return $value > $operand;
+		[$left, $right] = $this->instants->pair(value: $value, operand: $operand);
+
+		return $left > $right;
 	}//end operatorGreaterThan()
 
 	/**
@@ -320,7 +324,9 @@ class OperatorEvaluator {
 			return false;
 		}
 
-		return $value >= $operand;
+		[$left, $right] = $this->instants->pair(value: $value, operand: $operand);
+
+		return $left >= $right;
 	}//end operatorGreaterThanOrEqual()
 
 	/**
@@ -338,7 +344,9 @@ class OperatorEvaluator {
 			return false;
 		}
 
-		return $value < $operand;
+		[$left, $right] = $this->instants->pair(value: $value, operand: $operand);
+
+		return $left < $right;
 	}//end operatorLessThan()
 
 	/**
@@ -360,6 +368,8 @@ class OperatorEvaluator {
 			return false;
 		}
 
-		return $value <= $operand;
+		[$left, $right] = $this->instants->pair(value: $value, operand: $operand);
+
+		return $left <= $right;
 	}//end operatorLessThanOrEqual()
 }//end class

@@ -786,7 +786,13 @@ class RenderObject {
 					if ($doGated === true) {
 						// Note filterReadableProperties strips writeOnly first, then applies
 						// the group-authorization filter, so this covers both concerns.
+						$unfiltered = $object;
 						$object = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $object);
+						$this->withholdEntityCopies(
+							entity: $row,
+							schema: $schema,
+							removed: $this->removedProperties(before: $unfiltered, after: $object)
+						);
 					} else {
 						// The writeOnly-only path (admin / `_rbac: false` / system context, or a
 						// schema with no property authorization): strip writeOnly unconditionally.
@@ -840,7 +846,13 @@ class RenderObject {
 				}
 
 				if ($doGated === true) {
+					$unfiltered = $row;
 					$row = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $row);
+					$row = $this->withholdRowCopies(
+						row: $row,
+						schema: $schema,
+						removed: $this->removedProperties(before: $unfiltered, after: $row)
+					);
 				} else {
 					$row = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $row);
 				}
@@ -867,6 +879,159 @@ class RenderObject {
 
 		unset($row);
 	}//end redactWriteOnlyFromRows()
+
+	/**
+	 * The schema configuration keys that copy a property into `@self` metadata.
+	 *
+	 * @var array<string, string> configuration key => `@self` field
+	 */
+	private const METADATA_COPIES = [
+		'objectNameField'        => 'name',
+		'objectDescriptionField' => 'description',
+		'objectSummaryField'     => 'summary',
+		'objectImageField'       => 'image',
+	];
+
+	/**
+	 * The properties a read filter removed from an object body.
+	 *
+	 * @param array<string, mixed> $before The body before filtering.
+	 * @param array<string, mixed> $after  The body after filtering.
+	 *
+	 * @return array<int, string> The removed property names (`@`-keys excluded).
+	 *
+	 * @spec openspec/changes/property-read-rules-hold-on-every-route/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 */
+	private function removedProperties(array $before, array $after): array {
+		$removed = [];
+		foreach (array_keys($before) as $key) {
+			$key = (string)$key;
+			if (str_starts_with($key, '@') === false && array_key_exists($key, $after) === false) {
+				$removed[] = $key;
+			}
+		}
+
+		return $removed;
+	}//end removedProperties()
+
+	/**
+	 * Remove the copies of withheld properties from an entity's `@self`.
+	 *
+	 * 🔴 THE BODY IS NOT THE ONLY COPY OF A PROPERTY. The `relations` mirror
+	 * holds every reference-shaped scalar, and `objectNameField` /
+	 * `objectDescriptionField` / `objectSummaryField` / `objectImageField` copy
+	 * a property into `@self.name|description|summary|image` at save time. The
+	 * read filter removed the property from the body and left both copies, so
+	 * an anonymous caller read a value the schema withholds from it through
+	 * `@self` (found live on the Rotterdam stack: a contact person's uuid and
+	 * two document references in `@self.relations`, a long description in
+	 * `@self.description`). Whatever the filter removed from the body is
+	 * removed from its copies, by the same decision.
+	 *
+	 * @param ObjectEntity       $entity  The rendered entity (mutated in memory only).
+	 * @param Schema             $schema  Its schema.
+	 * @param array<int, string> $removed Properties the read filter removed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/property-read-rules-hold-on-every-route/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 */
+	private function withholdEntityCopies(ObjectEntity $entity, Schema $schema, array $removed): void {
+		if ($removed === []) {
+			return;
+		}
+
+		$relations = $entity->getRelations();
+		if (is_array($relations) === true && $relations !== []) {
+			$entity->setRelations($this->withoutRelationKeys(relations: $relations, removed: $removed));
+		}
+
+		foreach ($this->withheldMetadataFields(schema: $schema, removed: $removed) as $field) {
+			$setter = 'set' . ucfirst($field);
+			$entity->$setter(null);
+		}
+	}//end withholdEntityCopies()
+
+	/**
+	 * Remove the copies of withheld properties from an array row's `@self`.
+	 *
+	 * The array-row twin of {@see self::withholdEntityCopies()}.
+	 *
+	 * @param array<string, mixed> $row     The filtered row.
+	 * @param Schema               $schema  Its schema.
+	 * @param array<int, string>   $removed Properties the read filter removed.
+	 *
+	 * @return array<string, mixed> The row with its `@self` copies withheld.
+	 *
+	 * @spec openspec/changes/property-read-rules-hold-on-every-route/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 */
+	private function withholdRowCopies(array $row, Schema $schema, array $removed): array {
+		if ($removed === [] || isset($row['@self']) === false || is_array($row['@self']) === false) {
+			return $row;
+		}
+
+		if (isset($row['@self']['relations']) === true && is_array($row['@self']['relations']) === true) {
+			$row['@self']['relations'] = $this->withoutRelationKeys(relations: $row['@self']['relations'], removed: $removed);
+		}
+
+		foreach ($this->withheldMetadataFields(schema: $schema, removed: $removed) as $field) {
+			if (array_key_exists($field, $row['@self']) === true) {
+				$row['@self'][$field] = null;
+			}
+		}
+
+		return $row;
+	}//end withholdRowCopies()
+
+	/**
+	 * Drop relation keys that belong to a removed property.
+	 *
+	 * A key is the property itself or a dotted path under it (`members.0`).
+	 *
+	 * @param array<string, mixed> $relations The relations mirror.
+	 * @param array<int, string>   $removed   Properties the read filter removed.
+	 *
+	 * @return array<string, mixed> The mirror without them.
+	 */
+	private function withoutRelationKeys(array $relations, array $removed): array {
+		foreach (array_keys($relations) as $key) {
+			$key = (string)$key;
+			foreach ($removed as $property) {
+				if ($key === $property || str_starts_with($key, $property . '.') === true) {
+					unset($relations[$key]);
+					break;
+				}
+			}
+		}
+
+		return $relations;
+	}//end withoutRelationKeys()
+
+	/**
+	 * The `@self` metadata fields whose source property was removed.
+	 *
+	 * @param Schema             $schema  The schema whose configuration names the sources.
+	 * @param array<int, string> $removed Properties the read filter removed.
+	 *
+	 * @return array<int, string> `@self` fields to blank.
+	 */
+	private function withheldMetadataFields(Schema $schema, array $removed): array {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$fields = [];
+		foreach (self::METADATA_COPIES as $configKey => $field) {
+			$source = trim((string)($configuration[$configKey] ?? ''));
+			if ($source === '') {
+				continue;
+			}
+
+			$topLevel = explode('.', $source)[0];
+			if (in_array($topLevel, $removed, true) === true) {
+				$fields[] = $field;
+			}
+		}
+
+		return $fields;
+	}//end withheldMetadataFields()
 
 	/**
 	 * Whether a schema has any read-strip rule (property-level read authorization or a
@@ -1999,6 +2164,11 @@ class RenderObject {
 				$objectData = $this->propertyRbacHandler->filterReadableProperties(
 					schema: $schema,
 					object: $objectDataWithSelf
+				);
+				$this->withholdEntityCopies(
+					entity: $entity,
+					schema: $schema,
+					removed: $this->removedProperties(before: $objectDataWithSelf, after: $objectData)
 				);
 
 				// Remove the temporary @self if it was added (jsonSerialize re-adds it).
