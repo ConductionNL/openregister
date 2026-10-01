@@ -72,6 +72,7 @@ use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
@@ -2449,6 +2450,17 @@ class ObjectService implements ObjectServiceInterface
         $groups = $this->repeatingGroups()->validate(object: $object, schema: $this->currentSchema);
         foreach ($groups as $violation) {
             $messages[] = $violation['message'];
+        }
+
+        // A geometry is checked on every write, like the bounds above: a
+        // polygon that does not close cannot be searched or drawn, and the
+        // schema's hard-validation switch was never meant to allow that.
+        $geometries = (new GeoJsonGeometryValidator())->validateObject(
+            object: $object,
+            schema: $this->currentSchema
+        );
+        foreach ($geometries as $property => $errors) {
+            $messages[] = sprintf("Property '%s' is not a valid geometry: %s.", $property, implode('; ', $errors));
         }
 
         if ($messages === []) {
