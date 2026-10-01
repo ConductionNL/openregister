@@ -414,4 +414,34 @@ class SchemaFlowImportListenerTest extends TestCase {
 
 		$this->assertCount(1, $this->updated);
 	}//end testAFailingShippedPublishIsNotFatal()
+
+	/**
+	 * A FIRST import publishes version 1 itself, so a clean install from the
+	 * app store ships a runnable flow (still disabled and ownerless until an
+	 * administrator or the app's switch-on adopts it). It never goes through
+	 * the upgrade path.
+	 */
+	public function testAFirstImportPublishesVersionOneAsNobody(): void {
+		$versions = $this->getMockBuilder(FlowVersionService::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['publishShippedUpdate', 'publish'])
+			->getMock();
+		$versions->expects($this->once())
+			->method('publish')
+			->with($this->isInstanceOf(Flow::class), null);
+		$versions->expects($this->never())->method('publishShippedUpdate');
+
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			fn (string $id) => ($id === FlowVersionService::class ? $versions : throw new \RuntimeException('not registered'))
+		);
+
+		$listener = $this->listener([], $container);
+		$this->fire($listener, $this->schema([
+			['name' => 'Harvest', 'nodes' => [['id' => 'a']], 'edges' => []],
+		]));
+
+		$this->assertCount(1, $this->inserted);
+		$this->assertFalse((bool)$this->inserted[0]->getEnabled(), 'published, but inert until adopted');
+	}//end testAFirstImportPublishesVersionOneAsNobody()
 }//end class
