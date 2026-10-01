@@ -14,6 +14,7 @@ use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Listener\SchemaFlowImportListener;
+use OCA\OpenRegister\Service\Flow\FlowVersionService;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 
@@ -350,4 +351,67 @@ class SchemaFlowImportListenerTest extends TestCase {
 			'the default organisation is what a session-less import must fall back to'
 		);
 	}//end testItResolvesTheOrganisationTheWayEveryOtherNewEntityDoes()
+
+	/**
+	 * A re-import hands the updated flow to FlowVersionService so a changed
+	 * shipped graph is published; a first import does not (it publishes
+	 * version 1 itself). Without this call an upgrade's fix never runs.
+	 *
+	 * @spec openspec/changes/shipped-flow-update-is-published/specs/flow-definition-versioning/spec.md#requirement-a-changed-shipped-flow-is-published-as-the-next-version
+	 */
+	public function testAReimportAsksForTheShippedUpdateToBePublished(): void {
+		$existing = new Flow();
+		$existing->setUuid('u1');
+		$existing->setApp('openregister');
+		$existing->setName('Triage');
+		$existing->setTriggerSchema('case');
+
+		$versions = $this->getMockBuilder(FlowVersionService::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['publishShippedUpdate', 'publish'])
+			->getMock();
+		$versions->expects($this->once())
+			->method('publishShippedUpdate')
+			->with($this->callback(fn (Flow $f): bool => $f->getUuid() === 'u1' && $f->getNodes() === [['id' => 'b']]))
+			->willReturn(null);
+		$versions->expects($this->never())->method('publish');
+
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			fn (string $id) => ($id === FlowVersionService::class ? $versions : throw new \RuntimeException('not registered'))
+		);
+
+		$listener = $this->listener([$existing], $container);
+		$this->fire($listener, $this->schema([
+			['name' => 'Triage', 'nodes' => [['id' => 'b']], 'edges' => []],
+		]));
+	}//end testAReimportAsksForTheShippedUpdateToBePublished()
+
+	/**
+	 * A failing publish never aborts the import: the head still holds the
+	 * shipped graph and the flow is still updated.
+	 */
+	public function testAFailingShippedPublishIsNotFatal(): void {
+		$existing = new Flow();
+		$existing->setUuid('u1');
+		$existing->setApp('openregister');
+		$existing->setName('Triage');
+		$existing->setTriggerSchema('case');
+
+		$versions = $this->getMockBuilder(FlowVersionService::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['publishShippedUpdate'])
+			->getMock();
+		$versions->method('publishShippedUpdate')->willThrowException(new \RuntimeException('dead end'));
+
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($versions);
+
+		$listener = $this->listener([$existing], $container);
+		$this->fire($listener, $this->schema([
+			['name' => 'Triage', 'nodes' => [['id' => 'b']], 'edges' => []],
+		]));
+
+		$this->assertCount(1, $this->updated);
+	}//end testAFailingShippedPublishIsNotFatal()
 }//end class
