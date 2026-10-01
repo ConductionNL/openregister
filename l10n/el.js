@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Αυτό το σχήμα έχει μη δημοσιευμένο πρόχειρο. Οι εγγραφές ελέγχονται με βάση τη δημοσιευμένη έκδοση μέχρι να το δημοσιεύσετε.",
         "Publish draft": "Δημοσίευση προχείρου",
         "Publish anyway": "Δημοσίευση παρ’ όλα αυτά",
-        "Discard draft": "Απόρριψη προχείρου"
+        "Discard draft": "Απόρριψη προχείρου",
+        "Limits of {name}": "Όρια του {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Επιλέξτε ποια εργαλεία μπορεί να χρησιμοποιεί κάθε πράκτορας ΤΝ. Η συνομιλία και οι πελάτες MCP που ονομάζουν τον πράκτορα λαμβάνουν τα ίδια όρια.",
+        "No agents yet": "Δεν υπάρχουν ακόμη πράκτορες",
+        "Could not load the agents": "Δεν ήταν δυνατή η φόρτωση των πρακτόρων",
+        "Could not save the limits": "Δεν ήταν δυνατή η αποθήκευση των ορίων",
+        "Only the agent's owner can change its limits.": "Μόνο ο κάτοχος του πράκτορα μπορεί να αλλάξει τα όριά του.",
+        "This agent has a grant per app. Change it through the agents API.": "Αυτός ο πράκτορας έχει άδεια ανά εφαρμογή. Αλλάξτε την μέσω του API πρακτόρων.",
+        "Edit limits": "Επεξεργασία ορίων"
     },
     "nplurals=2; plural=(n != 1);"
 )

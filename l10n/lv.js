@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Šai shēmai ir nepublicēts melnraksts. Ieraksti tiek pārbaudīti pret publicēto versiju, līdz jūs to publicējat.",
         "Publish draft": "Publicēt melnrakstu",
         "Publish anyway": "Tomēr publicēt",
-        "Discard draft": "Atmest melnrakstu"
+        "Discard draft": "Atmest melnrakstu",
+        "Limits of {name}": "{name} ierobežojumi",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Izvēlieties, kādus rīkus katrs MI aģents drīkst izmantot. Tērzēšana un MCP klienti, kas nosauc aģentu, saņem tos pašus ierobežojumus.",
+        "No agents yet": "Vēl nav aģentu",
+        "Could not load the agents": "Aģentus nevarēja ielādēt",
+        "Could not save the limits": "Ierobežojumus nevarēja saglabāt",
+        "Only the agent's owner can change its limits.": "Tikai aģenta īpašnieks var mainīt tā ierobežojumus.",
+        "This agent has a grant per app. Change it through the agents API.": "Šim aģentam ir atļauja katrai lietotnei. Mainiet to ar aģentu API.",
+        "Edit limits": "Rediģēt ierobežojumus"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);"
 )

@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "У гэтай схемы ёсць неапублікаваны чарнавік. Запісы правяраюцца па апублікаванай версіі, пакуль вы яго не апублікуеце.",
         "Publish draft": "Апублікаваць чарнавік",
         "Publish anyway": "Усё роўна апублікаваць",
-        "Discard draft": "Адхіліць чарнавік"
+        "Discard draft": "Адхіліць чарнавік",
+        "Limits of {name}": "Абмежаванні для {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Выберыце, якімі інструментамі можа карыстацца кожны ШІ-агент. Чат і MCP-кліенты, якія называюць агента, атрымліваюць тыя ж абмежаванні.",
+        "No agents yet": "Агентаў пакуль няма",
+        "Could not load the agents": "Не ўдалося загрузіць агентаў",
+        "Could not save the limits": "Не ўдалося захаваць абмежаванні",
+        "Only the agent's owner can change its limits.": "Змяняць абмежаванні агента можа толькі яго ўладальнік.",
+        "This agent has a grant per app. Change it through the agents API.": "У гэтага агента дазвол для кожнай праграмы. Змяніце яго праз API агентаў.",
+        "Edit limits": "Змяніць абмежаванні"
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

@@ -3310,7 +3310,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Dit schema heeft een ongepubliceerd concept. Records worden gecontroleerd tegen de gepubliceerde versie tot je het publiceert.",
         "Publish draft": "Concept publiceren",
         "Publish anyway": "Toch publiceren",
-        "Discard draft": "Concept verwijderen"
+        "Discard draft": "Concept verwijderen",
+        "Limits of {name}": "Grenzen van {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Kies welke tools elke AI-agent mag gebruiken. Chat en MCP-clients die de agent noemen krijgen dezelfde grenzen.",
+        "No agents yet": "Nog geen agents",
+        "Could not load the agents": "De agents konden niet worden geladen",
+        "Could not save the limits": "De grenzen konden niet worden opgeslagen",
+        "Only the agent's owner can change its limits.": "Alleen de eigenaar van de agent kan de grenzen wijzigen.",
+        "This agent has a grant per app. Change it through the agents API.": "Deze agent heeft een toekenning per app. Wijzig die via de agents-API.",
+        "Edit limits": "Grenzen bewerken"
     },
     "nplurals=2; plural=(n != 1);"
 )

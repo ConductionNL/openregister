@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Kjo skemë ka një draft të papublikuar. Regjistrimet kontrollohen sipas versionit të publikuar derisa ta publikoni.",
         "Publish draft": "Publiko draftin",
         "Publish anyway": "Publiko gjithsesi",
-        "Discard draft": "Hidh draftin"
+        "Discard draft": "Hidh draftin",
+        "Limits of {name}": "Kufijtë e {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Zgjidhni cilat mjete mund të përdorë secili agjent IA. Biseda dhe klientët MCP që emërtojnë agjentin marrin të njëjtët kufij.",
+        "No agents yet": "Ende pa agjentë",
+        "Could not load the agents": "Agjentët nuk u ngarkuan",
+        "Could not save the limits": "Kufijtë nuk u ruajtën",
+        "Only the agent's owner can change its limits.": "Vetëm pronari i agjentit mund t’i ndryshojë kufijtë.",
+        "This agent has a grant per app. Change it through the agents API.": "Ky agjent ka një leje për çdo aplikacion. Ndryshojeni përmes API-së së agjentëve.",
+        "Edit limits": "Ndrysho kufijtë"
     },
     "nplurals=2; plural=(n != 1);"
 )

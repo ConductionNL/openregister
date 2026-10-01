@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Ennek a sémának van egy közzé nem tett piszkozata. A rekordokat a közzétett verzió alapján ellenőrizzük, amíg közzé nem teszi.",
         "Publish draft": "Piszkozat közzététele",
         "Publish anyway": "Közzététel mégis",
-        "Discard draft": "Piszkozat elvetése"
+        "Discard draft": "Piszkozat elvetése",
+        "Limits of {name}": "{name} korlátai",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Válassza ki, mely eszközöket használhatja az egyes MI-ügynökök. A csevegés és az ügynököt megnevező MCP-kliensek ugyanazokat a korlátokat kapják.",
+        "No agents yet": "Még nincsenek ügynökök",
+        "Could not load the agents": "Az ügynököket nem sikerült betölteni",
+        "Could not save the limits": "A korlátokat nem sikerült menteni",
+        "Only the agent's owner can change its limits.": "Az ügynök korlátait csak a tulajdonosa módosíthatja.",
+        "This agent has a grant per app. Change it through the agents API.": "Ennek az ügynöknek alkalmazásonkénti jogosultsága van. Az ügynökök API-ján keresztül módosíthatja.",
+        "Edit limits": "Korlátok szerkesztése"
     },
     "nplurals=2; plural=(n != 1);"
 )

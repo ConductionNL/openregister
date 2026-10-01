@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Þetta skema hefur óútgefin drög. Færslur eru prófaðar gegn útgefnu útgáfunni þar til þú gefur þau út.",
         "Publish draft": "Gefa út drög",
         "Publish anyway": "Gefa samt út",
-        "Discard draft": "Henda drögum"
+        "Discard draft": "Henda drögum",
+        "Limits of {name}": "Takmörk {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Veldu hvaða verkfæri hver gervigreindarfulltrúi má nota. Spjall og MCP-biðlar sem nefna fulltrúann fá sömu takmörk.",
+        "No agents yet": "Engir fulltrúar enn",
+        "Could not load the agents": "Ekki tókst að hlaða fulltrúunum",
+        "Could not save the limits": "Ekki tókst að vista takmörkin",
+        "Only the agent's owner can change its limits.": "Aðeins eigandi fulltrúans getur breytt takmörkum hans.",
+        "This agent has a grant per app. Change it through the agents API.": "Þessi fulltrúi hefur heimild fyrir hvert forrit. Breyttu henni í gegnum API fulltrúa.",
+        "Edit limits": "Breyta takmörkum"
     },
     "nplurals=2; plural=(n != 1);"
 )

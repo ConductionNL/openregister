@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Bu şemanın yayımlanmamış bir taslağı var. Siz yayımlayana kadar kayıtlar yayımlanan sürüme göre denetlenir.",
         "Publish draft": "Taslağı yayımla",
         "Publish anyway": "Yine de yayımla",
-        "Discard draft": "Taslağı at"
+        "Discard draft": "Taslağı at",
+        "Limits of {name}": "{name} sınırları",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Her yapay zekâ ajanının hangi araçları kullanabileceğini seçin. Sohbet ve ajanı belirten MCP istemcileri aynı sınırları alır.",
+        "No agents yet": "Henüz ajan yok",
+        "Could not load the agents": "Ajanlar yüklenemedi",
+        "Could not save the limits": "Sınırlar kaydedilemedi",
+        "Only the agent's owner can change its limits.": "Ajanın sınırlarını yalnızca sahibi değiştirebilir.",
+        "This agent has a grant per app. Change it through the agents API.": "Bu ajanın uygulama başına bir yetkisi var. Ajan API’si üzerinden değiştirin.",
+        "Edit limits": "Sınırları düzenle"
     },
     "nplurals=2; plural=(n != 1);"
 )

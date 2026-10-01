@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Táto schéma má nezverejnený koncept. Záznamy sa kontrolujú podľa zverejnenej verzie, kým ho nezverejníte.",
         "Publish draft": "Zverejniť koncept",
         "Publish anyway": "Napriek tomu zverejniť",
-        "Discard draft": "Zahodiť koncept"
+        "Discard draft": "Zahodiť koncept",
+        "Limits of {name}": "Obmedzenia agenta {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Vyberte, ktoré nástroje smie každý AI agent používať. Chat a MCP klienti, ktorí agenta uvedú, dostanú rovnaké obmedzenia.",
+        "No agents yet": "Zatiaľ žiadni agenti",
+        "Could not load the agents": "Agentov sa nepodarilo načítať",
+        "Could not save the limits": "Obmedzenia sa nepodarilo uložiť",
+        "Only the agent's owner can change its limits.": "Obmedzenia agenta môže zmeniť len jeho vlastník.",
+        "This agent has a grant per app. Change it through the agents API.": "Tento agent má oprávnenie pre každú aplikáciu. Zmeňte ho cez API agentov.",
+        "Edit limits": "Upraviť obmedzenia"
     },
     "nplurals=4; plural=(n % 1 == 0 && n == 1 ? 0 : n % 1 == 0 && n >= 2 && n <= 4 ? 1 : n % 1 != 0 ? 2: 3);"
 )

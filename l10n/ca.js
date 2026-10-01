@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Aquest esquema té un esborrany sense publicar. Els registres es comproven amb la versió publicada fins que el publiqueu.",
         "Publish draft": "Publica l'esborrany",
         "Publish anyway": "Publica igualment",
-        "Discard draft": "Descarta l'esborrany"
+        "Discard draft": "Descarta l'esborrany",
+        "Limits of {name}": "Límits de {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Trieu quines eines pot fer servir cada agent d'IA. El xat i els clients MCP que anomenen l'agent reben els mateixos límits.",
+        "No agents yet": "Encara no hi ha agents",
+        "Could not load the agents": "No s'han pogut carregar els agents",
+        "Could not save the limits": "No s'han pogut desar els límits",
+        "Only the agent's owner can change its limits.": "Només el propietari de l'agent pot canviar-ne els límits.",
+        "This agent has a grant per app. Change it through the agents API.": "Aquest agent té una concessió per aplicació. Canvieu-la amb l'API d'agents.",
+        "Edit limits": "Edita els límits"
     },
     "nplurals=2; plural=(n != 1);"
 )

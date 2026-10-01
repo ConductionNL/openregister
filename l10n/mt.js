@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Din l-iskema għandha abbozz mhux ippubblikat. Ir-rekords jiġu ċċekkjati skont il-verżjoni ppubblikata sakemm tippubblikah.",
         "Publish draft": "Ippubblika l-abbozz",
         "Publish anyway": "Ippubblika xorta waħda",
-        "Discard draft": "Armi l-abbozz"
+        "Discard draft": "Armi l-abbozz",
+        "Limits of {name}": "Il-limiti ta’ {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Agħżel liema għodod jista’ juża kull aġent tal-IA. Iċ-chat u l-klijenti MCP li jsemmu l-aġent jiksbu l-istess limiti.",
+        "No agents yet": "Għad m’hemmx aġenti",
+        "Could not load the agents": "L-aġenti ma setgħux jitgħabbew",
+        "Could not save the limits": "Il-limiti ma setgħux jiġu ssejvjati",
+        "Only the agent's owner can change its limits.": "Is-sid tal-aġent biss jista’ jibdel il-limiti tiegħu.",
+        "This agent has a grant per app. Change it through the agents API.": "Dan l-aġent għandu għotja għal kull app. Ibdilha permezz tal-API tal-aġenti.",
+        "Edit limits": "Editja l-limiti"
     },
     "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);"
 )

@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Este esquema tem um rascunho por publicar. Os registos são verificados com a versão publicada até o publicar.",
         "Publish draft": "Publicar rascunho",
         "Publish anyway": "Publicar mesmo assim",
-        "Discard draft": "Descartar rascunho"
+        "Discard draft": "Descartar rascunho",
+        "Limits of {name}": "Limites de {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Escolha que ferramentas cada agente de IA pode usar. O chat e os clientes MCP que indicam o agente recebem os mesmos limites.",
+        "No agents yet": "Ainda sem agentes",
+        "Could not load the agents": "Não foi possível carregar os agentes",
+        "Could not save the limits": "Não foi possível guardar os limites",
+        "Only the agent's owner can change its limits.": "Só o proprietário do agente pode alterar os seus limites.",
+        "This agent has a grant per app. Change it through the agents API.": "Este agente tem uma concessão por aplicação. Altere-a através da API de agentes.",
+        "Edit limits": "Editar limites"
     },
     "nplurals=2; plural=(n != 1);"
 )

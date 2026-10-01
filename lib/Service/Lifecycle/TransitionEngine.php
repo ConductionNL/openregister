@@ -40,6 +40,7 @@ use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IUserSession;
@@ -315,16 +316,7 @@ class TransitionEngine {
 	 * @return array{object: ObjectEntity, schema: Schema, annotation: array<string, mixed>}
 	 */
 	private function resolveTransitionSubject(string $objectId): array {
-		$object = $this->objectService->find(id: $objectId);
-		if ($object === null) {
-			// A distinct type, still a RuntimeException: the write endpoint has
-			// to tell "this object is gone" (404) apart from "this move was
-			// refused" (422) and "the provider broke" (502), and those first two
-			// shared a status code until this type existed.
-			throw new LifecycleSubjectNotFoundException(
-				message: sprintf('Object "%s" not found.', $objectId)
-			);
-		}
+		$object = $this->findVisibleSubject(objectId: $objectId);
 
 		$schema = $this->loadSchema(object: $object);
 		if ($schema === null) {
@@ -362,6 +354,52 @@ class TransitionEngine {
 
 		return ['object' => $object, 'schema' => $schema, 'annotation' => $annotation];
 	}//end resolveTransitionSubject()
+
+	/**
+	 * Load the object a lifecycle call acts on, as the CALLER sees it.
+	 *
+	 * `ObjectService::find()` is RBAC-filtered and refuses an object the caller
+	 * may not read in two ways: the id-only cross-table lookup drops the row
+	 * and throws OCP's `DoesNotExistException`, and a schema-level read denial
+	 * throws `NotAuthorizedException`. Neither is a `RuntimeException`, so the
+	 * first escaped `TransitionController` as an HTTP 500 and the second
+	 * answered 403, confirming the object exists.
+	 *
+	 * Both now read as "not found", exactly like an object that is not there.
+	 * That is what `GET /api/objects/{register}/{schema}/{id}` answers for an
+	 * object the caller cannot see (404 for both, deliberately, so existence
+	 * does not leak), and the lifecycle endpoints must not leak what the read
+	 * endpoint hides. The `update` denial on an object the caller CAN see stays
+	 * a 403 in {@see resolveTransitionSubject()}.
+	 *
+	 * @param string $objectId Object id/uuid/slug.
+	 *
+	 * @return ObjectEntity The object, readable by the caller.
+	 *
+	 * @throws LifecycleSubjectNotFoundException When the object does not exist
+	 *                                           or the caller may not read it.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function findVisibleSubject(string $objectId): ObjectEntity {
+		$notFound = sprintf('Object "%s" not found.', $objectId);
+
+		try {
+			$object = $this->objectService->find(id: $objectId);
+		} catch (DoesNotExistException | NotAuthorizedException $e) {
+			throw new LifecycleSubjectNotFoundException(message: $notFound, previous: $e);
+		}
+
+		if ($object === null) {
+			// A distinct type, still a RuntimeException: the write endpoint has
+			// to tell "this object is gone" (404) apart from "this move was
+			// refused" (422) and "the provider broke" (502), and those first two
+			// shared a status code until this type existed.
+			throw new LifecycleSubjectNotFoundException(message: $notFound);
+		}
+
+		return $object;
+	}//end findVisibleSubject()
 
 	/**
 	 * Apply a named transition, without the automatic-transition boundary.
@@ -729,10 +767,7 @@ class TransitionEngine {
 	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
 	 */
 	public function availableActions(string $objectId): array {
-		$object = $this->objectService->find(id: $objectId);
-		if ($object === null) {
-			throw new RuntimeException(sprintf('Object "%s" not found.', $objectId));
-		}
+		$object = $this->findVisibleSubject(objectId: $objectId);
 
 		$schema = $this->loadSchema(object: $object);
 		if ($schema === null) {

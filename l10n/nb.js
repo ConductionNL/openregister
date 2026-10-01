@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Dette skjemaet har et upublisert utkast. Poster kontrolleres mot den publiserte versjonen til du publiserer det.",
         "Publish draft": "Publiser utkast",
         "Publish anyway": "Publiser likevel",
-        "Discard draft": "Forkast utkast"
+        "Discard draft": "Forkast utkast",
+        "Limits of {name}": "Grenser for {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Velg hvilke verktøy hver KI-agent kan bruke. Chat og MCP-klienter som navngir agenten får de samme grensene.",
+        "No agents yet": "Ingen agenter ennå",
+        "Could not load the agents": "Kunne ikke laste inn agentene",
+        "Could not save the limits": "Kunne ikke lagre grensene",
+        "Only the agent's owner can change its limits.": "Bare agentens eier kan endre grensene.",
+        "This agent has a grant per app. Change it through the agents API.": "Denne agenten har en tildeling per app. Endre den via agent-API-et.",
+        "Edit limits": "Rediger grenser"
     },
     "nplurals=2; plural=(n != 1);"
 )

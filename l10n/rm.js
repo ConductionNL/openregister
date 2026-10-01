@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Questa schema ha in sboz betg publitgà. Las datas vegnan controlladas tenor la versiun publitgada fin che ti al publitgeschas.",
         "Publish draft": "Publitgar il sboz",
         "Publish anyway": "Publitgar tuttina",
-        "Discard draft": "Stizzar il sboz"
+        "Discard draft": "Stizzar il sboz",
+        "Limits of {name}": "Limitas da {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Tscherna tge utensils che mintga agent d'IA dastga duvrar. Il chat ed ils clients MCP che numnan l'agent survegnan las medemas limitas.",
+        "No agents yet": "Anc nagins agents",
+        "Could not load the agents": "Ils agents n'han betg pudì vegnir chargiads",
+        "Could not save the limits": "Las limitas n'han betg pudì vegnir memorisadas",
+        "Only the agent's owner can change its limits.": "Mo il possessur da l'agent po midar sias limitas.",
+        "This agent has a grant per app. Change it through the agents API.": "Quest agent ha ina permissiun per app. Mida quella via l'API dals agents.",
+        "Edit limits": "Modifitgar las limitas"
     },
     "nplurals=2; plural=(n != 1);"
 )

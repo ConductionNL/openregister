@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Тази схема има непубликувана чернова. Записите се проверяват спрямо публикуваната версия, докато не я публикувате.",
         "Publish draft": "Публикуване на черновата",
         "Publish anyway": "Публикуване въпреки това",
-        "Discard draft": "Отхвърляне на черновата"
+        "Discard draft": "Отхвърляне на черновата",
+        "Limits of {name}": "Ограничения за {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Изберете кои инструменти може да използва всеки AI агент. Чатът и MCP клиентите, които посочват агента, получават същите ограничения.",
+        "No agents yet": "Все още няма агенти",
+        "Could not load the agents": "Агентите не можаха да се заредят",
+        "Could not save the limits": "Ограниченията не можаха да се запазят",
+        "Only the agent's owner can change its limits.": "Само собственикът на агента може да променя ограниченията му.",
+        "This agent has a grant per app. Change it through the agents API.": "Този агент има разрешение за всяко приложение. Променете го чрез API за агенти.",
+        "Edit limits": "Редактиране на ограниченията"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Dieses Schema hat einen unveröffentlichten Entwurf. Datensätze werden gegen die veröffentlichte Version geprüft, bis Sie ihn veröffentlichen.",
         "Publish draft": "Entwurf veröffentlichen",
         "Publish anyway": "Trotzdem veröffentlichen",
-        "Discard draft": "Entwurf verwerfen"
+        "Discard draft": "Entwurf verwerfen",
+        "Limits of {name}": "Grenzen von {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Wählen Sie, welche Tools jeder KI-Agent nutzen darf. Chat und MCP-Clients, die den Agenten nennen, erhalten dieselben Grenzen.",
+        "No agents yet": "Noch keine Agenten",
+        "Could not load the agents": "Die Agenten konnten nicht geladen werden",
+        "Could not save the limits": "Die Grenzen konnten nicht gespeichert werden",
+        "Only the agent's owner can change its limits.": "Nur der Eigentümer des Agenten kann seine Grenzen ändern.",
+        "This agent has a grant per app. Change it through the agents API.": "Dieser Agent hat eine Freigabe pro App. Ändern Sie sie über die Agenten-API.",
+        "Edit limits": "Grenzen bearbeiten"
     },
     "nplurals=2; plural=(n != 1);"
 )

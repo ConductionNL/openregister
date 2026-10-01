@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Această schemă are o ciornă nepublicată. Înregistrările sunt verificate după versiunea publicată până când o publicați.",
         "Publish draft": "Publică ciorna",
         "Publish anyway": "Publică oricum",
-        "Discard draft": "Renunță la ciornă"
+        "Discard draft": "Renunță la ciornă",
+        "Limits of {name}": "Limitele pentru {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Alegeți ce instrumente poate folosi fiecare agent AI. Chatul și clienții MCP care numesc agentul primesc aceleași limite.",
+        "No agents yet": "Încă nu există agenți",
+        "Could not load the agents": "Agenții nu au putut fi încărcați",
+        "Could not save the limits": "Limitele nu au putut fi salvate",
+        "Only the agent's owner can change its limits.": "Doar proprietarul agentului îi poate schimba limitele.",
+        "This agent has a grant per app. Change it through the agents API.": "Acest agent are o permisiune pentru fiecare aplicație. Schimbați-o prin API-ul pentru agenți.",
+        "Edit limits": "Editează limitele"
     },
     "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));"
 )

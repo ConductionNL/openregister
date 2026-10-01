@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Tällä skeemalla on julkaisematon luonnos. Tietueet tarkistetaan julkaistua versiota vasten, kunnes julkaiset sen.",
         "Publish draft": "Julkaise luonnos",
         "Publish anyway": "Julkaise silti",
-        "Discard draft": "Hylkää luonnos"
+        "Discard draft": "Hylkää luonnos",
+        "Limits of {name}": "Rajat: {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Valitse, mitä työkaluja kukin tekoälyagentti saa käyttää. Chat ja agentin nimeävät MCP-asiakkaat saavat samat rajat.",
+        "No agents yet": "Ei vielä agentteja",
+        "Could not load the agents": "Agenttien lataus epäonnistui",
+        "Could not save the limits": "Rajojen tallennus epäonnistui",
+        "Only the agent's owner can change its limits.": "Vain agentin omistaja voi muuttaa sen rajoja.",
+        "This agent has a grant per app. Change it through the agents API.": "Tällä agentilla on sovelluskohtainen oikeus. Muuta sitä agenttien API:n kautta.",
+        "Edit limits": "Muokkaa rajoja"
     },
     "nplurals=2; plural=(n != 1);"
 )

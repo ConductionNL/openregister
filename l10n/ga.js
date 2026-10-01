@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Tá dréacht neamhfhoilsithe ag an scéimre seo. Seiceáiltear taifid i gcoinne an leagain fhoilsithe go dtí go bhfoilsíonn tú é.",
         "Publish draft": "Foilsigh an dréacht",
         "Publish anyway": "Foilsigh mar sin féin",
-        "Discard draft": "Caith an dréacht i leataobh"
+        "Discard draft": "Caith an dréacht i leataobh",
+        "Limits of {name}": "Teorainneacha {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Roghnaigh na huirlisí is féidir le gach gníomhaire IS a úsáid. Faigheann comhrá agus cliaint MCP a ainmníonn an gníomhaire na teorainneacha céanna.",
+        "No agents yet": "Níl aon ghníomhairí fós",
+        "Could not load the agents": "Níorbh fhéidir na gníomhairí a lódáil",
+        "Could not save the limits": "Níorbh fhéidir na teorainneacha a shábháil",
+        "Only the agent's owner can change its limits.": "Ní féidir ach le húinéir an ghníomhaire a theorainneacha a athrú.",
+        "This agent has a grant per app. Change it through the agents API.": "Tá deonú in aghaidh an aip ag an ngníomhaire seo. Athraigh é trí API na ngníomhairí.",
+        "Edit limits": "Cuir teorainneacha in eagar"
     },
     "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);"
 )

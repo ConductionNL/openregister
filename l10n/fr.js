@@ -3250,7 +3250,15 @@ OC.L10N.register(
         "This schema has an unpublished draft. Records are checked against the published version until you publish it.": "Ce schéma a un brouillon non publié. Les enregistrements sont vérifiés selon la version publiée jusqu'à ce que vous le publiiez.",
         "Publish draft": "Publier le brouillon",
         "Publish anyway": "Publier quand même",
-        "Discard draft": "Abandonner le brouillon"
+        "Discard draft": "Abandonner le brouillon",
+        "Limits of {name}": "Limites de {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Choisissez les outils que chaque agent IA peut utiliser. Le chat et les clients MCP qui nomment l'agent reçoivent les mêmes limites.",
+        "No agents yet": "Aucun agent pour l'instant",
+        "Could not load the agents": "Impossible de charger les agents",
+        "Could not save the limits": "Impossible d'enregistrer les limites",
+        "Only the agent's owner can change its limits.": "Seul le propriétaire de l'agent peut modifier ses limites.",
+        "This agent has a grant per app. Change it through the agents API.": "Cet agent a une autorisation par application. Modifiez-la via l'API des agents.",
+        "Edit limits": "Modifier les limites"
     },
     "nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )
