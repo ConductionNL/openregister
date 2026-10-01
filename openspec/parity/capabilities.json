@@ -1907,9 +1907,9 @@
    "source": "competitor-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Controller/BulkController.php:559 save, route appinfo/routes.php:1282. Not all-or-nothing: docblock :476-477 'Rows that DID write are not rolled back — this endpoint has never been transactional'; only per-chunk transactions lib/Db/MagicMapper/MagicBulkHandler.php:491",
+    "evidence": "POST api/bulk/{register}/{schema}/save with atomic: true (lib/Controller/BulkController.php writeAtomicBatch) runs the batch in one transaction: a refused row or a failing write rolls back every row and the 422 names the first refused row; over 1000 rows answers 413. tests/Unit/Controller/BulkAtomicSaveTest.php on a real SQLite transaction. Change api-atomic-batch archived 2026-09-30.",
     "change": "api-atomic-batch"
    },
    "reachedOn": "API only: POST /api/bulk/{register}/{schema}/save",
