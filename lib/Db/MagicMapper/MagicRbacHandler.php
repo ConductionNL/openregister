@@ -2450,7 +2450,13 @@ class MagicRbacHandler {
 	 * @param Schema $schema The schema to check
 	 * @param string $action The action to check (default: 'read')
 	 *
+	 * The rules are the RESOLVED block (schema-level, else the register
+	 * cascade), the same one applyRbacFilters() emits, so a schema that
+	 * inherits its register's rules decides the bypass on those rules.
+	 *
 	 * @return bool True if RBAC has conditional rules that should bypass multitenancy
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
 	 */
 	public function hasConditionalRulesBypassingMultitenancy(Schema $schema, string $action = 'read'): bool {
 		$user = $this->userSession->getUser();
@@ -2466,9 +2472,18 @@ class MagicRbacHandler {
 			return true;
 		}
 
-		// Get schema authorization configuration, minus the descriptive `mcp`
-		// scope — see the note on the other read of this block above.
-		$authorization = PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization());
+		// The SAME resolved block the RBAC filter emits (schema-level, else the
+		// register cascade with its roles expanded; the `mcp` scope stripped).
+		// Reading the schema's own block here made every schema that inherits
+		// its register's rules keep the organisation filter for a reader the
+		// RBAC filter grants, so org-less rows vanished for every non-admin.
+		// Fail-closed: an unresolvable block keeps the organisation filter.
+		try {
+			$authorization = $this->resolveSchemaAuthorization(schema: $schema);
+		} catch (AuthorizationUnresolvableException $e) {
+			return false;
+		}
+
 		if (empty($authorization) === true) {
 			return false;
 		}
