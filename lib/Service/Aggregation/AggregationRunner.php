@@ -2575,6 +2575,19 @@ class AggregationRunner {
 			registerId: $register->getId(),
 			schemaId: $schema->getId()
 		);
+
+		// AND THE LIST'S DECISION WHETHER THE BOUNDARY APPLIES AT ALL. A
+		// default list read waives the organisation filter when the caller
+		// reaches the rows through an RBAC rule (MagicSearchHandler::
+		// multitenancyApplies()), and lets RBAC decide instead. This path
+		// applied the boundary regardless, so once a non-admin could
+		// aggregate at all, a teacher whose list shows 1189 attendance
+		// records was counted 0 (learniq, measured 2026-10-02). Waived only
+		// together with the row predicate below, which is what then governs.
+		if ($rowRbac === true && $this->magicMapper->organisationBoundaryWaivedByRbac(schema: $schema) === true) {
+			$orgScope = ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []];
+		}
+
 		$orgColumn = $quote . '_organisation' . $quote;
 		switch ($orgScope['mode']) {
 			case MagicOrganizationHandler::SCOPE_ALL:

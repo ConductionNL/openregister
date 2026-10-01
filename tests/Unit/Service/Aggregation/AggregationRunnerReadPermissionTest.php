@@ -213,6 +213,43 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$this->assertSame(['high' => 2, 'low' => 3], $this->counts($result));
 	}//end testBypassRbacSkipsTheRowPredicate()
 
+	/**
+	 * Where the list waives the organisation boundary for a reader reaching
+	 * the rows through an RBAC rule, the aggregate does too: a teacher in a
+	 * different organisation from the rows counts what its list shows.
+	 * Measured live before this: list 1189, aggregate 0.
+	 *
+	 * @return void
+	 */
+	public function testTheOrganisationBoundaryFollowsTheListDecision(): void {
+		$otherOrg = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-elsewhere']];
+
+		$waived = $this->runner(
+			userId: 'teacher-1',
+			groups: ['instructors'],
+			grants: ['read'],
+			orgScope: $otherOrg,
+			boundaryWaived: true
+		);
+		$this->assertSame(
+			['high' => 2, 'low' => 3],
+			$this->counts($waived->runAdhoc(register: $this->register(), schema: $this->schema(), query: $this->countByLevel()))
+		);
+
+		$applied = $this->runner(
+			userId: 'teacher-1',
+			groups: ['instructors'],
+			grants: ['read'],
+			orgScope: $otherOrg,
+			boundaryWaived: false
+		);
+		$this->assertSame(
+			[],
+			$this->counts($applied->runAdhoc(register: $this->register(), schema: $this->schema(), query: $this->countByLevel())),
+			'where the list applies the boundary, so does the aggregate'
+		);
+	}//end testTheOrganisationBoundaryFollowsTheListDecision()
+
 	// -----------------------------------------------------------------------
 	// Helpers.
 	// -----------------------------------------------------------------------
@@ -283,10 +320,19 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 	 * @param array<string> $groups The caller's groups.
 	 * @param array<string> $grants The schema-level verbs PermissionHandler grants.
 	 * @param Schema|null   $schema The schema run() resolves, when testing run().
+	 * @param array<string, mixed> $orgScope The organisation scope the handler reports.
+	 * @param bool          $boundaryWaived Whether the list would waive the organisation boundary.
 	 *
 	 * @return AggregationRunner The runner.
 	 */
-	private function runner(string $userId, array $groups, array $grants, ?Schema $schema = null): AggregationRunner {
+	private function runner(
+		string $userId,
+		array $groups,
+		array $grants,
+		?Schema $schema = null,
+		array $orgScope = ['mode' => MagicOrganizationHandler::SCOPE_ALL],
+		bool $boundaryWaived = false,
+	): AggregationRunner {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($userId);
 		$userSession = $this->createMock(IUserSession::class);
@@ -319,6 +365,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 
 		$magicMapper = $this->createMock(MagicMapper::class);
 		$magicMapper->method('getTableNameForRegisterSchema')->willReturn(self::TABLE);
+		$magicMapper->method('organisationBoundaryWaivedByRbac')->willReturn($boundaryWaived);
 		$magicMapper->method('rbacRowPredicateSql')->willReturnCallback(
 			static fn (Schema $s, string $action = 'read'): ?string => $rbac->buildRbacRowPredicateSql(schema: $s, action: $action)
 		);
@@ -350,7 +397,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$organisationService->method('getActiveOrganisation')->willReturn(null);
 
 		$orgHandler = $this->createMock(MagicOrganizationHandler::class);
-		$orgHandler->method('resolveOrganizationScope')->willReturn(['mode' => MagicOrganizationHandler::SCOPE_ALL]);
+		$orgHandler->method('resolveOrganizationScope')->willReturn($orgScope);
 
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$schemaMapper = $this->createMock(SchemaMapper::class);
