@@ -253,6 +253,71 @@ class FlowVersionService {
 	}//end publish()
 
 	/**
+	 * Publish an app's changed flow declaration as the next version.
+	 *
+	 * An app that ships a flow in `x-openregister-flows` gets version 1
+	 * published on first import. A later app upgrade that CHANGES the
+	 * declaration rewrote the flow's head and stopped there, while runs walk
+	 * the PUBLISHED version. So the fix an upgrade shipped never ran until
+	 * someone opened a draft and published it by hand. Measured on the
+	 * Rotterdam stack: version 1 had 32 nodes, the head 147, and every run
+	 * still walked the 32.
+	 *
+	 * Publishes only when the shipped declaration still owns the flow:
+	 * - a version is published, and nobody published it (`publishedBy` null
+	 *   is how an import publishes; a person's publish names them), so an
+	 *   administrator's own version is never replaced by an upgrade;
+	 * - the head is not an open draft, so an edit in progress is not
+	 *   published under its author;
+	 * - the head's graph differs from the published one.
+	 *
+	 * Otherwise nothing happens and the head waits for a person, exactly as
+	 * before. `enabled` and `owner` are untouched: publishing answers which
+	 * graph runs, adoption answers whether it runs.
+	 *
+	 * @param Flow $flow The flow whose head now holds the shipped declaration.
+	 *
+	 * @return FlowVersion|null The newly published version, or null when nothing was published.
+	 *
+	 * @throws FlowLifecycleRefused When the shipped graph cannot be published (a dead end).
+	 * @throws Throwable            When a transaction could not be committed.
+	 *
+	 * @spec openspec/changes/shipped-flow-update-is-published/specs/flow-definition-versioning/spec.md#requirement-a-changed-shipped-flow-is-published-as-the-next-version
+	 */
+	public function publishShippedUpdate(Flow $flow): ?FlowVersion {
+		$flowId = (string)$flow->getUuid();
+		$published = $this->versions->findPublished(flowUuid: $flowId);
+		if ($published === null) {
+			return null;
+		}
+
+		if ((string)($published->getPublishedBy() ?? '') !== '') {
+			$this->logger->info(
+				message: '[FlowVersionService] Flow "' . $flowId . '" has a version published by '
+					. $published->getPublishedBy() . '; the shipped update stays on the head until a person publishes it.'
+			);
+			return null;
+		}
+
+		if ($flow->getLifecycleStatus() !== FlowVersion::STATUS_PUBLISHED) {
+			$this->logger->info(
+				message: '[FlowVersionService] Flow "' . $flowId . '" has an open draft; the shipped update is not published over it.'
+			);
+			return null;
+		}
+
+		$canonical = $this->pin->canonicalise(flow: $this->graphOf(flow: $flow));
+		if ($canonical === null || $canonical['hash'] === $published->getDefinitionHash()) {
+			return null;
+		}
+
+		$this->createDraft(flow: $flow);
+
+		return $this->publish(flow: $flow, publishedBy: null);
+
+	}//end publishShippedUpdate()
+
+	/**
 	 * Copy the published graph into a new draft at version N+1.
 	 *
 	 * The published version keeps serving — it stays `published` and keeps its

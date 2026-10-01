@@ -133,6 +133,10 @@ class FlowItemPlacement {
 	 * on a place they share, which is openregister#2488 and is invisible in a
 	 * run log — see the comment in the body.
 	 *
+	 * Items land on an output place by APPENDING to what is already there, so
+	 * several steps converging on one node without a join (an OR-merge) each
+	 * deliver their items instead of the last one overwriting the rest.
+	 *
 	 * @param object $transition The fired transition.
 	 * @param array<string, array> $placeItems The current per-place buffers.
 	 * @param array $items What the step produced.
@@ -141,6 +145,7 @@ class FlowItemPlacement {
 	 * @return array<string, array> The updated buffers.
 	 *
 	 * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+	 * @spec openspec/changes/flow-or-merge-keeps-every-firing/specs/flow-merge/spec.md#requirement-an-or-merge-place-keeps-every-firings-items
 	 */
 	public function advanceItems(object $transition, array $placeItems, array $items, array $taken): array {
 		// A FIRING THAT PRODUCED NOTHING PLACES NOTHING AND DESTROYS NOTHING.
@@ -188,7 +193,20 @@ class FlowItemPlacement {
 				continue;
 			}
 
-			$placeItems[(string)$to] = $this->itemsForOutput(items: $items, output: (string)$to);
+			// APPEND, never assign. Several steps can converge on one node
+			// without a declared join (an OR-merge): each firing adds a token to
+			// the shared place, so the items must add up as well. Assigning
+			// here let every predecessor that fired before the consumer
+			// overwrite the previous one's items while the token count still
+			// rose: 24 shard pages converged on one node and the consumer read
+			// 3 of them, each run reporting `completed`. Items on a place are
+			// always backed by an unconsumed token (a firing clears its input
+			// places below), so what is already there is pending work, never a
+			// stale copy.
+			$placeItems[(string)$to] = array_merge(
+				($placeItems[(string)$to] ?? []),
+				$this->itemsForOutput(items: $items, output: (string)$to)
+			);
 		}
 
 		foreach ($transition->getFroms() as $from) {
