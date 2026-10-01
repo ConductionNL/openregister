@@ -11,4 +11,4 @@ A bulk save with `atomic: true` SHALL write every row or none. A refused row SHA
 - **GIVEN** an atomic batch of three rows whose third fails validation
 - **WHEN** a client posts it to the bulk endpoint
 - **THEN** no row is stored, the answer names row index 2, and no webhook fires
-- @e2e exclude {specified only; task 1 adds the test}
+- @e2e exclude {transaction semantics asserted on a real SQLite transaction in tests/Unit/Controller/BulkAtomicSaveTest.php}
