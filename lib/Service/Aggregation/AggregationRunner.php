@@ -201,7 +201,7 @@ class AggregationRunner {
 	 * @param string $registerRef Register slug/uuid/id.
 	 * @param string $schemaRef Schema slug/uuid/id.
 	 * @param string $name Aggregation name (key in the annotation).
-	 * @param bool $bypassRbac Internal-system mode: skip the F04 list-permission gate.
+	 * @param bool $bypassRbac Internal-system mode: skip the F04 read-permission gate and the row predicate.
 	 *                         Pass `true` ONLY from non-controller callers that already
 	 *                         hold an authoritative reason to compute the aggregation
 	 *                         (e.g. report rendering for a viewer who has dashboard read,
@@ -252,22 +252,18 @@ class AggregationRunner {
 		$schema = $pair['schema'];
 		$register = $pair['register'];
 
-		// SECURITY: gate aggregation behind list-permission on the schema
-		// before any native or fallback path executes. Without this gate,
-		// the native PG path would compute COUNT/SUM/AVG over rows the
-		// caller has no read permission for (cross-tenant + cross-RBAC
-		// statistics leak). NotAuthorizedException maps to HTTP 403 in
-		// AggregationController; using RuntimeException here would mask
-		// it as 404.
+		// SECURITY: gate aggregation behind READ on the schema before any
+		// native or fallback path executes (see mayAggregate(): read, or a
+		// declared `list`, or a conditional read rule the caller qualifies
+		// for). NotAuthorizedException maps to HTTP 403 in
+		// AggregationController; using RuntimeException here would mask it
+		// as 404.
 		//
-		// NOTE: this gate is schema-level (matches `list`). For schemas
-		// whose authorization config also declares per-object ACL rules
-		// (`object-acl` / conditional rules), the aggregate value still
-		// rolls up rows the caller cannot read row-by-row. A future
-		// hardening step is to add a per-row hasPermission(read) filter
-		// in the PHP fallback path and a derived WHERE clause (or
-		// bailout to PHP) in the native path. Tracked alongside the
-		// aggregations-backend-native follow-up.
+		// The gate decides WHETHER the caller may aggregate; WHICH rows are
+		// counted is the read rule's row predicate, which the native path
+		// ANDs into its own SQL (tryNativeAggregation()) and the PHP fallback
+		// gets from the RBAC-filtered read it hydrates through. Conditional
+		// rules therefore narrow the figure to the rows the caller may read.
 		//
 		// Non-controller callers (ReportRenderService for dashboard
 		// widgets, AggregationThresholdListener for fire-once threshold
@@ -275,15 +271,7 @@ class AggregationRunner {
 		// an authoritative reason that's separate from the active session
 		// (a viewer with dashboard read, a write-event reaction).
 		$userId = $this->userSession->getUser()?->getUID();
-		if ($bypassRbac === false && $this->permissionHandler->hasPermission(
-			schema: $schema,
-			action: 'list',
-			userId: $userId,
-			objectOwner: null,
-			_rbac: true,
-			object: null
-		) === false
-		) {
+		if ($bypassRbac === false && $this->mayAggregate(schema: $schema, userId: $userId) === false) {
 			throw new NotAuthorizedException(
 				message: sprintf(
 					'You do not have permission to aggregate schema "%s".',
@@ -347,9 +335,9 @@ class AggregationRunner {
 		$filter = (array)($spec['filter'] ?? $spec['where'] ?? []);
 		$groupBy = ($spec['groupBy'] ?? null);
 
-		// 🔴 THE GATE ABOVE IS LIST PERMISSION ON THE SCHEMA, WHICH IS A
-		// DIFFERENT QUESTION FROM THIS ONE. A caller may be entitled to list a
-		// register and still not be entitled to read one of its properties, and
+		// 🔴 THE GATE ABOVE IS ROW ACCESS ON THE SCHEMA, WHICH IS A DIFFERENT
+		// QUESTION FROM THIS ONE. A caller may be entitled to read a schema's
+		// rows and still not be entitled to read one of their properties, and
 		// a SUM over a salary nobody may read IS the salary total. Same for a
 		// groupBy: its keys are the distinct values of the column.
 		//
@@ -490,7 +478,8 @@ class AggregationRunner {
 			field: $nativeFieldArg,
 			filter: $resolvedFilter,
 			groupBy: $nativeGroupByArg,
-			metrics: $metrics
+			metrics: $metrics,
+			rowRbac: $bypassRbac === false
 		);
 		if ($native !== null) {
 			// R05: native Postgres aggregates over the full set, so
@@ -672,7 +661,8 @@ class AggregationRunner {
 	 *
 	 * The execution pipeline is the same as `run()`:
 	 *
-	 * 1. RBAC gate via `PermissionHandler::hasPermission(list)`.
+	 * 1. RBAC gate via mayAggregate() (read, a declared list, or a
+	 *    conditional read rule), then the read rule's row predicate.
 	 * 2. Read-through cache lookup via `AggregationCache::getAdhoc()` —
 	 *    cache key derives from `sha1(json_encode($query->toArray()))`
 	 *    prefixed with `adhoc:`. 60 s TTL. Invalidated on every
@@ -698,7 +688,7 @@ class AggregationRunner {
 	 *                              on the second identical request within
 	 *                              the 60 s TTL window.
 	 *
-	 * @throws NotAuthorizedException When the caller lacks list-permission on the schema.
+	 * @throws NotAuthorizedException When the caller may not read the schema.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *   RBAC + placeholder-resolve + cache-read + native-or-fallback dispatch +
@@ -717,15 +707,7 @@ class AggregationRunner {
 	): array {
 		// RBAC gate — identical predicate to run().
 		$userId = $this->userSession->getUser()?->getUID();
-		if ($this->permissionHandler->hasPermission(
-			schema: $schema,
-			action: 'list',
-			userId: $userId,
-			objectOwner: null,
-			_rbac: true,
-			object: null
-		) === false
-		) {
+		if ($this->mayAggregate(schema: $schema, userId: $userId) === false) {
 			throw new NotAuthorizedException(
 				message: sprintf(
 					'You do not have permission to aggregate schema "%s".',
@@ -1162,7 +1144,7 @@ class AggregationRunner {
 	 * @return array<string, mixed> Result envelope (see runAdhoc()).
 	 *
 	 * @throws RuntimeException When the register or schema cannot be resolved.
-	 * @throws NotAuthorizedException When the caller lacks list-permission.
+	 * @throws NotAuthorizedException When the caller may not read the schema.
 	 *
 	 * @spec openspec/specs/aggregations-backend-native/spec.md
 	 */
@@ -2424,6 +2406,7 @@ class AggregationRunner {
 		?array $dateBucket = null,
 		?array $metrics = null,
 		bool $cumulative = false,
+		bool $rowRbac = true,
 	): ?array {
 		// A per-metric `condition` (or an `as` alias) is NOT expressible on the
 		// native path — tryNativeMultiMetric() emits one SQL aggregate per
@@ -2453,7 +2436,8 @@ class AggregationRunner {
 				schema: $schema,
 				filter: $filter,
 				groupBy: $groupBy,
-				metrics: $metrics
+				metrics: $metrics,
+				rowRbac: $rowRbac
 			);
 		}
 
@@ -2618,6 +2602,22 @@ class AggregationRunner {
 				// An unknown mode is not something to guess at.
 				return null;
 		}//end switch
+
+		// SECURITY: the row-level read rule. Like the organisation boundary
+		// above, this fast path bypasses MagicMapper, so it must apply the
+		// SAME access predicate the list path applies. Without it a caller
+		// whose read rule is conditional (`{group, match: {learnerId:
+		// $userId}}`) would be counted over every row of the table, which
+		// discloses the counts of rows it may not read. The predicate is
+		// MagicRbacHandler's own (via MagicMapper), not a copy. Null means no
+		// restriction (an admin); internal callers that already decided who
+		// may see the figure pass `rowRbac: false`.
+		if ($rowRbac === true) {
+			$rowPredicate = $this->magicMapper->rbacRowPredicateSql(schema: $schema, action: 'read');
+			if ($rowPredicate !== null) {
+				$whereParts[] = $rowPredicate;
+			}
+		}
 
 		foreach ($filter as $f => $v) {
 			$col = $this->sanitizeColumnName(name: (string)$f);
@@ -2936,6 +2936,7 @@ class AggregationRunner {
 		array $filter,
 		?array $groupBy,
 		array $metrics,
+		bool $rowRbac = true,
 	): ?array {
 		$groupFields = $this->resolveGroupFields(groupBy: $groupBy);
 		$isMulti = (count($groupFields) > 1);
@@ -2952,7 +2953,8 @@ class AggregationRunner {
 				field: $entry['field'],
 				filter: $filter,
 				groupBy: $groupBy,
-				dateBucket: null
+				dateBucket: null,
+				rowRbac: $rowRbac
 			);
 
 			if ($single === null) {
@@ -3338,7 +3340,7 @@ class AggregationRunner {
 	 * @param array<string, mixed> $envelope The parent aggregation envelope (must carry `groups`).
 	 * @param array<string, mixed>|null $join The raw join spec; null is a no-op.
 	 * @param array<int, string> $groupFields The parent's ordered group fields.
-	 * @param bool $bypassRbac Internal-system mode: skip the list-permission gate
+	 * @param bool $bypassRbac Internal-system mode: skip the read-permission gate
 	 *                         (tenancy predicates still apply — they are not bypassable here).
 	 * @param array<string, mixed> $extraFilter The caller's narrowing constraints, applied to the
 	 *                         JOINED aggregate as well as the parent — restricted to keys the
@@ -3350,7 +3352,7 @@ class AggregationRunner {
 	 * @return array<string, mixed> The envelope with a `joined` map on each group and a `join` summary.
 	 *
 	 * @throws RuntimeException When the join spec is unusable, the joined schema cannot be
-	 *                          resolved, or the caller lacks list permission on it.
+	 *                          resolved, or the caller lacks read permission on it.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -3450,7 +3452,8 @@ class AggregationRunner {
 			schema: $joinedSchema,
 			filter: $joinedFilter,
 			joinedFields: array_values($onMap),
-			selectEntries: $selectEntries
+			selectEntries: $selectEntries,
+			rowRbac: $bypassRbac === false
 		);
 
 		$aliases = array_map(static fn (array $entry): string => $entry['alias'], $selectEntries);
@@ -3546,7 +3549,7 @@ class AggregationRunner {
 	 * without rights on the joined schema learns nothing beyond the refusal.
 	 *
 	 * @param string $through The joined schema ref.
-	 * @param bool $bypassRbac Internal-system mode: skip the list-permission gate.
+	 * @param bool $bypassRbac Internal-system mode: skip the read-permission gate.
 	 *
 	 * @return array{0: Schema, 1: Register} The joined schema and its register.
 	 *
@@ -3562,17 +3565,9 @@ class AggregationRunner {
 		// `object: null` is the list-level form — the join has not selected
 		// any specific row.
 		$userId = $this->userSession->getUser()?->getUID();
-		if ($bypassRbac === false && $this->permissionHandler->hasPermission(
-			schema: $joinedSchema,
-			action: 'list',
-			userId: $userId,
-			objectOwner: null,
-			_rbac: true,
-			object: null
-		) === false
-		) {
+		if ($bypassRbac === false && $this->mayAggregate(schema: $joinedSchema, userId: $userId) === false) {
 			throw new RuntimeException(
-				sprintf('Forbidden: caller lacks list permission on join target "%s".', $through)
+				sprintf('Forbidden: caller lacks read permission on join target "%s".', $through)
 			);
 		}
 
@@ -3864,6 +3859,7 @@ class AggregationRunner {
 		array $filter,
 		array $joinedFields,
 		array $selectEntries,
+		bool $rowRbac = true,
 	): array {
 		$groupBySpec = ['fields' => $joinedFields];
 		$isMulti = (count($joinedFields) > 1);
@@ -3878,7 +3874,8 @@ class AggregationRunner {
 				metric: $entry['metric'],
 				field: $entry['field'],
 				filter: $filter,
-				groupBy: $groupBySpec
+				groupBy: $groupBySpec,
+				rowRbac: $rowRbac
 			);
 
 			if ($single === null) {
@@ -4087,7 +4084,7 @@ class AggregationRunner {
 		// Load the target schema.
 		$targetSchema = $this->loadSchema(schemaRef: $fromRef);
 
-		// SECURITY: gate on list permission for the *target* schema so a
+		// SECURITY: gate on read permission for the *target* schema so a
 		// cross-schema aggregation cannot leak counts from a schema the
 		// caller is not allowed to list.
 		//
@@ -4100,18 +4097,10 @@ class AggregationRunner {
 		// `object: null` reinforces this: PermissionHandler treats the
 		// (null, null) pair as the list-level form.
 		$userId = $this->userSession->getUser()?->getUID();
-		if ($bypassRbac === false && $this->permissionHandler->hasPermission(
-			schema: $targetSchema,
-			action: 'list',
-			userId: $userId,
-			objectOwner: null,
-			_rbac: true,
-			object: null
-		) === false
-		) {
+		if ($bypassRbac === false && $this->mayAggregate(schema: $targetSchema, userId: $userId) === false) {
 			throw new RuntimeException(
 				sprintf(
-					'Forbidden: caller lacks list permission on cross-schema target "%s".',
+					'Forbidden: caller lacks read permission on cross-schema target "%s".',
 					$fromRef
 				)
 			);
@@ -4184,7 +4173,8 @@ class AggregationRunner {
 				metric: $metric,
 				field: $crossFieldArg,
 				filter: $resolvedWhere,
-				groupBy: $crossGroupByArg
+				groupBy: $crossGroupByArg,
+				rowRbac: $bypassRbac === false
 			);
 		}
 
@@ -4492,6 +4482,54 @@ class AggregationRunner {
 	// and register METADATA-READ lookups MUST bypass multi-tenancy") is unchanged
 	// and now lives in RegisterScopedSchemaResolver::resolveRegister(); it is
 	// locked by AggregationRunnerTest::testRegisterLoadPassesMultitenancyFalse.
+
+	/**
+	 * Whether the current caller may aggregate over a schema.
+	 *
+	 * An aggregate is a read of many rows at once, so the question is READ,
+	 * the verb every schema declares. The gate used to ask for `list`, which
+	 * is a canonical verb but one most leaf-app schemas never declare (their
+	 * blocks name read/create/update/delete). Every non-admin was refused on
+	 * those schemas, so a dashboard tile showed a dash for staff who could
+	 * read every row the tile counts.
+	 *
+	 * Admitted, in order:
+	 *  - schema-level `read`;
+	 *  - schema-level `list`, so a schema that declares it keeps working;
+	 *  - a conditional `read` rule the caller's group qualifies for. A
+	 *    schema-level check has no row to evaluate the rule's `match`
+	 *    against and refuses, but the aggregate narrows to the rows that
+	 *    match through the row predicate in tryNativeAggregation() (and the
+	 *    RBAC-filtered read in the PHP fallback), so the caller is counted
+	 *    over its own rows and nothing else.
+	 *
+	 * Admitting the caller here never widens WHICH rows are counted: that is
+	 * the row predicate's job, and it applies the read rule.
+	 *
+	 * @param Schema      $schema The schema being aggregated.
+	 * @param string|null $userId The caller.
+	 *
+	 * @return bool True when the caller may aggregate.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 */
+	private function mayAggregate(Schema $schema, ?string $userId): bool {
+		foreach (['read', 'list'] as $action) {
+			if ($this->permissionHandler->hasPermission(
+				schema: $schema,
+				action: $action,
+				userId: $userId,
+				objectOwner: null,
+				_rbac: true,
+				object: null
+			) === true
+			) {
+				return true;
+			}
+		}
+
+		return $this->magicMapper->callerQualifiesForAction(schema: $schema, action: 'read');
+	}//end mayAggregate()
 
 	/**
 	 * Read the `x-openregister-aggregations` annotation off a schema.
