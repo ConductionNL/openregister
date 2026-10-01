@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Bez mapování: odeslat standardní obsah",
         "Preview payload": "Náhled obsahu",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Mapování se nepodařilo použít, proto doručení odešle standardní obsah zobrazený níže.",
-        "Could not preview the payload": "Náhled obsahu se nepodařilo zobrazit"
+        "Could not preview the payload": "Náhled obsahu se nepodařilo zobrazit",
+        "Limits of {name}": "Omezení agenta {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Zvolte, které nástroje smí každý AI agent používat. Chat a MCP klienti, kteří agenta uvedou, dostanou stejná omezení.",
+        "No agents yet": "Zatím žádní agenti",
+        "Could not load the agents": "Agenty se nepodařilo načíst",
+        "Could not save the limits": "Omezení se nepodařilo uložit",
+        "Only the agent's owner can change its limits.": "Omezení agenta může změnit jen jeho vlastník.",
+        "This agent has a grant per app. Change it through the agents API.": "Tento agent má oprávnění pro každou aplikaci. Změňte je přes API agentů.",
+        "Edit limits": "Upravit omezení"
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 )

@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Sin mapeo: enviar la carga útil estándar",
         "Preview payload": "Vista previa de la carga útil",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "No se pudo aplicar el mapeo, así que una entrega envía la carga útil estándar que se muestra abajo.",
-        "Could not preview the payload": "No se pudo mostrar la vista previa de la carga útil"
+        "Could not preview the payload": "No se pudo mostrar la vista previa de la carga útil",
+        "Limits of {name}": "Límites de {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Elija qué herramientas puede usar cada agente de IA. El chat y los clientes MCP que nombran al agente reciben los mismos límites.",
+        "No agents yet": "Aún no hay agentes",
+        "Could not load the agents": "No se pudieron cargar los agentes",
+        "Could not save the limits": "No se pudieron guardar los límites",
+        "Only the agent's owner can change its limits.": "Solo el propietario del agente puede cambiar sus límites.",
+        "This agent has a grant per app. Change it through the agents API.": "Este agente tiene una concesión por aplicación. Cámbiela mediante la API de agentes.",
+        "Edit limits": "Editar límites"
     },
     "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )

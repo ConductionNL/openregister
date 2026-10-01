@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Nagin mapping: trametter il payload standard",
         "Preview payload": "Prevista dal payload",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Il mapping n'ha betg pudì vegnir applitgà, perquai trametta ina furniziun il payload standard mussà sutvart.",
-        "Could not preview the payload": "Il payload n'ha betg pudì vegnir mussà en prevista"
+        "Could not preview the payload": "Il payload n'ha betg pudì vegnir mussà en prevista",
+        "Limits of {name}": "Limitas da {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Tscherna tge utensils che mintga agent d'IA dastga duvrar. Il chat ed ils clients MCP che numnan l'agent survegnan las medemas limitas.",
+        "No agents yet": "Anc nagins agents",
+        "Could not load the agents": "Ils agents n'han betg pudì vegnir chargiads",
+        "Could not save the limits": "Las limitas n'han betg pudì vegnir memorisadas",
+        "Only the agent's owner can change its limits.": "Mo il possessur da l'agent po midar sias limitas.",
+        "This agent has a grant per app. Change it through the agents API.": "Quest agent ha ina permissiun per app. Mida quella via l'API dals agents.",
+        "Edit limits": "Modifitgar las limitas"
     },
     "nplurals=2; plural=(n != 1);"
 )

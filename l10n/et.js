@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Vastendus puudub: saada standardne kasulik koormus",
         "Preview payload": "Kasuliku koormuse eelvaade",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Vastendust ei saanud rakendada, seega saadab kohaletoimetamine allpool näidatud standardse kasuliku koormuse.",
-        "Could not preview the payload": "Kasuliku koormuse eelvaadet ei õnnestunud kuvada"
+        "Could not preview the payload": "Kasuliku koormuse eelvaadet ei õnnestunud kuvada",
+        "Limits of {name}": "{name} piirangud",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Vali, milliseid tööriistu iga tehisintellekti agent tohib kasutada. Vestlus ja agendi nimetavad MCP-kliendid saavad samad piirangud.",
+        "No agents yet": "Agente veel pole",
+        "Could not load the agents": "Agente ei õnnestunud laadida",
+        "Could not save the limits": "Piiranguid ei õnnestunud salvestada",
+        "Only the agent's owner can change its limits.": "Ainult agendi omanik saab selle piiranguid muuta.",
+        "This agent has a grant per app. Change it through the agents API.": "Sellel agendil on rakendusepõhine luba. Muuda seda agentide API kaudu.",
+        "Edit limits": "Muuda piiranguid"
     },
     "nplurals=2; plural=(n != 1);"
 )

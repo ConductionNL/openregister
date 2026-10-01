@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Nincs leképezés: a szabványos tartalom küldése",
         "Preview payload": "Tartalom előnézete",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "A leképezést nem sikerült alkalmazni, ezért a kézbesítés az alább látható szabványos tartalmat küldi.",
-        "Could not preview the payload": "A tartalom előnézete nem jeleníthető meg"
+        "Could not preview the payload": "A tartalom előnézete nem jeleníthető meg",
+        "Limits of {name}": "{name} korlátai",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Válassza ki, mely eszközöket használhatja az egyes MI-ügynökök. A csevegés és az ügynököt megnevező MCP-kliensek ugyanazokat a korlátokat kapják.",
+        "No agents yet": "Még nincsenek ügynökök",
+        "Could not load the agents": "Az ügynököket nem sikerült betölteni",
+        "Could not save the limits": "A korlátokat nem sikerült menteni",
+        "Only the agent's owner can change its limits.": "Az ügynök korlátait csak a tulajdonosa módosíthatja.",
+        "This agent has a grant per app. Change it through the agents API.": "Ennek az ügynöknek alkalmazásonkénti jogosultsága van. Az ügynökök API-ján keresztül módosíthatja.",
+        "Edit limits": "Korlátok szerkesztése"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Ingen mapping: send standard-payload",
         "Preview payload": "Forhåndsvis payload",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Mappingen kunne ikke brukes, så en levering sender standard-payloaden vist nedenfor.",
-        "Could not preview the payload": "Kunne ikke forhåndsvise payloaden"
+        "Could not preview the payload": "Kunne ikke forhåndsvise payloaden",
+        "Limits of {name}": "Grenser for {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Velg hvilke verktøy hver KI-agent kan bruke. Chat og MCP-klienter som navngir agenten får de samme grensene.",
+        "No agents yet": "Ingen agenter ennå",
+        "Could not load the agents": "Kunne ikke laste inn agentene",
+        "Could not save the limits": "Kunne ikke lagre grensene",
+        "Only the agent's owner can change its limits.": "Bare agentens eier kan endre grensene.",
+        "This agent has a grant per app. Change it through the agents API.": "Denne agenten har en tildeling per app. Endre den via agent-API-et.",
+        "Edit limits": "Rediger grenser"
     },
     "nplurals=2; plural=(n != 1);"
 )

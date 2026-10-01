@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Engin vörpun: senda staðlaðan farm",
         "Preview payload": "Forskoða farm",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Ekki tókst að beita vörpuninni, svo sending sendir staðlaða farminn sem sýndur er hér að neðan.",
-        "Could not preview the payload": "Ekki tókst að forskoða farminn"
+        "Could not preview the payload": "Ekki tókst að forskoða farminn",
+        "Limits of {name}": "Takmörk {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Veldu hvaða verkfæri hver gervigreindarfulltrúi má nota. Spjall og MCP-biðlar sem nefna fulltrúann fá sömu takmörk.",
+        "No agents yet": "Engir fulltrúar enn",
+        "Could not load the agents": "Ekki tókst að hlaða fulltrúunum",
+        "Could not save the limits": "Ekki tókst að vista takmörkin",
+        "Only the agent's owner can change its limits.": "Aðeins eigandi fulltrúans getur breytt takmörkum hans.",
+        "This agent has a grant per app. Change it through the agents API.": "Þessi fulltrúi hefur heimild fyrir hvert forrit. Breyttu henni í gegnum API fulltrúa.",
+        "Edit limits": "Breyta takmörkum"
     },
     "nplurals=2; plural=(n != 1);"
 )

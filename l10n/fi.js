@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Ei mappausta: lähetä vakiohyötykuorma",
         "Preview payload": "Esikatsele hyötykuormaa",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Mappausta ei voitu soveltaa, joten toimitus lähettää alla näkyvän vakiohyötykuorman.",
-        "Could not preview the payload": "Hyötykuorman esikatselu epäonnistui"
+        "Could not preview the payload": "Hyötykuorman esikatselu epäonnistui",
+        "Limits of {name}": "Rajat: {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Valitse, mitä työkaluja kukin tekoälyagentti saa käyttää. Chat ja agentin nimeävät MCP-asiakkaat saavat samat rajat.",
+        "No agents yet": "Ei vielä agentteja",
+        "Could not load the agents": "Agenttien lataus epäonnistui",
+        "Could not save the limits": "Rajojen tallennus epäonnistui",
+        "Only the agent's owner can change its limits.": "Vain agentin omistaja voi muuttaa sen rajoja.",
+        "This agent has a grant per app. Change it through the agents API.": "Tällä agentilla on sovelluskohtainen oikeus. Muuta sitä agenttien API:n kautta.",
+        "Edit limits": "Muokkaa rajoja"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Без сопоставления: отправлять стандартную полезную нагрузку",
         "Preview payload": "Предпросмотр полезной нагрузки",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Не удалось применить сопоставление, поэтому доставка отправляет стандартную полезную нагрузку, показанную ниже.",
-        "Could not preview the payload": "Не удалось показать предпросмотр полезной нагрузки"
+        "Could not preview the payload": "Не удалось показать предпросмотр полезной нагрузки",
+        "Limits of {name}": "Ограничения для {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Выберите, какими инструментами может пользоваться каждый ИИ-агент. Чат и MCP-клиенты, указывающие агента, получают те же ограничения.",
+        "No agents yet": "Агентов пока нет",
+        "Could not load the agents": "Не удалось загрузить агентов",
+        "Could not save the limits": "Не удалось сохранить ограничения",
+        "Only the agent's owner can change its limits.": "Изменять ограничения агента может только его владелец.",
+        "This agent has a grant per app. Change it through the agents API.": "У этого агента разрешение по приложениям. Измените его через API агентов.",
+        "Edit limits": "Изменить ограничения"
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

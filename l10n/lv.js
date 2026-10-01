@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Nav kartēšanas: sūtīt standarta kravu",
         "Preview payload": "Priekšskatīt kravu",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Kartēšanu nevarēja piemērot, tāpēc piegāde nosūta tālāk redzamo standarta kravu.",
-        "Could not preview the payload": "Kravu nevarēja priekšskatīt"
+        "Could not preview the payload": "Kravu nevarēja priekšskatīt",
+        "Limits of {name}": "{name} ierobežojumi",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Izvēlieties, kādus rīkus katrs MI aģents drīkst izmantot. Tērzēšana un MCP klienti, kas nosauc aģentu, saņem tos pašus ierobežojumus.",
+        "No agents yet": "Vēl nav aģentu",
+        "Could not load the agents": "Aģentus nevarēja ielādēt",
+        "Could not save the limits": "Ierobežojumus nevarēja saglabāt",
+        "Only the agent's owner can change its limits.": "Tikai aģenta īpašnieks var mainīt tā ierobežojumus.",
+        "This agent has a grant per app. Change it through the agents API.": "Šim aģentam ir atļauja katrai lietotnei. Mainiet to ar aģentu API.",
+        "Edit limits": "Rediģēt ierobežojumus"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);"
 )

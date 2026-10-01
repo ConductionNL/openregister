@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Aucun mappage : envoyer la charge utile standard",
         "Preview payload": "Aperçu de la charge utile",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Le mappage n'a pas pu être appliqué ; une livraison envoie donc la charge utile standard affichée ci-dessous.",
-        "Could not preview the payload": "Impossible d'afficher l'aperçu de la charge utile"
+        "Could not preview the payload": "Impossible d'afficher l'aperçu de la charge utile",
+        "Limits of {name}": "Limites de {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Choisissez les outils que chaque agent IA peut utiliser. Le chat et les clients MCP qui nomment l'agent reçoivent les mêmes limites.",
+        "No agents yet": "Aucun agent pour l'instant",
+        "Could not load the agents": "Impossible de charger les agents",
+        "Could not save the limits": "Impossible d'enregistrer les limites",
+        "Only the agent's owner can change its limits.": "Seul le propriétaire de l'agent peut modifier ses limites.",
+        "This agent has a grant per app. Change it through the agents API.": "Cet agent a une autorisation par application. Modifiez-la via l'API des agents.",
+        "Edit limits": "Modifier les limites"
     },
     "nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )

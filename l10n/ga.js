@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Gan mhapáil: seol an t-ualach caighdeánach",
         "Preview payload": "Réamhamharc ar an ualach",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Níorbh fhéidir an mhapáil a chur i bhfeidhm, mar sin seolann seachadadh an t-ualach caighdeánach a thaispeántar thíos.",
-        "Could not preview the payload": "Níorbh fhéidir réamhamharc a thaispeáint ar an ualach"
+        "Could not preview the payload": "Níorbh fhéidir réamhamharc a thaispeáint ar an ualach",
+        "Limits of {name}": "Teorainneacha {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Roghnaigh na huirlisí is féidir le gach gníomhaire IS a úsáid. Faigheann comhrá agus cliaint MCP a ainmníonn an gníomhaire na teorainneacha céanna.",
+        "No agents yet": "Níl aon ghníomhairí fós",
+        "Could not load the agents": "Níorbh fhéidir na gníomhairí a lódáil",
+        "Could not save the limits": "Níorbh fhéidir na teorainneacha a shábháil",
+        "Only the agent's owner can change its limits.": "Ní féidir ach le húinéir an ghníomhaire a theorainneacha a athrú.",
+        "This agent has a grant per app. Change it through the agents API.": "Tá deonú in aghaidh an aip ag an ngníomhaire seo. Athraigh é trí API na ngníomhairí.",
+        "Edit limits": "Cuir teorainneacha in eagar"
     },
     "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);"
 )

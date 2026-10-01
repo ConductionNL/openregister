@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Без мапирања: пошаљи стандардни садржај",
         "Preview payload": "Преглед садржаја",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Мапирање није могло да се примени, па испорука шаље стандардни садржај приказан испод.",
-        "Could not preview the payload": "Преглед садржаја није могао да се прикаже"
+        "Could not preview the payload": "Преглед садржаја није могао да се прикаже",
+        "Limits of {name}": "Ограничења за {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Изаберите које алате сваки AI агент сме да користи. Ћаскање и MCP клијенти који наведу агента добијају иста ограничења.",
+        "No agents yet": "Још нема агената",
+        "Could not load the agents": "Агенти нису могли да се учитају",
+        "Could not save the limits": "Ограничења нису могла да се сачувају",
+        "Only the agent's owner can change its limits.": "Само власник агента може да промени његова ограничења.",
+        "This agent has a grant per app. Change it through the agents API.": "Овај агент има дозволу по апликацији. Промените је преко API-ја агената.",
+        "Edit limits": "Уреди ограничења"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 )

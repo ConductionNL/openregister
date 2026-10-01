@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Kein Mapping: Standard-Payload senden",
         "Preview payload": "Payload-Vorschau",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Das Mapping konnte nicht angewendet werden, daher sendet eine Zustellung die unten gezeigte Standard-Payload.",
-        "Could not preview the payload": "Die Payload-Vorschau konnte nicht erstellt werden"
+        "Could not preview the payload": "Die Payload-Vorschau konnte nicht erstellt werden",
+        "Limits of {name}": "Grenzen von {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Wählen Sie, welche Tools jeder KI-Agent nutzen darf. Chat und MCP-Clients, die den Agenten nennen, erhalten dieselben Grenzen.",
+        "No agents yet": "Noch keine Agenten",
+        "Could not load the agents": "Die Agenten konnten nicht geladen werden",
+        "Could not save the limits": "Die Grenzen konnten nicht gespeichert werden",
+        "Only the agent's owner can change its limits.": "Nur der Eigentümer des Agenten kann seine Grenzen ändern.",
+        "This agent has a grant per app. Change it through the agents API.": "Dieser Agent hat eine Freigabe pro App. Ändern Sie sie über die Agenten-API.",
+        "Edit limits": "Grenzen bearbeiten"
     },
     "nplurals=2; plural=(n != 1);"
 )

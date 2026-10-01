@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Fără mapare: trimite conținutul standard",
         "Preview payload": "Previzualizează conținutul",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Maparea nu a putut fi aplicată, așa că o livrare trimite conținutul standard afișat mai jos.",
-        "Could not preview the payload": "Conținutul nu a putut fi previzualizat"
+        "Could not preview the payload": "Conținutul nu a putut fi previzualizat",
+        "Limits of {name}": "Limitele pentru {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Alegeți ce instrumente poate folosi fiecare agent AI. Chatul și clienții MCP care numesc agentul primesc aceleași limite.",
+        "No agents yet": "Încă nu există agenți",
+        "Could not load the agents": "Agenții nu au putut fi încărcați",
+        "Could not save the limits": "Limitele nu au putut fi salvate",
+        "Only the agent's owner can change its limits.": "Doar proprietarul agentului îi poate schimba limitele.",
+        "This agent has a grant per app. Change it through the agents API.": "Acest agent are o permisiune pentru fiecare aplicație. Schimbați-o prin API-ul pentru agenți.",
+        "Edit limits": "Editează limitele"
     },
     "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));"
 )

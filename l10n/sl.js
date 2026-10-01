@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Brez preslikave: pošlji standardno vsebino",
         "Preview payload": "Predogled vsebine",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Preslikave ni bilo mogoče uporabiti, zato dostava pošlje standardno vsebino, prikazano spodaj.",
-        "Could not preview the payload": "Predogleda vsebine ni bilo mogoče prikazati"
+        "Could not preview the payload": "Predogleda vsebine ni bilo mogoče prikazati",
+        "Limits of {name}": "Omejitve za {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Izberite, katera orodja sme uporabljati vsak agent UI. Klepet in odjemalci MCP, ki navedejo agenta, dobijo enake omejitve.",
+        "No agents yet": "Še ni agentov",
+        "Could not load the agents": "Agentov ni bilo mogoče naložiti",
+        "Could not save the limits": "Omejitev ni bilo mogoče shraniti",
+        "Only the agent's owner can change its limits.": "Omejitve agenta lahko spremeni samo njegov lastnik.",
+        "This agent has a grant per app. Change it through the agents API.": "Ta agent ima dovoljenje za vsako aplikacijo. Spremenite ga prek API-ja agentov.",
+        "Edit limits": "Uredi omejitve"
     },
     "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);"
 )

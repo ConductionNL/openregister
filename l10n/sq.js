@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Pa hartëzim: dërgo përmbajtjen standarde",
         "Preview payload": "Parapamje e përmbajtjes",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Hartëzimi nuk mund të zbatohej, ndaj një dorëzim dërgon përmbajtjen standarde të treguar më poshtë.",
-        "Could not preview the payload": "Përmbajtja nuk mund të parashihej"
+        "Could not preview the payload": "Përmbajtja nuk mund të parashihej",
+        "Limits of {name}": "Kufijtë e {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Zgjidhni cilat mjete mund të përdorë secili agjent IA. Biseda dhe klientët MCP që emërtojnë agjentin marrin të njëjtët kufij.",
+        "No agents yet": "Ende pa agjentë",
+        "Could not load the agents": "Agjentët nuk u ngarkuan",
+        "Could not save the limits": "Kufijtë nuk u ruajtën",
+        "Only the agent's owner can change its limits.": "Vetëm pronari i agjentit mund t’i ndryshojë kufijtë.",
+        "This agent has a grant per app. Change it through the agents API.": "Ky agjent ka një leje për çdo aplikacion. Ndryshojeni përmes API-së së agjentëve.",
+        "Edit limits": "Ndrysho kufijtë"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Keen Mapping: Standard-Payload schécken",
         "Preview payload": "Payload-Virschau",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "D'Mapping konnt net ugewannt ginn, dofir schéckt eng Liwwerung d'Standard-Payload, déi hei ënnendrënner gewise gëtt.",
-        "Could not preview the payload": "D'Payload-Virschau konnt net gewise ginn"
+        "Could not preview the payload": "D'Payload-Virschau konnt net gewise ginn",
+        "Limits of {name}": "Limitte vun {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Wielt, wéi eng Tools all KI-Agent benotze dierf. De Chat an MCP-Clienten, déi den Agent nennen, kréien déiselwecht Limitten.",
+        "No agents yet": "Nach keng Agenten",
+        "Could not load the agents": "D'Agente konnten net geluede ginn",
+        "Could not save the limits": "D'Limitte konnten net gespäichert ginn",
+        "Only the agent's owner can change its limits.": "Just den Eegentümer vum Agent kann seng Limitte änneren.",
+        "This agent has a grant per app. Change it through the agents API.": "Dësen Agent huet eng Autorisatioun pro App. Ännert se iwwer d'Agenten-API.",
+        "Edit limits": "Limitten änneren"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Be susiejimo: siųsti standartinę naudingąją apkrovą",
         "Preview payload": "Peržiūrėti naudingąją apkrovą",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Susiejimo pritaikyti nepavyko, todėl pristatymas siunčia žemiau parodytą standartinę naudingąją apkrovą.",
-        "Could not preview the payload": "Nepavyko peržiūrėti naudingosios apkrovos"
+        "Could not preview the payload": "Nepavyko peržiūrėti naudingosios apkrovos",
+        "Limits of {name}": "{name} apribojimai",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Pasirinkite, kokius įrankius gali naudoti kiekvienas DI agentas. Pokalbis ir agentą nurodantys MCP klientai gauna tuos pačius apribojimus.",
+        "No agents yet": "Agentų dar nėra",
+        "Could not load the agents": "Nepavyko įkelti agentų",
+        "Could not save the limits": "Nepavyko įrašyti apribojimų",
+        "Only the agent's owner can change its limits.": "Tik agento savininkas gali keisti jo apribojimus.",
+        "This agent has a grant per app. Change it through the agents API.": "Šis agentas turi leidimą kiekvienai programai. Keiskite jį per agentų API.",
+        "Edit limits": "Redaguoti apribojimus"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);"
 )

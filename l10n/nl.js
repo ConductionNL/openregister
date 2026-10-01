@@ -3307,7 +3307,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Geen mapping: de standaard payload versturen",
         "Preview payload": "Payload bekijken",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "De mapping kon niet worden toegepast, dus een aflevering verstuurt de standaard payload hieronder.",
-        "Could not preview the payload": "De payload kon niet worden getoond"
+        "Could not preview the payload": "De payload kon niet worden getoond",
+        "Limits of {name}": "Grenzen van {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Kies welke tools elke AI-agent mag gebruiken. Chat en MCP-clients die de agent noemen krijgen dezelfde grenzen.",
+        "No agents yet": "Nog geen agents",
+        "Could not load the agents": "De agents konden niet worden geladen",
+        "Could not save the limits": "De grenzen konden niet worden opgeslagen",
+        "Only the agent's owner can change its limits.": "Alleen de eigenaar van de agent kan de grenzen wijzigen.",
+        "This agent has a grant per app. Change it through the agents API.": "Deze agent heeft een toekenning per app. Wijzig die via de agents-API.",
+        "Edit limits": "Grenzen bewerken"
     },
     "nplurals=2; plural=(n != 1);"
 )

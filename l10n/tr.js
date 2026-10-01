@@ -3247,7 +3247,15 @@ OC.L10N.register(
         "No mapping: send the standard payload": "Eşleme yok: standart yükü gönder",
         "Preview payload": "Yükü önizle",
         "The mapping could not be applied, so a delivery sends the standard payload shown below.": "Eşleme uygulanamadı, bu nedenle teslimat aşağıda gösterilen standart yükü gönderir.",
-        "Could not preview the payload": "Yük önizlenemedi"
+        "Could not preview the payload": "Yük önizlenemedi",
+        "Limits of {name}": "{name} sınırları",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Her yapay zekâ ajanının hangi araçları kullanabileceğini seçin. Sohbet ve ajanı belirten MCP istemcileri aynı sınırları alır.",
+        "No agents yet": "Henüz ajan yok",
+        "Could not load the agents": "Ajanlar yüklenemedi",
+        "Could not save the limits": "Sınırlar kaydedilemedi",
+        "Only the agent's owner can change its limits.": "Ajanın sınırlarını yalnızca sahibi değiştirebilir.",
+        "This agent has a grant per app. Change it through the agents API.": "Bu ajanın uygulama başına bir yetkisi var. Ajan API’si üzerinden değiştirin.",
+        "Edit limits": "Sınırları düzenle"
     },
     "nplurals=2; plural=(n != 1);"
 )
