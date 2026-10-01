@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -59,6 +60,13 @@ class BulkController extends Controller {
 	use ResolvesRegisterAndSchemaTrait;
 
 	/**
+	 * The most rows one atomic batch may carry. One transaction holds its locks
+	 * until the last row is written, so an unbounded batch would hold them for
+	 * as long as the client cares to send rows.
+	 */
+	public const ATOMIC_BATCH_LIMIT = 1000;
+
+	/**
 	 * Constructor for the BulkController
 	 *
 	 * @param string $appName The name of the app
@@ -68,6 +76,7 @@ class BulkController extends Controller {
 	 * @param SchemaMapper $schemaMapper Mapper for resolving schemas (RBAC gates)
 	 * @param IUserSession $userSession User session for admin/manage checks
 	 * @param IGroupManager $groupManager Group manager for admin/manage checks
+	 * @param IDBConnection $db The connection an atomic batch runs its transaction on
 	 *
 	 * @return void
 	 */
@@ -79,6 +88,7 @@ class BulkController extends Controller {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
+		private readonly IDBConnection $db,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -352,6 +362,88 @@ class BulkController extends Controller {
 	}//end delete()
 
 	/**
+	 * Write a batch in one transaction: every row, or none (REQ-ATOMIC-001).
+	 *
+	 * The save path refuses invalid rows one by one and keeps writing the rest,
+	 * so the transaction is what makes it all or nothing: when any row is
+	 * refused, or the save throws, every row it wrote is rolled back and the
+	 * answer names the first refused row. The per-chunk transactions inside the
+	 * save nest as savepoints under this one. The bulk path dispatches no object
+	 * events (`events: false`), so nothing leaves the transaction before it
+	 * commits; the audit rows it writes are rolled back with the objects.
+	 * `stream` and `partial` do not apply: the streaming path commits per row,
+	 * and a partial result is exactly what an atomic batch refuses.
+	 *
+	 * @param array    $objects  The rows.
+	 * @param int      $register The register id.
+	 * @param int|null $schema   The schema id, or null for a mixed-schema batch.
+	 *
+	 * @return JSONResponse 200 when every row wrote; 422 naming the first refused row; 413 over the limit.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md
+	 */
+	private function writeAtomicBatch(array $objects, int $register, ?int $schema): JSONResponse {
+		$requestedCount = count($objects);
+		if ($requestedCount > self::ATOMIC_BATCH_LIMIT) {
+			return new JSONResponse(
+				data: [
+					'error' => sprintf(
+						'An atomic batch may carry at most %d rows; this one has %d. Split it, or send it without atomic.',
+						self::ATOMIC_BATCH_LIMIT,
+						$requestedCount
+					),
+					'limit' => self::ATOMIC_BATCH_LIMIT,
+					'requested_count' => $requestedCount,
+				],
+				statusCode: Http::STATUS_REQUEST_ENTITY_TOO_LARGE
+			);
+		}
+
+		$this->db->beginTransaction();
+		try {
+			$response = $this->writeBatch(objects: $objects, register: $register, schema: $schema, stream: false, partial: false);
+		} catch (\Throwable $e) {
+			$this->db->rollBack();
+			throw $e;
+		}
+
+		$data = $response->getData();
+		if (is_array($data) === false) {
+			$data = [];
+		}
+
+		if (($data['success'] ?? false) === true) {
+			$this->db->commit();
+			$data['atomic'] = true;
+			return new JSONResponse(data: $data, statusCode: Http::STATUS_OK);
+		}
+
+		$this->db->rollBack();
+
+		$failures = ($data['failures'] ?? []);
+		$first = ($failures[0] ?? []);
+		$reason = (string)($first['error'] ?? 'no reason recorded');
+		$where = 'a row';
+		if (isset($first['index']) === true) {
+			$where = 'row '.(int)$first['index'];
+		}
+
+		return new JSONResponse(
+			data: [
+				'success' => false,
+				'atomic' => true,
+				'message' => sprintf('Atomic batch rolled back: %s was refused (%s). No row was written.', $where, $reason),
+				'saved_count' => 0,
+				'failed_count' => (int)($data['failed_count'] ?? count($failures)),
+				'requested_count' => $requestedCount,
+				'failures' => $failures,
+				'partial' => false,
+			],
+			statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
+		);
+	}//end writeAtomicBatch()
+
+	/**
 	 * Write a resolved batch through whichever path the caller asked for.
 	 *
 	 * `stream` is opt-in and defaults to the existing behaviour, because neither
@@ -612,6 +704,11 @@ class BulkController extends Controller {
 			$schemaToUse = $resolved['schema'];
 			if ($isMixedSchema === true) {
 				$schemaToUse = null;
+			}
+
+			// `atomic` wins over `stream` and `partial`: see writeAtomicBatch().
+			if (filter_var(($data['atomic'] ?? false), FILTER_VALIDATE_BOOLEAN) === true) {
+				return $this->writeAtomicBatch(objects: $objects, register: $resolved['register'], schema: $schemaToUse);
 			}
 
 			// See writeBatch() for why `stream` is opt-in, and bulkSaveResponse()

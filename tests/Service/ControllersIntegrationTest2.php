@@ -1964,7 +1964,8 @@ class ControllersIntegrationTest2 extends TestCase {
 			\OC::$server->get(RegisterMapper::class),
 			\OC::$server->get(SchemaMapper::class),
 			\OC::$server->get(IUserSession::class),
-			\OC::$server->get(IGroupManager::class)
+			\OC::$server->get(IGroupManager::class),
+			\OC::$server->get(\OCP\IDBConnection::class)
 		);
 	}//end buildBulkController()
 
