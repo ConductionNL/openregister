@@ -2468,13 +2468,14 @@ class ObjectService implements ObjectServiceInterface
         }
 
         $this->logger->info(
-            message: '[ObjectService] repeating-group / not-supplied enforcement rejected the write',
+            message: '[ObjectService] repeating-group / not-supplied / geometry enforcement rejected the write',
             context: [
                 'file'           => __FILE__,
                 'line'           => __LINE__,
                 'schemaId'       => $this->currentSchema->getId(),
                 'groups'         => $groups,
                 'incompleteness' => $incompleteness,
+                'geometries'     => $geometries,
             ]
         );
 
