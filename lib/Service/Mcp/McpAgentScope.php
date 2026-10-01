@@ -182,7 +182,7 @@ class McpAgentScope {
 		}
 
 		$constraints = $this->grantResolver->argumentConstraints(grants: (array) $agent->getTools());
-		$violation   = ToolGrantResolver::violationFor(
+		$violation   = $this->grantResolver::violationFor(
 			constraintSets: ($constraints[$toolId] ?? []),
 			arguments: $arguments
 		);
