@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Acest furnizor nu este încă configurat pe acest server. Roagă-ți administratorul să îl configureze.",
         "The provider's server did not accept the connection. Try again later.": "Serverul furnizorului nu a acceptat conexiunea. Încearcă din nou mai târziu.",
         "Consequence": "Consecință",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Ce se întâmplă dacă partea nu răspunde, pentru o treaptă după termen."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Ce se întâmplă dacă partea nu răspunde, pentru o treaptă după termen.",
+        "Limits of {name}": "Limitele pentru {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Alegeți ce instrumente poate folosi fiecare agent AI. Chatul și clienții MCP care numesc agentul primesc aceleași limite.",
+        "No agents yet": "Încă nu există agenți",
+        "Could not load the agents": "Agenții nu au putut fi încărcați",
+        "Could not save the limits": "Limitele nu au putut fi salvate",
+        "Only the agent's owner can change its limits.": "Doar proprietarul agentului îi poate schimba limitele.",
+        "This agent has a grant per app. Change it through the agents API.": "Acest agent are o permisiune pentru fiecare aplicație. Schimbați-o prin API-ul pentru agenți.",
+        "Edit limits": "Editează limitele"
     },
     "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));"
 )

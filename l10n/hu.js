@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Ez a szolgáltató még nincs beállítva ezen a kiszolgálón. Kérd meg a rendszergazdát, hogy állítsa be.",
         "The provider's server did not accept the connection. Try again later.": "A szolgáltató kiszolgálója nem fogadta el a kapcsolatot. Próbáld újra később.",
         "Consequence": "Következmény",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mi történik, ha a fél nem válaszol, a határidő utáni lépcsőnél."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Mi történik, ha a fél nem válaszol, a határidő utáni lépcsőnél.",
+        "Limits of {name}": "{name} korlátai",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Válassza ki, mely eszközöket használhatja az egyes MI-ügynökök. A csevegés és az ügynököt megnevező MCP-kliensek ugyanazokat a korlátokat kapják.",
+        "No agents yet": "Még nincsenek ügynökök",
+        "Could not load the agents": "Az ügynököket nem sikerült betölteni",
+        "Could not save the limits": "A korlátokat nem sikerült menteni",
+        "Only the agent's owner can change its limits.": "Az ügynök korlátait csak a tulajdonosa módosíthatja.",
+        "This agent has a grant per app. Change it through the agents API.": "Ennek az ügynöknek alkalmazásonkénti jogosultsága van. Az ügynökök API-ján keresztül módosíthatja.",
+        "Edit limits": "Korlátok szerkesztése"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Quest purschider n'è anc betg configurà sin quest server. Dumonda tes administratur da al configurar.",
         "The provider's server did not accept the connection. Try again later.": "Il server dal purschider n'ha betg acceptà la colliaziun. Emprova pli tard anc ina giada.",
         "Consequence": "Consequenza",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Tge che capita, sche la partida na respunda betg, per in stgalim suenter il termin."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Tge che capita, sche la partida na respunda betg, per in stgalim suenter il termin.",
+        "Limits of {name}": "Limitas da {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Tscherna tge utensils che mintga agent d'IA dastga duvrar. Il chat ed ils clients MCP che numnan l'agent survegnan las medemas limitas.",
+        "No agents yet": "Anc nagins agents",
+        "Could not load the agents": "Ils agents n'han betg pudì vegnir chargiads",
+        "Could not save the limits": "Las limitas n'han betg pudì vegnir memorisadas",
+        "Only the agent's owner can change its limits.": "Mo il possessur da l'agent po midar sias limitas.",
+        "This agent has a grant per app. Change it through the agents API.": "Quest agent ha ina permissiun per app. Mida quella via l'API dals agents.",
+        "Edit limits": "Modifitgar las limitas"
     },
     "nplurals=2; plural=(n != 1);"
 )

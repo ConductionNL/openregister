@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Гэты пастаўшчык яшчэ не наладжаны на гэтым серверы. Папрасіце адміністратара наладзіць яго.",
         "The provider's server did not accept the connection. Try again later.": "Сервер пастаўшчыка не прыняў падлучэнне. Паспрабуйце пазней.",
         "Consequence": "Наступства",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Што будзе, калі бок не адкажа, паведамляецца яму на прыступцы пасля тэрміну."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Што будзе, калі бок не адкажа, паведамляецца яму на прыступцы пасля тэрміну.",
+        "Limits of {name}": "Абмежаванні для {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Выберыце, якімі інструментамі можа карыстацца кожны ШІ-агент. Чат і MCP-кліенты, якія называюць агента, атрымліваюць тыя ж абмежаванні.",
+        "No agents yet": "Агентаў пакуль няма",
+        "Could not load the agents": "Не ўдалося загрузіць агентаў",
+        "Could not save the limits": "Не ўдалося захаваць абмежаванні",
+        "Only the agent's owner can change its limits.": "Змяняць абмежаванні агента можа толькі яго ўладальнік.",
+        "This agent has a grant per app. Change it through the agents API.": "У гэтага агента дазвол для кожнай праграмы. Змяніце яго праз API агентаў.",
+        "Edit limits": "Змяніць абмежаванні"
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

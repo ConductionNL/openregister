@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Этот поставщик ещё не настроен на этом сервере. Попросите администратора настроить его.",
         "The provider's server did not accept the connection. Try again later.": "Сервер поставщика не принял подключение. Попробуйте позже.",
         "Consequence": "Последствие",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Что произойдёт, если сторона не ответит, для ступени после срока."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Что произойдёт, если сторона не ответит, для ступени после срока.",
+        "Limits of {name}": "Ограничения для {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Выберите, какими инструментами может пользоваться каждый ИИ-агент. Чат и MCP-клиенты, указывающие агента, получают те же ограничения.",
+        "No agents yet": "Агентов пока нет",
+        "Could not load the agents": "Не удалось загрузить агентов",
+        "Could not save the limits": "Не удалось сохранить ограничения",
+        "Only the agent's owner can change its limits.": "Изменять ограничения агента может только его владелец.",
+        "This agent has a grant per app. Change it through the agents API.": "У этого агента разрешение по приложениям. Измените его через API агентов.",
+        "Edit limits": "Изменить ограничения"
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

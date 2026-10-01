@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Controller;
 use BadMethodCallException;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Mcp\McpAgentScope;
 use OCA\OpenRegister\Service\Mcp\McpProtocolService;
 use OCA\OpenRegister\Service\Mcp\McpResourcesService;
 use OCA\OpenRegister\Service\Mcp\McpToolsService;
@@ -102,6 +103,7 @@ class McpServerController extends Controller {
 	 * @param McpResourcesService $resourcesService MCP resources service
 	 * @param LoggerInterface $logger Logger
 	 * @param string $userId Authenticated user ID
+	 * @param McpAgentScope $agentScope Holds a session that declared an agent to its grant
 	 */
 	public function __construct(
 		string $appName,
@@ -111,6 +113,7 @@ class McpServerController extends Controller {
 		private readonly McpResourcesService $resourcesService,
 		private readonly LoggerInterface $logger,
 		private readonly string $userId,
+		private readonly McpAgentScope $agentScope,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -184,7 +187,7 @@ class McpServerController extends Controller {
 		}
 
 		// Dispatch to method handler.
-		return $this->dispatch(id: $id, method: $method, params: $params);
+		return $this->dispatch(id: $id, method: $method, params: $params, sessionId: $sessionId);
 	}//end handle()
 
 	/**
@@ -214,6 +217,26 @@ class McpServerController extends Controller {
 	 * @return JSONResponse JSON-RPC response with session ID header
 	 */
 	private function handleInitialize(mixed $id, array $params): JSONResponse {
+		// An agent the client declares is checked BEFORE a session exists, so a
+		// refused agent never yields a session with the user's full rights.
+		// A client names it as the `agent` initialize parameter or, for clients
+		// that can only add headers, as `X-OpenRegister-Agent`.
+		$agentUuid = $params['agent'] ?? null;
+		if ($agentUuid === null && $this->request->getHeader('X-OpenRegister-Agent') !== '') {
+			$agentUuid = $this->request->getHeader('X-OpenRegister-Agent');
+		}
+		if ($agentUuid !== null) {
+			try {
+				if (is_string($agentUuid) === false || $agentUuid === '') {
+					throw new InvalidArgumentException(message: 'The agent parameter must be an agent uuid');
+				}
+
+				$this->agentScope->assertUsable(agentUuid: $agentUuid, userId: $this->userId);
+			} catch (InvalidArgumentException $e) {
+				return $this->jsonRpcError(id: $id, code: self::ERR_INVALID_PARAMS, message: $e->getMessage());
+			}
+		}
+
 		try {
 			$result = $this->protocolService->initialize(
 				params: $params,
@@ -225,6 +248,9 @@ class McpServerController extends Controller {
 				result: $result['result']
 			);
 			$response->addHeader('Mcp-Session-Id', $result['sessionId']);
+			if (is_string($agentUuid) === true) {
+				$this->agentScope->bind(sessionId: $result['sessionId'], agentUuid: $agentUuid);
+			}
 
 			return $response;
 		} catch (\Exception $e) {
@@ -247,15 +273,20 @@ class McpServerController extends Controller {
 	 * @param mixed $id JSON-RPC request ID
 	 * @param string $method Method name
 	 * @param array $params Method parameters
+	 * @param string $sessionId The validated MCP session
 	 *
 	 * @return JSONResponse JSON-RPC response
 	 */
-	private function dispatch(mixed $id, string $method, array $params): JSONResponse {
+	private function dispatch(mixed $id, string $method, array $params, string $sessionId): JSONResponse {
 		try {
 			$result = match ($method) {
 				'ping' => $this->protocolService->ping(),
-				'tools/list' => $this->toolsService->listTools(),
-				'tools/call' => $this->handleToolCall(params: $params),
+				'tools/list' => $this->agentScope->filterListing(
+					sessionId: $sessionId,
+					userId: $this->userId,
+					listing: $this->toolsService->listTools()
+				),
+				'tools/call' => $this->handleToolCall(params: $params, sessionId: $sessionId),
 				'resources/list' => $this->resourcesService->listResources(),
 				'resources/read' => $this->handleResourceRead(params: $params),
 				'resources/templates/list' => $this->resourcesService->listTemplates(),
@@ -295,17 +326,25 @@ class McpServerController extends Controller {
 	 * Handle tools/call request
 	 *
 	 * @param array $params Must contain name and arguments
+	 * @param string $sessionId The validated MCP session
 	 *
 	 * @return array Tool execution result
 	 *
-	 * @throws InvalidArgumentException If name is missing
+	 * @throws InvalidArgumentException If name is missing, or the session agent's grant does not cover the call
 	 */
-	private function handleToolCall(array $params): array {
+	private function handleToolCall(array $params, string $sessionId): array {
 		if (isset($params['name']) === false) {
 			throw new InvalidArgumentException(
 				message: 'Missing required parameter: name'
 			);
 		}
+
+		$this->agentScope->assertMayCall(
+			sessionId: $sessionId,
+			userId: $this->userId,
+			name: (string) $params['name'],
+			arguments: (array) ($params['arguments'] ?? [])
+		);
 
 		return $this->toolsService->callTool(
 			name: $params['name'],

@@ -3242,7 +3242,15 @@ OC.L10N.register(
         "This provider is not set up on this server yet. Ask your administrator to configure it.": "Αυτός ο πάροχος δεν έχει ρυθμιστεί ακόμα σε αυτόν τον διακομιστή. Ζητήστε από τον διαχειριστή σας να τον ρυθμίσει.",
         "The provider's server did not accept the connection. Try again later.": "Ο διακομιστής του παρόχου δεν αποδέχτηκε τη σύνδεση. Δοκιμάστε ξανά αργότερα.",
         "Consequence": "Συνέπεια",
-        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Τι θα συμβεί αν το μέρος δεν απαντήσει, για ένα βήμα μετά την προθεσμία."
+        "What the party is told will happen if they do not respond, for a rung after the deadline.": "Τι θα συμβεί αν το μέρος δεν απαντήσει, για ένα βήμα μετά την προθεσμία.",
+        "Limits of {name}": "Όρια του {name}",
+        "Choose which tools each AI agent may use. Chat and MCP clients that name the agent get the same limits.": "Επιλέξτε ποια εργαλεία μπορεί να χρησιμοποιεί κάθε πράκτορας ΤΝ. Η συνομιλία και οι πελάτες MCP που ονομάζουν τον πράκτορα λαμβάνουν τα ίδια όρια.",
+        "No agents yet": "Δεν υπάρχουν ακόμη πράκτορες",
+        "Could not load the agents": "Δεν ήταν δυνατή η φόρτωση των πρακτόρων",
+        "Could not save the limits": "Δεν ήταν δυνατή η αποθήκευση των ορίων",
+        "Only the agent's owner can change its limits.": "Μόνο ο κάτοχος του πράκτορα μπορεί να αλλάξει τα όριά του.",
+        "This agent has a grant per app. Change it through the agents API.": "Αυτός ο πράκτορας έχει άδεια ανά εφαρμογή. Αλλάξτε την μέσω του API πρακτόρων.",
+        "Edit limits": "Επεξεργασία ορίων"
     },
     "nplurals=2; plural=(n != 1);"
 )
