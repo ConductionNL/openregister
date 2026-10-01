@@ -3141,7 +3141,7 @@ class ImportHandler {
 		// referenced schema properties are `format: uuid`, so the tokens must be
 		// rewritten to the target object's UUID (and the targets given a stable
 		// id) before validation runs inside saveObject().
-		$data = $this->resolveSeedReferenceTokens(data: $data);
+		$data = $this->resolveSeedReferenceTokens(data: $data, appId: $appId);
 
 		// NOTE: We do NOT build ID maps - we'll pass the actual objects to avoid organisation filter issues.
 		// When saveObject() receives Register/Schema objects, it skips the find() lookup entirely.
@@ -3254,6 +3254,14 @@ class ImportHandler {
 								'schemaFound' => $schemaObject !== null,
 							]
 						);
+						continue;
+					}
+
+					// A seed whose schema slug resolved to ANOTHER app's schema,
+					// one its register does not list, is a stale seed, not a
+					// write target ({@see self::seedSchemaIsForeign()}).
+					if ($this->seedSchemaIsForeign(register: $registerObject, schema: $schemaObject, appId: $appId) === true) {
+						$result['skipped']['objects']++;
 						continue;
 					}
 
@@ -3517,10 +3525,11 @@ class ImportHandler {
 	 * left exactly as-is (the import loop assigns their identity as before).
 	 *
 	 * @param array $data The configuration data.
+	 * @param string|null $appId The importing app, for the foreign-schema guard.
 	 *
 	 * @return array The data with target `@self.id` populated and `@ref:` tokens resolved.
 	 */
-	private function resolveSeedReferenceTokens(array $data): array {
+	private function resolveSeedReferenceTokens(array $data, ?string $appId = null): array {
 		if (($data['components']['objects'] ?? null) === null
 			|| is_array($data['components']['objects']) === false
 		) {
@@ -3579,7 +3588,7 @@ class ImportHandler {
 			// would leave referrers pointing at a dangling, never-stored UUID.
 			// Leave it unmapped so replaceRefTokens logs the unresolved reference
 			// instead of silently fabricating one.
-			[$registerObject, $schemaObject] = $this->resolveImportRegisterSchema(objectData: $targetData);
+			[$registerObject, $schemaObject] = $this->resolveImportRegisterSchema(objectData: $targetData, appId: $appId);
 			if ($registerObject === null || $schemaObject === null) {
 				continue;
 			}
@@ -3762,11 +3771,16 @@ class ImportHandler {
 	 * lookup (RBAC/multitenancy bypassed, as everywhere else in this trusted
 	 * import path). Returns nulls when either cannot be resolved.
 	 *
+	 * A schema that resolves to another app's schema its register does not list
+	 * comes back as null, the same answer the import loop acts on, so a stale
+	 * seed is never handed a pre-assigned identity it will not be stored under.
+	 *
 	 * @param array $objectData The seed object (with @self register/schema).
+	 * @param string|null $appId The importing app, for the foreign-schema guard.
 	 *
 	 * @return array{0: ?Register, 1: ?Schema} The resolved register and schema.
 	 */
-	private function resolveImportRegisterSchema(array $objectData): array {
+	private function resolveImportRegisterSchema(array $objectData, ?string $appId = null): array {
 		$rawRegister = $objectData['@self']['register'] ?? null;
 		$rawSchema = $objectData['@self']['schema'] ?? null;
 
@@ -3804,8 +3818,79 @@ class ImportHandler {
 			$schemaObject = null;
 		}
 
+		if ($registerObject !== null
+			&& $schemaObject !== null
+			&& $this->seedSchemaIsForeign(register: $registerObject, schema: $schemaObject, appId: $appId) === true
+		) {
+			$schemaObject = null;
+		}
+
 		return [$registerObject, $schemaObject];
 	}//end resolveImportRegisterSchema()
+
+	/**
+	 * Whether a seed's schema belongs to another app and not to the seed's register.
+	 *
+	 * A seed names its schema by slug, and the import resolves a slug it did
+	 * not import itself with a GLOBAL lookup. Two apps can ship a schema under
+	 * the same slug: stackiq and opencatalogi both used `organization`. When
+	 * opencatalogi dropped its own and kept a stale `organization` seed in its
+	 * `publication` register, the global lookup found stackiq's schema and the
+	 * seed was written into a `publication` x stackiq-`organization` table,
+	 * failing NOT NULL on stackiq's required fields. Whichever app installed
+	 * second broke.
+	 *
+	 * Foreign means all three: the register lists schemas and this one is not
+	 * among them, the schema names an owning application, and that owner is
+	 * neither the importing app nor the register's own app. Each condition
+	 * keeps a legitimate seed working: a register with no schema list yet
+	 * carries no evidence; an app's own schema may not be linked yet on a first
+	 * install that imports its register fragments in several passes; and an app
+	 * seeding into another app's register uses a schema that register lists.
+	 *
+	 * @param Register $register The register the seed names.
+	 * @param Schema $schema The schema its slug resolved to.
+	 * @param string|null $appId The importing app, or null for an import without one.
+	 *
+	 * @return bool True when the seed must be skipped.
+	 *
+	 * @spec openspec/changes/seed-schema-must-belong-to-its-register/specs/data-import-export/spec.md#requirement-a-seed-is-never-written-into-another-apps-schema-its-register-does-not-list
+	 */
+	private function seedSchemaIsForeign(Register $register, Schema $schema, ?string $appId): bool {
+		$linked = array_map('strval', $register->getSchemas());
+		if ($linked === []) {
+			return false;
+		}
+
+		if (in_array((string)$schema->getId(), $linked, true) === true
+			|| in_array((string)$schema->getSlug(), $linked, true) === true
+		) {
+			return false;
+		}
+
+		$owner = (string)($schema->getApplication() ?? '');
+		if ($owner === ''
+			|| $owner === (string)($appId ?? '')
+			|| $owner === (string)($register->getApplication() ?? '')
+		) {
+			return false;
+		}
+
+		$this->logger->warning(
+			message: '[ImportHandler] Skipping seed object: its schema belongs to another app and is not in its register',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'appId' => $appId,
+				'registerSlug' => $register->getSlug(),
+				'schemaSlug' => $schema->getSlug(),
+				'schemaId' => $schema->getId(),
+				'schemaApplication' => $owner,
+			]
+		);
+
+		return true;
+	}//end seedSchemaIsForeign()
 
 	/**
 	 * Look up the UUID of an already-imported object with the given
@@ -5158,6 +5243,16 @@ class ImportHandler {
 					continue;
 				}//end try
 			}//end if
+
+			// Same guard as the components.objects path: a slug that resolved
+			// to another app's schema its target register does not list is a
+			// stale seed, so every object under it is skipped.
+			if ($targetRegister instanceof Register
+				&& $this->seedSchemaIsForeign(register: $targetRegister, schema: $schema, appId: $appId) === true
+			) {
+				$result['skipped']['seedObjects'] += count((array)$objects);
+				continue;
+			}
 
 			$this->logger->debug(
 				message: "[ImportHandler] Importing seed objects for schema '{$schemaSlug}'",
