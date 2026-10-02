@@ -272,7 +272,7 @@ class NamesController extends Controller {
 			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
 		}
 
-		// getMultipleObjectNames() only resolves ids the caller may read, so a
+		// The lookup (getMultipleObjectNames()) only resolves ids the caller may read, so a
 		// caller-supplied UUID of an object they cannot read resolves to nothing.
 		$startTime = microtime(true);
 
