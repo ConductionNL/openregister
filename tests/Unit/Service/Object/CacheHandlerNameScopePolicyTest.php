@@ -77,10 +77,25 @@ class CacheHandlerNameScopePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Owning organisation per object UUID, read by the stand-in for the object read path.
+	 *
+	 * @var array<string, string|null>
+	 */
+	private array $orgByUuid = [];
+
 	protected function setUp(): void {
 		parent::setUp();
 
 		$this->objectMapper = $this->createMock(MagicMapper::class);
+		// Names follow the object read path. In this suite that path admits an
+		// object exactly when it belongs to the caller's organisation, so each
+		// cross-tenant control below still asks the question it was written for.
+		$this->objectMapper->method('filterReadableUuids')->willReturnCallback(
+			fn (int $registerId, int $schemaId, array $uuids): array => array_values(
+				array_filter($uuids, fn (string $uuid): bool => ($this->orgByUuid[$uuid] ?? null) === self::ORG_B)
+			)
+		);
 		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->cacheFactory = $this->createMock(ICacheFactory::class);
@@ -191,6 +206,9 @@ class CacheHandlerNameScopePolicyTest extends TestCase {
 		$object->setUuid($uuid);
 		$object->setName($name);
 		$object->setOrganisation($organisation);
+		$object->setRegister('1');
+		$object->setSchema('5');
+		$this->orgByUuid[$uuid] = $organisation;
 		return $object;
 	}
 
@@ -482,8 +500,9 @@ class CacheHandlerNameScopePolicyTest extends TestCase {
 	// =====================================================================
 
 	/**
-	 * A value written BEFORE this change is a bare string with no tenancy. It
-	 * must read as a MISS, never be served unscoped.
+	 * A value written BEFORE this change is a bare string with no tenancy, and
+	 * one written before names followed read rights carries no source. Both
+	 * must read as a MISS, never be served.
 	 *
 	 * @return void
 	 */
@@ -499,9 +518,11 @@ class CacheHandlerNameScopePolicyTest extends TestCase {
 		$this->assertNull($method->invoke($handler, ['o' => self::ORG_A]));
 		$this->assertNull($method->invoke($handler, ['n' => 42, 'o' => null]));
 		$this->assertNull($method->invoke($handler, ['n' => 'Name', 'o' => 7]));
+		$this->assertNull($method->invoke($handler, ['n' => 'Name', 'o' => self::ORG_A]), 'An envelope without a source is a miss.');
+		$this->assertNull($method->invoke($handler, ['n' => 'Name', 'o' => self::ORG_A, 's' => '']));
 		$this->assertSame(
-			['n' => 'Name', 'o' => self::ORG_A],
-			$method->invoke($handler, ['n' => 'Name', 'o' => self::ORG_A])
+			['n' => 'Name', 'o' => self::ORG_A, 's' => '1:5'],
+			$method->invoke($handler, ['n' => 'Name', 'o' => self::ORG_A, 's' => '1:5'])
 		);
 	}
 
@@ -647,6 +668,8 @@ class CacheHandlerNameScopePolicyTest extends TestCase {
 			false
 		);
 		$db->method('prepare')->willReturn($statement);
+		$this->orgByUuid['11112222-1111-2222-1111-222222222222'] = self::ORG_A;
+		$this->orgByUuid['33334444-3333-4444-3333-444444444444'] = self::ORG_B;
 
 		$handler = $this->buildHandler(null, null, $registerMapper, $schemaMapper, $db);
 
