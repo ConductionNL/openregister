@@ -7340,6 +7340,23 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end organisationBoundaryWaivedByRbac()
 
 	/**
+	 * Whether a default list read widens the organisation boundary by the
+	 * rows with no organisation, because the caller's grant comes from the
+	 * register cascade.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when the list's organisation filter also admits org-less rows.
+	 *
+	 * @see MagicSearchHandler::organisationlessRowsAdmittedByRbac()
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
+	 */
+	public function organisationlessRowsAdmittedByRbac(Schema $schema): bool {
+		return $this->searchHandler->organisationlessRowsAdmittedByRbac(schema: $schema);
+	}//end organisationlessRowsAdmittedByRbac()
+
+	/**
 	 * Insert ObjectEntity into register+schema table.
 	 *
 	 * @param ObjectEntity $entity The object entity to insert.

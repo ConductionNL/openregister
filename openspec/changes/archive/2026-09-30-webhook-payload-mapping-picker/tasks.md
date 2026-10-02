@@ -8,8 +8,8 @@
 - **acceptance_criteria**:
   - mapping id saved
   - preview equals delivery
-- [ ] Implement
-- [ ] Test (red first)
+- [x] Implement: POST api/webhooks/preview (WebhooksController::preview, admin only) over WebhookService::previewPayload(), which calls the delivery's own buildPayload(); the dialog's Payload mapping select (clearable) and Preview payload button; Webhook::hydrate clears the mapping on an explicit null
+- [x] Test (red first): tests/Unit/Controller/WebhookMappingPreviewTest.php, 4 of 4 red on development, over the real WebhookService and MappingService
 
 ## Verification
 
