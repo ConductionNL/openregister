@@ -9,8 +9,8 @@
   - draft save leaves validation unchanged
   - publish bumps the version once with one changelog entry
   - discard removes the draft
-- [ ] Implement
-- [ ] Test (red first)
+- [x] Implement
+- [x] Test (red first)
 
 ### Task 2: Draft mode in the schema editor
 - **spec_ref**: `openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published`
@@ -18,8 +18,8 @@
 - **acceptance_criteria**:
   - save as draft, publish and discard buttons
   - a badge shows a pending draft
-- [ ] Implement
-- [ ] Test (red first)
+- [x] Implement
+- [x] Test (red first)
 
 ## Verification
 

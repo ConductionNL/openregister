@@ -1064,6 +1064,7 @@ class SchemasController extends Controller {
 	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	public function update(int $id): JSONResponse {
 		// Get request parameters.
@@ -1076,6 +1077,43 @@ class SchemasController extends Controller {
 			}
 		}
 
+		// `?draft=true` holds the edit beside the published definition instead
+		// of applying it (modelling-schema-draft).
+		$asDraft = $this->isTrue(value: ($data['draft'] ?? null));
+		unset($data['draft'], $data['acknowledgeBreaking'], $data['renames']);
+		if ($asDraft === true) {
+			return $this->saveDraft(id: $id, data: $data);
+		}
+
+		return $this->applyUpdate(id: $id, data: $data);
+	}//end update()
+
+	/**
+	 * Apply an update body to a schema: permission, validation, versioning gate, write, changelog.
+	 *
+	 * Shared by a direct update and by publishing a draft, so a published draft
+	 * gets the same gate, the same version bump and one changelog entry.
+	 *
+	 * @param int                  $id   The ID of the schema to update
+	 * @param array<string, mixed> $data The update body, internal parameters removed
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)          DatabaseConstraintException::fromDatabaseException is a named constructor — no DI alternative.
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
+	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Error-classification block is repetitive but
+	 * intentional; extracting it would not reduce cognitive load.
+	 * @SuppressWarnings(PHPMD.ShortVariable)         $id matches the {id} URL route parameter.
+	 *
+	 * @return JSONResponse JSON response with updated schema or error
+	 *
+	 * @psalm-return JSONResponse<200, Schema,
+	 *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
+	 *     array<never, never>>|JSONResponse<422, array{error: string,
+	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
+	 *
+	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 */
+	private function applyUpdate(int $id, array $data): JSONResponse {
 		// Remove immutable fields to prevent tampering.
 		unset($data['id']);
 		unset($data['organisation']);
@@ -1347,7 +1385,133 @@ class SchemasController extends Controller {
 			// Return 500 for other unexpected errors with actual error message.
 			return $this->errorResponse(e: $e);
 		}//end try
-	}//end update()
+	}//end applyUpdate()
+
+	/**
+	 * Whether a request value means true (`true` or the string `'true'`).
+	 *
+	 * @param mixed $value The request value
+	 *
+	 * @return bool
+	 */
+	private function isTrue(mixed $value): bool {
+		return ($value === true || $value === 'true' || $value === '1' || $value === 1);
+	}//end isTrue()
+
+	/**
+	 * Hold an edit as the schema's draft, leaving the published definition untouched.
+	 *
+	 * @param int                  $id   The ID of the schema
+	 * @param array<string, mixed> $data The edit body
+	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
+	 *
+	 * @return JSONResponse The schema with its draft, or an error
+	 *
+	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 */
+	private function saveDraft(int $id, array $data): JSONResponse {
+		try {
+			$schema = $this->schemaMapper->find($id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+		}
+
+		if ($this->checkSchemaManagePermission(schema: $schema) === false) {
+			return new JSONResponse(
+				data: ['error' => 'User does not have permission to manage this schema'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		unset($data['id'], $data['organisation'], $data['owner'], $data['created']);
+		$schema->setDraft($data);
+
+		return new JSONResponse(data: $this->schemaMapper->update(entity: $schema));
+	}//end saveDraft()
+
+	/**
+	 * Publish a schema's draft through the normal update, then remove it
+	 *
+	 * The draft goes through the same permission check, versioning gate
+	 * (`acknowledgeBreaking`, `renames`), version bump and changelog as a direct
+	 * update. A refused publish keeps the draft.
+	 *
+	 * @param int $id The ID of the schema
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
+	 *
+	 * @return JSONResponse The updated schema, 409 when there is no draft, or the update's error
+	 *
+	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 */
+	public function publishDraft(int $id): JSONResponse {
+		try {
+			$schema = $this->schemaMapper->find($id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+		}
+
+		if ($this->checkSchemaManagePermission(schema: $schema) === false) {
+			return new JSONResponse(
+				data: ['error' => 'User does not have permission to manage this schema'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		$draft = $schema->getDraft();
+		if ($draft === null) {
+			return new JSONResponse(data: ['error' => 'This schema has no draft to publish'], statusCode: 409);
+		}
+
+		$response  = $this->applyUpdate(id: $id, data: $draft);
+		$published = $response->getData();
+		if ($response->getStatus() !== Http::STATUS_OK || $published instanceof Schema === false) {
+			return $response;
+		}
+
+		$published->setDraft(null);
+
+		return new JSONResponse(data: $this->schemaMapper->update(entity: $published));
+	}//end publishDraft()
+
+	/**
+	 * Discard a schema's draft, leaving the published definition as it is
+	 *
+	 * @param int $id The ID of the schema
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
+	 *
+	 * @return JSONResponse The schema without a draft, or an error
+	 *
+	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 */
+	public function discardDraft(int $id): JSONResponse {
+		try {
+			$schema = $this->schemaMapper->find($id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+		}
+
+		if ($this->checkSchemaManagePermission(schema: $schema) === false) {
+			return new JSONResponse(
+				data: ['error' => 'User does not have permission to manage this schema'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		$schema->setDraft(null);
+
+		return new JSONResponse(data: $this->schemaMapper->update(entity: $schema));
+	}//end discardDraft()
 
 	/**
 	 * Patch (partially update) a schema
