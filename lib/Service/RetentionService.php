@@ -175,7 +175,7 @@ class RetentionService {
 
 		// The schema's category, unless this record names its own through the
 		// property the schema declares for that (DECISIONS row 48).
-		$classification = $this->effectiveClassification(
+		$classification = (new ClassificationOverride())->effective(
 			archive: $archiveConfig,
 			data: ($object->getObject() ?? [])
 		);
@@ -265,45 +265,7 @@ class RetentionService {
 
 
 	/**
-	 * The selectielijst category that applies to a record.
-	 *
-	 * The schema's `classification`, unless the schema names an override
-	 * property (`classificationProperty`) and the record fills it in.
-	 *
-	 * @param array<string, mixed> $archive The schema's archive block
-	 * @param array<string, mixed> $data    The record's data
-	 *
-	 * @return string|null The effective category
-	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 */
-	public function effectiveClassification(array $archive, array $data): ?string {
-		return (new ClassificationOverride())->effective(archive: $archive, data: $data);
-	}//end effectiveClassification()
-
-	/**
-	 * The object property through which a record of this schema may override
-	 * its category, from the archive block or an `x-openregister-archival` block.
-	 *
-	 * @param Schema $schema The schema
-	 *
-	 * @return string|null The property name, or null when no override is allowed
-	 *
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 */
-	public function classificationPropertyOf(Schema $schema): ?string {
-		return (new ClassificationOverride())->propertyOf(
-			archive: ($schema->getArchive() ?? []),
-			configuration: ($schema->getConfiguration() ?? [])
-		);
-	}//end classificationPropertyOf()
-
-	/**
 	 * Refuse a record whose category override names no selectielijst row.
-	 *
-	 * A category nobody can resolve would leave the record with the schema's
-	 * defaults while it claims another category, so the save is refused and
-	 * the message names the value.
 	 *
 	 * @param Schema               $schema The record's schema
 	 * @param array<string, mixed> $data   The record's data as it will be stored
@@ -315,24 +277,12 @@ class RetentionService {
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
 	public function guardClassificationOverride(Schema $schema, array $data): void {
-		$property  = $this->classificationPropertyOf(schema: $schema);
-		$requested = (new ClassificationOverride())->requested(property: $property, data: $data);
-		if ($requested === null) {
-			return;
-		}
-
-		if (is_string($requested) === false) {
-			throw new ValidationException(
-				message: 'The selectielijst category in "' . $property . '" must be text.'
-			);
-		}
-
-		if ($this->listResolver->entryFor(category: $requested) === null) {
-			throw new ValidationException(
-				message: 'The selectielijst category "' . $requested . '" in "' . $property
-					. '" matches no selectielijst row.'
-			);
-		}
+		$override = new ClassificationOverride();
+		$override->guard(
+			property: $override->propertyOf(archive: ($schema->getArchive() ?? []), configuration: ($schema->getConfiguration() ?? [])),
+			data: $data,
+			resolver: $this->listResolver
+		);
 	}//end guardClassificationOverride()
 
 	/**
@@ -359,15 +309,15 @@ class RetentionService {
 	 */
 	public function applyClassificationOnUpdate(ObjectEntity $object, Schema $schema, array $previousData): ObjectEntity {
 		$archive  = ($schema->getArchive() ?? []);
-		$property = $this->classificationPropertyOf(schema: $schema);
+		$override = new ClassificationOverride();
+		$property = $override->propertyOf(archive: $archive, configuration: ($schema->getConfiguration() ?? []));
 		if (($archive['enabled'] ?? false) !== true || $property === null) {
 			return $object;
 		}
 
-		$override  = new ClassificationOverride();
 		$data      = ($object->getObject() ?? []);
 		$retention = ($object->getRetention() ?? []);
-		$effective = $this->effectiveClassification(archive: $archive, data: $data);
+		$effective = $override->effective(archive: $archive, data: $data, configuration: ($schema->getConfiguration() ?? []));
 		if ($override->requested(property: $property, data: $data) === $override->requested(property: $property, data: $previousData)) {
 			return $object;
 		}

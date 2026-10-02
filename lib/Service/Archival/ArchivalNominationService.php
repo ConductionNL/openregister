@@ -261,9 +261,9 @@ class ArchivalNominationService {
 		// The schema's category, unless this record names its own (DECISIONS
 		// row 48). The same resolver decides it at creation, so a record is
 		// created and nominated under one category.
-		$classification = $this->retentionService->effectiveClassification(
+		$classification = (new ClassificationOverride())->effective(
 			archive: $archive,
-			data: $object->getObject()
+			data: ($object->getObject() ?? [])
 		);
 
 		$appraisal = null;

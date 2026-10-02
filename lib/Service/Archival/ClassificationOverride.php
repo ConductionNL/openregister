@@ -30,8 +30,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Archival;
 
+use OCA\OpenRegister\Exception\ValidationException;
+
 /**
  * Resolves the schema's category and a record's override of it.
+ *
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
  */
 class ClassificationOverride {
 
@@ -114,6 +118,43 @@ class ClassificationOverride {
 
 		return $this->text(value: ($archive['classification'] ?? null));
 	}//end effective()
+
+	/**
+	 * Refuse an override that is not text or names no selectielijst row.
+	 *
+	 * A category nobody can resolve would leave the record with the schema's
+	 * defaults while it claims another category, so the save is refused and
+	 * the message names the value.
+	 *
+	 * @param string|null           $property The override property, or null when none is declared
+	 * @param array<string, mixed>  $data     The record's data as it will be stored
+	 * @param SelectielijstResolver $resolver Resolves a category to its row
+	 *
+	 * @return void
+	 *
+	 * @throws ValidationException When the override is not text or matches no selectielijst row
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function guard(?string $property, array $data, SelectielijstResolver $resolver): void {
+		$requested = $this->requested(property: $property, data: $data);
+		if ($requested === null) {
+			return;
+		}
+
+		if (is_string($requested) === false) {
+			throw new ValidationException(
+				message: 'The selectielijst category in "' . (string) $property . '" must be text.'
+			);
+		}
+
+		if ($resolver->entryFor(category: $requested) === null) {
+			throw new ValidationException(
+				message: 'The selectielijst category "' . $requested . '" in "' . (string) $property
+					. '" matches no selectielijst row.'
+			);
+		}
+	}//end guard()
 
 	/**
 	 * A non-empty trimmed string, or null.

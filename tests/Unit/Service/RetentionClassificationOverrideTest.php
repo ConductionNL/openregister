@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
+use OCA\OpenRegister\Service\Archival\ClassificationOverride;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
@@ -176,10 +177,10 @@ class RetentionClassificationOverrideTest extends TestCase {
 	public function testTheEffectiveCategoryIsTheOverrideOrTheSchemas(): void {
 		$archive = ['classification' => '1.1', 'classificationProperty' => 'selectielijstCategorie'];
 
-		$this->assertSame('2.3', $this->service->effectiveClassification(archive: $archive, data: ['selectielijstCategorie' => '2.3']));
-		$this->assertSame('1.1', $this->service->effectiveClassification(archive: $archive, data: []));
+		$this->assertSame('2.3', (new ClassificationOverride())->effective(archive: $archive, data: ['selectielijstCategorie' => '2.3']));
+		$this->assertSame('1.1', (new ClassificationOverride())->effective(archive: $archive, data: []));
 		// Without a declared property, a same-named field is plain data.
-		$this->assertSame('1.1', $this->service->effectiveClassification(archive: ['classification' => '1.1'], data: ['selectielijstCategorie' => '2.3']));
+		$this->assertSame('1.1', (new ClassificationOverride())->effective(archive: ['classification' => '1.1'], data: ['selectielijstCategorie' => '2.3']));
 	}
 
 	public function testAnInvalidCategoryIsRefused(): void {
@@ -219,7 +220,7 @@ class RetentionClassificationOverrideTest extends TestCase {
 			['x-openregister-archival' => ['category' => '1.1', 'categoryProperty' => 'selectielijstCategorie', 'retention' => 'P5Y']]
 		);
 
-		$this->assertSame('selectielijstCategorie', $this->service->classificationPropertyOf(schema: $schema));
+		$this->assertSame('selectielijstCategorie', (new ClassificationOverride())->propertyOf(archive: ($schema->getArchive() ?? []), configuration: $schema->getConfiguration()));
 
 		$this->expectException(ValidationException::class);
 		$this->service->guardClassificationOverride(schema: $schema, data: ['selectielijstCategorie' => '9.9']);
