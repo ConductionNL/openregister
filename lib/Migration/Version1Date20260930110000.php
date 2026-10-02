@@ -56,7 +56,7 @@ class Version1Date20260930110000 extends SimpleMigrationStep {
 	 * @param Closure $schemaClosure Returns the schema wrapper.
 	 * @param array<string, mixed> $options Migration options.
 	 *
-	 * @return ISchemaWrapper|null The changed schema, or null when nothing changed.
+	 * @return ISchemaWrapper|null The schema, also when nothing changed (a null drops the shared snapshot).
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 *
@@ -66,12 +66,12 @@ class Version1Date20260930110000 extends SimpleMigrationStep {
 		$schema = $schemaClosure();
 
 		if ($schema->hasTable(self::TABLE) === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(self::TABLE);
 		if ($table->hasColumn(self::COLUMN) === true) {
-			return null;
+			return $schema;
 		}
 
 		// TEXT, like every other JSON field on this table: the entity encodes
