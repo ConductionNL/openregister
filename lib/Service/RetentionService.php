@@ -46,8 +46,11 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Archival\Appraisal;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
+use OCA\OpenRegister\Service\Archival\ClassificationOverride;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
@@ -170,13 +173,20 @@ class RetentionService {
 			return $object;
 		}
 
-		$applied = $this->resolveArchivalDefaults(archiveConfig: $archiveConfig);
+		// The schema's category, unless this record names its own through the
+		// property the schema declares for that (DECISIONS row 48).
+		$classification = (new ClassificationOverride())->effective(
+			archive: $archiveConfig,
+			data: ($object->getObject() ?? [])
+		);
+
+		$applied = $this->resolveArchivalDefaults(archiveConfig: $archiveConfig, classification: $classification);
 		$retentionPeriod = $applied['bewaartermijn'];
 
 		// Build archival metadata.
 		$retention['archiefnominatie'] = $applied['archiefnominatie'];
 		$retention['archiefstatus'] = RecordState::ACTIVE;
-		$retention['classification'] = ($archiveConfig['classification'] ?? null);
+		$retention['classification'] = $classification;
 		$retention['bewaartermijn'] = $retentionPeriod;
 		$retention['selectielijstBron'] = $applied['selectielijstBron'];
 
@@ -213,13 +223,14 @@ class RetentionService {
 	 * schema's explicit `bewaartermijnOverride`, which wins over both because
 	 * it is a deliberate local decision rather than a fallback.
 	 *
-	 * @param array $archiveConfig The schema's archive block
+	 * @param array       $archiveConfig  The schema's archive block
+	 * @param string|null $classification The record's effective category
 	 *
 	 * @return array{archiefnominatie: string, bewaartermijn: string|null, selectielijstBron: string|null, provenance: array<string, string>}
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	private function resolveArchivalDefaults(array $archiveConfig): array {
+	private function resolveArchivalDefaults(array $archiveConfig, ?string $classification): array {
 		$applied = [
 			'archiefnominatie' => ($archiveConfig['defaultNominatie'] ?? 'nog_niet_bepaald'),
 			'bewaartermijn' => ($archiveConfig['defaultBewaartermijn'] ?? null),
@@ -227,7 +238,6 @@ class RetentionService {
 			'provenance' => [],
 		];
 
-		$classification = $archiveConfig['classification'] ?? null;
 		$entry = null;
 		if ($classification !== null) {
 			$entry = $this->listResolver->entryFor(category: $classification);
@@ -253,6 +263,84 @@ class RetentionService {
 
 
 
+
+	/**
+	 * Refuse a record whose category override names no selectielijst row.
+	 *
+	 * @param Schema               $schema The record's schema
+	 * @param array<string, mixed> $data   The record's data as it will be stored
+	 *
+	 * @return void
+	 *
+	 * @throws ValidationException When the override is not text or matches no selectielijst row
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function guardClassificationOverride(Schema $schema, array $data): void {
+		$override = new ClassificationOverride();
+		$override->guard(
+			property: $override->propertyOf(archive: ($schema->getArchive() ?? []), configuration: ($schema->getConfiguration() ?? [])),
+			data: $data,
+			resolver: $this->listResolver
+		);
+	}//end guardClassificationOverride()
+
+	/**
+	 * Follow a changed category override on an update.
+	 *
+	 * A record that is still active is re-derived from its new category. A
+	 * record already nominated at its terminal state keeps that decision:
+	 * changing its category is refused, because re-nominating it is the
+	 * explicit recompute's job, which records who asked and why.
+	 *
+	 * Only a change of the override itself counts: an edit that leaves it
+	 * alone never re-derives or refuses, even when the schema's own category
+	 * has moved since the record was created.
+	 *
+	 * @param ObjectEntity         $object       The record, with its updated data
+	 * @param Schema               $schema       Its schema
+	 * @param array<string, mixed> $previousData The record's data before this update
+	 *
+	 * @return ObjectEntity The record, re-derived when its category changed
+	 *
+	 * @throws ObjectStateWriteException When a nominated record's category changes
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function applyClassificationOnUpdate(ObjectEntity $object, Schema $schema, array $previousData): ObjectEntity {
+		$archive  = ($schema->getArchive() ?? []);
+		$override = new ClassificationOverride();
+		$property = $override->propertyOf(archive: $archive, configuration: ($schema->getConfiguration() ?? []));
+		if (($archive['enabled'] ?? false) !== true || $property === null) {
+			return $object;
+		}
+
+		$data      = ($object->getObject() ?? []);
+		$retention = ($object->getRetention() ?? []);
+		$effective = $override->effective(archive: $archive, data: $data, configuration: ($schema->getConfiguration() ?? []));
+		if ($override->requested(property: $property, data: $data) === $override->requested(property: $property, data: $previousData)) {
+			return $object;
+		}
+
+		$this->guardClassificationOverride(schema: $schema, data: $data);
+		if ($effective === ($retention['classification'] ?? null)) {
+			return $object;
+		}
+
+		$live = in_array(($retention['archiefstatus'] ?? RecordState::ACTIVE), RecordState::ACTIVE_ALIASES, true);
+		if ($live === false || isset($retention['nomination']) === true) {
+			throw new ObjectStateWriteException(
+				message: 'Cannot change the selectielijst category to "' . (string)$effective
+					. '": this record was already nominated under "' . (string)($retention['classification'] ?? '')
+					. '". Recompute its nomination instead.'
+			);
+		}
+
+		unset($retention['archiefnominatie'], $retention['archiefactiedatum'], $retention['selectielijstBron']);
+		$object->setRetention($retention);
+
+		return $this->applyArchivalMetadata(object: $object, schema: $schema);
+	}//end applyClassificationOnUpdate()
 
 	/**
 	 * Calculate archiefactiedatum based on the schema's afleidingswijze.
