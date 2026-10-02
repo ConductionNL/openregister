@@ -8,11 +8,13 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 	<div class="edit-schema">
 		<CnSchemaFormDialog
 			ref="schemaFormDialog"
-			:item="schemaStore.schemaItem"
+			:item="schemaStore.editorSchemaItem"
 			:dialogTitle="
-				schemaStore.schemaItem?.id
-					? t('openregister', 'Edit Schema')
-					: t('openregister', 'Add Schema')
+				schemaStore.draftMode
+					? t('openregister', 'Edit draft')
+					: schemaStore.schemaItem?.id
+						? t('openregister', 'Edit Schema')
+						: t('openregister', 'Add Schema')
 			"
 			:availableSchemas="computedAvailableSchemas"
 			:availableRegisters="computedAvailableRegisters"
@@ -29,14 +31,21 @@ import { navigationStore, registerStore, schemaStore } from '../../store/store.j
 			:cancelLabel="t('openregister', 'Cancel')"
 			:closeLabel="t('openregister', 'Close')"
 			:confirmLabel="
-				schemaStore.schemaItem?.id
-					? t('openregister', 'Save')
-					: t('openregister', 'Create')
+				schemaStore.draftMode
+					? t('openregister', 'Save draft')
+					: schemaStore.schemaItem?.id
+						? t('openregister', 'Save')
+						: t('openregister', 'Create')
 			"
 			:successText="
-				schemaStore.schemaItem?.id
-					? t('openregister', 'Schema successfully updated')
-					: t('openregister', 'Schema successfully created')
+				schemaStore.draftMode
+					? t(
+							'openregister',
+							'Draft saved. Records are still checked against the published schema.',
+						)
+					: schemaStore.schemaItem?.id
+						? t('openregister', 'Schema successfully updated')
+						: t('openregister', 'Schema successfully created')
 			"
 			:extendSchemaLabel="t('openregister', 'Extend Schema')"
 			:analyzePropertiesLabel="t('openregister', 'Analyze Properties')"
@@ -296,6 +305,12 @@ export default {
 		 * @spec exclude modal submit handler delegating to schemaStore.saveSchema
 		 */
 		async onConfirm(schemaData, acknowledgeBreaking = false) {
+			// Draft mode holds the edit beside the published schema: no version
+			// bump and no breaking-change question until it is published.
+			if (schemaStore.draftMode) {
+				await this.saveDraft(schemaData)
+				return
+			}
 			try {
 				const { response } = await schemaStore.saveSchema(schemaData, {
 					acknowledgeBreaking,
@@ -324,6 +339,30 @@ export default {
 				this.$refs.schemaFormDialog.setResult({
 					error:
 						error.message || 'An error occurred while saving the schema',
+				})
+			}
+		},
+
+		/**
+		 * Save the edit as the schema's draft.
+		 *
+		 * @param {object} schemaData - The schema payload from the editor.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 */
+		async saveDraft(schemaData) {
+			try {
+				await schemaStore.saveSchemaDraft({
+					...schemaData,
+					id: schemaStore.schemaItem?.id,
+				})
+				this.$refs.schemaFormDialog.setResult({ success: true })
+			} catch (error) {
+				this.$refs.schemaFormDialog.setResult({
+					error:
+						error?.response?.data?.error
+						|| error.message
+						|| 'An error occurred while saving the draft',
 				})
 			}
 		},
@@ -369,6 +408,7 @@ export default {
 		 * @spec exclude modal close UI handler
 		 */
 		closeModal() {
+			schemaStore.setDraftMode(false)
 			navigationStore.setModal(false)
 			navigationStore.setDialog(false)
 		},

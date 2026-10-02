@@ -34,6 +34,7 @@ export class Schema implements TSchema {
 	public oneOf?: string[]
 	public anyOf?: string[]
 	public stats?: TSchema['stats']
+	public draft: TSchema['draft']
 
 	/**
 	 * @param schema
@@ -72,6 +73,7 @@ export class Schema implements TSchema {
 		this.oneOf = schema.oneOf
 		this.anyOf = schema.anyOf
 		this.stats = schema.stats
+		this.draft = schema.draft || null
 	}
 
 	public validate(): ZodSafeParseResult<unknown> {
