@@ -133,6 +133,7 @@ class CalculationOnSaveListener implements IEventListener {
 	 *   extracting them would only scatter a strictly-sequential flow across helpers.
 	 *
 	 * @spec openspec/specs/computed-fields/spec.md
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
 	private function process(ObjectEntity $object, bool $isUpdate): void {
 		$schema = $this->loadSchema(object: $object);
@@ -152,8 +153,9 @@ class CalculationOnSaveListener implements IEventListener {
 		// cross-object references, and pre-resolved `@aggregate.<name>`
 		// aggregate references. Shared with the temporal re-evaluation sweep
 		// via CalculationPayloadBuilder so both paths evaluate against one
-		// payload shape. Resolution is RBAC + tenant scoped and never fails
-		// the save.
+		// payload shape. References are read as the system, bounded by the
+		// saving object's tenant (ReferenceTenantGuard), and never fail the
+		// save.
 		$data = $this->payloadBuilder->build(object: $object, schema: $schema);
 
 		// Build the sequence-consumption context ONLY on create. Passing it to
@@ -194,6 +196,30 @@ class CalculationOnSaveListener implements IEventListener {
 			if ($sequenceContext === null
 				&& $this->evaluator->expressionUsesSequence($spec['expression'] ?? null) === true
 			) {
+				continue;
+			}
+
+			// A calculation that reads a reference which had something to
+			// resolve and still came back empty (target missing, outside the
+			// tenant, read failed) would evaluate against nothing and write null
+			// over a good stored value. Keep the stored value and say why in
+			// the rule run log instead.
+			$unresolved = $this->payloadBuilder->unresolvedReferencesUsedBy(
+				payload: $data,
+				expression: ($spec['expression'] ?? null)
+			);
+			if ($unresolved !== []) {
+				$this->recordRun(
+					object: $object,
+					slug: $slug,
+					name: (string)$name,
+					trace: RuleTrace::errored(
+						message: sprintf(
+							'Reference %s could not be resolved; the stored value was kept.',
+							implode(', ', $unresolved)
+						)
+					)
+				);
 				continue;
 			}
 

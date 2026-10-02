@@ -10,11 +10,19 @@
  * calculations can read it via `{ "prop": "@ref.<name>.<field>" }` — exactly
  * mirroring `@self`.
  *
- * Resolution uses ObjectService READ paths (find / findAll) under the saver's
- * existing RBAC + multitenancy scope. Read paths do not dispatch
+ * Resolution uses ObjectService READ paths (find / findAll) WITHOUT the
+ * saver's RBAC and multitenancy scope: a calculation must give the same
+ * answer whoever saves, and a portal write made by an anonymous resident
+ * would otherwise see no referenced rows at all. The organisation boundary is
+ * kept by ReferenceTenantGuard instead: a referenced object outside the saving
+ * object's tenant scope resolves empty. Read paths do not dispatch
  * Creating/Updating events, so resolving a reference never recursively
  * re-triggers the resolved object's own calculations. Any failure injects
  * null and is logged; the save is never failed.
+ *
+ * A reference that HAD something to resolve (a filled foreign key, or a lookup
+ * that matched rows) and still came back empty is reported as unresolved, so
+ * the save-time listener can keep a stored value instead of writing null.
  *
  * The CalculationEvaluator stays pure: all I/O lives here.
  *
@@ -55,15 +63,18 @@ class ReferenceResolver {
 	/**
 	 * Wire the object service used to read referenced objects and the logger.
 	 *
-	 * @param ObjectService $objectService Read-side object service (RBAC + tenant scoped).
+	 * @param ObjectService $objectService Read-side object service.
+	 * @param ReferenceTenantGuard $tenantGuard Keeps references inside the saving object's tenant.
 	 * @param LoggerInterface $logger PSR logger for unresolved-reference warnings.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-1
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
+		private readonly ReferenceTenantGuard $tenantGuard,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -78,25 +89,57 @@ class ReferenceResolver {
 	 * @param array<string, mixed> $payload Object data WITH `@self` already injected.
 	 * @param array<string, mixed> $references The `x-openregister-references` map.
 	 * @param Register|string|int|null $register Saving object's register context.
+	 * @param string|null $organisation Saving object's organisation UUID (the tenant boundary).
 	 *
 	 * @return array<string, mixed> Map of reference name to resolved data (or null).
 	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 *
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
-	public function resolveAll(array $payload, array $references, mixed $register = null): array {
+	public function resolveAll(array $payload, array $references, mixed $register, ?string $organisation): array {
+		return $this->resolveAllWithOutcome(
+			payload: $payload,
+			references: $references,
+			register: $register,
+			organisation: $organisation
+		)['refs'];
+	}//end resolveAll()
+
+	/**
+	 * Build the `@ref` map and name the references that could not be resolved.
+	 *
+	 * `unresolved` lists every reference that had something to resolve (a
+	 * filled foreign key, or a lookup that matched rows) and still resolved
+	 * empty: the target is missing, outside the saving object's tenant, or the
+	 * read failed. An empty foreign key, or a lookup that matched nothing, is a
+	 * real answer (null) and is not listed.
+	 *
+	 * @param array<string, mixed> $payload Object data WITH `@self` already injected.
+	 * @param array<string, mixed> $references The `x-openregister-references` map.
+	 * @param Register|string|int|null $register Saving object's register context.
+	 * @param string|null $organisation Saving object's organisation UUID (the tenant boundary).
+	 *
+	 * @return array{refs: array<string, mixed>, unresolved: list<string>} The map and the unresolved names.
+	 *
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
+	 */
+	public function resolveAllWithOutcome(array $payload, array $references, mixed $register, ?string $organisation): array {
 		$refs = [];
+		$unresolved = [];
 		foreach ($references as $name => $spec) {
 			if ((string)$name === '' || is_array($spec) === false) {
 				continue;
 			}
 
-			$refs[$name] = $this->resolveOne(payload: $payload, spec: $spec, register: $register);
+			$outcome = $this->resolveOne(payload: $payload, spec: $spec, register: $register, organisation: $organisation);
+			$refs[$name] = $outcome['data'];
+			if ($outcome['unresolved'] === true) {
+				$unresolved[] = (string)$name;
+			}
 		}
 
-		return $refs;
-	}//end resolveAll()
+		return ['refs' => $refs, 'unresolved' => $unresolved];
+	}//end resolveAllWithOutcome()
 
 	/**
 	 * Resolve a single reference spec to a data array, or null.
@@ -104,53 +147,56 @@ class ReferenceResolver {
 	 * @param array<string, mixed> $payload Object data with `@self` injected.
 	 * @param array<string, mixed> $spec Single reference declaration.
 	 * @param Register|string|int|null $register Saving object's register context.
+	 * @param string|null $organisation Saving object's organisation UUID.
 	 *
-	 * @return array<string, mixed>|null Resolved object data, or null.
+	 * @return array{data: array<string, mixed>|null, unresolved: bool} Resolved data, and whether it failed to resolve.
 	 *
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
 	 */
-	private function resolveOne(array $payload, array $spec, mixed $register): ?array {
+	private function resolveOne(array $payload, array $spec, mixed $register, ?string $organisation): array {
 		$schema = (string)($spec['schema'] ?? '');
 		$mode = (string)($spec['mode'] ?? '');
 		if ($schema === '' || ($mode !== 'relatedObject' && $mode !== 'lookup')) {
-			return null;
+			return ['data' => null, 'unresolved' => false];
 		}
 
 		// Allow the reference to override the register; default to the saving
 		// object's register so the lookup stays within the same dataset.
 		$refRegister = ($spec['register'] ?? $register);
-		$entity = null;
+		$outcome = ['entity' => null, 'attempted' => false];
 
 		try {
 			if ($mode === 'relatedObject') {
-				$entity = $this->resolveRelatedObject(
+				$outcome = $this->resolveRelatedObject(
 					payload: $payload,
 					field: (string)($spec['field'] ?? ''),
 					schema: $schema,
-					register: $refRegister
+					register: $refRegister,
+					organisation: $organisation
 				);
 			}
 
 			if ($mode === 'lookup') {
-				$entity = $this->resolveLookup(
+				$outcome = $this->resolveLookup(
 					payload: $payload,
 					spec: $spec,
 					schema: $schema,
-					register: $refRegister
+					register: $refRegister,
+					organisation: $organisation
 				);
 			}
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				sprintf('Reference resolution failed for schema "%s": %s', $schema, $e->getMessage())
 			);
-			return null;
+			return ['data' => null, 'unresolved' => true];
 		}//end try
 
-		if ($entity === null) {
-			return null;
+		if ($outcome['entity'] === null) {
+			return ['data' => null, 'unresolved' => $outcome['attempted']];
 		}
 
-		return $this->entityToPayload(entity: $entity);
+		return ['data' => $this->entityToPayload(entity: $outcome['entity']), 'unresolved' => false];
 	}//end resolveOne()
 
 	/**
@@ -160,34 +206,50 @@ class ReferenceResolver {
 	 * @param string $field Local field holding the referenced uuid/id.
 	 * @param string $schema Target schema reference.
 	 * @param Register|string|int|null $register Register context.
+	 * @param string|null $organisation Saving object's organisation UUID.
 	 *
-	 * @return ObjectEntity|null The referenced object, or null.
+	 * @return array{entity: ObjectEntity|null, attempted: bool} The admitted object, and whether a key was set.
 	 *
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
-	private function resolveRelatedObject(array $payload, string $field, string $schema, mixed $register): ?ObjectEntity {
+	private function resolveRelatedObject(
+		array $payload,
+		string $field,
+		string $schema,
+		mixed $register,
+		?string $organisation
+	): array {
+		$none = ['entity' => null, 'attempted' => false];
 		if ($field === '') {
-			return null;
+			return $none;
 		}
 
 		$id = ($payload[$field] ?? null);
 		if (is_string($id) === false && is_int($id) === false) {
-			return null;
+			return $none;
 		}
 
 		if ((string)$id === '') {
-			return null;
+			return $none;
 		}
 
-		// RBAC + multitenancy stay at their default `true` — the lookup runs
-		// under the saving user's scope and can never leak cross-tenant data.
-		return $this->objectService->find(
+		// Read as the system, not as the saver: an anonymous portal write and
+		// an administrator's write must compute the same value. The tenant
+		// boundary is enforced by the guard below instead of by the session.
+		$entity = $this->objectService->find(
 			id: $id,
 			register: $register,
 			schema: $schema,
-			_rbac: true,
-			_multitenancy: true
+			_rbac: false,
+			_multitenancy: false
 		);
+
+		if ($entity === null || $this->tenantGuard->admits(savingOrganisation: $organisation, referenced: $entity) === false) {
+			return ['entity' => null, 'attempted' => true];
+		}
+
+		return ['entity' => $entity, 'attempted' => true];
 	}//end resolveRelatedObject()
 
 	/**
@@ -202,18 +264,20 @@ class ReferenceResolver {
 	 * @param array<string, mixed> $spec Reference declaration.
 	 * @param string $schema Target schema reference.
 	 * @param Register|string|int|null $register Register context.
+	 * @param string|null $organisation Saving object's organisation UUID.
 	 *
-	 * @return ObjectEntity|null The most-relevant matching object, or null.
+	 * @return array{entity: ObjectEntity|null, attempted: bool} The most-relevant admitted row, and whether rows matched.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
-	private function resolveLookup(array $payload, array $spec, string $schema, mixed $register): ?ObjectEntity {
+	private function resolveLookup(array $payload, array $spec, string $schema, mixed $register, ?string $organisation): array {
 		$criteria = ($spec['filters'] ?? []);
 		if (is_array($criteria) === false) {
-			return null;
+			return ['entity' => null, 'attempted' => false];
 		}
 
 		$filters = [
@@ -248,17 +312,23 @@ class ReferenceResolver {
 			$config['sort'] = $sort;
 		}
 
-		$results = $this->objectService->findAll($config, _rbac: true, _multitenancy: true);
+		// Read as the system (see resolveRelatedObject()); rows outside the
+		// saving object's tenant are dropped by the guard, keeping the sort
+		// order so the most-relevant ADMITTED row wins.
+		$results = $this->objectService->findAll($config, _rbac: false, _multitenancy: false);
 		if (count($results) === 0) {
-			return null;
+			return ['entity' => null, 'attempted' => false];
 		}
 
-		$first = $results[array_key_first($results)];
-		if ($first instanceof ObjectEntity) {
-			return $first;
+		foreach ($results as $row) {
+			if ($row instanceof ObjectEntity
+				&& $this->tenantGuard->admits(savingOrganisation: $organisation, referenced: $row) === true
+			) {
+				return ['entity' => $row, 'attempted' => true];
+			}
 		}
 
-		return null;
+		return ['entity' => null, 'attempted' => true];
 	}//end resolveLookup()
 
 	/**
