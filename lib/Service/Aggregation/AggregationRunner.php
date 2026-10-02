@@ -2388,6 +2388,7 @@ class AggregationRunner {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList)  rowRbac threads the bypassRbac decision down to the SQL.
 	 * @SuppressWarnings(PHPMD.ElseExpression)
 	 *   The platform-branch is genuinely binary (postgres vs non-postgres
 	 *   for both the soft-delete predicate and the aggregate-cast block,
