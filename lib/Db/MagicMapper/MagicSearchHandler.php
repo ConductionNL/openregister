@@ -908,7 +908,12 @@ class MagicSearchHandler {
 			$orgCondition = $this->buildOrganizationConditionSql(
 				schema: $schema,
 				registerId: ($registerId ?? $this->registerIdFromQuery(query: $query)),
-				connection: $connection
+				connection: $connection,
+				withOrgless: $this->organisationlessRowsAdmitted(
+					schema: $schema,
+					_rbac: $this->flagFromQuery(value: $rbac),
+					multitenancyExplicit: $multitenancyExplicit
+				)
 			);
 			if ($orgCondition !== null) {
 				$conditions[] = $orgCondition;
@@ -1046,6 +1051,50 @@ class MagicSearchHandler {
 	}//end organisationBoundaryWaivedByRbac()
 
 	/**
+	 * Whether a default read (no `_multi` asked for) widens the organisation
+	 * boundary by the rows with no organisation, because the caller's grant
+	 * comes from the register cascade.
+	 *
+	 * The aggregation fast path renders the boundary in its own SQL and must
+	 * agree with the list about which rows exist, so it asks this with the
+	 * list's defaults (RBAC on, not explicit).
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when the list's organisation filter also admits org-less rows.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
+	 */
+	public function organisationlessRowsAdmittedByRbac(Schema $schema): bool {
+		return $this->organisationlessRowsAdmitted(schema: $schema, _rbac: true, multitenancyExplicit: false);
+	}//end organisationlessRowsAdmittedByRbac()
+
+	/**
+	 * Whether the organisation filter, where it applies, also admits the rows
+	 * with no organisation.
+	 *
+	 * True only for a caller the REGISTER CASCADE grants on a schema with no
+	 * authorization block of its own. A schema's own block keeps deciding
+	 * through {@see multitenancyApplies()}, unchanged, and an explicit `_multi`
+	 * keeps the strict filter, as it does for a schema's own rules.
+	 *
+	 * @param Schema $schema               The schema being read.
+	 * @param bool   $_rbac                Whether RBAC filtering is on.
+	 * @param bool   $multitenancyExplicit Whether the caller explicitly asked for multitenancy.
+	 *
+	 * @return bool True when org-less rows join the caller's organisation scope.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flags are the request posture, mirrored.
+	 */
+	private function organisationlessRowsAdmitted(Schema $schema, bool $_rbac, bool $multitenancyExplicit): bool {
+		if ($_rbac === false || $multitenancyExplicit === true) {
+			return false;
+		}
+
+		return $this->rbacHandler->admitsOrganisationlessRowsThroughCascade(schema: $schema, action: 'read');
+	}//end organisationlessRowsAdmitted()
+
+	/**
 	 * Render the organisation boundary as raw SQL, for the string-built paths.
 	 *
 	 * The DECISION is {@see MagicOrganizationHandler::resolveOrganizationScope()},
@@ -1063,8 +1112,11 @@ class MagicSearchHandler {
 	 * @param Schema           $schema     The schema being read.
 	 * @param int|null         $registerId The register whose table is being read, for shared master data.
 	 * @param IDBConnection    $connection The connection, used to quote the organisation uuids.
+	 * @param bool             $withOrgless Whether a register-cascade grant also admits org-less rows.
 	 *
 	 * @return string|null The SQL condition, or null when every row is in scope.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) admitOrganisationless() is a pure transform of the decided scope.
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
 	 */
@@ -1072,12 +1124,16 @@ class MagicSearchHandler {
 		Schema $schema,
 		?int $registerId,
 		IDBConnection $connection,
+		bool $withOrgless = false,
 	): ?string {
 		$scope = $this->organizationHandler->resolveOrganizationScope(
 			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
 			registerId: $registerId,
 			schemaId: $schema->getId()
 		);
+		if ($withOrgless === true) {
+			$scope = MagicOrganizationHandler::admitOrganisationless(scope: $scope);
+		}
 
 		$column = '_organisation';
 
@@ -2168,7 +2224,12 @@ class MagicSearchHandler {
 				qb: $qb,
 				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
 				registerId: $registerId,
-				schemaId: $schema->getId()
+				schemaId: $schema->getId(),
+				withOrgless: $this->organisationlessRowsAdmitted(
+					schema: $schema,
+					_rbac: $_rbac,
+					multitenancyExplicit: $multitenancyExplicit
+				)
 			);
 		}
 

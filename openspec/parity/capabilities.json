@@ -3822,9 +3822,9 @@
    "source": "own-code-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Service/WebhookService.php:1022 applies a Mapping via applyMappingTransformation :1090 (lib/Db/Webhook.php:237 mapping id); src/modals/webhook/EditWebhook.vue has no mapping field (only responseMapping :507), so it is set over PUT /api/webhooks/{id} (routes.php:1918)",
+    "evidence": "The webhook dialog (src/modals/webhook/EditWebhook.vue) picks a payload mapping (clearable) and previews the payload through POST api/webhooks/preview, which calls the delivery's own WebhookService::buildPayload (tests/Unit/Controller/WebhookMappingPreviewTest.php). Change webhook-payload-mapping-picker archived 2026-09-30.",
     "change": "webhook-payload-mapping-picker"
    },
    "reachedOn": "API only: PUT /api/webhooks/{id}",

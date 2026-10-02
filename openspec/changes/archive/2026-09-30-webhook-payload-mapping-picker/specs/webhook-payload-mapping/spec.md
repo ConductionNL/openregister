@@ -11,4 +11,4 @@ The webhook dialog SHALL let an administrator choose the payload mapping and pre
 - **GIVEN** a mapping `to-zgw-notification` and a webhook on object creation
 - **WHEN** the administrator picks the mapping in the webhook dialog and presses preview
 - **THEN** the preview shows the mapped payload, and the next delivery sends the same shape
-- @e2e exclude {specified only; task 1 adds the test}
+- @e2e exclude {preview equals delivery asserted over the real services in tests/Unit/Controller/WebhookMappingPreviewTest.php; the dialog needs a live instance}
