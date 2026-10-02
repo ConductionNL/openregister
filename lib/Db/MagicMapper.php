@@ -7287,6 +7287,59 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end findAllInRegisterSchemaTable()
 
 	/**
+	 * The row-level access predicate for a raw query over one magic table.
+	 *
+	 * For a caller that writes its own SQL against the table (the aggregation
+	 * fast path) and must count the rows a list read would return, no more.
+	 * The predicate is {@see MagicRbacHandler::buildRbacRowPredicateSql()}'s, so
+	 * the list and the raw query cannot drift apart. Columns are unqualified:
+	 * the query must read the magic table without an alias.
+	 *
+	 * @param Schema $schema The schema of the table being read.
+	 * @param string $action The action the rows are filtered for (default: 'read').
+	 *
+	 * @return string|null Null when no row restriction applies (an admin); otherwise
+	 *                     a predicate safe to AND into a WHERE, `1 = 0` for deny-all.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function rbacRowPredicateSql(Schema $schema, string $action = 'read'): ?string {
+		return $this->rbacHandler->buildRbacRowPredicateSql(schema: $schema, action: $action);
+	}//end rbacRowPredicateSql()
+
+	/**
+	 * Whether the current caller qualifies for at least one rule of an action.
+	 *
+	 * @param Schema $schema The schema whose rules to consult.
+	 * @param string $action The action (default: 'read').
+	 *
+	 * @return bool True when a rule for the action admits the caller.
+	 *
+	 * @see MagicRbacHandler::callerQualifiesForAction()
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function callerQualifiesForAction(Schema $schema, string $action = 'read'): bool {
+		return $this->rbacHandler->callerQualifiesForAction(schema: $schema, action: $action);
+	}//end callerQualifiesForAction()
+
+	/**
+	 * Whether a default list read waives the organisation boundary for this
+	 * caller because RBAC governs the rows instead.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when the list would not apply the organisation filter.
+	 *
+	 * @see MagicSearchHandler::organisationBoundaryWaivedByRbac()
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function organisationBoundaryWaivedByRbac(Schema $schema): bool {
+		return $this->searchHandler->organisationBoundaryWaivedByRbac(schema: $schema);
+	}//end organisationBoundaryWaivedByRbac()
+
+	/**
 	 * Insert ObjectEntity into register+schema table.
 	 *
 	 * @param ObjectEntity $entity The object entity to insert.
