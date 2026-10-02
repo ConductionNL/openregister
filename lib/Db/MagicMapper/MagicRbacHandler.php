@@ -1619,6 +1619,39 @@ class MagicRbacHandler {
 	}//end buildRbacPredicateForAlias()
 
 	/**
+	 * The access predicate for a raw query over one magic table, unaliased.
+	 *
+	 * The single-table sibling of {@see buildRbacPredicateForAlias()}, for a
+	 * caller that writes its own `SELECT ... FROM <magic table> WHERE ...`
+	 * (the aggregation fast path) and must count exactly the rows a list read
+	 * returns. Delegates to {@see buildRbacConditionsSql()} like its sibling,
+	 * so there is one evaluator of the rule grammar, not two.
+	 *
+	 * @param Schema $schema The schema of the table being read.
+	 * @param string $action The action the rows are filtered for (default: 'read').
+	 *
+	 * @return string|null Null when no row restriction applies (an admin); otherwise
+	 *                     a non-empty predicate safe to AND into a WHERE, `1 = 0`
+	 *                     for deny-all (never an empty string, which would admit
+	 *                     everything).
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function buildRbacRowPredicateSql(Schema $schema, string $action = 'read'): ?string {
+		$result = $this->buildRbacConditionsSql(schema: $schema, action: $action);
+		if (($result['bypass'] ?? false) === true) {
+			return null;
+		}
+
+		$conditions = ($result['conditions'] ?? []);
+		if ($conditions === []) {
+			return '1 = 0';
+		}
+
+		return '(' . implode(' OR ', $conditions) . ')';
+	}//end buildRbacRowPredicateSql()
+
+	/**
 	 * Build RBAC conditions as raw SQL for use in UNION queries.
 	 *
 	 * This is the raw SQL equivalent of applyRbacFilters() for use in UNION-based
@@ -1965,6 +1998,15 @@ class MagicRbacHandler {
 			// Anonymous users always qualify; authenticated users only when
 			// public inheritance is enabled (inheritFromPublic).
 			$userQualifies = $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic);
+		} elseif ($group === 'authenticated' && $userId !== null) {
+			// 🔴 The QueryBuilder emitter (processConditionalRule) and
+			// hasPermission() both admit any signed-in user here, and the
+			// comment in hasPermission() says this method did too. It did not:
+			// `authenticated` is a pseudo-group nobody is a member of, so a
+			// `{group: authenticated, match: {...}}` rule fell through to deny
+			// on every raw-SQL path (the multi-schema UNION, related-row
+			// subqueries, the aggregation fast path).
+			$userQualifies = true;
 		} elseif ($group !== null && in_array($group, $userGroups, true) === true) {
 			$userQualifies = true;
 		}
@@ -2438,6 +2480,75 @@ class MagicRbacHandler {
 	public function isAdmin(): bool {
 		return in_array('admin', $this->getCurrentUserGroups(), true);
 	}//end isAdmin()
+
+	/**
+	 * Whether the current caller qualifies for at least one rule of an action.
+	 *
+	 * A schema-level answer to "can this caller see ANY row through this
+	 * action", for a surface that then narrows to the rows themselves with
+	 * {@see buildRbacConditionsSql()}. It differs from a schema-level
+	 * hasPermission() in exactly one place: a conditional rule (`{group,
+	 * match}`) the caller's group qualifies for counts, because its `match`
+	 * is a ROW condition the predicate applies afterwards. A schema-level
+	 * hasPermission() with no object cannot evaluate that match and refuses,
+	 * which shut a reader whose access is "the rows about me" out of the
+	 * aggregate over exactly those rows.
+	 *
+	 * Mirrors buildRbacConditionsSql(): admin qualifies, an unresolvable
+	 * authorization does not (fail-closed), an empty block is open, and the
+	 * rule dispatch is the same processAuthorizationRuleSql() the predicate
+	 * uses, so the two cannot disagree about who a rule admits.
+	 *
+	 * @param Schema $schema The schema whose rules to consult.
+	 * @param string $action The action whose rules to consult (default: 'read').
+	 *
+	 * @return bool True when at least one rule for the action admits the caller.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function callerQualifiesForAction(Schema $schema, string $action = 'read'): bool {
+		$user = $this->userSession->getUser();
+		$userId = $user?->getUID();
+
+		$userGroups = [];
+		if ($user !== null) {
+			$userGroups = $this->groupManager->getUserGroupIds($user);
+		}
+
+		if (in_array('admin', $userGroups, true) === true) {
+			return true;
+		}
+
+		try {
+			$authorization = $this->resolveSchemaAuthorization(schema: $schema);
+		} catch (AuthorizationUnresolvableException $e) {
+			return false;
+		}
+
+		if (empty($authorization) === true) {
+			return true;
+		}
+
+		$rules = ($authorization[$action] ?? []);
+		if (is_array($rules) === false) {
+			return false;
+		}
+
+		$inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
+		foreach ($rules as $rule) {
+			$verdict = $this->processAuthorizationRuleSql(
+				rule: $rule,
+				userGroups: $userGroups,
+				userId: $userId,
+				inheritFromPublic: $inheritFromPublic
+			);
+			if ($verdict !== false) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end callerQualifiesForAction()
 
 	/**
 	 * Check if schema has conditional RBAC rules that match on non-_organisation fields

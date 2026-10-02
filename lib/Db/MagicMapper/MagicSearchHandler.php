@@ -1014,6 +1014,38 @@ class MagicSearchHandler {
 	}//end multitenancyApplies()
 
 	/**
+	 * Whether a default read (no `_multi` asked for) waives the organisation
+	 * boundary for this caller because RBAC governs the rows instead.
+	 *
+	 * The same decision {@see multitenancyApplies()} takes for a list, with the
+	 * list's defaults (RBAC on, multitenancy on, not explicit), for a caller that
+	 * renders the boundary in its own SQL (the aggregation fast path) and must
+	 * agree with the list about which rows exist. A raw query that applied the
+	 * boundary where the list waives it counted 0 of a teacher's 1189 readable
+	 * rows (learniq attendance-record, measured 2026-10-02).
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when the list would NOT apply the organisation filter.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function organisationBoundaryWaivedByRbac(Schema $schema): bool {
+		$resolvedMultitenancy = $this->resolveMultitenancyFlag(
+			_multitenancy: true,
+			multitenancyExplicit: false,
+			schema: $schema
+		);
+
+		return $this->multitenancyApplies(
+			schema: $schema,
+			_rbac: true,
+			_multitenancy: $resolvedMultitenancy,
+			multitenancyExplicit: false
+		) === false;
+	}//end organisationBoundaryWaivedByRbac()
+
+	/**
 	 * Render the organisation boundary as raw SQL, for the string-built paths.
 	 *
 	 * The DECISION is {@see MagicOrganizationHandler::resolveOrganizationScope()},
