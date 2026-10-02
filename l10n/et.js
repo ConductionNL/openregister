@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Piiranguid ei õnnestunud salvestada",
         "Only the agent's owner can change its limits.": "Ainult agendi omanik saab selle piiranguid muuta.",
         "This agent has a grant per app. Change it through the agents API.": "Sellel agendil on rakendusepõhine luba. Muuda seda agentide API kaudu.",
-        "Edit limits": "Muuda piiranguid"
+        "Edit limits": "Muuda piiranguid",
+        "Edit {field}": "Muuda välja {field}",
+        "The value could not be saved": "Väärtust ei õnnestunud salvestada"
     },
     "nplurals=2; plural=(n != 1);"
 )

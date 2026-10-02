@@ -3342,7 +3342,9 @@
         "This link is closed with a password": "Эта ссылка защищена паролем",
         "This link is open until {date}.": "Эта ссылка открыта до {date}.",
         "This record has no visible fields.": "У этой записи нет видимых полей.",
-        "Upload": "Загрузить"
+        "Upload": "Загрузить",
+        "Edit {field}": "Редактировать {field}",
+        "The value could not be saved": "Не удалось сохранить значение"
     },
     "pluralForm": "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);",
     "plurals": {

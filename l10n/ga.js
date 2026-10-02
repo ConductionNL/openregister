@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Níorbh fhéidir na teorainneacha a shábháil",
         "Only the agent's owner can change its limits.": "Ní féidir ach le húinéir an ghníomhaire a theorainneacha a athrú.",
         "This agent has a grant per app. Change it through the agents API.": "Tá deonú in aghaidh an aip ag an ngníomhaire seo. Athraigh é trí API na ngníomhairí.",
-        "Edit limits": "Cuir teorainneacha in eagar"
+        "Edit limits": "Cuir teorainneacha in eagar",
+        "Edit {field}": "Cuir {field} in eagar",
+        "The value could not be saved": "Níorbh fhéidir an luach a shábháil"
     },
     "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);"
 )

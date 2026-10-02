@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Omejitev ni bilo mogoče shraniti",
         "Only the agent's owner can change its limits.": "Omejitve agenta lahko spremeni samo njegov lastnik.",
         "This agent has a grant per app. Change it through the agents API.": "Ta agent ima dovoljenje za vsako aplikacijo. Spremenite ga prek API-ja agentov.",
-        "Edit limits": "Uredi omejitve"
+        "Edit limits": "Uredi omejitve",
+        "Edit {field}": "Uredi {field}",
+        "The value could not be saved": "Vrednosti ni bilo mogoče shraniti"
     },
     "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);"
 )

@@ -3321,7 +3321,9 @@
         "This link is closed with a password": "Questo link è protetto da una password",
         "This link is open until {date}.": "Questo link è aperto fino al {date}.",
         "This record has no visible fields.": "Questo record non ha campi visibili.",
-        "Upload": "Carica"
+        "Upload": "Carica",
+        "Edit {field}": "Modifica {field}",
+        "The value could not be saved": "Impossibile salvare il valore"
     },
     "pluralForm": "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;",
     "plurals": {

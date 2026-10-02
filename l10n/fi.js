@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Rajojen tallennus epäonnistui",
         "Only the agent's owner can change its limits.": "Vain agentin omistaja voi muuttaa sen rajoja.",
         "This agent has a grant per app. Change it through the agents API.": "Tällä agentilla on sovelluskohtainen oikeus. Muuta sitä agenttien API:n kautta.",
-        "Edit limits": "Muokkaa rajoja"
+        "Edit limits": "Muokkaa rajoja",
+        "Edit {field}": "Muokkaa kenttää {field}",
+        "The value could not be saved": "Arvoa ei voitu tallentaa"
     },
     "nplurals=2; plural=(n != 1);"
 )

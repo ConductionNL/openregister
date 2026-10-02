@@ -3300,7 +3300,9 @@
         "This link is closed with a password": "Dette link er beskyttet med en adgangskode",
         "This link is open until {date}.": "Dette link er åbent indtil {date}.",
         "This record has no visible fields.": "Denne post har ingen synlige felter.",
-        "Upload": "Overfør"
+        "Upload": "Overfør",
+        "Edit {field}": "Rediger {field}",
+        "The value could not be saved": "Værdien kunne ikke gemmes"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

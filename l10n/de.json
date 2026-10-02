@@ -3300,7 +3300,9 @@
         "This link is closed with a password": "Dieser Link ist mit einem Passwort geschützt",
         "This link is open until {date}.": "Dieser Link ist bis {date} geöffnet.",
         "This record has no visible fields.": "Dieser Datensatz hat keine sichtbaren Felder.",
-        "Upload": "Hochladen"
+        "Upload": "Hochladen",
+        "Edit {field}": "{field} bearbeiten",
+        "The value could not be saved": "Der Wert konnte nicht gespeichert werden"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

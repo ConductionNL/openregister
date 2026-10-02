@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Impossible d'enregistrer les limites",
         "Only the agent's owner can change its limits.": "Seul le propriétaire de l'agent peut modifier ses limites.",
         "This agent has a grant per app. Change it through the agents API.": "Cet agent a une autorisation par application. Modifiez-la via l'API des agents.",
-        "Edit limits": "Modifier les limites"
+        "Edit limits": "Modifier les limites",
+        "Edit {field}": "Modifier {field}",
+        "The value could not be saved": "La valeur n'a pas pu être enregistrée"
     },
     "nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )

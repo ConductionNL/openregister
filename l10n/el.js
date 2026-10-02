@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Δεν ήταν δυνατή η αποθήκευση των ορίων",
         "Only the agent's owner can change its limits.": "Μόνο ο κάτοχος του πράκτορα μπορεί να αλλάξει τα όριά του.",
         "This agent has a grant per app. Change it through the agents API.": "Αυτός ο πράκτορας έχει άδεια ανά εφαρμογή. Αλλάξτε την μέσω του API πρακτόρων.",
-        "Edit limits": "Επεξεργασία ορίων"
+        "Edit limits": "Επεξεργασία ορίων",
+        "Edit {field}": "Επεξεργασία {field}",
+        "The value could not be saved": "Δεν ήταν δυνατή η αποθήκευση της τιμής"
     },
     "nplurals=2; plural=(n != 1);"
 )

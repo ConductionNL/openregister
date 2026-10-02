@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "No s'han pogut desar els límits",
         "Only the agent's owner can change its limits.": "Només el propietari de l'agent pot canviar-ne els límits.",
         "This agent has a grant per app. Change it through the agents API.": "Aquest agent té una concessió per aplicació. Canvieu-la amb l'API d'agents.",
-        "Edit limits": "Edita els límits"
+        "Edit limits": "Edita els límits",
+        "Edit {field}": "Edita {field}",
+        "The value could not be saved": "No s'ha pogut desar el valor"
     },
     "nplurals=2; plural=(n != 1);"
 )

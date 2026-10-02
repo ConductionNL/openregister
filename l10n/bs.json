@@ -3321,7 +3321,9 @@
         "This link is closed with a password": "Ovaj link je zaštićen lozinkom",
         "This link is open until {date}.": "Ovaj link je otvoren do {date}.",
         "This record has no visible fields.": "Ovaj zapis nema vidljivih polja.",
-        "Upload": "Otpremi"
+        "Upload": "Otpremi",
+        "Edit {field}": "Uredi {field}",
+        "The value could not be saved": "Vrijednost nije moguće sačuvati"
     },
     "pluralForm": "nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;",
     "plurals": {

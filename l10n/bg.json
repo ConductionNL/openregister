@@ -3300,7 +3300,9 @@
         "This link is closed with a password": "Тази връзка е защитена с парола",
         "This link is open until {date}.": "Тази връзка е отворена до {date}.",
         "This record has no visible fields.": "Този запис няма видими полета.",
-        "Upload": "Качване"
+        "Upload": "Качване",
+        "Edit {field}": "Редактиране на {field}",
+        "The value could not be saved": "Стойността не можа да бъде запазена"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

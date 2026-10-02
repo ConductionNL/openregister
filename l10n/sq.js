@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Kufijtë nuk u ruajtën",
         "Only the agent's owner can change its limits.": "Vetëm pronari i agjentit mund t’i ndryshojë kufijtë.",
         "This agent has a grant per app. Change it through the agents API.": "Ky agjent ka një leje për çdo aplikacion. Ndryshojeni përmes API-së së agjentëve.",
-        "Edit limits": "Ndrysho kufijtë"
+        "Edit limits": "Ndrysho kufijtë",
+        "Edit {field}": "Ndrysho {field}",
+        "The value could not be saved": "Vlera nuk mund të ruhej"
     },
     "nplurals=2; plural=(n != 1);"
 )

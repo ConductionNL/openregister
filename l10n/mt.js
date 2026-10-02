@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Il-limiti ma setgħux jiġu ssejvjati",
         "Only the agent's owner can change its limits.": "Is-sid tal-aġent biss jista’ jibdel il-limiti tiegħu.",
         "This agent has a grant per app. Change it through the agents API.": "Dan l-aġent għandu għotja għal kull app. Ibdilha permezz tal-API tal-aġenti.",
-        "Edit limits": "Editja l-limiti"
+        "Edit limits": "Editja l-limiti",
+        "Edit {field}": "Editja {field}",
+        "The value could not be saved": "Il-valur ma setax jiġi ssejvjat"
     },
     "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);"
 )

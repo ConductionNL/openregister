@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Sınırlar kaydedilemedi",
         "Only the agent's owner can change its limits.": "Ajanın sınırlarını yalnızca sahibi değiştirebilir.",
         "This agent has a grant per app. Change it through the agents API.": "Bu ajanın uygulama başına bir yetkisi var. Ajan API’si üzerinden değiştirin.",
-        "Edit limits": "Sınırları düzenle"
+        "Edit limits": "Sınırları düzenle",
+        "Edit {field}": "{field} düzenle",
+        "The value could not be saved": "Değer kaydedilemedi"
     },
     "nplurals=2; plural=(n != 1);"
 )
