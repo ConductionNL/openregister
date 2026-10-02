@@ -1,0 +1,58 @@
+{
+ "type": "array",
+ "default": [],
+ "description": "One entry per in-scope CurriculumPlan with a matching period component, populated by ReportCardComposer from FinalGrade.breakdown.periods[periodCode]. A subject whose CurriculumPlan declares no component matching the ReportPeriod's periodCode contributes no row here (not an error).",
+ "items": {
+  "type": "object",
+  "required": [
+   "curriculumPlanId"
+  ],
+  "properties": {
+   "curriculumPlanId": {
+    "type": "string",
+    "format": "uuid",
+    "$ref": "CurriculumPlan",
+    "description": "UUID of the subject's CurriculumPlan.",
+    "title": "Curriculum Plan ID"
+   },
+   "courseId": {
+    "type": "string",
+    "nullable": true,
+    "format": "uuid",
+    "$ref": "Course",
+    "description": "UUID of the associated Course, when set on the source FinalGrade.",
+    "title": "Course ID"
+   },
+   "periodAverage": {
+    "type": "number",
+    "nullable": true,
+    "description": "The FinalGrade.breakdown.periods[periodCode] value for this subject at composition time.",
+    "title": "Period Average"
+   },
+   "passed": {
+    "type": "boolean",
+    "nullable": true,
+    "description": "The source FinalGrade.passed value for this subject at composition time.",
+    "title": "Passed"
+   },
+   "teacherComment": {
+    "type": "string",
+    "nullable": true,
+    "description": "Per-subject teacher comment, editable while the report card is in draft or rapportvergadering-review.",
+    "title": "Teacher Comment"
+   },
+   "sourceGradeEntryIds": {
+    "type": "array",
+    "default": [],
+    "description": "UUIDs of the published GradeEntries that contributed this subject's periodAverage, denormalised the same way AttendanceFlag.breachingRecordIds already is — so ReportCardVisibilityGuard can resolve each entry's visibleFrom without a second query hop.",
+    "items": {
+     "type": "string",
+     "format": "uuid",
+     "$ref": "GradeEntry"
+    },
+    "title": "Source Grade Entry IDs"
+   }
+  }
+ },
+ "title": "Subject Grades"
+}
