@@ -258,7 +258,13 @@ class ArchivalNominationService {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) See nominate().
 	 */
 	private function derive(ObjectEntity $object, Schema $schema, array $archive): array {
-		$classification = $this->text(value: ($archive['classification'] ?? null));
+		// The schema's category, unless this record names its own (DECISIONS
+		// row 48). The same resolver decides it at creation, so a record is
+		// created and nominated under one category.
+		$classification = $this->retentionService->effectiveClassification(
+			archive: $archive,
+			data: $object->getObject()
+		);
 
 		$appraisal = null;
 		$period = null;
