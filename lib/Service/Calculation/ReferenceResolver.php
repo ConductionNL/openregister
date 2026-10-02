@@ -245,11 +245,10 @@ class ReferenceResolver {
 			_multitenancy: false
 		);
 
-		if ($entity === null || $this->tenantGuard->admits(savingOrganisation: $organisation, referenced: $entity) === false) {
-			return ['entity' => null, 'attempted' => true];
-		}
-
-		return ['entity' => $entity, 'attempted' => true];
+		return [
+			'entity' => $this->tenantGuard->firstAdmitted(savingOrganisation: $organisation, candidates: [$entity]),
+			'attempted' => true,
+		];
 	}//end resolveRelatedObject()
 
 	/**
@@ -320,15 +319,10 @@ class ReferenceResolver {
 			return ['entity' => null, 'attempted' => false];
 		}
 
-		foreach ($results as $row) {
-			if ($row instanceof ObjectEntity
-				&& $this->tenantGuard->admits(savingOrganisation: $organisation, referenced: $row) === true
-			) {
-				return ['entity' => $row, 'attempted' => true];
-			}
-		}
-
-		return ['entity' => null, 'attempted' => true];
+		return [
+			'entity' => $this->tenantGuard->firstAdmitted(savingOrganisation: $organisation, candidates: $results),
+			'attempted' => true,
+		];
 	}//end resolveLookup()
 
 	/**

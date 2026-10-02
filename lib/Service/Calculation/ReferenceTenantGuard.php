@@ -74,6 +74,31 @@ class ReferenceTenantGuard {
 	}//end __construct()
 
 	/**
+	 * The first candidate the saving object's tenant may read, keeping the candidates' order.
+	 *
+	 * Anything that is not an ObjectEntity (a null from a missed find, a
+	 * stray row shape) is skipped.
+	 *
+	 * @param string|null $savingOrganisation Organisation UUID of the object being saved.
+	 * @param array<int|string, mixed> $candidates The rows a reference read returned, most relevant first.
+	 *
+	 * @return ObjectEntity|null The first admitted row, or null when none is admitted.
+	 *
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
+	 */
+	public function firstAdmitted(?string $savingOrganisation, array $candidates): ?ObjectEntity {
+		foreach ($candidates as $candidate) {
+			if ($candidate instanceof ObjectEntity
+				&& $this->admits(savingOrganisation: $savingOrganisation, referenced: $candidate) === true
+			) {
+				return $candidate;
+			}
+		}
+
+		return null;
+	}//end firstAdmitted()
+
+	/**
 	 * Whether the referenced object may feed a calculation of an object in `$savingOrganisation`.
 	 *
 	 * @param string|null $savingOrganisation Organisation UUID of the object being saved.
@@ -84,8 +109,8 @@ class ReferenceTenantGuard {
 	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
 	public function admits(?string $savingOrganisation, ObjectEntity $referenced): bool {
-		$referencedOrganisation = $referenced->getOrganisation();
-		if ($referencedOrganisation === null || $referencedOrganisation === '') {
+		$refOrganisation = $referenced->getOrganisation();
+		if ($refOrganisation === null || $refOrganisation === '') {
 			return true;
 		}
 
@@ -93,12 +118,12 @@ class ReferenceTenantGuard {
 			return $this->refuse(savingOrganisation: '', referenced: $referenced);
 		}
 
-		if ($referencedOrganisation === $savingOrganisation) {
+		if ($refOrganisation === $savingOrganisation) {
 			return true;
 		}
 
 		$scope = $this->scopeOf(organisation: $savingOrganisation);
-		if (in_array($referencedOrganisation, $scope, true) === true) {
+		if (in_array($refOrganisation, $scope, true) === true) {
 			return true;
 		}
 
@@ -107,7 +132,7 @@ class ReferenceTenantGuard {
 			schemaId: $this->numericId(value: $referenced->getSchema()),
 			consumerOrgUuids: $scope
 		);
-		if (in_array($referencedOrganisation, $holders, true) === true) {
+		if (in_array($refOrganisation, $holders, true) === true) {
 			return true;
 		}
 
