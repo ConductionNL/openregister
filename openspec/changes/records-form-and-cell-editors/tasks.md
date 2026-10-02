@@ -9,8 +9,8 @@
   - enum renders a select with the declared values
   - file renders a picker
   - translatable renders one input per register language
-- [ ] Implement
-- [ ] Test (red first)
+- [x] Implement
+- [x] Test (red first)
 
 ### Task 2: Editable cells in the records list
 - **spec_ref**: `openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place`
@@ -19,8 +19,8 @@
   - saves one field through PATCH
   - shows the refusal and restores the value
   - absent without update rights
-- [ ] Implement
-- [ ] Test (red first)
+- [x] Implement
+- [x] Test (red first)
 
 ## Verification
 
