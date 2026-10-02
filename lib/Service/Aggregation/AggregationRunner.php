@@ -2588,6 +2588,10 @@ class AggregationRunner {
 		// together with the row predicate below, which is what then governs.
 		if ($rowRbac === true && $this->magicMapper->organisationBoundaryWaivedByRbac(schema: $schema) === true) {
 			$orgScope = ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []];
+		} else if ($rowRbac === true && $this->magicMapper->organisationlessRowsAdmittedByRbac(schema: $schema) === true) {
+			// A grant from the register cascade keeps the boundary and only
+			// widens it by the org-less rows, exactly as the list does.
+			$orgScope = MagicOrganizationHandler::admitOrganisationless(scope: $orgScope);
 		}
 
 		$orgColumn = $quote . '_organisation' . $quote;
