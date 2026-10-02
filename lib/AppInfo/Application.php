@@ -5158,6 +5158,8 @@ class Application extends App implements IBootstrap {
 			TablesObjectSourceProvider::class,
 			// Virtual registers (dbal-virtual-registers): external SQL databases over Doctrine DBAL.
 			DbalObjectSourceProvider::class,
+			// A saved view's rows as a read-only type (modelling-query-backed-type).
+			\OCA\OpenRegister\Service\ObjectSource\ViewObjectSourceProvider::class,
 		];
 		foreach ($providerClasses as $providerClass) {
 			try {
