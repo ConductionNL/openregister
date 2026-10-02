@@ -720,6 +720,15 @@ class ValidateObject {
 				unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
 			} elseif (isset($itemsSchema->type) === true && $itemsSchema->type === 'object') {
 				$this->transformObjectPropertyForOpenRegister(objectSchema: $itemsSchema);
+
+				// 🔴 AND THE ITEM OBJECT'S OWN PROPERTIES. Without this a `$ref` on a
+				// property of an object inside `items` (learniq
+				// ReportCard.subjectGrades[].curriculumPlanId, Lesson.blocks[],
+				// HourPlan.lines[]) reached Opis untouched, and every write that
+				// carried the array failed with `Unresolved reference:
+				// schema:///CurriculumPlan#` (openregister#2179). Each such
+				// property gets exactly the treatment a top-level property gets.
+				$this->transformNestedPropertiesForOpenRegister(schema: $itemsSchema);
 			}//end if
 		}//end if
 
@@ -765,19 +774,47 @@ class ValidateObject {
 		}
 
 		// Recursively transform nested properties.
-		if (($propertySchema->properties ?? null) !== null) {
-			foreach ($propertySchema->properties ?? [] as $nestedPropertyName => $nestedPropertySchema) {
-				// Suppress unused variable warning for $nestedPropertyName - only processing schemas.
-				unset($nestedPropertyName);
-				// Ensure nested property schema is an object (deeply nested JSON may decode as array).
-				if (is_array($nestedPropertySchema) === true) {
-					$nestedPropertySchema = (object)$nestedPropertySchema;
-				}
+		$this->transformNestedPropertiesForOpenRegister(schema: $propertySchema);
+	}//end transformPropertyForOpenRegister()
 
+	/**
+	 * Apply transformPropertyForOpenRegister() to every property of an object schema.
+	 *
+	 * Used for a nested object property and for the object inside an array's
+	 * `items`, so a relation `$ref` at any depth is treated the way a top-level
+	 * one is.
+	 *
+	 * @param object $schema The object (or items) schema whose properties to transform in place.
+	 *
+	 * @return void
+	 */
+	private function transformNestedPropertiesForOpenRegister(object $schema): void {
+		if (($schema->properties ?? null) === null) {
+			return;
+		}
+
+		// `properties` and each property may decode as associative arrays for some
+		// schema sources; cast them and WRITE THE CAST BACK, or the transform runs
+		// on a copy and the original keeps its `$ref`.
+		if (is_array($schema->properties) === true) {
+			$schema->properties = (object)$schema->properties;
+		}
+
+		if (is_object($schema->properties) === false) {
+			return;
+		}
+
+		foreach (get_object_vars($schema->properties) as $nestedPropertyName => $nestedPropertySchema) {
+			if (is_array($nestedPropertySchema) === true) {
+				$nestedPropertySchema = (object)$nestedPropertySchema;
+				$schema->properties->{$nestedPropertyName} = $nestedPropertySchema;
+			}
+
+			if (is_object($nestedPropertySchema) === true) {
 				$this->transformPropertyForOpenRegister(propertySchema: $nestedPropertySchema);
 			}
 		}
-	}//end transformPropertyForOpenRegister()
+	}//end transformNestedPropertiesForOpenRegister()
 
 	/**
 	 * Remove a `$ref` that cannot be a JSON Schema reference.
