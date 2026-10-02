@@ -4774,16 +4774,16 @@
         },
         {
             "name": "theodo-group/llphant",
-            "version": "1.0.2",
+            "version": "1.0.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/LLPhant/LLPhant.git",
-                "reference": "e0960be70ba716b9ee2f5ab8a59486b8be00b302"
+                "reference": "52fcd7afd58e6d289b9e304ea357695ece9dc518"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/LLPhant/LLPhant/zipball/e0960be70ba716b9ee2f5ab8a59486b8be00b302",
-                "reference": "e0960be70ba716b9ee2f5ab8a59486b8be00b302",
+                "url": "https://api.github.com/repos/LLPhant/LLPhant/zipball/52fcd7afd58e6d289b9e304ea357695ece9dc518",
+                "reference": "52fcd7afd58e6d289b9e304ea357695ece9dc518",
                 "shasum": ""
             },
             "require": {
@@ -4907,10 +4907,10 @@
                 "vectorstore"
             ],
             "support": {
-                "source": "https://github.com/LLPhant/LLPhant/tree/1.0.2",
+                "source": "https://github.com/LLPhant/LLPhant/tree/1.0.3",
                 "issues": "https://github.com/LLPhant/LLPhant/issues"
             },
-            "time": "2026-09-07T10:10:30+00:00"
+            "time": "2026-09-25T13:46:01+00:00"
         },
         {
             "name": "twig/twig",
@@ -8520,11 +8520,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.2.13",
+            "version": "2.2.16",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/9ba9ac76ee9c5cf5b56d58eb5deec6315b7a0260",
-                "reference": "9ba9ac76ee9c5cf5b56d58eb5deec6315b7a0260",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/46a6d9060e5a7763adfcc21ebcb8b504ebdbcb92",
+                "reference": "46a6d9060e5a7763adfcc21ebcb8b504ebdbcb92",
                 "shasum": ""
             },
             "require": {
@@ -8580,7 +8580,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-09-03T20:38:19+00:00"
+            "time": "2026-09-25T09:31:51+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
