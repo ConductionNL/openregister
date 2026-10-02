@@ -727,76 +727,41 @@ class CacheHandler {
 			}
 		}
 
+		// Ask the read path per table, remembering each answer per caller (user
+		// plus active organisation): a facet resolves one value per call, and the
+		// same question must not cost the same query twice. A failure is "none".
+		$caller = (string)$this->userSession->getUser()?->getUID() . '|' . $this->getActiveOrganisationCacheScope();
+		$memo = ($this->readabilityMemo[$caller] ?? []);
 		foreach ($uuidsBySource as $source => $uuids) {
-			foreach ($this->readableObjectUuids(source: (string)$source, uuids: $uuids) as $uuid) {
-				$visible[$uuid] = $candidates[$uuid];
+			$unknown = array_values(array_filter($uuids, fn (string $uuid): bool => isset($memo[$uuid]) === false));
+			if (empty($unknown) === false) {
+				[$registerId, $schemaId] = array_map('intval', explode(':', (string)$source, 2) + [1 => '0']);
+				$readable = [];
+				try {
+					$readable = $this->getObjectMapper()->filterReadableUuids(registerId: $registerId, schemaId: $schemaId, uuids: $unknown);
+				} catch (\Throwable $e) {
+					$this->logger->warning(
+						message: '[CacheHandler] Read access for names could not be established; disclosing none',
+						context: ['file' => __FILE__, 'line' => __LINE__, 'source' => $source, 'error' => $e->getMessage()]
+					);
+				}
+
+				foreach ($unknown as $uuid) {
+					$memo[$uuid] = in_array($uuid, $readable, true);
+				}
 			}
-		}
+
+			foreach ($uuids as $uuid) {
+				if (($memo[$uuid] ?? false) === true) {
+					$visible[$uuid] = $candidates[$uuid];
+				}
+			}
+		}//end foreach
+
+		$this->readabilityMemo[$caller] = $memo;
 
 		return $visible;
 	}//end visibleNames()
-
-	/**
-	 * Which of these UUIDs from one table may the current caller read?
-	 *
-	 * Answers from the per-user memo where it can, and asks the object read path
-	 * for the rest. A failure answers "none".
-	 *
-	 * @param string             $source "<registerId>:<schemaId>"
-	 * @param array<int, string> $uuids  UUIDs in that table
-	 *
-	 * @return array<int, string> The readable subset
-	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/schema-driven-read-coercion/spec.md
-	 */
-	private function readableObjectUuids(string $source, array $uuids): array {
-		// The answer depends on who asks AND in which organisation they act.
-		$caller = (string)$this->userSession->getUser()?->getUID() . '|' . $this->getActiveOrganisationCacheScope();
-		$memo = $this->readabilityMemo[$caller] ?? [];
-
-		$unknown = array_values(array_filter($uuids, fn (string $uuid): bool => isset($memo[$uuid]) === false));
-		if (empty($unknown) === false) {
-			[$registerId, $schemaId] = array_map('intval', explode(':', $source, 2) + [1 => '0']);
-			$readable = [];
-			try {
-				$readable = $this->getObjectMapper()->filterReadableUuids(
-					registerId: $registerId,
-					schemaId: $schemaId,
-					uuids: $unknown
-				);
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[CacheHandler] Read access for names could not be established; disclosing none',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'source' => $source, 'error' => $e->getMessage()]
-				);
-			}
-
-			foreach ($unknown as $uuid) {
-				$memo[$uuid] = in_array($uuid, $readable, true);
-			}
-
-			$this->readabilityMemo[$caller] = $memo;
-		}
-
-		return array_values(array_filter($uuids, fn (string $uuid): bool => ($memo[$uuid] ?? false) === true));
-	}//end readableObjectUuids()
-
-	/**
-	 * Forget every caller's read-path answer for these identifiers.
-	 *
-	 * @param array<int, string> $keys Object UUIDs (or ids)
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/schema-driven-read-coercion/spec.md
-	 */
-	private function forgetReadability(array $keys): void {
-		foreach (array_keys($this->readabilityMemo) as $caller) {
-			foreach ($keys as $key) {
-				unset($this->readabilityMemo[$caller][$key]);
-			}
-		}
-	}//end forgetReadability()
 
 	/**
 	 * Bulk preload objects to warm the cache
@@ -1145,24 +1110,14 @@ class CacheHandler {
 			$this->clearObjectNameFromCache(object: $object);
 
 			if ($operation === 'create' || $operation === 'update') {
-				// Update name cache for the modified object, carrying its tenancy
-				// so the refreshed entry is only served back to that organisation.
+				// Update name cache for the modified object, carrying its tenancy and
+				// its table, so the entry is only served to callers who may read it.
 				$name = $object->getName() ?? $object->getUuid();
 				$organisation = $object->getOrganisation();
-				$source = self::objectNameSource(register: ($registerId ?? $object->getRegister()), schema: ($schemaId ?? $object->getSchema()));
-				$this->setObjectName(
-					identifier: $object->getUuid(),
-					name: $name,
-					organisation: $organisation,
-					source: $source
-				);
+				$source = self::objectNameSource(register: $registerId, schema: $schemaId);
+				$this->setObjectName(identifier: $object->getUuid(), name: $name, organisation: $organisation, source: $source);
 				if (($object->getId() !== null) === true && (string)$object->getId() !== $object->getUuid()) {
-					$this->setObjectName(
-						identifier: $object->getId(),
-						name: $name,
-						organisation: $organisation,
-						source: $source
-					);
+					$this->setObjectName(identifier: $object->getId(), name: $name, organisation: $organisation, source: $source);
 				}
 			} elseif ($operation === 'delete') {
 				// Remove from in-memory name cache (name AND its recorded tenancy).
@@ -1170,8 +1125,6 @@ class CacheHandler {
 				unset($this->nameCache[(string)$object->getId()]);
 				unset($this->nameOrganisations[$object->getUuid()]);
 				unset($this->nameOrganisations[(string)$object->getId()]);
-				unset($this->nameSources[$object->getUuid()]);
-				unset($this->nameSources[(string)$object->getId()]);
 
 				// Remove from distributed name cache.
 				if ($this->nameDistributedCache !== null) {
@@ -1281,8 +1234,13 @@ class CacheHandler {
 			$keys[] = (string)$object->getId();
 		}
 
-		// A changed object may have changed who may read it.
-		$this->forgetReadability(keys: $keys);
+		// A changed object may have changed who may read it: forget every
+		// caller's remembered answer for it.
+		foreach (array_keys($this->readabilityMemo) as $caller) {
+			foreach ($keys as $key) {
+				unset($this->readabilityMemo[$caller][$key]);
+			}
+		}
 
 		foreach ($keys as $key) {
 			unset($this->nameCache[$key]);
@@ -1507,10 +1465,10 @@ class CacheHandler {
 		$isUuid = str_contains($key, '-');
 
 		// Check in-memory cache first (fastest). Whatever layer the name comes
-		// from, it is only returned when the caller may see it (decideSingleName()).
+		// from, it is only returned when the caller may see it (visibleNames()).
 		if ($isUuid === true && ($this->nameCache[$key] ?? null) !== null && isset($this->nameSources[$key]) === true) {
 			$this->stats['name_hits']++;
-			return $this->decideSingleName(key: $key, name: $this->nameCache[$key]);
+			return ($this->visibleNames(candidates: [$key => $this->nameCache[$key]])[$key] ?? null);
 		}
 
 		// Check distributed cache.
@@ -1521,7 +1479,7 @@ class CacheHandler {
 					$this->nameCache[$key] = $envelope['n'];
 					$this->rememberNameOrganisation(key: $key, organisation: $envelope['o'], source: $envelope['s']);
 					$this->stats['name_hits']++;
-					return $this->decideSingleName(key: $key, name: $envelope['n']);
+					return ($this->visibleNames(candidates: [$key => $envelope['n']])[$key] ?? null);
 				}
 			} catch (\Exception $e) {
 				$this->logger->warning(
@@ -1556,7 +1514,7 @@ class CacheHandler {
 					organisation: $organisation->getUuid(),
 					source: self::NAME_SOURCE_ORGANISATION
 				);
-				return $this->decideSingleName(key: $key, name: $name);
+				return ($this->visibleNames(candidates: [$key => $name])[$key] ?? null);
 			} catch (\Exception $e) {
 				// Organisation not found, continue to objects.
 			}
@@ -1589,7 +1547,7 @@ class CacheHandler {
 				$this->setObjectName(identifier: $uuid, name: $name, organisation: $object->getOrganisation(), source: $source);
 			}
 
-			return $this->decideSingleName(key: $uuid, name: $name);
+			return ($this->visibleNames(candidates: [$uuid => $name])[$uuid] ?? null);
 		} catch (\Exception $e) {
 			$this->logger->debug(
 				message: '[CacheHandler] Failed to load entity for name lookup',
@@ -1604,20 +1562,6 @@ class CacheHandler {
 
 		return null;
 	}//end getSingleObjectName()
-
-	/**
-	 * Return a single name when the caller may see it, null otherwise.
-	 *
-	 * @param string $key  The UUID the name is cached under
-	 * @param string $name The name
-	 *
-	 * @return string|null The name, or null when not visible
-	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/schema-driven-read-coercion/spec.md
-	 */
-	private function decideSingleName(string $key, string $name): ?string {
-		return ($this->visibleNames(candidates: [$key => $name])[$key] ?? null);
-	}//end decideSingleName()
 
 	/**
 	 * Get multiple object names from cache or database
