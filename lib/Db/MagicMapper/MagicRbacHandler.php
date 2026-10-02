@@ -1348,11 +1348,9 @@ class MagicRbacHandler {
 		// The `private` scope. Owner and administrators both returned above,
 		// unconditionally, so a private object denies anything reaching here.
 		//
-		// The scope is read through resolveSchemaAuthorization() rather than
-		// $schema->getAuthorization() below, so the SCHEMA DEFAULT is resolved
-		// through the same register cascade both list emitters use. The rule
-		// chain's own source is left alone: widening it here would change
-		// verdicts unrelated to this capability.
+		// The scope is read through resolveSchemaAuthorization(), so the
+		// SCHEMA DEFAULT is resolved through the same register cascade both
+		// list emitters use. The rule chain below reads the same block.
 		//
 		// Gated on $objectData because that is this method's signal that an
 		// object is in play at all — a schema-level check has nothing to be
@@ -1379,7 +1377,13 @@ class MagicRbacHandler {
 		// revoking (a non-empty block is fail-closed, so an mcp-only annotation
 		// would deny every action it did not mention). Same transform as
 		// PermissionHandler so the two interpreters cannot disagree.
-		$authorization = PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization());
+		//
+		// The rules are the CASCADED block resolved above (schema-level, else
+		// the register's block with its roles expanded), the same block both
+		// list emitters filter on. Reading the schema's own block here treated
+		// every schema that inherits its register's rules as open, so a related
+		// or globally searched object was shown to a caller the list refused.
+		$authorization = $cascaded;
 
 		// If no authorization configured, everyone has access.
 		if (empty($authorization) === true) {
@@ -2558,18 +2562,76 @@ class MagicRbacHandler {
 	 * organization-based access control. This allows users to access records based
 	 * on field matches (e.g., aanbieder) even if the _organisation differs.
 	 *
+	 * Only the schema's OWN block can lift the organisation filter. A schema
+	 * that inherits its register's rules never does: those rules admit the rows
+	 * with no organisation instead, see
+	 * {@see admitsOrganisationlessRowsThroughCascade()}, and the rows of other
+	 * organisations stay behind the filter.
+	 *
 	 * @param Schema $schema The schema to check
 	 * @param string $action The action to check (default: 'read')
-	 *
-	 * The rules are the RESOLVED block (schema-level, else the register
-	 * cascade), the same one applyRbacFilters() emits, so a schema that
-	 * inherits its register's rules decides the bypass on those rules.
 	 *
 	 * @return bool True if RBAC has conditional rules that should bypass multitenancy
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
 	 */
 	public function hasConditionalRulesBypassingMultitenancy(Schema $schema, string $action = 'read'): bool {
+		// The schema's own authorization block, minus the descriptive `mcp`
+		// scope (see the note on the other read of this block above).
+		return $this->callerQualifiesForBypassRule(
+			schema: $schema,
+			authorization: PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization()),
+			action: $action
+		);
+	}//end hasConditionalRulesBypassingMultitenancy()
+
+	/**
+	 * Whether the register cascade admits the rows with NO organisation for the
+	 * current caller.
+	 *
+	 * A schema without an authorization block of its own is governed by its
+	 * register's block (the same resolved block {@see applyRbacFilters()}
+	 * emits). For a caller that block grants, the organisation filter stays on
+	 * and is widened by the rows whose organisation is empty, which belong to no
+	 * tenant. Rows of other organisations stay hidden, exactly as they were
+	 * before the cascade was consulted here. A schema with its own block answers
+	 * false: its own rules decide through
+	 * {@see hasConditionalRulesBypassingMultitenancy()}, unchanged.
+	 *
+	 * @param Schema $schema The schema being read.
+	 * @param string $action The action (default: 'read').
+	 *
+	 * @return bool True when the organisation filter must also admit org-less rows.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
+	 */
+	public function admitsOrganisationlessRowsThroughCascade(Schema $schema, string $action = 'read'): bool {
+		$ownAuthorization = PermissionHandler::stripMcpScope(authorization: $schema->getAuthorization());
+		if (empty($ownAuthorization) === false) {
+			return false;
+		}
+
+		// Fail-closed: an unresolvable block admits nothing extra.
+		try {
+			$resolved = $this->resolveSchemaAuthorization(schema: $schema);
+		} catch (AuthorizationUnresolvableException $e) {
+			return false;
+		}
+
+		return $this->callerQualifiesForBypassRule(schema: $schema, authorization: $resolved, action: $action);
+	}//end admitsOrganisationlessRowsThroughCascade()
+
+	/**
+	 * Whether the current caller qualifies for a rule of the given block that
+	 * lets RBAC, rather than the organisation filter, govern the rows.
+	 *
+	 * @param Schema     $schema        The schema, for the public-inheritance gate.
+	 * @param array|null $authorization The authorization block to read.
+	 * @param string     $action        The action.
+	 *
+	 * @return bool True when the caller is an admin or qualifies for such a rule.
+	 */
+	private function callerQualifiesForBypassRule(Schema $schema, ?array $authorization, string $action): bool {
 		$user = $this->userSession->getUser();
 
 		// Get user groups.
@@ -2581,18 +2643,6 @@ class MagicRbacHandler {
 		// Admin users bypass all RBAC checks anyway.
 		if (in_array('admin', $userGroups, true) === true) {
 			return true;
-		}
-
-		// The SAME resolved block the RBAC filter emits (schema-level, else the
-		// register cascade with its roles expanded; the `mcp` scope stripped).
-		// Reading the schema's own block here made every schema that inherits
-		// its register's rules keep the organisation filter for a reader the
-		// RBAC filter grants, so org-less rows vanished for every non-admin.
-		// Fail-closed: an unresolvable block keeps the organisation filter.
-		try {
-			$authorization = $this->resolveSchemaAuthorization(schema: $schema);
-		} catch (AuthorizationUnresolvableException $e) {
-			return false;
 		}
 
 		if (empty($authorization) === true) {
@@ -2630,7 +2680,7 @@ class MagicRbacHandler {
 		}//end foreach
 
 		return false;
-	}//end hasConditionalRulesBypassingMultitenancy()
+	}//end callerQualifiesForBypassRule()
 
 	/**
 	 * Check if a single rule should bypass multitenancy for the current user

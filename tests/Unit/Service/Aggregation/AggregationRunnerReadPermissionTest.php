@@ -250,6 +250,49 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		);
 	}//end testTheOrganisationBoundaryFollowsTheListDecision()
 
+	/**
+	 * Where the list keeps the organisation boundary and widens it by the
+	 * org-less rows (a grant from the register cascade), the aggregate does the
+	 * same: it counts the caller's own organisation and the org-less rows, and
+	 * never another organisation's.
+	 *
+	 * @return void
+	 */
+	public function testARegisterCascadeGrantCountsOrganisationlessRowsButNotAnotherOrganisation(): void {
+		$insert = $this->pdo->prepare(
+			'INSERT INTO "oc_' . self::TABLE . '" (_uuid, _owner, _organisation, learner_id, level) VALUES (?, ?, ?, ?, ?)'
+		);
+		$insert->execute(['u6', 'system-importer', 'org-home', 'learner-a', 'low']);
+		$insert->execute(['u7', 'system-importer', 'org-other', 'learner-a', 'high']);
+		$homeOrg = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-home']];
+
+		$admitted = $this->runner(
+			userId: 'teacher-1',
+			groups: ['instructors'],
+			grants: ['read'],
+			orgScope: $homeOrg,
+			organisationlessAdmitted: true
+		);
+		$this->assertSame(
+			['high' => 2, 'low' => 4],
+			$this->counts($admitted->runAdhoc(register: $this->register(), schema: $this->schema(), query: $this->countByLevel())),
+			'the five org-less rows and the own-organisation row, not the other organisation\'s'
+		);
+
+		$strict = $this->runner(
+			userId: 'teacher-1',
+			groups: ['instructors'],
+			grants: ['read'],
+			orgScope: $homeOrg,
+			organisationlessAdmitted: false
+		);
+		$this->assertSame(
+			['low' => 1],
+			$this->counts($strict->runAdhoc(register: $this->register(), schema: $this->schema(), query: $this->countByLevel())),
+			'without the cascade grant only the own-organisation row counts'
+		);
+	}//end testARegisterCascadeGrantCountsOrganisationlessRowsButNotAnotherOrganisation()
+
 	// -----------------------------------------------------------------------
 	// Helpers.
 	// -----------------------------------------------------------------------
@@ -322,6 +365,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 	 * @param Schema|null   $schema The schema run() resolves, when testing run().
 	 * @param array<string, mixed> $orgScope The organisation scope the handler reports.
 	 * @param bool          $boundaryWaived Whether the list would waive the organisation boundary.
+	 * @param bool          $organisationlessAdmitted Whether the list widens the boundary by org-less rows.
 	 *
 	 * @return AggregationRunner The runner.
 	 */
@@ -332,6 +376,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		?Schema $schema = null,
 		array $orgScope = ['mode' => MagicOrganizationHandler::SCOPE_ALL],
 		bool $boundaryWaived = false,
+		bool $organisationlessAdmitted = false,
 	): AggregationRunner {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($userId);
@@ -366,6 +411,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$magicMapper = $this->createMock(MagicMapper::class);
 		$magicMapper->method('getTableNameForRegisterSchema')->willReturn(self::TABLE);
 		$magicMapper->method('organisationBoundaryWaivedByRbac')->willReturn($boundaryWaived);
+		$magicMapper->method('organisationlessRowsAdmittedByRbac')->willReturn($organisationlessAdmitted);
 		$magicMapper->method('rbacRowPredicateSql')->willReturnCallback(
 			static fn (Schema $s, string $action = 'read'): ?string => $rbac->buildRbacRowPredicateSql(schema: $s, action: $action)
 		);

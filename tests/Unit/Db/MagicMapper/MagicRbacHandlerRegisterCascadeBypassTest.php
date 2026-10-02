@@ -1,12 +1,16 @@
 <?php
 
 /**
- * MagicRbacHandler multitenancy-bypass register cascade tests
+ * MagicRbacHandler register cascade and the organisation boundary
  *
- * The multitenancy-bypass verdict must read the SAME resolved authorization as
- * the RBAC filter: the schema's own block, else its register's block with the
- * register roles expanded. These tests wire a REAL PermissionHandler (only the
- * register lookup is a double) so the cascade under test is the production one.
+ * A schema without an authorization block of its own is governed by its
+ * register's block. For a reader that block grants, the organisation filter
+ * stays on and ALSO admits the rows with no organisation; the rows of other
+ * organisations stay hidden. A schema's own block keeps lifting the filter as
+ * before. The per-object verdict (hasPermission) reads the same cascade.
+ *
+ * These tests wire a REAL PermissionHandler (only the register lookup is a
+ * double) so the cascade under test is the production one.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Db\MagicMapper
@@ -25,14 +29,22 @@ declare(strict_types=1);
 namespace Unit\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
+use Doctrine\DBAL\Platforms\SqlitePlatform;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
+use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -41,10 +53,11 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use PDO;
 use RuntimeException;
 
 /**
- * Tests that hasConditionalRulesBypassingMultitenancy() honours the register cascade.
+ * Tests that the register cascade admits org-less rows only, and that hasPermission() reads it.
  */
 class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 
@@ -189,105 +202,250 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 	}//end mockUser()
 
 	/**
-	 * A schema with no block of its own inherits its register's role, so a
-	 * member of a granted group escapes the organisation filter exactly as the
-	 * RBAC filter already lets them read.
+	 * A search handler over the REAL rbac handler, whose organisation handler
+	 * reports the caller's organisation as `org-home`.
+	 *
+	 * @param array $scope The organisation scope the organisation handler decides.
+	 *
+	 * @return MagicSearchHandler The handler.
+	 */
+	private function searchHandler(
+		array $scope = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-home']]
+	): MagicSearchHandler {
+		$connection = $this->createMock(originalClassName: IDBConnection::class);
+		$connection->method('quote')->willReturnCallback(
+			static fn ($value): string => "'" . str_replace("'", "''", (string)$value) . "'"
+		);
+
+		$queryBuilder = $this->createMock(originalClassName: IQueryBuilder::class);
+		$queryBuilder->method('getConnection')->willReturn($connection);
+
+		$db = $this->createMock(originalClassName: IDBConnection::class);
+		$db->method('getQueryBuilder')->willReturn($queryBuilder);
+		$db->method('getDatabasePlatform')->willReturn(new SqlitePlatform());
+
+		$organisation = $this->createMock(originalClassName: MagicOrganizationHandler::class);
+		$organisation->method('resolveOrganizationScope')->willReturn($scope);
+		$organisation->method('isAdminOverrideEnabled')->willReturn(false);
+
+		return new MagicSearchHandler(
+			$db,
+			$this->createMock(originalClassName: LoggerInterface::class),
+			$this->handler,
+			$organisation,
+			$this->createMock(originalClassName: SchemaTypeConverter::class),
+			$this->createMock(originalClassName: DateTimeNormalizer::class),
+			relatedRows: $this->createMock(originalClassName: RelatedRowQueryApplier::class)
+		);
+
+	}//end searchHandler()
+
+	/**
+	 * Run the organisation and RBAC conditions the list builds against a real
+	 * table holding one row of the caller's organisation, one with no
+	 * organisation and one of another organisation.
+	 *
+	 * @param Schema $schema The schema read.
+	 * @param array  $query  The list query.
+	 *
+	 * @return array<int, string> The uuids the list returns, sorted.
+	 */
+	private function visibleRows(Schema $schema, array $query = []): array {
+		$conditions = $this->searchHandler()->buildWhereConditionsSql(query: $query, schema: $schema);
+
+		$pdo = new PDO('sqlite::memory:');
+		$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		// The non-Postgres RBAC predicate is written in the MySQL dialect;
+		// SQLite's json_extract() already returns the unquoted scalar.
+		$pdo->sqliteCreateFunction('JSON_UNQUOTE', static fn ($value) => $value, 1);
+		$pdo->exec(
+			'CREATE TABLE t (_uuid TEXT, _owner TEXT, _organisation TEXT, _authorization TEXT,'
+			. ' _deleted TEXT, _archived TEXT, _expires TEXT, _published TEXT, _depublished TEXT)'
+		);
+		$pdo->exec(
+			"INSERT INTO t (_uuid, _owner, _organisation) VALUES"
+			. " ('own-org', 'importer', 'org-home'),"
+			. " ('no-org', 'importer', NULL),"
+			. " ('other-org', 'importer', 'org-other')"
+		);
+
+		$where = '';
+		if ($conditions !== []) {
+			$where = ' WHERE ' . implode(' AND ', $conditions);
+		}
+
+		$uuids = $pdo->query('SELECT _uuid FROM t' . $where)->fetchAll(PDO::FETCH_COLUMN);
+		sort($uuids);
+
+		return $uuids;
+
+	}//end visibleRows()
+
+	/**
+	 * A granted reader of a schema that inherits its register's role keeps the
+	 * organisation filter: the cascade does not lift it.
 	 *
 	 * @return void
 	 */
-	public function testRegisterRoleGrantBypassesMultitenancyForGrantedGroup(): void {
+	public function testInheritedSchemaKeepsTheOrganisationFilterForAGrantedReader(): void {
+		$this->wireLearniqRegister();
+		$this->mockUser(uid: 'po-leerkracht-09', groups: ['instructors']);
+
+		$this->assertFalse(
+			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(
+				schema: $this->createSchema(authorization: null),
+				action: 'read'
+			)
+		);
+
+	}//end testInheritedSchemaKeepsTheOrganisationFilterForAGrantedReader()
+
+	/**
+	 * The register role admits the org-less rows for a reader it grants.
+	 *
+	 * @return void
+	 */
+	public function testInheritedSchemaAdmitsOrganisationlessRowsForAGrantedReader(): void {
 		$this->wireLearniqRegister();
 		$this->mockUser(uid: 'po-leerkracht-09', groups: ['instructors']);
 
 		$this->assertTrue(
-			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(
+			condition: $this->handler->admitsOrganisationlessRowsThroughCascade(
 				schema: $this->createSchema(authorization: null),
 				action: 'read'
 			)
 		);
 
-	}//end testRegisterRoleGrantBypassesMultitenancyForGrantedGroup()
+	}//end testInheritedSchemaAdmitsOrganisationlessRowsForAGrantedReader()
 
 	/**
-	 * A user outside every granted group gets no bypass, so the organisation
-	 * filter still applies and the org-less row stays hidden.
+	 * End to end over the list's own SQL: the granted instructor sees its own
+	 * organisation's row and the org-less row, and NOT another organisation's.
 	 *
 	 * @return void
 	 */
-	public function testRegisterRoleGrantDoesNotBypassForUngrantedUser(): void {
+	public function testGrantedReaderSeesOrganisationlessRowButNotAnotherOrganisationsRow(): void {
 		$this->wireLearniqRegister();
-		$this->mockUser(uid: 'leerling-01', groups: ['students']);
+		$this->mockUser(uid: 'po-leerkracht-09', groups: ['instructors']);
+
+		$this->assertSame(
+			expected: ['no-org', 'own-org'],
+			actual: $this->visibleRows(schema: $this->createSchema(authorization: null))
+		);
+
+	}//end testGrantedReaderSeesOrganisationlessRowButNotAnotherOrganisationsRow()
+
+	/**
+	 * An explicit `_multi` keeps the strict organisation filter, as it does for
+	 * a schema's own rules.
+	 *
+	 * @return void
+	 */
+	public function testExplicitMultitenancyKeepsTheStrictFilter(): void {
+		$this->wireLearniqRegister();
+		$this->mockUser(uid: 'po-leerkracht-09', groups: ['instructors']);
+
+		$this->assertSame(
+			expected: ['own-org'],
+			actual: $this->visibleRows(
+				schema: $this->createSchema(authorization: null),
+				query: ['_multitenancy' => true, '_multitenancy_explicit' => true]
+			)
+		);
+
+	}//end testExplicitMultitenancyKeepsTheStrictFilter()
+
+	/**
+	 * A user outside every granted group gets neither a bypass nor the org-less
+	 * rows, and the list shows nothing.
+	 *
+	 * @return void
+	 */
+	public function testUngrantedUserGetsNothing(): void {
+		$this->wireLearniqRegister();
+		$this->mockUser(uid: 'po-ib-01', groups: ['coordinators']);
+		$schema = $this->createSchema(authorization: null);
 
 		$this->assertFalse(
-			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(
-				schema: $this->createSchema(authorization: null),
-				action: 'read'
-			)
+			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $schema, action: 'read')
 		);
+		$this->assertFalse(
+			condition: $this->handler->admitsOrganisationlessRowsThroughCascade(schema: $schema, action: 'read')
+		);
+		$this->assertSame(expected: [], actual: $this->visibleRows(schema: $schema));
 
-	}//end testRegisterRoleGrantDoesNotBypassForUngrantedUser()
+	}//end testUngrantedUserGetsNothing()
 
 	/**
-	 * The register role grants read, not delete, so the delete verdict gets
-	 * no bypass from it.
+	 * The register role grants read, not delete, so it admits nothing for delete.
 	 *
 	 * @return void
 	 */
-	public function testRegisterRoleGrantDoesNotBypassForUngrantedAction(): void {
+	public function testRegisterRoleAdmitsNothingForAnUngrantedAction(): void {
 		$this->wireLearniqRegister();
 		$this->mockUser(uid: 'po-leerkracht-09', groups: ['instructors']);
 
 		$this->assertFalse(
-			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(
+			condition: $this->handler->admitsOrganisationlessRowsThroughCascade(
 				schema: $this->createSchema(authorization: null),
 				action: 'delete'
 			)
 		);
 
-	}//end testRegisterRoleGrantDoesNotBypassForUngrantedAction()
+	}//end testRegisterRoleAdmitsNothingForAnUngrantedAction()
 
 	/**
-	 * A schema with its own block is unchanged: the register role does not
-	 * leak into it, and the schema's own grant still bypasses.
+	 * A schema with its own block is unchanged: its own grant still lifts the
+	 * organisation filter, the register role neither leaks into it nor admits
+	 * org-less rows on it.
 	 *
 	 * @return void
 	 */
-	public function testSchemaOwnBlockStillWinsOverRegister(): void {
+	public function testSchemaOwnBlockIsUnchanged(): void {
 		$this->wireLearniqRegister();
 		$schema = $this->createSchema(authorization: ['read' => ['teachers']]);
 
+		$this->mockUser(uid: 'juf-01', groups: ['teachers']);
+		$this->assertTrue(
+			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $schema, action: 'read')
+		);
+		$this->assertFalse(
+			condition: $this->handler->admitsOrganisationlessRowsThroughCascade(schema: $schema, action: 'read')
+		);
+		$this->assertSame(
+			expected: ['no-org', 'other-org', 'own-org'],
+			actual: $this->visibleRows(schema: $schema)
+		);
+
+	}//end testSchemaOwnBlockIsUnchanged()
+
+	/**
+	 * On a schema with its own block, a member of the register's group only is
+	 * still refused, exactly as before.
+	 *
+	 * @return void
+	 */
+	public function testSchemaOwnBlockStillRefusesTheRegistersGroup(): void {
+		$this->wireLearniqRegister();
+		$schema = $this->createSchema(authorization: ['read' => ['teachers']]);
 		$this->mockUser(uid: 'po-leerkracht-09', groups: ['instructors']);
+
 		$this->assertFalse(
 			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(schema: $schema, action: 'read')
 		);
-
-	}//end testSchemaOwnBlockStillWinsOverRegister()
-
-	/**
-	 * The schema's own grant still bypasses for its own group.
-	 *
-	 * @return void
-	 */
-	public function testSchemaOwnBlockGrantStillBypasses(): void {
-		$this->wireLearniqRegister();
-		$this->mockUser(uid: 'juf-01', groups: ['teachers']);
-
-		$this->assertTrue(
-			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(
-				schema: $this->createSchema(authorization: ['read' => ['teachers']]),
-				action: 'read'
-			)
+		$this->assertFalse(
+			condition: $this->handler->admitsOrganisationlessRowsThroughCascade(schema: $schema, action: 'read')
 		);
+		$this->assertSame(expected: [], actual: $this->visibleRows(schema: $schema));
 
-	}//end testSchemaOwnBlockGrantStillBypasses()
+	}//end testSchemaOwnBlockStillRefusesTheRegistersGroup()
 
 	/**
-	 * An organisation-scoped conditional rule on the register still keeps the
-	 * organisation filter: a `_organisation`-only match is not a bypass.
+	 * A register rule that only matches `_organisation` admits nothing extra.
 	 *
 	 * @return void
 	 */
-	public function testRegisterOrganisationOnlyMatchDoesNotBypass(): void {
+	public function testRegisterOrganisationOnlyMatchAdmitsNothing(): void {
 		$register = new Register();
 		$register->setId(99);
 		$register->setTitle('learniq');
@@ -299,30 +457,153 @@ class MagicRbacHandlerRegisterCascadeBypassTest extends TestCase {
 		$this->mockUser(uid: 'po-leerkracht-09', groups: ['instructors']);
 
 		$this->assertFalse(
-			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(
+			condition: $this->handler->admitsOrganisationlessRowsThroughCascade(
 				schema: $this->createSchema(authorization: null),
 				action: 'read'
 			)
 		);
 
-	}//end testRegisterOrganisationOnlyMatchDoesNotBypass()
+	}//end testRegisterOrganisationOnlyMatchAdmitsNothing()
 
 	/**
-	 * An unresolvable register keeps the organisation filter (fail closed).
+	 * An unresolvable register admits nothing (fail closed).
 	 *
 	 * @return void
 	 */
-	public function testUnresolvableRegisterDoesNotBypass(): void {
+	public function testUnresolvableRegisterAdmitsNothing(): void {
 		$this->registerMapper->method('getFirstRegisterWithSchema')
 			->willThrowException(new RuntimeException(message: 'database gone'));
 		$this->mockUser(uid: 'po-leerkracht-09', groups: ['instructors']);
 
 		$this->assertFalse(
-			condition: $this->handler->hasConditionalRulesBypassingMultitenancy(
+			condition: $this->handler->admitsOrganisationlessRowsThroughCascade(
 				schema: $this->createSchema(authorization: null),
 				action: 'read'
 			)
 		);
 
-	}//end testUnresolvableRegisterDoesNotBypass()
+	}//end testUnresolvableRegisterAdmitsNothing()
+
+	/**
+	 * The per-object verdict reads the cascade: on a schema with no block of
+	 * its own, a user the register does not grant is refused. It used to read
+	 * the schema's own (absent) block and treat the schema as open.
+	 *
+	 * @return void
+	 */
+	public function testHasPermissionRefusesAUserTheRegisterDoesNotGrant(): void {
+		$this->wireLearniqRegister();
+		$this->mockUser(uid: 'po-ib-01', groups: ['coordinators']);
+
+		$this->assertFalse(
+			condition: $this->handler->hasPermission(
+				schema: $this->createSchema(authorization: null),
+				action: 'read',
+				objectOwner: 'importer',
+				objectData: ['name' => 'De Wilg', '_organisation' => null]
+			)
+		);
+
+	}//end testHasPermissionRefusesAUserTheRegisterDoesNotGrant()
+
+	/**
+	 * The per-object verdict admits the user the register grants.
+	 *
+	 * @return void
+	 */
+	public function testHasPermissionAdmitsAUserTheRegisterGrants(): void {
+		$this->wireLearniqRegister();
+		$this->mockUser(uid: 'po-leerkracht-09', groups: ['instructors']);
+
+		$this->assertTrue(
+			condition: $this->handler->hasPermission(
+				schema: $this->createSchema(authorization: null),
+				action: 'read',
+				objectOwner: 'importer',
+				objectData: ['name' => 'De Wilg', '_organisation' => null]
+			)
+		);
+
+	}//end testHasPermissionAdmitsAUserTheRegisterGrants()
+
+	/**
+	 * The per-object verdict on a schema with its own block is unchanged.
+	 *
+	 * @return void
+	 */
+	public function testHasPermissionOnASchemaOwnBlockIsUnchanged(): void {
+		$this->wireLearniqRegister();
+		$schema = $this->createSchema(authorization: ['read' => ['teachers']]);
+		$this->mockUser(uid: 'po-leerkracht-09', groups: ['instructors']);
+
+		$this->assertFalse(
+			condition: $this->handler->hasPermission(schema: $schema, action: 'read', objectData: ['name' => 'x'])
+		);
+
+	}//end testHasPermissionOnASchemaOwnBlockIsUnchanged()
+
+	/**
+	 * A schema in no register and with no block stays open, as the cascade says.
+	 *
+	 * @return void
+	 */
+	public function testHasPermissionWithNoBlockAnywhereStaysOpen(): void {
+		$this->registerMapper->method('getFirstRegisterWithSchema')->willReturn(null);
+		$this->mockUser(uid: 'po-ib-01', groups: ['coordinators']);
+
+		$this->assertTrue(
+			condition: $this->handler->hasPermission(
+				schema: $this->createSchema(authorization: null),
+				action: 'read',
+				objectData: ['name' => 'x']
+			)
+		);
+
+	}//end testHasPermissionWithNoBlockAnywhereStaysOpen()
+
+	/**
+	 * The aggregation fast path asks the search handler the list's question:
+	 * on an inherited schema the boundary is kept and widened, on a schema's
+	 * own block it is waived as before.
+	 *
+	 * @return void
+	 */
+	public function testAggregationQuestionsFollowTheListDecision(): void {
+		$this->wireLearniqRegister();
+		$this->mockUser(uid: 'po-leerkracht-09', groups: ['instructors']);
+		$inherited = $this->createSchema(authorization: null);
+		$search = $this->searchHandler();
+
+		$this->assertFalse(condition: $search->organisationBoundaryWaivedByRbac(schema: $inherited));
+		$this->assertTrue(condition: $search->organisationlessRowsAdmittedByRbac(schema: $inherited));
+
+		$ownBlock = $this->createSchema(authorization: ['read' => ['instructors']]);
+		$this->assertTrue(condition: $search->organisationBoundaryWaivedByRbac(schema: $ownBlock));
+		$this->assertFalse(condition: $search->organisationlessRowsAdmittedByRbac(schema: $ownBlock));
+
+	}//end testAggregationQuestionsFollowTheListDecision()
+
+	/**
+	 * Widening a scope by the org-less rows changes only the two modes that
+	 * exclude them.
+	 *
+	 * @return void
+	 */
+	public function testAdmitOrganisationlessWidensOnlyTheExcludingModes(): void {
+		$widen = static fn (string $mode, array $uuids = []): array => MagicOrganizationHandler::admitOrganisationless(
+			scope: ['mode' => $mode, 'uuids' => $uuids]
+		);
+
+		$this->assertSame(
+			expected: ['mode' => MagicOrganizationHandler::SCOPE_IN_OR_NULL, 'uuids' => ['org-home']],
+			actual: $widen(MagicOrganizationHandler::SCOPE_IN, ['org-home'])
+		);
+		$this->assertSame(
+			expected: ['mode' => MagicOrganizationHandler::SCOPE_NULL_ONLY, 'uuids' => []],
+			actual: $widen(MagicOrganizationHandler::SCOPE_NONE)
+		);
+		$this->assertSame(expected: MagicOrganizationHandler::SCOPE_ALL, actual: $widen(MagicOrganizationHandler::SCOPE_ALL)['mode']);
+		$this->assertSame(expected: 'a-later-mode', actual: $widen('a-later-mode')['mode']);
+
+	}//end testAdmitOrganisationlessWidensOnlyTheExcludingModes()
 }//end class
