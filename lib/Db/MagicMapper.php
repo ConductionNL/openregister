@@ -9869,6 +9869,57 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end restoreObject()
 
 	/**
+	 * Record the node id of an object's files folder as bookkeeping, not as an edit of the object.
+	 *
+	 * The files folder is made on demand, often by a request that only lists
+	 * the object's files (a portal showing a case's documents). Storing its id
+	 * through update() ran the whole save path for that read: the updating and
+	 * updated events, so every save-time listener (calculations, quality
+	 * scoring, retention, other apps' handlers) ran as whoever was reading,
+	 * with no audit row and no version bump to show for it. This write touches
+	 * the `_folder` column of the one row and nothing else, dispatches no
+	 * lifecycle event, and only lands while the stored value is still empty or
+	 * what the caller read, so it never repoints a folder another request
+	 * recorded first. It mirrors RegisterFolderRecorder for registers.
+	 *
+	 * @param ObjectEntity $entity The object whose folder was made.
+	 * @param string|null $expected The folder value read before the folder was made: null or '' for none,
+	 *                              or the legacy path that no longer resolves.
+	 * @param string $folderId The node id of the folder the file service made or found.
+	 *
+	 * @return bool True when this call recorded the id; false when another request recorded one first.
+	 *
+	 * @throws Exception If the object has no uuid or its register and schema cannot be resolved.
+	 *
+	 * @spec openspec/changes/object-folder-is-bookkeeping/specs/file-actions/spec.md#requirement-recording-an-objects-folder-id-is-bookkeeping-req-ofib-001
+	 */
+	public function recordFolder(ObjectEntity $entity, ?string $expected, string $folderId): bool {
+		$uuid = $entity->getUuid();
+		if ($uuid === null || $uuid === '') {
+			throw new Exception('Cannot record an object folder without the object uuid');
+		}
+
+		[$register, $schema] = $this->getResolvedRegisterAndSchema(entity: $entity);
+		if ($register === null || $schema === null) {
+			throw new Exception('Cannot record an object folder without register and schema context');
+		}
+
+		$folderCol = self::METADATA_PREFIX . 'folder';
+		$qb = $this->db->getQueryBuilder();
+		$qb->update($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
+			->set($folderCol, $qb->createNamedParameter($folderId))
+			->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)))
+			->andWhere(
+				$qb->expr()->orX(
+					$qb->expr()->isNull($folderCol),
+					$qb->expr()->eq($folderCol, $qb->createNamedParameter((string)$expected))
+				)
+			);
+
+		return $qb->executeStatement() > 0;
+	}//end recordFolder()
+
+	/**
 	 * Ultra-fast bulk save operation with automatic routing.
 	 *
 	 * Returns complete objects with database-computed classification (created/updated/unchanged).
