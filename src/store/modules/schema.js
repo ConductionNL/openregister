@@ -7,6 +7,8 @@ import {
 	deleteSchema as apiDeleteSchema,
 	saveSchema as apiSaveSchema,
 } from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
+import { generateUrl } from '@nextcloud/router'
 import { defineStore } from 'pinia'
 import { Schema } from '../../entities/index.js'
 
@@ -24,6 +26,8 @@ export const useSchemaStore = defineStore('schema', {
 		schemaPropertyKey: null, // holds a UUID of the property to edit
 		schemaList: [],
 		viewMode: 'cards',
+		// True while the editor saves to the schema's draft instead of publishing (modelling-schema-draft).
+		draftMode: false,
 		filters: [], // List of query
 		pagination: {
 			page: 1,
@@ -32,6 +36,20 @@ export const useSchemaStore = defineStore('schema', {
 	}),
 	getters: {
 		getViewMode: (state) => state.viewMode,
+		/**
+		 * What the editor opens on: the pending draft in draft mode, else the published schema.
+		 *
+		 * @param {object} state - Store state
+		 * @return {object|false} The schema to edit
+		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 */
+		editorSchemaItem: (state) => {
+			const item = state.schemaItem
+			if (!state.draftMode || !item || !item.draft) {
+				return item
+			}
+			return { ...item, ...item.draft, id: item.id, draft: item.draft }
+		},
 	},
 	actions: {
 		/**
@@ -51,6 +69,69 @@ export const useSchemaStore = defineStore('schema', {
 		 */
 		setSchemaItem(schemaItem) {
 			this.schemaItem = schemaItem && new Schema(schemaItem)
+		},
+		/**
+		 * Switch the editor between publishing and saving a draft.
+		 *
+		 * @param {boolean} draftMode - True to save edits as the schema's draft
+		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 */
+		setDraftMode(draftMode) {
+			this.draftMode = draftMode === true
+		},
+		/**
+		 * Save an edit as the schema's draft. Records keep being checked against
+		 * the published definition until the draft is published.
+		 *
+		 * @param {object} schemaItem - The edited schema (must have an id)
+		 * @return {Promise<Schema>} The schema with its draft
+		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 */
+		async saveSchemaDraft(schemaItem) {
+			if (!schemaItem?.id) {
+				throw new Error('Only a saved schema can hold a draft')
+			}
+			const body = this.cleanSchemaForSave(schemaItem)
+			const { data } = await axios.put(
+				generateUrl(
+					`/apps/openregister/api/schemas/${schemaItem.id}?draft=true`,
+				),
+				body,
+			)
+			this.setSchemaItem(data)
+			return this.schemaItem
+		},
+		/**
+		 * Publish the schema's draft through the normal update (version bump, changelog).
+		 *
+		 * @param {number|string} id - The schema id
+		 * @param {object} [options] - Options
+		 * @param {boolean} [options.acknowledgeBreaking] - Accept a breaking change
+		 * @return {Promise<Schema>} The published schema
+		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 */
+		async publishSchemaDraft(id, options = {}) {
+			const { data } = await axios.post(
+				generateUrl(`/apps/openregister/api/schemas/${id}/draft/publish`),
+				{ acknowledgeBreaking: options.acknowledgeBreaking === true },
+			)
+			this.setSchemaItem(data)
+			this.refreshSchemaList()
+			return this.schemaItem
+		},
+		/**
+		 * Discard the schema's draft; the published definition stays.
+		 *
+		 * @param {number|string} id - The schema id
+		 * @return {Promise<Schema>} The schema without a draft
+		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 */
+		async discardSchemaDraft(id) {
+			const { data } = await axios.delete(
+				generateUrl(`/apps/openregister/api/schemas/${id}/draft`),
+			)
+			this.setSchemaItem(data)
+			return this.schemaItem
 		},
 		/**
 		 * Set the schema list, normalizing empty-properties arrays to objects
@@ -269,6 +350,7 @@ export const useSchemaStore = defineStore('schema', {
 			delete cleaned.stats
 			delete cleaned.archive
 			delete cleaned.version // Backend determines version
+			delete cleaned.draft // Only the draft routes write it
 
 			// New schemas have id: '' — omit it entirely so the backend unambiguously
 			// treats the request as a create rather than an update with an empty id.

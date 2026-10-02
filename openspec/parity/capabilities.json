@@ -653,9 +653,9 @@
    "source": "competitor-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Service/Schema/SchemaVersioningService.php diffs, semver-bumps and records a changelog on every schema update (SchemasController.php:184); changelog API routes.php:1634. No draft state: grep 'draft' in lib/Db/Schema.php and SchemasController.php finds only JSON Schema draft-2020-12 refs; Corrections round 8 (2026-09-28), openregister#4102: the version bump and changelog run only on PUT /api/schemas/{id}, lib/Controller/SchemasController.php:1140-1182 is the only caller of SchemaVersioningService, while a configuration or app import saves the schema through schemaMapper->update() with no classification, version bump or changelog entry, lib/Service/Configuration/ImportHandler.php:2210 and :2224 at 555af72.",
+    "evidence": "A schema holds one draft beside the published definition: PUT /api/schemas/{id}?draft=true saves it, POST /api/schemas/{id}/draft/publish applies it through the normal update (breaking-change gate, version bump, one changelog entry), DELETE /api/schemas/{id}/draft discards it (lib/Controller/SchemasController.php publishDraft/discardDraft, lib/Db/Schema.php draft column, migration Version1Date20260930110000). Schema page: Edit as draft and a draft bar (src/components/schema/SchemaDraftBar.vue). tests/Unit/Controller/SchemaDraftTest.php with the real versioning service and Opis. Change modelling-schema-draft archived 2026-09-30.",
     "change": "modelling-schema-draft"
    },
    "reachedOn": "API only: GET /api/schemas/{id}/changelog",
