@@ -43,12 +43,19 @@ use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 #[CoversClass(MagicRbacHandler::class)]
 #[CoversClass(MagicOrganizationHandler::class)]
+#[UsesClass(\OCA\OpenRegister\Db\Schema::class)]
+#[UsesClass(\OCA\OpenRegister\Service\AnonymousEvaluationContext::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Object\PermissionHandler::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Rbac\DenyEnforcementMode::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Rbac\ObjectScopeResolver::class)]
+#[UsesClass(\OCA\OpenRegister\Service\SystemOperationContext::class)]
 class SystemOperationReadScopeTest extends TestCase {
 
 	/**

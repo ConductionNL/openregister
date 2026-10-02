@@ -20,9 +20,11 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(SchemaMapper::class)]
+#[UsesClass(\OCA\OpenRegister\Db\Schema::class)]
 class SchemaMapperGetRelatedTenancyTest extends TestCase {
 
 	/**

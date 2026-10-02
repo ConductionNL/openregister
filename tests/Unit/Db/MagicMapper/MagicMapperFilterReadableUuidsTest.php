@@ -35,12 +35,23 @@ use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 #[CoversClass(MagicMapper::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler::class)]
+#[UsesClass(\OCA\OpenRegister\Db\MagicMapper\MagicTableHandler::class)]
+#[UsesClass(\OCA\OpenRegister\Db\Register::class)]
+#[UsesClass(\OCA\OpenRegister\Db\Schema::class)]
+#[UsesClass(\OCA\OpenRegister\Service\Query\RelatedRowQueryApplier::class)]
 class MagicMapperFilterReadableUuidsTest extends TestCase {
 
 	private IDBConnection&MockObject $db;

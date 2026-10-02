@@ -40,6 +40,7 @@ use OCP\IMemcache;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
@@ -47,6 +48,8 @@ use Psr\Log\LoggerInterface;
  * Names are disclosed exactly where the object is readable.
  */
 #[CoversClass(CacheHandler::class)]
+#[UsesClass(\OCA\OpenRegister\Db\ObjectEntity::class)]
+#[UsesClass(\OCA\OpenRegister\Db\Organisation::class)]
 class CacheHandlerNameReadRightsTest extends TestCase {
 	/** The caller's active organisation. */
 	private const ORG_CALLER = 'cccccccc-0000-0000-0000-000000000001';
@@ -96,6 +99,13 @@ class CacheHandlerNameReadRightsTest extends TestCase {
 	 * @var array<int, array{registerId: int, schemaId: int, uuids: array<int, string>}>
 	 */
 	private array $oracleCalls = [];
+
+	/**
+	 * When true, the read-path oracle throws.
+	 *
+	 * @var bool
+	 */
+	private bool $oracleThrows = false;
 
 	/**
 	 * The distributed cache, as a plain array.
@@ -151,6 +161,10 @@ class CacheHandlerNameReadRightsTest extends TestCase {
 		$this->objectMapper->method('filterReadableUuids')->willReturnCallback(
 			function (int $registerId, int $schemaId, array $uuids): array {
 				$this->oracleCalls[] = ['registerId' => $registerId, 'schemaId' => $schemaId, 'uuids' => array_values($uuids)];
+				if ($this->oracleThrows === true) {
+					throw new \RuntimeException('read path unavailable');
+				}
+
 				return array_values(array_intersect($uuids, ($this->readableByUser[$this->uid] ?? [])));
 			}
 		);
@@ -364,4 +378,79 @@ class CacheHandlerNameReadRightsTest extends TestCase {
 		$this->assertSame([self::ORG_CALLER => 'Gemeente Tilburg'], $names);
 		$this->assertSame([], $this->oracleCalls, 'An organisation name never asks the object read path.');
 	}//end testOrganisationNamesKeepTheOrganisationScope()
+
+	/**
+	 * When the read path cannot answer, nothing is disclosed.
+	 *
+	 * @return void
+	 */
+	public function testAReadPathFailureDisclosesNothing(): void {
+		$this->objectMapper->method('findMultiple')->willReturn([
+			$this->moduleObject(self::MODULE_UUID, 'iBurgerzaken', self::ORG_OTHER),
+		]);
+		$this->readableByUser['tilburg-demo'] = [self::MODULE_UUID];
+		$this->oracleThrows = true;
+
+		$this->assertSame([], $this->buildHandler()->getMultipleObjectNames([self::MODULE_UUID]));
+	}//end testAReadPathFailureDisclosesNothing()
+
+	/**
+	 * A remembered answer is forgotten when the object changes: the next lookup
+	 * asks the read path again.
+	 *
+	 * @return void
+	 */
+	public function testAChangedObjectIsAskedAgain(): void {
+		$object = $this->moduleObject(self::MODULE_UUID, 'iBurgerzaken', self::ORG_OTHER);
+		$this->objectMapper->method('findMultiple')->willReturn([$object]);
+		$this->readableByUser['tilburg-demo'] = [self::MODULE_UUID];
+		$handler = $this->buildHandler();
+
+		$this->assertSame('iBurgerzaken', $handler->getMultipleObjectNames([self::MODULE_UUID])[self::MODULE_UUID] ?? null);
+
+		// Read rights change (say the object moved schema); the remembered answer still holds...
+		$this->readableByUser['tilburg-demo'] = [];
+		$this->assertCount(1, $this->oracleCalls, 'The second lookup is answered from memory.');
+		$handler->getMultipleObjectNames([self::MODULE_UUID]);
+		$this->assertCount(1, $this->oracleCalls);
+
+		// ...until the object changes, after which the read path is asked again.
+		$handler->invalidateForObjectChange(object: $object, operation: 'update');
+		$this->assertSame([], $handler->getMultipleObjectNames([self::MODULE_UUID]));
+		$this->assertCount(2, $this->oracleCalls);
+	}//end testAChangedObjectIsAskedAgain()
+
+	/**
+	 * A single lookup by numeric id resolves through the object's UUID and
+	 * follows the same rule.
+	 *
+	 * @return void
+	 */
+	public function testASingleLookupByIdFollowsTheReadRule(): void {
+		$object = $this->moduleObject(self::MODULE_UUID, 'iBurgerzaken', self::ORG_OTHER);
+		$this->organisationMapper->method('findByUuid')->willThrowException(new \RuntimeException('not an organisation'));
+		$this->objectMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
+
+		$this->readableByUser['tilburg-demo'] = [self::MODULE_UUID];
+		$this->assertSame('iBurgerzaken', $this->buildHandler()->getSingleObjectName(42));
+
+		$this->readableByUser['tilburg-demo'] = [];
+		$this->assertNull($this->buildHandler()->getSingleObjectName(42));
+	}//end testASingleLookupByIdFollowsTheReadRule()
+
+	/**
+	 * A single lookup of an object without a table discloses nothing.
+	 *
+	 * @return void
+	 */
+	public function testASingleLookupWithoutATableDisclosesNothing(): void {
+		$object = new ObjectEntity();
+		$object->setUuid(self::MODULE_UUID);
+		$object->setName('Nowhere');
+		$this->organisationMapper->method('findByUuid')->willThrowException(new \RuntimeException('not an organisation'));
+		$this->objectMapper->method('findAcrossAllSources')->willReturn(['object' => $object]);
+		$this->readableByUser['tilburg-demo'] = [self::MODULE_UUID];
+
+		$this->assertNull($this->buildHandler()->getSingleObjectName(self::MODULE_UUID));
+	}//end testASingleLookupWithoutATableDisclosesNothing()
 }//end class
