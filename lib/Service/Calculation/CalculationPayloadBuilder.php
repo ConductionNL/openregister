@@ -47,6 +47,14 @@ use OCA\OpenRegister\Db\Schema;
  */
 class CalculationPayloadBuilder {
 	/**
+	 * Synthetic payload key listing the declared references that could not be resolved.
+	 *
+	 * Read through {@see self::unresolvedReferencesUsedBy()} and stripped with
+	 * the other synthetic keys; it never reaches stored data.
+	 */
+	public const UNRESOLVED_KEY = '@unresolvedRef';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ReferenceResolver $references Cross-object reference pre-resolver.
@@ -105,11 +113,14 @@ class CalculationPayloadBuilder {
 
 		$references = $this->configBlock(schema: $schema, key: 'x-openregister-references');
 		if ($references !== null) {
-			$data['@ref'] = $this->references->resolveAll(
+			$outcome = $this->references->resolveAllWithOutcome(
 				payload: $data,
 				references: $references,
-				register: $object->getRegister()
+				register: $object->getRegister(),
+				organisation: $object->getOrganisation()
 			);
+			$data['@ref'] = $outcome['refs'];
+			$data[self::UNRESOLVED_KEY] = $outcome['unresolved'];
 		}
 
 		$aggregateRefs = $this->configBlock(schema: $schema, key: 'x-openregister-aggregate-refs');
@@ -129,16 +140,74 @@ class CalculationPayloadBuilder {
 	 *
 	 * @param array<string, mixed> $data The enriched payload.
 	 *
-	 * @return array<string, mixed> The payload without `@self` / `@ref` / `@aggregate`.
+	 * @return array<string, mixed> The payload without `@self` / `@ref` / `@aggregate` / the unresolved list.
 	 *
 	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
 	 *   (Requirement: Time-dependent calculated fields re-evaluate without object writes)
 	 */
 	public function stripSyntheticKeys(array $data): array {
-		unset($data['@self'], $data['@ref'], $data['@aggregate']);
+		unset($data['@self'], $data['@ref'], $data['@aggregate'], $data[self::UNRESOLVED_KEY]);
 
 		return $data;
 	}//end stripSyntheticKeys()
+
+	/**
+	 * The unresolved references a calculation expression reads.
+	 *
+	 * A calculation that reads `@ref.<name>` for a reference that could not be
+	 * resolved would evaluate against nothing and write null over a good
+	 * stored value. Callers skip such a calculation and keep the stored value.
+	 *
+	 * @param array<string, mixed> $payload The payload {@see self::build()} returned.
+	 * @param mixed $expression The calculation's JSON-AST expression.
+	 *
+	 * @return list<string> The unresolved reference names the expression reads, in first-read order.
+	 *
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
+	 */
+	public function unresolvedReferencesUsedBy(array $payload, mixed $expression): array {
+		$unresolved = ($payload[self::UNRESOLVED_KEY] ?? []);
+		if (is_array($unresolved) === false || $unresolved === []) {
+			return [];
+		}
+
+		$used = array_values(array_unique($this->referenceNamesIn(expression: $expression)));
+
+		return array_values(array_intersect($used, $unresolved));
+	}//end unresolvedReferencesUsedBy()
+
+	/**
+	 * Collect every `@ref.<name>` an expression reads.
+	 *
+	 * @param mixed $expression A JSON-AST node or leaf.
+	 *
+	 * @return list<string> Reference names, possibly repeated.
+	 */
+	private function referenceNamesIn(mixed $expression): array {
+		if (is_string($expression) === true) {
+			if (str_starts_with($expression, '@ref.') === false) {
+				return [];
+			}
+
+			$name = explode('.', $expression)[1];
+			if ($name === '') {
+				return [];
+			}
+
+			return [$name];
+		}
+
+		if (is_array($expression) === false) {
+			return [];
+		}
+
+		$names = [];
+		foreach ($expression as $value) {
+			$names = array_merge($names, $this->referenceNamesIn(expression: $value));
+		}
+
+		return $names;
+	}//end referenceNamesIn()
 
 	/**
 	 * Read a non-empty array block off the schema configuration.
