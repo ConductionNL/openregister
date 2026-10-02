@@ -74,7 +74,7 @@
     "@nextcloud/router": "^3.1.0",
     "@nextcloud/vue": "^9.13.1",
     "@vueuse/core": "^14.3.0",
-    "apexcharts": "^7.1.0",
+    "apexcharts": "^7.6.1",
     "css-loader": "^7.1.5",
     "dexie": "^4.4.6",
     "dompurify": "^3.4.15",
