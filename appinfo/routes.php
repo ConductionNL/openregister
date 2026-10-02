@@ -1620,6 +1620,9 @@ return [
         ['name' => 'propertyVocabulary#extendingForms', 'url' => '/api/schemas/extending-forms', 'verb' => 'GET'],
         ['name' => 'schemas#upload', 'url' => '/api/schemas/upload', 'verb' => 'POST'],
         ['name' => 'schemas#uploadUpdate', 'url' => '/api/schemas/{id}/upload', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
+        // A draft is saved with PUT /api/schemas/{id}?draft=true; these publish or discard it (modelling-schema-draft).
+        ['name' => 'schemas#publishDraft', 'url' => '/api/schemas/{id}/draft/publish', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+        ['name' => 'schemas#discardDraft', 'url' => '/api/schemas/{id}/draft', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#download', 'url' => '/api/schemas/{id}/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#related', 'url' => '/api/schemas/{id}/related', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         // The list surface a schema declares: columns and search fields, so a
