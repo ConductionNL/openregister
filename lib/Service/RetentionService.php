@@ -72,6 +72,16 @@ use Psr\Log\LoggerInterface;
 class RetentionService {
 
 	/**
+	 * Why a destruction rule refused an object (destructionRefusal()).
+	 */
+	public const REFUSAL_NOT_NOMINATED = 'not_nominated_for_destruction';
+	public const REFUSAL_NOT_LIVE = 'record_not_live';
+	public const REFUSAL_NOT_DUE = 'action_date_not_reached';
+	public const REFUSAL_FROZEN = 'record_frozen';
+	public const REFUSAL_LEGAL_HOLD = 'legal_hold';
+	public const REFUSAL_ALREADY_LISTED = 'already_on_a_list';
+
+	/**
 	 * Valid archiefnominatie values.
 	 */
 	private const VALID_NOMINATIES = ['vernietigen', 'bewaren', 'nog_niet_bepaald'];
@@ -595,27 +605,46 @@ class RetentionService {
 	 * @param array        $excludeUuids UUIDs already on a pending destruction list.
 	 *
 	 * @return bool True when every destruction rule is satisfied.
+	 */
+	private function isEligibleForDestruction(ObjectEntity $object, string $today, array $excludeUuids): bool {
+		return $this->destructionRefusal(object: $object, today: $today, excludeUuids: $excludeUuids) === null;
+	}//end isEligibleForDestruction()
+
+	/**
+	 * The first destruction rule that refuses one object, or null when none does.
+	 *
+	 * The one rule, read by the daily sweep (through isEligibleForDestruction())
+	 * and by an app that asks for a list of its own (DestructionListCreator),
+	 * so the two cannot drift apart.
+	 *
+	 * @param ObjectEntity $object       The object to judge.
+	 * @param string       $today        Today, as Y-m-d.
+	 * @param array        $excludeUuids UUIDs already on a pending destruction list.
+	 *
+	 * @return string|null One of the REFUSAL_* reasons, or null when the object may be destroyed.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One rule per branch; collapsing
 	 *              them would hide which rule rejected an object.
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	private function isEligibleForDestruction(ObjectEntity $object, string $today, array $excludeUuids): bool {
+	public function destructionRefusal(ObjectEntity $object, string $today, array $excludeUuids): ?string {
 		$retention = ($object->getRetention() ?? []);
 
 		// Every spelling that means destroy. Matching only the English one
 		// would make every pre-existing record invisible to this sweep, which
 		// is the direction that keeps personal data past its lawful term.
 		if (in_array(($retention['archiefnominatie'] ?? ''), Appraisal::DESTROY_ALIASES, true) === false) {
-			return false;
+			return self::REFUSAL_NOT_NOMINATED;
 		}
 
 		if ($this->recordStateIsLive(retention: $retention) === false) {
-			return false;
+			return self::REFUSAL_NOT_LIVE;
 		}
 
 		$actiedatum = ($retention['archiefactiedatum'] ?? null);
 		if ($actiedatum === null || $actiedatum > $today) {
-			return false;
+			return self::REFUSAL_NOT_DUE;
 		}
 
 		// Skip objects in an immutable archival status (destroyed, transferred).
@@ -628,15 +657,19 @@ class RetentionService {
 		// a new state counts as live, this line is what stops a transferred
 		// record being swept while nobody is looking at this method.
 		if ($this->validateNotImmutable(object: $object) !== null) {
-			return false;
+			return self::REFUSAL_FROZEN;
 		}
 
 		if ((($retention['legalHold'] ?? [])['active'] ?? false) === true) {
-			return false;
+			return self::REFUSAL_LEGAL_HOLD;
 		}
 
-		return (in_array($object->getUuid(), $excludeUuids, true) === false);
-	}//end isEligibleForDestruction()
+		if (in_array($object->getUuid(), $excludeUuids, true) === true) {
+			return self::REFUSAL_ALREADY_LISTED;
+		}
+
+		return null;
+	}//end destructionRefusal()
 
 	/**
 	 * Is this record still live, for the purposes of a disposal sweep?

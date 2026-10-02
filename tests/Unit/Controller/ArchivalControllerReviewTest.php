@@ -95,7 +95,8 @@ class ArchivalControllerReviewTest extends TestCase {
 			$this->outcomes,
 			$this->createMock(AuditTrailMapper::class),
 			$this->nominations,
-			$this->schemaMapper
+			$this->schemaMapper,
+			$this->createMock(\OCA\OpenRegister\Service\Archival\DestructionListCreator::class)
 		);
 	}
 
