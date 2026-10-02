@@ -10,3 +10,13 @@
 
 - [x] 2.1 `CacheHandlerNameReadRightsTest`: readable gets the name, unreadable gets nothing (own organisation included), admin unchanged, both caches, legacy entries, organisation names (red on development, green here)
 - [x] 2.2 `MagicMapperFilterReadableUuidsTest`: the read rule is applied with both flags and the table's register, chunked, fail closed
+
+## 3. System reads in a web request
+
+- [x] 3.1 `MagicRbacHandler::isTrustedSystemCaller()`: userless on the command line, or inside `runAsSystem()`; never a logged-in user, never a forced-anonymous evaluation. Used by `applyRbacFilters()`; `buildRbacConditionsSql()` takes the runAsSystem arm only (REQ-NFR-03)
+- [x] 3.2 `MagicOrganizationHandler::isSystemContext()` takes the same runAsSystem arm (REQ-NFR-03)
+- [x] 3.3 `SystemOperationReadScopeTest` (red on development, green here)
+
+## 4. Related schemas
+
+- [x] 4.1 `SchemaMapper::getRelated()` looks up and scans schemas with multitenancy off; `SchemaMapperGetRelatedTenancyTest` (REQ-NFR-04)

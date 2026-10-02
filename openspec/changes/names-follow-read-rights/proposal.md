@@ -48,10 +48,20 @@ Closing the leak in the other direction is part of the same rule: an object in t
 caller's own organisation whose schema denies the caller read access no longer
 discloses its name.
 
-## Not in this change
+## Also in this change
 
-`GET /api/schemas/{id}/related` answers "Schema not found" for a non-admin whose
-active organisation does not own the schema. That is a different cause:
-`SchemaMapper::getRelated()` looks the schema up with multitenancy on, while the
-controller's own outgoing half already uses the metadata-read bypass. Listed for a
-follow-up, not fixed here.
+**A userless read inside runAsSystem is a system read.** dossiq's portal Woo intake
+(`POST /apps/dossiq/api/portal/woo-verzoek`, called server-side with no user) writes the
+case inside `runAsSystem()`. The case's calculations resolve `caseType` and `statusType`
+through ReferenceResolver with RBAC on, and MagicRbacHandler and
+MagicOrganizationHandler only trusted a userless caller on the command line, so every
+reference read clamped to nothing and the case got no deadline and no status label
+(nextcloud.log: "Reference resolution failed for schema "caseType": ... not found in any
+magic table"). PermissionHandler already trusted the scope; the magic-table filters now
+agree. A logged-in user, a forced-anonymous evaluation, and a userless web read outside
+the scope are filtered exactly as before.
+
+**Related schemas are a catalog read.** `GET /api/schemas/{id}/related` answered "Schema
+not found" for a non-admin outside the schema's organisation because
+`SchemaMapper::getRelated()` looked the schema up with multitenancy on. Both its lookups
+now bypass multitenancy, like the controller's outgoing half and `GET /api/schemas/{id}`.
