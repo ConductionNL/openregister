@@ -119,7 +119,7 @@ class MagicOrganizationHandler {
 	 * @param bool $adminBypassEnabled Whether admin users can bypass org filtering
 	 * @param int|null $registerId The register this table belongs to, for shared master data
 	 * @param int|null $schemaId The schema this table belongs to, for shared master data
-	 * @param bool $admitOrganisationless Whether the caller's RBAC grant also admits org-less rows
+	 * @param bool $withOrgless Whether the caller's RBAC grant also admits org-less rows
 	 *
 	 * @return void
 	 *
@@ -134,14 +134,14 @@ class MagicOrganizationHandler {
 		bool $adminBypassEnabled = false,
 		?int $registerId = null,
 		?int $schemaId = null,
-		bool $admitOrganisationless = false,
+		bool $withOrgless = false,
 	): void {
 		$scope = $this->resolveOrganizationScope(
 			adminBypassEnabled: $adminBypassEnabled,
 			registerId: $registerId,
 			schemaId: $schemaId
 		);
-		if ($admitOrganisationless === true) {
+		if ($withOrgless === true) {
 			$scope = self::admitOrganisationless(scope: $scope);
 		}
 

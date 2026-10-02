@@ -909,7 +909,7 @@ class MagicSearchHandler {
 				schema: $schema,
 				registerId: ($registerId ?? $this->registerIdFromQuery(query: $query)),
 				connection: $connection,
-				admitOrganisationless: $this->organisationlessRowsAdmitted(
+				withOrgless: $this->organisationlessRowsAdmitted(
 					schema: $schema,
 					_rbac: $this->flagFromQuery(value: $rbac),
 					multitenancyExplicit: $multitenancyExplicit
@@ -1112,9 +1112,11 @@ class MagicSearchHandler {
 	 * @param Schema           $schema     The schema being read.
 	 * @param int|null         $registerId The register whose table is being read, for shared master data.
 	 * @param IDBConnection    $connection The connection, used to quote the organisation uuids.
-	 * @param bool             $admitOrganisationless Whether a register-cascade grant also admits org-less rows.
+	 * @param bool             $withOrgless Whether a register-cascade grant also admits org-less rows.
 	 *
 	 * @return string|null The SQL condition, or null when every row is in scope.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) admitOrganisationless() is a pure transform of the decided scope.
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
 	 */
@@ -1122,14 +1124,14 @@ class MagicSearchHandler {
 		Schema $schema,
 		?int $registerId,
 		IDBConnection $connection,
-		bool $admitOrganisationless = false,
+		bool $withOrgless = false,
 	): ?string {
 		$scope = $this->organizationHandler->resolveOrganizationScope(
 			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
 			registerId: $registerId,
 			schemaId: $schema->getId()
 		);
-		if ($admitOrganisationless === true) {
+		if ($withOrgless === true) {
 			$scope = MagicOrganizationHandler::admitOrganisationless(scope: $scope);
 		}
 
@@ -2223,7 +2225,7 @@ class MagicSearchHandler {
 				adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
 				registerId: $registerId,
 				schemaId: $schema->getId(),
-				admitOrganisationless: $this->organisationlessRowsAdmitted(
+				withOrgless: $this->organisationlessRowsAdmitted(
 					schema: $schema,
 					_rbac: $_rbac,
 					multitenancyExplicit: $multitenancyExplicit
