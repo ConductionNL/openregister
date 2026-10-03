@@ -22,6 +22,7 @@ namespace Unit\Event;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\ObjectEventSubscription;
 use OCA\OpenRegister\Listener\ObjectEventProxyListener;
 use OCP\EventDispatcher\Event;
@@ -365,4 +366,74 @@ class ObjectEventSubscriptionTest extends TestCase {
 		$this->assertSame(1, $this->spy->calls, 'Declaring nothing must still mean all.');
 
 	}//end testUndeclaredSubscriptionInvokesForEverything()
+
+	/**
+	 * A pre-update event is filtered by the schema of the object being written.
+	 *
+	 * ObjectUpdatingEvent has getNewObject() and no getObject(). Before the
+	 * proxy read getNewObject(), this event was undecidable and the listener
+	 * ran for every update in every register.
+	 *
+	 * @return void
+	 */
+	public function testUpdatingEventSkipsOtherSchema(): void {
+		$this->declareUpdating(schemas: ['62']);
+
+		$this->dispatchUpdating(register: '17', schema: '999');
+
+		$this->assertSame(0, $this->spy->calls, 'A pre-update listener declared for one schema must not run for another.');
+
+	}//end testUpdatingEventSkipsOtherSchema()
+
+	/**
+	 * A pre-update event still reaches a listener declared for its schema.
+	 *
+	 * The positive control for the test above: a proxy that skipped every
+	 * update would pass that one too.
+	 *
+	 * @return void
+	 */
+	public function testUpdatingEventInvokesDeclaredSchema(): void {
+		$this->declareUpdating(schemas: ['62']);
+
+		$this->dispatchUpdating(register: '17', schema: '62');
+
+		$this->assertSame(1, $this->spy->calls, 'A pre-update listener must run for the schema it declared.');
+
+	}//end testUpdatingEventInvokesDeclaredSchema()
+
+	/**
+	 * Declare a subscription to the pre-update event.
+	 *
+	 * @param array<int,string>|null $schemas Schema tokens.
+	 *
+	 * @return void
+	 */
+	private function declareUpdating(?array $schemas = null): void {
+		ObjectEventSubscription::subscribe(
+			dispatcher: $this->createMock(IEventDispatcher::class),
+			event: ObjectUpdatingEvent::class,
+			listener: SpyObjectListener::class,
+			registers: null,
+			schemas: $schemas
+		);
+
+	}//end declareUpdating()
+
+	/**
+	 * Dispatch a real pre-update event for an object in the given register/schema.
+	 *
+	 * @param string $register Register id.
+	 * @param string $schema Schema id.
+	 *
+	 * @return void
+	 */
+	private function dispatchUpdating(string $register, string $schema): void {
+		$object = new ObjectEntity();
+		$object->setRegister($register);
+		$object->setSchema($schema);
+
+		$this->proxy->handle(new ObjectUpdatingEvent($object, null));
+
+	}//end dispatchUpdating()
 }//end class
