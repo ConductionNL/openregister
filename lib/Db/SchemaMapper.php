@@ -3442,12 +3442,16 @@ class SchemaMapper extends QBMapper {
 	 * @return Schema[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Schema>
+	 *
+	 * @spec openspec/changes/names-follow-read-rights/specs/rbac-scopes/spec.md
 	 */
 	public function getRelated(Schema|int|string $schema): array {
 		// If we received a Schema entity, get its ID, otherwise find the schema.
 		if ($schema instanceof Schema === false) {
 			// Find the target schema to get all its identifiers.
-			$targetSchema = $this->find(id: $schema);
+			// Metadata read: bypasses multitenancy, like the controller's own
+			// outgoing half and every other schema catalog lookup.
+			$targetSchema = $this->find(id: $schema, _multitenancy: false);
 			$targetSchemaId = (string)$targetSchema->getId();
 			$targetSchemaUuid = $targetSchema->getUuid();
 			$targetSchemaSlug = $targetSchema->getSlug();
@@ -3459,8 +3463,8 @@ class SchemaMapper extends QBMapper {
 			$targetSchemaSlug = $schema->getSlug();
 		}
 
-		// Get all schemas to search through their properties.
-		$allSchemas = $this->findAll();
+		// Get all schemas to search through their properties (metadata read).
+		$allSchemas = $this->findAll(_multitenancy: false);
 		$relatedSchemas = [];
 
 		foreach ($allSchemas as $currentSchema) {
