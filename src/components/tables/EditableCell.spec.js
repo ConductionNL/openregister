@@ -55,6 +55,9 @@ function ctx(over = {}) {
 		error: '',
 		$emit: jest.fn(),
 		$nextTick: (fn) => fn && fn(),
+		cancel() {
+			return EditableCell.methods.cancel.call(this)
+		},
 		...over,
 	}
 }
@@ -73,7 +76,9 @@ describe('EditableCell', () => {
 	})
 
 	it('offers no editor for a field that cannot be edited inline', () => {
-		expect(computed('canEdit', ctx({ property: { type: 'object' } }))).toBe(false)
+		expect(computed('canEdit', ctx({ property: { type: 'object' } }))).toBe(
+			false,
+		)
 	})
 
 	it('opens the record instead of an editor for a reader', () => {
@@ -105,18 +110,31 @@ describe('EditableCell', () => {
 		expect(c.shown).toBe('Z-2')
 		expect(c.editing).toBe(false)
 		expect(c.error).toBe('')
-		expect(c.$emit).toHaveBeenCalledWith('saved', { row: c.row, field: 'reference', value: 'Z-2' })
+		expect(c.$emit).toHaveBeenCalledWith('saved', {
+			row: c.row,
+			field: 'reference',
+			value: 'Z-2',
+		})
 	})
 
 	it('sends a number field as a number', async () => {
 		axios.patch.mockResolvedValue({ data: {} })
-		const c = ctx({ editing: true, draft: '42', property: { type: 'integer' }, field: 'count', value: 1, shown: 1 })
+		const c = ctx({
+			editing: true,
+			draft: '42',
+			property: { type: 'integer' },
+			field: 'count',
+			value: 1,
+			shown: 1,
+		})
 		await method('save', c)
 		expect(axios.patch).toHaveBeenCalledWith(expect.any(String), { count: 42 })
 	})
 
 	it('shows the refusal and keeps the old value', async () => {
-		axios.patch.mockRejectedValue({ response: { data: { message: 'reference is frozen in state closed' } } })
+		axios.patch.mockRejectedValue({
+			response: { data: { message: 'reference is frozen in state closed' } },
+		})
 		const c = ctx({ editing: true, draft: 'Z-2' })
 		await method('save', c)
 		expect(c.shown).toBe('Z-1')

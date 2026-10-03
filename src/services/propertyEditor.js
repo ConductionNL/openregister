@@ -53,7 +53,11 @@ export function enumOptions(property) {
  */
 export function editorFor(property, languages = []) {
 	if (!property) return 'text'
-	if (property.translatable === true && Array.isArray(languages) && languages.length > 0) {
+	if (
+		property.translatable === true
+		&& Array.isArray(languages)
+		&& languages.length > 0
+	) {
 		return 'translation'
 	}
 	if (property.type === 'file') return 'file'
@@ -84,7 +88,12 @@ export function isInlineEditable(property, value = null) {
 	if (property.translatable === true) return false
 	if (!['string', 'number', 'integer'].includes(property.type)) return false
 	if (editorFor(property) === 'date') return false
-	if (property.immutable === true && value !== null && value !== undefined && value !== '') {
+	if (
+		property.immutable === true
+		&& value !== null
+		&& value !== undefined
+		&& value !== ''
+	) {
 		return false
 	}
 	return true

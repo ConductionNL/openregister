@@ -307,19 +307,22 @@ import {
 															v-else-if="
 																getPropertyInputComponent(
 																	key,
-																)
-																=== 'NcSelect'
+																) === 'NcSelect'
 															"
 															:modelValue="
 																enumOptionFor(
 																	key,
 																	formData[key]
 																		!== undefined
-																		? formData[key]
+																		? formData[
+																				key
+																			]
 																		: value,
 																)
 															"
-															:options="enumOptionsFor(key)"
+															:options="
+																enumOptionsFor(key)
+															"
 															label="label"
 															:inputLabel="
 																getPropertyDisplayName(
@@ -340,8 +343,7 @@ import {
 															v-else-if="
 																getPropertyInputComponent(
 																	key,
-																)
-																=== 'file'
+																) === 'file'
 															"
 															type="file"
 															class="property-file-input"
@@ -355,7 +357,7 @@ import {
 																	key,
 																	$event,
 																)
-															">
+															" />
 
 														<!-- Translatable properties: one input per register language (REQ-RFCE-001) -->
 														<TranslationFieldEditor
@@ -369,11 +371,15 @@ import {
 																translationValueFor(
 																	formData[key]
 																		!== undefined
-																		? formData[key]
+																		? formData[
+																				key
+																			]
 																		: value,
 																)
 															"
-															:languages="registerLanguages"
+															:languages="
+																registerLanguages
+															"
 															:label="
 																getPropertyDisplayName(
 																	key,
@@ -1298,6 +1304,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Tag from 'vue-material-design-icons/Tag.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import TranslationFieldEditor from '../../components/i18n/TranslationFieldEditor.vue'
 import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import EmailsTab from '../../components/object-relations/EmailsTab.vue'
@@ -1309,8 +1316,11 @@ import AppTabs from '../../components/tabs/AppTabs.vue'
 import { dateToString, stringToDate } from '../../services/dateUtils.js'
 import { updateFileLabels } from '../../services/fileMetadata.js'
 import { getTheme } from '../../services/getTheme.js'
-import { editorFor, enumOptions, readFileAsDataUri } from '../../services/propertyEditor.js'
-import TranslationFieldEditor from '../../components/i18n/TranslationFieldEditor.vue'
+import {
+	editorFor,
+	enumOptions,
+	readFileAsDataUri,
+} from '../../services/propertyEditor.js'
 export default {
 	name: 'ViewObject',
 	components: {
@@ -3099,13 +3109,15 @@ export default {
 				this.currentSchema?.properties?.[key],
 				this.registerLanguages,
 			)
-			return {
-				switch: 'NcCheckboxRadioSwitch',
-				date: 'NcDateTimePickerNative',
-				select: 'NcSelect',
-				file: 'file',
-				translation: 'TranslationFieldEditor',
-			}[editor] || 'NcTextField'
+			return (
+				{
+					switch: 'NcCheckboxRadioSwitch',
+					date: 'NcDateTimePickerNative',
+					select: 'NcSelect',
+					file: 'file',
+					translation: 'TranslationFieldEditor',
+				}[editor] || 'NcTextField'
+			)
 		},
 
 		/**
@@ -3128,7 +3140,10 @@ export default {
 		 * @spec exclude display helper: the select's current option
 		 */
 		enumOptionFor(key, current) {
-			return this.enumOptionsFor(key).find((option) => option.value === current) || null
+			return (
+				this.enumOptionsFor(key).find((option) => option.value === current)
+				|| null
+			)
 		},
 
 		/**
@@ -3140,8 +3155,10 @@ export default {
 		 * @spec exclude display helper: shape a stored value for the translation editor
 		 */
 		translationValueFor(current) {
-			if (current && typeof current === 'object' && !Array.isArray(current)) return current
-			if (current === null || current === undefined || current === '') return {}
+			if (current && typeof current === 'object' && !Array.isArray(current))
+				return current
+			if (current === null || current === undefined || current === '')
+				return {}
 			const first = this.registerLanguages[0]
 			return first ? { [first]: String(current) } : {}
 		},

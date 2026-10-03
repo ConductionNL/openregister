@@ -84,7 +84,9 @@ export default {
 		inlineEditableColumns() {
 			const properties = this.normalizedSchema?.properties
 			if (!properties) return []
-			return Object.keys(properties).filter((key) => isInlineEditable(properties[key]))
+			return Object.keys(properties).filter((key) =>
+				isInlineEditable(properties[key]),
+			)
 		},
 
 		/**
@@ -691,9 +693,9 @@ export default {
 			@select="handleSelect">
 			<template
 				v-for="column in inlineEditableColumns"
+				:key="column"
 				#[`column-${column}`]="{ row, value }">
 				<EditableCell
-					:key="column"
 					:row="row"
 					:field="column"
 					:value="value"

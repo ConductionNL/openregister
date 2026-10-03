@@ -40,7 +40,7 @@ export default {
 	props: {
 		row: { type: Object, required: true },
 		field: { type: String, required: true },
-		value: { type: [String, Number, Boolean, Object, Array], default: null },
+		value: { type: [Boolean, String, Number, Object, Array], default: null },
 		property: { type: Object, default: () => ({}) },
 	},
 
@@ -62,8 +62,10 @@ export default {
 		 * @return {boolean}
 		 */
 		canEdit() {
-			return this.row?.['@self']?.can?.update === true
+			return (
+				this.row?.['@self']?.can?.update === true
 				&& isInlineEditable(this.property, this.shown)
+			)
 		},
 
 		/**
@@ -87,7 +89,9 @@ export default {
 		 * @return {string}
 		 */
 		editorLabel() {
-			return t('openregister', 'Edit {field}', { field: this.property?.title || this.field })
+			return t('openregister', 'Edit {field}', {
+				field: this.property?.title || this.field,
+			})
 		},
 	},
 
@@ -133,15 +137,22 @@ export default {
 				return
 			}
 			const self = this.row?.['@self'] || {}
-			const url = generateUrl(`/apps/openregister/api/objects/${self.register}/${self.schema}/${self.id ?? this.row.id}`)
+			const url = generateUrl(
+				`/apps/openregister/api/objects/${self.register}/${self.schema}/${self.id ?? this.row.id}`,
+			)
 			this.saving = true
 			try {
 				await axios.patch(url, { [this.field]: next })
 				this.shown = next
 				this.error = ''
-				this.$emit('saved', { row: this.row, field: this.field, value: next })
+				this.$emit('saved', {
+					row: this.row,
+					field: this.field,
+					value: next,
+				})
 			} catch (e) {
-				this.error = e?.response?.data?.message
+				this.error =
+					e?.response?.data?.message
 					|| e?.response?.data?.error
 					|| t('openregister', 'The value could not be saved')
 			} finally {
@@ -185,7 +196,6 @@ export default {
 		},
 	},
 }
-
 </script>
 
 <template>
@@ -210,7 +220,11 @@ export default {
 				v-model="draft"
 				:label="editorLabel"
 				:labelOutside="true"
-				:type="property.type === 'integer' || property.type === 'number' ? 'number' : 'text'"
+				:type="
+					property.type === 'integer' || property.type === 'number'
+						? 'number'
+						: 'text'
+				"
 				:disabled="saving"
 				@click.stop
 				@keydown.enter.prevent="save"

@@ -11,12 +11,17 @@ import {
 
 describe('editorFor', () => {
 	it('gives an enum field a choice list', () => {
-		expect(editorFor({ type: 'string', enum: ['open', 'closed'] })).toBe('select')
+		expect(editorFor({ type: 'string', enum: ['open', 'closed'] })).toBe(
+			'select',
+		)
 	})
 
 	it('gives a oneOf of constants a choice list', () => {
 		expect(
-			editorFor({ type: 'string', oneOf: [{ const: 'a', title: 'A' }, { const: 'b' }] }),
+			editorFor({
+				type: 'string',
+				oneOf: [{ const: 'a', title: 'A' }, { const: 'b' }],
+			}),
 		).toBe('select')
 	})
 
@@ -25,7 +30,9 @@ describe('editorFor', () => {
 	})
 
 	it('gives a translatable property one input per register language', () => {
-		expect(editorFor({ type: 'string', translatable: true }, ['nl', 'en'])).toBe('translation')
+		expect(editorFor({ type: 'string', translatable: true }, ['nl', 'en'])).toBe(
+			'translation',
+		)
 	})
 
 	it('keeps a translatable property a text field when the register declares no languages', () => {
@@ -50,7 +57,9 @@ describe('enumOptions', () => {
 	})
 
 	it('labels a oneOf constant by its title', () => {
-		expect(enumOptions({ oneOf: [{ const: 'a', title: 'Alpha' }, { const: 'b' }] })).toEqual([
+		expect(
+			enumOptions({ oneOf: [{ const: 'a', title: 'Alpha' }, { const: 'b' }] }),
+		).toEqual([
 			{ value: 'a', label: 'Alpha' },
 			{ value: 'b', label: 'b' },
 		])
@@ -80,7 +89,9 @@ describe('isInlineEditable', () => {
 	})
 
 	it('refuses an immutable field that already holds a value', () => {
-		expect(isInlineEditable({ type: 'string', immutable: true }, 'Z-1')).toBe(false)
+		expect(isInlineEditable({ type: 'string', immutable: true }, 'Z-1')).toBe(
+			false,
+		)
 		expect(isInlineEditable({ type: 'string', immutable: true }, '')).toBe(true)
 	})
 })
@@ -88,6 +99,8 @@ describe('isInlineEditable', () => {
 describe('readFileAsDataUri', () => {
 	it('reads the chosen file as the data URI the save path accepts', async () => {
 		const file = new File(['hello'], 'hello.txt', { type: 'text/plain' })
-		await expect(readFileAsDataUri(file)).resolves.toBe('data:text/plain;base64,aGVsbG8=')
+		await expect(readFileAsDataUri(file)).resolves.toBe(
+			'data:text/plain;base64,aGVsbG8=',
+		)
 	})
 })
