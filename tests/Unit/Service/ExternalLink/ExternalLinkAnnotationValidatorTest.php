@@ -23,6 +23,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator
+ * @uses \OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver
  */
 class ExternalLinkAnnotationValidatorTest extends TestCase {
 

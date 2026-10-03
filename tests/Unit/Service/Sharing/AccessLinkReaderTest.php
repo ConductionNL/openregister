@@ -297,4 +297,39 @@ class AccessLinkReaderTest extends TestCase {
 
 		$this->reader->read(link: $this->link());
 	}
+	// ---- Task 4.3: the timeline moved out, and its allow-list with it. -----
+
+	// A public entry's text is public and the account that wrote it is not.
+	// That projection now lives in Service/Timeline/PublicTimeline, which this
+	// reader delegates to, and it is asserted there by
+	// PublicTimelineTest::testANoteLeavesWithoutItsAuthor (it feeds an entry
+	// carrying `actorId` and asserts the key is gone). The version of this
+	// check that lived here projected notes only; that one reads records too,
+	// so it is strictly the better home.
+
+	// ---- Task 4.1/4.2: the projection the share token surface borrows. -----
+
+	/**
+	 * `publish()` is the same projection the link uses, for the share token.
+	 *
+	 * The share token surface answered with `jsonSerialize()`, which carried
+	 * `@self.authorization` and every property regardless of the rules
+	 * (openregister#3818). Two anonymous surfaces get one allow-list, so this
+	 * test asserts what the OTHER surface now receives.
+	 */
+	public function testPublishReducesAnObjectTheWayALinkDoes(): void {
+		$this->properties->method('filterReadableProperties')->willReturn(['onderwerp' => 'Bezwaar']);
+
+		$published = $this->reader->publish(object: $this->object());
+
+		$this->assertSame('Bezwaar', $published['onderwerp']);
+		$this->assertArrayNotHasKey('bsn', $published, 'a property the rules removed must not reappear');
+		foreach (['owner', 'organisation', 'folder', 'authorization', 'groups'] as $forbidden) {
+			$this->assertArrayNotHasKey(
+				$forbidden,
+				$published['@self'],
+				sprintf('an anonymous read must not publish @self.%s', $forbidden)
+			);
+		}
+	}
 }

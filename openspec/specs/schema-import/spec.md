@@ -207,6 +207,24 @@ Provenance MUST be visible via the schemas API.
 - AND it is not overwritten without that confirmation
 
 
+### Requirement: A shipped property missing from the instance is restored on upgrade
+
+When an app's upgrade imports a schema, a property the app ships that the instance holds no part of SHALL be written from the shipped definition, even when the shipped baseline already names it. Such a property never reached the instance; it SHALL NOT be read as a local deletion, kept absent, or reported as a conflict. A property the instance holds with one part changed or removed stays a local change.
+
+#### Scenario: an upgrade puts back properties an earlier import did not land
+
+- **GIVEN** a stored LearnerProfile schema with 16 properties, a shipped baseline and a new release that both name 30, and a release that also edits `personalNumber.x-notes`
+- **WHEN** the upgrade runs
+- **THEN** the written schema has all 30 properties, `personalNumber` as shipped, and no conflict is reported
+- @e2e exclude {upgrade path, asserted with the real guard, merge and comparator in tests/Unit/Service/ShippedBaseline/ShippedConfigurationGuardTest.php (learniq live pass D11, 3 Oct 2026)}
+
+#### Scenario: a part removed locally from a property the instance has stays removed
+
+- **GIVEN** a stored property `toelichting` whose `maxLength` was removed locally
+- **WHEN** an upgrade that still ships `maxLength` runs
+- **THEN** `toelichting` keeps no `maxLength` and the part is reported as preserved
+- @e2e exclude {asserted in tests/Unit/Service/ShippedBaseline/ShippedConfigurationGuardTest.php}
+
 ### Requirement: A schema retired from a descriptor MUST be removable from the instance
 
 Removing a schema from an app's register descriptor does not remove it from the

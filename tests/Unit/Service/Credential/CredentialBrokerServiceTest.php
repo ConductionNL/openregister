@@ -39,6 +39,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class CredentialBrokerServiceTest extends TestCase {
 	/** @var array<string, mixed>|null Captured client->request() options. */

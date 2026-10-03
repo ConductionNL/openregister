@@ -1499,7 +1499,25 @@ export default {
 		 * @spec exclude UI display helper — static list of selectable MIME types.
 		 */
 		mimeTypes() {
-			return ['image/jpeg', 'image/png', 'application/pdf', 'text/plain'] // Add more MIME types as needed
+			// The upload check enforces this list (fileConfiguration.allowedMimeTypes).
+			return [
+				'application/pdf',
+				'image/jpeg',
+				'image/png',
+				'image/gif',
+				'image/webp',
+				'text/plain',
+				'text/csv',
+				'application/msword',
+				'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+				'application/vnd.ms-excel',
+				'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+				'application/vnd.oasis.opendocument.text',
+				'application/vnd.oasis.opendocument.spreadsheet',
+				'application/zip',
+				'application/json',
+				'application/xml',
+			]
 		},
 
 		/**

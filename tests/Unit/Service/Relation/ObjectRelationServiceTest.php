@@ -37,6 +37,8 @@ use Psr\Log\LoggerInterface;
 /**
  * @covers \OCA\OpenRegister\Service\Relation\ObjectRelationService
  * @covers \OCA\OpenRegister\Db\ObjectRelation
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Relation\RelationTypeResolver
  */
 class ObjectRelationServiceTest extends TestCase {
 	private ObjectRelationService $service;

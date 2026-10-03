@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Schemas;
 
+use OCA\OpenRegister\Service\Schemas\CodedChoiceException;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabulary;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
@@ -217,30 +218,62 @@ class PropertyVocabularyTest extends TestCase {
 	}
 
 	/**
-	 * A key another lane owns saves, and stays out of the published list.
+	 * `x-openregister-property-source` is now defined, so it is published.
 	 *
-	 * `x-openregister-property-source` is dossiq's, and integriq's
-	 * `registry-backed-field-source` is where its meaning is being defined.
-	 * Both halves matter: refusing it would break a shipped schema, and
-	 * publishing it would be this lane inventing semantics for a key it does
-	 * not own. Covers the scenario "a key an app owns stays out of the
-	 * vocabulary until it is defined".
+	 * 🔑 THIS TEST USED TO ASSERT THE OPPOSITE, AND IT WAS RIGHT AT THE TIME.
+	 * It said the key must save but stay unpublished, because publishing it
+	 * would have been this layer inventing semantics for a key whose meaning
+	 * another change was still defining. That reasoning has been honoured
+	 * rather than overruled: integriq's `registry-backed-field-source` has now
+	 * DEFINED the shape (`provider`, `config`, `mode`), its resolver half is
+	 * built, and it was waiting on this side. So the key is adopted with the
+	 * meaning that change gave it, not with one invented here.
+	 *
+	 * Its old fixture, `{registry: 'kvk'}`, was never a shipped shape: no
+	 * register file in openregister or integriq carries this key at all, which
+	 * is what made it safe to enforce the defined one.
 	 *
 	 * @return void
 	 */
-	public function testAKeyAnotherLaneOwnsSavesButIsNotPublished(): void {
+	public function testThePropertySourceKeyIsPublishedNowThatItIsDefined(): void {
 		$this->assertTrue(
 			condition: $this->validator->validateProperty(
-				property: ['type' => 'string', 'x-openregister-property-source' => ['registry' => 'kvk']],
+				property: [
+					'type' => 'string',
+					'x-openregister-property-source' => ['provider' => 'kvk', 'mode' => 'live'],
+				],
 				path: '/kvkNummer'
 			),
-			message: 'a shipped annotation this layer does not define must still save'
+			message: 'the defined shape must save'
+		);
+
+		$this->assertContains(
+			needle: 'x-openregister-property-source',
+			haystack: $this->vocabulary->keys(),
+			message: 'a key nothing publishes cannot be discovered, which is what kept integriq waiting'
+		);
+	}
+
+	/**
+	 * A vendor extension whose meaning nobody has defined still saves.
+	 *
+	 * The half of the old test that has NOT changed, kept deliberately: an
+	 * `x-` key this layer does not define must not be refused, or a shipped
+	 * schema carrying somebody else's annotation stops saving.
+	 *
+	 * @return void
+	 */
+	public function testAnUndefinedVendorKeyStillSaves(): void {
+		$this->assertTrue(
+			condition: $this->validator->validateProperty(
+				property: ['type' => 'string', 'x-someotherapp-whatever' => ['anything' => true]],
+				path: '/kvkNummer'
+			)
 		);
 
 		$this->assertNotContains(
-			needle: 'x-openregister-property-source',
-			haystack: $this->vocabulary->keys(),
-			message: 'the vocabulary published a key whose meaning another change defines'
+			needle: 'x-someotherapp-whatever',
+			haystack: $this->vocabulary->keys()
 		);
 	}
 
@@ -257,7 +290,20 @@ class PropertyVocabularyTest extends TestCase {
 		// the key being present AND non-null, so a null says "this key is
 		// spelled correctly" without also asserting a value shape. The two
 		// exceptions read presence rather than value, so they get a real one.
-		$samples = ['translatable' => true, 'sourceLanguage' => 'nl'];
+		// 'scope' needs a sample because it is refused when null: a scope that
+		// cannot name a group matches nobody, and publishing one would deny
+		// everybody silently. This prober assigns null to any key without a
+		// sample, which is what caught it.
+		$samples = [
+			'translatable' => true,
+			'sourceLanguage' => 'nl',
+			'scope' => 'team-a',
+			// The prober assigns null to any key without a sample, and this key
+			// refuses null: a binding with no provider has nothing to ask for
+			// the values. It caught the key the moment it was published, which
+			// is the second time this prober has caught one of mine.
+			'x-openregister-property-source' => ['provider' => 'kvk', 'mode' => 'live'],
+		];
 
 		foreach ($this->vocabulary->keys() as $key) {
 			if ($key === 'type') {
@@ -273,6 +319,90 @@ class PropertyVocabularyTest extends TestCase {
 			);
 		}
 	}
+
+	/**
+	 * A field can say its choices come from a concept scheme.
+	 *
+	 * 🔑 THE VOCABULARY IS THE PUBLICATION, AND PUBLISHING IS THE WHOLE POINT.
+	 * The save path already accepted this binding, because
+	 * `assertKeysAreInTheVocabulary()` skips every `x-` prefixed key and the
+	 * fleet was spelling it `x-openregister-concept-scheme`. What it could not
+	 * do was FORWARD it: `ExtendingFormDeclaration` may only carry a key the
+	 * vocabulary holds and refuses the rest by name, so a case type could store
+	 * the binding and never hand it to the form that renders the field.
+	 * Measured on dossiq 2026-09-18, where it sat in `PENDING_PLATFORM_KEYS`
+	 * with `owner: openregister` waiting for exactly this line.
+	 *
+	 * 🔴 THE PUBLISHED SPELLING IS BARE, NOT PREFIXED. Every other modifier in
+	 * this table is bare, an `x-` key is skipped by the validator rather than
+	 * checked, and dossiq's own `propertyDefinition` already stores it as
+	 * `conceptScheme`. Publishing the prefixed spelling would have put a key in
+	 * the vocabulary that the thing enforcing the vocabulary refuses to look at.
+	 *
+	 * @return void
+	 */
+	public function testAFieldDeclaresTheConceptSchemeItsChoicesComeFrom(): void {
+		$this->assertTrue(
+			condition: $this->vocabulary->hasKey(key: 'conceptScheme'),
+			message: 'a case type cannot forward a binding the vocabulary does not hold'
+		);
+
+		$modifiers = array_column($this->vocabulary->modifiers(), null, 'key');
+		$this->assertArrayHasKey('conceptScheme', $modifiers, 'it is a modifier, like widget and facetable');
+		$this->assertSame('string', $modifiers['conceptScheme']['value'], 'a scheme is named by its slug');
+		$this->assertGreaterThan(
+			60,
+			strlen((string)$modifiers['conceptScheme']['description']),
+			'a published key says what it does, or nobody can use it without reading this file'
+		);
+	}//end testAFieldDeclaresTheConceptSchemeItsChoicesComeFrom()
+
+	/**
+	 * The binding survives a save, which publishing alone does not prove.
+	 *
+	 * The control the test above cannot give, and the same one
+	 * `testTheKeysTheFleetAlreadyWritesAreHeld` needed beside it: a key the
+	 * vocabulary publishes and the save path refuses is the contract lying in
+	 * the expensive direction, because the author is told it is supported.
+	 *
+	 * @return void
+	 */
+	public function testTheConceptSchemeBindingSavesWithARealSchemeName(): void {
+		// `testEveryPublishedKeySurvivesASave` above sweeps every published key
+		// with a NULL value, which proves the spelling is accepted and nothing
+		// about the value. A binding is a slug, and a slug is the value an
+		// author actually writes, so this is the probe that shape survives.
+		$this->assertTrue(
+			condition: $this->validator->validateProperty(
+				property: ['type' => 'string', 'title' => 'Wijk', 'conceptScheme' => 'wijken'],
+				path: '/properties/wijk'
+			),
+			message: 'the vocabulary publishes conceptScheme and the save path must accept a real scheme slug'
+		);
+
+		// 🔴 THIS ASSERTION IS THE OPPOSITE OF WHAT IT SAID IN #3883, AND THE
+		// FIRST VERSION WAS MINE AND WRONG. It read "a competing source is a
+		// reportable authoring mistake, not a refused save", reasoning from
+		// dossiq's `code-lists-from-concepts`, which resolves a scheme against
+		// an inline list by precedence. Those are two different objects: dossiq
+		// resolves it on its own `propertyDefinition` ROW, where an author is
+		// editing and can be shown a warning. This is the compiled SCHEMA
+		// PROPERTY, and `property-code-list-from-concept-scheme` says of it, in
+		// its own words, "Declaring both is refused."
+		//
+		// Refusing here is also the only place it can be refused usefully: by
+		// the time a value is validated, precedence has already silently picked
+		// one, and whichever it picked the author meant the other half the time.
+		$this->expectException(CodedChoiceException::class);
+		$this->validator->validateProperty(
+			property: [
+				'type' => 'string',
+				'conceptScheme' => 'wijken',
+				'enum' => ['Centrum', 'Noord'],
+			],
+			path: '/properties/wijk'
+		);
+	}//end testTheConceptSchemeBindingSavesWithARealSchemeName()
 
 	/**
 	 * The keys the fleet already writes are in the vocabulary.

@@ -36,8 +36,32 @@ Each audit trail entry MUST contain a `hash` field computed as `SHA-256(previous
 
 #### Scenario: First audit entry uses genesis hash
 - **WHEN** the first audit trail entry is created in the system (no previous entries exist)
-- **THEN** the entry MUST have `previousHash` set to `SHA-256("openregister-genesis-v1")`
+- **THEN** the entry MUST have `previousHash` set to `SHA-256("openregister-genesis-v2")`
 - **AND** the entry MUST have `hash` set to `SHA-256(genesis_hash + canonical_json(entry_data))`
+
+> ⚠️ **This scenario said `-v1` until 2026-09-18, and the code did not.**
+> `AuditHashService::GENESIS_SEED` is `openregister-genesis-v2`, and the
+> development instance's own chain agrees: its first sealed row carries
+> `ce429ddf6fb0601d34d2a40bb8758c79610f4d59cd9342aa9c5c1e3ac46e4fce`, which is
+> SHA-256 of the v2 seed (read from `oc_openregister_audit_trails` on
+> 2026-09-18). The move is `flow-object-attribution` task 4.1, **which is
+> unticked**, so the seed went ahead of both its own task and this text.
+>
+> The requirement is corrected to the shipped value rather than the code to the
+> text, because the chains that exist are the ones that matter and they are
+> already v2. Two consequences are recorded rather than left to be met:
+>
+> 1. **An instance seeded before the move still carries a v1 first row.** The
+>    genesis only enters the hash of row 1 — every later row chains to its
+>    predecessor — so such an instance verifies cleanly from row 2 and reports
+>    row 1 as broken. That is a one-row false positive on old instances, not a
+>    chain-wide failure, and `flow-object-attribution` defines the fix as a
+>    verify-then-rechain migration.
+> 2. **A seed change must never be a silent edit.** That change's own design
+>    says the outgoing canonicaliser is frozen and used for a pre-check whose
+>    verdict is persisted before the re-seal makes the prior state underivable.
+>    This one was not; saying so here is the only place a reader of the spec
+>    would find out.
 
 #### Scenario: Subsequent entries chain to previous hash
 - **WHEN** audit trail entry N is created after entry N-1 with hash `abc123...`

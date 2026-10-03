@@ -27,6 +27,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\File\TaggingHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -203,6 +205,11 @@ class TagsController extends Controller {
 				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 			}
 
+			$refusal = $this->refuseWithoutUpdateRight(object: $object);
+			if ($refusal !== null) {
+				return $refusal;
+			}
+
 			$data = $this->request->getParams();
 
 			if (empty($data['tag']) === true) {
@@ -218,6 +225,8 @@ class TagsController extends Controller {
 			return new JSONResponse(data: $tags, statusCode: 201);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
@@ -254,14 +263,58 @@ class TagsController extends Controller {
 				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 			}
 
+			$refusal = $this->refuseWithoutUpdateRight(object: $object);
+			if ($refusal !== null) {
+				return $refusal;
+			}
+
 			$this->taggingHandler->removeObjectTag($object->getUuid(), $tag);
 			$tags = $this->taggingHandler->getObjectTags($object->getUuid());
 
 			return new JSONResponse(data: $tags);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 403);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}
 	}//end remove()
+
+	/**
+	 * Refuse a tag change on an object the caller may read but not update.
+	 *
+	 * The object was loaded through the read path, so reaching this point
+	 * proves only `read`. A tag is part of the object as its users see it, so
+	 * adding or removing one is an update, decided by the same permission
+	 * handler and rule as any other update (openregister#4096). An object
+	 * whose schema cannot be resolved is refused: the rule cannot be read.
+	 *
+	 * @param ObjectEntity $object The object being tagged.
+	 *
+	 * @return JSONResponse|null A 403 response, or null when the caller may update the object.
+	 *
+	 * @spec openspec/changes/flow-tag-object-step/proposal.md
+	 */
+	private function refuseWithoutUpdateRight(ObjectEntity $object): ?JSONResponse {
+		$schema = $this->objectService->getCurrentSchemaEntity();
+		$mayUpdate = false;
+		if ($schema !== null) {
+			$mayUpdate = $this->objectService->getPermissionHandler()->hasPermission(
+				schema: $schema,
+				action: 'update',
+				objectOwner: $object->getOwner(),
+				object: $object
+			);
+		}
+
+		if ($mayUpdate === true) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: ['error' => 'You may read this object but not change it, so you cannot change its tags.'],
+			statusCode: 403
+		);
+	}//end refuseWithoutUpdateRight()
 }//end class

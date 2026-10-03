@@ -27,6 +27,7 @@ export type TSchema = {
 	allOf?: string[] // Schema refs (id, UUID, or slug) that this schema must validate against (inheritance/extension via JSON Schema allOf)
 	oneOf?: string[] // Schema refs where instance must validate against EXACTLY ONE (mutually exclusive options)
 	anyOf?: string[] // Schema refs where instance must validate against AT LEAST ONE (flexible composition)
+	draft?: Record<string, unknown> | null // A pending edit of the definition, not yet published (modelling-schema-draft)
 	stats?: {
 		objects: {
 			total: number

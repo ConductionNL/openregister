@@ -52,6 +52,7 @@ use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCA\OpenRegister\Event\TaskTransitionedEvent;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
+use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -139,6 +140,18 @@ class TaskService {
 	 *                                                      services; absent, no
 	 *                                                      sequence policy is
 	 *                                                      enforced here.
+	 * @param TaskSubjectAccessGuard|null $subjects Refuses a CREATE whose
+	 *                                              subject object the caller
+	 *                                              may not read. Nullable for
+	 *                                              the same hand-built-service
+	 *                                              reason as the two above,
+	 *                                              but absence does NOT mean
+	 *                                              "skipped": the guard itself
+	 *                                              refuses every named subject
+	 *                                              when it has no object
+	 *                                              service to ask, so a
+	 *                                              missing collaborator denies
+	 *                                              rather than admits.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -153,6 +166,7 @@ class TaskService {
 		private readonly ?IEventDispatcher $dispatcher = null,
 		private readonly ?TaskFormReader $forms = null,
 		private readonly ?TaskSequenceDecisionGuard $sequenceGuard = null,
+		private readonly ?TaskSubjectAccessGuard $subjects = null,
 	) {
 
 	}//end __construct()
@@ -192,11 +206,26 @@ class TaskService {
 	 *
 	 * @throws TaskValidationException On any refused value.
 	 * @throws TaskAccessDeniedException Without an acting identity.
+	 * @throws TaskSubjectNotFoundException When the caller may not read an
+	 *                                      object the payload attaches the
+	 *                                      task to.
 	 *
 	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/changes/flow-task-subject-authorization/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 */
 	public function create(array $data, ?string $actor): Task {
 		if ($this->authorization->isAdministrator(uid: $actor) === false) {
+			// A task is an annotation ON an object, so it inherits that
+			// object's read authorization: knowing a uuid is not entitlement
+			// to write onto what it names, and this endpoint used to treat it
+			// as exactly that. The check runs BEFORE any validation or write,
+			// and before the requester is pinned, so a refused caller leaves
+			// no trace on the record and learns nothing about the object.
+			// Administrators skip it for the reason ObjectsController::show()
+			// skips RBAC for them: they read every object, so it could only
+			// pass.
+			($this->subjects ?? new TaskSubjectAccessGuard())->assertReadable(data: $data);
+
 			// An ordinary caller is the requester of what they create: they
 			// may not write somebody else's name into the seat that owns
 			// cancel and reassign. And they may not create a task that is

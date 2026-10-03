@@ -87,6 +87,9 @@ class KnownTypeResolver implements IPrincipalResolver {
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalReference
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry
  * @uses \OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent
+ * @uses \OCA\OpenRegister\Service\Flow\FlowAdvanceBudget
+ * @uses \OCA\OpenRegister\Service\Task\TaskForm
+ * @uses \OCA\OpenRegister\Service\Task\TaskFormReader
  */
 final class UserTaskTypedPerformersTest extends TestCase {
 

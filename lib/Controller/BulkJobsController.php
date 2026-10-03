@@ -292,6 +292,62 @@ class BulkJobsController extends Controller {
 	}//end cancel()
 
 	/**
+	 * Hold a running job where it stands.
+	 *
+	 * Owner-scoped like every other verb on this resource: the operations
+	 * console calls it as an administrator over anybody's job, and the owner
+	 * calls it over their own. `readable()` is the one place that decides.
+	 *
+	 * @param int $id The job id.
+	 *
+	 * @return JSONResponse The paused job, or the refusal.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 */
+	#[NoAdminRequired]
+	public function pause(int $id): JSONResponse {
+		$job = $this->readable(id: $id);
+
+		if ($job instanceof JSONResponse) {
+			return $job;
+		}
+
+		try {
+			$paused = $this->service->pause(job: $job);
+		} catch (BulkJobRefusedException $exception) {
+			return $this->refusal(exception: $exception);
+		}
+
+		return new JSONResponse(data: $paused->jsonSerialize());
+	}//end pause()
+
+	/**
+	 * Set a paused job running again from where it stopped.
+	 *
+	 * @param int $id The job id.
+	 *
+	 * @return JSONResponse The running job, or the refusal.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-a-run-is-started-again-from-the-console-once-req-aoc-002
+	 */
+	#[NoAdminRequired]
+	public function resume(int $id): JSONResponse {
+		$job = $this->readable(id: $id);
+
+		if ($job instanceof JSONResponse) {
+			return $job;
+		}
+
+		try {
+			$resumed = $this->service->resume(job: $job);
+		} catch (BulkJobRefusedException $exception) {
+			return $this->refusal(exception: $exception);
+		}
+
+		return new JSONResponse(data: $resumed->jsonSerialize(), statusCode: 202);
+	}//end resume()
+
+	/**
 	 * Retry a job that stopped part way.
 	 *
 	 * @param int $id The job id.

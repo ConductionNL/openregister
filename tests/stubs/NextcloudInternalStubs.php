@@ -14,6 +14,7 @@
  * typically just an interface declaration or a minimal class body — so that
  * PHP can evaluate the OCP interface files without fatal errors.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  */
 
@@ -635,4 +636,23 @@ if (interface_exists(\Sabre\DAV\ICollection::class) === false) {
 if (class_exists(\Sabre\DAV\Exception\Forbidden::class) === false) {
 	eval('namespace Sabre\DAV\Exception;
     class Forbidden extends \Exception {}');
+}//end if
+
+// `OC_User` is a legacy global class from the Nextcloud server source, not part
+// of `nextcloud/ocp`. ObjectService::runAsAnonymous() uses its incognito mode —
+// the same mechanism core uses to serve a public link while a session exists
+// (ShareController, PublicAuth, BearerAuth) — because it is the only switch
+// `Session::getUser()` honours BEFORE its `user_id` fallback.
+if (class_exists('OC_User') === false) {
+	eval('class OC_User {
+    private static bool $incognitoMode = false;
+
+    public static function setIncognitoMode(bool $status): void {
+        self::$incognitoMode = $status;
+    }
+
+    public static function isIncognitoMode(): bool {
+        return self::$incognitoMode;
+    }
+}');
 }//end if

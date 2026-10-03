@@ -235,6 +235,70 @@ class ContentSearchHandlerTest extends TestCase {
 	// Dedup on object id (ZKN-CONTENT-002/-003)
 	// =========================================================================
 
+	/**
+	 * Tell the overlap probe which of the resolved chunk owners the metadata
+	 * arm matches too. The probe is the same query restricted to the candidate
+	 * ids, so the mock answers with those objects.
+	 *
+	 * @param ObjectEntity[] $overlapping The owners the metadata arm also matches.
+	 */
+	private function metadataArmAlsoMatches(array $overlapping): void {
+		$this->objectMapper->method('searchObjectsPaginated')->willReturn(
+			['results' => $overlapping, 'total' => count($overlapping)]
+		);
+	}//end metadataArmAlsoMatches()
+
+	/**
+	 * The one plausible disclosure route of content search, closed.
+	 *
+	 * A chunk is a fragment of a FILE. The text in a file can hold values the
+	 * reader is redacted out of on the object, so a chunk hit must be appended
+	 * as the owning object and nothing else. If chunk text ever rode along on
+	 * the row, the object would stay correctly filtered while the search
+	 * result beside it leaked, which is exactly the shape a redaction bug
+	 * takes: the guard works and the thing next to it does not.
+	 *
+	 * @return void
+	 */
+	public function testAnAppendedRowCarriesNoneOfTheChunksText(): void {
+		$secret = 'BSN 000000000 en rekening NL00BANK0000000000';
+
+		$this->chunkMapper->method('searchByKeyword')->willReturn(
+			[
+				[
+					'entity_type' => 'object',
+					'entity_id' => '42',
+					'score' => 0.8,
+					'chunk_text' => 'Bijlage bij de zaak: ' . $secret,
+					'text_content' => 'Bijlage bij de zaak: ' . $secret,
+					'chunk_index' => 0,
+					'metadata' => ['filename' => 'bijlage.pdf'],
+				],
+			]
+		);
+
+		$this->objectMapper->method('find')->with(42)->willReturn($this->makeObject(42));
+
+		$result = $this->handler->augmentWithChunkMatches(
+			query: ['_search' => 'rekening'],
+			results: [],
+			total: 0,
+			limit: 20
+		);
+
+		$this->assertCount(1, $result['results']);
+		$row = $result['results'][0];
+		$this->assertInstanceOf(ObjectEntity::class, $row);
+
+		$serialised = json_encode($row->jsonSerialize());
+		$this->assertStringNotContainsString(
+			$secret,
+			(string)$serialised,
+			'file text must never ride along on the row a chunk hit produced'
+		);
+		$this->assertStringNotContainsString('bijlage.pdf', (string)$serialised);
+	}//end testAnAppendedRowCarriesNoneOfTheChunksText()
+
 	public function testObjectAlreadyMatchedByMetadataArmIsNotDuplicated(): void {
 		$existing = $this->makeObject(42);
 
@@ -244,10 +308,9 @@ class ContentSearchHandlerTest extends TestCase {
 			]
 		);
 		// The chunk resolves to the same object that the metadata arm already
-		// returned. objectMapper->find() is called once (dedup happens after
-		// resolve — seenUuids is keyed by getUuid() which is not derivable from
-		// the numeric chunk source_id without loading the object).
+		// returned, and the overlap probe confirms the metadata arm matches it.
 		$this->objectMapper->method('find')->willReturn($existing);
+		$this->metadataArmAlsoMatches([$existing]);
 
 		$result = $this->handler->augmentWithChunkMatches(
 			query: ['_search' => 'quarterly report'],
@@ -262,6 +325,238 @@ class ContentSearchHandlerTest extends TestCase {
 		// that matches BOTH ways is still one result.
 		$this->assertSame(1, $result['total']);
 	}//end testObjectAlreadyMatchedByMetadataArmIsNotDuplicated()
+
+
+	/**
+	 * WOO-577: the overlap used to be computed against THIS PAGE's metadata
+	 * rows. An owner the metadata arm serves on page 2 was therefore counted
+	 * as chunk-only on page 1 (total too high by one) and dropped on page 2
+	 * (total back down) — measured as total 4, 5, 4, 5 across pages on the
+	 * NC 32 rig. The probe makes the overlap a property of the query, so a
+	 * page that does not hold the row still leaves it out of the chunk arm.
+	 */
+	public function testAnOwnerTheMetadataArmMatchesOnAnotherPageIsNotCountedAsChunkOnly(): void {
+		$sharedOwner = $this->makeObject(42);
+		$chunkOnly = $this->makeObject(43);
+
+		$this->chunkMapper->method('searchByKeyword')->willReturn(
+			[
+				['entity_type' => 'object', 'entity_id' => '42', 'score' => 0.9, 'chunk_text' => 'x', 'chunk_index' => 0, 'metadata' => []],
+				['entity_type' => 'object', 'entity_id' => '43', 'score' => 0.8, 'chunk_text' => 'y', 'chunk_index' => 0, 'metadata' => []],
+			]
+		);
+		$this->objectMapper->method('find')->willReturnCallback(
+			fn (int $id): ObjectEntity => $this->makeObject($id)
+		);
+		$this->metadataArmAlsoMatches([$sharedOwner]);
+
+		// Page 1 of the metadata arm holds a DIFFERENT row; 42 is on page 2.
+		$pageOne = $this->handler->augmentWithChunkMatches(
+			query: ['_search' => 'q'],
+			results: [$this->makeObject(1)],
+			total: 2,
+			limit: 1,
+			offset: 0
+		);
+		$this->assertSame(3, $pageOne['total'], 'metadata 2 + one chunk-only owner; the shared owner is not counted twice');
+		$this->assertCount(1, $pageOne['results']);
+
+		// Page 2 holds 42 itself. Same total, and 42 is not appended again.
+		$pageTwo = $this->handler->augmentWithChunkMatches(
+			query: ['_search' => 'q'],
+			results: [$sharedOwner],
+			total: 2,
+			limit: 1,
+			offset: 1
+		);
+		$this->assertSame(3, $pageTwo['total']);
+		$this->assertSame(['obj-uuid-42'], array_map(static fn (ObjectEntity $o): string => $o->getUuid(), $pageTwo['results']));
+
+		// Page 3: the metadata arm is exhausted, the chunk arm starts at 0 and
+		// holds only the chunk-only owner.
+		$pageThree = $this->handler->augmentWithChunkMatches(
+			query: ['_search' => 'q'],
+			results: [],
+			total: 2,
+			limit: 1,
+			offset: 2
+		);
+		$this->assertSame(3, $pageThree['total']);
+		$this->assertSame([$chunkOnly->getUuid()], array_map(static fn (ObjectEntity $o): string => $o->getUuid(), $pageThree['results']));
+	}//end testAnOwnerTheMetadataArmMatchesOnAnotherPageIsNotCountedAsChunkOnly()
+
+
+	/**
+	 * WOO-577: without an offset into the chunk arm every page past the
+	 * metadata rows re-served the same chunk-only rows, so a client walking
+	 * `_page` never reached the end (page 4 onward returned the same object
+	 * indefinitely on the rig). The chunk arm is the tail of one combined
+	 * list: it starts where the metadata arm's `total` ends and is sliced by
+	 * the remaining offset.
+	 */
+	public function testTheChunkArmIsPagedByTheOffsetPastTheMetadataArmAndEnds(): void {
+		$this->chunkMapper->method('searchByKeyword')->willReturn(
+			[
+				['entity_type' => 'object', 'entity_id' => '101', 'score' => 0.9, 'chunk_text' => 'a', 'chunk_index' => 0, 'metadata' => []],
+				['entity_type' => 'object', 'entity_id' => '102', 'score' => 0.8, 'chunk_text' => 'b', 'chunk_index' => 0, 'metadata' => []],
+				['entity_type' => 'object', 'entity_id' => '103', 'score' => 0.7, 'chunk_text' => 'c', 'chunk_index' => 0, 'metadata' => []],
+			]
+		);
+		$this->objectMapper->method('find')->willReturnCallback(
+			fn (int $id): ObjectEntity => $this->makeObject($id)
+		);
+
+		$uuids = static fn (array $page): array => array_map(
+			static fn (ObjectEntity $o): string => $o->getUuid(),
+			$page['results']
+		);
+
+		// Metadata arm: 3 rows. _limit=2. Page 1 is metadata only.
+		$page = fn (array $results, int $offset): array => $this->handler->augmentWithChunkMatches(
+			query: ['_search' => 'q'],
+			results: $results,
+			total: 3,
+			limit: 2,
+			offset: $offset
+		);
+
+		$pageOne = $page([$this->makeObject(1), $this->makeObject(2)], 0);
+		$this->assertSame([], array_slice($uuids($pageOne), 2), 'no room left on a full metadata page');
+		$this->assertSame(6, $pageOne['total']);
+
+		// Page 2: the last metadata row plus the FIRST chunk-only row.
+		$pageTwo = $page([$this->makeObject(3)], 2);
+		$this->assertSame(['obj-uuid-3', 'obj-uuid-101'], $uuids($pageTwo));
+		$this->assertSame(6, $pageTwo['total']);
+
+		// Page 3: offset 4 is one past the metadata arm (3), so the chunk arm
+		// continues at its own position 1 — not at 0 again.
+		$pageThree = $page([], 4);
+		$this->assertSame(['obj-uuid-102', 'obj-uuid-103'], $uuids($pageThree));
+		$this->assertSame(6, $pageThree['total']);
+
+		// Page 4: past the end of both arms. Empty, and the total still holds.
+		$pageFour = $page([], 6);
+		$this->assertSame([], $uuids($pageFour));
+		$this->assertSame(6, $pageFour['total']);
+	}//end testTheChunkArmIsPagedByTheOffsetPastTheMetadataArmAndEnds()
+
+
+	/**
+	 * The probe must be the caller's own query — same term, same guards —
+	 * restricted to the resolved candidates and stripped of paging, or its
+	 * answer would depend on the page after all. It is aimed at the owners'
+	 * own (register, schema) with `_ids`: that single-table path is the one
+	 * on which an id restriction is honoured (the multi-schema UNION path
+	 * accepts `ids`/`_ids` and applies neither — measured on the rig).
+	 */
+	public function testTheOverlapProbeIsTheSameQueryRestrictedToTheCandidatesWithoutPaging(): void {
+		$this->chunkMapper->method('searchByKeyword')->willReturn(
+			[
+				['entity_type' => 'object', 'entity_id' => '7', 'score' => 0.9, 'chunk_text' => 'a', 'chunk_index' => 0, 'metadata' => []],
+			]
+		);
+		$this->objectMapper->method('find')->willReturn($this->makeObject(7, '4', '9'));
+
+		$this->objectMapper->expects($this->once())
+			->method('searchObjectsPaginated')
+			->with(
+				$this->callback(
+					static function (array $probe): bool {
+						return ($probe['_search'] ?? null) === 'q'
+							&& ($probe['_register'] ?? null) === 4
+							&& ($probe['_schema'] ?? null) === 9
+							&& ($probe['_ids'] ?? null) === ['obj-uuid-7']
+							&& ($probe['_limit'] ?? null) === 1
+							&& ($probe['_offset'] ?? null) === 0
+							&& array_key_exists('_schemas', $probe) === false
+							&& array_key_exists('_registers', $probe) === false
+							&& array_key_exists('_page', $probe) === false
+							&& array_key_exists('_content_search', $probe) === false
+							&& array_key_exists('_facetable', $probe) === false;
+					}
+				),
+				$this->anything(),
+				'org-1',
+				false,
+				false
+			)
+			->willReturn(['results' => [], 'total' => 0]);
+
+		$this->handler->augmentWithChunkMatches(
+			query: ['_search' => 'q', '_registers' => [4], '_schemas' => [9, 10], '_page' => 3, '_limit' => 5, '_content_search' => true, '_facetable' => true],
+			results: [],
+			total: 10,
+			limit: 5,
+			_rbac: false,
+			_multitenancy: false,
+			offset: 10,
+			activeOrgUuid: 'org-1'
+		);
+	}//end testTheOverlapProbeIsTheSameQueryRestrictedToTheCandidatesWithoutPaging()
+
+
+	/**
+	 * Owners from two tables mean two probes, each restricted to its own
+	 * owners; the overlap is the union of what they report.
+	 */
+	public function testOneProbePerTableTheOwnersLiveIn(): void {
+		$this->chunkMapper->method('searchByKeyword')->willReturn(
+			[
+				['entity_type' => 'object', 'entity_id' => '1', 'score' => 0.9, 'chunk_text' => 'a', 'chunk_index' => 0, 'metadata' => []],
+				['entity_type' => 'object', 'entity_id' => '2', 'score' => 0.8, 'chunk_text' => 'b', 'chunk_index' => 0, 'metadata' => []],
+				['entity_type' => 'object', 'entity_id' => '3', 'score' => 0.7, 'chunk_text' => 'c', 'chunk_index' => 0, 'metadata' => []],
+			]
+		);
+		$this->objectMapper->method('find')->willReturnCallback(
+			fn (int $id): ObjectEntity => $this->makeObject($id, '1', $id === 3 ? '2' : '1')
+		);
+
+		$probes = [];
+		$this->objectMapper->method('searchObjectsPaginated')->willReturnCallback(
+			function (array $searchQuery) use (&$probes): array {
+				$probes[] = [$searchQuery['_schema'], $searchQuery['_ids']];
+				// Schema 1's probe says owner 1 is a metadata match too; schema 2's says nothing.
+				if ($searchQuery['_schema'] === 1) {
+					return ['results' => [$this->makeObject(1)], 'total' => 1];
+				}
+
+				return ['results' => [], 'total' => 0];
+			}
+		);
+
+		$result = $this->handler->augmentWithChunkMatches(
+			query: ['_search' => 'q'],
+			results: [],
+			total: 5,
+			limit: 10,
+			offset: 5
+		);
+
+		$this->assertCount(2, $probes);
+		$this->assertContains([1, ['obj-uuid-1', 'obj-uuid-2']], $probes);
+		$this->assertContains([2, ['obj-uuid-3']], $probes);
+		// Owner 1 is metadata-matched: not counted, not appended. 2 and 3 are chunk-only.
+		$this->assertSame(7, $result['total']);
+		$this->assertSame(['obj-uuid-2', 'obj-uuid-3'], array_map(static fn (ObjectEntity $o): string => $o->getUuid(), $result['results']));
+	}//end testOneProbePerTableTheOwnersLiveIn()
+
+
+	/**
+	 * No candidates, no probe: the extra query is only paid when there is
+	 * something to disambiguate.
+	 */
+	public function testNoProbeIsIssuedWithoutResolvedCandidates(): void {
+		$this->chunkMapper->method('searchByKeyword')->willReturn([]);
+		$this->objectMapper->expects($this->never())->method('searchObjectsPaginated');
+
+		$this->handler->augmentWithChunkMatches(
+			query: ['_search' => 'q'],
+			results: [],
+			total: 0,
+			limit: 5
+		);
+	}//end testNoProbeIsIssuedWithoutResolvedCandidates()
 
 	// =========================================================================
 	// Register / schema scope filtering

@@ -44,6 +44,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Exception;
+use RuntimeException;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
@@ -62,6 +63,8 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\FieldEncryptionHandler;
+use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -278,6 +281,25 @@ class MagicMapper extends AbstractObjectMapper {
 	 * entries"), regardless of how many schemas are searched.
 	 */
 	private const UNION_PROPERTY_COLUMN_BUDGET = 1500;
+
+	/**
+	 * Maximum number of UNION arms in a single cross-schema statement.
+	 *
+	 * The column budget above bounds the WIDTH of one arm; this bounds their
+	 * COUNT. A cross-schema search over every searchable schema on a large
+	 * instance (measured: 1,272 schemas) is one statement with 1,272 arms,
+	 * each carrying its own WHERE, its own score expression and its own bound
+	 * parameters. That fails long before the database refuses it: MariaDB's
+	 * default `max_allowed_packet` is 1 MiB and an arm is a few kilobytes of
+	 * SQL, the planner cost grows with the arm count, and every arm's
+	 * parameters land in the same statement.
+	 *
+	 * 50 matches the schema chunk the unified-search provider already applies
+	 * (`ObjectsProvider::SCHEMA_CHUNK_SIZE`), so the two bounds agree instead
+	 * of interacting. Pairs beyond one batch are searched in further batches
+	 * and merged in PHP; see searchAcrossMultipleTablesWithUnion().
+	 */
+	private const UNION_ARM_BATCH_SIZE = 50;
 
 	/**
 	 * Cache for table existence to avoid repeated database queries
@@ -519,13 +541,36 @@ class MagicMapper extends AbstractObjectMapper {
 			logger: $this->logger
 		);
 
+		// The table handler is built BEFORE the search handler because the
+		// related-row applier needs it, and the search handler needs the
+		// applier. It depends on nothing built later, so the move is safe; the
+		// facet handler still comes after the search handler it consumes.
+		$this->tableHandler = new MagicTableHandler(
+			db: $this->db,
+			appConfig: $this->appConfig,
+			logger: $this->logger,
+			magicMapper: $this
+		);
+
+		// Assembled by hand rather than resolved from the container, for the
+		// same reason the cache handler above is not: the container would walk
+		// MagicMapper → applier → MagicTableHandler → MagicMapper and recurse.
+		$relatedRowApplier = new RelatedRowQueryApplier(
+			schemaMapper: $this->schemaMapper,
+			tableHandler: $this->tableHandler,
+			rbacHandler: $this->rbacHandler,
+			db: $this->db,
+			logger: $this->logger
+		);
+
 		$this->searchHandler = new MagicSearchHandler(
 			db: $this->db,
 			logger: $this->logger,
 			rbacHandler: $this->rbacHandler,
 			organizationHandler: $this->organizationHandler,
 			schemaTypeConverter: $this->container->get(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class),
-			dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
+			dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
+			relatedRows: $relatedRowApplier
 		);
 
 		$this->bulkHandler = new MagicBulkHandler(
@@ -546,13 +591,6 @@ class MagicMapper extends AbstractObjectMapper {
 			searchHandler: $this->searchHandler,
 			container: $this->container,
 			config: $this->config
-		);
-
-		$this->tableHandler = new MagicTableHandler(
-			db: $this->db,
-			appConfig: $this->appConfig,
-			logger: $this->logger,
-			magicMapper: $this
 		);
 
 		$this->statisticsHandler = new MagicStatisticsHandler(
@@ -1223,22 +1261,82 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end shouldUseUnionQuery()
 
 	/**
-	 * Search across multiple tables using UNION ALL (FAST).
+	 * Search across multiple tables using UNION ALL, in bounded batches.
 	 *
-	 * This method builds a single SQL query with UNION ALL to search
-	 * all tables at once, which is MUCH faster than individual queries.
-	 *
-	 * Performance: ~100-200ms for 5 tables vs ~400ms sequential.
+	 * Up to UNION_ARM_BATCH_SIZE pairs are one statement and the database does
+	 * the ordering, the offset and the limit, exactly as before. Beyond that
+	 * the pairs are split into batches; each batch over-fetches `offset +
+	 * limit` rows in its own statement, the batches are merged and sorted in
+	 * PHP on the same keys the SQL would have used, and the page is taken from
+	 * the merged set. Without that merge a page would be the first batch's
+	 * page, not the search's.
 	 *
 	 * @param array $query Search parameters.
 	 * @param array $registerSchemaPairs Array of register+schema pairs.
 	 *
 	 * @return array Array of ObjectEntity objects from all tables.
 	 *
+	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+	 */
+	private function searchAcrossMultipleTablesWithUnion(array $query, array $registerSchemaPairs): array {
+		$batches = array_chunk($registerSchemaPairs, self::UNION_ARM_BATCH_SIZE);
+
+		// One batch: the single-statement path, unchanged.
+		if (count($batches) <= 1) {
+			return $this->convertUnionRowsToEntities(
+				rows: $this->runUnionBatch(query: $query, registerSchemaPairs: $registerSchemaPairs)
+			);
+		}
+
+		// Many batches: each one answers the same question over its own arms,
+		// so each must over-fetch far enough that the merged set can serve the
+		// requested page. A batch that only fetched `limit` rows could not
+		// contribute row `offset + limit - 1` even when it owns it.
+		$batchQuery = $this->buildUnionBatchQuery(query: $query);
+
+		$rows = [];
+		foreach ($batches as $batch) {
+			foreach ($this->runUnionBatch(query: $batchQuery, registerSchemaPairs: $batch) as $row) {
+				$rows[] = $row;
+			}
+		}
+
+		$platform = $this->db->getDatabasePlatform();
+		$isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+
+		$rows = $this->mergeUnionBatchRows(rows: $rows, query: $query, isPostgres: $isPostgres);
+
+		$this->logger->debug(
+			message: '[MagicMapper] Cross-batch union search merged',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'batchCount' => count($batches),
+				'pairCount' => count($registerSchemaPairs),
+				'pageSize' => count($rows),
+			]
+		);
+
+		return $this->convertUnionRowsToEntities(rows: $rows);
+	}//end searchAcrossMultipleTablesWithUnion()
+
+	/**
+	 * Run one UNION ALL batch and return its raw rows.
+	 *
+	 * This is the former body of searchAcrossMultipleTablesWithUnion(): it
+	 * builds one statement over the pairs it is given, orders it, applies
+	 * LIMIT/OFFSET and returns the rows. It returns rows rather than entities
+	 * so the caller can merge several batches before paying for conversion.
+	 *
+	 * @param array $query Search parameters.
+	 * @param array $registerSchemaPairs Array of register+schema pairs, already bounded by the caller.
+	 *
+	 * @return array Raw result rows.
+	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
-	private function searchAcrossMultipleTablesWithUnion(array $query, array $registerSchemaPairs): array {
+	private function runUnionBatch(array $query, array $registerSchemaPairs): array {
 		$qb = $this->db->getQueryBuilder();
 		$parts = [];
 
@@ -1335,88 +1433,14 @@ class MagicMapper extends AbstractObjectMapper {
 		$unionSql = implode(' UNION ALL ', $parts);
 
 		// Apply global ORDER BY - supports _order parameter or defaults to search score.
-		$hasSearch = isset($query['_search']) === true
-			&& empty($query['_search']) === false;
-		$orderParams = $query['_order'] ?? [];
+		// The keys come from one place so that the PHP-side merge of several
+		// batches sorts on exactly what the SQL would have sorted on.
+		$orderClauses = [];
+		foreach ($this->buildUnionOrderKeys(query: $query, isPostgres: $isPostgres) as $orderKey) {
+			$orderClauses[] = $orderKey['sql'] . ' ' . $orderKey['dir'];
+		}
 
-		if (empty($orderParams) === false && is_array($orderParams) === true) {
-			// Use custom ordering from _order parameter.
-			$orderClauses = [];
-			foreach ($orderParams as $field => $direction) {
-				// Special handling for _relevance: map to _search_score in UNION queries.
-				// The _relevance column is used by MagicSearchHandler for single-table queries,.
-				// but UNION queries use _search_score for relevance scoring.
-				if ($field === '_relevance') {
-					// Only use _search_score if we have a search term.
-					if ($hasSearch === true) {
-						$dir = 'ASC';
-						if (strtoupper($direction) === 'DESC') {
-							$dir = 'DESC';
-						}
-
-						$orderClauses[] = "_search_score {$dir}";
-					}
-
-					// Skip _relevance ordering if no search term (nothing to order by).
-					continue;
-				}
-
-				// Translate field name to column name.
-				$columnName = $this->sanitizeColumnName(name: $field);
-				if (str_starts_with($field, '@self.') === true) {
-					// Metadata fields: sanitize the bare name, then validate against
-					// the known METADATA_PREFIX column allowlist before quoting.
-					// Without this allowlist, raw user input was concatenated into
-					// the UNION SQL (SQL injection via ORDER BY).
-					$rawMetaName = substr($field, 6);
-					$sanitizedMeta = $this->sanitizeColumnName(name: $rawMetaName);
-					$candidateColumn = self::METADATA_PREFIX . $sanitizedMeta;
-					$allowedMetadata = array_keys($this->getMetadataColumns());
-					if (in_array($candidateColumn, $allowedMetadata, true) === false) {
-						// Unknown metadata column - skip this ORDER BY clause entirely.
-						continue;
-					}
-
-					$columnName = $this->quoteIdentifier(
-						name: $candidateColumn,
-						isPostgres: $isPostgres
-					);
-				} elseif (str_starts_with($field, '_') === false) {
-					// Non-metadata fields - property columns are included in UNION queries.
-					// The column must exist in the SELECT for ordering to work.
-					// Quote to protect against SQL reserved keywords (e.g. "order", "group").
-					$columnName = $this->quoteIdentifier(
-						name: $this->sanitizeColumnName(name: $field),
-						isPostgres: $isPostgres
-					);
-				}//end if
-
-				$dir = 'ASC';
-				if (strtoupper($direction) === 'DESC') {
-					$dir = 'DESC';
-				}
-
-				$orderClauses[] = "{$columnName} {$dir}";
-			}//end foreach
-
-			if (empty($orderClauses) === false) {
-				// BUG-DB-4: append a stable tiebreaker so rows that compare equal
-				// on the requested order keep a deterministic order across pages.
-				$orderClauses[] = self::METADATA_PREFIX . 'uuid ASC';
-				$unionSql .= ' ORDER BY ' . implode(', ', $orderClauses);
-			} else {
-				// BUG-DB-4: no usable order clause survived - fall back to a stable order.
-				$unionSql .= ' ORDER BY ' . self::METADATA_PREFIX . 'uuid ASC';
-			}
-		} elseif ($hasSearch === true) {
-			// Default to search score ordering when no _order specified but search is present.
-			// BUG-DB-4: tiebreaker keeps equal scores in a deterministic order.
-			$unionSql .= ' ORDER BY _search_score DESC, ' . self::METADATA_PREFIX . 'uuid ASC';
-		} else {
-			// BUG-DB-4: no order and no search - LIMIT/OFFSET would otherwise be
-			// non-deterministic. Order by the stable uuid column.
-			$unionSql .= ' ORDER BY ' . self::METADATA_PREFIX . 'uuid ASC';
-		}//end if
+		$unionSql .= ' ORDER BY ' . implode(', ', $orderClauses);
 
 		// Apply LIMIT/OFFSET to final UNION result.
 		// Cast + clamp at the boundary so raw user input cannot reach the
@@ -1458,7 +1482,210 @@ class MagicMapper extends AbstractObjectMapper {
 		$stmt->execute();
 		$rows = $stmt->fetchAll();
 
-		// Convert rows to ObjectEntity objects.
+		$this->logger->debug(
+			message: '[MagicMapper] Union batch completed',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'armCount' => count($parts),
+				'rowCount' => count($rows),
+			]
+		);
+
+		return $rows;
+	}//end runUnionBatch()
+
+	/**
+	 * Resolve the ORDER BY keys for a cross-schema UNION search.
+	 *
+	 * Returns one entry per key, in order, each carrying the SQL expression to
+	 * put in the statement and the plain row key to read when the same order
+	 * has to be reproduced in PHP across batches. The list is never empty: the
+	 * uuid tiebreaker always closes it, because LIMIT/OFFSET over an unordered
+	 * UNION returns a different page each time it runs.
+	 *
+	 * @param array $query      Search parameters.
+	 * @param bool  $isPostgres Whether the platform is PostgreSQL (identifier quoting).
+	 *
+	 * @return array<int, array{row: string, sql: string, dir: string}> Ordered sort keys.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 */
+	private function buildUnionOrderKeys(array $query, bool $isPostgres): array {
+		$hasSearch = isset($query['_search']) === true
+			&& empty($query['_search']) === false;
+		$orderParams = $query['_order'] ?? [];
+		$uuidColumn = self::METADATA_PREFIX . 'uuid';
+
+		$keys = [];
+		if (empty($orderParams) === false && is_array($orderParams) === true) {
+			foreach ($orderParams as $field => $direction) {
+				$dir = 'ASC';
+				if (strtoupper((string)$direction) === 'DESC') {
+					$dir = 'DESC';
+				}
+
+				// Special handling for _relevance: map to _search_score in UNION queries.
+				// The _relevance column is used by MagicSearchHandler for single-table
+				// queries, but UNION queries use _search_score for relevance scoring.
+				if ($field === '_relevance') {
+					// Skip _relevance ordering if no search term (nothing to order by).
+					if ($hasSearch === true) {
+						$keys[] = ['row' => '_search_score', 'sql' => '_search_score', 'dir' => $dir];
+					}
+
+					continue;
+				}
+
+				// Translate field name to column name.
+				$rowKey = $this->sanitizeColumnName(name: $field);
+				$columnName = $rowKey;
+				if (str_starts_with($field, '@self.') === true) {
+					// Metadata fields: sanitize the bare name, then validate against
+					// the known METADATA_PREFIX column allowlist before quoting.
+					// Without this allowlist, raw user input was concatenated into
+					// the UNION SQL (SQL injection via ORDER BY).
+					$sanitizedMeta = $this->sanitizeColumnName(name: substr($field, 6));
+					$candidateColumn = self::METADATA_PREFIX . $sanitizedMeta;
+					if (in_array($candidateColumn, array_keys($this->getMetadataColumns()), true) === false) {
+						// Unknown metadata column - skip this ORDER BY clause entirely.
+						continue;
+					}
+
+					$rowKey = $candidateColumn;
+					$columnName = $this->quoteIdentifier(name: $candidateColumn, isPostgres: $isPostgres);
+				} elseif (str_starts_with($field, '_') === false) {
+					// Non-metadata fields - property columns are included in UNION queries.
+					// The column must exist in the SELECT for ordering to work.
+					// Quote to protect against SQL reserved keywords (e.g. "order", "group").
+					$columnName = $this->quoteIdentifier(name: $rowKey, isPostgres: $isPostgres);
+				}//end if
+
+				$keys[] = ['row' => $rowKey, 'sql' => $columnName, 'dir' => $dir];
+			}//end foreach
+		} elseif ($hasSearch === true) {
+			// Default to search score ordering when no _order specified but search is present.
+			$keys[] = ['row' => '_search_score', 'sql' => '_search_score', 'dir' => 'DESC'];
+		}//end if
+
+		// BUG-DB-4: a stable tiebreaker so rows that compare equal on the
+		// requested order keep a deterministic order across pages, and so a
+		// query with no usable order still pages deterministically.
+		$keys[] = ['row' => $uuidColumn, 'sql' => $uuidColumn, 'dir' => 'ASC'];
+
+		return $keys;
+	}//end buildUnionOrderKeys()
+
+	/**
+	 * Sort merged rows from several UNION batches on the SQL's own order keys.
+	 *
+	 * Each batch is already ordered by its own statement; merging them is not.
+	 * A row that a batch did not project (a property column another schema
+	 * owns) sorts as null, which is what the UNION's `NULL AS alias` arm would
+	 * have produced.
+	 *
+	 * @param array $rows      Merged raw rows.
+	 * @param array $orderKeys Keys from buildUnionOrderKeys().
+	 *
+	 * @return array Rows in the merged order.
+	 */
+	private function sortUnionRows(array $rows, array $orderKeys): array {
+		usort(
+			$rows,
+			static function (array $left, array $right) use ($orderKeys): int {
+				foreach ($orderKeys as $key) {
+					$leftValue = ($left[$key['row']] ?? null);
+					$rightValue = ($right[$key['row']] ?? null);
+
+					// Cast to string and let the spaceship operator decide: PHP
+					// compares two NUMERIC strings numerically, so a score of
+					// "0.9" still beats "0.75" and "1.0E-5" still loses to
+					// "0.0001", while a missing column (null, cast to "") is
+					// compared as text instead of silently becoming zero.
+					$comparison = ((string)$leftValue <=> (string)$rightValue);
+
+					if ($comparison !== 0) {
+						if ($key['dir'] === 'DESC') {
+							return -$comparison;
+						}
+
+						return $comparison;
+					}
+				}
+
+				return 0;
+			}
+		);
+
+		return $rows;
+	}//end sortUnionRows()
+
+	/**
+	 * The per-batch query: page one, wide enough to cover the caller's page.
+	 *
+	 * Every batch answers the same question over its own arms, so each has to
+	 * reach as far as `offset + limit` for the merged set to be able to serve
+	 * the requested page. A batch asked for only `limit` rows could not
+	 * contribute the last row of a later page even when it owns it.
+	 *
+	 * An unlimited query stays unlimited: there is nothing to over-fetch to.
+	 *
+	 * @param array $query Search parameters.
+	 *
+	 * @return array The query to run per batch.
+	 */
+	private function buildUnionBatchQuery(array $query): array {
+		$batchQuery = $query;
+		$batchQuery['_offset'] = 0;
+
+		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
+		if ($normalisedLimit !== null) {
+			// The batch runner clamps this to MAX_PAGE_SIZE, the same bound the
+			// single-statement path applies, so paging past that bound is
+			// truncated identically either way.
+			$batchQuery['_limit'] = (max(0, (int)($query['_offset'] ?? 0)) + $normalisedLimit);
+		}
+
+		return $batchQuery;
+	}//end buildUnionBatchQuery()
+
+	/**
+	 * Merge the rows of several UNION batches into one page.
+	 *
+	 * Sorts on the SQL's own order keys and then takes the caller's page from
+	 * the merged set, which is the whole point of the batching: the page has
+	 * to be the search's page, not the first batch's.
+	 *
+	 * @param array $rows       Rows from every batch, in batch order.
+	 * @param array $query      The caller's search parameters (offset and limit).
+	 * @param bool  $isPostgres Whether the platform is PostgreSQL.
+	 *
+	 * @return array The merged page.
+	 */
+	private function mergeUnionBatchRows(array $rows, array $query, bool $isPostgres): array {
+		$rows = $this->sortUnionRows(
+			rows: $rows,
+			orderKeys: $this->buildUnionOrderKeys(query: $query, isPostgres: $isPostgres)
+		);
+
+		$offset = max(0, (int)($query['_offset'] ?? 0));
+		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
+		if ($normalisedLimit === null) {
+			return array_slice($rows, $offset);
+		}
+
+		return array_slice($rows, $offset, min($normalisedLimit, self::MAX_PAGE_SIZE));
+	}//end mergeUnionBatchRows()
+
+	/**
+	 * Convert raw UNION rows to ObjectEntity objects.
+	 *
+	 * @param array $rows Raw result rows.
+	 *
+	 * @return array Array of ObjectEntity objects.
+	 */
+	private function convertUnionRowsToEntities(array $rows): array {
 		$results = [];
 		foreach ($rows as $row) {
 			try {
@@ -1481,7 +1708,7 @@ class MagicMapper extends AbstractObjectMapper {
 		);
 
 		return $results;
-	}//end searchAcrossMultipleTablesWithUnion()
+	}//end convertUnionRowsToEntities()
 
 	/**
 	 * Build SELECT part for UNION ALL query.
@@ -1685,10 +1912,17 @@ class MagicMapper extends AbstractObjectMapper {
 			$armQuery['@self']['schema'] = $schema->getId();
 		}
 
+		// The register goes with the question. It is what lets the organisation
+		// boundary widen by a declared shared master data holder on this arm,
+		// the same way the single-table path does; without it this arm would
+		// answer a NARROWER set than the sequential path answers for the same
+		// query, and the two paths disagreeing is the defect this whole area
+		// keeps producing.
 		$whereClauses = $this->searchHandler->buildWhereConditionsSql(
 			query: $armQuery,
 			schema: $schema,
-			existingColumns: $existingColumns
+			existingColumns: $existingColumns,
+			registerId: $register->getId()
 		);
 
 		if (empty($whereClauses) === false) {
@@ -2202,24 +2436,34 @@ class MagicMapper extends AbstractObjectMapper {
 					continue;
 				}
 
-				// Skip properties flagged `x-openregister-encrypted: true` (field-level-
-				// object-encryption): the value is ciphertext by the time it reaches this
-				// table sync, so a dedicated typed column would only ever hold an opaque
-				// string useless for filtering/sorting/faceting. The value still lives in
-				// the table's `object` JSON blob column; it simply gets no dedicated,
-				// independently-queryable column. This is what makes the field
-				// structurally unsearchable server-side (composes with the explicit
-				// filter-time rejection in MagicSearchHandler::applyObjectFilters()).
-				if (($propertyConfig['x-openregister-encrypted'] ?? false) === true) {
-					continue;
-				}
-
 				// Note: Schema properties do NOT conflict with metadata columns.
 				// Metadata columns have '_' prefix, schema properties don't.
 				// Both '_name' (metadata) and 'name' (schema property) can coexist.
 				// mapSchemaPropertyToColumn() returns a non-nullable array, so the
 				// emptiness guard that used to wrap this block was always true.
 				$column = $this->mapSchemaPropertyToColumn(propertyName: $propertyName, propertyConfig: $propertyConfig);
+
+				// A property flagged `x-openregister-encrypted: true` (field-level object
+				// encryption) reaches this table as an `openregister:enc:v1:` envelope,
+				// an opaque string whatever type the schema declares. So its column is
+				// plain nullable TEXT with no index: it can hold the ciphertext and is
+				// still useless for filtering, sorting and faceting (composes with the
+				// explicit filter-time rejection in MagicSearchHandler).
+				//
+				// These properties used to get NO column, on the belief that the value
+				// "still lives in the table's `object` JSON blob column". There is no
+				// such column. The write path (prepareObjectDataForTable) still named
+				// the property, so every single-object save of such a schema failed
+				// with "column ... does not exist", and the bulk path, which drops
+				// unknown columns, discarded the value in silence (#4197).
+				if (($propertyConfig['x-openregister-encrypted'] ?? false) === true) {
+					$column = [
+						'name'     => $column['name'],
+						'type'     => 'text',
+						'nullable' => true,
+						'comment'  => 'Encrypted value (x-openregister-encrypted)',
+					];
+				}
 
 				// BUG-DB-8: disambiguate column-name collisions deterministically.
 				if (isset($usedColumnNames[$column['name']]) === true) {
@@ -3631,6 +3875,10 @@ class MagicMapper extends AbstractObjectMapper {
 		$data = $objectData;
 		unset($data['@self']);
 
+		// An encrypted property is written only as an envelope, whichever path
+		// got here (see encryptFlaggedProperties()).
+		$data = $this->encryptFlaggedProperties(data: $data, schema: $schema);
+
 		// SECURITY (wave-7 CRITICAL C2 — @self allowlist enforcement):
 		// Clients must not be able to overwrite server-controlled fields via the @self
 		// block. The primary defence for field-level injection lives in
@@ -3948,6 +4196,78 @@ class MagicMapper extends AbstractObjectMapper {
 
 		return $preparedData;
 	}//end prepareObjectDataForTable()
+
+	/**
+	 * Replace every `x-openregister-encrypted` property value with its envelope.
+	 *
+	 * SaveObject encrypts on the single-object path, but the table is the one
+	 * place every write passes through. Encrypting here as well means no path
+	 * (bulk, import, a service writing an entity back) can put plaintext in an
+	 * encrypted column. FieldEncryptionHandler::encryptProperties() skips a value
+	 * that is already an envelope, so the second pass never double-encrypts.
+	 *
+	 * Fails closed: if the schema has encrypted properties and the handler
+	 * cannot be resolved, the write is refused rather than stored in the clear.
+	 *
+	 * @param array<string, mixed> $data   Property values, without `@self`.
+	 * @param Schema               $schema The schema being written to.
+	 *
+	 * @return array<string, mixed> The data with encrypted properties as envelopes.
+	 *
+	 * @throws RuntimeException When the schema needs encryption and no handler is available.
+	 *
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
+	 */
+	private function encryptFlaggedProperties(array $data, Schema $schema): array {
+		if ($schema->hasEncryptedProperties() === false) {
+			return $data;
+		}
+
+		$handler = $this->container->get(FieldEncryptionHandler::class);
+		if ($handler instanceof FieldEncryptionHandler === false) {
+			throw new RuntimeException(
+				'Schema "' . ($schema->getSlug() ?? (string) $schema->getId())
+				. '" has encrypted properties but no FieldEncryptionHandler is available; refusing to store them in the clear.'
+			);
+		}
+
+		return $handler->encryptProperties(data: $data, schema: $schema);
+	}//end encryptFlaggedProperties()
+
+	/**
+	 * Apply encryptFlaggedProperties() to every row of a bulk write.
+	 *
+	 * A bulk row carries its properties either under `object` or at the top
+	 * level beside `@self`, the two shapes MagicBulkHandler reads.
+	 *
+	 * @param array<int|string, mixed> $objects The rows.
+	 * @param Schema                   $schema  The schema being written to.
+	 *
+	 * @return array<int|string, mixed> The rows with encrypted properties as envelopes.
+	 *
+	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
+	 */
+	private function encryptFlaggedPropertiesInRows(array $objects, Schema $schema): array {
+		if ($schema->hasEncryptedProperties() === false) {
+			return $objects;
+		}
+
+		foreach ($objects as $key => $object) {
+			if (is_array($object) === false) {
+				continue;
+			}
+
+			if (isset($object['object']) === true && is_array($object['object']) === true) {
+				$object['object'] = $this->encryptFlaggedProperties(data: $object['object'], schema: $schema);
+			} else {
+				$object = $this->encryptFlaggedProperties(data: $object, schema: $schema);
+			}
+
+			$objects[$key] = $object;
+		}
+
+		return $objects;
+	}//end encryptFlaggedPropertiesInRows()
 
 	/**
 	 * Say so when a property the caller sent is about to be thrown away.
@@ -6552,13 +6872,30 @@ class MagicMapper extends AbstractObjectMapper {
 	 * broken register/schema-less `searchObjectsPaginated()` path which always
 	 * fell through to an empty result.
 	 *
+	 * Each table is narrowed IN THE QUERY to the rows the caller may read, with
+	 * the same organisation and RBAC filters the object list applies
+	 * ({@see MagicSearchHandler::applyAccessControlToQuery()}), so a trashed
+	 * object is never shown to someone who could not read it before it was
+	 * deleted, and the total the count answers matches the pages this returns
+	 * (openregister#4078). A table whose schema cannot be resolved is skipped:
+	 * whether the caller may read it cannot be answered, and the answer is no.
+	 *
 	 * @param int|null $limit Maximum rows to return.
 	 * @param int|null $offset Rows to skip (pagination).
+	 * @param bool $_rbac Apply the schema's read rules for the caller (false only for an admin or system caller).
+	 * @param bool $_multitenancy Apply the organisation boundary for the caller.
 	 *
 	 * @return ObjectEntity[] Soft-deleted objects across all magic tables.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function findDeletedAcrossAllMagicTables(?int $limit = null, ?int $offset = null): array {
-		$deletedCol = self::METADATA_PREFIX . 'deleted';
+	public function findDeletedAcrossAllMagicTables(
+		?int $limit = null,
+		?int $offset = null,
+		bool $_rbac = true,
+		bool $_multitenancy = true,
+	): array {
+		$deletedCol = 't.' . self::METADATA_PREFIX . 'deleted';
 		$updatedCol = self::METADATA_PREFIX . 'updated';
 
 		// Collect (entity, sortKey) pairs so the global newest-first ordering is
@@ -6573,9 +6910,13 @@ class MagicMapper extends AbstractObjectMapper {
 			try {
 				$qb = $this->db->getQueryBuilder();
 				$qb->select('*')
-					->from($bareTableName)
+					->from($bareTableName, 't')
 					->where($qb->expr()->isNotNull($deletedCol))
-					->orderBy($updatedCol, 'DESC');
+					->orderBy('t.' . $updatedCol, 'DESC');
+
+				if ($this->scopeDeletedScanToCaller(qb: $qb, table: $info, _rbac: $_rbac, _multitenancy: $_multitenancy) === false) {
+					continue;
+				}
 
 				$rows = $qb->executeQuery()->fetchAll();
 				foreach ($rows as $row) {
@@ -6625,19 +6966,31 @@ class MagicMapper extends AbstractObjectMapper {
 	/**
 	 * Count all soft-deleted objects across ALL magic tables.
 	 *
+	 * Narrowed per table exactly as {@see findDeletedAcrossAllMagicTables()}
+	 * is, so the total never counts a row the listing would not return.
+	 *
+	 * @param bool $_rbac Apply the schema's read rules for the caller (false only for an admin or system caller).
+	 * @param bool $_multitenancy Apply the organisation boundary for the caller.
+	 *
 	 * @return int Total soft-deleted object count.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
 	 */
-	public function countDeletedAcrossAllMagicTables(): int {
-		$deletedCol = self::METADATA_PREFIX . 'deleted';
+	public function countDeletedAcrossAllMagicTables(bool $_rbac = true, bool $_multitenancy = true): int {
+		$deletedCol = 't.' . self::METADATA_PREFIX . 'deleted';
 		$total = 0;
 
-		foreach (array_keys($this->discoverMagicTables()) as $fullTableName) {
+		foreach ($this->discoverMagicTables() as $fullTableName => $info) {
 			$bareTableName = substr($fullTableName, strlen($this->getTablePrefix()));
 			try {
 				$qb = $this->db->getQueryBuilder();
 				$qb->select($qb->func()->count('*', 'cnt'))
-					->from($bareTableName)
+					->from($bareTableName, 't')
 					->where($qb->expr()->isNotNull($deletedCol));
+
+				if ($this->scopeDeletedScanToCaller(qb: $qb, table: $info, _rbac: $_rbac, _multitenancy: $_multitenancy) === false) {
+					continue;
+				}
 
 				$res = $qb->executeQuery();
 				$row = $res->fetch();
@@ -6650,6 +7003,48 @@ class MagicMapper extends AbstractObjectMapper {
 
 		return $total;
 	}//end countDeletedAcrossAllMagicTables()
+
+	/**
+	 * Narrow one magic table's trash scan to the rows the caller may read.
+	 *
+	 * Delegates to the list path's own access control, so the trash and the
+	 * object list cannot disagree about who sees a row.
+	 *
+	 * @param IQueryBuilder $qb The scan, already reading the table as alias `t`.
+	 * @param array{registerId: int, schemaId: int} $table The table's register and schema.
+	 * @param bool $_rbac Apply the schema's read rules.
+	 * @param bool $_multitenancy Apply the organisation boundary.
+	 *
+	 * @return bool False when the table must be skipped because its schema cannot be resolved.
+	 *
+	 * @spec openspec/specs/deletion-audit-trail/spec.md
+	 */
+	private function scopeDeletedScanToCaller(
+		IQueryBuilder $qb,
+		array $table,
+		bool $_rbac,
+		bool $_multitenancy,
+	): bool {
+		if ($_rbac === false && $_multitenancy === false) {
+			return true;
+		}
+
+		try {
+			$schema = $this->schemaMapper->find(id: $table['schemaId'], _rbac: false, _multitenancy: false);
+		} catch (\Exception $e) {
+			return false;
+		}
+
+		$this->searchHandler->applyAccessControlToQuery(
+			qb: $qb,
+			schema: $schema,
+			_rbac: $_rbac,
+			_multitenancy: $_multitenancy,
+			registerId: $table['registerId']
+		);
+
+		return true;
+	}//end scopeDeletedScanToCaller()
 
 	/**
 	 * Find all objects across ALL magic tables that have the given UUID in their relations.
@@ -6890,6 +7285,76 @@ class MagicMapper extends AbstractObjectMapper {
 
 		return $this->searchObjectsInRegisterSchemaTable(query: $query, register: $register, schema: $schema);
 	}//end findAllInRegisterSchemaTable()
+
+	/**
+	 * The row-level access predicate for a raw query over one magic table.
+	 *
+	 * For a caller that writes its own SQL against the table (the aggregation
+	 * fast path) and must count the rows a list read would return, no more.
+	 * The predicate is {@see MagicRbacHandler::buildRbacRowPredicateSql()}'s, so
+	 * the list and the raw query cannot drift apart. Columns are unqualified:
+	 * the query must read the magic table without an alias.
+	 *
+	 * @param Schema $schema The schema of the table being read.
+	 * @param string $action The action the rows are filtered for (default: 'read').
+	 *
+	 * @return string|null Null when no row restriction applies (an admin); otherwise
+	 *                     a predicate safe to AND into a WHERE, `1 = 0` for deny-all.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function rbacRowPredicateSql(Schema $schema, string $action = 'read'): ?string {
+		return $this->rbacHandler->buildRbacRowPredicateSql(schema: $schema, action: $action);
+	}//end rbacRowPredicateSql()
+
+	/**
+	 * Whether the current caller qualifies for at least one rule of an action.
+	 *
+	 * @param Schema $schema The schema whose rules to consult.
+	 * @param string $action The action (default: 'read').
+	 *
+	 * @return bool True when a rule for the action admits the caller.
+	 *
+	 * @see MagicRbacHandler::callerQualifiesForAction()
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function callerQualifiesForAction(Schema $schema, string $action = 'read'): bool {
+		return $this->rbacHandler->callerQualifiesForAction(schema: $schema, action: $action);
+	}//end callerQualifiesForAction()
+
+	/**
+	 * Whether a default list read waives the organisation boundary for this
+	 * caller because RBAC governs the rows instead.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when the list would not apply the organisation filter.
+	 *
+	 * @see MagicSearchHandler::organisationBoundaryWaivedByRbac()
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	public function organisationBoundaryWaivedByRbac(Schema $schema): bool {
+		return $this->searchHandler->organisationBoundaryWaivedByRbac(schema: $schema);
+	}//end organisationBoundaryWaivedByRbac()
+
+	/**
+	 * Whether a default list read widens the organisation boundary by the
+	 * rows with no organisation, because the caller's grant comes from the
+	 * register cascade.
+	 *
+	 * @param Schema $schema The schema being read.
+	 *
+	 * @return bool True when the list's organisation filter also admits org-less rows.
+	 *
+	 * @see MagicSearchHandler::organisationlessRowsAdmittedByRbac()
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
+	 */
+	public function organisationlessRowsAdmittedByRbac(Schema $schema): bool {
+		return $this->searchHandler->organisationlessRowsAdmittedByRbac(schema: $schema);
+	}//end organisationlessRowsAdmittedByRbac()
 
 	/**
 	 * Insert ObjectEntity into register+schema table.
@@ -7824,6 +8289,11 @@ class MagicMapper extends AbstractObjectMapper {
 				'object_count' => count($objects),
 			]
 		);
+
+		// The bulk path never went through SaveObject's encryption step. An
+		// encrypted property used to have no column, so bulk dropped its value;
+		// now that it has one, encrypt here so it can only ever hold an envelope.
+		$objects = $this->encryptFlaggedPropertiesInRows(objects: $objects, schema: $schema);
 
 		try {
 			return $this->bulkHandler->bulkUpsert(
@@ -8941,6 +9411,86 @@ class MagicMapper extends AbstractObjectMapper {
 	public function findMultiple(array $ids): array {
 		return $this->findMultipleAcrossAllMagicTables(uuids: $ids);
 	}//end findMultiple()
+
+	/**
+	 * Which of these UUIDs, all living in one register+schema table, may the caller read?
+	 *
+	 * The answer comes from the same access-control filter the single-object read
+	 * applies (applyAccessControlToQuery: RBAC plus multitenancy, with every rule
+	 * that widens or narrows them), so a name lookup can never disagree with
+	 * `GET /api/objects/{register}/{schema}/{id}`. Soft-deleted rows are never
+	 * readable here. Any failure answers "none": a lookup that cannot establish
+	 * read access must not disclose.
+	 *
+	 * @param int           $registerId The register the table belongs to.
+	 * @param int           $schemaId   The schema the table belongs to.
+	 * @param array<string> $uuids      UUIDs to test, all expected in that table.
+	 *
+	 * @return array<int, string> The subset of $uuids the caller may read.
+	 *
+	 * @spec openspec/changes/names-follow-read-rights/specs/schema-driven-read-coercion/spec.md
+	 */
+	public function filterReadableUuids(int $registerId, int $schemaId, array $uuids): array {
+		$uuids = array_values(array_unique(array_filter($uuids, fn ($uuid): bool => is_string($uuid) && $uuid !== '')));
+		if (empty($uuids) === true) {
+			return [];
+		}
+
+		$readable = [];
+		try {
+			// Metadata lookups only: which table, and which rules. The rows themselves
+			// are filtered by the access-control seam below.
+			$register = $this->registerMapper->find(id: $registerId, _rbac: false, _multitenancy: false);
+			$schema = $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
+			if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+				return [];
+			}
+
+			$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+			$uuidCol = 't.' . self::METADATA_PREFIX . 'uuid';
+
+			// Chunked so a long list never exceeds the driver's parameter limit.
+			foreach (array_chunk($uuids, 500) as $chunk) {
+				$qb = $this->db->getQueryBuilder();
+				$qb->select($uuidCol)
+					->from($tableName, 't')
+					->where($qb->expr()->in($uuidCol, $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)))
+					->andWhere($qb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'));
+
+				$this->searchHandler->applyAccessControlToQuery(
+					qb: $qb,
+					schema: $schema,
+					_rbac: true,
+					_multitenancy: true,
+					registerId: $registerId
+				);
+
+				$result = $qb->executeQuery();
+				while (($row = $result->fetch()) !== false) {
+					$uuid = $row[self::METADATA_PREFIX . 'uuid'] ?? null;
+					if (is_string($uuid) === true) {
+						$readable[] = $uuid;
+					}
+				}
+
+				$result->closeCursor();
+			}//end foreach
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[MagicMapper] filterReadableUuids: read access could not be established; disclosing none',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'registerId' => $registerId,
+					'schemaId' => $schemaId,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
+		}//end try
+
+		return $readable;
+	}//end filterReadableUuids()
 
 	/**
 	 * Find all objects for a given schema.
@@ -10451,6 +11001,82 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end extractSchemaIds()
 
 	/**
+	 * Resolve which register owns each schema, and load those registers.
+	 *
+	 * A schema belongs to exactly one register, and the magic table is named
+	 * after the pair. Pairing a schema with the wrong register asks a table
+	 * that does not exist, which is what made cross-schema search answer
+	 * nothing. A schema whose owning register cannot be resolved is left out of
+	 * the map and skipped (logged) by the caller rather than guessed at.
+	 *
+	 * @param array $registerIds The register filter, or an empty array when the
+	 *                           query names schemas only (unified search).
+	 *
+	 * @return array{registers: array, registersCache: array, schemaToRegisterId: array<int, int>}
+	 *
+	 * @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+	 */
+	private function resolveSchemaOwnership(array $registerIds): array {
+		$registers = [];
+		$registersCache = [];
+		$schemaToRegisterId = [];
+
+		if (empty($registerIds) === false) {
+			foreach ($registerIds as $regId) {
+				try {
+					$register = $this->registerMapper->find($regId, _multitenancy: false, _rbac: false);
+					$registers[$register->getId()] = $register;
+					$registersCache[$register->getId()] = $register->jsonSerialize();
+					$registerSchemas = ($register->getSchemas() ?? []);
+					if (is_array($registerSchemas) === true) {
+						foreach ($this->extractSchemaIds(registerSchemas: $registerSchemas) as $sid) {
+							if (isset($schemaToRegisterId[$sid]) === false) {
+								$schemaToRegisterId[$sid] = $register->getId();
+							}
+						}
+					}
+				} catch (\Exception $e) {
+					$this->logger->warning(
+						message: '[MagicMapper] Failed to find register for multi-schema search',
+						context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $regId, 'error' => $e->getMessage()]
+					);
+				}
+			}
+		} else {
+			try {
+				$rqb = $this->db->getQueryBuilder();
+				$rqb->select('id', 'schemas')->from('openregister_registers');
+				$res = $rqb->executeQuery();
+				while (($row = $res->fetch()) !== false) {
+					$regId = (int)$row['id'];
+					$schemas = json_decode((string)($row['schemas'] ?? '[]'), true);
+					if (is_array($schemas) === false) {
+						continue;
+					}
+
+					foreach ($this->extractSchemaIds(registerSchemas: $schemas) as $sid) {
+						if (isset($schemaToRegisterId[$sid]) === false) {
+							$schemaToRegisterId[$sid] = $regId;
+						}
+					}
+				}
+
+				$res->closeCursor();
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: '[MagicMapper] Failed to build schema->register map for multi-schema search',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+				);
+			}//end try
+		}//end if
+		return [
+			'registers' => $registers,
+			'registersCache' => $registersCache,
+			'schemaToRegisterId' => $schemaToRegisterId,
+		];
+	}//end resolveSchemaOwnership()
+
+	/**
 	 * Search objects across multiple schemas using UNION queries.
 	 *
 	 * @param array $searchQuery Search query parameters.
@@ -10502,57 +11128,10 @@ class MagicMapper extends AbstractObjectMapper {
 		// org resolution can collapse the result to a single register), which
 		// would hide most schemas' owning registers and make cross-schema
 		// search return nothing. See the method docblock's spec tag.
-		$registers = [];
-		$schemaToRegisterId = [];
-
-		if (empty($registerIds) === false) {
-			foreach ($registerIds as $regId) {
-				try {
-					$register = $this->registerMapper->find($regId, _multitenancy: false, _rbac: false);
-					$registers[$register->getId()] = $register;
-					$registersCache[$register->getId()] = $register->jsonSerialize();
-					$registerSchemas = ($register->getSchemas() ?? []);
-					if (is_array($registerSchemas) === true) {
-						foreach ($this->extractSchemaIds(registerSchemas: $registerSchemas) as $sid) {
-							if (isset($schemaToRegisterId[$sid]) === false) {
-								$schemaToRegisterId[$sid] = $register->getId();
-							}
-						}
-					}
-				} catch (\Exception $e) {
-					$this->logger->warning(
-						message: '[MagicMapper] Failed to find register for multi-schema search',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'registerId' => $regId, 'error' => $e->getMessage()]
-					);
-				}
-			}
-		} else {
-			try {
-				$rqb = $this->db->getQueryBuilder();
-				$rqb->select('id', 'schemas')->from('openregister_registers');
-				$res = $rqb->executeQuery();
-				while (($row = $res->fetch()) !== false) {
-					$regId = (int)$row['id'];
-					$schemas = json_decode((string)($row['schemas'] ?? '[]'), true);
-					if (is_array($schemas) === false) {
-						continue;
-					}
-
-					foreach ($this->extractSchemaIds(registerSchemas: $schemas) as $sid) {
-						if (isset($schemaToRegisterId[$sid]) === false) {
-							$schemaToRegisterId[$sid] = $regId;
-						}
-					}
-				}
-
-				$res->closeCursor();
-			} catch (\Throwable $e) {
-				$this->logger->warning(
-					message: '[MagicMapper] Failed to build schema->register map for multi-schema search',
-					context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-				);
-			}//end try
-		}//end if
+		$ownership = $this->resolveSchemaOwnership(registerIds: $registerIds);
+		$registers = $ownership['registers'];
+		$registersCache = ($ownership['registersCache'] + $registersCache);
+		$schemaToRegisterId = $ownership['schemaToRegisterId'];
 
 		if (empty($schemaToRegisterId) === true) {
 			return [

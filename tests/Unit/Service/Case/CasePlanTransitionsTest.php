@@ -32,6 +32,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Case\CasePlanTransitions
  * @covers \OCA\OpenRegister\Exception\CaseTransitionException
+ * @uses \OCA\OpenRegister\Db\CaseItem
  */
 class CasePlanTransitionsTest extends TestCase {
 

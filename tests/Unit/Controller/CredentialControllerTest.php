@@ -45,14 +45,29 @@ use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialController
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialBrokerService
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialUpdateRequest
  */
 class CredentialControllerTest extends TestCase {
+
+	/** @var integer How many times update() saved the credential object. */
+	private int $saves = 0;
+
+	/** @var array<int, array{message: string, context: array<string, mixed>}> Every error the controller logged. */
+	private array $errors = [];
+
+	protected function setUp(): void {
+		$this->saves = 0;
+		$this->errors = [];
+	}
 	/**
 	 * The github catalogue entry used across the happy-path tests.
 	 *
@@ -159,7 +174,8 @@ class CredentialControllerTest extends TestCase {
 			$broker,
 			$this->createMock(CredentialAppTokenService::class),
 			$this->createMock(OrganisationService::class),
-			new SharePrincipalDeriver()
+			new SharePrincipalDeriver(),
+			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);
 	}//end makeController()
 
@@ -378,6 +394,149 @@ class CredentialControllerTest extends TestCase {
 	}//end testUpdateWithWhitespaceOnlySecretNeverTouchesTheVault()
 
 	/**
+	 * A vault fault during a rotation answers a static 500 rather than escaping to
+	 * Nextcloud's handler, whose trace log would carry the rotated secret. The
+	 * secret is written first, so nothing else was saved either, and the fault's
+	 * class reaches the log.
+	 */
+	public function testAFailedRotationChangesNothingAndIsLogged(): void {
+		$store = $this->createMock(CredentialStore::class);
+		$store->method('put')->willThrowException(new \RuntimeException('the vault is down'));
+
+		$controller = $this->makeUpdateController(
+			ownerUid: 'alice',
+			credData: ['name' => 'My GitHub', 'provider' => 'github', 'allowedApps' => ['hermiq']],
+			params: ['name' => 'Renamed', 'secret' => 'gho_rotated'],
+			store: $store
+		);
+
+		$response = $controller->update('cred-1');
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$this->assertSame(['message' => 'Unable to update credential'], $response->getData());
+		$this->assertSame(0, $this->saves, 'the metadata is not saved when the secret could not be');
+		$this->assertCount(1, $this->errors);
+		$this->assertStringContainsString('RuntimeException', $this->errors[0]['message']);
+		$this->assertStringNotContainsString('gho_rotated', $this->errors[0]['message']);
+		$this->assertSame(['credentialId' => 'cred-1'], $this->errors[0]['context'], 'no exception in the context: its trace holds the secret');
+	}//end testAFailedRotationChangesNothingAndIsLogged()
+
+	/**
+	 * When the metadata cannot be saved after the secret was rotated, the answer
+	 * says the secret did change, so it agrees with what is stored.
+	 */
+	public function testAFailedSaveAfterARotationSaysTheSecretChanged(): void {
+		$store = $this->createMock(CredentialStore::class);
+		$store->expects($this->once())->method('put');
+
+		$controller = $this->makeUpdateController(
+			ownerUid: 'alice',
+			credData: ['name' => 'My GitHub', 'provider' => 'github', 'allowedApps' => ['hermiq']],
+			params: ['name' => 'Renamed', 'secret' => 'gho_rotated'],
+			store: $store,
+			saveFails: true
+		);
+
+		$response = $controller->update('cred-1');
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$this->assertSame(
+			['message' => 'The secret was rotated, but the other changes could not be saved'],
+			$response->getData()
+		);
+		$this->assertCount(1, $this->errors);
+		$this->assertSame(['credentialId' => 'cred-1'], $this->errors[0]['context'], 'no exception in the context: its trace holds the secret');
+	}//end testAFailedSaveAfterARotationSaysTheSecretChanged()
+
+	/**
+	 * A failed save without a rotation says nothing changed, because nothing did.
+	 */
+	public function testAFailedSaveWithoutARotationSaysNothingChanged(): void {
+		$store = $this->createMock(CredentialStore::class);
+		$store->expects($this->never())->method('put');
+
+		$controller = $this->makeUpdateController(
+			ownerUid: 'alice',
+			credData: ['name' => 'My GitHub', 'provider' => 'github', 'allowedApps' => ['hermiq']],
+			params: ['name' => 'Renamed'],
+			store: $store,
+			saveFails: true
+		);
+
+		$response = $controller->update('cred-1');
+
+		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$this->assertSame(['message' => 'Unable to update credential'], $response->getData());
+		$this->assertCount(1, $this->errors);
+		$this->assertSame(['credentialId' => 'cred-1'], $this->errors[0]['context']);
+	}//end testAFailedSaveWithoutARotationSaysNothingChanged()
+
+	/**
+	 * Requests whose metadata breaks a schema length bound.
+	 *
+	 * @return array<string, array{0: array<string, mixed>}>
+	 */
+	public static function outOfBoundsUpdates(): array {
+		return [
+			'a 256-character name'             => [['name' => str_repeat('a', 256)]],
+			'a 65-character allowed app'       => [['allowedApps' => ['hermiq', str_repeat('a', 65)]]],
+			'256 multibyte characters of name' => [['name' => str_repeat('é', 256)]],
+			'a 65-character multibyte app'     => [['allowedApps' => [str_repeat('é', 65)]]],
+		];
+	}//end outOfBoundsUpdates()
+
+	/**
+	 * The save is where the schema validates, and the secret is written before it.
+	 * A request the schema would refuse is answered 400 before anything is written,
+	 * so it never rotates the secret.
+	 *
+	 * @param array<string, mixed> $params The metadata the request carries.
+	 */
+	#[DataProvider('outOfBoundsUpdates')]
+	public function testAnUpdateTheSchemaWouldRefuseRotatesNothing(array $params): void {
+		$store = $this->createMock(CredentialStore::class);
+		$store->expects($this->never())->method('put');
+
+		$controller = $this->makeUpdateController(
+			ownerUid: 'alice',
+			credData: ['name' => 'My GitHub', 'provider' => 'github', 'allowedApps' => ['hermiq']],
+			params: array_merge($params, ['secret' => 'gho_rotated']),
+			store: $store
+		);
+
+		$response = $controller->update('cred-1');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame(['message' => 'Invalid credential request'], $response->getData());
+		$this->assertSame(0, $this->saves);
+	}//end testAnUpdateTheSchemaWouldRefuseRotatesNothing()
+
+	/**
+	 * Metadata exactly at the bounds, counted in characters rather than bytes, is
+	 * accepted and rotates the secret.
+	 */
+	public function testAnUpdateAtTheBoundsIsAccepted(): void {
+		$store = $this->createMock(CredentialStore::class);
+		$store->expects($this->once())->method('put');
+
+		$controller = $this->makeUpdateController(
+			ownerUid: 'alice',
+			credData: ['name' => 'My GitHub', 'provider' => 'github', 'allowedApps' => ['hermiq']],
+			params: [
+				'name'        => str_repeat('é', 255),
+				'allowedApps' => [str_repeat('é', 64)],
+				'secret'      => 'gho_rotated',
+			],
+			store: $store
+		);
+
+		$response = $controller->update('cred-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(1, $this->saves);
+	}//end testAnUpdateAtTheBoundsIsAccepted()
+
+	/**
 	 * Build a CredentialController for exercising update() — an owned personal
 	 * credential, a stub saveObject() that echoes the merged property bag back,
 	 * and a caller-supplied CredentialStore mock to assert the vault write.
@@ -386,6 +545,7 @@ class CredentialControllerTest extends TestCase {
 	 * @param array<string, mixed> $credData The existing credential's property bag.
 	 * @param array<string, mixed> $params The request body params (e.g. `secret`).
 	 * @param CredentialStore&\PHPUnit\Framework\MockObject\MockObject $store The vault mock.
+	 * @param bool $saveFails Whether saving the metadata fails.
 	 *
 	 * @return CredentialController The wired controller.
 	 */
@@ -394,6 +554,7 @@ class CredentialControllerTest extends TestCase {
 		array $credData,
 		array $params,
 		CredentialStore $store,
+		bool $saveFails = false,
 	): CredentialController {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($ownerUid);
@@ -407,7 +568,12 @@ class CredentialControllerTest extends TestCase {
 		$objectService = $this->createMock(ObjectService::class);
 		$objectService->method('find')->willReturn($entity);
 		$objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ...$rest) {
+			function (array $object, ...$rest) use ($saveFails) {
+				$this->saves++;
+				if ($saveFails === true) {
+					throw new \RuntimeException('the object store is down');
+				}
+
 				$saved = new ObjectEntity();
 				$saved->setObject($object);
 				return $saved;
@@ -418,6 +584,13 @@ class CredentialControllerTest extends TestCase {
 		$request->method('getParam')->willReturnCallback(
 			static function (string $key, $default = null) use ($params) {
 				return array_key_exists($key, $params) ? $params[$key] : $default;
+			}
+		);
+
+		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+		$logger->method('error')->willReturnCallback(
+			function (string $message, array $context = []): void {
+				$this->errors[] = ['message' => $message, 'context' => $context];
 			}
 		);
 
@@ -432,7 +605,54 @@ class CredentialControllerTest extends TestCase {
 			$this->createMock(CredentialBrokerService::class),
 			$this->createMock(CredentialAppTokenService::class),
 			$this->createMock(OrganisationService::class),
-			new SharePrincipalDeriver()
+			new SharePrincipalDeriver(),
+			$logger
 		);
 	}//end makeUpdateController()
+
+	/**
+	 * An app id longer than 32 characters is refused with 400 before anything is
+	 * stored: its vault key would not fit the 64-character identifier column.
+	 */
+	public function testRegisterAppRefusesAnIdTooLongForTheVaultKey(): void {
+		$tokens = $this->createMock(CredentialAppTokenService::class);
+		$tokens->expects($this->once())->method('registerApp')->with(str_repeat('a', 32))->willReturn('SECRET');
+
+		$controller = $this->makeAdminController(tokens: $tokens);
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $controller->registerApp(appId: str_repeat('a', 33))->getStatus());
+		$this->assertSame(Http::STATUS_CREATED, $controller->registerApp(appId: str_repeat('a', 32))->getStatus());
+	}//end testRegisterAppRefusesAnIdTooLongForTheVaultKey()
+
+	/**
+	 * A controller whose session is an administrator.
+	 *
+	 * @param CredentialAppTokenService $tokens The app-token service.
+	 *
+	 * @return CredentialController The wired controller.
+	 */
+	private function makeAdminController(CredentialAppTokenService $tokens): CredentialController {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('admin');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+
+		$groups = $this->createMock(IGroupManager::class);
+		$groups->method('isAdmin')->willReturn(true);
+
+		return new CredentialController(
+			'openregister',
+			$this->createMock(IRequest::class),
+			$session,
+			$groups,
+			$this->createMock(ObjectService::class),
+			$this->createMock(CredentialStore::class),
+			$this->createMock(ProviderCatalogue::class),
+			$this->createMock(CredentialBrokerService::class),
+			$tokens,
+			$this->createMock(OrganisationService::class),
+			new SharePrincipalDeriver(),
+			$this->createMock(\Psr\Log\LoggerInterface::class)
+		);
+	}//end makeAdminController()
 }//end class

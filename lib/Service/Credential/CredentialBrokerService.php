@@ -460,7 +460,7 @@ class CredentialBrokerService {
 		string $provider,
 		string $owner,
 		array $allowedApps = [],
-		?string $secret = null,
+		#[\SensitiveParameter] ?string $secret = null,
 		string $scope = self::SCOPE_PERSONAL,
 		?string $organisation = null,
 		array $metadata = [],
@@ -614,7 +614,7 @@ class CredentialBrokerService {
 	 *
 	 * @spec openspec/changes/credential-broker-upstream-diagnostics/specs/credential-broker/spec.md#requirement-a-credential-secret-is-trimmed-of-surrounding-whitespace-before-storage
 	 */
-	private function trimmedSecret(?string $secret): ?string {
+	private function trimmedSecret(#[\SensitiveParameter] ?string $secret): ?string {
 		if ($secret === null) {
 			return null;
 		}

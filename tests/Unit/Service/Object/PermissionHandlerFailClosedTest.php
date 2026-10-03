@@ -43,6 +43,14 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @coversDefaultClass \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class PermissionHandlerFailClosedTest extends TestCase {
 

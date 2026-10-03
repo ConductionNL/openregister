@@ -136,6 +136,43 @@ The ad-hoc aggregation cache key MUST be derived from the NORMALISED filter map,
 - **AND** `?origin=manual` and `?origin=migration` MUST resolve to different cache keys
 - @e2e exclude Backend cache-key derivation; verified by PHPUnit unit tests over AggregationCache, no browser flow.
 
+### Requirement: A register or schema reference on the read path resolves or is refused
+The read path MUST accept a register or schema reference in every spelling the write path accepts: a numeric id, a uuid or a slug. It MUST resolve the reference to its numeric id before the search runs, and it MUST refuse a reference that names nothing by raising `RegisterNotFoundException` or `SchemaNotFoundException`, the same two the write path raises.
+
+The read path MUST NOT int-cast a reference. `(int)` turns a slug, a uuid and an empty string into `0`, `0` is not `null`, so the search runs scoped to a register no instance carries, the lookup fails, and the caller receives an empty page. An empty page is indistinguishable from a legitimate answer, and three apps acted on it as a fact about their data.
+
+A reference that is empty or only whitespace MUST drop the filter instead of scoping to `0`, so the search reaches the same global fallbacks a real `null` reaches.
+
+The rule applies wherever a reference enters a search: the query builder's `register` and `schema` parameters, and the `@self.register`, `@self.schema`, `_register` and `_schema` keys of a query a caller built by hand.
+
+#### Scenario: A slug scopes a search the way an id does
+- **GIVEN** register `zaken` with id 19 and schema `zaak` with id 9476, holding 3 objects
+- **WHEN** a caller searches or counts with `@self.register = 'zaken'` and `@self.schema = 'zaak'`
+- **THEN** the answer MUST be the same as for ids 19 and 9476
+- **AND** it MUST NOT be an empty result
+- @e2e exclude Backend reference resolution on a read path; verified by PHPUnit unit tests over the query handler with a mapper double, no browser flow.
+
+#### Scenario: A reference that names nothing is refused
+- **GIVEN** an instance with no register named `no-such-register`
+- **WHEN** a caller searches with that reference
+- **THEN** the search MUST raise `RegisterNotFoundException`
+- **AND** it MUST NOT answer `['results' => [], 'total' => 0]`
+- @e2e exclude Backend refusal on a read path; verified by PHPUnit unit tests, no browser flow.
+
+#### Scenario: An empty reference filters nothing
+- **GIVEN** a query carrying `@self.register = ''`
+- **WHEN** the search runs
+- **THEN** the register filter MUST be absent from the query
+- **AND** the search MUST NOT be scoped to register `0`
+- @e2e exclude Backend query normalisation; verified by PHPUnit unit tests over the resolver, no browser flow.
+
+#### Scenario: A list refuses the member it cannot resolve
+- **GIVEN** a query carrying `_schemas = ['zaak', 'no-such-schema']`
+- **WHEN** the search runs
+- **THEN** it MUST raise `SchemaNotFoundException`
+- **AND** it MUST NOT drop the unresolvable member and search the rest in silence
+- @e2e exclude Backend list resolution; verified by PHPUnit unit tests over the resolver, no browser flow.
+
 ### Requirement: JSON array and object property filtering
 The system MUST support filtering on `type: array` (JSONB array columns) using PostgreSQL's `@>` containment operator, and on `type: object` properties using JSON path extraction. This enables filtering on multi-valued and nested structured properties.
 

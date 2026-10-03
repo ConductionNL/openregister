@@ -48,6 +48,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2InstanceHost
  */
 class CredentialBrokerOAuth2Test extends TestCase {
 	/** @var array<string, mixed>|null The options the outbound client was called with. */

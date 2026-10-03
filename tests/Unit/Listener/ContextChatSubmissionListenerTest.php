@@ -38,6 +38,10 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Listener\ContextChatSubmissionListener
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
+ * @uses \OCA\OpenRegister\Event\ObjectDeletedEvent
  */
 class ContextChatSubmissionListenerTest extends TestCase {
 	private SchemaMapper $schemaMapper;

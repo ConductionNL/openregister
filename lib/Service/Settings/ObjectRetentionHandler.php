@@ -61,8 +61,13 @@ class ObjectRetentionHandler {
 	 *
 	 * @param IAppConfig $appConfig Configuration service.
 	 * @param string $appName Application name (default: 'openregister').
+	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail, and announces it.
 	 */
-	public function __construct(IAppConfig $appConfig, string $appName = 'openregister') {
+	public function __construct(
+		IAppConfig $appConfig,
+		string $appName = 'openregister',
+		private readonly ?OwnSettingsChangeRecorder $changeRecorder = null,
+	) {
 		$this->appConfig = $appConfig;
 		$this->appName = $appName;
 	}//end __construct()
@@ -137,6 +142,7 @@ class ObjectRetentionHandler {
 	 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
 	 */
 	public function updateObjectSettingsOnly(array $objectData): array {
+		$beforeChange = $this->changeRecorder?->snapshot(keys: ['objectManagement']);
 		try {
 			$objectConfig = [
 				'vectorizationEnabled' => $objectData['vectorizationEnabled'] ?? false,
@@ -152,6 +158,7 @@ class ObjectRetentionHandler {
 			];
 
 			$this->appConfig->setValueString($this->appName, 'objectManagement', json_encode($objectConfig));
+			$this->recordSettingsChange(before: $beforeChange, keys: ['objectManagement']);
 			return $objectConfig;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to update Object Management settings: ' . $e->getMessage());
@@ -242,6 +249,7 @@ class ObjectRetentionHandler {
 	 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
 	 */
 	public function updateRetentionSettingsOnly(array $retentionData): array {
+		$beforeChange = $this->changeRecorder?->snapshot(keys: ['retention']);
 		try {
 			$retentionConfig = [
 				'objectArchiveRetention' => $retentionData['objectArchiveRetention'] ?? 31536000000,
@@ -257,6 +265,7 @@ class ObjectRetentionHandler {
 			];
 
 			$this->appConfig->setValueString($this->appName, 'retention', json_encode($retentionConfig));
+			$this->recordSettingsChange(before: $beforeChange, keys: ['retention']);
 			return $retentionConfig;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to update Retention settings: ' . $e->getMessage());
@@ -311,6 +320,7 @@ class ObjectRetentionHandler {
 	 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
 	 */
 	public function updateArchivalSettingsOnly(array $archivalData): array {
+		$beforeChange = $this->changeRecorder?->snapshot(keys: ['archival']);
 		try {
 			$archivalConfig = [
 				'destructionCheckInterval' => $archivalData['destructionCheckInterval'] ?? 86400,
@@ -327,11 +337,30 @@ class ObjectRetentionHandler {
 			];
 
 			$this->appConfig->setValueString($this->appName, 'archival', json_encode($archivalConfig));
+			$this->recordSettingsChange(before: $beforeChange, keys: ['archival']);
 			return $archivalConfig;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to update archival settings: ' . $e->getMessage());
 		}
 	}//end updateArchivalSettingsOnly()
+
+	/**
+	 * Hand a per-section save to the change recorder.
+	 *
+	 * @param array{settings: array<string, mixed>, security: array<string, mixed>}|null $before The snapshot, or null.
+	 * @param array<int, string>                                                         $keys   The keys the save wrote.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/settings-change-audit/specs/audit-trail-immutable/spec.md
+	 */
+	private function recordSettingsChange(?array $before, array $keys): void {
+		if ($before === null || $this->changeRecorder === null) {
+			return;
+		}
+
+		$this->changeRecorder->record(before: $before, keys: $keys);
+	}//end recordSettingsChange()
 
 	/**
 	 * Get default archival settings

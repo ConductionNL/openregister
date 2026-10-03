@@ -50,6 +50,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Db\Schema::validateLinkedTypesValue
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Integration\IntegrationRegistry
  */
 class SchemaLinkedTypesTest extends TestCase {
 

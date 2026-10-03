@@ -486,6 +486,63 @@ class NotifyPushListener implements IEventListener {
 	}//end resolveQueue()
 
 	/**
+	 * Push that the readers of an object changed.
+	 *
+	 * 🔴 ON CHANGE ONLY (D-2). This is called on an arrival, a departure and an
+	 * expiry, and NEVER on a renewal that changed nothing. Twenty readers on
+	 * one page are twenty writes a minute, which is nothing, and would be twenty
+	 * pushes a minute to twenty clients, which is not.
+	 *
+	 * 🔴 THE AUDIENCE IS THE OBJECT'S (D-3). `getReadableByUsers()` is the same
+	 * resolution a lifecycle push takes, so presence can never tell somebody
+	 * that an object exists, or that colleagues are interested in it, when they
+	 * may not read the object itself.
+	 *
+	 * Soft-fails, like every other push here: an instance without notify_push
+	 * simply has no live presence, and the list still answers on request.
+	 *
+	 * @param ObjectEntity                     $object  The object whose readers changed.
+	 * @param array<int, array<string, mixed>> $present Who is present now.
+	 *
+	 * @return boolean True when at least one push was queued.
+	 *
+	 * @spec openspec/changes/object-presence/specs/realtime-updates/spec.md#requirement-presence-changes-are-pushed-not-polled
+	 */
+	public function pushPresence(ObjectEntity $object, array $present): bool {
+		$uuid = $object->getUuid();
+		if ($uuid === null || $uuid === '') {
+			return false;
+		}
+
+		$queue = $this->resolveQueue();
+		if ($queue === null) {
+			return false;
+		}
+
+		$payload = [
+			'action' => 'presence',
+			'uuid' => $uuid,
+			'present' => array_values($present),
+		];
+
+		$pushed = false;
+		$channel = PushEvents::OR_OBJECT . '-' . $uuid;
+		foreach ($this->permissionHandler->getReadableByUsers(object: $object) as $userId) {
+			$queue->push(
+				'notify_custom',
+				[
+					'user' => $userId,
+					'message' => $channel,
+					'body' => $payload,
+				]
+			);
+			$pushed = true;
+		}
+
+		return $pushed;
+	}//end pushPresence()
+
+	/**
 	 * Resolve a register's slug from its UUID.
 	 *
 	 * @param string|null $registerUuid The register UUID from ObjectEntity::getRegister().

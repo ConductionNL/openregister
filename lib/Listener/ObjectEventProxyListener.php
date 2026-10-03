@@ -229,11 +229,17 @@ final class ObjectEventProxyListener implements IEventListener {
 	 * @return array{0: string|null, 1: string|null}
 	 */
 	private function identify(Event $event): array {
-		if (method_exists($event, 'getObject') === false) {
-			return [null, null];
+		// ObjectUpdatingEvent carries the written object as getNewObject() and
+		// has no getObject(). Reading only getObject() left every pre-update
+		// event undecidable, so every ObjectUpdatingEvent subscriber ran on
+		// every update in every register, whatever it declared.
+		$object = null;
+		if (method_exists($event, 'getObject') === true) {
+			$object = $event->getObject();
+		} else if (method_exists($event, 'getNewObject') === true) {
+			$object = $event->getNewObject();
 		}
 
-		$object = $event->getObject();
 		if (($object instanceof ObjectEntity) === false) {
 			return [null, null];
 		}

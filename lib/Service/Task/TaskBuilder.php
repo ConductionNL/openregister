@@ -139,6 +139,7 @@ class TaskBuilder {
 		$task->setTitle($this->stringOrNull(value: $data['title'] ?? null));
 		$task->setDescription($this->stringOrNull(value: $data['description'] ?? null));
 		$task->setMetadata($this->arrayOrNull(value: $data['metadata'] ?? null));
+		$task->setKind($this->stringOrNull(value: $data['kind'] ?? null));
 		$task->setRunUuid($this->stringOrNull(value: $data['runUuid'] ?? null));
 		$task->setNodeId($this->stringOrNull(value: $data['nodeId'] ?? null));
 		$task->setDefinitionVersion($this->intOrNull(value: ($data['definitionVersion'] ?? null)));

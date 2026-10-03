@@ -151,6 +151,11 @@ final class TenancyGuardHost {
  * Enforcement coverage across all twelve trait-using entity types.
  *
  * @covers \OCA\OpenRegister\Db\MultiTenancyTrait
+ * @uses \OCA\OpenRegister\Db\Configuration
+ * @uses \OCA\OpenRegister\Db\Endpoint
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\View
+ * @uses \OCA\OpenRegister\Db\Webhook
  */
 class MultiTenancyTraitOrganisationAccessTest extends TestCase {
 

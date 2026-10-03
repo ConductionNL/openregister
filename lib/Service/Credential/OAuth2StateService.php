@@ -54,6 +54,20 @@ class OAuth2StateService {
 	private const PENDING_PREFIX = 'openregister/oauth2-pending/';
 
 	/**
+	 * Length of the nonce that names a pending flow.
+	 *
+	 * The vault key is PENDING_PREFIX plus the nonce, and Nextcloud's credential
+	 * vault keeps it in `oc_storages_credentials.identifier`, a 64-character
+	 * column: 28 + 32 fits. A longer nonce fails the insert, and with it every
+	 * connect start, wherever the length is enforced (PostgreSQL, MySQL in strict
+	 * mode); non-strict MySQL truncates the key instead. 32 alphanumeric
+	 * characters is about 190 bits.
+	 *
+	 * @var integer
+	 */
+	private const NONCE_LENGTH = 32;
+
+	/**
 	 * The reserved Nextcloud system-credential identity (empty-string user).
 	 *
 	 * A pending flow is not owned by the user in the way a credential is: the
@@ -100,7 +114,7 @@ class OAuth2StateService {
 	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
 	 */
 	public function issue(array $claims): array {
-		$nonce = $this->random->generate(43, ISecureRandom::CHAR_ALPHANUMERIC);
+		$nonce = $this->random->generate(self::NONCE_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC);
 		$verifier = $this->random->generate(64, ISecureRandom::CHAR_ALPHANUMERIC);
 
 		$payload = array_merge($claims, ['v' => 1, 'n' => $nonce, 'exp' => (time() + self::STATE_TTL_SECONDS)]);
@@ -120,6 +134,22 @@ class OAuth2StateService {
 			'challenge' => $this->challengeFor(verifier: $verifier),
 		];
 	}//end issue()
+
+	/**
+	 * Withdraw a flow that will never be redeemed: delete its pending record.
+	 *
+	 * For a start that failed after issue(): its state never reached the person,
+	 * so no callback will consume the record, and nothing else would remove it.
+	 *
+	 * @param string $nonce The nonce issue() returned.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
+	 */
+	public function withdraw(string $nonce): void {
+		$this->vault->delete(self::SYSTEM_IDENTITY, self::PENDING_PREFIX . $nonce);
+	}//end withdraw()
 
 	/**
 	 * Read a state's claims WITHOUT verifying its signature.

@@ -50,6 +50,7 @@ use Psr\Log\NullLogger;
  * Per-request memoisation of the inheritFromPublic verdict, and its eviction.
  *
  * @covers \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class PermissionHandlerAuthorizationCacheTest extends TestCase {
 

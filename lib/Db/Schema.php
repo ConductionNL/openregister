@@ -26,10 +26,14 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use Exception;
 use InvalidArgumentException;
+use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use JsonSerializable;
 use OCA\OpenRegister\Exception\CalendarDateKindException;
 use OCA\OpenRegister\Service\Calendar\ObjectDateDeclaration;
+use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
+use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Types;
@@ -107,6 +111,8 @@ use stdClass;
  * @method void setTalk(?array $talk)
  * @method array|null getDeck()
  * @method void setDeck(?array $deck)
+ * @method array|null getDraft()
+ * @method void setDraft(?array $draft)
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
@@ -477,6 +483,16 @@ class Schema extends Entity implements JsonSerializable {
 	protected ?array $deck = null;
 
 	/**
+	 * A pending edit of this schema's definition, held beside the published one.
+	 *
+	 * Validation never reads it; publishing applies it through the normal update.
+	 * Only SchemasController's draft routes write it, never hydrate().
+	 *
+	 * @var array|null The draft body, or null when there is none
+	 */
+	protected ?array $draft = null;
+
+	/**
 	 * Constructor for the Schema class
 	 *
 	 * Sets up field types for all properties
@@ -522,6 +538,7 @@ class Schema extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'calendar', type: 'json');
 		$this->addType(fieldName: 'talk', type: 'json');
 		$this->addType(fieldName: 'deck', type: 'json');
+		$this->addType(fieldName: 'draft', type: 'json');
 	}//end __construct()
 
 	/**
@@ -612,16 +629,48 @@ class Schema extends Entity implements JsonSerializable {
 		}
 
 		foreach ($this->properties as $propertyConfig) {
-			if (is_array($propertyConfig) === true
-				&& isset($propertyConfig['authorization']) === true
-				&& empty($propertyConfig['authorization']) === false
-			) {
+			if (self::propertyCarriesAuthorization(propertyConfig: $propertyConfig) === true) {
 				return true;
 			}
 		}
 
 		return false;
 	}//end hasPropertyAuthorization()
+
+	/**
+	 * Whether one property config is governed at all.
+	 *
+	 * 🔴 THIS METHOD IS THE REASON `scope` IS NOT INERT, AND THE TRAP IS THAT
+	 * NOTHING WOULD HAVE FAILED WITHOUT IT. `hasPropertyAuthorization()` is a
+	 * SHORT-CIRCUIT: five call sites, on the render, query, export and OAS
+	 * paths, skip property filtering entirely when it answers false. Compiling
+	 * a scope into an authorization block inside
+	 * {@see getPropertyAuthorization()} is therefore not enough on its own,
+	 * because on a schema whose only control is a scope nothing would ever call
+	 * it. The field would be published as scoped and returned to everybody, and
+	 * no test on the compiler itself could see it.
+	 *
+	 * So both gates ask this one question, and a scope answers it.
+	 *
+	 * @param mixed $propertyConfig One property's configuration.
+	 *
+	 * @return bool Whether the property is governed by an authorization block or a scope.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
+	 */
+	private static function propertyCarriesAuthorization(mixed $propertyConfig): bool {
+		if (is_array($propertyConfig) === false) {
+			return false;
+		}
+
+		if (empty($propertyConfig['authorization'] ?? null) === false) {
+			return true;
+		}
+
+		$scope = ($propertyConfig[ScopedPropertyDeclaration::ANNOTATION] ?? null);
+
+		return (is_string($scope) === true && trim($scope) !== '');
+	}//end propertyCarriesAuthorization()
 
 	/**
 	 * Get the authorization rules for a specific property.
@@ -642,6 +691,22 @@ class Schema extends Entity implements JsonSerializable {
 
 		$authorization = $propertyConfig['authorization'] ?? null;
 		if (empty($authorization) === true) {
+			// 🔴 A `scope` IS AN AUTHORIZATION BLOCK, AND THIS IS WHERE IT
+			// BECOMES ONE. Compiling it here rather than beside the existing
+			// mechanism is the whole design: `PropertyRbacHandler` already
+			// strips unreadable properties from every read, refuses writes to
+			// them, and keeps them out of exports and the OAS, all by reading
+			// this method. A second evaluator would mean two answers to "may
+			// this person see this field", and the two disagree within a week.
+			//
+			// Without this, `scope` would validate, publish, and enforce
+			// nothing, and the author would believe the field was team-only
+			// BECAUSE the platform accepted the word.
+			$scope = ($propertyConfig[ScopedPropertyDeclaration::ANNOTATION] ?? null);
+			if (is_string($scope) === true && trim($scope) !== '') {
+				return ScopedPropertyDeclaration::authorizationFor(scope: trim($scope));
+			}
+
 			return null;
 		}
 
@@ -661,12 +726,14 @@ class Schema extends Entity implements JsonSerializable {
 		}
 
 		foreach ($this->properties as $propertyName => $propertyConfig) {
-			if (is_array($propertyConfig) === true
-				&& isset($propertyConfig['authorization']) === true
-				&& empty($propertyConfig['authorization']) === false
-			) {
-				$result[$propertyName] = $propertyConfig['authorization'];
+			if (self::propertyCarriesAuthorization(propertyConfig: $propertyConfig) === false) {
+				continue;
 			}
+
+			// Read through the same compiler the single-property lookup uses, so
+			// a scoped property is listed with the block it actually enforces
+			// rather than with nothing.
+			$result[$propertyName] = $this->getPropertyAuthorization(propertyName: (string)$propertyName);
 		}
 
 		return $result;
@@ -858,6 +925,16 @@ class Schema extends Entity implements JsonSerializable {
 	public const LENS_ANNOTATION = 'x-openregister-lenses';
 
 	/**
+	 * The operators an authorization `match` may use (openregister#4089).
+	 *
+	 * Exactly the set OperatorEvaluator and MagicRbacHandler both evaluate; a
+	 * schema naming any other `$` operator in a match is refused at save.
+	 *
+	 * @var string[]
+	 */
+	public const MATCH_OPERATORS = ['$eq', '$ne', '$in', '$nin', '$contains', '$exists', '$gt', '$gte', '$lt', '$lte'];
+
+	/**
 	 * The list-surface annotation: declared columns and search fields.
 	 *
 	 * A list page written per object type is a list page that drifts per object
@@ -878,6 +955,33 @@ class Schema extends Entity implements JsonSerializable {
 	 * @var string
 	 */
 	public const GEO_INHERITANCE_ANNOTATION = 'x-openregister-geo-inheritance';
+
+	/**
+	 * The property keys whose falsy value is a real one.
+	 *
+	 * An empty value is dropped by getSchemaObject(), because an empty `title`
+	 * says nothing; these carry a value instead, so `false`, `0` and a zero
+	 * bound survive. The four numeric ones are the draft-2020-12 keywords, all
+	 * declared `number` in PropertyValidatorHandler's table -- not the form's
+	 * `exclusiveMin`/`exclusiveMax`, which are booleans meaning "read the bound
+	 * as exclusive" and whose `false` really is unset.
+	 *
+	 * Not the full set of value-carrying keywords. `multipleOf: 0` would be an
+	 * invalid schema, and the length and item bounds have no falsy writer:
+	 * the property form normalises them through `parseFloat(...) || null`, and
+	 * nothing generates one at 0 the way TablesColumnMapper::numberProperty()
+	 * generates `minimum: 0`. Add a key when something starts writing one.
+	 *
+	 * @var array<int, string>
+	 */
+	public const VALUE_CARRYING_PROPERTY_KEYS = [
+		'default',
+		'const',
+		'minimum',
+		'maximum',
+		'exclusiveMinimum',
+		'exclusiveMaximum',
+	];
 
 	/**
 	 * Whether the schema declares any nested write-only dot-paths.
@@ -1175,8 +1279,21 @@ class Schema extends Entity implements JsonSerializable {
 		// that an authorization block, an event listener and the
 		// grantable-rights index can all refer to; the app still enforces its
 		// own operation.
+		//
+		// 🔴 THE CANONICAL VERBS COME FROM THE CATALOGUE, NOT FROM A LIST HERE.
+		// `PermissionCatalogue::CANONICAL` publishes nine grantable verbs, and
+		// the permission matrix writes any of them into a schema's block. This
+		// method used to accept four of them. An administrator who narrowed
+		// `export` on a schema (which is what the catalogue exists to allow)
+		// made that schema fail EVERY later import of its app with "Invalid
+		// authorization action 'export'": the app's fragment never named the
+		// verb, the stored block did, and the merge is what gets validated.
+		// Measured on the dev instance 2026-09-27: ~280 schemas of 17 apps carry
+		// `export`, and pipelinq's `lead` and `enquiry` were the first two seen
+		// refused, only because that app's re-import had just learned to report
+		// a rejection. Same fix as the control keys above: read the one list.
 		$validActions = array_merge(
-			['create', 'read', 'update', 'delete'],
+			array_keys(PermissionCatalogue::CANONICAL),
 			$this->declaredActionNames()
 		);
 
@@ -1200,13 +1317,13 @@ class Schema extends Entity implements JsonSerializable {
 			if (in_array($action, $validActions) === false) {
 				$validList = implode(', ', $validActions);
 				$msg = "Invalid authorization action '{$action}' in {$context}. Must be one of: {$validList}";
-				throw new InvalidArgumentException($msg);
+				throw new InvalidAuthorizationRuleException(message: $msg);
 			}
 
 			// Validate rules is an array.
 			if (is_array($rules) === false) {
-				throw new InvalidArgumentException(
-					"Authorization rules for action '{$action}' in {$context} must be an array"
+				throw new InvalidAuthorizationRuleException(
+					message: "Authorization rules for action '{$action}' in {$context} must be an array"
 				);
 			}
 
@@ -1243,8 +1360,8 @@ class Schema extends Entity implements JsonSerializable {
 	): bool {
 		if (in_array($action, $reservedFlags, true) === true) {
 			if (is_bool($value) === false) {
-				throw new InvalidArgumentException(
-					"Authorization flag '{$action}' in {$context} must be a boolean"
+				throw new InvalidAuthorizationRuleException(
+					message: "Authorization flag '{$action}' in {$context} must be a boolean"
 				);
 			}
 
@@ -1258,6 +1375,42 @@ class Schema extends Entity implements JsonSerializable {
 
 		if ($action === self::ROLES_KEY) {
 			$this->validateRolesAssignment(roles: $value, context: $context);
+			return true;
+		}
+
+		// 🔴 EVERY OTHER CONTROL KEY, taken from the ONE list that already
+		// names them. `PermissionCatalogue::CONTROL_KEYS` exists precisely to
+		// say which keys of an authorization block are settings rather than
+		// verbs, and it carries two comments recording what happens when a
+		// control key is read as a verb. This method had its own private copy
+		// of that knowledge — three keys of it — so `matrix`, `deny`, `public`
+		// and the token-grant marker fell through to the CRUD-verb check and
+		// the SAVE was refused with "Invalid authorization action 'matrix'".
+		// Measured on a live instance 2026-09-19: the whole of
+		// rbac-department-role-matrix was unreachable over HTTP for that
+		// reason, while every unit test of the compiler passed because none of
+		// them crosses this validator.
+		//
+		// Reading the list instead of repeating it is the fix, not adding four
+		// names: a fifth control key added to the catalogue tomorrow would
+		// otherwise break the save again in exactly this way.
+		//
+		// Accepting the key here is not accepting its SHAPE. Each control has
+		// its own validator at save time — SchemaMapper::validateDepartmentMatrix()
+		// for the matrix, AuthorizationDenyValidator for `deny` — and those
+		// refuse a malformed block with a message about the block.
+		// `scope` and `roles` are answered above with their own validators, so
+		// they come out of the list here rather than being tested twice. Psalm
+		// reads the constant and calls the second test a paradox otherwise,
+		// and it is right: the branch could never be taken for those two.
+		$remaining = array_values(
+			array_diff(
+				PermissionCatalogue::CONTROL_KEYS,
+				[ObjectScopeResolver::SCOPE_KEY, self::ROLES_KEY]
+			)
+		);
+
+		if (in_array($action, $remaining, true) === true) {
 			return true;
 		}
 
@@ -1287,15 +1440,15 @@ class Schema extends Entity implements JsonSerializable {
 	 */
 	private function validateRolesAssignment(mixed $roles, string $context): void {
 		if (is_array($roles) === false) {
-			throw new InvalidArgumentException(
-				"Authorization '" . self::ROLES_KEY . "' in {$context} must be a map of role name to group ids"
+			throw new InvalidAuthorizationRuleException(
+				message: "Authorization '" . self::ROLES_KEY . "' in {$context} must be a map of role name to group ids"
 			);
 		}
 
 		foreach ($roles as $roleName => $groups) {
 			if (is_string($roleName) === false || trim($roleName) === '') {
-				throw new InvalidArgumentException(
-					"Authorization '" . self::ROLES_KEY . "' in {$context} names a role with no name"
+				throw new InvalidAuthorizationRuleException(
+					message: "Authorization '" . self::ROLES_KEY . "' in {$context} names a role with no name"
 				);
 			}
 
@@ -1316,15 +1469,15 @@ class Schema extends Entity implements JsonSerializable {
 	 */
 	private function validateRoleGroups(string $roleName, mixed $groups, string $context): void {
 		if (is_array($groups) === false || $groups === []) {
-			throw new InvalidArgumentException(
-				"Role '{$roleName}' in {$context} must list at least one group id"
+			throw new InvalidAuthorizationRuleException(
+				message: "Role '{$roleName}' in {$context} must list at least one group id"
 			);
 		}
 
 		foreach ($groups as $group) {
 			if (is_string($group) === false || trim($group) === '') {
-				throw new InvalidArgumentException(
-					"Role '{$roleName}' in {$context} lists a group id that is not a non-empty string"
+				throw new InvalidAuthorizationRuleException(
+					message: "Role '{$roleName}' in {$context} lists a group id that is not a non-empty string"
 				);
 			}
 		}
@@ -1349,8 +1502,8 @@ class Schema extends Entity implements JsonSerializable {
 
 		if (in_array($scope, $validScopes, true) === false) {
 			$scopeList = implode(', ', $validScopes);
-			throw new InvalidArgumentException(
-				"Authorization scope in {$context} must be one of: {$scopeList}"
+			throw new InvalidAuthorizationRuleException(
+				message: "Authorization scope in {$context} must be one of: {$scopeList}"
 			);
 		}
 	}//end validateScopeValue()
@@ -1381,8 +1534,8 @@ class Schema extends Entity implements JsonSerializable {
 			}
 
 			if (is_array($authorization) === false) {
-				throw new InvalidArgumentException(
-					"Authorization for property '{$propertyName}' must be an array"
+				throw new InvalidAuthorizationRuleException(
+					message: "Authorization for property '{$propertyName}' must be an array"
 				);
 			}
 
@@ -1412,8 +1565,8 @@ class Schema extends Entity implements JsonSerializable {
 		// Simple rule: non-empty string (group name).
 		if (is_string($rule) === true) {
 			if (trim($rule) === '') {
-				throw new InvalidArgumentException(
-					"Group ID in authorization for action '{$action}' in {$context} must be a non-empty string"
+				throw new InvalidAuthorizationRuleException(
+					message: "Group ID in authorization for action '{$action}' in {$context} must be a non-empty string"
 				);
 			}
 
@@ -1424,34 +1577,111 @@ class Schema extends Entity implements JsonSerializable {
 		if (is_array($rule) === true) {
 			// Validate 'group' key exists and is a non-empty string.
 			if (isset($rule['group']) === false) {
-				throw new InvalidArgumentException(
-					"Conditional authorization rule for action '{$action}' in {$context} must have a 'group' key"
+				throw new InvalidAuthorizationRuleException(
+					message: "Conditional authorization rule for action '{$action}' in {$context} must have a 'group' key"
 				);
 			}
 
 			if (is_string($rule['group']) === false || trim($rule['group']) === '') {
-				throw new InvalidArgumentException(
-					"Conditional authorization 'group' for action '{$action}' in {$context} must be a non-empty string"
+				throw new InvalidAuthorizationRuleException(
+					message: "Conditional authorization 'group' for action '{$action}' in {$context} must be a non-empty string"
 				);
 			}
 
 			// Validate 'match' key if present.
 			if (isset($rule['match']) === true) {
 				if (is_array($rule['match']) === false) {
-					throw new InvalidArgumentException(
-						"Conditional authorization 'match' for action '{$action}' in {$context} must be an array"
+					throw new InvalidAuthorizationRuleException(
+						message: "Conditional authorization 'match' for action '{$action}' in {$context} must be an array"
 					);
 				}
+
+				$this->validateMatchOperators(match: $rule['match'], action: $action, context: $context);
 			}
 
 			return;
 		}//end if
 
 		// Invalid rule type.
-		throw new InvalidArgumentException(
-			"Authorization rule for action '{$action}' in {$context} must be a string or conditional object"
+		throw new InvalidAuthorizationRuleException(
+			message: "Authorization rule for action '{$action}' in {$context} must be a string or conditional object"
 		);
 	}//end validateAuthorizationRule()
+
+	/**
+	 * Refuse a match operator or operand the evaluators cannot handle (openregister#4089).
+	 *
+	 * An unknown operator such as `$lookup`, or an `$in`/`$nin` whose operand is
+	 * not a list, used to save cleanly and then deny every caller at runtime
+	 * without a word. The operators accepted here are exactly the ones both
+	 * {@see \OCA\OpenRegister\Service\OperatorEvaluator} and the list query in
+	 * MagicRbacHandler evaluate. An `$in`/`$nin` operand may also be a dynamic
+	 * token such as `$user.groups`, which resolves to a list at runtime.
+	 *
+	 * @param array  $match   The match clause of one conditional rule.
+	 * @param string $action  The action the rule belongs to, for the message.
+	 * @param string $context The block being validated, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When an operator or operand is not supported.
+	 *
+	 * @spec openspec/specs/rbac-zaaktype/spec.md
+	 */
+	private function validateMatchOperators(array $match, string $action, string $context): void {
+		foreach ($match as $property => $value) {
+			if (is_array($value) === false) {
+				continue;
+			}
+
+			foreach ($value as $operator => $operand) {
+				if (is_string($operator) === true && str_starts_with($operator, '$') === true) {
+					$this->validateMatchOperator(
+						operator: $operator,
+						operand: $operand,
+						where: "action '{$action}' in {$context}, property '{$property}'"
+					);
+				}
+			}
+		}
+	}//end validateMatchOperators()
+
+	/**
+	 * Refuse one unsupported match operator, or a non-list `$in`/`$nin` operand.
+	 *
+	 * @param string $operator The `$` operator.
+	 * @param mixed  $operand  Its operand.
+	 * @param string $where    Where it sits, for the message.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the operator or its operand is not supported.
+	 *
+	 * @spec openspec/specs/rbac-zaaktype/spec.md
+	 */
+	private function validateMatchOperator(string $operator, mixed $operand, string $where): void {
+		if (in_array($operator, self::MATCH_OPERATORS, true) === false) {
+			throw new InvalidAuthorizationRuleException(
+				message: "Authorization match for {$where} uses the unsupported operator '{$operator}'; supported are "
+				.implode(', ', self::MATCH_OPERATORS)
+			);
+		}
+
+		if ($operator !== '$in' && $operator !== '$nin') {
+			return;
+		}
+
+		// A dynamic token such as `$user.groups` resolves to a list at runtime.
+		if (is_string($operand) === true && str_starts_with($operand, '$') === true) {
+			return;
+		}
+
+		if (is_array($operand) === false || array_is_list($operand) === false) {
+			throw new InvalidAuthorizationRuleException(
+				message: "Authorization match for {$where} needs a list as the '{$operator}' operand"
+			);
+		}
+	}//end validateMatchOperator()
 
 	/**
 	 * Check if a user group has permission for a specific CRUD action
@@ -1727,6 +1957,11 @@ class Schema extends Entity implements JsonSerializable {
 	public function hydrate(array $object, ?PropertyValidatorHandler $validator = null): static {
 		$jsonFields = $this->getJsonFields();
 
+		// A draft is written by the draft routes only. An import, a PUT body or a
+		// re-imported export carrying `draft` would otherwise set a pending edit
+		// nobody asked for (modelling-schema-draft).
+		unset($object['draft']);
+
 		if (isset($object['metadata']) === false) {
 			$object['metadata'] = [];
 		}
@@ -1791,6 +2026,8 @@ class Schema extends Entity implements JsonSerializable {
 		if ($annotationsFolded === true) {
 			$object['configuration'] = $existingConfig;
 		}
+
+		$object = $this->foldTopLevelExportable(object: $object);
 
 		foreach ($object as $key => $value) {
 			// Special handling for 'required' field - must always be an array, never NULL.
@@ -1959,6 +2196,10 @@ class Schema extends Entity implements JsonSerializable {
 			'sharedWith' => ($this->sharedWith ?? []),
 			'deleted' => $deleted,
 			'configuration' => $this->configuration,
+			// Mirror of `configuration.exportable`, the one place the flag is
+			// stored, served at the top level too because that is where the
+			// index page's Export menu reads it (or#4103).
+			'exportable' => (($this->configuration['exportable'] ?? false) === true),
 			'allOf' => $this->allOf,
 			'oneOf' => $this->oneOf,
 			'anyOf' => $this->anyOf,
@@ -1971,6 +2212,7 @@ class Schema extends Entity implements JsonSerializable {
 			'_calendar' => $this->calendar,
 			'_talk' => $this->talk,
 			'_deck' => $this->deck,
+			'draft' => $this->draft,
 		];
 	}//end jsonSerialize()
 
@@ -2031,8 +2273,12 @@ class Schema extends Entity implements JsonSerializable {
 
 			$prop = new stdClass();
 			foreach ($property as $key => $value) {
+				// A value-carrying key keeps its falsy value; '' is not one of them,
+				// being what the property form ships for a default nobody filled in.
+				$carriesValue = (in_array($key, self::VALUE_CARRYING_PROPERTY_KEYS, true) === true && $value !== '');
+
 				// Skip 'required' property on this level.
-				if ($key !== 'required' && (empty($value) === false)) {
+				if ($key !== 'required' && ($carriesValue === true || empty($value) === false)) {
 					$prop->{$key} = $value;
 				}
 			}
@@ -2154,10 +2400,14 @@ class Schema extends Entity implements JsonSerializable {
 	 * table (see GetObject). Returns null when absent or when `provider` is not a
 	 * non-empty string.
 	 *
+	 * A schema declaring `x-openregister-view: {view: <id or uuid>}` and no object
+	 * source is served by the read-only `view` provider.
+	 *
 	 * @return array{provider: string, readOnly?: bool, config?: array}|null
 	 *                                                                       The parsed object-source declaration, or null when absent/invalid.
 	 *
 	 * @spec openspec/changes/object-source-providers/tasks.md#task-2.2
+	 * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
 	 */
 	public function getObjectSource(): ?array {
 		$configuration = $this->getConfiguration();
@@ -2168,7 +2418,15 @@ class Schema extends Entity implements JsonSerializable {
 
 		$source = ($configuration['x-openregister-object-source'] ?? null);
 
+		// A type backed by a saved view (x-openregister-view) reads through the
+		// built-in `view` provider and is never writable
+		// (modelling-query-backed-type). An explicit object source wins.
 		if (is_array($source) === false) {
+			$view = ($configuration['x-openregister-view']['view'] ?? null);
+			if ((is_string($view) === true && $view !== '') || is_int($view) === true) {
+				return ['provider' => 'view', 'config' => ['view' => $view], 'readOnly' => true];
+			}
+
 			return null;
 		}
 
@@ -2534,6 +2792,49 @@ class Schema extends Entity implements JsonSerializable {
 	}//end parseConfigurationInput()
 
 	/**
+	 * Fold a top-level `exportable` into `configuration.exportable`.
+	 *
+	 * The entity has no `exportable` field, so a top-level flag used to fall
+	 * through to a `setExportable()` that does not exist and be swallowed by
+	 * hydrate()'s silent catch (or#4103). It is folded into the configuration
+	 * instead, the same way `x-schema-org` is: an explicit
+	 * `configuration.exportable` wins. A top-level `false` with no
+	 * configuration value is not written, because absent already means not
+	 * exportable and the serialised schema carries the mirror on every read,
+	 * so a read-and-save round trip would otherwise add the key to every
+	 * schema. When the payload carries no configuration the stored one is
+	 * the base, so a partial write of the flag keeps the rest.
+	 *
+	 * @param array $object The hydrate payload.
+	 *
+	 * @return array The payload without a top-level `exportable`.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md
+	 */
+	private function foldTopLevelExportable(array $object): array {
+		if (array_key_exists('exportable', $object) === false) {
+			return $object;
+		}
+
+		$exportable = $object['exportable'];
+		unset($object['exportable']);
+
+		$config = ($object['configuration'] ?? $this->configuration ?? []);
+		if (is_string($config) === true) {
+			$config = json_decode($config, true);
+		}
+
+		if (is_array($config) === false || array_key_exists('exportable', $config) === true || $exportable === false) {
+			return $object;
+		}
+
+		$config['exportable'] = $exportable;
+		$object['configuration'] = $config;
+
+		return $object;
+	}//end foldTopLevelExportable()
+
+	/**
 	 * Validate configuration array
 	 *
 	 * @param array $configuration Configuration array to validate
@@ -2547,7 +2848,10 @@ class Schema extends Entity implements JsonSerializable {
 	private function validateConfigurationArray(array $configuration): array {
 		$validatedConfig = [];
 		$stringFields = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
-		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
+		// `exportable` opts the schema into nextcloud-vue's native Export menu
+		// on an index page (or#4103). Off the allowlist it was dropped without
+		// a log line, so `allowExport: true` on every app page was a no-op.
+		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare', 'exportable'];
 		// `implements` + `x-schema-org` carry the cross-app semantic-type
 		// markers (ADR-048); they must round-trip through the configuration
 		// column so SemanticTypeResolver can discover the schema. Their IRI
@@ -3030,6 +3334,11 @@ class Schema extends Entity implements JsonSerializable {
 		// record that same loss three times.
 		'x-openregister-mdto-mapping',
 		'x-openregister-object-source',
+		// A type whose objects are the rows of a saved view: `{"view": "<id or
+		// uuid>"}` (modelling-query-backed-type). Read by getObjectSource().
+		// Absent from this list it would be dropped and the type would read as
+		// an ordinary, empty, writable schema.
+		'x-openregister-view',
 		'x-openregister-quality',
 		'x-openregister-dedup',
 		// Which properties a schema nominates as effectively unique, so a save
@@ -3130,6 +3439,42 @@ class Schema extends Entity implements JsonSerializable {
 		// and the schema author would be reading a 200 on the list they had
 		// just saved. Same silent no-op class as every entry above.
 		self::NOT_SUPPLIED_REASONS_ANNOTATION,
+		// The library of named conditions a rule, guard or field rule may
+		// reference by name (row 11.40). Absent from this list,
+		// setConfiguration() would DROP it, and every rule referencing a name
+		// would then REFUSE — fail-closed, so not a silent no-op this time,
+		// but a schema whose author had just saved the library reading a 200
+		// and watching every one of their rules stop working. Same class of
+		// trap as every entry above, arriving from the other side.
+		'x-openregister-conditions',
+		// The checks an administrator adds, with the sentence each one says
+		// when it refuses (row 11.53). Absent from this list,
+		// setConfiguration() DROPS it and the schema's author reads a 200 on
+		// the save while every violating object keeps saving happily — a
+		// missing CONTROL rather than a missing feature, which is the worst
+		// member of the silent no-op class this list exists to prevent.
+		'x-openregister-validations',
+		// The edge a GRANT travels down: which property points at the parent,
+		// and which actions descend. Read by HierarchyGrantExpander and
+		// refused at save by SchemaMapper::validateHierarchyAnnotation().
+		//
+		// ⚠️ It was absent from this list, and that is the seventh time the
+		// trap the comments above describe actually fired. setConfiguration()
+		// DROPPED the block, so `getConfiguration()` answered null, the
+		// save-time validator returned early on a key that could never be
+		// there, and the expander found nothing to descend: a grant on a root
+		// stopped at the root while its author read a 201. Measured on a live
+		// instance 2026-09-19 — POST with the annotation returned 201 and the
+		// configuration column was empty.
+		HierarchyGrantExpander::ANNOTATION,
+		// Whether this schema's objects may invite an external
+		// (non-Nextcloud-user) participant into a linked Talk room by email,
+		// via TalkLinkService::inviteExternalParticipant() — default OFF.
+		// Absent from this list setConfiguration() would silently DROP it,
+		// so an author enabling guardian participation would read a 200 and
+		// every subsequent invite would answer 403 "does not allow", the
+		// same silent no-op class every entry above records.
+		'x-openregister-talk-participants',
 	];
 
 	/**

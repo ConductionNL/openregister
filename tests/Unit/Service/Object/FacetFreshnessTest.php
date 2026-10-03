@@ -26,6 +26,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Listener\FacetCacheInvalidationListener;
 use OCA\OpenRegister\Service\Object\FacetCacheVersion;
 use OCA\OpenRegister\Service\Object\FacetHandler;
+use OCA\OpenRegister\Service\Object\FacetResponseCache;
 use OCA\OpenRegister\Tests\Unit\Support\FakeMemcache;
 use OCP\ICacheFactory;
 use OCP\IUser;
@@ -132,13 +133,20 @@ final class FacetFreshnessTest extends TestCase {
 
 		$this->versions = new FacetCacheVersion($cacheFactory, $logger);
 
+		// The REAL response cache over the same fake backends. A double of it
+		// would answer "no hit" to everything, and the freshness token folded
+		// into the key -- the whole subject of this file -- would never be
+		// computed at all.
 		$this->handler = new FacetHandler(
 			$this->mapper,
 			$schemaMapper,
-			$cacheFactory,
-			$userSession,
-			$logger,
-			$this->versions
+			new FacetResponseCache(
+				cacheFactory: $cacheFactory,
+				userSession: $userSession,
+				facetCacheVersion: $this->versions,
+				logger: $logger
+			),
+			$logger
 		);
 	}//end setUp()
 

@@ -390,6 +390,15 @@ class CalculationEvaluator {
 		$op = (string)array_key_first($expression);
 		$args = $expression[$op];
 
+		// A calculation's result is stored and returned, so it never reads a
+		// value source: those may be secrets (expression-value-sources D-4).
+		// Not an operator, so it stays out of the dispatch and the catalogue.
+		if ($op === 'source') {
+			throw new EvaluationException(
+				sprintf('A calculation cannot read the value source %s: its result is stored.', (string)json_encode($args))
+			);
+		}
+
 		return match ($op) {
 			'prop' => $this->propValue(object: $object, args: $args),
 			'lit' => $this->placeholders->resolve($args),

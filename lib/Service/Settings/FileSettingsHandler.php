@@ -60,19 +60,29 @@ class FileSettingsHandler {
 	private string $appName;
 
 	/**
+	 * Records every save on the audit trail (openregister#4100).
+	 *
+	 * @var OwnSettingsChangeRecorder|null
+	 */
+	private ?OwnSettingsChangeRecorder $changeRecorder;
+
+	/**
 	 * Constructor for FileSettingsHandler
 	 *
 	 * @param IAppConfig $appConfig Configuration service.
 	 * @param string $appName Application name.
+	 * @param OwnSettingsChangeRecorder|null $changeRecorder Records every save on the audit trail.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IAppConfig $appConfig,
 		string $appName = 'openregister',
+		?OwnSettingsChangeRecorder $changeRecorder = null,
 	) {
 		$this->appConfig = $appConfig;
 		$this->appName = $appName;
+		$this->changeRecorder = $changeRecorder;
 	}//end __construct()
 
 	/**
@@ -136,7 +146,18 @@ class FileSettingsHandler {
 				];
 			}//end if
 
-			return json_decode($fileConfig, true);
+			$fileSettings = json_decode($fileConfig, true);
+
+			// The same bound as updateFileSettings() applies on the way out. Values
+			// stored before that clamp existed are still in appconfig — the previous
+			// write path accepted 0, negatives and anything above 500 — and the cron
+			// job hands batchSize straight to extractPendingFiles(), so a bound that
+			// only guards the write path leaves those installations unprotected.
+			if (is_array($fileSettings) === true && array_key_exists('batchSize', $fileSettings) === true) {
+				$fileSettings['batchSize'] = max(1, min((int) $fileSettings['batchSize'], 500));
+			}
+
+			return $fileSettings;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to retrieve File Management settings: ' . $e->getMessage());
 		}//end try
@@ -194,7 +215,11 @@ class FileSettingsHandler {
 				'extractionMode' => $fileData['extractionMode'] ?? 'background',
 				// Background, immediate, manual.
 				'maxFileSize' => $fileData['maxFileSize'] ?? 100,
-				'batchSize' => $fileData['batchSize'] ?? 10,
+				// Bounded on write: a zero or negative batch size makes the cron job
+				// extract nothing and report "no pending files" for a queue that is
+				// not empty, and an unbounded one lets a single tick attempt
+				// MAX_PENDING_WINDOWS x batchSize files.
+				'batchSize' => max(1, min((int) ($fileData['batchSize'] ?? 10), 500)),
 				'dolphinApiEndpoint' => $fileData['dolphinApiEndpoint'] ?? '',
 				'dolphinApiKey' => $fileData['dolphinApiKey'] ?? '',
 				// Presidio entity recognition settings.
@@ -206,7 +231,12 @@ class FileSettingsHandler {
 				// Auto (unconfigured marker), regex, presidio, openanonymiser, llm, hybrid.
 			];
 
+			$before = $this->changeRecorder?->snapshot(keys: ['fileManagement']);
 			$this->appConfig->setValueString($this->appName, 'fileManagement', json_encode($fileConfig));
+			if ($before !== null) {
+				$this->changeRecorder?->record(before: $before, keys: ['fileManagement']);
+			}
+
 			return $fileConfig;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to update File Management settings: ' . $e->getMessage());

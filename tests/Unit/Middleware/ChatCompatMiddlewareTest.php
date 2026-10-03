@@ -36,6 +36,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Middleware\ChatCompatMiddleware
+ * @uses \OCA\OpenRegister\Middleware\Exception\ChatProxiedResponseException
  */
 class ChatCompatMiddlewareTest extends TestCase {
 

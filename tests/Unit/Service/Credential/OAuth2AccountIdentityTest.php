@@ -42,6 +42,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2AccountIdentity
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2TokenSet
  */
 class OAuth2AccountIdentityTest extends TestCase {
 	/** @var array<int, array<string, mixed>> Every brokered call made. */

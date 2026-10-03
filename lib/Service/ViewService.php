@@ -30,6 +30,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -105,6 +106,24 @@ class ViewService {
 	}//end __construct()
 
 	/**
+	 * A view by id, without judging who asks.
+	 *
+	 * For a caller that resolves access itself, such as the views controller
+	 * through ViewerReachResolver::reaches().
+	 *
+	 * @param int|string $id The view id.
+	 *
+	 * @return View
+	 *
+	 * @throws DoesNotExistException When no view has this id.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function findById(int|string $id): View {
+		return $this->viewMapper->find($id);
+	}//end findById()
+
+	/**
 	 * Find a view by ID
 	 *
 	 * Retrieves view by ID and validates user access permissions.
@@ -156,6 +175,26 @@ class ViewService {
 	}//end findAll()
 
 	/**
+	 * Every view this caller may see, each carrying the access they hold.
+	 *
+	 * The union `view-group-share` adds to `findAll()`: the caller's own views,
+	 * the views shared with a group they are in, and the public ones, each with
+	 * `@self.access`. `findAll()` is left alone rather than widened, because it
+	 * is called from paths that mean "the views this OWNER has" and silently
+	 * turning that into "and everything shared with them" would change what
+	 * those paths count.
+	 *
+	 * @param ViewerReach $reach The caller, their groups and whether they administer the instance.
+	 *
+	 * @return array The views.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	public function findAllFor(ViewerReach $reach): array {
+		return $this->viewMapper->findAllFor(reach: $reach);
+	}//end findAllFor()
+
+	/**
 	 * Create a new view
 	 *
 	 * Creates a new view entity with specified properties. If view is set as default,
@@ -168,6 +207,7 @@ class ViewService {
 	 * @param bool $isDefault Whether the view is the default view for the user
 	 * @param array<string, mixed> $query The query parameters (registers, schemas, filters)
 	 * @param array|null $presentation Presentation config (viewType + kanban/calendar config); null = table (default)
+	 * @param array|null $sharedWith Validated group shares, `[{group, mode}]`; null = none
 	 *
 	 * @return View The created view entity
 	 *
@@ -185,6 +225,7 @@ class ViewService {
 		bool $isDefault,
 		array $query,
 		?array $presentation = null,
+		?array $sharedWith = null,
 	): View {
 		try {
 			// Step 0: Reject a presentation config that cannot render before touching the DB.
@@ -206,6 +247,7 @@ class ViewService {
 			$view->setQuery($query);
 			$view->setPresentation($presentation);
 			$view->setFavoredBy([]);
+			$view->setSharedWith(array_values($sharedWith ?? []));
 
 			// Step 3: Insert view into database and return created entity.
 			return $this->viewMapper->insert($view);
@@ -231,6 +273,7 @@ class ViewService {
 	 * @param array $query The query parameters
 	 * @param array|null $favoredBy Array of user IDs who favor this view
 	 * @param array|null $presentation Presentation config (viewType + kanban/calendar config); null leaves the existing value untouched
+	 * @param array|null $sharedWith Validated group shares, `[{group, mode}]`; null leaves the existing shares untouched
 	 *
 	 * @return View The updated view
 	 *
@@ -239,6 +282,8 @@ class ViewService {
 	 *
 	 * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
 	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Each optional field is null-means-untouched; a bag would lose that per field.
 	 */
 	public function update(
 		int|string $id,
@@ -250,6 +295,7 @@ class ViewService {
 		array $query,
 		?array $favoredBy = null,
 		?array $presentation = null,
+		?array $sharedWith = null,
 	): View {
 		try {
 			// Reject a presentation config that cannot render before touching the DB.
@@ -278,6 +324,12 @@ class ViewService {
 			// so a PATCH that doesn't mention presentation can't silently wipe it.
 			if ($presentation !== null) {
 				$view->setPresentation($presentation);
+			}
+
+			// The group shares, validated by the caller. Null leaves them as they
+			// were, so an update that does not mention sharing cannot drop them.
+			if ($sharedWith !== null) {
+				$view->setSharedWith(array_values($sharedWith));
 			}
 
 			return $this->viewMapper->update($view);

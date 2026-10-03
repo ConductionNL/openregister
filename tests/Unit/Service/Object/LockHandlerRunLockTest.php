@@ -45,6 +45,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\LockHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 final class LockHandlerRunLockTest extends TestCase {
 

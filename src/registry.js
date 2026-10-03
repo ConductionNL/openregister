@@ -85,6 +85,7 @@ export default {
 	WebhooksIndex: page(() => import('./views/webhooks/WebhooksIndex.vue')),
 	FlowDetailSidebar: page(() => import('./views/flows/FlowDetailSidebar.vue')),
 	WebhookLogsIndex: page(() => import('./views/webhooks/WebhookLogsIndex.vue')),
+	AgentsIndex: page(() => import('./views/agents/AgentsIndex.vue')),
 	EndpointsIndex: page(() => import('./views/Endpoint/EndpointsIndex.vue')),
 	EntitiesIndex: page(() => import('./views/entities/EntitiesIndex.vue')),
 	EntityDetail: page(() => import('./views/entities/EntityDetail.vue')),
@@ -103,6 +104,9 @@ export default {
 		() => import('./views/quality/MasterEntitiesIndex.vue'),
 	),
 	QueueHealthIndex: page(() => import('./views/quality/QueueHealthIndex.vue')),
+	OperationsConsoleIndex: page(
+		() => import('./views/operations/OperationsConsoleIndex.vue'),
+	),
 	MergeOperationsIndex: page(
 		() => import('./views/quality/MergeOperationsIndex.vue'),
 	),

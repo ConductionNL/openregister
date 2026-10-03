@@ -116,6 +116,8 @@
 		"Details": "Same spelling and meaning in Dutch; core nl keeps it.",
 		"Urgent": "Same spelling and meaning in Dutch (urgent).",
 		"score": "Established loanword in Dutch for a points-based score; no non-narrowing Dutch synonym exists (\"totaalscore\" would narrow it to a total), so the honest value is identical.",
-		"Operator": "The engine's comparison/logic operator. Dutch uses the identically-spelled international term \"operator\", the bundle writing \"operator\" in prose, so the value coincides with the English key; no distinct synonym exists."
+		"Operator": "The engine's comparison/logic operator. Dutch uses the identically-spelled international term \"operator\", the bundle writing \"operator\" in prose, so the value coincides with the English key; no distinct synonym exists.",
+		"Respondent": "Dutch survey terminology uses the same word, 'respondent'; it is the standard term in Dutch research and form language, so the correct translation is byte-identical.",
+		"Token": "Established loan; this bundle already writes 'token' throughout (for example 'Nieuw token aanmaken'), so the Dutch term is spelled identically."
 	}
 }

@@ -72,6 +72,12 @@
         "title": "Intake Sources (demo)",
         "version": "1.0.0",
         "description": "Demo data for Intake Sources. Generated from the register's own schemas — see hydra-gates/scripts/lib/generate_mock_register.py."
+      },
+      "surveys": {
+        "slug": "surveys",
+        "title": "Surveys (demo)",
+        "version": "1.0.0",
+        "description": "Demo data for Surveys. Written by hand against the register's own schemas, because the generator rewrites the whole descriptor."
       }
     },
     "schemas": {
@@ -2267,6 +2273,289 @@
             "description": "UUID of the organisation this source belongs to. Empty for a shared one."
           }
         }
+      },
+      "survey": {
+        "slug": "survey",
+        "title": "Survey",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "A survey as its own object: its questions, who may read the answers, and whether respondents are named.",
+        "description": "A satisfaction survey is a thing, not a rating field on a closed case. It carries its questions, the object type it asks about, whether it is anonymous, and the minimum number of responses below which an anonymous survey's answers are withheld. Anonymity is decided at creation and cannot be changed: switching it on later would hide answers somebody already acted on by name, and switching it off would name respondents who answered on a promise that they would not be.",
+        "required": [
+          "title",
+          "anonymity"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "What this survey is called.",
+            "title": "Title",
+            "maxLength": 255
+          },
+          "introduction": {
+            "type": "string",
+            "description": "Shown above the questions, in the respondent's own language.",
+            "title": "Introduction"
+          },
+          "subjectSchema": {
+            "type": "string",
+            "description": "The slug of the schema this survey asks about, for example a closed case.",
+            "title": "Subject schema",
+            "maxLength": 255,
+            "facetable": true
+          },
+          "anonymity": {
+            "type": "string",
+            "description": "Whether answers name their respondent. Decided at creation and refused afterwards.",
+            "title": "Anonymity",
+            "enum": [
+              "anonymous",
+              "attributed"
+            ],
+            "default": "attributed",
+            "facetable": true
+          },
+          "minimumResponses": {
+            "type": "integer",
+            "description": "An anonymous survey withholds its answers below this many responses, and says so with the count. Three answers from one team identify the people in it.",
+            "title": "Minimum responses",
+            "default": 5,
+            "minimum": 1
+          },
+          "allowReopening": {
+            "type": "boolean",
+            "description": "Whether an answered invitation may be followed again. Off by default: a link that can be answered twice cannot be reported on.",
+            "title": "Allow reopening",
+            "default": false
+          },
+          "readerRoles": {
+            "type": "array",
+            "title": "Reader roles",
+            "description": "The roles that may read this survey's answer sets.",
+            "items": {
+              "type": "string",
+              "title": "Role"
+            }
+          },
+          "version": {
+            "type": "integer",
+            "description": "Raised whenever the survey is edited while answers exist. Every answer set keeps naming the version it answered.",
+            "title": "Version",
+            "default": 1,
+            "facetable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Whether this survey is being sent.",
+            "title": "Status",
+            "enum": [
+              "draft",
+              "active",
+              "closed"
+            ],
+            "default": "draft",
+            "facetable": true
+          }
+        }
+      },
+      "surveyQuestion": {
+        "slug": "surveyQuestion",
+        "title": "Survey question",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "One question on a survey, in an order.",
+        "description": "Questions are their own objects so a survey can be edited without rewriting the shape of every answer that already came back.",
+        "required": [
+          "survey",
+          "text",
+          "kind"
+        ],
+        "properties": {
+          "survey": {
+            "type": "string",
+            "description": "The survey this question belongs to.",
+            "title": "Survey",
+            "maxLength": 255,
+            "facetable": true
+          },
+          "text": {
+            "type": "string",
+            "description": "The question, as the respondent reads it.",
+            "title": "Text"
+          },
+          "kind": {
+            "type": "string",
+            "description": "How it is answered.",
+            "title": "Kind",
+            "enum": [
+              "scale",
+              "choice",
+              "text"
+            ],
+            "default": "scale",
+            "facetable": true
+          },
+          "options": {
+            "type": "array",
+            "title": "Options",
+            "description": "The answers offered, for a choice question.",
+            "items": {
+              "type": "string",
+              "title": "Option"
+            }
+          },
+          "order": {
+            "type": "integer",
+            "description": "Where it sits in the survey.",
+            "title": "Order",
+            "default": 0
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Whether a submission without it is refused, naming this question.",
+            "title": "Required",
+            "default": false
+          }
+        }
+      },
+      "surveyInvitation": {
+        "slug": "surveyInvitation",
+        "title": "Survey invitation",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "One person asked one survey about one thing, and what became of the asking.",
+        "description": "The invitation is separate from the answer set so that 'who was asked and never answered' is a question with an answer. A blocked invitation is RECORDED rather than not created: a gap in the response data with no reason beside it reads as nobody being asked.",
+        "required": [
+          "survey",
+          "state"
+        ],
+        "properties": {
+          "survey": {
+            "type": "string",
+            "description": "The survey being asked.",
+            "title": "Survey",
+            "maxLength": 255,
+            "facetable": true
+          },
+          "subjectObject": {
+            "type": "string",
+            "description": "The object it is about, for example the closed case.",
+            "title": "Subject object",
+            "maxLength": 255,
+            "facetable": true
+          },
+          "respondent": {
+            "type": "string",
+            "description": "Where the invitation was sent. Held on the invitation, never on an anonymous survey's answers.",
+            "title": "Respondent",
+            "maxLength": 255
+          },
+          "token": {
+            "type": "string",
+            "description": "The signed token the link carries.",
+            "title": "Token",
+            "maxLength": 512
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "When the link stops working.",
+            "title": "Expires at",
+            "format": "date-time"
+          },
+          "state": {
+            "type": "string",
+            "description": "What became of it.",
+            "title": "State",
+            "enum": [
+              "sent",
+              "answered",
+              "expired",
+              "blocked"
+            ],
+            "default": "sent",
+            "facetable": true
+          },
+          "blockedReason": {
+            "type": "string",
+            "description": "Why it was never sent, in words. A state of blocked with no reason is a gap nobody can explain.",
+            "title": "Blocked reason"
+          },
+          "answeredAt": {
+            "type": "string",
+            "description": "When it was answered.",
+            "title": "Answered at",
+            "format": "date-time"
+          }
+        }
+      },
+      "surveyAnswerSet": {
+        "slug": "surveyAnswerSet",
+        "title": "Survey answer set",
+        "version": "1.0.0",
+        "published": "2026-01-01T00:00:00+00:00",
+        "summary": "What one respondent sent back, and which version of the survey they were answering.",
+        "description": "An answer set names the survey VERSION it answered, so a question edited afterwards never silently changes what somebody is recorded as having been asked. On an anonymous survey it carries no respondent reference at all.",
+        "required": [
+          "survey",
+          "surveyVersion"
+        ],
+        "properties": {
+          "survey": {
+            "type": "string",
+            "description": "The survey answered.",
+            "title": "Survey",
+            "maxLength": 255,
+            "facetable": true
+          },
+          "surveyVersion": {
+            "type": "integer",
+            "description": "The version answered, kept even after the survey moves on.",
+            "title": "Survey version",
+            "facetable": true
+          },
+          "subjectObject": {
+            "type": "string",
+            "description": "The object it is about.",
+            "title": "Subject object",
+            "maxLength": 255,
+            "facetable": true
+          },
+          "respondent": {
+            "type": "string",
+            "description": "Who answered. Absent entirely on an anonymous survey, not empty.",
+            "title": "Respondent",
+            "maxLength": 255
+          },
+          "answers": {
+            "type": "array",
+            "title": "Answers",
+            "description": "One entry per question answered.",
+            "items": {
+              "type": "object",
+              "title": "Answer",
+              "description": "One question and what was said to it.",
+              "properties": {
+                "question": {
+                  "type": "string",
+                  "description": "The question answered.",
+                  "title": "Question",
+                  "maxLength": 255
+                },
+                "value": {
+                  "type": "string",
+                  "description": "What was answered.",
+                  "title": "Value"
+                }
+              }
+            }
+          },
+          "submittedAt": {
+            "type": "string",
+            "description": "When it came back.",
+            "title": "Submitted at",
+            "format": "date-time"
+          }
+        }
       }
     },
     "objects": [
@@ -3391,6 +3680,220 @@
         "reversedBy": "teamleider",
         "reversedAt": "2026-03-04T08:45:00+00:00",
         "active": false
+      },
+      {
+        "@self": {
+          "register": "surveys",
+          "schema": "survey",
+          "slug": "permit-service-2026"
+        },
+        "title": "Permit service, first half of 2026",
+        "introduction": "Six questions about the permit you applied for. Your answers go to the permit team, never to the officer who handled your case.",
+        "subjectSchema": "vergunningaanvraag",
+        "anonymity": "attributed",
+        "minimumResponses": 5,
+        "allowReopening": false,
+        "version": 1,
+        "readerRoles": [
+          "group:vergunningen"
+        ],
+        "status": "active"
+      },
+      {
+        "@self": {
+          "register": "surveys",
+          "schema": "survey",
+          "slug": "waste-collection-2026"
+        },
+        "title": "Waste collection, spring round",
+        "introduction": "Three questions about the collection at your address. Nobody sees who answered what.",
+        "subjectSchema": "",
+        "anonymity": "anonymous",
+        "minimumResponses": 25,
+        "allowReopening": false,
+        "version": 2,
+        "readerRoles": [
+          "group:afval"
+        ],
+        "status": "closed"
+      },
+      {
+        "@self": {
+          "register": "surveys",
+          "schema": "survey",
+          "slug": "counter-visit-draft"
+        },
+        "title": "Visit to the counter",
+        "introduction": "A short check after a visit to the desk. Still being written.",
+        "subjectSchema": "",
+        "anonymity": "attributed",
+        "minimumResponses": 5,
+        "allowReopening": true,
+        "version": 1,
+        "readerRoles": [],
+        "status": "draft"
+      },
+      {
+        "@self": {
+          "register": "surveys",
+          "schema": "surveyQuestion",
+          "slug": "permit-service-clarity"
+        },
+        "survey": "permit-service-2026",
+        "text": "Was it clear what you had to hand in?",
+        "kind": "scale",
+        "options": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "order": 1,
+        "required": true
+      },
+      {
+        "@self": {
+          "register": "surveys",
+          "schema": "surveyQuestion",
+          "slug": "permit-service-speed"
+        },
+        "survey": "permit-service-2026",
+        "text": "How did you find the time it took?",
+        "kind": "choice",
+        "options": [
+          "faster than expected",
+          "about what I expected",
+          "slower than expected"
+        ],
+        "order": 2,
+        "required": true
+      },
+      {
+        "@self": {
+          "register": "surveys",
+          "schema": "surveyQuestion",
+          "slug": "permit-service-open"
+        },
+        "survey": "permit-service-2026",
+        "text": "What would you have changed about the process?",
+        "kind": "text",
+        "options": [],
+        "order": 3,
+        "required": false
+      },
+      {
+        "@self": {
+          "register": "surveys",
+          "schema": "surveyInvitation",
+          "slug": "permit-service-answered"
+        },
+        "survey": "permit-service-2026",
+        "subjectObject": "vergunningaanvraag/2026-0114",
+        "respondent": "j.dekker",
+        "token": "demo-invitation-answered",
+        "expiresAt": "2026-07-01T00:00:00+00:00",
+        "state": "answered",
+        "blockedReason": "",
+        "answeredAt": "2026-06-12T09:41:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "surveys",
+          "schema": "surveyInvitation",
+          "slug": "permit-service-sent"
+        },
+        "survey": "permit-service-2026",
+        "subjectObject": "vergunningaanvraag/2026-0127",
+        "respondent": "a.elhaddad",
+        "token": "demo-invitation-sent",
+        "expiresAt": "2026-07-01T00:00:00+00:00",
+        "state": "sent",
+        "blockedReason": ""
+      },
+      {
+        "@self": {
+          "register": "surveys",
+          "schema": "surveyInvitation",
+          "slug": "permit-service-blocked"
+        },
+        "survey": "permit-service-2026",
+        "subjectObject": "vergunningaanvraag/2026-0131",
+        "respondent": "m.bakker",
+        "token": "demo-invitation-blocked",
+        "expiresAt": "2026-07-01T00:00:00+00:00",
+        "state": "blocked",
+        "blockedReason": "asked twice in thirty days"
+      },
+      {
+        "@self": {
+          "register": "surveys",
+          "schema": "surveyAnswerSet",
+          "slug": "permit-service-answer-1"
+        },
+        "survey": "permit-service-2026",
+        "surveyVersion": 1,
+        "subjectObject": "vergunningaanvraag/2026-0114",
+        "respondent": "j.dekker",
+        "answers": [
+          {
+            "question": "permit-service-clarity",
+            "value": "4"
+          },
+          {
+            "question": "permit-service-speed",
+            "value": "about what I expected"
+          },
+          {
+            "question": "permit-service-open",
+            "value": "Say up front which drawings you need."
+          }
+        ],
+        "submittedAt": "2026-06-12T09:41:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "surveys",
+          "schema": "surveyAnswerSet",
+          "slug": "permit-service-answer-2"
+        },
+        "survey": "permit-service-2026",
+        "surveyVersion": 1,
+        "subjectObject": "vergunningaanvraag/2026-0098",
+        "respondent": "s.vermeer",
+        "answers": [
+          {
+            "question": "permit-service-clarity",
+            "value": "2"
+          },
+          {
+            "question": "permit-service-speed",
+            "value": "slower than expected"
+          },
+          {
+            "question": "permit-service-open",
+            "value": "I called three times before anyone could tell me where it stood."
+          }
+        ],
+        "submittedAt": "2026-06-14T16:02:00+00:00"
+      },
+      {
+        "@self": {
+          "register": "surveys",
+          "schema": "surveyAnswerSet",
+          "slug": "waste-collection-answer-1"
+        },
+        "survey": "waste-collection-2026",
+        "surveyVersion": 2,
+        "subjectObject": "",
+        "respondent": "",
+        "answers": [
+          {
+            "question": "waste-collection-ontime",
+            "value": "5"
+          }
+        ],
+        "submittedAt": "2026-04-03T11:15:00+00:00"
       }
     ]
   }

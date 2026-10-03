@@ -52,6 +52,18 @@ parameters:
         - vendor-bin
 
     ignoreErrors:
+        # `OC_User` is a legacy GLOBAL class from the Nextcloud server source. It
+        # is not in nextcloud/ocp and has no OCP equivalent, so the analyser cannot
+        # resolve it — but it is always present at runtime, and its incognito mode
+        # is the only switch `Session::getUser()` honours BEFORE its `user_id`
+        # fallback. ObjectService::runAsAnonymous() needs exactly that: clearing
+        # the volatile user is not enough, because null there means "unresolved"
+        # and the next read re-hydrates the signed-in user from the session. Core
+        # uses the same mechanism to serve a public link while a session exists
+        # (ShareController, PublicAuth, BearerAuth). WOO-578.
+        -
+            message: '#static method (set|is)IncognitoMode\(\) on an unknown class OC_User#'
+            path: lib/Service/ObjectService.php
         # The shared base already ignores `unknown class OCA\DAV\...` (server-
         # internal, not in nextcloud/ocp). A constructor-promoted parameter of
         # that type is reported with a different spelling, `has invalid type`,

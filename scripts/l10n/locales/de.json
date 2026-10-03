@@ -86,6 +86,7 @@
 		"Details": "Same spelling and meaning in German (die Details).",
 		"Normal": "Same spelling and meaning in German (normal).",
 		"Text": "The field-type name \"Text\" is identical in German; the only non-identical options narrow it (\"Freitext\" = free text) or shift to a technical term (\"Zeichenkette\" = string), so the honest label is the same word.",
-		"Operator": "The engine's comparison/logic operator. German uses the identically-spelled international term \"operator\", capitalised as a German noun but spelled identically, so the value coincides with the English key; no distinct synonym exists."
+		"Operator": "The engine's comparison/logic operator. German uses the identically-spelled international term \"operator\", capitalised as a German noun but spelled identically, so the value coincides with the English key; no distinct synonym exists.",
+		"Token": "Established loan; German security and API language uses 'das Token' unchanged, and this bundle already writes 'Neues Token erstellen'."
 	}
 }

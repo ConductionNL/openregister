@@ -106,7 +106,9 @@
 		"Urgent": "Same spelling and meaning in Romansh (urgent).",
 		"Text": "\"Text\" is the same word in Romansh for the text field type; no non-identical synonym exists, so the honest label is identical.",
 		"Contexts": "Romansh's own ordinary word for this sense is 'context', plural 'contexts' formed regularly with +s, so the capitalised plural coincides with the English key. No distinct synonym exists; the honest label is identical, in the same class as the borrowed technical terms this bundle keeps.",
-		"Verdict": "The rule-evaluation outcome. Romansh's own word for a verdict is the identically-spelled \"verdict\", so the value coincides with the English key; no distinct synonym exists."
+		"Verdict": "The rule-evaluation outcome. Romansh's own word for a verdict is the identically-spelled \"verdict\", so the value coincides with the English key; no distinct synonym exists.",
+		"Progress": "'Progress' is an ordinary Rumantsch Grischun noun (il progress) spelled exactly as the English, and this bundle already keeps Status, Success, Total and Minimum unchanged for the same reason.",
+		"Token": "The bundle already writes 'token' as the Romansh term for this object (capitalisationNote records token 0:4), so the standalone label is byte-identical to the English."
 	},
 	"corrections": {
 		"_schema_::_schemas_": "Capitalised to 'Schema(s)' after first being written lowercase. translatePlural hands the form it selects back to translate(), which resolves it against the bundle again — so lowercase 'schema(s)' matched this bundle's own 'schema(s)' KEY and rendered that key's value, 'Schema(s)'. Same characters, produced by an unrelated entry. The capital makes it this array's own value, and matches how the bundle writes the noun everywhere else. check-l10n-parity now fails on the collision class.",

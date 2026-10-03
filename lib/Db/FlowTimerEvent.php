@@ -50,6 +50,10 @@ use OCP\AppFramework\Db\Entity;
  * @method float|null getDaysImpact()
  * @method void setDaysImpact(?float $daysImpact)
  * @method string|null getBasis()
+ * @method DateTime|null getUnrolledAt()
+ * @method void setUnrolledAt(?DateTime $unrolledAt)
+ * @method string|null getRolledBy()
+ * @method void setRolledBy(?string $rolledBy)
  * @method void setBasis(?string $basis)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
@@ -132,6 +136,24 @@ class FlowTimerEvent extends Entity implements JsonSerializable {
 	protected ?string $basis = null;
 
 	/**
+	 * Where the budget put the deadline, when a roll moved it.
+	 *
+	 * On the EVENT as well as on the timer: a timer carries only its current
+	 * deadline, and an auditor reading why a term ended on Tuesday a year later
+	 * is reading the ledger, not the row.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $unrolledAt = null;
+
+	/**
+	 * The name of the rule that moved it.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $rolledBy = null;
+
+	/**
 	 * Creation stamp: the moment of the event.
 	 *
 	 * @var DateTime|null
@@ -150,6 +172,8 @@ class FlowTimerEvent extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'newFireAt', type: 'datetime');
 		$this->addType(fieldName: 'daysImpact', type: 'float');
 		$this->addType(fieldName: 'basis', type: 'string');
+		$this->addType(fieldName: 'unrolledAt', type: 'datetime');
+		$this->addType(fieldName: 'rolledBy', type: 'string');
 		$this->addType(fieldName: 'created', type: 'datetime');
 
 	}//end __construct()
@@ -172,6 +196,8 @@ class FlowTimerEvent extends Entity implements JsonSerializable {
 			'newFireAt' => $this->format(value: $this->newFireAt),
 			'daysImpact' => $this->daysImpact,
 			'basis' => $this->basis,
+			'unrolledAt' => $this->unrolledAt?->format('c'),
+			'rolledBy' => $this->rolledBy,
 			'created' => $this->format(value: $this->created),
 		];
 	}//end jsonSerialize()

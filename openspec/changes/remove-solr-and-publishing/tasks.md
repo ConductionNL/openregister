@@ -1,3 +1,29 @@
+# Tasks: remove-solr-and-publishing
+
+> 🔑 **Archive blocker, measured 2026-09-18 by a neighbouring lane, and not
+> fixed here because it is yours to decide.**
+>
+> The structural defect in `specs/auth-system/spec.md` that used to refuse every
+> delta against that spec is fixed (#3918), so that is no longer what stands in
+> your way. What remains is a real content mismatch, and the archive names it:
+>
+> `auth-system MODIFIED failed for header "### Requirement: Public read
+> endpoints MUST require an authenticated user except for RBAC-public
+> resources" - not found`
+>
+> The spec carries that requirement under its OLD title, "…except for
+> **published** resources" (line 494). This delta MODIFIES it under the NEW
+> title, which is the rename this change is for — but `openspec` matches a
+> MODIFIED block by its header, so a rename spelled that way finds nothing and
+> the whole delta is refused. Spell the header as the one that exists and put
+> the new wording in the body, or use a rename operation if the tooling offers
+> one.
+>
+> Four more archive blockers sit in other specs and are none of auth-system's
+> doing: `aggregations-backend-native`, `faceting-configuration`,
+> `vector-embeddings` and `zoeken-filteren`, each a MODIFIED header that is not
+> found. Listed so the auth-system one is not mistaken for the only one.
+
 ## 1. SOLR + Index abstraction — backend code
 
 - [x] 1.1 Delete all SOLR PHP code: `lib/Service/Index/Backends/SolrBackend.php`, `lib/Service/Index/Backends/Solr/*`, `lib/Service/Settings/SolrSettingsHandler.php`, `lib/Service/Aggregation/SolrAggregationQueryBuilder.php`, `lib/EventListener/SolrEventListener.php`

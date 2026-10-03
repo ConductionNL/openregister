@@ -45,6 +45,17 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<NotificationHistory>
  *
  * @psalm-suppress PossiblyUnusedMethod
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Ten named queries and one
+ * writer, each a distinct question this table answers with its own predicate
+ * set: record a delivery, list and count it under a filter, count by status,
+ * and the five per-recipient state changes (read, read-for-subject, snooze,
+ * archive, archive-by-object) plus the ownership-scoped read they all lean on.
+ * The five state changes are separate precisely BECAUSE each writes a
+ * different column under a different `recipient` predicate; collapsing them
+ * into one generic updater would move the choice of column and of guard into
+ * the caller, which is where a per-recipient guard is easiest to forget. Same
+ * argument {@see FlowTimerMapper} and {@see ContactLinkMapper} make.
  */
 class NotificationHistoryMapper extends QBMapper {
 	/**
@@ -195,6 +206,56 @@ class NotificationHistoryMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findFiltered()
+
+	/**
+	 * How the dispatches in a window came out, grouped by outcome.
+	 *
+	 * The dispatcher writes a status per attempt, and it writes more than two:
+	 * `dispatched`, and then every reason a notice never reached anybody, from
+	 * `rate-limited` to `preference-off` to `recipient-unresolved`. Grouping
+	 * rather than counting a list of known statuses is deliberate: whatever the
+	 * dispatcher learns to write next appears on the console by itself, instead
+	 * of being silently dropped into neither column.
+	 *
+	 * Index-backed on `(status, dispatched_at)` (`or_notif_hist_status_idx`),
+	 * which is the pair this groups and windows on (ADR-009).
+	 *
+	 * @param DateTime|null $since Only dispatches at or after this moment.
+	 *
+	 * @return array<string, int> Status to count, for the statuses in use.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function countByStatus(?DateTime $since = null): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('status')
+			->selectAlias($qb->createFunction('COUNT(*)'), 'status_count')
+			->from($this->getTableName())
+			->groupBy('status');
+
+		if ($since !== null) {
+			$qb->where(
+				$qb->expr()->gte('dispatched_at', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+			);
+		}
+
+		$result = $qb->executeQuery();
+		$counts = [];
+
+		foreach ($result->fetchAll() as $row) {
+			$status = ($row['status'] ?? null);
+
+			if ($status === null || $status === '') {
+				continue;
+			}
+
+			$counts[(string)$status] = (int)($row['status_count'] ?? 0);
+		}
+
+		$result->closeCursor();
+
+		return $counts;
+	}//end countByStatus()
 
 	/**
 	 * Count rows matching the same filters as `findFiltered()`.

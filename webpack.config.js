@@ -1,8 +1,8 @@
-const path = require('path')
-const fs = require('fs')
-const { VueLoaderPlugin } = require('vue-loader')
-const TerserPlugin = require('terser-webpack-plugin')
 const webpackConfig = require('@nextcloud/webpack-vue-config')
+const fs = require('fs')
+const path = require('path')
+const TerserPlugin = require('terser-webpack-plugin')
+const { VueLoaderPlugin } = require('vue-loader')
 
 const buildMode = process.env.NODE_ENV
 const isDev = buildMode === 'development'
@@ -296,6 +296,12 @@ webpackConfig.entry = {
 	userDashboard: {
 		import: path.join(__dirname, 'src', 'user-dashboard.js'),
 		filename: appId + '-user-dashboard.js',
+	},
+	// The public page a person with an access link lands on (#4061).
+	// Loaded by templates/accessLink.php from AccessLinkPageController::show().
+	accessLink: {
+		import: path.join(__dirname, 'src', 'access-link.js'),
+		filename: appId + '-access-link.js',
 	},
 }
 

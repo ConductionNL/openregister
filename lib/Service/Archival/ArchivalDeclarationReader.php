@@ -156,6 +156,13 @@ class ArchivalDeclarationReader {
 			$block['classification'] = $classification;
 		}
 
+		// The property a record overrides `category` with, carried under the
+		// archive block's name for it so one resolver reads both forms.
+		$override = $this->text(value: ($annotation['categoryProperty'] ?? null));
+		if ($override !== null) {
+			$block['classificationProperty'] = $override;
+		}
+
 		return $block;
 	}//end translateAnnotation()
 
@@ -178,7 +185,29 @@ class ArchivalDeclarationReader {
 			return Appraisal::DESTROY;
 		}
 
-		return (Appraisal::CANONICAL[strtolower($declared)] ?? Appraisal::DESTROY);
+		$canonical = (Appraisal::CANONICAL[strtolower($declared)] ?? null);
+		if ($canonical !== null) {
+			return $canonical;
+		}
+
+		// 🔴 AN ACTION NOBODY RECOGNISES IS NOT A DECISION TO DESTROY. This line
+		// used to fall through to `Appraisal::DESTROY`, so a schema whose
+		// `action` said anything the vocabulary had not heard of — a typo, a
+		// spelling from another standard, or `anonymiseren` before the word
+		// existed here — nominated its records for destruction. Nothing failed,
+		// nothing warned; the sweep simply found them eligible.
+		//
+		// The default for "we do not know what this says" is the value that
+		// means neither sweep may act. A record left undecided is a question
+		// somebody has to answer. A record destroyed because a word was
+		// misspelled is not recoverable, and the log will say it was destroyed
+		// under the schema's own instruction.
+		$this->logger->warning(
+			'[ArchivalDeclarationReader] Unknown archival action; the record is left undecided rather than nominated for destruction',
+			['action' => $declared]
+		);
+
+		return Appraisal::NOT_YET_DETERMINED;
 	}//end declaredAppraisal()
 
 	/**

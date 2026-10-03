@@ -22,6 +22,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\SubFlowNode
+ * @uses \OCA\OpenRegister\Db\FlowRun
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItems
+ * @uses \OCA\OpenRegister\Service\Flow\FlowToken
  */
 class SubFlowNodeTokenTest extends TestCase {
 

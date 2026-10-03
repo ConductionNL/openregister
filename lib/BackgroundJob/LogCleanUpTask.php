@@ -20,8 +20,10 @@
 
 namespace OCA\OpenRegister\BackgroundJob;
 
+use DateTime;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Db\StateHistoryMapper;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJob;
@@ -48,6 +50,17 @@ use Psr\Log\LoggerInterface;
  * @psalm-suppress UnusedClass
  */
 class LogCleanUpTask extends TimedJob {
+
+	/**
+	 * Objects whose purged trail is reconciled with the projection per sweep.
+	 *
+	 * The sweep runs hourly, so a bounded batch keeps up with a purge that is
+	 * itself bounded by what expired in the last hour, without ever turning one
+	 * cron tick into a table scan.
+	 *
+	 * @var int
+	 */
+	private const PRUNE_BATCH = 500;
 
 	/**
 	 * Fallback search trail retention when the setting is absent: 30 days in milliseconds.
@@ -94,6 +107,7 @@ class LogCleanUpTask extends TimedJob {
 	 * @param SearchTrailMapper      $searchTrailMapper The search trail mapper for database operations
 	 * @param ObjectRetentionHandler $retentionHandler  The retention settings handler
 	 * @param LoggerInterface        $logger            The logger for logging operations
+	 * @param StateHistoryMapper|null $stateHistory     The derived state-history projection, pruned with the trail
 	 *
 	 * @return void
 	 *
@@ -105,6 +119,9 @@ class LogCleanUpTask extends TimedJob {
 		SearchTrailMapper $searchTrailMapper,
 		ObjectRetentionHandler $retentionHandler,
 		LoggerInterface $logger,
+		// LAST AND NULLABLE so every existing construction of this job keeps
+		// working; the container always supplies it.
+		private readonly ?StateHistoryMapper $stateHistory = null,
 	) {
 		parent::__construct(time: $time);
 		$this->auditTrailMapper = $auditTrailMapper;
@@ -140,7 +157,63 @@ class LogCleanUpTask extends TimedJob {
 	protected function run($argument): void {
 		$this->clearAuditTrails();
 		$this->clearSearchTrails();
+		// AFTER the purge, not before: the rows this prunes are the ones the
+		// purge just tombstoned, so running it first would prune last hour's
+		// purge and leave this one's derivations standing for an hour.
+		$this->pruneStateHistory();
 	}//end run()
+
+	/**
+	 * Drop the projected intervals whose source payload has been purged.
+	 *
+	 * The state-history projection is DERIVED from the audit trail's `changed`
+	 * payload. A retention purge destroys that payload, so the derivation has
+	 * to go with it, or a history filter keeps answering about a period nothing
+	 * else in the instance can show.
+	 *
+	 * 🔴 ONLY CLOSED INTERVALS GO. The open one describes the state the object
+	 * is in NOW, which the object itself still asserts; it is not derived from
+	 * the purged payload, and dropping it would make a case sitting in bezwaar
+	 * for ten years vanish from "was ever in bezwaar" the day its oldest audit
+	 * row expired.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/search-over-history-and-an-administered-dictionary/specs/zoeken-filteren/spec.md
+	 */
+	private function pruneStateHistory(): void {
+		if ($this->stateHistory === null) {
+			return;
+		}
+
+		try {
+			$pruned = 0;
+			foreach ($this->auditTrailMapper->findPurgedHorizons(limit: self::PRUNE_BATCH) as $uuid => $horizon) {
+				if ($horizon === '') {
+					continue;
+				}
+
+				$pruned += $this->stateHistory->pruneClosedIntervalsBefore(
+					objectUuid: $uuid,
+					horizon: new DateTime($horizon)
+				);
+			}
+
+			if ($pruned > 0) {
+				$this->logger->info(
+					message: '[LogCleanUpTask] Pruned ' . $pruned . ' state-history intervals whose trail was purged',
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+			}
+		} catch (\Throwable $e) {
+			// A projection that is one sweep behind is a smaller problem than a
+			// cleanup job Nextcloud disables.
+			$this->logger->warning(
+				message: '[LogCleanUpTask] State-history prune failed: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}//end try
+	}//end pruneStateHistory()
 
 	/**
 	 * Tombstone expired audit trail rows

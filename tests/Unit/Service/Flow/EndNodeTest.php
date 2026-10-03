@@ -36,6 +36,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\EndNode
+ * @uses \OCA\OpenRegister\Service\Flow\FlowStop
  */
 final class EndNodeTest extends TestCase {
 

@@ -62,6 +62,8 @@ interface ReversibleBulkActionInterface extends BulkActionInterface {
 	 * likely restoring it destroys somebody's later work (D-2, D-3).
 	 *
 	 * @return int The window, in seconds.
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
 	 */
 	public function getReversalWindow(): int;
 
@@ -81,6 +83,8 @@ interface ReversibleBulkActionInterface extends BulkActionInterface {
 	 * @param array<string, mixed> $parameters The job's parameters.
 	 *
 	 * @return array{prior: array<string, mixed>, applied: array<string, mixed>} The plan.
+	 *
+	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
 	 */
 	public function reversalPlanFor(ObjectEntity $object, array $parameters): array;
 }//end interface

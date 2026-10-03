@@ -226,6 +226,7 @@ class Notifier implements INotifier {
 			'destruction_holds_skipped' => $this->prepareDestructionHoldsSkipped(...),
 			'destruction_review_pending' => $this->prepareDestructionReviewPending(...),
 			'timeline_mention' => $this->prepareTimelineMention(...),
+			'security_setting_changed' => $this->prepareSecuritySettingChanged(...),
 			default => null,
 		};
 
@@ -235,6 +236,56 @@ class Notifier implements INotifier {
 
 		return $handler(notification: $notification, l: $l);
 	}//end prepare()
+
+	/**
+	 * Render "a security setting changed".
+	 *
+	 * WITHOUT THIS CASE THE ANNOUNCEMENT NEVER RENDERS: an unknown subject
+	 * throws out of prepare(), so the beheerteam would be told nothing at the
+	 * one moment REQ-ATS-004 exists for.
+	 *
+	 * A secret takes the other branch and NEITHER value is shown. It is not
+	 * masked here: the announcer never puts a secret in the parameters at all,
+	 * because Nextcloud stores those in its database and can mail them.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 */
+	private function prepareSecuritySettingChanged(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$label = (string) ($parameters['label'] ?? ($parameters['setting'] ?? ''));
+		$actor = (string) ($parameters['actor'] ?? '');
+
+		$notification->setParsedSubject($l->t('A security setting changed: %1$s', [$label]));
+
+		if (($parameters['secret'] ?? false) === true) {
+			$notification->setParsedMessage(
+				$l->t(
+					'%1$s changed %2$s. It holds a secret, so neither value is shown here. Open the settings and put it back if nobody planned this.',
+					[$actor, $label]
+				)
+			);
+		}
+
+		if (($parameters['secret'] ?? false) !== true) {
+			$notification->setParsedMessage(
+				$l->t(
+					'%1$s changed %2$s from "%3$s" to "%4$s". Open the settings and put it back if nobody planned this.',
+					[$actor, $label, (string) ($parameters['oldValue'] ?? ''), (string) ($parameters['newValue'] ?? '')]
+				)
+			);
+		}
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareSecuritySettingChanged()
 
 	/**
 	 * Render "somebody named you in a note".

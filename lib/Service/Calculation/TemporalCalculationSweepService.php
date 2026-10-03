@@ -260,6 +260,7 @@ class TemporalCalculationSweepService {
 	 *
 	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-deadline-escalation/spec.md
 	 *   (Scenario: Tier crossing notifies exactly once)
+	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
 	 */
 	private function recomputeChanges(ObjectEntity $object, Schema $schema, array $calcs): bool {
 		$payload = $this->payloadBuilder->build(object: $object, schema: $schema);
@@ -271,6 +272,13 @@ class TemporalCalculationSweepService {
 			// would render the node as "" and report a spurious change on every
 			// pass (and, before openregister#3075, persist the truncated value).
 			if ($this->evaluator->expressionUsesSequence($spec['expression'] ?? null) === true) {
+				continue;
+			}
+
+			// Mirrors the save-time listener: a calculation reading a reference
+			// that could not be resolved keeps its stored value, so it is no
+			// change worth a write.
+			if ($this->payloadBuilder->unresolvedReferencesUsedBy(payload: $payload, expression: ($spec['expression'] ?? null)) !== []) {
 				continue;
 			}
 

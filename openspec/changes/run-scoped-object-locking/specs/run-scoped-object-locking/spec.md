@@ -284,6 +284,33 @@ error naming the node.
   the node MUST be logged
 - @e2e exclude covered by FlowNodePaletteIconsTest
 
+### Requirement: A lock is released through its own endpoint, and a release says whether there was one
+
+The lock a caller holds SHALL be releasable by `POST` to the object's
+`/unlock` path and by `DELETE` on its `/lock` path, both reaching one
+implementation. A release that actually freed a lock SHALL answer 200. A
+release on an object carrying no live lock SHALL answer 404 naming that fact,
+and SHALL NOT be treated as an error: nothing was refused and nothing threw.
+
+#### Scenario: A held lock is released, and says so
+- **GIVEN** an object locked by the caller
+- **WHEN** they release it
+- **THEN** the answer MUST be 200 and MUST report that a lock was released
+- @e2e exclude covered by ObjectsControllerUnlockTest
+
+#### Scenario: Releasing a lock that is not there answers 404, not success
+- **GIVEN** an object carrying no live lock
+- **WHEN** a caller releases it
+- **THEN** the answer MUST be 404 naming that the object was not locked
+- **AND** the caller MUST NOT be refused and nothing MUST throw
+- @e2e exclude covered by ObjectsControllerUnlockTest
+
+#### Scenario: DELETE on the lock reaches the same release
+- **GIVEN** a client that releases a lock by deleting it
+- **WHEN** `DELETE` is sent to the object's `/lock` path
+- **THEN** the route MUST resolve to the same controller method as `POST /unlock`
+- @e2e exclude covered by LockRoutesTest
+
 ## MODIFIED Requirements
 
 ### Requirement: A lock records what it was taken for

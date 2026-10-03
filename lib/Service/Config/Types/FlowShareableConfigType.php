@@ -33,6 +33,7 @@ use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
+use OCA\OpenRegister\Service\Flow\FlowCaller;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Throwable;
@@ -70,10 +71,12 @@ class FlowShareableConfigType implements IShareableConfigType {
 	 *
 	 * @param FlowMapper $mapper Writes flow definitions on install.
 	 * @param FlowService $flows Reads flows the CALLER is allowed to see.
+	 * @param FlowCaller $caller Who is installing, and which organisation they write into.
 	 */
 	public function __construct(
 		private readonly FlowMapper $mapper,
 		private readonly FlowService $flows,
+		private readonly FlowCaller $caller,
 	) {
 
 	}//end __construct()
@@ -198,7 +201,7 @@ class FlowShareableConfigType implements IShareableConfigType {
 			// comment describing this exact outcome — the rule was fixed on the
 			// create path and never reached this one. Both now read the same
 			// method, so there is one place that decides ownership.
-			['owner' => $owner, 'organisation' => $organisation] = $this->flows->callerOwnership();
+			['owner' => $owner, 'organisation' => $organisation] = $this->caller->ownership();
 			if ($owner === null || $organisation === null) {
 				throw new DoesNotExistException(
 					'Installing a flow needs a signed-in owner and an active organisation; '

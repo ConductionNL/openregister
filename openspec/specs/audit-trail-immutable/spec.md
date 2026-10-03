@@ -224,6 +224,71 @@ The system exposes an admin-only operational escape hatch at `DELETE /api/audit-
 - The `ClearAuditTrails.vue` dialog defaults to deleting ALL entries when no filters are active and surfaces a warning note-card to that effect; the UI flow tries to dissuade but does not block.
 - The companion routes `auditTrail#destroy` (DELETE `/api/audit-trails/{id}`) and `auditTrail#destroyMultiple` (DELETE `/api/audit-trails`) DO return HTTP 405 per the existing immutability REQ, which makes the `clear-all` carve-out inconsistent. Flagged as part of the drift in D-1 of the proposal.
 
+### Requirement: The audit trail is readable within a caller's own scope
+
+The system SHALL offer a scoped audit list, separate from the admin-only
+instance-wide index, that returns audit entries only for objects the calling
+user may read. Readability SHALL be decided by the same RBAC funnel the object
+read path uses, so that a grant, a schema rule and a register rule all mean
+here what they mean everywhere else. An anonymous caller SHALL receive
+nothing. An entry whose object cannot be resolved, or whose schema cannot be
+resolved, SHALL be absent rather than present, so that every failure to decide
+hides a row instead of showing it. The scoped list SHALL be cursor paginated,
+SHALL NOT count the table, and SHALL bound the number of rows it inspects per
+request.
+
+#### Scenario: a handler sees only the entries of objects they may read
+
+- **GIVEN** a trail with entries on an object the caller may read and entries on an object they may not
+- **WHEN** the caller lists the scoped audit trail
+- **THEN** only the entries of the readable object are returned
+- @e2e exclude {the scope decision is a unit-level contract on ReadableAuditTrailLister, mutation-checked in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
+
+#### Scenario: an anonymous caller is told nothing
+
+- **GIVEN** a trail with entries
+- **WHEN** an anonymous caller lists the scoped audit trail
+- **THEN** no entries are returned and no query for candidates is made
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php::testAnonymousCallerGetsNothingAndAsksTheMapperNothing}
+
+#### Scenario: an entry whose object is gone is not shown
+
+- **GIVEN** an audit entry whose object no longer resolves
+- **WHEN** a non-admin lists the scoped audit trail
+- **THEN** that entry is absent
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
+
+### Requirement: The scoped audit list withholds the instance-recon fields
+
+The scoped audit list SHALL NOT return the `session`, `request` and
+`ipAddress` of an entry. Those fields describe the instance rather than the
+object, and the admin-only index remains the only surface that carries them.
+
+#### Scenario: a scoped row carries the change but not the session
+
+- **GIVEN** an audit entry with a session, a request id and an IP address on a readable object
+- **WHEN** a non-admin lists the scoped audit trail
+- **THEN** the row carries its action, actor and changes, and carries no `session`, `request` or `ipAddress`
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
+
+### Requirement: An app counts and lists the audit actions it writes under its own prefix
+
+An app that writes its own audit rows, such as portaliq's proof records (`portaliq.login`, `portaliq.download`), SHALL be able to count them per action without loading the rows, and an administrator SHALL be able to list every action of one prefix at once. `AuditTrailMapper::countByActionPrefix($prefix)` MUST answer the lifetime row count per full action for the actions that start with the prefix, in one grouped query. The list filter `action=<prefix>.*` MUST answer every row whose action starts with the prefix. The prefix MUST match literally: `_` and `%` are not wildcards. An exact `action` filter MUST keep filtering exactly. Source: DECISIONS row 5 (portaliq audit trail move).
+
+#### Scenario: counts per action of one prefix
+
+- **GIVEN** audit rows `portaliq.login` (twice), `portaliq.logout`, `portaliq.download`, `create` and `portal_q.login`
+- **WHEN** `countByActionPrefix('portaliq.')` is called
+- **THEN** it answers `portaliq.login` 2, `portaliq.logout` 1 and `portaliq.download` 1, and nothing else
+- @e2e exclude {mapper-level contract for sibling apps, asserted in tests/Unit/Db/AuditTrailActionPrefixTest.php}
+
+#### Scenario: the admin list filters on an action prefix
+
+- **GIVEN** the same rows
+- **WHEN** the audit trail is listed with `action=portaliq.*`
+- **THEN** it answers the four `portaliq.` rows only
+- @e2e exclude {filter semantics asserted against the migrated table in tests/Unit/Db/AuditTrailActionPrefixTest.php}
+
 ## Current Implementation Status
 - **Implemented:**
   - `AuditTrail` entity (`lib/Db/AuditTrail.php`) with fields: uuid, schema, register, object, objectUuid, registerUuid, schemaUuid, action, changed, user, userName, created, organisation, session, request, ipAddress, size, hash, previousHash

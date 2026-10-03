@@ -307,6 +307,49 @@
 							</p>
 						</div>
 
+						<div class="selectField">
+							<label class="dialog-label">{{
+								t('openregister', 'Payload mapping')
+							}}</label>
+							<NcSelect
+								v-model="selectedMapping"
+								:inputLabel="t('openregister', 'Payload mapping')"
+								:options="mappingOptions"
+								label="label"
+								trackBy="value"
+								:labelOutside="true"
+								:clearable="true"
+								:loading="loadingMappings"
+								:placeholder="
+									t(
+										'openregister',
+										'No mapping: send the standard payload',
+									)
+								"
+								@update:modelValue="updateMapping" />
+							<NcButton :disabled="previewing" @click="previewPayload">
+								{{ t('openregister', 'Preview payload') }}
+							</NcButton>
+							<p v-if="previewError" class="field-hint">
+								{{ previewError }}
+							</p>
+							<p
+								v-if="
+									preview && !preview.mapped && webhookItem.mapping
+								"
+								class="field-hint">
+								{{
+									t(
+										'openregister',
+										'The mapping could not be applied, so a delivery sends the standard payload shown below.',
+									)
+								}}
+							</p>
+							<pre v-if="preview" class="payload-preview">{{
+								JSON.stringify(preview.payload, null, 2)
+							}}</pre>
+						</div>
+
 						<NcTextField
 							:label="t('openregister', 'Max Retries')"
 							placeholder="3"
@@ -499,6 +542,12 @@ export default {
 			selectedEvent: null,
 			selectedEventProperty: null,
 			selectedRetryPolicy: null,
+			selectedMapping: null,
+			mappingOptions: [],
+			loadingMappings: false,
+			preview: null,
+			previewError: null,
+			previewing: false,
 			configuration: {
 				sendCloudEvent: true,
 				waitForResponse: false,
@@ -659,7 +708,7 @@ export default {
 	 * @spec exclude Vue lifecycle hook — loads events and initializes the webhook form.
 	 */
 	async created() {
-		await this.loadAvailableEvents()
+		await Promise.all([this.loadAvailableEvents(), this.loadMappings()])
 		this.initializeWebhook()
 	},
 
@@ -834,6 +883,68 @@ export default {
 		},
 
 		/**
+		 * @spec openspec/specs/webhook-payload-mapping/spec.md
+		 */
+		async loadMappings() {
+			this.loadingMappings = true
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/mappings'),
+					{ params: { _limit: 500 } },
+				)
+				const rows = response.data?.results || []
+				this.mappingOptions = rows.map((mapping) => ({
+					value: mapping.id,
+					label: mapping.name || String(mapping.id),
+				}))
+			} catch {
+				// No mappings to offer: the select stays empty and a delivery
+				// sends the standard payload, which is what an empty select says.
+				this.mappingOptions = []
+			} finally {
+				this.loadingMappings = false
+			}
+		},
+
+		/**
+		 * @param {{value: number}|null} value The chosen mapping, or null when cleared
+		 * @spec openspec/specs/webhook-payload-mapping/spec.md
+		 */
+		updateMapping(value) {
+			this.webhookItem.mapping = value ? value.value : null
+			this.selectedMapping = value
+			this.preview = null
+		},
+
+		/**
+		 * Render the payload a delivery would send, through the same code path.
+		 *
+		 * @spec openspec/specs/webhook-payload-mapping/spec.md
+		 */
+		async previewPayload() {
+			this.previewing = true
+			this.previewError = null
+			try {
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/webhooks/preview'),
+					{
+						mapping: this.webhookItem.mapping ?? null,
+						configuration: this.webhookItem.configuration || {},
+						event: this.selectedEvent || undefined,
+					},
+				)
+				this.preview = response.data
+			} catch {
+				this.previewError = t(
+					'openregister',
+					'Could not preview the payload',
+				)
+			} finally {
+				this.previewing = false
+			}
+		},
+
+		/**
 		 * @param value
 		 * @spec exclude Form-field binding — sets the retry policy.
 		 */
@@ -968,6 +1079,9 @@ export default {
 		loadExistingSelections() {
 			const item = this.webhookItem
 			if (item) {
+				// Load the payload mapping.
+				this.selectedMapping =
+					this.mappingOptions.find((m) => m.value === item.mapping) || null
 				// Load method.
 				if (item.method) {
 					this.selectedMethod =
@@ -1056,6 +1170,7 @@ export default {
 					headers: this.webhookItem.headers || {},
 					filters: this.webhookItem.filters || {},
 					configuration: this.webhookItem.configuration || {},
+					mapping: this.webhookItem.mapping ?? null,
 				}
 
 				const isUpdate = Boolean(this.webhookItem.id)
@@ -1121,6 +1236,16 @@ export default {
 	font-size: 0.875rem;
 	color: var(--color-text-maxcontrast);
 	margin: 0;
+}
+
+.payload-preview {
+	max-height: 240px;
+	overflow: auto;
+	padding: 8px;
+	border-radius: var(--border-radius);
+	background: var(--color-background-dark);
+	color: var(--color-main-text);
+	font-size: 0.8125rem;
 }
 
 .option-content {

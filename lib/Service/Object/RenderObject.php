@@ -58,6 +58,8 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\TranslationStatusService;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
+use OCA\OpenRegister\Service\Relation\LinkExposure;
+use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\UrnService;
 use OCP\IRequest;
@@ -172,6 +174,26 @@ class RenderObject {
 	 * @var boolean
 	 */
 	private bool $pageRenderActive = false;
+
+	/**
+	 * The relation vocabulary reader, created on first use.
+	 *
+	 * Held rather than constructed per call because it memoises a schema's
+	 * descriptors, and a page render asks the same schema the same question
+	 * once per row. Not injected: it is a pure resolver with no dependencies,
+	 * and threading it through this constructor would touch every caller and
+	 * every test that builds one.
+	 *
+	 * @var RelationTypeResolver|null
+	 */
+	private ?RelationTypeResolver $relationTypes = null;
+
+	/**
+	 * The link exposure rule, created on first use.
+	 *
+	 * @var LinkExposure|null
+	 */
+	private ?LinkExposure $linkExposure = null;
 
 	/**
 	 * Constructor for RenderObject handler.
@@ -764,7 +786,13 @@ class RenderObject {
 					if ($doGated === true) {
 						// Note filterReadableProperties strips writeOnly first, then applies
 						// the group-authorization filter, so this covers both concerns.
+						$unfiltered = $object;
 						$object = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $object);
+						$this->withholdEntityCopies(
+							entity: $row,
+							schema: $schema,
+							removed: $this->removedProperties(before: $unfiltered, after: $object)
+						);
 					} else {
 						// The writeOnly-only path (admin / `_rbac: false` / system context, or a
 						// schema with no property authorization): strip writeOnly unconditionally.
@@ -818,7 +846,13 @@ class RenderObject {
 				}
 
 				if ($doGated === true) {
+					$unfiltered = $row;
 					$row = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $row);
+					$row = $this->withholdRowCopies(
+						row: $row,
+						schema: $schema,
+						removed: $this->removedProperties(before: $unfiltered, after: $row)
+					);
 				} else {
 					$row = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $row);
 				}
@@ -845,6 +879,159 @@ class RenderObject {
 
 		unset($row);
 	}//end redactWriteOnlyFromRows()
+
+	/**
+	 * The schema configuration keys that copy a property into `@self` metadata.
+	 *
+	 * @var array<string, string> configuration key => `@self` field
+	 */
+	private const METADATA_COPIES = [
+		'objectNameField'        => 'name',
+		'objectDescriptionField' => 'description',
+		'objectSummaryField'     => 'summary',
+		'objectImageField'       => 'image',
+	];
+
+	/**
+	 * The properties a read filter removed from an object body.
+	 *
+	 * @param array<string, mixed> $before The body before filtering.
+	 * @param array<string, mixed> $after  The body after filtering.
+	 *
+	 * @return array<int, string> The removed property names (`@`-keys excluded).
+	 *
+	 * @spec openspec/changes/property-read-rules-hold-on-every-route/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 */
+	private function removedProperties(array $before, array $after): array {
+		$removed = [];
+		foreach (array_keys($before) as $key) {
+			$key = (string)$key;
+			if (str_starts_with($key, '@') === false && array_key_exists($key, $after) === false) {
+				$removed[] = $key;
+			}
+		}
+
+		return $removed;
+	}//end removedProperties()
+
+	/**
+	 * Remove the copies of withheld properties from an entity's `@self`.
+	 *
+	 * 🔴 THE BODY IS NOT THE ONLY COPY OF A PROPERTY. The `relations` mirror
+	 * holds every reference-shaped scalar, and `objectNameField` /
+	 * `objectDescriptionField` / `objectSummaryField` / `objectImageField` copy
+	 * a property into `@self.name|description|summary|image` at save time. The
+	 * read filter removed the property from the body and left both copies, so
+	 * an anonymous caller read a value the schema withholds from it through
+	 * `@self` (found live on the Rotterdam stack: a contact person's uuid and
+	 * two document references in `@self.relations`, a long description in
+	 * `@self.description`). Whatever the filter removed from the body is
+	 * removed from its copies, by the same decision.
+	 *
+	 * @param ObjectEntity       $entity  The rendered entity (mutated in memory only).
+	 * @param Schema             $schema  Its schema.
+	 * @param array<int, string> $removed Properties the read filter removed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/property-read-rules-hold-on-every-route/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 */
+	private function withholdEntityCopies(ObjectEntity $entity, Schema $schema, array $removed): void {
+		if ($removed === []) {
+			return;
+		}
+
+		$relations = $entity->getRelations();
+		if (is_array($relations) === true && $relations !== []) {
+			$entity->setRelations($this->withoutRelationKeys(relations: $relations, removed: $removed));
+		}
+
+		foreach ($this->withheldMetadataFields(schema: $schema, removed: $removed) as $field) {
+			$setter = 'set' . ucfirst($field);
+			$entity->$setter(null);
+		}
+	}//end withholdEntityCopies()
+
+	/**
+	 * Remove the copies of withheld properties from an array row's `@self`.
+	 *
+	 * The array-row twin of {@see self::withholdEntityCopies()}.
+	 *
+	 * @param array<string, mixed> $row     The filtered row.
+	 * @param Schema               $schema  Its schema.
+	 * @param array<int, string>   $removed Properties the read filter removed.
+	 *
+	 * @return array<string, mixed> The row with its `@self` copies withheld.
+	 *
+	 * @spec openspec/changes/property-read-rules-hold-on-every-route/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 */
+	private function withholdRowCopies(array $row, Schema $schema, array $removed): array {
+		if ($removed === [] || isset($row['@self']) === false || is_array($row['@self']) === false) {
+			return $row;
+		}
+
+		if (isset($row['@self']['relations']) === true && is_array($row['@self']['relations']) === true) {
+			$row['@self']['relations'] = $this->withoutRelationKeys(relations: $row['@self']['relations'], removed: $removed);
+		}
+
+		foreach ($this->withheldMetadataFields(schema: $schema, removed: $removed) as $field) {
+			if (array_key_exists($field, $row['@self']) === true) {
+				$row['@self'][$field] = null;
+			}
+		}
+
+		return $row;
+	}//end withholdRowCopies()
+
+	/**
+	 * Drop relation keys that belong to a removed property.
+	 *
+	 * A key is the property itself or a dotted path under it (`members.0`).
+	 *
+	 * @param array<string, mixed> $relations The relations mirror.
+	 * @param array<int, string>   $removed   Properties the read filter removed.
+	 *
+	 * @return array<string, mixed> The mirror without them.
+	 */
+	private function withoutRelationKeys(array $relations, array $removed): array {
+		foreach (array_keys($relations) as $key) {
+			$key = (string)$key;
+			foreach ($removed as $property) {
+				if ($key === $property || str_starts_with($key, $property . '.') === true) {
+					unset($relations[$key]);
+					break;
+				}
+			}
+		}
+
+		return $relations;
+	}//end withoutRelationKeys()
+
+	/**
+	 * The `@self` metadata fields whose source property was removed.
+	 *
+	 * @param Schema             $schema  The schema whose configuration names the sources.
+	 * @param array<int, string> $removed Properties the read filter removed.
+	 *
+	 * @return array<int, string> `@self` fields to blank.
+	 */
+	private function withheldMetadataFields(Schema $schema, array $removed): array {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$fields = [];
+		foreach (self::METADATA_COPIES as $configKey => $field) {
+			$source = trim((string)($configuration[$configKey] ?? ''));
+			if ($source === '') {
+				continue;
+			}
+
+			$topLevel = explode('.', $source)[0];
+			if (in_array($topLevel, $removed, true) === true) {
+				$fields[] = $field;
+			}
+		}
+
+		return $fields;
+	}//end withheldMetadataFields()
 
 	/**
 	 * Whether a schema has any read-strip rule (property-level read authorization or a
@@ -1978,6 +2165,11 @@ class RenderObject {
 					schema: $schema,
 					object: $objectDataWithSelf
 				);
+				$this->withholdEntityCopies(
+					entity: $entity,
+					schema: $schema,
+					removed: $this->removedProperties(before: $objectDataWithSelf, after: $objectData)
+				);
 
 				// Remove the temporary @self if it was added (jsonSerialize re-adds it).
 				if (isset($objectData['@self']) === true
@@ -2191,6 +2383,11 @@ class RenderObject {
 		// same per-request memo as the two markers above, so a page of objects
 		// costs ONE query for the star rather than one per rendered row.
 		$this->applyFavouriteMarker(entity: $entity);
+
+		// The reader's update right (`@self.can.update`), opt-in through
+		// `_extend[]=@self.can`: the records list's in-place editor asks for it
+		// so it never offers an edit the save would refuse (REQ-RFCE-002).
+		$this->applyUpdateRightMarker(entity: $entity, schema: $renderSchema, extend: $_extend);
 
 		// Annotation-driven retention block.
 		// When the schema declares `x-openregister-archival`, compute the
@@ -2467,6 +2664,62 @@ class RenderObject {
 		}//end try
 
 	}//end applyFavouriteMarker()
+
+	/**
+	 * Attach `@self.can.update`: whether the reader may update this object.
+	 *
+	 * Opt-in through `_extend[]=@self.can`, because it costs one permission
+	 * evaluation per row and only the records list's in-place editor asks for
+	 * it. The verdict is PermissionHandler's own (schema, owner and conditional
+	 * rules), so the list never offers an edit the save would refuse on rights.
+	 * Resolved through the container like the markers above, to keep the
+	 * render layer free of a construction cycle. A failure leaves the marker
+	 * out, which the list reads as "no editor": the safe side.
+	 *
+	 * @param ObjectEntity      $entity The entity being rendered.
+	 * @param Schema|null       $schema The object's schema.
+	 * @param array|string|null $extend The _extend parameter.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+	 */
+	private function applyUpdateRightMarker(ObjectEntity $entity, ?Schema $schema, array|string|null $extend): void {
+		if ($this->container === null || $schema === null || $extend === null || $extend === '' || $extend === []) {
+			return;
+		}
+
+		if (is_string($extend) === true) {
+			$extend = array_map('trim', explode(',', $extend));
+		}
+
+		if (in_array('@self.can', $extend, true) === false) {
+			return;
+		}
+
+		try {
+			$permissions = $this->container->get(PermissionHandler::class);
+			$owner       = $entity->getOwner();
+			if (is_string($owner) === false) {
+				$owner = null;
+			}
+
+			$entity->setCan(
+				[
+					'update' => $permissions->hasPermission(
+						schema: $schema,
+						action: 'update',
+						objectOwner: $owner,
+						object: $entity
+					),
+				]
+			);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf('[RenderObject] update right marker skipped for %s: %s', (string)$entity->getUuid(), $e->getMessage())
+			);
+		}//end try
+	}//end applyUpdateRightMarker()
 
 	/**
 	 * Attach the resolved `@self._retention` decision.
@@ -2932,6 +3185,9 @@ class RenderObject {
 	 * @param int $depth The current depth.
 	 * @param bool $allFlag If we extend all or not.
 	 * @param array $visitedIds All ids we already handled.
+	 * @param array $exposures The relation descriptors that declare a field set, keyed by
+	 *                         the property the link hangs on. Empty for every schema that
+	 *                         declares none, which is every schema written so far.
 	 *
 	 * @return array
 	 *
@@ -2950,6 +3206,7 @@ class RenderObject {
 		int $depth,
 		bool $allFlag = false,
 		array $visitedIds = [],
+		array $exposures = [],
 	): array {
 		$data = $this->handleWildcardExtends(objectData: $data, _extend: $_extend, depth: $depth + 1);
 
@@ -2995,13 +3252,22 @@ class RenderObject {
 					fn ($v) => $v !== null
 						&& (is_string($v) === false || str_starts_with(haystack: $v, needle: '@') === false)
 				);
+				$descriptor = ($exposures[$key] ?? null);
 				$renderedValue = array_map(
-					function ($identifier) use ($depth, $keyExtends, $allFlag, $visitedIds) {
+					function ($identifier) use ($depth, $keyExtends, $allFlag, $visitedIds, $descriptor) {
 						// If already an extended object (has 'id' and '@self' keys), return as-is.
 						// This prevents double-processing when extend is called multiple times.
 						if (is_array($identifier) === true) {
 							if (isset($identifier['id']) === true || isset($identifier['@self']) === true) {
-								return $identifier;
+								// Already extended, by the wildcard pass above or by an
+								// earlier call. The exposure still applies: an extend that
+								// arrives here pre-rendered is the same far record reached
+								// through the same link, and skipping the projection because
+								// somebody else did the loading would be a control that any
+								// caller can step around by asking for the wildcard form.
+								// Projecting twice is harmless, a withheld field stays
+								// withheld.
+								return $this->applyLinkExposure(rendered: $identifier, descriptor: $descriptor);
 							}
 
 							return null;
@@ -3034,7 +3300,7 @@ class RenderObject {
 							$subExtend = array_merge(['all'], $keyExtends);
 						}
 
-						return $this->renderEntity(
+						$rendered = $this->renderEntity(
 							entity: $object,
 							_extend: $subExtend,
 							depth: $depth + 1,
@@ -3043,6 +3309,8 @@ class RenderObject {
 							unset: [],
 							visitedIds: $visitedIds
 						)->jsonSerialize();
+
+						return $this->applyLinkExposure(rendered: $rendered, descriptor: $descriptor);
 					},
 					$value
 				);
@@ -3097,15 +3365,18 @@ class RenderObject {
 				$subExtend = array_merge(['all'], $keyExtends);
 			}
 
-			$rendered = $this->renderEntity(
-				entity: $object,
-				_extend: $subExtend,
-				depth: $depth + 1,
-				filter: [],
-				fields: [],
-				unset: [],
-				visitedIds: $visitedIds
-			)->jsonSerialize();
+			$rendered = $this->applyLinkExposure(
+				rendered: $this->renderEntity(
+					entity: $object,
+					_extend: $subExtend,
+					depth: $depth + 1,
+					filter: [],
+					fields: [],
+					unset: [],
+					visitedIds: $visitedIds
+				)->jsonSerialize(),
+				descriptor: ($exposures[$key] ?? null)
+			);
 
 			if (in_array($object->getUuid(), $visitedIds, true) === true) {
 				$rendered = ['@circular' => true, 'id' => $object->getUuid()];
@@ -3121,6 +3392,100 @@ class RenderObject {
 
 		return $dataDot->jsonSerialize();
 	}//end handleExtendDot()
+
+
+	/**
+	 * The relation descriptors that declare a field set, keyed by property.
+	 *
+	 * Resolved through {@see RelationTypeResolver}, which is the one reader of
+	 * `x-openregister-relation-types`. Reading the annotation here instead
+	 * would be a second reader of one vocabulary, and the two would drift.
+	 *
+	 * Empty for a schema that declares no exposure, which is every schema
+	 * written before this change: an undeclared `exposes` narrows nothing.
+	 *
+	 * @param Schema|null $schema The schema being rendered.
+	 *
+	 * @return array<string, array<string, mixed>> The descriptors, keyed by property name.
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 */
+	private function exposuresFor(?Schema $schema): array {
+		if ($schema === null) {
+			return [];
+		}
+
+		if ($this->relationTypes === null) {
+			$this->relationTypes = new RelationTypeResolver();
+		}
+
+		if ($this->linkExposure === null) {
+			$this->linkExposure = new LinkExposure();
+		}
+
+		$exposures = [];
+		foreach ($this->relationTypes->descriptors(schema: $schema) as $property => $descriptor) {
+			if ($this->linkExposure->declaresExposure(relationType: $descriptor) === true) {
+				$exposures[(string)$property] = $descriptor;
+			}
+		}
+
+		return $exposures;
+	}//end exposuresFor()
+
+	/**
+	 * Narrow one extended far record to what its link declares it exposes.
+	 *
+	 * 🔑 THERE IS NO SECOND PERMISSION EVALUATOR HERE, and that is the design
+	 * (D-4). The readable set is whatever survived `renderEntity()`, which has
+	 * already run the far schema's own property rules through
+	 * `PropertyRbacHandler`. This takes that answer as its argument and
+	 * intersects the declared set with it, so a link can carry a reader to a
+	 * record they could not otherwise open and can never show them a field
+	 * their own rules withhold.
+	 *
+	 * 🔴 `@self` AND `id` ARE NOT PROPERTIES AND ARE NEVER WITHHELD. They are
+	 * the render envelope: marking `id` withheld would break every client that
+	 * follows the link it was handed, and it would say "you may not see this
+	 * record's identity" about a record the link exists to point at. The
+	 * exposure decides which FIELDS travel, not whether the link is there.
+	 *
+	 * @param array<string, mixed>      $rendered   The far record as renderEntity answered it.
+	 * @param array<string, mixed>|null $descriptor The relation descriptor, or null when the link declares none.
+	 *
+	 * @return array<string, mixed> The projection.
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 */
+	private function applyLinkExposure(array $rendered, ?array $descriptor): array {
+		if ($descriptor === null) {
+			return $rendered;
+		}
+
+		if ($this->linkExposure === null) {
+			$this->linkExposure = new LinkExposure();
+		}
+
+		$envelope = [];
+		$body = [];
+		foreach ($rendered as $property => $value) {
+			$property = (string)$property;
+			if ($property === '@self' || $property === 'id' || str_starts_with($property, '@') === true) {
+				$envelope[$property] = $value;
+				continue;
+			}
+
+			$body[$property] = $value;
+		}
+
+		$projected = $this->linkExposure->project(
+			farObject: $body,
+			relationType: $descriptor,
+			readable: array_map('strval', array_keys($body))
+		);
+
+		return array_merge($projected, $envelope);
+	}//end applyLinkExposure()
 
 	/**
 	 * Extends an object with additional data based on the extension configuration
@@ -3222,7 +3587,8 @@ class RenderObject {
 			_extend: $_extend,
 			depth: $depth,
 			allFlag: in_array('all', $_extend, true),
-			visitedIds: $visitedIds
+			visitedIds: $visitedIds,
+			exposures: $this->exposuresFor(schema: $this->getSchema(id: $entity->getSchema()))
 		);
 
 		return $objectDataDot;

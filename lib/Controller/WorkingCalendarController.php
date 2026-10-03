@@ -151,6 +151,13 @@ class WorkingCalendarController extends Controller {
 				'year' => $year,
 				'workingWeekdays' => $definition->getWorkingWeekdays(),
 				'hoursPerWorkingDay' => $definition->getHoursPerWorkingDay(),
+				// Echoed back from what was VALIDATED, like the weekdays above
+				// and for the same reason: a panel that previews the holidays
+				// but prints the opening time straight from its own form
+				// cannot tell the reader that a malformed one was defaulted.
+				'dayStartsAt' => sprintf('%02d:%02d', intdiv($definition->getDayStartsAtMinute(), 60), ($definition->getDayStartsAtMinute() % 60)),
+				'dayEndsAt' => sprintf('%02d:%02d', intdiv($definition->getDayEndsAtMinute(), 60), ($definition->getDayEndsAtMinute() % 60)),
+				'timezone' => $definition->getTimezone(),
 				'dates' => $dates,
 				'total' => count($dates),
 			]

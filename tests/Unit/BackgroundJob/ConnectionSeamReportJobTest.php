@@ -48,6 +48,11 @@ use RuntimeException;
  * Unit tests for the seam report job.
  *
  * @covers \OCA\OpenRegister\BackgroundJob\ConnectionSeamReportJob
+ * @uses \OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry
+ * @uses \OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider
+ * @uses \OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider
+ * @uses \OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry
+ * @uses \OCA\OpenRegister\Service\Translation\IdentityTranslationProvider
  */
 class ConnectionSeamReportJobTest extends TestCase {
 

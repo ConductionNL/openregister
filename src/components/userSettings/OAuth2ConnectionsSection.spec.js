@@ -162,14 +162,49 @@ describe('OAuth2ConnectionsSection', () => {
 			})
 		})
 
+		/**
+		 * A context for startFlow, carrying the message picker it calls.
+		 *
+		 * @return {object} The `this` to bind.
+		 */
+		function startContext() {
+			return {
+				t,
+				busy: false,
+				error: '',
+				navigateTo: jest.fn(),
+				startFailureMessage:
+					OAuth2ConnectionsSection.methods.startFailureMessage,
+			}
+		}
+
 		it('reports a start failure and stops being busy', async () => {
 			axios.post.mockRejectedValue(new Error('refused'))
-			const ctx = { t, busy: false, error: '', navigateTo: jest.fn() }
+			const ctx = startContext()
 
 			await callMethod('startFlow', ctx, { provider: 'mastodon' })
 
 			expect(ctx.error).toContain('Could not start the connection')
 			expect(ctx.busy).toBe(false)
+		})
+
+		it('sends a provider with no configured client to the administrator', async () => {
+			axios.post.mockRejectedValue({ response: { status: 409 } })
+			const ctx = startContext()
+
+			await callMethod('startFlow', ctx, { provider: 'linkedin' })
+
+			expect(ctx.error).toContain('Ask your administrator to configure it')
+			expect(ctx.busy).toBe(false)
+		})
+
+		it('says a refusing provider server is worth retrying later', async () => {
+			axios.post.mockRejectedValue({ response: { status: 502 } })
+			const ctx = startContext()
+
+			await callMethod('startFlow', ctx, { provider: 'mastodon' })
+
+			expect(ctx.error).toContain('Try again later')
 		})
 	})
 

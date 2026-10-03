@@ -994,6 +994,129 @@ class FilePropertyHandlerTest extends TestCase {
 	}
 
 	// =========================================================================
+	// Editor shape: fileConfiguration.allowedMimeTypes / maxSize in MB (#4058)
+	//
+	// The schema property editor writes the limits under `fileConfiguration`,
+	// with the size in megabytes. These fixtures are the exact shape
+	// EditSchemaProperty.vue saves, not the hand-written `allowedTypes` shape.
+	// =========================================================================
+
+	public function testValidateFileAgainstConfigAppliesEditorMimeTypeLimit(): void {
+		$fileData = [
+			'content' => 'png',
+			'mimeType' => 'image/png',
+			'extension' => 'png',
+			'size' => 100,
+		];
+
+		$fileConfig = [
+			'type' => 'file',
+			'fileConfiguration' => [
+				'handling' => 'transform',
+				'allowedMimeTypes' => ['application/pdf'],
+				'location' => '',
+				'maxSize' => 0,
+			],
+		];
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage("invalid type 'image/png'");
+
+		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'attachment');
+	}
+
+	public function testValidateFileAgainstConfigAppliesEditorMaxSizeInMegabytes(): void {
+		$fileData = [
+			'content' => 'pdf',
+			'mimeType' => 'application/pdf',
+			'extension' => 'pdf',
+			'size' => (1024 * 1024) + 1,
+		];
+
+		// The editor's number field can hand back a string.
+		$fileConfig = [
+			'type' => 'file',
+			'fileConfiguration' => [
+				'allowedMimeTypes' => ['application/pdf'],
+				'maxSize' => '1',
+			],
+		];
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('exceeds maximum size (1048576 bytes)');
+
+		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'attachment');
+	}
+
+	public function testValidateFileAgainstConfigEditorMaxSizeIsNotBytes(): void {
+		// 10 MB in the editor must not become a 10 byte limit.
+		$fileData = [
+			'content' => 'pdf',
+			'mimeType' => 'application/pdf',
+			'extension' => 'pdf',
+			'size' => 5000,
+		];
+
+		$fileConfig = [
+			'type' => 'file',
+			'fileConfiguration' => [
+				'allowedMimeTypes' => ['application/pdf'],
+				'maxSize' => 10,
+			],
+		];
+
+		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'attachment');
+		$this->assertTrue(true);
+	}
+
+	public function testValidateFileAgainstConfigTopLevelKeysWinOverEditorShape(): void {
+		// A schema carrying both shapes keeps its API-set byte limit and types.
+		$fileData = [
+			'content' => 'png',
+			'mimeType' => 'image/png',
+			'extension' => 'png',
+			'size' => 2000,
+		];
+
+		$fileConfig = [
+			'type' => 'file',
+			'allowedTypes' => ['image/png'],
+			'maxSize' => 1000,
+			'fileConfiguration' => [
+				'allowedMimeTypes' => ['application/pdf'],
+				'maxSize' => 50,
+			],
+		];
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('exceeds maximum size (1000 bytes)');
+
+		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'attachment');
+	}
+
+	public function testValidateFileAgainstConfigEditorShapeStillRefusesExecutables(): void {
+		$fileData = [
+			'content' => 'MZ' . str_repeat("\x00", 100),
+			'mimeType' => 'application/octet-stream',
+			'extension' => 'bin',
+			'size' => 102,
+		];
+
+		$fileConfig = [
+			'type' => 'file',
+			'fileConfiguration' => [
+				'allowedMimeTypes' => ['application/octet-stream'],
+				'maxSize' => 10,
+			],
+		];
+
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('executable code');
+
+		$this->handler->validateFileAgainstConfig($fileData, $fileConfig, 'attachment');
+	}
+
+	// =========================================================================
 	// Binary MIME scoping on the OBJECT-SAVE path — openregister#2776
 	//
 	// This handler carried a byte-identical COPY of the executable-content

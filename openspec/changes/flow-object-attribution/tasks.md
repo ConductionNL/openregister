@@ -18,6 +18,17 @@
 ## 4. Hash chain (ADR-003 Rule 4)
 
 - [ ] 4.1 Add the three keys to `AuditTrail::jsonSerialize()` and move `GENESIS_SEED` to `openregister-genesis-v2`; verify a freshly seeded chain verifies end to end under v2
+      > ⚠️ **THE SEED HALF OF THIS TASK IS ALREADY IN THE CODE.**
+      > `AuditHashService::GENESIS_SEED` reads `openregister-genesis-v2`, and
+      > the development instance's chain is seeded under it (first sealed row's
+      > `previous_hash` is `ce429ddf…`, SHA-256 of the v2 seed, read
+      > 2026-09-18). It went in without this box being ticked and without the
+      > verify-then-rechain this change's own design requires, and
+      > `openspec/specs/audit-hash-chain/spec.md` still said `-v1` until the
+      > same day. Found by a chain test that wrote the seed out instead of
+      > reading it from the code under test. What is left of 4.1 is the three
+      > keys and the migration for instances seeded under v1, whose row 1 now
+      > verifies as broken.
 - [ ] 4.2 Add `AuditCanonicalV1` — a frozen private copy of the v1 key list and canonicalisation rules, marked never-to-be-updated; verify it reproduces the stored hash of a row sealed before this change
 - [ ] 4.3 Verify tampering with `flow_run`, `flow_node` or `flow_step` on a sealed row makes `verifyChain()` report a break at that row
 

@@ -113,7 +113,7 @@ class OAuth2ClientResolver {
 		}
 
 		if ($clientId === '') {
-			throw new CredentialAccessDeniedException(message: 'no OAuth2 client id is configured for provider ' . $provider);
+			throw new OAuth2ClientNotConfiguredException(message: 'no OAuth2 client id is configured for provider ' . $provider);
 		}
 
 		$clientSecret = null;

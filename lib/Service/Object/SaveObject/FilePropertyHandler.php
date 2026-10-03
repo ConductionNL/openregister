@@ -1102,9 +1102,10 @@ class FilePropertyHandler {
 		}
 
 		// Validate MIME type.
-		if (($fileConfig['allowedTypes'] ?? null) !== null && empty($fileConfig['allowedTypes']) === false) {
-			if (in_array($fileData['mimeType'], $fileConfig['allowedTypes'], true) === false) {
-				$allowedStr = implode(', ', $fileConfig['allowedTypes']);
+		$allowedTypes = $this->resolveAllowedTypes(fileConfig: $fileConfig);
+		if (empty($allowedTypes) === false) {
+			if (in_array($fileData['mimeType'], $allowedTypes, true) === false) {
+				$allowedStr = implode(', ', $allowedTypes);
 				$mimeType = $fileData['mimeType'];
 				throw new Exception(
 					"$errorPrefix has invalid type '$mimeType'. Allowed types: $allowedStr"
@@ -1113,9 +1114,9 @@ class FilePropertyHandler {
 		}
 
 		// Validate file size.
-		if (($fileConfig['maxSize'] ?? null) !== null && $fileConfig['maxSize'] > 0) {
-			if ($fileData['size'] > $fileConfig['maxSize']) {
-				$maxSize = $fileConfig['maxSize'];
+		$maxSize = $this->resolveMaxSizeBytes(fileConfig: $fileConfig);
+		if ($maxSize > 0) {
+			if ($fileData['size'] > $maxSize) {
 				$fileSize = $fileData['size'];
 				throw new Exception(
 					"$errorPrefix exceeds maximum size ($maxSize bytes). File size: $fileSize bytes"
@@ -1123,6 +1124,75 @@ class FilePropertyHandler {
 			}
 		}
 	}//end validateFileAgainstConfig()
+
+	/**
+	 * Resolve the MIME types a file property accepts.
+	 *
+	 * Two shapes are in use. A schema written through the API or as JSON sets
+	 * `allowedTypes` on the property. The schema property editor writes
+	 * `fileConfiguration.allowedMimeTypes`. The top-level key wins when both
+	 * are set, so schemas that already work keep their behaviour.
+	 *
+	 * @param array $fileConfig The file property configuration.
+	 *
+	 * @psalm-param   array<string, mixed> $fileConfig
+	 * @phpstan-param array<string, mixed> $fileConfig
+	 *
+	 * @return string[] The accepted MIME types, empty when any type is accepted.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function resolveAllowedTypes(array $fileConfig): array {
+		$types = $fileConfig['allowedTypes'] ?? null;
+		if (is_array($types) === false || $types === []) {
+			$editorConfig = $fileConfig['fileConfiguration'] ?? [];
+			$types = null;
+			if (is_array($editorConfig) === true) {
+				$types = $editorConfig['allowedMimeTypes'] ?? null;
+			}
+		}
+
+		if (is_array($types) === false) {
+			return [];
+		}
+
+		return array_values(array_filter($types, 'is_string'));
+	}//end resolveAllowedTypes()
+
+	/**
+	 * Resolve the largest upload a file property accepts, in bytes.
+	 *
+	 * The top-level `maxSize` is in bytes. The editor's
+	 * `fileConfiguration.maxSize` is labelled and entered in megabytes, so it
+	 * is converted here; a plain rename would turn 10 MB into 10 bytes.
+	 *
+	 * @param array $fileConfig The file property configuration.
+	 *
+	 * @psalm-param   array<string, mixed> $fileConfig
+	 * @phpstan-param array<string, mixed> $fileConfig
+	 *
+	 * @return int The limit in bytes, 0 when there is no limit.
+	 *
+	 * @spec openspec/specs/content-versioning/spec.md
+	 */
+	private function resolveMaxSizeBytes(array $fileConfig): int {
+		$bytes = $fileConfig['maxSize'] ?? null;
+		if (is_numeric($bytes) === true && (float) $bytes > 0) {
+			return (int) $bytes;
+		}
+
+		$editorConfig = $fileConfig['fileConfiguration'] ?? [];
+		if (is_array($editorConfig) === false) {
+			return 0;
+		}
+
+		$megabytes = $editorConfig['maxSize'] ?? null;
+		if (is_numeric($megabytes) === true && (float) $megabytes > 0) {
+			return (int) round((float) $megabytes * 1024 * 1024);
+		}
+
+		return 0;
+	}//end resolveMaxSizeBytes()
 
 	/**
 	 * Blocks executable files from being uploaded for security.

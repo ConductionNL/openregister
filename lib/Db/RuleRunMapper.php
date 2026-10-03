@@ -140,6 +140,55 @@ class RuleRunMapper extends QBMapper {
 	}//end findByRule()
 
 	/**
+	 * The most recent runs across every rule.
+	 *
+	 * The per-rule listing answers "how is this rule doing"; an operations
+	 * console asks the other question, "what has the engine been doing", and
+	 * cannot ask it by walking the rules one at a time. The order and the
+	 * narrowing are the same as {@see findByRule()}, minus the rule.
+	 *
+	 * Index-backed on `created` (`or_rulerun_created_idx`), which is the
+	 * column the ordering and the window both use, so the console never
+	 * scans the run log (ADR-009).
+	 *
+	 * @param string|null   $verdict Narrow to one verdict.
+	 * @param DateTime|null $since   Only runs at or after this moment.
+	 * @param int           $limit   How many rows to return, capped at MAX_LIMIT.
+	 * @param int           $offset  Where to start.
+	 *
+	 * @return array<int, RuleRun> The rows, newest first.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function findRecent(
+		?string $verdict = null,
+		?DateTime $since = null,
+		int $limit = self::DEFAULT_LIMIT,
+		int $offset = 0,
+	): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->orderBy('created', 'DESC')
+			->addOrderBy('id', 'DESC')
+			->setMaxResults(max(1, min($limit, self::MAX_LIMIT)))
+			->setFirstResult(max(0, $offset));
+
+		if ($verdict !== null && $verdict !== '') {
+			$qb->andWhere($qb->expr()->eq('verdict', $qb->createNamedParameter($verdict)));
+		}
+
+		if ($since !== null) {
+			$qb->andWhere(
+				$qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+			);
+		}
+
+		return $this->findEntities(query: $qb);
+
+	}//end findRecent()
+
+	/**
 	 * How many runs one rule has in the log, under the same filters.
 	 *
 	 * @param string $ruleId The derived rule id.

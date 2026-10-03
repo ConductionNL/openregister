@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\InvalidAuthorizationRuleException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\AuthorizationBlockException;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
@@ -42,6 +43,7 @@ use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
+use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
@@ -56,6 +58,8 @@ use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
+use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
+use OCA\OpenRegister\Service\Schemas\ReferenceFilterOperandGuard;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SemanticRoleHandler;
 use OCA\OpenRegister\Service\SchemaService;
@@ -123,6 +127,18 @@ class SchemasController extends Controller {
 	private readonly RegisterScopedSchemaResolver $scopedSchemaResolver;
 
 	/**
+	 * The call site for the reference-filter operand check.
+	 *
+	 * Built here for the same reason as the resolver above: it is a stateless
+	 * collaborator over the `SchemaMapper` this class already holds, so every
+	 * existing unit test keeps exercising the real path instead of a mock of
+	 * the thing under test.
+	 *
+	 * @var ReferenceFilterOperandGuard
+	 */
+	private readonly ReferenceFilterOperandGuard $referenceFilterOperands;
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes controller with required dependencies for schema operations.
@@ -179,6 +195,7 @@ class SchemasController extends Controller {
 			registerMapper: $registerMapper,
 			schemaMapper: $schemaMapper
 		);
+		$this->referenceFilterOperands = new ReferenceFilterOperandGuard(schemaMapper: $schemaMapper);
 	}//end __construct()
 
 	/**
@@ -616,6 +633,47 @@ class SchemasController extends Controller {
 	}//end validateSemanticRoles()
 
 	/**
+	 * Refuse a reference filter that reads a property nobody declares.
+	 *
+	 * 🔴 THIS IS THE CALL SITE `assertOperandsExist()` SHIPPED WITHOUT. The
+	 * comment beside `PropertyValidatorHandler::validateProperty()` said the
+	 * operands were checked "in SchemasController", and this class did not
+	 * mention the declaration at all, so the check was dead code with a full
+	 * set of messages nobody could ever read. `validateProperty()` sees one
+	 * property and cannot answer the question: it needs both schemas.
+	 *
+	 * The refusal is a 422 in the same family as the semantic-role and
+	 * generated-identifier refusals, and it names the property and which of
+	 * the two schemas is missing the operand.
+	 *
+	 * @param array<string, mixed> $data The incoming schema payload.
+	 *
+	 * @return JSONResponse|null A 422 naming the operand, or null when there is nothing to refuse.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
+	 */
+	private function validateReferenceFilterOperands(array $data): ?JSONResponse {
+		$properties = ($data['properties'] ?? null);
+		if (is_array($properties) === false) {
+			return null;
+		}
+
+		try {
+			$this->referenceFilterOperands->assertProperties(properties: $properties);
+		} catch (ReferenceFilterException $e) {
+			return new JSONResponse(
+				data: [
+					'error' => $e->getMessage(),
+					'errors' => $e->getErrors(),
+				],
+				statusCode: 422
+			);
+		}
+
+		return null;
+	}//end validateReferenceFilterOperands()
+
+	/**
 	 * The language the caller asked for, defaulting to Dutch.
 	 *
 	 * @return string The BCP-47 tag.
@@ -762,6 +820,13 @@ class SchemasController extends Controller {
 			return $roleError;
 		}
 
+		// Refuse a reference filter reading a property neither schema
+		// declares, before the write, while the author is still here.
+		$operandError = $this->validateReferenceFilterOperands(data: $data);
+		if ($operandError !== null) {
+			return $operandError;
+		}
+
 		// Refuse a register context that does not resolve BEFORE writing the schema.
 		// Creating a free-floating schema and reporting 201 is what made the old
 		// behaviour invisible: the caller believed it had a schema in that register.
@@ -900,6 +965,14 @@ class SchemasController extends Controller {
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
 			);
+		} catch (ConsentDeclarationException $e) {
+			// An x-openregister-consent declaration that cannot be honoured must
+			// not silently ship a property that never fills evidence — the
+			// refusal names the property rather than being logged (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (DependentValueDeclarationException $e) {
 			// A dependent value table that names nothing constrains nothing,
 			// and the object it was written to guard would save cleanly. The
@@ -908,6 +981,10 @@ class SchemasController extends Controller {
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
 			);
+		} catch (InvalidAuthorizationRuleException $e) {
+			// A malformed authorization rule names its action, property and
+			// operator; the author needs that, not a bare 500 (#4162).
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: InvalidAuthorizationRuleException::HTTP_STATUS);
 		} catch (DBException $e) {
 			// Handle database constraint violations with user-friendly messages.
 			$constraintException = DatabaseConstraintException::fromDatabaseException(dbException: $e, entityType: 'schema');
@@ -987,6 +1064,7 @@ class SchemasController extends Controller {
 	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
 	 */
 	public function update(int $id): JSONResponse {
 		// Get request parameters.
@@ -999,6 +1077,43 @@ class SchemasController extends Controller {
 			}
 		}
 
+		// `?draft=true` holds the edit beside the published definition instead
+		// of applying it (modelling-schema-draft).
+		$asDraft = $this->isTrue(value: ($data['draft'] ?? null));
+		unset($data['draft'], $data['acknowledgeBreaking'], $data['renames']);
+		if ($asDraft === true) {
+			return $this->saveDraft(id: $id, data: $data);
+		}
+
+		return $this->applyUpdate(id: $id, data: $data);
+	}//end update()
+
+	/**
+	 * Apply an update body to a schema: permission, validation, versioning gate, write, changelog.
+	 *
+	 * Shared by a direct update and by publishing a draft, so a published draft
+	 * gets the same gate, the same version bump and one changelog entry.
+	 *
+	 * @param int                  $id   The ID of the schema to update
+	 * @param array<string, mixed> $data The update body, internal parameters removed
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)          DatabaseConstraintException::fromDatabaseException is a named constructor — no DI alternative.
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple message-substring checks for error classification; each adds one branch.
+	 * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
+	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Error-classification block is repetitive but
+	 * intentional; extracting it would not reduce cognitive load.
+	 * @SuppressWarnings(PHPMD.ShortVariable)         $id matches the {id} URL route parameter.
+	 *
+	 * @return JSONResponse JSON response with updated schema or error
+	 *
+	 * @psalm-return JSONResponse<200, Schema,
+	 *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
+	 *     array<never, never>>|JSONResponse<422, array{error: string,
+	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
+	 *
+	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 */
+	private function applyUpdate(int $id, array $data): JSONResponse {
 		// Remove immutable fields to prevent tampering.
 		unset($data['id']);
 		unset($data['organisation']);
@@ -1035,6 +1150,13 @@ class SchemasController extends Controller {
 		$roleError = $this->validateSemanticRoles(data: $data);
 		if ($roleError !== null) {
 			return $roleError;
+		}
+
+		// Refuse a reference filter reading a property neither schema
+		// declares, before the write, while the author is still here.
+		$operandError = $this->validateReferenceFilterOperands(data: $data);
+		if ($operandError !== null) {
+			return $operandError;
 		}
 
 		// Capture prior authorization so a change can be audit-logged below.
@@ -1188,6 +1310,14 @@ class SchemasController extends Controller {
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
 			);
+		} catch (ConsentDeclarationException $e) {
+			// An x-openregister-consent declaration that cannot be honoured must
+			// not silently ship a property that never fills evidence — the
+			// refusal names the property rather than being logged (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (DependentValueDeclarationException $e) {
 			// A dependent value table that names nothing constrains nothing,
 			// and the object it was written to guard would save cleanly. The
@@ -1196,6 +1326,10 @@ class SchemasController extends Controller {
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
 			);
+		} catch (InvalidAuthorizationRuleException $e) {
+			// A malformed authorization rule names its action, property and
+			// operator; the author needs that, not a bare 500 (#4162).
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: InvalidAuthorizationRuleException::HTTP_STATUS);
 		} catch (DBException $e) {
 			// Handle database constraint violations with user-friendly messages.
 			$constraintException = DatabaseConstraintException::fromDatabaseException(
@@ -1251,7 +1385,133 @@ class SchemasController extends Controller {
 			// Return 500 for other unexpected errors with actual error message.
 			return $this->errorResponse(e: $e);
 		}//end try
-	}//end update()
+	}//end applyUpdate()
+
+	/**
+	 * Whether a request value means true (`true` or the string `'true'`).
+	 *
+	 * @param mixed $value The request value
+	 *
+	 * @return bool
+	 */
+	private function isTrue(mixed $value): bool {
+		return ($value === true || $value === 'true' || $value === '1' || $value === 1);
+	}//end isTrue()
+
+	/**
+	 * Hold an edit as the schema's draft, leaving the published definition untouched.
+	 *
+	 * @param int                  $id   The ID of the schema
+	 * @param array<string, mixed> $data The edit body
+	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
+	 *
+	 * @return JSONResponse The schema with its draft, or an error
+	 *
+	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 */
+	private function saveDraft(int $id, array $data): JSONResponse {
+		try {
+			$schema = $this->schemaMapper->find($id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+		}
+
+		if ($this->checkSchemaManagePermission(schema: $schema) === false) {
+			return new JSONResponse(
+				data: ['error' => 'User does not have permission to manage this schema'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		unset($data['id'], $data['organisation'], $data['owner'], $data['created']);
+		$schema->setDraft($data);
+
+		return new JSONResponse(data: $this->schemaMapper->update(entity: $schema));
+	}//end saveDraft()
+
+	/**
+	 * Publish a schema's draft through the normal update, then remove it
+	 *
+	 * The draft goes through the same permission check, versioning gate
+	 * (`acknowledgeBreaking`, `renames`), version bump and changelog as a direct
+	 * update. A refused publish keeps the draft.
+	 *
+	 * @param int $id The ID of the schema
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
+	 *
+	 * @return JSONResponse The updated schema, 409 when there is no draft, or the update's error
+	 *
+	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 */
+	public function publishDraft(int $id): JSONResponse {
+		try {
+			$schema = $this->schemaMapper->find($id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+		}
+
+		if ($this->checkSchemaManagePermission(schema: $schema) === false) {
+			return new JSONResponse(
+				data: ['error' => 'User does not have permission to manage this schema'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		$draft = $schema->getDraft();
+		if ($draft === null) {
+			return new JSONResponse(data: ['error' => 'This schema has no draft to publish'], statusCode: 409);
+		}
+
+		$response  = $this->applyUpdate(id: $id, data: $draft);
+		$published = $response->getData();
+		if ($response->getStatus() !== Http::STATUS_OK || $published instanceof Schema === false) {
+			return $response;
+		}
+
+		$published->setDraft(null);
+
+		return new JSONResponse(data: $this->schemaMapper->update(entity: $published));
+	}//end publishDraft()
+
+	/**
+	 * Discard a schema's draft, leaving the published definition as it is
+	 *
+	 * @param int $id The ID of the schema
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter.
+	 *
+	 * @return JSONResponse The schema without a draft, or an error
+	 *
+	 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+	 */
+	public function discardDraft(int $id): JSONResponse {
+		try {
+			$schema = $this->schemaMapper->find($id);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => 'Schema not found'], statusCode: 404);
+		}
+
+		if ($this->checkSchemaManagePermission(schema: $schema) === false) {
+			return new JSONResponse(
+				data: ['error' => 'User does not have permission to manage this schema'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		$schema->setDraft(null);
+
+		return new JSONResponse(data: $this->schemaMapper->update(entity: $schema));
+	}//end discardDraft()
 
 	/**
 	 * Patch (partially update) a schema
@@ -1720,6 +1980,14 @@ class SchemasController extends Controller {
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
 			);
+		} catch (ConsentDeclarationException $e) {
+			// An x-openregister-consent declaration that cannot be honoured must
+			// not silently ship a property that never fills evidence — the
+			// refusal names the property rather than being logged (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (DependentValueDeclarationException $e) {
 			// A dependent value table that names nothing constrains nothing,
 			// and the object it was written to guard would save cleanly. The
@@ -1728,6 +1996,10 @@ class SchemasController extends Controller {
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
 			);
+		} catch (InvalidAuthorizationRuleException $e) {
+			// A malformed authorization rule names its action, property and
+			// operator; the author needs that, not a bare 500 (#4162).
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: InvalidAuthorizationRuleException::HTTP_STATUS);
 		} catch (DBException $e) {
 			// Handle database constraint violations with user-friendly messages.
 			$constraintException = DatabaseConstraintException::fromDatabaseException(

@@ -760,7 +760,7 @@ class AggregationJoinAndCompositeGroupByTest extends TestCase {
 		);
 
 		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('Forbidden: caller lacks list permission on join target "commitment-budget"');
+		$this->expectExceptionMessage('Forbidden: caller lacks read permission on join target "commitment-budget"');
 
 		$runner->run(
 			registerRef: 'finance',

@@ -129,6 +129,11 @@ class TransitionController extends Controller {
 			// cannot take that move" are different things to tell a handler,
 			// and they answered the same 422 until this type existed. 404 is
 			// what the read half of the same pair already answers.
+			//
+			// An object the caller may not READ lands here too, by design: GET
+			// /api/objects/{register}/{schema}/{id} answers 404 for it so its
+			// existence does not leak, and this endpoint must not leak it
+			// either. It used to escape as an OCP DoesNotExistException → 500.
 			return new JSONResponse(
 				['error' => $e->getMessage()],
 				Http::STATUS_NOT_FOUND

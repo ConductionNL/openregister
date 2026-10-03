@@ -18,6 +18,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\InvalidTransitionInputException;
+use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
@@ -46,6 +47,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Exception\ValidationException
  * @uses \OCA\OpenRegister\Exception\HookStoppedException
  * @uses \OCA\OpenRegister\Exception\TaskAccessDeniedException
+ * @uses \OCA\OpenRegister\Service\Flow\FlowRunContext
  */
 class TaskFormCompletionTest extends TestCase {
 
@@ -356,6 +358,40 @@ class TaskFormCompletionTest extends TestCase {
 		$this->expectExceptionMessage('obj-1');
 		$this->completion->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: 'x', data: ['reason' => 'late'], actor: 'alice');
 	}//end testTheObjectWritesAuthorizationMayRefuse()
+
+	/**
+	 * The engine reports an unreadable subject as "not found" for the object
+	 * endpoints; the task path keeps answering that read denial as an access denial.
+	 */
+	public function testAnUnreadableSubjectStaysAnAccessDenial(): void {
+		$this->openTask($this->task());
+		$this->forms->method('describe')->willReturn($this->nativeForm(action: 'reject'));
+		$this->engine->method('transition')->willThrowException(
+			new LifecycleSubjectNotFoundException(
+				message: 'Object "obj-1" not found.',
+				previous: new NotAuthorizedException('Insufficient permissions to read objects of this schema')
+			)
+		);
+		$this->tasks->expects($this->never())->method('complete');
+
+		$this->expectException(TaskAccessDeniedException::class);
+		$this->expectExceptionMessage('Insufficient permissions to read');
+		$this->completion->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: 'x', data: ['reason' => 'late'], actor: 'alice');
+	}//end testAnUnreadableSubjectStaysAnAccessDenial()
+
+	/**
+	 * A subject that is genuinely gone is the subject's refusal, as before.
+	 */
+	public function testAMissingSubjectIsAWriteRefusal(): void {
+		$this->openTask($this->task());
+		$this->forms->method('describe')->willReturn($this->nativeForm(action: 'reject'));
+		$this->engine->method('transition')->willThrowException(
+			new LifecycleSubjectNotFoundException(message: 'Object "obj-1" not found.')
+		);
+
+		$this->expectException(TaskSubjectWriteRefusedException::class);
+		$this->completion->complete(uuid: 't-7', outcome: 'rejected', resultText: null, comment: 'x', data: ['reason' => 'late'], actor: 'alice');
+	}//end testAMissingSubjectIsAWriteRefusal()
 
 	/**
 	 * The task verb's authorization is settled FIRST: a denial reaches no resolver and no write.

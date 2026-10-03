@@ -997,6 +997,40 @@ class WebhookService {
 	}//end getNestedValue()
 
 	/**
+	 * The payload a delivery of this webhook would send for one event, without sending it
+	 *
+	 * The body comes from buildPayload(), the method a delivery uses, so the
+	 * preview cannot drift from what is sent. `mapped` says whether the mapping
+	 * shaped it: a delivery whose mapping is missing or fails falls back to the
+	 * standard payload, and the preview must not show that fallback as mapped.
+	 *
+	 * @param Webhook $webhook   The webhook, saved or as the dialog holds it.
+	 * @param string  $eventName The event class the payload is for.
+	 * @param array   $payload   The event payload.
+	 *
+	 * @return array{payload: array, mapped: bool}
+	 *
+	 * @spec openspec/specs/webhook-payload-mapping/spec.md
+	 */
+	public function previewPayload(Webhook $webhook, string $eventName, array $payload): array {
+		$mapped = false;
+		$mappingId = $webhook->getMapping();
+		if ($mappingId !== null) {
+			$mapped = $this->applyMappingTransformation(
+				mappingId: $mappingId,
+				eventName: $eventName,
+				payload: $payload,
+				webhook: $webhook
+			) !== null;
+		}
+
+		return [
+			'payload' => $this->buildPayload(webhook: $webhook, eventName: $eventName, payload: $payload, attempt: 1),
+			'mapped' => $mapped,
+		];
+	}//end previewPayload()
+
+	/**
 	 * Build webhook payload
 	 *
 	 * Builds the webhook payload using one of three strategies (in priority order):

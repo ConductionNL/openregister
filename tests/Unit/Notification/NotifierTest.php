@@ -631,4 +631,90 @@ class NotifierTest extends TestCase {
 		$this->assertStringContainsString('list-42', $joined);
 		$this->assertStringContainsString('1 record on destruction list', $joined);
 	}
+
+	/**
+	 * The announcement REQ-ATS-004 is about. An unknown subject throws out of
+	 * prepare(), so without the case the beheerteam hears nothing.
+	 */
+	public function testPrepareSecuritySettingChanged(): void {
+		$parsed = $this->renderSubject(
+			'security_setting_changed',
+			[
+				'setting' => 'rbac.enabled',
+				'label' => 'Access control',
+				'actor' => 'Jan Jansen',
+				'secret' => false,
+				'oldValue' => 'on',
+				'newValue' => 'off',
+			]
+		);
+
+		$joined = implode(' ', $parsed);
+		$this->assertStringContainsString('Access control', $joined);
+		$this->assertStringContainsString('Jan Jansen', $joined);
+		$this->assertStringContainsString('"on"', $joined);
+		$this->assertStringContainsString('"off"', $joined);
+	}
+
+	/**
+	 * A secret is announced as changed and neither value is shown.
+	 */
+	public function testPrepareSecuritySettingChangedQuotesNoSecret(): void {
+		$parsed = $this->renderSubject(
+			'security_setting_changed',
+			[
+				'setting' => 'solr.password',
+				'label' => 'Search index password',
+				'actor' => 'Jan Jansen',
+				'secret' => true,
+			]
+		);
+
+		$joined = implode(' ', $parsed);
+		$this->assertStringContainsString('Search index password', $joined);
+		$this->assertStringContainsString('neither value is shown', $joined);
+		$this->assertStringNotContainsString('"', $joined, 'a secret announcement quotes no value at all');
+	}
+
+	/**
+	 * Render one subject and collect the parsed subject and message.
+	 *
+	 * @param string $subject The notification subject.
+	 * @param array $parameters Its subject parameters.
+	 *
+	 * @return string[] The parsed subject and message.
+	 */
+	private function renderSubject(string $subject, array $parameters): array {
+		$parsed = [];
+		$notification = $this->createMock(INotification::class);
+		$notification->method('getApp')->willReturn('openregister');
+		$notification->method('getSubject')->willReturn($subject);
+		$notification->method('getSubjectParameters')->willReturn($parameters);
+		$notification->method('setParsedSubject')->willReturnCallback(
+			function (string $text) use (&$parsed, $notification): INotification {
+				$parsed[] = $text;
+
+				return $notification;
+			}
+		);
+		$notification->method('setParsedMessage')->willReturnCallback(
+			function (string $text) use (&$parsed, $notification): INotification {
+				$parsed[] = $text;
+
+				return $notification;
+			}
+		);
+		$notification->method('setIcon')->willReturnSelf();
+
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static fn (string $text, array $args = []): string => vsprintf($text, $args)
+		);
+		$this->factory->method('get')->willReturn($l10n);
+		$this->urlGenerator->method('imagePath')->willReturn('/icon.svg');
+
+		$this->notifier->prepare($notification, 'en');
+
+		return $parsed;
+	}
 }

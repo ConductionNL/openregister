@@ -77,14 +77,14 @@
 
 ## 5. Rendering and the binding
 
-- [ ] 5.1 One task-completion component owns the binding: `CnFormDialog` with
+- [x] 5.1 One task-completion component owns the binding: `CnFormDialog` with
       `:schema` = the subject schema, `:item` = the subject object,
       `:includeFields` = the declared fields, and `:fieldOverrides` carrying
       `required` from the declaration and `order` from the declaration index —
       the two repairs for `nextcloud-vue/src/utils/schema.js:542` and
       `:514-519`. `@confirm` posts the payload; the component does not
       persist.
-- [ ] 5.2 Failure surfaces, both kinds. A BROKEN field (the schema dropped it,
+- [~] 5.2 Failure surfaces, both kinds. A BROKEN field (the schema dropped it,
       or made it readOnly/invisible after the step was saved) renders as a
       disabled row stating why, and the step is flagged wherever steps are
       listed — never silently omitted. A REFUSED completion keeps the dialog
@@ -93,7 +93,7 @@
       (`lib/Exception/InvalidTransitionInputException.php:44`,
       `lib/Controller/TransitionController.php:100-107`), distinguishing an
       undeclared key from a missing required input.
-- [ ] 5.3 `CnLifecycleActions.vue:251` gains the ability to send `data` for a
+- [x] 5.3 `CnLifecycleActions.vue:251` gains the ability to send `data` for a
       transition whose published `inputs` are non-empty, and keeps sending
       `{action}` alone when they are empty.
 - [x] 5.4 External path: the task presents the bound Forms form through
@@ -160,3 +160,35 @@
   before implementing).
 - No form-definition table, version lineage or field-type vocabulary is
   introduced, and no partial hook for one is left behind.
+
+## Status of section 5, 2026-09-18
+
+Read on the owning repo's branch, not off these checkboxes, which were stale.
+
+**5.1 and 5.3 were already shipped in nextcloud-vue.** `fieldsFromSchema()`
+merges a per-key override over the schema, so a declaration's `required` wins
+in BOTH directions and its `order` wins over the schema property's own; both
+repairs this task asked for are in place, and `CnFormDialog` takes
+`includeFields` and `fieldOverrides`. `CnLifecycleActions` opens the input
+dialog when a transition's published `inputs` are non-empty and still sends
+`{action}` alone when they are empty.
+
+**5.2's second half is now built** (nextcloud-vue#1211). The input dialog used
+to close the moment confirm was clicked, so a refusal landed on the page behind
+it and everything typed went with it — and the refusal is usually about ONE of
+those fields. The dialog now stays open until the move has happened, the
+refusal comes back into it, and each field the 400's `fields` array named is
+marked on its own row. Which KIND of refusal a field earned is decided in the
+dialog rather than read out of the server's sentence: offered and empty is a
+missing required input, offered and filled was refused for its value, and a key
+the dialog never offered is named as one the action does not accept. Parsing
+prose to tell those apart would break the first time it is reworded, and a
+reworded sentence is not a contract change.
+
+**5.2's first half is still open.** A BROKEN declared field — one the schema
+dropped, or made readOnly or invisible after the step was saved — rendering as
+a disabled row that states why, and the step flagged wherever steps are listed.
+That needs a task-completion surface consuming `TaskFormResolver`'s
+render/broken-with-reason answer, and no such surface exists in the library
+yet. It is a component, not a repair, which is why it was not folded into the
+repair above.

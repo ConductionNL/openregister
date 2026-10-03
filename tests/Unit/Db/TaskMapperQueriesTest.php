@@ -40,6 +40,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Db\TaskMapper
  * @covers \OCA\OpenRegister\Db\TaskInboxCriteria
  * @covers \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Db\FlowRun
  */
 class TaskMapperQueriesTest extends TestCase {
 	use FluentQueryBuilderTrait;

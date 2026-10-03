@@ -48,14 +48,12 @@ namespace OCA\OpenRegister\Service\Rbac;
 
 use DateTime;
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCP\Files\Folder;
-use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use OCP\Share\IManager;
@@ -67,9 +65,10 @@ use Throwable;
  * Owner-checked writes for an object's scope and its per-object grants.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The split is deliberate and each
- * dependency is load-bearing: MagicMapper + IDBConnection perform the ONE targeted
+ * dependency is load-bearing: ObjectAuthorizationWriter performs the ONE targeted
  * column write (the object write path omits `_authorization` on purpose, so a save
- * cannot be used here); FolderManagementHandler + IManager + IShare + Folder are
+ * cannot be used here); InheritedGrantLister answers the ancestor half of an access
+ * review, and only reads; FolderManagementHandler + IManager + IShare + Folder are
  * core's share surface, which owns the grant record; ObjectScopeResolver is the
  * shared vocabulary AND the shared owner-or-admin rule, so this cannot drift from
  * the read side; ObjectGrantResolver is only asked to drop its per-request memo
@@ -128,8 +127,7 @@ class ObjectSharingService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $mapper Object mapper.
-	 * @param IDBConnection $db Database, for the targeted scope write.
+	 * @param ObjectAuthorizationWriter $authorizationWriter The one writer of the stored authorization block.
 	 * @param IUserSession $userSession Resolves the caller.
 	 * @param IGroupManager $groupManager Resolves the caller's groups.
 	 * @param FolderManagementHandler $folders Resolves an object's NC folder.
@@ -137,10 +135,10 @@ class ObjectSharingService {
 	 * @param ObjectGrantResolver $grantResolver The grant resolver, to drop its per-request memo.
 	 * @param IManager $shareManager Core share manager.
 	 * @param LoggerInterface $logger Logger.
+	 * @param InheritedGrantLister $inheritedGrants Lists the grants an ancestor's share confers.
 	 */
 	public function __construct(
-		private readonly MagicMapper $mapper,
-		private readonly IDBConnection $db,
+		private readonly ObjectAuthorizationWriter $authorizationWriter,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly FolderManagementHandler $folders,
@@ -148,6 +146,7 @@ class ObjectSharingService {
 		private readonly ObjectGrantResolver $grantResolver,
 		private readonly IManager $shareManager,
 		private readonly LoggerInterface $logger,
+		private readonly InheritedGrantLister $inheritedGrants,
 	) {
 	}//end __construct()
 
@@ -163,6 +162,8 @@ class ObjectSharingService {
 	 * @throws InvalidArgumentException When the scope is not in the vocabulary.
 	 *
 	 * @return array<string, mixed> The stored authorization block after the write.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	public function setScope(Register $register, Schema $schema, ObjectEntity $object, string $scope): array {
 		$this->requireOwnerOrAdmin(object: $object);
@@ -184,7 +185,7 @@ class ObjectSharingService {
 
 		$block[ObjectScopeResolver::SCOPE_KEY] = $scope;
 
-		$this->writeAuthorizationBlock(
+		$this->authorizationWriter->writeAuthorizationBlock(
 			register: $register,
 			schema: $schema,
 			objectUuid: (string)$object->getUuid(),
@@ -205,6 +206,8 @@ class ObjectSharingService {
 	 * @throws NotAuthorizedException When the caller is neither owner nor admin.
 	 *
 	 * @return array<int, array<string, mixed>> The grants.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	public function listGrants(ObjectEntity $object): array {
 		$this->requireOwnerOrAdmin(object: $object);
@@ -244,12 +247,24 @@ class ObjectSharingService {
 						'sharedWith' => $share->getSharedWith(),
 						'permissions' => $share->getPermissions(),
 						'expiration' => $share->getExpirationDate()?->format('c'),
+						// Ledger row 13.41: an access review can only be
+						// FINISHED when every grant is either explained or
+						// explicitly local. The provenance answers the first
+						// half; this answers the second, beside it and in the
+						// same row rather than in a second call nobody makes.
+						'inherited' => false,
+						'inheritable' => $this->grantResolver->isInheritable(
+							(string)$object->getUuid()
+						),
 					];
 				}//end foreach
 			}//end foreach
 		}//end foreach
 
-		return array_values($grants);
+		return array_merge(
+			array_values($grants),
+			$this->inheritedGrants->inheritedGrantsFor(object: $object)
+		);
 	}//end listGrants()
 
 	/**
@@ -350,8 +365,8 @@ class ObjectSharingService {
 
 		$attributes = ($share->getAttributes() ?? $share->newAttributes());
 		$attributes->setAttribute(
-			ObjectGrantResolver::VERB_ATTRIBUTE_SCOPE,
-			ObjectGrantResolver::VERB_ATTRIBUTE_KEY,
+			ShareGrantAttributes::VERB_ATTRIBUTE_SCOPE,
+			ShareGrantAttributes::VERB_ATTRIBUTE_KEY,
 			json_encode($clean)
 		);
 		$share->setAttributes($attributes);
@@ -578,46 +593,6 @@ class ObjectSharingService {
 		$this->shareManager->deleteShare($share);
 		$this->grantResolver->forget();
 	}//end revoke()
-
-	/**
-	 * Write the authorization block for one object.
-	 *
-	 * A targeted single-column UPDATE, deliberately NOT a save through the
-	 * object write path: that path omits the column so an ordinary save carries
-	 * the stored value forward, which is what stops a routine update from
-	 * destroying per-object RBAC.
-	 *
-	 * @param Register $register The register.
-	 * @param Schema $schema The schema.
-	 * @param string $objectUuid The object UUID.
-	 * @param array<string, mixed> $block The block to store.
-	 *
-	 * @return void
-	 */
-	private function writeAuthorizationBlock(
-		Register $register,
-		Schema $schema,
-		string $objectUuid,
-		array $block,
-	): void {
-		$table = $this->mapper->getTableNameForRegisterSchema($register, $schema);
-
-		$qb = $this->db->getQueryBuilder();
-		$qb->update($table)
-			->set('_authorization', $qb->createNamedParameter(json_encode($block)))
-			->where($qb->expr()->eq('_uuid', $qb->createNamedParameter($objectUuid)));
-		$qb->executeStatement();
-
-		$this->logger->info(
-			message: '[ObjectSharingService] Wrote the authorization block for an object',
-			context: [
-				'file' => __FILE__,
-				'line' => __LINE__,
-				'uuid' => $objectUuid,
-				'scope' => ($block[ObjectScopeResolver::SCOPE_KEY] ?? null),
-			]
-		);
-	}//end writeAuthorizationBlock()
 
 	/**
 	 * Resolve the object's NC folder, creating it if it has none.

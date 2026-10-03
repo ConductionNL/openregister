@@ -192,7 +192,8 @@ class RematerialiseCalculationsCommand extends Command {
 				$payload['@ref'] = $this->references->resolveAll(
 					payload: $payload,
 					references: $referenceSpecs,
-					register: $entity->getRegister()
+					register: $entity->getRegister(),
+					organisation: $entity->getOrganisation()
 				);
 			}
 

@@ -60,10 +60,28 @@ class NotificationTemplating {
 	/**
 	 * Interpolate `{{ key }}` placeholders in a template.
 	 *
-	 * Data keys win over context keys; a placeholder that resolves to a
-	 * non-scalar or to nothing renders as an empty string. A UUID-shaped data
-	 * value is resolved to the related object's display name when possible,
-	 * so `{{client}}` reads "Acme Gemeente BV" rather than a UUID.
+	 * Data keys win over context keys. A UUID-shaped data value is resolved to
+	 * the related object's display name when possible, so `{{client}}` reads
+	 * "Acme Gemeente BV" rather than a UUID.
+	 *
+	 * 🔴 A KEY NOTHING ANSWERS IS LEFT IN THE TEXT, NOT BLANKED. It used to
+	 * render as an empty string, and that is the worse of the two failures.
+	 * `Bewaartermijn: {{skippedCount}} records overgeslagen` became
+	 * "Bewaartermijn:  records overgeslagen": a sentence with a hole, which
+	 * reads as clumsy writing rather than as a defect, so nobody reports it
+	 * and the notification keeps going out wrong. Leaving `{{skippedCount}}`
+	 * in announces itself the first time anybody reads it — which is exactly
+	 * how dossiq#2950 found six templates that had been broken for 35 days.
+	 *
+	 * It also makes this evaluator agree with the one beside it.
+	 * `NotificationTemplateRegistry::interpolate()` renders the SAME kind of
+	 * text for the SAME subsystem and has always left an unknown key alone.
+	 * Two evaluators disagreeing about the same question meant which failure a
+	 * reader got depended on whether an administrator had edited the template.
+	 *
+	 * A caller that must REFUSE rather than render asks {@see unanswered()}
+	 * first. Nothing here throws: a notification is an alert, and a missing
+	 * word in one is better than silence about the thing it was raised for.
 	 *
 	 * This is the notification dialect's ONE placeholder syntax; the flow
 	 * messaging nodes reuse it verbatim rather than introducing a second one.
@@ -83,7 +101,7 @@ class NotificationTemplating {
 				$key = $matches[1];
 				if (array_key_exists($key, $data) === true) {
 					if (is_scalar($data[$key]) === false) {
-						return '';
+						return $matches[0];
 					}
 
 					// Relation fields hold a UUID reference; show the related
@@ -97,17 +115,64 @@ class NotificationTemplating {
 
 				if (array_key_exists($key, $context) === true) {
 					if (is_scalar($context[$key]) === false) {
-						return '';
+						return $matches[0];
 					}
 
 					return htmlspecialchars((string)$context[$key], ENT_QUOTES, 'UTF-8');
 				}
 
-				return '';
+				// Left as it was found. See the docblock: a hole is harder to
+				// notice than a leak, and this evaluator now agrees with the
+				// registry's.
+				return $matches[0];
 			},
 			$template
 		) ?? $template;
 	}//end interpolate()
+
+	/**
+	 * The placeholders this template names that neither data nor context fills.
+	 *
+	 * The question {@see interpolate()} answers silently, asked out loud. A
+	 * caller that must not emit half-rendered text asks this first and refuses;
+	 * a caller for whom a missing word beats silence renders anyway.
+	 *
+	 * Named after the same method in dossiq's two renderers, which is
+	 * deliberate: this is one class of defect across two apps and a reader who
+	 * has met it once should recognise it here.
+	 *
+	 * @param string               $template The template carrying `{{ key }}` placeholders.
+	 * @param array<string, mixed> $data     The primary data.
+	 * @param array<string, mixed> $context  Secondary lookup values.
+	 *
+	 * @return array<int, string> The unanswerable names, in the order they appear, without repeats.
+	 *
+	 * @spec openspec/changes/notification-placeholders-refuse/specs/notificatie-engine/spec.md
+	 */
+	public function unanswered(string $template, array $data, array $context): array {
+		if (preg_match_all('/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/', $template, $matches) === false) {
+			return [];
+		}
+
+		$unanswered = [];
+		foreach ($matches[1] as $key) {
+			// A non-scalar counts as unanswered, because that is exactly what
+			// interpolate() cannot render either. Asking a different question
+			// here than the renderer asks is how a guard comes to disagree with
+			// the thing it guards.
+			if (array_key_exists($key, $data) === true && is_scalar($data[$key]) === true) {
+				continue;
+			}
+
+			if (array_key_exists($key, $context) === true && is_scalar($context[$key]) === true) {
+				continue;
+			}
+
+			$unanswered[] = $key;
+		}
+
+		return array_values(array_unique($unanswered));
+	}//end unanswered()
 
 	/**
 	 * Resolve a relation-reference UUID to the related object's display name.

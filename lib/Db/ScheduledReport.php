@@ -50,6 +50,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setFilters(?string $filters)
  * @method string|null getFormat()
  * @method void setFormat(?string $format)
+ * @method int|null getProfileId()
+ * @method void setProfileId(?int $profileId)
  * @method string|null getScheduleType()
  * @method void setScheduleType(?string $scheduleType)
  * @method int|null getScheduleHour()
@@ -131,6 +133,19 @@ class ScheduledReport extends Entity implements JsonSerializable {
 	 * @var string|null
 	 */
 	protected ?string $format = null;
+
+	/**
+	 * The export profile this schedule runs, or null when it runs a plain
+	 * format plus filter export.
+	 *
+	 * A profile brings its own ordered field set and value mode, so a schedule
+	 * that names one stops deciding those here: `format` and `filters` are
+	 * ignored on that path, deliberately, because two places deciding the shape
+	 * of one file is how a monthly aanlevering drifts.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $profileId = null;
 
 	/**
 	 * Schedule cadence: daily|weekly|monthly.
@@ -239,6 +254,7 @@ class ScheduledReport extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'schemaId', type: 'integer');
 		$this->addType(fieldName: 'filters', type: 'string');
 		$this->addType(fieldName: 'format', type: 'string');
+		$this->addType(fieldName: 'profileId', type: 'integer');
 		$this->addType(fieldName: 'scheduleType', type: 'string');
 		$this->addType(fieldName: 'scheduleHour', type: 'integer');
 		$this->addType(fieldName: 'scheduleDayOfWeek', type: 'integer');
@@ -311,6 +327,7 @@ class ScheduledReport extends Entity implements JsonSerializable {
 			'schemaId' => $this->schemaId,
 			'filters' => $this->getFiltersArray(),
 			'format' => $this->format,
+			'profileId' => $this->profileId,
 			'scheduleType' => $this->scheduleType,
 			'scheduleHour' => $this->scheduleHour,
 			'scheduleDayOfWeek' => $this->scheduleDayOfWeek,

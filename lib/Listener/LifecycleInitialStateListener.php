@@ -234,7 +234,8 @@ class LifecycleInitialStateListener implements IEventListener {
 		$resolved = $this->references->resolveAll(
 			payload: $data,
 			references: [$refName => $references[$refName]],
-			register: $object->getRegister()
+			register: $object->getRegister(),
+			organisation: $object->getOrganisation()
 		);
 
 		$related = ($resolved[$refName] ?? null);

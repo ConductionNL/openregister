@@ -64,10 +64,10 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\ObjectHandlers\DeleteObject;
-use OCA\OpenRegister\Service\ObjectHandlers\GetObject;
-use OCA\OpenRegister\Service\ObjectHandlers\SaveObject;
-use OCA\OpenRegister\Service\ObjectHandlers\ValidateObject;
+use OCA\OpenRegister\Service\Object\DeleteObject;
+use OCA\OpenRegister\Service\Object\GetObject;
+use OCA\OpenRegister\Service\Object\SaveObject;
+use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCP\IGroupManager;
@@ -137,6 +137,42 @@ class ObjectServiceRbacTest extends TestCase {
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->userManager = $this->createMock(IUserManager::class);
 		$this->mockUser = $this->createMock(IUser::class);
+		// 🔴 THIS FILE HAS NOT RUN SINCE AT LEAST TWO REFACTORS, AND NOTHING SAID SO.
+		//
+		// It lives in `tests/unit/` (lower-case). `phpunit.xml` configures
+		// `tests/Unit` (capital U) and three other directories — this one is in
+		// none of them, so CI has never executed it. On a case-insensitive
+		// filesystem the two directories are the same place; on Linux they are not,
+		// which is how a whole directory went quiet without a red build.
+		//
+		// Two things rotted underneath it in the meantime:
+		//   · `OCA\OpenRegister\Service\ObjectHandlers\*` was renamed to
+		//     `…\Service\Object\*`. The imports above are corrected, which is what
+		//     turns the `UnknownTypeException` on a hand-run into something
+		//     readable.
+		//   · `ObjectService::__construct()` grew from the 15 positional arguments
+		//     below to 41, and argument #1 is now `DataManipulationHandler`, not
+		//     `DeleteObject`. Every test in this class dies on that TypeError.
+		//
+		// Skipping rather than rewriting is deliberate. The RBAC behaviour this
+		// file was written for is covered by a live, configured suite —
+		// `tests/Unit/Service/Rbac/` (290 tests) and `tests/Unit/Db/MagicMapper/`
+		// (173) — so rebuilding an 11-test class against a 41-parameter constructor
+		// would duplicate coverage rather than add it. Deleting it is probably the
+		// right end state, but that is a call for whoever owns this directory, not
+		// something to slip into an unrelated fix.
+		//
+		// Whoever picks that up: the other three files here are
+		// `RbacTest` (14 green), `BasicCrudTest` (17 green) and
+		// `RbacComprehensiveTest` (79 tests, 2 failing). Moving them into
+		// `tests/Unit/` is not a drop-in — the last one would turn CI red.
+		$this->markTestSkipped(
+			'Orphaned: tests/unit/ is not in any phpunit.xml testsuite, and this '
+			.'class predates the ObjectHandlers→Object rename and the ObjectService '
+			.'constructor growing from 15 to 41 parameters. Live RBAC coverage is in '
+			.'tests/Unit/Service/Rbac/ and tests/Unit/Db/MagicMapper/.'
+		);
+
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->objectMapper = $this->createMock(MagicMapper::class);

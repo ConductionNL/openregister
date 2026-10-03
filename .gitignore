@@ -141,3 +141,7 @@ scripts/l10n/harvest-*.json
 .phpunit.result.cache
 test-results/
 playwright-report/
+
+# Python bytecode caches (a .pyc was once committed by accident, WOO-579)
+__pycache__/
+*.pyc

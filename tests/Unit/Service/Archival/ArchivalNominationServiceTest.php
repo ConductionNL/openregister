@@ -628,4 +628,37 @@ class ArchivalNominationServiceTest extends TestCase {
 		$this->assertTrue($this->service->isTerminalState(schema: $schema, state: 'afgehandeld'));
 		$this->assertFalse($this->service->isTerminalState(schema: $schema, state: 'status-uuid'));
 	}
+
+	/**
+	 * A record that names its own selectielijst category is nominated by that
+	 * category's row, not its schema's (DECISIONS row 48).
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function testAnObjectsOwnCategoryDecidesItsNomination(): void {
+		$asked = [];
+		$this->retentionService->method('lookupSelectielijstEntry')->willReturnCallback(
+			function (string $category) use (&$asked): ?array {
+				$asked[] = $category;
+				return [
+					'1.1' => ['categorie' => '1.1', 'archiefnominatie' => 'vernietigen', 'bewaartermijn' => 'P5Y'],
+					'2.3' => ['categorie' => '2.3', 'archiefnominatie' => 'bewaren', 'bewaartermijn' => 'P20Y'],
+				][$category] ?? null;
+			}
+		);
+		$this->retentionService->method('calculateArchiveActionDate')->willReturn('2046-03-01');
+
+		$object = $this->object();
+		$object->setObject(['selectielijstCategorie' => '2.3']);
+		$nomination = $this->service->nominate(
+			object: $object,
+			schema: $this->schema(['enabled' => true, 'classification' => '1.1', 'classificationProperty' => 'selectielijstCategorie']),
+			trigger: 'closure'
+		);
+
+		$this->assertSame(['2.3'], $asked);
+		$this->assertSame('2.3', $nomination['selectionListRow']);
+		$this->assertSame('2.3', $object->getRetention()['classification']);
+		$this->assertSame('bewaren', $object->getRetention()['archiefnominatie']);
+	}
 }

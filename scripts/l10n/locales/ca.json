@@ -131,7 +131,8 @@
 		"Present": "Same spelling and meaning in Catalan.",
 		"Normal": "Same spelling and meaning in Catalan (normal).",
 		"Urgent": "Same spelling and meaning in Catalan (urgent).",
-		"Text": "\"Text\" is the same word in Catalan for the text field type; no non-identical synonym exists, so the honest label is identical."
+		"Text": "\"Text\" is the same word in Catalan for the text field type; no non-identical synonym exists, so the honest label is identical.",
+		"Token": "Catalan IT usage and this bundle have settled on the English loanword: every existing token key here reads 'token' (Crear token d'API, No s'ha pogut revocar el token), so the standalone label is byte-identical."
 	},
 	"corrections": {
 		"Settings": "TERM-SETTINGS",

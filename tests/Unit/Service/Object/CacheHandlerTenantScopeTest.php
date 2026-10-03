@@ -84,10 +84,25 @@ class CacheHandlerTenantScopeTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Owning organisation per object UUID, read by the stand-in for the object read path.
+	 *
+	 * @var array<string, string|null>
+	 */
+	private array $orgByUuid = [];
+
 	protected function setUp(): void {
 		parent::setUp();
 
 		$this->objectMapper = $this->createMock(MagicMapper::class);
+		// Names follow the object read path. In this suite that path admits an
+		// object exactly when it belongs to the caller's organisation, so each
+		// cross-tenant control below still asks the question it was written for.
+		$this->objectMapper->method('filterReadableUuids')->willReturnCallback(
+			fn (int $registerId, int $schemaId, array $uuids): array => array_values(
+				array_filter($uuids, fn (string $uuid): bool => ($this->orgByUuid[$uuid] ?? null) === $this->activeOrganisation)
+			)
+		);
 		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->cacheFactory = $this->createMock(ICacheFactory::class);
@@ -173,6 +188,9 @@ class CacheHandlerTenantScopeTest extends TestCase {
 		$object->setUuid($uuid);
 		$object->setName($name);
 		$object->setOrganisation($organisation);
+		$object->setRegister('1');
+		$object->setSchema('5');
+		$this->orgByUuid[$uuid] = $organisation;
 		return $object;
 	}
 
@@ -373,6 +391,8 @@ class CacheHandlerTenantScopeTest extends TestCase {
 			false
 		);
 		$db->method('executeQuery')->willReturn($queryResult);
+		$this->orgByUuid['55555555-5555-5555-5555-555555555555'] = self::ORG_A;
+		$this->orgByUuid['66666666-6666-6666-6666-666666666666'] = self::ORG_B;
 
 		$handler = $this->buildHandler($registerMapper, $schemaMapper, $db);
 

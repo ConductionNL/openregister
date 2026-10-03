@@ -50,6 +50,9 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialController
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Service\Credential\CredentialBrokerService
  */
 class CredentialControllerOrganisationTest extends TestCase {
 	private const ACTIVE_ORG = 'org-active-uuid';
@@ -301,7 +304,8 @@ class CredentialControllerOrganisationTest extends TestCase {
 			$broker,
 			$this->createMock(CredentialAppTokenService::class),
 			$this->orgService,
-			new SharePrincipalDeriver()
+			new SharePrincipalDeriver(),
+			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);
 	}
 }//end class

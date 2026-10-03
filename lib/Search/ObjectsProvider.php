@@ -32,6 +32,8 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Search\ObjectSearchResultFormatter;
 use OCP\IL10N;
 use OCP\IUser;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Search\SearchScopes;
 use OCP\Search\FilterDefinition;
 use OCP\Search\IFilteringProvider;
 use OCP\Search\ISearchQuery;
@@ -151,6 +153,13 @@ class ObjectsProvider implements IFilteringProvider {
 	private readonly ObjectSearchResultFormatter $resultFormatter;
 
 	/**
+	 * Registers, for resolving which one owns a schema a scope names.
+	 *
+	 * @var RegisterMapper|null
+	 */
+	private readonly ?RegisterMapper $registerMapper;
+
+	/**
 	 * Constructor for the ObjectsProvider class
 	 *
 	 * @param IL10N $l10n The localization service
@@ -158,6 +167,9 @@ class ObjectsProvider implements IFilteringProvider {
 	 * @param LoggerInterface $logger Logger for debugging search operations
 	 * @param SchemaMapper $schemaMapper Schema mapper for the searchable-schema opt-out
 	 * @param ObjectSearchResultFormatter $resultFormatter Shared result-formatting service
+	 * @param RegisterMapper|null $registerMapper Resolves a register named in a search scope. Nullable and last
+	 *                                            so no positional caller shifts; absent, a scope naming a
+	 *                                            register narrows nothing, which is the pre-scope behaviour
 	 *
 	 * @return void
 	 *
@@ -169,12 +181,19 @@ class ObjectsProvider implements IFilteringProvider {
 		LoggerInterface $logger,
 		SchemaMapper $schemaMapper,
 		ObjectSearchResultFormatter $resultFormatter,
+		// Appended LAST and nullable, deliberately: a new constructor argument
+		// inserted anywhere else shifts every positional caller, and the
+		// resulting TypeError names the argument AFTER the one that moved.
+		// Null simply means a scope naming a register narrows nothing, which
+		// is the pre-scope behaviour.
+		?RegisterMapper $registerMapper = null,
 	) {
 		$this->l10n = $l10n;
 		$this->objectService = $objectService;
 		$this->logger = $logger;
 		$this->schemaMapper = $schemaMapper;
 		$this->resultFormatter = $resultFormatter;
+		$this->registerMapper = $registerMapper;
 	}//end __construct()
 
 	/**
@@ -243,6 +262,9 @@ class ObjectsProvider implements IFilteringProvider {
 			// Open Register Specific.
 			'register',
 			'schema',
+			// What to look in (content-search-index). `app:<id>`,
+			// `register:<slug>`, `schema:<slug>` or `files`, comma separated.
+			'scopes',
 		];
 	}//end getSupportedFilters()
 
@@ -274,6 +296,7 @@ class ObjectsProvider implements IFilteringProvider {
 		return [
 			new FilterDefinition(name: 'register', type: FilterDefinition::TYPE_STRING),
 			new FilterDefinition(name: 'schema', type: FilterDefinition::TYPE_STRING),
+			new FilterDefinition(name: 'scopes', type: FilterDefinition::TYPE_STRING),
 		];
 	}//end getCustomFilters()
 
@@ -322,6 +345,10 @@ class ObjectsProvider implements IFilteringProvider {
 			$filters['schema'] = $schema;
 		}
 
+		// What to look in. Read BEFORE the schema list is built, because it is
+		// what narrows that list; read after it would be a post-filter.
+		$scopes = SearchScopes::parse(raw: $query->getFilter('scopes')?->get());
+
 		/*
 		 * @var string|null $search
 		 */
@@ -354,23 +381,37 @@ class ObjectsProvider implements IFilteringProvider {
 		// Add filters to @self metadata section. When an explicit schema
 		// filter targets a non-searchable schema, the opt-out wins: return
 		// an empty (complete) result set rather than leaking it.
+		// The reference travels as written. It used to be int-cast here, and
+		// `(int)'zaakregister'` is `0`, so a scope filter spelled with a slug
+		// searched a register that cannot exist and answered nothing found.
+		// ObjectService resolves the reference now, and refuses one that names
+		// no register instead of reporting an empty result (openregister#3990).
 		if (empty($register) === false) {
-			$searchQuery['@self']['register'] = (int)$register;
+			$registerRef = trim((string)$register);
+			if (ctype_digit($registerRef) === true) {
+				$searchQuery['@self']['register'] = (int)$registerRef;
+			} else {
+				$searchQuery['@self']['register'] = $registerRef;
+			}
 		}
 
 		// The schema chunks this search fans out over. A single null chunk
 		// means "the explicit schema filter already in the query".
 		$schemaChunks = [null];
 		if (empty($schema) === false) {
-			$schemaId = (int)$schema;
-			if (in_array($schemaId, $nonSearchableIds, true) === true) {
+			// The opt-out list is numeric, so a slug has to be resolved before
+			// it can be compared against it. A reference that resolves to
+			// nothing is NOT swallowed here: it travels as written, so the one
+			// refusal lives in ObjectService and names the reference.
+			$schemaId = $this->schemaIdOf(reference: $schema);
+			if ($schemaId !== null && in_array($schemaId, $nonSearchableIds, true) === true) {
 				return SearchResult::complete(
 					name: $this->getSectionName(),
 					entries: []
 				);
 			}
 
-			$searchQuery['@self']['schema'] = $schemaId;
+			$searchQuery['@self']['schema'] = ($schemaId ?? $schema);
 		}
 
 		if (empty($schema) === true) {
@@ -388,6 +429,27 @@ class ObjectsProvider implements IFilteringProvider {
 					name: $this->getSectionName(),
 					entries: []
 				);
+			}
+
+			// 🔴 NARROWED BEFORE THE CHUNK LOOP, NEVER AFTER IT (D-4).
+			// Filtering the PAGE afterwards would make a scoped search cost
+			// MORE than an unscoped one — the same union over every searchable
+			// table plus a discard — and would break paging, because the page
+			// boundary would be cut before the unwanted rows were removed.
+			// Narrowing here means a scoped query is cheaper, never dearer,
+			// which is the whole reason a caller reaches for one.
+			if ($scopes->narrows() === true) {
+				$scoped = $scopes->narrowSchemas(schemas: $this->describeSearchableSchemas());
+				// An EMPTY narrowing is a real answer, not a reason to widen:
+				// the caller named a schema this instance does not have, and
+				// widening back to everything would answer rows they excluded.
+				$searchableIds = array_values(array_intersect($searchableIds, $scoped));
+				if ($searchableIds === []) {
+					return SearchResult::complete(
+						name: $this->getSectionName(),
+						entries: []
+					);
+				}
 			}
 
 			$schemaChunks = array_chunk($searchableIds, self::SCHEMA_CHUNK_SIZE);
@@ -658,6 +720,57 @@ class ObjectsProvider implements IFilteringProvider {
 	}//end getSearchableIds()
 
 	/**
+	 * The searchable schemas with the slugs a scope names them by.
+	 *
+	 * 🔑 THE REGISTER SLUG COMES FROM THE REGISTER THAT OWNS THE SCHEMA, not
+	 * from the first register that happens to load. A schema belongs to exactly
+	 * one register, and pairing it with the wrong one makes `register:dossiq`
+	 * answer somebody else's rows — true-looking, and about the wrong data.
+	 *
+	 * Fails soft to an empty list, like {@see getSearchableIds()}: the caller
+	 * then narrows to nothing and answers an empty page, which is the same
+	 * outcome as a lookup that cannot run, and says so at ERROR level.
+	 *
+	 * @return array<int, array{id: int, slug: string, register: string}> The schemas.
+	 *
+	 * @spec openspec/changes/content-search-index/specs/unified-search-provider/spec.md#requirement-the-provider-accepts-scopes-and-advertises-them
+	 */
+	private function describeSearchableSchemas(): array {
+		try {
+			$searchable = array_flip($this->schemaMapper->findSearchableIds());
+			$owner = [];
+			foreach (($this->registerMapper?->findAll() ?? []) as $register) {
+				foreach (($register->getSchemas() ?? []) as $schemaId) {
+					$owner[(int)$schemaId] = (string)$register->getSlug();
+				}
+			}
+
+			$described = [];
+			foreach ($this->schemaMapper->findAll() as $schema) {
+				$id = (int)$schema->getId();
+				if (array_key_exists($id, $searchable) === false) {
+					continue;
+				}
+
+				$described[] = [
+					'id' => $id,
+					'slug' => (string)$schema->getSlug(),
+					'register' => ($owner[$id] ?? ''),
+				];
+			}
+
+			return $described;
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				'[ObjectsProvider] Failed to describe searchable schemas for scoping: {error}',
+				['error' => $e->getMessage(), 'exception' => $e]
+			);
+
+			return [];
+		}//end try
+	}//end describeSearchableSchemas()
+
+	/**
 	 * The localized provider section name shown in unified search.
 	 *
 	 * @return string The section title.
@@ -667,6 +780,35 @@ class ObjectsProvider implements IFilteringProvider {
 	private function getSectionName(): string {
 		return $this->l10n->t('Open Register Objects');
 	}//end getSectionName()
+
+	/**
+	 * The numeric id a schema reference names, when it names one.
+	 *
+	 * A filter value typed into unified search can be an id, a uuid or a slug.
+	 * Only the id could ever be compared against the opt-out list, so the other
+	 * two are resolved here. Null means "this reference resolves to nothing as
+	 * far as this provider can tell", and the reference is then passed on
+	 * unchanged so that the search path refuses it by name rather than this
+	 * provider quietly returning an empty section.
+	 *
+	 * @param string $reference The schema id, uuid or slug from the filter.
+	 *
+	 * @return int|null The schema id, or null when the reference does not resolve.
+	 *
+	 * @spec openspec/specs/unified-search-provider/spec.md
+	 */
+	private function schemaIdOf(string $reference): ?int {
+		$trimmed = trim($reference);
+		if (ctype_digit($trimmed) === true && (int)$trimmed > 0) {
+			return (int)$trimmed;
+		}
+
+		try {
+			return (int)$this->schemaMapper->find($trimmed, _rbac: false, _multitenancy: false)->getId();
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end schemaIdOf()
 
 	/**
 	 * Resolve the request-scoped set of non-searchable schema IDs.

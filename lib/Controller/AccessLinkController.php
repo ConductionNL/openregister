@@ -251,6 +251,19 @@ class AccessLinkController extends Controller {
 			);
 		}
 
+		// A browser cannot put binary bytes in a JSON body, so the holder's page
+		// sends `encoding: base64`. Without it the content is stored as sent,
+		// as it always was.
+		if ($this->stringParam(name: 'encoding') === 'base64') {
+			$content = base64_decode($content, true);
+			if ($content === false) {
+				return new JSONResponse(
+					['message' => 'The upload content is not valid base64.'],
+					Http::STATUS_BAD_REQUEST
+				);
+			}
+		}
+
 		try {
 			$stored = $this->acts->upload(
 				link: $link,

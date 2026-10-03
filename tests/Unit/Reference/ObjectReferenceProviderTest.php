@@ -46,6 +46,7 @@ use Psr\Log\LoggerInterface;
  * Tests for ObjectReferenceProvider.
  *
  * @covers \OCA\OpenRegister\Reference\ObjectReferenceProvider
+ * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter
  */
 class ObjectReferenceProviderTest extends TestCase {
 

@@ -31,6 +31,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Db\TaskMapper
  * @covers \OCA\OpenRegister\Event\TaskTerminalEvent
+ * @uses \OCA\OpenRegister\Db\Task
  */
 class TaskMapperTerminalityTest extends TestCase {
 	use FluentQueryBuilderTrait;

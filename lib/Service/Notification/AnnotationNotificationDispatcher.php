@@ -117,6 +117,13 @@ class AnnotationNotificationDispatcher {
 	private ?NotificationTemplating $lazyTemplating = null;
 
 	/**
+	 * Notes rules that resolved to no recipients at all.
+	 *
+	 * @var RuleReachRecorder
+	 */
+	private RuleReachRecorder $reachRecorder;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SchemaMapper $schemaMapper Mapper used to resolve the object's schema.
@@ -150,6 +157,7 @@ class AnnotationNotificationDispatcher {
 	 * @param TalkSender|null $talkSender Shared Talk channel unit (lazily built when absent).
 	 * @param NotificationRecipientResolver|null $recipientResolver Shared recipient resolver (lazily built when absent).
 	 * @param NotificationTemplating|null $templating Shared placeholder evaluator (lazily built when absent).
+	 * @param RuleReachRecorder|null $reachRecorder Notes rules that reached nobody (lazily built when absent).
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
 	 */
@@ -185,7 +193,9 @@ class AnnotationNotificationDispatcher {
 		?TalkSender $talkSender = null,
 		?NotificationRecipientResolver $recipientResolver = null,
 		?NotificationTemplating $templating = null,
+		?RuleReachRecorder $reachRecorder = null,
 	) {
+		$this->reachRecorder = ($reachRecorder ?? new RuleReachRecorder(logger: $logger));
 		$this->lazyNcSender = $ncSender;
 		$this->lazyEmailSender = $emailSender;
 		$this->lazyTalkSender = $talkSender;
@@ -520,7 +530,7 @@ class AnnotationNotificationDispatcher {
 			// accounts. The recipient resolver answers in verified uids, and
 			// most melders have none, so this kind is dispatched here instead:
 			// over the addresses the party record itself holds.
-			$this->dispatchToParties(
+			$partiesReached = $this->dispatchToParties(
 				recipientsSpec: (array)($spec['recipients'] ?? []),
 				object: $object,
 				channels: $channels,
@@ -529,6 +539,21 @@ class AnnotationNotificationDispatcher {
 			);
 
 			if (count($recipients) === 0) {
+				// 🔴 IT USED TO `continue` IN SILENCE. No log, no counter, no
+				// complaint — and declared groups ship EMPTY across this fleet,
+				// so on a fresh install a correctly written rule resolves to
+				// nobody and reports exactly what it would report having
+				// reached everybody.
+				//
+				// Only when the parties path reached nobody either: a rule
+				// addressed to parties has no account recipients by design.
+				if ($partiesReached === 0) {
+					$this->reachRecorder->reachedNobody(
+						ruleId: (string)$name,
+						objectUuid: (string)($object->getUuid() ?? '')
+					);
+				}
+
 				continue;
 			}
 
@@ -3152,7 +3177,7 @@ class AnnotationNotificationDispatcher {
 	 * @param string $ruleId The rule, for the history row.
 	 * @param string $subject The rule's subject, in the default locale.
 	 *
-	 * @return void
+	 * @return int How many people the party path reached.
 	 *
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
 	 */
@@ -3162,14 +3187,21 @@ class AnnotationNotificationDispatcher {
 		array $channels,
 		string $ruleId,
 		string $subject,
-	): void {
+	): int {
+		// Returns a COUNT rather than void, because "this rule reached nobody"
+		// cannot be decided from the account recipients alone: a rule addressed
+		// to `parties` legitimately resolves to zero accounts while still
+		// reaching people by e-mail. Reporting those as unreachable would be a
+		// false alarm on every party-addressed rule.
+		$reached = 0;
+
 		if (in_array('email', $channels, true) === false) {
-			return;
+			return $reached;
 		}
 
 		$objectUuid = (string)($object->getUuid() ?? '');
 		if ($objectUuid === '') {
-			return;
+			return $reached;
 		}
 
 		foreach ($recipientsSpec as $recipient) {
@@ -3191,6 +3223,7 @@ class AnnotationNotificationDispatcher {
 			);
 
 			foreach ($sent as $outcome) {
+				$reached++;
 				$this->recordHistory(
 					ruleId: $ruleId,
 					channel: 'email',
@@ -3202,6 +3235,8 @@ class AnnotationNotificationDispatcher {
 				);
 			}
 		}//end foreach
+
+		return $reached;
 	}//end dispatchToParties()
 
 	/**

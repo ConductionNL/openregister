@@ -1,0 +1,1914 @@
+[
+  {
+    "row": "acc-classification",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Clustered with mod-catalogue-meta: the Objects API keeps data classification on the objecttype beside the catalogue fields, and both land on the schema edit modal and Schema entity. On its own the row would defer (changelog and one competitor, access area). The per-object tier is confidentiality-classification-primitive, a different capability.",
+    "change": "modelling-type-catalogue-metadata",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "acc-end-user-accounts",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Recorded decision: hydra ADR-086 section 8 gives each portaliq website its own account store ('local', portal accounts), so end-user sign-up is portaliq's; the matrix note says the same. Three competitors rate yes, but decided-no comes before build in the rule.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "acc-locked-rows",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "ai-field",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "ai-generate-type",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Decided no: Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "ai-translate",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "The row was marked specified with no change directory. No open or archived change covers AI translation or a glossary (only the IdentityTranslationProvider seam and the unopened BulkTranslateDialog exist), so this pass writes the change.",
+    "change": "ai-translation-with-a-glossary",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "api-dutch-standard",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Recorded decision: hydra ADR-091 decision 6 puts NL statutory API shapes (ZGW and its siblings) in OpenConnector, now integriq, and api-as-a-versioned-surface repeats that ZGW endpoints stay integriq's.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "api-nl-design-rules",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Tender demand (TenderNed 418890) on a partial row. The archived 2026-05-01-openapi-generation specified NL API Design Rules markers and left that task unticked; the self-check covers two rules. The change specifies the missing half: the full rule set checked and reported.",
+    "change": "api-nl-design-rules-conformance",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "api-sdk",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Three competitors rated yes (directus, strapi, pocketbase) and no change covers client libraries.",
+    "change": "api-client-libraries",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "api-upsert",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Partial with a feature request (nocodb#5126) plus nocodb rated yes. The missing half is a single-call upsert matched on a declared business key; import-preview-and-conflict-policy matches on a key only inside an import.",
+    "change": "api-upsert-on-a-declared-key",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "file-checksum",
+    "matrix": "openregister",
+    "decision": "defer",
+    "reason": "One feature request and no competitor rated yes; files is outside the core area. The e-Depot package checksum stays as built.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "hist-admin-actions",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Partial with a feature request (strapi#23493) plus directus rated yes. #4060 covered Open Register's own access settings. Schema and register edits still write no audit row; that half is specified here. The LLM, file and search settings half is settings-change-audit task 1.3 (open), whose handlers still bypass OwnSettingsChangeRecorder.",
+    "change": "history-schema-and-settings-edits-audited",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "hist-public-audit",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "mod-catalogue-meta",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Partial in the core area (modelling) with a changelog demand row (open-object CHANGELOG) that adds exactly the missing catalogue fields; objects-api rated yes.",
+    "change": "modelling-type-catalogue-metadata",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "mod-composite-key",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Core area (modelling) with a feature request (directus discussion 12137); no change makes a field combination a record's identity.",
+    "change": "modelling-composite-identity",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "mod-custom-messages",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Core area with a feature request (pocketbase#3798) plus directus rated yes; no change covers custom validation wording.",
+    "change": "modelling-validation-messages",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "mod-diagram",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Core area with a changelog demand row plus two competitors rated yes (nocodb, pocketbase).",
+    "change": "modelling-schema-diagram",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "mod-index",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Partial with a feature request (nocodb#8949) plus two competitors rated yes. searchable-property-index adds the trigram index but no editor switch; the explicit per-field index choice is the missing half.",
+    "change": "modelling-property-index-switch",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "mod-rename-lossless",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Partial with a feature request plus two competitors rated yes. The migration planner renames a property over the API only; no page reaches it and a record type's slug rename breaks its API path. Those two are the missing half.",
+    "change": "modelling-rename-without-loss",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "op-app-page",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "The missing half is a page builder with page-level access, which openspec/specs/no-code-app-builder/spec.md hands to the root openspec as a cross-app capability built by buildiq; saved, shared views stay Open Register's and are built.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "op-backpressure",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Partial with a feature request (open-object#534) plus directus rated yes. Rate limits and quotas exist; shedding load when a dependency fails is the missing half and no change covers it.",
+    "change": "operate-load-shedding",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "op-sql-console",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Partial with a changelog demand row plus pocketbase rated yes. The missing half is an administrator's read-only query with a downloadable result. The change answers it on the GraphQL surface and refuses raw SQL in its design D-1: SQL would skip RBAC, organisation scoping, field encryption and the reveal audit, and reach Nextcloud's own tables.",
+    "change": "operate-admin-query-console",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "rec-draft-publish",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Core area (records) with two competitors rated yes. ADR-006 makes publication an RBAC scope, so the change keeps a draft copy apart from the live record rather than a published flag.",
+    "change": "records-draft-versions",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "rec-form-update",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "A journey run creates or updates objects at a step that declares writes, with lookup and prefill, which is a form that changes an existing record. access-by-link-not-by-account leaves citizen writes to portaliq (D16).",
+    "change": "or-form-and-journey-registry",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "rec-gallery",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Core area with two competitors rated yes. object-views-kanban-calendar names gallery as an explicit phase-two follow-up, so no change covers it.",
+    "change": "records-gallery-view",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "rec-named-version",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Core area (records) with directus rated yes; the same draft store as rec-draft-publish, so one change.",
+    "change": "records-draft-versions",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "rec-preview-site",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Core area with a changelog demand row plus directus rated yes; previewing a draft is the same draft store, so one change.",
+    "change": "records-draft-versions",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "rec-template",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Partial in the core area with a changelog demand row (nocodb 0.301.3) for the missing half: named, saved record templates.",
+    "change": "records-saved-templates",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "rec-tree",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Core area with a feature request (directus discussion 3054); clustered with buildiq data-tree-structure on one tree view.",
+    "change": "records-tree-view",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "ret-linked-destroy-conflict",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Tender demand (TenderNed 419447). ArchivalRetentionGuard keeps retained children out of a cascade at delete time (called from ReferentialIntegrityService.php:318), but no destruction review compares dates across linked records, and no change covers that.",
+    "change": "retention-linked-destruction-conflict",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "srch-alert",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "saved-view-count-alert (open) adds the alert block on a view, the crossing rule and the sweep; the row's evidence is that change's unwired half.",
+    "change": "saved-view-count-alert",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "srch-engine",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Recorded decision: openregister ADR-007 makes the built-in database search the only backend, and adding one is an ADR-level decision; remove-solr-and-publishing removed Solr and Elasticsearch.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "x-backup-encrypt",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Feature request (pocketbase#7706) plus strapi rated yes. import-preview-and-conflict-policy specifies the instance serialisation; encrypting it is not specified anywhere.",
+    "change": "exchange-encrypted-instance-export",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "x-import-product",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "import-preview-and-conflict-policy (open) is the target half of importing a named competing product (mapping, preview, policy, writer); the source adapters are integriq's migration-source-adapters.",
+    "change": "import-preview-and-conflict-policy",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "cat-access",
+    "matrix": "opencatalogi",
+    "decision": "existing",
+    "reason": "A per-object grant on the catalogue reaches every publication that names it as parent (rbac-inherits-to-children, open, tasks done). Declaring the parent property on the publication schema is opencatalogi's configuration.",
+    "change": "rbac-inherits-to-children",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "cat-custom-fields",
+    "matrix": "opencatalogi",
+    "decision": "existing",
+    "reason": "The row's open question is whether a re-import keeps a field an admin added to the shipped schema; local-changes-to-app-shipped-configuration specifies exactly that.",
+    "change": "local-changes-to-app-shipped-configuration",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "cat-multi-org",
+    "matrix": "opencatalogi",
+    "decision": "existing",
+    "reason": "Open Register's tenant isolation shipped (2026-03-22-saas-multi-tenant). The missing half is opencatalogi's public API reading every organisation's catalogues, which is opencatalogi code; owner should be ConductionNL/opencatalogi for that half.",
+    "change": "2026-03-22-saas-multi-tenant",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "cat-organisation",
+    "matrix": "opencatalogi",
+    "decision": "existing",
+    "reason": "The organisation projection carries OIN, TOOI and RSIN, and the-organisation-projection-is-writable retires the leaf organization schemas the Organizations page still targets.",
+    "change": "the-organisation-projection-is-writable",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "int-connector-report",
+    "matrix": "opencatalogi",
+    "decision": "build",
+    "reason": "Tender demand (TenderNed 407973) plus ckan rated yes. Scheduled report mail exists (2026-07-14-scheduled-report-email-delivery) but nothing reports connection health; the change joins the two.",
+    "change": "connections-daily-report-mail",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "int-plugins",
+    "matrix": "opencatalogi",
+    "decision": "existing",
+    "reason": "Extension without core changes runs through Open Register's seams: leaf registration (app-leaf-provider-registration) and contributed flow nodes (or-flow-nodes). opencatalogi's own harvest-protocol-plugins lives in opencatalogi.",
+    "change": "app-leaf-provider-registration",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "lc-archive",
+    "matrix": "opencatalogi",
+    "decision": "defer",
+    "reason": "Partial, built, no demand. Open Register's e-Depot transfer is built; the missing half is opencatalogi's archive decision handing publications over, which is opencatalogi's.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "od-change-alert",
+    "matrix": "opencatalogi",
+    "decision": "build",
+    "reason": "Partial with a feature request (ckan discussion 9535). Schema versioning classifies a breaking change and api-as-a-versioned-surface records callers, but nobody who builds on the data is told; that is the missing half.",
+    "change": "schema-breaking-change-notice",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "od-table-download",
+    "matrix": "opencatalogi",
+    "decision": "build",
+    "reason": "Partial with a changelog demand row plus two competitors rated yes. Open Register exports CSV, Excel and PDF to signed-in users. XML is already a requirement in data-import-export (specified, not built) and the change builds it; TSV and a download for public readers are new. Parsing an attached table into rows stays opencatalogi's.",
+    "change": "export-open-formats-and-public-download",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "ops-roles",
+    "matrix": "opencatalogi",
+    "decision": "existing",
+    "reason": "Per-transition authorization on x-openregister-lifecycle shipped (LifecycleAnnotationValidator::validateTransitionAuthorization). opencatalogi must declare a publish transition limited to publishers; matrix note for the coordinator: the Open Register half is built.",
+    "change": "2026-06-15-rbac-and-lifecycle-enforcement",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "pub-attach-select",
+    "matrix": "opencatalogi",
+    "decision": "defer",
+    "reason": "Partial, built, no demand. The per-file publish endpoint exists; the publication detail page not exposing it is opencatalogi's.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "pub-draft-required",
+    "matrix": "opencatalogi",
+    "decision": "existing",
+    "reason": "field-rules-by-state lets a lifecycle state declare required fields, so a draft state saves with empty fields and the published state enforces them. The publication schema still has to declare the states.",
+    "change": "field-rules-by-state",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "pub-relations",
+    "matrix": "opencatalogi",
+    "decision": "existing",
+    "reason": "relation-types-with-inverses gives a typed link with a name in both directions; the staff field and widget are opencatalogi's configuration.",
+    "change": "relation-types-with-inverses",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "pub-versions",
+    "matrix": "opencatalogi",
+    "decision": "defer",
+    "reason": "Partial, built, no demand, one competitor (ckan).",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "srch-content",
+    "matrix": "opencatalogi",
+    "decision": "existing",
+    "reason": "Content search over attachments is Open Register's (expose-content-search-in-object-service, content-search-index); no opencatalogi page sends the flag, which is opencatalogi's half.",
+    "change": "expose-content-search-in-object-service",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "srch-ocr",
+    "matrix": "opencatalogi",
+    "decision": "defer",
+    "reason": "No demand row and no competitor rated yes; search is outside opencatalogi's core areas.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "con-opencorporates",
+    "matrix": "integriq",
+    "decision": "existing",
+    "reason": "Open Register's OpenCorporatesProvider is specified and built (integration-kvk-opencorporates); the seed shipping in mock mode is integriq's configuration.",
+    "change": "integration-kvk-opencorporates",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "con-xwiki",
+    "matrix": "integriq",
+    "decision": "existing",
+    "reason": "Open Register's xWiki leaf is specified and built (integration-xwiki-query-search); the dormant source seed is integriq's configuration.",
+    "change": "integration-xwiki-query-search",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "plt-ai-tools",
+    "matrix": "integriq",
+    "decision": "existing",
+    "reason": "Declared actions exposed as MCP tools shipped in Open Register (2026-08-17-declared-actions-and-mcp-scope). The governed sync and replay actions are integriq's hermiq-ai-tooling change.",
+    "change": "2026-08-17-declared-actions-and-mcp-scope",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "con-flow",
+    "matrix": "filinq",
+    "decision": "defer",
+    "reason": "Partial, built, no demand and no competitor rated yes.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "det-dutch-ids",
+    "matrix": "filinq",
+    "decision": "build",
+    "reason": "Partial with two competitors rated yes (datamask, decos-join); decos-join names kentekens and no detection code in the fleet recognises a licence plate.",
+    "change": "detection-dutch-licence-plates",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "det-engine",
+    "matrix": "filinq",
+    "decision": "existing",
+    "reason": "The engine choice is Open Register's admin setting (anonymiser-backend-selection); filinq shows it read-only by design.",
+    "change": "anonymiser-backend-selection",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "op-backup-export",
+    "matrix": "filinq",
+    "decision": "existing",
+    "reason": "import-preview-and-conflict-policy specifies the instance serialisation with files and a load into another instance.",
+    "change": "import-preview-and-conflict-policy",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "op-export-list",
+    "matrix": "filinq",
+    "decision": "existing",
+    "reason": "Open Register's list export shipped (2026-05-02-data-import-export). The missing half is filinq switching the export button off (showMassExport false), which is filinq's; owner should be ConductionNL/filinq for that half.",
+    "change": "2026-05-02-data-import-export",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "red-true-removal",
+    "matrix": "filinq",
+    "decision": "existing",
+    "reason": "Byte-level removal shipped in Open Register's anonymisation backend (2026-06-14-pdf-anonymisation, 2026-07-23-tag-preserving-redaction); it is blocked by filinq's own RedactionOutputGuard defect (filinq#1178).",
+    "change": "2026-06-14-pdf-anonymisation",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "r-registry",
+    "matrix": "launchpad",
+    "decision": "existing",
+    "reason": "store-over-federated-config (open) makes the store Launchpad discovers from read the federated registry.",
+    "change": "store-over-federated-config",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "w-charts",
+    "matrix": "launchpad",
+    "decision": "defer",
+    "reason": "Partial, built, no demand and no competitor rated yes; partial only because it was not run against a live register.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "w-spend",
+    "matrix": "launchpad",
+    "decision": "defer",
+    "reason": "Partial, built, no demand and no competitor rated yes.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "conn-impact-analysis",
+    "matrix": "stackiq",
+    "decision": "existing",
+    "reason": "relations-that-travel-and-what-they-expose (open) adds the walk over declared relations that answers who else is affected.",
+    "change": "relations-that-travel-and-what-they-expose",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "land-custom-fields",
+    "matrix": "stackiq",
+    "decision": "existing",
+    "reason": "fields-a-user-adds-and-choices-a-record-narrows (open) lets a team add a field without a change request; stackiq pages showing it is stackiq's.",
+    "change": "fields-a-user-adds-and-choices-a-record-narrows",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "life-new-version-notice",
+    "matrix": "stackiq",
+    "decision": "build",
+    "reason": "The row was marked specified with no change directory. The notification engine's relation kind reads uids from the triggering object only, so a rule cannot reach the organisations whose usage objects point at the application; the change adds that recipient kind.",
+    "change": "notifications-new-notes-and-referrers",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "1.10",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "files-leaf-save-to-object (open) adds 'Add to object' on files and 'Save chat to object' in Talk.",
+    "change": "files-leaf-save-to-object",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "10.5",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "The row was marked specified with no change directory; the change is audit-log-page (open), the instance-wide log with filters and export.",
+    "change": "audit-log-page",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "10.7",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "an-export-is-a-file-with-a-life (open) names ledger row 10.7 itself.",
+    "change": "an-export-is-a-file-with-a-life",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "10.8",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "activity-leaf (open) exports the filtered feed as CSV or PDF, per competitor-parity-2026-09's mapping.",
+    "change": "activity-leaf",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "11.15",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "feature-toggle-surface (open) names ledger row 11.15.",
+    "change": "feature-toggle-surface",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "11.19",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "rbac-department-role-matrix (open) adds the admin grid, per competitor-parity-2026-09's mapping.",
+    "change": "rbac-department-role-matrix",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "11.25",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "field-rules-by-state (open) declares hidden, read-only and required fields per role and state.",
+    "change": "field-rules-by-state",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "11.5",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "flow-bpmn-interchange (open) exports and imports BPMN with diagram interchange; the flow canvas is the modeller.",
+    "change": "flow-bpmn-interchange",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "12.15",
+    "matrix": "dossiq",
+    "decision": "decided-no",
+    "reason": "Recorded decision: openregister ADR-007, a single built-in database search backend; competitor-parity-2026-09 marks this row a deliberate no.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "13.1",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "matrix corrected: rated yes with built.state none is an inconsistency, not a gap. The evidence (lib/Repair/ProvisionAssignedGroups.php) reads built; dossiq's matrix should set built.state built.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "13.10",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "Open Register's half (retention-management, the destruction check job) shipped; writing the retention onto the case at close is dossiq's, per competitor-parity-2026-09 row 7.7.",
+    "change": "2026-06-14-retention-management",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "13.14",
+    "matrix": "dossiq",
+    "decision": "defer",
+    "reason": "Single competitor (gzac) and no demand row; outside dossiq's core areas.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "13.16",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "rbac-department-role-matrix (open) is the access-control admin surface, per competitor-parity-2026-09.",
+    "change": "rbac-department-role-matrix",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "13.2",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "Conditional matching on group and object data shipped in rbac-scopes (2026-05-02-rbac-scopes); matrix note for the coordinator: built.state none looks wrong on dossiq's side.",
+    "change": "2026-05-02-rbac-scopes",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "13.3",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "object-level-sharing-and-private-scope (open) is the per-object invitation.",
+    "change": "object-level-sharing-and-private-scope",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "13.5",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "The per-object primitive is schema-agnostic, so a document object gets its own override; classification-clearance-on-an-object adds the ordinal clearance.",
+    "change": "object-level-sharing-and-private-scope",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "13.6",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "rbac-department-role-matrix (open) declares the department field matrix.",
+    "change": "rbac-department-role-matrix",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "2.26",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "relation-types-with-inverses (open) names a typed link in both directions.",
+    "change": "relation-types-with-inverses",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "3.1",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "flow-bpmn-interchange treats BPMN as an interchange format run on the native engine (ADR-065 decision 2); that is the fleet's answer to a BPMN engine.",
+    "change": "flow-bpmn-interchange",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "3.16",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "migrate-run-between-versions (open) moves a running flow onto a newer definition.",
+    "change": "migrate-run-between-versions",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "3.17",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "Save-time computed fields with date arithmetic shipped (2026-06-14-computed-fields); calc-engine-scalar-functions adds the missing scalar functions. built.state none looks wrong on dossiq's side.",
+    "change": "2026-06-14-computed-fields",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "3.20",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "macro-flows-with-next-item (open) is this capability.",
+    "change": "macro-flows-with-next-item",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "5.13",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "external-register-view-leaf (open) is this capability.",
+    "change": "external-register-view-leaf",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "6.12",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "files-leaf-save-to-object (open) adds 'Save chat to object'.",
+    "change": "files-leaf-save-to-object",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "6.9",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "send-at-on-the-messaging-leaf (open) sends a message at a chosen moment.",
+    "change": "send-at-on-the-messaging-leaf",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "8.7",
+    "matrix": "dossiq",
+    "decision": "defer",
+    "reason": "Partial, built, no demand and no competitor rated yes; the destruction date on the case is dossiq's surface over retention-management.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "9.1",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "unified-search-index (open), per competitor-parity-2026-09.",
+    "change": "unified-search-index",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "9.12",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "unified-search-index (open) repoints the ObjectsProvider, per competitor-parity-2026-09.",
+    "change": "unified-search-index",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "9.13",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "saved-view-count-alert (open) names ledger row 9.13.",
+    "change": "saved-view-count-alert",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "9.4",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "view-group-share (open) shares a view with a group in read or write mode; the control is nextcloud-vue's saved-views-shared-by-role.",
+    "change": "view-group-share",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "9.6",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "content-search-index (open), per competitor-parity-2026-09.",
+    "change": "content-search-index",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "9.7",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "matrix corrected: rated yes with built.state none is an inconsistency, not a gap. Access-filtered search is built (MagicRbacHandler filters rows in SQL); dossiq's matrix should set built.state built.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "9.9",
+    "matrix": "dossiq",
+    "decision": "existing",
+    "reason": "contacts-leaf-cases-panel (open) adds the name search, per competitor-parity-2026-09.",
+    "change": "contacts-leaf-cases-panel",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "pipeline-auto-label",
+    "matrix": "pipelinq",
+    "decision": "build",
+    "reason": "Partial with a changelog demand row plus two competitors rated yes. Object tags and flows exist, but no flow step puts a tag on an object, which is the missing half.",
+    "change": "flow-tag-object-step",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "plat-restore-deleted",
+    "matrix": "pipelinq",
+    "decision": "build",
+    "reason": "Partial with a changelog demand row plus three competitors rated yes. Restore is one act per object; bringing back what a cascade deleted with it is not specified anywhere, including delete-window-and-recorded-destruction.",
+    "change": "records-restore-with-cascade",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "work-collaborators",
+    "matrix": "pipelinq",
+    "decision": "existing",
+    "reason": "object-watchers (open, done) lets a colleague follow a record and be notified; people-on-objects links users in a role. pipelinq wiring them is pipelinq's.",
+    "change": "object-watchers",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "plt-custom-entities",
+    "matrix": "shillinq",
+    "decision": "existing",
+    "reason": "Runtime record types shipped in Open Register (2026-06-14-openregister-runtime-schema-api); shillinq pages that show them are shillinq's, so owner should be ConductionNL/shillinq for that half.",
+    "change": "2026-06-14-openregister-runtime-schema-api",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "plt-custom-fields",
+    "matrix": "shillinq",
+    "decision": "existing",
+    "reason": "fields-a-user-adds-and-choices-a-record-narrows (open) lets a team add a field; shillinq's fixed page fields are shillinq's.",
+    "change": "fields-a-user-adds-and-choices-a-record-narrows",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "gov-feed-bi-tool",
+    "matrix": "learniq",
+    "decision": "existing",
+    "reason": "rapportage-bi-export (open) specifies OData and scheduled exports for Power BI and other BI tools.",
+    "change": "rapportage-bi-export",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "gov-hide-a-field-from-a-role",
+    "matrix": "learniq",
+    "decision": "existing",
+    "reason": "Property-level read RBAC shipped (2026-07-13-property-level-read-rbac); learniq's register has to declare it (learniq#972).",
+    "change": "2026-07-13-property-level-read-rbac",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "age-03",
+    "matrix": "decidiq",
+    "decision": "existing",
+    "reason": "Per-object files are Open Register's file-actions; the agenda item page not being linked from the meeting is decidiq's, so owner should be ConductionNL/decidiq.",
+    "change": "file-actions",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "ins-02",
+    "matrix": "decidiq",
+    "decision": "existing",
+    "reason": "The aggregation query already takes gt, gte, lt and lte (lib/Service/Aggregation/AggregationQuery.php:12-13), so a per-period cut is decidiq's report configuration; the row's provider is decidiq.",
+    "change": "2026-07-24-adhoc-aggregation-suite",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "ins-15",
+    "matrix": "decidiq",
+    "decision": "existing",
+    "reason": "audit-log-page (open) is the single log across records, and 2026-09-22-audit-trail-readable-scope limits it to the caller's scope.",
+    "change": "audit-log-page",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "pla-04",
+    "matrix": "decidiq",
+    "decision": "existing",
+    "reason": "object-dates-as-a-calendar-feed (open, done) puts object dates in the person's own calendar; decidiq's guarded call to a method that does not exist is decidiq's.",
+    "change": "object-dates-as-a-calendar-feed",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "pub-19",
+    "matrix": "decidiq",
+    "decision": "build",
+    "reason": "Tender demand (TenderNed 408309). Boolean operators are search-quality-operators-and-facets and highlighting is zoeken-filteren, but nothing ignores accents (no unaccent anywhere in lib); that half is specified here.",
+    "change": "search-accent-insensitive",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "acc-builder-audit",
+    "matrix": "buildiq",
+    "decision": "existing",
+    "reason": "Open Register writes the per-object audit trail on every save; buildiq's modal calls the wrong route (.../audit instead of .../audit-trails), which is buildiq's defect.",
+    "change": "2026-03-21-audit-trail-immutable",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "acc-field-level",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Four competitors rated yes. Property-level RBAC is enforced (PropertyRbacHandler) but neither Open Register's property editor nor buildiq's authors it, so the missing half is the editor.",
+    "change": "modelling-field-access-editor",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "acc-four-eyes-data-change",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Tender demand (TenderNed 310787, VGGM W10). Approval chains fire after the write; holding the change until a second person approves is not specified anywhere.",
+    "change": "records-change-held-for-approval",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "ai-external-agent-builds",
+    "matrix": "buildiq",
+    "decision": "existing",
+    "reason": "MCP tools carry destructiveHint since 2026-07-13-or-mcp-attribute-hints, which is what makes a client confirm; buildiq's promote tool not declaring it is buildiq's.",
+    "change": "2026-07-13-or-mcp-attribute-hints",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "ai-mcp-exposure",
+    "matrix": "buildiq",
+    "decision": "existing",
+    "reason": "A built app's declared actions reach MCP through 2026-08-17-declared-actions-and-mcp-scope.",
+    "change": "2026-08-17-declared-actions-and-mcp-scope",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "app-create-from-spreadsheet",
+    "matrix": "buildiq",
+    "decision": "existing",
+    "reason": "Open Register creates a schema from an uploaded file (2026-07-23-register-import-auto-create); generating the app and its pages is buildiq's.",
+    "change": "2026-07-23-register-import-auto-create",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "data-auto-number",
+    "matrix": "buildiq",
+    "decision": "existing",
+    "reason": "generated-identifier (open) adds a sequence and a format on a schema property.",
+    "change": "generated-identifier",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "data-tree-structure",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Partial with three competitors rated yes; the tree view is the missing half, clustered with openregister rec-tree.",
+    "change": "records-tree-view",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "int-graphql",
+    "matrix": "buildiq",
+    "decision": "defer",
+    "reason": "Partial, built, no demand, one competitor (appsmith); Open Register's GraphQL is built.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "int-outbound-webhooks",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Partial with three competitors rated yes. Webhook subscriptions are admin-only (WebhooksController::index checks isCurrentUserAdmin); subscriptions a non-admin owns, limited to what they may read, are specified here. A flow already posts to a webhook through integriq's openconnector.source-call node, which the open flow-messaging-nodes names as the one outbound HTTP path.",
+    "change": "webhooks-for-owners",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "logic-action-email",
+    "matrix": "buildiq",
+    "decision": "existing",
+    "reason": "The send-email step exists (flow-messaging-nodes, SendEmailNode); buildiq's composer not offering it is buildiq's.",
+    "change": "flow-messaging-nodes",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "logic-action-notification",
+    "matrix": "buildiq",
+    "decision": "existing",
+    "reason": "The send-notification step exists (flow-messaging-nodes, SendNotificationNode); the fixed recipients are buildiq's composer.",
+    "change": "flow-messaging-nodes",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "logic-approval-before-save",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Clustered with acc-four-eyes-data-change: holding a new record until approval is the same pending-change store. On its own the row would defer (changelog only, logic area).",
+    "change": "records-change-held-for-approval",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "logic-approval-inbox",
+    "matrix": "buildiq",
+    "decision": "existing",
+    "reason": "flow-task-inbox-projections (open) delivers pending tasks where people work; the page-editor picker is buildiq's.",
+    "change": "flow-task-inbox-projections",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "logic-human-task-form",
+    "matrix": "buildiq",
+    "decision": "existing",
+    "reason": "flow-task-forms (open) gives a human task a structured form.",
+    "change": "flow-task-forms",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "logic-run-log",
+    "matrix": "buildiq",
+    "decision": "existing",
+    "reason": "rules-engine-operability (open, done) adds the run log that names why a rule did or did not fire; flow runs already have history.",
+    "change": "rules-engine-operability",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "logic-task-deadline-warning",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Tender demand (TenderNed 310787, VGGM W4). The deadline warning shipped (buildiq#937); workflow progress reporting is the open half and no change covers it.",
+    "change": "tasks-progress-report",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "logic-task-delegate-mandate",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Tender demand (VGGM W7). TaskService::delegate records a mandate as free text and never checks it; checking the delegate's mandate is the missing half.",
+    "change": "tasks-delegation-and-substitution",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "logic-task-substitute",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Tender demand (VGGM W3). No absence or stand-in routing exists in lib/Service/Task.",
+    "change": "tasks-delegation-and-substitution",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "logic-trigger-schedule",
+    "matrix": "buildiq",
+    "decision": "existing",
+    "reason": "apphost-schedule-flow-action (open) reconciles manifest.schedules into flow runs, which is the defect the row names.",
+    "change": "apphost-schedule-flow-action",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "cmp-audit-trail",
+    "matrix": "humaniq",
+    "decision": "existing",
+    "reason": "Reads of sensitive schemas are audited (audit-trail-immutable 'Sensitive data reads MUST be audited', ObjectService::logRead); humaniq has to mark the employee schema sensitive.",
+    "change": "2026-03-21-audit-trail-immutable",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "dm-mcp-server",
+    "matrix": "humaniq",
+    "decision": "existing",
+    "reason": "The row was marked specified with no change directory; the Open Register change is 2026-08-17-declared-actions-and-mcp-scope, which lets a schema declare a write action as an MCP tool. humaniq declaring the time-off action is humaniq's.",
+    "change": "2026-08-17-declared-actions-and-mcp-scope",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "plt-public-api",
+    "matrix": "humaniq",
+    "decision": "existing",
+    "reason": "Open Register generates an OpenAPI document per register (GET /api/registers/{id}/oas, 2026-06-14-openapi-generation); api-as-a-versioned-surface adds the version lifecycle.",
+    "change": "2026-06-14-openapi-generation",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "td-bi-feed",
+    "matrix": "humaniq",
+    "decision": "existing",
+    "reason": "rapportage-bi-export (open) specifies OData and scheduled exports for Power BI.",
+    "change": "rapportage-bi-export",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "col-edit-conflict",
+    "matrix": "planninq",
+    "decision": "existing",
+    "reason": "object-presence (open) shows who else has the object open, and a-conflicting-save-shows-the-other-value stops the second save.",
+    "change": "object-presence",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "col-link-preview",
+    "matrix": "planninq",
+    "decision": "existing",
+    "reason": "platform-reference-provider (open) renders any object's link as a card; planninq registering its own URL pattern uses 2026-08-17-schema-scoped-smart-picker.",
+    "change": "platform-reference-provider",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "col-notify-comment",
+    "matrix": "planninq",
+    "decision": "build",
+    "reason": "Five competitors rated yes. Watchers exist, but the notification engine has no trigger for a new note (VALID_TRIGGERS has none), so nobody is told.",
+    "change": "notifications-new-notes-and-referrers",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "int-ai-connector",
+    "matrix": "planninq",
+    "decision": "existing",
+    "reason": "Declared actions as MCP tools shipped; planninq-specific tools and the dependency-edge service are planninq's.",
+    "change": "2026-08-17-declared-actions-and-mcp-scope",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "int-automation-guard",
+    "matrix": "planninq",
+    "decision": "build",
+    "reason": "Partial with a changelog demand row plus jira rated yes. Flow rights are four verbs and the palette splits admin and user; a named right per powerful step, checked on save, is the missing half.",
+    "change": "flow-powerful-steps-need-a-right",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "int-import-other",
+    "matrix": "planninq",
+    "decision": "existing",
+    "reason": "import-preview-and-conflict-policy is the target half of importing Jira or Trello; the source adapters are integriq's.",
+    "change": "import-preview-and-conflict-policy",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "int-project-folder",
+    "matrix": "planninq",
+    "decision": "defer",
+    "reason": "Single competitor (openproject) and no demand row; outside planninq's core areas.",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "int-webhooks",
+    "matrix": "planninq",
+    "decision": "build",
+    "reason": "Four competitors rated yes; the same missing half as buildiq int-outbound-webhooks (a project owner cannot subscribe a webhook), so one change.",
+    "change": "webhooks-for-owners",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "plt-data-export",
+    "matrix": "planninq",
+    "decision": "existing",
+    "reason": "export-as-its-own-right (open, done) makes export a grant a non-admin can hold, and import-preview-and-conflict-policy serialises the whole instance.",
+    "change": "export-as-its-own-right",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "plt-destruction-list",
+    "matrix": "planninq",
+    "decision": "existing",
+    "reason": "Destruction lists, destruction and proof shipped in Open Register (2026-06-14-archivering-vernietiging); planninq sets no retention period, which is planninq's.",
+    "change": "2026-06-14-archivering-vernietiging",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "prt-export-tasks",
+    "matrix": "planninq",
+    "decision": "existing",
+    "reason": "Open Register's objects export gives CSV, Excel and PDF (2026-07-13-export-pdf-format); the missing export button is planninq's.",
+    "change": "2026-07-13-export-pdf-format",
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "prt-nc-dashboard",
+    "matrix": "planninq",
+    "decision": "defer",
+    "reason": "Partial, built, no demand, one competitor (nextcloud-deck).",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "prt-task-status",
+    "matrix": "planninq",
+    "decision": "defer",
+    "reason": "Partial, built, no demand, one competitor (openproject).",
+    "change": null,
+    "decidedOn": "2026-09-27"
+  },
+  {
+    "row": "auto-ai-step",
+    "matrix": "integriq",
+    "decision": "existing",
+    "reason": "Owner move from integriq. The AI step exists as a contributed node: open change or-flow-nodes gave the engine RegisterFlowNodesEvent (tasks ticked), and hermiq contributes hermiq.agent-step through it (hermiq lib/Flow/HermiqAgentNode.php at hermiq development 5ac16d315), listed in the node catalogue the shared canvas reads. Buildiq's merged change ai-llm-steps-and-computed-fields records the same correction. The integriq row reads no and decided-no; that is for the coordinator to correct.",
+    "change": "or-flow-nodes",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-code",
+    "matrix": "integriq",
+    "decision": "build",
+    "reason": "Owner move from integriq. All six competitors rate yes, and buildiq's merged change logic-script-step depends on it (the whole runtime is OpenRegister's, issue #2066). No change existed; no code node exists in lib/Service/Flow/Nodes at 555af7212.",
+    "change": "flow-code-step-in-a-sidecar",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-error-path",
+    "matrix": "integriq",
+    "decision": "build",
+    "reason": "Owner move from integriq. Four competitors rate yes (n8n, MuleSoft, WSO2, Frank!Framework). FlowEngine knows stop, continue and dead_letter only (FlowEngine.php:105-109) and FlowRunService::retry() re-queues the whole run. No open or archived change covers a per-step branch or retry.",
+    "change": "flow-error-branch-and-step-retry",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-compensate",
+    "matrix": "integriq",
+    "decision": "defer",
+    "reason": "Owner move from integriq. No competitor rates it yes (n8n, MuleSoft and Frank!Framework partial), no demand row, and it is outside integriq's core area (sources, gateway). No OpenRegister change covers compensation across steps.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-templates",
+    "matrix": "integriq",
+    "decision": "existing",
+    "reason": "Owner move from integriq. A ready-made flow is a shared flow installed from the store: federated-config-sharing ships FlowShareableConfigType (lib/Service/Config/Types/FlowShareableConfigType.php at 555af7212), and the open change store-over-federated-config points the store surface at it so that a flow arrives as a flow. The picker on the canvas is nextcloud-vue's.",
+    "change": "store-over-federated-config",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "src-secrets-manager",
+    "matrix": "integriq",
+    "decision": "build",
+    "reason": "Owner move from integriq. Demand row featureRequest (apache/apisix#12755), three competitors yes (Tyk, APISIX, Frank!Framework), and it is in integriq's core area (sources). Built as a per-credential reference to an outside vault read by the broker, so ADR-064's single custody leaf stays; ADR-064 gets one paragraph (task 3.2).",
+    "change": "credential-outside-vault-reference",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-failure-alerts",
+    "matrix": "pipelinq",
+    "decision": "defer",
+    "reason": "Owner move from pipelinq. A changelog demand row and one competitor yes (Pipedrive), outside pipelinq's core area (clients, pipeline). No OpenRegister change covers alerting on or switching off a repeatedly failing flow; the load-shedding and stale-run changes are about capacity and abandoned runs.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "plat-translated-field-names",
+    "matrix": "pipelinq",
+    "decision": "build",
+    "reason": "Owner move from pipelinq. Demand row featureRequest (pdpartnerassociation top 6) and three competitors yes (HubSpot, EspoCRM, Odoo). The archived register-i18n change translates object content, not property names; nothing carries a name per language.",
+    "change": "modelling-field-names-per-language",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "acc-row-level",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "OpenRegister half of buildiq's row (buildiq half built by archived 2026-07-11-data-scopes-authoring, whose Upstream leaf requirements ask for the @creator sentinel, authorization.conditions and the authorization.scopes capability). Four competitors yes. At 555af7212 lib/ reads neither @creator nor authorization.conditions, and only UrnCapability and IntegrationsCapability are registered.",
+    "change": "access-owner-and-condition-scopes",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "index-bulk-edit-and-transitions",
+    "matrix": "nextcloud-vue",
+    "decision": "existing",
+    "reason": "set-field half: already shipped as openregister:set-properties (lib/BulkAction/SetPropertiesAction.php, #3742) under the open change bulk-action-jobs, writing through patchObject(). The nextcloud-vue proposal's two-actions reading predates it.",
+    "change": "bulk-action-jobs",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "index-bulk-edit-and-transitions",
+    "matrix": "nextcloud-vue",
+    "decision": "build",
+    "reason": "transition half: a half nextcloud-vue's merged change depends on (rows opencatalogi pub-bulk, buildiq data-bulk-edit). No bulk action moves objects through TransitionEngine.",
+    "change": "records-bulk-transition",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "index-copy-with-relations",
+    "matrix": "nextcloud-vue",
+    "decision": "build",
+    "reason": "A half nextcloud-vue's merged change depends on (stackiq row land-copy-entry, changelog demand and two competitors yes). OpenRegister has objects#move and no copy.",
+    "change": "records-copy-with-links",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "notes-replies-group-mentions-and-images",
+    "matrix": "nextcloud-vue",
+    "decision": "build",
+    "reason": "A half nextcloud-vue's merged change depends on (Reply is not shown until notes carry parentId; rows buildiq pg-record-comments, planninq col-threaded-comments). NotesController::create() reads no parent at 555af7212.",
+    "change": "notes-replies-by-parent",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "form-conditions-from-schema",
+    "matrix": "nextcloud-vue",
+    "decision": "build",
+    "reason": "Required-when half: nextcloud-vue's merged change names server enforcement as OpenRegister's (listener in the shape of DependentValueListener). Nothing in lib/ reads x-openregister-required-when; field-rules-by-state covers required per lifecycle state, not per condition.",
+    "change": "modelling-required-when-enforced",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "index-export-follows-the-page",
+    "matrix": "nextcloud-vue",
+    "decision": "build",
+    "reason": "A half nextcloud-vue's merged change depends on: without a kept exportable flag the Export menu never appears on a real instance. Schema::setConfiguration drops it ($boolFields at Schema.php:2683) and hydrate drops a top-level one. Clustered with stackiq insight-exports-and-custom-reports.",
+    "change": "modelling-schema-exportable-flag",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "form-options-from-concept-scheme",
+    "matrix": "nextcloud-vue",
+    "decision": "existing",
+    "reason": "The conceptScheme slug-versus-uri mismatch lives inside the open change property-code-list-from-concept-scheme, which folded the conceptScheme spelling into CodedPropertyDeclarationFactory (task 1.1). This pass added its task 4.4: resolve a scheme value by uri, then slug, then uuid in one place.",
+    "change": "property-code-list-from-concept-scheme",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "audit-trail-restore-version",
+    "matrix": "nextcloud-vue",
+    "decision": "build",
+    "reason": "Findings of nextcloud-vue's merged change (exception text in the revert route's 403, 423 and 500 bodies, against ADR-005) together with buildiq data-restore-record-version (RevertHandler writes with ObjectEntityMapper::update(), bypassing validation, listeners and the audit entry the content-versioning spec requires; that spec names a route that does not exist).",
+    "change": "history-revert-through-the-save-path",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "insight-exports-and-custom-reports",
+    "matrix": "stackiq",
+    "decision": "build",
+    "reason": "Keep-exportable half named by stackiq's merged change (four list pages wait on it). Clustered with nextcloud-vue index-export-follows-the-page.",
+    "change": "modelling-schema-exportable-flag",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "operations-record-reconciliation",
+    "matrix": "stackiq",
+    "decision": "build",
+    "reason": "Two halves stackiq's merged change names as OpenRegister's: relinking every reference inside the merge unit so a reversal restores them (ADR-045: relink and reverse on any schema), and a deep link to /duplicates with register and schema. MergeService relinks only the configured reverse reference (relinkReverseFk, MergeService.php:684); DuplicatesIndex.vue reads no route query. No change covered either.",
+    "change": "mdm-merge-relinks-every-reference",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "events-world-scope-and-upcoming",
+    "matrix": "larpinq",
+    "decision": "build",
+    "reason": "A half larpinq's merged change depends on for its world lens in lists (row evt-world-scoping, four competitors yes); without it larpinq falls back to two queries on the dashboard only. The operators of one property are ANDed (MagicSearchHandler.php:1535-1556), so value or empty cannot be one query today.",
+    "change": "search-value-or-empty-filter",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "surfaces-document-house-style",
+    "matrix": "thematiq",
+    "decision": "build",
+    "reason": "Tender demand (TenderNed 404703, 415897, 298070) named in thematiq's merged change, whose Risks say a sibling that never reads the profile leaves the tender unmet. ExportService::exportToPdf() (ExportService.php:332) has no logo, font or footer.",
+    "change": "export-pdf-house-style",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "ai-copilot-documents-and-code-help",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "File-text read half buildiq's merged change depends on for PDF and Word input (rows ai-code-assist with five competitors yes, ai-spec-to-app); GET /api/files/{fileId}/text is a stub answering 404 (FileTextController.php:147-160, issue #4106). Clustered with the vector facade.",
+    "change": "search-file-text-and-vector-facade",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "ai-agents-knowledge-and-run-trace",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Vector search facade half buildiq's merged change and hermiq's open vector-rag both name as OpenRegister's (row ai-agent-knowledge-base). No public vector facade exists; the file search routes return chunks without a read check, fixed in the same change.",
+    "change": "search-file-text-and-vector-facade",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "ai-llm-steps-and-computed-fields",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Changed-fields condition half buildiq's merged change depends on (AI steps run on created and manual only until it lands; rows ai-computed-column, ai-llm-action). TriggerObjectNode config keys are event, register and schema only (TriggerObjectNode.php:169-171).",
+    "change": "flow-trigger-transitions-and-changed-fields",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "logic-automation-actions-that-run",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Lifecycle-transition start half buildiq's merged change depends on (rows logic-action-update-record, logic-action-webhook, logic-rules-engine). The engine fires object.transitioned (FlowTriggerListener.php:236), but a converted flow's trigger node refuses it (TriggerObjectNode::EVENTS), and nothing filters on the transition.",
+    "change": "flow-trigger-transitions-and-changed-fields",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "logic-automation-actions-that-run",
+    "matrix": "buildiq",
+    "decision": "existing",
+    "reason": "Manual-start half (a signed-in app user starting a published manual flow on a record): specified by the open change macro-flows-with-next-item, which binds a declared action to a published manual flow at POST /api/objects/{register}/{schema}/{id}/actions/{action} with the action's authorisation.",
+    "change": "macro-flows-with-next-item",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "logic-script-step",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Code step half: the whole runtime is OpenRegister issue #2066, which buildiq's merged change depends on (row logic-custom-code-step, three competitors yes). Clustered with integriq auto-code.",
+    "change": "flow-code-step-in-a-sidecar",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "data-external-database-sources",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Query-table half buildiq's merged change depends on (rows data-external-db, five competitors yes, buildiq core; int-sql-query). Premise partly did not hold up: query-backed schemas shipped in #2043 (DbalObjectSourceProvider::isQueryBacked, 12a52c7fc) without a change. The change adds the statement guard, the read-only transaction and timeout, and the preview route that are missing.",
+    "change": "dbal-query-schema-guarded-and-previewed",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "data-model-diagram",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "x-openregister-relations half of buildiq's merged change (row data-model-diagram, three competitors yes): without it every relation a maker drew is missing from the diagram. Added to the open change modelling-schema-diagram as design D-1a, a requirement and task 1.1a.",
+    "change": "modelling-schema-diagram",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "lifecycle-release-test-gate",
+    "matrix": "buildiq",
+    "decision": "build",
+    "reason": "Validate-only half buildiq's merged change depends on (row lc-automated-tests, two competitors yes). ObjectServiceInterface has no validate method and objects#validate re-validates stored objects.",
+    "change": "records-validate-without-saving",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "platform-record-lock",
+    "matrix": "pipelinq",
+    "decision": "build",
+    "reason": "Freeze-refuses-delete half of pipelinq's merged change (its task 3.1 asks OpenRegister for it). DeleteObject never reads @self.frozen; delete guards are ObjectDeletingEvent listeners (Application.php:3359, :3378). Clustered with the retention date half.",
+    "change": "archival-frozen-refuses-delete-and-dates-follow",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "platform-client-retention",
+    "matrix": "pipelinq",
+    "decision": "build",
+    "reason": "Recalculation half of pipelinq's merged change (D3 and D4: its task 1.3 test fails until it lands). RetentionService::recalculateArchiveActionDate() compares sources only under eigenschap, afgehandeld and termijn (RetentionService.php:317-336).",
+    "change": "archival-frozen-refuses-delete-and-dates-follow",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "platform-client-retention",
+    "matrix": "pipelinq",
+    "decision": "existing",
+    "reason": "Anonymise-outcome half (D6: read the profile beside the archive block): the open change anonymising-as-an-archival-outcome owns the profile; this pass added its design D-6, a scenario and task 2.2a, because AnonymisationPlanner reads only x-openregister-archival.anonymisation.",
+    "change": "anonymising-as-an-archival-outcome",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "requests-inbound-to-queue",
+    "matrix": "pipelinq",
+    "decision": "defer",
+    "reason": "Decision table contains: pipelinq's merged change puts rules on words in the subject or text out of scope and names it a follow-up, so nothing depends on it. The tender rows behind it (req-mail-routing) ask for rules on address, domain and sender group, which the current comparison and set grammar expresses. No DMN change covers contains.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "mod-field-types",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: core area modelling. Specified in records-form-and-cell-editors.",
+    "change": "records-form-and-cell-editors",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "mod-type-versions",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: core area modelling. Specified in modelling-schema-draft.",
+    "change": "modelling-schema-draft",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "mod-geometry",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: core area modelling. Specified in geometry-on-a-map.",
+    "change": "geometry-on-a-map",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "mod-view-type",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: core area modelling. Specified in modelling-query-backed-type.",
+    "change": "modelling-query-backed-type",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-inline-edit",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: core area records. Specified in records-form-and-cell-editors.",
+    "change": "records-form-and-cell-editors",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-kanban",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change object-views-kanban-calendar covers it (the matrix now names it).",
+    "change": "object-views-kanban-calendar",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-calendar",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change object-views-kanban-calendar covers it (the matrix now names it).",
+    "change": "object-views-kanban-calendar",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-map",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: core area records. Specified in geometry-on-a-map.",
+    "change": "geometry-on-a-map",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-bulk",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change bulk-action-jobs covers it (the matrix now names it).",
+    "change": "bulk-action-jobs",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-revert",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change history-revert-through-the-save-path covers it (the matrix now names it).",
+    "change": "history-revert-through-the-save-path",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-tasks",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change flow-task-entity covers it (the matrix now names it).",
+    "change": "flow-task-entity",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-favourites",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change favourites-and-recent covers it (the matrix now names it).",
+    "change": "favourites-and-recent",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-follow",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change object-watchers covers it (the matrix now names it).",
+    "change": "object-watchers",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-presence",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change object-presence covers it (the matrix now names it).",
+    "change": "object-presence",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-public-form",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change or-form-and-journey-registry covers it (the matrix now names it).",
+    "change": "or-form-and-journey-registry",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-share-link",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change access-by-link-not-by-account covers it (the matrix now names it).",
+    "change": "access-by-link-not-by-account",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-translate",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: core area records. Specified in records-form-and-cell-editors.",
+    "change": "records-form-and-cell-editors",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-move",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change identity-survives-a-move covers it (the matrix now names it).",
+    "change": "identity-survives-a-move",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "rec-unread",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change object-read-state covers it (the matrix now names it).",
+    "change": "object-read-state",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "api-try-docs",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: two or more competitors rate it yes. Specified in api-explorer-in-the-app.",
+    "change": "api-explorer-in-the-app",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "api-filter-ops",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change search-quality-operators-and-facets covers it (the matrix now names it).",
+    "change": "search-quality-operators-and-facets",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "api-filter-related",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change query-related-schema-rows covers it (the matrix now names it).",
+    "change": "query-related-schema-rows",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "api-batch",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: two or more competitors rate it yes. Specified in api-atomic-batch.",
+    "change": "api-atomic-batch",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "api-keys",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change scoped-api-tokens covers it (the matrix now names it).",
+    "change": "scoped-api-tokens",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "api-custom-endpoint",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "srch-fulltext",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "srch-file-content",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change unified-search-file-content covers it (the matrix now names it).",
+    "change": "unified-search-file-content",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "srch-semantic",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "srch-saved-shared",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change view-group-share covers it (the matrix now names it).",
+    "change": "view-group-share",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "srch-geo",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: two or more competitors rate it yes. Specified in geometry-on-a-map.",
+    "change": "geometry-on-a-map",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "acc-department-matrix",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change rbac-department-role-matrix covers it (the matrix now names it).",
+    "change": "rbac-department-role-matrix",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "acc-delegation",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "hist-as-of",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Only objects-api rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "hist-bitemporal",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Only objects-api rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "gdpr-anonymise",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change anonymising-as-an-archival-outcome covers it (the matrix now names it).",
+    "change": "anonymising-as-an-archival-outcome",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "file-image-transform",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "file-redact",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "file-save-to-record",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change files-leaf-save-to-object covers it (the matrix now names it).",
+    "change": "files-leaf-save-to-object",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-webhook-shape",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: two or more competitors rate it yes. Specified in webhook-payload-mapping-picker.",
+    "change": "webhook-payload-mapping-picker",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-bpmn",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: BPMN is an interchange format here by design (flow-bpmn-interchange: import and export, not an engine or editor). No competitor rates it yes and no demand row asks for a BPMN engine. Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-approval",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change records-change-held-for-approval covers it (the matrix now names it).",
+    "change": "records-change-held-for-approval",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-transitions",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-code-hooks",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change flow-code-step-in-a-sidecar covers it (the matrix now names it).",
+    "change": "flow-code-step-in-a-sidecar",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "auto-external-workflow",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Recorded non-goal: ADR-065 makes OpenRegister the only flow engine in the fleet, and the open change retire-external-workflow-engines removes the n8n and windmill adapters. Handing changes to an outside workflow tool is what webhooks already do.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "x-import-file",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change import-preview-and-conflict-policy covers it (the matrix now names it).",
+    "change": "import-preview-and-conflict-policy",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "x-export-pdf",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change export-pdf-house-style covers it (the matrix now names it).",
+    "change": "export-pdf-house-style",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "x-harvest",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "x-federation",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "x-backup",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change exchange-encrypted-instance-export covers it (the matrix now names it).",
+    "change": "exchange-encrypted-instance-export",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "x-mapping-pack",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "ai-chat",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "ai-agent-limits",
+    "matrix": "openregister",
+    "decision": "build",
+    "reason": "Building, missing half: two or more competitors rate it yes. Specified in ai-agent-limits-screen.",
+    "change": "ai-agent-limits-screen",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "op-reports",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "op-bi-feed",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change rapportage-bi-export covers it (the matrix now names it).",
+    "change": "rapportage-bi-export",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "op-otap",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change configuration-as-a-deployment covers it (the matrix now names it).",
+    "change": "configuration-as-a-deployment",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "op-marketplace",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "op-feature-toggles",
+    "matrix": "openregister",
+    "decision": "existing",
+    "reason": "building, missing half: open change feature-toggle-surface covers it (the matrix now names it).",
+    "change": "feature-toggle-surface",
+    "decidedOn": "2026-09-28"
+  },
+  {
+    "row": "ai-summarise",
+    "matrix": "openregister",
+    "decision": "decided-no",
+    "reason": "Building, missing half decided no: Only directus rates it yes, no demand row, outside the core area (modelling, records). Reversible.",
+    "change": null,
+    "decidedOn": "2026-09-28"
+  }
+]
