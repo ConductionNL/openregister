@@ -3342,7 +3342,9 @@
         "This link is closed with a password": "Dan il-link huwa protett b'password",
         "This link is open until {date}.": "Dan il-link huwa miftuħ sa {date}.",
         "This record has no visible fields.": "Dan ir-rekord m'għandux oqsma viżibbli.",
-        "Upload": "Tella'"
+        "Upload": "Tella'",
+        "Edit {field}": "Editja {field}",
+        "The value could not be saved": "Il-valur ma setax jiġi ssejvjat"
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);",
     "plurals": {

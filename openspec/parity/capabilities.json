@@ -539,9 +539,9 @@
    "source": "competitor-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "Types/formats (email, uri, date, file, oneOf, Nc*) chosen in EditSchemaProperty.vue:1185-1250; record form src/modals/object/ViewObject.vue:2997 getPropertyInputComponent gives own editors only to boolean and date/time, email/url as input types (:2979); enum choice lists and file fields render a plain text field",
+    "evidence": "Record form src/modals/object/ViewObject.vue getPropertyInputComponent delegates to src/services/propertyEditor.js editorFor: enum/oneOf -> NcSelect of the declared values, file -> file picker (readFileAsDataUri, the data URI the save path stores), translatable -> TranslationFieldEditor per register language; booleans and dates as before. Tests src/services/propertyEditor.spec.js.",
     "change": "records-form-and-cell-editors"
    },
    "reachedOn": "/schemas/:id and /objects (edit dialog)",
@@ -1023,9 +1023,9 @@
    "source": "competitor-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "Only inside the record modal: src/modals/object/ViewObject.vue:2688 handleRowClick edits a property row in the Properties tab. The list table src/views/search/SearchIndex.vue:593 opens the modal on row click (:384), no cell editing. Searched src for inlineEdit/cellEdit/contenteditable.",
+    "evidence": "src/components/tables/EditableCell.vue (double click edits, Enter saves through PATCH /api/objects/{register}/{schema}/{id}, a refusal shows the server message and keeps the value) wired per scalar column in src/views/search/SearchIndex.vue (#column-<key> slots, inlineEditableColumns); offered only where @self.can.update is true, which lib/Service/Object/RenderObject.php applyUpdateRightMarker fills from PermissionHandler::hasPermission on _extend[]=@self.can. Tests EditableCell.spec.js, SearchIndex.spec.js, tests/Unit/Service/Object/RenderObjectUpdateRightTest.php.",
     "change": "records-form-and-cell-editors"
    },
    "reachedOn": "/tables (record modal Properties tab)",
@@ -1574,9 +1574,9 @@
    ],
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "Negotiation executes: lib/Middleware/LanguageMiddleware.php:101 registered lib/AppInfo/Application.php:657, projection lib/Service/Object/RenderObject.php:658 resolveTranslationsForRows called lib/Controller/ObjectsController.php:1090; register languages editor src/sidebars/register/RegisterSideBar.vue:220. src/components/i18n/TranslationFieldEditor.vue is imported nowhere.",
+    "evidence": "Negotiation and projection as before (LanguageMiddleware, RenderObject resolveTranslationsForRows); the record form now edits a translatable field with src/components/i18n/TranslationFieldEditor.vue, one input per register language (ViewObject.vue registerLanguages).",
     "change": "records-form-and-cell-editors"
    },
    "reachedOn": "API (Accept-Language) and /registers sidebar for languages; no per-field language editor",

@@ -3300,7 +3300,9 @@
         "This link is closed with a password": "Questa colliaziun è protegida cun in pled-clav",
         "This link is open until {date}.": "Questa colliaziun è averta fin ils {date}.",
         "This record has no visible fields.": "Quest register n'ha nagins champs visibels.",
-        "Upload": "Chargiar si"
+        "Upload": "Chargiar si",
+        "Edit {field}": "Modifitgar {field}",
+        "The value could not be saved": "La valur na pudeva betg vegnir memorisada"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

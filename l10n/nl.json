@@ -3360,7 +3360,9 @@
         "This link is closed with a password": "Deze link is afgesloten met een wachtwoord",
         "This link is open until {date}.": "Deze link is open tot {date}.",
         "This record has no visible fields.": "Dit record heeft geen zichtbare velden.",
-        "Upload": "Uploaden"
+        "Upload": "Uploaden",
+        "Edit {field}": "{field} bewerken",
+        "The value could not be saved": "De waarde kon niet worden opgeslagen"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

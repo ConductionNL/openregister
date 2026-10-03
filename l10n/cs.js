@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Omezení se nepodařilo uložit",
         "Only the agent's owner can change its limits.": "Omezení agenta může změnit jen jeho vlastník.",
         "This agent has a grant per app. Change it through the agents API.": "Tento agent má oprávnění pro každou aplikaci. Změňte je přes API agentů.",
-        "Edit limits": "Upravit omezení"
+        "Edit limits": "Upravit omezení",
+        "Edit {field}": "Upravit {field}",
+        "The value could not be saved": "Hodnotu se nepodařilo uložit"
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 )

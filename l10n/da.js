@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Grænserne kunne ikke gemmes",
         "Only the agent's owner can change its limits.": "Kun agentens ejer kan ændre dens grænser.",
         "This agent has a grant per app. Change it through the agents API.": "Denne agent har en tildeling pr. app. Ændr den via agent-API’et.",
-        "Edit limits": "Rediger grænser"
+        "Edit limits": "Rediger grænser",
+        "Edit {field}": "Rediger {field}",
+        "The value could not be saved": "Værdien kunne ikke gemmes"
     },
     "nplurals=2; plural=(n != 1);"
 )

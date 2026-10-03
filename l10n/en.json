@@ -3298,7 +3298,9 @@
         "This link is closed with a password": "This link is closed with a password",
         "This link is open until {date}.": "This link is open until {date}.",
         "This record has no visible fields.": "This record has no visible fields.",
-        "Upload": "Upload"
+        "Upload": "Upload",
+        "Edit {field}": "Edit {field}",
+        "The value could not be saved": "The value could not be saved"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

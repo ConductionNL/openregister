@@ -1282,6 +1282,9 @@ export default {
 				schema: schemaId,
 				search,
 				filters,
+				// The reader's update right per row, which decides where the
+				// records list offers an in-place editor (REQ-RFCE-002).
+				_extend: ['@self.can'],
 			})
 			objectStore.refetchSearchCollection()
 		},

@@ -3300,7 +3300,9 @@
         "This link is closed with a password": "Esta ligação está protegida por palavra-passe",
         "This link is open until {date}.": "Esta ligação está aberta até {date}.",
         "This record has no visible fields.": "Este registo não tem campos visíveis.",
-        "Upload": "Carregar"
+        "Upload": "Carregar",
+        "Edit {field}": "Editar {field}",
+        "The value could not be saved": "Não foi possível guardar o valor"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

@@ -3300,7 +3300,9 @@
         "This link is closed with a password": "Tämä linkki on suojattu salasanalla",
         "This link is open until {date}.": "Tämä linkki on auki {date} asti.",
         "This record has no visible fields.": "Tällä tietueella ei ole näkyviä kenttiä.",
-        "Upload": "Lähetä"
+        "Upload": "Lähetä",
+        "Edit {field}": "Muokkaa kenttää {field}",
+        "The value could not be saved": "Arvoa ei voitu tallentaa"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

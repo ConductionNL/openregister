@@ -3300,7 +3300,9 @@
         "This link is closed with a password": "Dëse Link ass mat engem Passwuert geschützt",
         "This link is open until {date}.": "Dëse Link ass op bis {date}.",
         "This record has no visible fields.": "Dësen Datesaz huet keng siichtbar Felder.",
-        "Upload": "Eroplueden"
+        "Upload": "Eroplueden",
+        "Edit {field}": "{field} änneren",
+        "The value could not be saved": "De Wäert konnt net gespäichert ginn"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

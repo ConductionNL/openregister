@@ -3300,7 +3300,9 @@
         "This link is closed with a password": "Kjo lidhje është e mbrojtur me fjalëkalim",
         "This link is open until {date}.": "Kjo lidhje është e hapur deri më {date}.",
         "This record has no visible fields.": "Ky regjistrim nuk ka fusha të dukshme.",
-        "Upload": "Ngarko"
+        "Upload": "Ngarko",
+        "Edit {field}": "Ndrysho {field}",
+        "The value could not be saved": "Vlera nuk mund të ruhej"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

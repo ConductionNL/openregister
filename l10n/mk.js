@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Ограничувањата не можеа да се зачуваат",
         "Only the agent's owner can change its limits.": "Само сопственикот на агентот може да ги промени неговите ограничувања.",
         "This agent has a grant per app. Change it through the agents API.": "Овој агент има дозвола по апликација. Променете ја преку API-то за агенти.",
-        "Edit limits": "Уреди ограничувања"
+        "Edit limits": "Уреди ограничувања",
+        "Edit {field}": "Уреди {field}",
+        "The value could not be saved": "Вредноста не може да се зачува"
     },
     "nplurals=2; plural=(n != 1);"
 )

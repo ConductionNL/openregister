@@ -3323,7 +3323,9 @@ OC.L10N.register(
         "Could not save the limits": "De grenzen konden niet worden opgeslagen",
         "Only the agent's owner can change its limits.": "Alleen de eigenaar van de agent kan de grenzen wijzigen.",
         "This agent has a grant per app. Change it through the agents API.": "Deze agent heeft een toekenning per app. Wijzig die via de agents-API.",
-        "Edit limits": "Grenzen bewerken"
+        "Edit limits": "Grenzen bewerken",
+        "Edit {field}": "{field} bewerken",
+        "The value could not be saved": "De waarde kon niet worden opgeslagen"
     },
     "nplurals=2; plural=(n != 1);"
 )

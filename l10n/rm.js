@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Las limitas n'han betg pudì vegnir memorisadas",
         "Only the agent's owner can change its limits.": "Mo il possessur da l'agent po midar sias limitas.",
         "This agent has a grant per app. Change it through the agents API.": "Quest agent ha ina permissiun per app. Mida quella via l'API dals agents.",
-        "Edit limits": "Modifitgar las limitas"
+        "Edit limits": "Modifitgar las limitas",
+        "Edit {field}": "Modifitgar {field}",
+        "The value could not be saved": "La valur na pudeva betg vegnir memorisada"
     },
     "nplurals=2; plural=(n != 1);"
 )

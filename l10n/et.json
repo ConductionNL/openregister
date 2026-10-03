@@ -3300,7 +3300,9 @@
         "This link is closed with a password": "See link on parooliga kaitstud",
         "This link is open until {date}.": "See link on avatud kuni {date}.",
         "This record has no visible fields.": "Sellel kirjel pole nähtavaid välju.",
-        "Upload": "Laadi üles"
+        "Upload": "Laadi üles",
+        "Edit {field}": "Muuda välja {field}",
+        "The value could not be saved": "Väärtust ei õnnestunud salvestada"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
