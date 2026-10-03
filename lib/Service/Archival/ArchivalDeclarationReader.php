@@ -156,6 +156,13 @@ class ArchivalDeclarationReader {
 			$block['classification'] = $classification;
 		}
 
+		// The property a record overrides `category` with, carried under the
+		// archive block's name for it so one resolver reads both forms.
+		$override = $this->text(value: ($annotation['categoryProperty'] ?? null));
+		if ($override !== null) {
+			$block['classificationProperty'] = $override;
+		}
+
 		return $block;
 	}//end translateAnnotation()
 

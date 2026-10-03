@@ -9413,6 +9413,86 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end findMultiple()
 
 	/**
+	 * Which of these UUIDs, all living in one register+schema table, may the caller read?
+	 *
+	 * The answer comes from the same access-control filter the single-object read
+	 * applies (applyAccessControlToQuery: RBAC plus multitenancy, with every rule
+	 * that widens or narrows them), so a name lookup can never disagree with
+	 * `GET /api/objects/{register}/{schema}/{id}`. Soft-deleted rows are never
+	 * readable here. Any failure answers "none": a lookup that cannot establish
+	 * read access must not disclose.
+	 *
+	 * @param int           $registerId The register the table belongs to.
+	 * @param int           $schemaId   The schema the table belongs to.
+	 * @param array<string> $uuids      UUIDs to test, all expected in that table.
+	 *
+	 * @return array<int, string> The subset of $uuids the caller may read.
+	 *
+	 * @spec openspec/changes/names-follow-read-rights/specs/schema-driven-read-coercion/spec.md
+	 */
+	public function filterReadableUuids(int $registerId, int $schemaId, array $uuids): array {
+		$uuids = array_values(array_unique(array_filter($uuids, fn ($uuid): bool => is_string($uuid) && $uuid !== '')));
+		if (empty($uuids) === true) {
+			return [];
+		}
+
+		$readable = [];
+		try {
+			// Metadata lookups only: which table, and which rules. The rows themselves
+			// are filtered by the access-control seam below.
+			$register = $this->registerMapper->find(id: $registerId, _rbac: false, _multitenancy: false);
+			$schema = $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false);
+			if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+				return [];
+			}
+
+			$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+			$uuidCol = 't.' . self::METADATA_PREFIX . 'uuid';
+
+			// Chunked so a long list never exceeds the driver's parameter limit.
+			foreach (array_chunk($uuids, 500) as $chunk) {
+				$qb = $this->db->getQueryBuilder();
+				$qb->select($uuidCol)
+					->from($tableName, 't')
+					->where($qb->expr()->in($uuidCol, $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_STR_ARRAY)))
+					->andWhere($qb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'));
+
+				$this->searchHandler->applyAccessControlToQuery(
+					qb: $qb,
+					schema: $schema,
+					_rbac: true,
+					_multitenancy: true,
+					registerId: $registerId
+				);
+
+				$result = $qb->executeQuery();
+				while (($row = $result->fetch()) !== false) {
+					$uuid = $row[self::METADATA_PREFIX . 'uuid'] ?? null;
+					if (is_string($uuid) === true) {
+						$readable[] = $uuid;
+					}
+				}
+
+				$result->closeCursor();
+			}//end foreach
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[MagicMapper] filterReadableUuids: read access could not be established; disclosing none',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'registerId' => $registerId,
+					'schemaId' => $schemaId,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
+		}//end try
+
+		return $readable;
+	}//end filterReadableUuids()
+
+	/**
 	 * Find all objects for a given schema.
 	 *
 	 * Searches across all magic tables that belong to the given schema.

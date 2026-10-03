@@ -91,4 +91,49 @@ class ImportHandlerSchemaVersioningWiringTest extends TestCase {
 
 		$this->assertSame($versioning, (new ReflectionProperty(ImportHandler::class, 'schemaVersioning'))->getValue($handler));
 	}//end testTheImportHandlerIsGivenTheSchemaVersioningService()
+
+	/**
+	 * The factory hands the import its selectielijst seeder, or `components.selectionLists` is dropped.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function testTheImportHandlerIsGivenTheSelectionListSeeder(): void {
+		$handler = new ImportHandler(
+			schemaMapper: $this->createMock(SchemaMapper::class),
+			registerMapper: $this->createMock(RegisterMapper::class),
+			objectEntityMapper: $this->createMock(MagicMapper::class),
+			configurationMapper: $this->createMock(ConfigurationMapper::class),
+			mappingMapper: $this->createMock(MappingMapper::class),
+			client: $this->createMock(Client::class),
+			appConfig: $this->createMock(IAppConfig::class),
+			logger: $this->createMock(LoggerInterface::class),
+			appDataPath: '/tmp',
+			uploadHandler: $this->createMock(UploadHandler::class),
+			objectService: $this->createMock(ObjectService::class)
+		);
+
+		$seeder = $this->createMock(\OCA\OpenRegister\Service\Archival\SelectionListSeeder::class);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			static function (string $id) use ($seeder): object {
+				if ($id === \OCA\OpenRegister\Service\Archival\SelectionListSeeder::class) {
+					return $seeder;
+				}
+
+				throw new RuntimeException('not in this test: ' . $id);
+			}
+		);
+
+		$app = (new ReflectionClass(Application::class))->newInstanceWithoutConstructor();
+		(new ReflectionMethod(Application::class, 'attachOptionalImportServices'))->invoke(
+			$app,
+			$handler,
+			$container,
+			$this->createMock(LoggerInterface::class)
+		);
+
+		$this->assertSame($seeder, (new ReflectionProperty(ImportHandler::class, 'selectionListSeeder'))->getValue($handler));
+	}//end testTheImportHandlerIsGivenTheSelectionListSeeder()
 }//end class
