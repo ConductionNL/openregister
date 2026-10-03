@@ -390,7 +390,17 @@ class MagicOrganizationHandler {
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function isSystemContext(?\OCP\IUser $user): bool {
-		if ($user !== null || PHP_SAPI !== 'cli' || $this->isSaasModeEnabled() === true) {
+		if ($user !== null || $this->isSaasModeEnabled() === true) {
+			return false;
+		}
+
+		// The command line, or code inside ObjectService::runAsSystem() in any
+		// SAPI: a system write in a web request (dossiq's portal Woo intake)
+		// resolves its calculation references here too. Same rule as
+		// MagicRbacHandler::isTrustedSystemCaller().
+		if ($this->isCommandLine() === false
+			&& \OCA\OpenRegister\Service\SystemOperationContext::isActive() === false
+		) {
 			return false;
 		}
 
@@ -402,6 +412,17 @@ class MagicOrganizationHandler {
 
 		return true;
 	}//end isSystemContext()
+
+	/**
+	 * Whether PHP runs on the command line. A seam, so a test can read as a web request.
+	 *
+	 * @return bool True under the CLI SAPI.
+	 *
+	 * @spec openspec/changes/names-follow-read-rights/specs/rbac-scopes/spec.md
+	 */
+	protected function isCommandLine(): bool {
+		return PHP_SAPI === 'cli';
+	}//end isCommandLine()
 
 	/**
 	 * Get the active organization UUID(s) for the current user

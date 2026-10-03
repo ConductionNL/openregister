@@ -3803,6 +3803,18 @@ class SaveObject {
 			currentUser: $currentUser
 		);
 
+		// A record that changes its own selectielijst category (DECISIONS row
+		// 48) is refused when that category has no row, re-derived while it is
+		// still active, and refused once it has been nominated.
+		$retentionService = $this->resolveRetentionService();
+		if ($retentionService !== null) {
+			$preparedObject = $retentionService->applyClassificationOnUpdate(
+				object: $preparedObject,
+				schema: $schema,
+				previousData: ($oldObjectData ?? [])
+			);
+		}
+
 		// If not persisting, return the prepared object. Nothing reached
 		// storage, so from a batching caller's point of view the row changed
 		// nothing.
@@ -3912,6 +3924,14 @@ class SaveObject {
 		// Apply archival metadata from schema archive configuration.
 		$retentionService = $this->resolveRetentionService();
 		if ($retentionService !== null) {
+			// Outside the try below on purpose: a per-object selectielijst
+			// category that names no row is the caller's error, and must be
+			// refused rather than logged and ignored.
+			$retentionService->guardClassificationOverride(
+				schema: $schema,
+				data: ($preparedObject->getObject() ?? [])
+			);
+
 			try {
 				$preparedObject = $retentionService->applyArchivalMetadata($preparedObject, $schema);
 			} catch (\Throwable $e) {

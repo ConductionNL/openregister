@@ -1435,6 +1435,11 @@ class Application extends App implements IBootstrap {
 				SchemaVersioningService::class,
 				'SchemaVersioningService',
 			],
+			// Writes the selectielijst categories an app ships (`components.selectionLists`).
+			'setSelectionListSeeder' => [
+				\OCA\OpenRegister\Service\Archival\SelectionListSeeder::class,
+				'SelectionListSeeder',
+			],
 		];
 
 		foreach ($optional as $setter => $service) {

@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -55,6 +56,7 @@ use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
+use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -499,15 +501,10 @@ class MagicRbacHandler {
 			return;
 		}
 
-		// CLI / no-session system context (occ commands, repair steps, cron
-		// jobs, background calculations) has no user session. These are trusted
-		// system operations and bypass RBAC filtering, mirroring the established
-		// CLI bypass in MultiTenancyTrait::hasRbacPermission(). Without this a
-		// schema with explicit authorization rules would clamp every CLI query
-		// to `1 = 0` and hide all rows from background calcs / list views.
-		// A forced-anonymous evaluation (WOO-578) is the one no-session case
-		// that must NOT be trusted: it asked to be filtered as nobody.
-		if ($user === null && PHP_SAPI === 'cli' && AnonymousEvaluationContext::isActive() === false) {
+		// A userless system caller (occ, repair steps, cron, background
+		// calculations, or code inside ObjectService::runAsSystem()) bypasses
+		// RBAC filtering. See isTrustedSystemCaller().
+		if ($this->isTrustedSystemCaller(user: $user) === true) {
 			return;
 		}
 
@@ -1684,8 +1681,12 @@ class MagicRbacHandler {
 			$userGroups = $this->groupManager->getUserGroupIds($user);
 		}
 
-		// Admin users bypass all RBAC checks.
-		if (in_array('admin', $userGroups, true) === true) {
+		// Admin users bypass all RBAC checks, and so does a userless caller inside
+		// ObjectService::runAsSystem(). (This raw-SQL path has never carried the
+		// command-line arm of isTrustedSystemCaller(); that stays as it was.)
+		if (in_array('admin', $userGroups, true) === true
+			|| ($this->isTrustedSystemCaller(user: $user) === true && SystemOperationContext::isActive() === true)
+		) {
 			return ['bypass' => true, 'conditions' => []];
 		}
 
@@ -2452,6 +2453,48 @@ class MagicRbacHandler {
 		$escaped = str_replace("'", "''", (string)$value);
 		return "'{$escaped}'";
 	}//end quoteValue()
+
+	/**
+	 * Whether this is a userless SYSTEM caller whose reads RBAC must not filter.
+	 *
+	 * Two userless contexts are the system rather than a caller: the command
+	 * line (occ, repair steps, cron, background calculations), and code running
+	 * inside ObjectService::runAsSystem() (SystemOperationContext), which
+	 * PermissionHandler::hasPermission() already trusts. Without the second, a
+	 * calculation run by a system write in a WEB request (dossiq's portal Woo
+	 * intake resolving caseType and statusType) had every reference read
+	 * clamped to nothing.
+	 *
+	 * Neither opens a user-facing read: a logged-in user is always filtered as
+	 * that user, and a forced-anonymous evaluation (WOO-578) asked to be
+	 * filtered as nobody, so it never counts as the system.
+	 *
+	 * @param IUser|null $user The session user.
+	 *
+	 * @return bool True when the caller is the system.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Both contexts are ambient static markers by design.
+	 *
+	 * @spec openspec/changes/names-follow-read-rights/specs/rbac-scopes/spec.md
+	 */
+	public function isTrustedSystemCaller(?IUser $user): bool {
+		if ($user !== null || AnonymousEvaluationContext::isActive() === true) {
+			return false;
+		}
+
+		return $this->isCommandLine() === true || SystemOperationContext::isActive() === true;
+	}//end isTrustedSystemCaller()
+
+	/**
+	 * Whether PHP runs on the command line. A seam, so a test can read as a web request.
+	 *
+	 * @return bool True under the CLI SAPI.
+	 *
+	 * @spec openspec/changes/names-follow-read-rights/specs/rbac-scopes/spec.md
+	 */
+	protected function isCommandLine(): bool {
+		return PHP_SAPI === 'cli';
+	}//end isCommandLine()
 
 	/**
 	 * Get the current user ID
