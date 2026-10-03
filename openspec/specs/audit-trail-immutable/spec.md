@@ -289,6 +289,17 @@ An app that writes its own audit rows, such as portaliq's proof records (`portal
 - **THEN** it answers the four `portaliq.` rows only
 - @e2e exclude {filter semantics asserted against the migrated table in tests/Unit/Db/AuditTrailActionPrefixTest.php}
 
+### Requirement: The audit history of one object is read through an index
+
+The audit trail table SHALL carry an index on `(object_uuid, created)`, so a read of one object's history (the history tab, revert, `AuditTrailMapper::findChangesForObject()`) is an index lookup and not a scan of the whole table.
+
+#### Scenario: an upgrade adds the index once
+
+- **GIVEN** an instance whose `openregister_audit_trails` has no index on `object_uuid`
+- **WHEN** the app is upgraded
+- **THEN** the table has the index `or_audit_obj_uuid_created` on `object_uuid`, `created`, and a second run of the migration adds nothing
+- @e2e exclude {schema change, asserted in tests/Unit/Migration/Version1Date20261003090000Test.php; the query plan was measured on the dev instance (planninq live pass, 3 Oct 2026)}
+
 ## Current Implementation Status
 - **Implemented:**
   - `AuditTrail` entity (`lib/Db/AuditTrail.php`) with fields: uuid, schema, register, object, objectUuid, registerUuid, schemaUuid, action, changed, user, userName, created, organisation, session, request, ipAddress, size, hash, previousHash
