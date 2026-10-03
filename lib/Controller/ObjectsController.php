@@ -4019,6 +4019,11 @@ class ObjectsController extends Controller {
 		} catch (FolderAccessDeniedException $exception) {
 			// MUST be caught before generic \Exception. See `self-folder-access-control` spec.
 			return $this->folderAccessDeniedResponse(exception: $exception);
+		} catch (NotAuthorizedException $exception) {
+			// The rules refused this caller the update: 403 with the reason, as
+			// PUT and DELETE answer. It fell into the generic handler and came
+			// back as a 500 that read like a server fault (planninq live pass P4).
+			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: Http::STATUS_FORBIDDEN);
 		} catch (\Exception $exception) {
 			// Handle all other exceptions (including RBAC permission errors).
 			$this->logger->error(
@@ -4187,6 +4192,11 @@ class ObjectsController extends Controller {
 			// body (no folder-id oracle) — same contract as create/update/patch.
 			// See the `self-folder-access-control` spec.
 			return $this->folderAccessDeniedResponse(exception: $exception);
+		} catch (NotAuthorizedException $exception) {
+			// The rules refused this caller the update: 403 with the reason, as
+			// PUT and DELETE answer. It fell into the generic handler and came
+			// back as a 500 that read like a server fault (planninq live pass P4).
+			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: Http::STATUS_FORBIDDEN);
 		} catch (\Exception $exception) {
 			// SEC-CTRL-7: do not leak internal exception detail on 500.
 			return $this->errorResponse(e: $exception);
