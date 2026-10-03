@@ -371,4 +371,89 @@ class ShippedConfigurationGuardTest extends TestCase {
 			'the decision names the part and the actor'
 		);
 	}//end testADecisionIsOnTheRecord()
+
+	/**
+	 * 🔴 D11 (learniq live pass, 3 Oct 2026): a shipped property that never
+	 * reached the instance is not a local deletion.
+	 *
+	 * The baseline already named `personalNumber` and `emergencyContacts`
+	 * (recorded by an import whose write did not land them), the stored schema
+	 * has neither, and the release also edits one leaf of each. The guard read
+	 * the absent property as REMOVED LOCALLY, kept the absence, and reported
+	 * "2 part(s) changed on both sides" on every upgrade, so the schema stayed
+	 * 14 properties short forever. A property absent from the instance as a
+	 * whole, which the app still ships, is put back.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-shipped-property-missing-from-the-instance-is-restored-on-upgrade
+	 */
+	public function testAShippedPropertyMissingFromTheInstanceIsRestored(): void {
+		$baseline = [
+			'properties' => [
+				'firstName' => ['type' => 'string', 'title' => 'Voornaam'],
+				'personalNumber' => ['type' => 'string', 'x-notes' => 'BSN or onderwijsnummer'],
+				'emergencyContacts' => ['type' => 'array', 'description' => 'Contacts'],
+				'allergies' => ['type' => 'string'],
+			],
+			'required' => ['firstName'],
+		];
+
+		// The instance holds only what an earlier import managed to write.
+		$live = [
+			'properties' => ['firstName' => ['type' => 'string', 'title' => 'Voornaam']],
+			'required' => ['firstName'],
+		];
+
+		$incoming = $baseline;
+		$incoming['properties']['personalNumber']['x-notes'] = 'BSN, onderwijsnummer or a school number';
+		$incoming['properties']['emergencyContacts']['description'] = 'Who to call';
+
+		$result = $this->guard(baseline: $baseline)->guardSchemaUpdate(
+			slug: 'learner-profile',
+			live: $live,
+			incoming: $incoming,
+			app: 'learniq',
+			appVersion: '0.34.33'
+		);
+
+		$this->assertSame([], $result['conflicts'], 'a property the instance never had is not a conflict');
+		// The merge writes parts in path order, as it does for every guarded
+		// import; the set is what this test is about.
+		$written = array_keys($result['definition']['properties']);
+		sort($written);
+		$this->assertSame(
+			['allergies', 'emergencyContacts', 'firstName', 'personalNumber'],
+			$written,
+			'every shipped property is in the definition written'
+		);
+		$this->assertSame($incoming['properties']['personalNumber'], $result['definition']['properties']['personalNumber']);
+		$this->assertSame('Who to call', $result['definition']['properties']['emergencyContacts']['description']);
+		$this->assertSame(['type' => 'string'], $result['definition']['properties']['allergies'], 'an unchanged missing property too');
+	}//end testAShippedPropertyMissingFromTheInstanceIsRestored()
+
+	/**
+	 * A property the instance has, with one leaf removed locally, is still a
+	 * local change: only a property missing as a whole is put back.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-shipped-property-missing-from-the-instance-is-restored-on-upgrade
+	 */
+	public function testALeafRemovedLocallyStaysRemoved(): void {
+		$baseline = ['properties' => ['toelichting' => ['type' => 'string', 'maxLength' => 500]]];
+		$live = ['properties' => ['toelichting' => ['type' => 'string']]];
+		$incoming = $baseline;
+
+		$result = $this->guard(baseline: $baseline)->guardSchemaUpdate(
+			slug: 'zaak',
+			live: $live,
+			incoming: $incoming,
+			app: 'dossiq',
+			appVersion: '1.3.0'
+		);
+
+		$this->assertSame(['type' => 'string'], $result['definition']['properties']['toelichting']);
+		$this->assertContains('properties.toelichting.maxLength', $result['preserved']);
+	}//end testALeafRemovedLocallyStaysRemoved()
 }//end class
