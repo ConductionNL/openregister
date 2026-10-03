@@ -97,8 +97,19 @@ class GuardedDescriptorMerge {
 			'conflicts' => [],
 		];
 
+		$missing = $this->missingProperties(sources: $sources);
+
 		foreach ($states as $path => $state) {
 			$decided = in_array($path, $decisions, true);
+
+			// A shipped property the instance does not hold AT ALL never reached
+			// it (an earlier import whose write did not land it); it was not
+			// deleted here. Read as a local deletion it was kept absent, and
+			// reported as a conflict wherever the app also changed it, on every
+			// upgrade (learniq D11). It is taken from upstream.
+			if (in_array($this->propertyOf(path: (string)$path), $missing, true) === true) {
+				$state = DivergenceComparator::UPSTREAM;
+			}
 
 			// A decided conflict is taken from upstream, and is the only way a
 			// conflicting part moves. The decision is the caller's; recording
@@ -126,6 +137,51 @@ class GuardedDescriptorMerge {
 			'baseline' => $this->parts->unflatten(parts: $acc['nextBaseline']),
 		];
 	}//end merge()
+
+	/**
+	 * The shipped properties the instance holds no part of.
+	 *
+	 * Only a property missing as a whole counts: a property the instance has
+	 * with one part removed is a local change and stays one.
+	 *
+	 * @param array<string, array<string, mixed>> $sources The flattened baseline, live and incoming definitions.
+	 *
+	 * @return array<int, string> The property names.
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-shipped-property-missing-from-the-instance-is-restored-on-upgrade
+	 */
+	private function missingProperties(array $sources): array {
+		$live = [];
+		foreach (array_keys($sources['live']) as $path) {
+			$live[$this->propertyOf(path: (string)$path)] = true;
+		}
+
+		$missing = [];
+		foreach (array_keys($sources['incoming']) as $path) {
+			$property = $this->propertyOf(path: (string)$path);
+			if ($property !== null && isset($live[$property]) === false) {
+				$missing[$property] = true;
+			}
+		}
+
+		return array_keys($missing);
+	}//end missingProperties()
+
+	/**
+	 * The property a flattened path belongs to, or null for a path outside `properties`.
+	 *
+	 * @param string $path The flattened path, such as `properties.personalNumber.x-notes`.
+	 *
+	 * @return string|null The property name.
+	 */
+	private function propertyOf(string $path): ?string {
+		$segments = explode(DescriptorParts::SEPARATOR, $path, 3);
+		if ($segments[0] !== 'properties' || isset($segments[1]) === false) {
+			return null;
+		}
+
+		return $segments[1];
+	}//end propertyOf()
 
 	/**
 	 * Fold ONE path's divergence state into the running result.
