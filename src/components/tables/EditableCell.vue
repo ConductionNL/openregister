@@ -202,8 +202,12 @@ export default {
 	<div
 		class="editable-cell"
 		:class="{ 'editable-cell--editable': canEdit }"
+		:role="canEdit && !editing ? 'button' : undefined"
+		:tabindex="canEdit && !editing ? 0 : undefined"
+		:aria-label="canEdit && !editing ? editorLabel : undefined"
 		@click="onClick"
-		@dblclick="onDoubleClick">
+		@dblclick="onDoubleClick"
+		@keydown.enter.self.prevent="onDoubleClick">
 		<template v-if="editing">
 			<NcSelect
 				v-if="options.length > 0"
