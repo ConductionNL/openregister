@@ -3,7 +3,7 @@
  * cell. Pure functions over the schema property, so the choice is testable
  * without mounting the 3,500-line record modal.
  *
- * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
+ * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
  */
 
 /**
@@ -23,7 +23,7 @@ function oneOfConstants(property) {
  *
  * @param {object} property The schema property.
  * @return {Array<{value: *, label: string}>}
- * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
+ * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
  */
 export function enumOptions(property) {
 	if (Array.isArray(property?.enum) && property.enum.length > 0) {
@@ -49,7 +49,7 @@ export function enumOptions(property) {
  * @param {object} property The schema property.
  * @param {Array<string>} languages The register's languages.
  * @return {string}
- * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
+ * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
  */
 export function editorFor(property, languages = []) {
 	if (!property) return 'text'
@@ -76,7 +76,7 @@ export function editorFor(property, languages = []) {
  * @param {object} property The schema property.
  * @param {*} value The cell's current value.
  * @return {boolean}
- * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+ * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
  */
 export function isInlineEditable(property, value = null) {
 	if (!property) return false
@@ -95,7 +95,7 @@ export function isInlineEditable(property, value = null) {
  *
  * @param {File} file The chosen file.
  * @return {Promise<string>}
- * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
+ * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
  */
 export function readFileAsDataUri(file) {
 	return new Promise((resolve, reject) => {

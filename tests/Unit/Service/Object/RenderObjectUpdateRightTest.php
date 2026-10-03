@@ -14,7 +14,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+ * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
  */
 
 declare(strict_types=1);

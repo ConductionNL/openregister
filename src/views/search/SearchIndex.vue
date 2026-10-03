@@ -78,7 +78,7 @@ export default {
 		 * The columns a reader with update rights may edit in their cell:
 		 * scalar text, numbers and choice lists of the searched schema.
 		 *
-		 * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
 		 * @return {Array<string>}
 		 */
 		inlineEditableColumns() {
@@ -317,7 +317,7 @@ export default {
 		 * Ask the list for the reader's update right on each row
 		 * (`_extend[]=@self.can`), which decides where a cell is editable.
 		 *
-		 * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
 		 * @return {void}
 		 */
 		requestUpdateRights() {
@@ -339,7 +339,7 @@ export default {
 		 * @param {object} payload.row The row.
 		 * @param {string} payload.field The field.
 		 * @param {*} payload.value The stored value.
-		 * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
 		 * @return {void}
 		 */
 		handleCellSaved({ row, field, value }) {

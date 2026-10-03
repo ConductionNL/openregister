@@ -31,7 +31,7 @@ function toPropertyType(property, draft) {
  * message under the cell and keeps the old value. Without update rights (the
  * row's `@self.can.update`), a double click opens the record as before.
  *
- * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+ * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
  */
 export default {
 	name: 'EditableCell',
@@ -58,7 +58,7 @@ export default {
 
 	computed: {
 		/**
-		 * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
 		 * @return {boolean}
 		 */
 		canEdit() {
@@ -67,7 +67,7 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
 		 * @return {Array<{value: *, label: string}>}
 		 */
 		options() {
@@ -106,7 +106,7 @@ export default {
 		 * Edit in place for an editor; open the record for everyone else.
 		 *
 		 * @param {MouseEvent} event The double click.
-		 * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
 		 */
 		onDoubleClick(event) {
 			event?.stopPropagation?.()
@@ -123,7 +123,7 @@ export default {
 		 * Save this one field through PATCH; on a refusal show why and keep the old value.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
 		 */
 		async save() {
 			if (this.saving) return
@@ -157,7 +157,7 @@ export default {
 		 * not edit lets the click through, and the row opens as before.
 		 *
 		 * @param {MouseEvent} event The click.
-		 * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
 		 */
 		onClick(event) {
 			if (this.canEdit || this.editing) {
@@ -168,7 +168,7 @@ export default {
 		/**
 		 * Leave the editor without saving.
 		 *
-		 * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
 		 */
 		cancel() {
 			this.editing = false

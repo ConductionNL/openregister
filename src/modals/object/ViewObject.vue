@@ -1553,7 +1553,7 @@ export default {
 		/**
 		 * The register's languages, which give a translatable field one input each.
 		 *
-		 * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
 		 * @return {Array<string>}
 		 */
 		registerLanguages() {
@@ -3113,7 +3113,7 @@ export default {
 		 *
 		 * @param {string} key The property.
 		 * @return {Array<{value: *, label: string}>}
-		 * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
 		 */
 		enumOptionsFor(key) {
 			return enumOptions(this.currentSchema?.properties?.[key])
@@ -3152,7 +3152,7 @@ export default {
 		 * @param {string} key The property.
 		 * @param {Event} event The change event of the file input.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/records-form-and-cell-editors/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
 		 */
 		async onPropertyFilePicked(key, event) {
 			const file = event?.target?.files?.[0]
