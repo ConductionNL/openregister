@@ -262,6 +262,19 @@ Declaration tokens MUST accept both register/schema slugs and numeric ids. A tok
 - **AND** the numeric token MUST NOT be resolved as a slug, which would match no row and silently disable the listener
 - **AND** normalisation MUST NOT coerce the token to `int`, which would make `strtolower()` a fatal `TypeError` under `strict_types`
 
+#### Scenario: A filtered subscription holds for every object event class
+- **GIVEN** a subscription declared as `schemas: ['62']` on any object event class that carries an object (created, creating, updating, updated, deleting, deleted, locked, unlocked, reverted, transitioned)
+- **WHEN** that event is dispatched for an object whose schema id is `99`
+- **THEN** the subscription MUST NOT be invoked, whichever accessor the event class carries its object behind (`getObject()` or `getNewObject()`)
+- **AND** a new object event class MUST be covered by the same test before it ships, because an unread accessor is how a listener filtered to humaniq's `managerdeputy` schema ran on every update instance-wide and refused every lifecycle transition (live defect H1, 3 Oct 2026)
+
+#### Scenario: A filtered subscription fails closed on an object without a register or schema
+- **GIVEN** a subscription declared with a schema (or register) filter
+- **WHEN** an event carries an object whose schema (or register) is not set
+- **THEN** the subscription MUST NOT be invoked, because that object is not in the declared schema
+- **AND** an unfiltered subscription MUST still be invoked for it
+- **AND** an event that carries no object at all (`ObjectsMergedEvent`) MUST still invoke a filtered subscription, because no filter can be applied to it and skipping would leave the listener silently dead
+
 #### Scenario: The declared subscription count is observable
 - **GIVEN** an operator needs to tell a working narrowing from an inert one
 - **WHEN** they read `ObjectEventSubscription::subscriptionCount()` or the proxy trace line

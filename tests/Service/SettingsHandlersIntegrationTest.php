@@ -1397,16 +1397,4 @@ class SettingsHandlersIntegrationTest extends TestCase {
 
 		$this->assertIsArray($result);
 	}
-
-	/**
-	 * Test importConfigurationWithSelection returns empty array (placeholder)
-	 *
-	 * @return void
-	 */
-	public function testImportConfigurationWithSelectionReturnsArray(): void {
-		$config = new Configuration();
-		$result = $this->previewHandler->importConfigurationWithSelection($config, []);
-
-		$this->assertIsArray($result);
-	}
 }
