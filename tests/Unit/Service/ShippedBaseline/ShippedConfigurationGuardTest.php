@@ -47,6 +47,13 @@ class ShippedConfigurationGuardTest extends TestCase {
 	private array $actions = [];
 
 	/**
+	 * The baselines the store was asked to record, by subject.
+	 *
+	 * @var array<int, array{subject: string, definition: array<string, mixed>}>
+	 */
+	private array $recorded = [];
+
+	/**
 	 * A guard over an in-memory baseline store.
 	 *
 	 * @param array<string, mixed>|null $baseline The stored baseline definition, or null for none.
@@ -67,7 +74,12 @@ class ShippedConfigurationGuardTest extends TestCase {
 				'recordedAt' => '2026-09-01T00:00:00+00:00',
 			])
 		);
-		$store->method('record')->willReturn(true);
+		$store->method('record')->willReturnCallback(
+			function (string $subject, array $definition): bool {
+				$this->recorded[] = ['subject' => $subject, 'definition' => $definition];
+				return true;
+			}
+		);
 
 		$parts = new DescriptorParts();
 		$comparator = new DivergenceComparator(parts: $parts);
@@ -456,4 +468,65 @@ class ShippedConfigurationGuardTest extends TestCase {
 		$this->assertSame(['type' => 'string'], $result['definition']['properties']['toelichting']);
 		$this->assertContains('properties.toelichting.maxLength', $result['preserved']);
 	}//end testALeafRemovedLocallyStaysRemoved()
+
+	/**
+	 * 🔴 With `record: false` the guard records nothing and hands the baseline
+	 * back, on both paths, so the import can record it after its write.
+	 *
+	 * The import used to record the baseline BEFORE writing the schema. When
+	 * that write was refused, the instance kept its old properties under a
+	 * baseline it never ran, and the next import read every old part as a
+	 * local edit and kept it (portaliq's portalPage, 0.4.1 with 0.3.0
+	 * properties).
+	 *
+	 * @return void
+	 */
+	public function testWithRecordFalseTheBaselineIsReturnedNotRecorded(): void {
+		$incoming = ['properties' => ['kind' => ['type' => 'string', 'enum' => ['inbox', 'cases']]]];
+		$live = ['properties' => ['kind' => ['type' => 'string', 'enum' => ['inbox']]]];
+
+		$first = $this->guard(baseline: null)->guardSchemaUpdate(
+			slug: 'portalPage',
+			live: $live,
+			incoming: $incoming,
+			app: 'portaliq',
+			appVersion: '0.56.0',
+			record: false
+		);
+
+		$this->assertSame([], $this->recorded, 'nothing is recorded before the schema is written');
+		$this->assertSame($incoming, $first['baseline'], 'the first baseline is what the app shipped');
+
+		$second = $this->guard(baseline: $live)->guardSchemaUpdate(
+			slug: 'portalPage',
+			live: $live,
+			incoming: $incoming,
+			app: 'portaliq',
+			appVersion: '0.56.1',
+			record: false
+		);
+
+		$this->assertSame([], $this->recorded, 'nor on the guarded path');
+		$this->assertEqualsCanonicalizing(['inbox', 'cases'], $second['definition']['properties']['kind']['enum'], 'the upstream change lands');
+		$this->assertEqualsCanonicalizing(['inbox', 'cases'], $second['baseline']['properties']['kind']['enum'], 'and the baseline to record moves with it');
+	}//end testWithRecordFalseTheBaselineIsReturnedNotRecorded()
+
+	/**
+	 * By default the guard still records, so the other callers are unchanged.
+	 *
+	 * @return void
+	 */
+	public function testByDefaultTheBaselineIsStillRecorded(): void {
+		$incoming = ['properties' => ['zaaknummer' => ['type' => 'string']]];
+
+		$this->guard(baseline: null)->guardSchemaUpdate(
+			slug: 'zaak',
+			live: ['properties' => []],
+			incoming: $incoming,
+			app: 'dossiq',
+			appVersion: '1.3.0'
+		);
+
+		$this->assertSame([['subject' => 'schema:zaak', 'definition' => $incoming]], $this->recorded);
+	}//end testByDefaultTheBaselineIsStillRecorded()
 }//end class
