@@ -50,6 +50,11 @@ use ReflectionMethod;
  */
 class MagicSearchHandlerDateSortTest extends TestCase {
 
+	/**
+	 * The real date/timestamp columns of the table the default cases sort.
+	 */
+	private const DATE_COLUMNS = ['_created', '_updated', 'occurred_at', 'due_date', 'order', 'born_on'];
+
 	private MagicSearchHandler $handler;
 
 	/**
@@ -105,17 +110,18 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 	/**
 	 * Run applySorting() for one order against a schema and return the recorded ORDER BY.
 	 *
-	 * @param array<string, string> $order      The requested order.
-	 * @param array<string, mixed>  $properties The schema's properties.
+	 * @param array<string, string>   $order           The requested order.
+	 * @param array<string, mixed>    $properties      The schema's properties.
+	 * @param array<int, string>|null $dateTimeColumns The table's real date/timestamp columns, or null when unknown.
 	 *
 	 * @return array<int, array{0: string, 1: string}> The recorded ORDER BY entries.
 	 */
-	private function sort(array $order, array $properties): array {
+	private function sort(array $order, array $properties, ?array $dateTimeColumns = self::DATE_COLUMNS): array {
 		$schema = new Schema();
 		$schema->setProperties($properties);
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applySorting');
-		$method->invoke($this->handler, $this->makeQueryBuilder(), $order, $schema, null);
+		$method->invoke($this->handler, $this->makeQueryBuilder(), $order, $schema, null, $dateTimeColumns);
 
 		return $this->orderBy;
 	}//end sort()
@@ -188,6 +194,39 @@ class MagicSearchHandlerDateSortTest extends TestCase {
 
 		$this->assertSame([['t._created', 'DESC'], ['t._updated', 'ASC']], $result);
 	}//end testMetadataSortsAreUnchanged()
+
+	public function testDatePropertyOnTextColumnKeepsBareColumn(): void {
+		// The property gained its date-time format after its table was created,
+		// so its column is still text. PostgreSQL rejects COALESCE(text, timestamp).
+		$result = $this->sort(
+			order: ['occurredAt' => 'desc'],
+			properties: ['occurredAt' => ['type' => 'string', 'format' => 'date-time']],
+			dateTimeColumns: ['_created', '_updated']
+		);
+
+		$this->assertSame([['t.occurred_at', 'DESC']], $result);
+	}//end testDatePropertyOnTextColumnKeepsBareColumn()
+
+	public function testUnknownColumnTypesKeepBareColumn(): void {
+		// A caller that does not pass the column types gets the safe default.
+		$result = $this->sort(
+			order: ['occurredAt' => 'desc'],
+			properties: ['occurredAt' => ['type' => 'string', 'format' => 'date-time']],
+			dateTimeColumns: null
+		);
+
+		$this->assertSame([['t.occurred_at', 'DESC']], $result);
+	}//end testUnknownColumnTypesKeepBareColumn()
+
+	public function testNonDatePropertyOnDateColumnKeepsBareColumn(): void {
+		// The column list alone is not enough: the schema must also call it a date.
+		$result = $this->sort(
+			order: ['occurredAt' => 'desc'],
+			properties: ['occurredAt' => ['type' => 'string']]
+		);
+
+		$this->assertSame([['t.occurred_at', 'DESC']], $result);
+	}//end testNonDatePropertyOnDateColumnKeepsBareColumn()
 
 	public function testInvalidDirectionFallsBackToAscending(): void {
 		$result = $this->sort(

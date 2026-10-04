@@ -284,21 +284,30 @@ class MagicSearchHandler {
 	 * @param Register $register Register context for the search
 	 * @param Schema $schema Schema context for the search
 	 * @param string $tableName Target dynamic table name
+	 * @param array|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown
 	 *
 	 * @return \OCA\OpenRegister\Db\ObjectEntity[]|int Array of ObjectEntity objects or count if _count=true
 	 *
 	 * @throws \OCP\DB\Exception If a database error occurs
 	 *
 	 * @phpstan-param array<string, mixed> $query
+	 * @phpstan-param array<int, string>|null $dateTimeColumns
 	 *
 	 * @psalm-param array<string, mixed> $query
+	 * @psalm-param array<int, string>|null $dateTimeColumns
 	 *
 	 * @psalm-return int|list<ObjectEntity>
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 */
-	public function searchObjects(array $query, Register $register, Schema $schema, string $tableName): array|int {
+	public function searchObjects(
+		array $query,
+		Register $register,
+		Schema $schema,
+		string $tableName,
+		?array $dateTimeColumns = null
+	): array|int {
 		// Reset ignored filters tracking for this search.
 		$this->ignoredFilters = [];
 
@@ -377,7 +386,8 @@ class MagicSearchHandler {
 			order: $order,
 			schema: $schema,
 			searchTerm: $searchTerm,
-			recentFor: ($query['_recentFor'] ?? null)
+			recentFor: ($query['_recentFor'] ?? null),
+			dateTimeColumns: $dateTimeColumns
 		);
 
 		$queryBuilder->setMaxResults($limit)
@@ -2874,6 +2884,7 @@ class MagicSearchHandler {
 	 * @param Schema|null $schema The schema being searched.
 	 * @param string|null $searchTerm The search term, for relevance ordering.
 	 * @param mixed $recentFor The user whose view times order a `_recent` page, or null.
+	 * @param array<int, string>|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown.
 	 *
 	 * @return void
 	 *
@@ -2884,10 +2895,17 @@ class MagicSearchHandler {
 		array $order,
 		?Schema $schema,
 		?string $searchTerm,
-		mixed $recentFor
+		mixed $recentFor,
+		?array $dateTimeColumns = null
 	): void {
 		if (empty($order) === false) {
-			$this->applySorting(qb: $qb, order: $order, schema: $schema, searchTerm: $searchTerm);
+			$this->applySorting(
+				qb: $qb,
+				order: $order,
+				schema: $schema,
+				searchTerm: $searchTerm,
+				dateTimeColumns: $dateTimeColumns
+			);
 			return;
 		}
 
@@ -3292,6 +3310,7 @@ class MagicSearchHandler {
 	 * @param array $order Sort order configuration
 	 * @param Schema $schema Schema for column mapping
 	 * @param string|null $searchTerm Search term for relevance sorting (optional)
+	 * @param array<int, string>|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown
 	 *
 	 * @return void
 	 */
@@ -3300,6 +3319,7 @@ class MagicSearchHandler {
 		array $order,
 		Schema $schema,
 		?string $searchTerm = null,
+		?array $dateTimeColumns = null,
 	): void {
 		$properties = $schema->getProperties();
 
@@ -3355,7 +3375,8 @@ class MagicSearchHandler {
 					$this->buildPropertySortExpression(
 						qb: $qb,
 						columnName: $columnName,
-						propertyConfig: $properties[$field]
+						propertyConfig: $properties[$field],
+						dateTimeColumns: $dateTimeColumns
 					),
 					$direction
 				);
@@ -3373,12 +3394,19 @@ class MagicSearchHandler {
 	 * oldest on MySQL/MariaDB (NULLs are smallest), so the same list read
 	 * differently per database. Every other property keeps its bare column.
 	 *
+	 * The fallback is only applied when the column is known to be a real date
+	 * or timestamp column ($dateTimeColumns). A property that gained its date
+	 * format after its table was created keeps a text column (the table sync
+	 * never retypes), and PostgreSQL rejects COALESCE(text, timestamp). When
+	 * the column types are unknown (null) the bare column is used.
+	 *
 	 * The column name passed in is already sanitised to [a-z0-9_]; it is
 	 * quoted again through the query builder so a reserved word stays valid.
 	 *
 	 * @param IQueryBuilder $qb             Query builder, used for identifier quoting.
 	 * @param string        $columnName     The sanitised property column name.
 	 * @param mixed         $propertyConfig The property's schema definition.
+	 * @param array<int, string>|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown.
 	 *
 	 * @return string|IQueryFunction The column reference or COALESCE expression.
 	 *
@@ -3387,9 +3415,12 @@ class MagicSearchHandler {
 	private function buildPropertySortExpression(
 		IQueryBuilder $qb,
 		string $columnName,
-		mixed $propertyConfig
+		mixed $propertyConfig,
+		?array $dateTimeColumns = null
 	): string|IQueryFunction {
-		if (is_array($propertyConfig) === false
+		if ($dateTimeColumns === null
+			|| in_array(strtolower($columnName), $dateTimeColumns, true) === false
+			|| is_array($propertyConfig) === false
 			|| ($propertyConfig['type'] ?? 'string') !== 'string'
 			|| in_array($propertyConfig['format'] ?? null, ['date', 'date-time'], true) === false
 			|| ($propertyConfig['x-openregister-encrypted'] ?? false) === true
