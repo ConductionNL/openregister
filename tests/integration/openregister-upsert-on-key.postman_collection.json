@@ -82,7 +82,17 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/registers"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "registers"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -121,7 +131,17 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -160,7 +180,18 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "registers",
+            "{{registerId}}"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -198,7 +229,19 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -238,7 +281,19 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -278,7 +333,18 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas",
+            "{{schemaId}}"
+          ]
         },
         "body": {
           "mode": "raw",
@@ -321,7 +387,25 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_upsertOn=zaaksleutel"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_upsertOn=zaaksleutel",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}"
+          ],
+          "query": [
+            {
+              "key": "_upsertOn",
+              "value": "zaaksleutel"
+            }
+          ]
         },
         "body": {
           "mode": "raw",
@@ -362,7 +446,25 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_upsertOn=zaaksleutel"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_upsertOn=zaaksleutel",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}"
+          ],
+          "query": [
+            {
+              "key": "_upsertOn",
+              "value": "zaaksleutel"
+            }
+          ]
         },
         "body": {
           "mode": "raw",
@@ -403,7 +505,19 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}"
+          ]
         }
       },
       "event": [
@@ -439,7 +553,25 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_upsertOn=zaaksleutel"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_upsertOn=zaaksleutel",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}"
+          ],
+          "query": [
+            {
+              "key": "_upsertOn",
+              "value": "zaaksleutel"
+            }
+          ]
         },
         "body": {
           "mode": "raw",
@@ -479,7 +611,20 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{dupOne}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{dupOne}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{dupOne}}"
+          ]
         }
       },
       "event": [
@@ -514,7 +659,25 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_upsertOn=omschrijving"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_upsertOn=omschrijving",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}"
+          ],
+          "query": [
+            {
+              "key": "_upsertOn",
+              "value": "omschrijving"
+            }
+          ]
         },
         "body": {
           "mode": "raw",
@@ -553,7 +716,25 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_upsertOn=zaaksleutel"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_upsertOn=zaaksleutel",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}"
+          ],
+          "query": [
+            {
+              "key": "_upsertOn",
+              "value": "zaaksleutel"
+            }
+          ]
         },
         "body": {
           "mode": "raw",
@@ -592,7 +773,29 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_upsertOn=zaaksleutel&_failIfExists=true"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}?_upsertOn=zaaksleutel&_failIfExists=true",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}"
+          ],
+          "query": [
+            {
+              "key": "_upsertOn",
+              "value": "zaaksleutel"
+            },
+            {
+              "key": "_failIfExists",
+              "value": "true"
+            }
+          ]
         },
         "body": {
           "mode": "raw",
@@ -630,7 +833,20 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{upsertUuid}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{upsertUuid}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{upsertUuid}}"
+          ]
         }
       },
       "event": [
@@ -664,7 +880,20 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{dupOne}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{dupOne}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{dupOne}}"
+          ]
         }
       },
       "event": [
@@ -698,7 +927,20 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{dupTwo}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{dupTwo}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "objects",
+            "{{registerId}}",
+            "{{schemaId}}",
+            "{{dupTwo}}"
+          ]
         }
       },
       "event": [
@@ -732,7 +974,18 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schemaId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "schemas",
+            "{{schemaId}}"
+          ]
         }
       },
       "event": [
@@ -766,7 +1019,18 @@
           }
         ],
         "url": {
-          "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}"
+          "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{registerId}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "index.php",
+            "apps",
+            "openregister",
+            "api",
+            "registers",
+            "{{registerId}}"
+          ]
         }
       },
       "event": [
