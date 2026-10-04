@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\OasValidationException;
 use OCA\OpenRegister\Service\Oas\OasRbacAnnotator;
+use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
@@ -1429,7 +1430,7 @@ class OasService {
 			$schemaName = $schema->getTitle();
 		}
 
-		return [
+		$operation = [
 			'summary' => 'Create a new ' . $schema->getTitle() . ' object',
 			'operationId' => 'create' . $this->pascalCase(string: $schema->getTitle()),
 			'tags' => [$schema->getTitle()],
@@ -1466,7 +1467,67 @@ class OasService {
 				],
 			],
 		];
+
+		return $this->withUpsertOnKey(operation: $operation, schema: $schema);
 	}//end createPostOperation()
+
+	/**
+	 * Document `_upsertOn` on a POST when the schema declares a key that refuses duplicates.
+	 *
+	 * The parameter's `enum` lists the schema's `refuse` uniqueness constraints
+	 * (the legacy `unique` key named by its properties joined with `+`), the
+	 * only names the upsert accepts, and the statuses only the upsert answers
+	 * are added.
+	 *
+	 * @param array<string, mixed> $operation The POST operation.
+	 * @param object               $schema    The schema object.
+	 *
+	 * @return array<string, mixed> The operation, with the upsert documented when it applies.
+	 *
+	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 */
+	private function withUpsertOnKey(array $operation, object $schema): array {
+		if (method_exists($schema, 'getConfiguration') === false) {
+			return $operation;
+		}
+
+		$keys = [];
+		$evaluator = new UniqueConstraintEvaluator();
+		foreach ($evaluator->constraints(configuration: $schema->getConfiguration(), includeLegacy: true) as $constraint) {
+			if ($constraint['action'] === UniqueConstraintEvaluator::ACTION_REFUSE) {
+				$keys[] = $constraint['name'];
+			}
+		}
+
+		if ($keys === []) {
+			return $operation;
+		}
+
+		$operation['parameters'][] = [
+			'name' => '_upsertOn',
+			'in' => 'query',
+			'required' => false,
+			'description' => 'Create or update by a key this schema declares unique: the record holding the key is updated (200), or created when none does (201). Needs a signed-in caller; cannot be combined with _failIfExists.',
+			'schema' => ['type' => 'string', 'enum' => $keys],
+		];
+
+		$error = ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]];
+		$operation['responses']['200'] = [
+			'description' => 'Upsert: the record holding the key was updated.',
+			'content' => $operation['responses']['201']['content'],
+		];
+		$operation['responses']['401'] = ['description' => 'Upsert: the caller is not signed in.', 'content' => $error];
+		$operation['responses']['409'] = [
+			'description' => 'Upsert: more than one record holds the key (the matches are listed), or a record you cannot change holds it.',
+			'content' => $error,
+		];
+		$operation['responses']['503'] = [
+			'description' => 'Upsert: the key could not be looked up or locked; nothing was written. Retry after the Retry-After seconds.',
+			'content' => $error,
+		];
+
+		return $operation;
+	}//end withUpsertOnKey()
 
 	/**
 	 * Create DELETE operation
