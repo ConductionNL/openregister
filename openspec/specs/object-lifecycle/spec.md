@@ -1227,6 +1227,29 @@ eliminates.
 - **WHEN** the executor runs the transition's actions
 - **THEN** the conditioned action MUST NOT run and its handler MUST NOT be resolved
 
+### Requirement: A lifecycle kept as data is validated through one entry point
+An app that lets a person author a state machine as an object (a process template, not a schema annotation) MUST be able to validate that graph through `LifecycleTransitionsValidator::validate(states, initial, transitions, knownGuards)` without wrapping it in a schema. The method MUST return a list of `{code, message}` errors, empty when the graph is valid, and MUST refuse: no named state (`lifecycle-states-empty`), a missing or undeclared initial state (`lifecycle-initial-missing`, `lifecycle-initial-not-declared`), a transition that is not an object or lacks `from` or `to` (`lifecycle-transition-malformed`, `lifecycle-from-missing`, `lifecycle-to-missing`), an endpoint that is not a declared state (`lifecycle-from-not-declared`, `lifecycle-to-not-declared`), a declared state no transition starts or ends in that is not the initial state (`lifecycle-state-unreachable`), and, when the app passes its guard catalogue, a guard token outside it (`lifecycle-guard-unknown`). The unreachable rule MUST NOT be applied to `x-openregister-lifecycle` schema annotations, where an enum value nothing moves to is a legitimate legacy value and refusing it would stop shipped schemas from importing.
+
+#### Scenario: A state no transition touches is refused
+- **GIVEN** states `draft`, `decided` and `orphan`, initial state `draft`, and one transition from `draft` to `decided`
+- **WHEN** the app validates the graph
+- **THEN** the result MUST hold exactly one error, code `lifecycle-state-unreachable`, whose message names `orphan`
+
+#### Scenario: A dangling transition is refused by name
+- **GIVEN** states `draft` and `decided` and a transition from `decided` to `ghost`
+- **WHEN** the app validates the graph
+- **THEN** the result MUST hold `lifecycle-to-not-declared` with a message naming `ghost`
+
+#### Scenario: A guard token outside the catalogue is refused
+- **GIVEN** a transition declaring guards `quorum_met` and `made_up_token`, and the catalogue `quorum_met`
+- **WHEN** the app validates the graph with that catalogue
+- **THEN** the result MUST hold `lifecycle-guard-unknown` naming `made_up_token`, so a typo never disables a guard
+
+#### Scenario: Without a catalogue guards are only shape-checked
+- **GIVEN** a transition whose `guards` is a list of non-empty strings
+- **WHEN** the app validates the graph without a catalogue
+- **THEN** the guards MUST be accepted, and a `guards` value that is not a list MUST be refused with `lifecycle-guards-malformed`
+
 ## Cross-References
 - **rbac-scopes** — RBAC checks are applied by `PermissionHandler` at the start of every pipeline stage
 - **schema-hooks** — schema hooks fire via event dispatcher after each successful save
