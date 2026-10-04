@@ -46,7 +46,7 @@ So two access systems answer the same question. The object answers with the `aut
 
 - Changing how object access is decided.
 - Folders a caller bound with `@self.folder` to a node outside `Open Registers/`. They keep their owner and Nextcloud's rules.
-- Write-action RBAC per verb beyond read and update (openregister#2733 stays its own change, see the open decisions).
+- Separate permission verbs per file action. Per decision 7, `update` covers every change, which folds in openregister#2733.
 
 ## Options
 
@@ -102,8 +102,9 @@ Option B looks cheaper because Nextcloud does the checking. It cannot express th
 
 One guard, used by every file endpoint and by `FileService` callers that act for a person:
 
-- Read actions need `read` on the object: list, show, download, download by id, preview, versions, ZIP export, text, search hits.
-- Change actions need `update` on the object: create, save, multipart upload, update, rename, labels, metadata, lock, unlock, restore version, delete (see the open decision on delete).
+- Read actions need `read` on the object: list, show, download, download by id, preview, versions, ZIP export, text, search hits, opening in Office read-only.
+- Change actions need `update` on the object: create, save, multipart upload, update, rename, labels, metadata, lock, unlock, restore version, delete, batch, editing in Office (decisions 2 and 7).
+- A refused read answers 404, as reading the object does. A refused change by someone who may read answers 403 (decision 4).
 - Copy and move need `read` on the source and `update` on the target. Move also needs `update` on the source.
 - The guard calls `PermissionHandler` with the object entity, so conditions and the owner rule apply. It runs as the acting person: the session user, or the identity of a `runAs()` scope (ADR-099).
 - A sessionless system operation (`SystemOperationContext`) passes, as it does for objects (`PermissionHandler::hasPermission()`).
@@ -125,6 +126,8 @@ The saving account keeps no folder, no copy and no share. It reads the object's 
 
 ### Migration
 
+Local storage only (decision 6). Before it moves anything the step checks the storage of every source and target folder. When a folder is not on local storage, or server-side encryption is on, the step moves nothing for that folder and writes one admin-facing message: "OpenRegister did not move object files on this storage. Files stay where they are. Only local storage is supported for this move." The same message is shown in `occ` output and in the admin settings warning list.
+
 A repair step, `MoveObjectFilesToOpenRegisterAccount`, runs on upgrade and can be run again with `occ`.
 
 1. Find every managed folder outside the `openregister` home: register folders from `openregister_registers.folder`, object folders from each magic table's folder column. Resolve each id through `IUserMountCache::getMountsForFileId()`, as `isManagedFolder()` does (`FolderManagementHandler.php:1206-1228`), so no person's mounts need to be set up.
@@ -142,14 +145,14 @@ The step must be safe while people work. It takes a per-folder lock and skips a 
 
 After this change a person's Files app no longer shows `Open Registers`. Files are reached through the app's object views and OpenRegister's API. The Files sidebar tab that lists objects linked to a file (`FileSidebarController`) only sees files in the person's own tree, so it stops showing objects for these files.
 
-Two ways to give a group a Files view, both optional and both later:
+Ruben accepted this (decision 1). A Files view for a group is a later change, not this one. Two shapes for it, both recorded as follow-ups:
 
 - A read-only share of a register folder with a named group, declared on the register. The share is a convenience view, not the access rule. It is off by default, and the register admin answers for what it exposes.
 - A WebDAV view served by OpenRegister that lists only objects the caller may read. More work, exact access.
 
 ### Quota
 
-Files count against the `openregister` account's quota, not the saver's. Nextcloud's `default_quota` applies to it unless set. The install and repair step sets the account's quota to unlimited (open decision). An admin can still set a limit.
+Files count against the `openregister` account's quota, not the saver's. Nextcloud's `default_quota` applies to it unless set. The install and repair step sets the account's quota to `none` (unlimited), per decision 3. An admin can still set a limit afterwards, and the step does not overwrite a quota an admin set.
 
 ### Performance
 
@@ -172,16 +175,62 @@ Files count against the `openregister` account's quota, not the saver's. Nextclo
 ## Risks
 
 - **A missing guard becomes a leak.** Today a forgotten check on a file endpoint fails closed because the mount hides the file. After this change it fails open, because the `openregister` account can read everything. Mitigation: one guard class, called from every endpoint, and a test that walks every route in `appinfo/routes.php` under `files#` and asserts the guard runs.
-- **Storage backends.** File-id preservation is shown for local storage only. Object storage as primary storage and encryption need their own check before the migration runs there.
+- **Storage backends.** File-id preservation is shown for local storage only. Per decision 6 the migration refuses on any other backend and leaves the files where they are.
 - **Apps that read files from a person's home.** Any app that opens `/<uid>/files/Open Registers/...` directly breaks. A fleet search for `Open Registers` and for direct `getUserFolder()` reads of OpenRegister folders is part of the tasks.
 - **Activity attribution** in Nextcloud's own stream shows the `openregister` account.
 
-## Open decisions
+### Nextcloud Office
 
-1. **Files app visibility.** Accept that files leave people's Files app, or ship the opt-in register share in this change. Recommendation: accept, and add the opt-in share as a follow-up.
-2. **Deleting a file.** Treat it as `update` on the object, or require `delete`. Recommendation: `update`, because removing an attachment changes the object, it does not remove it.
-3. **Quota of the `openregister` account.** Set it to unlimited on install and upgrade, or leave Nextcloud's default. Recommendation: unlimited, with a note in the admin docs.
-4. **Refusal status.** A person who may not read the object gets 404 (as the object read does, evidence run-18) or 403 (as `ensureObjectAccess()` does today). Recommendation: 404 on read, 403 on change for a person who may read but not update.
-5. **Office editing.** Editing a document in Collabora or OnlyOffice from the Files app stops for non-owners. Accept for now, or route editing through the office abstraction (ADR-087) in this change. Recommendation: accept, follow up separately.
-6. **Storage backends in scope for migration.** Local storage only, or also S3 primary storage and server-side encryption. Recommendation: local in this change, the step refuses (and reports) on other backends until checked.
-7. **Write-action RBAC (openregister#2733).** Fold the per-verb check into this change, or keep `read`/`update` here and leave the rest to #2733. Recommendation: this change uses `update` for every change action, which already closes #2733's main gap.
+Office editing must work in this change (decision 5). The rule is the object rule:
+
+- `update` on the object: the document opens in Office and can be edited and saved.
+- `read` only: the document opens read-only.
+- No `read`: no open. The open request answers 404 and no token is issued.
+
+**Why the normal Office path fails after the move.** richdocuments makes a token for the signed-in user by looking the file up in that user's own home (`TokenManager::generateWopiToken()`, `lib/TokenManager.php:69-80` in richdocuments 12.0.1). Every WOPI call then reads the file through the editor's home again for a user token (`WopiController::getFileForWopiToken()`, `lib/Controller/WopiController.php:983-987`, with `Wopi::getUserForFileAccess()`, `lib/Db/Wopi.php:158-163`). After this change the file is in the `openregister` home, so both lookups find nothing. Opening from the Files app is gone anyway (decision 1).
+
+**How OpenRegister opens a document.** OpenRegister issues the WOPI token itself, after its own object check, and lets richdocuments serve the WOPI calls unchanged.
+
+1. A new endpoint `POST /api/objects/{register}/{schema}/{id}/files/{fileId}/office` runs the read guard. No read: 404.
+2. It checks that the file belongs to the object's folder, and that richdocuments is installed and enabled. Missing: 409 with "Nextcloud Office is not available on this instance."
+3. It asks richdocuments whether the mimetype opens in Office (`TokenManager::getUrlSrcForMimeType()`, `lib/TokenManager.php:277-283`). No: 415.
+4. It asks richdocuments whether the person may use Office at all (`PermissionManager::isEnabledForUser()`, `lib/PermissionManager.php:150`) and may edit (`PermissionManager::userCanEdit()`, `:158`), so the Office admin settings still apply. Not enabled: 403.
+5. `canWrite` is `update` on the object AND `userCanEdit()`.
+6. It creates the token with `WopiMapper::generateFileToken()` (`lib/Db/WopiMapper.php:43-69`): file id, owner `openregister`, editor the acting person, version `0`, `canWrite`, the server host, and the person's display name as the guest display name.
+7. It returns `urlSrc`, `wopiSrc` (`<host>/index.php/apps/richdocuments/wopi/files/<fileId>_<instanceid>`), `token`, `tokenTtl` and `readOnly`.
+
+A display name makes the token a guest-type token (`WopiMapper.php:62`). For a guest-type token richdocuments reads the file through the owner's home (`Wopi.php:158-163`), which is the `openregister` home. The editor stays the real person:
+
+- `CheckFileInfo` shows the person's own name and avatar, because the editor account exists (`WopiController.php:175-176`).
+- `PutFile` refuses a token without `canWrite` (`WopiController.php:631-633`), so read-only is enforced by richdocuments itself.
+- `PutFile` sets the user scope to the editor before writing (`WopiController.php:637-638`), so the new file version names the person.
+
+A page `GET /apps/openregister/office/{register}/{schema}/{id}/{fileId}` posts the token into the Collabora frame, the same way richdocuments' own viewer builds the frame URL from `urlsrc` and `WOPISrc`. The file metadata OpenRegister returns gains an `officeUrl` pointing at that page, only for mimetypes Office opens. The shared files tab (`CnFilesTab` in nextcloud-vue) links to it in a follow-up PR on nextcloud-vue.
+
+**Alternatives that do not work.**
+
+- *A link share per file, passed to `generateWopiToken()` as the share token.* That is richdocuments' supported path for a share (`TokenManager.php:55-67`). OpenRegister counts every link share as a publication (`FileMapper::isFilePublished()`, and `getFiles()` with `sharedFilesOnly` for anonymous callers, `FilesController.php:355-359`). The file would become downloadable by anyone. Instances that disable link sharing would also break it.
+- *A user share of the file with the editor at open time.* It brings back the private copy this change removes, and it has to be revoked when access changes.
+- *Running `generateWopiToken()` as the `openregister` account.* Every edit would then be attributed to the `openregister` account.
+
+**Risks of the chosen path.**
+
+- `WopiMapper`, `TokenManager` and `PermissionManager` are richdocuments classes, not Nextcloud's public API. OpenRegister reaches them through the container only when richdocuments is enabled, and checks that the methods exist. Otherwise it refuses with the 409 message. An integration test pinned to richdocuments 12.0.x proves edit, read-only and refusal. A richdocuments upgrade that changes the guest token semantics fails that test, not production.
+- Guest-type tokens are rate limited on `CheckFileInfo` and `GetFile` (`WopiController.php:148-158`, `:404`). Normal editing stays far below the limit.
+- A token lives until its richdocuments expiry. Losing access to the object does not end a document that is already open. Opening it again is refused.
+
+## Decisions (approved by Ruben 2026-10-04)
+
+1. **Files app visibility.** Accepted: files leave the saver's Files app. An opt-in share into Files is a later change, recorded as a follow-up and not in scope here.
+2. **Deleting a file** needs `update` on the object.
+3. **Quota.** The `openregister` account's quota is set to unlimited on install and upgrade.
+4. **Refusal status.** 404 when the person may not read the object. 403 when the person may read but not change.
+5. **Nextcloud Office** must work in this change: `update` edits, `read` opens read-only, no access opens nothing. Design in "Nextcloud Office" above.
+6. **Migration** runs on local storage only. On S3 or any other backend it refuses with a clear admin message and leaves the files where they are.
+7. **Write-action RBAC.** `update` covers every change action. This folds in openregister#2733.
+
+## Follow-ups (not in this change)
+
+- An opt-in share of a register folder into Files for a named group.
+- An `Open in Office` action in nextcloud-vue's `CnFilesTab`, using `officeUrl`.
+- Migration for S3 primary storage and server-side encryption.

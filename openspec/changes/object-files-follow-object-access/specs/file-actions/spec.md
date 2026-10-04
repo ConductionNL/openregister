@@ -31,7 +31,7 @@ The system SHALL create every register folder and every object folder it manages
 
 ### Requirement: Reading an object's files follows the object's read rule (REQ-OFOA-002)
 
-Every file read of an object SHALL require read on that object, decided by the same rule that decides reading the object. File reads are: list, show, download, download by file id, preview, versions, ZIP export, extracted text and file search hits. A caller who may not read the object SHALL receive no file content, no file metadata and no file count. After the check, the system SHALL read the file as the `openregister` account, so the caller needs no Nextcloud access to the file itself.
+Every file read of an object SHALL require read on that object, decided by the same rule that decides reading the object. File reads are: list, show, download, download by file id, preview, versions, ZIP export, extracted text and file search hits. A caller who may not read the object SHALL get HTTP 404 and SHALL receive no file content, no file metadata and no file count. After the check, the system SHALL read the file as the `openregister` account, so the caller needs no Nextcloud access to the file itself.
 
 #### Scenario: A handler group member reads the intake's attachments
 
@@ -47,7 +47,7 @@ Every file read of an object SHALL require read on that object, decided by the s
 - **GIVEN** the same submission
 - **AND** user `gewoon` is in no group the schema grants `read`, and is not the object's owner
 - **WHEN** `gewoon` lists the files of the submission
-- **THEN** the request is refused the way reading the object is refused
+- **THEN** the response is HTTP 404, as reading the object is
 - **AND** the response carries no file name, no file id and no file count
 - @e2e exclude {needs two signed-in accounts; covered by an API test on the Nextcloud test image}
 
@@ -56,7 +56,7 @@ Every file read of an object SHALL require read on that object, decided by the s
 - **GIVEN** the same submission and user `gewoon`
 - **AND** `gewoon` knows the file id of one attachment
 - **WHEN** `gewoon` downloads that file id through the download-by-id endpoint
-- **THEN** the request is refused
+- **THEN** the response is HTTP 404
 - **AND** no file content is returned
 - @e2e exclude {id-guessing path; covered by an API test on the Nextcloud test image}
 
@@ -86,7 +86,7 @@ Every file read of an object SHALL require read on that object, decided by the s
 
 ### Requirement: Changing an object's files follows the object's update rule (REQ-OFOA-003)
 
-Every change to an object's files SHALL require update on that object, decided by the same rule that decides updating the object. Changes are: create, save, multipart upload, update, rename, labels, metadata, lock, unlock, restore a version and delete. Copying a file SHALL require read on the source object and update on the target object. Moving a file SHALL require update on both. After the check, the system SHALL write the file as the `openregister` account.
+Every change to an object's files SHALL require update on that object, decided by the same rule that decides updating the object. Changes are: create, save, multipart upload, update, rename, labels, metadata, lock, unlock, restore a version, batch and delete. A caller who may read the object but not update it SHALL get HTTP 403. Copying a file SHALL require read on the source object and update on the target object. Moving a file SHALL require update on both. After the check, the system SHALL write the file as the `openregister` account.
 
 #### Scenario: A handler copies the intake's attachments to the case
 
@@ -101,13 +101,13 @@ Every change to an object's files SHALL require update on that object, decided b
 
 - **GIVEN** an object that user `lezer` may read but not update
 - **WHEN** `lezer` uploads a file to it
-- **THEN** the upload is refused
+- **THEN** the response is HTTP 403
 - **AND** no file is created
 - @e2e exclude {needs a read-only account; covered by an API test on the Nextcloud test image}
 
 ### Requirement: Existing files move into OpenRegister's own account (REQ-OFOA-004)
 
-On upgrade the system SHALL move every managed register and object folder that sits in a person's home into the `openregister` account's home. The move SHALL keep every file id and folder id. Tags, OpenRegister file records, extracted text and published links SHALL keep working on the moved files. A folder the step cannot move SHALL stay where it is, SHALL be logged and SHALL be counted. The step SHALL NOT delete any file. Running the step again SHALL move only what is left.
+On upgrade the system SHALL move every managed register and object folder that sits in a person's home into the `openregister` account's home. The move SHALL keep every file id and folder id. Tags, OpenRegister file records, extracted text and published links SHALL keep working on the moved files. A folder the step cannot move SHALL stay where it is, SHALL be logged and SHALL be counted. The step SHALL NOT delete any file. Running the step again SHALL move only what is left. The step SHALL move files on local storage only. On any other storage backend, or with server-side encryption on, it SHALL move nothing there, SHALL leave the files where they are and SHALL tell the admin why. The step SHALL set the `openregister` account's quota to unlimited unless an admin already set one.
 
 #### Scenario: An intake's attachments migrate
 
@@ -143,6 +143,15 @@ On upgrade the system SHALL move every managed register and object folder that s
 - **AND** a later run moves it once it can
 - @e2e exclude {failure and retry path; covered by PHPUnit on the repair step}
 
+#### Scenario: Migration on object storage refuses and explains
+
+- **GIVEN** an instance whose primary storage is S3
+- **AND** managed folders sit in people's homes
+- **WHEN** the migration step runs
+- **THEN** no folder is moved and no file is changed
+- **AND** the step reports, in `occ` output and in the admin warnings, that only local storage is supported and the files stay where they are
+- @e2e exclude {storage backend detection; covered by PHPUnit on the repair step with a non-local storage double}
+
 ### Requirement: The acting person is the actor of a file action (REQ-OFOA-005)
 
 OpenRegister's audit trail SHALL record the acting person as the actor of every file action on an object, not the `openregister` account. The acting person is the session user, or the identity of an explicit run-as scope.
@@ -153,3 +162,42 @@ OpenRegister's audit trail SHALL record the acting person as the actor of every 
 - **WHEN** the audit trail of the submission is read
 - **THEN** the download entry names `behandelaar` as the actor
 - @e2e exclude {audit attribution; covered by PHPUnit on FileAuditHandler through the controller}
+
+### Requirement: Nextcloud Office opens an object's document by the object rule (REQ-OFOA-006)
+
+When Nextcloud Office (richdocuments) is enabled, the system SHALL let a person open an object's document in Office by the object's rule. A person with `update` on the object SHALL open it for editing, and a save SHALL write a new version of the same file, attributed to that person. A person with only `read` SHALL open it read-only, and a save SHALL be refused. A person without `read` SHALL get HTTP 404 and SHALL NOT receive a token. The Office admin settings for who may use and edit with Office SHALL still apply. When Office is not available, the open request SHALL get HTTP 409 with a message saying so.
+
+#### Scenario: An update holder edits the document and it is saved as a new version
+
+- **GIVEN** a case with `report.odt`, saved by `of-intake`
+- **AND** `behandelaar` may update the case
+- **WHEN** `behandelaar` opens `report.odt` in Office, changes the text and saves
+- **THEN** `report.odt` keeps its file id and holds the new text
+- **AND** the file has one more version than before
+- **AND** the change is attributed to `behandelaar`
+- @e2e exclude {needs a Collabora server; covered by a live proof against Collabora CODE on the Nextcloud test image}
+
+#### Scenario: A read-only holder opens the document read-only
+
+- **GIVEN** the same case
+- **AND** `lezer` may read the case but not update it
+- **WHEN** `lezer` opens `report.odt` in Office
+- **THEN** the document opens with write access off
+- **AND** a save attempt with that token is refused and the file does not change
+- @e2e exclude {needs a Collabora server; covered by an API test that drives the WOPI PutFile call with the issued token}
+
+#### Scenario: A person without access cannot open the document
+
+- **GIVEN** the same case
+- **AND** `gewoon` may not read the case
+- **WHEN** `gewoon` asks to open `report.odt` in Office
+- **THEN** the response is HTTP 404
+- **AND** no WOPI token is created
+- @e2e exclude {token issuance refusal; covered by an API test on the Nextcloud test image}
+
+#### Scenario: Office is not installed
+
+- **GIVEN** an instance without richdocuments enabled
+- **WHEN** a person who may read the case asks to open `report.odt` in Office
+- **THEN** the response is HTTP 409 with a message that Nextcloud Office is not available
+- @e2e exclude {integration absence; covered by PHPUnit on the Office service}

@@ -49,11 +49,12 @@ Object files follow the object's access rules, for every app, without the app do
 ## Impact
 
 - Apps: integriq's copy to the case (`lib/Service/OpenFormulierenIntakeService.php:527` on integriq `development`) starts working. pipelinq can drop the root-share workaround described in openregister#4165. No app API changes.
-- People who browsed `Open Registers` in the Files app no longer see their objects' files there. See the design for the options.
+- People who browsed `Open Registers` in the Files app no longer see their objects' files there. Ruben accepted this; an opt-in share into Files is a follow-up.
+- Nextcloud Office opens object documents through OpenRegister: edit with `update`, read-only with `read`.
 - Quota moves from each saver to the `openregister` account.
 - Nextcloud's own activity stream shows the `openregister` account on file events in those folders.
 - Closes openregister#4165 part 1. Touches openregister#1952 and #2733.
 
-## Open decisions for Ruben
+## Decisions
 
-Listed in `design.md`, section "Open decisions". In short: Files app visibility, file delete as update or delete, quota, refusal status, office editing, and the storage backends the migration must support.
+Approved by Ruben on 2026-10-04, recorded in `design.md` under "Decisions". Read needs `read` on the object and every change needs `update`. A refused read answers 404 and a refused change 403. Quota is unlimited. Nextcloud Office editing works in this change. The migration covers local storage only. An opt-in share into Files is a follow-up.
