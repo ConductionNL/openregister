@@ -213,10 +213,51 @@ class UpsertOnKeyHandlerTest extends TestCase {
 		[$acquire, $release] = $this->lockCalls;
 		$this->assertSame('acquire', $acquire[0]);
 		$this->assertSame(['release', $acquire[1]], $release);
-		$this->assertMatchesRegularExpression('#^openregister/upsert/3/7/[0-9a-f]{64}$#', $acquire[1]);
+		$this->assertMatchesRegularExpression('#^openregister/upsert/[0-9a-f]{40}$#', $acquire[1]);
 		$this->assertStringNotContainsString('Z-1', $acquire[1]);
 		$this->assertStringNotContainsString('0363', $acquire[1]);
 	}//end testTheLockPathIsAHashAndIsReleased()
+
+	/**
+	 * The lock path fits the column Nextcloud's database locking provider stores it in.
+	 *
+	 * `oc_file_locks.key` is a varchar(64). A longer path made pgsql refuse the
+	 * INSERT, and the controller's generic catch answered every upsert with 403
+	 * (CI Newman, run 37230164290). A stub provider cannot see that, so the
+	 * length is asserted here against the column, with the largest ids a
+	 * register and a schema can carry.
+	 */
+	public function testTheLockPathFitsNextcloudsLockColumn(): void {
+		$this->storeFinds([]);
+		$calls = [];
+		$this->register->setId(2147483647);
+		$this->schema->setId(2147483647);
+
+		$this->handler()->upsert('zaaksleutel', $this->body(), $this->register, $this->schema, $this->saver($calls));
+
+		$this->assertLessThanOrEqual(64, strlen($this->lockCalls[0][1]));
+	}//end testTheLockPathFitsNextcloudsLockColumn()
+
+	/**
+	 * One key in one schema is one lock; the same values elsewhere are another.
+	 */
+	public function testTheLockPathSeparatesRegistersSchemasAndKeys(): void {
+		$this->storeFinds([]);
+		$calls = [];
+		$saver = $this->saver($calls);
+
+		$this->handler()->upsert('zaaksleutel', $this->body(), $this->register, $this->schema, $saver);
+		$this->handler()->upsert('zaaksleutel', $this->body(), $this->register, $this->schema, $saver);
+		$otherRegister = new Register();
+		$otherRegister->setId(4);
+		$this->handler()->upsert('zaaksleutel', $this->body(), $otherRegister, $this->schema, $saver);
+		$this->handler()->upsert('zaaksleutel', (['zaaknummer' => 'Z-2'] + $this->body()), $this->register, $this->schema, $saver);
+
+		$paths = array_column(array_filter($this->lockCalls, static fn (array $call): bool => $call[0] === 'acquire'), 1);
+		$this->assertSame($paths[0], $paths[1]);
+		$this->assertNotSame($paths[0], $paths[2]);
+		$this->assertNotSame($paths[0], $paths[3]);
+	}//end testTheLockPathSeparatesRegistersSchemasAndKeys()
 
 	public function testTheLockIsReleasedWhenTheSaveThrows(): void {
 		$this->storeFinds([]);

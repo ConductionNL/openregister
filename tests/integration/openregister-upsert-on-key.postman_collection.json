@@ -105,7 +105,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('the register is created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "pm.test('the register is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
               "pm.collectionVariables.set('registerId', String(pm.response.json().id));"
             ]
           }
@@ -154,7 +154,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('the schema is created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "pm.test('the schema is created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
               "pm.collectionVariables.set('schemaId', String(pm.response.json().id));"
             ]
           }
@@ -204,7 +204,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('the schema is attached', () => pm.expect(pm.response.code).to.be.below(300));"
+              "pm.test('the schema is attached', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));"
             ]
           }
         }
@@ -254,7 +254,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "pm.test('created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
               "const b = pm.response.json(); const uid = String((b['@self'] && b['@self'].id) || b.id || b.uuid);",
               "pm.collectionVariables.set('dupOne', uid);"
             ]
@@ -306,7 +306,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('created', () => pm.expect(pm.response.code).to.be.below(300));",
+              "pm.test('created', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
               "const b = pm.response.json(); const uid = String((b['@self'] && b['@self'].id) || b.id || b.uuid);",
               "pm.collectionVariables.set('dupTwo', uid);"
             ]
@@ -357,7 +357,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('the schema is updated', () => pm.expect(pm.response.code).to.be.below(300));",
+              "pm.test('the schema is updated', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(300));",
               "pm.test('the declared constraint persisted', () => {",
               "  const cfg = pm.response.json().configuration || {};",
               "  pm.expect(cfg.uniqueConstraints).to.be.an('array');",
@@ -418,7 +418,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('201, a new record', () => pm.response.to.have.status(201));",
+              "pm.test('201, a new record', () => pm.expect(pm.response.code, pm.response.text()).to.eql(201));",
               "const b = pm.response.json(); const uid = String((b['@self'] && b['@self'].id) || b.id || b.uuid);",
               "pm.collectionVariables.set('upsertUuid', uid);",
               "pm.test('the control is not stored as data', () => pm.expect(b._upsertOn).to.eql(undefined));"
@@ -477,7 +477,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('200, an update', () => pm.response.to.have.status(200));",
+              "pm.test('200, an update', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
               "const b = pm.response.json(); const uid = String((b['@self'] && b['@self'].id) || b.id || b.uuid);",
               "pm.test('the same uuid', () => pm.expect(uid).to.eql(pm.collectionVariables.get('upsertUuid')));",
               "pm.test('the new omschrijving', () => pm.expect(b.omschrijving).to.eql('Kapvergunning Dorpsstraat'));"
@@ -526,7 +526,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('the listing answers 200', () => pm.response.to.have.status(200));",
+              "pm.test('the listing answers 200', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
               "const b = pm.response.json(); const rows = b.results || b.items || [];",
               "pm.test('the two Z-DUP records and one upserted record', () => pm.expect(rows.length).to.eql(3));"
             ]
@@ -584,7 +584,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('409', () => pm.response.to.have.status(409));",
+              "pm.test('409', () => pm.expect(pm.response.code, pm.response.text()).to.eql(409));",
               "const m = pm.response.json().matches || [];",
               "pm.test('both matches are listed', () => pm.expect(m).to.have.members([pm.collectionVariables.get('dupOne'), pm.collectionVariables.get('dupTwo')]));"
             ]
@@ -633,7 +633,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('200', () => pm.response.to.have.status(200));",
+              "pm.test('200', () => pm.expect(pm.response.code, pm.response.text()).to.eql(200));",
               "pm.test('still eerste', () => pm.expect(pm.response.json().omschrijving).to.eql('eerste'));"
             ]
           }
@@ -690,7 +690,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('400', () => pm.response.to.have.status(400));",
+              "pm.test('400', () => pm.expect(pm.response.code, pm.response.text()).to.eql(400));",
               "pm.test('the refuse constraints are listed', () => pm.expect(pm.response.json().refuseConstraints).to.eql(['zaaksleutel']));"
             ]
           }
@@ -747,7 +747,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('400', () => pm.response.to.have.status(400));",
+              "pm.test('400', () => pm.expect(pm.response.code, pm.response.text()).to.eql(400));",
               "pm.test('zaaknummer is named', () => pm.expect(pm.response.json().property).to.eql('zaaknummer'));"
             ]
           }
@@ -808,7 +808,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('400', () => pm.response.to.have.status(400));"
+              "pm.test('400', () => pm.expect(pm.response.code, pm.response.text()).to.eql(400));"
             ]
           }
         }
@@ -855,7 +855,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+              "pm.test('removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(400));"
             ]
           }
         }
@@ -902,7 +902,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+              "pm.test('removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(400));"
             ]
           }
         }
@@ -949,7 +949,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+              "pm.test('removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(400));"
             ]
           }
         }
@@ -994,7 +994,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+              "pm.test('removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(400));"
             ]
           }
         }
@@ -1039,7 +1039,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('removed', () => pm.expect(pm.response.code).to.be.below(400));"
+              "pm.test('removed', () => pm.expect(pm.response.code, pm.response.text()).to.be.below(400));"
             ]
           }
         }

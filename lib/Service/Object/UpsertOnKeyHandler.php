@@ -205,6 +205,11 @@ class UpsertOnKeyHandler {
 	/**
 	 * The lock path for one key: a hash, so key values never reach a lock table or a log.
 	 *
+	 * The register and schema ids go INTO the hash, not beside it: Nextcloud's
+	 * database locking provider stores the path in `oc_file_locks.key`, a
+	 * varchar(64), and a longer path made pgsql refuse every lock. `sha1` keeps
+	 * the path at 60 characters; this is a lock name, not a secret.
+	 *
 	 * @param Register                                                       $register   The register.
 	 * @param Schema                                                         $schema     The schema.
 	 * @param array{name:string,properties:array<int,string>,action:string} $constraint The constraint.
@@ -213,9 +218,9 @@ class UpsertOnKeyHandler {
 	 * @return string The lock path.
 	 */
 	private function lockPath(Register $register, Schema $schema, array $constraint, array $values): string {
-		$digest = hash('sha256', (string)json_encode([$constraint['name'], $values]));
+		$digest = hash('sha1', (string)json_encode([$register->getId(), $schema->getId(), $constraint['name'], $values]));
 
-		return 'openregister/upsert/'.$register->getId().'/'.$schema->getId().'/'.$digest;
+		return 'openregister/upsert/'.$digest;
 	}//end lockPath()
 
 	/**
