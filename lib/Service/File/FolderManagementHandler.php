@@ -187,7 +187,7 @@ class FolderManagementHandler {
 	 * RegisterMapper::update() refused it and the upload failed (portaliq#29).
 	 *
 	 * @param Register $register The register to create the folder for.
-	 * @param IUser|null $currentUser The current user to share the folder with.
+	 * @param IUser|null $currentUser Kept for callers; the folder is no longer shared with them.
 	 *
 	 * @throws Exception If folder creation fails.
 	 * @throws NotPermittedException If folder creation is not permitted.
@@ -200,6 +200,9 @@ class FolderManagementHandler {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
 	 * @spec openspec/changes/register-folder-on-first-upload/specs/file-actions/spec.md#requirement-a-registers-folder-is-created-on-its-first-upload-by-whoever-uploads-req-rffu-001
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $currentUser stays for callers: the folder is no longer shared with anybody, it is held by the openregister account.
 	 */
 	public function createRegisterFolderById(Register $register, ?IUser $currentUser = null): Node {
 		$folderProperty = $register->getFolder();
@@ -237,14 +240,8 @@ class FolderManagementHandler {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		// Transfer ownership to OpenRegister and share with current user if needed.
-		if ($this->fileService !== null) {
-			$this->fileService->transferFolderOwnershipIfNeeded(folder: $folderNode);
-		}
-
-		// Share the folder with the currently active user if there is one.
-		$this->shareFolderWithCurrentUser(folderNode: $folderNode, currentUser: $currentUser);
-
+		// The folder is made in the openregister account's home, so it already
+		// has the right owner, and nobody gets a private copy or share of it.
 		return $folderNode;
 	}//end createRegisterFolderById()
 
@@ -331,14 +328,6 @@ class FolderManagementHandler {
 			message: '[FolderManagementHandler] Created object folder with ID: ' . $objectFolder->getId(),
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-
-		// Transfer ownership to OpenRegister and share with current user if needed.
-		if ($this->fileService !== null) {
-			$this->fileService->transferFolderOwnershipIfNeeded(folder: $objectFolder);
-		}
-
-		// Share the folder with the currently active user if there is one.
-		$this->shareFolderWithCurrentUser(folderNode: $objectFolder, currentUser: $currentUser);
 
 		return $objectFolder;
 	}//end createObjectFolderById()
@@ -563,19 +552,6 @@ class FolderManagementHandler {
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 
-		// Transfer ownership to OpenRegister and share with current user if needed.
-		if ($this->fileService !== null) {
-			$this->fileService->transferFolderOwnershipIfNeeded(folder: $objectFolder);
-		}
-
-		// Share the folder with the currently active user if there is one.
-		if ($currentUser !== null && $currentUser->getUID() !== $this->getUser()->getUID()) {
-			if ($this->fileService !== null) {
-				// TODO: Call $this->fileService->shareFolderWithUser(folder: $objectFolder, userId:
-				// $currentUser->getUID()) once FileSharingHandler is extracted.
-			}
-		}
-
 		return $objectFolder->getId();
 	}//end createObjectFolderWithoutUpdate()
 
@@ -605,15 +581,8 @@ class FolderManagementHandler {
 		try {
 			// First, check if the root folder exists, and if not, create it and share it with the openregister group.
 			$root = $this->getOrCreateFolder(parent: $userFolder, path: self::ROOT_FOLDER);
-			if ($root['created'] === true) {
-				if ($this->groupManager->groupExists(self::APP_GROUP) === false) {
-					$this->groupManager->createGroup(self::APP_GROUP);
-				}
-
-				if ($this->fileService !== null) {
-					// TODO: Call $this->fileService->createShare() once FileSharingHandler is extracted.
-					// For now, skip share creation (will be handled during integration).
-				}
+			if ($root['created'] === true && $this->groupManager->groupExists(self::APP_GROUP) === false) {
+				$this->groupManager->createGroup(self::APP_GROUP);
 			}
 
 			$folder = $this->getOrCreateFolder(parent: $userFolder, path: $folderPath);
@@ -630,11 +599,6 @@ class FolderManagementHandler {
 				message: "[FolderManagementHandler] Created folder: $folderPath",
 				context: ['file' => __FILE__, 'line' => __LINE__]
 			);
-
-			// Transfer ownership to OpenRegister and share with current user if needed.
-			if ($this->fileService !== null) {
-				$this->fileService->transferFolderOwnershipIfNeeded(folder: $node);
-			}
 
 			return $node;
 		} catch (NotPermittedException $e) {
@@ -777,11 +741,14 @@ class FolderManagementHandler {
 	 * @psalm-return   Folder
 	 * @phpstan-return Folder
 	 *
-	 * @spec openspec/specs/file-actions/spec.md
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
 	 */
 	public function getOpenRegisterUserFolder(): Folder {
 		try {
-			$user = $this->getUser();
+			// Always the openregister account's home, whoever is signed in. An
+			// object's files follow the object's rule, not the home of whoever
+			// saved first, so no person's home may hold a managed folder.
+			$user = $this->getSystemAccount();
 			$userFolder = $this->rootFolder->getUserFolder($user->getUID());
 			return $userFolder;
 		} catch (Exception $e) {
@@ -838,6 +805,87 @@ class FolderManagementHandler {
 	}//end getNodeById()
 
 	/**
+	 * A node in OpenRegister's managed tree, looked up in the openregister account's home.
+	 *
+	 * Every object's file lives there, so this resolves a managed file for any
+	 * caller. It finds nothing outside `Open Registers/`: a person's own file
+	 * is never handed out through the openregister account.
+	 *
+	 * @param int $nodeId The node id.
+	 *
+	 * @return Node|null The managed node, or null.
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 */
+	public function findManagedNodeById(int $nodeId): ?Node {
+		try {
+			$node = $this->getOpenRegisterUserFolder()->getFirstNodeById($nodeId);
+		} catch (Exception $e) {
+			return null;
+		}
+
+		if ($node === null || $this->isManagedNode(node: $node) === false) {
+			return null;
+		}
+
+		return $node;
+	}//end findManagedNodeById()
+
+	/**
+	 * Whether a node lies in an OpenRegister-managed folder tree.
+	 *
+	 * @param Node $node The node.
+	 *
+	 * @return bool True when it is under `Open Registers/` in some home.
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
+	 */
+	public function isManagedNode(Node $node): bool {
+		try {
+			return $this->isManagedFolderPath(path: $node->getPath());
+		} catch (Exception $e) {
+			return false;
+		}
+	}//end isManagedNode()
+
+	/**
+	 * The object a managed file belongs to.
+	 *
+	 * The file's parent is the object folder, named after the object's uuid,
+	 * and the object records that folder's id. Both must agree, so a folder
+	 * that merely carries another object's name is not taken for its folder.
+	 *
+	 * @param Node $file The file.
+	 *
+	 * @return ObjectEntity|null The object, or null when no object owns the file.
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 */
+	public function findObjectForFile(Node $file): ?ObjectEntity {
+		try {
+			$parent = $file->getParent();
+			$found = $this->objectEntityMapper->findAcrossAllSources(
+				identifier: $parent->getName(),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		$object = ($found['object'] ?? null);
+		if ($object instanceof ObjectEntity === false) {
+			return null;
+		}
+
+		if ((string)$object->getFolder() !== (string)$parent->getId()) {
+			return null;
+		}
+
+		return $object;
+	}//end findObjectForFile()
+
+	/**
 	 * Get node type from node (file or folder).
 	 *
 	 * @param Node $node The node to check.
@@ -862,33 +910,19 @@ class FolderManagementHandler {
 	}//end getNodeTypeFromFolder()
 
 	/**
-	 * Get the user for file operations.
+	 * The openregister account, which holds every managed folder.
 	 *
-	 * Returns the session user if available, otherwise falls back to the
-	 * OpenRegister system user. This enables file operations for public
-	 * (unauthenticated) requests such as public form submissions.
+	 * @return IUser The openregister account.
 	 *
-	 * @return IUser The user for file operations.
-	 *
-	 * @throws Exception If no user can be resolved.
-	 *
-	 * @psalm-return   IUser
-	 * @phpstan-return IUser
+	 * @throws Exception When the account cannot be resolved.
 	 */
-	private function getUser(): IUser {
-		$user = $this->userSession->getUser();
-
-		if ($user !== null) {
-			return $user;
+	private function getSystemAccount(): IUser {
+		if ($this->fileService === null) {
+			throw new Exception('The OpenRegister account is not available');
 		}
 
-		// Fall back to the OpenRegister system user for public/unauthenticated requests.
-		if ($this->fileService !== null) {
-			return $this->fileService->getUser();
-		}
-
-		throw new Exception('User not logged in and no system user available');
-	}//end getUser()
+		return $this->fileService->getUser();
+	}//end getSystemAccount()
 
 	/**
 	 * Get the currently active user (not the OpenRegister system user).
@@ -1117,12 +1151,11 @@ class FolderManagementHandler {
 	 * escape hatch.
 	 *
 	 * It is the WRONG question for a value the app wrote itself. An object
-	 * folder is created under `Open Registers/` in whichever home the creating
-	 * identity had — `getOpenRegisterUserFolder()` resolves the session user
-	 * when there is one — and the compensating share back to other readers is
-	 * still a TODO. So the stored binding lands in ONE user's mount and nobody
-	 * else's, and re-validating it on every save asks every later editor to
-	 * prove they were the creator. Measured: a second user editing a colleague's
+	 * folder is created under `Open Registers/` in the openregister account's
+	 * home (object-files-follow-object-access); before that it landed in the
+	 * home of whoever saved first. Either way the stored binding is in nobody
+	 * else's mount, and re-validating it on every save would ask every later
+	 * editor to prove they own it. Measured: a second user editing a colleague's
 	 * case is refused `folder_access_denied` / 403 on both PUT and PATCH, and a
 	 * repair step is refused the same way.
 	 *
@@ -1354,38 +1387,6 @@ class FolderManagementHandler {
 			);
 		}//end try
 	}//end logFolderAccessDenied()
-
-	/**
-	 * Share folder with current user if different from system user.
-	 *
-	 * @param Node $folderNode The folder to share.
-	 * @param IUser|null $currentUser The current user to share with.
-	 *
-	 * @return void
-	 *
-	 * @psalm-return   void
-	 * @phpstan-return void
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 */
-	private function shareFolderWithCurrentUser(Node $folderNode, ?IUser $currentUser): void {
-		// Share the folder with the currently active user if there is one and different from system user.
-		if ($currentUser === null) {
-			return;
-		}
-
-		if ($currentUser->getUID() === $this->getUser()->getUID()) {
-			return;
-		}
-
-		if ($this->fileService === null) {
-			return;
-		}
-
-		// TODO: Call $this->fileService->shareFolderWithUser(folder: $folderNode, userId: $currentUser->getUID())
-		// Once FileSharingHandler is extracted. The $folderNode parameter will be used when the
-		// FileSharingHandler integration is complete.
-	}//end shareFolderWithCurrentUser()
 
 	/**
 	 * Get register from object entity or register ID.

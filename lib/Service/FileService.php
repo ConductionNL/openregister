@@ -1666,9 +1666,18 @@ class FileService {
 	 *
 	 * @spec openspec/specs/file-actions/spec.md#file-retrieval-resolves-by-id-or-name-and-projects-nodes-to-metadata
 	 *   (resolves a single file node by NC file id, null on miss)
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
 	 */
 	public function getFileById(int $fileId): ?File {
 		try {
+			// An object's file lives in the openregister account's home, which
+			// the caller has no mount on. Look there first; the caller's access
+			// is then the object's rule, applied by the controller.
+			$managed = $this->folderManagementHandler->findManagedNodeById(nodeId: $fileId);
+			if ($managed instanceof File === true) {
+				return $managed;
+			}
+
 			// Use root folder to search for file by ID.
 			$nodes = $this->rootFolder->getById($fileId);
 
@@ -1699,6 +1708,32 @@ class FileService {
 			return null;
 		}//end try
 	}//end getFileById()
+
+	/**
+	 * Whether a node lies in OpenRegister's managed folder tree.
+	 *
+	 * @param Node $node The node.
+	 *
+	 * @return bool True when it is an object's or a register's file or folder.
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 */
+	public function isManagedFile(Node $node): bool {
+		return $this->folderManagementHandler->isManagedNode(node: $node);
+	}//end isManagedFile()
+
+	/**
+	 * The object a managed file belongs to, or null.
+	 *
+	 * @param Node $file The file.
+	 *
+	 * @return ObjectEntity|null The owning object.
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 */
+	public function findObjectForFile(Node $file): ?ObjectEntity {
+		return $this->folderManagementHandler->findObjectForFile(file: $file);
+	}//end findObjectForFile()
 
 	/**
 	 * Stream a file for download.
