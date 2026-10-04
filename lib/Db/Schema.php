@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
+use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Types;
 use OCP\IURLGenerator;
@@ -2334,6 +2335,29 @@ class Schema extends Entity implements JsonSerializable {
 	}//end setIcon()
 
 	/**
+	 * The names an upsert may use as its key.
+	 *
+	 * These are the schema's uniqueness constraints with action `refuse`,
+	 * the legacy `unique` key included and named by its properties joined
+	 * with `+`. A `report` constraint allows duplicates on purpose, so it
+	 * never identifies one record.
+	 *
+	 * @return array<int, string> The constraint names, in declaration order.
+	 *
+	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 */
+	public function getUpsertKeys(): array {
+		$keys = [];
+		foreach ((new UniqueConstraintEvaluator())->constraints(configuration: $this->getConfiguration(), includeLegacy: true) as $constraint) {
+			if ($constraint['action'] === UniqueConstraintEvaluator::ACTION_REFUSE) {
+				$keys[] = $constraint['name'];
+			}
+		}
+
+		return $keys;
+	}//end getUpsertKeys()
+
+	/**
 	 * Get the configuration for the schema
 	 *
 	 * Ensures that configuration is always returned as an array,
@@ -2865,7 +2889,21 @@ class Schema extends Entity implements JsonSerializable {
 		// source endpoint; without it in the allowlist the provenance is
 		// silently dropped on save and the entire update-from-source feature
 		// is dead (the schema reports "not imported from a standard").
-		$passThrough = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org', 'handoffContract', 'importSource'];
+		// `uniqueConstraints` is the declared uniqueness block that
+		// UniqueConstraintEvaluator and UniqueConstraintListener read (named
+		// refuse/report constraints, beside the legacy `unique`). Off this
+		// list every save dropped it in silence and no constraint ever fired.
+		$passThrough = [
+			'unique',
+			'uniqueConstraints',
+			'facetCacheTtl',
+			'calendarProvider',
+			'jsonld',
+			'implements',
+			'x-schema-org',
+			'handoffContract',
+			'importSource',
+		];
 
 		foreach ($configuration as $key => $value) {
 			// Per-key isolation (#419): a bad VALUE for one config key must never

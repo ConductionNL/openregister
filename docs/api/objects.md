@@ -452,6 +452,49 @@ curl -X POST /api/objects/1/3 \
 
 **Status:** `201 Created`
 
+#### Create or update by a declared key
+
+An integration that knows a record by its own key, and not by its uuid, can send the record once and let Open Register decide. Add `_upsertOn` with the name of a uniqueness constraint the schema declares with action `refuse`:
+
+```bash
+curl -X POST "/api/objects/zaken/zaak?_upsertOn=zaaksleutel" \
+  -u "<USER>:<API_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gemeentecode": "0363",
+    "zaaknummer": "Z-2026-0042",
+    "omschrijving": "Kapvergunning"
+  }'
+```
+
+The schema declares the key in its configuration:
+
+```json
+{
+  "configuration": {
+    "uniqueConstraints": [
+      { "name": "zaaksleutel", "properties": ["gemeentecode", "zaaknummer"], "action": "refuse" }
+    ]
+  }
+}
+```
+
+The legacy `configuration.unique` key works too. Name it by its properties joined with `+`, for example `_upsertOn=gemeentecode+zaaknummer`.
+
+Open Register reads the key's values from the body and looks for the record that holds them, under your own read rights and organisation.
+
+| Status | When |
+|---|---|
+| `201` | No record holds the key, so a new one is created. |
+| `200` | One record holds the key, so that record is updated with the body. The response carries its uuid. |
+| `400` | `_upsertOn` is not a `refuse` constraint of this schema (the answer lists the ones it can be, in `refuseConstraints`), the body has no value for one of the key's properties (named in `property`), or `_failIfExists` was sent as well. |
+| `401` | The call is anonymous. An upsert needs a signed-in caller. |
+| `403` | You can read the record that holds the key but may not change it. |
+| `409` | More than one record holds the key, so nothing is written and `matches` lists them. Also when a record you cannot see holds the key: then the answer names the constraint and no uuid. |
+| `503` | The key could not be looked up or locked, so nothing is written. Try again after the `Retry-After` seconds. |
+
+Two calls with the same key at the same moment are handled one after the other, so they produce one record. Calls with different keys do not wait for each other. A `report` constraint cannot be a key, because it allows duplicates on purpose.
+
 ### Update Object (Full Replace)
 
 **PUT** `/api/objects/{register}/{schema}/{id}`
