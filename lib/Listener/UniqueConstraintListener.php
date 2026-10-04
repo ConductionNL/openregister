@@ -103,7 +103,10 @@ class UniqueConstraintListener implements IEventListener {
 			return;
 		}
 
-		if ($event instanceof ObjectUpdatingEvent) {
+		// A soft delete writes its marker through update(), so it arrives
+		// here as an update. Removing a record never breaches uniqueness, and
+		// refusing it left duplicates from before a constraint undeletable.
+		if ($event instanceof ObjectUpdatingEvent && $event->getNewObject()->isSoftDeleted() === false) {
 			$this->evaluate(event: $event, object: $event->getNewObject());
 		}
 
