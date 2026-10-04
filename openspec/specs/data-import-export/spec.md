@@ -662,8 +662,11 @@ detailed import/export contract): `exportConfig()` → `Configuration/ExportHand
 `getUploadedJson()` → `Configuration/UploadHandler`, `importFromFilePath()` /
 `importFromApp()` / `importFromJson()` → `Configuration/ImportHandler`,
 `fetchRemoteConfiguration()` → `Configuration/FetchHandler`,
-`previewConfigurationChanges()` / `importConfigurationWithSelection()` →
-`Configuration/PreviewHandler`. The facade MUST pass through the handler results
+`previewConfigurationChanges()` → `Configuration/PreviewHandler`, and
+`importConfigurationWithSelection()` → `Configuration/FetchHandler` plus
+`Configuration/ImportSelection` plus `Configuration/ImportHandler` (see
+"Selective configuration import and auto-update MUST import what they name").
+The facade MUST pass through the handler results
 unchanged and MUST be the single service consuming apps inject for
 configuration import/export.
 
@@ -684,6 +687,40 @@ configuration import/export.
 - **WHEN** `ConfigurationService::getUploadedJson($data, $uploadedFiles)` is called
 - **THEN** it MUST delegate to `Configuration/UploadHandler::getUploadedJson()` which resolves the payload in that precedence order
 - **AND** return either the parsed array or a `JSONResponse` error
+
+### Requirement: Selective configuration import and auto-update MUST import what they name @e2e exclude backend import path driven by the preview modal and a background job — covered by PHPUnit
+
+`ConfigurationService::importConfigurationWithSelection()` MUST fetch the
+configuration's remote document fresh and import it through the ImportHandler
+with its per-entity version gates (`force` false). Its two callers are the
+preview's import endpoint (`POST /api/configurations/{id}/import`, body
+`selection: {registers: [slug], schemas: [slug], objects: ['register:schema:slug']}`)
+and `ConfigurationCheckJob` for a configuration with `autoUpdate` on, which
+passes an empty selection. An empty selection MUST mean the whole document,
+seed data included. A non-empty selection MUST narrow the document to the
+named registers, schemas and objects (slugs compare case-insensitively), keep
+its metadata, and drop seed data and components the preview cannot select.
+The configuration MUST then track the ids of every register, schema and object
+the import returned, next to the ids it already tracked. Only a whole import
+MUST move `localVersion` to the remote version.
+
+#### Scenario: The preview imports only the selection
+- **GIVEN** a remote configuration at version `2.0.0` with schemas `Klant` and `zaak`, two objects and seed data, and a local configuration at `1.0.0` tracking schema `5`
+- **WHEN** an administrator posts `selection: {schemas: ['klant'], objects: ['demo:Klant:k1']}` to its import endpoint
+- **THEN** the importer MUST receive only schema `Klant` and object `k1`, and no seed data
+- **AND** the response MUST be HTTP 200 with `schemasCount` 1 and `objectsCount` 1
+- **AND** the configuration MUST track schema `5` plus the imported schema, and keep `localVersion` `1.0.0`
+
+#### Scenario: A remote that cannot be read is an error
+- **GIVEN** the remote source answers with a body that is not JSON or YAML
+- **WHEN** the import endpoint is called
+- **THEN** it MUST NOT answer 200, and nothing MUST be imported
+
+#### Scenario: Auto-update imports the whole document
+- **GIVEN** a configuration with `autoUpdate` on whose remote version is newer than its `localVersion`
+- **WHEN** `ConfigurationCheckJob` runs
+- **THEN** the importer MUST receive the whole remote document
+- **AND** `localVersion` MUST become the remote version, so the next run finds no update and sends no notification
 
 ### Requirement: ConfigurationService MUST track and compare imported-configuration versions @e2e exclude backend version check/compare logic — covered by PHPUnit
 

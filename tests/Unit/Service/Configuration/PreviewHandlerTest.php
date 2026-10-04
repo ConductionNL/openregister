@@ -889,33 +889,4 @@ class PreviewHandlerTest extends TestCase {
 
 		$this->assertSame([], $result);
 	}
-
-	// ──────────────────────────────────────────────────────────────
-	// importConfigurationWithSelection — placeholder
-	// ──────────────────────────────────────────────────────────────
-
-	/**
-	 * Test importConfigurationWithSelection returns empty array (placeholder).
-	 */
-	public function testImportConfigurationWithSelectionReturnsEmpty(): void {
-		$config = $this->makeConfiguration();
-
-		$result = $this->handler->importConfigurationWithSelection($config, []);
-
-		$this->assertSame([], $result);
-	}
-
-	/**
-	 * Test importConfigurationWithSelection with non-empty selection returns empty.
-	 */
-	public function testImportConfigurationWithSelectionNonEmptySelection(): void {
-		$config = $this->makeConfiguration();
-
-		$result = $this->handler->importConfigurationWithSelection($config, [
-			'registers' => ['reg-1'],
-			'schemas' => ['sch-1'],
-		]);
-
-		$this->assertSame([], $result);
-	}
 }

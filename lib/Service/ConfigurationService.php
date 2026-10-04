@@ -43,10 +43,12 @@ use OCA\OpenRegister\Service\Configuration\FetchHandler;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\ImportSelection;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use Psr\Container\ContainerExceptionInterface;
@@ -1060,23 +1062,99 @@ class ConfigurationService {
 	}//end getCacheHandler()
 
 	/**
-	 * Import configuration with selection.
+	 * Import a remote configuration, whole or narrowed to a selection.
 	 *
-	 * Delegates to PreviewHandler.
+	 * The preview's import endpoint passes what the administrator picked; the
+	 * hourly ConfigurationCheckJob passes an empty selection, which means the
+	 * whole remote document (seed data included). The document is fetched
+	 * fresh, narrowed with ImportSelection, and handed to the importer, which
+	 * keeps its per-entity version gates (`force` stays false).
+	 *
+	 * The configuration then tracks every register, schema and object the
+	 * import returned, next to what it already tracked. Only a whole import
+	 * moves `localVersion` to the remote version: after a partial one the rest
+	 * of the update must stay on offer.
 	 *
 	 * @param Configuration $configuration Configuration to import
-	 * @param array $selection Selection of items to import
+	 * @param array $selection Selected `registers`/`schemas` slugs and `register:schema:slug` object keys; empty = all
 	 *
-	 * @return array Import results
+	 * @return array Import results, keyed as importFromJson() returns them
 	 *
-	 * @psalm-return array<never, never>
+	 * @throws Exception When the remote document cannot be fetched or the import fails
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-selective-configuration-import-and-auto-update-must-import-what-they-name
 	 */
 	public function importConfigurationWithSelection(Configuration $configuration, array $selection): array {
-		return $this->previewHandler->importConfigurationWithSelection(
-			_configuration: $configuration,
-			_selection: $selection
+		$remoteData = $this->fetchRemoteConfiguration(configuration: $configuration);
+		if ($remoteData instanceof JSONResponse) {
+			$error = $remoteData->getData()['error'] ?? 'unknown error';
+			throw new Exception('Failed to fetch remote configuration: ' . $error);
+		}
+
+		$whole = ImportSelection::isEmpty(selection: $selection);
+		$data = $remoteData;
+		if ($whole === false) {
+			$data = ImportSelection::filter(document: $remoteData, selection: $selection);
+			if (ImportSelection::hasContent(filtered: $data) === false) {
+				return ['registers' => [], 'schemas' => [], 'objects' => []];
+			}
+		}
+
+		$remoteVersion = $remoteData['version'] ?? $remoteData['info']['version'] ?? null;
+		$result = $this->importFromJson(
+			data: $data,
+			configuration: $configuration,
+			owner: $configuration->getApp(),
+			appId: $configuration->getApp(),
+			version: $remoteVersion ?? $configuration->getVersion(),
+			force: false
 		);
+
+		$configuration->setRegisters($this->mergeIds(existing: $configuration->getRegisters(), entities: $result['registers'] ?? []));
+		$configuration->setSchemas($this->mergeIds(existing: $configuration->getSchemas(), entities: $result['schemas'] ?? []));
+		$configuration->setObjects($this->mergeIds(existing: $configuration->getObjects(), entities: $result['objects'] ?? []));
+		if ($whole === true && $remoteVersion !== null) {
+			$configuration->setLocalVersion((string)$remoteVersion);
+		}
+
+		$this->configurationMapper->update($configuration);
+
+		$this->logger->info(
+			message: '[ConfigurationService] Imported configuration ' . $configuration->getId(),
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'whole' => $whole,
+				'registers' => count($result['registers'] ?? []),
+				'schemas' => count($result['schemas'] ?? []),
+				'objects' => count($result['objects'] ?? []),
+			]
+		);
+
+		return $result;
 	}//end importConfigurationWithSelection()
+
+	/**
+	 * Add the ids of imported entities to a tracked id list, without duplicates.
+	 *
+	 * @param array|null $existing Ids already tracked.
+	 * @param array $entities Entities the import returned.
+	 *
+	 * @return array<int, int>
+	 */
+	private function mergeIds(?array $existing, array $entities): array {
+		$ids = array_values($existing ?? []);
+		foreach ($entities as $entity) {
+			if (($entity instanceof Entity) === false) {
+				continue;
+			}
+
+			$id = $entity->getId();
+			if ($id !== null && in_array($id, $ids, true) === false) {
+				$ids[] = $id;
+			}
+		}
+
+		return $ids;
+	}//end mergeIds()
 }//end class
