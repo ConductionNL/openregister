@@ -105,6 +105,11 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 			lockingProvider: $this->createMock(ILockingProvider::class)
 		);
 
+		// With no interception webhook configured, the real service hands the
+		// request's own parameters back unchanged.
+		$webhooks = $this->createMock(WebhookService::class);
+		$webhooks->method('interceptRequest')->willReturnCallback(fn (): array => $this->params);
+
 		$this->controller = new ObjectsController(
 			'openregister',
 			$this->request,
@@ -119,7 +124,7 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 			$groupManager,
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
-			$this->createMock(WebhookService::class),
+			$webhooks,
 			$this->createMock(LoggerInterface::class),
 			upsertOnKeyHandler: $handler
 		);
@@ -133,7 +138,8 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 
 	private function savesEcho(): void {
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, $register = null, $schema = null, $_rbac = true, $_multitenancy = true, ?string $uuid = null): ObjectEntity {
+			// Positional, in ObjectService::saveObject()'s own order: object, extend, register, schema, uuid.
+			function (array $object, $extend = [], $register = null, $schema = null, ?string $uuid = null): ObjectEntity {
 				$this->savedUuids[] = $uuid;
 				$entity = new ObjectEntity();
 				$entity->setUuid($uuid ?? 'new-uuid');

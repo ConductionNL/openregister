@@ -38,7 +38,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\OasValidationException;
 use OCA\OpenRegister\Service\Oas\OasRbacAnnotator;
-use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
@@ -1487,17 +1486,11 @@ class OasService {
 	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
 	 */
 	private function withUpsertOnKey(array $operation, object $schema): array {
-		if (method_exists($schema, 'getConfiguration') === false) {
+		if (method_exists($schema, 'getUpsertKeys') === false) {
 			return $operation;
 		}
 
-		$keys = [];
-		$evaluator = new UniqueConstraintEvaluator();
-		foreach ($evaluator->constraints(configuration: $schema->getConfiguration(), includeLegacy: true) as $constraint) {
-			if ($constraint['action'] === UniqueConstraintEvaluator::ACTION_REFUSE) {
-				$keys[] = $constraint['name'];
-			}
-		}
+		$keys = $schema->getUpsertKeys();
 
 		if ($keys === []) {
 			return $operation;
@@ -1507,7 +1500,8 @@ class OasService {
 			'name' => '_upsertOn',
 			'in' => 'query',
 			'required' => false,
-			'description' => 'Create or update by a key this schema declares unique: the record holding the key is updated (200), or created when none does (201). Needs a signed-in caller; cannot be combined with _failIfExists.',
+			'description' => 'Create or update by a key this schema declares unique: the record holding the key is updated (200), '
+				.'or created when none does (201). Needs a signed-in caller; cannot be combined with _failIfExists.',
 			'schema' => ['type' => 'string', 'enum' => $keys],
 		];
 
