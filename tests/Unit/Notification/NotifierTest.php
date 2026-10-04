@@ -677,6 +677,33 @@ class NotifierTest extends TestCase {
 	}
 
 	/**
+	 * A view alert names the view, the count and the line it crossed. Without the case
+	 * prepare() throws and Nextcloud drops the notification the sweep raised.
+	 */
+	public function testPrepareViewAlertCrossedAbove(): void {
+		$parsed = $this->renderSubject(
+			'view_alert_crossed',
+			['view' => 'Overdue cases', 'viewId' => 'view-uuid-1', 'count' => 23, 'operator' => 'gte', 'threshold' => 20]
+		);
+
+		$this->assertSame('Overdue cases is at 23', $parsed[0]);
+		$this->assertSame('The view Overdue cases counts 23, at or above its threshold of 20.', $parsed[1]);
+	}
+
+	/**
+	 * A falling count reads as falling, not as the same sentence with the numbers swapped.
+	 */
+	public function testPrepareViewAlertCrossedBelow(): void {
+		$parsed = $this->renderSubject(
+			'view_alert_crossed',
+			['view' => 'Free beds', 'viewId' => 'view-uuid-2', 'count' => 2, 'operator' => 'lte', 'threshold' => 5]
+		);
+
+		$this->assertSame('Free beds is at 2', $parsed[0]);
+		$this->assertSame('The view Free beds counts 2, at or below its threshold of 5.', $parsed[1]);
+	}
+
+	/**
 	 * Render one subject and collect the parsed subject and message.
 	 *
 	 * @param string $subject The notification subject.
