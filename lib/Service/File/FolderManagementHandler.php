@@ -261,6 +261,7 @@ class FolderManagementHandler {
 	 * @return Folder The created or existing folder for the object.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
+	 * @spec openspec/changes/object-folder-is-bookkeeping/specs/file-actions/spec.md#requirement-reading-an-objects-files-never-saves-the-object-req-ofib-002
 	 */
 	public function createObjectFolderById(
 		ObjectEntity|string $objectEntity,
@@ -316,10 +317,14 @@ class FolderManagementHandler {
 		// Create object folder within the register folder.
 		$objectFolder = $this->createObjectFolderInRegister(registerFolder: $registerFolder, objectEntity: $objectEntity);
 
-		// Store the folder ID.
+		// Store the folder ID as bookkeeping: one column, no lifecycle events, so
+		// a request that only reads the object's files does not save the object.
 		if ($objectEntity instanceof ObjectEntity === true) {
-			$objectEntity->setFolder((string)$objectFolder->getId());
-			$this->objectEntityMapper->update($objectEntity);
+			$this->recordObjectFolder(
+				objectEntity: $objectEntity,
+				expected: $folderProperty,
+				folderId: (string)$objectFolder->getId()
+			);
 		}
 
 		$this->logger->debug(
@@ -1452,4 +1457,27 @@ class FolderManagementHandler {
 			return $objectFolder;
 		}
 	}//end createObjectFolderInRegister()
+
+	/**
+	 * Record an object's folder id as bookkeeping: one column, no lifecycle
+	 * events, so a request that only reads the object's files never saves it.
+	 *
+	 * @param ObjectEntity $objectEntity The object the folder belongs to.
+	 * @param string|null  $expected     The folder value read before creating the folder.
+	 * @param string       $folderId     The id of the folder that now exists.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-folder-is-bookkeeping/specs/file-actions/spec.md#requirement-reading-an-objects-files-never-saves-the-object-req-ofib-002
+	 */
+	private function recordObjectFolder(ObjectEntity $objectEntity, ?string $expected, string $folderId): void {
+		$recorded = $this->objectEntityMapper->recordFolder(entity: $objectEntity, expected: $expected, folderId: $folderId);
+		$objectEntity->setFolder($folderId);
+		if ($recorded === false) {
+			$this->logger->debug(
+				message: '[FolderManagementHandler] Object folder id was recorded by another request first; using folder ' . $folderId,
+				context: ['file' => __FILE__, 'line' => __LINE__, 'objectUuid' => $objectEntity->getUuid()]
+			);
+		}
+	}//end recordObjectFolder()
 }//end class
