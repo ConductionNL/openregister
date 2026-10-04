@@ -2726,6 +2726,9 @@ class AuditTrailMapper extends QBMapper {
 		$auditTrail = new AuditTrail();
 		$auditTrail->setUuid((string)Uuid::v4());
 		$auditTrail->setAction('mcp.' . $verb);
+		// `changed` is NOT NULL and QBMapper writes only the fields a setter
+		// touched: a tool call changes no object, so it records an empty set (#4279).
+		$auditTrail->setChanged([]);
 		$auditTrail->setToolId($toolId);
 		$auditTrail->setParamsDigest($paramsDigest);
 		$auditTrail->setResultSummary($resultSummary);
