@@ -16,6 +16,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Configuration;
 
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
@@ -61,7 +62,8 @@ class PreviewHandlerTest extends TestCase {
 			$this->registerMapper,
 			$this->schemaMapper,
 			$this->logger,
-			$this->fetchHandler
+			$this->fetchHandler,
+			$this->createMock(MagicMapper::class)
 		);
 	}
 
@@ -852,37 +854,21 @@ class PreviewHandlerTest extends TestCase {
 		$this->assertSame(4, $result['metadata']['totalChanges']);
 	}
 
-	// ──────────────────────────────────────────────────────────────
-	// compareArrays — placeholder
-	// ──────────────────────────────────────────────────────────────
-
 	/**
-	 * Test compareArrays returns empty array (placeholder).
+	 * compareArrays reports a changed scalar under its prefixed path.
 	 */
-	public function testCompareArraysReturnsEmpty(): void {
-		$result = $this->handler->compareArrays(
-			['key' => 'old'],
-			['key' => 'new']
-		);
-
-		$this->assertSame([], $result);
-	}
-
-	/**
-	 * Test compareArrays with prefix parameter returns empty (placeholder).
-	 */
-	public function testCompareArraysWithPrefixReturnsEmpty(): void {
+	public function testCompareArraysReportsAChangedScalar(): void {
 		$result = $this->handler->compareArrays(
 			['key' => 'old'],
 			['key' => 'new'],
-			'prefix.'
+			'prefix'
 		);
 
-		$this->assertSame([], $result);
+		$this->assertSame([['field' => 'prefix.key', 'current' => 'old', 'proposed' => 'new']], $result);
 	}
 
 	/**
-	 * Test compareArrays with empty arrays returns empty (placeholder).
+	 * compareArrays with empty arrays returns no changes.
 	 */
 	public function testCompareArraysEmptyInputs(): void {
 		$result = $this->handler->compareArrays([], []);
