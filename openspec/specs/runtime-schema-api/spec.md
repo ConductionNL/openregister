@@ -201,3 +201,10 @@ A schema SHALL keep `configuration.uniqueConstraints` through every create, upda
 - **THEN** its configuration carries that constraint unchanged
 - **AND** the uniqueness check reads `een-bezwaar` as a refuse constraint
 - @e2e exclude {asserted on the real entity and the real evaluator in tests/Unit/Db/SchemaUniqueConstraintsConfigTest.php; tests/e2e/ci/code-list-lifecycle.spec.ts drives the refusal live}
+
+#### Scenario: a record that shares its key can still be deleted
+
+- **GIVEN** two records holding the same key, saved before the schema declared a refuse constraint on it
+- **WHEN** either record is deleted
+- **THEN** the delete succeeds, because removing a record never breaches uniqueness
+- @e2e exclude {asserted on the real listener, evaluator and ObjectUpdatingEvent in tests/Unit/Listener/UniqueConstraintListenerDeleteTest.php; the Newman upsert collection deletes both duplicates in its tearDown}
