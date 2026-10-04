@@ -55,6 +55,7 @@ class FileSidebarController extends Controller {
 	 * @param LoggerInterface $logger Logger.
 	 * @param IRootFolder $rootFolder Root folder for per-user file access checks.
 	 * @param IUserSession $userSession Active user session for caller identity.
+	 * @param \OCA\OpenRegister\Service\File\FileReadScope|null $fileReadScope The object read rule for an object's file.
 	 */
 	public function __construct(
 		string $appName,
@@ -63,6 +64,7 @@ class FileSidebarController extends Controller {
 		private readonly LoggerInterface $logger,
 		private readonly IRootFolder $rootFolder,
 		private readonly IUserSession $userSession,
+		private readonly ?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -80,6 +82,12 @@ class FileSidebarController extends Controller {
 	 * @return bool True when the file is reachable in the caller's user folder.
 	 */
 	private function hasFileAccess(int $fileId): bool {
+		// An object's file sits in the openregister account's home, never in
+		// the caller's own tree: the object's read rule decides it.
+		if ($this->fileReadScope !== null) {
+			return $this->fileReadScope->mayReadFile(fileId: $fileId);
+		}
+
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return false;

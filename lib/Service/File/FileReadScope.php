@@ -112,6 +112,33 @@ class FileReadScope {
 	}//end readableResults()
 
 	/**
+	 * Whether the caller may read one file.
+	 *
+	 * An object's file is answered by the object's read rule. Any other file
+	 * by whether it resolves in the caller's own tree.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return bool True when the caller may read it.
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 */
+	public function mayReadFile(int $fileId): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
+
+		try {
+			$userFolder = $this->rootFolder->getUserFolder($user->getUID());
+		} catch (Throwable $e) {
+			return false;
+		}
+
+		return $this->mayRead(userFolder: $userFolder, fileId: $fileId);
+	}//end mayReadFile()
+
+	/**
 	 * The Nextcloud file id a hit points at, or null when it is not a file hit.
 	 *
 	 * @param array<string, mixed> $result One hit.
