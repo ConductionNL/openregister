@@ -148,6 +148,78 @@ class McpServerControllerTest extends TestCase {
 	}
 
 	// ---------------------------------------------------------------
+	// handle() — Unauthenticated requests (#4284)
+	// ---------------------------------------------------------------
+
+	/**
+	 * Build the controller the way the DI container does when Nextcloud did not
+	 * recognise the caller: the `userId` service resolves to null.
+	 */
+	private function unauthenticatedController(): McpServerController {
+		return new McpServerController(
+			'openregister',
+			$this->request,
+			$this->protocolService,
+			$this->toolsService,
+			$this->resourcesService,
+			$this->logger,
+			null,
+			$this->agentScope
+		);
+	}
+
+	public function testHandleWithoutUserAnswers401WithJsonRpcError(): void {
+		$this->protocolService->expects($this->never())->method('initialize');
+
+		$this->mockPhpInput(json_encode([
+			'jsonrpc' => '2.0',
+			'method' => 'initialize',
+			'params' => ['clientInfo' => ['name' => 'test']],
+			'id' => 7,
+		]));
+
+		$result = $this->unauthenticatedController()->handle();
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $result->getStatus());
+		$data = $result->getData();
+		$this->assertSame('2.0', $data['jsonrpc']);
+		$this->assertSame(7, $data['id']);
+		$this->assertSame(-32001, $data['error']['code']);
+		$this->assertStringContainsString('Authentication required', $data['error']['message']);
+		$this->assertArrayHasKey('WWW-Authenticate', $result->getHeaders());
+	}
+
+	public function testHandleWithoutUserRefusesASessionBoundCall(): void {
+		$this->request->method('getHeader')->willReturnMap([['Mcp-Session-Id', 'valid-session']]);
+		$this->protocolService->method('validateSession')->willReturn('admin');
+		$this->toolsService->expects($this->never())->method('callTool');
+
+		$this->mockPhpInput(json_encode([
+			'jsonrpc' => '2.0',
+			'method' => 'tools/call',
+			'params' => ['name' => 'anything'],
+			'id' => 'abc',
+		]));
+
+		$result = $this->unauthenticatedController()->handle();
+
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $result->getStatus());
+		$this->assertSame('abc', $result->getData()['id']);
+		$this->assertSame(-32001, $result->getData()['error']['code']);
+	}
+
+	public function testHandleWithoutUserAndUnparseableBodyStillAnswers401(): void {
+		$this->mockPhpInput('{not json');
+
+		$result = $this->unauthenticatedController()->handle();
+
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $result->getStatus());
+		$this->assertNull($result->getData()['id']);
+		$this->assertSame(-32001, $result->getData()['error']['code']);
+	}
+
+	// ---------------------------------------------------------------
 	// handle() — Parse errors
 	// ---------------------------------------------------------------
 
