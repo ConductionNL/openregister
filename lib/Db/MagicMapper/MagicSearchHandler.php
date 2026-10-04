@@ -61,6 +61,7 @@ use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;
 use OCA\OpenRegister\Support\FilterParams;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -3350,10 +3351,57 @@ class MagicSearchHandler {
 			} elseif (($properties[$field] ?? null) !== null) {
 				// Schema property field sorting.
 				$columnName = $this->sanitizeColumnName(name: $field);
-				$qb->addOrderBy("t.{$columnName}", $direction);
+				$qb->addOrderBy(
+					$this->buildPropertySortExpression(
+						qb: $qb,
+						columnName: $columnName,
+						propertyConfig: $properties[$field]
+					),
+					$direction
+				);
 			}//end if
 		}//end foreach
 	}//end applySorting()
+
+	/**
+	 * Build the ORDER BY expression for one schema property column.
+	 *
+	 * A `date` or `date-time` property sorts as if an empty value held the
+	 * object's own creation date (`_created`, which every magic table row
+	 * carries). Without that fallback an empty date sorts above the newest
+	 * dated object on PostgreSQL (NULLs are largest there) and below the
+	 * oldest on MySQL/MariaDB (NULLs are smallest), so the same list read
+	 * differently per database. Every other property keeps its bare column.
+	 *
+	 * The column name passed in is already sanitised to [a-z0-9_]; it is
+	 * quoted again through the query builder so a reserved word stays valid.
+	 *
+	 * @param IQueryBuilder $qb             Query builder, used for identifier quoting.
+	 * @param string        $columnName     The sanitised property column name.
+	 * @param mixed         $propertyConfig The property's schema definition.
+	 *
+	 * @return string|IQueryFunction The column reference or COALESCE expression.
+	 *
+	 * @spec exclude Sort fallback for empty date properties, decided by the product owner on 2026-10-04 after a live pipelinq list report.
+	 */
+	private function buildPropertySortExpression(
+		IQueryBuilder $qb,
+		string $columnName,
+		mixed $propertyConfig
+	): string|IQueryFunction {
+		if (is_array($propertyConfig) === false
+			|| ($propertyConfig['type'] ?? 'string') !== 'string'
+			|| in_array($propertyConfig['format'] ?? null, ['date', 'date-time'], true) === false
+			|| ($propertyConfig['x-openregister-encrypted'] ?? false) === true
+		) {
+			return "t.{$columnName}";
+		}
+
+		$propertyColumn = $qb->getColumnName($columnName, 't');
+		$createdColumn = $qb->getColumnName('_created', 't');
+
+		return $qb->createFunction("COALESCE({$propertyColumn}, {$createdColumn})");
+	}//end buildPropertySortExpression()
 
 	/**
 	 * Execute search query and convert results to ObjectEntity objects
