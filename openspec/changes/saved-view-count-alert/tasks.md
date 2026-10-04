@@ -2,7 +2,7 @@
 
 ## 1. Data and validation
 
-- [~] 1.1 `alert` and `alertState` on `View` with a migration; validator reusing the recipient and channel grammar; owner-or-write guard.
+- [x] 1.1 `alert` and `alertState` on `View` with a migration; validator reusing the recipient and channel grammar; owner-or-write guard.
 
 ## 2. Sweep
 
@@ -61,3 +61,21 @@ path.** Both are named rather than half-built:
   own authorisation question, and it is the next piece.
 - **3.1, the e2e**, which the spec already defers until the field ships in
   nextcloud-vue.
+
+## Status, 2026-10-04
+
+**1.1 is done: the alert is written through the real save path.** Create,
+update and patch read `alert` from the body (`ViewAlert::declaredIn()`), and
+`ViewService::applyAlert()` stores it in the form `ViewAlert::parse()` returns,
+defaults filled in. A malformed alert answers 422 with `field` naming the input
+(`InvalidViewAlertException`), and nothing is written. A body without `alert`
+leaves it as it was; `alert: null` clears it. The alert's state restarts only
+when the declaration changes, because the edit screen resends the whole view
+and re-arming a fired alert on every save would page its recipients again.
+Who may set it is the existing field guard: `alert` is in
+`ViewShareResolver::WRITABLE_BY_MEMBER`, so the owner and a write member may,
+a read member gets 403. `tests/Unit/Controller/ViewAlertOnSaveTest.php` runs
+the real controller over the real `ViewService` and reach resolver.
+
+Still open: 2.1's notification sender (the crossing is an event with no
+sender that can address a person about a number) and 3.1, the e2e.

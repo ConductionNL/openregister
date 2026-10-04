@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
+use OCA\OpenRegister\Service\View\ViewAlert;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -208,6 +209,7 @@ class ViewService {
 	 * @param array<string, mixed> $query The query parameters (registers, schemas, filters)
 	 * @param array|null $presentation Presentation config (viewType + kanban/calendar config); null = table (default)
 	 * @param array|null $sharedWith Validated group shares, `[{group, mode}]`; null = none
+	 * @param array|null $alert The declared count alert; null or `[]` = none
 	 *
 	 * @return View The created view entity
 	 *
@@ -226,6 +228,7 @@ class ViewService {
 		array $query,
 		?array $presentation = null,
 		?array $sharedWith = null,
+		?array $alert = null,
 	): View {
 		try {
 			// Step 0: Reject a presentation config that cannot render before touching the DB.
@@ -248,6 +251,7 @@ class ViewService {
 			$view->setPresentation($presentation);
 			$view->setFavoredBy([]);
 			$view->setSharedWith(array_values($sharedWith ?? []));
+			$this->applyAlert(view: $view, alert: $alert);
 
 			// Step 3: Insert view into database and return created entity.
 			return $this->viewMapper->insert($view);
@@ -274,6 +278,7 @@ class ViewService {
 	 * @param array|null $favoredBy Array of user IDs who favor this view
 	 * @param array|null $presentation Presentation config (viewType + kanban/calendar config); null leaves the existing value untouched
 	 * @param array|null $sharedWith Validated group shares, `[{group, mode}]`; null leaves the existing shares untouched
+	 * @param array|null $alert The declared count alert; null leaves it untouched, `[]` clears it
 	 *
 	 * @return View The updated view
 	 *
@@ -296,6 +301,7 @@ class ViewService {
 		?array $favoredBy = null,
 		?array $presentation = null,
 		?array $sharedWith = null,
+		?array $alert = null,
 	): View {
 		try {
 			// Reject a presentation config that cannot render before touching the DB.
@@ -332,6 +338,8 @@ class ViewService {
 				$view->setSharedWith(array_values($sharedWith));
 			}
 
+			$this->applyAlert(view: $view, alert: $alert);
+
 			return $this->viewMapper->update($view);
 		} catch (Exception $e) {
 			$this->logger->error(
@@ -366,6 +374,43 @@ class ViewService {
 			throw $e;
 		}
 	}//end delete()
+
+	/**
+	 * Store a declared count alert on a view, in its canonical form.
+	 *
+	 * Null leaves the alert as it was, so a save that does not mention it
+	 * cannot drop it. An empty array clears it. A declaration is read through
+	 * ViewAlert::parse(), which refuses a malformed one naming its field.
+	 *
+	 * The alert's state restarts only when the declaration CHANGES. The edit
+	 * screen sends the whole view on every save; re-arming a fired alert each
+	 * time would page its recipients again about a backlog they already heard
+	 * of. A changed line is a different alert, and the old state belongs to
+	 * the old one.
+	 *
+	 * @param View $view The view being saved.
+	 * @param array|null $alert The declared alert, `[]` to clear, or null to leave it.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the declared alert does not read.
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
+	 */
+	private function applyAlert(View $view, ?array $alert): void {
+		if ($alert === null) {
+			return;
+		}
+
+		$canonical = ViewAlert::parse(raw: $alert)?->jsonSerialize();
+		if ($canonical === $view->getAlert()) {
+			return;
+		}
+
+		$view->setAlert($canonical);
+		$view->setAlertState(null);
+		$view->setAlertEvaluatedAt(null);
+	}//end applyAlert()
 
 	/**
 	 * Clear default flag for all views of a user.
