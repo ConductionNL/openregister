@@ -66,6 +66,8 @@ use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\ViewHistoryService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
+use OCA\OpenRegister\Service\Object\UpsertOnKeyHandler;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultException;
 use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
@@ -174,6 +176,7 @@ class ObjectsController extends Controller {
 	 * @param ?\OCA\OpenRegister\Service\Quality\UniqueHintWarnings $uniqueHintWarnings Optional per-request soft-uniqueness collector (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\Audit\PurposeGuard $purposeGuard Optional doelbinding guard (null-safe)
 	 * @param ?\OCA\OpenRegister\Service\History\StateHistoryProjector $stateHistory Optional state-history projector (null-safe)
+	 * @param ?UpsertOnKeyHandler $upsertOnKeyHandler Optional upsert on a declared key (null-safe: `_upsertOn` then answers 501)
 	 *
 	 * @return void
 	 *
@@ -207,6 +210,7 @@ class ObjectsController extends Controller {
 		private readonly ?\OCA\OpenRegister\Service\Quality\UniqueHintWarnings $uniqueHintWarnings = null,
 		private readonly ?\OCA\OpenRegister\Service\Audit\PurposeGuard $purposeGuard = null,
 		private readonly ?\OCA\OpenRegister\Service\History\StateHistoryProjector $stateHistory = null,
+		private readonly ?UpsertOnKeyHandler $upsertOnKeyHandler = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->exportService = $exportService;
@@ -3333,6 +3337,18 @@ class ObjectsController extends Controller {
 			FILTER_VALIDATE_BOOLEAN
 		);
 
+		// UPSERT ON A DECLARED KEY (api-upsert-on-a-declared-key), read from the
+		// raw request like the two controls above. `_upsertOn` names one of the
+		// schema's `refuse` uniqueness constraints; the record holding that key
+		// is updated, or created when none does.
+		$upsertOn = trim((string)$this->request->getParam('_upsertOn', ''));
+		if ($upsertOn !== '') {
+			$refusal = $this->upsertPreconditionRefusal(failIfExists: $failIfExists, resolved: $resolved);
+			if ($refusal !== null) {
+				return $refusal;
+			}
+		}
+
 		// Determine RBAC and multitenancy settings based on admin status.
 		$isAdmin = $this->isCurrentUserAdmin();
 		$rbac = !$isAdmin;
@@ -3352,21 +3368,42 @@ class ObjectsController extends Controller {
 			// Use the object service to validate and save the object.
 			// Use resolved numeric IDs instead of slugs.
 			$objectToSave = $object;
-			$objectEntity = $objectService->saveObject(
+			$save = static fn (?string $uuid): ObjectEntity => $objectService->saveObject(
 				object: $objectToSave,
 				register: $resolved['register'],
 				schema: $resolved['schema'],
 				_rbac: $rbac,
 				_multitenancy: true,
-				uuid: null,
+				uuid: $uuid,
 				uploadedFiles: $uploadedFilesValue,
 				failIfExists: $failIfExists,
 				_dedupOverride: $dedupOverride
 			);
 
+			$created = true;
+			if ($upsertOn !== '' && $this->upsertOnKeyHandler !== null) {
+				$upserted = $this->upsertOnKeyHandler->upsert(
+					constraintName: $upsertOn,
+					object: $objectToSave,
+					register: $resolved['registerEntity'],
+					schema: $resolved['schemaEntity'],
+					save: $save
+				);
+				$objectEntity = $upserted['object'];
+				$created = $upserted['created'];
+			} else {
+				$objectEntity = $save(null);
+			}
+
 			// TODO: Unlock the object after saving using LockingHandler through ObjectService.
 			// The unlockObject() method on the old ObjectEntityMapper is deprecated.
 			// For now, skipping unlock to allow CRUD operations to complete.
+		} catch (UpsertOnKeyException $exception) {
+			// The upsert decided its own answer: a key that is not a refuse
+			// constraint or has no value (400), a duplicated key or a holder the
+			// caller cannot see (409, never naming that holder), a lookup or key
+			// lock that could not be had (503, nothing written).
+			return new JSONResponse(data: $exception->getBody(), statusCode: $exception->getStatusCode(), headers: $exception->getHeaders());
 		} catch (TranslationTargetConflictException $exception) {
 			// Structured 400 per the exception's own documented contract
 			// (i18n-api-language-negotiation): a language-keyed body for a
@@ -3450,8 +3487,50 @@ class ObjectsController extends Controller {
 
 		// Return the created object.
 		// Note: Sub-objects are only returned when _extend is explicitly requested on GET.
-		return new JSONResponse(data: $this->withUniqueHintWarnings(body: $objectEntity->jsonSerialize()), statusCode: 201);
+		// An upsert that found its record updated it: 200, not 201.
+		$status = 201;
+		if ($created === false) {
+			$status = 200;
+		}
+
+		return new JSONResponse(data: $this->withUniqueHintWarnings(body: $objectEntity->jsonSerialize()), statusCode: $status);
 	}//end create()
+
+	/**
+	 * Why an `_upsertOn` request cannot proceed, or null when it can.
+	 *
+	 * Anonymous callers are refused: create() is a public page for form
+	 * submissions, and overwriting a record by guessing its key is not what
+	 * those forms are for. `_failIfExists` asks the opposite of an upsert.
+	 *
+	 * @param bool                 $failIfExists Whether the call also asked for insert-only.
+	 * @param array<string, mixed> $resolved     The resolved register and schema.
+	 *
+	 * @return JSONResponse|null The refusal, or null.
+	 *
+	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 */
+	private function upsertPreconditionRefusal(bool $failIfExists, array $resolved): ?JSONResponse {
+		if ($this->userSession->getUser() === null) {
+			return new JSONResponse(data: ['error' => 'An upsert needs a signed-in caller.'], statusCode: 401);
+		}
+
+		if ($failIfExists === true) {
+			return new JSONResponse(
+				data: ['error' => '_upsertOn and _failIfExists ask opposite things; send one of them.'],
+				statusCode: 400
+			);
+		}
+
+		if ($this->upsertOnKeyHandler === null
+			|| ($resolved['registerEntity'] instanceof Register) === false
+			|| ($resolved['schemaEntity'] instanceof Schema) === false
+		) {
+			return new JSONResponse(data: ['error' => 'Upsert on a key is not available here.'], statusCode: 501);
+		}
+
+		return null;
+	}//end upsertPreconditionRefusal()
 
 	/**
 	 * Release the lock this writer holds, after their own write has landed.
