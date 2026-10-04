@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Nepavyko įrašyti apribojimų",
         "Only the agent's owner can change its limits.": "Tik agento savininkas gali keisti jo apribojimus.",
         "This agent has a grant per app. Change it through the agents API.": "Šis agentas turi leidimą kiekvienai programai. Keiskite jį per agentų API.",
-        "Edit limits": "Redaguoti apribojimus"
+        "Edit limits": "Redaguoti apribojimus",
+        "Edit {field}": "Redaguoti {field}",
+        "The value could not be saved": "Nepavyko išsaugoti reikšmės"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);"
 )

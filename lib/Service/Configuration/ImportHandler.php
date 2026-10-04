@@ -1436,12 +1436,21 @@ class ImportHandler {
 	 * back untouched: that is exactly today's behaviour, and it is what every
 	 * instance gets on the first import after this ships.
 	 *
+	 * The baseline that goes with that definition is returned, NOT recorded:
+	 * the caller records it with recordPendingBaseline() only once the schema
+	 * write has succeeded. Recorded here, a write that then fails (a property
+	 * the validator refuses) leaves a baseline the instance never ran, and the
+	 * next import reads every old live part as a local edit and keeps it,
+	 * while the version still moves on.
+	 *
 	 * @param array<string, mixed> $data       The incoming schema definition.
 	 * @param Schema               $existing   The schema the instance runs.
 	 * @param string|null          $appId      The app shipping it.
 	 * @param string|null          $appVersion The app version.
 	 *
-	 * @return array<string, mixed> The definition to write.
+	 * @return array{data: array<string, mixed>, baseline: array<string, mixed>|null, slug: string}
+	 *         The definition to write, the baseline to record after it is written
+	 *         (null: nothing to record) and the schema slug.
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
@@ -1451,13 +1460,14 @@ class ImportHandler {
 		?string $appId,
 		?string $appVersion
 	): array {
+		$unguarded = ['data' => $data, 'baseline' => null, 'slug' => ''];
 		if ($this->shippedGuard === null || $appId === null) {
-			return $data;
+			return $unguarded;
 		}
 
 		$slug = (string)($data['slug'] ?? $existing->getSlug() ?? '');
 		if ($slug === '') {
-			return $data;
+			return $unguarded;
 		}
 
 		$live = [
@@ -1478,11 +1488,13 @@ class ImportHandler {
 			live: $live,
 			incoming: $incoming,
 			app: $appId,
-			appVersion: ($appVersion ?? '')
+			appVersion: ($appVersion ?? ''),
+			record: false
 		);
 
+		$pending = ['data' => $data, 'baseline' => $result['baseline'], 'slug' => $slug];
 		if ($result['guarded'] === false) {
-			return $data;
+			return $pending;
 		}
 
 		foreach (self::SHIPPED_GUARD_KEYS as $key) {
@@ -1503,8 +1515,33 @@ class ImportHandler {
 			);
 		}
 
-		return $data;
+		$pending['data'] = $data;
+		return $pending;
 	}//end applyShippedBaselineGuard()
+
+	/**
+	 * Record the baseline the guard resolved, now that the schema is written.
+	 *
+	 * @param array{data: array<string, mixed>, baseline: array<string, mixed>|null, slug: string} $guarded    What applyShippedBaselineGuard() returned.
+	 * @param string|null                                                                          $appId      The app shipping it.
+	 * @param string|null                                                                          $appVersion The app version.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	private function recordPendingBaseline(array $guarded, ?string $appId, ?string $appVersion): void {
+		if ($this->shippedGuard === null || $appId === null || $guarded['baseline'] === null || $guarded['slug'] === '') {
+			return;
+		}
+
+		$this->shippedGuard->recordShipped(
+			slug: $guarded['slug'],
+			definition: $guarded['baseline'],
+			app: $appId,
+			appVersion: ($appVersion ?? '')
+		);
+	}//end recordPendingBaseline()
 
 	/**
 	 * Record what the app shipped for a schema that has just been created.
@@ -2330,13 +2367,15 @@ class ImportHandler {
 				// every upgrade and nothing records that it existed (row
 				// 11.36). The guard is null-safe and never throws, so an
 				// instance without a baseline imports exactly as it does
-				// today.
-				$data = $this->applyShippedBaselineGuard(
+				// today. Its baseline is recorded only after the write below
+				// succeeds, so a refused write cannot leave a baseline behind.
+				$guarded = $this->applyShippedBaselineGuard(
 					data: $data,
 					existing: $existingSchema,
 					appId: $appId,
 					appVersion: $version
 				);
+				$data = $guarded['data'];
 
 				// Classify the change against the stored definition, whatever
 				// path it came in by (#4102). An import has nobody to answer a
@@ -2368,6 +2407,7 @@ class ImportHandler {
 				}
 
 				$existingSchema = $this->schemaMapper->update($existingSchema);
+				$this->recordPendingBaseline(guarded: $guarded, appId: $appId, appVersion: $version);
 				$this->recordImportedSchemaChange(schema: $existingSchema, changeSet: $changeSet, appId: $appId);
 
 				return $existingSchema;

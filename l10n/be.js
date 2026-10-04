@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Не ўдалося захаваць абмежаванні",
         "Only the agent's owner can change its limits.": "Змяняць абмежаванні агента можа толькі яго ўладальнік.",
         "This agent has a grant per app. Change it through the agents API.": "У гэтага агента дазвол для кожнай праграмы. Змяніце яго праз API агентаў.",
-        "Edit limits": "Змяніць абмежаванні"
+        "Edit limits": "Змяніць абмежаванні",
+        "Edit {field}": "Рэдагаваць {field}",
+        "The value could not be saved": "Не ўдалося захаваць значэнне"
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

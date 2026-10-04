@@ -3342,7 +3342,9 @@
         "This link is closed with a password": "Ten link jest chroniony hasłem",
         "This link is open until {date}.": "Ten link jest otwarty do {date}.",
         "This record has no visible fields.": "Ten rekord nie ma widocznych pól.",
-        "Upload": "Prześlij"
+        "Upload": "Prześlij",
+        "Edit {field}": "Edytuj {field}",
+        "The value could not be saved": "Nie udało się zapisać wartości"
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);",
     "plurals": {

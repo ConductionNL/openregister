@@ -47,6 +47,13 @@ class ShippedConfigurationGuardTest extends TestCase {
 	private array $actions = [];
 
 	/**
+	 * The baselines the store was asked to record, by subject.
+	 *
+	 * @var array<int, array{subject: string, definition: array<string, mixed>}>
+	 */
+	private array $recorded = [];
+
+	/**
 	 * A guard over an in-memory baseline store.
 	 *
 	 * @param array<string, mixed>|null $baseline The stored baseline definition, or null for none.
@@ -67,7 +74,12 @@ class ShippedConfigurationGuardTest extends TestCase {
 				'recordedAt' => '2026-09-01T00:00:00+00:00',
 			])
 		);
-		$store->method('record')->willReturn(true);
+		$store->method('record')->willReturnCallback(
+			function (string $subject, array $definition): bool {
+				$this->recorded[] = ['subject' => $subject, 'definition' => $definition];
+				return true;
+			}
+		);
 
 		$parts = new DescriptorParts();
 		$comparator = new DivergenceComparator(parts: $parts);
@@ -371,4 +383,150 @@ class ShippedConfigurationGuardTest extends TestCase {
 			'the decision names the part and the actor'
 		);
 	}//end testADecisionIsOnTheRecord()
+
+	/**
+	 * 🔴 D11 (learniq live pass, 3 Oct 2026): a shipped property that never
+	 * reached the instance is not a local deletion.
+	 *
+	 * The baseline already named `personalNumber` and `emergencyContacts`
+	 * (recorded by an import whose write did not land them), the stored schema
+	 * has neither, and the release also edits one leaf of each. The guard read
+	 * the absent property as REMOVED LOCALLY, kept the absence, and reported
+	 * "2 part(s) changed on both sides" on every upgrade, so the schema stayed
+	 * 14 properties short forever. A property absent from the instance as a
+	 * whole, which the app still ships, is put back.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-shipped-property-missing-from-the-instance-is-restored-on-upgrade
+	 */
+	public function testAShippedPropertyMissingFromTheInstanceIsRestored(): void {
+		$baseline = [
+			'properties' => [
+				'firstName' => ['type' => 'string', 'title' => 'Voornaam'],
+				'personalNumber' => ['type' => 'string', 'x-notes' => 'BSN or onderwijsnummer'],
+				'emergencyContacts' => ['type' => 'array', 'description' => 'Contacts'],
+				'allergies' => ['type' => 'string'],
+			],
+			'required' => ['firstName'],
+		];
+
+		// The instance holds only what an earlier import managed to write.
+		$live = [
+			'properties' => ['firstName' => ['type' => 'string', 'title' => 'Voornaam']],
+			'required' => ['firstName'],
+		];
+
+		$incoming = $baseline;
+		$incoming['properties']['personalNumber']['x-notes'] = 'BSN, onderwijsnummer or a school number';
+		$incoming['properties']['emergencyContacts']['description'] = 'Who to call';
+
+		$result = $this->guard(baseline: $baseline)->guardSchemaUpdate(
+			slug: 'learner-profile',
+			live: $live,
+			incoming: $incoming,
+			app: 'learniq',
+			appVersion: '0.34.33'
+		);
+
+		$this->assertSame([], $result['conflicts'], 'a property the instance never had is not a conflict');
+		// The merge writes parts in path order, as it does for every guarded
+		// import; the set is what this test is about.
+		$written = array_keys($result['definition']['properties']);
+		sort($written);
+		$this->assertSame(
+			['allergies', 'emergencyContacts', 'firstName', 'personalNumber'],
+			$written,
+			'every shipped property is in the definition written'
+		);
+		$this->assertSame($incoming['properties']['personalNumber'], $result['definition']['properties']['personalNumber']);
+		$this->assertSame('Who to call', $result['definition']['properties']['emergencyContacts']['description']);
+		$this->assertSame(['type' => 'string'], $result['definition']['properties']['allergies'], 'an unchanged missing property too');
+	}//end testAShippedPropertyMissingFromTheInstanceIsRestored()
+
+	/**
+	 * A property the instance has, with one leaf removed locally, is still a
+	 * local change: only a property missing as a whole is put back.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-import/spec.md#requirement-a-shipped-property-missing-from-the-instance-is-restored-on-upgrade
+	 */
+	public function testALeafRemovedLocallyStaysRemoved(): void {
+		$baseline = ['properties' => ['toelichting' => ['type' => 'string', 'maxLength' => 500]]];
+		$live = ['properties' => ['toelichting' => ['type' => 'string']]];
+		$incoming = $baseline;
+
+		$result = $this->guard(baseline: $baseline)->guardSchemaUpdate(
+			slug: 'zaak',
+			live: $live,
+			incoming: $incoming,
+			app: 'dossiq',
+			appVersion: '1.3.0'
+		);
+
+		$this->assertSame(['type' => 'string'], $result['definition']['properties']['toelichting']);
+		$this->assertContains('properties.toelichting.maxLength', $result['preserved']);
+	}//end testALeafRemovedLocallyStaysRemoved()
+
+	/**
+	 * 🔴 With `record: false` the guard records nothing and hands the baseline
+	 * back, on both paths, so the import can record it after its write.
+	 *
+	 * The import used to record the baseline BEFORE writing the schema. When
+	 * that write was refused, the instance kept its old properties under a
+	 * baseline it never ran, and the next import read every old part as a
+	 * local edit and kept it (portaliq's portalPage, 0.4.1 with 0.3.0
+	 * properties).
+	 *
+	 * @return void
+	 */
+	public function testWithRecordFalseTheBaselineIsReturnedNotRecorded(): void {
+		$incoming = ['properties' => ['kind' => ['type' => 'string', 'enum' => ['inbox', 'cases']]]];
+		$live = ['properties' => ['kind' => ['type' => 'string', 'enum' => ['inbox']]]];
+
+		$first = $this->guard(baseline: null)->guardSchemaUpdate(
+			slug: 'portalPage',
+			live: $live,
+			incoming: $incoming,
+			app: 'portaliq',
+			appVersion: '0.56.0',
+			record: false
+		);
+
+		$this->assertSame([], $this->recorded, 'nothing is recorded before the schema is written');
+		$this->assertSame($incoming, $first['baseline'], 'the first baseline is what the app shipped');
+
+		$second = $this->guard(baseline: $live)->guardSchemaUpdate(
+			slug: 'portalPage',
+			live: $live,
+			incoming: $incoming,
+			app: 'portaliq',
+			appVersion: '0.56.1',
+			record: false
+		);
+
+		$this->assertSame([], $this->recorded, 'nor on the guarded path');
+		$this->assertEqualsCanonicalizing(['inbox', 'cases'], $second['definition']['properties']['kind']['enum'], 'the upstream change lands');
+		$this->assertEqualsCanonicalizing(['inbox', 'cases'], $second['baseline']['properties']['kind']['enum'], 'and the baseline to record moves with it');
+	}//end testWithRecordFalseTheBaselineIsReturnedNotRecorded()
+
+	/**
+	 * By default the guard still records, so the other callers are unchanged.
+	 *
+	 * @return void
+	 */
+	public function testByDefaultTheBaselineIsStillRecorded(): void {
+		$incoming = ['properties' => ['zaaknummer' => ['type' => 'string']]];
+
+		$this->guard(baseline: null)->guardSchemaUpdate(
+			slug: 'zaak',
+			live: ['properties' => []],
+			incoming: $incoming,
+			app: 'dossiq',
+			appVersion: '1.3.0'
+		);
+
+		$this->assertSame([['subject' => 'schema:zaak', 'definition' => $incoming]], $this->recorded);
+	}//end testByDefaultTheBaselineIsStillRecorded()
 }//end class

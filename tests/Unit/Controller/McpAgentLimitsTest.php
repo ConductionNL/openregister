@@ -37,6 +37,8 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use OCP\Security\ISecureRandom;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -209,9 +211,21 @@ class McpAgentLimitsTest extends TestCase {
 			$tools,
 			$this->createMock(McpResourcesService::class),
 			$logger,
-			'alice',
+			$this->aliceSession(),
 			new McpAgentScope($agentMapper, new ToolGrantResolver(), $tools, $cacheFactory, $logger),
 		);
+	}
+
+	/**
+	 * A user session holding alice, the caller every test speaks as.
+	 */
+	private function aliceSession(): IUserSession {
+		$alice = $this->createMock(IUser::class);
+		$alice->method('getUID')->willReturn('alice');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($alice);
+
+		return $session;
 	}
 
 	protected function tearDown(): void {

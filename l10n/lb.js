@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "D'Limitte konnten net gespäichert ginn",
         "Only the agent's owner can change its limits.": "Just den Eegentümer vum Agent kann seng Limitte änneren.",
         "This agent has a grant per app. Change it through the agents API.": "Dësen Agent huet eng Autorisatioun pro App. Ännert se iwwer d'Agenten-API.",
-        "Edit limits": "Limitten änneren"
+        "Edit limits": "Limitten änneren",
+        "Edit {field}": "{field} änneren",
+        "The value could not be saved": "De Wäert konnt net gespäichert ginn"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -3363,7 +3363,9 @@
         "This link is closed with a password": "Tá an nasc seo cosanta le pasfhocal",
         "This link is open until {date}.": "Tá an nasc seo oscailte go dtí {date}.",
         "This record has no visible fields.": "Níl aon réimsí infheicthe ag an taifead seo.",
-        "Upload": "Uaslódáil"
+        "Upload": "Uaslódáil",
+        "Edit {field}": "Cuir {field} in eagar",
+        "The value could not be saved": "Níorbh fhéidir an luach a shábháil"
     },
     "pluralForm": "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);",
     "plurals": {

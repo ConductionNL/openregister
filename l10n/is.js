@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Ekki tókst að vista takmörkin",
         "Only the agent's owner can change its limits.": "Aðeins eigandi fulltrúans getur breytt takmörkum hans.",
         "This agent has a grant per app. Change it through the agents API.": "Þessi fulltrúi hefur heimild fyrir hvert forrit. Breyttu henni í gegnum API fulltrúa.",
-        "Edit limits": "Breyta takmörkum"
+        "Edit limits": "Breyta takmörkum",
+        "Edit {field}": "Breyta {field}",
+        "The value could not be saved": "Ekki tókst að vista gildið"
     },
     "nplurals=2; plural=(n != 1);"
 )

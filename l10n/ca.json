@@ -3300,7 +3300,9 @@
         "This link is closed with a password": "Aquest enllaç està protegit amb una contrasenya",
         "This link is open until {date}.": "Aquest enllaç està obert fins al {date}.",
         "This record has no visible fields.": "Aquest registre no té camps visibles.",
-        "Upload": "Puja"
+        "Upload": "Puja",
+        "Edit {field}": "Edita {field}",
+        "The value could not be saved": "No s'ha pogut desar el valor"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "A korlátokat nem sikerült menteni",
         "Only the agent's owner can change its limits.": "Az ügynök korlátait csak a tulajdonosa módosíthatja.",
         "This agent has a grant per app. Change it through the agents API.": "Ennek az ügynöknek alkalmazásonkénti jogosultsága van. Az ügynökök API-ján keresztül módosíthatja.",
-        "Edit limits": "Korlátok szerkesztése"
+        "Edit limits": "Korlátok szerkesztése",
+        "Edit {field}": "{field} szerkesztése",
+        "The value could not be saved": "Az érték nem menthető"
     },
     "nplurals=2; plural=(n != 1);"
 )

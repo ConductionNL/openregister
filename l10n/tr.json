@@ -3300,7 +3300,9 @@
         "This link is closed with a password": "Bu bağlantı parola ile korunuyor",
         "This link is open until {date}.": "Bu bağlantı {date} tarihine kadar açık.",
         "This record has no visible fields.": "Bu kaydın görünür alanı yok.",
-        "Upload": "Yükle"
+        "Upload": "Yükle",
+        "Edit {field}": "{field} düzenle",
+        "The value could not be saved": "Değer kaydedilemedi"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

@@ -118,6 +118,11 @@ class MagicMapperIntegrationTest extends TestCase {
 					'type' => 'boolean',
 					'title' => 'Active',
 				],
+				'occurredAt' => [
+					'type' => 'string',
+					'format' => 'date-time',
+					'title' => 'Occurred at',
+				],
 			],
 		]);
 		$this->createdSchemaIds[] = $schema->getId();
@@ -633,6 +638,45 @@ class MagicMapperIntegrationTest extends TestCase {
 			$schema
 		);
 		$this->assertIsArray($results);
+	}
+
+	/**
+	 * An empty date property sorts as if it held the object's creation date.
+	 *
+	 * Three objects: one dated 2000, one dated 2999, and one with no date
+	 * (created now). Ascending must read 2000, now, 2999 on every database.
+	 * Before the fallback PostgreSQL put the undated object last (NULL is
+	 * largest) and MySQL/MariaDB put it first (NULL is smallest).
+	 */
+	public function testSearchSortsEmptyDateByCreatedDate(): void {
+		$register = $this->createTestRegister();
+		$schema = $this->createTestSchema();
+
+		$this->mapper->ensureTableForRegisterSchema($register, $schema);
+		$this->trackTable($register, $schema);
+
+		$objects = [
+			['name' => 'Future', 'occurredAt' => '2999-01-01T00:00:00+00:00'],
+			['name' => 'Undated'],
+			['name' => 'Past', 'occurredAt' => '2000-01-01T00:00:00+00:00'],
+		];
+		foreach ($objects as $object) {
+			$entity = new ObjectEntity();
+			$entity->setUuid(Uuid::v4()->toRfc4122());
+			$entity->setRegister((string)$register->getId());
+			$entity->setSchema((string)$schema->getId());
+			$entity->setObject($object);
+			$this->mapper->insertObjectEntity($entity, $register, $schema, false);
+		}
+
+		$results = $this->mapper->searchObjectsInRegisterSchemaTable(
+			['_order' => ['occurredAt' => 'ASC']],
+			$register,
+			$schema
+		);
+
+		$names = array_map(static fn (ObjectEntity $o): ?string => ($o->getObject()['name'] ?? null), $results);
+		$this->assertSame(['Past', 'Undated', 'Future'], $names);
 	}
 
 	public function testCountObjectsInTable(): void {

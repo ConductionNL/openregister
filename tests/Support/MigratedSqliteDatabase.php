@@ -52,7 +52,7 @@ class MigratedSqliteDatabase {
 	private const BRIDGED = [
 		'select', 'from', 'where', 'andWhere', 'orWhere', 'orderBy', 'addOrderBy',
 		'setMaxResults', 'setFirstResult', 'groupBy', 'createNamedParameter', 'createFunction',
-		'expr', 'executeQuery', 'getSQL',
+		'expr', 'executeQuery', 'getSQL', 'insert', 'setValue', 'executeStatement', 'getLastInsertId',
 	];
 
 	/**
@@ -283,6 +283,25 @@ class MigratedSqliteDatabase {
 		);
 		$qb->method('createFunction')->willReturnCallback(fn (string $call) => self::func($call));
 		$qb->method('getSQL')->willReturnCallback(fn () => self::unprefix($inner->getSQL()));
+		// An INSERT, as QBMapper::insert() builds one: only the columns the
+		// entity's setters touched are written, so a NOT NULL column the caller
+		// never set reaches the database as NULL and is refused, as on PostgreSQL.
+		$qb->method('insert')->willReturnCallback(
+			function (string $table) use ($inner, $qb) {
+				$inner->insert(self::unprefix($table));
+				return $qb;
+			}
+		);
+		$qb->method('setValue')->willReturnCallback(
+			function (string $column, $value) use ($inner, $qb) {
+				$inner->setValue($this->connection->quoteIdentifier($column), self::sql($value));
+				return $qb;
+			}
+		);
+		$qb->method('executeStatement')->willReturnCallback(
+			fn () => (int) $this->connection->executeStatement(self::unprefix($inner->getSQL()), $inner->getParameters(), $inner->getParameterTypes())
+		);
+		$qb->method('getLastInsertId')->willReturnCallback(fn () => (int) $this->connection->lastInsertId());
 		$qb->method('executeQuery')->willReturnCallback(
 			fn () => $this->result(rows: $this->connection->fetchAllAssociative(self::unprefix($inner->getSQL()), $inner->getParameters(), $inner->getParameterTypes()))
 		);

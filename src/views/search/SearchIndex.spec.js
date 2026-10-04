@@ -22,6 +22,11 @@ jest.mock('../../store/store.js', () => ({
 	schemaStore: { schemaList: [] },
 	viewsStore: {},
 }))
+// The inline cell editor has its own spec; here it only has to resolve.
+jest.mock('../../components/tables/EditableCell.vue', () => ({
+	__esModule: true,
+	default: { name: 'EditableCell', render: () => null },
+}))
 jest.mock('@nextcloud/l10n', () => ({
 	__esModule: true,
 	translate: (_app, text) => text,
@@ -382,6 +387,71 @@ describe('SearchIndex — presentation dispatch (REQ-VIEW-PRES-05)', () => {
 			SearchIndex.watch.activeViewId.call(ctx, 'v4')
 
 			expect(ctx.fetchKanbanBoard).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('records list cells edited in place (REQ-RFCE-002)', () => {
+		it('offers in-place editing only for scalar columns', () => {
+			const ctx = {
+				normalizedSchema: {
+					properties: {
+						reference: { type: 'string' },
+						count: { type: 'integer' },
+						status: { type: 'string', enum: ['open', 'closed'] },
+						attachment: { type: 'file' },
+						title: { type: 'string', translatable: true },
+						address: { type: 'object' },
+						code: { type: 'string', const: 'X' },
+					},
+				},
+			}
+			expect(computedCall('inlineEditableColumns', ctx)).toEqual([
+				'reference',
+				'count',
+				'status',
+			])
+		})
+
+		it('offers nothing without a schema', () => {
+			expect(
+				computedCall('inlineEditableColumns', { normalizedSchema: null }),
+			).toEqual([])
+		})
+
+		it("asks the list for the reader's update right on each row", () => {
+			mockObjectStore.searchParams = {
+				register: 3,
+				schema: 7,
+				_extend: ['@self.files'],
+			}
+			methodCall('requestUpdateRights', {})
+			expect(mockObjectStore.updateSearchParams).toHaveBeenCalledWith({
+				_extend: ['@self.files', '@self.can'],
+			})
+		})
+
+		it('does not ask twice', () => {
+			mockObjectStore.searchParams = {
+				register: 3,
+				schema: 7,
+				_extend: ['@self.can'],
+			}
+			methodCall('requestUpdateRights', {})
+			expect(mockObjectStore.updateSearchParams).not.toHaveBeenCalled()
+		})
+
+		it('a saved cell updates the row in the list', () => {
+			mockObjectStore.searchCollection = [
+				{ '@self': { id: 'u-1' }, reference: 'Z-1' },
+				{ '@self': { id: 'u-2' }, reference: 'Z-7' },
+			]
+			methodCall(
+				'handleCellSaved',
+				{},
+				{ row: { id: 'u-1' }, field: 'reference', value: 'Z-2' },
+			)
+			expect(mockObjectStore.searchCollection[0].reference).toBe('Z-2')
+			expect(mockObjectStore.searchCollection[1].reference).toBe('Z-7')
 		})
 	})
 })

@@ -99,14 +99,22 @@ class ShippedConfigurationGuard {
 	 * @param string               $app        The app.
 	 * @param string               $appVersion The app version.
 	 * @param array<int, string>   $decisions  Paths an administrator decided to take from upstream.
+	 * @param bool                 $record     False leaves the baseline unrecorded: the caller
+	 *                                         records `baseline` with recordShipped() once the
+	 *                                         definition is actually written. A baseline recorded
+	 *                                         for a write that then fails makes the next import read
+	 *                                         the old live definition as a local edit and keep it.
 	 *
 	 * @return array{
 	 *     definition: array<string, mixed>,
+	 *     baseline: array<string, mixed>|null,
 	 *     guarded: bool,
 	 *     applied: array<int, string>,
 	 *     preserved: array<int, string>,
 	 *     conflicts: array<int, array<string, mixed>>
-	 * } What to write and what happened.
+	 * } What to write, the baseline that goes with it (null: record nothing), and what happened.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The default keeps every existing caller unchanged.
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
 	 */
@@ -116,7 +124,8 @@ class ShippedConfigurationGuard {
 		array $incoming,
 		string $app,
 		string $appVersion,
-		array $decisions = []
+		array $decisions = [],
+		bool $record = true
 	): array {
 		$subject = $this->baselines->schemaSubject(slug: $slug);
 
@@ -126,15 +135,18 @@ class ShippedConfigurationGuard {
 			if ($this->comparator->hasBaseline(baseline: ($baseline['definition'] ?? null)) === false) {
 				// Nothing to compare against: import as today, and record what
 				// the app shipped so the NEXT release can be guarded.
-				$this->baselines->record(
-					subject: $subject,
-					definition: $incoming,
-					app: $app,
-					appVersion: $appVersion
-				);
+				if ($record === true) {
+					$this->baselines->record(
+						subject: $subject,
+						definition: $incoming,
+						app: $app,
+						appVersion: $appVersion
+					);
+				}
 
 				return [
 					'definition' => $incoming,
+					'baseline' => $incoming,
 					'guarded' => false,
 					'applied' => [],
 					'preserved' => [],
@@ -149,12 +161,14 @@ class ShippedConfigurationGuard {
 				decisions: $decisions
 			);
 
-			$this->baselines->record(
-				subject: $subject,
-				definition: $result['baseline'],
-				app: $app,
-				appVersion: $appVersion
-			);
+			if ($record === true) {
+				$this->baselines->record(
+					subject: $subject,
+					definition: $result['baseline'],
+					app: $app,
+					appVersion: $appVersion
+				);
+			}
 
 			if ($result['conflicts'] !== []) {
 				// INFO on the parts that were left alone, because this is the
@@ -175,6 +189,7 @@ class ShippedConfigurationGuard {
 
 			return [
 				'definition' => $result['merged'],
+				'baseline' => $result['baseline'],
 				'guarded' => true,
 				'applied' => $result['applied'],
 				'preserved' => $result['preserved'],
@@ -190,6 +205,7 @@ class ShippedConfigurationGuard {
 
 			return [
 				'definition' => $incoming,
+				'baseline' => null,
 				'guarded' => false,
 				'applied' => [],
 				'preserved' => [],

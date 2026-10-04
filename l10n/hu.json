@@ -3300,7 +3300,9 @@
         "This link is closed with a password": "Ez a hivatkozás jelszóval védett",
         "This link is open until {date}.": "Ez a hivatkozás {date}-ig nyitva van.",
         "This record has no visible fields.": "Ennek a rekordnak nincsenek látható mezői.",
-        "Upload": "Feltöltés"
+        "Upload": "Feltöltés",
+        "Edit {field}": "{field} szerkesztése",
+        "The value could not be saved": "Az érték nem menthető"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

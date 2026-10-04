@@ -3263,7 +3263,9 @@ OC.L10N.register(
         "Could not save the limits": "Ierobežojumus nevarēja saglabāt",
         "Only the agent's owner can change its limits.": "Tikai aģenta īpašnieks var mainīt tā ierobežojumus.",
         "This agent has a grant per app. Change it through the agents API.": "Šim aģentam ir atļauja katrai lietotnei. Mainiet to ar aģentu API.",
-        "Edit limits": "Rediģēt ierobežojumus"
+        "Edit limits": "Rediģēt ierobežojumus",
+        "Edit {field}": "Rediģēt {field}",
+        "The value could not be saved": "Vērtību neizdevās saglabāt"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);"
 )

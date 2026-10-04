@@ -3342,7 +3342,9 @@
         "This link is closed with a password": "Tento odkaz je chráněn heslem",
         "This link is open until {date}.": "Tento odkaz je otevřený do {date}.",
         "This record has no visible fields.": "Tento záznam nemá žádná viditelná pole.",
-        "Upload": "Nahrát"
+        "Upload": "Nahrát",
+        "Edit {field}": "Upravit {field}",
+        "The value could not be saved": "Hodnotu se nepodařilo uložit"
     },
     "pluralForm": "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;",
     "plurals": {

@@ -2384,6 +2384,11 @@ class RenderObject {
 		// costs ONE query for the star rather than one per rendered row.
 		$this->applyFavouriteMarker(entity: $entity);
 
+		// The reader's update right (`@self.can.update`), opt-in through
+		// `_extend[]=@self.can`: the records list's in-place editor asks for it
+		// so it never offers an edit the save would refuse (REQ-RFCE-002).
+		$this->applyUpdateRightMarker(entity: $entity, schema: $renderSchema, extend: $_extend);
+
 		// Annotation-driven retention block.
 		// When the schema declares `x-openregister-archival`, compute the
 		// effective retention for this row from the annotation's default +
@@ -2659,6 +2664,62 @@ class RenderObject {
 		}//end try
 
 	}//end applyFavouriteMarker()
+
+	/**
+	 * Attach `@self.can.update`: whether the reader may update this object.
+	 *
+	 * Opt-in through `_extend[]=@self.can`, because it costs one permission
+	 * evaluation per row and only the records list's in-place editor asks for
+	 * it. The verdict is PermissionHandler's own (schema, owner and conditional
+	 * rules), so the list never offers an edit the save would refuse on rights.
+	 * Resolved through the container like the markers above, to keep the
+	 * render layer free of a construction cycle. A failure leaves the marker
+	 * out, which the list reads as "no editor": the safe side.
+	 *
+	 * @param ObjectEntity      $entity The entity being rendered.
+	 * @param Schema|null       $schema The object's schema.
+	 * @param array|string|null $extend The _extend parameter.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+	 */
+	private function applyUpdateRightMarker(ObjectEntity $entity, ?Schema $schema, array|string|null $extend): void {
+		if ($this->container === null || $schema === null || $extend === null || $extend === '' || $extend === []) {
+			return;
+		}
+
+		if (is_string($extend) === true) {
+			$extend = array_map('trim', explode(',', $extend));
+		}
+
+		if (in_array('@self.can', $extend, true) === false) {
+			return;
+		}
+
+		try {
+			$permissions = $this->container->get(PermissionHandler::class);
+			$owner       = $entity->getOwner();
+			if (is_string($owner) === false) {
+				$owner = null;
+			}
+
+			$entity->setCan(
+				[
+					'update' => $permissions->hasPermission(
+						schema: $schema,
+						action: 'update',
+						objectOwner: $owner,
+						object: $entity
+					),
+				]
+			);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf('[RenderObject] update right marker skipped for %s: %s', (string)$entity->getUuid(), $e->getMessage())
+			);
+		}//end try
+	}//end applyUpdateRightMarker()
 
 	/**
 	 * Attach the resolved `@self._retention` decision.

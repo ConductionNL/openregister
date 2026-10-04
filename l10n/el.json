@@ -3300,7 +3300,9 @@
         "This link is closed with a password": "Αυτός ο σύνδεσμος προστατεύεται με κωδικό",
         "This link is open until {date}.": "Αυτός ο σύνδεσμος είναι ανοιχτός έως {date}.",
         "This record has no visible fields.": "Αυτή η εγγραφή δεν έχει ορατά πεδία.",
-        "Upload": "Μεταφόρτωση"
+        "Upload": "Μεταφόρτωση",
+        "Edit {field}": "Επεξεργασία {field}",
+        "The value could not be saved": "Δεν ήταν δυνατή η αποθήκευση της τιμής"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

@@ -721,6 +721,18 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?bool $favourite = null;
 
 	/**
+	 * What the reader may do with this object, as `{"update": bool}`.
+	 *
+	 * Transient, populated by the render layer only when the request asks for
+	 * it (`_extend[]=@self.can`), from PermissionHandler's own verdict. Exposed
+	 * in @self as `can`. The records list reads it to decide where a cell may
+	 * be edited in place (REQ-RFCE-002).
+	 *
+	 * @var array<string, bool>|null
+	 */
+	protected ?array $can = null;
+
+	/**
 	 * AVG / GDPR Art 30 processing-activity override.
 	 *
 	 * Transient field — set by callers that want to tag an upcoming
@@ -1034,6 +1046,22 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setFavourite(?bool $favourite): void {
 		$this->favourite = $favourite;
 	}//end setFavourite()
+
+	/**
+	 * Write what the reader may do with this object.
+	 *
+	 * Write-only, like setFavourite(): mergeTransientRenderFields() reads the
+	 * property directly. Surfaced in the @self envelope as `can`.
+	 *
+	 * @param array<string, bool>|null $can The reader's rights, e.g. `['update' => true]`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+	 */
+	public function setCan(?array $can): void {
+		$this->can = $can;
+	}//end setCan()
 
 	/**
 	 * Initialize the entity and define field types
@@ -1482,6 +1510,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'watcherCount'            => $this->watcherCount,
 			'unread'                  => $this->unread,
 			'favourite'               => $this->favourite,
+			'can'                     => $this->can,
 		];
 
 		foreach ($transient as $key => $value) {
