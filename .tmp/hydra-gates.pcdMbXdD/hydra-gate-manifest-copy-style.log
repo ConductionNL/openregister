@@ -1,0 +1,12 @@
+WARN appinfo/info.xml:9 <description>: em-dash
+     Open Register is the foundation for structured data management in Nextcloud. Define your data models with JSON Schema...
+WARN appinfo/info.xml:26 <description>: em-dash
+     Open Register is de basis voor gestructureerd databeheer in Nextcloud. Definieer je datamodellen met JSON Schema, sla...
+
+The App Store description breaks voice.md §8. This is ADVISORY:
+it does not fail the gate yet, because 20 of 21 fleet apps carry
+the same debt (204 findings, measured 2026-09-09) and this
+repository resolves at @main for all of them. Fix it anyway: this
+is the first prose a stranger reads about the app.
+warned 4 app-store string(s)
+checked 115 manifest string(s)

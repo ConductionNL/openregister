@@ -1,0 +1,31 @@
+=== composer lint ===
+lint exit 0
+0
+=== phpmd full (isolated HOME) ===
+Could not open input file: /tmp/claude-1000/or-lane-tmp/home/.local/share/composer.phar
+phpmd exit 1
+=== phpunit full --no-coverage ===
+[openregister/tests/bootstrap] No installed Nextcloud root in scope (a bare source tree does not count); running with composer autoload only.
+  Set OPENREGISTER_TEST_NC_ROOT to an installed Nextcloud root if you need integration/DB tests.
+PHPUnit 10.5.63 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.3.6
+Configuration: /home/rubenlinde/memcap-work/lq-lanes/or-primitives/phpunit.xml
+
+S.......................................................... 10738 / 24113 ( 44%)
+
+Time: 01:56.477, Memory: 592.01 MB
+
+1 test triggered 1 PHP warning:
+
+1) /home/rubenlinde/memcap-work/lq-lanes/or-primitives/lib/Service/Notification/ReplyThreadResolver.php:235
+Array to string conversion
+
+Triggered by:
+
+* OCA\OpenRegister\Tests\Unit\Service\Notification\ReplyThreadResolverTest::testAHeaderArrivingAsAnArrayIsRead
+  /home/rubenlinde/memcap-work/lq-lanes/or-primitives/tests/Unit/Service/Notification/ReplyThreadResolverTest.php:183
+
+OK, but there were issues!
+Tests: 24113, Assertions: 61364, Warnings: 1, Skipped: 25.
+phpunit exit 0

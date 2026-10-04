@@ -1,0 +1,1 @@
+[gate-19] e2e-coverage: EMPTY SCOPE — diff-scoped against 'origin/development' and NO spec file was touched. 206 spec file(s) exist here and NONE were inspected: @e2e traceability (ADR-020) is UNVERIFIED by this run. This is not a pass. Audit the whole tree by running without HYDRA_GATE_BASE_REF, or with --scope-to-diff --base <root-commit>.

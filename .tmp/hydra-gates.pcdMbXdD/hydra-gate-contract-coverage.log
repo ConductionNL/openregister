@@ -1,0 +1,1 @@
+[gate-25] contract-coverage: EMPTY SCOPE — diff-scoped against 'origin/development' and NO controller file was touched, so no endpoint was inspected. Wire-contract coverage is UNVERIFIED by this run. This is not a pass. Audit the whole tree by running without HYDRA_GATE_BASE_REF, or with --scope-to-diff --base <root-commit>.

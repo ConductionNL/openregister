@@ -1,0 +1,1277 @@
+
+> openregister@1.0.0 lint
+> eslint src tests scripts
+
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/casing.js
+   74:1  warning  Missing JSDoc @param "flag" description   jsdoc/require-param-description
+   74:1  warning  Missing JSDoc @param "flag" type          jsdoc/require-param-type
+   75:1  warning  Missing JSDoc @param "dflt" description   jsdoc/require-param-description
+   75:1  warning  Missing JSDoc @param "dflt" type          jsdoc/require-param-type
+  278:1  warning  Missing JSDoc @param "name" description   jsdoc/require-param-description
+  278:1  warning  Missing JSDoc @param "name" type          jsdoc/require-param-type
+  279:1  warning  Missing JSDoc @param "m" description      jsdoc/require-param-description
+  279:1  warning  Missing JSDoc @param "m" type             jsdoc/require-param-type
+  280:1  warning  Missing JSDoc @param "extra" description  jsdoc/require-param-description
+  280:1  warning  Missing JSDoc @param "extra" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/be.js
+   72:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   72:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  245:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  245:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/bg.js
+   56:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   56:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  187:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  187:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/bs.js
+   58:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   58:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  180:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  180:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/ca.js
+  23:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  23:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  83:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  83:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/cs.js
+   68:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   68:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  227:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  227:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/et.js
+  22:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  22:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  98:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  98:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/ga.js
+   82:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   82:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  271:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  271:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/hr.js
+   26:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   26:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  115:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  115:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/is.js
+  120:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  120:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  353:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  353:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/lb.js
+   79:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   79:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  254:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  254:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/lt.js
+   26:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   26:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  100:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  100:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/lv.js
+   57:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   57:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  161:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  161:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/mk.js
+   75:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   75:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  220:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  220:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/mt.js
+   65:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   65:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  241:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  241:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/rm.js
+   73:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   73:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  241:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  241:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/ro.js
+   66:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   66:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  192:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  192:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/sk.js
+   48:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   48:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  172:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  172:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/sl.js
+   38:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   38:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  155:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  155:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/sq.js
+   93:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   93:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  307:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  307:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/sr.js
+   51:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+   51:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  213:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  213:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/detectors/tr.js
+  14:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  14:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+  47:1  warning  Missing JSDoc @param "s" description  jsdoc/require-param-description
+  47:1  warning  Missing JSDoc @param "s" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/lib.js
+  849:1  warning  Prefer a more specific type to `Function`  jsdoc/reject-function-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/runtime-check.mjs
+  65:1  warning  Missing JSDoc @param "cond" description   jsdoc/require-param-description
+  65:1  warning  Missing JSDoc @param "cond" type          jsdoc/require-param-type
+  66:1  warning  Missing JSDoc @param "label" description  jsdoc/require-param-description
+  66:1  warning  Missing JSDoc @param "label" type         jsdoc/require-param-type
+  67:1  warning  Missing JSDoc @param "got" description    jsdoc/require-param-description
+  67:1  warning  Missing JSDoc @param "got" type           jsdoc/require-param-type
+  87:1  warning  Missing JSDoc @param "cond" description   jsdoc/require-param-description
+  87:1  warning  Missing JSDoc @param "cond" type          jsdoc/require-param-type
+  88:1  warning  Missing JSDoc @param "key" description    jsdoc/require-param-description
+  88:1  warning  Missing JSDoc @param "key" type           jsdoc/require-param-type
+  89:1  warning  Missing JSDoc @param "label" description  jsdoc/require-param-description
+  89:1  warning  Missing JSDoc @param "label" type         jsdoc/require-param-type
+  90:1  warning  Missing JSDoc @param "got" description    jsdoc/require-param-description
+  90:1  warning  Missing JSDoc @param "got" type           jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/selfcheck.js
+  48:1  warning  Missing JSDoc @param "name" description    jsdoc/require-param-description
+  48:1  warning  Missing JSDoc @param "name" type           jsdoc/require-param-type
+  49:1  warning  Missing JSDoc @param "ok" description      jsdoc/require-param-description
+  49:1  warning  Missing JSDoc @param "ok" type             jsdoc/require-param-type
+  50:1  warning  Missing JSDoc @param "detail" description  jsdoc/require-param-description
+  50:1  warning  Missing JSDoc @param "detail" type         jsdoc/require-param-type
+  67:1  warning  Missing JSDoc @param "name" description    jsdoc/require-param-description
+  67:1  warning  Missing JSDoc @param "name" type           jsdoc/require-param-type
+  68:1  warning  Missing JSDoc @param "ok" description      jsdoc/require-param-description
+  68:1  warning  Missing JSDoc @param "ok" type             jsdoc/require-param-type
+  69:1  warning  Missing JSDoc @param "detail" description  jsdoc/require-param-description
+  69:1  warning  Missing JSDoc @param "detail" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/scripts/l10n/termdrift.js
+  54:1  warning  Missing JSDoc @param "flag" description  jsdoc/require-param-description
+  54:1  warning  Missing JSDoc @param "flag" type         jsdoc/require-param-type
+  55:1  warning  Missing JSDoc @param "dflt" description  jsdoc/require-param-description
+  55:1  warning  Missing JSDoc @param "dflt" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/AgentSelector.vue
+  206:3  warning  'selectedAgent' of property found, but never used  vue/no-unused-properties
+  226:3  warning  'starting' of property found, but never used       vue/no-unused-properties
+  243:1  warning  Missing JSDoc @param "app" description             jsdoc/require-param-description
+  244:1  warning  Missing JSDoc @param "text" description            jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/EntitiesSidebar.vue
+  161:1   warning  Missing JSDoc @param "newVal" description                                          jsdoc/require-param-description
+  169:1   warning  Missing JSDoc @param "newVal" description                                          jsdoc/require-param-description
+  177:1   warning  Missing JSDoc @param "newVal" description                                          jsdoc/require-param-description
+  197:16  warning  The "update:search" event has been triggered but not declared on `emits` option    vue/require-explicit-emits
+  202:1   warning  Missing JSDoc @param "type" description                                            jsdoc/require-param-description
+  207:15  warning  The "update:type" event has been triggered but not declared on `emits` option      vue/require-explicit-emits
+  211:1   warning  Missing JSDoc @param "category" description                                        jsdoc/require-param-description
+  216:15  warning  The "update:category" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  226:15  warning  The "update:search" event has been triggered but not declared on `emits` option    vue/require-explicit-emits
+  227:15  warning  The "update:type" event has been triggered but not declared on `emits` option      vue/require-explicit-emits
+  228:15  warning  The "update:category" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/FacetComponent.vue
+  1350:1  warning  Unexpected inline JSDoc tag. Did you mean to use {@self}, \@self, or `@self`?  jsdoc/escape-inline-tags
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/FilesSidebar.vue
+  185:1   warning  Missing JSDoc @param "newVal" description                                           jsdoc/require-param-description
+  193:1   warning  Missing JSDoc @param "newVal" description                                           jsdoc/require-param-description
+  201:1   warning  Missing JSDoc @param "newVal" description                                           jsdoc/require-param-description
+  222:16  warning  The "update:search" event has been triggered but not declared on `emits` option     vue/require-explicit-emits
+  235:15  warning  The "update:status" event has been triggered but not declared on `emits` option     vue/require-explicit-emits
+  247:15  warning  The "update:riskLevel" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  260:15  warning  The "update:search" event has been triggered but not declared on `emits` option     vue/require-explicit-emits
+  261:15  warning  The "update:status" event has been triggered but not declared on `emits` option     vue/require-explicit-emits
+  262:15  warning  The "update:riskLevel" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/NotificationSubscriptionToggle.vue
+  166:16  warning  The "change" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/PaginationComponent.vue
+  246:1   warning  Syntax error in namepath: page-changed                                               jsdoc/valid-types
+  249:16  warning  The "page-changed" event has been triggered but not declared on `emits` option       vue/require-explicit-emits
+  265:1   warning  Syntax error in namepath: page-size-changed                                          jsdoc/valid-types
+  268:16  warning  The "page-size-changed" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/RbacTable.vue
+  368:15  warning  The "update" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/WebhooksSidebar.vue
+   84:13  warning  Boolean prop should only be defaulted to false                                    vue/no-boolean-default
+  109:1   warning  Missing JSDoc @param "newVal" description                                         jsdoc/require-param-description
+  117:1   warning  Missing JSDoc @param "newVal" description                                         jsdoc/require-param-description
+  138:16  warning  The "update:search" event has been triggered but not declared on `emits` option   vue/require-explicit-emits
+  151:15  warning  The "update:enabled" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  163:15  warning  The "update:search" event has been triggered but not declared on `emits` option   vue/require-explicit-emits
+  164:15  warning  The "update:enabled" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/cards/RegisterSchemaCard.vue
+   779:1  warning  Missing JSDoc @param "val" description                jsdoc/require-param-description
+   822:1  warning  Missing JSDoc @param "schemas" description            jsdoc/require-param-description
+   838:1  warning  Missing JSDoc @param "formData" description           jsdoc/require-param-description
+   920:1  warning  Missing JSDoc @param "schema" description             jsdoc/require-param-description
+   934:1  warning  Missing JSDoc @param "schema" description             jsdoc/require-param-description
+   947:1  warning  Missing JSDoc @param "schema" description             jsdoc/require-param-description
+  1039:1  warning  Missing JSDoc @param "schema" description             jsdoc/require-param-description
+  1040:1  warning  Missing JSDoc @param "configurationType" description  jsdoc/require-param-description
+  1137:1  warning  Missing JSDoc @param "schema" description             jsdoc/require-param-description
+  1206:1  warning  Missing JSDoc @param "schema" description             jsdoc/require-param-description
+  1207:1  warning  Missing JSDoc @param "hardDelete" description         jsdoc/require-param-description
+  1346:1  warning  Missing JSDoc @param "schema" description             jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/files-sidebar/ExtractionTab.vue
+  287:1  warning  Missing JSDoc @param "newVal" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/files-sidebar/RegisterObjectsTab.vue
+  92:1  warning  Missing JSDoc @param "newVal" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/i18n/RegisterLanguagesEditor.vue
+  179:1   warning  Missing JSDoc @param "candidate" description                             jsdoc/require-param-description
+  202:15  warning  The "input" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  207:1   warning  Missing JSDoc @param "reason" description                                jsdoc/require-param-description
+  224:1   warning  Missing JSDoc @param "idx" description                                   jsdoc/require-param-description
+  231:15  warning  The "input" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  235:1   warning  Missing JSDoc @param "from" description                                  jsdoc/require-param-description
+  236:1   warning  Missing JSDoc @param "to" description                                    jsdoc/require-param-description
+  246:15  warning  The "input" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/i18n/TranslationCompletenessBadge.vue
+  39:1  warning  Use object shorthand or index signatures instead of `Object`, e.g., `{[key: string]: string}`  jsdoc/check-types
+  87:1  warning  Missing JSDoc @param "lang" description                                                        jsdoc/require-param-description
+  97:1  warning  Missing JSDoc @param "lang" description                                                        jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/i18n/TranslationFieldEditor.vue
+   92:1   warning  Use object shorthand or index signatures instead of `Object`, e.g., `{[key: string]: string}`  jsdoc/check-types
+  137:1   warning  Missing JSDoc @param "lang" description                                                        jsdoc/require-param-description
+  150:1   warning  Missing JSDoc @param "lang" description                                                        jsdoc/require-param-description
+  158:1   warning  Missing JSDoc @param "lang" description                                                        jsdoc/require-param-description
+  166:1   warning  Missing JSDoc @param "lang" description                                                        jsdoc/require-param-description
+  167:1   warning  Missing JSDoc @param "newValue" description                                                    jsdoc/require-param-description
+  177:15  warning  The "input" event has been triggered but not declared on `emits` option                        vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/object-relations/ContactsTab.vue
+  200:1   warning  Missing JSDoc @param "newId" description                                            jsdoc/require-param-description
+  237:1   warning  Missing JSDoc @param "contact" description                                          jsdoc/require-param-description
+  249:16  warning  The "contacts-changed" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  260:15  warning  The "add-contact" event has been triggered but not declared on `emits` option       vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/object-relations/DeckTab.vue
+  204:1   warning  Missing JSDoc @param "newId" description                                         jsdoc/require-param-description
+  236:1   warning  Missing JSDoc @param "card" description                                          jsdoc/require-param-description
+  248:16  warning  The "deck-changed" event has been triggered but not declared on `emits` option   vue/require-explicit-emits
+  259:15  warning  The "add-deck-card" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  263:1   warning  Missing JSDoc @param "value" description                                         jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/object-relations/EmailsTab.vue
+  156:1   warning  Missing JSDoc @param "newId" description                                          jsdoc/require-param-description
+  205:1   warning  Missing JSDoc @param "email" description                                          jsdoc/require-param-description
+  222:16  warning  The "emails-changed" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  230:1   warning  Missing JSDoc @param "value" description                                          jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/object-relations/EventsTab.vue
+  206:1   warning  Missing JSDoc @param "newId" description                                          jsdoc/require-param-description
+  238:1   warning  Missing JSDoc @param "event" description                                          jsdoc/require-param-description
+  249:16  warning  The "events-changed" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  262:15  warning  The "create-event" event has been triggered but not declared on `emits` option    vue/require-explicit-emits
+  269:15  warning  The "link-event" event has been triggered but not declared on `emits` option      vue/require-explicit-emits
+  273:1   warning  Missing JSDoc @param "value" description                                          jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/object-relations/RelationsTab.vue
+  214:1  warning  Missing JSDoc @param "newId" description  jsdoc/require-param-description
+  262:1  warning  Missing JSDoc @param "data" description   jsdoc/require-param-description
+  301:1  warning  Missing JSDoc @param "raw" description    jsdoc/require-param-description
+  347:1  warning  Missing JSDoc @param "type" description   jsdoc/require-param-description
+  359:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/shared/SettingsCard.vue
+  83:16  warning  The "toggle" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/shared/SettingsSection.vue
+   21:6  warning  'v-html' directive can lead to XSS attack         vue/no-v-html
+  193:3  warning  'wrapperClass' of property found, but never used  vue/no-unused-properties
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/components/shared/VersionInfoCard.vue
+  172:13  warning  Boolean prop should only be defaulted to false  vue/no-boolean-default
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/dialogs/avg/EditActivityDialog.vue
+  202:1  warning  Missing JSDoc @param "value" description     jsdoc/require-param-description
+  224:1  warning  Missing JSDoc @param "value" description     jsdoc/require-param-description
+  240:1  warning  Missing JSDoc @param "activity" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/dialogs/mail/CreateConnectedObjectDialog.vue
+    8:19  warning  The "cancel" event has been triggered but not declared on `emits` option   vue/require-explicit-emits
+   63:47  warning  The "cancel" event has been triggered but not declared on `emits` option   vue/require-explicit-emits
+   72:19  warning  The "confirm" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  185:1   warning  Missing JSDoc @param "key" description                                     jsdoc/require-param-description
+  199:1   warning  Missing JSDoc @param "key" description                                     jsdoc/require-param-description
+  200:1   warning  Missing JSDoc @param "def" description                                     jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/dialogs/mail/RemoveConnectionDialog.vue
+   7:19  warning  The "cancel" event has been triggered but not declared on `emits` option   vue/require-explicit-emits
+  25:49  warning  The "cancel" event has been triggered but not declared on `emits` option   vue/require-explicit-emits
+  31:65  warning  The "confirm" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/application/application.ts
+  40:1  warning  Missing JSDoc @param "application" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/auditTrail/auditTrail.mock.ts
+  158:1  warning  Missing JSDoc @param "data" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/auditTrail/auditTrail.ts
+  34:1  warning  Missing JSDoc @param "auditTrail" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/configuration/configuration.ts
+  37:1  warning  Missing JSDoc @param "configuration" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/database/database.mock.ts
+  33:1  warning  Missing JSDoc @param "data" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/database/database.ts
+  13:1  warning  Missing JSDoc @param "database" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/object/object.mock.ts
+  75:1  warning  Missing JSDoc @param "data" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/object/object.ts
+  42:1  warning  Missing JSDoc @param "object" description                                      jsdoc/require-param-description
+  43:1  warning  Unexpected inline JSDoc tag. Did you mean to use {@self}, \@self, or `@self`?  jsdoc/escape-inline-tags
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/organisation/organisation.mock.ts
+  49:1  warning  Missing JSDoc @param "data" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/organisation/organisation.ts
+  40:1  warning  Missing JSDoc @param "organisation" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/register/register.mock.ts
+  64:1  warning  Missing JSDoc @param "data" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/register/register.ts
+  24:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/schema/schema.mock.ts
+  73:1  warning  Missing JSDoc @param "data" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/schema/schema.ts
+  39:1  warning  Missing JSDoc @param "schema" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/source/source.mock.ts
+  24:1  warning  Missing JSDoc @param "data" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/source/source.ts
+  17:1  warning  Missing JSDoc @param "source" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/entities/view/view.ts
+  32:1  warning  Missing JSDoc @param "view" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/eventBus.js
+  33:1  warning  Prefer a more specific type to `Function`  jsdoc/reject-function-type
+  40:1  warning  Prefer a more specific type to `Function`  jsdoc/reject-function-type
+  71:1  warning  Prefer a more specific type to `Function`  jsdoc/reject-function-type
+  99:1  warning  Prefer a more specific type to `*`         jsdoc/reject-any-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/mail-sidebar/MailSidebar.vue
+  184:1  warning  Missing JSDoc @param "tabId" description  jsdoc/require-param-description
+  199:1  warning  Missing JSDoc @param "count" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/mail-sidebar/components/ActionsTab.vue
+  160:1   warning  Missing JSDoc @param "schema" description                                 jsdoc/require-param-description
+  167:1   warning  Missing JSDoc @param "obj" description                                    jsdoc/require-param-description
+  224:1   warning  Missing JSDoc @param "schema" description                                 jsdoc/require-param-description
+  255:1   warning  Missing JSDoc @param "schema" description                                 jsdoc/require-param-description
+  263:1   warning  Missing JSDoc @param "schema" description                                 jsdoc/require-param-description
+  276:1   warning  Missing JSDoc @param "schema" description                                 jsdoc/require-param-description
+  340:1   warning  Missing JSDoc @param "schema" description                                 jsdoc/require-param-description
+  367:1   warning  Missing JSDoc @param "envelope" description                               jsdoc/require-param-description
+  401:1   warning  Missing JSDoc @param "template" description                               jsdoc/require-param-description
+  402:1   warning  Missing JSDoc @param "placeholders" description                           jsdoc/require-param-description
+  423:1   warning  Missing JSDoc @param "schema" description                                 jsdoc/require-param-description
+  461:1   warning  Missing JSDoc @param "data" description                                   jsdoc/require-param-description
+  496:1   warning  Missing JSDoc @param "schema" description                                 jsdoc/require-param-description
+  497:1   warning  Missing JSDoc @param "obj" description                                    jsdoc/require-param-description
+  525:16  warning  The "linked" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/mail-sidebar/components/EntitiesTab.vue
+   58:3  warning  'accountId' of property found, but never used  vue/no-unused-properties
+  102:1  warning  Missing JSDoc @param "type" description        jsdoc/require-param-description
+  148:1  warning  Missing JSDoc @param "envelope" description    jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/mail-sidebar/components/LinkedObjectsList.vue
+  19:20  warning  The "unlink" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/mail-sidebar/components/ObjectCard.vue
+  22:19  warning  The "unlink" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/mail-sidebar/components/ObjectsTab.vue
+   20:47  warning  The "switch-tab" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+   73:20  warning  The "switch-tab" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  160:1   warning  Missing JSDoc @param "obj" description                                        jsdoc/require-param-description
+  184:1   warning  Missing JSDoc @param "obj" description                                        jsdoc/require-param-description
+  207:16  warning  The "count" event has been triggered but not declared on `emits` option       vue/require-explicit-emits
+  222:16  warning  The "count" event has been triggered but not declared on `emits` option       vue/require-explicit-emits
+  229:1   warning  Missing JSDoc @param "obj" description                                        jsdoc/require-param-description
+  278:1   warning  Missing JSDoc @param "event" description                                      jsdoc/require-param-description
+  288:1   warning  Missing JSDoc @param "event" description                                      jsdoc/require-param-description
+  289:1   warning  Missing JSDoc @param "obj" description                                        jsdoc/require-param-description
+  328:1   warning  Missing JSDoc @param "attachment" description                                 jsdoc/require-param-description
+  329:1   warning  Missing JSDoc @param "target" description                                     jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/mail-sidebar/composables/useMailObserver.js
+  89:1  warning  Prefer a more specific type to `Function`  jsdoc/reject-function-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/application/DeleteApplication.vue
+  75:1  warning  Missing JSDoc @param "open" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/configuration/EditConfiguration.vue
+   959:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+   970:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+   981:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+   992:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1006:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1017:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1032:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1047:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1062:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1077:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1092:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1107:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1122:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1138:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1152:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1163:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1174:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1185:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1199:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1210:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1221:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+  1427:1  warning  Missing JSDoc @param "query" description  jsdoc/require-param-description
+  1458:1  warning  Missing JSDoc @param "query" description  jsdoc/require-param-description
+  1487:1  warning  Missing JSDoc @param "query" description  jsdoc/require-param-description
+  1535:1  warning  Missing JSDoc @param "query" description  jsdoc/require-param-description
+  1564:1  warning  Missing JSDoc @param "query" description  jsdoc/require-param-description
+  1593:1  warning  Missing JSDoc @param "query" description  jsdoc/require-param-description
+  1622:1  warning  Missing JSDoc @param "query" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/configuration/ImportConfiguration.vue
+  652:1  warning  Missing JSDoc @param "result" description         jsdoc/require-param-description
+  865:1  warning  Missing JSDoc @param "event" description          jsdoc/require-param-description
+  876:1  warning  Missing JSDoc @param "event" description          jsdoc/require-param-description
+  888:1  warning  Missing JSDoc @param "file" description           jsdoc/require-param-description
+  921:1  warning  Missing JSDoc @param "bytes" description          jsdoc/require-param-description
+  957:1  warning  Missing JSDoc @param "configuration" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/configuration/PreviewConfiguration.vue
+  463:1  warning  Missing JSDoc @param "change" description   jsdoc/require-param-description
+  472:1  warning  Missing JSDoc @param "slug" description     jsdoc/require-param-description
+  473:1  warning  Missing JSDoc @param "checked" description  jsdoc/require-param-description
+  489:1  warning  Missing JSDoc @param "slug" description     jsdoc/require-param-description
+  490:1  warning  Missing JSDoc @param "checked" description  jsdoc/require-param-description
+  504:1  warning  Missing JSDoc @param "change" description   jsdoc/require-param-description
+  505:1  warning  Missing JSDoc @param "checked" description  jsdoc/require-param-description
+  555:1  warning  Missing JSDoc @param "value" description    jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/configuration/PublishConfiguration.vue
+  215:1  warning  Missing JSDoc @param "newValue" description  jsdoc/require-param-description
+  315:1  warning  Missing JSDoc @param "owner" description     jsdoc/require-param-description
+  316:1  warning  Missing JSDoc @param "repo" description      jsdoc/require-param-description
+  363:1  warning  Missing JSDoc @param "value" description     jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/endpoint/DeleteEndpoint.vue
+  60:6  warning  The property or function OCP.Toast was deprecated in Nextcloud 19.0.0  @nextcloud/no-deprecated-globals
+  63:6  warning  The property or function OCP.Toast was deprecated in Nextcloud 19.0.0  @nextcloud/no-deprecated-globals
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/endpoint/EditEndpoint.vue
+  143:7  warning  The property or function OCP.Toast was deprecated in Nextcloud 19.0.0  @nextcloud/no-deprecated-globals
+  146:7  warning  The property or function OCP.Toast was deprecated in Nextcloud 19.0.0  @nextcloud/no-deprecated-globals
+  153:7  warning  The property or function OCP.Toast was deprecated in Nextcloud 19.0.0  @nextcloud/no-deprecated-globals
+  156:7  warning  The property or function OCP.Toast was deprecated in Nextcloud 19.0.0  @nextcloud/no-deprecated-globals
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/file/UploadFiles.vue
+   10:7  warning  'modalRef' is defined as ref, but never used                                   vue/no-unused-refs
+  476:1  warning  Unexpected inline JSDoc tag. Did you mean to use {@self}, \@self, or `@self`?  jsdoc/escape-inline-tags
+  486:1  warning  Unexpected inline JSDoc tag. Did you mean to use {@self}, \@self, or `@self`?  jsdoc/escape-inline-tags
+  494:1  warning  Unexpected inline JSDoc tag. Did you mean to use {@self}, \@self, or `@self`?  jsdoc/escape-inline-tags
+  511:1  warning  Missing JSDoc @param "newFiles" description                                    jsdoc/require-param-description
+  512:1  warning  Missing JSDoc @param "_oldFiles" description                                   jsdoc/require-param-description
+  552:1  warning  Missing JSDoc @param "bytes" description                                       jsdoc/require-param-description
+  565:1  warning  Missing JSDoc @param "fullname" description                                    jsdoc/require-param-description
+  576:1  warning  Missing JSDoc @param "files" description                                       jsdoc/require-param-description
+  597:1  warning  Missing JSDoc @param "option" description                                      jsdoc/require-param-description
+  681:1  warning  Missing JSDoc @param "file" description                                        jsdoc/require-param-description
+  682:1  warning  Missing JSDoc @param "editedTags" description                                  jsdoc/require-param-description
+  695:1  warning  Missing JSDoc @param "fileName" description                                    jsdoc/require-param-description
+  718:1  warning  Missing JSDoc @param "specificFile" description                                jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/logs/AuditTrailChanges.vue
+  287:1  warning  Prefer a more specific type to `*`  jsdoc/reject-any-type
+  315:1  warning  Prefer a more specific type to `*`  jsdoc/reject-any-type
+  339:1  warning  Prefer a more specific type to `*`  jsdoc/reject-any-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/logs/AuditTrailDetails.vue
+  270:1  warning  Prefer a more specific type to `*`  jsdoc/reject-any-type
+  298:1  warning  Prefer a more specific type to `*`  jsdoc/reject-any-type
+  341:1  warning  Prefer a more specific type to `*`  jsdoc/reject-any-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/logs/ClearAuditTrails.vue
+  272:1  warning  Prefer a more specific type to `any`  jsdoc/reject-any-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/mdm/MdmConflictResolutionModal.vue
+  232:1  warning  Prefer a more specific type to `*`  jsdoc/reject-any-type
+  299:1  warning  Prefer a more specific type to `*`  jsdoc/reject-any-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/mdm/MdmMergeWizardModal.vue
+  245:1  warning  Prefer a more specific type to `*`  jsdoc/reject-any-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/object/MassCopyObjects.vue
+  176:1  warning  Missing JSDoc @param "object" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/object/MassDeleteObject.vue
+  241:1  warning  Missing JSDoc @param "objectId" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/object/MassValidateObjects.vue
+  158:1  warning  Missing JSDoc @param "objectId" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/object/MergeObject.vue
+   784:1  warning  Missing JSDoc @param "obj" description             jsdoc/require-param-description
+   861:1  warning  Missing JSDoc @param "property" description        jsdoc/require-param-description
+   899:1  warning  Missing JSDoc @param "property" description        jsdoc/require-param-description
+   900:1  warning  Missing JSDoc @param "selectedOption" description  jsdoc/require-param-description
+   917:1  warning  Missing JSDoc @param "value" description           jsdoc/require-param-description
+   918:1  warning  Missing JSDoc @param "maxLength" description       jsdoc/require-param-description
+   942:1  warning  Missing JSDoc @param "text" description            jsdoc/require-param-description
+   943:1  warning  Missing JSDoc @param "maxLength" description       jsdoc/require-param-description
+  1047:1  warning  Missing JSDoc @param "bytes" description           jsdoc/require-param-description
+  1060:1  warning  Missing JSDoc @param "filename" description        jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/object/MigrationObject.vue
+  564:1  warning  Missing JSDoc @param "objectId" description         jsdoc/require-param-description
+  629:1  warning  Missing JSDoc @param "schema" description           jsdoc/require-param-description
+  734:1  warning  Missing JSDoc @param "_sourceProperty" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/object/UploadObject.vue
+  314:1  warning  Missing JSDoc @param "json" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/object/ViewObject.vue
+  1684:1  warning  Missing JSDoc @param "newValue" description         jsdoc/require-param-description
+  1699:1  warning  Missing JSDoc @param "newSchema" description        jsdoc/require-param-description
+  1743:1  warning  Missing JSDoc @param "newRegister" description      jsdoc/require-param-description
+  1758:1  warning  Missing JSDoc @param "newValue" description         jsdoc/require-param-description
+  1770:1  warning  Missing JSDoc @param "_newValue" description        jsdoc/require-param-description
+  1948:1  warning  Missing JSDoc @param "isOpen" description           jsdoc/require-param-description
+  2000:1  warning  Missing JSDoc @param "value" description            jsdoc/require-param-description
+  2010:1  warning  Missing JSDoc @param "val" description              jsdoc/require-param-description
+  2019:1  warning  Missing JSDoc @param "text" description             jsdoc/require-param-description
+  2214:1  warning  Missing JSDoc @param "str" description              jsdoc/require-param-description
+  2248:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  2249:1  warning  Missing JSDoc @param "index" description            jsdoc/require-param-description
+  2250:1  warning  Missing JSDoc @param "value" description            jsdoc/require-param-description
+  2261:1  warning  Missing JSDoc @param "v" description                jsdoc/require-param-description
+  2269:1  warning  Missing JSDoc @param "v" description                jsdoc/require-param-description
+  2277:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  2288:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  2289:1  warning  Missing JSDoc @param "i" description                jsdoc/require-param-description
+  2299:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  2300:1  warning  Missing JSDoc @param "val" description              jsdoc/require-param-description
+  2313:1  warning  Missing JSDoc @param "checked" description          jsdoc/require-param-description
+  2334:1  warning  Missing JSDoc @param "fileId" description           jsdoc/require-param-description
+  2335:1  warning  Missing JSDoc @param "checked" description          jsdoc/require-param-description
+  2351:1  warning  Missing JSDoc @param "page" description             jsdoc/require-param-description
+  2359:1  warning  Missing JSDoc @param "pageSize" description         jsdoc/require-param-description
+  2381:1  warning  Missing JSDoc @param "action" description           jsdoc/require-param-description
+  2382:1  warning  Missing JSDoc @param "perFileFallback" description  jsdoc/require-param-description
+  2422:1  warning  Missing JSDoc @param "file" description             jsdoc/require-param-description
+  2441:1  warning  Missing JSDoc @param "file" description             jsdoc/require-param-description
+  2468:1  warning  Missing JSDoc @param "file" description             jsdoc/require-param-description
+  2516:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  2517:1  warning  Missing JSDoc @param "value" description            jsdoc/require-param-description
+  2553:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  2554:1  warning  Missing JSDoc @param "value" description            jsdoc/require-param-description
+  2555:1  warning  Missing JSDoc @param "schemaProperty" description   jsdoc/require-param-description
+  2604:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  2605:1  warning  Missing JSDoc @param "value" description            jsdoc/require-param-description
+  2658:1  warning  Prefer a more specific type to `*`                  jsdoc/reject-any-type
+  2684:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  2685:1  warning  Missing JSDoc @param "event" description            jsdoc/require-param-description
+  2738:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  2761:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  2762:1  warning  Missing JSDoc @param "newValue" description         jsdoc/require-param-description
+  2854:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  2855:1  warning  Missing JSDoc @param "oldValue" description         jsdoc/require-param-description
+  2856:1  warning  Missing JSDoc @param "newValue" description         jsdoc/require-param-description
+  2892:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  2901:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  2902:1  warning  Missing JSDoc @param "value" description            jsdoc/require-param-description
+  2930:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  2931:1  warning  Missing JSDoc @param "value" description            jsdoc/require-param-description
+  2954:1  warning  Missing JSDoc @param "value" description            jsdoc/require-param-description
+  2955:1  warning  Missing JSDoc @param "format" description           jsdoc/require-param-description
+  2963:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  2994:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  3103:1  warning  Missing JSDoc @param "key" description              jsdoc/require-param-description
+  3104:1  warning  Missing JSDoc @param "value" description            jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/objectAuditTrail/ViewObjectAuditTrail.vue
+  173:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/organisation/EditOrganisation.vue
+  818:1  warning  Missing JSDoc @param "newVal" description  jsdoc/require-param-description
+  819:1  warning  Missing JSDoc @param "oldVal" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/organisation/RemoveUserDialog.vue
+   7:19  warning  The "cancel" event has been triggered but not declared on `emits` option   vue/require-explicit-emits
+  14:49  warning  The "cancel" event has been triggered but not declared on `emits` option   vue/require-explicit-emits
+  20:65  warning  The "confirm" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/organisation/SwitchOrganisationModal.vue
+  70:1  warning  Missing JSDoc @param "org" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/register/ImportRegister.vue
+  964:1  warning  Missing JSDoc @param "option" description  jsdoc/require-param-description
+  994:1  warning  Missing JSDoc @param "option" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/register/PublishRegister.vue
+  215:1  warning  Missing JSDoc @param "newValue" description  jsdoc/require-param-description
+  296:1  warning  Missing JSDoc @param "owner" description     jsdoc/require-param-description
+  297:1  warning  Missing JSDoc @param "repo" description      jsdoc/require-param-description
+  344:1  warning  Missing JSDoc @param "value" description     jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/schema/DeleteSchemaObjects.vue
+  196:1  warning  Missing JSDoc @param "newSchemaItem" description  jsdoc/require-param-description
+  211:1  warning  Missing JSDoc @param "newDialog" description      jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/schema/EditSchemaProperty.vue
+  1579:1  warning  Missing JSDoc @param "newVal" description     jsdoc/require-param-description
+  1580:1  warning  Missing JSDoc @param "oldVal" description     jsdoc/require-param-description
+  1735:1  warning  Missing JSDoc @param "index" description      jsdoc/require-param-description
+  1744:1  warning  Missing JSDoc @param "option" description     jsdoc/require-param-description
+  1759:1  warning  Missing JSDoc @param "index" description      jsdoc/require-param-description
+  2208:1  warning  Missing JSDoc @param "jsonInput" description  jsdoc/require-param-description
+  2247:1  warning  Missing JSDoc @param "ref" description        jsdoc/require-param-description
+  2266:1  warning  Missing JSDoc @param "register" description   jsdoc/require-param-description
+  2289:1  warning  Missing JSDoc @param "schema" description     jsdoc/require-param-description
+  2310:1  warning  Missing JSDoc @param "property" description   jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/schema/ExploreSchema.vue
+  1443:1  warning  Missing JSDoc @param "propertyName" description  jsdoc/require-param-description
+  1591:1  warning  Missing JSDoc @param "value" description         jsdoc/require-param-description
+  1611:1  warning  Missing JSDoc @param "page" description          jsdoc/require-param-description
+  1625:1  warning  Missing JSDoc @param "pageSize" description      jsdoc/require-param-description
+  1642:1  warning  Missing JSDoc @param "issues" description        jsdoc/require-param-description
+  1656:1  warning  Missing JSDoc @param "issueType" description     jsdoc/require-param-description
+  1678:1  warning  Missing JSDoc @param "issueType" description     jsdoc/require-param-description
+  1696:1  warning  Missing JSDoc @param "issueType" description     jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/schema/UploadSchema.vue
+  166:1  warning  Missing JSDoc @param "json" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/schema/ValidateSchema.vue
+  317:1  warning  Missing JSDoc @param "newSchemaItem" description              jsdoc/require-param-description
+  332:1  warning  Missing JSDoc @param "newDialog" description                  jsdoc/require-param-description
+  412:1  warning  Expected @param names to be "_object". Got "object, _object"  jsdoc/check-param-names
+  412:1  warning  Missing JSDoc @param "object" description                     jsdoc/require-param-description
+  413:1  warning  Missing JSDoc @param "_object" description                    jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/settings/ClearCacheModal.vue
+  127:1   warning  Missing JSDoc @param "newValue" description                                           jsdoc/require-param-description
+  135:1   warning  Missing JSDoc @param "newValue" description                                           jsdoc/require-param-description
+  139:15  warning  The "cache-type-changed" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/settings/FileManagementModal.vue
+    6:19  warning  The "closing" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+   93:28  warning  The "closing" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  196:16  warning  The "closing" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/settings/FileVectorizationModal.vue
+    6:19  warning  The "closing" event has been triggered but not declared on `emits` option    vue/require-explicit-emits
+  226:28  warning  The "closing" event has been triggered but not declared on `emits` option    vue/require-explicit-emits
+  385:1   warning  Missing JSDoc @param "newValue" description                                  jsdoc/require-param-description
+  471:17  warning  The "completed" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  474:17  warning  The "closing" event has been triggered but not declared on `emits` option    vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/settings/LLMConfigModal.vue
+     6:19  warning  The "closing" event has been triggered but not declared on `emits` option             vue/require-explicit-emits
+   617:29  warning  The "closing" event has been triggered but not declared on `emits` option             vue/require-explicit-emits
+  1001:1   warning  Missing JSDoc @param "newVal" description                                             jsdoc/require-param-description
+  1011:1   warning  Missing JSDoc @param "newVal" description                                             jsdoc/require-param-description
+  1361:16  warning  The "closing" event has been triggered but not declared on `emits` option             vue/require-explicit-emits
+  1445:17  warning  The "embeddings-cleared" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/settings/MassValidateModal.vue
+  605:1   warning  Missing JSDoc @param "newConfig" description                                      jsdoc/require-param-description
+  617:1   warning  Missing JSDoc @param "newConfig" description                                      jsdoc/require-param-description
+  621:16  warning  The "config-changed" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/settings/ObjectManagementModal.vue
+    6:19  warning  The "closing" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  332:28  warning  The "closing" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  504:16  warning  The "closing" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/settings/ObjectVectorizationModal.vue
+    6:19  warning  The "closing" event has been triggered but not declared on `emits` option    vue/require-explicit-emits
+  203:28  warning  The "closing" event has been triggered but not declared on `emits` option    vue/require-explicit-emits
+  478:16  warning  The "completed" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  479:16  warning  The "closing" event has been triggered but not declared on `emits` option    vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/source/ViewSource.vue
+  345:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+  355:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+  383:1  warning  Missing JSDoc @param "schemas" description   jsdoc/require-param-description
+  399:1  warning  Missing JSDoc @param "formData" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/view/DeleteView.vue
+  116:15  warning  The "close" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/view/EditView.vue
+  269:1   warning  Missing JSDoc @param "newView" description                               jsdoc/require-param-description
+  479:17  warning  The "close" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+  500:15  warning  The "close" event has been triggered but not declared on `emits` option  vue/require-explicit-emits
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/webhook/EditWebhook.vue
+  708:1  warning  Missing JSDoc @param "value" description   jsdoc/require-param-description
+  719:1  warning  Missing JSDoc @param "value" description   jsdoc/require-param-description
+  730:1  warning  Missing JSDoc @param "value" description   jsdoc/require-param-description
+  742:1  warning  Missing JSDoc @param "value" description   jsdoc/require-param-description
+  753:1  warning  Missing JSDoc @param "value" description   jsdoc/require-param-description
+  777:1  warning  Missing JSDoc @param "value" description   jsdoc/require-param-description
+  792:1  warning  Missing JSDoc @param "value" description   jsdoc/require-param-description
+  807:1  warning  Missing JSDoc @param "value" description   jsdoc/require-param-description
+  822:1  warning  Missing JSDoc @param "value" description   jsdoc/require-param-description
+  837:1  warning  Missing JSDoc @param "value" description   jsdoc/require-param-description
+  849:1  warning  Missing JSDoc @param "value" description   jsdoc/require-param-description
+  860:1  warning  Missing JSDoc @param "value" description   jsdoc/require-param-description
+  871:1  warning  Missing JSDoc @param "value" description   jsdoc/require-param-description
+  882:1  warning  Missing JSDoc @param "value" description   jsdoc/require-param-description
+  902:1  warning  Missing JSDoc @param "value" description   jsdoc/require-param-description
+  956:1  warning  Missing JSDoc @param "_query" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/modals/webhook/ViewWebhookLog.vue
+  158:1  warning  Invalid JSDoc @license: "EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12"; expected SPDX expression: https://spdx.org/licenses/  jsdoc/check-values
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/reference/ObjectReferenceWidget.vue
+  69:3   warning  'richObjectType' of property found, but never used  vue/no-unused-properties
+  79:3   warning  'accessible' of property found, but never used      vue/no-unused-properties
+  81:13  warning  Boolean prop should only be defaulted to false      vue/no-boolean-default
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/registry.js
+  45:1  warning  Prefer a more specific type to `Function`  jsdoc/reject-function-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/services/appInstallService.js
+  215:1  warning  Prefer a more specific type to `any`  jsdoc/reject-any-type
+  470:1  warning  Prefer a more specific type to `any`  jsdoc/reject-any-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/services/dateUtils.js
+  41:1  warning  Missing JSDoc @param "date" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/services/formatBytes.js
+  2:1  warning  Missing JSDoc @param "bytes" description  jsdoc/require-param-description
+  2:1  warning  Missing JSDoc @param "bytes" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/services/geo/mapData.js
+   76:1  warning  Prefer a more specific type to `*`  jsdoc/reject-any-type
+  216:1  warning  Prefer a more specific type to `*`  jsdoc/reject-any-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/sidebars/dashboard/DashboardSideBar.vue
+   13:7  warning  'sidebar' is defined as ref, but never used   vue/no-unused-refs
+  499:1  warning  Missing JSDoc @param "newSchema" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/sidebars/deleted/DeletedSideBar.vue
+  13:7  warning  'sidebar' is defined as ref, but never used  vue/no-unused-refs
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/sidebars/entities/EntitiesSideBar.vue
+  7:7  warning  'sidebar' is defined as ref, but never used  vue/no-unused-refs
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/sidebars/logs/AuditTrailSideBar.vue
+   13:7  warning  'sidebar' is defined as ref, but never used              vue/no-unused-refs
+  200:7  warning  The '<Delete>' component has been used, but not defined  vue/no-undef-components
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/sidebars/logs/SearchTrailSideBar.vue
+  13:7  warning  'sidebar' is defined as ref, but never used  vue/no-unused-refs
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/sidebars/register/RegisterSideBar.vue
+   14:7  warning  'sidebar' is defined as ref, but never used  vue/no-unused-refs
+  337:1  warning  Missing JSDoc @param "value" description     jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/sidebars/register/RegistersSideBar.vue
+  14:7  warning  'sidebar' is defined as ref, but never used  vue/no-unused-refs
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/sidebars/search/SearchSideBar.vue
+     3:7   warning  'sidebar' is defined as ref, but never used                                             vue/no-unused-refs
+   883:1   warning  Missing JSDoc @param "newList" description                                              jsdoc/require-param-description
+   900:1   warning  Missing JSDoc @param "newSchema" description                                            jsdoc/require-param-description
+   918:1   warning  Missing JSDoc @param "newSchemas" description                                           jsdoc/require-param-description
+   919:1   warning  Missing JSDoc @param "oldSchemas" description                                           jsdoc/require-param-description
+   942:1   warning  Missing JSDoc @param "newView" description                                              jsdoc/require-param-description
+  1005:1   warning  Unexpected inline JSDoc tag. Did you mean to use {@search}, \@search, or `@search`?     jsdoc/escape-inline-tags
+  1008:1   warning  Missing JSDoc @param "value" description                                                jsdoc/require-param-description
+  1020:1   warning  Unexpected inline JSDoc tag. Did you mean to use {@filter}, \@filter, or `@filter`?     jsdoc/escape-inline-tags
+  1023:1   warning  Missing JSDoc @param "root0" description                                                jsdoc/require-param-description
+  1024:1   warning  Missing JSDoc @param "root0.key" description                                            jsdoc/require-param-description
+  1025:1   warning  Missing JSDoc @param "root0.values" description                                         jsdoc/require-param-description
+  1038:1   warning  Unexpected inline JSDoc tag. Did you mean to use {@columns}, \@columns, or `@columns`?  jsdoc/escape-inline-tags
+  1041:1   warning  Missing JSDoc @param "columns" description                                              jsdoc/require-param-description
+  1560:1   warning  Unexpected inline JSDoc tag. Did you mean to use {@self}, \@self, or `@self`?           jsdoc/escape-inline-tags
+  1964:24  warning  The property or function OC.getCurrentUser was deprecated in Nextcloud 19.0.0           @nextcloud/no-deprecated-globals
+  1980:25  warning  The property or function OC.getCurrentUser was deprecated in Nextcloud 19.0.0           @nextcloud/no-deprecated-globals
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/store/modules/application.js
+   26:1  warning  Missing JSDoc @param "mode" description             jsdoc/require-param-description
+   26:1  warning  Missing JSDoc @param "mode" type                    jsdoc/require-param-type
+   33:1  warning  Missing JSDoc @param "applicationItem" description  jsdoc/require-param-description
+   33:1  warning  Missing JSDoc @param "applicationItem" type         jsdoc/require-param-type
+   51:1  warning  Missing JSDoc @param "applicationList" description  jsdoc/require-param-description
+   51:1  warning  Missing JSDoc @param "applicationList" type         jsdoc/require-param-type
+  127:1  warning  Missing JSDoc @param "id" description               jsdoc/require-param-description
+  127:1  warning  Missing JSDoc @param "id" type                      jsdoc/require-param-type
+  154:1  warning  Missing JSDoc @param "applicationItem" description  jsdoc/require-param-description
+  154:1  warning  Missing JSDoc @param "applicationItem" type         jsdoc/require-param-type
+  190:1  warning  Missing JSDoc @param "applicationItem" description  jsdoc/require-param-description
+  190:1  warning  Missing JSDoc @param "applicationItem" type         jsdoc/require-param-type
+  241:1  warning  Missing JSDoc @param "applicationItem" description  jsdoc/require-param-description
+  241:1  warning  Missing JSDoc @param "applicationItem" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/store/modules/avg.js
+  293:1  warning  Missing JSDoc @param "state" description           jsdoc/require-param-description
+  335:1  warning  Missing JSDoc @param "identifier" description      jsdoc/require-param-description
+  488:1  warning  Missing JSDoc @param "params.subject" description  jsdoc/require-param-description
+  488:1  warning  Missing JSDoc @param "params.subject" type         jsdoc/require-param-type
+  489:1  warning  Missing JSDoc @param "params.type" description     jsdoc/require-param-description
+  489:1  warning  Missing JSDoc @param "params.type" type            jsdoc/require-param-type
+  490:1  warning  Missing JSDoc @param "params.mode" description     jsdoc/require-param-description
+  490:1  warning  Missing JSDoc @param "params.mode" type            jsdoc/require-param-type
+  520:1  warning  Missing JSDoc @param "params.subject" description  jsdoc/require-param-description
+  520:1  warning  Missing JSDoc @param "params.subject" type         jsdoc/require-param-type
+  521:1  warning  Missing JSDoc @param "params.type" description     jsdoc/require-param-description
+  521:1  warning  Missing JSDoc @param "params.type" type            jsdoc/require-param-type
+  522:1  warning  Missing JSDoc @param "params.dryRun" description   jsdoc/require-param-description
+  522:1  warning  Missing JSDoc @param "params.dryRun" type          jsdoc/require-param-type
+  553:1  warning  Missing JSDoc @param "params.subject" description  jsdoc/require-param-description
+  553:1  warning  Missing JSDoc @param "params.subject" type         jsdoc/require-param-type
+  554:1  warning  Missing JSDoc @param "params.type" description     jsdoc/require-param-description
+  554:1  warning  Missing JSDoc @param "params.type" type            jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/store/modules/configuration.js
+   16:1  warning  Missing JSDoc @param "configurationItem" description  jsdoc/require-param-description
+   16:1  warning  Missing JSDoc @param "configurationItem" type         jsdoc/require-param-type
+   25:1  warning  Missing JSDoc @param "configurationList" description  jsdoc/require-param-description
+   25:1  warning  Missing JSDoc @param "configurationList" type         jsdoc/require-param-type
+   80:1  warning  Missing JSDoc @param "id" description                 jsdoc/require-param-description
+   80:1  warning  Missing JSDoc @param "id" type                        jsdoc/require-param-type
+   98:1  warning  Missing JSDoc @param "configurationItem" description  jsdoc/require-param-description
+   98:1  warning  Missing JSDoc @param "configurationItem" type         jsdoc/require-param-type
+  129:1  warning  Missing JSDoc @param "configurationItem" description  jsdoc/require-param-description
+  129:1  warning  Missing JSDoc @param "configurationItem" type         jsdoc/require-param-type
+  180:1  warning  Missing JSDoc @param "configurationItem" description  jsdoc/require-param-description
+  180:1  warning  Missing JSDoc @param "configurationItem" type         jsdoc/require-param-type
+  195:1  warning  Missing JSDoc @param "configuration" description      jsdoc/require-param-description
+  195:1  warning  Missing JSDoc @param "configuration" type             jsdoc/require-param-type
+  242:1  warning  Missing JSDoc @param "file" description               jsdoc/require-param-description
+  242:1  warning  Missing JSDoc @param "file" type                      jsdoc/require-param-type
+  243:1  warning  Missing JSDoc @param "includeObjects" description     jsdoc/require-param-description
+  243:1  warning  Missing JSDoc @param "includeObjects" type            jsdoc/require-param-type
+  285:1  warning  Missing JSDoc @param "source" description             jsdoc/require-param-description
+  285:1  warning  Missing JSDoc @param "source" type                    jsdoc/require-param-type
+  286:1  warning  Missing JSDoc @param "search" description             jsdoc/require-param-description
+  286:1  warning  Missing JSDoc @param "search" type                    jsdoc/require-param-type
+  319:1  warning  Missing JSDoc @param "source" description             jsdoc/require-param-description
+  319:1  warning  Missing JSDoc @param "source" type                    jsdoc/require-param-type
+  320:1  warning  Missing JSDoc @param "params" description             jsdoc/require-param-description
+  320:1  warning  Missing JSDoc @param "params" type                    jsdoc/require-param-type
+  344:1  warning  Missing JSDoc @param "source" description             jsdoc/require-param-description
+  344:1  warning  Missing JSDoc @param "source" type                    jsdoc/require-param-type
+  345:1  warning  Missing JSDoc @param "params" description             jsdoc/require-param-description
+  345:1  warning  Missing JSDoc @param "params" type                    jsdoc/require-param-type
+  369:1  warning  Missing JSDoc @param "params" description             jsdoc/require-param-description
+  369:1  warning  Missing JSDoc @param "params" type                    jsdoc/require-param-type
+  401:1  warning  Missing JSDoc @param "params" description             jsdoc/require-param-description
+  401:1  warning  Missing JSDoc @param "params" type                    jsdoc/require-param-type
+  433:1  warning  Missing JSDoc @param "params" description             jsdoc/require-param-description
+  433:1  warning  Missing JSDoc @param "params" type                    jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/store/modules/navigation.js
+  41:1  warning  Missing JSDoc @param "dialog" description  jsdoc/require-param-description
+  41:1  warning  Missing JSDoc @param "dialog" type         jsdoc/require-param-type
+  48:1  warning  Missing JSDoc @param "data" description    jsdoc/require-param-description
+  48:1  warning  Missing JSDoc @param "data" type           jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/store/modules/object-relations/contacts.js
+   33:1  warning  Missing JSDoc @param "register" description    jsdoc/require-param-description
+   33:1  warning  Missing JSDoc @param "register" type           jsdoc/require-param-type
+   34:1  warning  Missing JSDoc @param "schema" description      jsdoc/require-param-description
+   34:1  warning  Missing JSDoc @param "schema" type             jsdoc/require-param-type
+   35:1  warning  Missing JSDoc @param "id" description          jsdoc/require-param-description
+   35:1  warning  Missing JSDoc @param "id" type                 jsdoc/require-param-type
+   36:1  warning  Missing JSDoc @param "suffix" description      jsdoc/require-param-description
+   36:1  warning  Missing JSDoc @param "suffix" type             jsdoc/require-param-type
+   52:1  warning  Missing JSDoc @param "register" description    jsdoc/require-param-description
+   52:1  warning  Missing JSDoc @param "register" type           jsdoc/require-param-type
+   53:1  warning  Missing JSDoc @param "schema" description      jsdoc/require-param-description
+   53:1  warning  Missing JSDoc @param "schema" type             jsdoc/require-param-type
+   54:1  warning  Missing JSDoc @param "id" description          jsdoc/require-param-description
+   54:1  warning  Missing JSDoc @param "id" type                 jsdoc/require-param-type
+   92:1  warning  Missing JSDoc @param "register" description    jsdoc/require-param-description
+   92:1  warning  Missing JSDoc @param "register" type           jsdoc/require-param-type
+   93:1  warning  Missing JSDoc @param "schema" description      jsdoc/require-param-description
+   93:1  warning  Missing JSDoc @param "schema" type             jsdoc/require-param-type
+   94:1  warning  Missing JSDoc @param "id" description          jsdoc/require-param-description
+   94:1  warning  Missing JSDoc @param "id" type                 jsdoc/require-param-type
+   95:1  warning  Missing JSDoc @param "payload" description     jsdoc/require-param-description
+   95:1  warning  Missing JSDoc @param "payload" type            jsdoc/require-param-type
+  108:1  warning  Missing JSDoc @param "register" description    jsdoc/require-param-description
+  108:1  warning  Missing JSDoc @param "register" type           jsdoc/require-param-type
+  109:1  warning  Missing JSDoc @param "schema" description      jsdoc/require-param-description
+  109:1  warning  Missing JSDoc @param "schema" type             jsdoc/require-param-type
+  110:1  warning  Missing JSDoc @param "id" description          jsdoc/require-param-description
+  110:1  warning  Missing JSDoc @param "id" type                 jsdoc/require-param-type
+  111:1  warning  Missing JSDoc @param "contactUid" description  jsdoc/require-param-description
+  111:1  warning  Missing JSDoc @param "contactUid" type         jsdoc/require-param-type
+  132:1  warning  Missing JSDoc @param "register" description    jsdoc/require-param-description
+  132:1  warning  Missing JSDoc @param "register" type           jsdoc/require-param-type
+  133:1  warning  Missing JSDoc @param "schema" description      jsdoc/require-param-description
+  133:1  warning  Missing JSDoc @param "schema" type             jsdoc/require-param-type
+  134:1  warning  Missing JSDoc @param "id" description          jsdoc/require-param-description
+  134:1  warning  Missing JSDoc @param "id" type                 jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/store/modules/object-relations/deck.js
+   38:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+   38:1  warning  Missing JSDoc @param "register" type         jsdoc/require-param-type
+   39:1  warning  Missing JSDoc @param "schema" description    jsdoc/require-param-description
+   39:1  warning  Missing JSDoc @param "schema" type           jsdoc/require-param-type
+   40:1  warning  Missing JSDoc @param "id" description        jsdoc/require-param-description
+   40:1  warning  Missing JSDoc @param "id" type               jsdoc/require-param-type
+   41:1  warning  Missing JSDoc @param "suffix" description    jsdoc/require-param-description
+   41:1  warning  Missing JSDoc @param "suffix" type           jsdoc/require-param-type
+   60:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+   60:1  warning  Missing JSDoc @param "register" type         jsdoc/require-param-type
+   61:1  warning  Missing JSDoc @param "schema" description    jsdoc/require-param-description
+   61:1  warning  Missing JSDoc @param "schema" type           jsdoc/require-param-type
+   62:1  warning  Missing JSDoc @param "id" description        jsdoc/require-param-description
+   62:1  warning  Missing JSDoc @param "id" type               jsdoc/require-param-type
+  101:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+  101:1  warning  Missing JSDoc @param "register" type         jsdoc/require-param-type
+  102:1  warning  Missing JSDoc @param "schema" description    jsdoc/require-param-description
+  102:1  warning  Missing JSDoc @param "schema" type           jsdoc/require-param-type
+  103:1  warning  Missing JSDoc @param "id" description        jsdoc/require-param-description
+  103:1  warning  Missing JSDoc @param "id" type               jsdoc/require-param-type
+  104:1  warning  Missing JSDoc @param "payload" description   jsdoc/require-param-description
+  104:1  warning  Missing JSDoc @param "payload" type          jsdoc/require-param-type
+  120:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+  120:1  warning  Missing JSDoc @param "register" type         jsdoc/require-param-type
+  121:1  warning  Missing JSDoc @param "schema" description    jsdoc/require-param-description
+  121:1  warning  Missing JSDoc @param "schema" type           jsdoc/require-param-type
+  122:1  warning  Missing JSDoc @param "id" description        jsdoc/require-param-description
+  122:1  warning  Missing JSDoc @param "id" type               jsdoc/require-param-type
+  123:1  warning  Missing JSDoc @param "deckRef" description   jsdoc/require-param-description
+  123:1  warning  Missing JSDoc @param "deckRef" type          jsdoc/require-param-type
+  141:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+  141:1  warning  Missing JSDoc @param "register" type         jsdoc/require-param-type
+  142:1  warning  Missing JSDoc @param "schema" description    jsdoc/require-param-description
+  142:1  warning  Missing JSDoc @param "schema" type           jsdoc/require-param-type
+  143:1  warning  Missing JSDoc @param "id" description        jsdoc/require-param-description
+  143:1  warning  Missing JSDoc @param "id" type               jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/store/modules/object-relations/emails.js
+   42:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+   42:1  warning  Missing JSDoc @param "register" type         jsdoc/require-param-type
+   43:1  warning  Missing JSDoc @param "schema" description    jsdoc/require-param-description
+   43:1  warning  Missing JSDoc @param "schema" type           jsdoc/require-param-type
+   44:1  warning  Missing JSDoc @param "id" description        jsdoc/require-param-description
+   44:1  warning  Missing JSDoc @param "id" type               jsdoc/require-param-type
+   45:1  warning  Missing JSDoc @param "suffix" description    jsdoc/require-param-description
+   45:1  warning  Missing JSDoc @param "suffix" type           jsdoc/require-param-type
+   64:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+   64:1  warning  Missing JSDoc @param "register" type         jsdoc/require-param-type
+   65:1  warning  Missing JSDoc @param "schema" description    jsdoc/require-param-description
+   65:1  warning  Missing JSDoc @param "schema" type           jsdoc/require-param-type
+   66:1  warning  Missing JSDoc @param "id" description        jsdoc/require-param-description
+   66:1  warning  Missing JSDoc @param "id" type               jsdoc/require-param-type
+  101:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+  101:1  warning  Missing JSDoc @param "register" type         jsdoc/require-param-type
+  102:1  warning  Missing JSDoc @param "schema" description    jsdoc/require-param-description
+  102:1  warning  Missing JSDoc @param "schema" type           jsdoc/require-param-type
+  103:1  warning  Missing JSDoc @param "id" description        jsdoc/require-param-description
+  103:1  warning  Missing JSDoc @param "id" type               jsdoc/require-param-type
+  104:1  warning  Missing JSDoc @param "emailId" description   jsdoc/require-param-description
+  104:1  warning  Missing JSDoc @param "emailId" type          jsdoc/require-param-type
+  120:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+  120:1  warning  Missing JSDoc @param "register" type         jsdoc/require-param-type
+  121:1  warning  Missing JSDoc @param "schema" description    jsdoc/require-param-description
+  121:1  warning  Missing JSDoc @param "schema" type           jsdoc/require-param-type
+  122:1  warning  Missing JSDoc @param "id" description        jsdoc/require-param-description
+  122:1  warning  Missing JSDoc @param "id" type               jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/store/modules/object-relations/events.js
+   36:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+   36:1  warning  Missing JSDoc @param "register" type         jsdoc/require-param-type
+   37:1  warning  Missing JSDoc @param "schema" description    jsdoc/require-param-description
+   37:1  warning  Missing JSDoc @param "schema" type           jsdoc/require-param-type
+   38:1  warning  Missing JSDoc @param "id" description        jsdoc/require-param-description
+   38:1  warning  Missing JSDoc @param "id" type               jsdoc/require-param-type
+   39:1  warning  Missing JSDoc @param "suffix" description    jsdoc/require-param-description
+   39:1  warning  Missing JSDoc @param "suffix" type           jsdoc/require-param-type
+   55:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+   55:1  warning  Missing JSDoc @param "register" type         jsdoc/require-param-type
+   56:1  warning  Missing JSDoc @param "schema" description    jsdoc/require-param-description
+   56:1  warning  Missing JSDoc @param "schema" type           jsdoc/require-param-type
+   57:1  warning  Missing JSDoc @param "id" description        jsdoc/require-param-description
+   57:1  warning  Missing JSDoc @param "id" type               jsdoc/require-param-type
+   89:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+   89:1  warning  Missing JSDoc @param "register" type         jsdoc/require-param-type
+   90:1  warning  Missing JSDoc @param "schema" description    jsdoc/require-param-description
+   90:1  warning  Missing JSDoc @param "schema" type           jsdoc/require-param-type
+   91:1  warning  Missing JSDoc @param "id" description        jsdoc/require-param-description
+   91:1  warning  Missing JSDoc @param "id" type               jsdoc/require-param-type
+   92:1  warning  Missing JSDoc @param "payload" description   jsdoc/require-param-description
+   92:1  warning  Missing JSDoc @param "payload" type          jsdoc/require-param-type
+  105:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+  105:1  warning  Missing JSDoc @param "register" type         jsdoc/require-param-type
+  106:1  warning  Missing JSDoc @param "schema" description    jsdoc/require-param-description
+  106:1  warning  Missing JSDoc @param "schema" type           jsdoc/require-param-type
+  107:1  warning  Missing JSDoc @param "id" description        jsdoc/require-param-description
+  107:1  warning  Missing JSDoc @param "id" type               jsdoc/require-param-type
+  108:1  warning  Missing JSDoc @param "payload" description   jsdoc/require-param-description
+  108:1  warning  Missing JSDoc @param "payload" type          jsdoc/require-param-type
+  121:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+  121:1  warning  Missing JSDoc @param "register" type         jsdoc/require-param-type
+  122:1  warning  Missing JSDoc @param "schema" description    jsdoc/require-param-description
+  122:1  warning  Missing JSDoc @param "schema" type           jsdoc/require-param-type
+  123:1  warning  Missing JSDoc @param "id" description        jsdoc/require-param-description
+  123:1  warning  Missing JSDoc @param "id" type               jsdoc/require-param-type
+  124:1  warning  Missing JSDoc @param "eventId" description   jsdoc/require-param-description
+  124:1  warning  Missing JSDoc @param "eventId" type          jsdoc/require-param-type
+  138:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+  138:1  warning  Missing JSDoc @param "register" type         jsdoc/require-param-type
+  139:1  warning  Missing JSDoc @param "schema" description    jsdoc/require-param-description
+  139:1  warning  Missing JSDoc @param "schema" type           jsdoc/require-param-type
+  140:1  warning  Missing JSDoc @param "id" description        jsdoc/require-param-description
+  140:1  warning  Missing JSDoc @param "id" type               jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/store/modules/organisation.js
+   29:1  warning  Missing JSDoc @param "mode" description                jsdoc/require-param-description
+   29:1  warning  Missing JSDoc @param "mode" type                       jsdoc/require-param-type
+   36:1  warning  Missing JSDoc @param "organisationItem" description    jsdoc/require-param-description
+   36:1  warning  Missing JSDoc @param "organisationItem" type           jsdoc/require-param-type
+   44:1  warning  Missing JSDoc @param "organisations" description       jsdoc/require-param-description
+   44:1  warning  Missing JSDoc @param "organisations" type              jsdoc/require-param-type
+   53:1  warning  Missing JSDoc @param "activeOrganisation" description  jsdoc/require-param-description
+   53:1  warning  Missing JSDoc @param "activeOrganisation" type         jsdoc/require-param-type
+   61:1  warning  Missing JSDoc @param "stats" description               jsdoc/require-param-description
+   61:1  warning  Missing JSDoc @param "stats" type                      jsdoc/require-param-type
+  136:1  warning  Missing JSDoc @param "uuid" description                jsdoc/require-param-description
+  136:1  warning  Missing JSDoc @param "uuid" type                       jsdoc/require-param-type
+  137:1  warning  Missing JSDoc @param "options" description             jsdoc/require-param-description
+  137:1  warning  Missing JSDoc @param "options" type                    jsdoc/require-param-type
+  160:1  warning  Missing JSDoc @param "uuid" description                jsdoc/require-param-description
+  160:1  warning  Missing JSDoc @param "uuid" type                       jsdoc/require-param-type
+  234:1  warning  Missing JSDoc @param "uuid" description                jsdoc/require-param-description
+  234:1  warning  Missing JSDoc @param "uuid" type                       jsdoc/require-param-type
+  264:1  warning  Missing JSDoc @param "organisationItem" description    jsdoc/require-param-description
+  264:1  warning  Missing JSDoc @param "organisationItem" type           jsdoc/require-param-type
+  288:1  warning  Missing JSDoc @param "organisationData" description    jsdoc/require-param-description
+  288:1  warning  Missing JSDoc @param "organisationData" type           jsdoc/require-param-type
+  331:1  warning  Missing JSDoc @param "organisationData" description    jsdoc/require-param-description
+  331:1  warning  Missing JSDoc @param "organisationData" type           jsdoc/require-param-type
+  400:1  warning  Missing JSDoc @param "organisationItem" description    jsdoc/require-param-description
+  400:1  warning  Missing JSDoc @param "organisationItem" type           jsdoc/require-param-type
+  414:1  warning  Missing JSDoc @param "organisationItem" description    jsdoc/require-param-description
+  414:1  warning  Missing JSDoc @param "organisationItem" type           jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/store/modules/quality.js
+  479:1  warning  Prefer a more specific type to `*`  jsdoc/reject-any-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/store/modules/register.js
+   37:1  warning  Missing JSDoc @param "tab" description                jsdoc/require-param-description
+   37:1  warning  Missing JSDoc @param "tab" type                       jsdoc/require-param-type
+   44:1  warning  Missing JSDoc @param "mode" description               jsdoc/require-param-description
+   44:1  warning  Missing JSDoc @param "mode" type                      jsdoc/require-param-type
+   51:1  warning  Missing JSDoc @param "registerItem" description       jsdoc/require-param-description
+   51:1  warning  Missing JSDoc @param "registerItem" type              jsdoc/require-param-type
+   67:1  warning  Missing JSDoc @param "registerList" description       jsdoc/require-param-description
+   67:1  warning  Missing JSDoc @param "registerList" type              jsdoc/require-param-type
+  128:1  warning  Missing JSDoc @param "id" description                 jsdoc/require-param-description
+  128:1  warning  Missing JSDoc @param "id" type                        jsdoc/require-param-type
+  147:1  warning  Missing JSDoc @param "id" description                 jsdoc/require-param-description
+  147:1  warning  Missing JSDoc @param "id" type                        jsdoc/require-param-type
+  165:1  warning  Missing JSDoc @param "registerItem" description       jsdoc/require-param-description
+  165:1  warning  Missing JSDoc @param "registerItem" type              jsdoc/require-param-type
+  203:1  warning  Missing JSDoc @param "registerItem" description       jsdoc/require-param-description
+  203:1  warning  Missing JSDoc @param "registerItem" type              jsdoc/require-param-type
+  254:1  warning  Missing JSDoc @param "registerItem" description       jsdoc/require-param-description
+  254:1  warning  Missing JSDoc @param "registerItem" type              jsdoc/require-param-type
+  270:1  warning  Missing JSDoc @param "register" description           jsdoc/require-param-description
+  270:1  warning  Missing JSDoc @param "register" type                  jsdoc/require-param-type
+  313:1  warning  Prefer a more specific type to `Function`             jsdoc/reject-function-type
+  398:1  warning  Missing JSDoc @param "file" description               jsdoc/require-param-description
+  398:1  warning  Missing JSDoc @param "file" type                      jsdoc/require-param-type
+  399:1  warning  Missing JSDoc @param "heartbeatCallback" description  jsdoc/require-param-description
+  399:1  warning  Missing JSDoc @param "heartbeatCallback" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/store/modules/reports.js
+  138:1  warning  Missing JSDoc @param "identifier" description  jsdoc/require-param-description
+  249:1  warning  Missing JSDoc @param "dataSource" description  jsdoc/require-param-description
+  249:1  warning  Missing JSDoc @param "dataSource" type         jsdoc/require-param-type
+  270:1  warning  Missing JSDoc @param "dataSource" description  jsdoc/require-param-description
+  270:1  warning  Missing JSDoc @param "dataSource" type         jsdoc/require-param-type
+  285:1  warning  Missing JSDoc @param "dataSource" description  jsdoc/require-param-description
+  285:1  warning  Missing JSDoc @param "dataSource" type         jsdoc/require-param-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/store/modules/search.ts
+  21:1  warning  Missing JSDoc @param "_search" description         jsdoc/require-param-description
+  28:1  warning  Missing JSDoc @param "_searchResults" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/store/modules/translations.js
+   73:1  warning  Missing JSDoc @param "state" description              jsdoc/require-param-description
+   78:1  warning  Missing JSDoc @param "state" description              jsdoc/require-param-description
+  193:1  warning  Missing JSDoc @param "params" description             jsdoc/require-param-description
+  194:1  warning  Missing JSDoc @param "params.query" description       jsdoc/require-param-description
+  195:1  warning  Missing JSDoc @param "params.language" description    jsdoc/require-param-description
+  196:1  warning  Missing JSDoc @param "params.status" description      jsdoc/require-param-description
+  197:1  warning  Missing JSDoc @param "params.objectUuid" description  jsdoc/require-param-description
+  198:1  warning  Missing JSDoc @param "params.limit" description       jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/store/modules/views.js
+  14:1  warning  Invalid JSDoc @license: "EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12"; expected SPDX expression: https://spdx.org/licenses/  jsdoc/check-values
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/Endpoint/EndpointDetails.vue
+  115:7  warning  The property or function OCP.Toast was deprecated in Nextcloud 19.0.0  @nextcloud/no-deprecated-globals
+  117:7  warning  The property or function OCP.Toast was deprecated in Nextcloud 19.0.0  @nextcloud/no-deprecated-globals
+  123:6  warning  The property or function OCP.Toast was deprecated in Nextcloud 19.0.0  @nextcloud/no-deprecated-globals
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/account/sections/ActivitySection.vue
+  111:1  warning  Missing JSDoc @param "timestamp" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/application/ApplicationsIndex.vue
+  9:8  warning  'indexPage' is defined as ref, but never used  vue/no-unused-refs
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/dashboard/DashboardIndex.vue
+  216:6  warning  The '<Apexchart>' component has been used, but not defined  vue/no-undef-components
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/deleted/DeletedIndex.vue
+  474:1  warning  Unexpected inline JSDoc tag. Did you mean to use {@self}, \@self, or `@self`?  jsdoc/escape-inline-tags
+  725:1  warning  Expected @param names to be "_options". Got "options, _options"                jsdoc/check-param-names
+  726:1  warning  Missing JSDoc @param "_options" description                                    jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/logs/SearchTrailIndex.vue
+  489:4  warning  The property or function OC.dialogs was deprecated in Nextcloud 30.0.0  @nextcloud/no-deprecated-globals
+  731:1  warning  Missing JSDoc @param "checked" description                              jsdoc/require-param-description
+  745:1  warning  Missing JSDoc @param "id" description                                   jsdoc/require-param-description
+  746:1  warning  Missing JSDoc @param "checked" description                              jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/organisation/OrganisationsIndex.vue
+  9:8  warning  'indexPage' is defined as ref, but never used  vue/no-unused-refs
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/quality/DuplicatesIndex.vue
+  225:1  warning  Unexpected inline JSDoc tag. Did you mean to use {@spec}, \@spec, or `@spec`?  jsdoc/escape-inline-tags
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/quality/MasterEntitiesIndex.vue
+  219:1  warning  Unexpected inline JSDoc tag. Did you mean to use {@spec}, \@spec, or `@spec`?  jsdoc/escape-inline-tags
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/quality/MergeOperationsIndex.vue
+  225:1  warning  Unexpected inline JSDoc tag. Did you mean to use {@spec}, \@spec, or `@spec`?  jsdoc/escape-inline-tags
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/quality/QualityIndex.vue
+  324:1  warning  Unexpected inline JSDoc tag. Did you mean to use {@spec}, \@spec, or `@spec`?  jsdoc/escape-inline-tags
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/quality/QueueHealthIndex.vue
+  163:1  warning  Unexpected inline JSDoc tag. Did you mean to use {@spec}, \@spec, or `@spec`?  jsdoc/escape-inline-tags
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/register/RegisterDetail.vue
+   88:6  warning  The '<Apexchart>' component has been used, but not defined  vue/no-undef-components
+  100:6  warning  The '<Apexchart>' component has been used, but not defined  vue/no-undef-components
+  115:6  warning  The '<Apexchart>' component has been used, but not defined  vue/no-undef-components
+  208:7  warning  The '<Apexchart>' component has been used, but not defined  vue/no-undef-components
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/register/RegistersIndex.vue
+  518:1  warning  Missing JSDoc @param "page" description      jsdoc/require-param-description
+  526:1  warning  Missing JSDoc @param "pageSize" description  jsdoc/require-param-description
+  534:1  warning  Missing JSDoc @param "ids" description       jsdoc/require-param-description
+  542:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+  553:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+  567:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+  581:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+  595:1  warning  Missing JSDoc @param "schemas" description   jsdoc/require-param-description
+  611:1  warning  Missing JSDoc @param "formData" description  jsdoc/require-param-description
+  629:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+  638:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+  663:1  warning  Missing JSDoc @param "register" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/reports/ReportView.vue
+  519:1  warning  Prefer a more specific type to `*`  jsdoc/reject-any-type
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/schema/SchemaDetails.vue
+  205:7  warning  The '<Apexchart>' component has been used, but not defined  vue/no-undef-components
+  218:7  warning  The '<Apexchart>' component has been used, but not defined  vue/no-undef-components
+  235:7  warning  The '<Apexchart>' component has been used, but not defined  vue/no-undef-components
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/schema/SchemasIndex.vue
+  13:8  warning  'indexPage' is defined as ref, but never used  vue/no-unused-refs
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/search/SearchIndex.vue
+   27:1  warning  Unexpected inline JSDoc tag. Did you mean to use {@self}, \@self, or `@self`?  jsdoc/escape-inline-tags
+  276:1  warning  Missing JSDoc @param "newVal" description                                      jsdoc/require-param-description
+  515:1  warning  Prefer a more specific type to `*`                                             jsdoc/reject-any-type
+  595:8  warning  'indexPage' is defined as ref, but never used                                  vue/no-unused-refs
+  682:8  warning  'calendar' is defined as ref, but never used                                   vue/no-unused-refs
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/settings/sections/PermissionMatrix.vue
+  345:1  warning  Missing JSDoc @param "registerId" description     jsdoc/require-param-description
+  353:1  warning  Missing JSDoc @param "register" description       jsdoc/require-param-description
+  364:1  warning  Missing JSDoc @param "register" description       jsdoc/require-param-description
+  365:1  warning  Missing JSDoc @param "action" description         jsdoc/require-param-description
+  381:1  warning  Missing JSDoc @param "schema" description         jsdoc/require-param-description
+  382:1  warning  Missing JSDoc @param "register" description       jsdoc/require-param-description
+  383:1  warning  Missing JSDoc @param "action" description         jsdoc/require-param-description
+  403:1  warning  Missing JSDoc @param "schema" description         jsdoc/require-param-description
+  404:1  warning  Missing JSDoc @param "register" description       jsdoc/require-param-description
+  416:1  warning  Missing JSDoc @param "schema" description         jsdoc/require-param-description
+  417:1  warning  Missing JSDoc @param "register" description       jsdoc/require-param-description
+  418:1  warning  Missing JSDoc @param "action" description         jsdoc/require-param-description
+  437:1  warning  Missing JSDoc @param "schema" description         jsdoc/require-param-description
+  438:1  warning  Missing JSDoc @param "register" description       jsdoc/require-param-description
+  439:1  warning  Missing JSDoc @param "action" description         jsdoc/require-param-description
+  459:1  warning  Missing JSDoc @param "groups" description         jsdoc/require-param-description
+  468:1  warning  Missing JSDoc @param "groups" description         jsdoc/require-param-description
+  478:1  warning  Missing JSDoc @param "authorization" description  jsdoc/require-param-description
+  491:1  warning  Missing JSDoc @param "register" description       jsdoc/require-param-description
+  492:1  warning  Missing JSDoc @param "enabled" description        jsdoc/require-param-description
+  520:1  warning  Missing JSDoc @param "schema" description         jsdoc/require-param-description
+  521:1  warning  Missing JSDoc @param "register" description       jsdoc/require-param-description
+  522:1  warning  Missing JSDoc @param "enabled" description        jsdoc/require-param-description
+  554:1  warning  Missing JSDoc @param "register" description       jsdoc/require-param-description
+  601:1  warning  Missing JSDoc @param "register" description       jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/settings/sections/RbacConfiguration.vue
+  210:1  warning  Missing JSDoc @param "value" description  jsdoc/require-param-description
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/src/views/source/SourcesIndex.vue
+  9:8  warning  'indexPage' is defined as ref, but never used  vue/no-unused-refs
+
+✖ 932 problems (0 errors, 932 warnings)
+

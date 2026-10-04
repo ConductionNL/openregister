@@ -1,0 +1,9 @@
+i lint-or-abstraction-anti-patterns: app id is 'openregister' — the ADR-022
+  'consume the OR abstraction' rules (audit-trail, approval-chain, tenant,
+  workflow-engine, rbac, and the ADR-051 capability table) do NOT apply to the
+  repository that PROVIDES those abstractions and are not evaluated here.
+  They remain in force for every leaf app.
+  ℹ️  [shared-pdok-via-openconnector] references api.pdok.nl but dispatches through OpenConnector — compliant, not counted:
+      lib/Service/Geo/PdokGeocoder.php
+✓ OR-abstraction anti-pattern gate clean.
+or_abstraction_findings=0 app_id=openregister mode=WARN

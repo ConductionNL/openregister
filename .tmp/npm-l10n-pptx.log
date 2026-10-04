@@ -1,0 +1,6 @@
+
+> openregister@1.0.0 test:l10n
+> node tests/l10n/check-l10n.js
+
+l10n-check [openregister]: scanned 360 files, 2337 distinct literal keys used, 3236 keys in en.js
+l10n-check: OK — every used translation key is present in l10n/en.js

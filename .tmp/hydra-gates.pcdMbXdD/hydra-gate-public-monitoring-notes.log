@@ -1,0 +1,3 @@
+AppHost\Controller\GenericMetrics#index — lib/AppHost/Controller/GenericMetricsController.php not touched by this diff (ADR-020)
+AppHost\Controller\GenericHealth#index — lib/AppHost/Controller/GenericHealthController.php not touched by this diff (ADR-020)
+chatHealth#health — lib/Controller/ChatHealthController.php not touched by this diff (ADR-020)

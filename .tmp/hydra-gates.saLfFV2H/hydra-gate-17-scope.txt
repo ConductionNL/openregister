@@ -1,0 +1,10 @@
+docs/Features/text-extraction-vectorization-ner.md
+lib/Service/TextExtraction/OoxmlPackage.php
+lib/Service/TextExtraction/PresentationExtractor.php
+lib/Service/TextExtraction/PresentationSlideParser.php
+openspec/changes/pptx-structured-reader/.openspec.yaml
+openspec/changes/pptx-structured-reader/design.md
+openspec/changes/pptx-structured-reader/proposal.md
+openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md
+openspec/changes/pptx-structured-reader/tasks.md
+tests/Unit/Service/TextExtraction/PresentationExtractorTest.php

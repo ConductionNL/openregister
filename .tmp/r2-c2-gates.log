@@ -1,0 +1,194 @@
+[hydra-gates] Delegating to conduction/hydra-gates at /home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/.github/hydra-gates
+[hydra-gates] findings logs: /tmp/claude-1000/or-lane-tmp/gates-c2
+[hydra-gates] gate package: bbce4339825625abf0ba19912fbafc6435526734 (git checkout at /home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/.github/hydra-gates/scripts)
+[hydra-gates] App dir: /home/rubenlinde/memcap-work/lq-lanes/or-primitives (absolute)
+[hydra-gates] SCOPE-MODE: diff
+[hydra-gates] File scope: the diff only (--scope-to-diff / HYDRA_GATE_SCOPE=diff). Inherited debt in untouched files is NOT judged.
+[hydra-gates] SCOPE-FILE-COUNT: 22
+[hydra-gates] Scope: diff vs origin/development — 22 changed file(s)
+[gate-1] spdx-headers: PASS
+[gate-2] forbidden-patterns: PASS
+[gate-3] stub-scan: PASS
+[gate-4] composer-audit: NOT APPLICABLE — neither composer.json nor composer.lock is in this diff — under ADR-020 diff scoping the dependency tree is unchanged from the base branch, so this PR introduces no dependency change to audit.
+[gate-5] route-auth: PASS
+[gate-6] orphan-auth: PASS
+[gate-7] no-admin-idor: PASS
+[gate-8] unsafe-auth-resolver: PASS
+[gate-9] semantic-auth: PASS
+[gate-10] initial-state: NOT APPLICABLE — 0 tracked, non-minified .vue/.js/.ts file(s) under src/ or js/ in this diff — nothing was inspected, so DOM reads of server-injected data are UNVERIFIED by this run.
+[gate-11] admin-router: NOT APPLICABLE — this app's router(s) — src/main.js — are not in this diff, so under ADR-020 the routing table is unchanged from the base branch.
+[gate-12] nc-input-labels: NOT APPLICABLE — 214 .vue component(s) exist here and the diff against 'origin/development' touched none of them, so no <NcSelect> was inspected. Diff-scoped out under ADR-020 — not a gap, and not a pass.
+[gate-13] modal-isolation: NOT APPLICABLE — 132 .vue component(s) exist here and the diff against 'origin/development' touched none of them, so no component was inspected. Diff-scoped out under ADR-020 — not a gap, and not a pass.
+[gate-14] route-reachability: PASS
+[gate-15] dashboard-antipattern: PASS
+[gate-16] spec-coverage: PASS
+[gate-17] redundant-controller: PASS
+[gate-18] notification-dialect: NOT APPLICABLE — no register JSON under lib/Settings (*register*.json or register.d/*.json) is in scope for this run: the run was NARROWED with --scope-to-diff and the diff against 'origin/development' touches none (the ADR-020 rule, now opt-in — see hydra-gates/ADR-020-SUPERSEDED.md). NOTHING was inspected and nothing could be, so this is NOT a pass. Re-run at the default full scope to judge the whole tree.
+[gate-19] e2e-coverage: WARNING — 51 scenario(s) missing @e2e (advisory, non-blocking — see .github#477) — see /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-e2e-coverage.log
+[gate-20] or-objectservice-api: PASS
+[gate-21] conflict-markers: PASS
+[gate-22] manifest-validation: NOT APPLICABLE — no src/manifest.json is in scope for this run: the run was NARROWED with --scope-to-diff and the diff against 'origin/development' touches none (the ADR-020 rule, now opt-in — see hydra-gates/ADR-020-SUPERSEDED.md). NOTHING was inspected and nothing could be, so this is NOT a pass. Re-run at the default full scope to judge the whole tree.
+[hydra-gates] gate-23 or-abstraction-anti-patterns: 0 rule(s) matched (see /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-or-abstraction-anti-patterns.log); WARN mode.
+[gate-23] or-abstraction-anti-patterns: PASS
+  [gate-24] ADR-066 server↔JS leaf parity — advisory warnings (WARN-only):
+    ⚠ server↔JS leaf parity (ADR-066) — advisory (WARN-only, does not fail the gate):
+      - render-surface leaf IntegrationProvider "brp-haalcentraal" (lib/Service/Integration/Providers/BrpPersonProvider.php) has NO matching JS registration — neither registerIntegration({ id }) nor integrations.register({ id }) in src/**, and no descriptor of that id contributed by @conduction/nextcloud-vue. Phantom render surface: the capability advertises a tab/widget that never mounts.
+      - render-surface leaf IntegrationProvider "kvk" (lib/Service/Integration/Providers/KvkProvider.php) has NO matching JS registration — neither registerIntegration({ id }) nor integrations.register({ id }) in src/**, and no descriptor of that id contributed by @conduction/nextcloud-vue. Phantom render surface: the capability advertises a tab/widget that never mounts.
+      - render-surface leaf IntegrationProvider "message-dispatch" (lib/Service/Integration/Providers/MessageDispatchProvider.php) has NO matching JS registration — neither registerIntegration({ id }) nor integrations.register({ id }) in src/**, and no descriptor of that id contributed by @conduction/nextcloud-vue. Phantom render surface: the capability advertises a tab/widget that never mounts.
+      - render-surface leaf IntegrationProvider "opencorporates" (lib/Service/Integration/Providers/OpenCorporatesProvider.php) has NO matching JS registration — neither registerIntegration({ id }) nor integrations.register({ id }) in src/**, and no descriptor of that id contributed by @conduction/nextcloud-vue. Phantom render surface: the capability advertises a tab/widget that never mounts.
+[gate-24] integration-parity: PASS
+[gate-25] contract-coverage: PASS
+[gate-26] visual-coverage: NOT APPLICABLE — the diff against 'origin/development' ADDED no page component (nothing under src/views|src/pages, no new manifest page component), so no screen was inspected. Diff-scoped out under ADR-020 — not a gap: this PR adds no screen whose appearance could be unbaselined. See /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-visual-coverage.log.
+[gate-27] no-phantom-cross-app-rpc: PASS
+[gate-28] license-triangle: PASS
+[gate-29] gitignore-then-commit: NOT APPLICABLE — the diff against 'origin/development' adds no non-comment line to .gitignore, so there is no new ignore rule whose path could already be tracked. Diff-scoped out under ADR-020.
+[gate-30] public-monitoring: NOT APPLICABLE — 3 monitoring endpoint(s) found; none of their controllers is touched by this diff (ADR-020) — see /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-public-monitoring-notes.log.
+[gate-31] img-alt: NOT APPLICABLE — no markup file (src|templates|appinfo/templates **/*.vue|php|html) is in scope for this run — the repository has none, or the diff touches none under ADR-020. No <img> was inspected and none could be.
+[gate-32] semantic-controls: NOT APPLICABLE — no markup file (src|templates|appinfo/templates **/*.vue|php|html) is in scope for this run — the repository has none, or the diff touches none under ADR-020. No click target was inspected and none could be.
+[gate-33] axe-core: NOT APPLICABLE — no tests/axe/report.json, and the caller did not set enable-axe — this repo has not opted into runtime accessibility enforcement. Runtime a11y (contrast / landmark / ARIA-validity / live-region) is therefore NOT enforced here, by a choice recorded in the caller's workflow rather than in this run. To enforce it, set `enable-axe: true` on ConductionNL/.github's quality.yml; this gate then becomes blocking and its absence becomes a failure.
+[gate-34] window-confirm: NOT APPLICABLE — no frontend source file (src|templates|appinfo/templates **/*.vue|js|ts|php|html) is in scope for this run: the run was NARROWED with --scope-to-diff and the diff against 'origin/development' touches none (the ADR-020 rule, now opt-in — see hydra-gates/ADR-020-SUPERSEDED.md). NOTHING was inspected and nothing could be, so this is NOT a pass. Re-run at the default full scope to judge the whole tree.
+[gate-35] img-alt-empty-only: NOT APPLICABLE — no markup file (src|templates|appinfo/templates **/*.vue|php|html) is in scope for this run: the run was NARROWED with --scope-to-diff and the diff against 'origin/development' touches none (the ADR-020 rule, now opt-in — see hydra-gates/ADR-020-SUPERSEDED.md). NOTHING was inspected and nothing could be, so this is NOT a pass. Re-run at the default full scope to judge the whole tree.
+[gate-36] tabindex-positive: NOT APPLICABLE — no frontend source file (src|templates|appinfo/templates **/*.vue|js|ts|php|html) is in scope for this run: the run was NARROWED with --scope-to-diff and the diff against 'origin/development' touches none (the ADR-020 rule, now opt-in — see hydra-gates/ADR-020-SUPERSEDED.md). NOTHING was inspected and nothing could be, so this is NOT a pass. Re-run at the default full scope to judge the whole tree.
+[gate-37] aria-hidden-focusable: NOT APPLICABLE — no markup file (src|templates|appinfo/templates **/*.vue|php|html) is in scope for this run: the run was NARROWED with --scope-to-diff and the diff against 'origin/development' touches none (the ADR-020 rule, now opt-in — see hydra-gates/ADR-020-SUPERSEDED.md). NOTHING was inspected and nothing could be, so this is NOT a pass. Re-run at the default full scope to judge the whole tree.
+[gate-38] skip-link: NOT APPLICABLE — no app page root (src/App.vue, src/**/*Root.vue) or document-owning PHP template (templates|appinfo/templates **/*.php) is in scope for this run: the run was NARROWED with --scope-to-diff and the diff against 'origin/development' touches none (the ADR-020 rule, now opt-in — see hydra-gates/ADR-020-SUPERSEDED.md). NOTHING was inspected and nothing could be, so this is NOT a pass. Re-run at the default full scope to judge the whole tree.
+[gate-39] button-name: NOT APPLICABLE — no markup file (src|templates|appinfo/templates **/*.vue|php|html) is in scope for this run: the run was NARROWED with --scope-to-diff and the diff against 'origin/development' touches none (the ADR-020 rule, now opt-in — see hydra-gates/ADR-020-SUPERSEDED.md). NOTHING was inspected and nothing could be, so this is NOT a pass. Re-run at the default full scope to judge the whole tree.
+[gate-40] form-label-association: NOT APPLICABLE — no markup file (src|templates|appinfo/templates **/*.vue|php|html) is in scope for this run: the run was NARROWED with --scope-to-diff and the diff against 'origin/development' touches none (the ADR-020 rule, now opt-in — see hydra-gates/ADR-020-SUPERSEDED.md). NOTHING was inspected and nothing could be, so this is NOT a pass. Re-run at the default full scope to judge the whole tree.
+[gate-41] html-lang: NOT APPLICABLE — no PHP template (templates|appinfo/templates **/*.php) is in scope for this run: the run was NARROWED with --scope-to-diff and the diff against 'origin/development' touches none (the ADR-020 rule, now opt-in — see hydra-gates/ADR-020-SUPERSEDED.md). NOTHING was inspected and nothing could be, so this is NOT a pass. Re-run at the default full scope to judge the whole tree.
+[gate-42] link-text-quality: NOT APPLICABLE — no markup file (src|templates|appinfo/templates **/*.vue|php|html) is in scope for this run: the run was NARROWED with --scope-to-diff and the diff against 'origin/development' touches none (the ADR-020 rule, now opt-in — see hydra-gates/ADR-020-SUPERSEDED.md). NOTHING was inspected and nothing could be, so this is NOT a pass. Re-run at the default full scope to judge the whole tree.
+[gate-43] table-headers: NOT APPLICABLE — no markup file (src|templates|appinfo/templates **/*.vue|php|html) is in scope for this run: the run was NARROWED with --scope-to-diff and the diff against 'origin/development' touches none (the ADR-020 rule, now opt-in — see hydra-gates/ADR-020-SUPERSEDED.md). NOTHING was inspected and nothing could be, so this is NOT a pass. Re-run at the default full scope to judge the whole tree.
+[gate-44] autocomplete-attr: NOT APPLICABLE — no markup file (src|templates|appinfo/templates **/*.vue|php|html) is in scope for this run: the run was NARROWED with --scope-to-diff and the diff against 'origin/development' touches none (the ADR-020 rule, now opt-in — see hydra-gates/ADR-020-SUPERSEDED.md). NOTHING was inspected and nothing could be, so this is NOT a pass. Re-run at the default full scope to judge the whole tree.
+[gate-45] prefers-reduced-motion: NOT APPLICABLE — scope was empty — 0 markup or stylesheet file(s) (css/, src/, templates/, appinfo/templates/) in this diff, so NO <style> block and NO stylesheet was inspected; motion without a prefers-reduced-motion fallback is UNVERIFIED by this run.
+[gate-46] spec-anchor-existence: PASS
+[gate-47] security-change-has-tests: PASS
+[gate-48] csrf-cochange: PASS
+[gate-49] controller-exception-translation: PASS
+[gate-50] security-config-fail-mode: PASS
+[gate-51] schema-property-titles: NOT APPLICABLE — scope was empty — 0 lib/Settings/*register*.json (or register.d/*.json) file(s) in this repo or this diff, so NO schema property was inspected; missing human-friendly titles are UNVERIFIED by this run.
+[hydra-gates] gate-52 custom-widget-ratchet: the RATCHET half was NOT computed — the helper printed no base/head/delta counts, which it does only when it has a base ref to compare against. The JUSTIFICATION half (every custom kind:"widget" entry needs a `_note`) did run over 360 file(s). A PASS below covers that half only.
+[gate-52] custom-widget-ratchet: NOT APPLICABLE — no src/**/*.{js,ts,vue} file (a component registry declaring kind:"widget" entries) is in scope for this run: the run was NARROWED with --scope-to-diff and the diff against 'origin/development' touches none (the ADR-020 rule, now opt-in — see hydra-gates/ADR-020-SUPERSEDED.md). NOTHING was inspected and nothing could be, so this is NOT a pass. Re-run at the default full scope to judge the whole tree.
+[gate-53] effective-manifest-crossref: NOT APPLICABLE — the diff against 'origin/development' touched no manifest input (src/manifest.json, src/manifest.d/**, src/menu-layout.json, lib/Settings/*register*.json), so NO effective manifest was assembled or cross-referenced. Diff-scoped out under ADR-020 — not a gap: the manifests in this repo are unchanged from the base branch. This gate runs on the next PR that touches a manifest input.
+[gate-54] relation-dialect: NOT APPLICABLE — scope was empty — 0 lib/Settings/*register*.json (or register.d/*.json) file(s) in this repo or this diff, so NO relation property was inspected; non-canonical relation dialects (ADR-062 rules 6/7/10) are UNVERIFIED by this run.
+[gate-55] detail-page-discipline: NOT APPLICABLE — scope was empty — 0 src/manifest.json or src/manifest.d/*.json file(s) in this repo or this diff, so NO type:"detail" page was inspected; ADR-062 grid discipline (render-path shadowing, widgets↔layout integrity, widget icons, row/viewAll routes) is UNVERIFIED by this run.
+[gate-56] register-handler-resolution: NOT APPLICABLE — 18 register JSON(s) exist here and the diff against 'origin/development' touched none of them, so NONE were inspected. Diff-scoped out under ADR-020 — this gate runs on the next PR that touches a register.
+[gate-57] orphaned-write-capability: FAIL — 1 orphaned write-capability method(s) — see /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-orphaned-write-capability.log
+[gate-58] e2e-networkidle: NOT APPLICABLE — 149 tests/e2e file(s) exist here and the diff against 'origin/development' touched none of them, so NONE were inspected. Diff-scoped out under ADR-020 (the fleet carries a 278-site legacy backlog this gate deliberately does not block on) — it runs on the next PR that touches an e2e file.
+[gate-59] unclosable-gate: PASS
+[gate-60] icon-vocabulary: NOT APPLICABLE — src/manifest.json exists here and the diff against 'origin/development' touched no manifest, so NO icon was inspected. Diff-scoped out under ADR-020 — this gate runs on the next PR that touches a manifest.
+[gate-61] listener-work-placement: NOT APPLICABLE — the diff against 'origin/development' put every post-event registration out of scope, so NONE were inspected. This gate is deliberately delta-scoped even at full file scope — the fleet's registration backlog is a work-list, not a reason to block an unrelated change. It runs on the next change that touches a listener registration. ADVISORY, and it decides nothing here: a whole-tree sweep of this same tree reaches 48 registration(s) carrying 0 finding(s), NONE of which this run judged — see /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-listener-work-placement.advisory.log. See /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-listener-work-placement.log.
+[gate-62] store-plane: NOT APPLICABLE — the diff against 'origin/development' touched no manifest and no menu-layout, so NO manifest was inspected. Diff-scoped out under ADR-020 — not a gap: the manifests in this repo are unchanged from the base branch, so this PR introduces no store-plane naming or discovery decision (ADR-080) to judge. This gate runs on the next PR that touches a manifest. See /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-store-plane.log.
+[gate-63] settings-surface: NOT APPLICABLE — the diff against 'origin/development' touched no manifest and no menu-layout, so NO manifest was inspected. Diff-scoped out under ADR-020 — not a gap. This gate adjudicates ADR-079 placement as declared in src/manifest.json, src/manifest.d/ and src/menu-layout.json, and nothing else. The manifests in this repo are unchanged from the base branch, so this PR introduces no manifest placement decision to judge. It runs on the next PR that touches one of those. See /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-settings-surface.log.
+[gate-64] apphost-autoload-prelude: PASS
+[gate-65] coding-standard-adoption: PASS
+[gate-66] openregister-dependency-shape: NOT APPLICABLE — this app references OpenRegister nowhere under lib/, so it holds no OpenRegister dependency to shape. NOT a pass — nothing was judged.
+[gate-67] openregister-contract-parity: PASS
+[gate-68] duplicate-index-pages: SKIPPED (wiring) — check_duplicate_index_pages.js exited 1 without printing its `findings=` count — it did NOT finish, so the effective manifest's type:"index" pages were left uninspected and ADR-097 Decision 5 is UNVERIFIED by this run. This is a broken checker, NOT a finding about the manifest. See /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-duplicate-index-pages.log.
+[gate-104] reports-one-page: NOT APPLICABLE — no src/manifest.json or src/manifest.d/ fragment is in scope for this run: the run was NARROWED with --scope-to-diff and the diff against 'origin/development' touches none (the ADR-020 rule, now opt-in — see hydra-gates/ADR-020-SUPERSEDED.md). NOTHING was inspected and nothing could be, so this is NOT a pass. Re-run at the default full scope to judge the whole tree.
+[gate-107] app-chrome: NOT APPLICABLE — no src/manifest.json or src/manifest.d/ fragment is in scope for this run: the run was NARROWED with --scope-to-diff and the diff against 'origin/development' touches none (the ADR-020 rule, now opt-in — see hydra-gates/ADR-020-SUPERSEDED.md). NOTHING was inspected and nothing could be, so this is NOT a pass. Re-run at the default full scope to judge the whole tree.
+[gate-69] page-type-discipline: NOT APPLICABLE — scope was empty — 0 src/manifest.json or src/manifest.d/*.json file(s) in this repo or this diff, so NO page was inspected; page-type discipline (typed-component integrity, mislabelled custom pages, custom-page ratchet) is UNVERIFIED by this run.
+[gate-82] public-endpoint-throttling: PASS
+[gate-84] npm-supply-chain-config: PASS
+[gate-93] composer-cooldown-config: PASS
+[gate-94] retired-git-host-metadata: PASS
+[gate-95] adr-number-collision: PASS
+[gate-96] manifest-copy-style: PASS
+[gate-102] manifest-l10n-coverage: PASS
+[gate-103] locale-duplication: PASS
+[gate-105] duplicate-page-refresh: PASS
+[gate-106] cross-app-schema-slug: NOT APPLICABLE — the diff against 'origin/development' touched no register descriptor under lib/Settings, so NO slug was inspected. Diff-scoped out under ADR-020 — this gate runs on the next PR that touches one.
+[gate-97] system-elevation-reachability: PASS
+[gate-100] setup-demo-data-first: NOT APPLICABLE — this diff touches no src/manifest.json, so no setup declaration needed its first step checked. See /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-setup-demo-first.log.
+[gate-101] demo-data-coverage: NOT APPLICABLE — this diff touches no register descriptor under lib/, so no schema needed its demo data checked. See /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-demo-data-coverage.log.
+[gate-109] seed-required-slugs: NOT APPLICABLE — this repo ships no tests/e2e/ci-seed.sh with a required-schema list, so NO slug was inspected. Saying so is not the same as passing.
+[gate-108] shipped-object-properties: NOT APPLICABLE — this diff touches no shipped register/seed/demo JSON under lib/, so no object needed its properties checked. See /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-shipped-object-properties.log.
+[gate-98] repair-step-registration: NOT APPLICABLE — this diff touches no lib/Repair/*.php, so no repair step needed its info.xml registration checked. See /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-repair-registration.log.
+[gate-110] migration-version-bump: NOT APPLICABLE — this diff adds no migration and no upgrade-time repair step, so there was no version bump to require. See /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-migration-version-bump.log.
+[gate-83] contract-surface-shift: NOT APPLICABLE — the diff against 'origin/development' touched no published-contract file, so no surface shift could occur. This gate runs on the next change that edits lib/Contract/ or a class implementing it. See /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-contract-surface-shift.log.
+[gate-111] flow-node-taxonomy: PASS
+[gate-70] walkthrough-flows-stop: NOT APPLICABLE — scope was empty — 0 src/manifest.json file(s) in this repo or this diff, so NO tour was inspected; walkthrough flows coverage is UNVERIFIED by this run.
+[gate-113] exclusion-evidence: 490 exclusion(s) — 157 name a test that is here, 0 name one in another repository, 271 claim a tier without naming a member of it, 62 name no evidence at all.
+[gate-113] exclusion-evidence: PASS
+[gate-112] newman-reach: FAIL — 21 finding(s). 337 of 718 committed request(s) run.
+  V2  tests/federation/federation-tests.postman_collection.json holds 50 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/newman/agent-cms-testing.postman_collection.json holds 11 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/newman/openregister-auth-matrix.postman_collection.json holds 5 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/newman/openregister-chat-streaming.postman_collection.json holds 5 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/newman/openregister-dedup-check.postman_collection.json holds 14 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/newman/openregister-delegation.postman_collection.json holds 9 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/newman/openregister-duplicate-merge.postman_collection.json holds 19 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/newman/openregister-error-matrix.postman_collection.json holds 3 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/newman/openregister-files-domain.postman_collection.json holds 3 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/newman/openregister-flow-engine.postman_collection.json holds 72 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/newman/openregister-flow-subjects.postman_collection.json holds 21 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/newman/openregister-handoff.postman_collection.json holds 19 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/newman/openregister-object-watchers.postman_collection.json holds 18 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/newman/openregister-register-descriptors.postman_collection.json holds 4 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/newman/openregister-transfer.postman_collection.json holds 4 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/newman/openregister-working-calendars.postman_collection.json holds 8 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/postman/openregister-anonymisation-tests.postman_collection.json holds 3 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/postman/openregister-crud-tests.postman_collection.json holds 15 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/postman/openregister-graphql-tests.postman_collection.json holds 15 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/postman/openregister-platform-annotations.postman_collection.json holds 39 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  V2  tests/postman/openregister-relations-tests.postman_collection.json holds 44 request(s) and sits outside newman-collection-path ('tests/integration'), so CI never runs it. Move it under 'tests/integration', repoint that input, or delete it.
+  Fix: move the collection under newman-collection-path, repoint that input, delete it, or put `@newman exclude <reason>` in the collection's info.description.
+[gate-112] newman-reach: FAIL — 21 committed Postman collection(s) that CI never runs, or that run without asserting anything — see /tmp/claude-1000/or-lane-tmp/gates-c2/hydra-gate-newman-reach.log
+
+[hydra-gates] COVERAGE: 43 of 93 declared gates reported a result (49 not applicable to this repo/diff; 43 of 44 applicable gates ran).
+[hydra-gates] NOT APPLICABLE — subject matter absent from this repo or this diff.
+[hydra-gates] These do NOT count against coverage. Each stated its own reason above:
+[hydra-gates]   gate-4 composer-audit
+[hydra-gates]   gate-10 initial-state
+[hydra-gates]   gate-11 admin-router
+[hydra-gates]   gate-12 nc-input-labels
+[hydra-gates]   gate-13 modal-isolation
+[hydra-gates]   gate-18 notification-dialect
+[hydra-gates]   gate-22 manifest-validation
+[hydra-gates]   gate-26 visual-coverage
+[hydra-gates]   gate-29 gitignore-then-commit
+[hydra-gates]   gate-30 public-monitoring
+[hydra-gates]   gate-31 img-alt
+[hydra-gates]   gate-32 semantic-controls
+[hydra-gates]   gate-33 axe-core
+[hydra-gates]   gate-34 window-confirm
+[hydra-gates]   gate-35 img-alt-empty-only
+[hydra-gates]   gate-36 tabindex-positive
+[hydra-gates]   gate-37 aria-hidden-focusable
+[hydra-gates]   gate-38 skip-link
+[hydra-gates]   gate-39 button-name
+[hydra-gates]   gate-40 form-label-association
+[hydra-gates]   gate-41 html-lang
+[hydra-gates]   gate-42 link-text-quality
+[hydra-gates]   gate-43 table-headers
+[hydra-gates]   gate-44 autocomplete-attr
+[hydra-gates]   gate-45 prefers-reduced-motion
+[hydra-gates]   gate-51 schema-property-titles
+[hydra-gates]   gate-52 custom-widget-ratchet
+[hydra-gates]   gate-53 effective-manifest-crossref
+[hydra-gates]   gate-54 relation-dialect
+[hydra-gates]   gate-55 detail-page-discipline
+[hydra-gates]   gate-56 register-handler-resolution
+[hydra-gates]   gate-58 e2e-networkidle
+[hydra-gates]   gate-60 icon-vocabulary
+[hydra-gates]   gate-61 listener-work-placement
+[hydra-gates]   gate-62 store-plane
+[hydra-gates]   gate-63 settings-surface
+[hydra-gates]   gate-66 openregister-dependency-shape
+[hydra-gates]   gate-69 page-type-discipline
+[hydra-gates]   gate-70 walkthrough-flows-stop
+[hydra-gates]   gate-83 contract-surface-shift
+[hydra-gates]   gate-98 repair-step-registration
+[hydra-gates]   gate-100 setup-demo-data-first
+[hydra-gates]   gate-101 demo-data-coverage
+[hydra-gates]   gate-104 reports-one-page
+[hydra-gates]   gate-106 cross-app-schema-slug
+[hydra-gates]   gate-107 app-chrome
+[hydra-gates]   gate-108 shipped-object-properties
+[hydra-gates]   gate-109 seed-required-slugs
+[hydra-gates]   gate-110 migration-version-bump
+[hydra-gates] GATES THAT DID NOT RUN — they inspected NOTHING, and their subject
+[hydra-gates] matter is UNVERIFIED by this run:
+[hydra-gates]   gate-68 duplicate-index-pages
+[hydra-gates] 1 gate(s) reported ADVISORY findings — real, measured, and NOT blocking this run.
+[hydra-gates] They are named WARNING above, each with its count and its tracking issue.
+[hydra-gates] A green verdict below means 'nothing BLOCKING failed', not 'nothing was found'.
+[hydra-gates] 2 gate(s) failed
+gates exit 2

@@ -1,0 +1,12 @@
+[openregister/tests/bootstrap] No installed Nextcloud root in scope (a bare source tree does not count); running with composer autoload only.
+  Set OPENREGISTER_TEST_NC_ROOT to an installed Nextcloud root if you need integration/DB tests.
+PHPUnit 10.5.63 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.3.6
+Configuration: /home/rubenlinde/memcap-work/lq-lanes/or-primitives/phpunit.xml
+
+.                                                                   1 / 1 (100%)
+
+Time: 00:00.088, Memory: 24.00 MB
+
+OK (1 test, 1 assertion)

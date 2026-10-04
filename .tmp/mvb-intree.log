@@ -1,0 +1,20 @@
+[openregister/tests/bootstrap] No installed Nextcloud root in scope (a bare source tree does not count); running with composer autoload only.
+  Set OPENREGISTER_TEST_NC_ROOT to an installed Nextcloud root if you need integration/DB tests.
+PHPUnit 10.5.63 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.3.6
+Configuration: /home/rubenlinde/memcap-work/lq-lanes/or-primitives/phpunit.xml
+
+F                                                                   1 / 1 (100%)
+
+Time: 00:00.111, Memory: 24.00 MB
+
+There was 1 failure:
+
+1) OCA\OpenRegister\Tests\Unit\Migration\MigrationVersionBumpCheckTest::testANonRepositoryRefusesToGiveAVerdict
+Failed asserting that 0 is identical to 2.
+
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/tests/Unit/Migration/MigrationVersionBumpCheckTest.php:310
+
+FAILURES!
+Tests: 1, Assertions: 1, Failures: 1.

@@ -1,0 +1,2 @@
+[gate-115] stale-fleet-app-id: 0 cross-app lookup(s) naming a retired id or namespace
+[gate-115] stale-fleet-app-id: this gate reads NAMES only. It cannot see whether a method or route you point at exists on the other side, and a repoint that lands on a missing method fails exactly as silently as the stale name did. Closing that half needs cross-repo surface reading (gate-67's model). This is not it.

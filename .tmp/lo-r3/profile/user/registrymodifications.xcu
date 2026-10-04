@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<oor:items xmlns:oor="http://openoffice.org/2001/registry" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<item oor:path="/org.openoffice.Office.Common/Misc"><prop oor:name="FirstRun" oor:op="fuse"><value>false</value></prop></item>
+<item oor:path="/org.openoffice.Office.Logging/Settings"><node oor:name="unopkg" oor:op="replace"><prop oor:name="LogLevel" oor:op="fuse"><value>2147483647</value></prop><prop oor:name="DefaultHandler" oor:op="fuse"><value>com.sun.star.logging.FileHandler</value></prop><node oor:name="HandlerSettings"><prop oor:name="FileURL" oor:op="fuse"><value>$(userurl)/$(loggername).log</value></prop></node><prop oor:name="DefaultFormatter" oor:op="fuse"><value>com.sun.star.logging.PlainTextFormatter</value></prop><node oor:name="FormatterSettings"></node></node></item>
+<item oor:path="/org.openoffice.Setup/L10N"><prop oor:name="ooLocale" oor:op="fuse"><value>en-US</value></prop></item>
+<item oor:path="/org.openoffice.Setup/Office"><prop oor:name="LastCompatibilityCheckID" oor:op="fuse"><value>420(Build:2)</value></prop></item>
+<item oor:path="/org.openoffice.Setup/Office"><prop oor:name="OfficeRestartInProgress" oor:op="fuse"><value>true</value></prop></item>
+<item oor:path="/org.openoffice.Setup/Office"><prop oor:name="ooSetupInstCompleted" oor:op="fuse"><value>true</value></prop></item>
+</oor:items>

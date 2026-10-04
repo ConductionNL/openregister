@@ -1,0 +1,2 @@
+/home/rubenlinde/memcap-work/lq-lanes/or-primitives/vendor/conduction/hydra-gates/hydra-gates/scripts/lib/check_phantom_cross_app_rpc.py:3: SyntaxWarning: invalid escape sequence '\O'
+  """Gate — no-phantom-cross-app-rpc (ADR-041).

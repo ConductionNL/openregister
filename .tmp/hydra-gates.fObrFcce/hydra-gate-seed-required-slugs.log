@@ -1,0 +1,1 @@
+NA: no tests/e2e/ci-seed.sh, or it asserts no schema list — nothing was inspected, which is not the same as passing.
