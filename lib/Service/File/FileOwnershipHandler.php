@@ -87,6 +87,7 @@ class FileOwnershipHandler {
 	 * @phpstan-return IUser
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
 	 */
 	public function getUser(): IUser {
 		$openRegisterUser = $this->userManager->get(self::APP_USER);
@@ -99,6 +100,10 @@ class FileOwnershipHandler {
 			if ($openRegisterUser === false) {
 				throw new Exception('Failed to create OpenRegister user account.');
 			}
+
+			// Every object's file counts against this account, so it starts
+			// unlimited. An admin can still set a limit afterwards.
+			$openRegisterUser->setQuota('none');
 
 			// Add user to OpenRegister group.
 			$group = $this->groupManager->get(self::APP_GROUP);
