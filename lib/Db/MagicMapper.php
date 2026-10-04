@@ -361,6 +361,15 @@ class MagicMapper extends AbstractObjectMapper {
 	private static array $columnExistsCache = [];
 
 	/**
+	 * Lower-cased data_type per column, filled by the same information_schema
+	 * query as $columnExistsCache (so it costs no extra query).
+	 * Key format: 'tableName' => ['column1' => 'timestamp without time zone', ...]
+	 *
+	 * @var array<string, array<string, string>>
+	 */
+	private static array $columnTypeCache = [];
+
+	/**
 	 * Handler instances for specialized functionality
 	 */
 
@@ -921,7 +930,8 @@ class MagicMapper extends AbstractObjectMapper {
 				query: $query,
 				register: $register,
 				schema: $schema,
-				tableName: $tableName
+				tableName: $tableName,
+				dateTimeColumns: $this->getDateTimeColumns(tableName: $tableName)
 			);
 
 			// If result is an integer (count), return empty array.
@@ -9128,36 +9138,9 @@ class MagicMapper extends AbstractObjectMapper {
 	 */
 	private function columnExistsInTable(string $tableName, string $columnName): bool {
 		try {
-			// Ensure table name has prefix for information_schema lookup.
-			$prefix = $this->getTablePrefix();
-			$fullTableName = $tableName;
-			if (str_starts_with($tableName, $prefix) === false) {
-				$fullTableName = $prefix . $tableName;
-			}
+			$fullTableNameLower = $this->loadTableColumnCache(tableName: $tableName);
 
-			// PostgreSQL stores unquoted identifiers in lowercase.
-			$fullTableNameLower = strtolower($fullTableName);
-			$columnNameLower = strtolower($columnName);
-
-			// OPTIMIZATION: Check in-memory cache first.
-			if (isset(self::$columnExistsCache[$fullTableNameLower]) === true) {
-				return isset(self::$columnExistsCache[$fullTableNameLower][$columnNameLower]);
-			}
-
-			// Load ALL columns for this table in one query (instead of one query per column).
-			$sql = 'SELECT LOWER(column_name) as col FROM information_schema.columns
-                    WHERE LOWER(table_name) = ?';
-
-			$stmt = $this->db->prepare($sql);
-			$stmt->execute([$fullTableNameLower]);
-
-			// Cache all columns for this table.
-			self::$columnExistsCache[$fullTableNameLower] = [];
-			while (($row = $stmt->fetch()) !== false) {
-				self::$columnExistsCache[$fullTableNameLower][$row['col']] = true;
-			}
-
-			return isset(self::$columnExistsCache[$fullTableNameLower][$columnNameLower]);
+			return isset(self::$columnExistsCache[$fullTableNameLower][strtolower($columnName)]);
 		} catch (\Exception $e) {
 			$this->logger->warning(
 				message: '[MagicMapper] Failed to check column existence',
@@ -9173,6 +9156,97 @@ class MagicMapper extends AbstractObjectMapper {
 			return false;
 		}//end try
 	}//end columnExistsInTable()
+
+	/**
+	 * Load a table's column names and types into the static caches, once per process.
+	 *
+	 * One information_schema query fills both $columnExistsCache (names, as
+	 * columnExistsInTable() has always used it) and $columnTypeCache (types).
+	 *
+	 * @param string $tableName The table name (with or without the oc_ prefix).
+	 *
+	 * @return string The lower-cased, prefixed table name used as cache key.
+	 *
+	 * @throws \Exception If the information_schema query fails.
+	 */
+	private function loadTableColumnCache(string $tableName): string {
+		// Ensure table name has prefix for information_schema lookup.
+		$prefix = $this->getTablePrefix();
+		$fullTableName = $tableName;
+		if (str_starts_with($tableName, $prefix) === false) {
+			$fullTableName = $prefix . $tableName;
+		}
+
+		// PostgreSQL stores unquoted identifiers in lowercase.
+		$fullTableNameLower = strtolower($fullTableName);
+
+		// OPTIMIZATION: Check in-memory cache first.
+		if (isset(self::$columnExistsCache[$fullTableNameLower]) === true
+			&& isset(self::$columnTypeCache[$fullTableNameLower]) === true
+		) {
+			return $fullTableNameLower;
+		}
+
+		// Load ALL columns for this table in one query (instead of one query per column).
+		$sql = 'SELECT LOWER(column_name) AS col, LOWER(data_type) AS col_type FROM information_schema.columns
+                WHERE LOWER(table_name) = ?';
+
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute([$fullTableNameLower]);
+
+		// Cache all columns for this table.
+		$names = [];
+		$types = [];
+		while (($row = $stmt->fetch()) !== false) {
+			$names[$row['col']] = true;
+			$types[$row['col']] = (string)($row['col_type'] ?? '');
+		}
+
+		self::$columnExistsCache[$fullTableNameLower] = $names;
+		self::$columnTypeCache[$fullTableNameLower] = $types;
+
+		return $fullTableNameLower;
+	}//end loadTableColumnCache()
+
+	/**
+	 * List the columns of a table whose real database type is a date or time stamp.
+	 *
+	 * PostgreSQL reports `date` and `timestamp with[out] time zone`; MySQL and
+	 * MariaDB report `date`, `datetime` and `timestamp`. A property whose schema
+	 * says date-time but whose column predates that format stays text, because
+	 * the table sync adds columns and never retypes them. The search handler
+	 * uses this list so it only wraps a real date column in COALESCE.
+	 *
+	 * @param string $tableName The table name (with or without the oc_ prefix).
+	 *
+	 * @return array<int, string> Lower-cased column names; empty when the lookup fails.
+	 */
+	private function getDateTimeColumns(string $tableName): array {
+		try {
+			$fullTableNameLower = $this->loadTableColumnCache(tableName: $tableName);
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[MagicMapper] Failed to read column types',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'tableName' => $tableName,
+					'error' => $e->getMessage(),
+				]
+			);
+			return [];
+		}
+
+		$columns = [];
+		foreach (self::$columnTypeCache[$fullTableNameLower] ?? [] as $column => $type) {
+			$type = strtolower($type);
+			if ($type === 'date' || $type === 'datetime' || str_starts_with($type, 'timestamp') === true) {
+				$columns[] = (string)$column;
+			}
+		}
+
+		return $columns;
+	}//end getDateTimeColumns()
 
 	// ==================================================================================
 	// ABSTRACT OBJECT MAPPER IMPLEMENTATION (public API facade methods)
