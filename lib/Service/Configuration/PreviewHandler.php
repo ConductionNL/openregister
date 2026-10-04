@@ -411,23 +411,4 @@ class PreviewHandler {
 		unset($current, $proposed, $prefix);
 		return [];
 	}//end compareArrays()
-
-	/**
-	 * Placeholder method - will be populated with extracted method.
-	 *
-	 * @param Configuration $_configuration The configuration.
-	 * @param array $_selection Selection criteria.
-	 *
-	 * @return array Import results.
-	 *
-	 * @throws Exception If import fails.
-	 *
-	 * @psalm-return array<never, never>
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
-	 */
-	public function importConfigurationWithSelection(Configuration $_configuration, array $_selection): array {
-		// Method body will be extracted from ConfigurationService.
-		return [];
-	}//end importConfigurationWithSelection()
 }//end class
