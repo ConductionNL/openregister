@@ -2865,7 +2865,21 @@ class Schema extends Entity implements JsonSerializable {
 		// source endpoint; without it in the allowlist the provenance is
 		// silently dropped on save and the entire update-from-source feature
 		// is dead (the schema reports "not imported from a standard").
-		$passThrough = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org', 'handoffContract', 'importSource'];
+		// `uniqueConstraints` is the declared uniqueness block that
+		// UniqueConstraintEvaluator and UniqueConstraintListener read (named
+		// refuse/report constraints, beside the legacy `unique`). Off this
+		// list every save dropped it in silence and no constraint ever fired.
+		$passThrough = [
+			'unique',
+			'uniqueConstraints',
+			'facetCacheTtl',
+			'calendarProvider',
+			'jsonld',
+			'implements',
+			'x-schema-org',
+			'handoffContract',
+			'importSource',
+		];
 
 		foreach ($configuration as $key => $value) {
 			// Per-key isolation (#419): a bad VALUE for one config key must never
