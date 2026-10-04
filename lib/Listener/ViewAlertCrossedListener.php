@@ -13,7 +13,7 @@
  * fabricated record in the link a person is told to click.
  *
  * Recipients use the RBAC string grammar the rest of the app already speaks
- * (DenyResolver::USER_PREFIX): `user:<uid>` names a person, a bare string
+ * (DenyResolver reads the same `user:` prefix): `user:<uid>` names a person, a bare string
  * names a Nextcloud group. Both go through NotificationRecipientResolver, so a
  * view alert verifies uids and expands groups exactly as a schema rule does.
  *
@@ -37,11 +37,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use DateTime;
-use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Service\Notification\EmailSender;
 use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
-use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -80,6 +78,13 @@ class ViewAlertCrossedListener implements IEventListener {
 	 * @var string
 	 */
 	public const CHANNEL_EMAIL = 'email';
+
+	/**
+	 * The prefix that names a person rather than a group, as in the app's RBAC rules.
+	 *
+	 * @var string
+	 */
+	public const USER_PREFIX = 'user:';
 
 	/**
 	 * Constructor.
@@ -125,7 +130,7 @@ class ViewAlertCrossedListener implements IEventListener {
 			'threshold' => $alert->threshold,
 		];
 
-		$uids = $this->resolve(view: $view, alert: $alert);
+		$uids = $this->resolve(viewId: $parameters['viewId'], alert: $alert);
 		foreach ($alert->channels as $channel) {
 			if ($channel === self::CHANNEL_NOTIFICATION) {
 				$this->notifyAll(uids: $uids, parameters: $parameters);
@@ -150,17 +155,17 @@ class ViewAlertCrossedListener implements IEventListener {
 	/**
 	 * The verified uids an alert names, with every name that resolved to nobody logged.
 	 *
-	 * @param View $view The view, for the log line.
+	 * @param string $viewId The view's uuid, for the log line.
 	 * @param ViewAlert $alert The declaration.
 	 *
 	 * @return array<int, string> Verified, deduplicated uids.
 	 */
-	private function resolve(View $view, ViewAlert $alert): array {
+	private function resolve(string $viewId, ViewAlert $alert): array {
 		$users = [];
 		$groups = [];
 		foreach ($alert->recipients as $recipient) {
-			if (str_starts_with($recipient, DenyResolver::USER_PREFIX) === true) {
-				$users[] = substr($recipient, strlen(DenyResolver::USER_PREFIX));
+			if (str_starts_with($recipient, self::USER_PREFIX) === true) {
+				$users[] = substr($recipient, strlen(self::USER_PREFIX));
 				continue;
 			}
 
@@ -181,14 +186,14 @@ class ViewAlertCrossedListener implements IEventListener {
 		$unresolved = array_column($resolved['unresolved'], 'id');
 		foreach ($users as $uid) {
 			if ($this->recipients->userExists(uid: $uid) === false) {
-				$unresolved[] = DenyResolver::USER_PREFIX . $uid;
+				$unresolved[] = self::USER_PREFIX . $uid;
 			}
 		}
 
 		if ($unresolved !== []) {
 			$this->logger->warning(
 				'[ViewAlertCrossedListener] View {view} alert names recipients this server does not have: {recipients}',
-				['view' => (string)$view->getUuid(), 'recipients' => implode(', ', $unresolved)]
+				['view' => $viewId, 'recipients' => implode(', ', $unresolved)]
 			);
 		}
 
