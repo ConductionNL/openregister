@@ -1922,6 +1922,10 @@ class ValidateObject {
 		// Clean the schema by removing all Nextcloud-specific metadata properties.
 		$schemaObject = $this->cleanSchemaForValidation(schemaObject: $schemaObject);
 
+		// A nested property marked `nullable: true` accepts null, as an
+		// optional top-level property already does (widened further down).
+		$this->allowNullForNestedNullable(schemaObject: $schemaObject);
+
 		// If schemaObject required is empty unset it.
 		if (($schemaObject->required ?? null) !== null && empty($schemaObject->required) === true) {
 			unset($schemaObject->required);
@@ -2029,6 +2033,127 @@ class ValidateObject {
 			'required' => $requiredFields,
 		];
 	}//end prepareSchemaForValidation()
+
+	/**
+	 * Let every NESTED property marked `nullable: true` accept `null`.
+	 *
+	 * The top level widens a non-required property with `"null"` in
+	 * prepareSchemaForValidation(). Nothing did the same one level down, so a
+	 * property inside an object or inside an array's `items` that the schema
+	 * declares `nullable: true` refused `null`, and every write carrying one
+	 * failed (learniq LearnerProfile.beeldmateriaalConsent, whose purposes are
+	 * null while consent is undecided; ReportCard.subjectGrades[].courseId).
+	 * Opis implements JSON Schema, where `nullable` is not a keyword, so the
+	 * marker has to become a type the validator reads.
+	 *
+	 * The top-level properties themselves are left to the existing widening:
+	 * only what sits beneath them is walked, at any depth.
+	 *
+	 * @param object $schemaObject The cleaned schema object, changed in place.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude bug fix: nested nullable parity with the top-level null widening
+	 */
+	private function allowNullForNestedNullable(object $schemaObject): void {
+		if (is_object($schemaObject->properties ?? null) === false) {
+			return;
+		}
+
+		foreach (get_object_vars($schemaObject->properties) as $propertySchema) {
+			if (is_object($propertySchema) === true) {
+				$this->allowNullBeneath(schema: $propertySchema);
+			}
+		}
+	}//end allowNullForNestedNullable()
+
+	/**
+	 * Widen every nullable schema below the given one, recursively.
+	 *
+	 * Walks `properties`, `items` (a single schema or a tuple), and the
+	 * `oneOf` / `anyOf` / `allOf` branches.
+	 *
+	 * @param object $schema The schema whose descendants to widen in place.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude bug fix: nested nullable parity with the top-level null widening
+	 */
+	private function allowNullBeneath(object $schema): void {
+		$children = [];
+		if (is_object($schema->properties ?? null) === true) {
+			$children = array_values(get_object_vars($schema->properties));
+		}
+
+		$items = ($schema->items ?? null);
+		if (is_object($items) === true) {
+			$children[] = $items;
+		} elseif (is_array($items) === true) {
+			$children = array_merge($children, $items);
+		}
+
+		foreach (['oneOf', 'anyOf', 'allOf'] as $keyword) {
+			if (is_array($schema->{$keyword} ?? null) === true) {
+				$children = array_merge($children, $schema->{$keyword});
+			}
+		}
+
+		foreach ($children as $child) {
+			if (is_object($child) === false) {
+				continue;
+			}
+
+			if (($child->nullable ?? null) === true) {
+				$this->widenToAcceptNull(schema: $child);
+			}
+
+			$this->allowNullBeneath(schema: $child);
+		}
+	}//end allowNullBeneath()
+
+	/**
+	 * Make one schema accept `null` alongside what it already accepts.
+	 *
+	 * @param object $schema The schema to widen in place.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude bug fix: nested nullable parity with the top-level null widening
+	 */
+	private function widenToAcceptNull(object $schema): void {
+		$type = ($schema->type ?? null);
+		if (is_string($type) === true && $type !== 'null') {
+			$schema->type = [$type, 'null'];
+		} elseif (is_array($type) === true && in_array('null', $type, true) === false) {
+			$schema->type[] = 'null';
+		}
+
+		// An enum is checked on its own, so null has to be one of its values.
+		if (is_array($schema->enum ?? null) === true && in_array(null, $schema->enum, true) === false) {
+			$schema->enum[] = null;
+		}
+
+		if ($type !== null) {
+			return;
+		}
+
+		// A typeless union (a related object rewritten to oneOf) needs a null
+		// branch, unless it has one: a second would make a oneOf match twice.
+		foreach (['oneOf', 'anyOf'] as $keyword) {
+			if (is_array($schema->{$keyword} ?? null) === false) {
+				continue;
+			}
+
+			foreach ($schema->{$keyword} as $branch) {
+				if (is_object($branch) === true && ($branch->type ?? null) === 'null') {
+					return;
+				}
+			}
+
+			$schema->{$keyword}[] = (object)['type' => 'null'];
+			return;
+		}
+	}//end widenToAcceptNull()
 
 	/**
 	 * Get the request-scoped memoized validator.
