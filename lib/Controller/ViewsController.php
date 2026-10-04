@@ -24,6 +24,8 @@ use OCA\OpenRegister\Db\View;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\ViewPresentationService;
 use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Service\View\ViewAlert;
+use OCA\OpenRegister\Exception\InvalidViewAlertException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -195,6 +197,21 @@ class ViewsController extends Controller {
 
 		return $data['sharedWith'];
 	}//end sharesFrom()
+
+	/**
+	 * The answer to a refused save: 422 naming the field of a malformed alert, 400 otherwise.
+	 *
+	 * @param InvalidArgumentException $e The refusal.
+	 *
+	 * @return JSONResponse
+	 */
+	private function refusalFor(InvalidArgumentException $e): JSONResponse {
+		if ($e instanceof InvalidViewAlertException) {
+			return new JSONResponse(data: ['error' => $e->getMessage(), 'field' => $e->getField()], statusCode: 422);
+		}
+
+		return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+	}//end refusalFor()
 
 	/**
 	 * Refuse an update that changes fields this caller does not own.
@@ -499,7 +516,8 @@ class ViewsController extends Controller {
 				isDefault: $data['isDefault'] ?? false,
 				query: $query,
 				presentation: $presentation,
-				sharedWith: $this->sharesFrom(data: $data)
+				sharedWith: $this->sharesFrom(data: $data),
+				alert: ViewAlert::declaredIn(body: $data)
 			);
 
 			return new JSONResponse(
@@ -509,12 +527,7 @@ class ViewsController extends Controller {
 				statusCode: 201
 			);
 		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => $e->getMessage(),
-				],
-				statusCode: 400
-			);
+			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ViewsController] Error creating view',
@@ -646,7 +659,8 @@ class ViewsController extends Controller {
 				isDefault: $data['isDefault'] ?? false,
 				query: $query,
 				presentation: $presentation,
-				sharedWith: $this->sharesFrom(data: $data)
+				sharedWith: $this->sharesFrom(data: $data),
+				alert: ViewAlert::declaredIn(body: $data)
 			);
 
 			return new JSONResponse(
@@ -662,12 +676,7 @@ class ViewsController extends Controller {
 				statusCode: 404
 			);
 		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => $e->getMessage(),
-				],
-				statusCode: 400
-			);
+			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ViewsController] Error updating view',
@@ -786,7 +795,8 @@ class ViewsController extends Controller {
 				query: $query,
 				favoredBy: $favoredBy,
 				presentation: $presentation,
-				sharedWith: $this->sharesFrom(data: $data)
+				sharedWith: $this->sharesFrom(data: $data),
+				alert: ViewAlert::declaredIn(body: $data)
 			);
 
 			return new JSONResponse(
@@ -802,12 +812,7 @@ class ViewsController extends Controller {
 				statusCode: 404
 			);
 		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => $e->getMessage(),
-				],
-				statusCode: 400
-			);
+			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ViewsController] Error patching view',
@@ -936,12 +941,7 @@ class ViewsController extends Controller {
 				statusCode: 404
 			);
 		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => $e->getMessage(),
-				],
-				statusCode: 400
-			);
+			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ViewsController] Error building kanban board',
@@ -1022,12 +1022,7 @@ class ViewsController extends Controller {
 				statusCode: 404
 			);
 		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => $e->getMessage(),
-				],
-				statusCode: 400
-			);
+			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ViewsController] Error querying calendar range',

@@ -33,8 +33,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\View;
 
-use InvalidArgumentException;
 use JsonSerializable;
+use OCA\OpenRegister\Exception\InvalidViewAlertException;
 
 /**
  * One view's declared count alert.
@@ -119,7 +119,7 @@ final class ViewAlert implements JsonSerializable {
 	 *
 	 * @return self|null The alert, or null when none is declared.
 	 *
-	 * @throws InvalidArgumentException When a declared alert does not read.
+	 * @throws InvalidViewAlertException When a declared alert does not read.
 	 *
 	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
 	 */
@@ -129,7 +129,7 @@ final class ViewAlert implements JsonSerializable {
 		}
 
 		if (is_array($raw) === false) {
-			throw new InvalidArgumentException('alert: an alert is an object with an operator and a threshold.');
+			throw new InvalidViewAlertException(field: 'alert', message: 'alert: an alert is an object with an operator and a threshold.');
 		}
 
 		// The four field checks run in the ORDER they used to, and `channels`
@@ -154,20 +154,54 @@ final class ViewAlert implements JsonSerializable {
 	}//end parse()
 
 	/**
+	 * The alert a request body declares, as a view save takes it.
+	 *
+	 * Null when the body does not mention `alert`, so the save leaves the
+	 * stored alert as it was. An empty array when the body clears it with
+	 * null or an empty value. Otherwise the declaration as sent; the save
+	 * reads it through parse(), which refuses a malformed one.
+	 *
+	 * @param array<string, mixed> $body The request body.
+	 *
+	 * @return array|null The declaration, `[]` to clear, or null to leave it.
+	 *
+	 * @throws InvalidViewAlertException When `alert` is neither empty nor an object.
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
+	 */
+	public static function declaredIn(array $body): ?array {
+		if (array_key_exists('alert', $body) === false) {
+			return null;
+		}
+
+		$raw = $body['alert'];
+		if ($raw === null || $raw === '' || $raw === []) {
+			return [];
+		}
+
+		if (is_array($raw) === false) {
+			throw new InvalidViewAlertException(field: 'alert', message: 'alert: an alert is an object with an operator and a threshold.');
+		}
+
+		return $raw;
+	}//end declaredIn()
+
+	/**
 	 * The declared operator, or a refusal naming the field.
 	 *
 	 * @param mixed $raw The declared operator.
 	 *
 	 * @return string The operator.
 	 *
-	 * @throws InvalidArgumentException When it is not one this class knows.
+	 * @throws InvalidViewAlertException When it is not one this class knows.
 	 *
 	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
 	 */
 	private static function validOperator(mixed $raw): string {
 		if (is_string($raw) === false || in_array($raw, self::OPERATORS, true) === false) {
-			throw new InvalidArgumentException(
-				sprintf(
+			throw new InvalidViewAlertException(
+				field: 'alert.operator',
+				message: sprintf(
 					'alert.operator: use one of %s; got %s.',
 					implode(', ', self::OPERATORS),
 					var_export($raw, true)
@@ -185,14 +219,15 @@ final class ViewAlert implements JsonSerializable {
 	 *
 	 * @return integer The threshold.
 	 *
-	 * @throws InvalidArgumentException When it is not a whole count of rows.
+	 * @throws InvalidViewAlertException When it is not a whole count of rows.
 	 *
 	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
 	 */
 	private static function validThreshold(mixed $raw): int {
 		if (is_int($raw) === false || $raw < 0) {
-			throw new InvalidArgumentException(
-				sprintf('alert.threshold: a count threshold is a whole number of rows, zero or more; got %s.', var_export($raw, true))
+			throw new InvalidViewAlertException(
+				field: 'alert.threshold',
+				message: sprintf('alert.threshold: a count threshold is a whole number of rows, zero or more; got %s.', var_export($raw, true))
 			);
 		}
 
@@ -209,14 +244,17 @@ final class ViewAlert implements JsonSerializable {
 	 *
 	 * @return array<int, string> The recipients.
 	 *
-	 * @throws InvalidArgumentException When the list is empty or unreadable.
+	 * @throws InvalidViewAlertException When the list is empty or unreadable.
 	 *
 	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
 	 */
 	private static function validRecipients(mixed $raw): array {
 		$recipients = self::stringList(raw: $raw, field: 'alert.recipients');
 		if ($recipients === []) {
-			throw new InvalidArgumentException('alert.recipients: name at least one recipient, or the alert has nobody to tell.');
+			throw new InvalidViewAlertException(
+				field: 'alert.recipients',
+				message: 'alert.recipients: name at least one recipient, or the alert has nobody to tell.'
+			);
 		}
 
 		return $recipients;
@@ -229,14 +267,15 @@ final class ViewAlert implements JsonSerializable {
 	 *
 	 * @return integer The interval.
 	 *
-	 * @throws InvalidArgumentException When it is under the floor.
+	 * @throws InvalidViewAlertException When it is under the floor.
 	 *
 	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-may-declare-a-count-alert
 	 */
 	private static function validEvery(mixed $raw): int {
 		if (is_int($raw) === false || $raw < self::MIN_EVERY) {
-			throw new InvalidArgumentException(
-				sprintf('alert.every: evaluate at most once every %d seconds; got %s.', self::MIN_EVERY, var_export($raw, true))
+			throw new InvalidViewAlertException(
+				field: 'alert.every',
+				message: sprintf('alert.every: evaluate at most once every %d seconds; got %s.', self::MIN_EVERY, var_export($raw, true))
 			);
 		}
 
@@ -340,7 +379,7 @@ final class ViewAlert implements JsonSerializable {
 	 *
 	 * @psalm-return list<string>
 	 *
-	 * @throws InvalidArgumentException When it is not a list of strings.
+	 * @throws InvalidViewAlertException When it is not a list of strings.
 	 */
 	private static function stringList(mixed $raw, string $field): array {
 		if (is_string($raw) === true) {
@@ -348,13 +387,13 @@ final class ViewAlert implements JsonSerializable {
 		}
 
 		if (is_array($raw) === false) {
-			throw new InvalidArgumentException(sprintf('%s: expected a list of names.', $field));
+			throw new InvalidViewAlertException(field: $field, message: sprintf('%s: expected a list of names.', $field));
 		}
 
 		$list = [];
 		foreach ($raw as $entry) {
 			if (is_string($entry) === false) {
-				throw new InvalidArgumentException(sprintf('%s: every entry is a name; got %s.', $field, gettype($entry)));
+				throw new InvalidViewAlertException(field: $field, message: sprintf('%s: every entry is a name; got %s.', $field, gettype($entry)));
 			}
 
 			$name = trim($entry);
