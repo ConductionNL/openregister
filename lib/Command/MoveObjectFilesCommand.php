@@ -52,10 +52,12 @@ class MoveObjectFilesCommand extends Command {
 	 * Configure the command.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
 	 */
 	protected function configure(): void {
-		$this->setName('openregister:files:move-to-account')
-			->setDescription('Move object files from people\'s homes into the OpenRegister account, keeping file ids');
+		$this->setName(name: 'openregister:files:move-to-account')
+			->setDescription(description: 'Move object files from people\'s homes into the OpenRegister account, keeping file ids');
 	}//end configure()
 
 	/**

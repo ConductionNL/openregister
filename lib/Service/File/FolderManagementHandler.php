@@ -202,7 +202,7 @@ class FolderManagementHandler {
 	 * @spec openspec/changes/register-folder-on-first-upload/specs/file-actions/spec.md#requirement-a-registers-folder-is-created-on-its-first-upload-by-whoever-uploads-req-rffu-001
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $currentUser stays for callers: the folder is no longer shared with anybody, it is held by the openregister account.
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $currentUser stays for callers; nobody gets a share any more.
 	 */
 	public function createRegisterFolderById(Register $register, ?IUser $currentUser = null): Node {
 		$folderProperty = $register->getFolder();

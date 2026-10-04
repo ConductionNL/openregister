@@ -349,4 +349,28 @@ class FilesControllerObjectAccessTest extends TestCase {
 		$this->assertSame(404, $response->getStatus());
 		$this->assertSame([], $issued);
 	}//end testAPersonWithoutAccessGetsNoToken()
+
+	public function testTheOfficePagePostsAnEditTokenForAnUpdateHolder(): void {
+		$issued = [];
+		$this->arrangeOffice($issued);
+
+		$response = $this->controllerAs('behandelaar', ['openformulieren-behandelaars'])
+			->officePage(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 77);
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\TemplateResponse::class, $response);
+		$this->assertSame('office', $response->getTemplateName());
+		$this->assertFalse($response->getParams()['readOnly']);
+		$this->assertSame('tok', $response->getParams()['token']);
+	}//end testTheOfficePagePostsAnEditTokenForAnUpdateHolder()
+
+	public function testTheOfficePageIs404WithoutRead(): void {
+		$issued = [];
+		$this->arrangeOffice($issued);
+
+		$response = $this->controllerAs('gewoon', [])
+			->officePage(register: '7', schema: '42', id: self::OBJECT_UUID, fileId: 77);
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertSame([], $issued);
+	}//end testTheOfficePageIs404WithoutRead()
 }//end class

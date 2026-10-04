@@ -125,6 +125,11 @@ class OfficeSessionService {
 		$writable = ($canWrite === true && $permissions->userCanEdit($editorUid) === true);
 		$fileId = (string)$file->getId();
 
+		$guestName = $displayName;
+		if ($guestName === '') {
+			$guestName = $editorUid;
+		}
+
 		try {
 			$wopi = $services['wopiMapper']->generateFileToken(
 				$fileId,
@@ -133,7 +138,7 @@ class OfficeSessionService {
 				'0',
 				$writable,
 				$this->urlGenerator->getAbsoluteURL('/'),
-				($displayName !== '' ? $displayName : $editorUid)
+				$guestName
 			);
 		} catch (Throwable $e) {
 			throw new OfficeOpenRefusedException(

@@ -383,8 +383,6 @@ class FilesController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with files list
 	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
-	 *
 	 * @NoAdminRequired
 	 *
 	 * @NoCSRFRequired
@@ -392,6 +390,7 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
 	 */
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(
