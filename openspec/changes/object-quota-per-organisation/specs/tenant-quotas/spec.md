@@ -29,7 +29,7 @@ the cap, when the organisation already holds at least the cap of that
 register and schema. The count SHALL be the organisation's real total,
 counted without the creating user's RBAC or organisation filter. An update
 SHALL never be refused by a quota, and an object in no organisation SHALL
-not be counted.
+not be counted. A count that cannot be made SHALL refuse the create with code `object-quota-unchecked`, never let it through.
 
 #### Scenario: a create at the cap is refused
 
@@ -51,6 +51,14 @@ not be counted.
 - **WHEN** one of its objects is updated
 - **THEN** no count is made and the update is not refused by a quota
 - @e2e exclude {listener event filter, covered by ObjectQuotaListenerTest}
+
+#### Scenario: a quota that cannot be checked refuses the create
+
+- **GIVEN** schema `schedule` declares `perOrganisation: 2`
+- **WHEN** an object of organisation A is created and the count of A's objects cannot be made
+- **THEN** the create is refused with `object-quota-unchecked`, saying the limit could not be checked
+- **AND** nothing is created and an error is logged
+- @e2e exclude {count failure, no page; covered by ObjectQuotaThroughMagicMapperTest}
 
 ### Requirement: An app can read an organisation's quota status (REQ-OQP-003)
 
