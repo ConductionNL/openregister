@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
  * channel, the `actions[]` hard cap of 2 plus action-shape errors, and the
  * `originApp` shape error.
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 class NotificationAnnotationValidatorWebPushTest extends TestCase {
 	private NotificationAnnotationValidator $v;

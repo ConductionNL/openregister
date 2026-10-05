@@ -279,7 +279,7 @@ class NotificationHistory extends Entity implements JsonSerializable {
 	 *
 	 * @return boolean True when the notice is in the unread list at that moment.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function isInUnreadListAt(?DateTime $asOf = null): bool {
 		if ($this->readAt !== null || $this->archivedAt !== null) {

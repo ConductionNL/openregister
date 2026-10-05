@@ -7,7 +7,7 @@ import type { APIRequestContext } from '@playwright/test'
  * OBJECT WATCHERS — end to end, through the HTTP API a real client uses.
  *
  * Scenario anchors, in the portable `<spec>::<slug>` form so they still resolve
- * once `openspec/changes/object-watchers/specs/` is archived into
+ * once `openspec/changes/archive/2026-10-05-object-watchers/specs/` is archived into
  * `openspec/specs/`:
  *
  * @e2e object-interactions::following-leaves-the-object-untouched

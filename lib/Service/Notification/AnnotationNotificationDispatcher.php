@@ -2145,7 +2145,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return bool True when the object satisfies the filter.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function createdFilterMatches(array $filter, array $data): bool {
 		$field = (string)($filter['field'] ?? '');
@@ -2466,7 +2466,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return string The interpolated body string, or '' for the empty back-compat body.
 	 *
-	 * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function resolveMessageBody(
 		mixed $template,
@@ -2509,7 +2509,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return string The human-readable app display name.
 	 *
-	 * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function resolveAppDisplayName(string $app): string {
 		$fallback = ucfirst($app);
@@ -2627,7 +2627,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return string The resolved origin app id.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function resolveOriginApp(array $spec, ObjectEntity $object): string {
 		$declared = ($spec['originApp'] ?? null);
@@ -2673,7 +2673,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return array<int, array{label: array<string,string>, primary: bool, url: string, method: string}>
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
 	 */
 	private function resolveActions(array $spec, ObjectEntity $object, array $data, string $originApp): array {
@@ -2837,7 +2837,7 @@ class AnnotationNotificationDispatcher {
 	 * @SuppressWarnings(PHPMD.NPathComplexity) The fourth kind (task-verb)
 	 * adds one branch; each kind's resolution is a distinct contract.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function resolveActionTarget(mixed $target, ObjectEntity $object, array $data, string $originApp): ?string {
 		if (is_array($target) === false) {
@@ -2919,7 +2919,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return string|null The deeplink, or null when the relation is empty/unreadable.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function resolveRelationDeeplink(string $field, array $data, string $originApp): ?string {
 		if ($field === '' || $this->objectService === null) {
@@ -3064,8 +3064,8 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	private function enqueueWebPush(
 		array $recipients,
@@ -3126,8 +3126,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function emitNotification(
 		string $uid,

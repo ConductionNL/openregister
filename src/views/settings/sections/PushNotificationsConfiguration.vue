@@ -185,7 +185,7 @@ import SettingsSection from '../../../components/shared/SettingsSection.vue'
  * @link https://www.openregister.nl
  *
  * @spec openspec/changes/add-live-updates/tasks.md#task-11
- * @spec openspec/changes/openregister-web-push-engine/tasks.md#task-5.1
+ * @spec openspec/changes/archive/2026-10-05-openregister-web-push-engine/tasks.md#task-5.1
  */
 export default {
 	name: 'PushNotificationsConfiguration',
@@ -233,7 +233,7 @@ export default {
 		/**
 		 * Load the VAPID public key + configured flag from the backend.
 		 *
-		 * @spec openspec/changes/openregister-web-push-engine/tasks.md#task-5.1
+		 * @spec openspec/changes/archive/2026-10-05-openregister-web-push-engine/tasks.md#task-5.1
 		 * @return {Promise<void>}
 		 */
 		async loadVapidStatus() {

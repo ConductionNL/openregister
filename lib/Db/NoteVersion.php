@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);

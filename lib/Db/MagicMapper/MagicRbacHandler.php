@@ -2504,7 +2504,7 @@ class MagicRbacHandler {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Both contexts are ambient static markers by design.
 	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function isTrustedSystemCaller(?IUser $user): bool {
 		if ($user !== null || AnonymousEvaluationContext::isActive() === true) {
@@ -2519,7 +2519,7 @@ class MagicRbacHandler {
 	 *
 	 * @return bool True under the CLI SAPI.
 	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	protected function isCommandLine(): bool {
 		return PHP_SAPI === 'cli';
@@ -2543,7 +2543,7 @@ class MagicRbacHandler {
 	 *
 	 * @return string[] Quoted group ids, empty when the caller is anonymous.
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	public function quotedCallerGroups(): array {
 		$quoted = [];

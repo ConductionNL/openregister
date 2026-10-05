@@ -392,7 +392,7 @@ class NotificationRecipientResolver {
 	 *
 	 * @return array<int, string> The watching uids that may still read the object.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
 	 */
 	private function resolveWatcherRecipients(ObjectEntity $object): array {
 		if ($this->serverContainer === null) {

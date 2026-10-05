@@ -319,7 +319,7 @@ class NotificationHistoryMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	private function applyListStateFilters(IQueryBuilder $qb, array $filters, DateTime $asOf): void {
 		if (filter_var(($filters['unreadOnly'] ?? false), FILTER_VALIDATE_BOOLEAN) === true) {
@@ -358,7 +358,7 @@ class NotificationHistoryMapper extends QBMapper {
 	 *
 	 * @return boolean True when a row was marked.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
 	public function markRead(int $id, string $recipient, ?DateTime $readAt = null): bool {
 		$qb = $this->db->getQueryBuilder();
@@ -387,7 +387,7 @@ class NotificationHistoryMapper extends QBMapper {
 	 *
 	 * @return integer How many notices were cleared.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
 	public function markReadForSubject(
 		string $recipient,
@@ -419,7 +419,7 @@ class NotificationHistoryMapper extends QBMapper {
 	 *
 	 * @return boolean True when a row was snoozed.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function snooze(int $id, string $recipient, DateTime $until): bool {
 		$qb = $this->db->getQueryBuilder();
@@ -445,7 +445,7 @@ class NotificationHistoryMapper extends QBMapper {
 	 *
 	 * @return boolean True when a row was archived.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function archive(int $id, string $recipient, ?DateTime $archivedAt = null): bool {
 		$qb = $this->db->getQueryBuilder();
@@ -469,7 +469,7 @@ class NotificationHistoryMapper extends QBMapper {
 	 *
 	 * @return integer How many notices were archived.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
 	public function archiveByObject(string $objectUuid, ?DateTime $archivedAt = null): int {
 		$qb = $this->db->getQueryBuilder();
@@ -490,7 +490,7 @@ class NotificationHistoryMapper extends QBMapper {
 	 *
 	 * @return NotificationHistory|null The row, or null when it is not theirs.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function findOwn(int $id, string $recipient): ?NotificationHistory {
 		$qb = $this->db->getQueryBuilder();

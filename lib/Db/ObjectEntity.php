@@ -967,7 +967,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	public function setWatching(?bool $watching): void {
 		$this->watching = $watching;
@@ -984,7 +984,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
 	public function setWatcherCount(?int $count): void {
 		$this->watcherCount = $count;
@@ -1004,7 +1004,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function setUnread(?bool $unread): void {
 		$this->unread = $unread;
@@ -1021,7 +1021,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	public function setUnreadCounts(?array $counts): void {
 		$this->unreadCounts = $counts;

@@ -100,7 +100,7 @@ class AnnotationNotifier implements INotifier {
 	 *                                      annotation/object notification this
 	 *                                      notifier owns.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function prepare(INotification $notification, string $languageCode): INotification {
 		if ($notification->getApp() !== 'openregister') {
@@ -214,7 +214,7 @@ class AnnotationNotifier implements INotifier {
 	 *
 	 * @return int The number of action buttons actually rendered.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
 	 */
 	private function addDeclaredActions(INotification $notification, array $actions, string $languageCode): int {

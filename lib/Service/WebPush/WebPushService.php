@@ -29,7 +29,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Encrypts, signs, and delivers Web Push payloads; prunes gone subscriptions.
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 class WebPushService {
 
@@ -92,7 +92,7 @@ class WebPushService {
 	 *
 	 * @return bool True when both public and private keys are present.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	public function isConfigured(): bool {
 		$public = $this->appConfig->getValueString(self::APP_ID, self::VAPID_PUBLIC_KEY, '');
@@ -108,7 +108,7 @@ class WebPushService {
 	 *
 	 * @return string The base64url VAPID public key, or empty string.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	public function getPublicKey(): string {
 		return $this->appConfig->getValueString(self::APP_ID, self::VAPID_PUBLIC_KEY, '');
@@ -125,7 +125,7 @@ class WebPushService {
 	 *
 	 * @return int The number of endpoints successfully delivered to.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	public function deliver(string $uid, array $payload): int {
 		if ($this->isConfigured() === false) {
@@ -200,7 +200,7 @@ class WebPushService {
 	 *
 	 * @return WebPush The configured client.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	private function buildWebPush(): WebPush {
 		$auth = [

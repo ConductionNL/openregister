@@ -2527,7 +2527,7 @@ class RenderObject {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	private function applyWatcherMarkers(ObjectEntity $entity): void {
 		if ($this->container === null) {
@@ -2587,7 +2587,7 @@ class RenderObject {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	private function applyReadStateMarkers(ObjectEntity $entity): void {
 		if ($this->container === null) {

@@ -12,7 +12,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-folder-is-bookkeeping/specs/file-actions/spec.md
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 declare(strict_types=1);

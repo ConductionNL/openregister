@@ -3442,7 +3442,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Schema>
 	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function getRelated(Schema|int|string $schema): array {
 		// If we received a Schema entity, get its ID, otherwise find the schema.

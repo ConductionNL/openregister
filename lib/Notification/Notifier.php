@@ -301,7 +301,7 @@ class Notifier implements INotifier {
 	 *
 	 * @return INotification The prepared notification
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	private function prepareOwnershipChanged(INotification $notification, $l): INotification {
 		$parameters = $notification->getSubjectParameters();
@@ -765,7 +765,6 @@ class Notifier implements INotifier {
 	 *
 	 * @return INotification The prepared notification
 	 *
-	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	private function prepareScheduledReportDelivered(INotification $notification, $l): INotification {

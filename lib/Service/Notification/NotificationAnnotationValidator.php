@@ -203,7 +203,7 @@ final class NotificationAnnotationValidator {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-5
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function validate(array $schema): array {
 		if (isset($schema['x-openregister-notifications']) === false) {
@@ -889,7 +889,7 @@ final class NotificationAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}>
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function validateActions(mixed $actions, string $name): array {
 		$errors = [];
@@ -1166,7 +1166,7 @@ final class NotificationAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}>
 	 *
-	 * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function validateMessage(mixed $message, string $name): array {
 		$code = 'notification-bad-message';

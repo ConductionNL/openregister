@@ -29,7 +29,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Builds + caches the cobalt-hex notification icon/badge per originApp.
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 class HexIconService {
 
@@ -95,7 +95,7 @@ class HexIconService {
 	 *
 	 * @return array{body: string, mime: string} The icon body + MIME type.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	public function getIcon(string $appId): array {
 		return $this->getOrRender(appId: $appId, badge: false);
@@ -108,7 +108,7 @@ class HexIconService {
 	 *
 	 * @return array{body: string, mime: string} The badge body + MIME type.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	public function getBadge(string $appId): array {
 		return $this->getOrRender(appId: $appId, badge: true);
@@ -122,7 +122,7 @@ class HexIconService {
 	 *
 	 * @return array{body: string, mime: string}
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	private function getOrRender(string $appId, bool $badge): array {
 		$safeApp = preg_replace('/[^a-z0-9_-]/', '', strtolower($appId)) ?? 'openregister';
@@ -173,7 +173,7 @@ class HexIconService {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	private function composite(string $appId, bool $badge): ?string {
 		$svgPath = $this->appSvgPath(appId: $appId);
