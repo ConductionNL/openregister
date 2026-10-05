@@ -39,7 +39,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+ * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use OCA\OpenRegister\Db\CaseItem;
 /**
  * zaaktype -> draft skeleton + report.
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+ * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
  */
 class ZaaktypeCaseSkeletonMapper {
 
@@ -99,7 +99,7 @@ class ZaaktypeCaseSkeletonMapper {
 	 *
 	 * @return array{draft: bool, definition: array<string, mixed>, report: array<int, array<string, string>>} The result.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	public function map(array $zaaktype): array {
 		$report = [];
@@ -150,7 +150,7 @@ class ZaaktypeCaseSkeletonMapper {
 	 *
 	 * @return array<int, array<string, mixed>> The items.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	private function mapStatuses(array $zaaktype, ?string $behandelaar, array $terms, array &$report): array {
 		$statuses = ($zaaktype['statustypen'] ?? []);
@@ -186,7 +186,7 @@ class ZaaktypeCaseSkeletonMapper {
 	 *
 	 * @return array<int, array<string, mixed>> The ordered statuses.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	private function orderStatuses(array $statuses, array &$report): array {
 		$ordered = [];
@@ -232,7 +232,7 @@ class ZaaktypeCaseSkeletonMapper {
 	 *
 	 * @return array<string, mixed> The stage node.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	private function stageFor(array $status, int $number, ?string $behandelaar, array $terms, ?string $previousMilestone): array {
 		$label = (string)($status['omschrijving'] ?? ('status ' . $number));
@@ -289,7 +289,7 @@ class ZaaktypeCaseSkeletonMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	private function reportStatus(array $status, array $stage, array &$report): void {
 		$number = (string)($status['volgnummer'] ?? '-');
@@ -326,7 +326,7 @@ class ZaaktypeCaseSkeletonMapper {
 	 *
 	 * @return string|null The behandelaar role name, when one is declared.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	private function mapRoles(array $zaaktype, array &$settings, array &$report): ?string {
 		$roles = ($zaaktype['roltypen'] ?? []);
@@ -391,7 +391,7 @@ class ZaaktypeCaseSkeletonMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	private function mapResults(array $zaaktype, array &$settings, array &$report): void {
 		$results = ($zaaktype['resultaattypen'] ?? []);
@@ -460,7 +460,7 @@ class ZaaktypeCaseSkeletonMapper {
 	 *
 	 * @return array<string, string|null> The two terms.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	private function mapTerms(array $zaaktype, array &$settings, array &$report): array {
 		$terms = [];
@@ -492,7 +492,7 @@ class ZaaktypeCaseSkeletonMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	private function reportRest(array $zaaktype, array &$report): void {
 		foreach ($zaaktype as $element => $value) {
@@ -524,7 +524,7 @@ class ZaaktypeCaseSkeletonMapper {
 	 *
 	 * @return array<string, string> The line.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	private function entry(string $element, string $status, string $reason, string $action): array {
 		return ['element' => $element, 'status' => $status, 'reason' => $reason, 'action' => $action];
@@ -537,7 +537,7 @@ class ZaaktypeCaseSkeletonMapper {
 	 *
 	 * @return string Lower-case letters, digits and dashes.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	private function slug(string $text): string {
 		$slug = strtolower(trim((string)preg_replace('/[^A-Za-z0-9]+/', '-', $text), '-'));

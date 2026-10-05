@@ -22,7 +22,7 @@
  *
  * @template-extends QBMapper<TaskCandidate>
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<TaskCandidate>
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
  */
 class TaskCandidateMapper extends QBMapper {
 
@@ -59,7 +59,7 @@ class TaskCandidateMapper extends QBMapper {
 	 *
 	 * @return array<int, TaskCandidate> The rows.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	public function findForTask(int $taskId): array {
 		$qb = $this->db->getQueryBuilder();
@@ -83,7 +83,7 @@ class TaskCandidateMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	public function replaceForTask(int $taskId, array $candidates): void {
 		$qb = $this->db->getQueryBuilder();

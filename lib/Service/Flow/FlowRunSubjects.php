@@ -39,7 +39,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+ * @spec openspec/specs/flow-run-subjects/spec.md
  */
 
 declare(strict_types=1);
@@ -68,7 +68,7 @@ class FlowRunSubjects {
 	 *
 	 * @param LoggerInterface|null $logger Where a REPLACEMENT is recorded.
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function __construct(private readonly ?LoggerInterface $logger = null) {
 
@@ -81,7 +81,7 @@ class FlowRunSubjects {
 	 *
 	 * @return array<string, array<string, mixed>> The declared subjects.
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function all(FlowRun $run): array {
 		$subjects = $run->getSubjects();
@@ -101,7 +101,7 @@ class FlowRunSubjects {
 	 *
 	 * @return array<int, string> The roles, sorted so a refusal reads the same twice.
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function roles(FlowRun $run): array {
 		$roles = array_keys($this->all(run: $run));
@@ -135,7 +135,7 @@ class FlowRunSubjects {
 	 *
 	 * @throws UnexpectedValueException When the role or the uuid is empty.
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function record(
 		FlowRun $run,
@@ -197,7 +197,7 @@ class FlowRunSubjects {
 	 *
 	 * @throws UnexpectedValueException When the run holds no such role.
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function addressed(FlowRun $run, string $role): array {
 		$role = trim($role);

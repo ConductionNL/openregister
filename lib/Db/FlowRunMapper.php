@@ -93,7 +93,7 @@ class FlowRunMapper extends QBMapper {
 	 *
 	 * @return FlowRun The updated run.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
 	 */
 	public function update(Entity $entity): FlowRun {
 		if ($entity instanceof FlowRun === false) {
@@ -147,7 +147,7 @@ class FlowRunMapper extends QBMapper {
 	 *
 	 * @return array<int, FlowRun> Zero, one or two suspended runs.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
 	 */
 	public function findSuspendedByCorrelationKey(string $correlationKey): array {
 		$qb = $this->db->getQueryBuilder();
@@ -1278,7 +1278,7 @@ class FlowRunMapper extends QBMapper {
 	 *
 	 * @return integer The number of non-terminal runs pinned to that version.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function countActivePinnedTo(string $flowUuid, int $version): int {
 		$qb = $this->db->getQueryBuilder();
@@ -1308,7 +1308,7 @@ class FlowRunMapper extends QBMapper {
 	 *
 	 * @return integer The number of runs pinned.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function pinUnversionedActive(string $flowUuid, int $version): int {
 		$qb = $this->db->getQueryBuilder();

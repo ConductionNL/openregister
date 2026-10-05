@@ -32,7 +32,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+ * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
  */
 
 declare(strict_types=1);
@@ -67,7 +67,7 @@ use Throwable;
  * between HTTP, the service, the mapper and four exception shapes; that is
  * the whole of its job.
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+ * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
  */
 class CaseController extends Controller {
 
@@ -105,7 +105,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse results, total, limit, offset.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -120,7 +120,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse draft, definition, report.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -144,7 +144,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse The plan; 404 when absent OR invisible.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -164,7 +164,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse The plan, 201.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -197,7 +197,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse passes, transitions.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -212,7 +212,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse results.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -246,7 +246,7 @@ class CaseController extends Controller {
 	 * boolean field of the item, bound from the body like the others, not a
 	 * behaviour switch of this method.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -305,7 +305,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse The plan plus `result`.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -328,7 +328,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse deleted.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -345,7 +345,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse The item.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -368,7 +368,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse The item.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -381,7 +381,7 @@ class CaseController extends Controller {
 	 *
 	 * @return string|null The uid.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	private function uid(): ?string {
 		return $this->userSession->getUser()?->getUID();
@@ -401,7 +401,7 @@ class CaseController extends Controller {
 	 *
 	 * @return JSONResponse The response.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	private function guard(callable $action, int $status = Http::STATUS_OK): JSONResponse {
 		try {

@@ -416,7 +416,7 @@ class LockObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	private function recordSubject(array $targets, array $config, array $context): void {
 		// The empty role is NOT guarded here. Recording is opt-in and the

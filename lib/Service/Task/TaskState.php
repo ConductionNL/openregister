@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use OCA\OpenRegister\Exception\TaskValidationException;
 /**
  * Resolves any fleet status vocabulary onto the six CMMN states.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
  */
 final class TaskState {
 
@@ -119,7 +119,7 @@ final class TaskState {
 	 *         vocabulary, or not in the declared source vocabulary. Never
 	 *         coerced to a default.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
 	 */
 	public static function normalise(string $value, ?array $sourceVocabulary = null): array {
 		$trimmed = trim($value);
@@ -151,7 +151,7 @@ final class TaskState {
 	 *
 	 * @return boolean True for completed, terminated and disabled.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
 	 */
 	public static function isTerminal(string $state): bool {
 		return in_array($state, Task::TERMINAL_STATES, true);
@@ -164,7 +164,7 @@ final class TaskState {
 	 *
 	 * @return boolean True when a non-empty comment is mandatory.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public static function isRejectingOutcome(?string $outcome): bool {
 		if ($outcome === null) {
@@ -179,7 +179,7 @@ final class TaskState {
 	 *
 	 * @return array<string, array{0: string, 1: string|null}> value => [state, outcome].
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
 	 */
 	public static function mapping(): array {
 		return self::LEGACY;

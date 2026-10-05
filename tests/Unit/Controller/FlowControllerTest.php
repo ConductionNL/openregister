@@ -986,7 +986,7 @@ class FlowControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function testAdoptSetsTheCallerAsOwner(): void {
 		$flow = new Flow();
@@ -1012,7 +1012,7 @@ class FlowControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function testAdoptIsRefusedWithoutTheRight(): void {
 		$denying = $this->createMock(\OCA\OpenRegister\Service\OpenRegisterActionAuthService::class);
@@ -1040,7 +1040,7 @@ class FlowControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function testAdoptRequiresASession(): void {
 		$anonymous = $this->createMock(IUserSession::class);
@@ -1069,7 +1069,7 @@ class FlowControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function testAdoptAnswersNotFoundForAFlowTheCallerMayNotSee(): void {
 		$this->flows->method('find')->willThrowException(
@@ -1086,7 +1086,7 @@ class FlowControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function testAdoptAnswersConflictWhenAlreadyOwned(): void {
 		$flow = new Flow();

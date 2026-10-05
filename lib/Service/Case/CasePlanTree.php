@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+ * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCA\OpenRegister\Db\CaseItem;
  * question the evaluator, the completion rule and the authorization ask;
  * the tree is a read-only query vocabulary, like a mapper.
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+ * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
  */
 class CasePlanTree {
 
@@ -82,7 +82,7 @@ class CasePlanTree {
 	 *
 	 * @return array<int, CaseItem> The rows, keyed by id.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	public function all(): array {
 		return $this->byId;
@@ -95,7 +95,7 @@ class CasePlanTree {
 	 *
 	 * @return CaseItem|null The row, or null.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	public function byId(?int $id): ?CaseItem {
 		if ($id === null) {
@@ -112,7 +112,7 @@ class CasePlanTree {
 	 *
 	 * @return array<int, CaseItem> The children.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	public function children(?int $parentId): array {
 		$rows = [];
@@ -130,7 +130,7 @@ class CasePlanTree {
 	 *
 	 * @return array<int, CaseItem> The descendants.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	public function descendants(int $parentId): array {
 		$rows = [];
@@ -151,7 +151,7 @@ class CasePlanTree {
 	 *
 	 * @return CaseItem|null The parent stage.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	public function parentOf(CaseItem $item): ?CaseItem {
 		return $this->byId(id: $item->getParentItemId());
@@ -164,7 +164,7 @@ class CasePlanTree {
 	 *
 	 * @return array<int, CaseItem> The ancestors.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function ancestors(CaseItem $item): array {
 		$chain = [];
@@ -187,7 +187,7 @@ class CasePlanTree {
 	 *
 	 * @return boolean True when the containing stage is active or absent.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	public function isParentActive(CaseItem $item): bool {
 		$parent = $this->parentOf(item: $item);
@@ -205,7 +205,7 @@ class CasePlanTree {
 	 *
 	 * @return array<int, CaseItem> The rows, oldest first.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	public function rowsForKey(string $key): array {
 		$rows = [];
@@ -225,7 +225,7 @@ class CasePlanTree {
 	 *
 	 * @return boolean True when some row of that key is in that state.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	public function keyHasState(string $key, string $state): bool {
 		foreach ($this->rowsForKey(key: $key) as $row) {
@@ -245,7 +245,7 @@ class CasePlanTree {
 	 *
 	 * @return boolean True when nothing of that key can still move.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	public function isItemTerminal(CaseItem $item): bool {
 		$rows = $this->rowsForKey(key: (string)$item->getItemKey());
@@ -274,7 +274,7 @@ class CasePlanTree {
 	 *
 	 * @return boolean True when no further realisation may be created.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	public function repetitionExhausted(CaseItem $item): bool {
 		$rule = $item->getRepetition();
@@ -303,7 +303,7 @@ class CasePlanTree {
 	 *
 	 * @return boolean True when the stage may auto-complete.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	public function stageMayComplete(CaseItem $stage): bool {
 		$mandatoryFound = false;
@@ -331,7 +331,7 @@ class CasePlanTree {
 	 *
 	 * @return array<string, string> key => state.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	public function stateMap(): array {
 		$map = [];
@@ -357,7 +357,7 @@ class CasePlanTree {
 	 *
 	 * @return array<string, mixed> The settings; empty for a plan with none.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function settings(): array {
 		foreach ($this->byId as $row) {

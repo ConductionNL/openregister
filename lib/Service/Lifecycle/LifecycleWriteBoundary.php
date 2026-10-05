@@ -144,7 +144,7 @@ final class LifecycleWriteBoundary {
 	 *
 	 * @return ObjectEntity Whatever $write returned.
 	 *
-	 * @spec openspec/changes/transition-as-system/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function runningAsSystem(string $uuid, string $app, callable $write): ObjectEntity {
 		$this->actions->enterSystem(uuid: $uuid, app: $app);

@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -74,7 +74,7 @@ class ViewHistoryService {
 	 *
 	 * @return string|null The uid, or null when anonymous.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function callerUid(): ?string {
 		return $this->userSession->getUser()?->getUID();
@@ -96,7 +96,7 @@ class ViewHistoryService {
 	 *
 	 * @return ObjectView|null The stored row, or null when nothing was written.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
 	 */
 	public function recordView(
 		ObjectEntity $object,
@@ -142,7 +142,7 @@ class ViewHistoryService {
 	 *
 	 * @return array<int, string> The viewed object uuids, newest first.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
 	 */
 	public function recentUuidsForCaller(?int $limit = null): array {
 		$uid = $this->callerUid();
@@ -172,7 +172,7 @@ class ViewHistoryService {
 	 *
 	 * @return integer How many views were removed.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
 	 */
 	public function cleanupForObject(string $objectUuid): int {
 		if ($objectUuid === '') {
@@ -192,7 +192,7 @@ class ViewHistoryService {
 	 *
 	 * @return boolean True when the last recorded view is younger than the window.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
 	 */
 	private function isThrottled(string $userId, string $objectUuid, DateTime $now): bool {
 		$existing = $this->mapper->findOne(userId: $userId, objectUuid: $objectUuid);

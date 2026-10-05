@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
  */
 
 declare(strict_types=1);
@@ -176,7 +176,7 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.ExcessivePublicCount) Entity getters/setters are
  * the column surface, not an API design choice.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
  */
 class Task extends Entity implements JsonSerializable {
 
@@ -847,7 +847,7 @@ class Task extends Entity implements JsonSerializable {
 	 *
 	 * @return boolean True when the state is terminal.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
 	 */
 	public function isInTerminalState(): bool {
 		return in_array($this->state, self::TERMINAL_STATES, true);
@@ -860,7 +860,7 @@ class Task extends Entity implements JsonSerializable {
 	 *
 	 * @return self This task.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function hydrate(array $object): self {
 		foreach ($object as $fieldName => $value) {
@@ -886,7 +886,7 @@ class Task extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The task as plain data.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function jsonSerialize(): array {
 		return [

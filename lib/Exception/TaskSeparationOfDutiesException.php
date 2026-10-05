@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-009
+ * @spec openspec/specs/approval-workflow/spec.md#req-009
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use RuntimeException;
 /**
  * A refused self-decision on an approval sequence.
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-009
+ * @spec openspec/specs/approval-workflow/spec.md#req-009
  */
 class TaskSeparationOfDutiesException extends RuntimeException {
 }//end class

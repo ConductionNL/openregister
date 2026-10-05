@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Service\Quality;
  * hundred and ninety-nine, and a warning attached to the wrong record is worse
  * than none. Reading clears.
  *
- * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+ * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
  */
 class UniqueHintWarnings {
 
@@ -59,7 +59,7 @@ class UniqueHintWarnings {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `$visible` is part of the
 	 *   warning, not a switch over how to record it: the spec asks for a
@@ -80,7 +80,7 @@ class UniqueHintWarnings {
 	 *
 	 * @return array<int, array{property: string, matches: array<int, string>, visible: bool}> The warnings.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function drain(): array {
 		$warnings = $this->warnings;

@@ -739,6 +739,10 @@ MUST be `skip` with a `reason`. Every `update` row, for registers and schemas as
 well as objects, MUST list the fields it changes as `{field, current, proposed}`:
 only keys the remote side carries are compared, nested maps by dotted path,
 lists whole, and a row's own `id`, `uuid`, `created` and `updated` are ignored.
+An object row MUST compare what the import would write: its `@self.version`
+(which only gates the update) is not a change, and the seed format's top-level
+`uuid` and `slug` are not compared unless the schema declares a property of
+that name, because the import strips them from the data.
 
 #### Scenario: A remote object can be selected from its row
 - **GIVEN** a remote object `omgevingsvergunning` in register `zaken` and schema `zaaktype`, both present locally, and no such object locally
@@ -755,6 +759,11 @@ lists whole, and a row's own `id`, `uuid`, `created` and `updated` are ignored.
 - **GIVEN** a local object at the same version as the remote one
 - **WHEN** the preview is built
 - **THEN** its row MUST be `skip` with a reason naming the versions and no changes
+
+#### Scenario: A seeded object's identity and version are no change
+- **GIVEN** a local object `livepass-lane11-a1` stored at version `0.0.1` with colour `red`, imported from a seed that carries a top-level `slug` and `uuid`
+- **WHEN** the preview is built for the seed at version `1.0.1` with colour `blue`
+- **THEN** its row MUST be `update` and its changes MUST be exactly `colour` from `red` to `blue`
 
 ### Requirement: ConfigurationService MUST track and compare imported-configuration versions @e2e exclude backend version check/compare logic — covered by PHPUnit
 
@@ -1047,12 +1056,14 @@ unaffected by this requirement.
 
 ### Requirement: Seed metadata keys are not stored as data
 
-A seed object under `x-openregister.seedData` carries its `uuid` and `slug` at
-the top level. The importer SHALL use them for the idempotency lookup and set
-them as the object's metadata, and SHALL remove them from the object's data
-before it is written, unless the target schema declares a property of that
-name. A seed import MUST NOT make the storage layer report `uuid` or `slug` as
-discarded undeclared properties.
+A seed object under `x-openregister.seedData`, and an object listed under a
+configuration's `components.objects`, carries its `uuid` and `slug` at the top
+level. The importer SHALL use them for the idempotency lookup and set them as
+the object's metadata, and SHALL remove them from the object's data before it
+is written, unless the target schema declares a property of that name. For a
+listed object an `@self.uuid` SHALL win over the top-level `uuid`. An import
+MUST NOT make the storage layer report `uuid` or `slug` as discarded
+undeclared properties.
 
 #### Scenario: A schema that declares neither key
 - **GIVEN** a seed object with top-level `uuid` and `slug` for a schema that
@@ -1066,6 +1077,26 @@ discarded undeclared properties.
 - **GIVEN** the same seed object for a schema that declares a `slug` property
 - **WHEN** the seed data is imported
 - **THEN** the object's data keeps `slug` and drops `uuid`
+
+#### Scenario: An object listed under components.objects
+- **GIVEN** a configuration listing an object under `components.objects` with
+  `@self.slug`, a top-level `uuid` and a top-level `slug`, for a schema that
+  declares neither
+- **WHEN** the configuration is imported and the object does not exist yet
+- **THEN** the object is created under the listed uuid
+- **AND** its data holds neither `uuid` nor `slug`
+- @e2e exclude {import path, covered by ImportHandlerComponentsObjectsIdentityTest}
+
+### Requirement: A remote configuration is read by its content, not its Content-Type
+
+Fetching a configuration from a remote source (github, gitlab or url) SHALL try to decode the body as JSON and then as YAML whatever Content-Type the source answers with; the Content-Type SHALL only decide which is tried first. A body that decodes to neither SHALL be refused with 400 naming the Content-Type.
+
+#### Scenario: a configuration on raw GitHub is previewed
+
+- **GIVEN** a configuration with sourceType github and sourceUrl on raw.githubusercontent.com, which answers valid JSON as `text/plain; charset=utf-8`
+- **WHEN** an administrator opens its preview
+- **THEN** the preview lists what an import would change instead of answering "Failed to parse response body as JSON or YAML"
+- @e2e exclude {remote fetch decoding, covered by FetchHandlerTest}
 
 ### Requirement: An app configuration import MUST run under its own import job id
 

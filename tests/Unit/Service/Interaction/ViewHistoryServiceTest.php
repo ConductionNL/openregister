@@ -12,7 +12,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
+ * @spec openspec/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
  */
 
 declare(strict_types=1);

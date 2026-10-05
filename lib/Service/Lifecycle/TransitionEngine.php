@@ -349,7 +349,7 @@ class TransitionEngine {
 	 * @throws InvalidArgumentException When `$app` is empty.
 	 * @throws RuntimeException As transition() does, including a guard refusal.
 	 *
-	 * @spec openspec/changes/transition-as-system/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function transitionAsSystem(string $objectId, string $action, string $app, array $data = []): ObjectEntity {
 		$app = trim($app);
@@ -543,7 +543,6 @@ class TransitionEngine {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/transition-as-system/specs/object-lifecycle/spec.md
 	 */
 	private function applyToSubject(array $subject, string $action, array $data, bool $asSystem = false): ObjectEntity {
 		$object = $subject['object'];
@@ -768,7 +767,6 @@ class TransitionEngine {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/transition-as-system/specs/object-lifecycle/spec.md
 	 */
 	private function applyProviderTransition(
 		ObjectEntity $object,
@@ -914,7 +912,7 @@ class TransitionEngine {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
 	 */
 	public function availableActions(string $objectId): array {
 		$object = $this->findVisibleSubject(objectId: $objectId);
@@ -1296,7 +1294,7 @@ class TransitionEngine {
 	 * @return array{action:string, to:string, label:string, requires:?string, description:?string, inputs:array<int,array{field:string,required:bool}>}
 	 *
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
 	 */
 	private function buildGraphAction(ObjectEntity $sibling): array {
 		$uuid = (string)$sibling->getUuid();
@@ -1335,7 +1333,7 @@ class TransitionEngine {
 	 *
 	 * @return array<int, array{field: string, required: bool}>|null The declared inputs, or null when the action is not declared.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-a-transition-may-declare-inputs-bounding-the-payload-it-accepts
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-transition-may-declare-inputs-bounding-the-payload-it-accepts
 	 */
 	public function declaredInputs(Schema $schema, string $action): ?array {
 		$annotation = $this->getLifecycleAnnotation(schema: $schema);
@@ -1364,7 +1362,7 @@ class TransitionEngine {
 	 *
 	 * @return array<int, array{field: string, required: bool}> The published list, in declaration order.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
 	 */
 	private function publishedInputs(array $inputs): array {
 		$published = [];
@@ -1407,7 +1405,7 @@ class TransitionEngine {
 	 *                          key, or a `required` input is absent or empty-string.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-a-transition-may-declare-inputs-bounding-the-payload-it-accepts
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-transition-may-declare-inputs-bounding-the-payload-it-accepts
 	 */
 	public function resolveTransitionInputs(array $inputs, array $data, string $action): array {
 		$declared = $this->normaliseDeclaredInputs(inputs: $inputs);
@@ -1526,7 +1524,7 @@ class TransitionEngine {
 	 * @throws InvalidTransitionInputException When `$data` is non-empty.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
-	 * @spec openspec/changes/transition-as-system/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
 	 */
 	private function applyGraphTransition(

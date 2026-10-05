@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use DateTime;
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag) isAdmin and sortDescending
  * are filter VALUES carried into the WHERE/ORDER BY, not behaviour switches.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
  */
 final class TaskInboxCriteria {
 
@@ -113,7 +113,7 @@ final class TaskInboxCriteria {
 	 *                          in the list on purpose: every caller names its
 	 *                          arguments, and appending cannot shift one.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	public function __construct(
 		public readonly string $uid,

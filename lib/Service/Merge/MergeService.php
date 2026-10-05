@@ -184,7 +184,7 @@ class MergeService {
 	 * @throws MergeNotFullyReadableException When either object carries a property the caller may not read.
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.2
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
 	 */
 	public function previewMerge(string $from, string $into): array {
 		if ($from === $into) {
@@ -992,7 +992,7 @@ class MergeService {
 	 *
 	 * @throws MergeNotFullyReadableException When either object carries an unreadable property.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
 	 */
 	private function guardFullyReadable(ObjectEntity $fromObject, ObjectEntity $intoObject, ?Schema $schema): void {
 		if ($schema === null || $schema->hasPropertyAuthorization() === false) {
@@ -1038,7 +1038,7 @@ class MergeService {
 	 *
 	 * @return array<int, string> Property names, never values.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
 	 */
 	private function unreadablePropertiesOf(ObjectEntity $object, Schema $schema): array {
 		$raw = $this->loadUnrendered(uuid: (string)$object->getUuid());
@@ -1076,7 +1076,7 @@ class MergeService {
 	 *
 	 * @return ObjectEntity|null The object, or null when it cannot be read.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
 	 */
 	private function loadUnrendered(string $uuid): ?ObjectEntity {
 		try {
@@ -1104,7 +1104,7 @@ class MergeService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
 	 */
 	private function auditAttemptedMerge(ObjectEntity $fromObject, ObjectEntity $intoObject, array $properties): void {
 		$context = [
@@ -1149,7 +1149,7 @@ class MergeService {
 	 *
 	 * @return array<string, array{from: mixed, into: mixed, proposed: mixed, proposedFrom: string}>
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
 	 */
 	private function fieldChoices(
 		array $fromData,
@@ -1195,7 +1195,7 @@ class MergeService {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
 	 */
 	private function machineryFields(array $config, array $survivorshipConfig): array {
 		return array_values(
@@ -1244,7 +1244,7 @@ class MergeService {
 	 *
 	 * @throws MergeDecisionException When the map and the preview disagree.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
 	 */
 	private function overridesFromDecisions(array $choices, array $decisions, string $decidedBy, string $reason): array {
 		$unknown = array_values(array_diff(array_keys($decisions), array_keys($choices)));

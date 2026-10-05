@@ -30,7 +30,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
+ * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Throwable;
 /**
  * Write migrated decisions back onto the kept approval-step rows.
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
+ * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
  *
  * @SuppressWarnings(PHPMD.StaticAccess) TaskState is the published,
  * stateless state vocabulary; calling it statically is the point.
@@ -75,7 +75,7 @@ class RollbackApprovalMigrationCommand extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:approval:rollback-to-steps')
@@ -98,7 +98,7 @@ class RollbackApprovalMigrationCommand extends Command {
 	 *
 	 * @return int Zero on success.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$dryRun = ((bool)$input->getOption('dry-run') === true);

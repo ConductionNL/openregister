@@ -33,7 +33,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -49,7 +49,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Create the definition and version stores, and the columns that point at them.
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 class Version1Date20260829090000 extends SimpleMigrationStep {
 	/**
@@ -61,7 +61,7 @@ class Version1Date20260829090000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper|null The modified schema, or null when nothing changed.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
@@ -94,7 +94,7 @@ class Version1Date20260829090000 extends SimpleMigrationStep {
 	 *
 	 * @return boolean Whether anything changed.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function definitionStore(ISchemaWrapper $schema): bool {
 		$changed = false;
@@ -155,7 +155,7 @@ class Version1Date20260829090000 extends SimpleMigrationStep {
 	 *
 	 * @return boolean Whether anything changed.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function versionStore(ISchemaWrapper $schema): bool {
 		$changed = false;
@@ -256,7 +256,7 @@ class Version1Date20260829090000 extends SimpleMigrationStep {
 	 *
 	 * @return boolean Whether anything changed.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function pinColumns(ISchemaWrapper $schema): bool {
 		$changed = false;

@@ -412,7 +412,7 @@ class DecisionTableEvaluator {
 	 *
 	 * @return string One of {@see UnaryTestEvaluator::VALID_TYPES}.
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
 	public static function effectiveType(string $type): string {
 		$lower = strtolower($type);

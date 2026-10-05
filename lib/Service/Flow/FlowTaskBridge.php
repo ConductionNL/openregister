@@ -34,7 +34,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+ * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
  */
 
 declare(strict_types=1);
@@ -137,7 +137,7 @@ class FlowTaskBridge {
 	 * @throws \OCA\OpenRegister\Exception\TaskValidationException When the task builder refuses a value.
 	 * @throws \OCA\OpenRegister\Exception\TaskAccessDeniedException Without an acting identity.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
 	 */
 	public function createTask(array $data, string $runUuid, string $nodeId, ?string $actor): Task {
 		$data['runUuid'] = $runUuid;
@@ -206,7 +206,7 @@ class FlowTaskBridge {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
 	 */
 	public function recordHeartbeatRecovery(Task $task): void {
 		try {
@@ -247,7 +247,7 @@ class FlowTaskBridge {
 	 *
 	 * @return Task|null The task, or null when no row carries that uuid.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
 	 */
 	public function taskOrNull(string $uuid): ?Task {
 		try {
@@ -290,7 +290,7 @@ class FlowTaskBridge {
 	 *
 	 * @return array<string, mixed> The outcome bag.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
 	 */
 	public static function outcomeBagFor(Task $task): array {
 		$state = (string)$task->getState();
@@ -341,7 +341,7 @@ class FlowTaskBridge {
 	 *
 	 * @return FlowRun|null The run after this call, or null when it was not suspended.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public function continueRun(Task $task): ?FlowRun {
 		$runUuid = trim((string)$task->getRunUuid());
@@ -425,7 +425,7 @@ class FlowTaskBridge {
 	 *
 	 * @return string|null The stream id, or null.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	private function streamParkedOn(string $runUuid, string $nodeId): ?string {
 		if ($nodeId === '') {
@@ -471,7 +471,7 @@ class FlowTaskBridge {
 	 *
 	 * @return FlowAdvanceBudget The budget.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	private function budgetFor(FlowRun $run, string $nodeId): FlowAdvanceBudget {
 		$slots = FlowResumeState::fromArray(($run->getContext() ?? [])[FlowResumeState::CONTEXT_KEY] ?? null);
@@ -501,7 +501,7 @@ class FlowTaskBridge {
 	 * @return integer|null The pinned version; null for a test run of a draft
 	 *                      or a run that cannot be read.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
 	 */
 	private function definitionVersionOf(string $runUuid): ?int {
 		try {

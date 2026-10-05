@@ -92,5 +92,5 @@ above.
 
 ## Specification
 
-`openspec/changes/favourites-and-recent/`, in the `object-interactions`
+`openspec/changes/archive/2026-10-05-favourites-and-recent/`, in the `object-interactions`
 capability.

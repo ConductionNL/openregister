@@ -317,7 +317,7 @@ class SearchQueryHandler {
 	 *
 	 * @return array<string, mixed> The query, carrying the resolved user.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
 	 */
 	private function applyPersonalLenses(array $query): array {
 		// Asked-for flag to the key the mapper reads.

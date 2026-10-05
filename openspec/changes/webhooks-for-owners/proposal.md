@@ -93,7 +93,7 @@ specify it. The open change `flow-messaging-nodes` carries a requirement that
 "`activity`, `webhook` and `web-push` SHALL NOT be flow node types", with the
 scenario "no `openregister.send-webhook` node MUST exist" and "the documented
 path is an `openconnector.source-call` node against a configured source"
-(`openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md:149-161`).
+(`openspec/specs/flow-messaging-nodes/spec.md:149-161`).
 `openconnector.source-call` is a live contributed node (recorded off the node
 catalogue in `openspec/changes/flow-parity-mapping-and-webhooks/proposal.md`,
 section 3). A flow that writes a record also raises the object events these

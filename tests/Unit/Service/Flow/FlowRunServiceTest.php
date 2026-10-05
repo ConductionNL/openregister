@@ -772,7 +772,7 @@ class FlowRunServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
 	public function testTheRunsFlowIdReachesTheNodeContext(): void {
 		$run = $this->service->queue('f1', ['uuid' => 'u1'], 'object.created', ['flowId' => 'forged'], 'alice');

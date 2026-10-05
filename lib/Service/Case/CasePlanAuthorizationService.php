@@ -32,7 +32,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+ * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use Throwable;
 /**
  * The case layer's authorization decisions.
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+ * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
  */
 class CasePlanAuthorizationService {
 
@@ -77,7 +77,7 @@ class CasePlanAuthorizationService {
 	 *
 	 * @throws CaseAccessDeniedException Without one.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function assertIdentified(?string $uid, string $verb): string {
 		$identity = trim((string)$uid);
@@ -95,7 +95,7 @@ class CasePlanAuthorizationService {
 	 *
 	 * @return boolean True only when the group backend affirms it.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function isAdministrator(?string $uid): bool {
 		if ($uid === null || trim($uid) === '' || $this->groupManager === null) {
@@ -121,7 +121,7 @@ class CasePlanAuthorizationService {
 	 *
 	 * @throws CaseAccessDeniedException When denied or indeterminate.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function assertMayAct(string $verb, ?CaseItem $item, CasePlanTree $tree, ?string $uid): void {
 		$identity = $this->assertIdentified(uid: $uid, verb: $verb);
@@ -144,7 +144,7 @@ class CasePlanAuthorizationService {
 	 *
 	 * @throws CaseAccessDeniedException When denied or indeterminate.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function assertMayAdminister(string $verb, array $settings, ?string $uid): void {
 		$identity = $this->assertIdentified(uid: $uid, verb: $verb);
@@ -164,7 +164,7 @@ class CasePlanAuthorizationService {
 	 *
 	 * @return mixed The rule list, or null.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function effectiveRules(?CaseItem $item, CasePlanTree $tree): mixed {
 		if ($item !== null) {
@@ -195,7 +195,7 @@ class CasePlanAuthorizationService {
 	 *
 	 * @throws CaseAccessDeniedException When no rule admits the caller.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	private function assertHolds(string $verb, mixed $rules, string $uid): void {
 		if (is_array($rules) === false || $rules === []) {
@@ -227,7 +227,7 @@ class CasePlanAuthorizationService {
 	 *
 	 * @throws CaseAccessDeniedException When a role cannot be resolved.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	private function ruleAdmits(string $verb, mixed $rule, string $uid): bool {
 		if (is_string($rule) === false || trim($rule) === '') {
@@ -257,7 +257,7 @@ class CasePlanAuthorizationService {
 	 *
 	 * @return boolean True only when the backend affirms membership.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	private function isInGroup(string $uid, string $groupId): bool {
 		if ($this->groupManager === null || $groupId === '') {
@@ -281,7 +281,7 @@ class CasePlanAuthorizationService {
 	 *
 	 * @throws CaseAccessDeniedException When it does not, or cannot be checked.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	private function assertRoleResolvable(string $verb, string $role): void {
 		if ($this->groupManager === null) {

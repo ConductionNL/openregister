@@ -264,7 +264,7 @@ class RateLimiter {
 	 *
 	 * @return string Cache key.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
 	private function sharedKey(string $recipient): string {
 		return 'notification:rate:shared:' . sha1($recipient);

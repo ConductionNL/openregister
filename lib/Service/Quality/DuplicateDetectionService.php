@@ -333,7 +333,7 @@ class DuplicateDetectionService {
 	 *
 	 * @return string A hex digest, or an empty string when there is nothing to fingerprint.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function pairFingerprint(array $dataA, array $dataB, array $rules): string {
 		$rules = $this->sanitiseRules(rules: $rules);
@@ -358,7 +358,7 @@ class DuplicateDetectionService {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	private function fingerprintSide(array $data, array $rules): string {
 		$parts = [];
@@ -388,7 +388,7 @@ class DuplicateDetectionService {
 	 *
 	 * @return array<int, array<string, mixed>> The effective match rules, empty when none are usable.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function effectiveRules($register, $schema): array {
 		$config = $this->resolveConfig(register: $register, schema: $schema, matchRules: null, threshold: null);
@@ -418,7 +418,7 @@ class DuplicateDetectionService {
 	 *
 	 * @return array<int, array<string, mixed>> The pairs still worth offering.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) `DismissedPairStore::key()` is a pure
 	 *   function of two uuids with nothing to inject, and it has to be the SAME

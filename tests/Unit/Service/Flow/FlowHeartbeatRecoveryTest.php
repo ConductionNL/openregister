@@ -32,7 +32,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md
+ * @spec openspec/specs/flow-heartbeat-recovery/spec.md
  */
 
 declare(strict_types=1);
@@ -394,7 +394,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
 	 */
 	public function testAnInRequestAdvanceKeepsTheSiblingNodesParkedSlot(): void {
 		$run = $this->suspendedOnBothTasks();
@@ -438,7 +438,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-wake-re-reads-the-awaited-task-and-applies-a-terminal-outcome
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-wake-re-reads-the-awaited-task-and-applies-a-terminal-outcome
 	 */
 	public function testTheHeartbeatRecoversACompletionWhoseSignalWasRefused(): void {
 		$run = $this->suspendedOnBothTasks();
@@ -468,7 +468,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-wake-re-reads-the-awaited-task-and-applies-a-terminal-outcome
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-wake-re-reads-the-awaited-task-and-applies-a-terminal-outcome
 	 */
 	public function testAHeartbeatWakeWithTheTasksStillOpenParksAgainOnTheSameTasks(): void {
 		$run = $this->suspendedOnBothTasks();
@@ -491,7 +491,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-wake-re-reads-the-awaited-task-and-applies-a-terminal-outcome
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-wake-re-reads-the-awaited-task-and-applies-a-terminal-outcome
 	 */
 	public function testOnlyTheNodeWhoseTaskEndedRecovers(): void {
 		$run = $this->suspendedOnBothTasks();
@@ -527,7 +527,7 @@ class FlowHeartbeatRecoveryTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-wake-re-reads-the-awaited-task-and-applies-a-terminal-outcome
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-wake-re-reads-the-awaited-task-and-applies-a-terminal-outcome
 	 */
 	public function testACompletionThatRacedTheSuspensionIsRecoveredByTheHeartbeat(): void {
 		$run = $this->suspendedOnBothTasks();

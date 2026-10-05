@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-user-task-node/spec.md
+ * @spec openspec/specs/flow-user-task-node/spec.md
  */
 
 declare(strict_types=1);

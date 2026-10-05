@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
+ * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use OCP\EventDispatcher\Event;
 /**
  * Carries the completed sequence, its final task and the resolved status.
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
+ * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
  */
 class TaskSequenceCompletedEvent extends Event {
 
@@ -68,7 +68,7 @@ class TaskSequenceCompletedEvent extends Event {
 	 *
 	 * @return TaskSequence The sequence as persisted.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
 	 */
 	public function getSequence(): TaskSequence {
 		return $this->sequence;
@@ -79,7 +79,7 @@ class TaskSequenceCompletedEvent extends Event {
 	 *
 	 * @return Task The task whose completion completed the sequence.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
 	 */
 	public function getFinalTask(): Task {
 		return $this->finalTask;
@@ -90,7 +90,7 @@ class TaskSequenceCompletedEvent extends Event {
 	 *
 	 * @return string|null Who decided the final position.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
 	 */
 	public function getDecider(): ?string {
 		return $this->decider;
@@ -101,7 +101,7 @@ class TaskSequenceCompletedEvent extends Event {
 	 *
 	 * @return string The `statusOnApprove` the frozen declaration resolves to.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-four-approval-events-are-replaced-by-a-named-complete-mapping
 	 */
 	public function getStatusOnApprove(): string {
 		return $this->statusOnApprove;

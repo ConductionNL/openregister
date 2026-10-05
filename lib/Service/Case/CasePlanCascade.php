@@ -33,7 +33,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+ * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ use Throwable;
  * mapper, the machine, the evaluator, the realiser and the anchor reader
  * inside one transaction; that is the whole of its job.
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+ * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
  */
 class CasePlanCascade {
 
@@ -110,7 +110,7 @@ class CasePlanCascade {
 	 *
 	 * @throws CaseCascadeBoundException At the bound, after rolling back.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	public function evaluate(string $objectUuid, ?string $event = null, array $payload = [], ?string $actor = null): array {
 		if (isset($this->evaluating[$objectUuid]) === true) {
@@ -180,7 +180,7 @@ class CasePlanCascade {
 	 *
 	 * @return int How many transitions (or new rows) this pass produced.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	private function pass(string $objectUuid, ?string $event, array $payload, ?string $actor): int {
 		$rows = $this->items->findByObject(objectUuid: $objectUuid);
@@ -215,7 +215,7 @@ class CasePlanCascade {
 	 *
 	 * @return int Transitions made.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
 	 */
 	private function syncRealisations(CasePlanTree $tree): int {
 		$count = 0;
@@ -254,7 +254,7 @@ class CasePlanCascade {
 	 *
 	 * @return int Transitions made.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	private function applyExits(CasePlanTree $tree, array $object, ?string $event, array $payload): int {
 		$count = 0;
@@ -295,7 +295,7 @@ class CasePlanCascade {
 	 *
 	 * @return int Transitions made.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	private function applyEntries(CasePlanTree $tree, array $object, ?string $event, array $payload): int {
 		$count = 0;
@@ -341,7 +341,7 @@ class CasePlanCascade {
 	 *
 	 * @return int Transitions made.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	private function startEnabled(CasePlanTree $tree, ?string $actor): int {
 		$count = 0;
@@ -373,7 +373,7 @@ class CasePlanCascade {
 	 *
 	 * @return int Transitions made.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	private function completeStages(CasePlanTree $tree): int {
 		$count = 0;
@@ -410,7 +410,7 @@ class CasePlanCascade {
 	 *
 	 * @return int Rows created.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	private function repeat(CasePlanTree $tree): int {
 		$count = 0;
@@ -455,7 +455,7 @@ class CasePlanCascade {
 	 *
 	 * @return CaseItem The unsaved row.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	private function nextRealisation(CaseItem $previous, int $count): CaseItem {
 		$clone = new CaseItem();

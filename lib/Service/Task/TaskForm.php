@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
+ * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ namespace OCA\OpenRegister\Service\Task;
  * reader; it selects no behaviour in this class, which is what the rule is
  * actually about.
  *
- * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
+ * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
  */
 final class TaskForm {
 
@@ -93,7 +93,7 @@ final class TaskForm {
 	 *
 	 * @return bool True for either kind; false for outcome-and-comment completion.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
 	 */
 	public function hasForm(): bool {
 		return $this->kind !== null;
@@ -104,7 +104,7 @@ final class TaskForm {
 	 *
 	 * @return bool True when fields of the subject schema are asked for.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
 	 */
 	public function isNative(): bool {
 		return $this->kind === self::KIND_FIELDS;
@@ -115,7 +115,7 @@ final class TaskForm {
 	 *
 	 * @return bool True when a bound Forms form is the way to finish.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-the-external-form-path-binds-an-existing-forms-form-and-validates-nothing-about-its-contents
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-external-form-path-binds-an-existing-forms-form-and-validates-nothing-about-its-contents
 	 */
 	public function isExternal(): bool {
 		return $this->kind === self::KIND_EXTERNAL;
@@ -126,7 +126,7 @@ final class TaskForm {
 	 *
 	 * @return array<string, mixed> The declaration, ready to store or serialise.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
 	 */
 	public function toArray(): array {
 		return [

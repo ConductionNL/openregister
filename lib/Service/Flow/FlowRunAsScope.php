@@ -45,7 +45,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
+ * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
  */
 
 declare(strict_types=1);
@@ -59,7 +59,7 @@ use RuntimeException;
 /**
  * Validates the run's acting identity and scopes a callable to it.
  *
- * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
+ * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
  */
 class FlowRunAsScope {
 	/**
@@ -87,7 +87,7 @@ class FlowRunAsScope {
 	 *
 	 * @throws RuntimeException When the named identity cannot be acted as.
 	 *
-	 * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
+	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
 	 */
 	public function call(array $context, callable $operation): mixed {
 		$uid = trim((string)($context[FlowRunService::RUN_AS_CONTEXT_KEY] ?? ''));

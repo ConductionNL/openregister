@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
+ * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
  */
 
 declare(strict_types=1);
@@ -70,7 +70,7 @@ class NotificationChannelPolicy {
 	 *
 	 * @return bool True when sends on this channel may proceed.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
 	public function isChannelEnabled(string $channel): bool {
 		$key = sprintf(self::CONFIG_KEY_TEMPLATE, str_replace('-', '_', $channel));

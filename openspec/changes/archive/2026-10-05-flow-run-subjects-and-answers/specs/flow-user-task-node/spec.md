@@ -2,6 +2,20 @@
 
 ### Requirement: The outcome is written onto every item, not only onto the run
 
+When the node continues, it SHALL write the task's completion result onto
+EVERY item it passes on, under a configurable key defaulting to `task`.
+
+The written value SHALL carry at minimum the outcome, the comment where one
+was given, the completing identity, the performer type, and the
+`on_behalf_of` identity where the completion was delegated.
+
+Writing it onto the items rather than into run-level context is normative,
+not incidental: the steps that follow route PER ITEM, and a switch cannot
+branch on something only the run holds.
+
+The node SHALL leave any item that is not a value bag untouched rather than
+failing the run.
+
 The outcome bag a user-task step places on its items SHALL include the
 performer's form answers, under the key `answers`, taken from the task's
 recorded responses.
@@ -17,6 +31,24 @@ already stored on the task, and the portal-task node already places them on
 its bag. Only this node's bag omitted them, so every answer a person typed
 was collected and then discarded.
 
+#### Scenario: A downstream switch branches on the outcome
+
+- **GIVEN** a user-task node followed by a switch keyed on the outcome
+- **WHEN** the task is completed with a rejecting outcome
+- **THEN** every item leaving the node MUST carry that outcome under the
+  configured key
+- **AND** the switch MUST take the rejection edge
+- @e2e a rejected task routes the flow down its rejection branch
+
+#### Scenario: A delegated completion names both identities on the item
+
+- **GIVEN** a task completed by a delegate acting on behalf of the assignee
+- **WHEN** the run continues
+- **THEN** the item payload MUST name the delegate as the completing
+  identity and the assignee as the on-behalf-of identity
+- @e2e exclude covered by UserTaskNode unit tests over a delegated
+  completion
+
 #### Scenario: A form answer reaches the following step
 
 - **GIVEN** a user-task step declaring the fields `reason` and `amount`
@@ -31,7 +63,7 @@ was collected and then discarded.
 - **WHEN** it is completed
 - **THEN** the bag MUST carry `answers` as an empty set, not omit it
 
----
+## ADDED Requirements
 
 ### Requirement: A step may attach its task to a declared subject
 

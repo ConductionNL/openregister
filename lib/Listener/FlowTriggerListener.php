@@ -139,7 +139,7 @@ class FlowTriggerListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-trigger-canonical-slugs/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function fireCaseItemTrigger(CaseItemTransitionedEvent $event): void {
 		$trigger = $event->getCatalogTrigger();

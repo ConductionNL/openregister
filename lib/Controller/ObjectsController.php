@@ -6807,7 +6807,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
 	 */
 	private function recordObjectView(ObjectEntity $object, string $register, string $schema): void {
 		try {
@@ -6978,7 +6978,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return array<string, mixed> The body, with `@warnings` when there are any.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	private function withUniqueHintWarnings(array $body): array {
 		if ($this->uniqueHintWarnings === null) {

@@ -210,7 +210,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return NcNotificationSender The sender.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function ncSender(): NcNotificationSender {
 		$this->lazyNcSender ??= new NcNotificationSender(
@@ -229,7 +229,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return EmailSender The sender.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function emailSender(): EmailSender {
 		$this->lazyEmailSender ??= new EmailSender(
@@ -247,7 +247,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return TalkSender The sender.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function talkSender(): TalkSender {
 		$this->lazyTalkSender ??= new TalkSender(
@@ -265,7 +265,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return NotificationRecipientResolver The resolver.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function recipientResolver(): NotificationRecipientResolver {
 		$this->lazyRecipientResolver ??= new NotificationRecipientResolver(
@@ -284,7 +284,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return NotificationTemplating The evaluator.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function templating(): NotificationTemplating {
 		$this->lazyTemplating ??= new NotificationTemplating(

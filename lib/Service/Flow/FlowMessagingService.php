@@ -30,7 +30,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+ * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
  */
 
 declare(strict_types=1);
@@ -167,7 +167,7 @@ class FlowMessagingService {
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected shared units.
 	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function __construct(
@@ -205,7 +205,7 @@ class FlowMessagingService {
 	 * @throws RuntimeException When there is no resolvable acting user, the
 	 *                          recipient bound is exceeded, or a send failed.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function sendNotification(array $config, array $items, array $context, string $stepName): array {
 		return $this->sendPerRecipient(
@@ -232,7 +232,7 @@ class FlowMessagingService {
 	 * @throws RuntimeException When there is no resolvable acting user, the
 	 *                          recipient bound is exceeded, or a send failed.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function sendEmail(array $config, array $items, array $context, string $stepName): array {
 		return $this->sendPerRecipient(
@@ -262,7 +262,7 @@ class FlowMessagingService {
 	 *
 	 * @throws RuntimeException When there is no resolvable acting user or a post failed.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
 	public function sendTalkMessage(array $config, array $items, array $context, string $stepName): array {
 		$actor = $this->resolveActingUser(context: $context);
@@ -352,7 +352,7 @@ class FlowMessagingService {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The chain reads top to bottom in
 	 * the order the spec states it; splitting it would hide the order.
 	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	private function sendPerRecipient(
 		string $channel,
@@ -630,7 +630,7 @@ class FlowMessagingService {
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The send's full context; bundling it
 	 * into an array would only move the list into an untyped shape.
 	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	private function sendToAddresses(
@@ -741,7 +741,7 @@ class FlowMessagingService {
 	 *
 	 * @throws RuntimeException When no enabled acting user resolves.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
 	private function resolveActingUser(array $context): string {
 		$uid = ($context[FlowRunService::RUN_AS_CONTEXT_KEY] ?? null);
@@ -792,7 +792,7 @@ class FlowMessagingService {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the channel takes addresses is a
 	 * fact about the channel, not a mode of this method's own.
 	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	private function resolveRecipients(mixed $recipients, array $json, bool $acceptAddresses = false): array {
 		$uids = [];
@@ -844,7 +844,7 @@ class FlowMessagingService {
 	 *
 	 * @return bool True when the send may proceed.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function preferenceAllows(string $uid, string $channel): bool {
 		$effective = $this->preferences->resolveEffective(
@@ -970,8 +970,8 @@ class FlowMessagingService {
 	 *
 	 * @return array The report.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	private function buildReport(
 		string $channel,

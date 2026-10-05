@@ -41,10 +41,11 @@ use Throwable;
  * UniqueConstraintListener uses, which the save path turns into a refused
  * write with the structured error.
  *
- * A count that cannot be made allows the create and logs a warning, the same
- * fail-soft choice UniqueConstraintListener makes: a quota is a resource
- * limit, not an access rule, and a broken count must not stop an
- * organisation's work.
+ * A count that cannot be made REFUSES the create (`object-quota-unchecked`)
+ * and logs an error. It allowed it before, and that is how a count that never
+ * worked (live pass O10: every count failed) left the quota silently off for
+ * every schema. Only a schema that declares a quota is affected, and the
+ * refusal says the quota could not be checked rather than that it was reached.
  *
  * @template-implements IEventListener<Event>
  *
@@ -58,6 +59,13 @@ class ObjectQuotaListener implements IEventListener {
 	 * @var string
 	 */
 	public const ERROR_CODE = 'object-quota-exceeded';
+
+	/**
+	 * The error code of a create refused because the quota could not be checked.
+	 *
+	 * @var string
+	 */
+	public const ERROR_CODE_UNCHECKED = 'object-quota-unchecked';
 
 	/**
 	 * Constructor.
@@ -99,21 +107,37 @@ class ObjectQuotaListener implements IEventListener {
 
 		try {
 			$schema = $this->schemas->find(id: $schemaRef, _rbac: false, _multitenancy: false);
-			$limit = $this->quotas->limitFor(schema: $schema);
-			if ($limit === null) {
-				return;
-			}
+		} catch (Throwable $failure) {
+			// No schema, no quota to read: the save path refuses an unknown schema itself.
+			return;
+		}
 
+		$limit = $this->quotas->limitFor(schema: $schema);
+		if ($limit === null) {
+			return;
+		}
+
+		try {
 			$count = $this->quotas->count(
 				registerId: (int)$registerRef,
 				schema: $schema,
 				organisationUuid: $organisation
 			);
 		} catch (Throwable $failure) {
-			$this->logger->warning(
-				message: '[ObjectQuotaListener] The quota count failed, allowing the create: ' . $failure->getMessage(),
+			$this->logger->error(
+				message: '[ObjectQuotaListener] The quota count failed, refusing the create: ' . $failure->getMessage(),
 				context: ['app' => 'openregister', 'schema' => $schemaRef, 'organisation' => $organisation]
 			);
+			$event->setErrors(
+				[
+					'code' => self::ERROR_CODE_UNCHECKED,
+					'message' => sprintf(
+						'Schema "%s" limits how many objects one organisation holds, and that limit could not be checked just now, so nothing was created. Try again.',
+						$schemaRef
+					),
+				]
+			);
+			$event->stopPropagation();
 			return;
 		}
 

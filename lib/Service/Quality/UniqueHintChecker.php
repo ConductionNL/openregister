@@ -41,7 +41,7 @@ use Throwable;
  * and the two annotations sit beside each other meaning different things on
  * purpose.
  *
- * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+ * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
  */
 class UniqueHintChecker {
 
@@ -88,7 +88,7 @@ class UniqueHintChecker {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function check(array $configuration, $register, $schema, array $data, ?string $selfUuid = null): void {
 		$nominated = $this->annotation->nominated(configuration: $configuration);
@@ -123,7 +123,7 @@ class UniqueHintChecker {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	private function checkOne(string $property, $value, $register, $schema, ?string $selfUuid): void {
 		$visible = $this->holdersOf(
@@ -175,7 +175,7 @@ class UniqueHintChecker {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	private function uuidsExcludingSelf(array $holders, ?string $selfUuid): array {
 		$uuids = [];
@@ -208,7 +208,7 @@ class UniqueHintChecker {
 	 *
 	 * @return array<int, ObjectEntity> The holders.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `$scoped` does not select
 	 *   between two behaviours, it selects the PRINCIPAL the same read runs as.
