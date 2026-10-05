@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Flow;
 
+use OCA\Integriq\Event\OutboundSendDecisionRequestedEvent;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\FlowEmailSentEvent;
 use OCA\OpenRegister\Service\Flow\FlowItems;
@@ -43,6 +44,8 @@ use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
 use OCA\OpenRegister\Service\Notification\NotificationTemplating;
 use OCA\OpenRegister\Service\Notification\RateLimiter;
 use OCA\OpenRegister\Service\Notification\TalkSender;
+use OCA\OpenRegister\Tests\Unit\Service\Notification\Fixture\RecordingMessage;
+use OCA\OpenRegister\Tests\Unit\Service\Notification\Fixture\RecordingSymfonyMessage;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -55,7 +58,6 @@ use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\Mail\IMailer;
-use OCP\Mail\IMessage;
 use OCP\Notification\IManager as INotificationManager;
 use OCP\Notification\INotification;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -114,6 +116,39 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	private bool $mailerThrows = false;
 
 	/**
+	 * Every message the mailer was handed, in order.
+	 *
+	 * @var array<int, RecordingMessage>
+	 */
+	private array $messages = [];
+
+	/**
+	 * What the stub integriq listener does: 'answer' or 'ignore' (integriq absent).
+	 */
+	private string $integriq = 'answer';
+
+	/**
+	 * Addresses the stub integriq listener reports as opted out.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $optedOut = [];
+
+	/**
+	 * The rate limiter's cache.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $cacheStore = [];
+
+	/**
+	 * Every opt-out question integriq was asked.
+	 *
+	 * @var array<int, OutboundSendDecisionRequestedEvent>
+	 */
+	private array $questions = [];
+
+	/**
 	 * Uids the notification manager was asked to notify.
 	 *
 	 * @var array<int, string>
@@ -151,24 +186,15 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 
 		$this->mailer = $this->createMock(IMailer::class);
 		$this->mailer->method('createMessage')->willReturnCallback(
-			function (): IMessage {
-				$message = $this->createMock(IMessage::class);
-				$message->method('setTo')->willReturnCallback(
-					function (array $to) use ($message): IMessage {
-						foreach (array_keys($to) as $address) {
-							$this->mailedTo[] = (string)$address;
-						}
-
-						return $message;
-					}
-				);
-				$message->method('setSubject')->willReturnSelf();
-				$message->method('setPlainBody')->willReturnSelf();
-				return $message;
-			}
+			fn (): RecordingMessage => new RecordingSymfonyMessage()
 		);
 		$this->mailer->method('send')->willReturnCallback(
-			function (): array {
+			function (RecordingMessage $message): array {
+				foreach (array_keys($message->to) as $address) {
+					$this->mailedTo[] = (string)$address;
+				}
+
+				$this->messages[] = $message;
 				if ($this->mailerThrows === true) {
 					throw new RuntimeException('SMTP down');
 				}
@@ -198,12 +224,50 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 		$this->dispatcher = $this->createMock(IEventDispatcher::class);
 		$this->dispatcher->method('dispatchTyped')->willReturnCallback(
 			function (Event $event): void {
+				if ($event instanceof OutboundSendDecisionRequestedEvent) {
+					$this->answerAsIntegriq(event: $event);
+					return;
+				}
+
 				$this->events[] = $event;
 			}
 		);
 
 		$this->runContext = new FlowRunContext();
 	}//end setUp()
+
+	/**
+	 * A stub integriq listener on the real contract event.
+	 *
+	 * @param OutboundSendDecisionRequestedEvent $event The question.
+	 *
+	 * @return void
+	 */
+	private function answerAsIntegriq(OutboundSendDecisionRequestedEvent $event): void {
+		$this->questions[] = $event;
+		if ($this->integriq === 'ignore') {
+			return;
+		}
+
+		$exempt = in_array($event->getCategory(), ['besluit', 'statutory', 'account', 'security'], true);
+		foreach ($event->getRecipients() as $recipient) {
+			$address = (string)$recipient['address'];
+			$link = 'https://nc.example/u/' . md5($address);
+			$unsubscribe = ['url' => $link, 'oneClickUrl' => $link, 'smsText' => null, 'headers' => []];
+			if ($exempt === true) {
+				$unsubscribe = null;
+			}
+
+			if ($exempt === false && in_array($address, $this->optedOut, true) === true) {
+				$event->setDecision($address, ['send' => false, 'overridden' => false, 'code' => 'opted-out', 'reason' => 'opted out', 'unsubscribe' => null]);
+				continue;
+			}
+
+			$event->setDecision($address, ['send' => true, 'overridden' => false, 'code' => 'allowed', 'reason' => '', 'unsubscribe' => $unsubscribe]);
+		}
+
+		$event->setHandled(true);
+	}//end answerAsIntegriq()
 
 	/**
 	 * The service under test, wired onto the REAL shared units.
@@ -214,9 +278,16 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$policy = new NotificationChannelPolicy(appConfig: $this->appConfig, logger: $logger);
 
+		// An in-memory cache, so the rate limiter's buckets persist across
+		// steps within a test and a test can read whether one was used.
 		$cache = $this->createMock(ICache::class);
-		$cache->method('get')->willReturn(null);
-		$cache->method('set')->willReturn(true);
+		$cache->method('get')->willReturnCallback(fn (string $key): mixed => ($this->cacheStore[$key] ?? null));
+		$cache->method('set')->willReturnCallback(
+			function (string $key, mixed $value): bool {
+				$this->cacheStore[$key] = $value;
+				return true;
+			}
+		);
 		$cacheFactory = $this->createMock(ICacheFactory::class);
 		$cacheFactory->method('createDistributed')->willReturn($cache);
 
@@ -478,6 +549,113 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 		$this->assertSame(1, $report['delivered']['count']);
 		$this->assertSame(['bob@users.example'], $this->mailedTo);
 	}//end testAThrowingListenerDoesNotFailTheStep()
+
+	// ---- Opt-out before send (opt-out-before-send) --------------------------
+
+	/**
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 */
+	public function testAnOptedOutAddressIsSkippedAndNotAnnounced(): void {
+		$this->optedOut = ['jan@example.nl'];
+
+		$report = $this->sendEmail(
+			config: ['recipients' => ['jan@example.nl', 'piet@example.nl'], 'externalRecipients' => 'any', 'messageCategory' => 'service']
+		);
+
+		// POSITIVE CONTROL: the other address on the same step is mailed.
+		$this->assertSame(['piet@example.nl'], $this->mailedTo);
+		$this->assertSame(1, $report['delivered']['count']);
+		$this->assertSame(['count' => 1, 'sample' => ['jan@example.nl']], $report['optedOut']);
+		$this->assertSame(0, $report['authorityUnavailable']['count']);
+
+		$this->assertCount(1, $this->events);
+		$this->assertSame('piet@example.nl', $this->events[0]->getRecipient());
+
+		// One question for the whole step, with the declared category.
+		$this->assertCount(1, $this->questions);
+		$this->assertSame('service', $this->questions[0]->getCategory());
+		$this->assertSame('email', $this->questions[0]->getChannel());
+		$this->assertSame('openregister', $this->questions[0]->getSourceApp());
+	}//end testAnOptedOutAddressIsSkippedAndNotAnnounced()
+
+	/**
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 */
+	public function testASkippedAddressDoesNotUseTheRateLimit(): void {
+		$this->optedOut = ['jan@example.nl'];
+		$this->appValues['notification_rate_limit_default_bucket_size'] = '1';
+		$this->appValues['notification_rate_limit_default_refill_seconds'] = '86400';
+
+		$this->sendEmail(config: ['recipients' => ['jan@example.nl'], 'externalRecipients' => 'any']);
+		$this->optedOut = [];
+		$report = $this->sendEmail(config: ['recipients' => ['jan@example.nl'], 'externalRecipients' => 'any']);
+
+		$this->assertSame(['jan@example.nl'], $this->mailedTo);
+		$this->assertSame(1, $report['delivered']['count']);
+	}//end testASkippedAddressDoesNotUseTheRateLimit()
+
+	/**
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 */
+	public function testWithoutIntegriqAServiceMailIsRefusedAndTheUserStillMailed(): void {
+		$this->integriq = 'ignore';
+
+		$report = $this->sendEmail(config: ['recipients' => ['jan@example.nl', 'bob'], 'externalRecipients' => 'any']);
+
+		$this->assertSame(['bob@users.example'], $this->mailedTo);
+		$this->assertSame(['count' => 1, 'sample' => ['jan@example.nl']], $report['authorityUnavailable']);
+		$this->assertSame(0, $report['optedOut']['count']);
+	}//end testWithoutIntegriqAServiceMailIsRefusedAndTheUserStillMailed()
+
+	/**
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 */
+	public function testWithoutIntegriqABesluitIsSentWithoutALinkOrHeader(): void {
+		$this->integriq = 'ignore';
+
+		$report = $this->sendEmail(config: ['recipients' => ['jan@example.nl'], 'externalRecipients' => 'any', 'messageCategory' => 'besluit']);
+
+		$this->assertSame(['jan@example.nl'], $this->mailedTo);
+		$this->assertSame(1, $report['delivered']['count']);
+		$this->assertSame('Dear reader of Case 7', $this->messages[0]->body);
+		$this->assertSame([], $this->messages[0]->headers);
+	}//end testWithoutIntegriqABesluitIsSentWithoutALinkOrHeader()
+
+	/**
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
+	 */
+	public function testAServiceMailCarriesTheLinkAndTheHeaders(): void {
+		$this->sendEmail(config: ['recipients' => ['piet@example.nl'], 'externalRecipients' => 'any']);
+
+		$link = 'https://nc.example/u/' . md5('piet@example.nl');
+		$this->assertStringStartsWith('Dear reader of Case 7', $this->messages[0]->body);
+		$this->assertStringEndsWith('Stop receiving these messages: ' . $link, $this->messages[0]->body);
+		$this->assertSame('<' . $link . '>', $this->messages[0]->headers['List-Unsubscribe']);
+		$this->assertSame('List-Unsubscribe=One-Click', $this->messages[0]->headers['List-Unsubscribe-Post']);
+	}//end testAServiceMailCarriesTheLinkAndTheHeaders()
+
+	/**
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
+	 */
+	public function testABesluitMailCarriesNoLinkWithIntegriqPresent(): void {
+		$this->sendEmail(config: ['recipients' => ['piet@example.nl'], 'externalRecipients' => 'any', 'messageCategory' => 'besluit']);
+
+		$this->assertSame('besluit', $this->questions[0]->getCategory());
+		$this->assertSame('Dear reader of Case 7', $this->messages[0]->body);
+		$this->assertSame([], $this->messages[0]->headers);
+	}//end testABesluitMailCarriesNoLinkWithIntegriqPresent()
+
+	/**
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
+	 */
+	public function testAnOldStepAsksAsServiceAndAUserOnlyStepAsksNothing(): void {
+		$this->sendEmail(config: ['recipients' => ['piet@example.nl'], 'externalRecipients' => 'any']);
+		$this->assertSame('service', $this->questions[0]->getCategory());
+
+		$this->questions = [];
+		$this->sendEmail(config: ['recipients' => ['bob']]);
+		$this->assertSame([], $this->questions);
+	}//end testAnOldStepAsksAsServiceAndAUserOnlyStepAsksNothing()
 
 	// ---- send-notification role fields -------------------------------------
 

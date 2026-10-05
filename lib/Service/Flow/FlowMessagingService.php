@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\Notification\NotificationChannelPolicy;
 use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
 use OCA\OpenRegister\Service\Notification\NotificationTemplating;
+use OCA\OpenRegister\Service\Notification\OptOutAuthority;
 use OCA\OpenRegister\Service\Notification\RateLimiter;
 use OCA\OpenRegister\Service\Notification\TalkSender;
 use OCA\OpenRegister\Service\Notification\TalkSendException;
@@ -115,6 +116,14 @@ class FlowMessagingService {
 	public const REFUSED_INVALID_ADDRESS = 'invalid-address';
 
 	/**
+	 * The outcome buckets an external address lands in when integriq says no:
+	 * an opt-out (or missing consent), or no answer at all (fail closed).
+	 */
+	public const BUCKET_OPTED_OUT = 'optedOut';
+
+	public const BUCKET_AUTHORITY_UNAVAILABLE = 'authorityUnavailable';
+
+	/**
 	 * The address rules: what counts as an address, which may be mailed.
 	 *
 	 * @var FlowRecipientAddresses
@@ -127,6 +136,13 @@ class FlowMessagingService {
 	 * @var FlowEmailAnnouncer
 	 */
 	private readonly FlowEmailAnnouncer $announcer;
+
+	/**
+	 * Asks integriq whether an external address may be mailed.
+	 *
+	 * @var OptOutAuthority
+	 */
+	private readonly OptOutAuthority $optOut;
 
 	/**
 	 * Constructor. Every dependency is one of the subsystem's call-shared
@@ -146,10 +162,12 @@ class FlowMessagingService {
 	 * @param IEventDispatcher $eventDispatcher Announces each sent email (FlowEmailSentEvent).
 	 * @param FlowRunContext|null $runContext The ambient step frame, for the sending step's node id.
 	 *                                        Nullable so a caller without a run still constructs it.
+	 * @param OptOutAuthority|null $optOut The opt-out seam; null builds one on the same dispatcher.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected shared units.
 	 *
 	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function __construct(
 		private readonly NotificationChannelPolicy $channelPolicy,
@@ -165,9 +183,11 @@ class FlowMessagingService {
 		private readonly LoggerInterface $logger,
 		IEventDispatcher $eventDispatcher,
 		?FlowRunContext $runContext = null,
+		?OptOutAuthority $optOut = null,
 	) {
 		$this->addresses = new FlowRecipientAddresses(recipientResolver: $recipientResolver);
 		$this->announcer = new FlowEmailAnnouncer(eventDispatcher: $eventDispatcher, logger: $logger, runContext: $runContext);
+		$this->optOut    = ($optOut ?? new OptOutAuthority(eventDispatcher: $eventDispatcher, appConfig: $appConfig, logger: $logger));
 
 	}//end __construct()
 
@@ -394,6 +414,11 @@ class FlowMessagingService {
 		}
 
 		$outcomes = $this->emptyOutcomes();
+		if ($acceptAddresses === true) {
+			$outcomes[self::BUCKET_OPTED_OUT] = [];
+			$outcomes[self::BUCKET_AUTHORITY_UNAVAILABLE] = [];
+		}
+
 		$failures = [];
 		$recipientCount = (count($distinct) + count($distinctAddresses));
 
@@ -459,6 +484,15 @@ class FlowMessagingService {
 			);
 		}//end if
 
+		// OPT-OUT, once for the whole step: integriq decides for every
+		// external address before anything is sent (opt-out-before-send).
+		$decisions = $this->optOut->ask(
+			channel: 'email',
+			category: OptOutAuthority::normaliseCategory(category: ($config['messageCategory'] ?? null)),
+			addresses: array_map('strval', array_keys($distinctAddresses)),
+			correlationId: $this->correlationId(context: $context, stepName: $stepName)
+		);
+
 		// RATE LIMIT then SEND, per recipient per item. The limiter's buckets
 		// are the subsystem's own — a shared budget with declarative sends.
 		foreach ($perItem as $entry) {
@@ -523,6 +557,7 @@ class FlowMessagingService {
 
 			foreach ($this->sendToAddresses(
 				addresses: $entry['addresses'],
+				decisions: $decisions,
 				title: $title,
 				body: $body,
 				json: $entry['json'],
@@ -577,7 +612,15 @@ class FlowMessagingService {
 	 * address simply skips the user lookup. Each dispatched email is
 	 * announced with a {@see FlowEmailSentEvent}.
 	 *
+	 * Integriq's decision comes first. A refused address is skipped before
+	 * the rate limiter, so it uses no budget and raises no event. An allowed
+	 * non-exempt mail carries the unsubscribe line in its body and, when the
+	 * mailer allows it, the List-Unsubscribe headers. The announced body is
+	 * the message without that line: the link holds a personal token.
+	 *
 	 * @param array<string, string> $addresses The allowed addresses, address => display name.
+	 * @param array<string, array{send: bool, code: string, unsubscribe: array<string, mixed>|null}> $decisions
+	 *        Integriq's decisions, by address.
 	 * @param string $title The rendered subject.
 	 * @param string $body The rendered body.
 	 * @param array $json The item's json.
@@ -592,9 +635,11 @@ class FlowMessagingService {
 	 * into an array would only move the list into an untyped shape.
 	 *
 	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	private function sendToAddresses(
 		array $addresses,
+		array $decisions,
 		string $title,
 		string $body,
 		array $json,
@@ -606,12 +651,30 @@ class FlowMessagingService {
 		$failures = [];
 		foreach ($addresses as $address => $name) {
 			$address = (string)$address;
+			// No decision means no answer, and no answer is refused.
+			$decision = ($decisions[$address] ?? ['send' => false, 'code' => OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE, 'unsubscribe' => null]);
+			if ($decision['send'] !== true) {
+				$bucket = self::BUCKET_OPTED_OUT;
+				if ($decision['code'] === OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE) {
+					$bucket = self::BUCKET_AUTHORITY_UNAVAILABLE;
+				}
+
+				$this->addOutcome(outcomes: $outcomes, bucket: $bucket, recipient: $address);
+				continue;
+			}
+
 			if ($this->rateLimiter->tryConsume(ruleId: $stepName, recipient: $address) === false) {
 				$this->addOutcome(outcomes: $outcomes, bucket: 'rateLimited', recipient: $address);
 				continue;
 			}
 
-			$outcome = $this->emailSender->sendToAddress(address: $address, displayName: $name, subject: $title, body: $body);
+			$outcome = $this->emailSender->sendToAddress(
+				address: $address,
+				displayName: $name,
+				subject: $title,
+				body: $this->optOut->withLink(body: $body, unsubscribe: $decision['unsubscribe']),
+				unsubscribe: $decision['unsubscribe']
+			);
 
 			if ($outcome === EmailSender::OUTCOME_DISPATCHED) {
 				$this->addOutcome(outcomes: $outcomes, bucket: 'delivered', recipient: $address);
@@ -971,6 +1034,23 @@ class FlowMessagingService {
 
 		return $report;
 	}//end buildReport()
+
+	/**
+	 * The id integriq's log rows carry for this step: the run, else the flow, and the step.
+	 *
+	 * @param array $context The run context.
+	 * @param string $stepName The step's type id.
+	 *
+	 * @return string The correlation id.
+	 */
+	private function correlationId(array $context, string $stepName): string {
+		$run = ($context[FlowRunContext::CONTEXT_RUN] ?? ($context[FlowRunService::FLOW_ID_CONTEXT_KEY] ?? ''));
+		if (is_scalar($run) === false) {
+			$run = '';
+		}
+
+		return 'openregister-flow:' . (string)$run . ':' . $stepName;
+	}//end correlationId()
 
 	/**
 	 * Write the report onto the run log via the context's report handle.
