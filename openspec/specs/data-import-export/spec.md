@@ -1043,6 +1043,28 @@ unaffected by this requirement.
   does not error
 - **AND** no existing schema row is modified or deleted by the migration
 
+### Requirement: Seed metadata keys are not stored as data
+
+A seed object under `x-openregister.seedData` carries its `uuid` and `slug` at
+the top level. The importer SHALL use them for the idempotency lookup and set
+them as the object's metadata, and SHALL remove them from the object's data
+before it is written, unless the target schema declares a property of that
+name. A seed import MUST NOT make the storage layer report `uuid` or `slug` as
+discarded undeclared properties.
+
+#### Scenario: A schema that declares neither key
+- **GIVEN** a seed object with top-level `uuid` and `slug` for a schema that
+  declares neither property
+- **WHEN** the seed data is imported
+- **THEN** the stored object's uuid and slug metadata equal the seed's values
+- **AND** the object's data holds neither `uuid` nor `slug`
+- **AND** no "Discarding" warning names them
+
+#### Scenario: A schema that declares slug
+- **GIVEN** the same seed object for a schema that declares a `slug` property
+- **WHEN** the seed data is imported
+- **THEN** the object's data keeps `slug` and drops `uuid`
+
 ## Current Implementation Status
 - **Implemented:**
   - `ImportService` (`lib/Service/ImportService.php`) with `importFromCsv()` and `importFromExcel()` methods for batch import with ReactPHP optimization
