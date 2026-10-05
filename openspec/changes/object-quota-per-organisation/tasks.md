@@ -10,7 +10,7 @@
 
 ## 3. Enforcement
 
-- [x] 3.1 `ObjectQuotaListener` on `ObjectCreatingEvent`, registered in `Application`; refuses with `object-quota-exceeded`, count and limit; updates and objects without an organisation are not counted; a failing count allows the create and warns (D-3, D-4).
+- [x] 3.1 `ObjectQuotaListener` on `ObjectCreatingEvent`, registered in `Application`; refuses with `object-quota-exceeded`, count and limit; updates and objects without an organisation are not counted; a count that cannot be made REFUSES the create with `object-quota-unchecked` and logs an error (changed 5 Oct after live pass O10: the fail-soft rule hid a count that never worked).
 
 ## 4. Follow-ups
 
@@ -19,5 +19,6 @@
 
 ## 5. Tests
 
-- [x] 5.1 `ObjectQuotaListenerTest` through the real listener and service: refused at the cap, allowed below, the count query is unrestricted and scoped to register, schema and organisation, no count without a quota, invalid limits are no quota, no organisation and updates are not counted, a failing count allows and warns, `status()` with and without a cap, the annotation survives the schema allow-list, the listener is registered.
+- [x] 5.1 `ObjectQuotaListenerTest` through the real listener and service: refused at the cap, allowed below, the count query is unrestricted and scoped to register, schema and organisation, no count without a quota, invalid limits are no quota, no organisation and updates are not counted, a failing count refuses with `object-quota-unchecked`, `status()` with and without a cap, the annotation survives the schema allow-list, the listener is registered.
 - [x] 5.2 `openspec validate object-quota-per-organisation --strict`.
+- [x] 5.3 Live pass O10 (5 Oct): the count went through `MagicMapper::searchObjects()`, whose one-register-one-schema path turns the integer count into `[]`, so every count failed and every create was allowed. The count now runs through `countObjectsInRegisterSchemaTable(failLoud: true)`; `ObjectQuotaThroughMagicMapperTest` runs the REAL MagicMapper, quota service and listener (only the SQL layer is a double that answers a count with an integer): the create past the cap is refused, below it allowed, a failing count refuses.

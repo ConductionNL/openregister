@@ -23,8 +23,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Quota;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
-use RuntimeException;
 
 /**
  * Reads a schema's per-organisation object quota and counts an organisation's objects.
@@ -54,12 +54,14 @@ class ObjectQuotaService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper $objects The object store, for the unrestricted count.
+	 * @param MagicMapper    $objects   The object store, for the unrestricted count.
+	 * @param RegisterMapper $registers Resolves the register the count runs in.
 	 *
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
 	 */
 	public function __construct(
 		private readonly MagicMapper $objects,
+		private readonly RegisterMapper $registers,
 	) {
 	}//end __construct()
 
@@ -99,31 +101,27 @@ class ObjectQuotaService {
 	 *
 	 * @return int The count.
 	 *
-	 * @throws RuntimeException When the store answers something other than a count.
+	 * @throws \Throwable When the count cannot be made (it never answers 0 for a failure).
 	 *
 	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
 	 */
 	public function count(int $registerId, Schema $schema, string $organisationUuid): int {
-		$result = $this->objects->searchObjects(
+		// Through the COUNT path, not searchObjects(): with one register and
+		// one schema searchObjects() turns the integer count into [] (live
+		// pass O10), and the quota could never fire. failLoud: a count that
+		// cannot be made throws instead of answering 0.
+		$register = $this->registers->find($registerId, _multitenancy: false, _rbac: false);
+
+		return $this->objects->countObjectsInRegisterSchemaTable(
 			query: [
-				'@self' => [
-					'register' => $registerId,
-					'schema' => (int)$schema->getId(),
-					'organisation' => $organisationUuid,
-				],
-				'_count' => true,
+				'@self' => ['organisation' => $organisationUuid],
+				'_rbac' => false,
+				'_multitenancy' => false,
 			],
-			_rbac: false,
-			_multitenancy: false
+			register: $register,
+			schema: $schema,
+			failLoud: true
 		);
-
-		if (is_int($result) === false) {
-			// A list where a count was asked for means the query took another
-			// path; reading it as zero would let every create through.
-			throw new RuntimeException('The object store did not answer the quota count with a number.');
-		}
-
-		return $result;
 	}//end count()
 
 	/**

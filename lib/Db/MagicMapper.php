@@ -986,10 +986,13 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param array $query Search parameters for filtering (excluding pagination).
 	 * @param Register $register The register context for table selection.
 	 * @param Schema $schema The schema for table selection.
+	 * @param bool $failLoud Throw when the count cannot be made instead of answering 0 (a caller that acts on the number).
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The default keeps every existing caller on the old 0.
 	 *
 	 * @return int Count of matching objects.
 	 */
-	public function countObjectsInRegisterSchemaTable(array $query, Register $register, Schema $schema): int {
+	public function countObjectsInRegisterSchemaTable(array $query, Register $register, Schema $schema, bool $failLoud=false): int {
 		// Use fast cached existence check.
 		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
 			// Check if magic mapping is enabled for this schema.
@@ -1037,6 +1040,10 @@ class MagicMapper extends AbstractObjectMapper {
 				tableName: $tableName
 			);
 
+			if (is_int($result) === false && $failLoud === true) {
+				throw new \RuntimeException('The count query did not answer with a number.');
+			}
+
 			$count = 0;
 			if (is_int($result) === true) {
 				$count = $result;
@@ -1070,7 +1077,12 @@ class MagicMapper extends AbstractObjectMapper {
 				]
 			);
 
-			// Return 0 on error instead of throwing.
+			// A caller that acts on the number (a quota) asks to hear the
+			// failure; everyone else keeps the old 0.
+			if ($failLoud === true) {
+				throw $e;
+			}
+
 			return 0;
 		}//end try
 	}//end countObjectsInRegisterSchemaTable()

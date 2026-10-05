@@ -33,6 +33,8 @@ namespace Unit\Listener;
 
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
@@ -70,14 +72,20 @@ class ObjectQuotaListenerTest extends TestCase {
 		$this->schemas = $this->createMock(SchemaMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		$this->objects->method('searchObjects')->willReturnCallback(
-			function (
-				array $query = [],
-				?string $_activeOrgUuid = null,
-				bool $_rbac = true,
-				bool $_multitenancy = true,
-			): array|int {
-				$this->counts[] = ['query' => $query, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy];
+		// The count path the service really takes (countObjectsInRegisterSchemaTable).
+		// This used to stub searchObjects() with an integer, which the real
+		// mapper never answers on this path (live pass O10); the real mapper's
+		// path is pinned in ObjectQuotaThroughMagicMapperTest.
+		$this->objects->method('countObjectsInRegisterSchemaTable')->willReturnCallback(
+			function (array $query, Register $register, Schema $schema, bool $failLoud = false): int {
+				$this->counts[] = [
+					'query' => $query,
+					'rbac' => $query['_rbac'] ?? true,
+					'multitenancy' => $query['_multitenancy'] ?? true,
+					'register' => $register->getId(),
+					'schema' => $schema->getId(),
+					'failLoud' => $failLoud,
+				];
 				return $this->existing;
 			}
 		);
@@ -110,8 +118,13 @@ class ObjectQuotaListenerTest extends TestCase {
 		return $object;
 	}//end newObject()
 
-	private function service(): ObjectQuotaService {
-		return new ObjectQuotaService($this->objects);
+	private function service(?MagicMapper $objects = null): ObjectQuotaService {
+		$register = new Register();
+		$register->setId(7);
+		$registers = $this->createMock(RegisterMapper::class);
+		$registers->method('find')->willReturn($register);
+
+		return new ObjectQuotaService(objects: ($objects ?? $this->objects), registers: $registers);
 	}//end service()
 
 	private function listener(): ObjectQuotaListener {
@@ -161,11 +174,10 @@ class ObjectQuotaListenerTest extends TestCase {
 		$this->assertCount(1, $this->counts);
 		$this->assertFalse($this->counts[0]['rbac']);
 		$this->assertFalse($this->counts[0]['multitenancy']);
-		$this->assertSame(
-			['register' => 7, 'schema' => 42, 'organisation' => self::ORG],
-			$this->counts[0]['query']['@self'] ?? null
-		);
-		$this->assertTrue($this->counts[0]['query']['_count'] ?? false);
+		$this->assertSame(['organisation' => self::ORG], $this->counts[0]['query']['@self'] ?? null);
+		$this->assertSame(7, $this->counts[0]['register']);
+		$this->assertSame(42, $this->counts[0]['schema']);
+		$this->assertTrue($this->counts[0]['failLoud'], 'A failed count must throw, never answer 0.');
 	}//end testTheCountIsUnrestrictedAndScopedToTheOrganisation()
 
 	public function testASchemaWithoutAQuotaIsNeverCounted(): void {
@@ -227,19 +239,20 @@ class ObjectQuotaListenerTest extends TestCase {
 	}//end testAnUpdateNeverCounts()
 
 	/**
-	 * A count that cannot be made does not block the write, and says so.
+	 * A count that cannot be made refuses the create (fail closed), and says so.
 	 */
-	public function testAFailingCountAllowsTheCreateAndWarns(): void {
+	public function testAFailingCountRefusesTheCreateAndLogsAnError(): void {
 		$this->schemaWith(['x-openregister-quota' => ['perOrganisation' => 1]]);
 		$objects = $this->createMock(MagicMapper::class);
-		$objects->method('searchObjects')->willThrowException(new RuntimeException('table gone'));
-		$this->logger->expects($this->once())->method('warning');
+		$objects->method('countObjectsInRegisterSchemaTable')->willThrowException(new RuntimeException('table gone'));
+		$this->logger->expects($this->once())->method('error');
 
 		$event = new ObjectCreatingEvent($this->newObject());
-		(new ObjectQuotaListener(new ObjectQuotaService($objects), $this->schemas, $this->logger))->handle($event);
+		(new ObjectQuotaListener($this->service(objects: $objects), $this->schemas, $this->logger))->handle($event);
 
-		$this->assertFalse($event->isPropagationStopped());
-	}//end testAFailingCountAllowsTheCreateAndWarns()
+		$this->assertTrue($event->isPropagationStopped());
+		$this->assertSame(ObjectQuotaListener::ERROR_CODE_UNCHECKED, $event->getErrors()['code']);
+	}//end testAFailingCountRefusesTheCreateAndLogsAnError()
 
 	/**
 	 * The status read an app shows its administrators.
