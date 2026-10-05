@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Command;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -268,6 +269,28 @@ class RematerialiseCalculationsCommand extends Command {
 				continue;
 			}
 
+			// Re-read the row: an earlier save in this run can already have
+			// materialised it (saving one enrolment re-saves its siblings), and
+			// saving the snapshot taken at the start would then try to change
+			// the readOnly value back (live pass O11).
+			$current = $this->reread(entity: $entity, register: $register, schema: $schema);
+			if ($current !== null) {
+				$stored = $current;
+				$expected = array_filter(
+					$expected,
+					static fn ($value, $name): bool => ($current[$name] ?? null) !== $value,
+					ARRAY_FILTER_USE_BOTH
+				);
+				if ($expected === []) {
+					$output->writeln(
+						sprintf('  <comment>%s already materialised by an earlier save in this run</comment>', (string)$entity->getUuid()),
+						OutputInterface::VERBOSITY_VERBOSE
+					);
+					$touched++;
+					continue;
+				}
+			}
+
 			if ($this->saveForMaterialisation(entity: $entity, stored: $stored, expected: $expected, output: $output) === true) {
 				$touched++;
 				continue;
@@ -291,6 +314,33 @@ class RematerialiseCalculationsCommand extends Command {
 
 		return $exitCode;
 	}//end execute()
+
+	/**
+	 * Read a row's stored data as it is now, not as the run's first read saw it.
+	 *
+	 * @param \OCA\OpenRegister\Db\ObjectEntity $entity   The row from the run's first read.
+	 * @param Register                          $register The register.
+	 * @param Schema                            $schema   The schema.
+	 *
+	 * @return array<string, mixed>|null The stored data, or null when the row cannot be read again.
+	 *
+	 * @spec openspec/changes/rematerialise-rereads-before-save/specs/computed-fields/spec.md
+	 */
+	private function reread(\OCA\OpenRegister\Db\ObjectEntity $entity, Register $register, Schema $schema): ?array {
+		try {
+			$fresh = $this->magicMapper->find(
+				identifier: (string)$entity->getUuid(),
+				register: $register,
+				schema: $schema,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		return ($fresh->getObject() ?? []);
+	}//end reread()
 
 	/**
 	 * Re-save a row UNCHANGED so the save path materialises it, and check it did.
