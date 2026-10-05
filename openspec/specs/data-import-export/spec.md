@@ -739,6 +739,10 @@ MUST be `skip` with a `reason`. Every `update` row, for registers and schemas as
 well as objects, MUST list the fields it changes as `{field, current, proposed}`:
 only keys the remote side carries are compared, nested maps by dotted path,
 lists whole, and a row's own `id`, `uuid`, `created` and `updated` are ignored.
+An object row MUST compare what the import would write: its `@self.version`
+(which only gates the update) is not a change, and the seed format's top-level
+`uuid` and `slug` are not compared unless the schema declares a property of
+that name, because the import strips them from the data.
 
 #### Scenario: A remote object can be selected from its row
 - **GIVEN** a remote object `omgevingsvergunning` in register `zaken` and schema `zaaktype`, both present locally, and no such object locally
@@ -755,6 +759,11 @@ lists whole, and a row's own `id`, `uuid`, `created` and `updated` are ignored.
 - **GIVEN** a local object at the same version as the remote one
 - **WHEN** the preview is built
 - **THEN** its row MUST be `skip` with a reason naming the versions and no changes
+
+#### Scenario: A seeded object's identity and version are no change
+- **GIVEN** a local object `livepass-lane11-a1` stored at version `0.0.1` with colour `red`, imported from a seed that carries a top-level `slug` and `uuid`
+- **WHEN** the preview is built for the seed at version `1.0.1` with colour `blue`
+- **THEN** its row MUST be `update` and its changes MUST be exactly `colour` from `red` to `blue`
 
 ### Requirement: ConfigurationService MUST track and compare imported-configuration versions @e2e exclude backend version check/compare logic — covered by PHPUnit
 

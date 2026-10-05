@@ -197,8 +197,55 @@ final class PreviewHandlerChangesTest extends TestCase {
 		self::assertSame('update', $row['action']);
 		self::assertNotNull($row['current']);
 		self::assertContains(['field' => 'title', 'current' => 'Bouw', 'proposed' => 'Bouwen'], $row['changes']);
-		self::assertContains(['field' => '@self.version', 'current' => '1.0.0', 'proposed' => '1.1.0'], $row['changes']);
+		// The version gates the update; it is not a field the import writes
+		// (the stored version is OpenRegister's own counter), so it is no change.
+		self::assertSame([], array_values(array_filter($row['changes'], static fn (array $c): bool => $c['field'] === '@self.version')));
 	}//end testNewerObjectIsAnUpdateWithItsChanges()
+
+	/**
+	 * 🔴 Live pass O2: a seeded object's top-level slug and version are no change.
+	 *
+	 * The seed format carries `slug` (and `uuid`) at the top level; the import
+	 * strips them from the data (#4315), so the stored object never holds them
+	 * and comparing the raw seed reported `slug: null -> "..."` on every row,
+	 * beside `@self.version 0.0.1 -> 1.0.1`. Only `colour` changed.
+	 *
+	 * @return void
+	 */
+	public function testSeedIdentityAndVersionAreNotReportedAsChanges(): void {
+		$local = $this->local(slug: 'livepass-lane11-a1', version: '0.0.1', title: 'A1');
+		$local->setObject(['title' => 'A1', 'colour' => 'red']);
+		$this->objectMapper->method('find')->willReturn($local);
+
+		$remote = $this->remote(slug: 'livepass-lane11-a1', version: '1.0.1', title: 'A1');
+		$remote['slug'] = 'livepass-lane11-a1';
+		$remote['uuid'] = '6a1d1f9e-3c55-4e0b-8b8e-2f6b0f6f1a01';
+		$remote['colour'] = 'blue';
+
+		$row = $this->previewObjects(objects: [$remote])['objects'][0];
+
+		self::assertSame('update', $row['action']);
+		self::assertSame([['field' => 'colour', 'current' => 'red', 'proposed' => 'blue']], $row['changes']);
+	}//end testSeedIdentityAndVersionAreNotReportedAsChanges()
+
+	/**
+	 * A schema that declares `slug` keeps it as data, so a changed slug is a change.
+	 *
+	 * @return void
+	 */
+	public function testADeclaredSlugIsStillCompared(): void {
+		$this->schema->setProperties(['title' => ['type' => 'string'], 'slug' => ['type' => 'string']]);
+		$local = $this->local(slug: 'b1', version: '1.0.0', title: 'B1');
+		$local->setObject(['title' => 'B1', 'slug' => 'old']);
+		$this->objectMapper->method('find')->willReturn($local);
+
+		$remote = $this->remote(slug: 'b1', version: '1.1.0', title: 'B1');
+		$remote['slug'] = 'new';
+
+		$row = $this->previewObjects(objects: [$remote])['objects'][0];
+
+		self::assertContains(['field' => 'slug', 'current' => 'old', 'proposed' => 'new'], $row['changes']);
+	}//end testADeclaredSlugIsStillCompared()
 
 	/**
 	 * A remote object that is not newer is skipped with the reason, as the import skips it.

@@ -458,6 +458,16 @@ class PreviewHandler {
 		// would report a change on every object.
 		unset($current['@self']['register'], $current['@self']['schema'], $objectData['@self']['register'], $objectData['@self']['schema']);
 
+		// Compare what the import would WRITE (live pass O2). The version only
+		// gates the update: the stored version is OpenRegister's own counter, so
+		// it differs on every row. The seed format's top-level uuid and slug are
+		// identity, stripped from the data on import unless the schema declares
+		// them (ImportHandler::withoutSeedMetadataKeys()), so the stored object
+		// never holds them and they would read as a change on every row.
+		unset($current['@self']['version'], $objectData['@self']['version']);
+		$undeclaredIdentity = array_diff_key(['uuid' => true, 'slug' => true], (array) ($schema->getProperties() ?? []));
+		$objectData = array_diff_key($objectData, $undeclaredIdentity);
+
 		$preview['action'] = 'update';
 		$preview['changes'] = $this->compareArrays(current: $current, proposed: $objectData);
 
