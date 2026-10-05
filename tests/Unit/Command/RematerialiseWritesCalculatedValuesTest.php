@@ -81,6 +81,8 @@ class RematerialiseWritesCalculatedValuesTest extends TestCase {
 		$entity->setObject($stored);
 		$magic = $this->createMock(MagicMapper::class);
 		$magic->method('findAllInRegisterSchemaTable')->willReturn([$entity]);
+		// The command re-reads the row before saving it (live pass O11).
+		$magic->method('find')->willReturn($entity);
 
 		$evaluator = $this->createMock(CalculationEvaluator::class);
 		$evaluator->method('expressionUsesSequence')->willReturn(false);

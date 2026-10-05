@@ -105,6 +105,9 @@ class RematerialiseCalculationsAsSystemTest extends TestCase {
 
 		$magic = $this->createMock(MagicMapper::class);
 		$magic->method('findAllInRegisterSchemaTable')->willReturn($entities);
+		// The command re-reads each row before saving it (live pass O11).
+		$byUuid = array_combine(array_map(static fn (ObjectEntity $e): string => (string) $e->getUuid(), $entities), $entities);
+		$magic->method('find')->willReturnCallback(static fn (string|int $identifier) => $byUuid[(string) $identifier]);
 
 		$evaluator = $this->createMock(CalculationEvaluator::class);
 		$evaluator->method('expressionUsesSequence')->willReturn(false);
