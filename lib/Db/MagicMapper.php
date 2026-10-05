@@ -982,60 +982,23 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * This method counts objects from a dedicated table based on register+schema combination.
 	 * It supports basic filtering and returns only the count for better performance.
+	 * A count that cannot be made answers 0 (logged); a caller that acts on the
+	 * number uses countObjectsOrFail() instead.
 	 *
-	 * @param array $query Search parameters for filtering (excluding pagination).
+	 * @param array    $query    Search parameters for filtering (excluding pagination).
 	 * @param Register $register The register context for table selection.
-	 * @param Schema $schema The schema for table selection.
+	 * @param Schema   $schema   The schema for table selection.
 	 *
 	 * @return int Count of matching objects.
 	 */
 	public function countObjectsInRegisterSchemaTable(array $query, Register $register, Schema $schema): int {
-		// Use fast cached existence check.
-		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			// Check if magic mapping is enabled for this schema.
-			$isMagicEnabled = $register->isMagicMappingEnabledForSchema(
-				schemaId: $schema->getId(),
-				schemaSlug: $schema->getSlug()
-			);
-			if ($isMagicEnabled !== true) {
-				$this->logger->debug(
-					message: '[MagicMapper] Register+schema table does not exist for count, returning 0',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'registerId' => $register->getId(),
-						'schemaId' => $schema->getId(),
-					]
-				);
-				return 0;
-			}
-
-			// Create the table since magic mapping is enabled.
-			$this->logger->debug(
-				message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'registerId' => $register->getId(),
-					'schemaId' => $schema->getId(),
-				]
-			);
-			$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
-		}//end if
-
-		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$tableName = $this->resolveCountTable(register: $register, schema: $schema);
+		if ($tableName === null) {
+			return 0;
+		}
 
 		try {
-			// Add _count flag to use MagicSearchHandler with RBAC and multi-tenancy filters.
-			$countQuery = $query;
-			$countQuery['_count'] = true;
-
-			$result = $this->searchHandler->searchObjects(
-				query: $countQuery,
-				register: $register,
-				schema: $schema,
-				tableName: $tableName
-			);
+			$result = $this->runCountQuery(query: $query, register: $register, schema: $schema, tableName: $tableName);
 
 			$count = 0;
 			if (is_int($result) === true) {
@@ -1074,6 +1037,111 @@ class MagicMapper extends AbstractObjectMapper {
 			return 0;
 		}//end try
 	}//end countObjectsInRegisterSchemaTable()
+
+	/**
+	 * Count objects in a register+schema table, throwing when the count cannot be made.
+	 *
+	 * The same count as countObjectsInRegisterSchemaTable(), for a caller that
+	 * acts on the number (a quota): a failed query or an answer that is not a
+	 * number throws instead of reading as 0, so a broken count can never pass
+	 * for an empty table (live pass O10).
+	 *
+	 * @param array    $query    Search parameters for filtering (excluding pagination).
+	 * @param Register $register The register context for table selection.
+	 * @param Schema   $schema   The schema for table selection.
+	 *
+	 * @return int Count of matching objects.
+	 *
+	 * @throws RuntimeException When the count query does not answer with a number.
+	 * @throws Exception        When the count query fails.
+	 *
+	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
+	 */
+	public function countObjectsOrFail(array $query, Register $register, Schema $schema): int {
+		$tableName = $this->resolveCountTable(register: $register, schema: $schema);
+		if ($tableName === null) {
+			return 0;
+		}
+
+		$result = $this->runCountQuery(query: $query, register: $register, schema: $schema, tableName: $tableName);
+		if (is_int($result) === false) {
+			throw new RuntimeException('The count query did not answer with a number.');
+		}
+
+		return $result;
+	}//end countObjectsOrFail()
+
+	/**
+	 * The table a register+schema count runs in, creating it when magic mapping is on.
+	 *
+	 * @param Register $register The register context for table selection.
+	 * @param Schema   $schema   The schema for table selection.
+	 *
+	 * @return string|null The table name, or null when there is no table and magic mapping is off (count 0).
+	 *
+	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
+	 */
+	private function resolveCountTable(Register $register, Schema $schema): ?string {
+		// Use fast cached existence check.
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+			// Check if magic mapping is enabled for this schema.
+			$isMagicEnabled = $register->isMagicMappingEnabledForSchema(
+				schemaId: $schema->getId(),
+				schemaSlug: $schema->getSlug()
+			);
+			if ($isMagicEnabled !== true) {
+				$this->logger->debug(
+					message: '[MagicMapper] Register+schema table does not exist for count, returning 0',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'registerId' => $register->getId(),
+						'schemaId' => $schema->getId(),
+					]
+				);
+				return null;
+			}
+
+			// Create the table since magic mapping is enabled.
+			$this->logger->debug(
+				message: '[MagicMapper] Register+schema table does not exist but magic mapping enabled, creating table',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'registerId' => $register->getId(),
+					'schemaId' => $schema->getId(),
+				]
+			);
+			$this->ensureTableForRegisterSchema(register: $register, schema: $schema);
+		}//end if
+
+		return $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+	}//end resolveCountTable()
+
+	/**
+	 * Run a count query through the search handler (RBAC and multi-tenancy filters apply).
+	 *
+	 * @param array    $query     Search parameters for filtering (excluding pagination).
+	 * @param Register $register  The register context.
+	 * @param Schema   $schema    The schema context.
+	 * @param string   $tableName The table to count in.
+	 *
+	 * @return mixed The handler's answer: an integer when the count was made.
+	 *
+	 * @spec openspec/changes/object-quota-per-organisation/specs/tenant-quotas/spec.md
+	 */
+	private function runCountQuery(array $query, Register $register, Schema $schema, string $tableName): mixed {
+		// Add _count flag to use MagicSearchHandler with RBAC and multi-tenancy filters.
+		$countQuery = $query;
+		$countQuery['_count'] = true;
+
+		return $this->searchHandler->searchObjects(
+			query: $countQuery,
+			register: $register,
+			schema: $schema,
+			tableName: $tableName
+		);
+	}//end runCountQuery()
 
 	/**
 	 * Get simple facets for a register+schema specific table.

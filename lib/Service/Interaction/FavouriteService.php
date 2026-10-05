@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -69,7 +69,7 @@ class FavouriteService {
 	 *
 	 * @return string|null The uid, or null when anonymous.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function callerUid(): ?string {
 		return $this->userSession->getUser()?->getUID();
@@ -90,7 +90,7 @@ class FavouriteService {
 	 *
 	 * @return ObjectFavourite The stored star.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	public function star(
 		ObjectEntity $object,
@@ -124,7 +124,7 @@ class FavouriteService {
 	 *
 	 * @return boolean True when a star was removed.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	public function unstar(ObjectEntity $object): bool {
 		$uid = $this->requireCaller();
@@ -146,7 +146,7 @@ class FavouriteService {
 	 *
 	 * @return boolean True when the caller has starred the object.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	public function isStarredByCaller(string $objectUuid): bool {
 		if ($objectUuid === '') {
@@ -171,7 +171,7 @@ class FavouriteService {
 	 *
 	 * @return ObjectFavourite|null The row, or null when the object is not starred.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	public function favouriteFor(ObjectEntity $object, ?string $userId = null): ?ObjectFavourite {
 		$uid = $this->requireCaller();
@@ -192,7 +192,7 @@ class FavouriteService {
 	 *
 	 * @return integer How many stars were removed.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	public function cleanupForObject(string $objectUuid): int {
 		if ($objectUuid === '') {
@@ -217,7 +217,7 @@ class FavouriteService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function forgetMemo(): void {
 		$this->starredByCallerMemo = null;

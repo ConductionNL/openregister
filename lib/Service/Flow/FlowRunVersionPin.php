@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use Throwable;
 /**
  * Resolves the published version a new run must be pinned to.
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 class FlowRunVersionPin {
 	/**
@@ -78,7 +78,7 @@ class FlowRunVersionPin {
 	 *
 	 * @return FlowVersion|null The published version, or null.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function publishedVersionOf(string $flowId): ?FlowVersion {
 		try {
@@ -123,7 +123,7 @@ class FlowRunVersionPin {
 	 *
 	 * @return array<string, mixed>|null The graph, or null when unresolvable.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function graphOf(?FlowVersion $version): ?array {
 		if ($version === null) {
@@ -162,7 +162,7 @@ class FlowRunVersionPin {
 	 * @throws FlowLifecycleRefused When a non-test dispatch has no published version.
 	 * @throws FlowDeadEnd          When that version has a node a token cannot leave.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function requirePublishedAndSound(string $flowId, string $trigger): ?FlowVersion {
 		$version = $this->publishedVersionOf(flowId: $flowId);

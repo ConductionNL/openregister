@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+ * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
  */
 
 declare(strict_types=1);
@@ -63,7 +63,7 @@ use Throwable;
  * collaborators one by one; hiding them behind a locator would hide the
  * dependency direction this change exists to enforce.
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+ * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
  */
 class CasePlanService {
 
@@ -109,7 +109,7 @@ class CasePlanService {
 	 *
 	 * @throws DoesNotExistException When there is no plan, OR the caller may not see the object.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	public function getPlan(string $objectUuid, ?string $uid): array {
 		$rows = $this->visibleRows(objectUuid: $objectUuid, uid: $uid);
@@ -147,7 +147,7 @@ class CasePlanService {
 	 * @throws CaseValidationException When the definition is refused, or the object already has a plan.
 	 * @throws CaseAccessDeniedException When the caller may not administer it.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	public function createPlan(
 		string $objectUuid,
@@ -200,7 +200,7 @@ class CasePlanService {
 	 * @throws CaseAccessDeniedException When denied (audited).
 	 * @throws \OCA\OpenRegister\Exception\CaseTransitionException When illegal.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
 	public function transition(string $itemUuid, string $to, ?string $uid, ?string $reason = null): CaseItem {
 		$item = $this->items->findByUuid(uuid: $itemUuid);
@@ -240,7 +240,7 @@ class CasePlanService {
 	 * @throws CaseAccessDeniedException When denied (audited).
 	 * @throws CaseValidationException When not enableable.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function enableDiscretionary(string $itemUuid, ?string $uid): CaseItem {
 		$item = $this->items->findByUuid(uuid: $itemUuid);
@@ -286,7 +286,7 @@ class CasePlanService {
 	 * @throws CaseAccessDeniedException When denied (audited on the parent, when any).
 	 * @throws CaseValidationException When the item is refused.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function attachAdHoc(string $objectUuid, array $data, ?string $uid): CaseItem {
 		$rows = $this->items->findByObject(objectUuid: $objectUuid);
@@ -348,7 +348,7 @@ class CasePlanService {
 	 *
 	 * @throws DoesNotExistException When there is no plan or the caller may not see it.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function enableableItems(string $objectUuid, ?string $uid): array {
 		$rows = $this->visibleRows(objectUuid: $objectUuid, uid: $uid);
@@ -377,7 +377,7 @@ class CasePlanService {
 	 *
 	 * @throws CaseAccessDeniedException For a non-administrator.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function findStuck(?string $type, ?string $state, int $limit, int $offset, ?string $uid): array {
 		$identity = $this->authorization->assertIdentified(uid: $uid, verb: 'list-items');
@@ -406,7 +406,7 @@ class CasePlanService {
 	 *
 	 * @return array{passes: int, transitions: int, skipped: bool} What happened.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	public function evaluate(string $objectUuid, ?string $uid): array {
 		$this->visibleRows(objectUuid: $objectUuid, uid: $uid);
@@ -428,7 +428,7 @@ class CasePlanService {
 	 * @throws CaseValidationException When the result is outside the set, or the plan is not finished.
 	 * @throws CaseAccessDeniedException When the caller may not administer the plan.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	public function completeCase(string $objectUuid, string $result, ?string $uid): array {
 		$rows = $this->items->findByObject(objectUuid: $objectUuid);
@@ -477,7 +477,7 @@ class CasePlanService {
 	 *
 	 * @throws CaseAccessDeniedException When the caller may not administer the plan.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
 	 */
 	public function deletePlan(string $objectUuid, ?string $uid): int {
 		$rows = $this->items->findByObject(objectUuid: $objectUuid);
@@ -497,7 +497,7 @@ class CasePlanService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
 	 */
 	public function onRealisationTerminal(string $taskUuid): void {
 		$objects = [];
@@ -520,7 +520,7 @@ class CasePlanService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
 	 */
 	public function onObjectEvent(string $objectUuid, string $event, array $payload): void {
 		if ($this->items->countOpenByObject(objectUuid: $objectUuid) === 0) {
@@ -538,7 +538,7 @@ class CasePlanService {
 	 *
 	 * @return boolean True when discretionary, available, parent active, entry satisfied.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	private function isEnableable(CaseItem $item, CasePlanTree $tree): bool {
 		if ($item->getDiscretionary() !== true || $item->getState() !== CaseItem::STATE_AVAILABLE) {
@@ -568,7 +568,7 @@ class CasePlanService {
 	 *
 	 * @throws DoesNotExistException When there is no plan, or it is invisible (same answer, deliberately).
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	private function visibleRows(string $objectUuid, ?string $uid): array {
 		$rows = $this->items->findByObject(objectUuid: $objectUuid);
@@ -597,7 +597,7 @@ class CasePlanService {
 	 *
 	 * @return CasePlanTree The tree.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	private function treeFor(CaseItem $item): CasePlanTree {
 		return new CasePlanTree(items: $this->items->findByObject(objectUuid: (string)$item->getObjectUuid()));
@@ -613,7 +613,7 @@ class CasePlanService {
 	 *
 	 * @throws CaseValidationException When the named parent is not a stage of this plan.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	private function parentFor(array $data, CasePlanTree $tree): ?CaseItem {
 		$ref = trim((string)($data['parent'] ?? ''));
@@ -648,7 +648,7 @@ class CasePlanService {
 	 *
 	 * @throws CaseAccessDeniedException The original denial, always rethrown.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	private function authorizeOrRecord(string $verb, ?CaseItem $item, CasePlanTree $tree, ?string $uid, string $requested): void {
 		try {
@@ -677,7 +677,7 @@ class CasePlanService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	private function insertNodes(
 		array $nodes,
@@ -736,7 +736,7 @@ class CasePlanService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	private function evaluateQuietly(string $objectUuid, ?string $event, array $payload): void {
 		try {
@@ -758,7 +758,7 @@ class CasePlanService {
 	 *
 	 * @throws Throwable Whatever the mutation threw, after rollback.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	private function transactional(callable $mutation): mixed {
 		$this->db->beginTransaction();

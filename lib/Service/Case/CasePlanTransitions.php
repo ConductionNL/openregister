@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+ * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use OCA\OpenRegister\Exception\CaseTransitionException;
 /**
  * The exhaustive per-type edge table and the terminal set.
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+ * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
  */
 class CasePlanTransitions {
 
@@ -108,7 +108,7 @@ class CasePlanTransitions {
 	 *
 	 * @return array<int, string> The legal targets; empty for a terminal state or an unknown type.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
 	public function targetsFor(string $type, string $from): array {
 		return (self::TABLE[$type][$from] ?? []);
@@ -123,7 +123,7 @@ class CasePlanTransitions {
 	 *
 	 * @return boolean True only for an edge present in the table.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
 	public function isLegal(string $type, string $from, string $to): bool {
 		return in_array($to, $this->targetsFor(type: $type, from: $from), true);
@@ -139,7 +139,7 @@ class CasePlanTransitions {
 	 *
 	 * @throws CaseTransitionException Naming item, type, from-state and to-state.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
 	public function assertLegal(CaseItem $item, string $to): void {
 		$type = (string)$item->getPlanItemType();
@@ -166,7 +166,7 @@ class CasePlanTransitions {
 	 *
 	 * @return boolean True for completed, terminated and disabled.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
 	public function isTerminal(string $state): bool {
 		return in_array($state, CaseItem::TERMINAL_STATES, true);

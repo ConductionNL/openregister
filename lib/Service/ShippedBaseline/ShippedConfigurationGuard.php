@@ -415,20 +415,30 @@ class ShippedConfigurationGuard {
 	 * step or any unattended path does because it found a difference. No
 	 * session means no actor means no reset, and the refusal says which.
 	 *
-	 * @param string               $slug The schema slug.
-	 * @param array<string, mixed> $live What the instance runs.
-	 * @param string               $path The part to reset.
+	 * `$record: false` leaves the audit row to the caller, which writes it with
+	 * recordReset() once the reset definition is stored. Recorded here, a write
+	 * that then fails leaves a trail naming a reset the instance never ran.
 	 *
-	 * @return array{applied: bool, reason: string, definition: array<string, mixed>} The outcome.
+	 * @param string               $slug   The schema slug.
+	 * @param array<string, mixed> $live   What the instance runs.
+	 * @param string               $path   The part to reset.
+	 * @param bool                 $record False leaves the audit row to the caller.
+	 *
+	 * @return array{applied: bool, reason: string, from: mixed, to: mixed, definition: array<string, mixed>} The outcome.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The default keeps every existing caller unchanged.
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
 	 */
-	public function resetToBaseline(string $slug, array $live, string $path): array {
+	public function resetToBaseline(string $slug, array $live, string $path, bool $record = true): array {
 		$user = $this->session->getUser();
 		if ($user === null) {
 			return [
 				'applied' => false,
 				'reason' => 'a reset needs an actor, and there is no session; it is never done by an unattended path',
+				'from' => null,
+				'to' => null,
 				'definition' => $live,
 			];
 		}
@@ -438,26 +448,48 @@ class ShippedConfigurationGuard {
 			return [
 				'applied' => false,
 				'reason' => $preview['reason'],
+				'from' => $preview['from'],
+				'to' => $preview['to'],
 				'definition' => $live,
 			];
 		}
 
+		if ($record === true) {
+			$this->recordReset(slug: $slug, path: $path, from: $preview['from'], to: $preview['to']);
+		}
+
+		return [
+			'applied' => true,
+			'reason' => '',
+			'from' => $preview['from'],
+			'to' => $preview['to'],
+			'definition' => $preview['definition'],
+		];
+	}//end resetToBaseline()
+
+	/**
+	 * Put a reset on the trail: who, which schema, which part, from what, to what.
+	 *
+	 * @param string $slug The schema slug.
+	 * @param string $path The part that was reset.
+	 * @param mixed  $from What the instance ran before.
+	 * @param mixed  $to   What was shipped, and now runs.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 */
+	public function recordReset(string $slug, string $path, mixed $from, mixed $to): void {
 		$this->record(
 			action: self::ACTION_RESET,
 			changed: [
 				'schema' => $slug,
 				'path' => $path,
-				'from' => $preview['from'],
-				'to' => $preview['to'],
+				'from' => $from,
+				'to' => $to,
 			]
 		);
-
-		return [
-			'applied' => true,
-			'reason' => '',
-			'definition' => $preview['definition'],
-		];
-	}//end resetToBaseline()
+	}//end recordReset()
 
 	/**
 	 * Record that a conflicting part was taken from upstream.

@@ -268,7 +268,7 @@ class FlowService {
 	 * @throws FlowAdoptionRefused When there is no acting user, or the flow
 	 *                             already belongs to someone else.
 	 *
-	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function adopt(Flow $flow): Flow {
 		$uid = $this->caller->actingUser();
@@ -401,7 +401,7 @@ class FlowService {
 	 *
 	 * @return string The signature.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function graphSignature(Flow $flow): string {
 		return (string)json_encode([

@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+ * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
  */
 
 declare(strict_types=1);
@@ -128,7 +128,7 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.ExcessivePublicCount) Entity getters/setters are
  * the column surface, not an API design choice.
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+ * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
  */
 class CaseItem extends Entity implements JsonSerializable {
 
@@ -544,7 +544,7 @@ class CaseItem extends Entity implements JsonSerializable {
 	 *
 	 * @return boolean True when the state is terminal.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
 	public function isInTerminalState(): bool {
 		return in_array($this->state, self::TERMINAL_STATES, true);
@@ -555,7 +555,7 @@ class CaseItem extends Entity implements JsonSerializable {
 	 *
 	 * @return boolean True for enabled, active or a terminal state other than disabled.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	public function isEntered(): bool {
 		return $this->state !== null
@@ -570,7 +570,7 @@ class CaseItem extends Entity implements JsonSerializable {
 	 *
 	 * @return self This item.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function hydrate(array $object): self {
 		foreach ($object as $fieldName => $value) {
@@ -590,7 +590,7 @@ class CaseItem extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The plan item as plain data.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	public function jsonSerialize(): array {
 		return [

@@ -273,7 +273,7 @@ class FederationController extends Controller {
 	 *
 	 * @return JSONResponse The object or an error.
 	 *
-	 * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -321,7 +321,7 @@ class FederationController extends Controller {
 	 *
 	 * @return JSONResponse The created object, or an error.
 	 *
-	 * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -391,7 +391,7 @@ class FederationController extends Controller {
 	 *
 	 * @return JSONResponse The updated object, or an error.
 	 *
-	 * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -436,7 +436,7 @@ class FederationController extends Controller {
 	 *
 	 * @return JSONResponse Success, or an error.
 	 *
-	 * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]

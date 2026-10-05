@@ -22,7 +22,7 @@
  *
  * @template-extends QBMapper<CaseItemAudit>
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+ * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<CaseItemAudit>
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+ * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
  */
 class CaseItemAuditMapper extends QBMapper {
 
@@ -63,7 +63,7 @@ class CaseItemAuditMapper extends QBMapper {
 	 *
 	 * @return CaseItemAudit The appended entry.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function insert(Entity $entity): CaseItemAudit {
 		if ($entity instanceof CaseItemAudit === false) {
@@ -89,7 +89,7 @@ class CaseItemAuditMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The parameter is the
 	 * inherited signature; refusing it unread is the whole method.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function update(Entity $entity): CaseItemAudit {
 		throw new LogicException('The plan-item audit is append-only: entries are never updated.');
@@ -107,7 +107,7 @@ class CaseItemAuditMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The parameter is the
 	 * inherited signature; refusing it unread is the whole method.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function delete(Entity $entity): CaseItemAudit {
 		throw new LogicException('The plan-item audit is append-only: entries are never deleted.');
@@ -120,7 +120,7 @@ class CaseItemAuditMapper extends QBMapper {
 	 *
 	 * @return array<int, CaseItemAudit> The entries.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function findForItem(int $caseItemId): array {
 		$qb = $this->db->getQueryBuilder();
@@ -139,7 +139,7 @@ class CaseItemAuditMapper extends QBMapper {
 	 *
 	 * @return array<int, CaseItemAudit> The entries.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function findForItems(array $caseItemIds): array {
 		if ($caseItemIds === []) {

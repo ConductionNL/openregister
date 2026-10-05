@@ -38,7 +38,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
+ * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
  */
 
 declare(strict_types=1);
@@ -142,7 +142,7 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 *
 	 * @throws RuntimeException When the verification cannot reconcile.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
 	 */
 	public function run(IOutput $output): void {
 		try {
@@ -175,7 +175,7 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 *
 	 * @return int How many steps were migrated this run.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
 	 */
 	private function migrateChain(array $chain): int {
 		$steps = $this->rows(
@@ -354,7 +354,7 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-a-decided-approval-keeps-its-decision-its-actor-and-its-comment
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-decided-approval-keeps-its-decision-its-actor-and-its-comment
 	 */
 	private function migrateStep(TaskSequence $sequence, array $step, string $chainName): void {
 		$status = (string)$step['status'];
@@ -447,7 +447,7 @@ class MigrateApprovalChainsToTasks implements IRepairStep {
 	 *
 	 * @throws RuntimeException Naming the chain, the object and the step.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
 	 */
 	private function verify(): void {
 		$steps = $this->rows(sql: 'SELECT * FROM `*PREFIX*openregister_approval_steps`');

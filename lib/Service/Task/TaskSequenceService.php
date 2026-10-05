@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+ * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use Throwable;
 /**
  * Provisions and progresses ordered task sequences.
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+ * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
  *
  * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4() is the codebase's uuid
  * idiom and TaskState is the published, stateless state vocabulary.
@@ -104,7 +104,7 @@ class TaskSequenceService {
 	 *
 	 * @return TaskSequence The provisioned, running sequence.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
 	public function provision(
 		array $template,
@@ -209,7 +209,7 @@ class TaskSequenceService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-a-rejection-terminates-the-sequence-and-every-task-it-still-owns
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-rejection-terminates-the-sequence-and-every-task-it-still-owns
 	 */
 	public function onTaskTerminal(Task $task): void {
 		$sequenceUuid = trim((string)$task->getSequenceUuid());
@@ -276,7 +276,7 @@ class TaskSequenceService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
 	private function advance(TaskSequence $sequence, Task $completed): void {
 		$source = self::ACTOR_PREFIX . (string)$sequence->getUuid();
@@ -332,7 +332,7 @@ class TaskSequenceService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-a-rejection-terminates-the-sequence-and-every-task-it-still-owns
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-rejection-terminates-the-sequence-and-every-task-it-still-owns
 	 */
 	private function close(TaskSequence $sequence, string $status, string $outcome, string $reason): void {
 		$sequence->setStatus($status);
@@ -368,7 +368,7 @@ class TaskSequenceService {
 	 *
 	 * @return string The resolved status; `approved` when undeclared.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-010
+	 * @spec openspec/specs/approval-workflow/spec.md#req-010
 	 */
 	private function statusOnApprove(TaskSequence $sequence, int $position): string {
 		return $this->declaredStatus(sequence: $sequence, position: $position, key: 'statusOnApprove', default: 'approved');
@@ -382,7 +382,7 @@ class TaskSequenceService {
 	 *
 	 * @return string The resolved status; `rejected` when undeclared.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-007
+	 * @spec openspec/specs/approval-workflow/spec.md#req-007
 	 */
 	private function statusOnReject(TaskSequence $sequence, int $position): string {
 		return $this->declaredStatus(sequence: $sequence, position: $position, key: 'statusOnReject', default: 'rejected');

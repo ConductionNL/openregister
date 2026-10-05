@@ -351,7 +351,7 @@ class FlowController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md
 	 */
 	public function state(string $flowId): JSONResponse {
 		try {
@@ -833,7 +833,7 @@ class FlowController extends Controller {
 	 *
 	 * @return JSONResponse The 409.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function refusal(FlowLifecycleRefused $refusal): JSONResponse {
 		return new JSONResponse(
@@ -1047,7 +1047,7 @@ class FlowController extends Controller {
 	 * `FlowService::find()`, which is organisation-scoped, so versions of a
 	 * flow the caller cannot see are refused as "no such flow".
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	#[NoAdminRequired]
 	public function versions(string $id): JSONResponse {
@@ -1082,7 +1082,7 @@ class FlowController extends Controller {
 	 *
 	 * @no-admin-idor-exempt Guarded downstream: see versions().
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	#[NoAdminRequired]
 	public function version(string $id, int $version): JSONResponse {
@@ -1152,7 +1152,7 @@ class FlowController extends Controller {
 	 *
 	 * @no-admin-idor-exempt Guarded downstream: see versions().
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	#[NoAdminRequired]
 	public function publish(string $id): JSONResponse {
@@ -1203,7 +1203,7 @@ class FlowController extends Controller {
 	 *
 	 * @no-admin-idor-exempt Guarded downstream: see versions().
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	#[NoAdminRequired]
 	public function draft(string $id): JSONResponse {
@@ -1238,7 +1238,7 @@ class FlowController extends Controller {
 	 *
 	 * @no-admin-idor-exempt Guarded downstream: see versions().
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	#[NoAdminRequired]
 	public function deprecate(string $id): JSONResponse {
@@ -1290,7 +1290,7 @@ class FlowController extends Controller {
 	 * one), and `adopt()` writes only the CALLER's uid — there is no
 	 * caller-chosen object state to abuse.
 	 *
-	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	#[NoAdminRequired]
 	public function adopt(string $id): JSONResponse {

@@ -761,7 +761,7 @@ class TaskService {
 	 *
 	 * @throws TaskConflictException When not an unconsumed approving decision.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-human-in-the-loop-semantic-is-not-retired-until-it-has-a-named-home
 	 */
 	public function consume(string $uuid, string $source, string $reason): Task {
 		$task = $this->tasks->findByUuid(uuid: $uuid);
@@ -834,7 +834,7 @@ class TaskService {
 	 *
 	 * @throws TaskConflictException When the task is terminal, or closed concurrently.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
 	public function enable(string $uuid, string $source, string $reason): Task {
 		$task = $this->tasks->findByUuid(uuid: $uuid);

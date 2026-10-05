@@ -17,7 +17,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+ * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
  */
 
 declare(strict_types=1);
@@ -122,7 +122,7 @@ class UniqueHintCheckerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function testASecondRecordOnTheSameValueWarns(): void {
 		$this->answerReads([$this->stored('first')], [$this->stored('first')]);
@@ -141,7 +141,7 @@ class UniqueHintCheckerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function testTheWarningFiresOnAnUpdate(): void {
 		$this->answerReads([$this->stored('first')], [$this->stored('first')]);
@@ -157,7 +157,7 @@ class UniqueHintCheckerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function testAnObjectDoesNotCollideWithItself(): void {
 		$this->answerReads([$this->stored('first')], [$this->stored('first')]);
@@ -174,7 +174,7 @@ class UniqueHintCheckerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function testAnUnreadableHolderIsReportedWithoutBeingNamed(): void {
 		$this->answerReads([], [$this->stored('hidden')]);
@@ -193,7 +193,7 @@ class UniqueHintCheckerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function testAnUnheldValueIsSilent(): void {
 		$this->answerReads([], []);
@@ -208,7 +208,7 @@ class UniqueHintCheckerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function testNoNominationReadsNothing(): void {
 		$this->objectService->expects($this->never())->method('findAll');
@@ -224,7 +224,7 @@ class UniqueHintCheckerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function testAnEmptyValueIsNotACollision(): void {
 		$this->objectService->expects($this->never())->method('findAll');
@@ -240,7 +240,7 @@ class UniqueHintCheckerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function testWarningsAreDrainedOnRead(): void {
 		$this->answerReads([$this->stored('first')], [$this->stored('first')]);

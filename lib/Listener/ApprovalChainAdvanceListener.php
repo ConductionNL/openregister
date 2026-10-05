@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-010
+ * @spec openspec/specs/approval-workflow/spec.md#req-010
  */
 
 declare(strict_types=1);
@@ -66,7 +66,7 @@ class ApprovalChainAdvanceListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-010
+	 * @spec openspec/specs/approval-workflow/spec.md#req-010
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof TaskSequenceCompletedEvent) === false) {

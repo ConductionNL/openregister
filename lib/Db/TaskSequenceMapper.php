@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+ * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
  */
 
 declare(strict_types=1);
@@ -59,7 +59,7 @@ class TaskSequenceMapper extends QBMapper {
 	 *
 	 * @throws DoesNotExistException When no such sequence exists.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
 	public function findByUuid(string $uuid): TaskSequence {
 		$qb = $this->db->getQueryBuilder();
@@ -81,7 +81,7 @@ class TaskSequenceMapper extends QBMapper {
 	 *
 	 * @return TaskSequence|null The running sequence, or null.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-007
+	 * @spec openspec/specs/approval-workflow/spec.md#req-007
 	 */
 	public function findRunning(string $anchorObjectUuid, string $templateId): ?TaskSequence {
 		$qb = $this->db->getQueryBuilder();
@@ -119,7 +119,7 @@ class TaskSequenceMapper extends QBMapper {
 	 *
 	 * @return TaskSequence|null The newest sequence for the template, or null when none has run.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-an-approval-is-an-ordered-task-sequence-with-one-position-enabled-at-a-time
 	 */
 	public function findNewestForTemplate(string $templateId): ?TaskSequence {
 		$qb = $this->db->getQueryBuilder();
@@ -146,7 +146,7 @@ class TaskSequenceMapper extends QBMapper {
 	 *
 	 * @return array<int, TaskSequence> The sequences, newest first.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-a-rejection-terminates-the-sequence-and-every-task-it-still-owns
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-a-rejection-terminates-the-sequence-and-every-task-it-still-owns
 	 */
 	public function findForAnchor(string $anchorObjectUuid, string $templateId): array {
 		$qb = $this->db->getQueryBuilder();
@@ -168,7 +168,7 @@ class TaskSequenceMapper extends QBMapper {
 	 *
 	 * @return TaskSequence|null The newest sequence, or null.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-007
+	 * @spec openspec/specs/approval-workflow/spec.md#req-007
 	 */
 	public function findNewestForAnchor(string $anchorObjectUuid, string $templateId): ?TaskSequence {
 		$rows = $this->findForAnchor(anchorObjectUuid: $anchorObjectUuid, templateId: $templateId);

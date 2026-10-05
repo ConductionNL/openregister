@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md
+ * @spec openspec/specs/flow-decision-tables/spec.md
  */
 
 declare(strict_types=1);
@@ -82,7 +82,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 *
 	 * @return string The id.
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-decision-table-step-evaluates-its-table-against-every-item
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-decision-table-step-evaluates-its-table-against-every-item
 	 */
 	public function getId(): string {
 		return self::NODE_ID;
@@ -93,7 +93,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 *
 	 * @return string The display name.
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-the-node-describes-its-own-form-and-writes-an-optional-evaluation-record
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-node-describes-its-own-form-and-writes-an-optional-evaluation-record
 	 */
 	public function getDisplayName(): string {
 		return $this->l10n->t('Evaluate a decision table');
@@ -104,7 +104,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-the-node-describes-its-own-form-and-writes-an-optional-evaluation-record
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-node-describes-its-own-form-and-writes-an-optional-evaluation-record
 	 */
 	public function getDescription(): string {
 		return $this->l10n->t('Apply a table of rules to each item and write the outcome onto it.');
@@ -115,7 +115,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 *
 	 * @return string The icon URL.
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-the-node-describes-its-own-form-and-writes-an-optional-evaluation-record
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-node-describes-its-own-form-and-writes-an-optional-evaluation-record
 	 */
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/checkmark.svg');
@@ -130,7 +130,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 *
 	 * @return bool Whether it is available.
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-decision-table-step-evaluates-its-table-against-every-item
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-decision-table-step-evaluates-its-table-against-every-item
 	 */
 	public function isAvailableForScope(int $scope): bool {
 		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
@@ -141,7 +141,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-the-node-describes-its-own-form-and-writes-an-optional-evaluation-record
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-node-describes-its-own-form-and-writes-an-optional-evaluation-record
 	 */
 	public function configKeys(): array {
 		return ['table', 'inputMapping', 'outputMapping', 'defaultOutputs', 'resultKey'];
@@ -156,7 +156,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 *
 	 * @return array<int, array<string, mixed>> The field descriptions.
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-the-node-describes-its-own-form-and-writes-an-optional-evaluation-record
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-node-describes-its-own-form-and-writes-an-optional-evaluation-record
 	 */
 	public function configForm(): array {
 		return [
@@ -208,7 +208,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 *
 	 * @throws UnexpectedValueException When the table or the mappings are refused.
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
 	public function validateConfig(array $config): void {
 		$table = ($config['table'] ?? null);
@@ -255,7 +255,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 * @throws UnexpectedValueException When the configuration is refused.
 	 * @throws DecisionEvaluationException When an item cannot be decided and no default row is configured.
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-the-step-is-deterministic-and-never-suspends
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-the-step-is-deterministic-and-never-suspends
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) `$context` is part of the
 	 * node contract; a deterministic rule step deliberately reads none of it.
@@ -328,7 +328,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 *
 	 * @throws DecisionEvaluationException When the item cannot be decided and no default row exists.
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-no-match-takes-the-authors-explicit-default-or-fails-loudly
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-no-match-takes-the-authors-explicit-default-or-fails-loudly
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) `FlowValueTemplate::render()` is the
 	 * engine's canonical dotted-path read.
@@ -410,7 +410,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 *
 	 * @throws UnexpectedValueException When the mapping is refused.
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
 	private function assertMapping(array $config, string $key, array $declared): void {
 		if (array_key_exists($key, $config) === false) {
@@ -452,7 +452,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 *
 	 * @throws UnexpectedValueException When the defaults are refused.
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-no-match-takes-the-authors-explicit-default-or-fails-loudly
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-no-match-takes-the-authors-explicit-default-or-fails-loudly
 	 */
 	private function assertDefaults(array $config, array $table, array $outputNames): void {
 		if (array_key_exists('defaultOutputs', $config) === false) {
@@ -499,7 +499,7 @@ class DecisionTableNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConf
 	 *
 	 * @throws UnexpectedValueException When the path is refused.
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
 	private function assertPath(mixed $path, string $where): void {
 		if (is_string($path) === false || trim($path) === '') {

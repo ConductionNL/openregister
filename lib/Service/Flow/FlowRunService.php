@@ -537,7 +537,7 @@ class FlowRunService {
 	 *
 	 * @return FlowRunAsScope|null The scope, or null when the container cannot build one.
 	 *
-	 * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
+	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
 	 */
 	private function identityScope(): ?FlowRunAsScope {
 		if ($this->runAsScopeResolved === true) {
@@ -1350,7 +1350,7 @@ class FlowRunService {
 	 *
 	 * @return FlowRun The failed run.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function failUnresolvableVersion(FlowRun $run): FlowRun {
 		$run->setStatus(FlowRun::STATUS_FAILED);
@@ -1536,7 +1536,7 @@ class FlowRunService {
 	 *
 	 * @return string|null The key, or null when not suspended or none is set.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
 	 */
 	private function correlationKeyFrom(array $context, bool $suspended): ?string {
 		if ($suspended === false) {

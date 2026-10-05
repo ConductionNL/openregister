@@ -17,7 +17,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+ * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
  */
 
 declare(strict_types=1);
@@ -67,7 +67,7 @@ class UniqueHintAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function testAbsentAnnotationIsValid(): void {
 		$this->assertSame([], $this->validator->validate(['properties' => []]));
@@ -78,7 +78,7 @@ class UniqueHintAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function testDeclaredPropertiesAreValid(): void {
 		$this->assertSame([], $this->validator->validate($this->shape(['kvkNumber', 'bsn'])));
@@ -90,7 +90,7 @@ class UniqueHintAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function testUndeclaredPropertyIsRefusedByName(): void {
 		$errors = $this->validator->validate($this->shape(['kvkNummer']));
@@ -105,7 +105,7 @@ class UniqueHintAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function testAScalarNominationIsRefused(): void {
 		$errors = $this->validator->validate($this->shape('kvkNumber'));
@@ -120,7 +120,7 @@ class UniqueHintAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function testAnEmptyEntryIsRefused(): void {
 		$errors = $this->validator->validate($this->shape(['kvkNumber', '']));
@@ -133,7 +133,7 @@ class UniqueHintAnnotationValidatorTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function testNominatedReadsTheConfiguration(): void {
 		$this->assertSame(

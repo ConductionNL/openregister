@@ -747,7 +747,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @contract tests/integration/openregister-integrations.postman_collection.json
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -812,7 +812,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @return JSONResponse The 403 or 409 the refusal maps to.
 	 *
-	 * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
+	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
 	 */
 	private function refusalResponse(FlowSignalRefused $refused, FlowRun $run, string $verb): JSONResponse {
 		if ($refused->getReason() === FlowSignalRefused::NOT_ASSIGNEE) {
@@ -845,7 +845,7 @@ class FlowRunController extends Controller {
 	 *
 	 * @return FlowRunSignalService The seam.
 	 *
-	 * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
+	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
 	 */
 	private function signals(): FlowRunSignalService {
 		return ($this->signalService ?? new FlowRunSignalService(

@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -64,7 +64,7 @@ use OCP\AppFramework\Db\Entity;
  * @method DateTime|null getCreated()
  * @method void          setCreated(?DateTime $created)
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 class FlowVersion extends Entity implements \JsonSerializable {
 	/**
@@ -231,7 +231,7 @@ class FlowVersion extends Entity implements \JsonSerializable {
 	 *
 	 * @return boolean True when this version is published.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function isPublished(): bool {
 		return $this->status === self::STATUS_PUBLISHED;
@@ -243,7 +243,7 @@ class FlowVersion extends Entity implements \JsonSerializable {
 	 *
 	 * @return boolean True when this version is a draft.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function isDraft(): bool {
 		return $this->status === self::STATUS_DRAFT;
@@ -255,7 +255,7 @@ class FlowVersion extends Entity implements \JsonSerializable {
 	 *
 	 * @return array<string, mixed> The version as an array.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [

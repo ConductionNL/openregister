@@ -3452,7 +3452,7 @@ class SaveObject {
 	 *
 	 * @return UniqueHintChecker|null The checker, or null when unavailable.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	private function resolveUniqueHintChecker(): ?UniqueHintChecker {
 		if ($this->container === null) {

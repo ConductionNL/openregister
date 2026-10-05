@@ -2069,7 +2069,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	private function validateUniqueHintAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);

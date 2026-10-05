@@ -681,6 +681,8 @@ class AggregationRunner {
 	 * @param Register $register The register the schema belongs to.
 	 * @param Schema $schema The schema being aggregated.
 	 * @param AggregationQuery $query The fully-validated query value object.
+	 * @param bool $bypassRbac Internal-system mode, as run() has it: skip the read gate.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Internal-mode toggle, as on run().
 	 *
 	 * @return array<string, mixed> Either `{value, backend, cached}` (ungrouped)
 	 *                              or `{groups, backend, cached}` (grouped /
@@ -704,10 +706,13 @@ class AggregationRunner {
 		Register $register,
 		Schema $schema,
 		AggregationQuery $query,
+		bool $bypassRbac=false,
 	): array {
-		// RBAC gate — identical predicate to run().
+		// RBAC gate — identical predicate to run(), including run()'s
+		// internal-system mode (a materialised aggregate-reference is the
+		// schema author's derived value, resolved whoever saves).
 		$userId = $this->userSession->getUser()?->getUID();
-		if ($this->mayAggregate(schema: $schema, userId: $userId) === false) {
+		if ($bypassRbac === false && $this->mayAggregate(schema: $schema, userId: $userId) === false) {
 			throw new NotAuthorizedException(
 				message: sprintf(
 					'You do not have permission to aggregate schema "%s".',
@@ -1140,6 +1145,8 @@ class AggregationRunner {
 	 * @param string $registerRef Register slug/uuid/id.
 	 * @param string $schemaRef Schema slug/uuid/id.
 	 * @param AggregationQuery $query The fully-validated query.
+	 * @param bool $bypassRbac Internal-system mode, as run() has it: skip the read gate.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Internal-mode toggle, as on run().
 	 *
 	 * @return array<string, mixed> Result envelope (see runAdhoc()).
 	 *
@@ -1152,13 +1159,14 @@ class AggregationRunner {
 		string $registerRef,
 		string $schemaRef,
 		AggregationQuery $query,
+		bool $bypassRbac=false,
 	): array {
 		// REGISTER-SCOPED RESOLUTION — see run() and loadSchemaInRegister().
 		// `value`, `grouped` and `timeseries` all land here, and all three are
 		// the surfaces the dashboard `stat`/`chart` widgets call.
 		$pair = $this->loadSchemaInRegister(schemaRef: $schemaRef, registerRef: $registerRef);
 
-		return $this->runAdhoc(register: $pair['register'], schema: $pair['schema'], query: $query);
+		return $this->runAdhoc(register: $pair['register'], schema: $pair['schema'], query: $query, bypassRbac: $bypassRbac);
 	}//end runAdhocByRef()
 
 	/**

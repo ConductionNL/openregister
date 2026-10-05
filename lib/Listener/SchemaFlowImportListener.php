@@ -302,7 +302,7 @@ class SchemaFlowImportListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function publishVersionOne(Flow $flow): void {
 		if ($this->container === null) {

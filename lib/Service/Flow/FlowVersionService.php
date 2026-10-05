@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -64,7 +64,7 @@ use Throwable;
  * and still over. The suppression states the reason rather than raising the
  * limit for every class in the app.
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 class FlowVersionService {
 	/**
@@ -99,7 +99,7 @@ class FlowVersionService {
 	 *
 	 * @return FlowVersion[] The versions.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function versionsOf(string $flowUuid): array {
 		return $this->versions->findAllForFlow(flowUuid: $flowUuid);
@@ -114,7 +114,7 @@ class FlowVersionService {
 	 *
 	 * @return FlowVersion|null The version, or null.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function versionOf(string $flowUuid, int $number): ?FlowVersion {
 		return $this->versions->find(flowUuid: $flowUuid, version: $number);
@@ -128,7 +128,7 @@ class FlowVersionService {
 	 *
 	 * @return array<string, mixed>|null The graph, or null when unresolvable.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function graphOfVersion(FlowVersion $version): ?array {
 		return $this->pin->graphFor($version->getDefinitionHash());
@@ -142,7 +142,7 @@ class FlowVersionService {
 	 *
 	 * @return array<string, mixed> The graph.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function graphOf(Flow $flow): array {
 		return [
@@ -169,7 +169,7 @@ class FlowVersionService {
 	 * @throws FlowLifecycleRefused When the head is not a draft, or has a dead end.
 	 * @throws Throwable            When the transaction could not be committed.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function publish(Flow $flow, ?string $publishedBy = null, ?string $bump = null): FlowVersion {
 		$flowId = (string)$flow->getUuid();
@@ -330,7 +330,7 @@ class FlowVersionService {
 	 *
 	 * @throws Throwable When the transaction could not be committed.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function createDraft(Flow $flow): FlowVersion {
 		$flowId = (string)$flow->getUuid();
@@ -385,7 +385,7 @@ class FlowVersionService {
 	 * @throws FlowLifecycleRefused When there is no published version.
 	 * @throws Throwable            When the transaction could not be committed.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function deprecate(Flow $flow): FlowVersion {
 		$flowId = (string)$flow->getUuid();
@@ -554,7 +554,7 @@ class FlowVersionService {
 	 *
 	 * @return FlowVersion The head's version row, unsaved changes included.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function headVersionRow(Flow $flow, string $hash): FlowVersion {
 		$flowId = (string)$flow->getUuid();
@@ -585,7 +585,7 @@ class FlowVersionService {
 	 *
 	 * @return FlowVersion The stored version.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function persist(FlowVersion $version): FlowVersion {
 		if ($version->getId() === null) {

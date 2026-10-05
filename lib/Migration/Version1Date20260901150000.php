@@ -35,7 +35,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+ * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Creates the plan-item and plan-item-audit tables.
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+ * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
  */
 class Version1Date20260901150000 extends SimpleMigrationStep {
 
@@ -74,7 +74,7 @@ class Version1Date20260901150000 extends SimpleMigrationStep {
 	 *
 	 * @return ISchemaWrapper|null The changed schema, or null when nothing changed.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		/*
@@ -110,7 +110,7 @@ class Version1Date20260901150000 extends SimpleMigrationStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	private function createItemsTable(ISchemaWrapper $schema): void {
 		$table = $schema->createTable(self::TABLE_ITEMS);
@@ -203,7 +203,7 @@ class Version1Date20260901150000 extends SimpleMigrationStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	private function createAuditTable(ISchemaWrapper $schema): void {
 		$table = $schema->createTable(self::TABLE_AUDIT);

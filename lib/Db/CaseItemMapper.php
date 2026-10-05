@@ -30,7 +30,7 @@
  *
  * @template-extends QBMapper<CaseItem>
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+ * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
  */
 
 declare(strict_types=1);
@@ -54,7 +54,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @template-extends QBMapper<CaseItem>
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+ * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
  */
 class CaseItemMapper extends QBMapper {
 
@@ -75,7 +75,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return CaseItem The inserted item, with its id.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function insert(Entity $entity): CaseItem {
 		if ($entity instanceof CaseItem === false) {
@@ -100,7 +100,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return CaseItem The updated item.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function update(Entity $entity): CaseItem {
 		if ($entity instanceof CaseItem === false) {
@@ -124,7 +124,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return boolean True when the row moved; false when somebody else moved it first.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function updateIfState(CaseItem $item, string $expectedState): bool {
 		$id = $item->getId();
@@ -161,7 +161,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such item exists.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	public function findByUuid(string $uuid): CaseItem {
 		$qb = $this->db->getQueryBuilder();
@@ -182,7 +182,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return array<int, CaseItem> The rows, parents before children by id.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	public function findByObject(string $objectUuid): array {
 		$qb = $this->db->getQueryBuilder();
@@ -203,7 +203,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return int The open row count.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function countOpenByObject(string $objectUuid): int {
 		$qb = $this->db->getQueryBuilder();
@@ -226,7 +226,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return array<int, CaseItem> The rows (normally one).
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
 	 */
 	public function findByRealisation(string $realisationUuid): array {
 		$qb = $this->db->getQueryBuilder();
@@ -252,7 +252,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return array<int, CaseItem> The page, oldest first.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function findByTypeAndState(?string $type, ?string $state, int $limit = 25, int $offset = 0): array {
 		$qb = $this->db->getQueryBuilder();
@@ -274,7 +274,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return int The count, computed in the datastore.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function countByTypeAndState(?string $type, ?string $state): int {
 		$qb = $this->db->getQueryBuilder();
@@ -297,7 +297,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return int How many rows were deleted.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
 	 */
 	public function deleteByObject(string $objectUuid): int {
 		$qb = $this->db->getQueryBuilder();
@@ -316,7 +316,7 @@ class CaseItemMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	private function applyTypeAndState(IQueryBuilder $qb, ?string $type, ?string $state): void {
 		if ($type !== null && trim($type) !== '') {
