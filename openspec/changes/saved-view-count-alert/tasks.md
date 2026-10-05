@@ -6,7 +6,7 @@
 
 ## 2. Sweep
 
-- [~] 2.1 `ViewAlertSweepJob` (TimedJob): due selection, cap, watermark, count under the owner's RBAC, crossing state machine, dispatch through the engine with a `view-alert` source.
+- [x] 2.1 `ViewAlertSweepJob` (TimedJob): due selection, cap, watermark, count under the owner's RBAC, crossing state machine, dispatch through the engine with a `view-alert` source.
 - [x] 2.2 Register the job in `appinfo/info.xml`.
 
 ## 3. Tests
@@ -79,3 +79,20 @@ the real controller over the real `ViewService` and reach resolver.
 
 Still open: 2.1's notification sender (the crossing is an event with no
 sender that can address a person about a number) and 3.1, the e2e.
+
+## Status, 2026-10-05
+
+**2.1 is done: a crossing now reaches people.** `ViewAlertCrossedListener`
+hears the sweep's `ViewAlertCrossedEvent` and delivers it. Recipients are
+the app's RBAC strings: `user:<uid>` for a person, a bare id for a Nextcloud
+group, both resolved through `NotificationRecipientResolver` so uids are
+verified and groups expanded as for a schema rule. A person named directly
+and through a group is told once. `nc-notification` puts it in the bell
+(subject `view_alert_crossed`, rendered by `Notifier`, with an editable
+template in `NotificationTemplateRegistry`), and `email` mails each
+recipient in their own language through `EmailSender`. A recipient the
+server does not have, or a channel nothing delivers, is named in a warning.
+`tests/Unit/Listener/ViewAlertCrossedListenerTest.php` runs the real
+listener over the real event, view, `ViewAlert` and resolver.
+
+Still open: 3.1, the e2e, until the field ships in nextcloud-vue.

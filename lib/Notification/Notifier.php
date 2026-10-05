@@ -228,6 +228,7 @@ class Notifier implements INotifier {
 			'timeline_mention' => $this->prepareTimelineMention(...),
 			'object_ownership_changed' => $this->prepareOwnershipChanged(...),
 			'security_setting_changed' => $this->prepareSecuritySettingChanged(...),
+			'view_alert_crossed' => $this->prepareViewAlertCrossed(...),
 			default => null,
 		};
 
@@ -851,4 +852,41 @@ class Notifier implements INotifier {
 
 		return $notification;
 	}//end prepareScheduledReportFailed()
+
+	/**
+	 * Render "a saved view's count crossed its threshold".
+	 *
+	 * The sentence says which side of the line the count is on, because a
+	 * team lead watching a backlog grow and a planner watching free beds run
+	 * out read the same numbers in opposite directions.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-alert-fires-once-per-crossing-and-re-arms
+	 */
+	private function prepareViewAlertCrossed(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+
+		$view = (string)($parameters['view'] ?? '');
+		$count = (string)($parameters['count'] ?? '');
+		$threshold = (string)($parameters['threshold'] ?? '');
+
+		$notification->setParsedSubject($l->t('%1$s is at %2$s', [$view, $count]));
+
+		$message = $l->t('The view %1$s counts %2$s, at or below its threshold of %3$s.', [$view, $count, $threshold]);
+		if (($parameters['operator'] ?? '') === 'gte') {
+			$message = $l->t('The view %1$s counts %2$s, at or above its threshold of %3$s.', [$view, $count, $threshold]);
+		}
+
+		$notification->setParsedMessage($message);
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareViewAlertCrossed()
 }//end class
