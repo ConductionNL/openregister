@@ -33,7 +33,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-006
+ * @spec openspec/specs/approval-workflow/spec.md#req-006
  */
 
 declare(strict_types=1);
@@ -104,7 +104,7 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-006
+	 * @spec openspec/specs/approval-workflow/spec.md#req-006
 	 */
 	public function handle(Event $event): void {
 		$schema = null;
@@ -153,7 +153,7 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 	 *
 	 * @return array<string, mixed>|null The compiled template, or null.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-006
+	 * @spec openspec/specs/approval-workflow/spec.md#req-006
 	 */
 	public function compile(Schema $schema, string $chainKey): ?array {
 		$schemaId = $schema->getId();
@@ -253,7 +253,7 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 	 *
 	 * @return string The template id, RFC-4122 shaped.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
 	 */
 	public function templateIdFor(int $schemaId, string $chainKey): string {
 		$hash = md5(self::TEMPLATE_ID_NS . ':' . $schemaId . ':' . $chainKey);

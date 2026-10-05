@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-agent-action/tasks.md#task-1-1
+ * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Symfony\Component\Uid\Uuid;
  * `mode` is `"async"` only in v1 — a consumer MUST treat any other mode as
  * unsupported and skip the run rather than execute it inline.
  *
- * @spec openspec/changes/flow-agent-action/tasks.md#task-1-1
+ * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
  */
 class AgentRunRequestedEvent extends Event {
 
@@ -69,7 +69,7 @@ class AgentRunRequestedEvent extends Event {
 	 * @param string $mode Dispatch mode — `"async"` only in v1.
 	 * @param string $flowName The owning flow's name (diagnostics/audit).
 	 *
-	 * @spec openspec/changes/flow-agent-action/tasks.md#task-1-1
+	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function __construct(
 		private readonly string $subjectUuid,
@@ -92,7 +92,7 @@ class AgentRunRequestedEvent extends Event {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/flow-agent-action/tasks.md#task-1-1
+	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getSubjectUuid(): string {
 		return $this->subjectUuid;
@@ -103,7 +103,7 @@ class AgentRunRequestedEvent extends Event {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/flow-agent-action/tasks.md#task-1-1
+	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getSubjectRegister(): string {
 		return $this->subjectRegister;
@@ -114,7 +114,7 @@ class AgentRunRequestedEvent extends Event {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/flow-agent-action/tasks.md#task-1-1
+	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getSubjectSchema(): string {
 		return $this->subjectSchema;
@@ -125,7 +125,7 @@ class AgentRunRequestedEvent extends Event {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/flow-agent-action/tasks.md#task-1-1
+	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getAgent(): string {
 		return $this->agent;
@@ -136,7 +136,7 @@ class AgentRunRequestedEvent extends Event {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/flow-agent-action/tasks.md#task-1-1
+	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getSkill(): ?string {
 		return $this->skill;
@@ -147,7 +147,7 @@ class AgentRunRequestedEvent extends Event {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/flow-agent-action/tasks.md#task-1-1
+	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getPrompt(): string {
 		return $this->prompt;
@@ -158,7 +158,7 @@ class AgentRunRequestedEvent extends Event {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/flow-agent-action/tasks.md#task-1-1
+	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getResultField(): string {
 		return $this->resultField;
@@ -169,7 +169,7 @@ class AgentRunRequestedEvent extends Event {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/flow-agent-action/tasks.md#task-1-1
+	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function isRequiresApproval(): bool {
 		return $this->requiresApproval;
@@ -180,7 +180,7 @@ class AgentRunRequestedEvent extends Event {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/flow-agent-action/tasks.md#task-1-1
+	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getMode(): string {
 		return $this->mode;
@@ -191,7 +191,7 @@ class AgentRunRequestedEvent extends Event {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/flow-agent-action/tasks.md#task-1-1
+	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getFlowName(): string {
 		return $this->flowName;
@@ -202,7 +202,7 @@ class AgentRunRequestedEvent extends Event {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/flow-agent-action/tasks.md#task-1-1
+	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getCorrelationId(): string {
 		return $this->correlationId;
@@ -217,7 +217,7 @@ class AgentRunRequestedEvent extends Event {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/flow-agent-action/tasks.md#task-1-1
+	 * @spec openspec/changes/archive/2026-10-05-flow-agent-action/tasks.md#task-1-1
 	 */
 	public function getPayload(): array {
 		return [

@@ -175,7 +175,7 @@ class RegistryStepDispatcher implements FlowStepDispatcher {
 	 *
 	 * @return array The output items.
 	 *
-	 * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
+	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
 	 */
 	private function executeScoped(IFlowNode $node, array $items, array $config, array $context): array {
 		$engineOwned = str_starts_with(get_class($node), 'OCA\\OpenRegister\\');

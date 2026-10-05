@@ -17,7 +17,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+ * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
  */
 
 declare(strict_types=1);
@@ -82,7 +82,7 @@ class DismissedPairStoreTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testTheKeyIsTheSameWhicheverWayRound(): void {
 		$this->assertSame(
@@ -98,7 +98,7 @@ class DismissedPairStoreTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testActiveDismissalsAreKeyedByPair(): void {
 		$this->objectService->method('findAll')->willReturn(
@@ -122,7 +122,7 @@ class DismissedPairStoreTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testAFailedLookupOffersEveryPair(): void {
 		$this->objectService->method('findAll')->willThrowException(new RuntimeException('down'));
@@ -136,7 +136,7 @@ class DismissedPairStoreTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testDismissalNamesWhoWhyAndWhen(): void {
 		$this->objectService->method('findAll')->willReturn([]);
@@ -176,7 +176,7 @@ class DismissedPairStoreTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testRedismissingReplacesTheRow(): void {
 		$this->objectService->method('findAll')->willReturn(
@@ -212,7 +212,7 @@ class DismissedPairStoreTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testReversalKeepsTheRow(): void {
 		$this->objectService->method('findAll')->willReturn(
@@ -246,7 +246,7 @@ class DismissedPairStoreTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function testUndismissingAnUnknownPairWritesNothing(): void {
 		$this->objectService->method('findAll')->willReturn([]);

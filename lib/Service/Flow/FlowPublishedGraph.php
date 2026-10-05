@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Psr\Container\ContainerInterface;
 /**
  * Resolves a flow's published graph and keeps its trigger rows in step with it.
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 class FlowPublishedGraph {
 	/**
@@ -57,7 +57,7 @@ class FlowPublishedGraph {
 	 *
 	 * @return array<string, mixed>|null The published graph, or null.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function graphOf(string $flowId): ?array {
 		$published = $this->container->get(FlowVersionMapper::class)->findPublished(flowUuid: $flowId);
@@ -83,7 +83,7 @@ class FlowPublishedGraph {
 	 * @return array<string, mixed>|null The pinned graph, or null when the run
 	 *                                   carries no version or it is unresolvable.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function ofRun(FlowRun $run): ?array {
 		$version = $run->getFlowVersion();
@@ -117,7 +117,7 @@ class FlowPublishedGraph {
 	 * @return array<string, mixed>|null The document to walk, or null when the
 	 *                                   run is pinned to a version that is gone.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function overlayOnto(FlowRun $run, array $live): ?array {
 		// An unpinned run is the interactive draft test run — the one

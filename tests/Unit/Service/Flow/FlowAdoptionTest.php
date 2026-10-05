@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+ * @spec openspec/specs/flow-storage/spec.md
  */
 
 declare(strict_types=1);

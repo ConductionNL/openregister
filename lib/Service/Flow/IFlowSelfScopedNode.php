@@ -38,7 +38,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
+ * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-contributed-node-executes-under-the-runs-acting-identity
  */
 
 declare(strict_types=1);

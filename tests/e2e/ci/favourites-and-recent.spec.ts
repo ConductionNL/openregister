@@ -8,7 +8,7 @@ import type { APIRequestContext } from '@playwright/test'
  * client uses.
  *
  * Scenario anchors, in the portable `<spec>::<slug>` form so they still resolve
- * once `openspec/changes/favourites-and-recent/specs/` is archived into
+ * once `openspec/changes/archive/2026-10-05-favourites-and-recent/specs/` is archived into
  * `openspec/specs/`:
  *
  * @e2e object-interactions::starring-leaves-the-object-untouched

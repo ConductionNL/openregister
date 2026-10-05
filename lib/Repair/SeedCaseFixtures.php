@@ -38,7 +38,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+ * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
  */
 
 declare(strict_types=1);
@@ -64,7 +64,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength) The fixtures ARE the class;
  * six groups of literal rows, same as SeedTaskFixtures.
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+ * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
  */
 class SeedCaseFixtures implements IRepairStep {
 
@@ -110,7 +110,7 @@ class SeedCaseFixtures implements IRepairStep {
 	 *
 	 * @return string The name.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	public function getName(): string {
 		return 'Seed the case-plan fixtures (flow-cmmn-case-semantics)';
@@ -123,7 +123,7 @@ class SeedCaseFixtures implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	public function run(IOutput $output): void {
 		if ($this->appConfig->getValueBool('openregister', self::FLAG, false) === false) {
@@ -157,7 +157,7 @@ class SeedCaseFixtures implements IRepairStep {
 	 *
 	 * @return array<string, mixed> The zaaktype document.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	public static function zaaktypeFixture(): array {
 		return [
@@ -195,7 +195,7 @@ class SeedCaseFixtures implements IRepairStep {
 	 *
 	 * @return array{seeded: int, present: int} Counts.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	private function seedTree(array $fixture, ?int $parentId): array {
 		$counts = ['seeded' => 0, 'present' => 0];
@@ -238,7 +238,7 @@ class SeedCaseFixtures implements IRepairStep {
 	 *
 	 * @return array<int, array<string, mixed>> The root fixtures.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	private function fixtures(): array {
 		// phpcs:disable Generic.Files.LineLength.MaxExceeded -- one fixture row per line keeps each seed readable as one record.

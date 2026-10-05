@@ -35,7 +35,7 @@ namespace OCA\OpenRegister\Service\Quality;
  * important to catch would be unrepresentable — and a typo would just silently
  * nominate nothing.
  *
- * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+ * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
  */
 class UniqueHintAnnotationValidator {
 
@@ -47,7 +47,7 @@ class UniqueHintAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, property: string, message: string}> Errors; empty when valid.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function validate(array $schema): array {
 		$annotation = ($schema['x-openregister-unique-hint'] ?? null);
@@ -107,7 +107,7 @@ class UniqueHintAnnotationValidator {
 	 *
 	 * @return array<int, string> The nominated property names.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	public function nominated(array $configuration): array {
 		$annotation = ($configuration['x-openregister-unique-hint'] ?? null);

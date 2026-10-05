@@ -278,7 +278,7 @@ class FlowLocator {
 	 *
 	 * @return array<string, Flow> The matches, by uuid.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md#requirement-trigger-matching-answers-which-flow-the-queue-path-answers-which-version
+	 * @spec openspec/specs/flow-definition-versioning/spec.md#requirement-trigger-matching-answers-which-flow-the-queue-path-answers-which-version
 	 */
 	private function columnFallbackMatches(array $candidates, array $converted, string $event): array {
 		$matched = [];
@@ -316,7 +316,7 @@ class FlowLocator {
 	 *
 	 * @return bool True when a published version exists, or when the answer is unknowable.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md#requirement-trigger-matching-answers-which-flow-the-queue-path-answers-which-version
+	 * @spec openspec/specs/flow-definition-versioning/spec.md#requirement-trigger-matching-answers-which-flow-the-queue-path-answers-which-version
 	 */
 	private function hasPublishedVersion(string $uuid): bool {
 		try {

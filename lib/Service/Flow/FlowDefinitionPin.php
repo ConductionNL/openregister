@@ -31,7 +31,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Throwable;
 /**
  * Captures and restores the definition a run is pinned to.
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 class FlowDefinitionPin {
 	/**
@@ -87,7 +87,7 @@ class FlowDefinitionPin {
 	 *
 	 * @return array{hash: string, json: string}|null The canonical form, or null when it cannot be encoded.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function canonicalise(array $flow): ?array {
 		$subset = [];
@@ -120,7 +120,7 @@ class FlowDefinitionPin {
 	 *
 	 * @return string|null The hash to pin, or null when it could not be pinned.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function pin(array $flow, string $flowId): ?string {
 		$canonical = $this->canonicalise(flow: $flow);
@@ -168,7 +168,7 @@ class FlowDefinitionPin {
 	 *
 	 * @return array<string, mixed>|null The graph, or null when unresolvable.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function graphFor(?string $hash): ?array {
 		if ($hash === null || trim($hash) === '') {
@@ -207,7 +207,7 @@ class FlowDefinitionPin {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function sortRecursive(array &$value): void {
 		foreach ($value as &$item) {

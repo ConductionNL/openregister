@@ -18,7 +18,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -88,7 +88,7 @@ class ObjectFavouriteMapper extends QBMapper {
 	 *
 	 * @return ObjectFavourite|null The row, or null when the object is not starred.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	public function findOne(string $userId, string $objectUuid): ?ObjectFavourite {
 		$qb = $this->db->getQueryBuilder();
@@ -120,7 +120,7 @@ class ObjectFavouriteMapper extends QBMapper {
 	 *
 	 * @return ObjectFavourite The stored row.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	public function star(
 		string $userId,
@@ -165,7 +165,7 @@ class ObjectFavouriteMapper extends QBMapper {
 	 *
 	 * @return boolean True when a row was removed, false when there was none.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	public function unstar(string $userId, string $objectUuid): bool {
 		$qb = $this->db->getQueryBuilder();
@@ -187,7 +187,7 @@ class ObjectFavouriteMapper extends QBMapper {
 	 *
 	 * @return array<int, string> The starred object uuids.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
 	 */
 	public function uuidsForUser(
 		string $userId,
@@ -234,7 +234,7 @@ class ObjectFavouriteMapper extends QBMapper {
 	 *
 	 * @return integer How many stars were removed.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	public function deleteByObject(string $objectUuid): int {
 		$qb = $this->db->getQueryBuilder();

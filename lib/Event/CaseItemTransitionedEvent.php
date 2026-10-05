@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+ * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use OCP\EventDispatcher\Event;
 /**
  * Carries the plan item as persisted, and the state it left.
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+ * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
  */
 class CaseItemTransitionedEvent extends Event {
 
@@ -59,7 +59,7 @@ class CaseItemTransitionedEvent extends Event {
 	 *
 	 * @return CaseItem The item as persisted.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	public function getItem(): CaseItem {
 		return $this->item;
@@ -70,7 +70,7 @@ class CaseItemTransitionedEvent extends Event {
 	 *
 	 * @return string The from-state.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	public function getFromState(): string {
 		return $this->fromState;
@@ -82,7 +82,7 @@ class CaseItemTransitionedEvent extends Event {
 	 *
 	 * @return string|null `case.item.completed` | `case.item.terminated` | `case.item.disabled` | null.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	public function getCatalogTrigger(): ?string {
 		$state = (string)$this->item->getState();
@@ -101,7 +101,7 @@ class CaseItemTransitionedEvent extends Event {
 	 *
 	 * @return array{uuid: string, register: string, schema: string} The subject.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	public function getSubject(): array {
 		return [

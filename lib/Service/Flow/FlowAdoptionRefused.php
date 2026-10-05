@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+ * @spec openspec/specs/flow-storage/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use RuntimeException;
 /**
  * A refusal carrying the reason a flow could not be adopted.
  *
- * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+ * @spec openspec/specs/flow-storage/spec.md
  */
 class FlowAdoptionRefused extends RuntimeException {
 	/**
@@ -69,7 +69,7 @@ class FlowAdoptionRefused extends RuntimeException {
 	 *
 	 * @return string One of the REASON_* constants.
 	 *
-	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	public function getReason(): string {
 		return $this->reason;

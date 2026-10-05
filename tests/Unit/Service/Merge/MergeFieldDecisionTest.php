@@ -18,7 +18,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
+ * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
  */
 
 declare(strict_types=1);
@@ -202,7 +202,7 @@ class MergeFieldDecisionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
 	 */
 	public function testPreviewOffersBothValuesAndAProposal(): void {
 		[$from, $into] = $this->buildPair();
@@ -229,7 +229,7 @@ class MergeFieldDecisionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
 	 */
 	public function testExecutionAppliesExactlyTheApprovedMap(): void {
 		[$from, $into] = $this->buildPair();
@@ -273,7 +273,7 @@ class MergeFieldDecisionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
 	 */
 	public function testAnIncompleteMapIsRefusedAndWritesNothing(): void {
 		[$from, $into] = $this->buildPair();
@@ -301,7 +301,7 @@ class MergeFieldDecisionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
 	 */
 	public function testAMapNamingAnUnofferedPropertyIsRefused(): void {
 		[$from, $into] = $this->buildPair();
@@ -328,7 +328,7 @@ class MergeFieldDecisionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
 	 */
 	public function testADecisionMustNameFromOrInto(): void {
 		[$from, $into] = $this->buildPair();
@@ -355,7 +355,7 @@ class MergeFieldDecisionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-preview-offers-the-choice-per-property-and-execution-applies-the-choice-req-dmd-001
 	 */
 	public function testNoMapLeavesThePayloadPropertiesAlone(): void {
 		[$from, $into] = $this->buildPair();
@@ -399,7 +399,7 @@ class MergeFieldDecisionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
 	 */
 	public function testAMergeIsRefusedWhenAPropertyCannotBeRead(): void {
 		[$from, $into] = $this->buildPair(['medicalNote' => 'diagnosis on file']);
@@ -462,7 +462,7 @@ class MergeFieldDecisionTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
+	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
 	 */
 	public function testAPairWithoutTheRestrictedPropertyStillMerges(): void {
 		[$from, $into] = $this->buildPair();

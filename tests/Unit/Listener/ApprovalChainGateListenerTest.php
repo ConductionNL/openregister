@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-007
+ * @spec openspec/specs/approval-workflow/spec.md#req-007
  */
 
 declare(strict_types=1);

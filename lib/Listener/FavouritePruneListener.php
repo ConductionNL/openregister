@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -63,7 +63,7 @@ final class FavouritePruneListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectDeletedEvent) === false) {

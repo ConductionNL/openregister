@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+ * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use Throwable;
  * transaction across two mappers, the table, the realiser, the writer and
  * the dispatcher; that is its job description.
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+ * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
  */
 class CasePlanStateMachine {
 
@@ -107,7 +107,7 @@ class CasePlanStateMachine {
 	 *
 	 * @throws CaseTransitionException When illegal, or when another mover won.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
 	public function transition(
 		CaseItem $item,
@@ -152,7 +152,7 @@ class CasePlanStateMachine {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function recordDenial(CaseItem $item, string $to, ?string $actor, string $reason): void {
 		if ($item->getId() === null) {
@@ -189,7 +189,7 @@ class CasePlanStateMachine {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function recordCreation(CaseItem $item, string $cause, ?string $causeRef, ?string $actor): void {
 		$this->appendAudit(
@@ -210,7 +210,7 @@ class CasePlanStateMachine {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	public function flushEvents(): void {
 		$events = $this->pending;
@@ -236,7 +236,7 @@ class CasePlanStateMachine {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	public function discardEvents(): void {
 		$this->pending = [];
@@ -257,7 +257,7 @@ class CasePlanStateMachine {
 	 *
 	 * @throws CaseTransitionException When another mover won the row.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-lifecycle-table-governs-every-plan-item
 	 */
 	private function apply(
 		CaseItem $item,
@@ -315,7 +315,7 @@ class CasePlanStateMachine {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
 	 */
 	private function stamp(CaseItem $item, string $to, ?string $reason, string $actor): void {
 		if ($to === CaseItem::STATE_ACTIVE) {
@@ -345,7 +345,7 @@ class CasePlanStateMachine {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-human-plan-item-is-realised-by-a-task-and-a-stage-may-be-realised-by-a-flow-run
 	 */
 	private function propagate(CaseItem $item, string $cause, ?string $reason): void {
 		$hasRealisation = trim((string)$item->getRealisationUuid()) !== '';
@@ -371,7 +371,7 @@ class CasePlanStateMachine {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-stages-nest-and-complete-by-a-written-rule
 	 */
 	private function cascade(CaseItem $stage, ?CasePlanTree $tree): void {
 		if ($tree === null) {
@@ -420,7 +420,7 @@ class CasePlanStateMachine {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	private function appendAudit(
 		CaseItem $item,

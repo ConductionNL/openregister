@@ -12,7 +12,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+ * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
  */
 
 declare(strict_types=1);
