@@ -61,4 +61,4 @@ Spec only until Ruben approves ConductionNL/hydra#739. Build after integriq's ev
 
 - [x] 5.1 Regression: opencatalogi and softwarecatalog do not call these paths. Confirm with `git grep -n "send-email\|notifyParties"` in both repos.
 - [x] 5.2 Live check with integriq installed: opt out through the link, run a flow that mails that address, see it under `optedOut`.
-- [ ] 5.3 `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` once, then `npm run lint`.
+- [x] 5.3 `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` once, then `npm run lint`.
