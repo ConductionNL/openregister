@@ -430,6 +430,16 @@ class MagicMapper extends AbstractObjectMapper {
 	private ?bool $hasPgTrgm = null;
 
 	/**
+	 * Undeclared properties already reported as discarded, by schema id then property name.
+	 *
+	 * MagicMapper is one shared service per process, so this lives for one
+	 * request (or one occ/cron run): see reportDroppedProperties().
+	 *
+	 * @var array<string, array<string, true>>
+	 */
+	private array $reportedDrops = [];
+
+	/**
 	 * Constructor for MagicMapper service.
 	 *
 	 * Initializes the service with required dependencies for database operations,
@@ -4321,18 +4331,35 @@ class MagicMapper extends AbstractObjectMapper {
 
 			// `@`-prefixed keys are envelope/metadata (`@self` is already gone),
 			// `_`-prefixed keys are OpenRegister's own metadata columns, and `id`
-			// is the caller echoing back an identifier. None of these are user
-			// data the schema was ever supposed to declare, so warning about them
-			// would drown the signal in noise on literally every save.
-			if ($name === '' || $name === 'id' || $name[0] === '@' || $name[0] === '_') {
+			// and `uuid` are the caller echoing back an identifier. None of these
+			// are user data the schema was ever supposed to declare, so warning
+			// about them would drown the signal in noise on literally every save.
+			if ($name === '' || $name === 'id' || $name === 'uuid' || $name[0] === '@' || $name[0] === '_') {
 				continue;
 			}
 
 			$dropped[] = $name;
 		}
 
+		// Once per schema and property per process. One import or bulk write of
+		// thousands of objects with the same undeclared key logged one warning
+		// per object (a throwaway instance wrote a 28 GB log). The first
+		// discard of each property is still a warning, so schema drift stays
+		// visible; a NEW undeclared property on the same schema warns again.
+		$schemaKey = (string)($schema->getId() ?? $schema->getSlug() ?? '');
+		$dropped   = array_values(
+			array_filter(
+				$dropped,
+				fn (string $name): bool => isset($this->reportedDrops[$schemaKey][$name]) === false
+			)
+		);
+
 		if ($dropped === []) {
 			return;
+		}
+
+		foreach ($dropped as $name) {
+			$this->reportedDrops[$schemaKey][$name] = true;
 		}
 
 		$plural = 'ies';
@@ -4343,7 +4370,8 @@ class MagicMapper extends AbstractObjectMapper {
 		$this->logger->warning(
 			message: sprintf(
 				'[MagicMapper] Discarding %d propert%s the schema "%s" does not declare: %s. '
-				. 'They are NOT stored anywhere — add them to the schema or stop sending them.',
+				. 'They are NOT stored anywhere — add them to the schema or stop sending them. '
+				. 'Reported once per property per request.',
 				count($dropped),
 				$plural,
 				(string)($schema->getTitle() ?? $schema->getSlug() ?? (string)$schema->getId()),

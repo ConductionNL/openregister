@@ -94,6 +94,36 @@ them would fire on every save.
 - **WHEN** the object is saved
 - **THEN** no drop warning is logged
 
+The warning SHALL be logged once per schema and property per process (one
+request, or one occ or cron run), not once per write: one import of thousands
+of objects carrying the same undeclared key logged one identical warning per
+object, and a throwaway instance wrote a 28 GB log that way. A property a schema
+has not yet discarded in that process SHALL still warn, naming only itself.
+
+#### Scenario: The same discard is reported once per request
+
+- **GIVEN** three writes in one request, each carrying `legacy`, which the schema does not declare
+- **WHEN** they are saved
+- **THEN** exactly one warning names `legacy`
+
+#### Scenario: A new undeclared property still warns
+
+- **GIVEN** a request that already reported `legacy` for a schema
+- **WHEN** a later write to that schema carries `legacy` and `drifted`
+- **THEN** a warning names `drifted` only
+
+#### Scenario: The same key on another schema warns
+
+- **GIVEN** a request that already reported `legacy` for one schema
+- **WHEN** a write to a second schema carries `legacy`
+- **THEN** a warning names `legacy` for the second schema
+
+#### Scenario: A top-level uuid is not reported
+
+- **GIVEN** a payload carrying `uuid`, which the schema does not declare
+- **WHEN** the object is saved
+- **THEN** no drop warning names `uuid`
+
 @e2e exclude data-layer write boundary — covered by MagicMapperTest with a
 positive control; verified against live data (the agentflow table has no
 `$bindings` / `$comment` column while every hydra flow document carries both)
