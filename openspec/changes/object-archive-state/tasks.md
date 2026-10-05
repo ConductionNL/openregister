@@ -62,3 +62,21 @@
   (frozen and readable), C-tasks-and-phases-35 (frozen by a closing phase, once
   C29.2 lands) and C-documents-5 (a final document) are answered by what ships
   here. C-communication-4, -12 and -13 wait on the timeline lane.
+
+## Woo programme amendment: file writes honour the freeze (REQ-OAS-007, supports 5.18 and 19.15)
+
+- [ ] W.1 Add `lib/Service/Object/FileWriteGuard.php` (resolves the owning object, throws `ObjectStateWriteException::frozen()` or `::archived()`); call it from every write action in `FilesController` (`create`, `save`, `createMultipart`, `update`, `delete`, `rename`, `move`, `batch`, `lock`, `unlock`) and from the `FileService` write methods those actions use. Verify: `tests/Unit/Service/Object/FileWriteGuardTest.php::testEveryFilesControllerWriteActionCallsTheGuard` enumerates the controller's public methods by reflection and fails on a write action without the call; `testAFrozenObjectRefusesAnUpload` through `FilesController::create()` with a real `ObjectEntity` carrying the marker (fails today: the upload succeeds); `testAnUnfrozenObjectAcceptsFileWritesAgain`; `testReadsStayAllowed`.
+- [ ] W.2 Add `lib/Listener/FrozenNodeWriteListener.php` on `BeforeNodeWrittenEvent`, `BeforeNodeDeletedEvent`, `BeforeNodeRenamedEvent` and `BeforeNodeCreatedEvent`, registered in `lib/AppInfo/Application.php`, calling `abortOperation()` for a node in a frozen or archived object's folder and for an unresolvable owner inside the register tree. Verify: `tests/Unit/Listener/FrozenNodeWriteListenerTest.php::testAWriteIntoAFrozenObjectFolderIsAborted` and `testAnUnresolvableOwnerInTheRegisterTreeIsRefused`, constructing the real event classes; `testANodeOutsideTheRegisterTreeIsIgnored`.
+- [ ] W.3 Map the exception to 409 with `{error, state, by, at, reason}` in the files controller responses. Verify: `tests/Unit/Controller/FilesFrozenResponseTest.php`.
+- [ ] W.4 Through the callers: a Newman sequence in `tests/newman/` freezes an object, gets 409 on `POST .../files` and a failed WebDAV `PUT` into its folder, unfreezes, and gets 200; `tests/e2e/ci/object-archive-state.spec.ts` gains a case that freezes an object and sees the upload refused with the reason in the files tab.
+- [ ] W.5 Contract for the consumers: freeze through `POST /api/objects/{register}/{schema}/{id}/freeze` with `{reason, state?}`, the 409 body above on a file write. Verify: `tests/Contract/FrozenFileWriteContractTest.php` pins both; `opencatalogi/publication-withdrawal-aftercare` and `dossiq/woo-delivered-set-is-a-record` carry their consumer tests. Every consumer requires OpenRegister, so there is no absent-app path.
+
+## V. Verification and done
+
+Follow `/home/rubenlinde/memcap-work/woo-build/LANE-RULES-BUILD.md` (or the copy of those rules in the build brief).
+
+- [ ] V.1 Work in your own clone, branched with `git checkout --no-track -b <branch> origin/development`, with `TMPDIR` set to a sibling directory outside the clone. Verify: `git rev-parse --show-toplevel` runs in the same command as every `git add`.
+- [ ] V.2 Every test named above fails on `origin/development` and passes on the branch. Verify: run each new test file once with the change stashed and once with it applied, and quote both `Tests:` lines in the PR body. A test that passes on today's code proves nothing and does not count.
+- [ ] V.3 Full unit suite: `./vendor/bin/phpunit -c phpunit-unit.xml --no-coverage`, judged by the `Tests:` line (`Failures:` and `Errors:`), never by the exit code alone, because a green suite exits 1 without a coverage driver.
+- [ ] V.4 Gates: `run-hydra-gates.sh --base origin/development` from `vendor/conduction/hydra-gates` (without `--base` the gates read NOT APPLICABLE, which is not a pass), and count the gates that ran. Then once before push: `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` and `npm run lint`. CI runs the gates on the full tree, and the coverage guard needs tests for every added statement, so project the coverage arithmetically and say in the PR body that it is arithmetic.
+- [ ] V.5 One PR with `--base development`. Merge `development` into the branch, never rebase a pushed branch. No `Co-Authored-By` trailer on any commit. Done means merged on `development` with CI green; the rows this change closes count as `production` only once it ships in a store release.
