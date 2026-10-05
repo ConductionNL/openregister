@@ -530,12 +530,39 @@ class AnnotationNotificationDispatcher {
 			// accounts. The recipient resolver answers in verified uids, and
 			// most melders have none, so this kind is dispatched here instead:
 			// over the addresses the party record itself holds.
+			// The party mail's BODY is the rule's message, resolved like the
+			// subject; only a rule without one falls back to the subject.
+			// It used to be the subject always (opt-out-before-send 4a.1).
+			$partiesBody = $this->resolveMessageBody(
+				template: $messageTemplate,
+				locale: null,
+				data: $data,
+				context: $context,
+				hasActions: false,
+				originApp: ''
+			);
+			if (trim($partiesBody) === '') {
+				$partiesBody = $broadcastSubject;
+			}
+
+			// Absent or unknown reads as `service`, never as exempt.
+			$partiesCategory = ($spec['messageCategory'] ?? '');
+			if (is_string($partiesCategory) === true) {
+				$partiesCategory = strtolower(trim($partiesCategory));
+			}
+
+			if (in_array($partiesCategory, OptOutAuthority::CATEGORIES, true) === false) {
+				$partiesCategory = OptOutAuthority::DEFAULT_CATEGORY;
+			}
+
 			$partiesReached = $this->dispatchToParties(
 				recipientsSpec: (array)($spec['recipients'] ?? []),
 				object: $object,
 				channels: $channels,
 				ruleId: (string)$name,
-				subject: $broadcastSubject
+				subject: $broadcastSubject,
+				body: $partiesBody,
+				category: $partiesCategory
 			);
 
 			if (count($recipients) === 0) {
@@ -3175,10 +3202,14 @@ class AnnotationNotificationDispatcher {
 	 * @param array<int, string> $channels The rule's channels.
 	 * @param string $ruleId The rule, for the history row.
 	 * @param string $subject The rule's subject, in the default locale.
+	 * @param string $body The rule's message, in the default locale; the subject when it has none.
+	 * @param string $category The rule's message category, for integriq's opt-out question.
 	 *
 	 * @return int How many people the party path reached.
 	 *
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-a-party-mail-carries-the-rule-s-message-as-its-body-req-ero-006
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-a-parties-notification-asks-integriq-before-it-mails-a-party-req-ero-003
 	 */
 	private function dispatchToParties(
 		array $recipientsSpec,
@@ -3186,6 +3217,8 @@ class AnnotationNotificationDispatcher {
 		array $channels,
 		string $ruleId,
 		string $subject,
+		string $body,
+		string $category,
 	): int {
 		// Returns a COUNT rather than void, because "this rule reached nobody"
 		// cannot be decided from the account recipients alone: a rule addressed
@@ -3217,8 +3250,9 @@ class AnnotationNotificationDispatcher {
 			$sent = $this->serverContainer->get(PartyNotificationService::class)->notifyParties(
 				objectUuid: $objectUuid,
 				subject: $subject,
-				body: $subject,
-				role: $onlyRole
+				body: $body,
+				role: $onlyRole,
+				category: $category
 			);
 
 			foreach ($sent as $outcome) {

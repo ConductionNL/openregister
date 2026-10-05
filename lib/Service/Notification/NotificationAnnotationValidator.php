@@ -49,7 +49,7 @@ final class NotificationAnnotationValidator {
 
 	private const VALID_TRIGGERS = ['created', 'updated', 'transition', 'scheduled', 'threshold', 'calculatedChange'];
 
-	private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'role', 'relation', 'object-acl', 'expression', 'watchers'];
+	private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'role', 'relation', 'object-acl', 'expression', 'watchers', 'parties'];
 
 	private const VALID_CHANNELS = ['nc-notification', 'email', 'activity', 'webhook', 'talk', 'web-push'];
 
@@ -499,6 +499,29 @@ final class NotificationAnnotationValidator {
 						),
 					];
 				}
+			}
+
+			// Optional `messageCategory` (opt-out-before-send): what kind of
+			// message a `parties` mail is, for integriq's opt-out question.
+			// Absent reads as `service`; anything outside the fleet list is
+			// refused here rather than silently asked as `service`.
+			$category = ($spec['messageCategory'] ?? '');
+			$shown    = '';
+			if (is_scalar($category) === true) {
+				$shown = strtolower(trim((string)$category));
+			}
+
+			if (($shown !== '' || is_scalar($category) === false) && in_array($shown, OptOutAuthority::CATEGORIES, true) === false) {
+
+				$errors[] = [
+					'code' => 'notification-bad-message-category',
+					'message' => sprintf(
+						'Notification "%s" messageCategory "%s" is not in [%s].',
+						$name,
+						$shown,
+						implode(', ', OptOutAuthority::CATEGORIES)
+					),
+				];
 			}
 
 			// Optional `originApp` (foundation contract / ADR-031): identifies
