@@ -8,7 +8,7 @@
 ## 2. Controller
 
 - [x] 2.1 Read `_upsertOn` in `ObjectsController::create()` from the raw request; refuse it for an anonymous caller (401) and together with `_failIfExists` (400); map the outcomes to 201, 200, 400, 403, 409 and 503, dropping `conflictingObject` on the unseen-holder 409 (design D-5). Verify: `tests/Unit/Controller/ObjectsControllerUpsertOnKeyTest.php`; a Newman collection `tests/integration/openregister-upsert-on-key.postman_collection.json` (under tests/integration because that is the directory CI's newman job runs; registered in tests/newman/run-all.sh) asserts 201 then 200 for the same key and 409 for a duplicated key.
-- [ ] 2.2 (open: needs a live instance under concurrent load; the lock path and release are unit-tested in 1.2) Prove the race is closed. Verify: `tests/Integration/UpsertOnKeyConcurrencyTest.php` fires 12 concurrent calls with one key and finds exactly one record and 1x201 plus 11x200.
+- [ ] 2.2 (open: needs a live instance under concurrent load; the lock path and release are unit-tested in 1.2) Prove the race is closed. Verify: `tests/Integration/UpsertOnKeyConcurrencyTest.php` fires 12 concurrent calls with one key and finds exactly one record; one call answers 201 and every other call answers 200, or 503 with Retry-After (Ruben, 5 Oct, DECISIONS row 66: the short wait stays; the live pass of 5 Oct saw one record, 1x201 + 6x200 + 5x503 with Retry-After: 5). That the 503 carries Retry-After through the controller: `ObjectsControllerUpsertOnKeyTest::testAKeyAnotherCallHoldsIs503WithRetryAfter`.
 
 ## 3. Generated document
 
