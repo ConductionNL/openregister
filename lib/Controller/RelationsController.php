@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeckCardService;
@@ -321,6 +322,13 @@ class RelationsController extends Controller {
 			try {
 				$tasks = $this->taskService->getTasksForObject($objectUuid);
 				$relations['tasks'] = ['results' => $tasks, 'total' => count($tasks)];
+			} catch (NoVtodoCalendarException $e) {
+				// A user who never opened Calendar or Tasks has no VTODO
+				// calendar, so has no tasks on this object either. That is a
+				// normal state, not a failure: logging it as an error wrote a
+				// level-3 line for every card such a user opened (#4165).
+				// TasksController::index() answers the same way.
+				$relations['tasks'] = ['results' => [], 'total' => 0];
 			} catch (Exception $e) {
 				$this->logRelationFailure(type: 'tasks', objectUuid: $objectUuid, exception: $e);
 				$errors['tasks'] = ['message' => $e->getMessage(), 'exception' => get_class($e)];

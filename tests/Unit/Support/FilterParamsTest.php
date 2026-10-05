@@ -238,6 +238,46 @@ class FilterParamsTest extends TestCase {
 	}//end testAnUnknownBracketKeyKeepsItsOldEffectAndIsReported()
 
 	/**
+	 * `filter[id]` filters on the object's own id (openregister#4165): every
+	 * aggregation row carries `id` (the object uuid) next to its properties,
+	 * so the key matches, and calling it "no property" was a false warning
+	 * that is announced to become an HTTP 400.
+	 *
+	 * @return void
+	 */
+	public function testTheObjectIdBracketKeyIsNotReportedAsUnknown(): void {
+		$normalised = FilterParams::forAggregation(
+			bracket: ['id' => '0b5e1c9a-4d0e-4a3b-9d55-1f0c7a2f9e11'],
+			params: [],
+			controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['value'],
+			properties: ['value' => ['type' => 'number']]
+		);
+
+		$this->assertSame(['id' => '0b5e1c9a-4d0e-4a3b-9d55-1f0c7a2f9e11'], $normalised['filter']);
+		$this->assertSame([], $normalised['unknown']);
+	}//end testTheObjectIdBracketKeyIsNotReportedAsUnknown()
+
+	/**
+	 * Only `id` is exempt. `uuid` and `@self.*` are not row keys on any
+	 * aggregation backend, so they still match no rows and the warning about
+	 * them is true. A bare `id` is a system parameter that never filters, so
+	 * it keeps being reported as well.
+	 *
+	 * @return void
+	 */
+	public function testOtherSystemKeysAndABareIdAreStillReported(): void {
+		$normalised = FilterParams::forAggregation(
+			bracket: ['uuid' => 'u-1', '@self.id' => 'u-1'],
+			params: ['id' => 'u-1'],
+			controlParams: FilterParams::AGGREGATION_CONTROL_PARAMS['value'],
+			properties: ['value' => ['type' => 'number']]
+		);
+
+		$this->assertSame(['id', 'uuid', '@self.id'], $normalised['unknown']);
+		$this->assertArrayNotHasKey('id', $normalised['filter'], 'a bare id must not start filtering');
+	}//end testOtherSystemKeysAndABareIdAreStillReported()
+
+	/**
 	 * The object-search side of "names no property": `@self`, every
 	 * underscore-prefixed key and every context parameter are not filters, so
 	 * they are never reported.

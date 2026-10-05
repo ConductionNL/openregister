@@ -90,6 +90,21 @@ final class FilterParams {
 	public const AGGREGATION_ROUTE_PARAMS = ['register', 'schema'];
 
 	/**
+	 * Bracket keys that filter on the object itself rather than on a declared
+	 * property, so they are never reported as unknown.
+	 *
+	 * Only `id`: every aggregation row carries the object's uuid as `id` next
+	 * to its properties (`ObjectEntity::getObject()`), so `filter[id]=<uuid>`
+	 * scopes the figure to one object. Reporting it as naming no property was
+	 * a false warning on every Pipelinq lead card (openregister#4165). `uuid`
+	 * and `@self.*` are NOT row keys on any backend, so they still match no
+	 * rows and the warning about them stays true.
+	 *
+	 * @var string[]
+	 */
+	public const AGGREGATION_OBJECT_KEYS = ['id'];
+
+	/**
 	 * The control parameters each aggregation action reads by name, taken
 	 * from `AggregationController`. None of them is ever a filter, on either
 	 * spelling of the endpoint; a property that shares one of these names can
@@ -193,12 +208,8 @@ final class FilterParams {
 
 		foreach ($bracket as $key => $value) {
 			$filter[$key] = $value;
-			if (is_string($key) === true
-				&& $key !== ''
-				&& str_starts_with($key, '_') === false
-				&& array_key_exists($key, $properties) === false
-			) {
-				$unknown[] = $key;
+			if (self::isUnknownBracketKey(key: $key, properties: $properties) === true) {
+				$unknown[] = (string)$key;
 			}
 		}
 
@@ -327,6 +338,29 @@ final class FilterParams {
 	private static function reservedForAggregation(array $controlParams): array {
 		return array_merge($controlParams, self::AGGREGATION_ROUTE_PARAMS, [self::FILTER_KEY]);
 	}//end reservedForAggregation()
+
+	/**
+	 * Whether a bracket key names nothing an aggregation row carries.
+	 *
+	 * Underscore-prefixed keys are metadata and the object keys in
+	 * {@see AGGREGATION_OBJECT_KEYS} are on every row, so neither is reported.
+	 *
+	 * @param int|string              $key        The bracket key.
+	 * @param array<array-key, mixed> $properties The schema's declared properties.
+	 *
+	 * @return bool True when the key should be reported as unknown.
+	 */
+	private static function isUnknownBracketKey(int|string $key, array $properties): bool {
+		if (is_string($key) === false || $key === '' || str_starts_with($key, '_') === true) {
+			return false;
+		}
+
+		if (in_array($key, self::AGGREGATION_OBJECT_KEYS, true) === true) {
+			return false;
+		}
+
+		return array_key_exists($key, $properties) === false;
+	}//end isUnknownBracketKey()
 
 	/**
 	 * Whether a request key can name a property filter at all.

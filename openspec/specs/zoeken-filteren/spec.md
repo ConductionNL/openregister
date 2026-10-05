@@ -97,7 +97,7 @@ A property filter MAY be written bare (`?origin=manual`) or bracketed (`?filter[
 
 Reserved parameters are never filters, on either spelling: every underscore-prefixed parameter (`_limit`, `_order`, `_search`, …), the object-search context parameters (`register`, `schema`, `registers`, `schemas`, `extend`) and the system parameters `id`, `rbac`, `multi`, `deleted`, plus each aggregation action's own control parameters (`metric`, `field`, `metrics`, `groupBy`, `sort`, `limit`, `interval`, `from`, `to`, `metricField`, `cumulative`, and `name` on the declared-aggregation route). A property that shares one of those names can only be filtered with the bracket spelling. `filter[_limit]` is not a way to reach a control parameter either: the bracket spelling is lifted only for keys that could be bare filters.
 
-On the aggregations, a bare key joins the filter map ONLY when it names a property the schema declares. A bare parameter that names nothing keeps being ignored, because a cache-buster or a stray `v=2` must not start filtering and answer `0` where a widget used to read a total. A bracket key that names no property keeps matching no rows, as it already did.
+On the aggregations, a bare key joins the filter map ONLY when it names a property the schema declares. A bare parameter that names nothing keeps being ignored, because a cache-buster or a stray `v=2` must not start filtering and answer `0` where a widget used to read a total. A bracket key that names no property keeps matching no rows, as it already did. The one exception is `filter[id]`: every aggregation row carries the object's uuid as `id`, so `filter[id]=<uuid>` scopes the figure to that object and MUST NOT be reported as unknown. `filter[uuid]` and `filter[@self.…]` name nothing a row carries, so they still match no rows and are still reported.
 
 An unrecognised filter key MUST be logged once per request as a warning naming the keys, the endpoint and the schema, and MUST NOT be refused: every caller on the wrong spelling would break in the same minute. Refusing it with HTTP 400 is the follow-up once the logs show no caller depends on the old answer.
 
@@ -130,6 +130,13 @@ The ad-hoc aggregation cache key MUST be derived from the NORMALISED filter map,
 - **AND** exactly one warning MUST be logged naming `origni`, the endpoint and the schema
 - **AND** the response MUST NOT be an HTTP 400
 - @e2e exclude Backend logging and result-preservation on an HTTP read path; verified by PHPUnit unit tests with a logger spy, no browser flow.
+
+#### Scenario: filter[id] scopes an aggregation to one object without a warning
+- **GIVEN** schema `lead` with property `value` and two objects worth 450000 and 2237500
+- **WHEN** the client calls `GET /api/objects/aggregations/pipelinq/lead/value?metric=sum&field=value&filter[id]=<uuid of the first>`
+- **THEN** the value MUST be `450000`
+- **AND** no unknown-filter-key warning MUST be logged
+- @e2e exclude Backend parameter classification and logging; verified by PHPUnit unit tests with a logger spy and a live instance, no browser flow.
 
 #### Scenario: The aggregation cache key follows the normalised filter
 - **GIVEN** an ad-hoc aggregation over schema `TimeEntry`
