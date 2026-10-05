@@ -27,12 +27,8 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
 
@@ -202,12 +198,16 @@ class PreviewHandler {
 			// Registers and schemas this same import creates: their objects
 			// are created too, not skipped as "not found locally" (live pass O13).
 			$planned = [
-				'registers' => $this->createdSlugs(rows: $preview['registers']),
-				'schemas'   => $this->createdSlugs(rows: $preview['schemas']),
+				'registers' => ObjectChangePreview::createdSlugs(rows: $preview['registers']),
+				'schemas'   => ObjectChangePreview::createdSlugs(rows: $preview['schemas']),
 			];
 
+			$objectPreview = new ObjectChangePreview(
+				objectMapper: $this->objectMapper,
+				compare: fn (array $current, array $proposed): array => $this->compareArrays(current: $current, proposed: $proposed)
+			);
 			foreach ($remoteData['components']['objects'] as $objectData) {
-				$preview['objects'][] = $this->previewObjectChange(
+				$preview['objects'][] = $objectPreview->preview(
 					objectData: (array)$objectData,
 					registersBySlug: $registersBySlug,
 					schemasBySlug: $schemasBySlug,
@@ -389,133 +389,6 @@ class PreviewHandler {
 	}//end previewSchemaChange()
 
 	/**
-	 * Preview what importing one remote object would do.
-	 *
-	 * Mirrors the import: the object is matched on register, schema and slug,
-	 * without RBAC or tenancy, and only a strictly newer version updates it.
-	 * The row carries the register and schema slugs and the object slug, which
-	 * is the key ImportSelection reads back when the administrator picks it.
-	 *
-	 * @param array<string, mixed> $objectData The remote object.
-	 * @param array<string, Register> $registersBySlug Local registers by lowercased slug.
-	 * @param array<string, Schema> $schemasBySlug Local schemas by lowercased slug.
-	 * @param array{registers: array<string, true>, schemas: array<string, true>} $planned Register and schema slugs this import creates.
-	 *
-	 * @return array<string, mixed> Preview row: type, action, slug, title, register, schema, current, proposed, changes,
-	 *                              discarded (undeclared properties the import drops), and reason on a skip.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-configuration-preview-names-what-an-import-would-change
-	 */
-	private function previewObjectChange(array $objectData, array $registersBySlug, array $schemasBySlug, array $planned): array {
-		$self = (array)($objectData['@self'] ?? []);
-		$slug = (string)($self['slug'] ?? '');
-		$registerSlug = (string)($self['register'] ?? '');
-		$schemaSlug = (string)($self['schema'] ?? '');
-
-		$preview = [
-			'type' => 'object',
-			'action' => 'skip',
-			'slug' => $slug,
-			'title' => $this->objectTitle(objectData: $objectData, slug: $slug),
-			'register' => $registerSlug,
-			'schema' => $schemaSlug,
-			'current' => null,
-			'proposed' => $objectData,
-			'changes' => [],
-		];
-
-		if ($slug === '' || $registerSlug === '' || $schemaSlug === '') {
-			$preview['reason'] = 'Missing required fields (slug, register, or schema)';
-			return $preview;
-		}
-
-		$register = ($registersBySlug[strtolower($registerSlug)] ?? null);
-		$schema = ($schemasBySlug[strtolower($schemaSlug)] ?? null);
-		if ($register === null || $schema === null) {
-			$registerComes = ($register !== null || isset($planned['registers'][strtolower($registerSlug)]) === true);
-			$schemaComes = ($schema !== null || isset($planned['schemas'][strtolower($schemaSlug)]) === true);
-			if ($registerComes === true && $schemaComes === true) {
-				$preview['action'] = 'create';
-				return $preview;
-			}
-
-			$preview['reason'] = 'Register or schema not found locally';
-			return $preview;
-		}
-
-		try {
-			$existing = $this->objectMapper->find(
-				identifier: $slug,
-				register: $register,
-				schema: $schema,
-				includeDeleted: false,
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (DoesNotExistException $e) {
-			$preview['action'] = 'create';
-			return $preview;
-		} catch (MultipleObjectsReturnedException $e) {
-			// The import skips such an object too (ImportHandler); one duplicate
-			// must not fail the whole preview (live pass O12: HTTP 500).
-			$preview['reason'] = sprintf(
-				'This register holds more than one %s object with slug "%s"; the import skips it until the duplicates are resolved',
-				$schemaSlug,
-				$slug
-			);
-			return $preview;
-		}
-
-		$current = $existing->jsonSerialize();
-		$preview['current'] = $current;
-
-		$currentVersion = (string)($current['@self']['version'] ?? $current['version'] ?? '1.0.0');
-		$proposedVersion = (string)($self['version'] ?? $objectData['version'] ?? '1.0.0');
-		if (version_compare($proposedVersion, $currentVersion, '>') === false) {
-			$preview['reason'] = sprintf(
-				'Remote version (%s) is not newer than current version (%s)',
-				$proposedVersion,
-				$currentVersion
-			);
-			return $preview;
-		}
-
-		// The row is matched on register and schema already, and the remote side
-		// names them by slug where the local side holds ids: comparing them
-		// would report a change on every object.
-		unset($current['@self']['register'], $current['@self']['schema'], $objectData['@self']['register'], $objectData['@self']['schema']);
-
-		// Compare what the import would WRITE (live pass O2). The version only
-		// gates the update: the stored version is OpenRegister's own counter, so
-		// it differs on every row. The seed format's top-level uuid and slug are
-		// identity, stripped from the data on import unless the schema declares
-		// them (ImportHandler::withoutSeedMetadataKeys()), so the stored object
-		// never holds them and they would read as a change on every row.
-		unset($current['@self']['version'], $objectData['@self']['version']);
-		$undeclaredIdentity = array_diff_key(['uuid' => true, 'slug' => true], (array) ($schema->getProperties() ?? []));
-		$objectData = array_diff_key($objectData, $undeclaredIdentity);
-
-		// Properties the schema does not declare are discarded on save
-		// (MagicMapper::reportDroppedProperties()), so they never arrive and
-		// would read as a change after every import (live pass O13).
-		$discarded = $this->undeclaredProperties(objectData: $objectData, schema: $schema);
-		$objectData = array_diff_key($objectData, array_flip($discarded));
-		if ($discarded !== []) {
-			$preview['discarded'] = $discarded;
-		}
-
-		$preview['changes'] = $this->compareArrays(current: $current, proposed: $objectData);
-		if ($preview['changes'] === []) {
-			$preview['reason'] = 'The stored object already holds what the import would write';
-			return $preview;
-		}
-
-		$preview['action'] = 'update';
-
-		return $preview;
-	}//end previewObjectChange()
-
-	/**
 	 * List the fields a proposed definition changes against the current one.
 	 *
 	 * Only keys the proposal carries are compared, so a field the remote side
@@ -564,74 +437,6 @@ class PreviewHandler {
 
 		return $changes;
 	}//end compareArrays()
-	/**
-	 * The top-level properties of a remote object that its schema does not declare.
-	 *
-	 * Mirrors MagicMapper::reportDroppedProperties(): `@`- and `_`-prefixed keys,
-	 * `id` and `uuid` are metadata, not data, and are not counted.
-	 *
-	 * @param array<string, mixed> $objectData The remote object.
-	 * @param Schema               $schema     The local schema.
-	 *
-	 * @return array<int, string>
-	 *
-	 * @spec openspec/changes/config-preview-duplicates-and-rest/specs/data-import-export/spec.md
-	 */
-	private function undeclaredProperties(array $objectData, Schema $schema): array {
-		$declared = $schema->getProperties();
-		$undeclared = [];
-		foreach (array_keys($objectData) as $key) {
-			$name = (string)$key;
-			if ($name === '' || $name === 'id' || $name === 'uuid' || $name[0] === '@' || $name[0] === '_') {
-				continue;
-			}
-
-			if (array_key_exists($name, $declared) === false) {
-				$undeclared[] = $name;
-			}
-		}
-
-		return $undeclared;
-	}//end undeclaredProperties()
-
-	/**
-	 * The lowercased slugs of the preview rows that would be created.
-	 *
-	 * @param array<int, array<string, mixed>> $rows Register or schema preview rows.
-	 *
-	 * @return array<string, true>
-	 *
-	 * @spec openspec/changes/config-preview-duplicates-and-rest/specs/data-import-export/spec.md
-	 */
-	private function createdSlugs(array $rows): array {
-		$slugs = [];
-		foreach ($rows as $row) {
-			if (($row['action'] ?? null) === 'create') {
-				$slugs[strtolower((string)($row['slug'] ?? ''))] = true;
-			}
-		}
-
-		return $slugs;
-	}//end createdSlugs()
-
-	/**
-	 * The title a preview row shows for a remote object: its title, its name, or its slug.
-	 *
-	 * @param array<string, mixed> $objectData The remote object.
-	 * @param string $slug The object slug.
-	 *
-	 * @return string
-	 */
-	private function objectTitle(array $objectData, string $slug): string {
-		foreach (['title', 'name'] as $key) {
-			if (is_string($objectData[$key] ?? null) === true && $objectData[$key] !== '') {
-				return $objectData[$key];
-			}
-		}
-
-		return $slug;
-	}//end objectTitle()
-
 	/**
 	 * Whether both values are maps, which compareArrays compares by path rather than whole.
 	 *
