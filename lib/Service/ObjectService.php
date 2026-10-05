@@ -3741,7 +3741,7 @@ class ObjectService implements ObjectServiceInterface
      *                                   attached-file/object chunk body text via
      *                                   `ChunkMapper::searchByKeyword()`; absent/false is
      *                                   byte-identical to pre-change behaviour (see
-     *                                   openspec/changes/expose-content-search-in-object-service)
+     *                                   openspec/specs/zoeken-filteren/spec.md)
      * @param bool        $_rbac         Whether to apply RBAC checks (default: true)
      * @param bool        $_multitenancy Whether to apply multitenancy filtering (default: true)
      * @param bool        $deleted       Whether to include deleted objects (default: false)

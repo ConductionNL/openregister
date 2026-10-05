@@ -16,7 +16,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Widens a metadata-only search result set with objects whose attached-file (or
  * object-level) chunk body text matches the query, per
- * `openspec/changes/expose-content-search-in-object-service/specs/zoeken-filteren/spec.md`
+ * `openspec/specs/zoeken-filteren/spec.md`
  * (ZKN-CONTENT-001/-002/-003).
  *
  * Design (see the change's design.md decisions D1-D5):
@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://conduction.nl
  *
- * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 class ContentSearchHandler {
 	/**
@@ -104,7 +104,7 @@ class ContentSearchHandler {
 	 * @param MagicMapper $objectMapper Unified object mapper, used to resolve chunk hits to ObjectEntity rows.
 	 * @param LoggerInterface $logger Logger for DEBUG-level unresolvable-chunk diagnostics.
 	 *
-	 * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
 		private readonly ChunkMapper $chunkMapper,
@@ -170,7 +170,7 @@ class ContentSearchHandler {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same early-exit guards multiply paths
 	 *   without adding real decision complexity.
 	 *
-	 * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function augmentWithChunkMatches(
 		array $query,

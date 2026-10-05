@@ -388,7 +388,7 @@
     "matrix": "opencatalogi",
     "decision": "existing",
     "reason": "Content search over attachments is Open Register's (expose-content-search-in-object-service, content-search-index); no opencatalogi page sends the flag, which is opencatalogi's half.",
-    "change": "expose-content-search-in-object-service",
+    "change": "2026-10-05-expose-content-search-in-object-service",
     "decidedOn": "2026-09-27"
   },
   {
