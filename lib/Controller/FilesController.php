@@ -1350,18 +1350,13 @@ class FilesController extends Controller {
 			// readability therefore says nothing about the caller: the object's
 			// read rule decides. A managed file whose object cannot be found is
 			// refused rather than served without a rule.
-			$parentObject = null;
-			if ($this->fileService->isManagedFile(node: $file) === true) {
-				$parentObject = $this->fileService->findObjectForFile(file: $file);
-				if ($isAnonymous === false && $this->mayReadObject(object: $parentObject) === false) {
-					return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
-				}
+			$parentObject = $this->managedFileObject(file: $file);
+			if ($this->refusesManagedFile(object: $parentObject, isAnonymous: $isAnonymous) === true) {
+				return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
 			}
 
-			if ($parentObject === null) {
-				// L2: resolve parent object for audit context (best-effort).
-				$parentObject = $this->resolveParentObjectForFile(file: $file);
-			}
+			// L2: for any other file, resolve the parent object for audit context (best-effort).
+			$parentObject = ($parentObject ?? $this->resolveParentObjectForFile(file: $file));
 
 			// Record download (counter + audit). Best-effort.
 			$this->recordDownloadEvent(fileId: (int)$file->getId(), object: $parentObject);
@@ -1375,6 +1370,41 @@ class FilesController extends Controller {
 			return $this->errorResponse(e: $e);
 		}//end try
 	}//end downloadById()
+
+	/**
+	 * The object an OpenRegister-managed file belongs to.
+	 *
+	 * @param File $file The file.
+	 *
+	 * @return ObjectEntity|false|null The object; false for a managed file no object owns; null for any other file.
+	 */
+	private function managedFileObject(File $file): ObjectEntity|false|null {
+		if ($this->fileService->isManagedFile(node: $file) === false) {
+			return null;
+		}
+
+		return ($this->fileService->findObjectForFile(file: $file) ?? false);
+	}//end managedFileObject()
+
+	/**
+	 * Whether a download by id must be refused for a managed file.
+	 *
+	 * @param ObjectEntity|false|null $object      What managedFileObject() answered.
+	 * @param bool                    $isAnonymous Whether the caller is anonymous (already gated on publication).
+	 *
+	 * @return bool True when no object owns the managed file, or a person may not read its object.
+	 */
+	private function refusesManagedFile(ObjectEntity|false|null $object, bool $isAnonymous): bool {
+		if ($object === false) {
+			return true;
+		}
+
+		if ($object === null || $isAnonymous === true) {
+			return false;
+		}
+
+		return $this->mayReadObject(object: $object) === false;
+	}//end refusesManagedFile()
 
 	/**
 	 * Whether the caller may read the object a managed file belongs to.
@@ -2419,8 +2449,6 @@ class FilesController extends Controller {
 			return $this->accessDenied(e: $e);
 		} catch (OfficeOpenRefusedException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: $e->getMessage())], statusCode: $e->getHttpStatus());
-		} catch (Exception $e) {
-			return $this->errorResponse(e: $e);
 		}
 	}//end office()
 
@@ -2452,8 +2480,6 @@ class FilesController extends Controller {
 			return $this->accessDenied(e: $e);
 		} catch (OfficeOpenRefusedException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: $e->getMessage())], statusCode: $e->getHttpStatus());
-		} catch (Exception $e) {
-			return $this->errorResponse(e: $e);
 		}
 
 		return new TemplateResponse(

@@ -1673,7 +1673,7 @@ class FileService {
 			// An object's file lives in the openregister account's home, which
 			// the caller has no mount on. Look there first; the caller's access
 			// is then the object's rule, applied by the controller.
-			$managed = $this->folderManagementHandler->findManagedNodeById(nodeId: $fileId);
+			$managed = $this->folderManagementHandler->getManagedNodeById(nodeId: $fileId);
 			if ($managed instanceof File === true) {
 				return $managed;
 			}
@@ -1732,7 +1732,7 @@ class FileService {
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
 	 */
 	public function findObjectForFile(Node $file): ?ObjectEntity {
-		return $this->folderManagementHandler->findObjectForFile(file: $file);
+		return $this->folderManagementHandler->getObjectForFile(file: $file);
 	}//end findObjectForFile()
 
 	/**

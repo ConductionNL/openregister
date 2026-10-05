@@ -817,7 +817,7 @@ class FolderManagementHandler {
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
 	 */
-	public function findManagedNodeById(int $nodeId): ?Node {
+	public function getManagedNodeById(int $nodeId): ?Node {
 		try {
 			$node = $this->getOpenRegisterUserFolder()->getFirstNodeById($nodeId);
 		} catch (Exception $e) {
@@ -829,7 +829,7 @@ class FolderManagementHandler {
 		}
 
 		return $node;
-	}//end findManagedNodeById()
+	}//end getManagedNodeById()
 
 	/**
 	 * Whether a node lies in an OpenRegister-managed folder tree.
@@ -861,7 +861,7 @@ class FolderManagementHandler {
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
 	 */
-	public function findObjectForFile(Node $file): ?ObjectEntity {
+	public function getObjectForFile(Node $file): ?ObjectEntity {
 		try {
 			$parent = $file->getParent();
 			$found = $this->objectEntityMapper->findAcrossAllSources(
@@ -883,7 +883,7 @@ class FolderManagementHandler {
 		}
 
 		return $object;
-	}//end findObjectForFile()
+	}//end getObjectForFile()
 
 	/**
 	 * Get node type from node (file or folder).

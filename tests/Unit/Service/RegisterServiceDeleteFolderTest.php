@@ -125,6 +125,12 @@ class RegisterServiceDeleteFolderTest extends TestCase {
 		$fileService = (new ReflectionClass(FileService::class))->newInstanceWithoutConstructor();
 		(new ReflectionProperty(FileService::class, 'folderManagementHandler'))->setValue($fileService, $handler);
 		(new ReflectionProperty(FileService::class, 'logger'))->setValue($fileService, $this->logger);
+		// Managed folders are held by the openregister account, as in production.
+		$systemAccount = $this->createMock(IUser::class);
+		$systemAccount->method('getUID')->willReturn('openregister');
+		$ownership = $this->createMock(\OCA\OpenRegister\Service\File\FileOwnershipHandler::class);
+		$ownership->method('getUser')->willReturn($systemAccount);
+		(new ReflectionProperty(FileService::class, 'fileOwnershipHandler'))->setValue($fileService, $ownership);
 		$handler->setFileService($fileService);
 
 		$schemaMapper = $this->createMock(SchemaMapper::class);

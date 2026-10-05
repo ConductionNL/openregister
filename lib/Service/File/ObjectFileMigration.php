@@ -22,15 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
-use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\Encryption\IManager as IEncryptionManager;
-use OCP\Files\File;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use OCP\IAppConfig;
 use OCP\IConfig;
-use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
@@ -84,18 +81,11 @@ class ObjectFileMigration {
 		. 'Files stay where they are. Only local storage is supported for this move.';
 
 	/**
-	 * The local storage class name, as Nextcloud's storages report it.
-	 *
-	 * @var string
-	 */
-	private const LOCAL_STORAGE = '\\OC\\Files\\Storage\\Local';
-
-	/**
 	 * Counts of the current run.
 	 *
 	 * @var array{foldersMoved: int, filesMoved: int, sharesReowned: int, foldersLeft: int, refused: bool}
 	 */
-	private array $tally = [];
+	private array $tally = ['foldersMoved' => 0, 'filesMoved' => 0, 'sharesReowned' => 0, 'foldersLeft' => 0, 'refused' => false];
 
 	/**
 	 * Constructor.
@@ -103,7 +93,7 @@ class ObjectFileMigration {
 	 * @param IRootFolder          $rootFolder        The file tree.
 	 * @param IUserManager         $userManager       Walks the people whose homes may hold managed folders.
 	 * @param FileOwnershipHandler $ownership         Resolves the openregister account.
-	 * @param IDBConnection        $db                Re-owns published link shares.
+	 * @param ObjectFileShareReowner $shareReowner    Re-owns published link shares.
 	 * @param IAppConfig           $appConfig         Keeps the refusal message for the admin.
 	 * @param IEncryptionManager   $encryptionManager Tells whether server-side encryption is on.
 	 * @param LoggerInterface      $logger            Records every folder left behind.
@@ -113,7 +103,7 @@ class ObjectFileMigration {
 		private readonly IRootFolder $rootFolder,
 		private readonly IUserManager $userManager,
 		private readonly FileOwnershipHandler $ownership,
-		private readonly IDBConnection $db,
+		private readonly ObjectFileShareReowner $shareReowner,
 		private readonly IAppConfig $appConfig,
 		private readonly IEncryptionManager $encryptionManager,
 		private readonly LoggerInterface $logger,
@@ -145,10 +135,12 @@ class ObjectFileMigration {
 		}
 
 		$this->userManager->callForSeenUsers(
-			function (IUser $user) use ($systemUid, $systemHome): void {
+			function (IUser $user) use ($systemUid, $systemHome): bool {
 				if ($user->getUID() !== $systemUid) {
 					$this->moveHome(uid: $user->getUID(), systemHome: $systemHome);
 				}
+
+				return true;
 			}
 		);
 
@@ -341,9 +333,7 @@ class ObjectFileMigration {
 				continue;
 			}
 
-			if ($child instanceof File) {
-				$ids[] = (int)$child->getId();
-			}
+			$ids[] = (int)$child->getId();
 		}
 
 		return $ids;
@@ -362,15 +352,7 @@ class ObjectFileMigration {
 		}
 
 		$owner = $this->ownership->getUser()->getUID();
-		foreach (array_chunk($fileIds, 500) as $chunk) {
-			$qb = $this->db->getQueryBuilder();
-			$qb->update('share')
-				->set('uid_owner', $qb->createNamedParameter($owner))
-				->where($qb->expr()->in('file_source', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_INT_ARRAY)))
-				->andWhere($qb->expr()->eq('share_type', $qb->createNamedParameter(3, IQueryBuilder::PARAM_INT)))
-				->andWhere($qb->expr()->neq('uid_owner', $qb->createNamedParameter($owner)));
-			$this->tally['sharesReowned'] += $qb->executeStatement();
-		}
+		$this->tally['sharesReowned'] += $this->shareReowner->reown(fileIds: $fileIds, owner: $owner);
 	}//end reownShares()
 
 	/**
@@ -426,7 +408,7 @@ class ObjectFileMigration {
 	 */
 	private function isLocal(Node $node): bool {
 		try {
-			return $node->getStorage()->instanceOfStorage(self::LOCAL_STORAGE) === true;
+			return $node->getStorage()->isLocal() === true;
 		} catch (Throwable $e) {
 			return false;
 		}

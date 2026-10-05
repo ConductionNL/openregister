@@ -28,8 +28,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\File;
 
 use OCA\OpenRegister\Service\File\FileOwnershipHandler;
 use OCA\OpenRegister\Service\File\ObjectFileMigration;
-use OCP\DB\QueryBuilder\IExpressionBuilder;
-use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCA\OpenRegister\Service\File\ObjectFileShareReowner;
 use OCP\Encryption\IManager as IEncryptionManager;
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -39,7 +38,6 @@ use OCP\Files\NotFoundException;
 use OCP\Files\Storage\IStorage;
 use OCP\IAppConfig;
 use OCP\IConfig;
-use OCP\IDBConnection;
 use OCP\IUser;
 use OCP\IUserManager;
 use PHPUnit\Framework\TestCase;
@@ -92,7 +90,7 @@ class ObjectFileMigrationTest extends TestCase {
 		$mock->method('getId')->willReturn($entry['id']);
 
 		$storage = $this->createMock(IStorage::class);
-		$storage->method('instanceOfStorage')->willReturnCallback(fn (): bool => $this->local);
+		$storage->method('isLocal')->willReturnCallback(fn (): bool => $this->local);
 		$mock->method('getStorage')->willReturn($storage);
 
 		$mock->method('move')->willReturnCallback(
@@ -177,16 +175,8 @@ class ObjectFileMigrationTest extends TestCase {
 		$ownership = $this->createMock(FileOwnershipHandler::class);
 		$ownership->method('getUser')->willReturn($users['openregister']);
 
-		$expr = $this->createMock(IExpressionBuilder::class);
-		$qb = $this->createMock(IQueryBuilder::class);
-		foreach (['update', 'set', 'where', 'andWhere'] as $method) {
-			$qb->method($method)->willReturnSelf();
-		}
-
-		$qb->method('expr')->willReturn($expr);
-		$qb->method('executeStatement')->willReturn(0);
-		$db = $this->createMock(IDBConnection::class);
-		$db->method('getQueryBuilder')->willReturn($qb);
+		$reowner = $this->createMock(ObjectFileShareReowner::class);
+		$reowner->method('reown')->willReturn(0);
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('setValueString')->willReturnCallback(
@@ -202,7 +192,7 @@ class ObjectFileMigrationTest extends TestCase {
 		$config = $this->createMock(IConfig::class);
 		$config->method('getUserValue')->willReturnCallback(fn (): string => $this->quota);
 
-		return new ObjectFileMigration($root, $userManager, $ownership, $db, $appConfig, $encryption, new NullLogger(), $config);
+		return new ObjectFileMigration($root, $userManager, $ownership, $reowner, $appConfig, $encryption, new NullLogger(), $config);
 	}//end migration()
 
 	public function testAnIntakesAttachmentsMoveWithTheirIds(): void {

@@ -55,6 +55,7 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The read scope is the object rule for an object's file.
  */
 class FileExtractionController extends Controller {
 	/**

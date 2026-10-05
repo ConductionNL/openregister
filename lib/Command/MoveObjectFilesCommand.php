@@ -68,6 +68,8 @@ class MoveObjectFilesCommand extends Command {
 	 *
 	 * @return int 0 when the move ran, 1 when it was refused.
 	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Symfony's signature; the command takes no input.
+	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-existing-files-move-into-openregisters-own-account-req-ofoa-004
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
