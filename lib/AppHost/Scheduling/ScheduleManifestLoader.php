@@ -35,7 +35,7 @@ use Throwable;
 /**
  * Loads on-disk app manifests and parses their `schedules[]` declarations.
  *
- * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 class ScheduleManifestLoader {
 	/**
@@ -61,7 +61,7 @@ class ScheduleManifestLoader {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function loadForApp(string $appId): ?ScheduleManifest {
 		$manifest = $this->loadBundledManifest(appId: $appId);
@@ -79,7 +79,7 @@ class ScheduleManifestLoader {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function loadAllOnDisk(): array {
 		$manifests = [];

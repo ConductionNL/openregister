@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-paragraph-text-is-read-once-with-runs-joined-req-docx-003
+ * @spec openspec/specs/text-extraction-document/spec.md#requirement-paragraph-text-is-read-once-with-runs-joined-req-docx-003
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use DOMElement;
  * @psalm-type PictureContext = array{name: string, description: string}
  * @psalm-type Relationships = array<string, array{type: string, target: string, external: bool}>
  *
- * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-paragraph-text-is-read-once-with-runs-joined-req-docx-003
+ * @spec openspec/specs/text-extraction-document/spec.md#requirement-paragraph-text-is-read-once-with-runs-joined-req-docx-003
  */
 class DocumentContentReader {
 
@@ -91,8 +91,8 @@ class DocumentContentReader {
 	 *
 	 * @return InlineContent The text with runs joined and whitespace collapsed; pictures and text boxes in order.
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-paragraph-text-is-read-once-with-runs-joined-req-docx-003
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-image-references-come-back-in-document-order-req-docx-006
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-paragraph-text-is-read-once-with-runs-joined-req-docx-003
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-image-references-come-back-in-document-order-req-docx-006
 	 */
 	public function paragraph(DOMElement $paragraph, array $relationships): array {
 		$inline = ['text' => '', 'images' => [], 'textBoxes' => []];
@@ -112,7 +112,7 @@ class DocumentContentReader {
 	 *
 	 * @return list<list<string>>
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-tables-come-back-as-rows-of-cell-text-req-docx-005
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-tables-come-back-as-rows-of-cell-text-req-docx-005
 	 */
 	public function tableRows(DOMElement $table, array $relationships, int $depth, array &$images): array {
 		$rows = [];
@@ -136,7 +136,7 @@ class DocumentContentReader {
 	 *
 	 * @return DOMElement|null Null for anything that is not a block wrapper.
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-hostile-input-is-bounded-req-docx-009
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-hostile-input-is-bounded-req-docx-009
 	 */
 	public function wrapperContent(DOMElement $element): ?DOMElement {
 		if ($element->localName === 'sdt') {

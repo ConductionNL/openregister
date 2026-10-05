@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
+ * @spec openspec/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use DOMElement;
  * @psalm-type DocumentBlock = DocumentParagraph|DocumentList|DocumentTable|DocumentImage
  * @psalm-type DocumentSection = array{heading: string, level: int, blocks: list<DocumentBlock>}
  *
- * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
+ * @spec openspec/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
  */
 class DocumentBodyParser {
 
@@ -146,8 +146,8 @@ class DocumentBodyParser {
 	 *
 	 * @return array{title: string, sections: list<DocumentSection>, truncated: bool}|null Null when the part has no body.
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-hostile-input-is-bounded-req-docx-009
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-hostile-input-is-bounded-req-docx-009
 	 */
 	public function parse(DOMDocument $document, ?DOMDocument $styles, ?DOMDocument $numbering, array $relationships): ?array {
 		$body = $document->getElementsByTagNameNS('*', 'body')->item(0);
@@ -228,7 +228,7 @@ class DocumentBodyParser {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-paragraph-text-is-read-once-with-runs-joined-req-docx-003
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-paragraph-text-is-read-once-with-runs-joined-req-docx-003
 	 */
 	private function paragraph(DOMElement $paragraph, int $depth): void {
 		if ($this->countBlock() === false) {
@@ -257,8 +257,8 @@ class DocumentBodyParser {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-the-document-carries-a-title-req-docx-002
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-lists-keep-their-items-levels-and-kind-req-docx-004
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-the-document-carries-a-title-req-docx-002
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-lists-keep-their-items-levels-and-kind-req-docx-004
 	 */
 	private function placeText(array $kind, string $text): void {
 		if ($kind['kind'] === 'title' && $this->titleTaken === false) {
@@ -289,7 +289,7 @@ class DocumentBodyParser {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-tables-come-back-as-rows-of-cell-text-req-docx-005
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-tables-come-back-as-rows-of-cell-text-req-docx-005
 	 */
 	private function table(DOMElement $table, int $depth): void {
 		if ($this->countBlock() === false) {

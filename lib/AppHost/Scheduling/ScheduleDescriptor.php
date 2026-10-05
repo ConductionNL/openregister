@@ -32,7 +32,7 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
 /**
  * A single validated schedule declaration.
  *
- * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 final class ScheduleDescriptor {
 	/**
@@ -62,7 +62,7 @@ final class ScheduleDescriptor {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function isInterval(): bool {
 		return $this->intervalSeconds !== null;
@@ -73,7 +73,7 @@ final class ScheduleDescriptor {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function isCron(): bool {
 		return $this->cron !== null;
@@ -95,7 +95,7 @@ final class ScheduleDescriptor {
 	 *
 	 * @throws ScheduleValidationException When the entry is structurally invalid.
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public static function fromArray(array $raw, int $index): self {
 		$id = $raw['id'] ?? null;
@@ -135,7 +135,7 @@ final class ScheduleDescriptor {
 	 *
 	 * @throws ScheduleValidationException When neither/both are present or a value is invalid.
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	private static function parseCadence(array $raw, string $id): array {
 		$hasInterval = array_key_exists('interval', $raw) === true && $raw['interval'] !== null;

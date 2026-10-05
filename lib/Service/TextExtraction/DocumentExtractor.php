@@ -32,7 +32,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md
+ * @spec openspec/specs/text-extraction-document/spec.md
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ use ZipArchive;
  * @psalm-type DocumentStructure = array{title: string, sections: list<DocumentSection>, truncated: bool}
  * @psalm-type DocumentResult = array{title: string, sections: list<DocumentSection>, text: string, truncated: bool}
  *
- * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md
+ * @spec openspec/specs/text-extraction-document/spec.md
  */
 class DocumentExtractor {
 
@@ -120,7 +120,7 @@ class DocumentExtractor {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-the-supported-formats-can-be-asked-for-req-docx-010
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-the-supported-formats-can-be-asked-for-req-docx-010
 	 */
 	public function supports(string $mimeType, string $fileName): bool {
 		$mimeType = strtolower($mimeType);
@@ -144,7 +144,7 @@ class DocumentExtractor {
 	 *
 	 * @throws Exception When the server has no zip extension (a deployment error).
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-a-document-that-cannot-be-read-degrades-to-no-result-req-docx-008
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-a-document-that-cannot-be-read-degrades-to-no-result-req-docx-008
 	 */
 	public function extract(File $file): ?array {
 		if (class_exists(ZipArchive::class) === false) {
@@ -255,8 +255,8 @@ class DocumentExtractor {
 	 *
 	 * @return DocumentStructure|null Null when there is no readable document part.
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-hostile-input-is-bounded-req-docx-009
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-hostile-input-is-bounded-req-docx-009
 	 */
 	private function readDocument(OoxmlPackage $package): ?array {
 		$mainPath = ($package->mainPartPath() ?? 'word/document.xml');
@@ -306,7 +306,7 @@ class DocumentExtractor {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-the-document-carries-a-title-req-docx-002
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-the-document-carries-a-title-req-docx-002
 	 */
 	private function coreTitle(OoxmlPackage $package): string {
 		$core = $this->relatedPart(
@@ -327,7 +327,7 @@ class DocumentExtractor {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-the-flat-text-comes-along-unchanged-req-docx-007
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-the-flat-text-comes-along-unchanged-req-docx-007
 	 */
 	private function flatText(File $file, array $structure): string {
 		try {

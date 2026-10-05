@@ -137,6 +137,7 @@ use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Listener\TablesTableDeletedListener;
 use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
+use OCA\OpenRegister\Listener\ObjectQuotaListener;
 use OCA\OpenRegister\Listener\UniqueConstraintListener;
 use OCA\OpenRegister\Listener\WatcherPruneListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
@@ -428,7 +429,7 @@ class Application extends App implements IBootstrap {
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
-	 * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#requirement-credential-store-backend-resolution
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-credential-store-backend-resolution
 	 */
 	public function register(IRegistrationContext $context): void {
 		include_once __DIR__ . '/../../vendor/autoload.php';
@@ -3401,6 +3402,11 @@ class Application extends App implements IBootstrap {
 		// refuses a second bezwaar and only reports a repeated e-mail.
 		$context->registerEventListener(ObjectCreatingEvent::class, UniqueConstraintListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, UniqueConstraintListener::class);
+
+		// A schema may cap how many of its objects one organisation holds
+		// (`x-openregister-quota.perOrganisation`); a create past it is
+		// refused with the count and the cap. Updates never count.
+		$context->registerEventListener(ObjectCreatingEvent::class, ObjectQuotaListener::class);
 
 		// A saved view's count alert: the sweep decides when it fires, this
 		// listener tells the people it names, on the channels it declares.

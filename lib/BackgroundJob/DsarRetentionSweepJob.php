@@ -100,7 +100,7 @@ class DsarRetentionSweepJob extends TimedJob {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-retention-sweep/spec.md
+	 * @spec openspec/specs/dsar-retention-sweep/spec.md
 	 */
 	protected function run($argument): void {
 		$enabled = filter_var(

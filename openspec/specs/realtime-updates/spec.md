@@ -12,7 +12,9 @@ status: done
 Provide live data synchronization to connected clients so that register object mutations (create, update, delete) are pushed immediately without manual page refresh. The system MUST offer Server-Sent Events (SSE) as the primary transport, with Nextcloud's notify_push integration as a complementary channel, and graceful fallback to polling. All realtime channels MUST be authorization-aware, meaning users only receive events for objects their RBAC permissions allow them to see, and MUST support topic-based subscriptions at the register, schema, and individual object level.
 
 **Source**: Gap identified in cross-platform analysis; PocketBase provides SSE-based realtime subscriptions per collection/record with auth-aware filtering, Directus offers WebSocket connectivity with UID-based subscription management and permission-filtered broadcasts, and five platforms total offer real-time capabilities. See also: `event-driven-architecture` (CloudEvents format, event bus transports), `webhook-payload-mapping` (payload transformation via Twig mappings), `notificatie-engine` (notification channels and batching).
+
 ## Requirements
+
 ### Requirement: The system MUST provide a dedicated SSE endpoint for object change events
 A Server-Sent Events endpoint MUST stream object change events (create, update, delete) to connected clients in real time. The endpoint MUST follow the W3C Server-Sent Events specification and use `text/event-stream` content type. The endpoint MUST be separate from the existing GraphQL subscription controller, providing a REST-native channel at `/api/sse/{register}/{schema}`.
 
@@ -418,39 +420,6 @@ Beyond URL-path-based topic selection, clients MUST be able to filter events by 
 #### Notes
 - The RBAC + multitenancy bypass in the two slug resolvers is attributed in-code to issue #1454: without it, cross-tenant lifecycle events leave the push payload's `register` / `schema` slug fields null whenever the request user's tenant does not own the register/schema. This is a deliberate system-level-listener design choice but a multitenancy-boundary concern flagged for follow-up review — it is described here as observed behaviour, not changed in this retrofit.
 
-### Requirement: The system MUST record object lifecycle events as CloudEvents in the realtime log
-
-The system MUST record every object lifecycle event as a CloudEvent in the realtime event log that backs the SSE controller. `RealtimeEventListener` MUST subscribe to `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`, and `ObjectTransitionedEvent` and forward each to `RealtimeService::record()` with the correct event type, the affected `ObjectEntity`, and (for transitions) the transition metadata.
-
-#### Scenario: Record a create event
-- **GIVEN** an `ObjectCreatedEvent` carrying an `ObjectEntity`
-- **WHEN** `RealtimeEventListener::handle()` processes it
-- **THEN** it MUST call `RealtimeService::record(RealtimeService::TYPE_OBJECT_CREATED, $object)`
-
-#### Scenario: Record an update event using the new object state
-- **GIVEN** an `ObjectUpdatedEvent`
-- **WHEN** `handle()` processes it
-- **THEN** it MUST read the new state via `getNewObject()`
-- **AND** call `RealtimeService::record(RealtimeService::TYPE_OBJECT_UPDATED, $object)`
-
-#### Scenario: Record a delete event
-- **GIVEN** an `ObjectDeletedEvent`
-- **WHEN** `handle()` processes it
-- **THEN** it MUST call `RealtimeService::record(RealtimeService::TYPE_OBJECT_DELETED, $object)`
-
-#### Scenario: Record a transition event with transition metadata
-- **GIVEN** an `ObjectTransitionedEvent` carrying `action`, `from`, and `to`
-- **WHEN** `handle()` processes it
-- **THEN** it MUST call `RealtimeService::record(RealtimeService::TYPE_OBJECT_TRANSITIONED, $object, ['action' => ..., 'from' => ..., 'to' => ...])`
-
-#### Scenario: Non-ObjectEntity payload is ignored
-- **GIVEN** a lifecycle event whose payload is not an `ObjectEntity`
-- **WHEN** `handle()` processes it
-- **THEN** no `record()` call MUST be made (the `instanceof ObjectEntity` guard short-circuits)
-
-#### Notes
-- This recorder feeds the same downstream consumer (the SSE controller's event buffer) as the GraphQL subscription path, in the CloudEvents payload format established by the `event-driven-architecture` spec. It was dropped from `nested-aggregations#NAG-005` and is specced here as the standalone realtime recorder listener.
-
 ### Requirement: The system MUST emit per-object push events on every lifecycle event
 
 On every `ObjectCreatedEvent`, `ObjectUpdatedEvent`, and `ObjectDeletedEvent`, the system MUST emit a `notify_custom` push with event string `or-object-{uuid}` to every user authorised to read the object.
@@ -518,23 +487,79 @@ When the same `(uuid, action)` pair would be pushed multiple times within one PH
 
 ### Requirement: The system MUST support a batch-mode flag to suppress per-object pushes during bulk import
 
-Callers running bulk import operations MUST be able to suppress per-object push delivery by setting batch mode. At the end of the batch, a single collection event per affected `(register, schema)` pair MUST be flushed.
+Callers running bulk import operations MUST suppress per-object push delivery by
+setting batch mode. On import completion — including the failure path, since
+partial saves may already have happened — the import caller MUST flush the
+accumulated collection events: a single `or-collection-{register-slug}-{schema-slug}`
+event per affected `(register, schema)` pair, deduplicated across all saved objects.
+
+The batch flush is an untargeted broadcast: the pushed message carries no
+per-user targeting and its payload contains only the register slug, the schema
+slug, and the action `batch` — never object data. Authorization is enforced at
+refetch time: clients receiving the event re-query the RBAC-filtered REST API,
+so subscribers without access simply get an empty page.
+
+The flush MUST soft-fail when notify_push is not installed: no events are
+accumulated in that case (the listener never reaches its accumulator), so the
+flush is a silent no-op without touching the container; a queue-resolution
+failure with pending events logs at most one DEBUG entry and MUST NOT interrupt
+the import.
 
 #### Scenario: Bulk import with batch mode
+
 - **GIVEN** batch mode is enabled via `NotifyPushListener::setBatchMode(true)`
-- **WHEN** 500 objects in schema `meldingen` are saved in a loop
+- **WHEN** 500 objects in schema `meldingen` (register `zaken`) are saved in a loop
 - **THEN** `IQueue::push()` MUST NOT be called during the loop
-- **WHEN** `NotifyPushListener::flushBatch()` is called
-- **THEN** `IQueue::push()` MUST be called with `or-collection-zaken-meldingen` for each authorised user exactly once
+- **WHEN** `NotifyPushListener::flushBatch($queue)` is called
+- **THEN** `IQueue::push('notify_custom', ...)` MUST be called exactly once with
+  message `or-collection-zaken-meldingen`
+- **AND** the push payload MUST NOT contain a `user` key (broadcast)
+- **AND** the payload body MUST be exactly `{action: "batch", register: "zaken", schema: "meldingen"}`
 - **AND** per-object `or-object-{uuid}` events MUST NOT be emitted for any of the 500 objects
 
+#### Scenario: Import service flushes on completion
+
+- **GIVEN** `ImportService` runs a bulk save (`processSpreadsheetBatch` or `processCsvSheet`)
+- **WHEN** the save completes (normally or by throwing)
+- **THEN** the `finally` block MUST call the flush BEFORE `setBatchMode(false)`
+  (disabling batch mode clears the accumulator)
+- **AND** one collection event per affected `(register, schema)` pair MUST be pushed
+- **AND** subsequent single-object saves in the same request MUST emit per-object
+  events again (batch mode is off)
+
+#### Scenario: Collection hint derived from the save result, not from lifecycle events
+
+- **GIVEN** a default import (`events=false` throughout the import call chain,
+  as sent by the UI and `RegistersController`), so `NotifyPushListener::handle()`
+  never fires during the bulk save
+- **WHEN** the bulk save returns with a non-empty `saved` or `updated` set
+- **THEN** the import MUST queue the `(register-slug, schema-slug)` pair
+  directly from its own register/schema entities
+  (`NotifyPushListener::addBatchedCollection()`), independent of event dispatch
+- **AND** when the bulk save throws (partial saves may have landed), the pair
+  MUST be queued conservatively
+- **AND** when every row is `unchanged` (smart dedup skipped all writes), NO
+  collection event MUST be emitted
+- **AND** when lifecycle events ARE enabled, listener accumulation and the
+  result-derived hint MUST collapse onto the same accumulator key (no double
+  emit)
+
+#### Scenario: Flush soft-fails without notify_push
+
+- **GIVEN** notify_push is not installed (`IQueue` not resolvable)
+- **WHEN** a bulk import completes
+- **THEN** the flush MUST be a silent no-op (nothing was accumulated, so the
+  container is not even queried)
+- **AND** a queue-resolution failure with pending events MUST log at most one
+  DEBUG entry (never WARNING or ERROR)
+- **AND** the import result MUST be unaffected
+
 #### Scenario: Import without batch mode causes write amplification (anti-pattern)
+
 - **GIVEN** batch mode is NOT enabled
 - **WHEN** 500 objects in schema `meldingen` are saved in a loop
 - **THEN** `IQueue::push()` MUST be called up to `500 × N_readers` times
 - **AND** this MUST be documented as the rationale for batch mode
-
----
 
 ### Requirement: The system MUST resolve authorised users via `PermissionHandler`
 

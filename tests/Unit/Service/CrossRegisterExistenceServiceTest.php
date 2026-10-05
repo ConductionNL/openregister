@@ -48,7 +48,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Service\CrossRegisterExistenceService
  * @uses \OCA\OpenRegister\Db\Schema
  *
- * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md
+ * @spec openspec/specs/cross-register-existence-query/spec.md
  */
 final class CrossRegisterExistenceServiceTest extends TestCase {
 
@@ -135,7 +135,7 @@ final class CrossRegisterExistenceServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
 	 */
 	public function testAMatchAnswersExistenceAndNothingOfTheRow(): void {
 		$this->answers([self::ROW]);
@@ -165,7 +165,7 @@ final class CrossRegisterExistenceServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
 	 */
 	public function testNoMatchSaysSo(): void {
 		$this->answers([]);
@@ -182,7 +182,7 @@ final class CrossRegisterExistenceServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
 	 */
 	public function testMoreProbesThanTheBoundAreRefusedAndNothingIsQueried(): void {
 		// The assertion that separates "refused" from "truncated": silently
@@ -202,7 +202,7 @@ final class CrossRegisterExistenceServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-revealed-fields-are-bounded-by-the-schema-not-by-the-caller
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-revealed-fields-are-bounded-by-the-schema-not-by-the-caller
 	 */
 	public function testADeclaredFieldIsRevealedOnRequest(): void {
 		$this->answers([self::ROW]);
@@ -220,7 +220,7 @@ final class CrossRegisterExistenceServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-revealed-fields-are-bounded-by-the-schema-not-by-the-caller
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-revealed-fields-are-bounded-by-the-schema-not-by-the-caller
 	 */
 	public function testASensitiveFieldIsRefusedByName(): void {
 		$this->answers([self::ROW]);
@@ -243,7 +243,7 @@ final class CrossRegisterExistenceServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-revealed-fields-are-bounded-by-the-schema-not-by-the-caller
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-revealed-fields-are-bounded-by-the-schema-not-by-the-caller
 	 */
 	public function testAnUndeclaredFieldIsRefused(): void {
 		$this->answers([self::ROW]);
@@ -259,7 +259,7 @@ final class CrossRegisterExistenceServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-a-probe-is-authorised-as-the-read-it-replaces
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-probe-is-authorised-as-the-read-it-replaces
 	 */
 	public function testARefusedRegisterDoesNotReportAnAbsence(): void {
 		$this->objects->method('searchObjects')->willThrowException(
@@ -281,7 +281,7 @@ final class CrossRegisterExistenceServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-a-probe-is-authorised-as-the-read-it-replaces
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-probe-is-authorised-as-the-read-it-replaces
 	 */
 	public function testARefusalAndAnAbsenceAreNotTheSameAnswer(): void {
 		$empty = new self('empty');
@@ -310,7 +310,7 @@ final class CrossRegisterExistenceServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
 	 */
 	public function testAProbeWithNoFilterIsRefused(): void {
 		$this->objects->expects(self::never())->method('searchObjects');

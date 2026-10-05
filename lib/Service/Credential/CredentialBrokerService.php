@@ -348,7 +348,7 @@ class CredentialBrokerService {
 	 * @throws CredentialAccessDeniedException When Guard 1 or 2 fails, or an inject-only credential has no stored secret.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-broker/spec.md#requirement-a-token-set-is-never-resolved-app-side
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-a-token-set-is-never-resolved-app-side
 	 */
 	public function resolveInjectable(
 		string $credentialId,
@@ -453,7 +453,7 @@ class CredentialBrokerService {
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 * @spec openspec/specs/credential-broker/spec.md
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
 	 */
 	public function mint(
 		string $name,
@@ -552,7 +552,7 @@ class CredentialBrokerService {
 	 *
 	 * @throws InvalidArgumentException When `instanceBaseUrl` is not a safe public https origin.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
 	 */
 	public static function connectionMetadata(array $metadata): array {
 		$accepted = [];
@@ -1165,7 +1165,7 @@ class CredentialBrokerService {
 	 * @throws CredentialRelinkRequiredException When the credential's grant is gone.
 	 * @throws CredentialUpstreamException When a required refresh could not be completed.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-broker/spec.md#requirement-injection-is-selected-by-kind
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-injection-is-selected-by-kind
 	 */
 	private function injectionSecret(
 		array $data,
@@ -1211,7 +1211,7 @@ class CredentialBrokerService {
 	 *
 	 * @return string Either `secret` or `oauth2-token-set`.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-credential-kind-is-declared-by-the-provider-catalogue-never-by-the-credential-object
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-credential-kind-is-declared-by-the-provider-catalogue-never-by-the-credential-object
 	 */
 	private function kindOf(array $provider): string {
 		$kind = trim((string)($provider['kind'] ?? ''));
@@ -1241,7 +1241,7 @@ class CredentialBrokerService {
 	 *
 	 * @throws CredentialAccessDeniedException When a per-credential host is required and is missing or unsafe.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
 	 */
 	private function baseUrlFor(array $provider, array $data, string $credentialId): string {
 		$from = trim((string)($provider['baseUrlFrom'] ?? ''));

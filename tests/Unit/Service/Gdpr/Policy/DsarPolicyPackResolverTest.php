@@ -18,7 +18,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
+ * @spec openspec/specs/dsar-identity-verify-seam/spec.md
  */
 
 declare(strict_types=1);

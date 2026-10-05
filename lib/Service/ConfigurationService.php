@@ -589,7 +589,7 @@ class ConfigurationService {
 	 *
 	 * @return array<int, array{jobId: string, version: string, created: int, importedAt: string}>
 	 *
-	 * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
 	 */
 	public function listImportJobs(string $appId): array {
 		return $this->getImportJobRecorder()->jobs(appId: $appId);
@@ -615,7 +615,7 @@ class ConfigurationService {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the static scoped-elevation helper importFromApp() uses.
 	 *
-	 * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
 	 */
 	public function softDeleteAppImports(string $appId): array {
 		return SystemOperationContext::run(

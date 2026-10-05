@@ -83,7 +83,7 @@ final class OAuth2TokenSet {
 	 * @throws InvalidArgumentException When the document is not decodable into a token set. The message names the
 	 *                                  failure and NEVER quotes any part of the stored value.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-an-oauth2-token-set-is-stored-as-one-opaque-secret-in-the-custody-leaf
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-oauth2-token-set-is-stored-as-one-opaque-secret-in-the-custody-leaf
 	 */
 	public static function fromStoredJson(string $stored): self {
 		try {
@@ -134,7 +134,7 @@ final class OAuth2TokenSet {
 	 *
 	 * @throws InvalidArgumentException When the response carries no access token.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
 	 */
 	public static function fromTokenResponse(
 		array $response,
@@ -185,7 +185,7 @@ final class OAuth2TokenSet {
 	 *
 	 * @return self A new token set; this one is unchanged.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-an-oauth2-token-set-is-stored-as-one-opaque-secret-in-the-custody-leaf
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-oauth2-token-set-is-stored-as-one-opaque-secret-in-the-custody-leaf
 	 */
 	public function withAccount(string $id, string $handle, string $displayName): self {
 		return new self(
@@ -207,7 +207,7 @@ final class OAuth2TokenSet {
 	 *
 	 * @return string The stored document.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-an-oauth2-token-set-is-stored-as-one-opaque-secret-in-the-custody-leaf
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-oauth2-token-set-is-stored-as-one-opaque-secret-in-the-custody-leaf
 	 */
 	public function toStoredJson(): string {
 		return (string)json_encode(
@@ -229,7 +229,7 @@ final class OAuth2TokenSet {
 	 *
 	 * @return string The access token.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-brokered-call-refreshes-an-expiring-token-set-before-it-is-used
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-brokered-call-refreshes-an-expiring-token-set-before-it-is-used
 	 */
 	public function getAccessToken(): string {
 		return $this->accessToken;
@@ -240,7 +240,7 @@ final class OAuth2TokenSet {
 	 *
 	 * @return string|null The refresh token.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
 	 */
 	public function getRefreshToken(): ?string {
 		return $this->refreshToken;
@@ -251,7 +251,7 @@ final class OAuth2TokenSet {
 	 *
 	 * @return DateTimeImmutable|null The expiry.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-brokered-call-refreshes-an-expiring-token-set-before-it-is-used
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-brokered-call-refreshes-an-expiring-token-set-before-it-is-used
 	 */
 	public function getExpiresAt(): ?DateTimeImmutable {
 		return $this->expiresAt;
@@ -262,7 +262,7 @@ final class OAuth2TokenSet {
 	 *
 	 * @return array<int, string> The granted scopes.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-non-secret-connection-metadata-lives-on-the-credential-object
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-non-secret-connection-metadata-lives-on-the-credential-object
 	 */
 	public function getScopes(): array {
 		return $this->scopes;
@@ -273,7 +273,7 @@ final class OAuth2TokenSet {
 	 *
 	 * @return array<string, string> The `id`, `handle` and `displayName`.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-non-secret-connection-metadata-lives-on-the-credential-object
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-non-secret-connection-metadata-lives-on-the-credential-object
 	 */
 	public function getAccount(): array {
 		return $this->account;
@@ -291,7 +291,7 @@ final class OAuth2TokenSet {
 	 *
 	 * @return boolean True when the margin has been crossed.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-brokered-call-refreshes-an-expiring-token-set-before-it-is-used
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-brokered-call-refreshes-an-expiring-token-set-before-it-is-used
 	 */
 	public function needsRefresh(int $marginSeconds, ?DateTimeImmutable $now = null): bool {
 		if ($this->expiresAt === null) {

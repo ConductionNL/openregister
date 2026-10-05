@@ -2112,7 +2112,7 @@ class RegistersControllerTest extends TestCase {
 	/**
 	 * An app's example data never leaves through the HTTP rollback.
 	 *
-	 * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-the-http-rollback-route-must-refuse-an-app-imports-job-id
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-http-rollback-route-must-refuse-an-app-imports-job-id
 	 */
 	public function testRollbackRefusesAnAppImportJob(): void {
 		$this->stubParams(['importJobId' => 'job-demo']);

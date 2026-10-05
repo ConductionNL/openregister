@@ -99,7 +99,7 @@ class DsarPolicyPackResolver {
 	 *
 	 * @return string|null The selector id, or null when unset/no pack resolves.
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
+	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function identityVerifyProviderId(array $case): ?string {
 		return $this->selectorFor(case: $case, field: self::IDENTITY_SELECTOR);
@@ -112,7 +112,7 @@ class DsarPolicyPackResolver {
 	 *
 	 * @return string|null The selector id, or null when unset/no pack resolves.
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function regulatorEscalateProviderId(array $case): ?string {
 		return $this->selectorFor(case: $case, field: self::REGULATOR_SELECTOR);

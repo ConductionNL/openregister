@@ -74,7 +74,7 @@ class CredentialRelinkNotifier {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
 	 */
 	public function announce(string $credentialId, string $provider, string $owner, string $reason): void {
 		try {

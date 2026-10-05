@@ -32,7 +32,7 @@ use Exception;
 /**
  * Raised for a structurally-invalid single schedule entry.
  *
- * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 class ScheduleValidationException extends Exception {
 }//end class

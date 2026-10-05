@@ -51,7 +51,7 @@ final class NullRegulatorEscalateProvider implements RegulatorEscalateProvider {
 	 *
 	 * @return string The fail-closed default provider id.
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function getProviderId(): string {
 		return self::PROVIDER_ID;
@@ -69,7 +69,7 @@ final class NullRegulatorEscalateProvider implements RegulatorEscalateProvider {
 	 *
 	 * @return RegulatorEscalateResult Always a `refused` result.
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) RegulatorEscalateResult::refused is a named constructor — no DI alternative.
 	 */
