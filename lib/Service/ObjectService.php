@@ -2962,11 +2962,25 @@ class ObjectService implements ObjectServiceInterface
 
             \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.scope');
 
+            // A schema served by an object source keeps no rows in a magic table,
+            // so the MagicMapper lookups below can only miss, and a scoped miss is
+            // rethrown as "not found" before the delete handler's provider
+            // dispatch runs. That made every DELETE on such a schema a 404: a
+            // writable database source could not delete, and the organisation
+            // projection never gave its own refusal.
+            $sourcedSchema = null;
+            if ($this->currentSchema !== null && $this->currentSchema->getObjectSource() !== null) {
+                $sourcedSchema = $this->currentSchema;
+            }
+
             // Reject deletion of transferred objects (archiefstatus = overgebracht).
             // Looked up with the caller's flags, so the guard sees the object the
             // delete handler below would touch; with the session scope it missed
             // an object outside it and let a `_multitenancy: false` delete through.
-            $this->rejectIfTransferred(uuid: $uuid, _rbac: $_rbac, _multitenancy: $_multitenancy);
+            // An external row has no retention block, so a sourced schema skips it.
+            if ($sourcedSchema === null) {
+                $this->rejectIfTransferred(uuid: $uuid, _rbac: $_rbac, _multitenancy: $_multitenancy);
+            }
 
             \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.transferred');
 
@@ -2989,6 +3003,17 @@ class ObjectService implements ObjectServiceInterface
                 $this->rejectIfArchivalImmutable(
                     schema: $this->currentSchema,
                     retentionSweep: $_retentionSweep
+                );
+            }
+
+            if ($sourcedSchema !== null) {
+                return $this->deleteFromObjectSource(
+                    schema: $sourcedSchema,
+                    uuid: $uuid,
+                    actingUserId: $actingUserId,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy,
+                    hasScope: $hasScope
                 );
             }
 
@@ -3071,6 +3096,57 @@ class ObjectService implements ObjectServiceInterface
             $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
         }
     }//end deleteObject()
+
+    /**
+     * Hand a delete on an object-source schema to the delete handler's provider dispatch.
+     *
+     * Delete rights on the schema are checked first, so the external source is
+     * never consulted for a caller who may not delete (no enumeration oracle).
+     * There is no stored owner to check against: the row lives outside
+     * OpenRegister. The handler then delegates to the writable provider, or
+     * refuses the delete as a read-only projection.
+     *
+     * @param Schema      $schema        The schema served by the object source.
+     * @param string      $uuid          The object id in the source.
+     * @param string|null $actingUserId  Explicit acting user, or null for the session user.
+     * @param bool        $_rbac         Whether to apply RBAC checks.
+     * @param bool        $_multitenancy Whether to apply multitenancy filtering.
+     * @param bool        $hasScope      Whether the caller supplied register and schema.
+     *
+     * @return bool Whether the deletion was successful.
+     *
+     * @throws \Exception If the caller may not delete on this schema, or the source refuses.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors deleteObject()'s own flags.
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     */
+    private function deleteFromObjectSource(
+        Schema $schema,
+        string $uuid,
+        ?string $actingUserId,
+        bool $_rbac,
+        bool $_multitenancy,
+        bool $hasScope
+    ): bool {
+        $this->checkPermission(
+            schema: $schema,
+            action: 'delete',
+            userId: $actingUserId,
+            objectOwner: null,
+            _rbac: $_rbac
+        );
+
+        return $this->deleteHandler->deleteObject(
+            register: $this->currentRegister,
+            schema: $schema,
+            uuid: $uuid,
+            originalObjectId: null,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
+            scoped: $hasScope
+        );
+    }//end deleteFromObjectSource()
 
     /**
      * Check whether a schema declares an `x-openregister-archival` annotation.
