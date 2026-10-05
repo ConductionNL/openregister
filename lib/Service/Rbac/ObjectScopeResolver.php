@@ -342,6 +342,14 @@ class ObjectScopeResolver {
 	 * group unconditionally, so a list that filtered the row out would hide an
 	 * object its reader may open and edit.
 	 *
+	 * IT BELONGS BESIDE THE OWNER ADMIT, NOT INSIDE "not private". That placement
+	 * is what makes it mean the same thing on both sides: an owner admit is ORed
+	 * over the whole query, while the not-private predicate is ANDed with the
+	 * schema's rules. Putting the group in the second one would have admitted it
+	 * subject to the rules in a list while {@see admitsUnconditionally()} admitted
+	 * it regardless on a single read — a principal honoured differently per path,
+	 * which is exactly what this class exists to prevent.
+	 *
 	 * @param string $authColumn The `_authorization` column, qualified by the caller.
 	 * @param bool $isPostgres Whether the connected platform is PostgreSQL.
 	 * @param string[] $quotedUserGroups The caller's group ids, ALREADY quoted as SQL literals.
@@ -377,8 +385,6 @@ class ObjectScopeResolver {
 	 * @param bool $isPostgres Whether the connected platform is PostgreSQL.
 	 * @param string $uuidColumn The `_uuid` column, qualified by the caller.
 	 * @param string[] $quotedUuids Granted object UUIDs, ALREADY quoted as SQL literals.
-	 * @param string[] $quotedUserGroups The caller's group ids, ALREADY quoted as SQL literals, so a
-	 *                                   row owned by one of those groups stays in the list.
 	 *
 	 * @return string A SQL predicate true for rows this caller may reach.
 	 */
@@ -388,7 +394,6 @@ class ObjectScopeResolver {
 		bool $isPostgres,
 		string $uuidColumn,
 		array $quotedUuids,
-		array $quotedUserGroups = [],
 	): string {
 		$notPrivate = $this->notPrivateSql(
 			columnName: $authColumn,
@@ -396,25 +401,12 @@ class ObjectScopeResolver {
 			isPostgres: $isPostgres
 		);
 
-		$disjuncts = [$notPrivate];
-
-		if (empty($quotedUuids) === false) {
-			$disjuncts[] = $uuidColumn . ' IN (' . implode(', ', $quotedUuids) . ')';
-		}
-
-		$ownedByMyGroup = $this->ownedByMyGroupSql(
-			authColumn: $authColumn,
-			isPostgres: $isPostgres,
-			quotedUserGroups: $quotedUserGroups
-		);
-		if ($ownedByMyGroup !== null) {
-			$disjuncts[] = $ownedByMyGroup;
-		}
-
-		if (count($disjuncts) === 1) {
+		if (empty($quotedUuids) === true) {
 			return $notPrivate;
 		}
 
-		return '(' . implode(' OR ', $disjuncts) . ')';
+		$inList = implode(', ', $quotedUuids);
+
+		return "({$notPrivate} OR {$uuidColumn} IN ({$inList}))";
 	}//end notPrivateOrGrantedSql()
 }//end class

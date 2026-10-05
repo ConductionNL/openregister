@@ -123,65 +123,75 @@ class ObjectScopeResolverOwnerGroupTest extends TestCase {
 	}//end testAnUnreadableOwningGroupAdmitsNobody()
 
 	/**
-	 * The list predicate keeps a row owned by one of the caller's groups.
+	 * The list term for the owning group names the group and reads the block.
+	 *
+	 * It is emitted as its own term, beside the owner admit, because that is the
+	 * placement that matches the single-object verdict: an owner admit is ORed
+	 * over the whole query while the not-private predicate is ANDed with the
+	 * schema's rules.
 	 *
 	 * @return void
 	 */
-	public function testTheListPredicateKeepsARowOwnedByMyGroup(): void {
-		$sql = $this->resolver->notPrivateOrGrantedSql(
-			authColumn: '_authorization',
-			defaultPrivate: true,
+	public function testTheListTermNamesTheGroupAndReadsTheBlock(): void {
+		$mariadb = $this->resolver->ownedByMyGroupSql(
+			authColumn: 't._authorization',
 			isPostgres: false,
-			uuidColumn: '_uuid',
-			quotedUuids: [],
 			quotedUserGroups: ["'redactie'"]
 		);
 
-		$this->assertStringContainsString('ownerGroup', $sql);
-		$this->assertStringContainsString("'redactie'", $sql);
-	}//end testTheListPredicateKeepsARowOwnedByMyGroup()
+		$this->assertIsString($mariadb);
+		$this->assertStringContainsString("JSON_UNQUOTE(JSON_EXTRACT(t._authorization, '$.ownerGroup'))", $mariadb);
+		$this->assertStringContainsString("IN ('redactie')", $mariadb);
 
-	/**
-	 * An anonymous caller adds no group term at all.
-	 *
-	 * The predicate lands on the list query of every schema, so it must stay
-	 * exactly what it was for a caller who is in no group.
-	 *
-	 * @return void
-	 */
-	public function testAnAnonymousCallerAddsNoGroupTerm(): void {
-		$withoutGroups = $this->resolver->notPrivateOrGrantedSql(
-			authColumn: '_authorization',
-			defaultPrivate: false,
-			isPostgres: false,
-			uuidColumn: '_uuid',
-			quotedUuids: [],
-			quotedUserGroups: []
-		);
-
-		$this->assertSame(
-			$this->resolver->notPrivateSql('_authorization', false, false),
-			$withoutGroups
-		);
-	}//end testAnAnonymousCallerAddsNoGroupTerm()
-
-	/**
-	 * Grants and the owning group compose rather than replace each other.
-	 *
-	 * @return void
-	 */
-	public function testAGrantAndAnOwningGroupBothSurvive(): void {
-		$sql = $this->resolver->notPrivateOrGrantedSql(
-			authColumn: '_authorization',
-			defaultPrivate: true,
+		$postgres = $this->resolver->ownedByMyGroupSql(
+			authColumn: 't._authorization',
 			isPostgres: true,
-			uuidColumn: '_uuid',
-			quotedUuids: ["'uuid-1'"],
-			quotedUserGroups: ["'redactie'"]
+			quotedUserGroups: ["'redactie'", "'financien'"]
 		);
 
-		$this->assertStringContainsString("_uuid IN ('uuid-1')", $sql);
-		$this->assertStringContainsString("->> 'ownerGroup'", $sql);
-	}//end testAGrantAndAnOwningGroupBothSurvive()
+		$this->assertIsString($postgres);
+		$this->assertStringContainsString("->> 'ownerGroup'", $postgres);
+		$this->assertStringContainsString("'redactie', 'financien'", $postgres);
+	}//end testTheListTermNamesTheGroupAndReadsTheBlock()
+
+	/**
+	 * A caller in no group gets no term at all.
+	 *
+	 * The predicate lands on the list query of every schema, so an anonymous
+	 * caller must cost it nothing.
+	 *
+	 * @return void
+	 */
+	public function testACallerInNoGroupGetsNoTerm(): void {
+		$this->assertNull(
+			$this->resolver->ownedByMyGroupSql(
+				authColumn: 't._authorization',
+				isPostgres: false,
+				quotedUserGroups: []
+			)
+		);
+	}//end testACallerInNoGroupGetsNoTerm()
+
+	/**
+	 * The reachable-row predicate is untouched by this change.
+	 *
+	 * The owning group is an owner, so it is not folded in here. A regression
+	 * that put it back would admit the group subject to the schema's rules in a
+	 * list while a single read admitted it regardless.
+	 *
+	 * @return void
+	 */
+	public function testTheReachableRowPredicateIsUnchanged(): void {
+		$this->assertStringNotContainsString(
+			'ownerGroup',
+			$this->resolver->notPrivateOrGrantedSql(
+				authColumn: '_authorization',
+				defaultPrivate: true,
+				isPostgres: false,
+				uuidColumn: '_uuid',
+				quotedUuids: ["'uuid-1'"]
+			)
+		);
+	}//end testTheReachableRowPredicateIsUnchanged()
 
 }//end class

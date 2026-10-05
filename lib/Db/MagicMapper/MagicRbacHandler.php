@@ -292,6 +292,21 @@ class MagicRbacHandler {
 			$conditions[] = "{$ownerColumn} = {$quotedSystemId}";
 		}
 
+		// THE OWNING GROUP IS AN OWNER, so it sits here with the other owner
+		// admits rather than inside the not-private predicate: here the term is
+		// ORed over the whole query, there it would have been ANDed with the
+		// schema's rules. One of those two placements matches what
+		// ObjectScopeResolver::admitsUnconditionally() answers on a single read
+		// and the other does not.
+		$ownedByMyGroup = $this->objectScope()->ownedByMyGroupSql(
+			authColumn: $columnPrefix . '_authorization',
+			isPostgres: $this->isPostgres(),
+			quotedUserGroups: $this->quotedCallerGroups()
+		);
+		if ($ownedByMyGroup !== null) {
+			$conditions[] = $ownedByMyGroup;
+		}
+
 		return $conditions;
 	}//end ownerAdmitConditionsSql()
 
@@ -327,12 +342,7 @@ class MagicRbacHandler {
 			defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $authorization),
 			isPostgres: $this->isPostgres(),
 			uuidColumn: $uuidColumn,
-			quotedUuids: $this->quotedGrantedUuids(userId: $userId, action: $action),
-			// A row owned by one of the caller's groups stays in the list. Passed
-			// here rather than left out because the single-object verdict admits
-			// a member of the owning group, and a list that dropped the row would
-			// hide an object its reader may open.
-			quotedUserGroups: $this->quotedCallerGroups()
+			quotedUuids: $this->quotedGrantedUuids(userId: $userId, action: $action)
 		);
 	}//end reachableRowSqlFor()
 
@@ -581,6 +591,20 @@ class MagicRbacHandler {
 				't._owner',
 				$qb->createNamedParameter($this->getSystemUserId())
 			);
+		}
+
+		// The owning group, admitted on the same terms as the named owner. Added
+		// to BOTH emitters' owner-admit lists, because this one is written inline
+		// here while the raw-SQL emitter builds its list in
+		// ownerAdmitConditionsSql(); honouring the group in one of them would hide
+		// a record from a list on one code path and show it on the other.
+		$ownedByMyGroup = $this->objectScope()->ownedByMyGroupSql(
+			authColumn: 't._authorization',
+			isPostgres: $this->isPostgres(),
+			quotedUserGroups: $this->quotedCallerGroups()
+		);
+		if ($ownedByMyGroup !== null) {
+			$ownerAdmits[] = $qb->createFunction($ownedByMyGroup);
 		}
 
 		// If no authorization is configured, the schema is open to all — but an
