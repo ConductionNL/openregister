@@ -304,4 +304,41 @@ class FetchHandlerTest extends TestCase {
 			$this->assertInstanceOf(JSONResponse::class, $result);
 		}
 	}
+
+	#[Test]
+	public function testABodyServedAsJsonThatIsYamlIsReadAndSaysSo(): void {
+		$this->client->method('request')
+			->willReturn($this->createGuzzleResponse("a: 1\n", 'application/json'));
+		$this->logger->expects($this->once())->method('info')
+			->with($this->stringContains('Content-Type was JSON but data was successfully parsed as YAML'));
+
+		$result = $this->handler->getJSONfromURL('https://example.com/data');
+
+		$this->assertIsArray($result);
+		$this->assertSame(1, $result['a']);
+	}
+
+	#[Test]
+	public function testABodyThatIsNeitherJsonNorYamlIs400AndIsLogged(): void {
+		$this->client->method('request')
+			->willReturn($this->createGuzzleResponse("a: [unclosed\n  - b: {", 'text/plain'));
+		$this->logger->expects($this->once())->method('warning')
+			->with($this->stringContains('Body is neither JSON nor YAML'));
+
+		$result = $this->handler->getJSONfromURL('https://example.com/data');
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(400, $result->getStatus());
+	}
+
+	#[Test]
+	public function testABodyThatParsesToAScalarIs400(): void {
+		$this->client->method('request')
+			->willReturn($this->createGuzzleResponse('just a sentence', 'application/yaml'));
+
+		$result = $this->handler->getJSONfromURL('https://example.com/data');
+
+		$this->assertInstanceOf(JSONResponse::class, $result);
+		$this->assertSame(400, $result->getStatus());
+	}
 }
