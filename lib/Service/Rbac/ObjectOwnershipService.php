@@ -412,7 +412,9 @@ class ObjectOwnershipService {
 	 * @param int $depth How many generations down this call already is.
 	 * @param array<string, true> $visited Records already moved by this transfer, by uuid.
 	 *
-	 * @return array{uuid: string|null, previousOwner: string|null, newOwner: string, changed: bool, children: array}
+	 * @throws InvalidArgumentException When the record carries no uuid to key the write on.
+	 *
+	 * @return array{uuid: string, previousOwner: string|null, newOwner: string, changed: bool, children: array}
 	 */
 	private function transfer(
 		Register $register,
@@ -426,9 +428,15 @@ class ObjectOwnershipService {
 		$uuid = $object->getUuid();
 		$previousOwner = $object->getOwner();
 
-		if ($uuid !== null) {
-			$visited[$uuid] = true;
+		// A record with no uuid cannot be addressed. Refused rather than cast,
+		// because the write is keyed on the uuid: `(string)null` is the empty
+		// string, which is a WHERE clause that matches whatever rows happen to
+		// carry an empty uuid instead of failing.
+		if ($uuid === null || $uuid === '') {
+			throw new InvalidArgumentException('A record with no uuid cannot change hands');
 		}
+
+		$visited[$uuid] = true;
 
 		// Already theirs. Reported rather than written, so a repeated call is not
 		// a second audit entry and not a second notification.
@@ -450,7 +458,7 @@ class ObjectOwnershipService {
 		$this->ownerWriter->writeOwner(
 			register: $register,
 			schema: $schema,
-			objectUuid: (string)$uuid,
+			objectUuid: $uuid,
 			owner: $newOwner
 		);
 		$object->setOwner($newOwner);

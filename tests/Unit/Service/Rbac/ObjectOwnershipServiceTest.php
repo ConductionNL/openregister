@@ -626,6 +626,32 @@ class ObjectOwnershipServiceTest extends TestCase {
 	}//end testTakingARecordYouAlreadyOwnWritesNothing()
 
 	/**
+	 * A record with no uuid cannot change hands.
+	 *
+	 * The write is keyed on the uuid. Cast instead of refused, a null uuid
+	 * becomes the empty string, and the update then addresses whatever rows carry
+	 * an empty uuid rather than failing.
+	 *
+	 * @return void
+	 */
+	public function testARecordWithNoUuidCannotChangeHands(): void {
+		$this->signIn('root', ['admin']);
+
+		$object = new ObjectEntity();
+		$object->setOwner('alice');
+
+		$this->ownerWriter->expects($this->never())->method('writeOwner');
+
+		$this->expectException(\InvalidArgumentException::class);
+		$this->service->assign(
+			register: new Register(),
+			schema: new Schema(),
+			object: $object,
+			newOwner: 'carol'
+		);
+	}//end testARecordWithNoUuidCannotChangeHands()
+
+	/**
 	 * The owner names the group that owns the record with them.
 	 *
 	 * The scope in the same block survives it: the block is read, one key is
