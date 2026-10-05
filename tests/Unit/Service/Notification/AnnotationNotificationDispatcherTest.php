@@ -11,6 +11,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Service\Notification\RecipientResolverInterface;
+use OCA\OpenRegister\Service\Party\PartyNotificationService;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
 use OCP\Http\Client\IClient;
@@ -1030,6 +1031,70 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 
 		$this->makeDispatcher()->dispatch($this->object($schema), 'updated');
 	}//end testConditionlessUpdatedStillFires()
+
+	/**
+	 * Fire one `parties` rule and capture what the party service was asked to send.
+	 *
+	 * @param array<string, mixed> $rule The rule, without trigger, channels and recipients.
+	 *
+	 * @return array<int, array<string, mixed>> The captured notifyParties() calls.
+	 */
+	private function fireAPartiesRule(array $rule): array {
+		$calls = [];
+		$parties = $this->createMock(PartyNotificationService::class);
+		$parties->method('notifyParties')->willReturnCallback(
+			function (string $objectUuid, string $subject, string $body, ?string $role = null, string $category = 'service') use (&$calls): array {
+				$calls[] = ['objectUuid' => $objectUuid, 'subject' => $subject, 'body' => $body, 'role' => $role, 'category' => $category];
+				return [];
+			}
+		);
+		$this->serverServices[PartyNotificationService::class] = $parties;
+
+		$schema = $this->schemaWithNotification(
+			[
+				'tell-the-parties' => $rule + [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['email'],
+					'recipients' => [['kind' => 'parties']],
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->makeDispatcher()->dispatch($this->object($schema), 'updated');
+
+		return $calls;
+	}//end fireAPartiesRule()
+
+	/**
+	 * A party mail's body is the rule's message, not its subject.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-a-party-mail-carries-the-rule-s-message-as-its-body-req-ero-006
+	 */
+	public function testAPartyMailCarriesTheMessageAsItsBody(): void {
+		$calls = $this->fireAPartiesRule(
+			['subject' => 'Your case changed', 'message' => 'Open the portal to see the new status', 'messageCategory' => 'case-update']
+		);
+
+		$this->assertCount(1, $calls);
+		$this->assertSame('Your case changed', $calls[0]['subject']);
+		$this->assertSame('Open the portal to see the new status', $calls[0]['body']);
+		$this->assertSame('case-update', $calls[0]['category']);
+		$this->assertSame('uuid-1', $calls[0]['objectUuid']);
+	}//end testAPartyMailCarriesTheMessageAsItsBody()
+
+	/**
+	 * A rule without a message keeps today's body, the subject, and asks as service.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-a-party-mail-carries-the-rule-s-message-as-its-body-req-ero-006
+	 */
+	public function testAPartyMailWithoutAMessageKeepsTheSubjectAsItsBody(): void {
+		$calls = $this->fireAPartiesRule(['subject' => 'Your case changed']);
+
+		$this->assertCount(1, $calls);
+		$this->assertSame('Your case changed', $calls[0]['body']);
+		$this->assertSame('service', $calls[0]['category']);
+	}//end testAPartyMailWithoutAMessageKeepsTheSubjectAsItsBody()
 
 	/**
 	 * @param array<string, mixed> $notifications

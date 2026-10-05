@@ -55,13 +55,18 @@ class EmailSender {
 	 * @param IMailer $mailer The mailer.
 	 * @param LoggerInterface $logger Logger for handoff diagnostics.
 	 * @param NotificationChannelPolicy|null $channelPolicy The subsystem's per-channel kill switches; null means enabled.
+	 * @param UnsubscribeHeaders|null $unsubscribeHeaders The shared header helper; null builds one.
 	 */
 	public function __construct(
 		private readonly IUserManager $userManager,
 		private readonly IMailer $mailer,
 		private readonly LoggerInterface $logger,
 		private readonly ?NotificationChannelPolicy $channelPolicy = null,
+		private ?UnsubscribeHeaders $unsubscribeHeaders = null,
 	) {
+		if ($this->unsubscribeHeaders === null) {
+			$this->unsubscribeHeaders = new UnsubscribeHeaders(logger: $logger);
+		}
 
 	}//end __construct()
 
@@ -126,13 +131,16 @@ class EmailSender {
 	 * @param string $address The recipient address.
 	 * @param string $displayName The name to address it to, '' for none.
 	 * @param string $subject Email subject line.
-	 * @param string $body Email body text.
+	 * @param string $body Email body text; a caller with a link has appended it already.
+	 * @param array<string, mixed>|null $unsubscribe Integriq's unsubscribe material, for the
+	 *                                               List-Unsubscribe headers; null for none.
 	 *
 	 * @return string One of the OUTCOME_* constants.
 	 *
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
 	 */
-	public function sendToAddress(string $address, string $displayName, string $subject, string $body): string {
+	public function sendToAddress(string $address, string $displayName, string $subject, string $body, ?array $unsubscribe = null): string {
 		if ($this->channelPolicy !== null && $this->channelPolicy->isChannelEnabled(channel: 'email') === false) {
 			return self::OUTCOME_KILL_SWITCH;
 		}
@@ -152,6 +160,12 @@ class EmailSender {
 			$msg->setTo([$to => $name]);
 			$msg->setSubject($subject);
 			$msg->setPlainBody($body);
+			if ($unsubscribe !== null && $this->unsubscribeHeaders !== null) {
+				// Best effort: false means the headers could not be set, and
+				// the mail still goes out with the link in its body.
+				$this->unsubscribeHeaders->apply(message: $msg, unsubscribe: $unsubscribe);
+			}
+
 			$this->mailer->send($msg);
 		} catch (\Throwable $e) {
 			$this->logger->debug(

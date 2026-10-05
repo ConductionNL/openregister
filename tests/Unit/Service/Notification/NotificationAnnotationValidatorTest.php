@@ -39,6 +39,35 @@ class NotificationAnnotationValidatorTest extends TestCase {
 		$this->assertContains('notification-bad-trigger', $codes);
 	}
 
+	/**
+	 * A parties rule with an unknown messageCategory is refused; a known one passes.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-a-parties-notification-asks-integriq-before-it-mails-a-party-req-ero-003
+	 */
+	public function testAnUnknownMessageCategoryIsRejected(): void {
+		$rule = [
+			'trigger' => ['type' => 'updated'],
+			'recipients' => [['kind' => 'parties']],
+			'channels' => ['email'],
+			'subject' => 'Your case changed',
+		];
+
+		$codes = array_column(
+			$this->v->validate(['x-openregister-notifications' => ['x' => $rule + ['messageCategory' => 'nieuwsbrief']], 'properties' => []]),
+			'code'
+		);
+		$this->assertContains('notification-bad-message-category', $codes);
+
+		foreach ([null, 'case-update', 'besluit'] as $category) {
+			$spec = $rule;
+			if ($category !== null) {
+				$spec['messageCategory'] = $category;
+			}
+
+			$this->assertSame([], $this->v->validate(['x-openregister-notifications' => ['x' => $spec], 'properties' => []]));
+		}
+	}
+
 	public function testBadChannelIsRejected(): void {
 		$errors = $this->v->validate([
 			'x-openregister-notifications' => [

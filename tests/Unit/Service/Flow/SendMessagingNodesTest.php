@@ -226,4 +226,32 @@ class SendMessagingNodesTest extends TestCase {
 			$this->assertStringContainsString('none, object or any', $e->getMessage());
 		}
 	}//end testSendEmailDeclaresAndValidatesExternalRecipients()
+
+	/**
+	 * The message category is declared, formed and validated, and an unknown one names the field.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
+	 */
+	public function testSendEmailDeclaresAndValidatesTheMessageCategory(): void {
+		$email = new SendEmailNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls);
+
+		$this->assertContains('messageCategory', $email->configKeys());
+		$this->assertContains('messageCategory', array_column($email->configForm(), 'key'));
+
+		$base = ['recipients' => ['bob'], 'body' => 'b'];
+		foreach (['', 'besluit', 'statutory', 'account', 'security', 'case-update', 'reminder', 'service', 'marketing', 'Besluit'] as $category) {
+			$email->validateConfig(config: $base + ['messageCategory' => $category]);
+		}
+
+		$email->validateConfig(config: $base);
+
+		try {
+			$email->validateConfig(config: $base + ['messageCategory' => 'nieuwsbrief']);
+			$this->fail('An unknown messageCategory must be refused.');
+		} catch (UnexpectedValueException $e) {
+			$this->assertStringContainsString('messageCategory', $e->getMessage());
+			$this->assertStringContainsString('nieuwsbrief', $e->getMessage());
+			$this->assertStringContainsString('besluit, statutory, account, security, case-update, reminder, service, marketing', $e->getMessage());
+		}
+	}//end testSendEmailDeclaresAndValidatesTheMessageCategory()
 }//end class
