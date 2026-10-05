@@ -442,7 +442,7 @@ class ChunkMapper extends QBMapper {
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#5.1
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#5.1
 	 */
 	public function findUnvectorized(?int $limit = null, ?int $offset = null): array {
 		$qb = $this->db->getQueryBuilder();
@@ -507,7 +507,7 @@ class ChunkMapper extends QBMapper {
 	 *   for opt-in behaviour flags (see SearchBackendInterface).
 	 * @SuppressWarnings(PHPMD.LongVariable)        Descriptive variable name improves readability.
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#3.3
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#3.3
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function searchByKeyword(string $query, int $limit, array $filters = [], bool $allowUnrankedFallback = false): array {

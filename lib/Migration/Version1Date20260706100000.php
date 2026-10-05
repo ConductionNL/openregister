@@ -72,7 +72,7 @@ use Psr\Container\ContainerInterface;
  *
  * @package OCA\OpenRegister\Migration
  *
- * @spec openspec/changes/hybrid-document-search/tasks.md#1.1
+ * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#1.1
  */
 class Version1Date20260706100000 extends SimpleMigrationStep {
 	/**
@@ -106,7 +106,7 @@ class Version1Date20260706100000 extends SimpleMigrationStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#1.1
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#1.1
 	 */
 	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		$schema = $schemaClosure();

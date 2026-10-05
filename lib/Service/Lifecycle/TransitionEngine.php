@@ -100,8 +100,6 @@ class TransitionEngine {
 	 * lifecycles, which reads worse than the count.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
@@ -151,7 +149,6 @@ class TransitionEngine {
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	private function dispatchTransitioned(
 		ObjectEntity $object,
@@ -292,7 +289,6 @@ class TransitionEngine {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	public function transition(string $objectId, string $action, array $data = []): ObjectEntity {
 		// OPEN THE AUTOMATIC-TRANSITION BOUNDARY around the whole transition,

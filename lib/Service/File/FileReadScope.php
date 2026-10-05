@@ -41,7 +41,7 @@ use Throwable;
  * endpoints serve files only, so an object hit that reaches them is dropped as
  * well rather than served without the object's own read check.
  *
- * @spec openspec/changes/hybrid-document-search/tasks.md
+ * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md
  * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
  */
 class FileReadScope {
@@ -73,7 +73,7 @@ class FileReadScope {
 	 *
 	 * @return array<int, array<string, mixed>> The readable hits.
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md
 	 */
 	public function readableResults(array $results): array {
 		$user = $this->userSession->getUser();

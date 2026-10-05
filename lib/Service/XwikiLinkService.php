@@ -490,7 +490,7 @@ class XwikiLinkService {
 	 *                             total, limit, offset }` when the source is
 	 *                             unconfigured/down.
 	 *
-	 * @spec openspec/changes/integration-xwiki-query-search/specs/integration-xwiki/spec.md
+	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
 	public function searchPages(?string $query = null, int $limit = 25, int $offset = 0): array {
 		$limit = max(1, min(100, $limit));

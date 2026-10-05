@@ -78,7 +78,7 @@ class LifecycleActionContext {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function declare(string $uuid, string $action): void {
 		$this->declared[$uuid][] = $action;
@@ -91,7 +91,7 @@ class LifecycleActionContext {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function release(string $uuid): void {
 		if (isset($this->declared[$uuid]) === false) {
@@ -111,7 +111,7 @@ class LifecycleActionContext {
 	 *
 	 * @return string|null The innermost declared action, or null when none.
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function declaredFor(string $uuid): ?string {
 		$stack = ($this->declared[$uuid] ?? []);

@@ -84,7 +84,7 @@ class CompanyLookupController extends Controller {
 	 * @no-admin-idor-exempt External-gateway proxy: forwards a KVK number to the admin-configured external KVK
 	 *   provider; takes no OpenRegister object id.
 	 *
-	 * @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md
+	 * @spec openspec/specs/integration-company-lookup/spec.md
 	 */
 	public function kvkCompany(): JSONResponse {
 		$kvkNumber = trim((string)$this->request->getParam('kvkNumber', ''));
@@ -111,7 +111,7 @@ class CompanyLookupController extends Controller {
 	 * @no-admin-idor-exempt External-gateway proxy: free-text company search against the admin-configured KVK
 	 *   provider; takes no OpenRegister object id.
 	 *
-	 * @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md
+	 * @spec openspec/specs/integration-company-lookup/spec.md
 	 */
 	public function kvkSearch(): JSONResponse {
 		$query = (string)$this->request->getParam('q', '');
@@ -145,7 +145,7 @@ class CompanyLookupController extends Controller {
 	 * @no-admin-idor-exempt External-gateway proxy: free-text company search against the admin-configured
 	 *   OpenCorporates provider; takes no OpenRegister object id.
 	 *
-	 * @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md
+	 * @spec openspec/specs/integration-company-lookup/spec.md
 	 */
 	public function openCorporatesSearch(): JSONResponse {
 		$query = (string)$this->request->getParam('q', '');

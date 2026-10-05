@@ -88,7 +88,7 @@ class LifecycleValidationListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
@@ -114,7 +114,6 @@ class LifecycleValidationListener implements IEventListener {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectUpdatingEvent) === false) {

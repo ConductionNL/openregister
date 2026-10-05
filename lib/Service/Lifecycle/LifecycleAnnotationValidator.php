@@ -72,8 +72,6 @@ final class LifecycleAnnotationValidator {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	public function validate(array $schema): array {
 		if (isset($schema['x-openregister-lifecycle']) === false) {
@@ -546,7 +544,7 @@ final class LifecycleAnnotationValidator {
 	 * constant table and holds no state; calling it statically IS the reuse, and it is
 	 * the SAME lookup the save path makes, which is what keeps the two from drifting.
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
 	 */
 	private function validateTransitionCondition(mixed $condition, string $action): ?array {
@@ -609,7 +607,7 @@ final class LifecycleAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> Errors (empty = valid).
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateAutomaticTransition(array $spec, string $action): array {
 		$errors = [];
@@ -680,7 +678,7 @@ final class LifecycleAnnotationValidator {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ConditionDialect's dialect lookup reads one
 	 * constant table and holds no state; calling it statically IS the reuse.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/rules-engine-operability/specs/object-lifecycle/spec.md
 	 */
 	private function validateAutoWhenRule(mixed $autoWhen, string $action): ?array {
@@ -736,7 +734,7 @@ final class LifecycleAnnotationValidator {
 	 *
 	 * @return bool True when at least one declared input is `required`.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function declaresRequiredInput(mixed $inputs): bool {
 		if (is_array($inputs) === false) {
@@ -765,7 +763,7 @@ final class LifecycleAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> Errors (empty = valid).
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateTransitionMessage(mixed $message, string $action): array {
 		$code = 'lifecycle-message-malformed';
@@ -812,7 +810,7 @@ final class LifecycleAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> Errors (empty = valid).
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateMessageMap(array $message, string $action): array {
 		$code = 'lifecycle-message-malformed';
@@ -860,7 +858,7 @@ final class LifecycleAnnotationValidator {
 	 *
 	 * @return array{code: string, message: string}|null Error, or null when absent or valid.
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateDefaultLocale(array $message, string $action): ?array {
 		if (isset($message['defaultLocale']) === false) {

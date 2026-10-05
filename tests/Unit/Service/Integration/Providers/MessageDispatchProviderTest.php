@@ -32,7 +32,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/messaging-dispatch-leaf/tasks.md
+ * @spec openspec/changes/archive/2026-10-05-messaging-dispatch-leaf/tasks.md
  */
 
 declare(strict_types=1);

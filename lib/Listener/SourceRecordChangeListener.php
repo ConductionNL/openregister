@@ -74,7 +74,7 @@ use Throwable;
  *
  * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent|SchemaCreatedEvent|SchemaUpdatedEvent|SchemaDeletedEvent>
  *
- * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+ * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Handles both object and schema lifecycle events plus the index cache
  */
@@ -138,7 +138,7 @@ class SourceRecordChangeListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
@@ -163,7 +163,7 @@ class SourceRecordChangeListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 */
 	public function handle(Event $event): void {
 		try {
@@ -200,7 +200,7 @@ class SourceRecordChangeListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 */
 	private function processSource(ObjectEntity $object, ?ObjectEntity $oldObject): void {
 		$referenceFields = $this->referenceFieldsFor(object: $object);
@@ -251,7 +251,7 @@ class SourceRecordChangeListener implements IEventListener {
 	 *
 	 * @return array<int, string> Reference-field names (may be empty).
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 */
 	private function referenceFieldsFor(ObjectEntity $object): array {
 		$schema = $this->resolveSchema(ref: (string)$object->getSchema());
@@ -279,7 +279,7 @@ class SourceRecordChangeListener implements IEventListener {
 	 *
 	 * @return array<string, array<int, string>>
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 */
 	private function reverseIndex(): array {
 		if ($this->reverseIndex !== null) {
@@ -329,7 +329,7 @@ class SourceRecordChangeListener implements IEventListener {
 	 *
 	 * @return array<int, array{sourceSchema: string, referenceField: string}>
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 */
 	private function reverseLinksFor(Schema $schema): array {
 		$config = ($schema->getConfiguration() ?? []);
@@ -365,7 +365,7 @@ class SourceRecordChangeListener implements IEventListener {
 	 *
 	 * @return Schema|null Resolved schema.
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 */
 	private function resolveSchema(string $ref): ?Schema {
 		if ($ref === '') {

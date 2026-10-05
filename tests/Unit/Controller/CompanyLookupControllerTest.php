@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md
+ * @spec openspec/specs/integration-company-lookup/spec.md
  */
 
 declare(strict_types=1);

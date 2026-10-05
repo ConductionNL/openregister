@@ -69,7 +69,7 @@ class AutoTransitionRecordListener implements IEventListener {
 	 * @param AutoTransitionSelector $selector Answers the cheap "does this schema declare any autoWhen" read.
 	 * @param AutoTransitionPass $pass The request-scoped pass the object is recorded in.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
@@ -85,7 +85,7 @@ class AutoTransitionRecordListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function handle(Event $event): void {
 		// Written as one instanceof check per branch so static analysis can
@@ -127,7 +127,7 @@ class AutoTransitionRecordListener implements IEventListener {
 	 *
 	 * @return bool True when the schema declares an `autoWhen`.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function schemaDeclaresAutoWhen(string $schemaRef): bool {
 		if ($schemaRef === '') {

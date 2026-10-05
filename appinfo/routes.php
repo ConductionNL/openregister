@@ -922,10 +922,10 @@ return [
         // — read-only, object-independent company-lookup leaves. No NC app
         // gate; the OpenConnector `kvk` / `opencorporates` sources carry the
         // base URL + API key. Unconfigured/down → 503 with details.cause.
-        // @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md#requirement-kvk-company-lookup
+        // @spec openspec/specs/integration-company-lookup/spec.md#requirement-kvk-company-lookup
         ['name' => 'companyLookup#kvkCompany',           'url' => '/api/integrations/kvk/company',            'verb' => 'GET'],
         ['name' => 'companyLookup#kvkSearch',            'url' => '/api/integrations/kvk/search',             'verb' => 'GET'],
-        // @spec openspec/changes/integration-kvk-opencorporates/specs/integration-company-lookup/spec.md#requirement-opencorporates-company-search
+        // @spec openspec/specs/integration-company-lookup/spec.md#requirement-opencorporates-company-search
         ['name' => 'companyLookup#openCorporatesSearch', 'url' => '/api/integrations/opencorporates/search',  'verb' => 'GET'],
         // BRP HaalCentraal person lookup (external, OpenConnector-routed) —
         // read-only, object-independent person-lookup leaf. No NC app gate; the
@@ -944,7 +944,7 @@ return [
         // selection, STOP opt-out, template-approval, 24h session, dedupe,
         // delivery-status); this leaf only POSTs the message. Unconfigured/down
         // → 503 with details.cause.
-        // @spec openspec/changes/messaging-dispatch-leaf/specs/integration-message-dispatch/spec.md#requirement-outbound-messaging-send-endpoints
+        // @spec openspec/specs/integration-message-dispatch/spec.md#requirement-outbound-messaging-send-endpoints
         ['name' => 'messageDispatch#smsSend',            'url' => '/api/integrations/sms/send',               'verb' => 'POST'],
         ['name' => 'messageDispatch#whatsappSend',       'url' => '/api/integrations/whatsapp/send',          'verb' => 'POST'],
         // Cospend (NC Costs) — Tier-2 link-table API. User-scoped (no

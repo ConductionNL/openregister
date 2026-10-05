@@ -39,7 +39,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-kvk-opencorporates/tasks.md
+ * @spec openspec/changes/archive/2026-10-05-integration-kvk-opencorporates/tasks.md
  */
 
 declare(strict_types=1);
@@ -192,7 +192,7 @@ class KvkProvider extends AbstractIntegrationProvider {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/integration-kvk-opencorporates/tasks.md
+	 * @spec openspec/changes/archive/2026-10-05-integration-kvk-opencorporates/tasks.md
 	 */
 	public function authRequirements(): array {
 		return [
@@ -222,7 +222,7 @@ class KvkProvider extends AbstractIntegrationProvider {
 	 * @throws ProviderUnavailableException When the source is missing/down —
 	 *                                      the controller maps the cause.
 	 *
-	 * @spec openspec/changes/integration-kvk-opencorporates/tasks.md
+	 * @spec openspec/changes/archive/2026-10-05-integration-kvk-opencorporates/tasks.md
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/objectId
 	 *   are mandated by the IntegrationProvider contract; this leaf is
@@ -270,7 +270,7 @@ class KvkProvider extends AbstractIntegrationProvider {
 	 *                             `{ unavailable, cause, results, total }`
 	 *                             when the source is unconfigured/down.
 	 *
-	 * @spec openspec/changes/integration-kvk-opencorporates/tasks.md
+	 * @spec openspec/changes/archive/2026-10-05-integration-kvk-opencorporates/tasks.md
 	 */
 	public function lookupByKvkNumber(string $kvkNumber): array {
 		$kvkNumber = trim($kvkNumber);
@@ -317,7 +317,7 @@ class KvkProvider extends AbstractIntegrationProvider {
 	 *                             success, or `{ unavailable, cause, ... }`
 	 *                             when the source is unconfigured/down.
 	 *
-	 * @spec openspec/changes/integration-kvk-opencorporates/tasks.md
+	 * @spec openspec/changes/archive/2026-10-05-integration-kvk-opencorporates/tasks.md
 	 */
 	public function searchCompanies(string $query, array $criteria = [], int $limit = 25, int $page = 1): array {
 		$limit = max(1, min(100, $limit));

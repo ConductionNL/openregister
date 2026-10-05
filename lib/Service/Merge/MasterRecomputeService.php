@@ -39,7 +39,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+ * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ use Throwable;
 /**
  * Recompute a reverse-FK master's golden record by re-persisting it.
  *
- * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+ * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
  */
 class MasterRecomputeService {
 	/**
@@ -64,7 +64,7 @@ class MasterRecomputeService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
@@ -85,7 +85,7 @@ class MasterRecomputeService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) `MergeService::normaliseRoundTripDates`
 	 *   is a pure stateless date-format utility shared with the merge relink;

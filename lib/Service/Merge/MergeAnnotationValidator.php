@@ -87,7 +87,7 @@ class MergeAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}>
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#1.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#1.1
 	 */
 	private function validateSourceLink(array $annotation): array {
 		$sourceLink = ($annotation['sourceLink'] ?? null);

@@ -82,7 +82,7 @@ class LifecycleConditionEvaluator {
 	 * @param LoggerInterface $logger Logs refusals so a bad rule is diagnosable.
 	 * @param ConditionDialect $dialect Decides which dialect a condition is written in.
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
 	public function __construct(
@@ -110,8 +110,7 @@ class LifecycleConditionEvaluator {
 	 *
 	 * @return array{code: string, field: string, action: string, message: string}|null
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function refusal(
 		array $spec,
@@ -201,7 +200,7 @@ class LifecycleConditionEvaluator {
 	 *
 	 * @return bool True only when the rule is a non-empty rule object that evaluates true.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/rules-engine-operability/specs/flow-engine/spec.md
 	 */
 	public function holds(

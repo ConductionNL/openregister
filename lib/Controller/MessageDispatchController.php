@@ -96,7 +96,7 @@ class MessageDispatchController extends Controller {
 	 * @no-admin-idor-exempt No per-object resource: dispatches via the admin-owned source (base URL admin-configured,
 	 *   source checked against a fixed per-channel allowlist); no OpenRegister object id.
 	 *
-	 * @spec openspec/changes/messaging-dispatch-leaf/specs/integration-message-dispatch/spec.md
+	 * @spec openspec/specs/integration-message-dispatch/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -121,7 +121,7 @@ class MessageDispatchController extends Controller {
 	 * @no-admin-idor-exempt No per-object resource: dispatches via the admin-owned source (base URL admin-configured,
 	 *   source checked against a fixed per-channel allowlist); no OpenRegister object id.
 	 *
-	 * @spec openspec/changes/messaging-dispatch-leaf/specs/integration-message-dispatch/spec.md
+	 * @spec openspec/specs/integration-message-dispatch/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

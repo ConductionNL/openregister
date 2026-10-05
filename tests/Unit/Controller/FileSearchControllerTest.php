@@ -20,7 +20,7 @@ use Psr\Log\LoggerInterface;
  * feeding hybridSearch's RRF fusion, and the flat `{results, total, ...}`
  * hybrid response shape with a correct total.
  *
- * @spec openspec/changes/hybrid-document-search/tasks.md#7.3
+ * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#7.3
  */
 class FileSearchControllerTest extends TestCase {
 	private FileSearchController $controller;

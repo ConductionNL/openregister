@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/messaging-dispatch-leaf/specs/integration-message-dispatch/spec.md
+ * @spec openspec/specs/integration-message-dispatch/spec.md
  */
 
 declare(strict_types=1);

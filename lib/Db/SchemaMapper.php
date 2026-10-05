@@ -1375,8 +1375,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateLifecycleAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);

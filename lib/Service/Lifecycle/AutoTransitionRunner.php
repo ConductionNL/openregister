@@ -59,7 +59,7 @@ class AutoTransitionRunner {
 	 * @param AutoTransitionQueue $queue Decides inline versus queued, and owns the job list.
 	 * @param LoggerInterface $logger Logs every refusal, so a move that never happens is visible.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
@@ -84,7 +84,7 @@ class AutoTransitionRunner {
 	 *
 	 * @return AutoTransitionDecision|null The decided move, or null.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function decide(string $uuid, string $register, string $schema, array $previous): ?AutoTransitionDecision {
 		$object = $this->resolveObject(uuid: $uuid, register: $register, schema: $schema);
@@ -134,7 +134,7 @@ class AutoTransitionRunner {
 	 *
 	 * @return ObjectEntity|null The object after the move, or null when it was queued or refused.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function fire(AutoTransitionDecision $decision, array $lineage, bool $queueOnly): ?ObjectEntity {
 		if ($this->queue->appliesInline(candidate: $decision->candidate, queueOnly: $queueOnly) === false) {
@@ -174,7 +174,7 @@ class AutoTransitionRunner {
 	 *
 	 * @return string|null The lifecycle refusal code, or null.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function refusalCodeOf(Throwable $error): ?string {
 		if ($error instanceof HookStoppedException === false) {
@@ -198,7 +198,7 @@ class AutoTransitionRunner {
 	 *
 	 * @return ObjectEntity|null The stored object, or null.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function resolveObject(string $uuid, string $register, string $schema): ?ObjectEntity {
 		try {
@@ -220,7 +220,7 @@ class AutoTransitionRunner {
 	 *
 	 * @return array{0: array<string, mixed>, 1: string}|null The annotation and slug, or null when there is none.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function annotationFor(string $schema): ?array {
 		try {
@@ -242,7 +242,7 @@ class AutoTransitionRunner {
 	 *
 	 * @return TransitionEngine The engine every automatic move goes through.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function engine(): TransitionEngine {
 		return $this->container->get(TransitionEngine::class);
@@ -256,7 +256,7 @@ class AutoTransitionRunner {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function flushQueued(): void {
 		$this->queue->flushQueued();

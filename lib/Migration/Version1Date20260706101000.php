@@ -56,7 +56,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @package OCA\OpenRegister\Migration
  *
- * @spec openspec/changes/hybrid-document-search/tasks.md#1.2
+ * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#1.2
  */
 class Version1Date20260706101000 extends SimpleMigrationStep {
 	/**
@@ -80,7 +80,7 @@ class Version1Date20260706101000 extends SimpleMigrationStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#1.2
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#1.2
 	 */
 	public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void {
 		$schema = $schemaClosure();

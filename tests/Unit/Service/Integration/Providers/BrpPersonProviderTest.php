@@ -31,7 +31,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-brp-haalcentraal/tasks.md
+ * @spec openspec/changes/archive/2026-10-05-integration-brp-haalcentraal/tasks.md
  */
 
 declare(strict_types=1);
