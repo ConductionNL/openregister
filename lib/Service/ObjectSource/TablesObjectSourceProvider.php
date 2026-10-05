@@ -143,7 +143,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider {
 		}
 
 		if (ctype_digit($id) === true) {
-			$row = $this->reader->findRow(rowId: (int)$id, userId: $userId);
+			$row = $this->reader->findRow(rowId: (int)$id, tableId: $tableId, userId: $userId);
 			if ($row === null) {
 				return null;
 			}
