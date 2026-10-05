@@ -13,7 +13,9 @@ retrofit_extensions:
 
 @e2e exclude server-side Twig expression engine — covered by PHPUnit
 Computed fields enable schema properties whose values are derived automatically from expressions evaluated against object data, cross-referenced objects, and aggregation functions. This capability eliminates redundant data entry, ensures consistency of derived values (full names, totals, expiry dates), and brings spreadsheet-like formula power to OpenRegister without requiring external workflow engines for simple calculations. Computed fields use Twig expressions evaluated server-side, leveraging the existing Twig infrastructure already integrated into OpenRegister for mapping and transformation.
+
 ## Requirements
+
 ### Requirement: Schema Property Computed Attribute Definition
 Schema property definitions MUST support a `computed` object attribute that defines the expression, evaluation mode, and metadata for deriving field values. The `computed` attribute MUST contain an `expression` key (Twig template string) and MAY contain `evaluateOn` (default `save`), `description`, and `dependsOn` keys. The `computed` attribute MUST be stored as part of the schema property definition in the standard JSON Schema `properties` object, using a vendor extension pattern consistent with ADR-006.
 
@@ -896,6 +898,17 @@ recognised by `CalculationAnnotationValidator`.
 - **WHEN** the calculation is evaluated
 - **THEN** the result MUST be `null`
 - **AND** the calculation MUST NOT return the SHA-256 of an empty string
+
+### Requirement: The rematerialise command writes as the system
+
+`occ openregister:rematerialise-calculations <register> <schema>` SHALL save each re-evaluated object without RBAC and without multitenancy filtering, because occ runs without a user session and a maintenance command acts for the system. It SHALL exit non-zero when any object could not be saved.
+
+#### Scenario: a schema with an authorization block is rematerialised
+
+- **GIVEN** a schema whose authorization block grants update only to `instructors`, with three objects whose materialised calculation is stale
+- **WHEN** an administrator runs the command from occ
+- **THEN** all three objects are saved and the command reports "Touched 3, unchanged 0, failed 0" and exits 0
+- @e2e exclude {occ command, covered by RematerialiseCalculationsAsSystemTest}
 
 ## Current Implementation Status
 - **Implemented:**

@@ -150,7 +150,7 @@ class ViewAlertSweepJobTest extends TestCase {
 	 */
 	public function testACrossingIsStoredAndAnnounced(): void {
 		$view = $this->view($this->alert());
-		$this->objects->method('count')->willReturn(23);
+		$this->objects->method('countSearchObjects')->willReturn(23);
 		$this->views->expects($this->once())->method('update');
 
 		$this->sweep([$view]);
@@ -169,7 +169,7 @@ class ViewAlertSweepJobTest extends TestCase {
 	 * @return void
 	 */
 	public function testAViewAlreadyFiredSaysNothingAgain(): void {
-		$this->objects->method('count')->willReturn(23);
+		$this->objects->method('countSearchObjects')->willReturn(23);
 
 		$this->sweep([$this->view($this->alert(), ['state' => ViewAlert::FIRED, 'lastCount' => 23])]);
 
@@ -200,7 +200,7 @@ class ViewAlertSweepJobTest extends TestCase {
 				return $operation();
 			}
 		);
-		$objects->method('count')->willReturn(23);
+		$objects->method('countSearchObjects')->willReturn(23);
 
 		$views = $this->createMock(ViewMapper::class);
 		$views->method('findWithAlerts')->willReturn([$this->view($this->alert())]);
@@ -229,7 +229,7 @@ class ViewAlertSweepJobTest extends TestCase {
 		$users->method('get')->willReturn(null);
 
 		$objects = $this->createMock(ObjectService::class);
-		$objects->expects($this->never())->method('count');
+		$objects->expects($this->never())->method('countSearchObjects');
 
 		$views = $this->createMock(ViewMapper::class);
 		$views->method('findWithAlerts')->willReturn([$this->view($this->alert())]);
@@ -254,7 +254,7 @@ class ViewAlertSweepJobTest extends TestCase {
 	 * @return void
 	 */
 	public function testAViewInsideItsIntervalIsNotCounted(): void {
-		$this->objects->expects($this->never())->method('count');
+		$this->objects->expects($this->never())->method('countSearchObjects');
 
 		$this->sweep([$this->view($this->alert(), null, 'now')]);
 
@@ -272,7 +272,7 @@ class ViewAlertSweepJobTest extends TestCase {
 	public function testAnUnreadableAlertDoesNotStopThePass(): void {
 		$broken = $this->view(['operator' => 'above', 'threshold' => 10]);
 		$good = $this->view($this->alert());
-		$this->objects->method('count')->willReturn(23);
+		$this->objects->method('countSearchObjects')->willReturn(23);
 
 		$this->sweep([$broken, $good]);
 
@@ -289,7 +289,7 @@ class ViewAlertSweepJobTest extends TestCase {
 	 */
 	public function testAFailedCountLeavesTheStateAlone(): void {
 		$view = $this->view($this->alert(), ['state' => ViewAlert::FIRED, 'lastCount' => 23]);
-		$this->objects->method('count')->willThrowException(new \RuntimeException('no database'));
+		$this->objects->method('countSearchObjects')->willThrowException(new \RuntimeException('no database'));
 		$this->views->expects($this->never())->method('update');
 
 		$this->sweep([$view]);

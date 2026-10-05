@@ -8,6 +8,7 @@
 
 - [x] 2.1 `ViewAlertSweepJob` (TimedJob): due selection, cap, watermark, count under the owner's RBAC, crossing state machine, dispatch through the engine with a `view-alert` source.
 - [x] 2.2 Register the job in `appinfo/info.xml`.
+- [x] 2.3 Count the view's own query (registers, schemas, filters, search terms) through `ObjectService::countSearchObjects()`, not `count()`, which reads only the service's ambient register/schema context (live pass O5, 5 Oct: a view over three records alerted at five).
 
 ## 3. Tests
 
@@ -96,3 +97,16 @@ server does not have, or a channel nothing delivers, is named in a warning.
 listener over the real event, view, `ViewAlert` and resolver.
 
 Still open: 3.1, the e2e, until the field ships in nextcloud-vue.
+
+## Status, 2026-10-05 (live pass O5)
+
+**2.3: the sweep counts the view, not the service's context.** The live pass
+saw a view over three records alert at five on its first evaluation:
+`ObjectService::count()` ignores the query's `registers` and `schemas` and
+counts whatever register/schema the service last pointed at, and the sweep
+test stubbed `count()`. `ViewObjectQuery::of()` now turns the stored query
+into the search query (registers and schemas as `@self` bounds, `filters`,
+`facetFilters` read as a view-backed schema reads them, search terms), and the
+sweep counts it with `countSearchObjects()` as the owner. A view naming no
+register and no schema is not counted. `ViewAlertCountsTheViewQueryTest`
+runs the real ObjectService and reads what reaches the mapper.

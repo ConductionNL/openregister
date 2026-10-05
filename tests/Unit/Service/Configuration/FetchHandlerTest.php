@@ -172,6 +172,33 @@ class FetchHandlerTest extends TestCase {
 		$this->assertCount(1, $result['components']['registers']);
 	}
 
+	/**
+	 * 🔴 Live pass O1: a configuration on raw.githubusercontent.com can be previewed.
+	 *
+	 * The source answers valid JSON as text/plain; charset=utf-8, and the
+	 * preview answered "Failed to parse response body as JSON or YAML".
+	 */
+	#[Test]
+	public function testFetchRemoteConfigurationReadsJsonServedAsTextPlain(): void {
+		$config = new Configuration();
+		$config->setSourceType('github');
+		$config->setSourceUrl('https://raw.githubusercontent.com/ConductionNL/filinq/master/lib/Settings/filinq_register.json');
+
+		$this->client->expects($this->once())
+			->method('request')
+			->willReturn(
+				$this->createGuzzleResponse(
+					json_encode(['openapi' => '3.0.0', 'components' => ['schemas' => ['document' => []]]]),
+					'text/plain; charset=utf-8'
+				)
+			);
+
+		$result = $this->handler->fetchRemoteConfiguration($config);
+
+		$this->assertIsArray($result);
+		$this->assertSame(['document' => []], $result['components']['schemas']);
+	}
+
 	// =========================================================================
 	// fetchRemoteConfiguration — not remote source
 	// =========================================================================
@@ -253,6 +280,12 @@ class FetchHandlerTest extends TestCase {
 			'yaml content-type' => ["a: 1\n", 'application/yaml', true],
 			'yml content-type' => ["a: 1\n", 'text/yml', true],
 			'empty content-type with json' => ['{"a": 1}', '', true],
+			// Live pass O1 (5 Oct): raw.githubusercontent.com and Nextcloud public
+			// DAV serve every .json/.yaml file as text/plain.
+			'text/plain with json (raw GitHub)' => ['{"a": 1}', 'text/plain; charset=utf-8', true],
+			'text/plain with yaml (raw GitHub)' => ["a: 1\n", 'text/plain; charset=utf-8', true],
+			'octet-stream with json' => ['{"a": 1}', 'application/octet-stream', true],
+			'empty content-type with yaml' => ["a: 1\n", '', true],
 		];
 	}
 
