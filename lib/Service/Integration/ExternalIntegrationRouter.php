@@ -56,6 +56,8 @@ use RuntimeException;
  * implementations themselves. The router only provides the safe transport.
  */
 class ExternalIntegrationRouter {
+	use ConnectorRequestTrait;
+
 
 	/**
 	 * The schema slug the connector stores its sources under.
@@ -653,8 +655,8 @@ class ExternalIntegrationRouter {
 	 */
 	private function invoke($source, string $method, string $path, array $options): array {
 		$callService = $this->container->get($this->callServiceClass());
-		$options = $this->toRequestOptions(options: $options);
-		$path = $this->endpointFor(source: $source, path: $path);
+		$options = $this->connectorOptions(options: $options);
+		$path = $this->connectorEndpoint(source: $source, path: $path);
 
 		if (method_exists($callService, 'call') === true) {
 			$response = $callService->call($source, $path, $method, $options);
@@ -674,91 +676,6 @@ class ExternalIntegrationRouter {
 	}//end invoke()
 
 	/**
-	 * The endpoint to hand the connector for a path relative to the source.
-	 *
-	 * The connector (integriq) builds the URL as `location . endpoint` with no separator, and
-	 * the seeded sources carry a location without a trailing slash
-	 * (`https://rest.messagebird.com`). A relative path such as `messages`
-	 * therefore became `https://rest.messagebird.commessages`. The path is
-	 * joined with exactly one slash: led by one unless the location already
-	 * ends in one.
-	 *
-	 * @param mixed $source The resolved source entity.
-	 * @param string $path Path relative to the source base URL.
-	 *
-	 * @return string The endpoint to append to the source location.
-	 *
-	 * @spec openspec/changes/archive/2026-10-05-messaging-dispatch-leaf/tasks.md
-	 */
-	private function endpointFor($source, string $path): string {
-		$relative = ltrim($path, '/');
-		if ($relative === '') {
-			return $path;
-		}
-
-		$data = $source;
-		if (is_object($source) === true && method_exists($source, 'getObject') === true) {
-			$data = $source->getObject();
-		} elseif (is_object($source) === true && method_exists($source, 'getLocation') === true) {
-			$data = ['location' => $source->getLocation()];
-		}
-
-		$location = '';
-		if (is_array($data) === true) {
-			$location = (string)($data['location'] ?? '');
-		}
-
-		if (str_ends_with($location, '/') === true) {
-			return $relative;
-		}
-
-		return '/' . $relative;
-	}//end endpointFor()
-
-	/**
-	 * Turn the router's call options into request options the connector's
-	 * CallService can hand to Guzzle.
-	 *
-	 * {@see call()} accepts `body` as a scalar OR an array, but the connector
-	 * passes the options to Guzzle unchanged, and Guzzle refuses an array
-	 * under `body` ("Passing in the body request option as an array ... is not
-	 * supported"). Every array body therefore failed on a real source; only a
-	 * mock source, which never reaches the CallService, appeared to work. An
-	 * array body is sent as `form_params` when the caller set a form
-	 * Content-Type (Twilio), and as `json` otherwise (MessageBird, CM.com,
-	 * Meta, BRP, OpenProject). A scalar body is sent as-is.
-	 *
-	 * @param array<string,mixed> $options Call options (query / body / headers).
-	 *
-	 * @return array<string,mixed> Guzzle request options.
-	 *
-	 * @spec openspec/changes/archive/2026-10-05-messaging-dispatch-leaf/tasks.md
-	 */
-	private function toRequestOptions(array $options): array {
-		if (isset($options['body']) === false || is_array($options['body']) === false) {
-			return $options;
-		}
-
-		$body = $options['body'];
-		unset($options['body']);
-
-		$contentType = '';
-		foreach (($options['headers'] ?? []) as $name => $value) {
-			if (strtolower((string)$name) === 'content-type') {
-				$contentType = strtolower((string)$value);
-			}
-		}
-
-		if (str_starts_with($contentType, 'application/x-www-form-urlencoded') === true) {
-			$options['form_params'] = $body;
-			return $options;
-		}
-
-		$options['json'] = $body;
-		return $options;
-	}//end toRequestOptions()
-
-	/**
 	 * Invoke the upstream call like {@see invoke()} but return both the
 	 * decoded body and the extracted response metadata. Keeps the same
 	 * CallService method-name fallback + >= 400 status assertion.
@@ -775,8 +692,8 @@ class ExternalIntegrationRouter {
 	 */
 	private function invokeWithMeta($source, string $method, string $path, array $options): array {
 		$callService = $this->container->get($this->callServiceClass());
-		$options = $this->toRequestOptions(options: $options);
-		$path = $this->endpointFor(source: $source, path: $path);
+		$options = $this->connectorOptions(options: $options);
+		$path = $this->connectorEndpoint(source: $source, path: $path);
 
 		if (method_exists($callService, 'call') === true) {
 			$response = $callService->call($source, $path, $method, $options);
