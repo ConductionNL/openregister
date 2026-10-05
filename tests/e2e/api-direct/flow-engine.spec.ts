@@ -14,7 +14,7 @@ import type { APIRequestContext } from '@playwright/test'
  * session is needed. Each flow object is created under a run-unique name and
  * deleted in afterAll.
  *
- * @spec openspec/changes/or-flow-store/specs/flow-store/spec.md
+ * @spec openspec/specs/flow-store/spec.md
  */
 import { expect, test } from '@playwright/test'
 

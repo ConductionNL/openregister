@@ -26,7 +26,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/or-flow-store/specs/flow-store/spec.md
+ * @spec openspec/specs/flow-store/spec.md
  */
 
 declare(strict_types=1);
@@ -79,7 +79,7 @@ class ImportFlowRegister implements IRepairStep {
 	 *
 	 * @return string The step name.
 	 *
-	 * @spec openspec/changes/or-flow-store/specs/flow-store/spec.md
+	 * @spec openspec/specs/flow-store/spec.md
 	 */
 	public function getName(): string {
 		return 'Import OpenRegister flow register (flows register + flow schema)';
@@ -92,7 +92,7 @@ class ImportFlowRegister implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-store/specs/flow-store/spec.md
+	 * @spec openspec/specs/flow-store/spec.md
 	 */
 	public function run(IOutput $output): void {
 		try {
