@@ -154,7 +154,7 @@ class MergeService {
 	 * @param AuditTrailMapper $auditTrailMapper Audit writer for a refused merge attempt.
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.1
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#3.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#3.1
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
@@ -679,7 +679,7 @@ class MergeService {
 	 *
 	 * @return array<int, array{sourceUuid: string, referenceField: string, prior: string}>
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#3.2
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#3.2
 	 */
 	private function relinkReverseFk(string $fromUuid, string $intoUuid, array $config, string $register): array {
 		$descriptor = $this->sourceRecordResolver->reverseFkDescriptor(config: $config);
@@ -761,7 +761,7 @@ class MergeService {
 	 *
 	 * @return array<string, mixed> Payload with space-format dates converted to ISO.
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#3.2
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#3.2
 	 */
 	public static function normaliseRoundTripDates(array $data): array {
 		foreach ($data as $key => $value) {
@@ -916,7 +916,7 @@ class MergeService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#3.3
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#3.3
 	 */
 	private function restoreReverseFkMove(array $move): void {
 		$sourceUuid = (string)($move['sourceUuid'] ?? '');

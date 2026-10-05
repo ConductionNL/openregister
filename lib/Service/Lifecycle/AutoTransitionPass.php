@@ -140,7 +140,7 @@ class AutoTransitionPass {
 	 * @param AutoTransitionRunner $runner Decides and applies one step of the pass.
 	 * @param LoggerInterface $logger Logs a cut at error level, with the chain it cut.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly AutoTransitionRunner $runner,
@@ -153,7 +153,7 @@ class AutoTransitionPass {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function enter(): void {
 		$this->depth++;
@@ -164,7 +164,7 @@ class AutoTransitionPass {
 	 *
 	 * @return array<string, ObjectEntity> The last entity applied per object uuid, empty when nothing was.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function leave(): array {
 		if ($this->depth > 0) {
@@ -183,7 +183,7 @@ class AutoTransitionPass {
 	 *
 	 * @return bool True when a save or a transition is in flight.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function isInsideBoundary(): bool {
 		return $this->depth > 0;
@@ -202,7 +202,7 @@ class AutoTransitionPass {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function record(string $uuid, string $register, string $schema, array $previous): void {
 		if ($uuid === '') {
@@ -233,7 +233,7 @@ class AutoTransitionPass {
 	 *
 	 * @return string|null The transition's name, or null for a manual move.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function applyingAction(): ?string {
 		return $this->applying;
@@ -250,7 +250,7 @@ class AutoTransitionPass {
 	 *
 	 * @return ObjectEntity The object in its final state.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function preferAutomatic(ObjectEntity $saved, array $applied): ObjectEntity {
 		return ($applied[(string)$saved->getUuid()] ?? $saved);
@@ -265,7 +265,7 @@ class AutoTransitionPass {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function resume(string $uuid, int $moves, array $visited): void {
 		$flags = [];
@@ -287,7 +287,7 @@ class AutoTransitionPass {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function flushOutsideBoundary(): void {
 		$queued = false;
@@ -312,7 +312,7 @@ class AutoTransitionPass {
 	 *
 	 * @return array<string, ObjectEntity> The last entity applied per object uuid.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function drain(): array {
 		$applied = [];
@@ -373,7 +373,7 @@ class AutoTransitionPass {
 	 *
 	 * @return ObjectEntity|null The object after the move, or null.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function safeStep(string $uuid, array $record, bool $queueOnly): ?ObjectEntity {
 		try {
@@ -397,7 +397,7 @@ class AutoTransitionPass {
 	 *
 	 * @return ObjectEntity|null The object after the move, or null.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function step(string $uuid, array $record, bool $queueOnly): ?ObjectEntity {
 		$decision = $this->runner->decide(
@@ -473,7 +473,7 @@ class AutoTransitionPass {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function cut(AutoTransitionDecision $decision, array $lineage, string $limit): void {
 		$this->logger->error(

@@ -57,7 +57,7 @@ final class LifecycleWriteBoundary {
 	 *                          it without wiring the pass; the container resolves the real, shared
 	 *                          instance by type.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly LifecycleActionContext $actions,
@@ -86,7 +86,7 @@ final class LifecycleWriteBoundary {
 	 * @return ObjectEntity The object in its final state: the write's own
 	 *                      result, or an automatic move that followed from it.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function around(callable $write): ObjectEntity {
 		$this->pass?->enter();
@@ -119,7 +119,7 @@ final class LifecycleWriteBoundary {
 	 *
 	 * @return ObjectEntity Whatever $write returned.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function declaringAction(string $uuid, string $action, callable $write): ObjectEntity {
 		$this->actions->declare(uuid: $uuid, action: $action);
@@ -167,7 +167,7 @@ final class LifecycleWriteBoundary {
 	 * @return string|null The transition's name, or null for a manual move
 	 *                      or when no pass is wired.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function applyingAction(): ?string {
 		return $this->pass?->applyingAction();
@@ -184,7 +184,7 @@ final class LifecycleWriteBoundary {
 	 *
 	 * @return ObjectEntity The object in its final state.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function preferAutomatic(ObjectEntity $saved, array $applied): ObjectEntity {
 		if ($this->pass === null) {

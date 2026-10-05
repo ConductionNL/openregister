@@ -227,7 +227,7 @@ class VectorStorageHandler {
 	 *
 	 * @return bool True when the sidecar row was written
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#2.1
 	 */
 	private function populateVectorColumn(int $vectorId, array $embedding): bool {
 		$columnDimension = $this->pgVector->getVectorColumnDimension();
@@ -284,7 +284,7 @@ class VectorStorageHandler {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Selection + per-row tolerance +
 	 *   remaining-count reporting belong to one atomic batch step.
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#2.2
 	 */
 	public function backfillEmbeddingVectors(int $batchSize = 100, int $afterId = 0): array {
 		$columnDimension = $this->pgVector->getVectorColumnDimension();

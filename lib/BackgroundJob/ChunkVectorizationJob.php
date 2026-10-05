@@ -97,7 +97,7 @@ class ChunkVectorizationJob extends TimedJob {
 	 * @param ITimeFactory $time Time factory for parent class
 	 * @param ContainerInterface $container App container the job resolves its collaborators from at run time
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#5.2
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#5.2
 	 */
 	public function __construct(ITimeFactory $time, private readonly ContainerInterface $container) {
 		parent::__construct(time: $time);
@@ -113,7 +113,7 @@ class ChunkVectorizationJob extends TimedJob {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#5.2
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#5.2
 	 */
 	protected function run($argument): void {
 		$startTime = microtime(true);
@@ -215,7 +215,7 @@ class ChunkVectorizationJob extends TimedJob {
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#5.2
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#5.2
 	 */
 	private function vectorizeChunks(
 		ChunkMapper $chunkMapper,
@@ -320,7 +320,7 @@ class ChunkVectorizationJob extends TimedJob {
 	 *
 	 * @return array{converted: int, failed: int, last_id: int, remaining: int}
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#2.2
 	 */
 	private function runWarmupBackfill(
 		VectorStorageHandler $storageHandler,

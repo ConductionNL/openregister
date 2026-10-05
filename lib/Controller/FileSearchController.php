@@ -82,7 +82,7 @@ class FileSearchController extends Controller {
 	 *     search_type?: 'semantic'},
 	 *     array<never, never>>
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#4.1
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#4.1
 	 */
 	public function semanticSearch(): JSONResponse {
 		try {
@@ -156,7 +156,7 @@ class FileSearchController extends Controller {
 	 *
 	 * @return JSONResponse JSON response with hybrid search results or error
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#4.2
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#4.2
 	 */
 	public function hybridSearch(): JSONResponse {
 		try {

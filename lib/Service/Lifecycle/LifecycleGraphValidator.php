@@ -73,8 +73,7 @@ final class LifecycleGraphValidator {
 	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
 	 *
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function validate(array $annotation, array $schema): array {
 		return array_merge(

@@ -56,7 +56,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Deferred reverse-FK master recompute under the forwarded actor.
  *
- * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+ * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#4.1
  */
 class SourceRecordRecomputeJob extends ActorForwardedJob {
 	/**

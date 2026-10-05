@@ -85,6 +85,21 @@ A filter value MAY also be the literal string `IS NULL` or `IS NOT NULL` (`?assi
 - **AND** only objects without an `afgehandeld_op` value MUST be returned
 - **AND** `?afgehandeld_op_isnull=false` MUST return exactly the complement
 
+#### Scenario: An operator bag carrying only isnull is not a bare IN list
+@e2e exclude query-layer operator with no browser surface — pinned by the same unit test
+
+- **WHEN** a filter resolves to `assignee => ['isnull' => 'true']`
+- **THEN** it MUST emit a null check
+- **AND** it MUST NOT be treated as the historical bare-list `IN ('true')`, which matches
+  nothing and reads as a correct empty result
+
+#### Scenario: Both filter paths agree
+@e2e exclude query-layer operator with no browser surface — pinned by the same unit test
+
+- **WHEN** the same `isnull` filter runs through the QueryBuilder path and the raw-SQL
+  UNION path
+- **THEN** both MUST emit the same predicate
+
 #### Scenario: Filter on non-existent property returns empty results
 - **GIVEN** schema `meldingen` that does NOT have a property `nonexistent`
 - **WHEN** the user filters with `?nonexistent=somevalue`

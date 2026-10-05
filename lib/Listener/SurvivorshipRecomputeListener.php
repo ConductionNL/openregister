@@ -110,7 +110,7 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	 * @return void
 	 *
 	 * @spec openspec/changes/mdm-survivorship-engine/tasks.md#4.1
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.2
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
@@ -315,7 +315,7 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.2
 	 */
 	private function hasSourceLinkage(array $config): bool {
 		if ((string)($config['sourceLinkField'] ?? '') !== '') {
@@ -339,7 +339,7 @@ class SurvivorshipRecomputeListener implements IEventListener {
 	 *
 	 * @return bool True when the existing golden record must be preserved as-is.
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.2
 	 */
 	private function shouldPreserveGoldenRecord(array $sourceRecords, array $config, array $data): bool {
 		if (empty($sourceRecords) === false) {

@@ -60,7 +60,7 @@ class LifecycleActionListener implements IEventListener {
 	 * @param LoggerInterface $logger Logger for diagnostics.
 	 * @param LifecycleTransitionResolver $transitionResolver Decides which declared transition an edit is, so the named action's own actions run.
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,

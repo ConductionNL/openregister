@@ -23,8 +23,6 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
- * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
- * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
  */
 
 declare(strict_types=1);
@@ -1703,7 +1701,7 @@ class ObjectService implements ObjectServiceInterface
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Save options are flag-driven; `$currentUser` was added for `@self.folder` access checks.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-     * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function saveObject(
         array | ObjectEntity $object,

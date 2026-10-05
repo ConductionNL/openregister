@@ -14,7 +14,7 @@ declare(strict_types=1);
  * @author   Conduction Development Team <dev@conduction.nl>
  * @license  EUPL-1.2
  *
- * @spec openspec/changes/hybrid-document-search/tasks.md#3.1
+ * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#3.1
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Vectorization\Handlers;

@@ -175,7 +175,7 @@ class FlowTriggerListener implements IEventListener {
 	 *
 	 * @return array<string, string> The extra context, empty for most events.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function contextFor(Event $event): array {
 		if ($event instanceof ObjectTransitionedEvent) {

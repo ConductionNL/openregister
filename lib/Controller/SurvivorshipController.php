@@ -95,7 +95,7 @@ class SurvivorshipController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
 	public function sources(string $id): JSONResponse {
 		try {
@@ -286,7 +286,7 @@ class SurvivorshipController extends Controller {
 	 *
 	 * @return array<string, mixed> Survivorship config.
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
 	private function survivorshipConfigFor(ObjectEntity $object): array {
 		$schema = $this->loadSchema(object: $object);

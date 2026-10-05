@@ -38,7 +38,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-kvk-opencorporates/tasks.md
+ * @spec openspec/changes/archive/2026-10-05-integration-kvk-opencorporates/tasks.md
  */
 
 declare(strict_types=1);
@@ -195,7 +195,7 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/integration-kvk-opencorporates/tasks.md
+	 * @spec openspec/changes/archive/2026-10-05-integration-kvk-opencorporates/tasks.md
 	 */
 	public function authRequirements(): array {
 		return [
@@ -226,7 +226,7 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider {
 	 * @throws ProviderUnavailableException When the source is missing/down —
 	 *                                      the controller maps the cause.
 	 *
-	 * @spec openspec/changes/integration-kvk-opencorporates/tasks.md
+	 * @spec openspec/changes/archive/2026-10-05-integration-kvk-opencorporates/tasks.md
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/objectId
 	 *   are mandated by the IntegrationProvider contract; this leaf is
@@ -275,7 +275,7 @@ class OpenCorporatesProvider extends AbstractIntegrationProvider {
 	 *                             success, or `{ unavailable, cause, ... }`
 	 *                             when the source is unconfigured/down.
 	 *
-	 * @spec openspec/changes/integration-kvk-opencorporates/tasks.md
+	 * @spec openspec/changes/archive/2026-10-05-integration-kvk-opencorporates/tasks.md
 	 */
 	public function searchCompanies(string $query, ?string $jurisdiction = null, int $limit = 30, int $page = 1): array {
 		$limit = max(1, min(100, $limit));
