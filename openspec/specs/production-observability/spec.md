@@ -8,7 +8,9 @@ status: implemented
 
 @e2e exclude Prometheus metrics/health backend — covered by PHPUnit
 Provide production-grade observability for OpenRegister deployments through Prometheus metrics, structured logging, health/readiness endpoints, and audit-compliant monitoring. This capability enables operations teams to monitor application health, track SLA compliance, detect anomalies in real-time, and satisfy BIO (Baseline Informatiebeveiliging Overheid) audit logging requirements for Dutch government deployments.
+
 ## Requirements
+
 ### Requirement: Prometheus Metrics Endpoint
 The system SHALL expose a dedicated metrics endpoint that returns all application metrics in Prometheus text exposition format (version 0.0.4). The endpoint MUST be served at `GET /index.php/apps/openregister/api/metrics` and MUST return the `Content-Type: text/plain; version=0.0.4; charset=utf-8` header. The `MetricsController` (`lib/Controller/MetricsController.php`) already implements this endpoint with basic gauge metrics; this requirement extends it with counters, histograms, and richer labels.
 
@@ -580,23 +582,6 @@ testing.
 - **THEN** `calculateSuccessRate(total, successful)` MUST return `0.0` when total is zero, otherwise `(successful / total) * 100` rounded to two decimals
 - **AND** `roundAverageMs(value)` MUST coerce a numeric (possibly string) value to a float rounded to two decimals, returning `0.0` for non-numeric input
 - **AND** `calculateAverageVectorsPerDay(growthData)` MUST return `0.0` for empty data, otherwise the total divided by the number of days rounded to two decimals
-
-### Requirement: Realtime change records MUST be emitted as CloudEvent-shaped envelopes
-
-`RealtimeService` MUST record a CloudEvents 1.0 shaped change record for a register object on create, update, delete, and transition, persisting it to the realtime event store. A write failure MUST NOT break the originating save pipeline.
-
-#### Scenario: Record a change event
-
-- **GIVEN** an object change of a known type (`or.object.created`, `or.object.updated`, `or.object.deleted`, `or.object.transitioned`)
-- **WHEN** `record(eventType, object, extra)` runs
-- **THEN** it MUST build a CloudEvents 1.0 envelope with `specversion: "1.0"`, the event type, a `source` of `<baseUrl>/apps/openregister`, a subject of the object URN (or its uuid), a unique id, an ISO 8601 `time`, and a `data` block carrying register, schema, uuid, urn, organisation, owner, actor (session UID), and trigger-specific `extra`
-- **AND** it MUST persist a `RealtimeEvent` with the matching fields and the JSON-encoded payload, returning the inserted entity
-
-#### Scenario: Failure is non-fatal
-
-- **GIVEN** the underlying realtime store write throws
-- **WHEN** `record()` executes
-- **THEN** it MUST catch the error, log a warning, and return `null` so a missed realtime event never breaks the actual save
 
 ## Current Implementation Status
 - **Implemented -- Prometheus metrics endpoint**: `MetricsController` (`lib/Controller/MetricsController.php`) exposes `/api/metrics` with `openregister_info`, `openregister_up`, `openregister_registers_total`, `openregister_schemas_total`, `openregister_objects_total` (by register/schema), and `openregister_search_requests_total` gauges. Content-Type header is correctly set to Prometheus exposition format.

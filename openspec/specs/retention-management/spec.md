@@ -8,7 +8,9 @@ status: done
 
 @e2e exclude backend MDTO retention lifecycle — covered by PHPUnit
 Implement retention lifecycle management for register objects: MDTO-compliant archival metadata, selectielijsten, archiefactiedatum calculation, destruction scheduling with approval workflows, legal holds, and notifications per Archiefwet 1995.
+
 ## Requirements
+
 ### Requirement: Objects MUST carry MDTO-compliant archival metadata in the retention field
 Each object MUST carry archival metadata fields conforming to the MDTO standard within the existing `ObjectEntity.retention` JSON field. These fields enable retention lifecycle management per the Archiefwet 1995.
 
@@ -426,43 +428,6 @@ A `TimedJob` (`AvgRetentionJob`, 24-hour interval) MUST invoke `AvgRetentionServ
 - **THEN** the method MUST return `null` without logging
 - **AND** the candidate MUST NOT count toward `erased`
 
-### Requirement: The system MUST prune the realtime events log daily
-
-A separate `TimedJob` (`RealtimeEventRetentionJob`, 24-hour interval) MUST bound the size of the `openregister_realtime_events` table by deleting rows older than a configurable retention window. This is independent of the AVG retention pass and of the Archiefwet destruction workflow — it manages the SSE event ledger used by the realtime-updates feature.
-
-#### Scenario: Default retention window is 7 days
-
-- **GIVEN** the app-config key `realtime_event_retention_seconds` is unset
-- **WHEN** the job runs
-- **THEN** it MUST call `RealtimeEventMapper::deleteOlderThan(retentionSeconds: 604800)` (7 × 86400)
-- **AND** it MUST log an info entry with `retentionSeconds=604800` and `deletedRows=<count returned by mapper>`
-
-#### Scenario: Configurable retention window override
-
-- **GIVEN** the app-config key `realtime_event_retention_seconds` is set to `"259200"` (3 days)
-- **WHEN** the job runs
-- **THEN** it MUST pass `259200` as the `retentionSeconds` argument to `deleteOlderThan()`
-
-#### Scenario: Setting retention to zero or negative disables the prune
-
-- **GIVEN** the app-config key `realtime_event_retention_seconds` is `"0"` (or any string parsed as int ≤ 0)
-- **WHEN** the job fires on its scheduled tick
-- **THEN** the job MUST log an info entry `[RealtimeEventRetentionJob] Retention disabled (value <= 0), skipping prune`
-- **AND** it MUST return without touching the `openregister_realtime_events` table
-
-#### Scenario: Mapper failure is logged and swallowed
-
-- **GIVEN** `deleteOlderThan()` raises a `\Throwable` (e.g. DB connection error)
-- **WHEN** the job's `run()` catches it
-- **THEN** the job MUST log the error at `error` level with the message prefix `[RealtimeEventRetentionJob] Prune failed:`
-- **AND** the job MUST NOT re-throw — the next scheduled tick will retry
-
-#### Scenario: Job interval is fixed at 24 hours
-
-- **GIVEN** the constructor builds a new `RealtimeEventRetentionJob`
-- **WHEN** the parent `TimedJob` is configured
-- **THEN** `setInterval(seconds: 86400)` MUST be called (running more often than daily is intentionally rejected per the implementation contract)
-
 ### Requirement: The retention settings handler MUST expose app metadata and normalise mixed-type toggle values
 
 `ObjectRetentionHandler` is the back-end handler for the Retention/Object/Archival settings sections. Beyond the read/write methods already covered by the settings retrofit, it MUST provide a version-info endpoint backing the settings UI's "About" panel and MUST coerce mixed-type boolean inputs from stored JSON (strings, ints, native booleans) to PHP `bool`.
@@ -498,4 +463,3 @@ A separate `TimedJob` (`RealtimeEventRetentionJob`, 24-hour interval) MUST bound
 - **GIVEN** the stored `retention` JSON blob contains `auditTrailsEnabled: "true"` and `searchTrailsEnabled: 1`
 - **WHEN** `getRetentionSettingsOnly()` decodes the blob
 - **THEN** both flags MUST be returned as PHP boolean `true` (via `convertToBoolean()`), not as the raw string/int — so downstream callers can rely on strict `=== true` checks
-

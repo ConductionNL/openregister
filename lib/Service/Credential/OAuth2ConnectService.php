@@ -117,7 +117,7 @@ class OAuth2ConnectService {
 	 *
 	 * @throws OAuth2RegistrationFailedException When the account's server refuses the registration.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
 	public function ensureInstanceClient(array $provider, array $claims, string $redirectUri): array {
 		return $this->instanceClients->ensure(provider: $provider, claims: $claims, redirectUri: $redirectUri);
@@ -132,7 +132,7 @@ class OAuth2ConnectService {
 	 *
 	 * @throws InvalidArgumentException When the provider is unknown or is not an OAuth2 token set.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
 	public function oauth2Provider(string $providerId): array {
 		$provider = $this->catalogue->get($providerId);
@@ -163,7 +163,7 @@ class OAuth2ConnectService {
 	 *
 	 * @throws InvalidArgumentException When the entry names no usable authorization endpoint.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
 	public function authorizationUrl(
 		array $provider,
@@ -224,7 +224,7 @@ class OAuth2ConnectService {
 	 * @throws InvalidArgumentException When the claims name a provider that cannot be connected.
 	 * @throws RuntimeException When the exchange fails or a re-authorisation would re-point a credential.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
 	 */
 	public function complete(array $claims, string $code, string $verifier, string $redirectUri): string {
 		$providerId = (string)($claims['p'] ?? '');
@@ -318,7 +318,7 @@ class OAuth2ConnectService {
 	 *
 	 * @return string An empty string on success, or a secret-free reason the revoke failed.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-disconnecting-revokes-upstream-where-it-can-and-disables-locally
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-disconnecting-revokes-upstream-where-it-can-and-disables-locally
 	 */
 	public function revokeUpstream(array $provider, array $credential, string $credentialId, string $scope): string {
 		$oauth2 = ($provider['oauth2'] ?? []);
@@ -367,7 +367,7 @@ class OAuth2ConnectService {
 	 *
 	 * @return string The new credential UUID.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
 	 */
 	private function mintNew(
 		array $claims,
@@ -414,7 +414,7 @@ class OAuth2ConnectService {
 	 *
 	 * @throws RuntimeException When the credential is gone, or the re-authorisation would re-point it.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-token-set/spec.md#requirement-a-re-authorised-credential-returns-to-active-in-place
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-re-authorised-credential-returns-to-active-in-place
 	 */
 	private function existingCredential(array $claims, string $providerId, ?string $instanceBaseUrl): ?array {
 		$credentialId = trim((string)($claims['cid'] ?? ''));
@@ -464,7 +464,7 @@ class OAuth2ConnectService {
 	 *
 	 * @throws RuntimeException When the exchange fails or the provider returns an error.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
 	 */
 	private function exchangeCode(
 		array $provider,

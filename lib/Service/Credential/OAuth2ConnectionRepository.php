@@ -74,7 +74,7 @@ class OAuth2ConnectionRepository {
 	 *
 	 * @return ObjectEntity|null The credential, or null when absent or not manageable.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-re-authorisation-overrides-the-same-credential
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-re-authorisation-overrides-the-same-credential
 	 */
 	public function findManageable(string $credentialId, string $uid): ?ObjectEntity {
 		try {
@@ -122,7 +122,7 @@ class OAuth2ConnectionRepository {
 	 * @throws InvalidArgumentException When there is no active organisation.
 	 * @throws CredentialAccessDeniedException When the caller does not administer the organisation.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
 	public function gatedOrganisation(string $uid, string $requestedScope): ?string {
 		if ($requestedScope !== self::SCOPE_ORGANISATION) {
@@ -157,7 +157,7 @@ class OAuth2ConnectionRepository {
 	 *
 	 * @throws Throwable When the custody delete or the object write fails.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-disconnecting-revokes-upstream-where-it-can-and-disables-locally
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-disconnecting-revokes-upstream-where-it-can-and-disables-locally
 	 */
 	public function disable(string $credentialId, array $data, string $lastError): void {
 		$scope = (string)($data['scope'] ?? 'personal');
@@ -187,7 +187,7 @@ class OAuth2ConnectionRepository {
 	 *
 	 * @throws Throwable When the custody delete or the object delete fails.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
 	public function discard(string $credentialId, string $scope): void {
 		$this->credentialStore->delete($credentialId, $scope);

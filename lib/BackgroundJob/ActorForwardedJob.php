@@ -52,7 +52,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Base class for deferred listener jobs that must run as the original actor.
  *
- * @spec openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-1.3
+ * @spec openspec/specs/event-driven-architecture/spec.md
  */
 abstract class ActorForwardedJob extends QueuedJob {
 	/**

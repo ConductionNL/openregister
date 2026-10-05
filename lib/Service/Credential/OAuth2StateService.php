@@ -111,7 +111,7 @@ class OAuth2StateService {
 	 *
 	 * @return array{state: string, nonce: string, verifier: string, challenge: string} The signed state and its PKCE pair.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
 	 */
 	public function issue(array $claims): array {
 		$nonce = $this->random->generate(self::NONCE_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC);
@@ -145,7 +145,7 @@ class OAuth2StateService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
 	 */
 	public function withdraw(string $nonce): void {
 		$this->vault->delete(self::SYSTEM_IDENTITY, self::PENDING_PREFIX . $nonce);
@@ -164,7 +164,7 @@ class OAuth2StateService {
 	 *
 	 * @return array<string, mixed>|null The claims, or null when the value is not a state at all.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
 	 */
 	public function parseUnverified(string $state): ?array {
 		$parts = explode('.', $state);
@@ -191,7 +191,7 @@ class OAuth2StateService {
 	 *
 	 * @return array{claims: array<string, mixed>, verifier: string}|null The claims and verifier, or null when invalid.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
 	 */
 	public function consume(string $state): ?array {
 		$claims = $this->verifiedClaims(state: $state);
@@ -233,7 +233,7 @@ class OAuth2StateService {
 	 *
 	 * @return array<string, mixed>|null The claims, or null when the state is forged or stale.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
 	 */
 	private function verifiedClaims(string $state): ?array {
 		$parts = explode('.', $state);
@@ -261,7 +261,7 @@ class OAuth2StateService {
 	 *
 	 * @return string The base64url-encoded SHA-256 challenge.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-state-value-is-signed-single-use-and-short-lived
 	 */
 	public function challengeFor(string $verifier): string {
 		return $this->base64UrlEncode(value: hash('sha256', $verifier, true));

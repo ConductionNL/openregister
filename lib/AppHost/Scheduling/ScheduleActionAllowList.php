@@ -35,7 +35,7 @@ use OCP\App\IAppManager;
 /**
  * Closed allow-list mapping action types to vetted job classes.
  *
- * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 class ScheduleActionAllowList {
 	/**
@@ -87,7 +87,7 @@ class ScheduleActionAllowList {
 	 *
 	 * @return string|null The server-vetted job class, or null when the action is not allow-listed.
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function resolve(string $action): ?string {
 		$relativeClass = (self::MAP[$action] ?? null);
@@ -105,7 +105,7 @@ class ScheduleActionAllowList {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function isAllowed(string $action): bool {
 		return isset(self::MAP[$action]);

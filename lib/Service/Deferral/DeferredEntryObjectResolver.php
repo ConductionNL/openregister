@@ -43,7 +43,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Resolves deferred job entries back to live objects, stale-safe.
  *
- * @spec openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-1.4
+ * @spec openspec/specs/event-driven-architecture/spec.md
  */
 class DeferredEntryObjectResolver {
 	/**
