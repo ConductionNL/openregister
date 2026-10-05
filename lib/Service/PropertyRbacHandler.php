@@ -753,7 +753,7 @@ class PropertyRbacHandler {
 	 *
 	 * @return StateFieldRules The hidden, read-only and required lists
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function stateFieldRulesFor(Schema $schema, array $object): StateFieldRules {
 		return $this->stateFieldRules->resolve(schema: $schema, data: $object);
@@ -772,7 +772,7 @@ class PropertyRbacHandler {
 	 *
 	 * @return array Object data with state-hidden properties removed
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function stripStateHiddenProperties(Schema $schema, array $object): array {
 		$rules = $this->stateFieldRules->resolve(schema: $schema, data: $object);
@@ -809,7 +809,7 @@ class PropertyRbacHandler {
 	 *
 	 * @return array Array of property names the state hides
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	private function stateHiddenWrites(Schema $schema, array $object, array $incomingData): array {
 		$source = $object;
