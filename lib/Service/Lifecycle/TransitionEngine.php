@@ -531,13 +531,14 @@ class TransitionEngine {
 	/**
 	 * Apply a named transition to a subject already resolved and cleared.
 	 *
-	 * @param array{object: ObjectEntity, schema: Schema, annotation: array<string, mixed>} $subject
-	 *        What resolveTransitionSubject() answered.
+	 * @param array<string, mixed> $subject What resolveTransitionSubject() answered.
 	 * @param string $action Transition action name.
 	 * @param array<string, mixed> $data Optional input values for the transition's declared `inputs`.
 	 * @param bool $asSystem True on the system path: the writes skip RBAC and the organisation filter.
 	 *
 	 * @return ObjectEntity The saved object after the transition.
+	 *
+	 * @psalm-param array{object: ObjectEntity, schema: Schema, annotation: array<string, mixed>} $subject
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
 	 *
