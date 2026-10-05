@@ -166,7 +166,7 @@ class PurgeObjectCommand extends Command {
 	 *
 	 * @return array<int, string>|null
 	 *
-	 * @spec openspec/changes/demo-data-purge-by-batch/specs/archival-annotation-vocabulary/spec.md#requirement-the-cli-purge-must-accept-an-import-job-instead-of-a-list-of-uuids
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-the-cli-purge-must-accept-an-import-job-instead-of-a-list-of-uuids
 	 */
 	private function importJobUuids(string $importJobId, OutputInterface $output): ?array {
 		$importJobId = trim($importJobId);

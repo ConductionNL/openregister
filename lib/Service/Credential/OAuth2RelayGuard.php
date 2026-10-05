@@ -98,7 +98,7 @@ class OAuth2RelayGuard {
 	 *
 	 * @return boolean True when the URL is an allow-listed origin plus this application's callback path.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
 	 */
 	public function permits(string $callbackUrl): bool {
 		$parts = parse_url(trim($callbackUrl));
@@ -132,7 +132,7 @@ class OAuth2RelayGuard {
 	 *
 	 * @return array<int, string> The normalised origins.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
 	 */
 	public function allowedOrigins(): array {
 		$raw = $this->appConfig->getValueString(self::APP_ID, self::CONFIG_KEY, '');

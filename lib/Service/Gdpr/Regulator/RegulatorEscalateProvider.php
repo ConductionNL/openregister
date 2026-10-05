@@ -47,7 +47,7 @@ interface RegulatorEscalateProvider {
 	 *
 	 * @return string The provider id (e.g. `or.default.regulator-escalate.null`).
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function getProviderId(): string;
 
@@ -66,7 +66,7 @@ interface RegulatorEscalateProvider {
 	 *
 	 * @return RegulatorEscalateResult The escalation outcome (reference + status).
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function escalate(string $caseUuid, array $case): RegulatorEscalateResult;
 }//end interface

@@ -4413,7 +4413,7 @@ class ImportHandler {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors importFromApp()'s force flag.
 	 *
-	 * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-an-app-configuration-import-must-run-under-its-own-import-job-id
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-configuration-import-must-run-under-its-own-import-job-id
 	 */
 	private function importFromJsonAsJob(
 		array $data,

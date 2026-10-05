@@ -6,7 +6,9 @@ status: in-progress
 
 ## Purpose
 Gives schemas a retention and archival vocabulary via the `x-openregister-archival` annotation, enforcing data-retention policy on object rows. Schemas declare a default retention plus condition-based rules; an hourly cron sweeps and deletes expired rows, object reads surface a computed `_retention` block, and user-driven deletes on archival schemas are blocked with HTTP 403. Validates retention declarations at save time and recognises the annotation through the import path so it round-trips without being dropped.
+
 ## Requirements
+
 ### Requirement: ANNOTATION_VOCABULARY recognises x-openregister-archival and x-openregister-seed
 
 The `Schema::ANNOTATION_VOCABULARY` constant in `lib/Db/Schema.php` SHALL include the keys `x-openregister-archival` and `x-openregister-seed`. Schemas declaring either annotation at top-level or under `configuration` MUST round-trip through the import path without being silently dropped by `validateConfigurationArray()`, and the SchemaMapper's "Dropped unknown x-openregister-* key(s)" warning MUST NOT fire for these keys.
@@ -371,3 +373,34 @@ term and the document that cites it cannot disagree.
 - @e2e exclude schema-save validation — covered by PHPUnit
 - **WHEN** a schema declares `aggregatieniveau` at the top level, or a literal `start` inside `temporalCoverage`
 - **THEN** the schema save SHALL fail, naming the allowed keys, so a typo cannot declare nothing in silence
+
+### Requirement: The CLI purge MUST accept an import job instead of a list of UUIDs
+
+`occ openregister:objects:purge --import-job <id>` SHALL resolve the objects whose `create`
+audit row carries that job id and SHALL purge each with the command's existing rules: dry
+run unless `--apply`, an archival record and a live object refused unless `--force`, an
+archival record named as such in the output. UUID arguments and `--import-job` MAY be
+combined; the command SHALL refuse to run when given neither. In job mode an object that no
+longer exists SHALL be reported as already gone and SHALL NOT count as a failure, so the
+command can be re-run after a partial purge.
+
+@e2e exclude CLI command with no UI surface. Asserted in tests/Unit/Command/PurgeObjectCommandTest.php (testImportJobPurgesTheObjectsTheJobCreated, testImportJobKeepsTheArchivalRefusal, testImportJobReportsAMissingObjectAsAlreadyGone, testRefusesToRunWithNeitherUuidsNorAnImportJob). Covered by PHPUnit.
+
+#### Scenario: Purging a removed example set
+
+- **GIVEN** an app import job whose objects were soft-deleted by the app's wizard
+- **WHEN** `occ openregister:objects:purge --import-job <id> --apply` runs
+- **THEN** every non-archival object the job created MUST be destroyed
+- **AND** every archival one MUST be refused, naming `--force`
+
+#### Scenario: Re-running after a partial purge
+
+- **GIVEN** a job whose objects are partly destroyed already
+- **WHEN** the command runs again with `--import-job <id> --apply`
+- **THEN** the destroyed ones MUST be reported as already gone
+- **AND** the exit code MUST be 0 when nothing else failed
+
+#### Scenario: Nothing named
+
+- **WHEN** the command runs with no UUID and no `--import-job`
+- **THEN** it MUST exit 1 and destroy nothing

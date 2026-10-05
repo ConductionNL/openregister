@@ -5022,7 +5022,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @psalm-suppress PossiblyUnusedMethod
 	 *
-	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
 	 */
 	#[NoAdminRequired]
 	public function exists(): JSONResponse {

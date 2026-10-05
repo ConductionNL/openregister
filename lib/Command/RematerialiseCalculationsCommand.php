@@ -251,11 +251,17 @@ class RematerialiseCalculationsCommand extends Command {
 			$touched++;
 			if ($dryRun === false) {
 				try {
+					// The occ runner has no user session: with RBAC on, every schema with an
+					// authorization block refused every row as "Anonymous" (live
+					// pass O7, 5 Oct). A maintenance command writes as the system,
+					// as its reads above already do.
 					$this->objectService->saveObject(
 						object: $data,
 						register: $entity->getRegister(),
 						schema: $entity->getSchema(),
-						uuid: $entity->getUuid()
+						uuid: $entity->getUuid(),
+						_rbac: false,
+						_multitenancy: false
 					);
 				} catch (\Throwable $e) {
 					$output->writeln(

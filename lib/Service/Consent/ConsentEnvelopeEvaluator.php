@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/consent-evidence-envelope/specs/consent-evidence-envelope/spec.md
+ * @spec openspec/specs/consent-evidence-envelope/spec.md
  */
 
 declare(strict_types=1);
@@ -62,7 +62,7 @@ final class ConsentEnvelopeEvaluator {
 	 *     `value` is the array to persist (with evidence filled on every newly appended entry)
 	 *     and `message` is null.
 	 *
-	 * @spec openspec/changes/consent-evidence-envelope/specs/consent-evidence-envelope/spec.md
+	 * @spec openspec/specs/consent-evidence-envelope/spec.md
 	 */
 	public function evaluate(
 		string $name,

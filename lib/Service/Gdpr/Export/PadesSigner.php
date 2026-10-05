@@ -43,7 +43,7 @@ interface PadesSigner {
 	 *
 	 * @return SignedBundle The bytes, their SHA-256 content hash, and the signature state.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function sign(string $bytes): SignedBundle;
 }//end interface

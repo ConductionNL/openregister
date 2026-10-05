@@ -10,7 +10,7 @@
  * and the two fail-closed integration seams).
  *
  * Each @e2e annotation below traces a Scenario in the change specs
- *   openspec/changes/dsar-case-ui/specs/{dsar-case-list,dsar-case-detail-actions}/spec.md
+ *   openspec/specs/{dsar-case-list,dsar-case-detail-actions}/spec.md
  * (referenced by their post-sync openspec/specs/<spec>/ path, per gate-19).
  *
  * NOTE: these tests drive the real UI and therefore require a Nextcloud

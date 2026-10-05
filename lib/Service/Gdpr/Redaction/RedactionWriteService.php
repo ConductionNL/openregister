@@ -78,7 +78,7 @@ class RedactionWriteService {
 	 *
 	 * @throws RuntimeException When the case cannot be loaded (absent or unauthorised).
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-redaction-write/spec.md
+	 * @spec openspec/specs/dsar-redaction-write/spec.md
 	 */
 	public function applyRedaction(string $caseUuid, string $field, string $after, string $ground): array {
 		$case = $this->accessor->load(caseUuid: $caseUuid);

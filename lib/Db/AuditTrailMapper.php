@@ -254,7 +254,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @return int
 	 *
-	 * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-the-job-id-of-an-app-import-that-created-objects-must-be-recorded-per-app
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-job-id-of-an-app-import-that-created-objects-must-be-recorded-per-app
 	 */
 	public function countByImportJobId(string $importJobId, ?string $action = 'create'): int {
 		$qb = $this->db->getQueryBuilder();
@@ -280,7 +280,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @return array<int, string> Distinct object UUIDs from the job's `create` rows.
 	 *
-	 * @spec openspec/changes/demo-data-purge-by-batch/specs/archival-annotation-vocabulary/spec.md#requirement-the-cli-purge-must-accept-an-import-job-instead-of-a-list-of-uuids
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-the-cli-purge-must-accept-an-import-job-instead-of-a-list-of-uuids
 	 */
 	public function objectUuidsByImportJobId(string $importJobId): array {
 		$uuids = [];

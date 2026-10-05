@@ -53,7 +53,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Deferred x-openregister-notifications dispatch under the forwarded actor.
  *
- * @spec openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-2.2
+ * @spec openspec/specs/event-driven-architecture/spec.md
  */
 class AnnotationNotificationDispatchJob extends ActorForwardedJob {
 	/**

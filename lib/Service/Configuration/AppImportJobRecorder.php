@@ -26,7 +26,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-an-app-configuration-import-must-run-under-its-own-import-job-id
+ * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-configuration-import-must-run-under-its-own-import-job-id
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use Symfony\Component\Uid\Uuid;
 /**
  * Stamps app configuration imports and records the jobs that created objects.
  *
- * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-the-job-id-of-an-app-import-that-created-objects-must-be-recorded-per-app
+ * @spec openspec/specs/data-import-export/spec.md#requirement-the-job-id-of-an-app-import-that-created-objects-must-be-recorded-per-app
  */
 class AppImportJobRecorder {
 	/**
@@ -92,7 +92,7 @@ class AppImportJobRecorder {
 	 *
 	 * @return string The new import job id (UUID v4).
 	 *
-	 * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-an-app-configuration-import-must-run-under-its-own-import-job-id
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-configuration-import-must-run-under-its-own-import-job-id
 	 */
 	public function begin(): string {
 		$this->outerJobIds[] = $this->auditTrailMapper->getRequestImportJobId();
@@ -107,7 +107,7 @@ class AppImportJobRecorder {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-an-app-configuration-import-must-run-under-its-own-import-job-id
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-configuration-import-must-run-under-its-own-import-job-id
 	 */
 	public function end(): void {
 		$outer = null;
@@ -128,7 +128,7 @@ class AppImportJobRecorder {
 	 *
 	 * @return bool True when the job was recorded.
 	 *
-	 * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-the-job-id-of-an-app-import-that-created-objects-must-be-recorded-per-app
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-job-id-of-an-app-import-that-created-objects-must-be-recorded-per-app
 	 */
 	public function record(string $appId, string $importJobId, string $version, int $objectsWritten): bool {
 		$created = $this->auditTrailMapper->countByImportJobId(importJobId: $importJobId, action: 'create');
@@ -156,7 +156,7 @@ class AppImportJobRecorder {
 	 *
 	 * @return array<int, array{jobId: string, version: string, created: int, importedAt: string}>
 	 *
-	 * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
 	 */
 	public function jobs(string $appId): array {
 		$stored = $this->read(key: $this->key(appId: $appId));
@@ -187,7 +187,7 @@ class AppImportJobRecorder {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
 	 */
 	public function forget(string $appId, string $importJobId): void {
 		$kept = array_values(
@@ -206,7 +206,7 @@ class AppImportJobRecorder {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-the-http-rollback-route-must-refuse-an-app-imports-job-id
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-http-rollback-route-must-refuse-an-app-imports-job-id
 	 */
 	public function appForJob(string $importJobId): ?string {
 		foreach ($this->appConfig->getKeys('openregister') as $key) {

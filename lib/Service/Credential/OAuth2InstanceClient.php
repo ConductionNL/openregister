@@ -88,7 +88,7 @@ class OAuth2InstanceClient {
 	 *
 	 * @throws OAuth2RegistrationFailedException When the account's server refuses the registration.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
 	public function ensure(array $provider, array $claims, string $redirectUri): array {
 		$oauth2 = ($provider['oauth2'] ?? []);
@@ -140,7 +140,7 @@ class OAuth2InstanceClient {
 	 *
 	 * @throws OAuth2RegistrationFailedException When the server refuses the registration.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
 	public function register(
 		array $provider,
@@ -197,7 +197,7 @@ class OAuth2InstanceClient {
 	 *
 	 * @return array{cl: string, cr: string}|null The stored client, or null when there is none.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
 	private function pinnedClient(string $credentialId): ?array {
 		if ($credentialId === '') {

@@ -60,8 +60,7 @@ use OCP\IUserSession;
  *
  * @psalm-suppress UnusedClass
  *
- * @spec openspec/changes/apphost-generic-preferences/tasks.md#task-1.1
- * @spec openspec/changes/apphost-generic-preferences/specs/apphost-boilerplate/spec.md — Requirement: Generic Preferences Controller
+ * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Generic Preferences Controller
  */
 class GenericPreferencesController extends Controller {
 	/**
@@ -88,7 +87,7 @@ class GenericPreferencesController extends Controller {
 	 *
 	 * @return JSONResponse `{value: string|null}`, 401 when anonymous, 400 on an invalid key.
 	 *
-	 * @spec openspec/changes/apphost-generic-preferences/specs/apphost-boilerplate/spec.md — Requirement: Generic Preferences Controller
+	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Generic Preferences Controller
 	 */
 	#[NoAdminRequired]
 	public function getPreference(string $key): JSONResponse {
@@ -125,7 +124,7 @@ class GenericPreferencesController extends Controller {
 	 *
 	 * @return JSONResponse `{value: string|null}`, 401 when anonymous, 400 on an invalid key.
 	 *
-	 * @spec openspec/changes/apphost-generic-preferences/specs/apphost-boilerplate/spec.md — Requirement: Generic Preferences Controller
+	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Generic Preferences Controller
 	 */
 	#[NoAdminRequired]
 	public function setPreference(string $key, string $value = ''): JSONResponse {

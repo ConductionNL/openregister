@@ -66,7 +66,7 @@ final class OAuth2InstanceHost {
 	 *
 	 * @throws InvalidArgumentException When the candidate is not a safe, absolute https origin.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
 	 */
 	public static function normalise(string $candidate): string {
 		$candidate = trim($candidate);
@@ -101,7 +101,7 @@ final class OAuth2InstanceHost {
 	 *
 	 * @throws InvalidArgumentException When the URL is not a bare https origin.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
 	 */
 	private static function assertOriginShape(array $parts): void {
 		if (strtolower((string)($parts['scheme'] ?? '')) !== 'https') {
@@ -140,7 +140,7 @@ final class OAuth2InstanceHost {
 	 *
 	 * @throws InvalidArgumentException When the host is empty, a literal address, or a loopback name.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
 	 */
 	private static function assertPublicHost(string $host): void {
 		if ($host === '') {

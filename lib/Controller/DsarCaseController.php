@@ -108,7 +108,7 @@ class DsarCaseController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-case-api/spec.md
+	 * @spec openspec/specs/dsar-case-api/spec.md
 	 */
 	public function create(): JSONResponse {
 		$denied = $this->requireAuthenticated();
@@ -160,7 +160,7 @@ class DsarCaseController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-case-api/spec.md
+	 * @spec openspec/specs/dsar-case-api/spec.md
 	 */
 	public function transition(string $id): JSONResponse {
 		$guard = $this->guardCase(caseUuid: $id);
@@ -198,7 +198,7 @@ class DsarCaseController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function evidence(string $id): JSONResponse {
 		$guard = $this->guardCase(caseUuid: $id);
@@ -227,7 +227,7 @@ class DsarCaseController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-redaction-write/spec.md
+	 * @spec openspec/specs/dsar-redaction-write/spec.md
 	 */
 	public function redact(string $id): JSONResponse {
 		$guard = $this->guardCase(caseUuid: $id);
@@ -273,7 +273,7 @@ class DsarCaseController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function generateBundle(string $id): JSONResponse {
 		$guard = $this->guardCase(caseUuid: $id);
@@ -308,7 +308,7 @@ class DsarCaseController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function downloadBundle(string $id) {
 		$denied = $this->requireAuthenticated();
@@ -351,7 +351,7 @@ class DsarCaseController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function dossier(string $id): JSONResponse {
 		$guard = $this->guardCase(caseUuid: $id);
@@ -389,7 +389,7 @@ class DsarCaseController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
+	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function identityVerify(string $id): JSONResponse {
 		$guard = $this->guardCase(caseUuid: $id);
@@ -449,7 +449,7 @@ class DsarCaseController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function escalate(string $id): JSONResponse {
 		$guard = $this->guardCase(caseUuid: $id);
