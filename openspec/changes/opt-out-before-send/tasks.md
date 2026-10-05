@@ -4,9 +4,9 @@ Spec only until Ruben approves ConductionNL/hydra#739. Build after integriq's ev
 
 ## 1. The seam
 
-- [ ] 1.1 Deduplication check: confirm OpenRegister has no other outbound opt-out or suppression reader (`git grep -n -i "opt.out\|unsubscribe\|suppress" lib/Service/Flow lib/Service/Notification lib/Service/Party`).
+- [x] 1.1 Deduplication check: confirm OpenRegister has no other outbound opt-out or suppression reader (`git grep -n -i "opt.out\|unsubscribe\|suppress" lib/Service/Flow lib/Service/Notification lib/Service/Party`).
   - acceptance: the hits are listed in the PR body.
-- [ ] 1.2 `OptOutAuthority::ask()`, with the string-named event, the `class_exists()` guard, the fixed exempt floor and the config switch.
+- [x] 1.2 `OptOutAuthority::ask()`, with the string-named event, the `class_exists()` guard, the fixed exempt floor and the config switch.
   - spec_ref: `specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001`
   - files: `lib/Service/Notification/OptOutAuthority.php`, `tests/Unit/Service/Notification/OptOutAuthorityTest.php`
   - acceptance: absent class, unhandled event and a throwing listener each give `authority-unavailable` for `service` and `send: true` for `besluit`.
@@ -14,11 +14,11 @@ Spec only until Ruben approves ConductionNL/hydra#739. Build after integriq's ev
 
 ## 2. The flow step
 
-- [ ] 2.1 `messageCategory` in `SendEmailNode` config keys, validation and form.
+- [x] 2.1 `messageCategory` in `SendEmailNode` config keys, validation and form.
   - spec_ref: `#requirement-the-send-email-step-declares-a-message-category-req-ero-002`
   - files: `lib/Service/Flow/Nodes/SendEmailNode.php`, its test
   - test: `vendor/bin/phpunit --no-coverage --filter SendEmailNodeTest`
-- [ ] 2.2 One `ask()` before the loop in `sendToAddresses()`. New buckets `optedOut` and `authorityUnavailable`. No rate-limit use and no `FlowEmailSentEvent` for a skipped address.
+- [x] 2.2 One `ask()` before the loop in `sendToAddresses()`. New buckets `optedOut` and `authorityUnavailable`. No rate-limit use and no `FlowEmailSentEvent` for a skipped address.
   - files: `lib/Service/Flow/FlowMessagingService.php`, its test
   - acceptance: the opted-out scenario passes with a real dispatcher and a stub listener. Red before.
   - test: `vendor/bin/phpunit --no-coverage --filter FlowMessagingServiceTest`
@@ -28,30 +28,30 @@ Spec only until Ruben approves ConductionNL/hydra#739. Build after integriq's ev
 
 ## 3. The party path
 
-- [ ] 3.1 `notifyParties()` takes a category and asks once. Outcomes `refused-opted-out` and `authority-unavailable`.
+- [x] 3.1 `notifyParties()` takes a category and asks once. Outcomes `refused-opted-out` and `authority-unavailable`.
   - spec_ref: `#requirement-a-parties-notification-asks-integriq-before-it-mails-a-party-req-ero-003`
   - files: `lib/Service/Party/PartyNotificationService.php`, its test
   - test: `vendor/bin/phpunit --no-coverage --filter PartyNotificationServiceTest`
-- [ ] 3.2 `messageCategory` on a notification rule: validator, dispatcher pass-through.
+- [x] 3.2 `messageCategory` on a notification rule: validator, dispatcher pass-through.
   - files: `lib/Service/Notification/NotificationAnnotationValidator.php`, `lib/Service/Notification/AnnotationNotificationDispatcher.php`
   - acceptance: `notification-bad-message-category` on an unknown value.
   - test: `vendor/bin/phpunit --no-coverage --filter NotificationAnnotationValidatorTest`
 
 ## 4. The link and the headers
 
-- [ ] 4.1 The shared `UnsubscribeHeaders` helper (Ruben, 2026-10-05). Public service, guarded path, returns false instead of throwing.
+- [x] 4.1 The shared `UnsubscribeHeaders` helper (Ruben, 2026-10-05). Public service, guarded path, returns false instead of throwing.
   - spec_ref: `#requirement-openregister-owns-one-shared-list-unsubscribe-helper-req-ero-005`
   - files: `lib/Service/Notification/UnsubscribeHeaders.php`, `tests/Unit/Service/Notification/UnsubscribeHeadersTest.php`
   - acceptance: both helper scenarios pass. Document it in OpenRegister's published contract so dossiq and pipelinq can rely on it.
   - test: `vendor/bin/phpunit --no-coverage --filter UnsubscribeHeadersTest`
-- [ ] 4.2 `EmailSender::sendToAddress()` takes the unsubscribe material and calls the helper. The body link is appended by the callers.
+- [x] 4.2 `EmailSender::sendToAddress()` takes the unsubscribe material and calls the helper. The body link is appended by the callers.
   - spec_ref: `#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004`
   - files: `lib/Service/Notification/EmailSender.php`, its test
   - test: `vendor/bin/phpunit --no-coverage --filter EmailSenderTest`
 
 ## 4a. The defect found while reading
 
-- [ ] 4a.1 A party mail's body is its subject (`AnnotationNotificationDispatcher.php:3221`). Resolve the rule's `message` at the caller (`:533-539`), pass it to `dispatchToParties()` as `body`, fall back to the subject.
+- [x] 4a.1 A party mail's body is its subject (`AnnotationNotificationDispatcher.php:3221`). Resolve the rule's `message` at the caller (`:533-539`), pass it to `dispatchToParties()` as `body`, fall back to the subject.
   - spec_ref: `#requirement-a-party-mail-carries-the-rule-s-message-as-its-body-req-ero-006`
   - files: `lib/Service/Notification/AnnotationNotificationDispatcher.php`, its test
   - acceptance: both body scenarios pass. Red before.
