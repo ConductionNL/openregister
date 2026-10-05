@@ -42,7 +42,7 @@ declare(strict_types=1);
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Db;
@@ -292,7 +292,7 @@ class ChunkMapperLiveQueryTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function testSearchByKeywordRunsRealSqlAndReturnsTheMatchingChunk(): void {
 		$results = $this->mapper->searchByKeyword(
@@ -392,7 +392,7 @@ class ChunkMapperLiveQueryTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function testUnrankedLikeFallbackRunsRealSqlAndReturnsTheMatchingChunk(): void {
 		// No setAccessible() call: it has been a no-op since PHP 8.1 and is

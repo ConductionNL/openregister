@@ -743,7 +743,7 @@ class FileMapper extends QBMapper {
 	 *
 	 * @return string|null The owning object's UUID, or null when it cannot be resolved.
 	 *
-	 * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function findOwningObjectUuid(int $fileId): ?string {
 		$qb = $this->db->getQueryBuilder();

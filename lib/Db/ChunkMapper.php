@@ -508,7 +508,7 @@ class ChunkMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.LongVariable)        Descriptive variable name improves readability.
 	 *
 	 * @spec openspec/changes/hybrid-document-search/tasks.md#3.3
-	 * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function searchByKeyword(string $query, int $limit, array $filters = [], bool $allowUnrankedFallback = false): array {
 		$platform = $this->db->getDatabasePlatform();
@@ -595,7 +595,7 @@ class ChunkMapper extends QBMapper {
 	 * @return array<int, array{entity_type: string, entity_id: string, score: float,
 	 *                          chunk_text: string|null, chunk_index: int, metadata: array}>
 	 *
-	 * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	private function searchByKeywordUnranked(string $query, int $limit, array $filters = []): array {
 		$qb = $this->db->getQueryBuilder();

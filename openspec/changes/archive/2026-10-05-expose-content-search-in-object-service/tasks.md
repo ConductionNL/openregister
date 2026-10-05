@@ -26,7 +26,7 @@
   - Spec ref: ZKN-CONTENT-001, -002, -003
   - Acceptance: 4 new test methods green on both PostgreSQL and MariaDB CI matrices
   - Done: `ContentSearchHandlerTest` (13 tests), `QueryHandlerContentSearchTest` (3 tests), `ChunkMapperKeywordSearchTest` unranked-fallback additions (3 tests), `FileMapperFindOwningObjectUuidTest` (3 tests). No chunk-field leakage is structural (handler only ever returns `ObjectEntity`), asserted via `instanceof`/`assertSame` on the returned rows.
-- [ ] Confirm archive gate: after impl + tests green, run `openspec archive expose-content-search-in-object-service`
+- [x] Confirm archive gate: after impl + tests green, run `openspec archive expose-content-search-in-object-service`
   - Spec ref: —
   - Acceptance: change moved under `openspec/changes/archive/YYYY-MM-DD-expose-content-search-in-object-service`; downstream opencatalogi #136 (WOO-517) unblocks
-  - Left unchecked intentionally: archiving happens after this PR merges to `development`, not in the PR itself.
+  - Done 5 Oct 2026: the implementation landed on `development` long ago (ContentSearchHandler, FileMapper::findOwningObjectUuid, tests); archived in its own PR.
