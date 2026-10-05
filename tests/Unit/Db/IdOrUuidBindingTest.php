@@ -74,16 +74,25 @@ class IdOrUuidBindingTest extends TestCase {
 		$expr->method('orX')->willReturn($this->createMock(ICompositeExpression::class));
 
 		// One row, then nothing, whichever fetch the server's QBMapper uses
-		// (the composer stub calls fetch(); NC stable35 may call another).
+		// (the composer stub calls fetch(); NC stable35 calls fetchAssociative()).
+		// Only methods the loaded IResult declares can be configured: the
+		// composer stub has no fetchAssociative(), the server's IResult has.
 		$rows = [$row];
 		$next = static function () use (&$rows) {
 			return (array_shift($rows) ?? false);
 		};
 		$result = $this->createMock(IResult::class);
-		$result->method('fetch')->willReturnCallback($next);
-		$result->method('fetchAssociative')->willReturnCallback($next);
-		$result->method('fetchAll')->willReturn([$row]);
-		$result->method('fetchAllAssociative')->willReturn([$row]);
+		foreach (['fetch', 'fetchAssociative'] as $fetchOne) {
+			if (method_exists(IResult::class, $fetchOne) === true) {
+				$result->method($fetchOne)->willReturnCallback($next);
+			}
+		}
+
+		foreach (['fetchAll', 'fetchAllAssociative'] as $fetchMany) {
+			if (method_exists(IResult::class, $fetchMany) === true) {
+				$result->method($fetchMany)->willReturn([$row]);
+			}
+		}
 
 		$qb = $this->createMock(IQueryBuilder::class);
 		foreach (['select', 'from', 'where', 'andWhere', 'orWhere', 'setMaxResults', 'orderBy'] as $fluent) {
