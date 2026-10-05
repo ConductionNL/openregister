@@ -146,7 +146,7 @@ class DuplicateController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	public function check(string $register, string $schema): JSONResponse {
 		$candidate = $this->candidateFromRequest();
@@ -194,7 +194,7 @@ class DuplicateController extends Controller {
 	 *
 	 * @return array<string, mixed> The candidate body.
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	private function candidateFromRequest(): array {
 		$candidate = $this->request->getParams();
@@ -231,7 +231,7 @@ class DuplicateController extends Controller {
 	 *
 	 * @return float|null The cut-off, or null when none was usably supplied.
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	private function thresholdFromRequest(string $key): ?float {
 		$value = $this->request->getParam($key);

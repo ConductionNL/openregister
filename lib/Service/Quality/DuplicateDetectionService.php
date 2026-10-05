@@ -48,7 +48,7 @@ use Throwable;
  * unsaved candidate against the stored set through the same rules.
  *
  * @spec openspec/changes/mdm-foundation/tasks.md#task-6
- * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+ * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) 61 against a threshold of 50,
  *   and the eleven points are the price of the thing this class exists to
@@ -218,7 +218,7 @@ class DuplicateDetectionService {
 	 *   matchedRules: array<int, array{field: string, method: string, similarity: float}>
 	 * }> Matches, highest score first. Empty when the schema declares no usable rules.
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	public function checkCandidate($register, $schema, array $candidate, ?array $matchRules = null, ?float $threshold = null): array {
 		$config = $this->resolveConfig(register: $register, schema: $schema, matchRules: $matchRules, threshold: $threshold);
@@ -283,7 +283,7 @@ class DuplicateDetectionService {
 	 *
 	 * @return float The effective threshold.
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function effectiveThreshold($register, $schema, ?float $threshold = null): float {
 		$config = $this->resolveConfig(register: $register, schema: $schema, matchRules: null, threshold: $threshold);
@@ -306,7 +306,7 @@ class DuplicateDetectionService {
 	 *
 	 * @return array<string, mixed> The annotation, empty when absent or unresolvable.
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function dedupAnnotation($register, $schema): array {
 		return $this->loadAnnotation(register: $register, schema: $schema);
@@ -786,7 +786,7 @@ class DuplicateDetectionService {
 	 *   matchedRules: array<int, array{field: string, method: string, similarity: float}>
 	 * }
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	private function scoreAgainstRules(array $dataA, array $dataB, array $rules): array {
 		$weightedSum = 0.0;

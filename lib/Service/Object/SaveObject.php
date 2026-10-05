@@ -3488,7 +3488,7 @@ class SaveObject {
 	 *
 	 * @return DedupCreatePolicy|null The policy, or null when unavailable.
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	private function resolveDedupCreatePolicy(): ?DedupCreatePolicy {
 		if ($this->container === null) {

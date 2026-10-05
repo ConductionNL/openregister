@@ -39,7 +39,7 @@ use Throwable;
 /**
  * The declared create-time duplicate policy, enforced server-side.
  *
- * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+ * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
  */
 class DedupCreatePolicy {
 
@@ -119,7 +119,7 @@ class DedupCreatePolicy {
 	 *
 	 * @throws DuplicateBlockedException When the schema blocks and the caller may not override.
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function guardCreate($register, $schema, array $data, bool $overrideRequested): array {
 		$annotation = $this->duplicates->dedupAnnotation(register: $register, schema: $schema);
@@ -160,7 +160,7 @@ class DedupCreatePolicy {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function recordOverride(ObjectEntity $object, array $matches): void {
 		if (count($matches) === 0) {
@@ -204,7 +204,7 @@ class DedupCreatePolicy {
 	 *
 	 * @return bool True when the caller may save through a blocking match.
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	private function mayOverride(array $annotation): bool {
 		$groups = ($annotation['overrideGroups'] ?? null);
