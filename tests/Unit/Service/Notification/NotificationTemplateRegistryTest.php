@@ -62,6 +62,18 @@ class NotificationTemplateRegistryTest extends TestCase {
 	}
 
 	/**
+	 * A view alert is a platform event, so an administrator can reword it like every other one.
+	 */
+	public function testTheViewAlertShipsAnEditableTemplate(): void {
+		$registry = $this->shipped();
+		$this->assertTrue($registry->knows(event: 'view_alert_crossed'));
+
+		$row = array_values(array_filter($registry->listAll(), static fn (array $r): bool => $r['event'] === 'view_alert_crossed'))[0];
+		$this->assertSame(['view', 'count', 'threshold'], array_keys($row['variables']));
+		$this->assertSame(['nl', 'en'], array_keys($row['shipped']));
+	}
+
+	/**
 	 * An event with no template is named, rather than rendering a generic line.
 	 */
 	public function testAnEventWithNoTemplateIsNamed(): void {

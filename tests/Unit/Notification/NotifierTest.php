@@ -677,6 +677,77 @@ class NotifierTest extends TestCase {
 	}
 
 	/**
+	 * A view alert names the view, the count and the line it crossed. Without the case
+	 * prepare() throws and Nextcloud drops the notification the sweep raised.
+	 */
+	public function testPrepareViewAlertCrossedAbove(): void {
+		$parsed = $this->renderSubject(
+			'view_alert_crossed',
+			['view' => 'Overdue cases', 'viewId' => 'view-uuid-1', 'count' => 23, 'operator' => 'gte', 'threshold' => 20]
+		);
+
+		$this->assertSame('Overdue cases is at 23', $parsed[0]);
+		$this->assertSame('The view Overdue cases counts 23, at or above its threshold of 20.', $parsed[1]);
+	}
+
+	/**
+	 * A falling count reads as falling, not as the same sentence with the numbers swapped.
+	 */
+	public function testPrepareViewAlertCrossedBelow(): void {
+		$parsed = $this->renderSubject(
+			'view_alert_crossed',
+			['view' => 'Free beds', 'viewId' => 'view-uuid-2', 'count' => 2, 'operator' => 'lte', 'threshold' => 5]
+		);
+
+		$this->assertSame('Free beds is at 2', $parsed[0]);
+		$this->assertSame('The view Free beds counts 2, at or below its threshold of 5.', $parsed[1]);
+	}
+
+	/**
+	 * The previous owner is told, and told who took the record.
+	 *
+	 * WITHOUT THIS CASE THE NOTIFICATION NEVER RENDERS: an unknown subject
+	 * throws out of prepare(), so the handover would be announced to nobody,
+	 * which is the silent handover the capability exists to fix.
+	 *
+	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 */
+	public function testPrepareOwnershipChanged(): void {
+		$parsed = $this->renderSubject(
+			'object_ownership_changed',
+			[
+				'objectTitle' => 'Besluit over de Nieuwstraat',
+				'objectUuid' => 'uuid-1',
+				'previousOwner' => 'alice',
+				'newOwner' => 'bob',
+				'actor' => 'bob',
+			]
+		);
+
+		$this->assertSame('A record you owned changed hands', $parsed[0]);
+		$this->assertStringContainsString('bob', $parsed[1]);
+		$this->assertStringContainsString('Besluit over de Nieuwstraat', $parsed[1]);
+	}//end testPrepareOwnershipChanged()
+
+	/**
+	 * An unresolvable new owner still produces a sentence.
+	 *
+	 * A notification that renders half a sentence is worse than a plainer one:
+	 * the reader is told their record moved and cannot tell to whom.
+	 *
+	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 */
+	public function testPrepareOwnershipChangedWithoutANewOwner(): void {
+		$parsed = $this->renderSubject(
+			'object_ownership_changed',
+			['objectTitle' => 'Besluit over de Nieuwstraat', 'previousOwner' => 'alice']
+		);
+
+		$this->assertSame('A record you owned changed hands', $parsed[0]);
+		$this->assertStringContainsString('has a new owner', $parsed[2] ?? $parsed[1]);
+	}//end testPrepareOwnershipChangedWithoutANewOwner()
+
+	/**
 	 * Render one subject and collect the parsed subject and message.
 	 *
 	 * @param string $subject The notification subject.

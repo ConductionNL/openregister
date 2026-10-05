@@ -634,7 +634,8 @@ class WatcherService {
 		if ($this->scopeResolver->admitsUnconditionally(
 			userId: $uid,
 			userGroups: $groups,
-			objectOwner: $object->getOwner()
+			objectOwner: $object->getOwner(),
+			authorization: $object->getAuthorization()
 		) === false
 		) {
 			throw new NotAuthorizedException(

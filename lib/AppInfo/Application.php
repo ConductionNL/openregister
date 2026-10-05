@@ -87,6 +87,7 @@ use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\SourceCreatedEvent;
 use OCA\OpenRegister\Event\SourceUpdatedEvent;
 use OCA\OpenRegister\Event\ToolRegistrationEvent;
+use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Federation\OpenRegisterCloudFederationProvider;
 use OCA\OpenRegister\Listener\AdministeredValidationListener;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
@@ -139,6 +140,7 @@ use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\UniqueConstraintListener;
 use OCA\OpenRegister\Listener\WatcherPruneListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\ViewAlertCrossedListener;
 use OCA\OpenRegister\Listener\WorkingCalendarChangedListener;
 use OCA\OpenRegister\Listener\WorkingCalendarDeleteGuardListener;
 use OCA\OpenRegister\Listener\WorkingCalendarValidationListener;
@@ -3399,6 +3401,10 @@ class Application extends App implements IBootstrap {
 		// refuses a second bezwaar and only reports a repeated e-mail.
 		$context->registerEventListener(ObjectCreatingEvent::class, UniqueConstraintListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, UniqueConstraintListener::class);
+
+		// A saved view's count alert: the sweep decides when it fires, this
+		// listener tells the people it names, on the channels it declares.
+		$context->registerEventListener(ViewAlertCrossedEvent::class, ViewAlertCrossedListener::class);
 
 		// Reverse-FK source-change listener — when a source object (declared via
 		// a master schema's x-openregister-survivorship sourceLink.reverseFk)

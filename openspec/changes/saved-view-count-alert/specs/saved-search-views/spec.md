@@ -6,7 +6,10 @@
 
 A View SHALL accept an optional `alert` block with `operator` (`gte` or
 `lte`), `threshold`, `recipients`, `channels` and `every`, validated with the
-notification engine's recipient and channel grammar. Only the view's owner,
+notification engine's recipient and channel grammar. A recipient is
+`user:<uid>` for a person or a bare Nextcloud group id, the same strings the
+app's RBAC rules use. The channels delivered are `nc-notification` (the
+default) and `email`. Only the view's owner,
 or a user with write on a shared view, SHALL set or clear it.
 
 #### Scenario: a malformed alert is refused
@@ -30,6 +33,14 @@ crosses the threshold in the declared direction, SHALL then hold state
 - **WHEN** eight sweeps run
 - **THEN** the recipients receive one notification and the view reads `fired` with last count 23
 - @e2e exclude {proposal only; task 3.1 adds tests/e2e/ci/view-alert.spec.ts when the field ships in nextcloud-vue}
+
+#### Scenario: the crossing reaches each named person once
+
+- **GIVEN** an alert with recipients `user:alice` and `teamleads`, a group holding alice and bob
+- **WHEN** the count crosses the threshold
+- **THEN** alice and bob each receive one notification naming the view, the count and the threshold
+- **AND** a recipient this server does not have, or a channel nothing delivers, is named in the log rather than skipped in silence
+- @e2e exclude {delivery, covered by ViewAlertCrossedListenerTest; task 3.1 adds the e2e when the field ships in nextcloud-vue}
 
 #### Scenario: the alert re-arms when the backlog clears
 

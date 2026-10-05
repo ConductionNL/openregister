@@ -44,6 +44,7 @@ use OCA\OpenRegister\Event\ReferenceValidatedEvent;
 use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
 use OCA\OpenRegister\Exception\CircularReferenceException;
 use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
@@ -4566,6 +4567,14 @@ class SaveObject {
 		// - For background / system contexts (no IUserSession user) applyOwnerAttribution
 		// only fills in owner when it is empty, so a client-supplied value would
 		// persist — that is the actual attack vector closed by this change.
+		//
+		// SILENTLY DROPPING IT IS NOT ENOUGH. A write that asks for an owner it
+		// may not have was accepted with a 2xx and a different owner stored, so
+		// the caller was told its request succeeded when the one thing it asked
+		// for did not happen. It is now REFUSED, and the refusal names the
+		// endpoint that does change an owner. See refuseOwnerClaim().
+		$this->refuseOwnerClaim(objectEntity: $objectEntity, selfData: $selfData);
+
 		// SECURITY (wave-11 SB1 / wave-12 Fix 3): organisation must only be accepted from
 		// @self when the caller is an admin or has verified membership in that organisation.
 		// Blindly applying a client-supplied organisation UUID allows any authenticated
@@ -4663,6 +4672,69 @@ class SaveObject {
 		// Therefore: strip @self.tmlo entirely here; let populateTmloDefaults() own it.
 		// (No setTmlo() call — the field is intentionally omitted).
 	}//end setSelfMetadata()
+
+	/**
+	 * Refuse a write that asks for an owner the acting user may not take.
+	 *
+	 * OWNERSHIP IS DERIVED FROM THE AUTHENTICATED ACTOR, NEVER CLAIMED BY A
+	 * CALLER. A caller that can set the owner can grant itself edit rights on
+	 * somebody else's record, because the owner is admitted unconditionally by
+	 * every enforcement path. So an ordinary save cannot move the owner, and a
+	 * save that tries is refused rather than quietly accepted: the previous
+	 * behaviour answered 2xx while storing a different owner, which reads as
+	 * success and is not.
+	 *
+	 * WHAT IS ALLOWED THROUGH, and why each one has to be:
+	 *
+	 *  - A value equal to the ACTING USER. Nothing moves, so there is nothing to
+	 *    refuse.
+	 *  - A value equal to the STORED owner. Every read emits `@self.owner`, so the
+	 *    ordinary GET-edit-PUT round trip sends it straight back; refusing that
+	 *    would break every consuming app for asking for no change at all.
+	 *  - A NON-STRING value. A read can render the owner as an expanded user
+	 *    object, and sending that back is the same echo as above.
+	 *  - ANY value when there is no session user. A background job, an import or a
+	 *    migration has no acting user to derive an owner from, and the owner it
+	 *    carries is the one being restored. This path is unauthenticated by
+	 *    construction and is not reachable from a request.
+	 *
+	 * @param ObjectEntity $objectEntity The entity being written; its stored owner on an update, empty on a create.
+	 * @param array $selfData The caller's `@self` block.
+	 *
+	 * @throws NotAuthorizedException When the write asks for a different owner.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 */
+	private function refuseOwnerClaim(ObjectEntity $objectEntity, array $selfData): void {
+		if (array_key_exists('owner', $selfData) === false) {
+			return;
+		}
+
+		$requested = $selfData['owner'];
+		if (is_string($requested) === false || $requested === '') {
+			return;
+		}
+
+		$actor = $this->userSession->getUser()?->getUID();
+		if ($actor === null) {
+			return;
+		}
+
+		if ($requested === $actor) {
+			return;
+		}
+
+		$stored = $objectEntity->getOwner();
+		if ($stored !== null && $stored !== '' && $requested === $stored) {
+			return;
+		}
+
+		throw new NotAuthorizedException(
+			message: 'An owner cannot be set through a save. Use the ownership endpoint to hand a record over.'
+		);
+	}//end refuseOwnerClaim()
 
 	/**
 	 * Resolve whether the current session user is in the admin group.
