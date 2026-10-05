@@ -4969,7 +4969,7 @@ class Application extends App implements IBootstrap {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	private function relaxCspForWebPushWorker($server): void {
 		try {

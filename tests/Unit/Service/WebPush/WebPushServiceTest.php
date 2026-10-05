@@ -22,7 +22,7 @@ use Psr\Log\LoggerInterface;
  * gate, the public-key accessor, the no-keypair no-op, and the no-subscriptions
  * no-op — all of which assert deliver() never queues when it must not.
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 class WebPushServiceTest extends TestCase {
 	private PushSubscriptionMapper&MockObject $mapper;

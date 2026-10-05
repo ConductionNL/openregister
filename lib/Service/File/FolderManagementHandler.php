@@ -258,7 +258,7 @@ class FolderManagementHandler {
 	 * @return Folder The created or existing folder for the object.
 	 *
 	 * @spec openspec/specs/file-actions/spec.md
-	 * @spec openspec/changes/object-folder-is-bookkeeping/specs/file-actions/spec.md#requirement-reading-an-objects-files-never-saves-the-object-req-ofib-002
+	 * @spec openspec/specs/file-actions/spec.md#requirement-reading-an-objects-files-never-saves-the-object-req-ofib-002
 	 */
 	public function createObjectFolderById(
 		ObjectEntity|string $objectEntity,
@@ -1469,7 +1469,7 @@ class FolderManagementHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-folder-is-bookkeeping/specs/file-actions/spec.md#requirement-reading-an-objects-files-never-saves-the-object-req-ofib-002
+	 * @spec openspec/specs/file-actions/spec.md#requirement-reading-an-objects-files-never-saves-the-object-req-ofib-002
 	 */
 	private function recordObjectFolder(ObjectEntity $objectEntity, ?string $expected, string $folderId): void {
 		$recorded = $this->objectEntityMapper->recordFolder(entity: $objectEntity, expected: $expected, folderId: $folderId);

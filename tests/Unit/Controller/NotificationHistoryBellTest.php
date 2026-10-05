@@ -12,7 +12,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+ * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
  */
 
 declare(strict_types=1);
@@ -226,7 +226,7 @@ class NotificationHistoryBellTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function testASnoozedNoticeComesBack(): void {
 		$row = new NotificationHistory();
@@ -251,7 +251,7 @@ class NotificationHistoryBellTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function testAnArchivedNoticeNeverComesBack(): void {
 		$row = $this->notice();
@@ -271,7 +271,7 @@ class NotificationHistoryBellTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function testTheListIsNarrowedBySubjectTypeOnBothReads(): void {
 		$this->request->method('getParam')->willReturnMap(

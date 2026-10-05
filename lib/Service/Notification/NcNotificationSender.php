@@ -98,7 +98,7 @@ class NcNotificationSender {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `$webPushActive` is the foreground-suppression
 	 * flag on the notification tag, a delivery detail of this channel, not a second responsibility.
 	 *
-	 * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function send(
@@ -195,7 +195,7 @@ class NcNotificationSender {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function enqueueWebPush(
 		array $recipients,

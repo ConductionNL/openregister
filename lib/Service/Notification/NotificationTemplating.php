@@ -185,7 +185,7 @@ class NotificationTemplating {
 	 *
 	 * @return string|null The related object's display name, or null to keep the raw value.
 	 *
-	 * @spec openspec/changes/openregister-notification-relation-names/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function resolveRelationDisplayName(string $value): ?string {
 		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) !== 1) {

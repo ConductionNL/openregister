@@ -710,7 +710,7 @@ class NotifierTest extends TestCase {
 	 * throws out of prepare(), so the handover would be announced to nobody,
 	 * which is the silent handover the capability exists to fix.
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	public function testPrepareOwnershipChanged(): void {
 		$parsed = $this->renderSubject(
@@ -735,7 +735,7 @@ class NotifierTest extends TestCase {
 	 * A notification that renders half a sentence is worse than a plainer one:
 	 * the reader is told their record moved and cannot tell to whom.
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	public function testPrepareOwnershipChangedWithoutANewOwner(): void {
 		$parsed = $this->renderSubject(

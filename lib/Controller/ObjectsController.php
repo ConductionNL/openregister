@@ -21,11 +21,6 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
- * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
- * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
- * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
- * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
- * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
  */
 
 declare(strict_types=1);
@@ -5557,7 +5552,6 @@ class ObjectsController extends Controller {
 	 * @psalm-suppress NoValue
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 * @spec openspec/specs/export-pdf-format/spec.md
 	 */
 	public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse|JSONResponse {
@@ -6766,7 +6760,7 @@ class ObjectsController extends Controller {
 	 *
 	 * @return array<string, mixed> The envelope, with the counts when there are any.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	private function withUnreadCounts(array $self, ObjectEntity $object): array {
 		try {

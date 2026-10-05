@@ -6,7 +6,7 @@
  * registered event listeners, then drive the `push` and `notificationclick`
  * handlers directly.
  *
- * @spec openspec/changes/openregister-web-push-engine/tasks.md#task-6.2
+ * @spec openspec/changes/archive/2026-10-05-openregister-web-push-engine/tasks.md#task-6.2
  */
 const fs = require('fs')
 const path = require('path')

@@ -171,7 +171,7 @@ class TimelineVisibilityService {
 	 *
 	 * @return boolean True when the caller holds `manage` on the object.
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function mayManageObject(?ObjectEntity $object): bool {
 		return $this->holds(object: $object, action: 'manage');

@@ -33,7 +33,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md
+ * @spec openspec/specs/object-read-state/spec.md
  */
 
 declare(strict_types=1);
@@ -90,7 +90,7 @@ class ObjectReadStateController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	#[NoAdminRequired]
 	public function show(string $register, string $schema, string $id): JSONResponse {
@@ -136,7 +136,7 @@ class ObjectReadStateController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
 	#[NoAdminRequired]
 	public function markRead(string $register, string $schema, string $id): JSONResponse {
@@ -188,7 +188,7 @@ class ObjectReadStateController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	#[NoAdminRequired]
 	public function markUnread(string $register, string $schema, string $id): JSONResponse {

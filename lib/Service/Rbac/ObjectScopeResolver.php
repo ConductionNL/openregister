@@ -216,7 +216,7 @@ class ObjectScopeResolver {
 	 * @return bool True when the caller is an owner or an administrator.
 	 *
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	public function admitsUnconditionally(
 		?string $userId,
@@ -254,7 +254,7 @@ class ObjectScopeResolver {
 	 *
 	 * @return string|null The owning group id, or null.
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	public function ownerGroup(?array $authorization): ?string {
 		if (is_array($authorization) === false) {
@@ -363,7 +363,7 @@ class ObjectScopeResolver {
 	 *
 	 * @return string|null The predicate, or null when the caller is in no group.
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	public function ownedByMyGroupSql(string $authColumn, bool $isPostgres, array $quotedUserGroups): ?string {
 		if ($quotedUserGroups === []) {

@@ -46,7 +46,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+ * @spec openspec/specs/object-ownership/spec.md
  */
 
 declare(strict_types=1);
@@ -177,7 +177,7 @@ class ObjectOwnershipService {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The cascade is a property of the
 	 * request, not a second behaviour: one record or its family, same transfer.
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	public function claim(
 		Register $register,
@@ -231,7 +231,7 @@ class ObjectOwnershipService {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As on claim().
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	public function assign(
 		Register $register,
@@ -275,7 +275,7 @@ class ObjectOwnershipService {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As on claim().
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	public function reassignMany(array $identifiers, string $newOwner, bool $cascade = false): array {
 		$this->requireAdmin();
@@ -360,7 +360,7 @@ class ObjectOwnershipService {
 	 *
 	 * @return array The stored authorization block.
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	public function setOwnerGroup(
 		Register $register,

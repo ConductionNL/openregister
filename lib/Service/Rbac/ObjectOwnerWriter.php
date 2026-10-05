@@ -33,7 +33,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+ * @spec openspec/specs/object-ownership/spec.md
  */
 
 declare(strict_types=1);
@@ -75,7 +75,7 @@ class ObjectOwnerWriter {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	public function writeOwner(
 		Register $register,

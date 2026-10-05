@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md
+ * @spec openspec/specs/object-read-state/spec.md
  */
 
 declare(strict_types=1);
@@ -69,7 +69,7 @@ class UnreadCountCalculator {
 	 *
 	 * @return array<string, int> Sub-resource name to its unread count.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	public function countsFor(ObjectEntity $object, ?ObjectReadState $state): array {
 		$subSeen = ($state?->getSubSeen() ?? []);

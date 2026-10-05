@@ -400,7 +400,7 @@ class NotesControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function testEditingALockedNoteAnswers423(): void {
 		$object = $this->createRealObjectEntity();
@@ -421,7 +421,7 @@ class NotesControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function testRewritingAnothersNoteAnswers403(): void {
 		$object = $this->createRealObjectEntity();
@@ -440,7 +440,7 @@ class NotesControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function testAnEditIsAuditedOnTheObject(): void {
 		$object = $this->createRealObjectEntity();
@@ -462,7 +462,7 @@ class NotesControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function testMovingTheFlagIsNotAuditedAsAnEdit(): void {
 		$object = $this->createRealObjectEntity();
@@ -482,7 +482,7 @@ class NotesControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function testPatchWritesTheSameNoteAsPut(): void {
 		$object = $this->createRealObjectEntity();
@@ -503,7 +503,7 @@ class NotesControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function testVersionsListsThePriorTexts(): void {
 		$object = $this->createRealObjectEntity();
@@ -527,7 +527,7 @@ class NotesControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function testVersionsOfANoteThatIsNotThereAre404(): void {
 		$object = $this->createRealObjectEntity();
@@ -543,7 +543,7 @@ class NotesControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function testVersionsOfANoteTheCallerMayNotSeeAre404(): void {
 		$object = $this->createRealObjectEntity();

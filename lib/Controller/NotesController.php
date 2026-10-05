@@ -245,7 +245,7 @@ class NotesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function update(
 		string $register,
@@ -343,7 +343,7 @@ class NotesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function patch(
 		string $register,
@@ -371,7 +371,7 @@ class NotesController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function versions(
 		string $register,

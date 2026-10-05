@@ -2766,7 +2766,7 @@ class MagicSearchHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	private function applyUnreadFilter(IQueryBuilder $qb, mixed $userId): void {
 		if (is_string($userId) === false || $userId === '') {

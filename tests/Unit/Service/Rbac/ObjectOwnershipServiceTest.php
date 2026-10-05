@@ -21,7 +21,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+ * @spec openspec/specs/object-ownership/spec.md
  */
 
 declare(strict_types=1);

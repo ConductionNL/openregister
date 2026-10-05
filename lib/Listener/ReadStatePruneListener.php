@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md
+ * @spec openspec/specs/object-read-state/spec.md
  */
 
 declare(strict_types=1);
@@ -66,7 +66,7 @@ final class ReadStatePruneListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectDeletedEvent) === false) {

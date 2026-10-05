@@ -20,7 +20,9 @@ This spec is an extension of existing infrastructure, not a greenfield build:
 - **Payload transformation (implemented)**: `MappingService::executeMapping()` with Twig templates already enables format-agnostic payload transformation. VNG Notificaties format is achieved through Mapping configuration, not hardcoded logic.
 - **Multi-tenancy (implemented)**: Webhook entities already support organisation scoping via the `organisation` field and `MultiTenancyTrait`. Notification rules inherit this isolation.
 - **What this spec adds**: NotificationRule entity, NotificationPreference entity, NotificationHistory entity, digest/batching mechanism, user opt-in/opt-out, rate limiting, threshold/deadline/workflow triggers, and read/unread tracking.
+
 ## Requirements
+
 ### Requirement: The system MUST integrate with Nextcloud's INotificationManager for in-app notifications
 All notification delivery to Nextcloud users MUST go through Nextcloud's native `OCP\Notification\IManager` interface. The object-lifecycle subjects declared by `x-openregister-notifications` — at minimum `object_created`, `object_updated`, and an assignment/transition subject (`object_transitioned`) — MUST be rendered by a registered `INotifier`. In OpenRegister this rendering lives in `AnnotationNotifier` (registered via `registerNotifierService`), which owns those subjects plus anything carrying a pre-rendered `_text` parameter; `Notifier` (registered via `appinfo/info.xml`) continues to own `configuration_update_available`. The two notifiers are mutually exclusive by subject so Nextcloud's sequential `Manager::prepare()` never double-renders. Each object subject MUST be internationalised in Dutch (nl) and English (en) via `IFactory::get('openregister', <languageCode>)` and MUST carry a primary action link to the object detail view. Push delivery is achieved by `notify_push` auto-intercepting the same `IManager` notification — the `push` channel is declared, not coded.
 
@@ -1091,6 +1093,236 @@ When the headers name more than one object the reply MUST NOT be threaded onto a
 - **GIVEN** a reply whose headers match no recorded `Message-ID`
 - **THEN** the outcome MUST be a named unthreaded state
 - **AND** the reply MUST NOT be filed automatically
+
+### Requirement: A notification is cleared by opening what it was about (REQ-ORS-003)
+
+When a user opens an object, the system SHALL mark read every
+notification for that user whose subject is that object. When a user opens
+a sub-resource, the system SHALL mark read every notification whose
+subject is that sub-resource. A notification whose subject no longer
+exists SHALL be archived rather than left unread.
+
+#### Scenario: doing the work empties the bell
+
+- **GIVEN** a user with three unread notifications about one object
+- **WHEN** the user opens that object
+- **THEN** those three notifications read as read
+- **AND** the user's unread count drops by three
+
+#### Scenario: a deleted subject does not leave a dead alert
+
+- **GIVEN** an unread notification about an object that is then deleted
+- **WHEN** the notification list is read
+- **THEN** that notification is archived and absent from the unread count
+- @e2e exclude {lifecycle, covered by unit tests}
+
+### Requirement: A notification may be snoozed or archived, and the list has an axis (REQ-ORS-004)
+
+A notification SHALL support `snoozedUntil` and `archivedAt` beside its
+read state. A snoozed notification SHALL be absent from the unread list
+until that moment and SHALL return unread afterwards. An archived
+notification SHALL leave the list without being marked read. The
+notification list SHALL filter by subject type and by object, and a thread
+SHALL be markable read as a whole.
+
+#### Scenario: a snoozed notification comes back
+
+- **GIVEN** an unread notification snoozed until tomorrow
+- **WHEN** the unread list is read today and again after that moment
+- **THEN** it is absent today and present afterwards, still unread
+- @e2e exclude {time-dependent, covered by unit tests with a clock fixture}
+
+#### Scenario: archiving is not reading
+
+- **GIVEN** an unread notification
+- **WHEN** the user archives it
+- **THEN** it leaves the list, its read state stays unread
+- **AND** the archive is visible on the notification
+
+#### Scenario: the bell is filtered by what a notice is about
+
+- **GIVEN** 400 notifications across four subject types
+- **WHEN** the list is requested for one subject type
+- **THEN** only that type's notifications are returned, with their own count
+
+### Requirement: A notification rule may address the object's watchers
+
+A `recipients` block in `x-openregister-notifications` SHALL accept
+`{"watchers": true}`. The dispatcher SHALL resolve it at dispatch time to
+the users watching the triggering object, merged and deduplicated with the
+other recipient blocks, subject to each user's preferences and to a read
+check on the object. A watcher who may no longer read the object SHALL
+receive nothing and SHALL be removed from the watcher list.
+
+#### Scenario: a watcher is told about a status change
+
+- **GIVEN** a schema whose `status-changed` rule declares `recipients: [{"watchers": true}]` and a user watching one object
+- **WHEN** the object's status changes
+- **THEN** the watcher receives the notification once, whether or not they are also the assignee
+- @e2e exclude {delivery runs through the queue and a background job, so an e2e assertion would be a timing race; asserted by NotificationRecipientResolverWatchersTest::testWatchersAreResolvedToUids and ::testAWatcherWhoIsAlsoTheAssigneeIsToldOnce}
+
+#### Scenario: a watcher who lost access hears nothing
+
+- **GIVEN** a watcher whose group membership no longer grants read on the object
+- **WHEN** a rule addressed to watchers fires
+- **THEN** the user receives nothing and is no longer listed as a watcher
+- @e2e exclude {same timing race as above; asserted by NotificationRecipientResolverWatchersTest::testAWatcherWhoLostReadIsSkippedAndDropped}
+
+#### Scenario: the block is validated at schema save
+
+- **GIVEN** a rule with `recipients: [{"watchers": "yes"}]`
+- **WHEN** the schema is saved
+- **THEN** the save fails with HTTP 422
+- `@e2e tests/e2e/ci/object-watchers.spec.ts` and NotificationAnnotationValidatorWatchersTest
+
+### Requirement: Notification title is the subject and the body is the optional message
+
+The engine MUST render the notification TITLE from a rule's `subject` and the notification BODY from a rule's optional `message`. The `message` MUST accept the same shape, locale-resolution, and `{{prop}}` interpolation as `subject` (a single template string OR a per-locale map with an optional `defaultLocale`). A malformed `message` MUST be rejected at schema-save with a `notification-bad-message` error. The resolved body MUST be threaded into the in-app notification (set via `setParsedMessage`) and into the web-push payload body, while the title remains the resolved `subject`.
+
+#### Scenario: Explicit per-locale message becomes the localised body
+
+- GIVEN a rule with `subject: { "nl": "Titel {{title}}", "en": "Title {{title}}" }` and `message: { "nl": "Body voor {{title}}", "en": "Body for {{title}}" }`
+- AND a recipient whose locale is `nl` and an object with `title` = `demo`
+- WHEN the engine dispatches the `nc-notification`
+- THEN the notification title MUST be `Titel demo` and the notification body (`_message`, set via `setParsedMessage`) MUST be `Body voor demo`
+
+#### Scenario: Malformed message is rejected at schema-save
+
+- GIVEN a rule whose `message` is neither a non-empty string nor a per-locale map with at least one non-empty locale
+- WHEN the schema is validated on save
+- THEN validation MUST return a `notification-bad-message` error
+
+#### Scenario: Web-push title and body are distinct
+
+- GIVEN a rule with a `subject` and a distinct `message` delivered over the `web-push` channel
+- WHEN the engine enqueues the web-push dispatch job
+- THEN the job argument MUST carry `title` = the resolved subject and `body` = the resolved message, and the Service-Worker payload body MUST be the message
+
+### Requirement: The body is auto-derived for actions-bearing rules and empty otherwise
+
+When a rule declares NO `message` but DOES declare `actions[]`, the engine MUST compose a default body `"Open in {AppName}."`, where `{AppName}` is the `originApp`'s human display name resolved via `IAppManager` (falling back to the capitalised app id when the app manager or app info is unavailable). When a rule declares neither `message` nor `actions`, the engine MUST leave the body empty and MUST NOT call `setParsedMessage` — preserving the behaviour before this change.
+
+#### Scenario: Actions but no message yields the auto-derived body
+
+- GIVEN a rule with `originApp: "opentalk"` (display name `OpenTalk`), a declared resolvable `actions[]`, and no `message`
+- WHEN the engine dispatches the notification
+- THEN the notification body (`_message`) MUST be `Open in OpenTalk.`
+
+#### Scenario: Neither message nor actions leaves the body empty (back-compat)
+
+- GIVEN a rule with neither `message` nor `actions`
+- WHEN the engine dispatches the notification
+- THEN the body (`_message`) MUST be the empty string and the notifier MUST NOT call `setParsedMessage`
+
+### Requirement: Relation placeholders resolve to display names
+
+The notification `{{prop}}` interpolation SHALL resolve a UUID-shaped field value to the related object's display name (via OpenRegister `ObjectService`, RBAC-scoped) before substitution, and SHALL fall back to the raw value when the value is not a UUID, the object cannot be resolved, or the object has no name.
+
+#### Scenario: Relation UUID renders as a name
+
+- **WHEN** a notification subject/message contains `{{client}}` and the object's `client` field holds the UUID of a Client named "Acme Gemeente BV"
+- **THEN** the rendered text reads "… Acme Gemeente BV …" rather than the UUID
+
+#### Scenario: Non-relation placeholder is unchanged
+
+- **WHEN** a placeholder resolves to a non-UUID scalar (e.g. `{{channel}}` = "telefoon")
+- **THEN** the value is substituted verbatim (no resolution attempted)
+
+#### Scenario: Unresolvable relation keeps the raw value
+
+- **WHEN** a `{{prop}}` UUID cannot be resolved (no access, missing object, or nameless)
+- **THEN** the raw UUID value is substituted and no error is raised
+
+### Requirement: Validator accepts actions, originApp, and the web-push channel
+
+`NotificationAnnotationValidator` SHALL accept the dialect additions from the foundation contract: `web-push` added to the channel enum (`VALID_CHANNELS`), an optional `actions[]` array with a hard cap of 2, and an optional `originApp` string. Each action SHALL declare an i18n `label`, an optional `primary` boolean, and a `target`. A third action SHALL be rejected with `notification-too-many-actions`; a bad label with `notification-action-bad-label`; an unrecognised target kind with `notification-action-bad-target`; a non-string/empty `originApp` with `notification-bad-origin-app`.
+
+#### Scenario: web-push accepted as a channel
+
+- **WHEN** a rule declares `channels: ["web-push"]`
+- **THEN** schema-save validation accepts `web-push` (now in `VALID_CHANNELS`)
+
+#### Scenario: Two actions accepted, three rejected
+
+- **WHEN** a rule declares two actions, then another rule declares three
+- **THEN** the two-action rule validates and the three-action rule is rejected with `notification-too-many-actions` referencing the Web Notification API limit of 2
+
+#### Scenario: Bad action label rejected
+
+- **WHEN** an action's `label` is not a per-locale map with at least one non-empty locale
+- **THEN** validation rejects the rule with `notification-action-bad-label`
+
+#### Scenario: Unrecognised target kind rejected
+
+- **WHEN** an action declares a `target.kind` outside `[object-detail, route, url]`
+- **THEN** validation rejects the rule with `notification-action-bad-target`
+
+#### Scenario: Bad originApp rejected
+
+- **WHEN** a rule declares `originApp` as a non-string or empty string
+- **THEN** validation rejects the rule with `notification-bad-origin-app`
+
+### Requirement: Dispatcher stamps originApp and routes web-push
+
+`AnnotationNotificationDispatcher::emitNotification` SHALL stamp the resolved `originApp` (declared value, or default = the app owning the schema's register) onto the emitted notification, and SHALL route a rule carrying the `web-push` channel through the Web Push send path (the `web-push-delivery` capability) in addition to any other declared channels.
+
+#### Scenario: originApp stamped from declaration
+
+- **WHEN** a rule declares `originApp: "pipelinq"`
+- **THEN** the dispatched notification carries the `pipelinq` origin (driving icon and deeplink base) instead of `openregister`
+
+#### Scenario: originApp defaults to register owner
+
+- **WHEN** a rule omits `originApp`
+- **THEN** the dispatcher resolves the owning app from the schema's register and uses that as the origin
+
+#### Scenario: web-push channel routed to the send path
+
+- **WHEN** a rule declares `channels: ["nc-notification", "web-push"]`
+- **THEN** the dispatcher emits the nc-notification AND hands the payload to the web-push send path (background job)
+
+### Requirement: Dispatcher resolves action targets to deeplinks
+
+For each declared action, `AnnotationNotificationDispatcher` SHALL resolve the `target` to a concrete deeplink server-side at dispatch time: `object-detail` → the triggering object's detail route; `object-detail` with `{ object: { kind: "relation", field } }` → the related object's register/schema/uuid resolved on the triggering object (the "Open client" mechanism), through OR RBAC so the deeplink is only built for objects the recipient may read; `route` → the originApp frontend route with `{{prop}}` interpolation (HTML-escaped) from object fields; `url` → the absolute URL verbatim.
+
+#### Scenario: object-detail deeplinks to the triggering object
+
+- **WHEN** an action declares `target: { "kind": "object-detail" }`
+- **THEN** the dispatcher builds the deeplink from the triggering object's registerId + schemaId + objectUuid against the originApp route base
+
+#### Scenario: relation target deeplinks to the related object
+
+- **WHEN** an action declares `target: { "kind": "object-detail", "object": { "kind": "relation", "field": "client" } }` and the triggering Contactmoment holds a relation in `client`
+- **THEN** the dispatcher resolves the related Client's register/schema/uuid server-side and builds the deeplink to that Client (the "Open client" case), only if the recipient may read it
+
+#### Scenario: route target interpolates fields
+
+- **WHEN** an action declares `target: { "kind": "route", "app": "pipelinq", "route": "/clients/{{clientId}}" }`
+- **THEN** the dispatcher interpolates `{{clientId}}` from the object's fields (HTML-escaped) and builds the named app route link
+
+#### Scenario: url target passthrough
+
+- **WHEN** an action declares `target: { "kind": "url", "href": "https://EXAMPLE_HOST/path" }`
+- **THEN** the dispatcher uses the absolute URL verbatim
+
+### Requirement: Notifier renders declared actions with the originApp icon
+
+`AnnotationNotifier` SHALL render the declared `actions[]` via `addAction()` (keeping the implicit "View" action as the default only when no actions are declared, for back-compat), labelling each in the recipient's locale (nl/en per ADR-007) and marking the `primary` one. It SHALL set the notification icon to the originApp hex composite (served by the hex-icon endpoint) instead of the static openregister image path.
+
+#### Scenario: Declared actions replace the implicit View
+
+- **WHEN** a rule declares one primary action
+- **THEN** the notifier renders that action button (localised, primary) and does not add the implicit "View" action
+
+#### Scenario: No actions keeps the implicit View
+
+- **WHEN** a rule declares no `actions`
+- **THEN** the notifier keeps adding the implicit "View" action deeplinking to the triggering object, exactly as before
+
+#### Scenario: Icon uses the originApp hex composite
+
+- **WHEN** a notification is dispatched with `originApp: "pipelinq"`
+- **THEN** the notifier sets the icon to the pipelinq hex-composite raster URL rather than `IURLGenerator::imagePath('openregister', ...)`
 
 ## Current Implementation Status
 - **Partially implemented -- in-app notifications**: `NotificationService` (`lib/Service/NotificationService.php`) exists and integrates with Nextcloud's `IManager` (INotificationManager). Currently limited to `configuration_update_available` notifications. `Notifier` (`lib/Notification/Notifier.php`) implements `INotifier` for formatting notifications with translations. Registered as a notifier service in `appinfo/info.xml`.

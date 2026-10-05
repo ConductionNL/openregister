@@ -9598,7 +9598,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return array<int, string> The subset of $uuids the caller may read.
 	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/schema-driven-read-coercion/spec.md
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	public function filterReadableUuids(int $registerId, int $schemaId, array $uuids): array {
 		$uuids = array_values(array_unique(array_filter($uuids, fn ($uuid): bool => is_string($uuid) && $uuid !== '')));
@@ -10141,7 +10141,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @throws Exception If the object has no uuid or its register and schema cannot be resolved.
 	 *
-	 * @spec openspec/changes/object-folder-is-bookkeeping/specs/file-actions/spec.md#requirement-recording-an-objects-folder-id-is-bookkeeping-req-ofib-001
+	 * @spec openspec/specs/file-actions/spec.md#requirement-recording-an-objects-folder-id-is-bookkeeping-req-ofib-001
 	 */
 	public function recordFolder(ObjectEntity $entity, ?string $expected, string $folderId): bool {
 		$uuid = $entity->getUuid();

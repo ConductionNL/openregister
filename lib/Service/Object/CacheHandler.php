@@ -611,7 +611,7 @@ class CacheHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/schema-driven-read-coercion/spec.md
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	private function rememberNameOrganisation(string $key, ?string $organisation, ?string $source = null): void {
 		$this->nameOrganisations[$key] = $organisation;
@@ -631,7 +631,7 @@ class CacheHandler {
 	 *
 	 * @return string|null The source, or null when either id is missing
 	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/schema-driven-read-coercion/spec.md
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	public static function objectNameSource(mixed $register, mixed $schema): ?string {
 		if (is_numeric($register) === false || is_numeric($schema) === false) {
@@ -655,7 +655,7 @@ class CacheHandler {
 	 *
 	 * @return array{n: string, o: string|null, s: string|null} The envelope stored in the distributed cache
 	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/schema-driven-read-coercion/spec.md
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	private function buildNameEnvelope(string $name, ?string $organisation, ?string $source = null): array {
 		return ['n' => $name, 'o' => $organisation, 's' => $source];
@@ -672,7 +672,7 @@ class CacheHandler {
 	 *
 	 * @return array{n: string, o: string|null, s: string}|null The envelope, or null when unusable
 	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/schema-driven-read-coercion/spec.md
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	private function readNameEnvelope(mixed $cached): ?array {
 		if (is_array($cached) === false || is_string($cached['n'] ?? null) === false) {
@@ -706,7 +706,7 @@ class CacheHandler {
 	 *
 	 * @return array<string, string> The visible subset
 	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/schema-driven-read-coercion/spec.md
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	private function visibleNames(array $candidates): array {
 		$visible = [];
@@ -1371,7 +1371,7 @@ class CacheHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/schema-driven-read-coercion/spec.md
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	public function setObjectName(
 		string|int $identifier,
@@ -1454,7 +1454,7 @@ class CacheHandler {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Three cache layers plus a
 	 * two-source database fallback, each gated on the caller's read rights.
 	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/schema-driven-read-coercion/spec.md
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	public function getSingleObjectName(string|int $identifier): ?string {
 		$this->beginNameScope();
@@ -1587,7 +1587,7 @@ class CacheHandler {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 * Bulk name retrieval with multiple cache layers requires extensive handling.
 	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/schema-driven-read-coercion/spec.md
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	public function getMultipleObjectNames(array $identifiers): array {
 		if (empty($identifiers) === true) {
@@ -2155,7 +2155,7 @@ class CacheHandler {
 	 * @return array<string, array{name: string, organisation: string|null, source: string|null}> Map of UUID to
 	 *         name, owning organisation and name source.
 	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/schema-driven-read-coercion/spec.md
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	private function queryTableForNames(string $tableName, array $uuids, ?string $source = null): array {
 		$results = [];

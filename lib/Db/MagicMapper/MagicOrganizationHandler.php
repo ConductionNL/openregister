@@ -418,7 +418,7 @@ class MagicOrganizationHandler {
 	 *
 	 * @return bool True under the CLI SAPI.
 	 *
-	 * @spec openspec/changes/names-follow-read-rights/specs/rbac-scopes/spec.md
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	protected function isCommandLine(): bool {
 		return PHP_SAPI === 'cli';

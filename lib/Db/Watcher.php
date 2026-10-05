@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -109,7 +109,7 @@ class Watcher extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The row as the API returns it.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [

@@ -4705,7 +4705,7 @@ class SaveObject {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	private function refuseOwnerClaim(ObjectEntity $objectEntity, array $selfData): void {
 		if (array_key_exists('owner', $selfData) === false) {

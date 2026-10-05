@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md
+ * @spec openspec/specs/object-read-state/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Creates the object read-state table and widens the notification history.
  *
- * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md
+ * @spec openspec/specs/object-read-state/spec.md
  */
 class Version1Date20260914140000 extends SimpleMigrationStep {
 
@@ -74,7 +74,7 @@ class Version1Date20260914140000 extends SimpleMigrationStep {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md
+	 * @spec openspec/specs/object-read-state/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
@@ -135,7 +135,7 @@ class Version1Date20260914140000 extends SimpleMigrationStep {
 	 *
 	 * @return integer How many columns were added.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	private function widenNotificationHistory(ISchemaWrapper $schema): int {
 		if ($schema->hasTable(self::HISTORY_TABLE) === false) {

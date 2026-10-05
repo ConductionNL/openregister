@@ -23,7 +23,6 @@
  *
  * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
  * @spec openspec/specs/zoeken-filteren/spec.md
- * @spec openspec/specs/zoeken-filteren/spec.md
  */
 
 declare(strict_types=1);
@@ -192,7 +191,7 @@ class SearchQueryHandler {
 	 *
 	 * @return array<string, mixed> The query, narrowed when the lens was asked for.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
 	private function applyWatchingLens(array $query): array {
 		if (array_key_exists('_watching', $query) === false) {
@@ -232,7 +231,7 @@ class SearchQueryHandler {
 	 *
 	 * @return array<int, string> The followed object uuids.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
 	private function subscriptionsOfCaller(): array {
 		$uid = $this->userSession?->getUser()?->getUID();
@@ -269,7 +268,7 @@ class SearchQueryHandler {
 	 *
 	 * @return array<string, mixed> The query, carrying the resolved reader.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	private function applyUnreadLens(array $query): array {
 		if (array_key_exists('_unread', $query) === false) {
@@ -563,7 +562,6 @@ class SearchQueryHandler {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Handles extensive parameter processing for query building
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function buildSearchQuery(
 		array $requestParams,
@@ -808,7 +806,6 @@ class SearchQueryHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function addPaginationUrls(array &$paginatedResults, int $page, int $pages): void {

@@ -12,7 +12,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+ * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
  */
 
 declare(strict_types=1);

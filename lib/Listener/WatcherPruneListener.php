@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-deleting-an-object-removes-its-watchers
+ * @spec openspec/specs/object-interactions/spec.md#requirement-deleting-an-object-removes-its-watchers
  */
 
 declare(strict_types=1);
@@ -65,7 +65,7 @@ final class WatcherPruneListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-deleting-an-object-removes-its-watchers
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-deleting-an-object-removes-its-watchers
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectDeletedEvent) === false) {

@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -66,7 +66,7 @@ class NoteVersionMapper extends QBMapper {
 	 *
 	 * @psalm-return list<NoteVersion>
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function findByComment(int $commentId): array {
 		$qb = $this->db->getQueryBuilder();
@@ -92,7 +92,7 @@ class NoteVersionMapper extends QBMapper {
 	 * @return array<int, array{editedAt: string|null, editedBy: string|null, versionCount: int}>
 	 *         Keyed by comment id; ids with no versions are absent.
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function summariesFor(array $commentIds): array {
 		$ids = array_values(array_unique(array_map('intval', $commentIds)));
@@ -139,7 +139,7 @@ class NoteVersionMapper extends QBMapper {
 	 *
 	 * @return int The number of rows deleted.
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function deleteByComments(array $commentIds): int {
 		$ids = array_values(array_unique(array_map('intval', $commentIds)));

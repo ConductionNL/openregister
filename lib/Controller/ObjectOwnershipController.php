@@ -32,7 +32,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+ * @spec openspec/specs/object-ownership/spec.md
  */
 
 declare(strict_types=1);
@@ -97,7 +97,7 @@ class ObjectOwnershipController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	#[NoAdminRequired]
 	public function show(string $register, string $schema, string $id): JSONResponse {
@@ -130,7 +130,7 @@ class ObjectOwnershipController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	#[NoAdminRequired]
 	public function claim(string $register, string $schema, string $id): JSONResponse {
@@ -166,7 +166,7 @@ class ObjectOwnershipController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	#[NoAdminRequired]
 	public function assign(string $register, string $schema, string $id): JSONResponse {
@@ -210,7 +210,7 @@ class ObjectOwnershipController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	#[NoAdminRequired]
 	public function setOwnerGroup(string $register, string $schema, string $id): JSONResponse {
@@ -254,7 +254,7 @@ class ObjectOwnershipController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 * @spec openspec/specs/object-ownership/spec.md
 	 */
 	#[NoAdminRequired]
 	public function reassign(): JSONResponse {
