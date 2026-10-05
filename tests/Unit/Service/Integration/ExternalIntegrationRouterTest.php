@@ -189,7 +189,9 @@ class GuzzleForwardingCallService {
 		$stack = \GuzzleHttp\HandlerStack::create(new \GuzzleHttp\Handler\MockHandler([new \GuzzleHttp\Psr7\Response(201)]));
 		$stack->push(\GuzzleHttp\Middleware::history($history));
 		$client = new \GuzzleHttp\Client(['handler' => $stack]);
-		$client->request($method, 'https://provider.example/' . $endpoint, $config);
+		// integriq builds the URL as `location . endpoint`, with no separator
+		// (CallService::prepareCall()).
+		$client->request($method, (string)($source->getObject()['location'] ?? '') . $endpoint, $config);
 		foreach ($history as $entry) {
 			$this->sent[] = $entry['request'];
 		}
@@ -839,7 +841,36 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$request = $callService->sent[0];
 		$this->assertSame('{"recipients":["+31611110001"],"body":"Hallo"}', (string)$request->getBody());
 		$this->assertSame('application/json', $request->getHeaderLine('Content-Type'));
+		$this->assertSame('https://provider.example/messages', (string)$request->getUri());
 	}//end testAnArrayBodyReachesTheConnectorAsJson()
+
+	public function testThePathIsJoinedToTheSourceLocationWithOneSlash(): void {
+		// The seeded sources carry a location without a trailing slash
+		// (`https://rest.messagebird.com`, `https://gw.cmtelecom.com/v1.0`) and
+		// integriq appends the endpoint verbatim, so a relative path must reach
+		// it with a leading slash, and exactly one.
+		$sources = [
+			'integriq/cmcom-sms' => $this->sourceEntity(['slug' => 'cmcom-sms', 'location' => 'https://gw.example/v1.0']),
+			'integriq/slashed' => $this->sourceEntity(['slug' => 'slashed', 'location' => 'https://slashed.example/api/']),
+		];
+		$callService = new GuzzleForwardingCallService($this->sentLog());
+		$router = $this->routerOn($this->objectService($sources), $callService);
+
+		$router->call(new FakeExternalProvider(id: 'a', source: 'cmcom-sms'), 'POST', 'message', ['body' => ['x' => 1]]);
+		$router->call(new FakeExternalProvider(id: 'b', source: 'cmcom-sms'), 'GET', '/status');
+		$router->call(new FakeExternalProvider(id: 'c', source: 'slashed'), 'GET', 'items');
+		$router->call(new FakeExternalProvider(id: 'd', source: 'slashed'), 'GET', '/items');
+
+		$this->assertSame(
+			[
+				'https://gw.example/v1.0/message',
+				'https://gw.example/v1.0/status',
+				'https://slashed.example/api/items',
+				'https://slashed.example/api/items',
+			],
+			array_map(static fn ($request): string => (string)$request->getUri(), $callService->sent)
+		);
+	}//end testThePathIsJoinedToTheSourceLocationWithOneSlash()
 
 	public function testAnArrayBodyWithAFormContentTypeIsFormEncoded(): void {
 		$callService = new GuzzleForwardingCallService($this->sentLog());

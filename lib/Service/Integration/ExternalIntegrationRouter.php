@@ -654,6 +654,7 @@ class ExternalIntegrationRouter {
 	private function invoke($source, string $method, string $path, array $options): array {
 		$callService = $this->container->get($this->callServiceClass());
 		$options = $this->toRequestOptions(options: $options);
+		$path = $this->endpointFor(source: $source, path: $path);
 
 		if (method_exists($callService, 'call') === true) {
 			$response = $callService->call($source, $path, $method, $options);
@@ -671,6 +672,48 @@ class ExternalIntegrationRouter {
 			'The connector CallService does not expose a known call/request method.'
 		);
 	}//end invoke()
+
+	/**
+	 * The endpoint to hand the connector for a path relative to the source.
+	 *
+	 * integriq builds the URL as `location . endpoint` with no separator, and
+	 * the seeded sources carry a location without a trailing slash
+	 * (`https://rest.messagebird.com`). A relative path such as `messages`
+	 * therefore became `https://rest.messagebird.commessages`. The path is
+	 * joined with exactly one slash: led by one unless the location already
+	 * ends in one.
+	 *
+	 * @param mixed $source The resolved source entity.
+	 * @param string $path Path relative to the source base URL.
+	 *
+	 * @return string The endpoint to append to the source location.
+	 *
+	 * @spec openspec/changes/archive/2026-10-05-messaging-dispatch-leaf/tasks.md
+	 */
+	private function endpointFor($source, string $path): string {
+		$relative = ltrim($path, '/');
+		if ($relative === '') {
+			return $path;
+		}
+
+		$data = $source;
+		if (is_object($source) === true && method_exists($source, 'getObject') === true) {
+			$data = $source->getObject();
+		} elseif (is_object($source) === true && method_exists($source, 'getLocation') === true) {
+			$data = ['location' => $source->getLocation()];
+		}
+
+		$location = '';
+		if (is_array($data) === true) {
+			$location = (string)($data['location'] ?? '');
+		}
+
+		if (str_ends_with($location, '/') === true) {
+			return $relative;
+		}
+
+		return '/' . $relative;
+	}//end endpointFor()
 
 	/**
 	 * Turn the router's call options into request options the connector's
@@ -733,6 +776,7 @@ class ExternalIntegrationRouter {
 	private function invokeWithMeta($source, string $method, string $path, array $options): array {
 		$callService = $this->container->get($this->callServiceClass());
 		$options = $this->toRequestOptions(options: $options);
+		$path = $this->endpointFor(source: $source, path: $path);
 
 		if (method_exists($callService, 'call') === true) {
 			$response = $callService->call($source, $path, $method, $options);
