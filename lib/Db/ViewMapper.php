@@ -205,6 +205,8 @@ class ViewMapper extends QBMapper {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags mirror the mapper-wide
 	 * `_rbac` / `_multitenancy` convention.
+	 *
+	 * @spec openspec/specs/mariadb-ci-matrix/spec.md#requirement-a-text-identifier-is-never-bound-as-an-integer
 	 */
 	public function find($id, bool $_rbac = true, bool $_multitenancy = true): View {
 		// Step 1: Verify RBAC permission to read views.
@@ -217,15 +219,18 @@ class ViewMapper extends QBMapper {
 		$qb = $this->db->getQueryBuilder();
 
 		// Step 3: Build SELECT query with ID or UUID filter.
-		// Supports both integer IDs and UUID strings for flexibility.
-		$qb->select('*')
-			->from($this->getTableName())
-			->where(
-				$qb->expr()->orX(
-					$qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)),
-					$qb->expr()->eq('uuid', $qb->createNamedParameter($id, IQueryBuilder::PARAM_STR))
-				)
+		// Compare `id` only when the value IS an integer: PostgreSQL refuses a
+		// uuid bound as an integer for the whole query, so `id = :uuid OR
+		// uuid = :uuid` answered 500 there (live pass O4, 5 Oct).
+		$match = $qb->expr()->eq('uuid', $qb->createNamedParameter((string) $id, IQueryBuilder::PARAM_STR));
+		if (is_int($id) === true || (is_string($id) === true && ctype_digit($id) === true)) {
+			$match = $qb->expr()->orX(
+				$qb->expr()->eq('id', $qb->createNamedParameter((int) $id, IQueryBuilder::PARAM_INT)),
+				$match
 			);
+		}
+
+		$qb->select('*')->from($this->getTableName())->where($match);
 
 		// Step 4: Apply organisation filter for multi-tenancy.
 		// All users including admins must have active organisation.

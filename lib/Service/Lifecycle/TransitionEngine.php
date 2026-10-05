@@ -349,7 +349,7 @@ class TransitionEngine {
 	 * @throws InvalidArgumentException When `$app` is empty.
 	 * @throws RuntimeException As transition() does, including a guard refusal.
 	 *
-	 * @spec openspec/changes/transition-as-system/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function transitionAsSystem(string $objectId, string $action, string $app, array $data = []): ObjectEntity {
 		$app = trim($app);
@@ -543,7 +543,7 @@ class TransitionEngine {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/transition-as-system/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function applyToSubject(array $subject, string $action, array $data, bool $asSystem = false): ObjectEntity {
 		$object = $subject['object'];
@@ -768,7 +768,7 @@ class TransitionEngine {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/transition-as-system/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function applyProviderTransition(
 		ObjectEntity $object,
@@ -1526,7 +1526,7 @@ class TransitionEngine {
 	 * @throws InvalidTransitionInputException When `$data` is non-empty.
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
-	 * @spec openspec/changes/transition-as-system/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
 	 */
 	private function applyGraphTransition(
