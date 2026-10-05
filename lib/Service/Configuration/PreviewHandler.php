@@ -197,15 +197,15 @@ class PreviewHandler {
 
 			// Registers and schemas this same import creates: their objects
 			// are created too, not skipped as "not found locally" (live pass O13).
-			$planned = [
-				'registers' => ObjectChangePreview::createdSlugs(rows: $preview['registers']),
-				'schemas'   => ObjectChangePreview::createdSlugs(rows: $preview['schemas']),
-			];
-
 			$objectPreview = new ObjectChangePreview(
 				objectMapper: $this->objectMapper,
 				compare: fn (array $current, array $proposed): array => $this->compareArrays(current: $current, proposed: $proposed)
 			);
+			$planned = [
+				'registers' => $objectPreview->createdSlugs(rows: $preview['registers']),
+				'schemas'   => $objectPreview->createdSlugs(rows: $preview['schemas']),
+			];
+
 			foreach ($remoteData['components']['objects'] as $objectData) {
 				$preview['objects'][] = $objectPreview->preview(
 					objectData: (array)$objectData,

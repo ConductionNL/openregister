@@ -136,7 +136,7 @@ final class ObjectChangePreview {
 	 *
 	 * @spec openspec/changes/config-preview-duplicates-and-rest/specs/data-import-export/spec.md
 	 */
-	public static function createdSlugs(array $rows): array {
+	public function createdSlugs(array $rows): array {
 		$slugs = [];
 		foreach ($rows as $row) {
 			if (($row['action'] ?? null) === 'create') {
