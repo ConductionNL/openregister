@@ -208,13 +208,8 @@ final class FilterParams {
 
 		foreach ($bracket as $key => $value) {
 			$filter[$key] = $value;
-			if (is_string($key) === true
-				&& $key !== ''
-				&& str_starts_with($key, '_') === false
-				&& in_array($key, self::AGGREGATION_OBJECT_KEYS, true) === false
-				&& array_key_exists($key, $properties) === false
-			) {
-				$unknown[] = $key;
+			if (self::isUnknownBracketKey(key: $key, properties: $properties) === true) {
+				$unknown[] = (string)$key;
 			}
 		}
 
@@ -343,6 +338,29 @@ final class FilterParams {
 	private static function reservedForAggregation(array $controlParams): array {
 		return array_merge($controlParams, self::AGGREGATION_ROUTE_PARAMS, [self::FILTER_KEY]);
 	}//end reservedForAggregation()
+
+	/**
+	 * Whether a bracket key names nothing an aggregation row carries.
+	 *
+	 * Underscore-prefixed keys are metadata and the object keys in
+	 * {@see AGGREGATION_OBJECT_KEYS} are on every row, so neither is reported.
+	 *
+	 * @param int|string              $key        The bracket key.
+	 * @param array<array-key, mixed> $properties The schema's declared properties.
+	 *
+	 * @return bool True when the key should be reported as unknown.
+	 */
+	private static function isUnknownBracketKey(int|string $key, array $properties): bool {
+		if (is_string($key) === false || $key === '' || str_starts_with($key, '_') === true) {
+			return false;
+		}
+
+		if (in_array($key, self::AGGREGATION_OBJECT_KEYS, true) === true) {
+			return false;
+		}
+
+		return array_key_exists($key, $properties) === false;
+	}//end isUnknownBracketKey()
 
 	/**
 	 * Whether a request key can name a property filter at all.
