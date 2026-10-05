@@ -196,7 +196,7 @@ class DuplicateControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	public function testCheckCarriesAuthAnnotations(): void {
 		$reflection = new ReflectionClass(DuplicateController::class);
@@ -215,7 +215,7 @@ class DuplicateControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	public function testCheckStripsRoutingKeysFromTheCandidate(): void {
 		$this->request->method('getParams')->willReturn(
@@ -261,7 +261,7 @@ class DuplicateControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	public function testCheckPassesThresholdThroughAndKeepsItOutOfTheCandidate(): void {
 		$this->request->method('getParams')->willReturn(['_threshold' => '0.9', 'requester' => 'bsn:123']);
@@ -287,7 +287,7 @@ class DuplicateControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	public function testAPropertyNamedThresholdIsStillCandidateData(): void {
 		$this->request->method('getParams')->willReturn(['threshold' => '30 dagen', 'requester' => 'bsn:123']);
@@ -308,7 +308,7 @@ class DuplicateControllerTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	public function testCheckMapsFailuresLikeTheListing(): void {
 		$this->request->method('getParams')->willReturn(['requester' => 'bsn:123']);
