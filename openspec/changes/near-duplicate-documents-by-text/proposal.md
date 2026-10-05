@@ -20,11 +20,11 @@ Row 19.5, "Near-identical documents are grouped, so the same text is not read tw
 ## What does not change
 
 - The declarative property rules and their scores.
-- What a consumer does with a group. dossiq's corpus collection and opencatalogi's review triage decide to read the representative only; this change supplies the grouping.
+- What a consumer does with a group. dossiq's corpus collection and review triage decide to read the representative only; this change supplies the grouping.
 
 ## Dependencies and absent apps
 
-- None blocking. Consumers: `dossiq/woo-request-corpus-collection` and `opencatalogi/woo-review-triage` read the endpoint; without them the duplicates review in OpenRegister still shows the groups.
+- None blocking. Consumers: `dossiq/woo-request-corpus-collection` (wave 2) and `dossiq/woo-review-triage` (wave 3) read the endpoint; without them the duplicates review in OpenRegister still shows the groups.
 
 ## Wave and decision
 
