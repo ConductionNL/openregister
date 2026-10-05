@@ -30,7 +30,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Creates the favourites table and the object-view history table.
  *
- * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 class Version1Date20260915061500 extends SimpleMigrationStep {
 
@@ -74,7 +74,7 @@ class Version1Date20260915061500 extends SimpleMigrationStep {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
@@ -99,7 +99,7 @@ class Version1Date20260915061500 extends SimpleMigrationStep {
 	 *
 	 * @return integer 1 when the table was created, 0 when it was already there.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	private function createFavourites(ISchemaWrapper $schema): int {
 		if ($schema->hasTable(self::FAVOURITES_TABLE) === true) {
@@ -137,7 +137,7 @@ class Version1Date20260915061500 extends SimpleMigrationStep {
 	 *
 	 * @return integer 1 when the table was created, 0 when it was already there.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
 	 */
 	private function createViews(ISchemaWrapper $schema): int {
 		if ($schema->hasTable(self::VIEWS_TABLE) === true) {

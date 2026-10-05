@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use RuntimeException;
 /**
  * A refusal carrying the reason a lifecycle rule rejected the request.
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 class FlowLifecycleRefused extends RuntimeException {
 	/**
@@ -87,7 +87,7 @@ class FlowLifecycleRefused extends RuntimeException {
 	 * @param string|null $state   The lifecycle state that caused it, when there is one.
 	 * @param string|null $detail  Extra human detail appended to the message.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function __construct(
 		private readonly string $reason,
@@ -131,7 +131,7 @@ class FlowLifecycleRefused extends RuntimeException {
 	 *
 	 * @return string One of the REASON_* constants.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function getReason(): string {
 		return $this->reason;
@@ -143,7 +143,7 @@ class FlowLifecycleRefused extends RuntimeException {
 	 *
 	 * @return string The flow uuid.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function getFlowId(): string {
 		return $this->flowId;
@@ -155,7 +155,7 @@ class FlowLifecycleRefused extends RuntimeException {
 	 *
 	 * @return string|null The state, or null when the refusal is not about one.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function getState(): ?string {
 		return $this->state;

@@ -95,7 +95,7 @@ class FlowRunAssignee {
 	 *
 	 * @return string The assignee uid or group id; '' when the step is unassigned.
 	 *
-	 * @spec openspec/changes/flow-engine-consumer-seams/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
+	 * @spec openspec/specs/flow-engine-consumer-seams/spec.md#requirement-a-server-side-signal-passes-the-same-guard-as-the-http-resume
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) `PrincipalReference::from()` and
 	 * `listFrom()` are NAMED CONSTRUCTORS on a value object, which is the

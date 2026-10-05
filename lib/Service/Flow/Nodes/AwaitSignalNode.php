@@ -405,7 +405,7 @@ class AwaitSignalNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @return string The resolved key, or the empty string.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate is the flow
 	 * engine's stateless value renderer; a factory would add a dependency to

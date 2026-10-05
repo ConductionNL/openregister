@@ -38,7 +38,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
+ * @spec openspec/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
  */
 
 declare(strict_types=1);
@@ -65,7 +65,7 @@ use Throwable;
  * ad-hoc attach, repetition); a parameter object would be built and unpacked
  * at every one of them.
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
+ * @spec openspec/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
  */
 class CasePlanDefinition {
 
@@ -96,7 +96,7 @@ class CasePlanDefinition {
 	 *
 	 * @throws CaseValidationException On the first refused element.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	public function validate(array $definition): array {
 		$items = ($definition['items'] ?? null);
@@ -145,7 +145,7 @@ class CasePlanDefinition {
 	 *
 	 * @throws CaseValidationException On any refused element.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	public function validateAdHoc(array $node): array {
 		if (array_key_exists('authorization', $node) === true) {
@@ -185,7 +185,7 @@ class CasePlanDefinition {
 	 *
 	 * @return CaseItem The unsaved row in `available`.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	public function rowFrom(
 		array $node,
@@ -251,7 +251,7 @@ class CasePlanDefinition {
 	 *
 	 * @throws CaseValidationException On the first refused element.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
 	 */
 	private function validateNode(mixed $node, string $path, array &$keys, array &$flows): array {
 		if (is_array($node) === false) {
@@ -338,7 +338,7 @@ class CasePlanDefinition {
 	 *
 	 * @throws CaseValidationException When malformed.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-caseworker-may-attach-work-no-author-drew
 	 */
 	private function validateRuleList(mixed $rules, string $where): void {
 		if ($rules === null) {
@@ -359,7 +359,7 @@ class CasePlanDefinition {
 	 *
 	 * @return boolean True for a (possibly empty) list of non-empty strings.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
 	 */
 	private function isStringList(mixed $value): bool {
 		if (is_array($value) === false) {
@@ -382,7 +382,7 @@ class CasePlanDefinition {
 	 *
 	 * @return string|null The string or null.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
 	 */
 	private function stringOrNull(mixed $value): ?string {
 		if ($value === null || is_scalar($value) === false) {
@@ -404,7 +404,7 @@ class CasePlanDefinition {
 	 *
 	 * @return array|null The array or null.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-cmmn-notation-is-not-adopted-and-bpmn-remains-a-format
 	 */
 	private function listOrNull(mixed $value): ?array {
 		if (is_array($value) === false || $value === []) {
@@ -424,7 +424,7 @@ class CasePlanDefinition {
 	 *
 	 * @throws CaseValidationException When unparseable.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-zaaktype-maps-to-a-case-skeleton-and-reports-what-it-could-not-map
 	 */
 	private function dateOrNull(mixed $value, string $field): ?DateTime {
 		if ($value === null || $value === '') {

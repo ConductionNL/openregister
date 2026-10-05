@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
+ * @spec openspec/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use OCA\OpenRegister\Service\ObjectService;
 /**
  * Mirrors status and result onto the anchoring object.
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
+ * @spec openspec/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
  */
 class CaseBusinessStateWriter {
 
@@ -61,7 +61,7 @@ class CaseBusinessStateWriter {
 	 *
 	 * @return boolean True when a write happened; false when the plan maps no status field.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
 	 */
 	public function mirrorStatus(CaseItem $milestone): bool {
 		$mapping = $this->mapping(settings: ($milestone->getPlanSettings() ?? []));
@@ -89,7 +89,7 @@ class CaseBusinessStateWriter {
 	 *
 	 * @return boolean True when a write happened; false when the plan maps no result field.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
 	 */
 	public function mirrorResult(CaseItem $anyRow, string $result): bool {
 		$mapping = $this->mapping(settings: ($anyRow->getPlanSettings() ?? []));
@@ -116,7 +116,7 @@ class CaseBusinessStateWriter {
 	 *
 	 * @return array<string, mixed> The mapping, or [] when none.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
 	 */
 	private function mapping(array $settings): array {
 		$mapping = ($settings['writeThrough'] ?? null);
@@ -135,7 +135,7 @@ class CaseBusinessStateWriter {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-business-state-is-written-through-to-the-register-never-owned-by-the-engine
 	 */
 	private function patch(CaseItem $item, array $data): void {
 		$this->objects->patchObject(

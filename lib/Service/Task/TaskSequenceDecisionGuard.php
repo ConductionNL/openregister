@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-009
+ * @spec openspec/specs/approval-workflow/spec.md#req-009
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 /**
  * Refuses a self-decision on a sequence position, delegated or direct.
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-009
+ * @spec openspec/specs/approval-workflow/spec.md#req-009
  */
 class TaskSequenceDecisionGuard {
 
@@ -74,7 +74,7 @@ class TaskSequenceDecisionGuard {
 	 *
 	 * @throws TaskSeparationOfDutiesException On a refused self-decision.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-009
+	 * @spec openspec/specs/approval-workflow/spec.md#req-009
 	 */
 	public function assertDecidable(Task $task, ?string $actor): void {
 		$sequenceUuid = trim((string)$task->getSequenceUuid());
@@ -133,7 +133,7 @@ class TaskSequenceDecisionGuard {
 	 *
 	 * @return bool True when the policy applies.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-009
+	 * @spec openspec/specs/approval-workflow/spec.md#req-009
 	 */
 	private function separationOfDutiesApplies(TaskSequence $sequence): bool {
 		$snapshot = ($sequence->getTemplateSnapshot() ?? []);

@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -85,7 +85,7 @@ class ObjectViewMapper extends QBMapper {
 	 *
 	 * @return ObjectView|null The row, or null when the user has never opened it.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
 	 */
 	public function findOne(string $userId, string $objectUuid): ?ObjectView {
 		$qb = $this->db->getQueryBuilder();
@@ -118,7 +118,7 @@ class ObjectViewMapper extends QBMapper {
 	 *
 	 * @return ObjectView The stored row.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
 	 */
 	public function record(
 		string $userId,
@@ -179,7 +179,7 @@ class ObjectViewMapper extends QBMapper {
 	 *
 	 * @return array<int, string> The viewed object uuids, newest first.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
 	 */
 	public function uuidsForUser(string $userId, int $limit = self::HISTORY_LIMIT): array {
 		$qb = $this->db->getQueryBuilder();
@@ -221,7 +221,7 @@ class ObjectViewMapper extends QBMapper {
 	 *
 	 * @return integer How many rows were dropped.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
 	 */
 	public function trim(string $userId, int $keep = self::HISTORY_LIMIT): int {
 		$cutoff = $this->db->getQueryBuilder();
@@ -257,7 +257,7 @@ class ObjectViewMapper extends QBMapper {
 	 *
 	 * @return integer How many views were removed.
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
 	 */
 	public function deleteByObject(string $objectUuid): int {
 		$qb = $this->db->getQueryBuilder();

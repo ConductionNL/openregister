@@ -171,7 +171,7 @@ class FlowTriggerIndex {
 	 *
 	 * @return Flow The carrier to derive triggers from.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function publishedFace(Flow $flow): Flow {
 		$carrier = new Flow();
