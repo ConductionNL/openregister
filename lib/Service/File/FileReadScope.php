@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\File;
 
+use OCA\OpenRegister\Service\FileService;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IUserSession;
@@ -41,6 +42,7 @@ use Throwable;
  * well rather than served without the object's own read check.
  *
  * @spec openspec/changes/hybrid-document-search/tasks.md
+ * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
  */
 class FileReadScope {
 
@@ -50,6 +52,8 @@ class FileReadScope {
 	 * @param IRootFolder     $rootFolder  The Nextcloud file tree.
 	 * @param IUserSession    $userSession The signed-in caller.
 	 * @param LoggerInterface $logger      Logs a lookup that failed, at debug level.
+	 * @param FileService|null      $fileService      Finds an object's file in the openregister account's home.
+	 * @param ObjectFileAccess|null $objectFileAccess The object read rule for an object's file.
 	 *
 	 * @return void
 	 */
@@ -57,6 +61,8 @@ class FileReadScope {
 		private readonly IRootFolder $rootFolder,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private readonly ?FileService $fileService = null,
+		private readonly ?ObjectFileAccess $objectFileAccess = null,
 	) {
 	}//end __construct()
 
@@ -106,6 +112,33 @@ class FileReadScope {
 	}//end readableResults()
 
 	/**
+	 * Whether the caller may read one file.
+	 *
+	 * An object's file is answered by the object's read rule. Any other file
+	 * by whether it resolves in the caller's own tree.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return bool True when the caller may read it.
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 */
+	public function mayReadFile(int $fileId): bool {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
+
+		try {
+			$userFolder = $this->rootFolder->getUserFolder($user->getUID());
+		} catch (Throwable $e) {
+			return false;
+		}
+
+		return $this->mayRead(userFolder: $userFolder, fileId: $fileId);
+	}//end mayReadFile()
+
+	/**
 	 * The Nextcloud file id a hit points at, or null when it is not a file hit.
 	 *
 	 * @param array<string, mixed> $result One hit.
@@ -139,6 +172,13 @@ class FileReadScope {
 	 */
 	private function mayRead(Folder $userFolder, int $fileId): bool {
 		try {
+			// An object's file is answered by the object's read rule: it sits
+			// in the openregister account's home, never in the caller's tree.
+			$managed = $this->managedFileVerdict(fileId: $fileId);
+			if ($managed !== null) {
+				return $managed;
+			}
+
 			return $userFolder->getFirstNodeById($fileId) !== null;
 		} catch (Throwable $e) {
 			$this->logger->debug(
@@ -148,4 +188,31 @@ class FileReadScope {
 			return false;
 		}
 	}//end mayRead()
+
+	/**
+	 * The object rule's verdict on an object's file, or null for any other file.
+	 *
+	 * @param int $fileId The file id.
+	 *
+	 * @return bool|null True or false for an object's file, null when the file is not one.
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 */
+	private function managedFileVerdict(int $fileId): ?bool {
+		if ($this->fileService === null || $this->objectFileAccess === null) {
+			return null;
+		}
+
+		$file = $this->fileService->getFileById(fileId: $fileId);
+		if ($file === null || $this->fileService->isManagedFile(node: $file) === false) {
+			return null;
+		}
+
+		$object = $this->fileService->findObjectForFile(file: $file);
+		if ($object === null) {
+			return false;
+		}
+
+		return $this->objectFileAccess->mayRead(object: $object);
+	}//end managedFileVerdict()
 }//end class

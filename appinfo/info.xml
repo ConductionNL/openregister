@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.35-unstable.20261003090000</version>
+    <version>2.1.35-unstable.20261004230000</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -385,6 +385,10 @@ Vrij en open source onder de EUPL-licentie.
 			     first upload. Last, so it also covers the registers the steps
 			     above just imported. Idempotent, records the id as bookkeeping
 			     (no update event, no organisation check), never throws. -->
+			<!-- Object files leave people's homes BEFORE missing register
+			     folders are made, so a register whose folder sat in a person's
+			     home keeps that folder (and its id) instead of getting a new one. -->
+			<step>OCA\OpenRegister\Repair\MoveObjectFilesToOpenRegisterAccount</step>
 			<step>OCA\OpenRegister\Repair\CreateMissingRegisterFolders</step>
 		</post-migration>
 		<install>
@@ -464,6 +468,7 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
+		<command>OCA\OpenRegister\Command\MoveObjectFilesCommand</command>
 		<command>OCA\OpenRegister\Command\ImportSkosCsvCommand</command>
 		<!-- App-rename repair: re-points registers and schemas at a new owning
 		     app id. Only a DB connection, so the DI graph stays light. -->

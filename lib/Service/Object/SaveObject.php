@@ -4543,6 +4543,7 @@ class SaveObject {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple optional metadata fields with validation
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
 	 */
 	private function setSelfMetadata(
 		ObjectEntity $objectEntity,
@@ -4616,7 +4617,16 @@ class SaveObject {
 			// strings (e.g. "42.5", "4e2", "+42") don't slip through and then
 			// get `(int)`-truncated to a *different* node than was validated.
 			// Legacy non-numeric values fall through to the auto-create path.
-			if (ctype_digit($folderValue) === true) {
+			// A payload that echoes the folder the object already has is not a
+			// bind: the stored value was written by OpenRegister and is
+			// re-validated as a managed folder in ensureObjectFolder(). Asking
+			// the caller-supplied question here refused every editor, because a
+			// managed folder sits in the openregister account's home and in
+			// nobody's own mount.
+			$storedFolder = (string)($objectEntity->getFolder() ?? '');
+			$isUnchanged = ($storedFolder !== '' && $storedFolder === $folderValue);
+
+			if (ctype_digit($folderValue) === true && $isUnchanged === false) {
 				// Pass `$currentUser` through so the access check uses the
 				// SAME user identity that the downstream
 				// `createObjectFolderById` check uses on the lazy-init path.

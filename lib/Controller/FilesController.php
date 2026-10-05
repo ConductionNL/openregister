@@ -33,12 +33,18 @@ use OCA\OpenRegister\Event\FileRenamedEvent;
 use OCA\OpenRegister\Event\FileUnlockedEvent;
 use OCA\OpenRegister\Event\FileVersionRestoredEvent;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
+use OCA\OpenRegister\Exception\OfficeOpenRefusedException;
+use OCA\OpenRegister\Service\File\ObjectFileAccess;
+use OCA\OpenRegister\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Service\File\FileMetadataFormHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\StreamResponse;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -119,6 +125,9 @@ class FilesController extends Controller {
 	 * @param IL10N|null $l10n Localization service for error
 	 *                         messages. Null-safe: when absent the
 	 *                         raw English source string is used.
+	 * @param ObjectFileAccess|null $objectFileAccess The object rule for file actions.
+	 *                                                Null only in legacy fixtures.
+	 * @param OfficeSessionService|null $officeSessionService Opens documents in Nextcloud Office.
 	 *
 	 * @return void
 	 *
@@ -136,6 +145,8 @@ class FilesController extends Controller {
 		private readonly ?\OCA\OpenRegister\Service\File\FileAuditHandler $fileAuditHandler = null,
 		private readonly ?IUserSession $userSession = null,
 		private readonly ?IL10N $l10n = null,
+		private readonly ?ObjectFileAccess $objectFileAccess = null,
+		private readonly ?OfficeSessionService $officeSessionService = null,
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
@@ -232,15 +243,13 @@ class FilesController extends Controller {
 	 *
 	 * The file-action endpoints carry `@NoAdminRequired`, so without an explicit
 	 * body guard any authenticated user could invoke them against an arbitrary
-	 * object id (classic IDOR, OWASP A01:2021). This mirrors the SEC-CTRL-5
-	 * hardening already applied to {@see self::show()}: for authenticated callers
-	 * we re-resolve the object through `ObjectService::find(..., _rbac: true)`,
-	 * which applies the read-permission check and throws
-	 * {@see \OCA\OpenRegister\Exception\NotAuthorizedException} (mapped to HTTP 403
-	 * by the caller) when the user may not access this object.
+	 * object id (classic IDOR, OWASP A01:2021). For authenticated callers the
+	 * object rule decides, through {@see ObjectFileAccess}: a read needs read on
+	 * the object and answers 404 without it; a change needs update and answers
+	 * 403 for a reader who may not update. Both throw
+	 * {@see ObjectFileAccessDeniedException}, mapped by {@see self::accessDenied()}.
 	 *
-	 * Anonymous callers are denied by default (TEMP guard until proper
-	 * write-action RBAC is wired for file endpoints); read-only published-file
+	 * Anonymous callers are denied by default; read-only published-file
 	 * endpoints pass $allowAnonymous = true to keep their anonymous access.
 	 *
 	 * The method name is prefixed `ensure` so gate-7 (no-admin-idor) recognises
@@ -250,21 +259,25 @@ class FilesController extends Controller {
 	 * @param string $schema The schema slug or identifier.
 	 * @param string $id The object UUID or identifier.
 	 * @param bool $allowAnonymous When false (default) anonymous callers are denied; read-only published-file endpoints pass true.
+	 * @param bool $change True (default) for an action that changes files, which needs update on the object.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-changing-an-objects-files-follows-the-objects-update-rule-req-ofoa-003
 	 *
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the
 	 *                                                            authenticated caller may not access the object.
 	 */
-	private function ensureObjectAccess(string $register, string $schema, string $id, bool $allowAnonymous = false): void {
-		// TEMP GUARD (rbac-default-deny follow-up): these file write/action
-		// endpoints are @PublicPage so authenticated non-members are not blocked
-		// by the app group-gate (HTTP 412), but their object RBAC here is only a
-		// READ check for authenticated callers and is NOT evaluated for anonymous
-		// principals. Until proper write-action RBAC (incl. public-group
-		// evaluation) is wired for file endpoints, deny anonymous outright.
-		// Published-file READ endpoints (e.g. preview) pass $allowAnonymous=true
-		// to keep their existing anonymous access.
+	private function ensureObjectAccess(
+		string $register,
+		string $schema,
+		string $id,
+		bool $allowAnonymous = false,
+		bool $change = true,
+	): void {
+		// Anonymous callers are denied by default. Published-file READ
+		// endpoints (e.g. preview) pass $allowAnonymous=true to keep their
+		// existing anonymous access, which is gated on publication.
 		if ($this->isAnonymousRequest() === true) {
 			if ($allowAnonymous === false) {
 				throw new NotAuthorizedException(
@@ -275,11 +288,51 @@ class FilesController extends Controller {
 			return;
 		}
 
-		// The find(_rbac: true) call applies the object read-permission check and
-		// throws NotAuthorizedException when the caller may not read this object.
+		// The object rule is the only gate: an object's files live in the
+		// openregister account's home, so no Nextcloud mount stops anybody.
+		// Reading needs read on the object (404 otherwise); changing needs
+		// update (403 for a reader who may not update).
+		if ($this->objectFileAccess !== null) {
+			if ($change === true) {
+				$this->objectFileAccess->changeable(register: $register, schema: $schema, id: $id);
+				return;
+			}
+
+			$this->objectFileAccess->readable(register: $register, schema: $schema, id: $id);
+			return;
+		}
+
+		// Legacy wiring without the guard: the object read check alone.
 		$this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true);
 
 	}//end ensureObjectAccess()
+
+	/**
+	 * Answer a refused file action.
+	 *
+	 * A person who may not read the object gets 404, the same answer an
+	 * object read gives, so a refusal never confirms the object exists. A
+	 * reader who may not change it gets 403. Any other authorization refusal
+	 * keeps its 403.
+	 *
+	 * @param NotAuthorizedException $e The refusal.
+	 *
+	 * @return JSONResponse The error response.
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 */
+	private function accessDenied(NotAuthorizedException $e): JSONResponse {
+		if ($e instanceof ObjectFileAccessDeniedException === true
+			&& $e->getHttpStatus() === ObjectFileAccessDeniedException::NOT_READABLE
+		) {
+			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
+		}
+
+		return new JSONResponse(
+			data: ['error' => $this->translate(text: 'You do not have access to this object')],
+			statusCode: 403
+		);
+	}//end accessDenied()
 
 	/**
 	 * Record a download event: bump the OR-side download counter and
@@ -337,6 +390,7 @@ class FilesController extends Controller {
 	 * @PublicPage
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
 	 */
 	#[AnonRateLimit(limit: 120, period: 60)]
 	public function index(
@@ -347,13 +401,14 @@ class FilesController extends Controller {
 		// Note: $register and $schema are route parameters for API consistency.
 		// They are part of the URL structure (/api/objects/{register}/{schema}/{id}/files)
 		// But only $id is used to fetch files.
-		// Reference them to satisfy static analysis.
-		$routeParams = ['register' => $register, 'schema' => $schema];
-		unset($routeParams);
-
 		try {
 			// SECURITY (H6): anonymous callers see only published (shared) files.
 			$isAnonymous = $this->isAnonymousRequest();
+
+			// A person sees the list only when they may read the object. Every
+			// file sits in the openregister account's home, so without this
+			// check any signed-in user could list any object's files.
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true, change: false);
 
 			// Get the raw files from the file service.
 			$files = $this->fileService->getFiles(object: $id, sharedFilesOnly: $isAnonymous);
@@ -362,6 +417,8 @@ class FilesController extends Controller {
 			$formattedFiles = $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
 
 			return new JSONResponse(data: $formattedFiles);
+		} catch (NotAuthorizedException $e) {
+			return $this->accessDenied(e: $e);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(
 				data: ['error' => $this->translate(text: 'Object not found')],
@@ -410,13 +467,10 @@ class FilesController extends Controller {
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
 
-			// SEC-CTRL-5: enforce object-level read RBAC for authenticated callers too
-			// (not just NC mount visibility). Anonymous callers are gated separately by
-			// the published-file check below. find() applies the read permission check and
-			// throws NotAuthorizedException (403) when the caller may not read this object.
-			if ($this->isAnonymousRequest() === false) {
-				$this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true);
-			}
+			// SEC-CTRL-5: the object read rule decides for authenticated callers
+			// (404 when they may not read it). Anonymous callers are gated
+			// separately by the published-file check below.
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true, change: false);
 
 			$file = $this->fileService->getFile(object: $object, file: $fileId);
 
@@ -470,8 +524,7 @@ class FilesController extends Controller {
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			// SEC-CTRL-5: read-permission denial maps to 403.
-			return new JSONResponse(data: ['error' => $this->translate(text: 'Forbidden')], statusCode: 403);
+			return $this->accessDenied(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
@@ -622,7 +675,7 @@ class FilesController extends Controller {
 			);
 			return new JSONResponse(data: $this->fileService->formatFile($result));
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
+			return $this->accessDenied(e: $e);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
 		} catch (Exception $e) {
@@ -735,7 +788,7 @@ class FilesController extends Controller {
 
 			return new JSONResponse(data: $this->fileService->formatFile($result));
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
+			return $this->accessDenied(e: $e);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
 		} catch (Exception $e) {
@@ -851,7 +904,7 @@ class FilesController extends Controller {
 
 			return new JSONResponse($formattedFiles['results']);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(['error' => $this->translate(text: 'You do not have access to this object')], 403);
+			return $this->accessDenied(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 400);
 		}//end try
@@ -1178,7 +1231,7 @@ class FilesController extends Controller {
 
 			return new JSONResponse(data: $this->fileService->formatFile($result));
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
+			return $this->accessDenied(e: $e);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
 		} catch (Exception $e) {
@@ -1231,7 +1284,7 @@ class FilesController extends Controller {
 
 			return new JSONResponse(data: ['success' => $result]);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
+			return $this->accessDenied(e: $e);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
 		} catch (Exception $e) {
@@ -1292,15 +1345,18 @@ class FilesController extends Controller {
 				return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
 			}
 
-			// L2: resolve parent object for audit context (best-effort).
-			// TODO(SEC-CTRL-5): authenticated callers here are gated only by the file
-			// owner check inside FileService::getFileById()/checkOwnership() (deny-on-
-			// mismatch as of SEC-CTRL-5) and NC mount visibility. resolveParentObjectForFile()
-			// is currently a best-effort stub that returns null, so a full object-level read
-			// RBAC check (as done in show()) is not yet possible on this id-only path. Wire
-			// real parent-object resolution + PermissionHandler read check before relying on
-			// this endpoint for strict object-level isolation.
-			$parentObject = $this->resolveParentObjectForFile(file: $file);
+			// A file in OpenRegister's managed tree is an object's file, and
+			// every such file sits in the openregister account's home. Nextcloud
+			// readability therefore says nothing about the caller: the object's
+			// read rule decides. A managed file whose object cannot be found is
+			// refused rather than served without a rule.
+			$parentObject = $this->managedFileObject(file: $file);
+			if ($this->refusesManagedFile(object: $parentObject, isAnonymous: $isAnonymous) === true) {
+				return new JSONResponse(data: ['error' => $this->translate(text: 'File not found')], statusCode: 404);
+			}
+
+			// L2: for any other file, resolve the parent object for audit context (best-effort).
+			$parentObject = ($parentObject ?? $this->resolveParentObjectForFile(file: $file));
 
 			// Record download (counter + audit). Best-effort.
 			$this->recordDownloadEvent(fileId: (int)$file->getId(), object: $parentObject);
@@ -1314,6 +1370,58 @@ class FilesController extends Controller {
 			return $this->errorResponse(e: $e);
 		}//end try
 	}//end downloadById()
+
+	/**
+	 * The object an OpenRegister-managed file belongs to.
+	 *
+	 * @param File $file The file.
+	 *
+	 * @return ObjectEntity|false|null The object; false for a managed file no object owns; null for any other file.
+	 */
+	private function managedFileObject(File $file): ObjectEntity|false|null {
+		if ($this->fileService->isManagedFile(node: $file) === false) {
+			return null;
+		}
+
+		return ($this->fileService->findObjectForFile(file: $file) ?? false);
+	}//end managedFileObject()
+
+	/**
+	 * Whether a download by id must be refused for a managed file.
+	 *
+	 * @param ObjectEntity|false|null $object      What managedFileObject() answered.
+	 * @param bool                    $isAnonymous Whether the caller is anonymous (already gated on publication).
+	 *
+	 * @return bool True when no object owns the managed file, or a person may not read its object.
+	 */
+	private function refusesManagedFile(ObjectEntity|false|null $object, bool $isAnonymous): bool {
+		if ($object === false) {
+			return true;
+		}
+
+		if ($object === null || $isAnonymous === true) {
+			return false;
+		}
+
+		return $this->mayReadObject(object: $object) === false;
+	}//end refusesManagedFile()
+
+	/**
+	 * Whether the caller may read the object a managed file belongs to.
+	 *
+	 * @param ObjectEntity|null $object The object, or null when none owns the file.
+	 *
+	 * @return bool True only when an object was found and its read rule allows the caller.
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 */
+	private function mayReadObject(?ObjectEntity $object): bool {
+		if ($object === null || $this->objectFileAccess === null) {
+			return false;
+		}
+
+		return $this->objectFileAccess->mayRead(object: $object);
+	}//end mayReadObject()
 
 	/**
 	 * Best-effort: resolve the parent ObjectEntity for a given file node by
@@ -1518,7 +1626,7 @@ class FilesController extends Controller {
 
 			return new JSONResponse(data: $this->fileService->formatFile($file));
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
+			return $this->accessDenied(e: $e);
 		} catch (Exception $e) {
 			$statusCode = match (true) {
 				str_contains($e->getMessage(), 'already exists') => 409,
@@ -1555,7 +1663,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC on the source object.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, change: false);
 
 			$this->objectService->setObject($id);
 			$sourceObject = $this->objectService->getObject();
@@ -1621,7 +1729,7 @@ class FilesController extends Controller {
 
 			return new JSONResponse(data: $this->fileService->formatFile($newFile), statusCode: 201);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
+			return $this->accessDenied(e: $e);
 		} catch (Exception $e) {
 			$statusCode = 400;
 			if (str_contains($e->getMessage(), 'not found') === true) {
@@ -1720,7 +1828,7 @@ class FilesController extends Controller {
 
 			return new JSONResponse(data: $this->fileService->formatFile($movedFile));
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
+			return $this->accessDenied(e: $e);
 		} catch (Exception $e) {
 			$statusCode = match (true) {
 				str_contains($e->getMessage(), 'not found') => 404,
@@ -1755,7 +1863,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: object read access required to list versions.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, change: false);
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -1772,7 +1880,7 @@ class FilesController extends Controller {
 
 			return new JSONResponse(data: $result);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
+			return $this->accessDenied(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
@@ -1841,7 +1949,7 @@ class FilesController extends Controller {
 
 			return new JSONResponse(data: $this->fileService->formatFile($file));
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
+			return $this->accessDenied(e: $e);
 		} catch (Exception $e) {
 			$statusCode = 400;
 			if (str_contains($e->getMessage(), 'not found') === true) {
@@ -1903,7 +2011,7 @@ class FilesController extends Controller {
 
 			return new JSONResponse(data: $result);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
+			return $this->accessDenied(e: $e);
 		} catch (Exception $e) {
 			$statusCode = 400;
 			if (str_contains($e->getMessage(), 'locked') === true) {
@@ -1973,7 +2081,7 @@ class FilesController extends Controller {
 
 			return new JSONResponse(data: $result);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
+			return $this->accessDenied(e: $e);
 		} catch (Exception $e) {
 			$statusCode = match (true) {
 				str_contains($e->getMessage(), 'Only the lock owner') => 403,
@@ -2035,7 +2143,7 @@ class FilesController extends Controller {
 
 			return new JSONResponse(data: $result, statusCode: $statusCode);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
+			return $this->accessDenied(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
@@ -2082,7 +2190,7 @@ class FilesController extends Controller {
 			// ADR-005 / gate-7: authenticated callers must have object read access.
 			// Anonymous callers were already gated by the published-file check
 			// above, so preview opts out of the write/action anonymous-deny guard.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true, change: false);
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2107,7 +2215,7 @@ class FilesController extends Controller {
 
 			return $response;
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
+			return $this->accessDenied(e: $e);
 		} catch (Exception $e) {
 			$fallbackIcon = '/core/img/filetypes/file.svg';
 			return new JSONResponse(
@@ -2190,10 +2298,7 @@ class FilesController extends Controller {
 
 			return new JSONResponse(data: $entity->jsonSerialize());
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(
-				data: ['error' => $this->translate(text: 'You do not have access to this object')],
-				statusCode: 403
-			);
+			return $this->accessDenied(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
@@ -2258,10 +2363,7 @@ class FilesController extends Controller {
 
 			return new JSONResponse(data: $handler->save(object: $object, entries: $entries));
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(
-				data: ['error' => $this->translate(text: 'You do not have access to this object')],
-				statusCode: 403
-			);
+			return $this->accessDenied(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
@@ -2315,11 +2417,123 @@ class FilesController extends Controller {
 
 			return new JSONResponse(data: $this->fileService->formatFile($result));
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
-			return new JSONResponse(data: ['error' => $this->translate(text: 'You do not have access to this object')], statusCode: 403);
+			return $this->accessDenied(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
 	}//end updateLabels()
+
+	/**
+	 * Open an object's document in Nextcloud Office.
+	 *
+	 * The object rule decides: update opens the document for editing, read
+	 * opens it read-only, and without read the answer is 404 with no token.
+	 *
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema The schema slug or identifier.
+	 * @param string $id The object UUID or identifier.
+	 * @param int $fileId The file to open.
+	 *
+	 * @return JSONResponse The Office session, or the refusal.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 */
+	#[NoAdminRequired]
+	public function office(string $register, string $schema, string $id, int $fileId): JSONResponse {
+		try {
+			$session = $this->openOfficeSession(register: $register, schema: $schema, id: $id, fileId: $fileId);
+			return new JSONResponse(data: $session->toArray());
+		} catch (NotAuthorizedException $e) {
+			return $this->accessDenied(e: $e);
+		} catch (OfficeOpenRefusedException $e) {
+			return new JSONResponse(data: ['error' => $this->translate(text: $e->getMessage())], statusCode: $e->getHttpStatus());
+		}
+	}//end office()
+
+	/**
+	 * Show an object's document in Nextcloud Office.
+	 *
+	 * The page holds the Office frame and a form that posts the WOPI token
+	 * into it, the way Collabora expects a token to arrive.
+	 *
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema The schema slug or identifier.
+	 * @param string $id The object UUID or identifier.
+	 * @param int $fileId The file to open.
+	 *
+	 * @return TemplateResponse|JSONResponse The Office page, or the refusal.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-nextcloud-office-opens-an-objects-document-by-the-object-rule-req-ofoa-006
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function officePage(string $register, string $schema, string $id, int $fileId): TemplateResponse|JSONResponse {
+		try {
+			$session = $this->openOfficeSession(register: $register, schema: $schema, id: $id, fileId: $fileId);
+		} catch (NotAuthorizedException $e) {
+			return $this->accessDenied(e: $e);
+		} catch (OfficeOpenRefusedException $e) {
+			return new JSONResponse(data: ['error' => $this->translate(text: $e->getMessage())], statusCode: $e->getHttpStatus());
+		}
+
+		return new TemplateResponse(
+			appName: 'openregister',
+			templateName: 'office',
+			params: [
+				'frameAction' => $session->frameAction(),
+				'token' => $session->token,
+				'tokenTtl' => $session->tokenTtl,
+				'readOnly' => $session->readOnly,
+			]
+		);
+	}//end officePage()
+
+	/**
+	 * Apply the object rule and issue the Office session.
+	 *
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema The schema slug or identifier.
+	 * @param string $id The object UUID or identifier.
+	 * @param int $fileId The file to open.
+	 *
+	 * @return \OCA\OpenRegister\Service\File\OfficeSession The issued session.
+	 *
+	 * @throws NotAuthorizedException When the caller may not read the object (404).
+	 * @throws OfficeOpenRefusedException When Office cannot open the document.
+	 */
+	private function openOfficeSession(string $register, string $schema, string $id, int $fileId): \OCA\OpenRegister\Service\File\OfficeSession {
+		$user = $this->userSession?->getUser();
+		if ($user === null || $this->objectFileAccess === null) {
+			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_READABLE);
+		}
+
+		$object = $this->objectFileAccess->readable(register: $register, schema: $schema, id: $id);
+
+		$file = $this->fileService->getFile(object: $object, file: $fileId);
+		if ($file === null) {
+			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_READABLE);
+		}
+
+		if ($this->officeSessionService === null) {
+			throw new OfficeOpenRefusedException(
+				httpStatus: OfficeOpenRefusedException::UNAVAILABLE,
+				message: 'Nextcloud Office is not available on this instance.'
+			);
+		}
+
+		return $this->officeSessionService->open(
+			file: $file,
+			editorUid: $user->getUID(),
+			displayName: $user->getDisplayName(),
+			canWrite: $this->objectFileAccess->mayUpdate(object: $object)
+		);
+	}//end openOfficeSession()
 
 	/**
 	 * Render the Files page

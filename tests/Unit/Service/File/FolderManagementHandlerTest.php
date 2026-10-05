@@ -119,6 +119,60 @@ class FolderManagementHandlerTest extends TestCase {
 			$this->mountCache,
 			$this->folderRecorder
 		);
+
+		// The openregister account holds every managed folder. It comes from
+		// the FileService facade, as in production.
+		$systemAccount = $this->createMock(FileService::class);
+		$systemAccount->method('getUser')->willReturn($this->mockUser);
+		$this->handler->setFileService($systemAccount);
+	}
+
+	#[Test]
+	public function testASignedInUsersFolderIsMadeInTheOpenRegisterAccountsHome(): void {
+		// A signed-in person, not the openregister account.
+		$alice = $this->createMock(IUser::class);
+		$alice->method('getUID')->willReturn('alice');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($alice);
+
+		$homes = [];
+		$systemHome = $this->createMock(Folder::class);
+		$root = $this->createMock(IRootFolder::class);
+		$root->method('getUserFolder')->willReturnCallback(
+			function (string $uid) use (&$homes, $systemHome): Folder {
+				$homes[] = $uid;
+				return $systemHome;
+			}
+		);
+
+		$made = $this->createMock(Folder::class);
+		$made->method('getId')->willReturn(500);
+		$systemHome->method('get')->willThrowException(new NotFoundException());
+		$systemHome->method('newFolder')->willReturn($made);
+
+		$handler = new FolderManagementHandler(
+			$root,
+			$this->objectEntityMapper,
+			$this->registerMapper,
+			$session,
+			$this->groupManager,
+			$this->logger,
+			$this->auditTrailMapper,
+			$this->mountCache,
+			$this->folderRecorder
+		);
+		$fileService = $this->createMock(FileService::class);
+		$fileService->method('getUser')->willReturn($this->mockUser);
+		// Nothing is handed over or shared back: the folder already has the right owner.
+		$fileService->expects($this->never())->method('transferFolderOwnershipIfNeeded');
+		$handler->setFileService($fileService);
+		$this->groupManager->method('groupExists')->willReturn(true);
+		$this->folderRecorder->method('record')->willReturn(true);
+
+		$handler->createRegisterFolderById($this->createRegister(3, 'Intake'), $alice);
+
+		$this->assertNotSame([], $homes);
+		$this->assertSame(['openregister'], array_values(array_unique($homes)));
 	}
 
 	/**
