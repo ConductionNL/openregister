@@ -1067,7 +1067,7 @@ class AuditTrailMapper extends QBMapper {
 	 *
 	 * @return string|null The app id, or null for an ordinary write.
 	 *
-	 * @spec openspec/changes/transition-as-system/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function transitionSystemApp(string $uuid): ?string {
 		if ($uuid === '') {
