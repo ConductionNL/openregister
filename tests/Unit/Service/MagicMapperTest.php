@@ -756,6 +756,107 @@ class MagicMapperTest extends TestCase {
 	}//end testAFullyDeclaredPayloadReportsNoDrop()
 
 	/**
+	 * The same discard is reported once per request, not once per object.
+	 *
+	 * A seed import of 8,000 objects with one undeclared key wrote 8,000
+	 * identical warnings; a throwaway instance wrote a 28 GB log this way.
+	 *
+	 * @return void
+	 */
+	public function testTheSameDiscardIsReportedOncePerRequest(): void {
+		$warnings = $this->collectDiscardWarnings();
+		$schema = $this->discardSchema(42);
+
+		for ($i = 0; $i < 3; $i++) {
+			$this->prepareForTable(['@self' => ['uuid' => "u{$i}"], 'name' => 'n', 'legacy' => $i], $schema);
+		}
+
+		$this->assertCount(1, $warnings->list, 'three writes with the same undeclared key warn once');
+		$this->assertSame(['legacy'], $warnings->list[0]);
+
+	}//end testTheSameDiscardIsReportedOncePerRequest()
+
+	/**
+	 * A new undeclared property on the same schema is still reported, naming only itself.
+	 *
+	 * @return void
+	 */
+	public function testANewUndeclaredPropertyIsStillReported(): void {
+		$warnings = $this->collectDiscardWarnings();
+		$schema = $this->discardSchema(42);
+
+		$this->prepareForTable(['name' => 'n', 'legacy' => 1], $schema);
+		$this->prepareForTable(['name' => 'n', 'legacy' => 2, 'drifted' => true], $schema);
+
+		$this->assertSame([['legacy'], ['drifted']], $warnings->list);
+
+	}//end testANewUndeclaredPropertyIsStillReported()
+
+	/**
+	 * The same key on another schema is that schema's drift, so it is reported.
+	 *
+	 * @return void
+	 */
+	public function testTheSameKeyOnAnotherSchemaIsReported(): void {
+		$warnings = $this->collectDiscardWarnings();
+
+		$this->prepareForTable(['name' => 'n', 'legacy' => 1], $this->discardSchema(42));
+		$this->prepareForTable(['name' => 'n', 'legacy' => 1], $this->discardSchema(43));
+
+		$this->assertSame([['legacy'], ['legacy']], $warnings->list);
+
+	}//end testTheSameKeyOnAnotherSchemaIsReported()
+
+	/**
+	 * Collect the `dropped` lists of every discard warning the mapper logs.
+	 *
+	 * @return \stdClass Object whose `list` grows as warnings arrive.
+	 */
+	private function collectDiscardWarnings(): \stdClass {
+		$warnings = new \stdClass();
+		$warnings->list = [];
+		$this->mockLogger->method('warning')->willReturnCallback(
+			static function (string $message, array $context = []) use ($warnings): void {
+				if (str_contains($message, 'does not declare') === true) {
+					$warnings->list[] = ($context['dropped'] ?? []);
+				}
+			}
+		);
+		return $warnings;
+
+	}//end collectDiscardWarnings()
+
+	/**
+	 * A schema declaring only `name`.
+	 *
+	 * @param int $id The schema id.
+	 *
+	 * @return TestableSchema The schema.
+	 */
+	private function discardSchema(int $id): TestableSchema {
+		$schema = new TestableSchema();
+		$schema->setId($id);
+		$schema->setTitle('Schema ' . $id);
+		$schema->testProperties = ['name' => ['type' => 'string']];
+		return $schema;
+
+	}//end discardSchema()
+
+	/**
+	 * Run the real prepareObjectDataForTable() on one payload.
+	 *
+	 * @param array          $objectData The payload.
+	 * @param TestableSchema $schema     The schema written to.
+	 *
+	 * @return array The prepared row.
+	 */
+	private function prepareForTable(array $objectData, TestableSchema $schema): array {
+		$method = (new \ReflectionClass($this->magicMapper))->getMethod('prepareObjectDataForTable');
+		return $method->invoke($this->magicMapper, $objectData, $this->mockRegister, $schema);
+
+	}//end prepareForTable()
+
+	/**
 	 * An encrypted property gets a column, so the write path can store it (#4197).
 	 *
 	 * The table sync skipped `x-openregister-encrypted` properties, saying the
