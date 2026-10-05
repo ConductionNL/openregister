@@ -28,6 +28,8 @@ namespace OCA\OpenRegister\Service\Consumer;
  * `record` is the store's own row (a Consumer entity, an ObjectEntity, ...),
  * so a caller that keys rate limits or call logs on it gets back exactly what
  * its source handed in.
+ *
+ * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 final class ResolvedConsumer {
 

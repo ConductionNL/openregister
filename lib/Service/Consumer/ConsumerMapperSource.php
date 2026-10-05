@@ -27,6 +27,8 @@ use OCA\OpenRegister\Db\ConsumerMapper;
 
 /**
  * The default consumer source: OpenRegister's Consumer entities.
+ *
+ * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 class ConsumerMapperSource implements ConsumerSource {
 

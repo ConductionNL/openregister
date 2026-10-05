@@ -32,6 +32,8 @@ use OCP\ICacheFactory;
  *
  * The algorithm always comes from the consumer's stored configuration, never
  * from the token: only that algorithm is loaded into the verifier.
+ *
+ * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 class JwtValidator {
 
@@ -64,6 +66,102 @@ class JwtValidator {
 		private readonly ?ICacheFactory $cacheFactory = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * The algorithms a consumer may pin.
+	 *
+	 * @var string[]
+	 */
+	public const SUPPORTED_ALGORITHMS = ['HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512', 'PS256', 'PS384', 'PS512'];
+
+	/**
+	 * Split a compact JWS into its decoded header and payload.
+	 *
+	 * @param string $token The compact JWS.
+	 *
+	 * @return array{0: array, 1: array} The header and the payload; the payload names an issuer.
+	 *
+	 * @throws AuthenticationException When the token is empty or malformed, or names no issuer.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	public function decode(string $token): array {
+		if ($token === '') {
+			throw new AuthenticationException(message: 'No token has been provided', details: []);
+		}
+
+		$parts = explode('.', $token);
+		if (count($parts) !== 3) {
+			throw $this->invalid(reason: 'Invalid JWT format');
+		}
+
+		$header = json_decode((string)base64_decode(strtr($parts[0], '-_', '+/')), true);
+		if (is_array($header) === false || isset($header['alg']) === false) {
+			throw $this->invalid(reason: 'Invalid header');
+		}
+
+		$payload = json_decode((string)base64_decode(strtr($parts[1], '-_', '+/')), true);
+		if (is_array($payload) === false) {
+			throw $this->invalid(reason: 'Invalid payload');
+		}
+
+		if (empty($payload['iss']) === true) {
+			throw $this->invalid(reason: 'No issuer mentioned');
+		}
+
+		return [$header, $payload];
+	}//end decode()
+
+	/**
+	 * Verify the token under the algorithm the consumer's configuration pins.
+	 *
+	 * The algorithm MUST come from the stored configuration, never from the
+	 * token header: taking it from the header lets an RS/PS consumer's public
+	 * key be used as an HMAC secret (algorithm confusion). The header's alg
+	 * must equal the pinned one.
+	 *
+	 * @param string $token         The compact JWS.
+	 * @param array  $header        The decoded header.
+	 * @param array  $configuration The consumer's authorization configuration (algorithm, publicKey).
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException When no algorithm is pinned, the header differs, the algorithm is unsupported or the signature fails.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	public function verifyPinned(string $token, array $header, array $configuration): void {
+		$algorithm = ($configuration['algorithm'] ?? null);
+		if (is_string($algorithm) === false || $algorithm === '') {
+			throw $this->invalid(reason: 'No verification algorithm configured for issuer');
+		}
+
+		if ($header['alg'] !== $algorithm) {
+			throw $this->invalid(reason: 'Token algorithm does not match issuer configuration');
+		}
+
+		if (in_array($algorithm, self::SUPPORTED_ALGORITHMS, true) === false) {
+			throw new AuthenticationException(
+				message: 'The token algorithm is not supported',
+				details: ['algorithm' => $algorithm]
+			);
+		}
+
+		if ($this->verifySignature(token: $token, algorithm: $algorithm, key: (string)($configuration['publicKey'] ?? '')) === false) {
+			throw $this->invalid(reason: 'The token does not match the public key');
+		}
+	}//end verifyPinned()
+
+	/**
+	 * The refusal for a token that could not be validated.
+	 *
+	 * @param string $reason Why.
+	 *
+	 * @return AuthenticationException
+	 */
+	private function invalid(string $reason): AuthenticationException {
+		return new AuthenticationException(message: 'The token could not be validated', details: ['reason' => $reason]);
+	}//end invalid()
 
 	/**
 	 * Whether the token's signature verifies with the key under the pinned algorithm.

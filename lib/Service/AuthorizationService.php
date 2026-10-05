@@ -50,6 +50,8 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
+ *
+ * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 class AuthorizationService {
 
@@ -217,17 +219,6 @@ class AuthorizationService {
 	}//end findIssuer()
 
 	/**
-	 * Base64url-decode a string per RFC 7515.
-	 *
-	 * @param string $data The base64url-encoded string
-	 *
-	 * @return string The decoded data
-	 */
-	private function base64urlDecode(string $data): string {
-		return base64_decode(strtr($data, '-_', '+/'));
-	}//end base64urlDecode()
-
-	/**
 	 * Validate data in the JWT payload.
 	 *
 	 * @param array $payload The payload of the JWT token.
@@ -264,91 +255,16 @@ class AuthorizationService {
 		$this->resolvedConsumer = null;
 		$token = substr(string: $authorization, offset: strlen(string: 'Bearer '));
 
-		if ($token === '') {
-			throw new AuthenticationException(message: 'No token has been provided', details: []);
-		}
-
-		$parts = explode('.', $token);
-		if (count($parts) !== 3) {
-			throw new AuthenticationException(
-				message: 'The token could not be validated',
-				details: ['reason' => 'Invalid JWT format']
-			);
-		}
-
-		[$headerB64, $payloadB64] = $parts;
-
-		$headerJson = $this->base64urlDecode(data: $headerB64);
-		$header = json_decode($headerJson, true);
-		if (is_array($header) === false || isset($header['alg']) === false) {
-			throw new AuthenticationException(
-				message: 'The token could not be validated',
-				details: ['reason' => 'Invalid header']
-			);
-		}
-
-		$payloadJson = $this->base64urlDecode(data: $payloadB64);
-		$payload = json_decode($payloadJson, true);
-		if (is_array($payload) === false) {
-			throw new AuthenticationException(
-				message: 'The token could not be validated',
-				details: ['reason' => 'Invalid payload']
-			);
-		}
-
-		if (isset($payload['iss']) === false || empty($payload['iss']) === true) {
-			throw new AuthenticationException(
-				message: 'The token could not be validated',
-				details: ['reason' => 'No issuer mentioned']
-			);
-		}
+		$validator = new JwtValidator(cacheFactory: $this->cacheFactory);
+		[$header, $payload] = $validator->decode(token: $token);
 
 		$issuer = $this->findIssuer(issuer: (string)$payload['iss'], consumers: $this->sourceFor(consumers: $consumers));
 		$authConf = $issuer->configuration;
 
-		$publicKey = $authConf['publicKey'] ?? '';
-
-		// The verification algorithm MUST come from the issuer's server-side
-		// configuration, never from the attacker-controlled token header. Taking
-		// it from `$header['alg']` enables an algorithm-confusion attack: an
-		// RS/PS-configured issuer (whose `publicKey` is, by definition, public)
-		// could be verified via HMAC using that public key as the secret, letting
-		// anyone forge a valid HS token. Reject when no algorithm is pinned.
-		$algorithm = $authConf['algorithm'] ?? null;
-		if (is_string($algorithm) === false || $algorithm === '') {
-			throw new AuthenticationException(
-				message: 'The token could not be validated',
-				details: ['reason' => 'No verification algorithm configured for issuer']
-			);
-		}
-
-		// The token's declared algorithm MUST match the pinned one — an
-		// asymmetric-configured issuer refuses an HMAC token and vice versa.
-		if ($header['alg'] !== $algorithm) {
-			throw new AuthenticationException(
-				message: 'The token could not be validated',
-				details: ['reason' => 'Token algorithm does not match issuer configuration']
-			);
-		}
-
-		// Asymmetric algorithms (RS/PS) are verified against the RSA public key
-		// with a real signature check; they never fall through to HMAC.
-		$supported = array_merge(self::HMAC_ALGORITHMS, self::PKCS1_ALGORITHMS, self::PSS_ALGORITHMS);
-		if (in_array($algorithm, $supported, true) === false) {
-			throw new AuthenticationException(
-				message: 'The token algorithm is not supported',
-				details: ['algorithm' => $algorithm]
-			);
-		}
-
-		$validator = new JwtValidator(cacheFactory: $this->cacheFactory);
-		if ($validator->verifySignature(token: $token, algorithm: $algorithm, key: $publicKey) === false) {
-			throw new AuthenticationException(
-				message: 'The token could not be validated',
-				details: ['reason' => 'The token does not match the public key']
-			);
-		}
-
+		// The algorithm comes from the issuer's stored configuration, never
+		// from the token header (algorithm confusion); RS/PS are verified
+		// against the RSA public key and never fall through to HMAC.
+		$validator->verifyPinned(token: $token, header: $header, configuration: $authConf);
 		$validator->validateClaims(payload: $payload);
 
 		// 🔴 THIS LINE IS THE ROW. Making the Consumer act AS its Nextcloud
@@ -470,6 +386,44 @@ class AuthorizationService {
 		(new EndpointAllowList(groupManager: $this->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
 
 	}//end authorizeOAuth()
+
+	/**
+	 * Authorize the Nextcloud user of the current browser session.
+	 *
+	 * For endpoints that accept a signed-in Nextcloud user. The request must
+	 * pass Nextcloud's CSRF check, because an app's dispatch route is usually
+	 * #[NoCSRFRequired] and would otherwise be forgeable from any origin. Fails
+	 * closed when the request is not available.
+	 *
+	 * @param array $users  The users allowed (uid or e-mail); empty with empty groups means any user.
+	 * @param array $groups The groups allowed.
+	 *
+	 * @return void
+	 *
+	 * @throws AuthenticationException Without a signed-in user, without a passing CSRF check, or outside the allow-list.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	public function authorizeNcSession(array $users = [], array $groups = []): void {
+		$this->resolvedConsumer = null;
+		$user = $this->userSession->getUser();
+		if ($this->userSession->isLoggedIn() === false || $user === null) {
+			throw new AuthenticationException(
+				message: 'Not authorized',
+				details: ['reason' => 'This endpoint requires an authenticated Nextcloud session.']
+			);
+		}
+
+		if ($this->request?->passesCSRFCheck() !== true) {
+			throw new AuthenticationException(
+				message: 'Not authorized',
+				details: ['reason' => 'A same-origin request with a valid CSRF request token is required for session authentication.']
+			);
+		}
+
+		(new EndpointAllowList(groupManager: $this->groupManager))->assertAllowed(user: $user, users: $users, groups: $groups);
+
+	}//end authorizeNcSession()
 
 	/**
 	 * Add CORS headers to controller result.

@@ -30,6 +30,8 @@ use OCP\IUser;
 /**
  * Empty lists allow every authenticated user; otherwise the user must be named
  * (uid or e-mail address) or be in one of the groups.
+ *
+ * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 class EndpointAllowList {
 

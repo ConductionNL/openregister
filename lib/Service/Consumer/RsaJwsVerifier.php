@@ -40,6 +40,8 @@ use Throwable;
  *
  * Only the pinned algorithm is loaded into the verifier, so the token's
  * header cannot select another one.
+ *
+ * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 class RsaJwsVerifier {
 

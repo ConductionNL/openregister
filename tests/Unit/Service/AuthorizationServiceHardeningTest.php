@@ -97,6 +97,8 @@ PEM;
 
 	private ?IUser $sessionUser = null;
 
+	private bool $passesCsrf = true;
+
 	/**
 	 * The real service over doubles for Nextcloud.
 	 *
@@ -158,6 +160,7 @@ PEM;
 		$request->method('getHeader')->willReturnCallback(
 			fn (string $name) => (strtolower($name) === 'authorization') ? $this->authorizationHeader : ''
 		);
+		$request->method('passesCSRFCheck')->willReturnCallback(fn (): bool => $this->passesCsrf);
 
 		return new AuthorizationService(
 			userManager: $users,
@@ -397,4 +400,34 @@ PEM;
 		$this->assertSame(0, $this->persistentSets, 'setUser() persists the identity into the caller\'s PHP session (ADR-099).');
 		$this->assertCount(1, $this->volatileUsers);
 	}//end testACredentialNeverWritesTheIdentityIntoTheSession()
+	public function testANcSessionWithinTheAllowListIsAccepted(): void {
+		$this->loggedIn = true;
+		$this->sessionUser = $this->userNamed('piet');
+
+		$service = $this->service();
+		$service->authorizeNcSession([], ['staff']);
+		$this->assertNull($service->getResolvedConsumer(), 'A session authenticates a user, not a consumer.');
+	}//end testANcSessionWithinTheAllowListIsAccepted()
+
+	public function testANcSessionOutsideTheAllowListIsRefused(): void {
+		$this->loggedIn = true;
+		$this->sessionUser = $this->userNamed('klaas');
+
+		$this->expectException(AuthenticationException::class);
+		$this->service()->authorizeNcSession([], ['staff']);
+	}//end testANcSessionOutsideTheAllowListIsRefused()
+
+	public function testANcSessionWithoutAValidCsrfTokenIsRefused(): void {
+		$this->loggedIn = true;
+		$this->sessionUser = $this->userNamed('piet');
+		$this->passesCsrf = false;
+
+		$this->expectException(AuthenticationException::class);
+		$this->service()->authorizeNcSession([], []);
+	}//end testANcSessionWithoutAValidCsrfTokenIsRefused()
+
+	public function testAnAnonymousCallerIsRefusedOnANcSessionEndpoint(): void {
+		$this->expectException(AuthenticationException::class);
+		$this->service()->authorizeNcSession([], []);
+	}//end testAnAnonymousCallerIsRefusedOnANcSessionEndpoint()
 }//end class

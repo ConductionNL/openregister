@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\Service\Consumer;
  * elsewhere (integriq: objects of its `consumer` schema) passes its own source
  * to the authorize call, so the checks stay in one place while the data stays
  * where the app keeps it.
+ *
+ * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
  */
 interface ConsumerSource {
 
