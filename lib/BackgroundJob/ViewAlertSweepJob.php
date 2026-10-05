@@ -46,6 +46,7 @@ use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\View\ViewAlert;
+use OCA\OpenRegister\Service\View\ViewObjectQuery;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -214,10 +215,28 @@ class ViewAlertSweepJob extends TimedJob {
 			return null;
 		}
 
+		// The VIEW's rows: its registers, schemas, filters and search terms.
+		// ObjectService::count() reads none of those, only the service's ambient
+		// register/schema context, which this sweep never sets (O5, 5 Oct).
+		$query = (new ViewObjectQuery())->forView(viewQuery: (array)($view->getQuery() ?? []));
+		if ($query === null) {
+			return 0;
+		}
+
+		// A view that names no register and no schema bounds nothing: the
+		// search answers 0 for it, and a silent 0 would re-arm a fired alert.
+		if (isset($query['@self']['register']) === false && isset($query['@self']['schema']) === false) {
+			$this->logger->warning(
+				'[ViewAlertSweepJob] View {view} names no register or schema, so its alert has nothing to count',
+				['view' => (string)$view->getUuid()]
+			);
+			return null;
+		}
+
 		try {
 			return (int)$this->objects->runAs(
 				$owner,
-				fn (): int => $this->objects->count(config: (array)($view->getQuery() ?? []))
+				fn (): int => $this->objects->countSearchObjects(query: $query)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
