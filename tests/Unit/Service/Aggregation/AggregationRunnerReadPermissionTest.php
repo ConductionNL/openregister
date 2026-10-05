@@ -221,6 +221,52 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	/**
+	 * runAdhoc() honours bypassRbac on the native SQL path, as run() does.
+	 *
+	 * A conditional reader (learner-a may read only its own three rows) asks as
+	 * the system: every row counts. Live pass O14: the internal-system mode
+	 * only skipped the read gate, and the row predicate still narrowed the count.
+	 *
+	 * @return void
+	 */
+	public function testAdhocBypassRbacSkipsTheRowPredicate(): void {
+		$runner = $this->runner(userId: 'learner-a', groups: ['students'], grants: []);
+
+		$result = $runner->runAdhoc(
+			register: $this->register(),
+			schema: $this->schema(),
+			query: $this->countByLevel(),
+			bypassRbac: true
+		);
+
+		$this->assertSame(['high' => 2, 'low' => 3], $this->counts($result));
+	}//end testAdhocBypassRbacSkipsTheRowPredicate()
+
+	/**
+	 * A materialised aggregate resolved with no user (occ, cron) counts every row.
+	 *
+	 * This is AggregateReferenceResolver's call: runAdhocByRef(..., bypassRbac: true)
+	 * under the command line. With no user the row predicate is `1 = 0`, so on
+	 * the live instance every aggregate under `occ openregister:rematerialise-calculations`
+	 * resolved to 0 (live pass O14: an enrolment kept totalPublishedLessonCount 0
+	 * for a course with three published lessons).
+	 *
+	 * @return void
+	 */
+	public function testAdhocByRefAsTheSystemWithoutAUserCountsEveryRow(): void {
+		$runner = $this->runner(userId: null, groups: [], grants: [], schema: $this->schema());
+
+		$result = $runner->runAdhocByRef(
+			registerRef: 'learniq',
+			schemaRef: 'engagement-score',
+			query: $this->countByLevel(),
+			bypassRbac: true
+		);
+
+		$this->assertSame(['high' => 2, 'low' => 3], $this->counts($result));
+	}//end testAdhocByRefAsTheSystemWithoutAUserCountsEveryRow()
+
 	public function testTheOrganisationBoundaryFollowsTheListDecision(): void {
 		$otherOrg = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-elsewhere']];
 
@@ -359,7 +405,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 	 * A runner whose caller is $userId in $groups, holding the schema-level
 	 * verbs in $grants, over the real SQLite table and the real RBAC predicate.
 	 *
-	 * @param string        $userId The caller.
+	 * @param string|null   $userId The caller, or null for no user (occ, cron).
 	 * @param array<string> $groups The caller's groups.
 	 * @param array<string> $grants The schema-level verbs PermissionHandler grants.
 	 * @param Schema|null   $schema The schema run() resolves, when testing run().
@@ -370,7 +416,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 	 * @return AggregationRunner The runner.
 	 */
 	private function runner(
-		string $userId,
+		?string $userId,
 		array $groups,
 		array $grants,
 		?Schema $schema = null,
@@ -378,8 +424,12 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		bool $boundaryWaived = false,
 		bool $organisationlessAdmitted = false,
 	): AggregationRunner {
-		$user = $this->createMock(IUser::class);
-		$user->method('getUID')->willReturn($userId);
+		$user = null;
+		if ($userId !== null) {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn($userId);
+		}
+
 		$userSession = $this->createMock(IUserSession::class);
 		$userSession->method('getUser')->willReturn($user);
 
