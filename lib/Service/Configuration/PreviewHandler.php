@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
 
@@ -198,11 +199,19 @@ class PreviewHandler {
 				$schemasBySlug[strtolower($schema->getSlug() ?? '')] = $schema;
 			}
 
+			// Registers and schemas this same import creates: their objects
+			// are created too, not skipped as "not found locally" (live pass O13).
+			$planned = [
+				'registers' => $this->createdSlugs(rows: $preview['registers']),
+				'schemas'   => $this->createdSlugs(rows: $preview['schemas']),
+			];
+
 			foreach ($remoteData['components']['objects'] as $objectData) {
 				$preview['objects'][] = $this->previewObjectChange(
 					objectData: (array)$objectData,
 					registersBySlug: $registersBySlug,
-					schemasBySlug: $schemasBySlug
+					schemasBySlug: $schemasBySlug,
+					planned: $planned
 				);
 			}
 		}//end if
@@ -390,12 +399,14 @@ class PreviewHandler {
 	 * @param array<string, mixed> $objectData The remote object.
 	 * @param array<string, Register> $registersBySlug Local registers by lowercased slug.
 	 * @param array<string, Schema> $schemasBySlug Local schemas by lowercased slug.
+	 * @param array{registers: array<string, true>, schemas: array<string, true>} $planned Register and schema slugs this import creates.
 	 *
-	 * @return array<string, mixed> Preview row: type, action, slug, title, register, schema, current, proposed, changes, and reason on a skip.
+	 * @return array<string, mixed> Preview row: type, action, slug, title, register, schema, current, proposed, changes,
+	 *                              discarded (undeclared properties the import drops), and reason on a skip.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-configuration-preview-names-what-an-import-would-change
 	 */
-	private function previewObjectChange(array $objectData, array $registersBySlug, array $schemasBySlug): array {
+	private function previewObjectChange(array $objectData, array $registersBySlug, array $schemasBySlug, array $planned): array {
 		$self = (array)($objectData['@self'] ?? []);
 		$slug = (string)($self['slug'] ?? '');
 		$registerSlug = (string)($self['register'] ?? '');
@@ -421,6 +432,13 @@ class PreviewHandler {
 		$register = ($registersBySlug[strtolower($registerSlug)] ?? null);
 		$schema = ($schemasBySlug[strtolower($schemaSlug)] ?? null);
 		if ($register === null || $schema === null) {
+			$registerComes = ($register !== null || isset($planned['registers'][strtolower($registerSlug)]) === true);
+			$schemaComes = ($schema !== null || isset($planned['schemas'][strtolower($schemaSlug)]) === true);
+			if ($registerComes === true && $schemaComes === true) {
+				$preview['action'] = 'create';
+				return $preview;
+			}
+
 			$preview['reason'] = 'Register or schema not found locally';
 			return $preview;
 		}
@@ -436,6 +454,15 @@ class PreviewHandler {
 			);
 		} catch (DoesNotExistException $e) {
 			$preview['action'] = 'create';
+			return $preview;
+		} catch (MultipleObjectsReturnedException $e) {
+			// The import skips such an object too (ImportHandler); one duplicate
+			// must not fail the whole preview (live pass O12: HTTP 500).
+			$preview['reason'] = sprintf(
+				'This register holds more than one %s object with slug "%s"; the import skips it until the duplicates are resolved',
+				$schemaSlug,
+				$slug
+			);
 			return $preview;
 		}
 
@@ -468,8 +495,22 @@ class PreviewHandler {
 		$undeclaredIdentity = array_diff_key(['uuid' => true, 'slug' => true], (array) ($schema->getProperties() ?? []));
 		$objectData = array_diff_key($objectData, $undeclaredIdentity);
 
-		$preview['action'] = 'update';
+		// Properties the schema does not declare are discarded on save
+		// (MagicMapper::reportDroppedProperties()), so they never arrive and
+		// would read as a change after every import (live pass O13).
+		$discarded = $this->undeclaredProperties(objectData: $objectData, schema: $schema);
+		$objectData = array_diff_key($objectData, array_flip($discarded));
+		if ($discarded !== []) {
+			$preview['discarded'] = $discarded;
+		}
+
 		$preview['changes'] = $this->compareArrays(current: $current, proposed: $objectData);
+		if ($preview['changes'] === []) {
+			$preview['reason'] = 'The stored object already holds what the import would write';
+			return $preview;
+		}
+
+		$preview['action'] = 'update';
 
 		return $preview;
 	}//end previewObjectChange()
@@ -523,6 +564,56 @@ class PreviewHandler {
 
 		return $changes;
 	}//end compareArrays()
+	/**
+	 * The top-level properties of a remote object that its schema does not declare.
+	 *
+	 * Mirrors MagicMapper::reportDroppedProperties(): `@`- and `_`-prefixed keys,
+	 * `id` and `uuid` are metadata, not data, and are not counted.
+	 *
+	 * @param array<string, mixed> $objectData The remote object.
+	 * @param Schema               $schema     The local schema.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/config-preview-duplicates-and-rest/specs/data-import-export/spec.md
+	 */
+	private function undeclaredProperties(array $objectData, Schema $schema): array {
+		$declared = $schema->getProperties();
+		$undeclared = [];
+		foreach (array_keys($objectData) as $key) {
+			$name = (string)$key;
+			if ($name === '' || $name === 'id' || $name === 'uuid' || $name[0] === '@' || $name[0] === '_') {
+				continue;
+			}
+
+			if (array_key_exists($name, $declared) === false) {
+				$undeclared[] = $name;
+			}
+		}
+
+		return $undeclared;
+	}//end undeclaredProperties()
+
+	/**
+	 * The lowercased slugs of the preview rows that would be created.
+	 *
+	 * @param array<int, array<string, mixed>> $rows Register or schema preview rows.
+	 *
+	 * @return array<string, true>
+	 *
+	 * @spec openspec/changes/config-preview-duplicates-and-rest/specs/data-import-export/spec.md
+	 */
+	private function createdSlugs(array $rows): array {
+		$slugs = [];
+		foreach ($rows as $row) {
+			if (($row['action'] ?? null) === 'create') {
+				$slugs[strtolower((string)($row['slug'] ?? ''))] = true;
+			}
+		}
+
+		return $slugs;
+	}//end createdSlugs()
+
 	/**
 	 * The title a preview row shows for a remote object: its title, its name, or its slug.
 	 *

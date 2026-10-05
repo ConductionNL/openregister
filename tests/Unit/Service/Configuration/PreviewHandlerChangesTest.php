@@ -77,6 +77,9 @@ final class PreviewHandlerChangesTest extends TestCase {
 		$this->schema->setSlug('zaaktype');
 		$this->schema->setVersion('1.0.0');
 		$this->schema->setTitle('Zaaktype');
+		// The import stores only declared properties (MagicMapper), and the
+		// preview compares only those.
+		$this->schema->setProperties(['title' => ['type' => 'string'], 'colour' => ['type' => 'string']]);
 
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->registerMapper->method('findAll')->willReturn([$this->register]);
