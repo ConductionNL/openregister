@@ -196,6 +196,8 @@ class OptOutAuthority {
 	 * @param string $address The address.
 	 *
 	 * @return array{send: bool, code: string, unsubscribe: array|null} The decision.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function decisionFor(array $decisions, string $address): array {
 		return ($decisions[$address] ?? ['send' => false, 'code' => self::CODE_AUTHORITY_UNAVAILABLE, 'unsubscribe' => null]);
@@ -302,6 +304,8 @@ class OptOutAuthority {
 	 * The event class to instantiate, or null when integriq does not ship it.
 	 *
 	 * @return string|null The class name.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	protected function resolveEventClass(): ?string {
 		$qualified = '\\' . self::DECISION_EVENT;
