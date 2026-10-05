@@ -98,7 +98,6 @@ class QueryHandler {
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md
-	 * @spec openspec/specs/zoeken-filteren/spec.md
 	 */
 	public function __construct(
 		private readonly MagicMapper $objectMapper,
