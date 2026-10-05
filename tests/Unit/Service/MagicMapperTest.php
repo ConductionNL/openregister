@@ -808,6 +808,20 @@ class MagicMapperTest extends TestCase {
 	}//end testTheSameKeyOnAnotherSchemaIsReported()
 
 	/**
+	 * A top-level `uuid` is an identifier echo, like `id`, and is not reported.
+	 *
+	 * @return void
+	 */
+	public function testATopLevelUuidIsNotReported(): void {
+		$warnings = $this->collectDiscardWarnings();
+
+		$this->prepareForTable(['name' => 'n', 'uuid' => 'u-1', 'legacy' => 1], $this->discardSchema(42));
+
+		$this->assertSame([['legacy']], $warnings->list);
+
+	}//end testATopLevelUuidIsNotReported()
+
+	/**
 	 * Collect the `dropped` lists of every discard warning the mapper logs.
 	 *
 	 * @return \stdClass Object whose `list` grows as warnings arrive.

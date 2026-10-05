@@ -4331,10 +4331,10 @@ class MagicMapper extends AbstractObjectMapper {
 
 			// `@`-prefixed keys are envelope/metadata (`@self` is already gone),
 			// `_`-prefixed keys are OpenRegister's own metadata columns, and `id`
-			// is the caller echoing back an identifier. None of these are user
-			// data the schema was ever supposed to declare, so warning about them
-			// would drown the signal in noise on literally every save.
-			if ($name === '' || $name === 'id' || $name[0] === '@' || $name[0] === '_') {
+			// and `uuid` are the caller echoing back an identifier. None of these
+			// are user data the schema was ever supposed to declare, so warning
+			// about them would drown the signal in noise on literally every save.
+			if ($name === '' || $name === 'id' || $name === 'uuid' || $name[0] === '@' || $name[0] === '_') {
 				continue;
 			}
 
