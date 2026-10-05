@@ -57,7 +57,9 @@ jobs:
         # `pinned` is the release #4316 was verified against, live and line by
         # line (the design cites richdocuments 12.0.1). Move it only after the
         # Office path has been checked against the new version.
-        richdocuments: [latest, v12.0.1]
+        # v11.1.2 is the richdocuments line for Nextcloud 34, which
+        # OpenRegister still supports; it passed the suite on 2026-10-05.
+        richdocuments: [latest, v12.0.1, v11.1.2]
     steps:
       - uses: actions/checkout@v4
 
