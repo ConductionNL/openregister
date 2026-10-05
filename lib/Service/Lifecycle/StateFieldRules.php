@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+ * @spec openspec/specs/row-field-level-security/spec.md
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use JsonSerializable;
  * that apply to this object as it stands, not the rules that could apply"
  * is a property of this class rather than a note in a caller.
  *
- * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+ * @spec openspec/specs/row-field-level-security/spec.md
  */
 final class StateFieldRules implements JsonSerializable {
 
@@ -54,7 +54,7 @@ final class StateFieldRules implements JsonSerializable {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function __construct(
 		private readonly ?string $state = null,
@@ -70,7 +70,7 @@ final class StateFieldRules implements JsonSerializable {
 	 *
 	 * @return string|null The state, or null when the schema declares no lifecycle.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function getState(): ?string {
 		return $this->state;
@@ -81,7 +81,7 @@ final class StateFieldRules implements JsonSerializable {
 	 *
 	 * @return array<int, string> The property names.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function getHidden(): array {
 		return $this->hidden;
@@ -92,7 +92,7 @@ final class StateFieldRules implements JsonSerializable {
 	 *
 	 * @return array<int, string> The property names.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function getReadOnly(): array {
 		return $this->readOnly;
@@ -103,7 +103,7 @@ final class StateFieldRules implements JsonSerializable {
 	 *
 	 * @return array<int, string> The property names.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function getRequired(): array {
 		return $this->required;
@@ -117,7 +117,7 @@ final class StateFieldRules implements JsonSerializable {
 	 *
 	 * @return bool True when all three lists are empty.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function isEmpty(): bool {
 		return ($this->hidden === [] && $this->readOnly === [] && $this->required === []);
@@ -130,7 +130,7 @@ final class StateFieldRules implements JsonSerializable {
 	 *
 	 * @return bool True when the property is hidden.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function hides(string $property): bool {
 		return in_array($property, $this->hidden, true);
@@ -143,7 +143,7 @@ final class StateFieldRules implements JsonSerializable {
 	 *
 	 * @return bool True when the property is read only.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function freezes(string $property): bool {
 		return in_array($property, $this->readOnly, true);
@@ -156,7 +156,7 @@ final class StateFieldRules implements JsonSerializable {
 	 *
 	 * @return string|null The declared message, or null.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function messageFor(string $property): ?string {
 		return ($this->messages[$property] ?? null);
@@ -172,7 +172,7 @@ final class StateFieldRules implements JsonSerializable {
 	 *
 	 * @return array{state: string|null, hidden: array<int, string>, readOnly: array<int, string>, required: array<int, string>} The published shape.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function jsonSerialize(): array {
 		return [

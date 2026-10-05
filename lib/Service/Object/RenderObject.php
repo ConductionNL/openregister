@@ -2441,7 +2441,7 @@ class RenderObject {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	private function attachFieldRules(ObjectEntity $entity, Schema $schema, array $stored): void {
 		try {
