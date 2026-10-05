@@ -309,6 +309,8 @@ class AuthorizationService {
 	 * @throws AuthenticationException If credentials are invalid or the user is outside the allow-list.
 	 *
 	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 *
+	 * @orphan-auth exclude cross-app entry point; caller is integriq's endpoint runtime (gate 23 gap 2)
 	 */
 	public function authorizeBasic(string $header, array $users = [], array $groups = []): void {
 		$this->resolvedConsumer = null;
@@ -351,6 +353,8 @@ class AuthorizationService {
 	 * @throws AuthenticationException If the token is invalid, the request carried no Bearer header, or the user is outside the allow-list.
 	 *
 	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 *
+	 * @orphan-auth exclude cross-app entry point; caller is integriq's endpoint runtime (gate 23 gap 2)
 	 */
 	public function authorizeOAuth(string $header, array $users = [], array $groups = []): void {
 		$this->resolvedConsumer = null;
@@ -403,6 +407,8 @@ class AuthorizationService {
 	 * @throws AuthenticationException Without a signed-in user, without a passing CSRF check, or outside the allow-list.
 	 *
 	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 *
+	 * @orphan-auth exclude cross-app entry point; caller is integriq's endpoint runtime (gate 23 gap 2)
 	 */
 	public function authorizeNcSession(array $users = [], array $groups = []): void {
 		$this->resolvedConsumer = null;
@@ -474,6 +480,8 @@ class AuthorizationService {
 	 * @throws AuthenticationException If the API key is invalid.
 	 *
 	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 *
+	 * @orphan-auth exclude cross-app entry point; caller is integriq's endpoint runtime (gate 23 gap 2)
 	 */
 	public function authorizeApiKey(string $header, array $keys, ?ConsumerSource $consumers=null): void {
 		$this->resolvedConsumer = null;
