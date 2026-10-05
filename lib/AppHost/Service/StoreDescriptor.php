@@ -87,7 +87,7 @@ final class StoreDescriptor {
 	 *
 	 * @return bool True when at least one field and one non-empty group are named.
 	 *
-	 * @spec openspec/changes/store-plane-publish/specs/apphost-store-plane/spec.md#requirement-a-descriptor-must-opt-in-to-publishing-by-naming-its-fields-and-its-groups
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-descriptor-must-opt-in-to-publishing-by-naming-its-fields-and-its-groups
 	 */
 	public function isPublishable(): bool {
 		return $this->publishFields !== [] && $this->namedPublishGroups() !== [];
@@ -101,7 +101,7 @@ final class StoreDescriptor {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/store-plane-publish/specs/apphost-store-plane/spec.md#requirement-only-a-user-the-apps-named-groups-admit-may-publish
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-only-a-user-the-apps-named-groups-admit-may-publish
 	 */
 	public function namedPublishGroups(): array {
 		$named = [];

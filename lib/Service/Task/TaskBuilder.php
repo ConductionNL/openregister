@@ -237,7 +237,7 @@ class TaskBuilder {
 	 *
 	 * @throws TaskValidationException When present but outside the vocabulary.
 	 *
-	 * @spec openspec/changes/task-expiry-and-outcomes/specs/task-expiry-and-outcomes/spec.md#requirement-a-task-declares-its-timeout-and-reject-behaviour-in-one-vocabulary
+	 * @spec openspec/specs/task-expiry-and-outcomes/spec.md#requirement-a-task-declares-its-timeout-and-reject-behaviour-in-one-vocabulary
 	 */
 	private function validBehaviour(mixed $value, string $field): ?string {
 		$behaviour = $this->stringOrNull(value: $value);

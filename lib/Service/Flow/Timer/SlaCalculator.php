@@ -401,7 +401,7 @@ final class SlaCalculator {
 	 *
 	 * @throws FlowTimerValidationException When the interval is longer than the walk allows.
 	 *
-	 * @spec openspec/changes/the-engine-measures-elapsed-business-hours/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function elapsedBusinessHours(DateTimeInterface $from, DateTimeInterface $to, WorkingCalendar $calendar): float {
 		if ($to->getTimestamp() < $from->getTimestamp()) {

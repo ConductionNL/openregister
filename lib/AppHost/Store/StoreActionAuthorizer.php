@@ -138,7 +138,7 @@ class StoreActionAuthorizer {
 	 *
 	 * @return bool True only when a group is named and it admits the user.
 	 *
-	 * @spec openspec/changes/store-plane-publish/specs/apphost-store-plane/spec.md#requirement-only-a-user-the-apps-named-groups-admit-may-publish
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-only-a-user-the-apps-named-groups-admit-may-publish
 	 */
 	public function canPublish(StoreDescriptor $descriptor, IUser $user): bool {
 		$groups = $descriptor->namedPublishGroups();

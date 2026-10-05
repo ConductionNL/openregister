@@ -20,7 +20,7 @@ declare(strict_types=1);
  * @license  EUPL-1.2
  * @link     https://www.OpenRegister.nl
  *
- * @spec openspec/changes/register-folder-on-first-upload/specs/file-actions/spec.md
+ * @spec openspec/specs/file-actions/spec.md
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Service\File;

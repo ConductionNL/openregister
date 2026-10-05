@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/register-folder-at-import/specs/file-actions/spec.md#requirement-an-app-imported-register-has-its-files-folder-when-the-import-returns-req-rfai-001
+ * @spec openspec/specs/file-actions/spec.md#requirement-an-app-imported-register-has-its-files-folder-when-the-import-returns-req-rfai-001
  */
 
 declare(strict_types=1);

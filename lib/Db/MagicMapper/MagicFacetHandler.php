@@ -286,7 +286,7 @@ class MagicFacetHandler {
 	 * @return array Facet results with buckets.
 	 *
 	 * @throws \OCP\DB\Exception If a database error occurs.
-	 * @spec openspec/changes/property-read-rules-hold-on-every-route/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
 	public function getSimpleFacets(
 		string $tableName,
@@ -432,7 +432,7 @@ class MagicFacetHandler {
 	 * @param array $query The search query with filters and facet config.
 	 *
 	 * @return array Merged facet results across all tables.
-	 * @spec openspec/changes/property-read-rules-hold-on-every-route/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
 	public function getSimpleFacetsUnion(array $tableConfigs, array $query): array {
 		$startTime = microtime(true);
@@ -1228,7 +1228,7 @@ class MagicFacetHandler {
 	 *
 	 * @return bool False when any table's schema withholds the property.
 	 *
-	 * @spec openspec/changes/property-read-rules-hold-on-every-route/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
 	private function callerMayFacetOnEveryTable(array $tableConfigs, string $property): bool {
 		foreach ($tableConfigs as $tableConfig) {

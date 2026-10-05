@@ -139,7 +139,7 @@ class FlowTimerSweep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/task-expiry-and-outcomes/specs/task-expiry-and-outcomes/spec.md#requirement-the-timer-sweep-enforces-a-declared-task-expiry
+	 * @spec openspec/specs/task-expiry-and-outcomes/spec.md#requirement-the-timer-sweep-enforces-a-declared-task-expiry
 	 */
 	private function sweepTaskTimeouts(DateTimeInterface $now, int $batch, array &$result): void {
 		if ($this->tasks === null || $this->taskService === null) {

@@ -1085,7 +1085,7 @@ class TaskService {
 	 * @throws TaskValidationException When a rejecting outcome has no comment.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
-	 * @spec openspec/changes/task-expiry-and-outcomes/specs/task-expiry-and-outcomes/spec.md#requirement-a-rejecting-completion-honours-the-tasks-declared-reject-behaviour
+	 * @spec openspec/specs/task-expiry-and-outcomes/spec.md#requirement-a-rejecting-completion-honours-the-tasks-declared-reject-behaviour
 	 */
 	private function completeInternal(
 		string $verb,

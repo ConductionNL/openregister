@@ -56,7 +56,7 @@ use Throwable;
  *   resolved via `OCP\Server::get` behind a `class_exists` guard so OpenRegister
  *   carries no compile-time dependency on the optional app (design D-2).
  *
- * @spec openspec/changes/per-app-doriath-application/tasks.md#1-per-app-doriath-registration-seam-d-2-d-6
+ * @spec openspec/changes/archive/2026-10-05-per-app-doriath-application/tasks.md#1-per-app-doriath-registration-seam-d-2-d-6
  */
 class DoriathApplicationRegistrar {
 	/**

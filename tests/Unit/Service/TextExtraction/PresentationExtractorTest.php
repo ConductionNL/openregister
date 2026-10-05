@@ -20,7 +20,7 @@ declare(strict_types=1);
  * @license  EUPL-1.2
  * @link     https://www.OpenRegister.nl
  *
- * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md
+ * @spec openspec/specs/text-extraction-presentation/spec.md
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;

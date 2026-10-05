@@ -15,7 +15,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/register-folder-at-import/specs/file-actions/spec.md#requirement-a-repair-step-provisions-folders-for-registers-imported-earlier-req-rfai-002
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-repair-step-provisions-folders-for-registers-imported-earlier-req-rfai-002
  */
 
 declare(strict_types=1);
