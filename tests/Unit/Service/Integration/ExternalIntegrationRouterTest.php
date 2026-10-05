@@ -165,6 +165,40 @@ class FakeCallService {
 }//end class
 
 /**
+ * A CallService that does what integriq's does with the options: hand them,
+ * unchanged, to a real Guzzle client as request options
+ * (integriq CallService::buildRequestOptions() returns `$config` as-is). The
+ * transport is a Guzzle MockHandler, so the request Guzzle would put on the
+ * wire is captured and nothing leaves the process.
+ */
+class GuzzleForwardingCallService {
+	/**
+	 * The requests Guzzle built, oldest first.
+	 *
+	 * @var list<\Psr\Http\Message\RequestInterface>
+	 */
+	public array $sent = [];
+
+	public function __construct(
+		private object $log,
+	) {
+	}//end __construct()
+
+	public function call($source, string $endpoint = '', string $method = 'GET', array $config = []) {
+		$history = [];
+		$stack = \GuzzleHttp\HandlerStack::create(new \GuzzleHttp\Handler\MockHandler([new \GuzzleHttp\Psr7\Response(201)]));
+		$stack->push(\GuzzleHttp\Middleware::history($history));
+		$client = new \GuzzleHttp\Client(['handler' => $stack]);
+		$client->request($method, 'https://provider.example/' . $endpoint, $config);
+		foreach ($history as $entry) {
+			$this->sent[] = $entry['request'];
+		}
+
+		return $this->log;
+	}//end call()
+}//end class
+
+/**
  * A CallService that fails loudly if ever called — proves mock mode never
  * touches the real upstream transport.
  */
@@ -765,4 +799,91 @@ class ExternalIntegrationRouterTest extends TestCase {
 
 		$this->assertSame(['resultaten' => []], $result);
 	}//end testNonMockSourceStillUsesTheRealCallPath()
+
+	/**
+	 * Build a router whose source `twilio-sms` exists and whose CallService
+	 * forwards the options to a real Guzzle client.
+	 *
+	 * @param GuzzleForwardingCallService $callService The forwarding CallService.
+	 *
+	 * @return ExternalIntegrationRouter
+	 */
+	private function routerForwardingToGuzzle(GuzzleForwardingCallService $callService): ExternalIntegrationRouter {
+		$sources = [
+			'integriq/twilio-sms' => $this->sourceEntity(['slug' => 'twilio-sms', 'location' => 'https://provider.example']),
+		];
+
+		return $this->routerOn($this->objectService($sources), $callService);
+	}//end routerForwardingToGuzzle()
+
+	private function sentLog(): ObjectEntity {
+		return $this->integriqCallLog(['statusCode' => 201, 'response' => ['statusCode' => 201, 'body' => '{"id":"m1"}', 'encoding' => 'UTF-8']]);
+	}//end sentLog()
+
+	public function testAnArrayBodyReachesTheConnectorAsJson(): void {
+		// The router documents `body` as "scalar or array". Guzzle refuses an
+		// array under `body`, so the router must hand the connector a request
+		// option Guzzle can send: `json` unless the caller asked for a form.
+		$callService = new GuzzleForwardingCallService($this->sentLog());
+		$router = $this->routerForwardingToGuzzle($callService);
+
+		$result = $router->call(
+			new FakeExternalProvider(id: 'message-dispatch', source: 'twilio-sms'),
+			'POST',
+			'messages',
+			['body' => ['recipients' => ['+31611110001'], 'body' => 'Hallo'], 'headers' => ['Accept' => 'application/json']]
+		);
+
+		$this->assertSame(['id' => 'm1'], $result);
+		$this->assertCount(1, $callService->sent);
+		$request = $callService->sent[0];
+		$this->assertSame('{"recipients":["+31611110001"],"body":"Hallo"}', (string)$request->getBody());
+		$this->assertSame('application/json', $request->getHeaderLine('Content-Type'));
+	}//end testAnArrayBodyReachesTheConnectorAsJson()
+
+	public function testAnArrayBodyWithAFormContentTypeIsFormEncoded(): void {
+		$callService = new GuzzleForwardingCallService($this->sentLog());
+		$router = $this->routerForwardingToGuzzle($callService);
+
+		$router->call(
+			new FakeExternalProvider(id: 'message-dispatch', source: 'twilio-sms'),
+			'POST',
+			'Messages.json',
+			['body' => ['To' => '+31611110001', 'Body' => 'Hallo'], 'headers' => ['Content-Type' => 'application/x-www-form-urlencoded']]
+		);
+
+		$this->assertCount(1, $callService->sent);
+		$request = $callService->sent[0];
+		$this->assertSame('To=%2B31611110001&Body=Hallo', (string)$request->getBody());
+		$this->assertSame('application/x-www-form-urlencoded', $request->getHeaderLine('Content-Type'));
+	}//end testAnArrayBodyWithAFormContentTypeIsFormEncoded()
+
+	public function testAStringBodyIsSentAsIs(): void {
+		$callService = new GuzzleForwardingCallService($this->sentLog());
+		$router = $this->routerForwardingToGuzzle($callService);
+
+		$router->call(
+			new FakeExternalProvider(id: 'message-dispatch', source: 'twilio-sms'),
+			'POST',
+			'raw',
+			['body' => '<x/>', 'headers' => ['Content-Type' => 'application/xml']]
+		);
+
+		$this->assertSame('<x/>', (string)$callService->sent[0]->getBody());
+	}//end testAStringBodyIsSentAsIs()
+
+	public function testCallWithMetaSendsAnArrayBodyAsJson(): void {
+		$callService = new GuzzleForwardingCallService($this->sentLog());
+		$router = $this->routerForwardingToGuzzle($callService);
+
+		$envelope = $router->callWithMeta(
+			new FakeExternalProvider(id: 'message-dispatch', source: 'twilio-sms'),
+			'POST',
+			'personen',
+			['body' => ['type' => 'RaadpleegMetBurgerservicenummer']]
+		);
+
+		$this->assertSame(['id' => 'm1'], $envelope['body']);
+		$this->assertSame('{"type":"RaadpleegMetBurgerservicenummer"}', (string)$callService->sent[0]->getBody());
+	}//end testCallWithMetaSendsAnArrayBodyAsJson()
 }//end class
