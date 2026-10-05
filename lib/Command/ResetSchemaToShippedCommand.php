@@ -65,6 +65,8 @@ class ResetSchemaToShippedCommand extends Command {
 	 * Configure the command.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:schema:reset-to-shipped')
