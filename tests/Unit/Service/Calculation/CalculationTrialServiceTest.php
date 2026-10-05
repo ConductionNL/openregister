@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Unit\Service\Calculation;
 
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationPayloadBuilder;
@@ -19,9 +16,9 @@ use PHPUnit\Framework\TestCase;
  * Try it before you save it.
  *
  * Covers the spec scenario "an administrator tries an expression before
- * committing it": the value comes back, and no schema is written. The mappers
- * are mocked with no expectations, so any call into the schema or object store
- * on the sample path would be a failure, not a silent pass.
+ * committing it": the value comes back, and no schema is written. The service
+ * holds no mapper at all, so the sample path cannot reach the schema or object
+ * store.
  */
 class CalculationTrialServiceTest extends TestCase {
 	/**
@@ -38,16 +35,10 @@ class CalculationTrialServiceTest extends TestCase {
 		$userSession = $this->createMock(originalClassName: IUserSession::class);
 		$userSession->method('getUser')->willReturn(null);
 
-		$schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
-		$schemaMapper->expects($this->never())->method($this->anything());
-
 		$this->trials = new CalculationTrialService(
 			new CalculationAnnotationValidator(),
 			new CalculationEvaluator(new PlaceholderResolver($userSession)),
 			$this->createMock(originalClassName: CalculationPayloadBuilder::class),
-			$this->createMock(originalClassName: RegisterMapper::class),
-			$schemaMapper,
-			$this->createMock(originalClassName: MagicMapper::class),
 		);
 	}
 
