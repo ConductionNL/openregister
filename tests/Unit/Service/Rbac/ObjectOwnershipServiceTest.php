@@ -626,6 +626,199 @@ class ObjectOwnershipServiceTest extends TestCase {
 	}//end testTakingARecordYouAlreadyOwnWritesNothing()
 
 	/**
+	 * A notification that could not be sent does not undo the transfer.
+	 *
+	 * The audit entry is the durable record and the notification is the
+	 * courtesy. A handover that rolled back because a notification failed would
+	 * make the courtesy load-bearing.
+	 *
+	 * @return void
+	 */
+	public function testANotificationFailureDoesNotUndoTheTransfer(): void {
+		$this->signIn('bob', ['redactie']);
+		$this->permissions->method('hasPermission')->willReturn(true);
+		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->notificationManager->method('createNotification')->willThrowException(
+			new \RuntimeException('the notification app is not enabled')
+		);
+
+		$this->ownerWriter->expects($this->once())->method('writeOwner');
+
+		$outcome = $this->service->claim(
+			register: new Register(),
+			schema: new Schema(),
+			object: $this->record('uuid-1', 'alice')
+		);
+
+		$this->assertTrue($outcome['changed']);
+	}//end testANotificationFailureDoesNotUndoTheTransfer()
+
+	/**
+	 * A previous owner who no longer exists is not notified.
+	 *
+	 * Reassigning a departed colleague's records is the main reason the bulk
+	 * path exists, and their account is usually already gone.
+	 *
+	 * @return void
+	 */
+	public function testADepartedPreviousOwnerIsNotNotified(): void {
+		$this->signIn('root', ['admin']);
+		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->userManager = $this->createMock(IUserManager::class);
+		$this->userManager->method('userExists')->willReturnCallback(
+			static fn (string $uid): bool => ($uid !== 'alice')
+		);
+		$service = new ObjectOwnershipService(
+			$this->userSession,
+			$this->userManager,
+			$this->groupManager,
+			new ObjectScopeResolver(),
+			$this->permissions,
+			$this->ownerWriter,
+			$this->authorizationWriter,
+			$this->auditTrailMapper,
+			$this->magicMapper,
+			$this->registerMapper,
+			$this->schemaMapper,
+			$this->notificationManager,
+			$this->createMock(LoggerInterface::class)
+		);
+
+		$this->notificationManager->expects($this->never())->method('notify');
+
+		$outcome = $service->assign(
+			register: new Register(),
+			schema: new Schema(),
+			object: $this->record('uuid-1', 'alice'),
+			newOwner: 'carol'
+		);
+
+		$this->assertTrue($outcome['changed']);
+	}//end testADepartedPreviousOwnerIsNotNotified()
+
+	/**
+	 * A verdict that could not be reached is not a yes.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreachableVerdictRefusesTheTakeover(): void {
+		$this->signIn('bob', ['redactie']);
+		$this->permissions->method('hasPermission')->willThrowException(
+			new \RuntimeException('the schema could not be resolved')
+		);
+
+		$this->ownerWriter->expects($this->never())->method('writeOwner');
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->service->claim(
+			register: new Register(),
+			schema: new Schema(),
+			object: $this->record('uuid-1', 'alice')
+		);
+	}//end testAnUnreachableVerdictRefusesTheTakeover()
+
+	/**
+	 * A cascade that cannot read the children leaves the parent transferred.
+	 *
+	 * @return void
+	 */
+	public function testAFailedChildLookupLeavesTheParentTransferred(): void {
+		$this->signIn('root', ['admin']);
+		$this->expectNotification();
+		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->magicMapper->method('findByRelationUsingRelationsColumn')->willThrowException(
+			new \RuntimeException('no magic table for this register')
+		);
+
+		$outcome = $this->service->assign(
+			register: new Register(),
+			schema: new Schema(),
+			object: $this->record('uuid-1', 'alice'),
+			newOwner: 'carol',
+			cascade: true
+		);
+
+		$this->assertTrue($outcome['changed']);
+		$this->assertSame([], $outcome['children']);
+	}//end testAFailedChildLookupLeavesTheParentTransferred()
+
+	/**
+	 * A child whose register cannot be resolved is skipped, not fatal.
+	 *
+	 * @return void
+	 */
+	public function testAnUnresolvableChildIsSkipped(): void {
+		$this->signIn('root', ['admin']);
+		$this->expectNotification();
+		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->magicMapper->method('findByRelationUsingRelationsColumn')->willReturn(
+			[$this->record('uuid-child', 'alice')]
+		);
+		$this->registerMapper->method('find')->willThrowException(
+			new \RuntimeException('register 1 does not exist')
+		);
+
+		$outcome = $this->service->assign(
+			register: new Register(),
+			schema: new Schema(),
+			object: $this->record('uuid-1', 'alice'),
+			newOwner: 'carol',
+			cascade: true
+		);
+
+		$this->assertTrue($outcome['changed']);
+		$this->assertSame([], $outcome['children']);
+	}//end testAnUnresolvableChildIsSkipped()
+
+	/**
+	 * A cyclic relation graph terminates.
+	 *
+	 * The visited set stops a record being moved twice, and the depth cap stops
+	 * a long chain being walked for minutes. Without either, a cycle in live
+	 * relation data turns one handover into a scan of the register.
+	 *
+	 * @return void
+	 */
+	public function testACyclicRelationGraphTerminates(): void {
+		$this->signIn('root', ['admin']);
+		$this->expectNotification();
+		$this->auditTrailMapper->method('createAuditTrail')->willReturn($this->createMock(AuditTrail::class));
+		$this->registerMapper->method('find')->willReturn(new Register());
+		$this->schemaMapper->method('find')->willReturn(new Schema());
+
+		$parent = $this->record('uuid-1', 'alice');
+		$child = $this->record('uuid-2', 'alice');
+
+		// Each points at the other, which is the cycle.
+		$this->magicMapper->method('findByRelationUsingRelationsColumn')->willReturnCallback(
+			static function (string $uuid) use ($parent, $child): array {
+				if ($uuid === 'uuid-1') {
+					return [$child];
+				}
+
+				return [$parent];
+			}
+		);
+
+		$written = [];
+		$this->ownerWriter->method('writeOwner')->willReturnCallback(
+			static function ($register, $schema, string $objectUuid, string $owner) use (&$written): void {
+				$written[] = $objectUuid;
+			}
+		);
+
+		$this->service->assign(
+			register: new Register(),
+			schema: new Schema(),
+			object: $parent,
+			newOwner: 'carol',
+			cascade: true
+		);
+
+		$this->assertSame(['uuid-1', 'uuid-2'], $written);
+	}//end testACyclicRelationGraphTerminates()
+
+	/**
 	 * A record with no uuid cannot change hands.
 	 *
 	 * The write is keyed on the uuid. Cast instead of refused, a null uuid
