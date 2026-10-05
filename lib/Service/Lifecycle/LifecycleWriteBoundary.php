@@ -131,6 +131,33 @@ final class LifecycleWriteBoundary {
 	}//end declaringAction()
 
 	/**
+	 * Mark a write as a transition run as the system for an app, and release the mark afterwards.
+	 *
+	 * The audit trail reads the mark so the row records that OpenRegister's
+	 * own read and update checks were skipped and which app approved the
+	 * caller instead. Release happens in a `finally`, for the same reason
+	 * {@see declaringAction()} releases there.
+	 *
+	 * @param string $uuid The object's uuid.
+	 * @param string $app The app id that approved the caller itself.
+	 * @param callable(): ObjectEntity $write Performs the write; called exactly once.
+	 *
+	 * @return ObjectEntity Whatever $write returned.
+	 *
+	 * @spec openspec/changes/transition-as-system/specs/object-lifecycle/spec.md
+	 */
+	public function runningAsSystem(string $uuid, string $app, callable $write): ObjectEntity {
+		$this->actions->enterSystem(uuid: $uuid, app: $app);
+		try {
+			return $write();
+		} finally {
+			// Released even when the write is refused, so a later ordinary
+			// save of the same object is never recorded as a system move.
+			$this->actions->leaveSystem(uuid: $uuid);
+		}
+	}//end runningAsSystem()
+
+	/**
 	 * The automatic transition being applied right now, if any.
 	 *
 	 * Read from the pass's ambient frame, never from a parameter a caller
