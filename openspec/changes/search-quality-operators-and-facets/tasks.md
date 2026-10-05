@@ -169,3 +169,21 @@ settings page under `src/views/settings/sections/` is the surface that exists.
 
 `search-over-history-and-an-administered-dictionary` depends on this change and
 carries the history filter and the synonym dictionary; it is a separate change.
+
+## 8. Woo programme amendment: reconciliation and reindex (REQ-SQF-006, REQ-SQF-007, rows 9.16, 9.19)
+
+- [ ] 8.1 Add the five index probes to `ConsistencyCheckService` with their repairs in `ConsistencyRepairService`. Verify: `tests/Unit/Service/Operations/IndexReconciliationTest.php::testAMissingFileIsReported`, `testAnOrphanedChunkIsReported`, `testAStaleChunkIsReported`, `testAMissingEmbeddingIsReportedOnlyWhenVectorisationIsOn`, `testAnOrphanedEmbeddingIsReported` (fail today: no such probes), `testRepairQueuesExtractionForMissingFiles`, `testRepairDeletesOrphans`; the read-only guard test covers the new probes.
+- [ ] 8.2 `lib/BackgroundJob/IndexReconciliationJob.php` (daily `TimedJob` through `RecordedTimedJob`, registered in `appinfo/info.xml`) storing the report. Verify: `tests/Unit/BackgroundJob/IndexReconciliationJobTest.php` runs the real `run()` over fixtures and reads the stored report.
+- [ ] 8.3 `lib/Service/Operations/ReindexSelectionService.php` and `lib/BackgroundJob/ReindexSelectionJob.php` (`RecordedQueuedJob`, progress written through `JobRunRecorder` every 100 objects); `OperationsConsoleController::reindex()` at `POST /api/operations/reindex`, administrator only. Verify: `tests/Unit/Service/Operations/ReindexSelectionTest.php::testExactlyOneSelectionIsAccepted`, `testMoreThanFiftyThousandIsRefused`, `testTheRunReportsProgressAndFailures`; `tests/Unit/Controller/ReindexSelectionControllerTest.php::testANonAdministratorGets403`; hydra gates route-auth and semantic-auth pass.
+- [ ] 8.4 The console: the five probes and the live run in `src/views/operations/`. Verify: `tests/e2e/ci/index-reconciliation-and-reindex.spec.ts` deletes a file behind the index's back, triggers the reconciliation, sees the orphan, repairs it, starts a reindex of a three-object selection and sees the run progress to three of three.
+- [ ] 8.5 Through the route: a Newman request posts a reindex for two ids and polls `GET /api/operations/runs` once after the cron run (no polling loop in CI), asserting processed 2.
+
+## V. Verification and done
+
+Follow `/home/rubenlinde/memcap-work/woo-build/LANE-RULES-BUILD.md` (or the copy of those rules in the build brief).
+
+- [ ] V.1 Work in your own clone, branched with `git checkout --no-track -b <branch> origin/development`, with `TMPDIR` set to a sibling directory outside the clone. Verify: `git rev-parse --show-toplevel` runs in the same command as every `git add`.
+- [ ] V.2 Every test named above fails on `origin/development` and passes on the branch. Verify: run each new test file once with the change stashed and once with it applied, and quote both `Tests:` lines in the PR body. A test that passes on today's code proves nothing and does not count.
+- [ ] V.3 Full unit suite: `./vendor/bin/phpunit -c phpunit-unit.xml --no-coverage`, judged by the `Tests:` line (`Failures:` and `Errors:`), never by the exit code alone, because a green suite exits 1 without a coverage driver.
+- [ ] V.4 Gates: `run-hydra-gates.sh --base origin/development` from `vendor/conduction/hydra-gates` (without `--base` the gates read NOT APPLICABLE, which is not a pass), and count the gates that ran. Then once before push: `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` and `npm run lint`. CI runs the gates on the full tree, and the coverage guard needs tests for every added statement, so project the coverage arithmetically and say in the PR body that it is arithmetic.
+- [ ] V.5 One PR with `--base development`. Merge `development` into the branch, never rebase a pushed branch. No `Co-Authored-By` trailer on any commit. Done means merged on `development` with CI green; the rows this change closes count as `production` only once it ships in a store release.

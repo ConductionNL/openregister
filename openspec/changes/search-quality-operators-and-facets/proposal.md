@@ -134,3 +134,19 @@ matched, and neither has an administered rebuild.
 - Stopword and synonym administration. The cluster name mentions
   stopwords; no candidate asks for them and ADR-007 leaves the analyser to
   the built-in backend.
+
+## Woo capability programme amendment (2026-10-05)
+
+The Woo capability programme (round 1, `woo-round1/mi/opencatalogi/_round1/build-plan/plan.md`, wave 1) amends this change with two rows. Re-read on `development` at 1dc6a4667 immediately before writing: the change is open at 15 of 18 tasks (5.1, 5.2 and 6.1 open); the administered rebuild (REQ-SQF-004) is built over the whole index. The operations console the rebuild's note says did not exist has since landed (`admin-operations-console`: `ConsistencyCheckService` probes, `JobRunRecorder`, `/api/operations/*`). Nothing already done is rewritten.
+
+| row | capability | ours today (`baseline/openwoo.tsv`) |
+|---|---|---|
+| 9.16 | The product reconciles its register against its index on a schedule, and reports what is missing | no: OpenRegister is its own index, so objects and their table rows cannot diverge; files and their text chunks and embeddings can, and nothing reconciles or reports them |
+| 9.19 | An administrator reindexes a selection of records, and the run is visible while it happens | partial: bulk save and import jobs exist; REQ-SQF-004 rebuilds whole indexes; there is no reindex of a selection with a visible run |
+
+What the amendment adds:
+
+- **Reconciliation on a schedule (9.16).** Five probes join the consistency check: a file in extraction scope with no chunks and no recorded skip (missing), chunks whose file or object is gone (orphaned), chunks older than their source file (stale), chunks without an embedding while vectorisation is on (missing), and embeddings whose chunk is gone (orphaned). A daily `IndexReconciliationJob` runs them and stores the report; the operations console shows each count with sample ids and the time of the last run, and offers the existing repair action per probe (queue extraction for missing and stale, delete orphans).
+- **Reindex a selection (9.19).** `POST /api/operations/reindex` with exactly one of `{register, schema}`, `{register, schema, query}` (the object list filters) or `{ids}` queues a recorded run that re-extracts the objects' own text and their files' text and embeddings. The run is listed in `/api/operations/runs` with `processed`, `total`, `failed` and the failures named, updated while it runs, and shown live on the operations console. Administrator only; a selection above 50,000 objects is refused with the advice to use the whole-index rebuild.
+
+Dependencies: none new. This change's own `recompute-and-reindex-on-demand` (wave 2) builds on the reindex run for parent-to-child reindexing. Closes 9.16 and 9.19.
