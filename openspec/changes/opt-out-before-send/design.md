@@ -1,6 +1,6 @@
 # Design: ask integriq before mailing an external address
 
-The fleet contract, the category list, the fail mode and the open decisions live in hydra's `openspec/changes/opt-out-before-send/design.md` (ConductionNL/hydra#739). This file covers OpenRegister. Lines are at `development` `910e3717`.
+The fleet contract, the category list, the fail mode and Ruben's decisions of 2026-10-05 live in hydra's `openspec/changes/opt-out-before-send/design.md` (ConductionNL/hydra#739). This file covers OpenRegister. Lines are at `development` `910e3717`.
 
 ## 1. Why an event and not a service
 
@@ -15,7 +15,7 @@ ask(string $channel, string $category, list<string> $addresses, string $correlat
 ```
 
 - It builds `OCA\Integriq\Event\OutboundSendDecisionRequestedEvent` by string, with `sourceApp: 'openregister'`.
-- Class missing, event unhandled, or listener throws: every address gets `send: false`, code `authority-unavailable`. An exempt category gets `send: true` and no link. The exempt floor is the fleet constant: `besluit`, `statutory`, `account`, `security`.
+- Class missing, event unhandled, or listener throws: every address gets `send: false`, code `authority-unavailable`, and a warning is logged with the category and the address count (decision 1). An exempt category gets `send: true` and no link. The exempt floor is the fleet constant: `besluit`, `statutory`, `account`, `security`.
 - The config key `openregister.outbound_optout_check` (default `true`) turns the seam off. It is a security-relevant key (ADR-102): any value other than `false` reads as on.
 
 Both send paths call this one service, so they cannot drift apart on the fail mode.
@@ -45,19 +45,27 @@ The step config gains `messageCategory`:
 - `notifyParties()` takes a new optional `category` argument. `AnnotationNotificationDispatcher` passes the rule's `messageCategory` (`lib/Service/Notification/AnnotationNotificationDispatcher.php:3218-3223`).
 - `NotificationAnnotationValidator` accepts `messageCategory` on a rule and refuses an unknown value with `notification-bad-message-category`. The existing codes, such as `notification-bad-channel` (`lib/Service/Notification/NotificationAnnotationValidator.php:493`), show the shape.
 
-## 5. Headers
+## 5. Headers: one shared helper
 
 `EmailSender::sendToAddress()` (`lib/Service/Notification/EmailSender.php:135`) builds an `IMessage` and calls `setPlainBody()`. `IMessage` has no header setter. pipelinq solved this behind `method_exists($message, 'getSymfonyEmail')` (`pipelinq/lib/Service/Marketing/Transport/InstanceMailerTransport.php:154`).
 
-`sendToAddress()` gains an optional `array $headers = []`. When the message exposes `getSymfonyEmail()`, it sets them. When it does not, it logs once at debug and sends without them. The body link is always there, so the person can always unsubscribe.
+Ruben decided that OpenRegister owns one helper for this (2026-10-05, decision 6). So:
 
-This is the helper hydra's open decision 6 asks about. When Ruben agrees, dossiq and pipelinq can call it instead of keeping their own copy.
+- A new `OCA\OpenRegister\Service\Notification\UnsubscribeHeaders` with `apply(IMessage $message, array $unsubscribe): bool`. It takes integriq's unsubscribe material, sets `List-Unsubscribe: <oneClickUrl>` and `List-Unsubscribe-Post: List-Unsubscribe=One-Click` when the message exposes `getSymfonyEmail()`, and returns whether it could.
+- When it cannot, it logs once at debug and returns false. The caller still sends: the body link is always there.
+- It is a public OpenRegister service. dossiq and pipelinq already hold OpenRegister as a hard dependency (ADR-083), so they inject it. pipelinq's own `applyHeaders()` delegates to it.
+- `sendToAddress()` gains an optional `?array $unsubscribe = null` and calls the helper.
 
-## 6. Out of scope
+## 6. A defect fixed in this change
+
+A party mail's body is its subject. `dispatchToParties()` (`lib/Service/Notification/AnnotationNotificationDispatcher.php:3184`) takes only `subject`. Its caller passes `$broadcastSubject` (`:533-539`). It then calls `notifyParties()` with `body: $subject` (`:3221`). So a party gets the subject twice and never the rule's message.
+
+The fix: the caller resolves the rule's `message` the way it resolves the subject, and passes it as a new `body` argument. When the rule has no `message`, the body falls back to the subject, which is today's behaviour. The unsubscribe line is appended after the body.
+
+## 7. Out of scope
 
 - Notifications to Nextcloud users through `field`, `users`, `groups`, `role` and `object-acl` recipients (`lib/Service/Notification/NotificationRecipientResolver.php:187-201`). They need `userExists()` and follow user preferences.
-- The `body: $subject` argument in the party dispatch (`AnnotationNotificationDispatcher.php:3221`). It looks like the body is set to the subject. It is not part of this change and is reported in the PR body.
 
-## 7. Performance
+## 8. Performance
 
 One `ask()` per step run or per notification rule fire, in chunks of 500 inside integriq. A flow step with ten thousand addresses makes twenty queries in integriq and no HTTP calls.

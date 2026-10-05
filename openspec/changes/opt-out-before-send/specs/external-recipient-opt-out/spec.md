@@ -79,3 +79,41 @@ A non-exempt mail to an external address MUST carry integriq's unsubscribe link 
 - **WHEN** a flow step mails an external address with `messageCategory: besluit`
 - **THEN** the body has no unsubscribe line and the message has no `List-Unsubscribe` header
 - @e2e exclude mail rendering, covered by PHPUnit
+
+### Requirement: OpenRegister owns one shared List-Unsubscribe helper (REQ-ERO-005)
+
+OpenRegister MUST ship a public `UnsubscribeHeaders` service that sets `List-Unsubscribe` and `List-Unsubscribe-Post: List-Unsubscribe=One-Click` from integriq's unsubscribe material on an `OCP\Mail\IMessage`. It MUST reach the underlying mail object only behind a `method_exists()` guard. When it cannot set the headers, it MUST return false and MUST NOT throw, so the caller still sends with the body link. `EmailSender` MUST use it. It is the one helper dossiq and pipelinq call. Approved by Ruben on 2026-10-05.
+
+#### Scenario: The helper sets both headers
+
+- **GIVEN** a message that exposes the underlying mail object
+- **WHEN** a caller applies integriq's material with one-click URL `https://nc.example/u/abc`
+- **THEN** the message has `List-Unsubscribe: <https://nc.example/u/abc>` and `List-Unsubscribe-Post: List-Unsubscribe=One-Click`
+- @e2e exclude mail header path, covered by PHPUnit
+
+#### Scenario: A mailer without headers still sends
+
+- **GIVEN** a message that does not expose the underlying mail object
+- **WHEN** a caller applies the material
+- **THEN** the helper returns false and does not throw
+- **AND** the caller sends the mail with the body link
+- @e2e exclude mail header path, covered by PHPUnit
+
+### Requirement: A party mail carries the rule's message as its body (REQ-ERO-006)
+
+A `parties` notification MUST send the rule's resolved `message` as the mail body. It MUST fall back to the subject only when the rule declares no `message`. This fixes the defect where `dispatchToParties()` passed `body: $subject` to `notifyParties()`.
+
+#### Scenario: The body is the message, not the subject
+
+- **GIVEN** a rule with subject `Your case changed` and message `Open the portal to see the new status`
+- **WHEN** the rule fires for a party with an address
+- **THEN** the mail's subject is `Your case changed`
+- **AND** its body starts with `Open the portal to see the new status`
+- @e2e exclude notification dispatcher path, covered by PHPUnit
+
+#### Scenario: A rule without a message keeps today's body
+
+- **GIVEN** a rule with a subject and no message
+- **WHEN** the rule fires for a party
+- **THEN** the mail's body starts with the subject
+- @e2e exclude notification dispatcher path, covered by PHPUnit

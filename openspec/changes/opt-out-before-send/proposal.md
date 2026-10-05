@@ -1,6 +1,6 @@
 # Ask integriq before mailing an external address
 
-Part of the hydra change `opt-out-before-send` (ConductionNL/hydra#739). That change holds the fleet contract, the sender table and the open decisions. This is OpenRegister's share.
+Part of the hydra change `opt-out-before-send` (ConductionNL/hydra#739). That change holds the fleet contract, the sender table and Ruben's decisions of 2026-10-05. This is OpenRegister's share.
 
 ## Why
 
@@ -18,6 +18,8 @@ A person who clicked an integriq unsubscribe link is mailed anyway.
 - Without integriq, only exempt categories are mailed. The rest is reported `authority-unavailable`.
 - The flow step and the notification rule gain an optional `messageCategory`, default `service`.
 - A non-exempt mail carries integriq's unsubscribe link in the body, and its `List-Unsubscribe` headers when the mailer allows them.
+- **One shared header helper.** OpenRegister owns `UnsubscribeHeaders`, which sets `List-Unsubscribe` and `List-Unsubscribe-Post` behind the guarded `getSymfonyEmail()` path. `EmailSender` uses it, and dossiq and pipelinq call it instead of keeping their own copy (Ruben, 2026-10-05, decision 6).
+- **A defect fixed on the way.** A party mail's body is its subject today: `dispatchToParties()` is given only the subject (`lib/Service/Notification/AnnotationNotificationDispatcher.php:533-539`) and passes `body: $subject` to `notifyParties()` (`:3221`). This change passes the rule's resolved message as the body, and falls back to the subject only when the rule has none.
 
 ## Capabilities
 
@@ -30,6 +32,7 @@ A person who clicked an integriq unsubscribe link is mailed anyway.
 - `lib/Service/Flow/FlowMessagingService.php`, `lib/Service/Flow/Nodes/SendEmailNode.php`
 - `lib/Service/Party/PartyNotificationService.php`, `lib/Service/Notification/AnnotationNotificationDispatcher.php`, `lib/Service/Notification/NotificationAnnotationValidator.php`
 - `lib/Service/Notification/EmailSender.php` gains optional headers.
+- A new public `lib/Service/Notification/UnsubscribeHeaders.php`, which sibling apps resolve from OpenRegister (they already depend on it, ADR-083).
 - A new `lib/Service/Notification/OptOutAuthority.php` holds the guarded dispatch, so both paths share one fail mode.
 - Dependent apps: dossiq records flow mail through `FlowEmailSentListener`. A skipped address raises no `FlowEmailSentEvent`, so dossiq records nothing for it. opencatalogi and softwarecatalog do not use these paths.
 - Notifications to Nextcloud users (`field`, `users`, `groups`, `role`) do not change.

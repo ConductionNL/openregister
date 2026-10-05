@@ -39,10 +39,23 @@ Spec only until Ruben approves ConductionNL/hydra#739. Build after integriq's ev
 
 ## 4. The link and the headers
 
-- [ ] 4.1 `EmailSender::sendToAddress()` accepts headers and sets them through the guarded path. The body link is appended by the callers.
+- [ ] 4.1 The shared `UnsubscribeHeaders` helper (Ruben, 2026-10-05). Public service, guarded path, returns false instead of throwing.
+  - spec_ref: `#requirement-openregister-owns-one-shared-list-unsubscribe-helper-req-ero-005`
+  - files: `lib/Service/Notification/UnsubscribeHeaders.php`, `tests/Unit/Service/Notification/UnsubscribeHeadersTest.php`
+  - acceptance: both helper scenarios pass. Document it in OpenRegister's published contract so dossiq and pipelinq can rely on it.
+  - test: `vendor/bin/phpunit --no-coverage --filter UnsubscribeHeadersTest`
+- [ ] 4.2 `EmailSender::sendToAddress()` takes the unsubscribe material and calls the helper. The body link is appended by the callers.
   - spec_ref: `#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004`
   - files: `lib/Service/Notification/EmailSender.php`, its test
   - test: `vendor/bin/phpunit --no-coverage --filter EmailSenderTest`
+
+## 4a. The defect found while reading
+
+- [ ] 4a.1 A party mail's body is its subject (`AnnotationNotificationDispatcher.php:3221`). Resolve the rule's `message` at the caller (`:533-539`), pass it to `dispatchToParties()` as `body`, fall back to the subject.
+  - spec_ref: `#requirement-a-party-mail-carries-the-rule-s-message-as-its-body-req-ero-006`
+  - files: `lib/Service/Notification/AnnotationNotificationDispatcher.php`, its test
+  - acceptance: both body scenarios pass. Red before.
+  - test: `vendor/bin/phpunit --no-coverage --filter AnnotationNotificationDispatcherTest`
 
 ## 5. Verify
 
