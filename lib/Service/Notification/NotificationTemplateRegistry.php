@@ -162,6 +162,14 @@ class NotificationTemplateRegistry {
 				'pendingCount' => 'How many records are waiting on a reviewer',
 			],
 		],
+		'view_alert_crossed' => [
+			'group' => 'views',
+			'variables' => [
+				'view' => 'The saved view whose count crossed its threshold',
+				'count' => 'The count that crossed it',
+				'threshold' => 'The threshold the alert declares',
+			],
+		],
 	];
 
 	/**
@@ -298,6 +306,16 @@ class NotificationTemplateRegistry {
 				'subject' => 'Records are waiting on a review',
 				'body' => '{{pendingCount}} records are waiting on a review before '
 					. 'destruction.',
+			],
+		],
+		'view_alert_crossed' => [
+			'nl' => [
+				'subject' => '{{view}} staat op {{count}}',
+				'body' => 'De weergave {{view}} telt {{count}} en is over de drempel van {{threshold}} gegaan.',
+			],
+			'en' => [
+				'subject' => '{{view}} is at {{count}}',
+				'body' => 'The view {{view}} counts {{count}} and has crossed its threshold of {{threshold}}.',
 			],
 		],
 	];
