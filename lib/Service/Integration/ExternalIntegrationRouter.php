@@ -676,7 +676,7 @@ class ExternalIntegrationRouter {
 	/**
 	 * The endpoint to hand the connector for a path relative to the source.
 	 *
-	 * integriq builds the URL as `location . endpoint` with no separator, and
+	 * The connector (integriq) builds the URL as `location . endpoint` with no separator, and
 	 * the seeded sources carry a location without a trailing slash
 	 * (`https://rest.messagebird.com`). A relative path such as `messages`
 	 * therefore became `https://rest.messagebird.commessages`. The path is
