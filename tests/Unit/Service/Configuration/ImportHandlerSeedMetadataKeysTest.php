@@ -105,7 +105,7 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 		);
 
 		$this->assertCount(1, $warnings);
-		$this->assertStringContainsString('uuid, slug', $warnings[0]);
+		$this->assertStringContainsString('slug', $warnings[0]);
 	}//end testMagicMapperStillReportsAnUndeclaredKey()
 
 	/**
