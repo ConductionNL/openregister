@@ -49,6 +49,11 @@ use Psr\Log\AbstractLogger;
 
 /**
  * @covers \OCA\OpenRegister\Listener\ViewAlertCrossedListener
+ * @uses \OCA\OpenRegister\Db\View
+ * @uses \OCA\OpenRegister\Event\ViewAlertCrossedEvent
+ * @uses \OCA\OpenRegister\Service\Notification\EmailSender
+ * @uses \OCA\OpenRegister\Service\Notification\NotificationRecipientResolver
+ * @uses \OCA\OpenRegister\Service\View\ViewAlert
  */
 class ViewAlertCrossedListenerTest extends TestCase {
 
@@ -79,6 +84,20 @@ class ViewAlertCrossedListenerTest extends TestCase {
 	 * @var \ArrayObject<int, string>
 	 */
 	private \ArrayObject $warnings;
+
+	/**
+	 * Users whose notification the manager refuses.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $refuseNotifyFor = [];
+
+	/**
+	 * Addresses the mailer fails to send to.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $refuseMailTo = [];
 
 	/**
 	 * The listener over a server with users alice, bob and carol and a group `teamleads` holding alice and bob.
@@ -135,13 +154,23 @@ class ViewAlertCrossedListenerTest extends TestCase {
 		$manager = $this->createMock(INotificationManager::class);
 		$manager->method('createNotification')->willReturnCallback(fn (): INotification => $this->recordingNotification());
 		$manager->method('notify')->willReturnCallback(function (INotification $notification): void {
-			$this->notified[] = $this->records[spl_object_id($notification)]->getArrayCopy();
+			$record = $this->records[spl_object_id($notification)]->getArrayCopy();
+			if (in_array($record['user'], $this->refuseNotifyFor, true) === true) {
+				throw new \RuntimeException('notification backend down');
+			}
+
+			$this->notified[] = $record;
 		});
 
 		$mailer = $this->createMock(IMailer::class);
 		$mailer->method('createMessage')->willReturnCallback(fn (): IMessage => $this->recordingMessage());
 		$mailer->method('send')->willReturnCallback(function (IMessage $message): array {
-			$this->mailed[] = $this->records[spl_object_id($message)]->getArrayCopy();
+			$record = $this->records[spl_object_id($message)]->getArrayCopy();
+			if (array_intersect(array_keys($record['to']), $this->refuseMailTo) !== []) {
+				throw new \RuntimeException('smtp down');
+			}
+
+			$this->mailed[] = $record;
 			return [];
 		});
 
@@ -191,14 +220,17 @@ class ViewAlertCrossedListenerTest extends TestCase {
 	}//end recordingNotification()
 
 	/**
-	 * A mail message double that records its recipient and subject.
+	 * A mail message double that records its recipient, subject and body.
 	 *
 	 * @return IMessage
 	 */
 	private function recordingMessage(): IMessage {
-		$record = new \ArrayObject(['to' => [], 'subject' => '']);
+		$record = new \ArrayObject(['to' => [], 'subject' => '', 'body' => '']);
 		$message = $this->createMock(IMessage::class);
-		$message->method('setPlainBody')->willReturnSelf();
+		$message->method('setPlainBody')->willReturnCallback(function (string $body) use ($record, $message): IMessage {
+			$record['body'] = $body;
+			return $message;
+		});
 		$message->method('setTo')->willReturnCallback(function (array $to) use ($record, $message): IMessage {
 			$record['to'] = $to;
 			return $message;
@@ -290,8 +322,39 @@ class ViewAlertCrossedListenerTest extends TestCase {
 		$this->assertCount(1, $this->mailed);
 		$this->assertSame(['carol@example.org' => 'Carol'], $this->mailed[0]['to']);
 		$this->assertStringContainsString('Overdue cases', $this->mailed[0]['subject']);
+		$this->assertSame('The view Overdue cases counts 2, at or below its threshold of 5.', $this->mailed[0]['body']);
 		$this->assertStringContainsString('pager', implode("\n", $this->warnings->getArrayCopy()));
 	}//end testTheEmailChannelMailsAndAnUnknownChannelIsNamed()
+
+	/**
+	 * A notification the manager refuses is named in the log, and the next recipient is still told.
+	 */
+	public function testARefusedNotificationIsNamedAndTheOthersAreStillTold(): void {
+		$this->refuseNotifyFor = ['alice'];
+		$this->listener()->handle(
+			$this->crossing(['operator' => 'gte', 'threshold' => 20, 'recipients' => ['teamleads']])
+		);
+
+		$this->assertSame(['bob'], array_column($this->notified, 'user'));
+		$log = implode("\n", $this->warnings->getArrayCopy());
+		$this->assertStringContainsString('could not notify alice: notification backend down', $log);
+	}//end testARefusedNotificationIsNamedAndTheOthersAreStillTold()
+
+	/**
+	 * A count at or above the threshold says "above" in the mail; a mail that fails is named in the log.
+	 */
+	public function testAnUpperAlertMailSaysAboveAndAFailedMailIsNamed(): void {
+		$this->refuseMailTo = ['bob@example.org'];
+		$this->listener()->handle(
+			$this->crossing(['operator' => 'gte', 'threshold' => 20, 'recipients' => ['teamleads'], 'channels' => ['email']])
+		);
+
+		$this->assertCount(1, $this->mailed);
+		$this->assertSame(['alice@example.org' => 'Alice'], $this->mailed[0]['to']);
+		$this->assertSame('The view Overdue cases counts 23, at or above its threshold of 20.', $this->mailed[0]['body']);
+		$log = implode("\n", $this->warnings->getArrayCopy());
+		$this->assertStringContainsString('email to bob was not sent: failed', $log);
+	}//end testAnUpperAlertMailSaysAboveAndAFailedMailIsNamed()
 
 	/**
 	 * CONTROL: an event that is not a view alert is left alone, so the green above is not a listener that notifies on anything.
