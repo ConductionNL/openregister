@@ -19,7 +19,9 @@ OpenRegister SHALL be fully tested on both PostgreSQL and MariaDB through a cost
 - All jobs pin to a single Nextcloud version (`stable32`)
 - `MagicSearchHandler` uses PostgreSQL-specific syntax (`::jsonb`, `@>`, `jsonb_typeof`, `jsonb_each_text`, `to_jsonb`) without MariaDB/MySQL fallbacks — these will fail on MariaDB until database-aware branching is added
 - `MagicFacetHandler` has some MariaDB branches but `MagicSearchHandler` and `MagicBulkHandler` have incomplete coverage
+
 ## Requirements
+
 ### Requirement: 2-Line CI Matrix Covering Both Databases and Nextcloud Versions
 
 The CI SHALL run exactly **2 parallel integration test jobs**, each combining a unique PHP version, Nextcloud version, and database:
@@ -514,6 +516,24 @@ Every `workflow-operations` Phase 1 migration (`Version1Date2026032*` family) MU
   Doctrine-derived column types
 - **AND** the same SHALL hold for `oc_openregister_scheduled_workflows` /
   `oc_openregister_approval_chains` / `oc_openregister_approval_steps`
+
+### Requirement: A text identifier is never bound as an integer
+
+A lookup that accepts an id, a uuid or a slug SHALL compare the integer `id` column only when the identifier is an integer or a string of digits, and SHALL compare the text columns otherwise. PostgreSQL refuses a text value bound as an integer for the whole query, so `id = :value OR uuid = :value` with a uuid fails there while MySQL and SQLite cast it silently.
+
+#### Scenario: a view is found by its uuid on PostgreSQL
+
+- **GIVEN** a view with id 1 and uuid `04d8079a-b84a-410e-b5df-75f04a130068` on a PostgreSQL instance
+- **WHEN** a client requests `GET /api/views/04d8079a-b84a-410e-b5df-75f04a130068`
+- **THEN** the response is 200 with that view, and `GET /api/views/1` still answers it too
+- @e2e exclude {query binding, covered by IdOrUuidBindingTest; the PostgreSQL PHPUnit cell runs it}
+
+#### Scenario: a schema reference by slug resolves on PostgreSQL
+
+- **GIVEN** a schema whose `allOf` names its parent by slug
+- **WHEN** the schema is resolved
+- **THEN** the parent is loaded by slug without binding the slug as an integer
+- @e2e exclude {query binding, covered by IdOrUuidBindingTest}
 
 ## Estimated Scope
 
