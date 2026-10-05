@@ -119,7 +119,10 @@ class RematerialiseCalculationsAsSystemTest extends TestCase {
 			function (array|ObjectEntity $object, ?array $extend = [], $register = null, $schemaRef = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true) use ($permissions, $schema): ObjectEntity {
 				// ObjectService::checkSavePermissions() for an existing row.
 				$permissions->checkPermission(schema: $schema, action: 'update', _rbac: $_rbac);
-				return new ObjectEntity();
+				// The save path materialises (CalculationOnSaveListener), so the saved row carries the value.
+				$saved = new ObjectEntity();
+				$saved->setObject(array_merge($object, ['isPast' => true]));
+				return $saved;
 			}
 		);
 
