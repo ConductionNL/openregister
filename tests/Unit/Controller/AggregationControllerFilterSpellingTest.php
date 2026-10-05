@@ -261,6 +261,25 @@ class AggregationControllerFilterSpellingTest extends TestCase {
 	}//end testAKnownKeyLogsNothing()
 
 	/**
+	 * `filter[id]=<uuid>` scopes a value aggregation to one object, as
+	 * Pipelinq's lead stat block asks, and logs no unknown-key warning
+	 * (openregister#4165).
+	 *
+	 * @return void
+	 */
+	public function testTheObjectIdBracketFilterLogsNothingAndReachesTheQuery(): void {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('warning');
+
+		$query = $this->captureValueQuery(
+			['metric' => 'sum', 'field' => 'hours', 'filter' => ['id' => '0b5e1c9a-4d0e-4a3b-9d55-1f0c7a2f9e11']],
+			$logger
+		);
+
+		$this->assertSame(['id' => '0b5e1c9a-4d0e-4a3b-9d55-1f0c7a2f9e11'], $query?->filter);
+	}//end testTheObjectIdBracketFilterLogsNothingAndReachesTheQuery()
+
+	/**
 	 * The declared-aggregation route narrows on both spellings too, and its
 	 * `{name}` placeholder is never read as a filter.
 	 *

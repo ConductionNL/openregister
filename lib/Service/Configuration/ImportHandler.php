@@ -3402,6 +3402,14 @@ class ImportHandler {
 					$objectData['@self']['register'] = (int)$registerId;
 					$objectData['@self']['schema'] = (int)$schemaId;
 
+					// Identity, not data (live pass O6): a listed object may carry
+					// its uuid and slug at the top level, as seed data does. The
+					// uuid becomes the new object's uuid (an @self uuid wins), and
+					// both keys leave the data unless the schema declares them, so
+					// MagicMapper has nothing undeclared to discard.
+					$listedUuid = $this->listedObjectUuid(objectData: $objectData);
+					$objectData = $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $schemaObject);
+
 					if ($existingObject !== null) {
 						// Handle both ObjectEntity instances and array results from searchObjects.
 						// searchObjects returns ObjectEntity or arrays depending on configuration.
@@ -3469,6 +3477,7 @@ class ImportHandler {
 							object: $objectData,
 							register: $registerObject,
 							schema: $schemaObject,
+							uuid: $listedUuid,
 							_rbac: false,
 							_multitenancy: false,
 							currentUser: $actingUser
@@ -5195,6 +5204,27 @@ class ImportHandler {
 
 		return $objectData;
 	}//end withoutSeedMetadataKeys()
+
+	/**
+	 * The uuid a listed (components.objects) object names for itself, if any.
+	 *
+	 * `@self.uuid` wins over the seed format's top-level `uuid`.
+	 *
+	 * @param array $objectData The listed object.
+	 *
+	 * @return string|null The uuid, or null when the object names none.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-seed-metadata-keys-are-not-stored-as-data
+	 */
+	private function listedObjectUuid(array $objectData): ?string {
+		foreach ([($objectData['@self']['uuid'] ?? null), ($objectData['uuid'] ?? null)] as $candidate) {
+			if (is_string($candidate) === true && trim($candidate) !== '') {
+				return trim($candidate);
+			}
+		}
+
+		return null;
+	}//end listedObjectUuid()
 
 	/**
 	 * Import the seed-data objects themselves.
