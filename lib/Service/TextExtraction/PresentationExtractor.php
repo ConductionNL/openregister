@@ -31,7 +31,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md
+ * @spec openspec/specs/text-extraction-presentation/spec.md
  */
 
 declare(strict_types=1);
@@ -57,7 +57,7 @@ use ZipArchive;
  *     images: list<array{target: string, external: bool, name: string, description: string}>
  * }
  *
- * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md
+ * @spec openspec/specs/text-extraction-presentation/spec.md
  */
 class PresentationExtractor {
 
@@ -126,7 +126,7 @@ class PresentationExtractor {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-the-supported-formats-can-be-asked-for-req-pptx-007
+	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-the-supported-formats-can-be-asked-for-req-pptx-007
 	 */
 	public function supports(string $mimeType, string $fileName): bool {
 		$mimeType = strtolower($mimeType);
@@ -151,7 +151,7 @@ class PresentationExtractor {
 	 *
 	 * @throws Exception When the server has no zip extension (a deployment error).
 	 *
-	 * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-a-deck-that-cannot-be-read-degrades-to-no-result-req-pptx-005
+	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-a-deck-that-cannot-be-read-degrades-to-no-result-req-pptx-005
 	 */
 	public function extract(File $file): ?array {
 		if (class_exists(ZipArchive::class) === false) {
@@ -240,8 +240,8 @@ class PresentationExtractor {
 	 *
 	 * @return array{slides: list<PresentationSlide>, truncated: bool}|null Null when there is no presentation part.
 	 *
-	 * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-slides-come-back-in-presentation-order-req-pptx-001
-	 * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-hostile-input-is-bounded-req-pptx-006
+	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-slides-come-back-in-presentation-order-req-pptx-001
+	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-hostile-input-is-bounded-req-pptx-006
 	 */
 	private function readPresentation(OoxmlPackage $package): ?array {
 		$mainPath = ($package->mainPartPath() ?? 'ppt/presentation.xml');
@@ -279,7 +279,7 @@ class PresentationExtractor {
 	 *
 	 * @return PresentationSlide
 	 *
-	 * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-title-and-its-body-text-in-shape-order-req-pptx-002
+	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-title-and-its-body-text-in-shape-order-req-pptx-002
 	 */
 	private function readSlide(OoxmlPackage $package, string $path, int $number): array {
 		$slide = ['number' => $number, 'hidden' => false, 'title' => '', 'body' => [], 'notes' => '', 'images' => []];
@@ -309,7 +309,7 @@ class PresentationExtractor {
 	 *
 	 * @return string The notes, or '' when the slide has none.
 	 *
-	 * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-speaker-notes-req-pptx-003
+	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-speaker-notes-req-pptx-003
 	 */
 	private function readNotes(OoxmlPackage $package, array $relationships): string {
 		foreach ($relationships as $relationship) {

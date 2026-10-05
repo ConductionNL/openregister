@@ -263,7 +263,7 @@ class GenericStoreService {
 	 *
 	 * @return array{outcome: string, slug: string} The slug is empty on every failure.
 	 *
-	 * @spec openspec/changes/store-plane-publish/specs/apphost-store-plane/spec.md#requirement-a-publish-must-travel-under-the-planes-transport-rules
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-publish-must-travel-under-the-planes-transport-rules
 	 */
 	public function publish(StoreDescriptor $descriptor, array $payload): array {
 		$refused = ['outcome' => self::OUTCOME_NOT_PUBLISHABLE, 'slug' => ''];
@@ -318,7 +318,7 @@ class GenericStoreService {
 	 *
 	 * @return array{outcome: string, slug: string}
 	 *
-	 * @spec openspec/changes/store-plane-publish/specs/apphost-store-plane/spec.md#requirement-a-publish-must-verify-the-slug-the-registry-stored
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-publish-must-verify-the-slug-the-registry-stored
 	 */
 	private function publishOutcome(StoreDescriptor $descriptor, IResponse $response, string $slug): array {
 		$status = $response->getStatusCode();
@@ -392,7 +392,7 @@ class GenericStoreService {
 	 * into OpenRegister — the previous app-local copy reached it through a dynamic
 	 * class-string with a weaker fallback (ADR-080 Context).
 	 *
-	 * @spec openspec/changes/store-plane-publish/specs/apphost-store-plane/spec.md#requirement-a-publish-must-travel-under-the-planes-transport-rules
+	 * @spec openspec/specs/apphost-store-plane/spec.md#requirement-a-publish-must-travel-under-the-planes-transport-rules
 	 */
 	private function send(StoreDescriptor $descriptor, string $method, array $options): ?IResponse {
 		try {

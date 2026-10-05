@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/task-expiry-and-outcomes/specs/task-expiry-and-outcomes/spec.md#requirement-a-task-declares-its-timeout-and-reject-behaviour-in-one-vocabulary
+ * @spec openspec/specs/task-expiry-and-outcomes/spec.md#requirement-a-task-declares-its-timeout-and-reject-behaviour-in-one-vocabulary
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use OCP\Migration\SimpleMigrationStep;
 /**
  * Adds the declared-behaviour columns and the expiry-scan index.
  *
- * @spec openspec/changes/task-expiry-and-outcomes/specs/task-expiry-and-outcomes/spec.md#requirement-the-timer-sweep-enforces-a-declared-task-expiry
+ * @spec openspec/specs/task-expiry-and-outcomes/spec.md#requirement-the-timer-sweep-enforces-a-declared-task-expiry
  */
 class Version1Date20260902090000 extends SimpleMigrationStep {
 
@@ -61,7 +61,7 @@ class Version1Date20260902090000 extends SimpleMigrationStep {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The interface fixes the signature.
 	 *
-	 * @spec openspec/changes/task-expiry-and-outcomes/specs/task-expiry-and-outcomes/spec.md#requirement-a-task-declares-its-timeout-and-reject-behaviour-in-one-vocabulary
+	 * @spec openspec/specs/task-expiry-and-outcomes/spec.md#requirement-a-task-declares-its-timeout-and-reject-behaviour-in-one-vocabulary
 	 */
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();

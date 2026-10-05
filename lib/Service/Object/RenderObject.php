@@ -900,7 +900,7 @@ class RenderObject {
 	 *
 	 * @return array<int, string> The removed property names (`@`-keys excluded).
 	 *
-	 * @spec openspec/changes/property-read-rules-hold-on-every-route/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
 	private function removedProperties(array $before, array $after): array {
 		$removed = [];
@@ -934,7 +934,7 @@ class RenderObject {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/property-read-rules-hold-on-every-route/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
 	private function withholdEntityCopies(ObjectEntity $entity, Schema $schema, array $removed): void {
 		if ($removed === []) {
@@ -963,7 +963,7 @@ class RenderObject {
 	 *
 	 * @return array<string, mixed> The row with its `@self` copies withheld.
 	 *
-	 * @spec openspec/changes/property-read-rules-hold-on-every-route/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
 	private function withholdRowCopies(array $row, Schema $schema, array $removed): array {
 		if ($removed === [] || isset($row['@self']) === false || is_array($row['@self']) === false) {
