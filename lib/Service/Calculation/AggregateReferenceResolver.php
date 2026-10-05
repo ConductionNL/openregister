@@ -43,6 +43,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -90,17 +91,45 @@ class AggregateReferenceResolver {
 	 * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-1
 	 */
 	public function resolveAll(array $payload, array $aggregates, mixed $registerRef = null): array {
-		$result = [];
+		return $this->resolveAllWithOutcome(payload: $payload, aggregates: $aggregates, registerRef: $registerRef)['values'];
+	}//end resolveAll()
+
+	/**
+	 * As resolveAll(), and also which references could not be resolved and why.
+	 *
+	 * A failed reference resolves to null in `values` (the save path's rule);
+	 * a caller that must not read that null as a real value (the rematerialise
+	 * command: live pass O9 counted 205 rows "unchanged") reads `failed`.
+	 *
+	 * @param array<string, mixed> $payload    The object payload.
+	 * @param array<string, mixed> $aggregates The declared aggregate-references.
+	 * @param mixed                $registerRef The saving object's register.
+	 *
+	 * @return array{values: array<string, mixed>, failed: array<string, string>} Values and failures by name.
+	 *
+	 * @spec openspec/changes/rematerialise-writes-calculated-values/specs/computed-fields/spec.md
+	 */
+	public function resolveAllWithOutcome(array $payload, array $aggregates, mixed $registerRef = null): array {
+		$values = [];
+		$failed = [];
 		foreach ($aggregates as $name => $spec) {
 			if ((string)$name === '' || is_array($spec) === false) {
 				continue;
 			}
 
-			$result[$name] = $this->resolveOne(payload: $payload, spec: $spec, registerRef: $registerRef);
+			try {
+				$values[$name] = $this->resolveOne(payload: $payload, spec: $spec, registerRef: $registerRef);
+			} catch (Throwable $e) {
+				$this->logger->warning(
+					sprintf('Aggregate-reference resolution failed for schema "%s": %s', (string)($spec['schema'] ?? ''), $e->getMessage())
+				);
+				$values[$name] = null;
+				$failed[(string)$name] = $e->getMessage();
+			}
 		}
 
-		return $result;
-	}//end resolveAll()
+		return ['values' => $values, 'failed' => $failed];
+	}//end resolveAllWithOutcome()
 
 	/**
 	 * Resolve a single aggregate-reference spec to a scalar / grouped map, or null.
@@ -110,6 +139,8 @@ class AggregateReferenceResolver {
 	 * @param string|int|null $registerRef Saving object's register ref (default context).
 	 *
 	 * @return mixed The scalar value, a `{stringKey: value}` grouped map, or null.
+	 *
+	 * @throws RuntimeException When the aggregation cannot run (resolveAllWithOutcome() records it).
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
@@ -161,16 +192,19 @@ class AggregateReferenceResolver {
 				filter: $filters,
 				groupBy: $groupBy
 			);
+			// As the system, whoever saves: a materialised aggregate is the
+			// schema author's derived value, the same rule references follow
+			// (calculations-resolve-references-regardless-of-saver). Under occ
+			// there is no session at all, and every aggregate resolved to null
+			// (live pass O9: 410 "no permission to aggregate" warnings).
 			$result = $this->aggregationRunner->runAdhocByRef(
 				registerRef: $aggRegister,
 				schemaRef: $schema,
-				query: $query
+				query: $query,
+				bypassRbac: true
 			);
 		} catch (Throwable $e) {
-			$this->logger->warning(
-				sprintf('Aggregate-reference resolution failed for schema "%s": %s', $schema, $e->getMessage())
-			);
-			return null;
+			throw new RuntimeException($e->getMessage(), 0, $e);
 		}//end try
 
 		return $this->envelopeToValue(result: $result);
