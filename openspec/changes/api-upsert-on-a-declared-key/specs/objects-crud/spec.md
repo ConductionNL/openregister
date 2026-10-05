@@ -63,12 +63,20 @@ Open Register SHALL answer 401 to `_upsertOn` on an anonymous request. When the 
 
 ### Requirement: Concurrent upserts on one key produce one record
 
-Open Register SHALL serialise upserts that carry the same register, schema, constraint and key values, so concurrent calls with one key create at most one record and update it for the rest. Upserts with different keys SHALL NOT wait on each other.
+Open Register SHALL serialise upserts that carry the same register, schema, constraint and key values, so concurrent calls with one key create at most one record and update it for the rest. Upserts with different keys SHALL NOT wait on each other. A call SHALL wait only a short, bounded time for the key; a call that cannot have the key in that time SHALL answer 503 with a `Retry-After` header and SHALL write nothing, so a burst never holds a worker for long and a client that retries gets 200.
 
 #### Scenario: twelve synchronisation workers send the same new case
 
 - **GIVEN** no record carries key `0363` and `Z-2026-0099`
 - **WHEN** twelve signed-in workers post that key with `_upsertOn=zaaksleutel` at the same moment
-- **THEN** one response is 201 and eleven are 200
+- **THEN** one response is 201 and every other response is 200, or 503 with a `Retry-After` header
 - **AND** `zaak` holds exactly one record with that key
+
+#### Scenario: a worker that cannot have the key in time is told when to retry
+
+- **GIVEN** another call holds the key `0363` and `Z-2026-0099` for longer than the wait
+- **WHEN** a signed-in worker posts that key with `_upsertOn=zaaksleutel`
+- **THEN** the response is 503 with a `Retry-After` header
+- **AND** nothing is written
+- @e2e exclude {lock contention, not a page; covered by ObjectsControllerUpsertOnKeyTest::testAKeyAnotherCallHoldsIs503WithRetryAfter}
 - @e2e exclude {concurrency, not a page; task 2.2 adds tests/Integration/UpsertOnKeyConcurrencyTest.php}
