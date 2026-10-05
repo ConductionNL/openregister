@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-priority-is-normalised-to-one-scale-on-the-way-in
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-priority-is-normalised-to-one-scale-on-the-way-in
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use OCA\OpenRegister\Exception\TaskValidationException;
 /**
  * Normalises every known priority scale onto low|normal|high|urgent.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-priority-is-normalised-to-one-scale-on-the-way-in
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-priority-is-normalised-to-one-scale-on-the-way-in
  */
 final class TaskPriority {
 
@@ -66,7 +66,7 @@ final class TaskPriority {
 	 *
 	 * @throws TaskValidationException When the value is on no known scale.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-priority-is-normalised-to-one-scale-on-the-way-in
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-priority-is-normalised-to-one-scale-on-the-way-in
 	 */
 	public static function normalise(mixed $value): string {
 		// The iCal integer range, arriving as int or as a numeric string.
@@ -107,7 +107,7 @@ final class TaskPriority {
 	 *
 	 * @throws TaskValidationException When outside 0-9.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-priority-is-normalised-to-one-scale-on-the-way-in
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-priority-is-normalised-to-one-scale-on-the-way-in
 	 */
 	private static function fromIcal(int $value): string {
 		if ($value < 0 || $value > 9) {

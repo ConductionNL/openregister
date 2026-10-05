@@ -137,7 +137,7 @@ class FlowTriggerIndex {
 	 *
 	 * @return array<int, array{event: string, register: string, schema: string}> The slug-keyed triggers.
 	 *
-	 * @spec openspec/changes/flow-trigger-canonical-slugs/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function canonical(array $triggers): array {
 		$rows = [];

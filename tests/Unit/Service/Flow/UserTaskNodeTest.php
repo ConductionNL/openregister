@@ -37,7 +37,7 @@ use UnexpectedValueException;
  * The user-task node: one task per node per run, resume on terminality,
  * outcome onto every item, rejection as a branch.
  *
- * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md
+ * @spec openspec/specs/flow-user-task-node/spec.md
  */
 class UserTaskNodeTest extends TestCase {
 
@@ -476,7 +476,7 @@ class UserTaskNodeTest extends TestCase {
 	 *
 	 * Storing is not reaching. This test asserts reaching.
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
 	 */
 	public function testWhatThePerformerFilledInReachesTheFollowingStep(): void {
 		$state = new FlowResumeState();
@@ -505,7 +505,7 @@ class UserTaskNodeTest extends TestCase {
 	 * way when the form was skipped and another way when the step declared
 	 * none, and every author learns to write two guards for one question.
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
 	 */
 	public function testAStepWithNoFormStillCarriesAnEmptyAnswersSet(): void {
 		$state = new FlowResumeState();
@@ -531,7 +531,7 @@ class UserTaskNodeTest extends TestCase {
 	 * missed wake — the completion's signal was refused or lost — and that
 	 * recovery is recorded on the task's audit, attributed to its completer.
 	 *
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
 	 */
 	public function testAHeartbeatRecoveredCompletionIsAuditedOnTheTask(): void {
 		$state = new FlowResumeState();
@@ -551,7 +551,7 @@ class UserTaskNodeTest extends TestCase {
 	 * A completion whose signal DID arrive is the ordinary path, not a
 	 * recovery: nothing extra lands on the task's audit.
 	 *
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
 	 */
 	public function testASignalDeliveredCompletionRecordsNoHeartbeatRecovery(): void {
 		$state = new FlowResumeState();

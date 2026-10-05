@@ -33,7 +33,7 @@ use RuntimeException;
  * Terminality is announced AFTER the transaction commits, once per
  * terminal transition, and a listener failure cannot undo the transition.
  *
- * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
+ * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
  */
 class TaskServiceTerminalEventTest extends TestCase {
 

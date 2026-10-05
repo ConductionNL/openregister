@@ -93,7 +93,7 @@ class FlowRunMapper extends QBMapper {
 	 *
 	 * @return FlowRun The updated run.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
 	 */
 	public function update(Entity $entity): FlowRun {
 		if ($entity instanceof FlowRun === false) {

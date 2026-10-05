@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md
+ * @spec openspec/specs/flow-send-email-external-recipients/spec.md
  */
 
 declare(strict_types=1);

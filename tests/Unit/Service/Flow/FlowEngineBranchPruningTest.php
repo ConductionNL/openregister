@@ -45,7 +45,7 @@ class PruningDispatcher implements FlowStepDispatcher {
  * single-stream walk and the stream walk's firing route through the same
  * wrapper, so one hook covers both.
  *
- * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
+ * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
  */
 class FlowEngineBranchPruningTest extends TestCase {
 

@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+ * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
  */
 
 declare(strict_types=1);
@@ -81,7 +81,7 @@ class TalkSender {
 	 *
 	 * @return string One of the OUTCOME_* constants.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function postAsBot(string $token, string $message): string {
 		if ($token === '') {
@@ -148,7 +148,7 @@ class TalkSender {
 	 *                           unknown, the acting user is not a participant,
 	 *                           or the post is refused.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
 	public function postAsUser(string $token, string $message, string $actorUid): string {
 		if ($token === '') {
@@ -184,7 +184,7 @@ class TalkSender {
 	 *
 	 * @throws TalkSendException On every non-delivery, naming the reason.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flow-sends-are-attributed-logged-and-bounded
 	 */
 	protected function postViaTalkApp(string $token, string $message, string $actorUid): void {
 		if ($this->serverContainer === null) {

@@ -17,7 +17,7 @@
  *
  * @template-extends QBMapper<TaskRelation>
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<TaskRelation>
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
  */
 class TaskRelationMapper extends QBMapper {
 
@@ -54,7 +54,7 @@ class TaskRelationMapper extends QBMapper {
 	 *
 	 * @return array<int, TaskRelation> The relations.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
 	 */
 	public function findForTask(int $taskId): array {
 		$qb = $this->db->getQueryBuilder();
@@ -77,7 +77,7 @@ class TaskRelationMapper extends QBMapper {
 	 *
 	 * @return array<int, TaskRelation> The relations.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
 	 */
 	public function findByObject(string $objectUuid, ?string $role = null): array {
 		$qb = $this->db->getQueryBuilder();

@@ -188,7 +188,7 @@ class FlowRunAdvancer {
 	 *
 	 * @throws Throwable When the run could not be advanced.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public function advanceStream(FlowRun $run, string $streamId, int|string $budget): FlowRun {
 		$flow = $this->resolvers->resolveFlow((string)$run->getFlowId());

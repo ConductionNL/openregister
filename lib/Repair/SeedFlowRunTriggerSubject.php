@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+ * @spec openspec/specs/flow-run-subjects/spec.md
  */
 
 declare(strict_types=1);
@@ -58,7 +58,7 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	 * @param ContainerInterface $container The app container.
 	 * @param LoggerInterface    $logger    Diagnostics.
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
@@ -72,7 +72,7 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	 *
 	 * @return string The name.
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function getName(): string {
 		return 'Record what existing runs fired on as their trigger subject';
@@ -85,7 +85,7 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function run(IOutput $output): void {
 		try {
@@ -127,7 +127,7 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	 *
 	 * @return int 1 when it was seeded, 0 otherwise.
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	private function seedOne(FlowRun $run, FlowRunMapper $runs, FlowRunSubjects $subjects): int {
 		if ($subjects->all(run: $run) !== []) {
@@ -164,7 +164,7 @@ class SeedFlowRunTriggerSubject implements IRepairStep {
 	 *
 	 * @return array<int, FlowRun> Every run.
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	private function everyRun(FlowRunMapper $runs): array {
 		$page = 500;

@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use Throwable;
 /**
  * Lists and counts tasks for a caller, with subject context attached.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
  *
  * @SuppressWarnings(PHPMD.StaticAccess) PortalTaskDelivery::summarise is a
  * stateless fold over rows; an instance to call it would be a second copy.
@@ -104,7 +104,7 @@ class TaskInboxService {
 	 *
 	 * @return array{results: array<int, array<string, mixed>>, total: int, limit: int, offset: int} The page.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	public function inbox(TaskInboxCriteria $criteria, int $limit = 25, int $offset = 0): array {
 		$limit = max(1, min($limit, 500));
@@ -148,7 +148,7 @@ class TaskInboxService {
 	 *
 	 * @return array<string, mixed> The row.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function row(Task $task, array $subjects, \DateTimeInterface $now): array {
 		$row = $task->jsonSerialize();
@@ -258,7 +258,7 @@ class TaskInboxService {
 	 *
 	 * @return string A non-empty display title.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function displayTitle(Task $task, ?array $subject): string {
 		$stored = trim((string)$task->getTitle());
@@ -294,7 +294,7 @@ class TaskInboxService {
 	 * @return array<string, array<string, mixed>> Context by object uuid:
 	 *         {uuid, registerId, schemaId, title}.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function subjectContexts(array $tasks): array {
 		$uuids = [];
