@@ -27,10 +27,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Calculation;
 
 use DateTimeInterface;
-use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
-use Throwable;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 
 /**
  * Try an expression before you save it.
@@ -40,9 +38,9 @@ use Throwable;
  * validator and the same evaluator the save path runs, against a payload the
  * author supplies or an object they name, and writes nothing either way.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The trial composes the validator, the
- *   evaluator, the shared payload builder and the three mappers needed to resolve a named
- *   object; each is a distinct collaborator on the one dry-run path.
+ * A named object is resolved by the caller, CalculationsController, with RBAC and tenancy
+ * on. This service never looks an object up itself, so it cannot be handed an id that
+ * skips the caller's read check.
  */
 final class CalculationTrialService {
 
@@ -52,14 +50,11 @@ final class CalculationTrialService {
 	private const TRIAL_NAME = '__trial';
 
 	/**
-	 * Wire the validator, the evaluator and the lookups a named object needs.
+	 * Wire the validator, the evaluator and the payload builder.
 	 *
 	 * @param CalculationAnnotationValidator $validator Declaration validator.
 	 * @param CalculationEvaluator $evaluator Pure expression evaluator.
 	 * @param CalculationPayloadBuilder $payloadBuilder Shared @self/@ref/@aggregate payload prep.
-	 * @param RegisterMapper $registerMapper Register lookup for a named object.
-	 * @param SchemaMapper $schemaMapper Schema lookup for a named object.
-	 * @param MagicMapper $objectMapper Object lookup in the register+schema table.
 	 *
 	 * @return void
 	 */
@@ -67,9 +62,6 @@ final class CalculationTrialService {
 		private readonly CalculationAnnotationValidator $validator,
 		private readonly CalculationEvaluator $evaluator,
 		private readonly CalculationPayloadBuilder $payloadBuilder,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly MagicMapper $objectMapper,
 	) {
 	}//end __construct()
 
@@ -96,46 +88,52 @@ final class CalculationTrialService {
 	 * Evaluate an unsaved declaration against an object that already exists.
 	 *
 	 * The object is read, never written: the value comes back in the response
-	 * and nothing is persisted.
+	 * and nothing is persisted. The caller resolves the object with RBAC and
+	 * tenancy on, so only an object the acting user may read arrives here.
 	 *
 	 * @param array<string, mixed> $declaration The `{type, expression}` declaration.
-	 * @param string $register Register id, uuid or slug.
-	 * @param string $schema Schema id, uuid or slug.
-	 * @param string $objectId Object id, uuid, slug or uri.
+	 * @param ObjectEntity $object The object, already resolved for the acting user.
+	 * @param Schema $schema The object's schema.
 	 *
 	 * @return array{ok: bool, value?: mixed, dependencies: array<int, string>, error?: array{code: string, message: string}} The trial result.
 	 *
 	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
 	 */
-	public function tryObject(array $declaration, string $register, string $schema, string $objectId): array {
-		try {
-			$registerEntity = $this->registerMapper->find($register);
-			$schemaEntity = $this->schemaMapper->find($schema);
-			$object = $this->objectMapper->findInRegisterSchemaTable(
-				identifier: $objectId,
-				register: $registerEntity,
-				schema: $schemaEntity
-			);
-		} catch (Throwable $e) {
-			return $this->failure(
-				error: [
-					'code' => 'calculation-trial-object-not-found',
-					'message' => sprintf('Could not resolve object "%s": %s', $objectId, $e->getMessage()),
-				],
-				declaration: $declaration
-			);
-		}
-
-		$properties = ($schemaEntity->getProperties() ?? []);
+	public function tryObject(array $declaration, ObjectEntity $object, Schema $schema): array {
+		$properties = ($schema->getProperties() ?? []);
 		$errors = $this->validateAgainst(declaration: $declaration, availableProperties: array_keys($properties));
 		if ($errors !== []) {
 			return $this->failure(error: $errors[0], declaration: $declaration);
 		}
 
-		$payload = $this->payloadBuilder->build(object: $object, schema: $schemaEntity);
+		$payload = $this->payloadBuilder->build(object: $object, schema: $schema);
 
 		return $this->run(declaration: $declaration, payload: $payload);
 	}//end tryObject()
+
+	/**
+	 * The refusal for a named object that is absent or that the caller may not read.
+	 *
+	 * Both cases answer the same way, so the trial cannot be used to learn
+	 * whether an object the caller may not read exists.
+	 *
+	 * @param array<string, mixed> $declaration The declaration under trial.
+	 * @param string $objectId The object id the caller named.
+	 * @param string $reason Why the lookup failed.
+	 *
+	 * @return array{ok: bool, dependencies: array<int, string>, error: array{code: string, message: string}} The trial result.
+	 *
+	 * @spec openspec/changes/computed-values-by-json-ast/specs/computed-fields/spec.md
+	 */
+	public function objectNotFound(array $declaration, string $objectId, string $reason): array {
+		return $this->failure(
+			error: [
+				'code' => 'calculation-trial-object-not-found',
+				'message' => sprintf('Could not resolve object "%s": %s', $objectId, $reason),
+			],
+			declaration: $declaration
+		);
+	}//end objectNotFound()
 
 	/**
 	 * Validate the declaration the way a schema save validates it.

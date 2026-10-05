@@ -26,11 +26,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Calculation\CalculationTrialService;
 use OCA\OpenRegister\Service\Calculation\OperatorCatalogue;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use Throwable;
 
 /**
  * Discovery and dry run for the JSON-AST calculation engine.
@@ -44,6 +50,9 @@ class CalculationsController extends Controller {
 	 * @param IRequest $request Request.
 	 * @param OperatorCatalogue $catalogue The published operator catalogue.
 	 * @param CalculationTrialService $trials Dry-run evaluation of an unsaved declaration.
+	 * @param RegisterMapper $registerMapper Register lookup, scoped to the caller.
+	 * @param SchemaMapper $schemaMapper Schema lookup, scoped to the caller.
+	 * @param MagicMapper $objectMapper Object lookup, scoped to the caller by RBAC and tenancy.
 	 *
 	 * @return void
 	 */
@@ -52,6 +61,9 @@ class CalculationsController extends Controller {
 		IRequest $request,
 		private readonly OperatorCatalogue $catalogue,
 		private readonly CalculationTrialService $trials,
+		private readonly RegisterMapper $registerMapper,
+		private readonly SchemaMapper $schemaMapper,
+		private readonly MagicMapper $objectMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -87,10 +99,11 @@ class CalculationsController extends Controller {
 	 *
 	 * Two payload shapes. With `object` the declaration runs against that
 	 * sample payload and no stored data is touched at all. With `register`,
-	 * `schema` and `objectId` it runs against the named object, which is
-	 * looked up through the RBAC- and tenancy-scoped mapper: a caller who may
-	 * not read that object gets a not-found refusal rather than its values.
-	 * That lookup is the per-object authorisation guard for this method.
+	 * `schema` and `objectId` it runs against the named object, which
+	 * readableObject() looks up with RBAC and tenancy switched on: a caller
+	 * who may not read that object gets a not-found refusal rather than its
+	 * values. That lookup is the per-object authorisation guard for this
+	 * method, and it runs before anything is evaluated.
 	 *
 	 * Nothing is written on either path: no schema is saved, no object is
 	 * saved, and a `sequence` node yields null instead of reserving a number.
@@ -118,11 +131,22 @@ class CalculationsController extends Controller {
 
 		$target = $this->objectTarget();
 		if ($target !== null) {
+			try {
+				$readable = $this->readableObject(target: $target);
+			} catch (Throwable $e) {
+				$result = $this->trials->objectNotFound(
+					declaration: $declaration,
+					objectId: $target['objectId'],
+					reason: $e->getMessage()
+				);
+
+				return new JSONResponse($result, $this->statusFor(result: $result));
+			}
+
 			$result = $this->trials->tryObject(
 				declaration: $declaration,
-				register: $target['register'],
-				schema: $target['schema'],
-				objectId: $target['objectId']
+				object: $readable['object'],
+				schema: $readable['schema']
 			);
 
 			return new JSONResponse($result, $this->statusFor(result: $result));
@@ -165,6 +189,36 @@ class CalculationsController extends Controller {
 		return $target;
 
 	}//end objectTarget()
+
+	/**
+	 * Resolve the named object as the caller is allowed to see it.
+	 *
+	 * Every lookup runs with RBAC and tenancy on. The object mapper adds the
+	 * caller's read-permission and organisation filters to the query itself,
+	 * so an object this caller may not read yields no row and a
+	 * DoesNotExistException, exactly as an absent object does. Refusing with
+	 * the same not-found keeps the trial from becoming an existence oracle.
+	 *
+	 * @param array{register: string, schema: string, objectId: string} $target The addressed object.
+	 *
+	 * @return array{object: ObjectEntity, schema: Schema} The object and its schema.
+	 *
+	 * @throws Throwable When the register, schema or object is absent or not readable by the caller.
+	 */
+	private function readableObject(array $target): array {
+		$register = $this->registerMapper->find($target['register'], _rbac: true, _multitenancy: true);
+		$schema = $this->schemaMapper->find($target['schema'], _rbac: true, _multitenancy: true);
+		$object = $this->objectMapper->findInRegisterSchemaTable(
+			identifier: $target['objectId'],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_multitenancy: true
+		);
+
+		return ['object' => $object, 'schema' => $schema];
+
+	}//end readableObject()
 
 	/**
 	 * Map a trial result onto an HTTP status.

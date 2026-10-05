@@ -196,7 +196,7 @@ class TablesObjectSourceProviderTest extends TestCase {
 		$this->reader->method('listColumns')->willReturn($this->columns());
 		$this->reader->expects($this->once())
 			->method('findRow')
-			->with(42, 'alice')
+			->with(42, 5, 'alice')
 			->willReturn(['id' => 42, 'cells' => [['columnId' => 1, 'value' => 'Swing']]]);
 
 		$object = $this->provider()->find($register, $schema, '42', ['tableId' => 5]);

@@ -100,6 +100,27 @@ export const FlowsIndex = '/flows'
 /** `src/views/deleted/DeletedIndex.vue` — soft-deleted object list. */
 export const DeletedIndex = '/deleted'
 
+/** `src/views/entities/EntitiesIndex.vue` — detected-entity list. */
+export const EntitiesIndex = '/entities'
+
+/** `src/views/operations/OperationsConsoleIndex.vue` — the operations console. */
+export const OperationsConsoleIndex = '/operations'
+
+/** `src/views/quality/QualityIndex.vue` — data quality per register and schema. */
+export const QualityIndex = '/quality'
+
+/** `src/views/quality/DuplicatesIndex.vue` — duplicate candidate pairs. */
+export const DuplicatesIndex = '/duplicates'
+
+/** `src/views/quality/MasterEntitiesIndex.vue` — master entity list. */
+export const MasterEntitiesIndex = '/master-entities'
+
+/** `src/views/quality/QueueHealthIndex.vue` — webhook delivery health. */
+export const QueueHealthIndex = '/queue-health'
+
+/** `src/views/quality/MergeOperationsIndex.vue` — reversible merge audit trail. */
+export const MergeOperationsIndex = '/mergeOperations'
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Parameterised routes.
 //

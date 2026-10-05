@@ -84,6 +84,13 @@ class TablesTableReader {
 	private const VIEW_SERVICE = 'OCA\\Tables\\Service\\ViewService';
 
 	/**
+	 * Tables' permission service (resolved dynamically — Tables' namespace).
+	 *
+	 * @var string
+	 */
+	private const PERMISSIONS_SERVICE = 'OCA\\Tables\\Service\\PermissionsService';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IAppManager $appManager App availability checks.
@@ -265,29 +272,35 @@ class TablesTableReader {
 	}//end findRowsByView()
 
 	/**
-	 * Fetch a single row by id, as a plain descriptor.
+	 * Fetch a single row of the bound table by id, as a plain descriptor.
+	 *
+	 * RowService::find() takes only the row id and checks read access for
+	 * the user Tables captured from the session, and it serves a row of ANY
+	 * table that user can read. So this method asks Tables, before reading,
+	 * whether $userId may read rows of $tableId, and refuses a row that
+	 * belongs to another table. A row the asking user may not read, and a
+	 * row of a table this schema is not bound to, both come back as null.
 	 *
 	 * @param int $rowId The Tables row id.
+	 * @param int $tableId The table the schema is bound to.
 	 * @param string $userId The acting user id.
 	 *
 	 * @return array<string, mixed>|null The row descriptor, or null when absent/denied.
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $userId is kept for reader-contract parity
-	 * with the View/table paths; RowService::find() resolves the acting user from the session.
-	 *
 	 * @spec openspec/specs/tables-virtual-register/spec.md
 	 */
-	public function findRow(int $rowId, string $userId): ?array {
+	public function findRow(int $rowId, int $tableId, string $userId): ?array {
 		$service = $this->resolveService(class: self::ROW_SERVICE);
-		if ($service === null) {
+		$permissions = $this->resolveService(class: self::PERMISSIONS_SERVICE);
+		if ($service === null || $permissions === null) {
 			return null;
 		}
 
 		try {
-			// RowService::find() takes only the row id; Tables resolves the
-			// acting user from the session internally (session-scoped RBAC).
-			// The $userId parameter is kept in this reader's contract for the
-			// View/table paths, which do take an explicit user id.
+			if ($permissions->canReadRowsByElementId($tableId, 'table', $userId) !== true) {
+				return null;
+			}
+
 			$row = $service->find($rowId);
 		} catch (Throwable $e) {
 			$this->logger->warning('[ObjectSource:tables] could not read row ' . $rowId . ': ' . $e->getMessage());
@@ -295,6 +308,10 @@ class TablesTableReader {
 		}
 
 		if (is_object($row) === false) {
+			return null;
+		}
+
+		if ($this->intGetter(entity: $row, getter: 'getTableId') !== $tableId) {
 			return null;
 		}
 
