@@ -327,7 +327,12 @@ class MagicRbacHandler {
 			defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $authorization),
 			isPostgres: $this->isPostgres(),
 			uuidColumn: $uuidColumn,
-			quotedUuids: $this->quotedGrantedUuids(userId: $userId, action: $action)
+			quotedUuids: $this->quotedGrantedUuids(userId: $userId, action: $action),
+			// A row owned by one of the caller's groups stays in the list. Passed
+			// here rather than left out because the single-object verdict admits
+			// a member of the owning group, and a list that dropped the row would
+			// hide an object its reader may open.
+			quotedUserGroups: $this->quotedCallerGroups()
 		);
 	}//end reachableRowSqlFor()
 
@@ -2504,6 +2509,28 @@ class MagicRbacHandler {
 	public function getCurrentUserId(): ?string {
 		return $this->userSession->getUser()?->getUID();
 	}//end getCurrentUserId()
+
+	/**
+	 * The caller's group ids, quoted as SQL literals.
+	 *
+	 * Quoted here, beside the quoter, so the predicate builder on
+	 * {@see \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver} never handles an
+	 * unquoted value — the same contract `quotedGrantedUuids()` already honours.
+	 *
+	 * @return string[] Quoted group ids, empty when the caller is anonymous.
+	 */
+	public function quotedCallerGroups(): array {
+		$quoted = [];
+		foreach ($this->getCurrentUserGroups() as $groupId) {
+			if (is_string($groupId) === false || $groupId === '') {
+				continue;
+			}
+
+			$quoted[] = $this->quoteValue(value: $groupId);
+		}
+
+		return $quoted;
+	}//end quotedCallerGroups()
 
 	/**
 	 * Get the current user's groups

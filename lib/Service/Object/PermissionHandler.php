@@ -1518,7 +1518,11 @@ class PermissionHandler {
 		if ($this->objectScope()->admitsUnconditionally(
 			userId: $userId,
 			userGroups: $userGroups,
-			objectOwner: $owner
+			objectOwner: $owner,
+			// The OWNING GROUP is read off the object's own block, never off the
+			// cascaded one: a schema-level `ownerGroup` would hand every object
+			// of that schema to one group, which is a rule, not an owner.
+			authorization: $object->getAuthorization()
 		) === true
 		) {
 			return true;

@@ -87,6 +87,24 @@ class ObjectScopeResolver {
 	public const SCOPE_PRIVATE = 'private';
 
 	/**
+	 * The authorization-block key carrying the OWNING GROUP.
+	 *
+	 * A second owner, which is a group rather than a person. It is stored beside
+	 * `scope` in the same block, for the reason `scope` is stored there: the
+	 * object's `_authorization` column already is the per-object access record,
+	 * and a new column would need a migration on every magic table to say
+	 * something the block can already carry.
+	 *
+	 * It admits on exactly the terms the named owner does, which is what makes a
+	 * colleague able to edit the record without being handed it first. It is NOT
+	 * a grant: a grant re-opens a private object within the schema's ceiling,
+	 * while the owning group IS an owner and so is admitted unconditionally.
+	 *
+	 * @var string
+	 */
+	public const OWNER_GROUP_KEY = 'ownerGroup';
+
+	/**
 	 * The administrator group that bypasses every RBAC decision.
 	 *
 	 * @var string
@@ -191,11 +209,27 @@ class ObjectScopeResolver {
 	 * @param string|null $userId The caller, or null when anonymous.
 	 * @param array $userGroups The caller's group IDs.
 	 * @param string|null $objectOwner The object's owner UID.
+	 * @param array|null $authorization The object's `_authorization` block, which may name an
+	 *                                  owning group. Omit it and only the named owner admits,
+	 *                                  which is what this method did before group ownership.
 	 *
-	 * @return bool True when the caller is the owner or an administrator.
+	 * @return bool True when the caller is an owner or an administrator.
 	 */
-	public function admitsUnconditionally(?string $userId, array $userGroups, ?string $objectOwner): bool {
+	public function admitsUnconditionally(
+		?string $userId,
+		array $userGroups,
+		?string $objectOwner,
+		?array $authorization = null,
+	): bool {
 		if (in_array(needle: self::ADMIN_GROUP, haystack: $userGroups, strict: true) === true) {
+			return true;
+		}
+
+		// The OWNING GROUP admits on the same terms as the named owner. Checked
+		// before the uid comparison because a member of the owning group need
+		// not be the named owner, which is the whole point of having one.
+		$ownerGroup = $this->ownerGroup(authorization: $authorization);
+		if ($ownerGroup !== null && in_array(needle: $ownerGroup, haystack: $userGroups, strict: true) === true) {
 			return true;
 		}
 
@@ -205,6 +239,30 @@ class ObjectScopeResolver {
 
 		return $objectOwner === $userId;
 	}//end admitsUnconditionally()
+
+	/**
+	 * The group that owns one object, or null when no group does.
+	 *
+	 * Only a non-empty string counts. Anything else — an array, a boolean, an
+	 * empty string — is read as "no owning group", because an unreadable value
+	 * must not admit anybody.
+	 *
+	 * @param array|null $authorization The object's `_authorization` block.
+	 *
+	 * @return string|null The owning group id, or null.
+	 */
+	public function ownerGroup(?array $authorization): ?string {
+		if (is_array($authorization) === false) {
+			return null;
+		}
+
+		$raw = ($authorization[self::OWNER_GROUP_KEY] ?? null);
+		if (is_string($raw) === false || $raw === '') {
+			return null;
+		}
+
+		return $raw;
+	}//end ownerGroup()
 
 	/**
 	 * One platform-appropriate predicate for "this row is NOT private".
@@ -235,10 +293,7 @@ class ObjectScopeResolver {
 	 * @return string A SQL predicate that is true for rows that are not private.
 	 */
 	public function notPrivateSql(string $columnName, bool $defaultPrivate, bool $isPostgres): string {
-		$scope = "JSON_UNQUOTE(JSON_EXTRACT({$columnName}, '$." . self::SCOPE_KEY . "'))";
-		if ($isPostgres === true) {
-			$scope = "({$columnName})::jsonb ->> '" . self::SCOPE_KEY . "'";
-		}
+		$scope = $this->jsonKeySql(columnName: $columnName, key: self::SCOPE_KEY, isPostgres: $isPostgres);
 
 		$organisation = "'" . self::SCOPE_ORGANISATION . "'";
 
@@ -259,6 +314,51 @@ class ObjectScopeResolver {
 	}//end notPrivateSql()
 
 	/**
+	 * One key of the JSON block, as a platform-appropriate expression.
+	 *
+	 * Extracted so the scope and the owning group are read the same way on both
+	 * platforms. Two hand-written extractions of the same JSON object is how the
+	 * predecessor change grew its divergences.
+	 *
+	 * @param string $columnName The `_authorization` column, qualified by the caller.
+	 * @param string $key The block key to read.
+	 * @param bool $isPostgres Whether the connected platform is PostgreSQL.
+	 *
+	 * @return string An SQL expression yielding the key's value as text.
+	 */
+	private function jsonKeySql(string $columnName, string $key, bool $isPostgres): string {
+		if ($isPostgres === true) {
+			return "({$columnName})::jsonb ->> '" . $key . "'";
+		}
+
+		return "JSON_UNQUOTE(JSON_EXTRACT({$columnName}, '$." . $key . "'))";
+	}//end jsonKeySql()
+
+	/**
+	 * The predicate for "this caller is in the group that owns this row".
+	 *
+	 * The list half of the owning group, and the reason it is here rather than in
+	 * either emitter: the single-object verdict admits a member of the owning
+	 * group unconditionally, so a list that filtered the row out would hide an
+	 * object its reader may open and edit.
+	 *
+	 * @param string $authColumn The `_authorization` column, qualified by the caller.
+	 * @param bool $isPostgres Whether the connected platform is PostgreSQL.
+	 * @param string[] $quotedUserGroups The caller's group ids, ALREADY quoted as SQL literals.
+	 *
+	 * @return string|null The predicate, or null when the caller is in no group.
+	 */
+	public function ownedByMyGroupSql(string $authColumn, bool $isPostgres, array $quotedUserGroups): ?string {
+		if ($quotedUserGroups === []) {
+			return null;
+		}
+
+		$group = $this->jsonKeySql(columnName: $authColumn, key: self::OWNER_GROUP_KEY, isPostgres: $isPostgres);
+
+		return '(' . $group . ' IN (' . implode(', ', $quotedUserGroups) . '))';
+	}//end ownedByMyGroupSql()
+
+	/**
 	 * The predicate for "this row is reachable at all by this caller".
 	 *
 	 * A grant makes a private row behave, for this caller, exactly as an
@@ -277,6 +377,8 @@ class ObjectScopeResolver {
 	 * @param bool $isPostgres Whether the connected platform is PostgreSQL.
 	 * @param string $uuidColumn The `_uuid` column, qualified by the caller.
 	 * @param string[] $quotedUuids Granted object UUIDs, ALREADY quoted as SQL literals.
+	 * @param string[] $quotedUserGroups The caller's group ids, ALREADY quoted as SQL literals, so a
+	 *                                   row owned by one of those groups stays in the list.
 	 *
 	 * @return string A SQL predicate true for rows this caller may reach.
 	 */
@@ -286,6 +388,7 @@ class ObjectScopeResolver {
 		bool $isPostgres,
 		string $uuidColumn,
 		array $quotedUuids,
+		array $quotedUserGroups = [],
 	): string {
 		$notPrivate = $this->notPrivateSql(
 			columnName: $authColumn,
@@ -293,12 +396,25 @@ class ObjectScopeResolver {
 			isPostgres: $isPostgres
 		);
 
-		if (empty($quotedUuids) === true) {
+		$disjuncts = [$notPrivate];
+
+		if (empty($quotedUuids) === false) {
+			$disjuncts[] = $uuidColumn . ' IN (' . implode(', ', $quotedUuids) . ')';
+		}
+
+		$ownedByMyGroup = $this->ownedByMyGroupSql(
+			authColumn: $authColumn,
+			isPostgres: $isPostgres,
+			quotedUserGroups: $quotedUserGroups
+		);
+		if ($ownedByMyGroup !== null) {
+			$disjuncts[] = $ownedByMyGroup;
+		}
+
+		if (count($disjuncts) === 1) {
 			return $notPrivate;
 		}
 
-		$inList = implode(', ', $quotedUuids);
-
-		return "({$notPrivate} OR {$uuidColumn} IN ({$inList}))";
+		return '(' . implode(' OR ', $disjuncts) . ')';
 	}//end notPrivateOrGrantedSql()
 }//end class
