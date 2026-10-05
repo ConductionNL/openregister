@@ -933,6 +933,17 @@ class AuditTrailMapper extends QBMapper {
 			$changed['automaticTransition'] = $automaticAction;
 		}
 
+		// Mark a row a transition run AS THE SYSTEM produced, naming the app
+		// that approved the caller itself (TransitionEngine::transitionAsSystem).
+		// The row's user stays the real caller; this says OpenRegister's own
+		// read and update checks were skipped and who took that decision.
+		// Applied before the row is built and sealed, for the hash-chain reason
+		// above, and read through the container for the same fail-soft reason.
+		$systemApp = $this->transitionSystemApp(uuid: (string)$objectEntity->getUuid());
+		if ($systemApp !== null) {
+			$changed['transitionAsSystem'] = ['app' => $systemApp];
+		}
+
 		// Get the current user.
 		$user = $this->userSession->getUser();
 
@@ -1042,6 +1053,35 @@ class AuditTrailMapper extends QBMapper {
 
 		return $auditTrail;
 	}//end buildAuditTrail()
+
+	/**
+	 * The app a transition on this object currently runs as the system for, if any.
+	 *
+	 * Read off the request-scoped LifecycleActionContext through the container,
+	 * like the automatic-transition pass above: this mapper is built in
+	 * contexts where the lifecycle services are not wired, and an audit row
+	 * must never fail to be built because of that. Unavailable means "no
+	 * system transition in flight".
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return string|null The app id, or null for an ordinary write.
+	 *
+	 * @spec openspec/changes/transition-as-system/specs/object-lifecycle/spec.md
+	 */
+	private function transitionSystemApp(string $uuid): ?string {
+		if ($uuid === '') {
+			return null;
+		}
+
+		try {
+			return $this->container
+				->get(\OCA\OpenRegister\Service\Lifecycle\LifecycleActionContext::class)
+				->systemAppFor($uuid);
+		} catch (\Throwable $contextUnavailable) {
+			return null;
+		}
+	}//end transitionSystemApp()
 
 	/**
 	 * Stamp an audit row's expiry and retention source from the retention of
