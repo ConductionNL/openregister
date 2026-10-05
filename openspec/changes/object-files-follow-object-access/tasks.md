@@ -40,7 +40,8 @@
 - [ ] 5.3 Add `officeUrl` to formatted file metadata for mimetypes Office opens
   - Not added: the formatted file has no object context. The page URL is fixed (`/apps/openregister/office/{register}/{schema}/{id}/{fileId}`), so the follow-up `CnFilesTab` action builds it.
 - [ ] 5.4 Integration test pinned to richdocuments 12.0.x: edit with update saves a new version attributed to the editor, read-only PutFile is refused, no read gets 404 and no token row
-  - Covered by `OfficeSessionServiceTest` and `FilesControllerObjectAccessTest`, and live against richdocuments 12.0.1 and Collabora CODE 26.04.4.2 (`orf-live` runs 13 to 16). No CI test pinned to richdocuments yet.
+  - Covered by `OfficeSessionServiceTest` and `FilesControllerObjectAccessTest`, and live against richdocuments 12.0.1 and Collabora CODE 26.04.4.2 (`orf-live` runs 13 to 16).
+  - Pinned in CI since the follow-up: `tests/Contract/Richdocuments` runs in `.github/workflows/richdocuments-contract.yml` against the latest richdocuments release and 12.0.1, daily and on every PR. It checks the classes, signatures, token fields and WOPI routes the Office path uses, and runs the real `WopiMapper::generateFileToken()`. It does not save through Collabora, so the box stays open for a full integration test.
 
 ## 6. Fleet impact
 
