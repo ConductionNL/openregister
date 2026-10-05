@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Notification\EmailSender;
+use OCA\OpenRegister\Service\Notification\OptOutAuthority;
 
 /**
  * Resolves and reaches the parties on an object over their own addresses.
@@ -46,18 +47,30 @@ class PartyNotificationService {
 	public const OUTBOUND_KIND = 'correspondence';
 
 	/**
+	 * The outcome of a party integriq says may not be mailed.
+	 */
+	public const OUTCOME_REFUSED_OPTED_OUT = 'refused-opted-out';
+
+	/**
+	 * The outcome of a party nobody could decide for: integriq is absent.
+	 */
+	public const OUTCOME_AUTHORITY_UNAVAILABLE = OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ContactLinkMapper $links The link rows, for the parties on an object.
 	 * @param PartyService $parties The party records and their addresses.
 	 * @param PartyIndicatorGuard $indicators The declared effects, which decide who may be reached.
 	 * @param EmailSender $email The email channel.
+	 * @param OptOutAuthority $optOut Asks integriq whether a party's address may be mailed.
 	 */
 	public function __construct(
 		private readonly ContactLinkMapper $links,
 		private readonly PartyService $parties,
 		private readonly PartyIndicatorGuard $indicators,
 		private readonly EmailSender $email,
+		private readonly OptOutAuthority $optOut,
 	) {
 	}//end __construct()
 
@@ -95,18 +108,46 @@ class PartyNotificationService {
 	/**
 	 * Send one message to every party on an object that may receive it.
 	 *
+	 * A refuse-send indicator comes first, a missing address next. Every
+	 * remaining address is put to integriq in one question; a party it
+	 * refuses is reported, never dropped (opt-out-before-send).
+	 *
 	 * @param string $objectUuid The object.
 	 * @param string $subject The subject.
 	 * @param string $body The body.
 	 * @param string|null $role Only the parties in this role, or null for all of them.
+	 * @param string $category The message category; absent or unknown reads as `service`.
 	 *
 	 * @return array<int, array{party: string, address: string|null, outcome: string}> What happened per party.
 	 *
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-a-parties-notification-asks-integriq-before-it-mails-a-party-req-ero-003
 	 */
-	public function notifyParties(string $objectUuid, string $subject, string $body, ?string $role = null): array {
+	public function notifyParties(
+		string $objectUuid,
+		string $subject,
+		string $body,
+		?string $role = null,
+		string $category = OptOutAuthority::DEFAULT_CATEGORY,
+	): array {
+		$recipients = $this->recipientsForObject(objectUuid: $objectUuid, role: $role);
+
+		$askable = [];
+		foreach ($recipients as $recipient) {
+			if ($recipient['refusedBy'] === null && $recipient['address'] !== null) {
+				$askable[] = (string)$recipient['address'];
+			}
+		}
+
+		$decisions = $this->optOut->ask(
+			channel: 'email',
+			category: $category,
+			addresses: $askable,
+			correlationId: 'openregister-parties:' . $objectUuid
+		);
+
 		$sent = [];
-		foreach ($this->recipientsForObject(objectUuid: $objectUuid, role: $role) as $recipient) {
+		foreach ($recipients as $recipient) {
 			if ($recipient['refusedBy'] !== null) {
 				$sent[] = [
 					'party' => $recipient['party'],
@@ -125,6 +166,22 @@ class PartyNotificationService {
 				continue;
 			}
 
+			// No decision means no answer, and no answer is refused.
+			$decision = ($decisions[$recipient['address']] ?? ['send' => false, 'code' => OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE, 'unsubscribe' => null]);
+			if ($decision['send'] !== true) {
+				$outcome = self::OUTCOME_REFUSED_OPTED_OUT;
+				if ($decision['code'] === OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE) {
+					$outcome = self::OUTCOME_AUTHORITY_UNAVAILABLE;
+				}
+
+				$sent[] = [
+					'party' => $recipient['party'],
+					'address' => null,
+					'outcome' => $outcome,
+				];
+				continue;
+			}
+
 			$sent[] = [
 				'party' => $recipient['party'],
 				'address' => $recipient['address'],
@@ -132,7 +189,8 @@ class PartyNotificationService {
 					address: $recipient['address'],
 					displayName: (string)($recipient['displayName'] ?? ''),
 					subject: $subject,
-					body: $body
+					body: $this->optOut->withLink(body: $body, unsubscribe: $decision['unsubscribe']),
+					unsubscribe: $decision['unsubscribe']
 				),
 			];
 		}//end foreach
