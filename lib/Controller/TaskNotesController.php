@@ -59,7 +59,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
 
 declare(strict_types=1);
@@ -82,7 +82,7 @@ use Throwable;
 /**
  * REST surface for the notes leaf on a task.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
 class TaskNotesController extends Controller {
 
@@ -130,7 +130,7 @@ class TaskNotesController extends Controller {
 	 * @return JSONResponse The notes and their count; 404 when the task is
 	 *                      absent OR invisible.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -157,7 +157,7 @@ class TaskNotesController extends Controller {
 	 * @return JSONResponse The created note; 404 when the task is absent OR
 	 *                      invisible, 400 when the message is missing.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -187,7 +187,7 @@ class TaskNotesController extends Controller {
 	 * @return JSONResponse The updated note; 404 when the task is absent OR
 	 *                      invisible, 400 when the message is missing.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -213,7 +213,7 @@ class TaskNotesController extends Controller {
 	 * @return JSONResponse Confirmation; 404 when the task is absent OR
 	 *                      invisible.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -242,7 +242,7 @@ class TaskNotesController extends Controller {
 	 *
 	 * @return Task|null The readable task, or null.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	private function readableTask(string $uuid): ?Task {
 		try {

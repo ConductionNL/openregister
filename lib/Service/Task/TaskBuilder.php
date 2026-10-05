@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Throwable;
  * is one independent branch.
  * @SuppressWarnings(PHPMD.CyclomaticComplexity) Same cause.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
  */
 class TaskBuilder {
 
@@ -64,7 +64,7 @@ class TaskBuilder {
 	 *
 	 * @throws TaskValidationException On any refused value.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
 	 */
 	public function fromData(array $data, ?string $actor): Task {
 		$task = new Task();
@@ -195,7 +195,7 @@ class TaskBuilder {
 	 *
 	 * @return array<int, TaskRelation> The relation rows to insert.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-generic-anchor-plus-typed-relations
 	 */
 	public function relationsFor(Task $task, array $data): array {
 		$relations = ($data['relations'] ?? null);
@@ -269,7 +269,7 @@ class TaskBuilder {
 	 *
 	 * @throws TaskValidationException When present but unparsable.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-due_at-advises-expires_at-enforces
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-due_at-advises-expires_at-enforces
 	 */
 	private function parseDate(mixed $value, string $field): ?DateTime {
 		if ($value === null || $value === '') {
@@ -305,7 +305,7 @@ class TaskBuilder {
 	 *
 	 * @throws TaskValidationException When it is a string or malformed.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-templated-task-freezes-its-template-at-creation
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-templated-task-freezes-its-template-at-creation
 	 */
 	private function validChecklist(mixed $value): ?array {
 		if ($value === null) {

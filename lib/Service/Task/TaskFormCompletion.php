@@ -36,7 +36,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+ * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
  */
 
 declare(strict_types=1);
@@ -68,7 +68,7 @@ use RuntimeException;
  * exception shapes it translates between. Splitting it would put the two
  * halves of "complete with a payload" in two files that must agree on order.
  *
- * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+ * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
  */
 class TaskFormCompletion {
 
@@ -119,7 +119,7 @@ class TaskFormCompletion {
 	 * @throws TaskSubjectWriteRefusedException When the subject's own validation or lifecycle refuses the write (422).
 	 * @throws TaskAccessDeniedException When the task verb or the object write is not authorized.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
 	public function complete(string $uuid, string $outcome, ?string $resultText, ?string $comment, array $data, ?string $actor): Task {
 		// The task verb's authorization FIRST, fail-closed and audited on
@@ -151,7 +151,7 @@ class TaskFormCompletion {
 	 *
 	 * @throws TaskFormRefusedException When the form's state is unresolvable.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
 	 */
 	private function refuseUnresolvable(array $described): void {
 		$form = $described['form'];
@@ -177,7 +177,7 @@ class TaskFormCompletion {
 	 *
 	 * @throws TaskFormRefusedException When an item is still unchecked.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-checklist-is-presented-beside-the-field-form-never-merged-into-it
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-checklist-is-presented-beside-the-field-form-never-merged-into-it
 	 */
 	private function refuseUncheckedItems(Task $task, bool $required): void {
 		if ($required === false) {
@@ -220,7 +220,7 @@ class TaskFormCompletion {
 	 * @throws TaskSubjectWriteRefusedException When the subject refuses the write.
 	 * @throws TaskAccessDeniedException When the object write is not authorized.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
 	private function writeSubject(Task $task, ?array $form, array $data): void {
 		if ($form === null || ($form['kind'] ?? null) !== TaskForm::KIND_FIELDS) {
@@ -280,7 +280,7 @@ class TaskFormCompletion {
 	 *
 	 * @throws TaskFormRefusedException When the allowlist refuses.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
 	 */
 	private function allowlist(array $declared, array $data, string $action): array {
 		try {
@@ -303,7 +303,7 @@ class TaskFormCompletion {
 	 * @throws TaskAccessDeniedException When the caller may not transition the object.
 	 * @throws TaskSubjectWriteRefusedException When the schema or the lifecycle refuses.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
 	private function transition(string $objectUuid, string $action, array $data): void {
 		try {
@@ -343,7 +343,7 @@ class TaskFormCompletion {
 	 * @throws TaskAccessDeniedException When the caller may not write the object.
 	 * @throws TaskSubjectWriteRefusedException When the schema refuses, or the object is gone.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
 	private function save(string $objectUuid, array $accepted, string $runUuid = ''): void {
 		$object = $this->objects->find(id: $objectUuid);

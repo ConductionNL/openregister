@@ -31,7 +31,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+ * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
  */
 
 declare(strict_types=1);
@@ -68,7 +68,7 @@ final class FlowAdvanceBudget {
 	 *
 	 * @return self A zero budget.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public static function none(): self {
 		return new self(transitions: 0);
@@ -89,7 +89,7 @@ final class FlowAdvanceBudget {
 	 * @throws UnexpectedValueException When the value is null, empty, negative,
 	 *                                  fractional or any string but "all".
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public static function fromConfig(array $config, string $key = 'advance'): self {
 		if (array_key_exists($key, $config) === false) {
@@ -109,7 +109,7 @@ final class FlowAdvanceBudget {
 	 * @throws UnexpectedValueException When the value is not `0`, a positive
 	 *                                  integer or the string "all".
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public static function fromValue(mixed $value): self {
 		if ($value === null) {
@@ -144,7 +144,7 @@ final class FlowAdvanceBudget {
 	 *
 	 * @return boolean False for the default zero budget.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public function advancesInRequest(): bool {
 		return ($this->transitions !== 0);
@@ -155,7 +155,7 @@ final class FlowAdvanceBudget {
 	 *
 	 * @return boolean True when the walk runs to its next natural stop.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public function isUnlimited(): bool {
 		return ($this->transitions === null);
@@ -166,7 +166,7 @@ final class FlowAdvanceBudget {
 	 *
 	 * @return integer|null The number of transitions the completion may push.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public function transitions(): ?int {
 		return $this->transitions;
@@ -181,7 +181,7 @@ final class FlowAdvanceBudget {
 	 *
 	 * @return integer|string The stored form.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-advance-budget-says-how-far-a-completion-may-push-the-run
 	 */
 	public function toStored(): int|string {
 		if ($this->transitions === null) {

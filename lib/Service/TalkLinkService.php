@@ -221,7 +221,7 @@ class TalkLinkService {
 	 *                   object's schema does not opt in (403), the email is
 	 *                   malformed (400), or no user is logged in.
 	 *
-	 * @spec openspec/changes/guardian-participant-messaging-leaf/specs/guardian-participant-messaging-leaf/spec.md
+	 * @spec openspec/specs/guardian-participant-messaging-leaf/spec.md
 	 */
 	public function inviteExternalParticipant(string $objectUuid, string $roomToken, string $email, ?string $displayName = null): array {
 		$link = $this->talkLinkMapper->findByObjectAndRoom($objectUuid, $roomToken);

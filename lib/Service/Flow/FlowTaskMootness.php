@@ -37,7 +37,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
+ * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
  */
 
 declare(strict_types=1);
@@ -81,7 +81,7 @@ class FlowTaskMootness {
 	 *
 	 * @return int How many tasks were terminated.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
 	 */
 	public function placesPruned(array $context, array $places, string $byTransition): int {
 		$state = ($context[FlowResumeState::CONTEXT_KEY] ?? null);
@@ -118,7 +118,7 @@ class FlowTaskMootness {
 	 *
 	 * @return boolean True when one of them feeds this node.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
 	 */
 	private function standsOn(string $nodeId, array $places): bool {
 		$joinPrefix = $nodeId . FlowGraph::PLACE_JOIN;
@@ -147,7 +147,7 @@ class FlowTaskMootness {
 	 *
 	 * @return boolean True when the task is now terminal (or already was).
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
 	 */
 	private function terminate(string $taskUuid, string $nodeId, string $runUuid, string $byTransition): bool {
 		try {

@@ -28,7 +28,7 @@
  *
  * @template-extends QBMapper<Task>
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
  */
 
 declare(strict_types=1);
@@ -63,7 +63,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<Task>
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
  */
 class TaskMapper extends QBMapper {
 
@@ -93,7 +93,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return Task The inserted task, with its id.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function insert(Entity $entity): Task {
 		if ($entity instanceof Task === false) {
@@ -114,7 +114,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return Task The updated task.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function update(Entity $entity): Task {
 		if ($entity instanceof Task === false) {
@@ -215,7 +215,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such task exists.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function findByUuid(string $uuid): Task {
 		$qb = $this->db->getQueryBuilder();
@@ -244,7 +244,7 @@ class TaskMapper extends QBMapper {
 	 * @return boolean True when the open row was updated; false when the
 	 *                 task had already been closed by someone else.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function updateIfOpen(Task $task): bool {
 		$id = $task->getId();
@@ -289,7 +289,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return string The platform-correct cast expression.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	public function watchersAsText(): string {
 		$column = $this->quote(identifier: 'watchers');
@@ -317,7 +317,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return string The EXISTS predicate.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	public function candidateMembershipSql(string $uidPlaceholder, ?string $groupsPlaceholder): string {
 		$kind = $this->quote(identifier: 'tc.kind');
@@ -383,7 +383,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return boolean True when this caller won the claim.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function claim(int $taskId, string $uid): bool {
 		$qb = $this->db->getQueryBuilder();
@@ -417,7 +417,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return array<int, Task> The open tasks carrying that run uuid.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
 	 */
 	public function findOpenByRunUuid(string $runUuid): array {
 		$qb = $this->db->getQueryBuilder();
@@ -437,7 +437,7 @@ class TaskMapper extends QBMapper {
 	 * @return array<string, int> Open-task count per uid; a uid with no open
 	 *                            tasks is absent.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	public function countOpenAssigned(array $uids): array {
 		if ($uids === []) {
@@ -472,7 +472,7 @@ class TaskMapper extends QBMapper {
 	 *                               datetime string); a uid never assigned is
 	 *                               absent, which round-robin reads as "next".
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	public function latestAssignedAt(array $uids): array {
 		if ($uids === []) {
@@ -506,7 +506,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return array<int, Task> The page.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	public function findInbox(TaskInboxCriteria $criteria, int $limit = 25, int $offset = 0): array {
 		$qb = $this->db->getQueryBuilder();
@@ -529,7 +529,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return int The total.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	public function countInbox(TaskInboxCriteria $criteria): int {
 		$qb = $this->db->getQueryBuilder();
@@ -560,7 +560,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function applyInboxPredicates(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
 		$this->applyScope(qb: $qb, criteria: $criteria);
@@ -680,7 +680,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function applyScope(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
 		if ($criteria->runUuid !== null) {
@@ -756,7 +756,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function applyVisibility(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
 		if ($criteria->isAdmin === false) {
@@ -780,7 +780,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function applyFilters(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
 		if ($criteria->states !== []) {
@@ -831,7 +831,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
 	 */
 	private function applyOverdue(IQueryBuilder $qb, DateTime $now): void {
 		$qb->andWhere(
@@ -859,7 +859,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return int The count.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
 	 */
 	public function countOverdueOpen(DateTime $now): int {
 		$qb = $this->db->getQueryBuilder();
@@ -897,7 +897,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function applyDueWindow(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
 		foreach (
@@ -935,7 +935,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return \OCP\DB\QueryBuilder\IQueryFunction The EXISTS predicate.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function candidateMembershipPredicate(IQueryBuilder $qb, TaskInboxCriteria $criteria): \OCP\DB\QueryBuilder\IQueryFunction {
 		// Parameters are created on the OUTER builder so the correlated
@@ -967,7 +967,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return string The LIKE predicate.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	private function watcherPredicate(IQueryBuilder $qb, string $uid): string {
 		$needle = '%"' . $this->db->escapeLikeParameter($uid) . '"%';
@@ -988,7 +988,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function applyInboxOrder(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
 		$direction = 'ASC';

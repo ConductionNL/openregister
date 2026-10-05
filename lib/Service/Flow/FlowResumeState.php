@@ -234,7 +234,7 @@ final class FlowResumeState implements JsonSerializable {
 	 * @return array<string, array<string, mixed>>|null The slots, or null to drop them.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-must-be-able-to-resume-from-where-it-stopped
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
 	 */
 	public function storableWhen(bool $live): ?array {
 		if ($live === false || $this->byNode === []) {

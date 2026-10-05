@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+ * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
 /**
  * Recipient address rules for the flow send nodes.
  *
- * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+ * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
  */
 class FlowRecipientAddresses {
 
@@ -65,7 +65,7 @@ class FlowRecipientAddresses {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the channel takes addresses is a
 	 * fact about the channel, not a mode of this method's own.
 	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	public function resolveLiteral(string $entry, bool $acceptAddresses): array {
 		$out = ['uids' => [], 'addresses' => [], 'unknown' => []];
@@ -118,7 +118,7 @@ class FlowRecipientAddresses {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Whether the channel takes addresses is a
 	 * fact about the channel, not a mode of this method's own.
 	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-notification-step-reads-role-fields-on-the-item
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-notification-step-reads-role-fields-on-the-item
 	 */
 	public function resolveTemplate(string $field, array $json, bool $acceptAddresses): array {
 		$value = $this->normaliseRoleValue(value: ($json[$field] ?? null));
@@ -156,7 +156,7 @@ class FlowRecipientAddresses {
 	 *
 	 * @return string One of the EXTERNAL_* modes.
 	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	public function externalRecipientMode(array $config): string {
 		$mode = strtolower(trim((string)($config['externalRecipients'] ?? '')));
@@ -178,7 +178,7 @@ class FlowRecipientAddresses {
 	 *
 	 * @return array{allowed: array<string, string>, refused: array<string, array{recipient: string, reason: string}>}
 	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	public function screenAddresses(array $addresses, array $json, string $mode): array {
 		$allowed = [];
@@ -256,7 +256,7 @@ class FlowRecipientAddresses {
 	 *
 	 * @return mixed The value, a single role object wrapped.
 	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-notification-step-reads-role-fields-on-the-item
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-notification-step-reads-role-fields-on-the-item
 	 */
 	private function normaliseRoleValue(mixed $value): mixed {
 		if (is_array($value) === false || $value === [] || array_is_list($value) === true) {
@@ -287,7 +287,7 @@ class FlowRecipientAddresses {
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Two entry shapes, each with a user and an address branch.
 	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	private function splitAddresses(mixed $value): array {
 		if (is_string($value) === true) {

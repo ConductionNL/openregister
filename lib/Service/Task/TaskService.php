@@ -34,7 +34,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
 
 declare(strict_types=1);
@@ -92,7 +92,7 @@ use UnexpectedValueException;
  * collaborator would hide that a lifecycle verb has an after-commit side
  * effect.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
 class TaskService {
 
@@ -210,8 +210,8 @@ class TaskService {
 	 *                                      object the payload attaches the
 	 *                                      task to.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
-	 * @spec openspec/changes/flow-task-subject-authorization/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 */
 	public function create(array $data, ?string $actor): Task {
 		if ($this->authorization->isAdministrator(uid: $actor) === false) {
@@ -258,7 +258,7 @@ class TaskService {
 	 * @throws TaskValidationException On any refused value.
 	 * @throws TaskAccessDeniedException Without an acting identity.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
 	 */
 	public function import(array $data, ?string $actor): Task {
 		$task = $this->builder->fromData(data: $data, actor: $actor);
@@ -305,7 +305,7 @@ class TaskService {
 	 *
 	 * @return Task The offered task.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	public function offer(string $uuid, array $pool, ?string $actor): Task {
 		$task = $this->openTaskFor(verb: 'offer', uuid: $uuid, actor: $actor);
@@ -371,7 +371,7 @@ class TaskService {
 	 *
 	 * @throws TaskConflictException When another claimer won, or the task is terminal.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function claim(string $uuid, ?string $actor): Task {
 		$task = $this->openTaskFor(verb: 'claim', uuid: $uuid, actor: $actor);
@@ -401,7 +401,7 @@ class TaskService {
 	 *
 	 * @return Task The pooled task.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function unclaim(string $uuid, ?string $actor): Task {
 		$task = $this->openTaskFor(verb: 'unclaim', uuid: $uuid, actor: $actor);
@@ -429,7 +429,7 @@ class TaskService {
 	 *
 	 * @return Task The assigned task.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function assign(string $uuid, string $assignee, ?string $actor): Task {
 		return $this->assignInternal(uuid: $uuid, assignee: $assignee, actor: $actor, action: 'assign');
@@ -444,7 +444,7 @@ class TaskService {
 	 *
 	 * @return Task The reassigned task.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function reassign(string $uuid, string $assignee, ?string $actor): Task {
 		return $this->assignInternal(uuid: $uuid, assignee: $assignee, actor: $actor, action: 'reassign');
@@ -465,7 +465,7 @@ class TaskService {
 	 *
 	 * @return Task The delegated task.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	public function delegate(string $uuid, string $delegate, string $mandate, ?string $actor): Task {
 		$task = $this->openTaskFor(verb: 'delegate', uuid: $uuid, actor: $actor);
@@ -505,7 +505,7 @@ class TaskService {
 	 *
 	 * @return Task The resolved task.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function resolve(string $uuid, ?string $resultText, ?string $comment, ?string $actor): Task {
 		return $this->completeInternal(
@@ -539,7 +539,7 @@ class TaskService {
 	 *
 	 * @return Task The completed task.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function complete(
 		string $uuid,
@@ -571,7 +571,7 @@ class TaskService {
 	 *
 	 * @return Task The terminated task.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function cancel(string $uuid, ?string $reason, ?string $actor): Task {
 		$task = $this->openTaskFor(verb: 'cancel', uuid: $uuid, actor: $actor);
@@ -601,7 +601,7 @@ class TaskService {
 	 *
 	 * @throws TaskValidationException When no item carries that id.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-templated-task-freezes-its-template-at-creation
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-templated-task-freezes-its-template-at-creation
 	 */
 	public function checkChecklistItem(string $uuid, string $itemId, bool $checked, ?string $actor): Task {
 		$task = $this->openTaskFor(verb: 'checklist', uuid: $uuid, actor: $actor);
@@ -653,7 +653,7 @@ class TaskService {
 	 *
 	 * @return int How many tasks were terminated.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
 	 */
 	public function terminateForRun(string $runUuid, string $runStatus): int {
 		if (trim($runUuid) === '') {
@@ -718,7 +718,7 @@ class TaskService {
 	 *
 	 * @return Task The terminated task, or the task untouched when already terminal.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
 	 */
 	public function terminateAsMoot(string $uuid, string $reason, string $source): Task {
 		$task = $this->tasks->findByUuid(uuid: $uuid);
@@ -960,7 +960,7 @@ class TaskService {
 	 *
 	 * @throws \OCP\AppFramework\Db\DoesNotExistException When no such task exists.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function get(string $uuid): Task {
 		return $this->tasks->findByUuid(uuid: $uuid);
@@ -1027,7 +1027,7 @@ class TaskService {
 	 *
 	 * @return array<int, TaskAudit> The entries.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
 	 */
 	public function auditTrail(string $uuid): array {
 		$task = $this->tasks->findByUuid(uuid: $uuid);
@@ -1045,7 +1045,7 @@ class TaskService {
 	 *
 	 * @return Task The task with its new assignee.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	private function assignInternal(string $uuid, string $assignee, ?string $actor, string $action): Task {
 		$task = $this->openTaskFor(verb: $action, uuid: $uuid, actor: $actor);
@@ -1084,7 +1084,7 @@ class TaskService {
 	 *
 	 * @throws TaskValidationException When a rejecting outcome has no comment.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 * @spec openspec/changes/task-expiry-and-outcomes/specs/task-expiry-and-outcomes/spec.md#requirement-a-rejecting-completion-honours-the-tasks-declared-reject-behaviour
 	 */
 	private function completeInternal(
@@ -1183,7 +1183,7 @@ class TaskService {
 	 * @throws TaskConflictException When the task is already terminal.
 	 * @throws TaskAccessDeniedException When authorization denies (audited).
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
 	public function authorizedOpenTask(string $verb, string $uuid, ?string $actor): Task {
 		return $this->openTaskFor(verb: $verb, uuid: $uuid, actor: $actor);
@@ -1204,7 +1204,7 @@ class TaskService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
 	 */
 	public function recordRefusedCompletion(Task $task, string $reason, ?string $actor): void {
 		if ($task->getId() === null) {
@@ -1245,7 +1245,7 @@ class TaskService {
 	 *
 	 * @throws TaskValidationException When the declaration is refused.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
 	 */
 	private function refuseUnrenderableForm(Task $task): void {
 		$record = (($task->getMetadata() ?? [])['form'] ?? null);
@@ -1274,7 +1274,7 @@ class TaskService {
 	 *                               the current state in the message.
 	 * @throws TaskAccessDeniedException When authorization denies (audited).
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	private function openTaskFor(string $verb, string $uuid, ?string $actor): Task {
 		$task = $this->tasks->findByUuid(uuid: $uuid);
@@ -1316,7 +1316,7 @@ class TaskService {
 	 *
 	 * @throws TaskAccessDeniedException The original denial, always rethrown.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
 	 */
 	private function authorizeOrRecord(string $verb, Task $task, ?string $actor): void {
 		try {
@@ -1361,7 +1361,7 @@ class TaskService {
 	 *
 	 * @throws TaskConflictException When the row was closed by someone else.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	private function persistOpen(Task $task): Task {
 		if ($this->tasks->updateIfOpen(task: $task) === false) {
@@ -1387,7 +1387,7 @@ class TaskService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
 	 */
 	private function applyState(Task $task, string $state, string $action): void {
 		$task->setState($state);
@@ -1409,7 +1409,7 @@ class TaskService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
 	 */
 	private function appendAudit(Task $task, string $action, ?string $actor, ?string $reason): void {
 		$entry = new TaskAudit();
@@ -1439,7 +1439,7 @@ class TaskService {
 	 *
 	 * @throws Throwable Whatever the mutation threw, after rollback.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
 	 */
 	private function transactional(callable $mutation): Task {
 		$this->db->beginTransaction();
@@ -1528,7 +1528,7 @@ class TaskService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	private function rewriteCandidateIndex(Task $task): void {
 		$rows = [];

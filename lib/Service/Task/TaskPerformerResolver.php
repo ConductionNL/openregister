@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Throwable;
 /**
  * The five routing strategies, and the pool expansion under them.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
  */
 class TaskPerformerResolver {
 
@@ -72,7 +72,7 @@ class TaskPerformerResolver {
 	 *         Null is a first-class answer, not a failure: the pool members
 	 *         can still claim.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	public function resolveAssignee(Task $task): ?string {
 		$pool = $this->expandPool(task: $task);
@@ -133,7 +133,7 @@ class TaskPerformerResolver {
 	 *
 	 * @return array<int, string> The candidate uids, deduplicated, in order.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	public function expandPool(Task $task): array {
 		$pool = [];
@@ -164,7 +164,7 @@ class TaskPerformerResolver {
 	 *
 	 * @return array<int, string> The member uids.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	private function groupMembers(string $groupId): array {
 		if ($this->groupManager === null || $groupId === '') {
@@ -198,7 +198,7 @@ class TaskPerformerResolver {
 	 *
 	 * @return string|null The chosen uid, or null for an empty pool.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	private function pickLeastRecentlyAssigned(array $pool): ?string {
 		if ($pool === []) {
@@ -229,7 +229,7 @@ class TaskPerformerResolver {
 	 *
 	 * @return string|null The chosen uid, or null for an empty pool.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	private function pickLeastLoaded(array $pool): ?string {
 		if ($pool === []) {

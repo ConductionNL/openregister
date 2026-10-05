@@ -24,7 +24,7 @@ use RuntimeException;
 /**
  * A losing branch takes its task with it; a run-less task is never touched.
  *
- * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
+ * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
  */
 class FlowTaskMootnessTest extends TestCase {
 

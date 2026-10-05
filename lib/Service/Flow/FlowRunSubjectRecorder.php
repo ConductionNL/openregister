@@ -30,7 +30,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+ * @spec openspec/specs/flow-run-subjects/spec.md
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ class FlowRunSubjectRecorder {
 	 * @param FlowRunSubjects $subjects The subject rules.
 	 * @param LoggerInterface $logger   Where a failure to record is reported.
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function __construct(
 		private readonly FlowRunMapper $runs,
@@ -76,7 +76,7 @@ class FlowRunSubjectRecorder {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function record(
 		array $context,
@@ -141,7 +141,7 @@ class FlowRunSubjectRecorder {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function recordOne(
 		array $context,
@@ -186,7 +186,7 @@ class FlowRunSubjectRecorder {
 	 *
 	 * @return FlowRun|null The run.
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function runFor(array $context): ?FlowRun {
 		$runUuid = trim((string)($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? '')));
@@ -229,7 +229,7 @@ class FlowRunSubjectRecorder {
 	 *
 	 * @throws UnexpectedValueException When the role is named and not held.
 	 *
-	 * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+	 * @spec openspec/specs/flow-run-subjects/spec.md
 	 */
 	public function anchorFor(array $context, string $role): array {
 		$role = trim($role);

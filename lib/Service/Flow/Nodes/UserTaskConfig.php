@@ -23,8 +23,8 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
- * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
+ * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
+ * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
  */
 
 declare(strict_types=1);
@@ -113,8 +113,8 @@ final class UserTaskConfig {
 	 *
 	 * @throws UnexpectedValueException When the config is refused.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
 	 */
 	public function validate(array $config): void {
 		if (trim((string)($config['title'] ?? '')) === '') {
@@ -171,7 +171,7 @@ final class UserTaskConfig {
 	 *
 	 * @return array<string, mixed> The creation payload.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
 	 */
 	public function taskData(array $config, array $items, string $nodeId, string $nodeType): array {
 		$json = $this->representativeJson(items: $items);
@@ -224,7 +224,7 @@ final class UserTaskConfig {
 	 *
 	 * @return array<string, mixed> The slot values.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-several-user-task-nodes-in-one-flow-keep-independent-state
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-several-user-task-nodes-in-one-flow-keep-independent-state
 	 */
 	public function slotValues(array $config, array $items, string $taskUuid): array {
 		return [
@@ -278,7 +278,7 @@ final class UserTaskConfig {
 	 *
 	 * @return string The key.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
 	 */
 	public function outcomeKey(array $config): string {
 		$key = trim((string)($config['outcomeKey'] ?? ''));
@@ -297,7 +297,7 @@ final class UserTaskConfig {
 	 *
 	 * @return string The rendered title.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
 	 */
 	public function renderedTitle(array $config, array $items): string {
 		return trim((string)FlowValueTemplate::render(
@@ -313,7 +313,7 @@ final class UserTaskConfig {
 	 *
 	 * @return DateTime The next heartbeat.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
 	 */
 	public function heartbeatAt(array $config): DateTime {
 		$minutes = (int)($config['heartbeatMinutes'] ?? self::DEFAULT_HEARTBEAT_MINUTES);

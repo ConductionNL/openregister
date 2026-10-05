@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use OCA\OpenRegister\Db\Task;
 /**
  * Computes overdue, days-until-due and days-overdue from the stored deadlines.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
  */
 final class TaskTemporalProjection {
 
@@ -51,7 +51,7 @@ final class TaskTemporalProjection {
 	 *
 	 * @return DateTime Now.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
 	 */
 	public function now(): DateTime {
 		return new DateTime();
@@ -71,7 +71,7 @@ final class TaskTemporalProjection {
 	 *
 	 * @return array{overdue: bool, daysUntilDue: int|null, daysOverdue: int|null} The projection.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-overdue-is-derived-and-must-not-be-stored
 	 */
 	public function project(Task $task, ?DateTimeInterface $now = null): array {
 		$now ??= $this->now();

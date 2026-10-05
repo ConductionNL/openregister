@@ -40,7 +40,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-subject-authorization/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ use Throwable;
 /**
  * Refuses a task whose subject object the caller may not read.
  *
- * @spec openspec/changes/flow-task-subject-authorization/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
  */
 class TaskSubjectAccessGuard {
 
@@ -102,7 +102,7 @@ class TaskSubjectAccessGuard {
 	 * @throws TaskSubjectNotFoundException When any named object is absent or
 	 *                                      unreadable for this caller.
 	 *
-	 * @spec openspec/changes/flow-task-subject-authorization/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 */
 	public function assertReadable(array $data): void {
 		$subjects = $this->subjectsIn(data: $data);
@@ -130,7 +130,7 @@ class TaskSubjectAccessGuard {
 	 * @return array<int, array{uuid: string, register: int|null, schema: int|null}>
 	 *         One entry per named object, deduplicated on the uuid.
 	 *
-	 * @spec openspec/changes/flow-task-subject-authorization/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 */
 	private function subjectsIn(array $data): array {
 		$subjects = [];
@@ -185,7 +185,7 @@ class TaskSubjectAccessGuard {
 	 *
 	 * @throws TaskSubjectNotFoundException When absent or unreadable.
 	 *
-	 * @spec openspec/changes/flow-task-subject-authorization/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 */
 	private function assertOne(string $uuid, ?int $register, ?int $schema): void {
 		$found = null;
@@ -233,7 +233,7 @@ class TaskSubjectAccessGuard {
 	 *
 	 * @return integer|null The integer, or null.
 	 *
-	 * @spec openspec/changes/flow-task-subject-authorization/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 */
 	private function intOrNull(mixed $value): ?int {
 		if (is_numeric($value) === false) {

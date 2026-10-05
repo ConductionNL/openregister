@@ -716,7 +716,7 @@ class FlowEngine {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
 	 */
 	private function pruneUntakenExits(Workflow $workflow, object $subject, object $transition, array $taken, array $context): void {
 		$tos = array_map(static fn ($t): string => (string)$t, $transition->getTos());

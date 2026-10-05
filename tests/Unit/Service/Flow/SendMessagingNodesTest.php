@@ -16,7 +16,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md
+ * @spec openspec/specs/flow-messaging-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -202,7 +202,7 @@ class SendMessagingNodesTest extends TestCase {
 	/**
 	 * The external-recipients option is declared, formed and validated.
 	 *
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
 	 */
 	public function testSendEmailDeclaresAndValidatesExternalRecipients(): void {
 		$email = new SendEmailNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls);

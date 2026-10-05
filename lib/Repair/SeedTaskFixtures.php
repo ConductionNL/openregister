@@ -39,7 +39,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
  */
 
 declare(strict_types=1);
@@ -64,7 +64,7 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass Instantiated by the NC repair framework (appinfo/info.xml).
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
  */
 class SeedTaskFixtures implements IRepairStep {
 
@@ -97,7 +97,7 @@ class SeedTaskFixtures implements IRepairStep {
 	 *
 	 * @return string The name.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function getName(): string {
 		return 'Seed the task fixtures (flow-task-entity)';
@@ -110,7 +110,7 @@ class SeedTaskFixtures implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function run(IOutput $output): void {
 		if ($this->appConfig->getValueBool('openregister', self::FLAG, false) === false) {
@@ -147,7 +147,7 @@ class SeedTaskFixtures implements IRepairStep {
 	 *
 	 * @return boolean True when inserted, false when already present.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	private function seedOne(array $fixture): bool {
 		try {
@@ -211,7 +211,7 @@ class SeedTaskFixtures implements IRepairStep {
 	 *
 	 * @return array<int, array<string, mixed>> The fixtures.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	private function fixtures(): array {
 		return [

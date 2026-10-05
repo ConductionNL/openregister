@@ -455,7 +455,7 @@ class FlowRunService {
 	 * run being reported into the context, not a mode switch on this method.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
-	 * @spec openspec/changes/flow-send-email-external-recipients/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
 	 */
 	private function baseContextFor(FlowRun $run, bool $resuming): array {
 		$context = ($run->getContext() ?? []);
@@ -1389,7 +1389,7 @@ class FlowRunService {
 	 * @return FlowRun The updated run.
 	 *
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
 	 */
 	private function persistResult(FlowRun $run, array $result): FlowRun {
 		$status = (string)($result['status'] ?? FlowRun::STATUS_FAILED);
@@ -1503,7 +1503,7 @@ class FlowRunService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-live-run-keeps-every-parked-nodes-resume-slot
 	 */
 	private function keepResumeSlots(array &$context, string $status): void {
 		$resumeState = ($context[FlowResumeState::CONTEXT_KEY] ?? null);

@@ -33,7 +33,7 @@ use RuntimeException;
  * Cancellation propagation from the run onto its tasks, observed twice;
  * and the completion listener's contract with the bridge.
  *
- * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
+ * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-task-whose-run-or-branch-has-died-is-terminated-not-orphaned
  */
 class UserTaskCancellationPropagationTest extends TestCase {
 

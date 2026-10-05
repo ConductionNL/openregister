@@ -347,7 +347,7 @@ export default {
 		 * task learns nothing, not even that the uuid exists, and this page
 		 * keeps it that way.
 		 *
-		 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+		 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 		 * @return {Promise<void>} Resolves when the read settled.
 		 */
 		async load() {
@@ -380,7 +380,7 @@ export default {
 		 * Claim the pooled task, then reload: on success the row moved, and
 		 * on a refusal the reload shows the state that refusal proves.
 		 *
-		 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+		 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 		 * @return {Promise<void>} Resolves when the verb settled.
 		 */
 		claim() {
@@ -390,7 +390,7 @@ export default {
 		/**
 		 * Complete the viewer's own task with an outcome.
 		 *
-		 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+		 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 		 * @param {string} outcome The chosen outcome id.
 		 * @return {Promise<void>} Resolves when the verb settled.
 		 */
@@ -403,7 +403,7 @@ export default {
 		 * shown in the server's own words: the endpoint's error string is
 		 * written for people, the raw status line is not.
 		 *
-		 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+		 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 		 * @param {string} verb The lifecycle verb.
 		 * @param {object} body The verb body.
 		 * @return {Promise<void>} Resolves when the verb settled.
