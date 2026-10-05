@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use Throwable;
  * The occ runner has no session, and the guard refuses a reset without an actor, so the
  * administrator is named explicitly and the trail records that name.
  *
- * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 class ResetSchemaToShippedCommand extends Command {
 
@@ -66,7 +66,7 @@ class ResetSchemaToShippedCommand extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:schema:reset-to-shipped')
@@ -87,7 +87,7 @@ class ResetSchemaToShippedCommand extends Command {
 	 *
 	 * @return int The exit code.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$schema = (string)$input->getArgument('schema');
