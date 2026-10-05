@@ -776,7 +776,7 @@ class CredentialController extends Controller {
 	 *
 	 * @return array<string, mixed> The proposed metadata, unvalidated (the broker validates).
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-non-secret-connection-metadata-lives-on-the-credential-object
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-non-secret-connection-metadata-lives-on-the-credential-object
 	 */
 	private function connectionMetadataParams(): array {
 		$metadata = [];

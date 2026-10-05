@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-oauth2-token-set/specs/credential-broker/spec.md#requirement-injection-is-selected-by-kind
+ * @spec openspec/specs/credential-broker/spec.md#requirement-injection-is-selected-by-kind
  */
 
 declare(strict_types=1);

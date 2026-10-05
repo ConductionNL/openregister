@@ -529,7 +529,7 @@ class OAuth2ConnectService {
 	 *
 	 * @throws InvalidArgumentException When the endpoint is absent or its host cannot be resolved.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-broker/spec.md#requirement-the-catalogue-may-describe-an-oauth2-provider
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-the-catalogue-may-describe-an-oauth2-provider
 	 */
 	private function endpoint(array $oauth2, string $key, ?string $instanceBaseUrl): string {
 		$endpoint = trim((string)($oauth2[$key] ?? ''));

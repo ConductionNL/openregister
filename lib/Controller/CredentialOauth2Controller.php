@@ -539,7 +539,7 @@ class CredentialOauth2Controller extends Controller {
 	 *
 	 * @throws InvalidArgumentException When the provider needs a host and none was supplied or it is unsafe.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
 	 */
 	private function requestedHost(array $provider): ?string {
 		if (trim((string)($provider['baseUrlFrom'] ?? '')) === '') {

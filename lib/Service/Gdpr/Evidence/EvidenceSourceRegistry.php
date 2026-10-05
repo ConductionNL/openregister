@@ -66,7 +66,7 @@ class EvidenceSourceRegistry {
 	 *
 	 * @return bool True when accepted, false when rejected (duplicate id).
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function addProvider(EvidenceSourceProvider $provider): bool {
 		$id = $provider->getSourceId();
@@ -91,7 +91,7 @@ class EvidenceSourceRegistry {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function withProviders(array $providers): void {
 		$this->providers = [];
@@ -107,7 +107,7 @@ class EvidenceSourceRegistry {
 	 *
 	 * @return EvidenceSourceProvider|null Provider, or null when unregistered.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function get(string $id): ?EvidenceSourceProvider {
 		return $this->providers[$id] ?? null;
@@ -118,7 +118,7 @@ class EvidenceSourceRegistry {
 	 *
 	 * @return array<int, EvidenceSourceProvider>
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function list(): array {
 		return array_values($this->providers);
@@ -129,7 +129,7 @@ class EvidenceSourceRegistry {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function listIds(): array {
 		return array_keys($this->providers);

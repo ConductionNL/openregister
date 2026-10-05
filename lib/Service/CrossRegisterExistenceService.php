@@ -40,7 +40,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md
+ * @spec openspec/specs/cross-register-existence-query/spec.md
  */
 
 declare(strict_types=1);
@@ -56,7 +56,7 @@ use Throwable;
  *
  * @psalm-suppress UnusedClass
  *
- * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md
+ * @spec openspec/specs/cross-register-existence-query/spec.md
  */
 class CrossRegisterExistenceService {
 
@@ -114,7 +114,7 @@ class CrossRegisterExistenceService {
 	 *
 	 * @return array{probes: array<int, array<string, mixed>>}|array{error: string, message: string}
 	 *
-	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
 	 */
 	public function probe(array $probes): array {
 		if (count($probes) > self::MAX_PROBES) {
@@ -144,7 +144,7 @@ class CrossRegisterExistenceService {
 	 *
 	 * @return array<string, mixed> The answer.
 	 *
-	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
 	 */
 	private function one(array $probe): array {
 		$register = trim((string)($probe['register'] ?? ''));
@@ -236,7 +236,7 @@ class CrossRegisterExistenceService {
 	 *
 	 * @return array{0: array<int, string>, 1: array<int, string>} The allowed and the refused.
 	 *
-	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-revealed-fields-are-bounded-by-the-schema-not-by-the-caller
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-revealed-fields-are-bounded-by-the-schema-not-by-the-caller
 	 */
 	private function narrowReveal(string $schema, array $reveal): array {
 		if ($reveal === []) {

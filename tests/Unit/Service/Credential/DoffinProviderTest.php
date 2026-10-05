@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-provider-doffin/specs/credential-broker/spec.md#doffin-provider-entry
+ * @spec openspec/specs/credential-broker/spec.md#doffin-provider-entry
  */
 
 declare(strict_types=1);

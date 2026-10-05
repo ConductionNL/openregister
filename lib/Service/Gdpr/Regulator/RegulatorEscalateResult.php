@@ -72,7 +72,7 @@ final class RegulatorEscalateResult {
 	 *
 	 * @throws InvalidArgumentException When $status is not one of the permitted values.
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function __construct(
 		private readonly string $status,
@@ -100,7 +100,7 @@ final class RegulatorEscalateResult {
 	 *
 	 * @return self
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public static function escalated(string $providerId, string $reference, ?string $message = null): self {
 		return new self(
@@ -119,7 +119,7 @@ final class RegulatorEscalateResult {
 	 *
 	 * @return self
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public static function refused(string $providerId, ?string $message = null): self {
 		return new self(status: self::STATUS_REFUSED, providerId: $providerId, reference: '', message: $message);
@@ -130,7 +130,7 @@ final class RegulatorEscalateResult {
 	 *
 	 * @return string One of the STATUS_* constants.
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function getStatus(): string {
 		return $this->status;
@@ -141,7 +141,7 @@ final class RegulatorEscalateResult {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function getProviderId(): string {
 		return $this->providerId;
@@ -152,7 +152,7 @@ final class RegulatorEscalateResult {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function getReference(): string {
 		return $this->reference;
@@ -163,7 +163,7 @@ final class RegulatorEscalateResult {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function getMessage(): ?string {
 		return $this->message;
@@ -174,7 +174,7 @@ final class RegulatorEscalateResult {
 	 *
 	 * @return bool True only for STATUS_ESCALATED.
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function isEscalated(): bool {
 		return $this->status === self::STATUS_ESCALATED;
@@ -185,7 +185,7 @@ final class RegulatorEscalateResult {
 	 *
 	 * @return array{status: string, provider: string, reference: string, message: string|null}
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+	 * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
 	 */
 	public function toArray(): array {
 		return [

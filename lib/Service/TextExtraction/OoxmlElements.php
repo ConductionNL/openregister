@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
+ * @spec openspec/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use DOMElement;
 /**
  * Local-name lookups on OOXML elements.
  *
- * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
+ * @spec openspec/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
  */
 class OoxmlElements {
 
@@ -47,7 +47,7 @@ class OoxmlElements {
 	 *
 	 * @return list<DOMElement>
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
 	 */
 	public function children(?DOMElement $parent, string $localName): array {
 		if ($parent === null) {
@@ -72,7 +72,7 @@ class OoxmlElements {
 	 *
 	 * @return DOMElement|null
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
 	 */
 	public function child(?DOMElement $parent, string $localName): ?DOMElement {
 		return ($this->children(parent: $parent, localName: $localName)[0] ?? null);
@@ -86,7 +86,7 @@ class OoxmlElements {
 	 *
 	 * @return DOMElement|null
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-image-references-come-back-in-document-order-req-docx-006
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-image-references-come-back-in-document-order-req-docx-006
 	 */
 	public function firstDescendant(DOMDocument|DOMElement $root, string $localName): ?DOMElement {
 		$found = $root->getElementsByTagNameNS('*', $localName)->item(0);
@@ -105,7 +105,7 @@ class OoxmlElements {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
 	 */
 	public function attribute(?DOMElement $element, string $localName): string {
 		if ($element === null) {
@@ -129,7 +129,7 @@ class OoxmlElements {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
 	 */
 	public function childValue(?DOMElement $parent, string $localName): string {
 		return $this->attribute(element: $this->child(parent: $parent, localName: $localName), localName: 'val');
@@ -142,7 +142,7 @@ class OoxmlElements {
 	 *
 	 * @return int|null
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-lists-keep-their-items-levels-and-kind-req-docx-004
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-lists-keep-their-items-levels-and-kind-req-docx-004
 	 */
 	public function integer(string $value): ?int {
 		if ($value === '' || ctype_digit($value) === false) {
@@ -160,7 +160,7 @@ class OoxmlElements {
 	 *
 	 * @return string The value, or '' when none is present.
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-image-references-come-back-in-document-order-req-docx-006
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-image-references-come-back-in-document-order-req-docx-006
 	 */
 	public function relationshipAttribute(DOMElement $element, array $localNames): string {
 		foreach ($localNames as $localName) {

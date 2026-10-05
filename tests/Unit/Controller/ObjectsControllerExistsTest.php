@@ -35,7 +35,7 @@ use Psr\Log\LoggerInterface;
  *
  * @package Unit\Controller
  *
- * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-a-probe-is-authorised-as-the-read-it-replaces
+ * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-probe-is-authorised-as-the-read-it-replaces
  */
 class ObjectsControllerExistsTest extends TestCase {
 
@@ -91,7 +91,7 @@ class ObjectsControllerExistsTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-a-probe-is-authorised-as-the-read-it-replaces
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-probe-is-authorised-as-the-read-it-replaces
 	 */
 	public function testAnAnonymousCallerIsRefusedBeforeAnythingIsAsked(): void {
 		// The assertion that separates "refused early" from "refused after
@@ -111,7 +111,7 @@ class ObjectsControllerExistsTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
 	 */
 	public function testASignedInCallerReachesTheService(): void {
 		$service = $this->createMock(CrossRegisterExistenceService::class);
@@ -129,7 +129,7 @@ class ObjectsControllerExistsTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/cross-register-existence-query/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
+	 * @spec openspec/specs/cross-register-existence-query/spec.md#requirement-a-caller-can-ask-whether-a-row-exists-without-reading-it
 	 */
 	public function testAServiceRefusalAnswers422(): void {
 		$service = $this->createMock(CrossRegisterExistenceService::class);

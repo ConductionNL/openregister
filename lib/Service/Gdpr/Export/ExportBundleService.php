@@ -84,7 +84,7 @@ class ExportBundleService {
 	 *
 	 * @throws RuntimeException When the case cannot be loaded (absent or unauthorised).
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function generate(string $caseUuid): array {
 		$case = $this->accessor->load(caseUuid: $caseUuid);
@@ -146,7 +146,7 @@ class ExportBundleService {
 	 *
 	 * @return SignedBundle|null The signed bundle, or null when refused.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function download(string $caseUuid, string $token): ?SignedBundle {
 		// Case scope is enforced twice: the token is bound to the case, and the
@@ -192,7 +192,7 @@ class ExportBundleService {
 	 *
 	 * @throws RuntimeException When the case cannot be loaded (absent or unauthorised).
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function assembleRegulatorDossier(string $caseUuid): array {
 		$case = $this->accessor->load(caseUuid: $caseUuid);
@@ -252,7 +252,7 @@ class ExportBundleService {
 	 *
 	 * @return string The PDF bytes.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	private function renderPdf(string $caseUuid, array $assembled): string {
 		$subject = (string)($assembled['subject'] ?? '');

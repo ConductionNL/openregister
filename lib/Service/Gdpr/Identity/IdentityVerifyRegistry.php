@@ -75,7 +75,7 @@ class IdentityVerifyRegistry {
 	 *
 	 * @return bool True when accepted, false when rejected (duplicate id).
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
+	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function addProvider(IdentityVerifyProvider $provider): bool {
 		$id = $provider->getProviderId();
@@ -103,7 +103,7 @@ class IdentityVerifyRegistry {
 	 *
 	 * @return IdentityVerifyProvider|null Provider, or null when unregistered.
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
+	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function get(string $id): ?IdentityVerifyProvider {
 		return $this->providers[$id] ?? null;
@@ -121,7 +121,7 @@ class IdentityVerifyRegistry {
 	 *
 	 * @return IdentityVerifyProvider The bound provider, or the fail-closed default.
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
+	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function resolve(?string $selectorId): IdentityVerifyProvider {
 		if ($selectorId !== null && $selectorId !== '' && isset($this->providers[$selectorId]) === true) {
@@ -144,7 +144,7 @@ class IdentityVerifyRegistry {
 	 *
 	 * @return array<int, IdentityVerifyProvider>
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
+	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function list(): array {
 		return array_values($this->providers);
@@ -155,7 +155,7 @@ class IdentityVerifyRegistry {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
+	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function listIds(): array {
 		return array_keys($this->providers);

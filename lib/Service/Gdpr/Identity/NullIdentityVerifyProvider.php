@@ -50,7 +50,7 @@ final class NullIdentityVerifyProvider implements IdentityVerifyProvider {
 	 *
 	 * @return string The fail-closed default provider id.
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
+	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function getProviderId(): string {
 		return self::PROVIDER_ID;
@@ -67,7 +67,7 @@ final class NullIdentityVerifyProvider implements IdentityVerifyProvider {
 	 *
 	 * @return IdentityVerifyResult Always an unverified (`needs-more`) result.
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
+	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) IdentityVerifyResult::needsMore is a named constructor — no DI alternative.
 	 */
