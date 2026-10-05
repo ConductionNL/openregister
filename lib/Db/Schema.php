@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
+use OCA\OpenRegister\Service\Schemas\UniqueConstraintEvaluator;
 use OCP\AppFramework\Db\Entity;
 use OCP\DB\Types;
 use OCP\IURLGenerator;
@@ -2332,6 +2333,29 @@ class Schema extends Entity implements JsonSerializable {
 		$this->icon = $icon;
 		$this->markFieldUpdated(attribute: 'icon');
 	}//end setIcon()
+
+	/**
+	 * The names an upsert may use as its key.
+	 *
+	 * These are the schema's uniqueness constraints with action `refuse`,
+	 * the legacy `unique` key included and named by its properties joined
+	 * with `+`. A `report` constraint allows duplicates on purpose, so it
+	 * never identifies one record.
+	 *
+	 * @return array<int, string> The constraint names, in declaration order.
+	 *
+	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 */
+	public function getUpsertKeys(): array {
+		$keys = [];
+		foreach ((new UniqueConstraintEvaluator())->constraints(configuration: $this->getConfiguration(), includeLegacy: true) as $constraint) {
+			if ($constraint['action'] === UniqueConstraintEvaluator::ACTION_REFUSE) {
+				$keys[] = $constraint['name'];
+			}
+		}
+
+		return $keys;
+	}//end getUpsertKeys()
 
 	/**
 	 * Get the configuration for the schema

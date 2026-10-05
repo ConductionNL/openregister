@@ -119,6 +119,7 @@ DOMAIN_ORDER=(
     "object-watchers"
     "dedup-check"
     "duplicate-merge"
+    "upsert-on-key"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -209,6 +210,10 @@ declare -A DOMAIN_COLLECTIONS=(
     # test there. A collection CI does not run is a collection that reports the
     # same green as one that passed.
     [relation-types]="$REPO_ROOT/tests/integration/openregister-relation-types.postman_collection.json"
+    # Upsert on a declared key. HTTP-shaped: the 201/200/409/400 split is the
+    # contract, `_upsertOn` rides the query string past the body filter, and the
+    # schema save must keep configuration.uniqueConstraints for any of it to work.
+    [upsert-on-key]="$REPO_ROOT/tests/integration/openregister-upsert-on-key.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
