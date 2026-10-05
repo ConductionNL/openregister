@@ -309,10 +309,16 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
 
 		$this->assertFalse(condition: $result['bypass']);
-		// Only the owner condition is emitted; the public-match is dropped
-		// because alice does not qualify for `public` when inheritance is off.
-		$this->assertCount(expectedCount: 1, haystack: $result['conditions']);
+		// The public-match is dropped, because alice does not qualify for
+		// `public` when inheritance is off. Asserted by its absence rather than
+		// by counting the conditions: the owner admits are a list, and the owning
+		// group added one to it (object-ownership-and-handover), so a count here
+		// would pin the number of owner admits rather than the behaviour this
+		// test is about.
 		$this->assertStringContainsString(needle: '_owner', haystack: $result['conditions'][0]);
+		foreach ($result['conditions'] as $condition) {
+			$this->assertStringNotContainsString(needle: 'status', haystack: $condition);
+		}
 
 	}//end testBuildSqlAuthInheritFalseSkipsPublicCondition()
 
@@ -380,8 +386,10 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase {
 		$result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
 
 		$this->assertFalse(condition: $result['bypass']);
-		// Only the owner condition; no unconditional public bypass for alice.
-		$this->assertCount(expectedCount: 1, haystack: $result['conditions']);
+		// No unconditional public bypass for alice. Asserted on the conditions
+		// themselves rather than on how many there are, for the reason given on
+		// testBuildSqlAuthInheritFalseSkipsPublicCondition().
+		$this->assertStringContainsString(needle: '_owner', haystack: $result['conditions'][0]);
 
 	}//end testBuildSqlSimplePublicRuleAuthInheritFalseDoesNotBypass()
 

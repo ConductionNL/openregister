@@ -292,6 +292,21 @@ class MagicRbacHandler {
 			$conditions[] = "{$ownerColumn} = {$quotedSystemId}";
 		}
 
+		// THE OWNING GROUP IS AN OWNER, so it sits here with the other owner
+		// admits rather than inside the not-private predicate: here the term is
+		// ORed over the whole query, there it would have been ANDed with the
+		// schema's rules. One of those two placements matches what
+		// ObjectScopeResolver::admitsUnconditionally() answers on a single read
+		// and the other does not.
+		$ownedByMyGroup = $this->objectScope()->ownedByMyGroupSql(
+			authColumn: $columnPrefix . '_authorization',
+			isPostgres: $this->isPostgres(),
+			quotedUserGroups: $this->quotedCallerGroups()
+		);
+		if ($ownedByMyGroup !== null) {
+			$conditions[] = $ownedByMyGroup;
+		}
+
 		return $conditions;
 	}//end ownerAdmitConditionsSql()
 
@@ -576,6 +591,20 @@ class MagicRbacHandler {
 				't._owner',
 				$qb->createNamedParameter($this->getSystemUserId())
 			);
+		}
+
+		// The owning group, admitted on the same terms as the named owner. Added
+		// to BOTH emitters' owner-admit lists, because this one is written inline
+		// here while the raw-SQL emitter builds its list in
+		// ownerAdmitConditionsSql(); honouring the group in one of them would hide
+		// a record from a list on one code path and show it on the other.
+		$ownedByMyGroup = $this->objectScope()->ownedByMyGroupSql(
+			authColumn: 't._authorization',
+			isPostgres: $this->isPostgres(),
+			quotedUserGroups: $this->quotedCallerGroups()
+		);
+		if ($ownedByMyGroup !== null) {
+			$ownerAdmits[] = $qb->createFunction($ownedByMyGroup);
 		}
 
 		// If no authorization is configured, the schema is open to all — but an
@@ -2504,6 +2533,30 @@ class MagicRbacHandler {
 	public function getCurrentUserId(): ?string {
 		return $this->userSession->getUser()?->getUID();
 	}//end getCurrentUserId()
+
+	/**
+	 * The caller's group ids, quoted as SQL literals.
+	 *
+	 * Quoted here, beside the quoter, so the predicate builder on
+	 * {@see \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver} never handles an
+	 * unquoted value — the same contract `quotedGrantedUuids()` already honours.
+	 *
+	 * @return string[] Quoted group ids, empty when the caller is anonymous.
+	 *
+	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 */
+	public function quotedCallerGroups(): array {
+		$quoted = [];
+		foreach ($this->getCurrentUserGroups() as $groupId) {
+			if (is_string($groupId) === false || $groupId === '') {
+				continue;
+			}
+
+			$quoted[] = $this->quoteValue(value: $groupId);
+		}
+
+		return $quoted;
+	}//end quotedCallerGroups()
 
 	/**
 	 * Get the current user's groups

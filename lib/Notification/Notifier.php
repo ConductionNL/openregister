@@ -226,6 +226,7 @@ class Notifier implements INotifier {
 			'destruction_holds_skipped' => $this->prepareDestructionHoldsSkipped(...),
 			'destruction_review_pending' => $this->prepareDestructionReviewPending(...),
 			'timeline_mention' => $this->prepareTimelineMention(...),
+			'object_ownership_changed' => $this->prepareOwnershipChanged(...),
 			'security_setting_changed' => $this->prepareSecuritySettingChanged(...),
 			'view_alert_crossed' => $this->prepareViewAlertCrossed(...),
 			default => null,
@@ -289,11 +290,48 @@ class Notifier implements INotifier {
 	}//end prepareSecuritySettingChanged()
 
 	/**
-	 * Render "somebody named you in a note".
+	 * Render "a record you owned changed hands".
 	 *
 	 * WITHOUT THIS CASE THE NOTIFICATION NEVER RENDERS: an unknown subject
-	 * throws out of prepare(), so the mention would subscribe the colleague
-	 * and tell them nothing.
+	 * throws out of prepare(), so the previous owner would be told nothing — which
+	 * is the silent handover this capability exists to fix.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
+	 */
+	private function prepareOwnershipChanged(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$objectTitle = (string) ($parameters['objectTitle'] ?? '');
+		$newOwner = (string) ($parameters['newOwner'] ?? '');
+
+		$notification->setParsedSubject($l->t('A record you owned changed hands'));
+
+		$notification->setParsedMessage(
+			$l->t(
+				'%1$s is now the owner of "%2$s". You are no longer answerable for it. Ask them if that was not the plan.',
+				[$this->displayName(uid: $newOwner), $objectTitle]
+			)
+		);
+
+		if ($newOwner === '') {
+			$notification->setParsedMessage(
+				$l->t('"%1$s" has a new owner. You are no longer answerable for it.', [$objectTitle])
+			);
+		}
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareOwnershipChanged()
+
+	/**
+	 * Render "somebody named you in a note".
 	 *
 	 * @param INotification $notification The notification to prepare
 	 * @param mixed $l The localization instance
