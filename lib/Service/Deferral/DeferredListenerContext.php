@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Deferral;
  * snapshot for `updated` notification conditions). Full objects are never
  * serialized — jobs re-fetch current state by identifier.
  *
- * @spec openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-1.1
+ * @spec openspec/specs/event-driven-architecture/spec.md
  */
 final class DeferredListenerContext {
 	/**

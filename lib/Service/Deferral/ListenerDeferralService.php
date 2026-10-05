@@ -47,7 +47,7 @@ use Psr\Log\LoggerInterface;
  * Registered as a shared service, so all listeners in one request append to
  * the same buffers and bulk saves coalesce into chunk-level jobs.
  *
- * @spec openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-1.2
+ * @spec openspec/specs/event-driven-architecture/spec.md
  */
 class ListenerDeferralService {
 

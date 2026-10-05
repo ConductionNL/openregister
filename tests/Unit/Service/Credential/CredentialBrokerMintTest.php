@@ -27,7 +27,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+ * @spec openspec/specs/credential-broker/spec.md#credential-metadata-schema
  */
 
 declare(strict_types=1);

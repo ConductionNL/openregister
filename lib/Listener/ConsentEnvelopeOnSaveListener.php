@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/consent-evidence-envelope/specs/consent-evidence-envelope/spec.md
+ * @spec openspec/specs/consent-evidence-envelope/spec.md
  */
 
 declare(strict_types=1);
@@ -98,7 +98,7 @@ class ConsentEnvelopeOnSaveListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/consent-evidence-envelope/specs/consent-evidence-envelope/spec.md
+	 * @spec openspec/specs/consent-evidence-envelope/spec.md
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ObjectCreatingEvent) {

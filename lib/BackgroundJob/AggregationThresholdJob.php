@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Deferred threshold-notification evaluation under the forwarded actor.
  *
- * @spec openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-2.3
+ * @spec openspec/specs/event-driven-architecture/spec.md
  */
 class AggregationThresholdJob extends ActorForwardedJob {
 	/**

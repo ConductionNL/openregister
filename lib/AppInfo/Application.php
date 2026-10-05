@@ -428,7 +428,7 @@ class Application extends App implements IBootstrap {
 	 * @return void
 	 *
 	 * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
-	 * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#requirement-credential-store-backend-resolution
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-credential-store-backend-resolution
 	 */
 	public function register(IRegistrationContext $context): void {
 		include_once __DIR__ . '/../../vendor/autoload.php';

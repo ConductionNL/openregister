@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\AppHost\Scheduling;
 /**
  * Validated set of schedules declared by a single application's manifest.
  *
- * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 final class ScheduleManifest {
 	/**
@@ -64,7 +64,7 @@ final class ScheduleManifest {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public static function fromManifest(string $applicationId, array $manifest, ?CronScheduleEvaluator $cron = null): self {
 		$raw = $manifest['schedules'] ?? null;

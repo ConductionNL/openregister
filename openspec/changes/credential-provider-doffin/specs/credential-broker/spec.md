@@ -6,7 +6,7 @@ Doffin (Norway public procurement) subscription key can be held once by the brok
 The catalogue's own requirement (runtime-immutable `lib/` file, no mutation API,
 entries change only via reviewed release) is unchanged — this delta is one such
 reviewed release. Note: the base `credential-broker` spec still lives in the active
-head change (`openspec/changes/credential-broker/specs/credential-broker/spec.md`);
+head change (`openspec/specs/credential-broker/spec.md`);
 `openspec/specs/credential-broker/` does not exist yet.
 
 ## ADDED Requirements

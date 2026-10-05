@@ -13,7 +13,7 @@ unchanged.
 
 NOTE (as in `credential-doriath-leaf`): the base `credential-broker` spec still
 lives in its active head change
-(`openspec/changes/credential-broker/specs/credential-broker/spec.md`);
+(`openspec/specs/credential-broker/spec.md`);
 `openspec/specs/credential-broker/` does not exist yet, and the self-registration
 + manifest-driven onboarding requirements this delta builds on live in the
 `credential-doriath-leaf` delta.
