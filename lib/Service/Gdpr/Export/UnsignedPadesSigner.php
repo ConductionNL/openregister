@@ -52,7 +52,7 @@ final class UnsignedPadesSigner implements PadesSigner {
 	 *
 	 * @return SignedBundle Bytes + `sha256:` hash + `signed:false` pending-library state.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function sign(string $bytes): SignedBundle {
 		return new SignedBundle(

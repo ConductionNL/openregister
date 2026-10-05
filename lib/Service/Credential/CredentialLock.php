@@ -100,7 +100,7 @@ class CredentialLock {
 	 *
 	 * @return boolean True when a distributed cache offering an atomic add is available.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
 	 */
 	public function isEffective(): bool {
 		return ($this->cacheFactory->isAvailable() === true && $this->memcache() !== null);
@@ -114,7 +114,7 @@ class CredentialLock {
 	 *
 	 * @return boolean True when this caller now holds the lock.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
 	 */
 	public function acquire(string $credentialId, int $ttlSeconds = self::DEFAULT_TTL_SECONDS): bool {
 		$cache = $this->memcache();
@@ -138,7 +138,7 @@ class CredentialLock {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
 	 */
 	public function release(string $credentialId): void {
 		$this->memcache()?->remove($credentialId);
@@ -157,7 +157,7 @@ class CredentialLock {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
 	 */
 	public function waitForRelease(string $credentialId): void {
 		$cache = $this->memcache();

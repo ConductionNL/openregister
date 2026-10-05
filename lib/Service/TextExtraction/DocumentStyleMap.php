@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
+ * @spec openspec/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use DOMElement;
  * @psalm-type ParagraphKind = array{kind: 'title'|'heading'|'list'|'text', level: int, numId: string, ordered: bool}
  * @psalm-type StyleEntry = array{name: string, basedOn: string, outline: int|null, numId: string, ilvl: int|null}
  *
- * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
+ * @spec openspec/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
  */
 class DocumentStyleMap {
 
@@ -119,8 +119,8 @@ class DocumentStyleMap {
 	 *
 	 * @return ParagraphKind The kind; `level` is the heading level (1 to 9) or the list level (1 and up).
 	 *
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
-	 * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md#requirement-lists-keep-their-items-levels-and-kind-req-docx-004
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-content-comes-back-in-sections-under-their-heading-req-docx-001
+	 * @spec openspec/specs/text-extraction-document/spec.md#requirement-lists-keep-their-items-levels-and-kind-req-docx-004
 	 */
 	public function classify(DOMElement $paragraph): array {
 		$properties = $this->elements->child(parent: $paragraph, localName: 'pPr');

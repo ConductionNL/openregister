@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-the-job-id-of-an-app-import-that-created-objects-must-be-recorded-per-app
+ * @spec openspec/specs/data-import-export/spec.md#requirement-the-job-id-of-an-app-import-that-created-objects-must-be-recorded-per-app
  */
 
 declare(strict_types=1);

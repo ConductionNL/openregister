@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/demo-data-purge-by-batch/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
+ * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
  */
 
 declare(strict_types=1);

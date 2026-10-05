@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/dsar-integration-seams/specs/dsar-regulator-escalate-seam/spec.md
+ * @spec openspec/specs/dsar-regulator-escalate-seam/spec.md
  */
 
 declare(strict_types=1);

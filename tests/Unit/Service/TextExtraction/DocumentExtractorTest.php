@@ -25,7 +25,7 @@ declare(strict_types=1);
  * @license  EUPL-1.2
  * @link     https://www.OpenRegister.nl
  *
- * @spec openspec/changes/docx-structured-reader/specs/text-extraction-document/spec.md
+ * @spec openspec/specs/text-extraction-document/spec.md
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Service\TextExtraction;
