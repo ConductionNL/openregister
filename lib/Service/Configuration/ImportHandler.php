@@ -5166,6 +5166,37 @@ class ImportHandler {
 	}//end importSeedData()
 
 	/**
+	 * Remove the seed format's top-level `uuid` and `slug` from an object's data.
+	 *
+	 * A seed object carries its uuid and slug at the top level; the importer
+	 * reads them for the idempotency lookup and sets them as object metadata.
+	 * Left in the data, MagicMapper discards them as undeclared and logs a
+	 * warning for every seeded object on every import. A schema that declares
+	 * a `uuid` or `slug` property keeps it as data.
+	 *
+	 * @param array  $objectData The seed object's data.
+	 * @param Schema $schema     The schema the object is written to.
+	 *
+	 * @return array The data without the undeclared metadata keys.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-seed-metadata-keys-are-not-stored-as-data
+	 */
+	private function withoutSeedMetadataKeys(array $objectData, Schema $schema): array {
+		$declared = $schema->getProperties();
+		if (is_array($declared) === false) {
+			$declared = [];
+		}
+
+		foreach (['uuid', 'slug'] as $metaKey) {
+			if (array_key_exists($metaKey, $declared) === false) {
+				unset($objectData[$metaKey]);
+			}
+		}
+
+		return $objectData;
+	}//end withoutSeedMetadataKeys()
+
+	/**
 	 * Import the seed-data objects themselves.
 	 *
 	 * Split out of {@see importSeedData()} so the whole pass runs inside one
@@ -5590,8 +5621,12 @@ class ImportHandler {
 					// SeedData with external config references goes to the external register.
 					$objectEntity->setRegister($targetRegId);
 
-					// Store object data.
-					$objectEntity->setObject($objectData);
+					// Store object data, without the top-level uuid/slug the seed
+					// format carries as metadata (set above) unless the schema
+					// declares them as properties.
+					$objectEntity->setObject(
+						$this->withoutSeedMetadataKeys(objectData: $objectData, schema: $objectSchema)
+					);
 
 					// Set timestamps.
 					$now = new DateTime();
