@@ -65,3 +65,26 @@ Schema and register edits leave no audit row.
 - The LLM, file and search settings. `settings-change-audit` owns "OpenRegister's own settings handlers (`SettingsService` domains) route through the same writer" (its proposal, "What changes"). Its task 1.3 is ticked, but its own note says "Not yet wired: the LLM, file, Solr and cache handlers, which save through their own classes", and `lib/Service/Settings/LlmSettingsHandler.php:175` and `lib/Service/Settings/FileSettingsHandler.php:177` indeed save without `OwnSettingsChangeRecorder`. That remainder belongs there, not in a second spec.
 - Role and group changes. Nextcloud writes those to its own `admin_audit` log.
 - Undoing a schema edit from its row. The row records; restoring is `schema-migration`'s.
+
+## Woo capability programme amendment (2026-10-05)
+
+The Woo capability programme (round 1, `woo-round1/mi/opencatalogi/_round1/build-plan/plan.md`, wave 1) amends this change with two rows. Re-read on `development` at 1dc6a4667 immediately before writing: the change is open at 0 of 9 tasks, so the amendment adds requirements and tasks beside the existing ones and rewrites nothing.
+
+| row | capability | ours today (`baseline/openwoo.tsv`) |
+|---|---|---|
+| 12.22 | The product keeps two separate histories per record: a domain audit trail and an administrative change log | no: one hash-sealed trail, no administrative log |
+| 12.30 | Every change to a controlled list, such as categories, subjects and organisations, is recorded with who and when | partial: themes, categories and publications are objects and get audit rows; organisations are OpenRegister's `Organisation` entity, whose `OrganisationMapper` only dispatches `OrganisationCreatedEvent`, `OrganisationUpdatedEvent` and `OrganisationDeletedEvent` to webhooks and writes no audit row |
+
+Decision D5 (Ruben, 2026-10-05) chose the spec over the row for 12.22: this change and `settings-change-audit` deliberately keep one trail. So 12.22 is met as one trail with an administrative category, an administrative view that reads only that category, its own reader right and its own retention period. Two physical stores are not built. The row is re-rated against this; if Ruben later wants two stores, that is a new change.
+
+What the amendment adds:
+
+- Organisations join schemas and registers: `EntityEditAuditListener` also listens to the three organisation events and writes `organisation.created`, `organisation.updated` and `organisation.deleted` rows with the same per-path diff, masking and cause (12.30).
+- Every audit row carries a `category`: `domain` for object writes, `administrative` for schema, register, organisation and settings rows (the actions this change and `settings-change-audit` write). Existing rows are backfilled by action name in the migration; the category is not part of the sealed hash input, so the chain still verifies.
+- `GET /api/audit-trails?category=administrative` and an "Administrative changes" view on the audit log page read only that category. The domain views exclude it by default.
+- Reading administrative rows needs the administrator right; a user who may read an object's trail never sees administrative rows through it.
+- `audit.administrativeRetention` (ISO 8601 duration, default `P10Y`) sets `retentionPeriod` and `expires` on administrative rows, separate from the domain retention.
+
+What it does not add: the 17 Woo information categories are a constant in opencatalogi, so recording changes to them belongs to `opencatalogi/woo-value-lists-on-the-concept-register`, which moves them onto OpenRegister's concept register, where every change is an object write and already audited.
+
+Dependencies: none new. The amendment closes 12.30 for organisations and 12.22 as re-rated under D5.
