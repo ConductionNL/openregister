@@ -1,7 +1,7 @@
 # duplicate-detection Specification
 
 ## Purpose
-TBD - created by archiving change mdm-foundation. Update Purpose after archive.
+Find records in one register and schema that describe the same thing. A schema declares how its objects are matched, OpenRegister scores pairs of stored objects against those rules, a form can check a candidate against the stored objects before it saves, and the schema decides what a strong match does at create: warn, or block unless an allowed group overrides it.
 
 ## Requirements
 
