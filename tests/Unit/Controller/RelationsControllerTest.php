@@ -4,6 +4,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\RelationsController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\ContactService;
 use OCA\OpenRegister\Service\DeckCardService;
@@ -185,6 +186,28 @@ class RelationsControllerTest extends TestCase {
 	 * `_errors` key — backwards compatibility with consumers that walk
 	 * the envelope's top-level keys.
 	 */
+	/**
+	 * A user without a VTODO calendar has no tasks; that is a normal state,
+	 * not a failure (openregister#4165). Before, every object card such a
+	 * user opened logged a level-3 error and put `tasks` under `_errors`.
+	 */
+	public function testMissingVtodoCalendarIsNoTasksNotAnError(): void {
+		$this->setupObject();
+		$this->request->method('getParams')->willReturn(['types' => 'notes,tasks']);
+
+		$this->noteService->method('getNotesForObject')->willReturn([]);
+		$this->taskService->method('getTasksForObject')
+			->willThrowException(new NoVtodoCalendarException(userId: 'colleague'));
+
+		$this->logger->expects($this->never())->method('error');
+		$this->logger->expects($this->never())->method('warning');
+
+		$data = $this->controller->index('1', '2', 'abc-123')->getData();
+
+		$this->assertSame(['results' => [], 'total' => 0], ($data['tasks'] ?? null));
+		$this->assertArrayNotHasKey('_errors', $data, 'unexpected partial failures: ' . json_encode(($data['_errors'] ?? [])));
+	}
+
 	public function testSuccessfulAggregationOmitsErrorsKey(): void {
 		$this->setupObject();
 

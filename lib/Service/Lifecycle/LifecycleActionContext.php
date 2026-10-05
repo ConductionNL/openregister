@@ -136,7 +136,7 @@ class LifecycleActionContext {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/transition-as-system/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function enterSystem(string $uuid, string $app): void {
 		$this->system[$uuid][] = $app;
@@ -149,7 +149,7 @@ class LifecycleActionContext {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/transition-as-system/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function leaveSystem(string $uuid): void {
 		if (isset($this->system[$uuid]) === false) {
@@ -169,7 +169,7 @@ class LifecycleActionContext {
 	 *
 	 * @return string|null The innermost app id, or null for an ordinary write.
 	 *
-	 * @spec openspec/changes/transition-as-system/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function systemAppFor(string $uuid): ?string {
 		$stack = ($this->system[$uuid] ?? []);

@@ -33,6 +33,7 @@ use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use OCP\Lock\ILockingProvider;
+use OCP\Lock\LockedException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -57,6 +58,8 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 
 	private IUserSession&MockObject $userSession;
 
+	private ILockingProvider&MockObject $locks;
+
 	/** @var array<string, mixed> Raw request parameters by name. */
 	private array $params = [];
 
@@ -72,6 +75,7 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 		$this->request = $this->createMock(IRequest::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
+		$this->locks = $this->createMock(ILockingProvider::class);
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('getUserGroupIds')->willReturn([]);
 
@@ -102,7 +106,7 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 		$handler = new UpsertOnKeyHandler(
 			evaluator: new UniqueConstraintEvaluator(),
 			matchResolver: new MatchResolver(objectService: $this->objectService, logger: new NullLogger()),
-			lockingProvider: $this->createMock(ILockingProvider::class)
+			lockingProvider: $this->locks
 		);
 
 		// With no interception webhook configured, the real service hands the
@@ -230,6 +234,24 @@ class ObjectsControllerUpsertOnKeyTest extends TestCase {
 		$this->assertSame(409, $result->getStatus());
 		$this->assertStringNotContainsString('secret-uuid', (string)json_encode($result->getData()));
 	}//end testAnUnseenHolderIs409WithoutItsUuid()
+
+	/**
+	 * A key another call keeps holding past the wait is 503 with Retry-After on
+	 * the HTTP response itself, and nothing is written (task 2.2's expectation).
+	 *
+	 * @return void
+	 */
+	public function testAKeyAnotherCallHoldsIs503WithRetryAfter(): void {
+		$this->signedIn();
+		$this->savesEcho();
+		$this->locks->method('acquireLock')->willThrowException(new LockedException('openregister/upsert/held'));
+
+		$result = $this->post(['_upsertOn' => 'zaaksleutel', 'gemeentecode' => '0363', 'zaaknummer' => 'Z-2026-0099']);
+
+		$this->assertSame(503, $result->getStatus());
+		$this->assertSame('5', ($result->getHeaders()['Retry-After'] ?? null));
+		$this->assertSame([], $this->savedUuids);
+	}//end testAKeyAnotherCallHoldsIs503WithRetryAfter()
 
 	public function testAnUpdateTheCallerMayNotMakeIs403(): void {
 		$this->signedIn();

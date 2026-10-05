@@ -4097,30 +4097,30 @@ class SchemaMapper extends QBMapper {
 	 * @throws \Exception If schema not found
 	 *
 	 * @return Schema The loaded schema
+	 *
+	 * @spec openspec/specs/mariadb-ci-matrix/spec.md#requirement-a-text-identifier-is-never-bound-as-an-integer
 	 */
 	private function loadSchema(string|int $identifier): Schema {
 		try {
 			$this->traceRead(method: 'loadSchema');
 
 			$qb = $this->db->getQueryBuilder();
+			$matches = [
+				$qb->expr()->eq('uuid', $qb->createNamedParameter(value: (string) $identifier, type: IQueryBuilder::PARAM_STR)),
+				$qb->expr()->eq('slug', $qb->createNamedParameter(value: (string) $identifier, type: IQueryBuilder::PARAM_STR)),
+			];
+			// Compare `id` only for an integer: PostgreSQL refuses a uuid or slug
+			// bound as an integer for the whole query (live pass O4, 5 Oct).
+			if (is_int($identifier) === true || ctype_digit($identifier) === true) {
+				$matches[] = $qb->expr()->eq(
+					'id',
+					$qb->createNamedParameter(value: (int) $identifier, type: IQueryBuilder::PARAM_INT)
+				);
+			}
+
 			$qb->select('*')
 				->from('openregister_schemas')
-				->where(
-					$qb->expr()->orX(
-						$qb->expr()->eq(
-							'id',
-							$qb->createNamedParameter(value: $identifier, type: IQueryBuilder::PARAM_INT)
-						),
-						$qb->expr()->eq(
-							'uuid',
-							$qb->createNamedParameter(value: $identifier, type: IQueryBuilder::PARAM_STR)
-						),
-						$qb->expr()->eq(
-							'slug',
-							$qb->createNamedParameter(value: $identifier, type: IQueryBuilder::PARAM_STR)
-						)
-					)
-				);
+				->where($qb->expr()->orX(...$matches));
 
 			return $this->findEntity(query: $qb);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
