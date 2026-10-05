@@ -90,6 +90,21 @@ final class FilterParams {
 	public const AGGREGATION_ROUTE_PARAMS = ['register', 'schema'];
 
 	/**
+	 * Bracket keys that filter on the object itself rather than on a declared
+	 * property, so they are never reported as unknown.
+	 *
+	 * Only `id`: every aggregation row carries the object's uuid as `id` next
+	 * to its properties (`ObjectEntity::getObject()`), so `filter[id]=<uuid>`
+	 * scopes the figure to one object. Reporting it as naming no property was
+	 * a false warning on every Pipelinq lead card (openregister#4165). `uuid`
+	 * and `@self.*` are NOT row keys on any backend, so they still match no
+	 * rows and the warning about them stays true.
+	 *
+	 * @var string[]
+	 */
+	public const AGGREGATION_OBJECT_KEYS = ['id'];
+
+	/**
 	 * The control parameters each aggregation action reads by name, taken
 	 * from `AggregationController`. None of them is ever a filter, on either
 	 * spelling of the endpoint; a property that shares one of these names can
@@ -196,6 +211,7 @@ final class FilterParams {
 			if (is_string($key) === true
 				&& $key !== ''
 				&& str_starts_with($key, '_') === false
+				&& in_array($key, self::AGGREGATION_OBJECT_KEYS, true) === false
 				&& array_key_exists($key, $properties) === false
 			) {
 				$unknown[] = $key;
