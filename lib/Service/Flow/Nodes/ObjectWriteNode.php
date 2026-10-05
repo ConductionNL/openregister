@@ -485,7 +485,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @return array<int, array<string, mixed>> The field descriptions.
 	 *
-	 * @spec openspec/changes/or-flow-bulk-object-write/specs/flow-object-write-bulk/spec.md
+	 * @spec openspec/specs/flow-object-write-bulk/spec.md
 	 */
 	public function configForm(): array {
 		return array_merge($this->targetConfigForm(), $this->policyConfigForm());
@@ -496,7 +496,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @return array<int, array<string, mixed>> The field descriptions.
 	 *
-	 * @spec openspec/changes/or-flow-bulk-object-write/specs/flow-object-write-bulk/spec.md
+	 * @spec openspec/specs/flow-object-write-bulk/spec.md
 	 */
 	private function targetConfigForm(): array {
 		return [
@@ -594,7 +594,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @return array<int, array<string, mixed>> The field descriptions.
 	 *
-	 * @spec openspec/changes/or-flow-bulk-object-write/specs/flow-object-write-bulk/spec.md
+	 * @spec openspec/specs/flow-object-write-bulk/spec.md
 	 */
 	private function policyConfigForm(): array {
 		return [
@@ -722,7 +722,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @throws UnexpectedValueException When bulk is combined with semantics the bulk path does not have.
 	 *
-	 * @spec openspec/changes/or-flow-bulk-object-write/specs/flow-object-write-bulk/spec.md
+	 * @spec openspec/specs/flow-object-write-bulk/spec.md
 	 */
 	private function validateBulkKeys(array $config, string $operation): void {
 		// A boolean, strictly — the string "false" is truthy, and this switch
@@ -1140,7 +1140,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The parameters execute() already resolved, same as writeItems().
 	 *
-	 * @spec openspec/changes/or-flow-bulk-object-write/specs/flow-object-write-bulk/spec.md
+	 * @spec openspec/specs/flow-object-write-bulk/spec.md
 	 */
 	private function writeBulk(
 		array $items,
@@ -1258,7 +1258,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @throws RuntimeException When an upsert's match value cannot be resolved.
 	 *
-	 * @spec openspec/changes/or-flow-bulk-object-write/specs/flow-object-write-bulk/spec.md
+	 * @spec openspec/specs/flow-object-write-bulk/spec.md
 	 */
 	private function bulkRowId(string $operation, array $pairs, array $json): string {
 		if ($operation === self::OP_CREATE) {
@@ -1297,7 +1297,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @throws RuntimeException When any row was rejected.
 	 *
-	 * @spec openspec/changes/or-flow-bulk-object-write/specs/flow-object-write-bulk/spec.md
+	 * @spec openspec/specs/flow-object-write-bulk/spec.md
 	 */
 	private function guardBulkFailures(array $result): void {
 		$invalid = (array)($result['invalid'] ?? []);
@@ -2115,7 +2115,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The parameters writeBulk() already resolved.
 	 *
-	 * @spec openspec/changes/or-flow-object-write-skip-when/specs/flow-object-write-skip-when/spec.md
+	 * @spec openspec/specs/flow-object-write-skip-when/spec.md
 	 */
 	private function planBulkRows(
 		array $items,
@@ -2164,7 +2164,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @return array One output item per input item.
 	 *
-	 * @spec openspec/changes/or-flow-object-write-skip-when/specs/flow-object-write-skip-when/spec.md
+	 * @spec openspec/specs/flow-object-write-skip-when/spec.md
 	 */
 	private function passThrough(array $items): array {
 		$out = [];
@@ -2195,7 +2195,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * @return bool Whether the item is already current.
 	 *
-	 * @spec openspec/changes/or-flow-object-write-skip-when/specs/flow-object-write-skip-when/spec.md
+	 * @spec openspec/specs/flow-object-write-skip-when/spec.md
 	 */
 	private function isSkipped(string $path, array $json): bool {
 		$found = $this->lookupPath(path: $path, json: $json);

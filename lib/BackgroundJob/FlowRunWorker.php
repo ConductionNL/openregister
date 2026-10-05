@@ -54,7 +54,7 @@ use Throwable;
  * Executes queued runs, resumes due ones, and prunes old ones.
  *
  * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
- * @spec openspec/changes/or-flow-queue-fairness/specs/flow-queue-fairness/spec.md
+ * @spec openspec/specs/flow-queue-fairness/spec.md
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The pass owns recovery for runs, claims and
  * streams alike; each mapper is one table the reaper has to read.
@@ -222,7 +222,7 @@ class FlowRunWorker extends TimedJob {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
-	 * @spec openspec/changes/or-flow-queue-fairness/specs/flow-queue-fairness/spec.md
+	 * @spec openspec/specs/flow-queue-fairness/spec.md
 	 */
 	protected function run($argument): void {
 		$now = new DateTime();
@@ -617,7 +617,7 @@ class FlowRunWorker extends TimedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/or-flow-queue-fairness/specs/flow-queue-fairness/spec.md
+	 * @spec openspec/specs/flow-queue-fairness/spec.md
 	 */
 	private function expireStaleQueued(DateTime $now): void {
 		$hours = (int)$this->appConfig->getValueString(
