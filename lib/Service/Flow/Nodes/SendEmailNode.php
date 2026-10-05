@@ -170,13 +170,27 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 			);
 		}
 
-		$category = ($config['messageCategory'] ?? null);
-		if (OptOutAuthority::isValidCategory(category: $category) === false) {
-			$shown = '';
-			if (is_scalar($category) === true) {
-				$shown = (string)$category;
-			}
+		$this->assertMessageCategory(category: ($config['messageCategory'] ?? ''));
+	}//end validateConfig()
 
+	/**
+	 * Refuse a message category outside the fleet list. Empty reads as `service`.
+	 *
+	 * @param mixed $category The declared value.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When it is not a fleet category.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
+	 */
+	private function assertMessageCategory(mixed $category): void {
+		$shown = '';
+		if (is_scalar($category) === true) {
+			$shown = strtolower(trim((string)$category));
+		}
+
+		if (($shown !== '' || is_scalar($category) === false) && in_array($shown, OptOutAuthority::CATEGORIES, true) === false) {
 			throw new UnexpectedValueException(
 				$this->l10n->t(
 					'messageCategory must be one of %1$s, not "%2$s".',
@@ -184,7 +198,7 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 				)
 			);
 		}
-	}//end validateConfig()
+	}//end assertMessageCategory()
 
 	/**
 	 * The fields this node's configuration is edited through.

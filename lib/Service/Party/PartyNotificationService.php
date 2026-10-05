@@ -166,8 +166,7 @@ class PartyNotificationService {
 				continue;
 			}
 
-			// No decision means no answer, and no answer is refused.
-			$decision = ($decisions[$recipient['address']] ?? ['send' => false, 'code' => OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE, 'unsubscribe' => null]);
+			$decision = $this->optOut->decisionFor(decisions: $decisions, address: (string)$recipient['address']);
 			if ($decision['send'] !== true) {
 				$outcome = self::OUTCOME_REFUSED_OPTED_OUT;
 				if ($decision['code'] === OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE) {

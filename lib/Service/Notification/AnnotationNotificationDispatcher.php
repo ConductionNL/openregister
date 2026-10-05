@@ -545,6 +545,16 @@ class AnnotationNotificationDispatcher {
 				$partiesBody = $broadcastSubject;
 			}
 
+			// Absent or unknown reads as `service`, never as exempt.
+			$partiesCategory = ($spec['messageCategory'] ?? '');
+			if (is_string($partiesCategory) === true) {
+				$partiesCategory = strtolower(trim($partiesCategory));
+			}
+
+			if (in_array($partiesCategory, OptOutAuthority::CATEGORIES, true) === false) {
+				$partiesCategory = OptOutAuthority::DEFAULT_CATEGORY;
+			}
+
 			$partiesReached = $this->dispatchToParties(
 				recipientsSpec: (array)($spec['recipients'] ?? []),
 				object: $object,
@@ -552,7 +562,7 @@ class AnnotationNotificationDispatcher {
 				ruleId: (string)$name,
 				subject: $broadcastSubject,
 				body: $partiesBody,
-				category: OptOutAuthority::normaliseCategory(category: ($spec['messageCategory'] ?? null))
+				category: $partiesCategory
 			);
 
 			if (count($recipients) === 0) {

@@ -116,12 +116,13 @@ class FlowMessagingService {
 	public const REFUSED_INVALID_ADDRESS = 'invalid-address';
 
 	/**
-	 * The outcome buckets an external address lands in when integriq says no:
-	 * an opt-out (or missing consent), or no answer at all (fail closed).
+	 * Where an address integriq refused lands: no answer (fail closed), else opted out.
 	 */
 	public const BUCKET_OPTED_OUT = 'optedOut';
 
 	public const BUCKET_AUTHORITY_UNAVAILABLE = 'authorityUnavailable';
+
+	private const REFUSAL_BUCKETS = [OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE => self::BUCKET_AUTHORITY_UNAVAILABLE];
 
 	/**
 	 * The address rules: what counts as an address, which may be mailed.
@@ -484,13 +485,12 @@ class FlowMessagingService {
 			);
 		}//end if
 
-		// OPT-OUT, once for the whole step: integriq decides for every
-		// external address before anything is sent (opt-out-before-send).
+		// OPT-OUT, once for the whole step, before anything is sent.
 		$decisions = $this->optOut->ask(
 			channel: 'email',
-			category: OptOutAuthority::normaliseCategory(category: ($config['messageCategory'] ?? null)),
+			category: (string)($this->scalarContext(context: $config)['messageCategory'] ?? ''),
 			addresses: array_map('strval', array_keys($distinctAddresses)),
-			correlationId: $this->correlationId(context: $context, stepName: $stepName)
+			correlationId: 'openregister-flow:' . (string)($this->scalarContext(context: $context)[FlowRunContext::CONTEXT_RUN] ?? '') . ':' . $stepName
 		);
 
 		// RATE LIMIT then SEND, per recipient per item. The limiter's buckets
@@ -612,15 +612,11 @@ class FlowMessagingService {
 	 * address simply skips the user lookup. Each dispatched email is
 	 * announced with a {@see FlowEmailSentEvent}.
 	 *
-	 * Integriq's decision comes first. A refused address is skipped before
-	 * the rate limiter, so it uses no budget and raises no event. An allowed
-	 * non-exempt mail carries the unsubscribe line in its body and, when the
-	 * mailer allows it, the List-Unsubscribe headers. The announced body is
-	 * the message without that line: the link holds a personal token.
+	 * A refused address is skipped before the rate limiter: no budget, no
+	 * event. The announced body leaves out the link line, a personal token.
 	 *
 	 * @param array<string, string> $addresses The allowed addresses, address => display name.
-	 * @param array<string, array{send: bool, code: string, unsubscribe: array<string, mixed>|null}> $decisions
-	 *        Integriq's decisions, by address.
+	 * @param array<string, array{send: bool, code: string, unsubscribe: array|null}> $decisions Integriq's decisions, by address.
 	 * @param string $title The rendered subject.
 	 * @param string $body The rendered body.
 	 * @param array $json The item's json.
@@ -651,15 +647,9 @@ class FlowMessagingService {
 		$failures = [];
 		foreach ($addresses as $address => $name) {
 			$address = (string)$address;
-			// No decision means no answer, and no answer is refused.
-			$decision = ($decisions[$address] ?? ['send' => false, 'code' => OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE, 'unsubscribe' => null]);
+			$decision = $this->optOut->decisionFor(decisions: $decisions, address: $address);
 			if ($decision['send'] !== true) {
-				$bucket = self::BUCKET_OPTED_OUT;
-				if ($decision['code'] === OptOutAuthority::CODE_AUTHORITY_UNAVAILABLE) {
-					$bucket = self::BUCKET_AUTHORITY_UNAVAILABLE;
-				}
-
-				$this->addOutcome(outcomes: $outcomes, bucket: $bucket, recipient: $address);
+				$this->addOutcome(outcomes: $outcomes, bucket: (self::REFUSAL_BUCKETS[$decision['code']] ?? self::BUCKET_OPTED_OUT), recipient: $address);
 				continue;
 			}
 
@@ -1034,23 +1024,6 @@ class FlowMessagingService {
 
 		return $report;
 	}//end buildReport()
-
-	/**
-	 * The id integriq's log rows carry for this step: the run, else the flow, and the step.
-	 *
-	 * @param array $context The run context.
-	 * @param string $stepName The step's type id.
-	 *
-	 * @return string The correlation id.
-	 */
-	private function correlationId(array $context, string $stepName): string {
-		$run = ($context[FlowRunContext::CONTEXT_RUN] ?? ($context[FlowRunService::FLOW_ID_CONTEXT_KEY] ?? ''));
-		if (is_scalar($run) === false) {
-			$run = '';
-		}
-
-		return 'openregister-flow:' . (string)$run . ':' . $stepName;
-	}//end correlationId()
 
 	/**
 	 * Write the report onto the run log via the context's report handle.

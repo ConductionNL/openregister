@@ -128,27 +128,6 @@ class OptOutAuthority {
 	}//end normaliseCategory()
 
 	/**
-	 * Whether a declared category is one of the fleet's. Absent counts as valid.
-	 *
-	 * @param mixed $category The declared value.
-	 *
-	 * @return bool True for null, '' or a known category.
-	 *
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
-	 */
-	public static function isValidCategory(mixed $category): bool {
-		if ($category === null || $category === '') {
-			return true;
-		}
-
-		if (is_string($category) === false) {
-			return false;
-		}
-
-		return in_array(strtolower(trim($category)), self::CATEGORIES, true);
-	}//end isValidCategory()
-
-	/**
 	 * Ask once for a batch of addresses.
 	 *
 	 * @param string $channel The channel, `email` for both OpenRegister paths.
@@ -209,6 +188,18 @@ class OptOutAuthority {
 
 		return $decisions;
 	}//end ask()
+
+	/**
+	 * One address's decision; none means no answer, and no answer is refused.
+	 *
+	 * @param array<string, array{send: bool, code: string, unsubscribe: array|null}> $decisions What ask() returned.
+	 * @param string $address The address.
+	 *
+	 * @return array{send: bool, code: string, unsubscribe: array|null} The decision.
+	 */
+	public function decisionFor(array $decisions, string $address): array {
+		return ($decisions[$address] ?? ['send' => false, 'code' => self::CODE_AUTHORITY_UNAVAILABLE, 'unsubscribe' => null]);
+	}//end decisionFor()
 
 	/**
 	 * A body with integriq's link line appended, or the body unchanged when there is no link.

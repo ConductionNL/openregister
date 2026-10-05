@@ -505,11 +505,13 @@ final class NotificationAnnotationValidator {
 			// message a `parties` mail is, for integriq's opt-out question.
 			// Absent reads as `service`; anything outside the fleet list is
 			// refused here rather than silently asked as `service`.
-			if (OptOutAuthority::isValidCategory(category: ($spec['messageCategory'] ?? null)) === false) {
-				$shown = '';
-				if (is_scalar($spec['messageCategory']) === true) {
-					$shown = (string)$spec['messageCategory'];
-				}
+			$category = ($spec['messageCategory'] ?? '');
+			$shown    = '';
+			if (is_scalar($category) === true) {
+				$shown = strtolower(trim((string)$category));
+			}
+
+			if (($shown !== '' || is_scalar($category) === false) && in_array($shown, OptOutAuthority::CATEGORIES, true) === false) {
 
 				$errors[] = [
 					'code' => 'notification-bad-message-category',

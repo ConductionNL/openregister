@@ -224,12 +224,4 @@ class OptOutAuthorityTest extends TestCase {
 		$this->assertSame("Hello\n\nStop receiving these messages: https://nc.example/u/x", $authority->withLink("Hello\n", ['url' => 'https://nc.example/u/x']));
 		$this->assertSame('Hello', $authority->withLink('Hello', null));
 	}
-
-	public function testCategoryValidation(): void {
-		$this->assertTrue(OptOutAuthority::isValidCategory(null));
-		$this->assertTrue(OptOutAuthority::isValidCategory(''));
-		$this->assertTrue(OptOutAuthority::isValidCategory('case-update'));
-		$this->assertFalse(OptOutAuthority::isValidCategory('nieuwsbrief'));
-		$this->assertFalse(OptOutAuthority::isValidCategory(['besluit']));
-	}
 }
