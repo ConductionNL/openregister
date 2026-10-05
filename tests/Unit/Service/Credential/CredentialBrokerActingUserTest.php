@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
+ * @spec openspec/specs/credential-broker/spec.md#background-acting-user-resolution
  */
 
 declare(strict_types=1);

@@ -67,7 +67,7 @@ heavier, reversible-only-with-migration follow-up (see Design, Scope fork).
   custody (still OR's single application vault), and the HTTP contract are all
   unchanged. NOTE (as in `credential-doriath-leaf`): the base `credential-broker`
   spec still lives in its active head change
-  (`openspec/changes/credential-broker/specs/credential-broker/spec.md`);
+  (`openspec/specs/credential-broker/spec.md`);
   `openspec/specs/credential-broker/` does not exist yet, and the
   self-registration + D-G onboarding requirements this change builds on live in
   the `credential-doriath-leaf` delta.

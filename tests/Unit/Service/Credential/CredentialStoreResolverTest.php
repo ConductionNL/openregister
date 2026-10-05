@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#credential-store-backend-resolution
+ * @spec openspec/specs/credential-broker/spec.md#credential-store-backend-resolution
  */
 
 declare(strict_types=1);

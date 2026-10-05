@@ -88,7 +88,7 @@ class CaseAccessControl {
 	 *
 	 * @return bool True when the caller may act on the case; false (fail-closed) otherwise.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-case-api/spec.md
+	 * @spec openspec/specs/dsar-case-api/spec.md
 	 */
 	public function mayAct(array $case): bool {
 		$user = $this->userSession->getUser();
@@ -121,7 +121,7 @@ class CaseAccessControl {
 	 *
 	 * @return bool True only when the user is confirmed to be in the officer group.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-case-api/spec.md
+	 * @spec openspec/specs/dsar-case-api/spec.md
 	 */
 	private function isOfficer(\OCP\IUser $user): bool {
 		$officerGroup = '';

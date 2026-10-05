@@ -25,7 +25,7 @@ declare(strict_types=1);
  * @author   Conduction Development Team <dev@conduction.nl>
  * @license  EUPL-1.2
  *
- * @spec openspec/changes/a-system-write-declares-itself/specs/system-operation-context/spec.md
+ * @spec openspec/specs/system-operation-context/spec.md
  */
 
 namespace Unit\Service;

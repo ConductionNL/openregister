@@ -46,7 +46,7 @@ interface IdentityVerifyProvider {
 	 *
 	 * @return string The provider id (e.g. `or.default.identity-verify.null`).
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
+	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function getProviderId(): string;
 
@@ -64,7 +64,7 @@ interface IdentityVerifyProvider {
 	 *
 	 * @return IdentityVerifyResult The three-state verification outcome.
 	 *
-	 * @spec openspec/changes/dsar-integration-seams/specs/dsar-identity-verify-seam/spec.md
+	 * @spec openspec/specs/dsar-identity-verify-seam/spec.md
 	 */
 	public function verify(string $caseUuid, array $case): IdentityVerifyResult;
 }//end interface

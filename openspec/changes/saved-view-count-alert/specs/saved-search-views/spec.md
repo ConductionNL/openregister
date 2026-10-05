@@ -49,6 +49,14 @@ crosses the threshold in the declared direction, SHALL then hold state
 - **THEN** the view reads `armed` and the next count of 21 fires again
 - @e2e exclude {state machine, covered by sweep unit tests}
 
+#### Scenario: the count is the view's own rows
+
+- **GIVEN** a view over register 102 and schema 1683 holding three live records, with facet filters and search terms, alert `gte 4`
+- **WHEN** a sweep runs
+- **THEN** it counts the rows the view's registers, schemas, filters and search terms name, as the owner, and nothing fires
+- **AND** a view that names no register and no schema is not counted, and its state is left as it was
+- @e2e exclude {count path, covered by ViewAlertCountsTheViewQueryTest over the real ObjectService}
+
 ### Requirement: The alert sweep is bounded
 
 The sweep SHALL evaluate only views whose `every` has elapsed, SHALL cap the

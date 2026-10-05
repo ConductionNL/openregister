@@ -603,7 +603,7 @@ class Notifier implements INotifier {
 	 *
 	 * @return INotification The prepared notification.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
 	 */
 	private function prepareCredentialRelinkNeeded(INotification $notification, $l): INotification {
 		$provider = (string)($notification->getSubjectParameters()['provider'] ?? '');

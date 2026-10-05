@@ -46,7 +46,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Evaluates threshold-typed notifications declared on a schema.
  *
- * @spec openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-2.3
+ * @spec openspec/specs/event-driven-architecture/spec.md
  */
 class ThresholdEvaluationService {
 

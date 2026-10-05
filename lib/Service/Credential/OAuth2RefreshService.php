@@ -143,7 +143,7 @@ class OAuth2RefreshService {
 	 * @throws CredentialAccessDeniedException When no usable token set is stored.
 	 * @throws CredentialUpstreamException When the token endpoint could not be reached or refused transiently.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-brokered-call-refreshes-an-expiring-token-set-before-it-is-used
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-brokered-call-refreshes-an-expiring-token-set-before-it-is-used
 	 */
 	public function accessTokenFor(
 		array $credential,
@@ -203,7 +203,7 @@ class OAuth2RefreshService {
 	 *
 	 * @throws Throwable Whatever the rotation raised; the sweep decides what to do with it.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-daily-job-refreshes-active-token-sets-before-they-expire
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-daily-job-refreshes-active-token-sets-before-they-expire
 	 */
 	public function sweepCredential(array $credential, array $provider, string $credentialId, string $scope): bool {
 		$this->assertNotBlocked(credential: $credential, credentialId: $credentialId);
@@ -247,7 +247,7 @@ class OAuth2RefreshService {
 	 *
 	 * @throws CredentialAccessDeniedException When nothing is stored, or the stored document is not a token set.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-an-oauth2-token-set-is-stored-as-one-opaque-secret-in-the-custody-leaf
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-oauth2-token-set-is-stored-as-one-opaque-secret-in-the-custody-leaf
 	 */
 	public function storedSet(string $credentialId, string $scope): OAuth2TokenSet {
 		$stored = $this->credentialStore->get($credentialId, $scope);
@@ -283,7 +283,7 @@ class OAuth2RefreshService {
 	 *
 	 * @throws Throwable When the custody write fails; the object is then left untouched.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
 	 */
 	public function persist(string $credentialId, string $scope, OAuth2TokenSet $set, array $extraMetadata = []): void {
 		$this->credentialStore->put($credentialId, $set->toStoredJson(), $scope);
@@ -314,7 +314,7 @@ class OAuth2RefreshService {
 	 *
 	 * @throws CredentialRelinkRequiredException When the credential is `relink_needed` or `disabled`.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
 	 */
 	private function assertNotBlocked(array $credential, string $credentialId): void {
 		$status = (string)($credential['status'] ?? 'active');
@@ -340,7 +340,7 @@ class OAuth2RefreshService {
 	 * @throws CredentialRelinkRequiredException When the provider says the grant is gone.
 	 * @throws CredentialUpstreamException When the exchange failed for any other reason.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
 	 */
 	private function rotate(
 		array $credential,
@@ -395,7 +395,7 @@ class OAuth2RefreshService {
 	 *
 	 * @return array<string, string> The form fields.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-refresh-runs-under-a-per-credential-lock-and-rotates-atomically
 	 */
 	private function refreshForm(array $oauth2, string $refreshToken, array $client): array {
 		$grant = (string)($oauth2['refreshGrant'] ?? 'refresh_token');
@@ -428,7 +428,7 @@ class OAuth2RefreshService {
 	 *
 	 * @throws CredentialAccessDeniedException When the catalogue names no usable token endpoint.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-broker/spec.md#requirement-the-catalogue-may-describe-an-oauth2-provider
+	 * @spec openspec/specs/credential-broker/spec.md#requirement-the-catalogue-may-describe-an-oauth2-provider
 	 */
 	private function tokenEndpoint(array $oauth2, array $credential, string $credentialId): string {
 		$endpoint = trim((string)($oauth2['tokenEndpoint'] ?? ''));
@@ -466,7 +466,7 @@ class OAuth2RefreshService {
 	 * @throws CredentialRelinkRequiredException When the provider answered `invalid_grant`.
 	 * @throws CredentialUpstreamException On any other failure.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
 	 */
 	private function exchange(string $endpoint, array $form, array $client, array $credential, string $credentialId): array {
 		$options = ['body' => $form, 'headers' => ['Accept' => 'application/json'], 'timeout' => 20];
@@ -572,7 +572,7 @@ class OAuth2RefreshService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
 	 */
 	private function markRelinkNeeded(array $credential, string $credentialId, string $reason): void {
 		$this->writeMetadata(
@@ -600,7 +600,7 @@ class OAuth2RefreshService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-non-secret-connection-metadata-lives-on-the-credential-object
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-non-secret-connection-metadata-lives-on-the-credential-object
 	 */
 	private function writeMetadata(string $credentialId, array $metadata): void {
 		try {

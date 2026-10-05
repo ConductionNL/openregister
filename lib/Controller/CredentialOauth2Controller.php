@@ -151,7 +151,7 @@ class CredentialOauth2Controller extends Controller {
 	 *
 	 * @return JSONResponse `{authorizationUrl, expiresIn}`, or a static error.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
 	#[NoAdminRequired]
 	public function start(): JSONResponse {
@@ -311,8 +311,8 @@ class CredentialOauth2Controller extends Controller {
 	 *
 	 * @return RedirectResponse|JSONResponse A redirect to the return URL or the relay target, or a static error.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -364,7 +364,7 @@ class CredentialOauth2Controller extends Controller {
 	 *
 	 * @return JSONResponse The disabled credential's status, or a static error.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-disconnecting-revokes-upstream-where-it-can-and-disables-locally
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-disconnecting-revokes-upstream-where-it-can-and-disables-locally
 	 */
 	#[NoAdminRequired]
 	public function disconnect(string $id): JSONResponse {
@@ -412,7 +412,7 @@ class CredentialOauth2Controller extends Controller {
 	 *
 	 * @return JSONResponse The client metadata document.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -445,7 +445,7 @@ class CredentialOauth2Controller extends Controller {
 	 *
 	 * @return RedirectResponse|JSONResponse The forward, or a refusal.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-relay-forwards-a-code-and-never-exchanges-it
 	 */
 	private function forward(string $destination, string $code, string $state): RedirectResponse | JSONResponse {
 		if ($this->relay->permits(callbackUrl: $destination) === false) {
@@ -462,7 +462,7 @@ class CredentialOauth2Controller extends Controller {
 	 *
 	 * @return JSONResponse The static refusal.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
 	 */
 	private function refuse(): JSONResponse {
 		try {
@@ -490,7 +490,7 @@ class CredentialOauth2Controller extends Controller {
 	 *
 	 * @return array<string, mixed> The claims, plus a `_credential` shape for client resolution.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
 	private function buildClaims(
 		string $uid,
@@ -539,7 +539,7 @@ class CredentialOauth2Controller extends Controller {
 	 *
 	 * @throws InvalidArgumentException When the provider needs a host and none was supplied or it is unsafe.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-per-account-host-is-pinned-at-mint-and-immutable-afterwards
 	 */
 	private function requestedHost(array $provider): ?string {
 		if (trim((string)($provider['baseUrlFrom'] ?? '')) === '') {

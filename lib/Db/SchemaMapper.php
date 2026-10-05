@@ -1648,7 +1648,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/consent-evidence-envelope/specs/consent-evidence-envelope/spec.md
+	 * @spec openspec/specs/consent-evidence-envelope/spec.md
 	 */
 	private function validateConsentAnnotation(Schema $schema): void {
 		$properties = ($schema->getProperties() ?? []);

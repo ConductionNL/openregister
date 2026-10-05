@@ -23,8 +23,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#doriath-backed-secret-custody
- * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#lazy-migration-of-vault-secrets-to-doriath
+ * @spec openspec/specs/credential-broker/spec.md#doriath-backed-secret-custody
+ * @spec openspec/specs/credential-broker/spec.md#lazy-migration-of-vault-secrets-to-doriath
  */
 
 declare(strict_types=1);

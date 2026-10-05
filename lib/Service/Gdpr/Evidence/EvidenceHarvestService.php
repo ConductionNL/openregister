@@ -74,7 +74,7 @@ class EvidenceHarvestService {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Linear enumerate→dedup→append loop; per-provider/per-item guards.
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Same loop; path count inflated by nested per-item guards.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-evidence-collection/spec.md
+	 * @spec openspec/specs/dsar-evidence-collection/spec.md
 	 */
 	public function harvest(string $caseUuid): array {
 		$case = $this->accessor->load(caseUuid: $caseUuid);
