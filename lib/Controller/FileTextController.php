@@ -72,6 +72,7 @@ class FileTextController extends Controller {
 	 * @param IUserSession $userSession Session user accessor (for the manual-entity endpoint)
 	 * @param IRootFolder $rootFolder Root folder for per-user file access checks
 	 * @param IGroupManager $groupManager Group manager for admin checks
+	 * @param \OCA\OpenRegister\Service\File\FileReadScope|null $fileReadScope The object read rule for an object's file.
 	 */
 	public function __construct(
 		string $appName,
@@ -85,6 +86,7 @@ class FileTextController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IRootFolder $rootFolder,
 		private readonly IGroupManager $groupManager,
+		private readonly ?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -102,6 +104,12 @@ class FileTextController extends Controller {
 	 * @return bool True when the file is reachable in the caller's user folder.
 	 */
 	private function hasFileAccess(int $fileId): bool {
+		// An object's file sits in the openregister account's home, never in
+		// the caller's own tree: the object's read rule decides it.
+		if ($this->fileReadScope !== null) {
+			return $this->fileReadScope->mayReadFile(fileId: $fileId);
+		}
+
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return false;
