@@ -3423,6 +3423,11 @@ class Schema extends Entity implements JsonSerializable {
 		// never take effect (same or#460/#462-class bug the vocabulary
 		// exists to prevent).
 		'x-openregister-contextchat',
+		// How many of this schema's objects one organisation may hold
+		// (`{"perOrganisation": N}`), enforced on create by ObjectQuotaListener.
+		// Absent from this list the key is dropped on save and the quota never
+		// fires, the same or#460/#462-class trap as the entries above.
+		'x-openregister-quota',
 		// Nested write-only dot-paths. Unlike every other entry in this list
 		// this key is NOT a plain pass-through: validateConfigurationEntry has
 		// a dedicated branch above that validates its shape, and
