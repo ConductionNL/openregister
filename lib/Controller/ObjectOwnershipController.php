@@ -55,6 +55,11 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Checked endpoints for a record's owner and its owning group.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A controller that resolves a
+ * record through the RBAC boundary, its register, its schema and the ownership
+ * service, and answers four statuses, names those types; the alternative is a
+ * second controller that duplicates the resolve.
  */
 class ObjectOwnershipController extends Controller {
 

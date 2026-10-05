@@ -77,6 +77,10 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A checked write needs the
  * session, the groups, the users, the rules, the storage, the trail and the
  * notification; splitting it would scatter one decision over several classes.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The complexity is the guard
+ * clauses: four entry points, each refusing before it writes. Splitting them into
+ * separate classes would put the refusals further from the write they protect,
+ * which is the arrangement that produces a guard nothing calls.
  */
 class ObjectOwnershipService {
 
@@ -132,6 +136,9 @@ class ObjectOwnershipService {
 	 * @param SchemaMapper $schemaMapper Resolves a child's schema.
 	 * @param INotificationManager $notificationManager Tells the previous owner.
 	 * @param LoggerInterface $logger Where a transfer is noted.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection; see the
+	 * coupling note on the class.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
@@ -166,6 +173,9 @@ class ObjectOwnershipService {
 	 * @throws NotAuthorizedException When nobody is signed in, or the rules refuse this caller the edit.
 	 *
 	 * @return array The outcome, as {@see transfer()} describes it.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The cascade is a property of the
+	 * request, not a second behaviour: one record or its family, same transfer.
 	 *
 	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
 	 */
@@ -219,6 +229,8 @@ class ObjectOwnershipService {
 	 *
 	 * @return array The outcome, as {@see transfer()} describes it.
 	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As on claim().
+	 *
 	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
 	 */
 	public function assign(
@@ -260,6 +272,8 @@ class ObjectOwnershipService {
 	 * @throws InvalidArgumentException When no such user exists, or no record was named.
 	 *
 	 * @return array{newOwner: string, transferred: array, failed: array, unchanged: array}
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As on claim().
 	 *
 	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
 	 */
@@ -506,6 +520,9 @@ class ObjectOwnershipService {
 	 * @param array<string, true> $visited Records already moved, by uuid.
 	 *
 	 * @return array The per-child outcomes.
+	 *
+	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Every branch is a child this walk
+	 * must NOT move: no uuid, already visited, a different owner, or unresolvable.
 	 */
 	private function cascadeToChildren(
 		ObjectEntity $object,

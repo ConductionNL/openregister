@@ -312,7 +312,7 @@ class Notifier implements INotifier {
 		$notification->setParsedMessage(
 			$l->t(
 				'%1$s is now the owner of "%2$s". You are no longer answerable for it. Ask them if that was not the plan.',
-				[$this->displayName($newOwner), $objectTitle]
+				[$this->displayName(uid: $newOwner), $objectTitle]
 			)
 		);
 
