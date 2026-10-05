@@ -164,6 +164,7 @@ final class PreviewHandlerComesToRestTest extends TestCase {
 	public function testAnUndeclaredPropertyIsDiscardedNotAChange(): void {
 		$stored = new ObjectEntity();
 		$stored->setUuid('11111111-2222-3333-4444-555555555555');
+		$stored->setSlug('livepass-lane15-s1');
 		$stored->setVersion('1.0.0');
 		$stored->setObject(['title' => 'Bakker', 'colour' => 'blue']);
 		$this->objectMapper->method('find')->willReturn($stored);
