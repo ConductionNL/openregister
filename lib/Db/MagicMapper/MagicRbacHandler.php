@@ -2542,6 +2542,8 @@ class MagicRbacHandler {
 	 * unquoted value — the same contract `quotedGrantedUuids()` already honours.
 	 *
 	 * @return string[] Quoted group ids, empty when the caller is anonymous.
+	 *
+	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
 	 */
 	public function quotedCallerGroups(): array {
 		$quoted = [];

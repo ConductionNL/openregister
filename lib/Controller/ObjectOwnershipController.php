@@ -96,6 +96,8 @@ class ObjectOwnershipController extends Controller {
 	 * @return JSONResponse The owner and the owning group.
 	 *
 	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
 	 */
 	#[NoAdminRequired]
 	public function show(string $register, string $schema, string $id): JSONResponse {
@@ -127,6 +129,8 @@ class ObjectOwnershipController extends Controller {
 	 * @return JSONResponse The outcome, or an error.
 	 *
 	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
 	 */
 	#[NoAdminRequired]
 	public function claim(string $register, string $schema, string $id): JSONResponse {
@@ -161,6 +165,8 @@ class ObjectOwnershipController extends Controller {
 	 * @return JSONResponse The outcome, or an error.
 	 *
 	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
 	 */
 	#[NoAdminRequired]
 	public function assign(string $register, string $schema, string $id): JSONResponse {
@@ -203,6 +209,8 @@ class ObjectOwnershipController extends Controller {
 	 * @return JSONResponse The owning group, or an error.
 	 *
 	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
 	 */
 	#[NoAdminRequired]
 	public function setOwnerGroup(string $register, string $schema, string $id): JSONResponse {
@@ -245,6 +253,8 @@ class ObjectOwnershipController extends Controller {
 	 * @return JSONResponse What moved, what did not, and why.
 	 *
 	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
 	 */
 	#[NoAdminRequired]
 	public function reassign(): JSONResponse {

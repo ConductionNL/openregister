@@ -214,6 +214,9 @@ class ObjectScopeResolver {
 	 *                                  which is what this method did before group ownership.
 	 *
 	 * @return bool True when the caller is an owner or an administrator.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md
+	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
 	 */
 	public function admitsUnconditionally(
 		?string $userId,
@@ -250,6 +253,8 @@ class ObjectScopeResolver {
 	 * @param array|null $authorization The object's `_authorization` block.
 	 *
 	 * @return string|null The owning group id, or null.
+	 *
+	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
 	 */
 	public function ownerGroup(?array $authorization): ?string {
 		if (is_array($authorization) === false) {
@@ -291,6 +296,8 @@ class ObjectScopeResolver {
 	 * @param bool $isPostgres Whether the connected platform is PostgreSQL.
 	 *
 	 * @return string A SQL predicate that is true for rows that are not private.
+	 *
+	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md
 	 */
 	public function notPrivateSql(string $columnName, bool $defaultPrivate, bool $isPostgres): string {
 		$scope = $this->jsonKeySql(columnName: $columnName, key: self::SCOPE_KEY, isPostgres: $isPostgres);
@@ -355,6 +362,8 @@ class ObjectScopeResolver {
 	 * @param string[] $quotedUserGroups The caller's group ids, ALREADY quoted as SQL literals.
 	 *
 	 * @return string|null The predicate, or null when the caller is in no group.
+	 *
+	 * @spec openspec/changes/object-ownership-and-handover/specs/object-ownership/spec.md
 	 */
 	public function ownedByMyGroupSql(string $authColumn, bool $isPostgres, array $quotedUserGroups): ?string {
 		if ($quotedUserGroups === []) {
