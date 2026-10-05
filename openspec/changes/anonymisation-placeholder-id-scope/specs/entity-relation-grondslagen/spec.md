@@ -132,3 +132,58 @@ Because the emitted number changes from the global `e.id` to a scope-local numbe
 - **WHEN** the file is anonymised after this change under any scope
 - **THEN** the placeholder number MUST be the scope-local number (e.g. `[PERSON: 1]`), which MAY differ from the pre-change global id
 - **AND** this difference is expected and MUST NOT be treated as a regression
+
+## ADDED Requirements
+
+### Requirement: A detection may be masked in part, with the form set per entity type (REQ-PIS-010)
+
+The substitution map SHALL allow, per entity type, either the placeholder (the default) or a mask form read from the file setting `anonymisation.maskForms`: `first` with `n` (keep the first n characters, mask the rest with `*`), `last` with `n` (keep the last n), `email-local` (mask the local part of an address, keep `@` and the domain), or `generalise` (a date to its year, a Dutch postcode to its four digits). A mask that would leave the whole value or more than half of its characters visible SHALL fall back to the placeholder. An unknown form or an `n` below 1 SHALL be refused with 400 when the setting is saved. `PdfTextReplacer` and the office replacers SHALL emit the masked value verbatim.
+
+#### Scenario: an IBAN keeps its last four characters
+<!-- @e2e exclude Substitution map unit; covered by PHPUnit MaskFormTest::testLastFourOfAnIban. -->
+
+- **GIVEN** `anonymisation.maskForms` sets IBAN to `last` with n 4
+- **WHEN** a PDF containing `NL91ABNA0417164300` is anonymised
+- **THEN** the output text reads `**************4300` at that place
+
+#### Scenario: an e-mail address keeps its domain
+<!-- @e2e exclude Substitution map unit; covered by PHPUnit MaskFormTest::testEmailLocalPartIsMasked. -->
+
+- **GIVEN** EMAIL set to `email-local`
+- **WHEN** `j.jansen@gemeente.nl` is anonymised
+- **THEN** the output reads `********@gemeente.nl`
+
+#### Scenario: a short value is never half shown
+<!-- @e2e exclude Substitution map unit; covered by PHPUnit MaskFormTest::testAMaskThatWouldRevealTooMuchFallsBack. -->
+
+- **GIVEN** PHONE set to `last` with n 4
+- **WHEN** a detected value of six characters is anonymised
+- **THEN** the placeholder is emitted instead of a mask
+
+#### Scenario: a mask form is set from the file configuration page
+- **GIVEN** an administrator on the file configuration page
+- **WHEN** they choose `last`, 4 for IBAN and save
+- **THEN** the next anonymised document masks IBANs that way
+
+### Requirement: The placeholder carries the exception ground where it applies (REQ-PIS-011)
+
+When an occurrence's `EntityRelation::$bases` holds one or more grounds, the emitted placeholder SHALL be `[<TYPE>: <n>; <ground>, ...]` in the stored order, and a masked value SHALL be followed by ` [<ground>, ...]`. When `bases` is empty or null the placeholder SHALL be unchanged. The ground SHALL be the identifier stored on the relation, printed without lookup. The residual check and `PdfTextReplacer::collapseAdjacentDuplicatePlaceholders()` SHALL parse the extended form. The ground SHALL be printed in every output mode: PDF, DOCX, ODT and plain text.
+
+#### Scenario: a withheld name shows its ground in the delivered file
+- **GIVEN** a detected PERSON whose relation holds bases `["5.1.2e"]` on a Dutch instance
+- **WHEN** the document is anonymised and the officer opens the output
+- **THEN** the text at that place reads `[PERSOON: 1; 5.1.2e]`
+
+#### Scenario: no ground, no change
+<!-- @e2e exclude Substitution map unit; covered by PHPUnit PlaceholderGroundTest::testNoBasesKeepsThePlaceholder. -->
+
+- **GIVEN** a relation with `bases` null
+- **WHEN** it is anonymised
+- **THEN** the placeholder is `[PERSOON: 1]`
+
+#### Scenario: the residual check still sees a leak
+<!-- @e2e exclude Residual parser unit; covered by PHPUnit PlaceholderGroundTest::testTheResidualCheckParsesTheExtendedForm. -->
+
+- **GIVEN** an output holding `[PERSOON: 1; 5.1.2e]` and one unreplaced occurrence of the name
+- **WHEN** the residual check runs
+- **THEN** the unreplaced occurrence is reported and the placeholder is not

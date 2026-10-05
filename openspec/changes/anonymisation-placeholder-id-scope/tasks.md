@@ -53,3 +53,21 @@
 ## 8. Cherry-pick to project branch (follow-up, not part of the development PR)
 
 - [ ] 8.1 Note: no migration to port (deterministic recompute, no table). The `findEntityIdsByValueForFiles` read method + recompute helper are additive and cherry-pick cleanly; the `DocumentProcessingHandler` placeholder-build edit + param threading are a SEMANTIC port (handler diverges between `development` and `test/anonimiseren-bij-de-bron-or`) — re-apply at the project branch's equivalent placeholder-build site, same caveat as the PDF-replacer backport.
+
+## 9. Woo programme amendment: mask forms and grounds (rows 4.18, 4.28)
+
+- [ ] 9.1 Add `anonymisation.maskForms` to `FileSettingsHandler` with validation (unknown form or `n` below 1 refused with 400). Verify: `tests/Unit/Service/Settings/MaskFormSettingTest.php::testAnUnknownFormIsRefused` (fails today: the key does not exist).
+- [ ] 9.2 Compute the mask in `DocumentProcessingHandler` where the placeholder is built, with the half-visible fallback (REQ-PIS-010). Verify: `tests/Unit/Service/File/MaskFormTest.php::testLastFourOfAnIban`, `testEmailLocalPartIsMasked`, `testGeneraliseADateToItsYear`, `testAMaskThatWouldRevealTooMuchFallsBack`.
+- [ ] 9.3 Append grounds from `EntityRelation::$bases` to the placeholder and the mask (REQ-PIS-011), reading `bases` from `findEntitiesForAnonymization()` rows. Verify: `tests/Unit/Service/File/PlaceholderGroundTest.php::testAGroundIsPrintedInThePlaceholder` using a real `EntityRelation`, `testNoBasesKeepsThePlaceholder`, `testTheResidualCheckParsesTheExtendedForm`, `testCollapseKeepsTheGround`.
+- [ ] 9.4 Prove every output mode prints it: PDF, DOCX, ODT, text. Verify: `PlaceholderGroundTest::testEveryOutputModePrintsTheGround` over four fixtures through `FileService::anonymizeDocument()`, the call opencatalogi's `DocumentRedactor` makes.
+- [ ] 9.5 Mask form choice on `src/views/settings/sections/FileConfiguration.vue`. Verify: `tests/e2e/ci/placeholder-mask-and-ground.spec.ts` sets IBAN to last 4, sets a ground on a relation through `PATCH /api/entity-relations/{id}`, anonymises a PDF fixture and reads both in the output text.
+
+## V. Verification and done
+
+Follow `/home/rubenlinde/memcap-work/woo-build/LANE-RULES-BUILD.md` (or the copy of those rules in the build brief).
+
+- [ ] V.1 Work in your own clone, branched with `git checkout --no-track -b <branch> origin/development`, with `TMPDIR` set to a sibling directory outside the clone. Verify: `git rev-parse --show-toplevel` runs in the same command as every `git add`.
+- [ ] V.2 Every test named above fails on `origin/development` and passes on the branch. Verify: run each new test file once with the change stashed and once with it applied, and quote both `Tests:` lines in the PR body. A test that passes on today's code proves nothing and does not count.
+- [ ] V.3 Full unit suite: `./vendor/bin/phpunit -c phpunit-unit.xml --no-coverage`, judged by the `Tests:` line (`Failures:` and `Errors:`), never by the exit code alone, because a green suite exits 1 without a coverage driver.
+- [ ] V.4 Gates: `run-hydra-gates.sh --base origin/development` from `vendor/conduction/hydra-gates` (without `--base` the gates read NOT APPLICABLE, which is not a pass), and count the gates that ran. Then once before push: `COMPOSER_PROCESS_TIMEOUT=0 composer check:strict` and `npm run lint`. CI runs the gates on the full tree, and the coverage guard needs tests for every added statement, so project the coverage arithmetically and say in the PR body that it is arithmetic.
+- [ ] V.5 One PR with `--base development`. Merge `development` into the branch, never rebase a pushed branch. No `Co-Authored-By` trailer on any commit. Done means merged on `development` with CI green; the rows this change closes count as `production` only once it ships in a store release.

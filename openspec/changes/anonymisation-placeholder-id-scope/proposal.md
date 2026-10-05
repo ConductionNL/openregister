@@ -39,3 +39,20 @@ Separately, the placeholder's **TYPE label** is always emitted in English (`PERS
 - **External dependency (frontend, out of scope for this backend change):** the frontend already knows single-document vs folder and MUST (a) pass the `scope`/`dossierKey` signal, and (b) add a HARD WARNING that a dossier (folder) result is published as ONE publication/dossier — files MUST NOT be split into separate publications. Keeping the dossier the disclosure unit is what makes per-dossier carry-over legally defensible.
 - **Cherry-pick caveat:** this lands on `development` first but must be cherry-pickable into `test/anonimiseren-bij-de-bron-or`. `DocumentProcessingHandler` (where the placeholder is built) DIVERGES between `development` and the project branch, so the project-branch port is a SEMANTIC port (same caveat as the recent PDF-replacer backport), not a clean cherry-pick.
 - **No new schemas/objects/tables/migrations** are introduced — this changes how the placeholder number is computed (deterministic recomputation from existing rows), not the data model. The only persistence touched is the existing `entity_relations` / `openregister_entities` tables, read-only for the numbering.
+
+## Woo capability programme amendment (2026-10-05)
+
+The Woo capability programme (round 1, `woo-round1/mi/opencatalogi/_round1/build-plan/plan.md`, wave 1) amends this change with two rows. Re-read on `development` at 1dc6a4667 before writing: the change is open at 25 of 29 tasks, and the open tasks are frontend and cross-app notes (7.1 to 7.3) and a cherry-pick (8.1). Nothing already done is rewritten.
+
+| row | capability | ours today (`baseline/openwoo.tsv`) |
+|---|---|---|
+| 4.18 | A detection is masked in part rather than removed whole, and the form of the mask is set per data type | partial: `PdfTextReplacer` substitutes the whole value with `[<TYPE>: <id>]`; `AnonymisationProfile`'s `generalise` treats record properties on the archival path, not document text |
+| 4.28 | The exception ground is printed on the delivered file at the place it applies | no: the ground sits on `EntityRelation::$bases` and in opencatalogi's inventory, never in the file |
+
+What the amendment adds:
+
+- A mask form per entity type, as an allowed alternative to the placeholder: `first` and `last` (keep n characters), `email-local` (mask the local part, keep the domain), and `generalise` (a date to its year, a postcode to its four digits). The form is set per entity type in the file settings key `anonymisation.maskForms`; `redaction-policy-as-data` (wave 2) later lets a named profile carry the same key. A mask that would reveal the whole value falls back to the placeholder.
+- The exception ground printed in the placeholder: when an occurrence's `EntityRelation::$bases` holds grounds, the emitted text is `[<TYPE>: <n>; <ground>, <ground>]`, for example `[PERSOON: 1; 5.1.2e]`. A masked value is followed by the ground in brackets. The ground is the identifier stored on the relation; per decision D3 the list of grounds is dossiq's, and OpenRegister prints what the relation holds without resolving it.
+- Both are computed upstream in `DocumentProcessingHandler`, so `PdfTextReplacer` and the office replacers stay agnostic and emit the map's value verbatim, as this change already requires.
+
+Dependencies: none new. opencatalogi's `woo-review-surface` and dossiq's refusal grounds list write the grounds onto the relation; this amendment only prints them. Closes 4.18 and 4.28 together with this change's existing scope.
