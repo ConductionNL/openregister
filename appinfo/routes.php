@@ -1777,6 +1777,10 @@ return [
         ['name' => 'organisation#stats', 'url' => '/api/organisations/statistics', 'verb' => 'GET', 'postfix' => 'statistics'],
         ['name' => 'organisation#clearCache', 'url' => '/api/organisations/clear-cache', 'verb' => 'POST'],
         ['name' => 'organisation#getActive', 'url' => '/api/organisations/active', 'verb' => 'GET'],
+        // Per-organisation halts, scoped by app and node-type prefix (admin; organisation-capability-halt).
+        ['name' => 'organisationHalt#index', 'url' => '/api/organisations/{uuid}/halts', 'verb' => 'GET'],
+        ['name' => 'organisationHalt#create', 'url' => '/api/organisations/{uuid}/halts', 'verb' => 'POST'],
+        ['name' => 'organisationHalt#destroy', 'url' => '/api/organisation-halts/{id}', 'verb' => 'DELETE'],
         ['name' => 'organisation#show', 'url' => '/api/organisations/{uuid}', 'verb' => 'GET'],
         ['name' => 'organisation#update', 'url' => '/api/organisations/{uuid}', 'verb' => 'PUT'],
         ['name' => 'organisation#patch', 'url' => '/api/organisations/{uuid}', 'verb' => 'PATCH'],
