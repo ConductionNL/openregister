@@ -22,7 +22,9 @@ This spec primarily validates and extends an already-functional import/export sy
 - **RBAC on export (fully implemented)**: `PropertyRbacHandler::canReadProperty()` controls column visibility, admin check gates `@self.*` columns.
 - **SOLR warmup (fully implemented)**: `ImportService::scheduleSmartSolrWarmup()` via `IJobList` after import.
 - **What this spec adds**: JSON/XML/ODS/JSONL format support, interactive column mapping UI, progress tracking with polling endpoint, downloadable error report CSV, import template generation, column selection for exports, streaming for 10k+ rows, scheduled/recurring imports, i18n for headers, and import rollback on critical failure.
+
 ## Requirements
+
 ### Requirement: The system MUST support import from CSV, Excel, JSON, and XML formats @e2e exclude REST API import — covered by Newman
 
 Users MUST be able to upload files in CSV, XLSX, JSON, or XML format. The `ImportService` SHALL detect the file type from the extension and delegate to the appropriate reader. CSV import SHALL use `PhpOffice\PhpSpreadsheet\Reader\Csv`, Excel import SHALL use `PhpOffice\PhpSpreadsheet\Reader\Xlsx`, JSON import SHALL parse the file as a JSON array of objects, and XML import SHALL parse each child element of the root as an object record.
@@ -1064,6 +1066,17 @@ discarded undeclared properties.
 - **GIVEN** the same seed object for a schema that declares a `slug` property
 - **WHEN** the seed data is imported
 - **THEN** the object's data keeps `slug` and drops `uuid`
+
+### Requirement: A remote configuration is read by its content, not its Content-Type
+
+Fetching a configuration from a remote source (github, gitlab or url) SHALL try to decode the body as JSON and then as YAML whatever Content-Type the source answers with; the Content-Type SHALL only decide which is tried first. A body that decodes to neither SHALL be refused with 400 naming the Content-Type.
+
+#### Scenario: a configuration on raw GitHub is previewed
+
+- **GIVEN** a configuration with sourceType github and sourceUrl on raw.githubusercontent.com, which answers valid JSON as `text/plain; charset=utf-8`
+- **WHEN** an administrator opens its preview
+- **THEN** the preview lists what an import would change instead of answering "Failed to parse response body as JSON or YAML"
+- @e2e exclude {remote fetch decoding, covered by FetchHandlerTest}
 
 ## Current Implementation Status
 - **Implemented:**

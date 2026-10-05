@@ -210,55 +210,47 @@ class FetchHandler {
 	}//end fetchRemoteConfiguration()
 
 	/**
-	 * Decode data based on content type.
+	 * Decode a fetched body as JSON, then YAML, whatever its Content-Type.
 	 *
-	 * Attempts to decode the data as JSON or YAML based on the Content-Type header.
+	 * The Content-Type only says which to try first. raw.githubusercontent.com
+	 * and Nextcloud's public DAV serve every .json and .yaml file as
+	 * text/plain, and reading the header as a gate made every configuration
+	 * on such a URL impossible to preview, import or update (live pass O1).
 	 *
 	 * @param string $data The data to decode.
 	 * @param string $type The Content-Type header value.
 	 *
-	 * @return array|null The decoded array or null on failure.
+	 * @return array|null The decoded array or null when neither parses to an array.
 	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-a-remote-configuration-is-read-by-its-content-not-its-content-type
 	 */
 	private function decode(string $data, string $type): ?array {
-		// Try JSON first (most common).
-		if (str_contains($type, 'json') === true || empty($type) === true) {
+		$yamlFirst = (str_contains($type, 'yaml') === true || str_contains($type, 'yml') === true);
+
+		if ($yamlFirst === false) {
 			$decoded = json_decode($data, associative: true);
 			if (is_array($decoded) === true) {
 				return $decoded;
 			}
 		}
 
-		// Try YAML if JSON failed or if Content-Type suggests YAML.
-		if (str_contains($type, 'yaml') === true || str_contains($type, 'yml') === true) {
-			try {
-				$decoded = Yaml::parse($data);
-				if (is_array($decoded) === true) {
-					return $decoded;
-				}
-			} catch (\Exception $e) {
-				$this->logger->warning(
-					message: '[FetchHandler] Failed to parse as YAML: ' . $e->getMessage(),
-					context: ['file' => __FILE__, 'line' => __LINE__]
-				);
-			}
-		}
-
-		// If JSON detection failed, try YAML as fallback.
-		if (str_contains($type, 'json') === true) {
-			try {
-				$decoded = Yaml::parse($data);
-				if (is_array($decoded) === true) {
+		try {
+			$decoded = Yaml::parse($data);
+			if (is_array($decoded) === true) {
+				if (str_contains($type, 'json') === true) {
 					$this->logger->info(
 						message: '[FetchHandler] Content-Type was JSON but data was successfully parsed as YAML',
 						context: ['file' => __FILE__, 'line' => __LINE__]
 					);
-					return $decoded;
 				}
-			} catch (\Exception $e) {
-				// YAML parsing also failed, return null.
+
+				return $decoded;
 			}
+		} catch (\Exception $e) {
+			$this->logger->warning(
+				message: '[FetchHandler] Body is neither JSON nor YAML: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'Content-Type' => $type]
+			);
 		}
 
 		return null;
