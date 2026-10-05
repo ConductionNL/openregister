@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Listener\ObjectQuotaListener;
 use OCA\OpenRegister\Service\Quota\ObjectQuotaService;
+use OCP\DB\IPreparedStatement;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IConfig;
@@ -102,8 +103,16 @@ class ObjectQuotaThroughMagicMapperTest extends TestCase {
 			}
 		);
 
+		// A statement that ends its rows as the database does (fetch() answers
+		// false). A bare mock answers null, and the column-cache loop of the
+		// search path never ends on that.
+		$statement = $this->createMock(IPreparedStatement::class);
+		$statement->method('fetch')->willReturn(false);
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('prepare')->willReturn($statement);
+
 		$mapper = new MagicMapper(
-			$this->createMock(IDBConnection::class),
+			$db,
 			$schemas,
 			$registers,
 			$this->createMock(IConfig::class),

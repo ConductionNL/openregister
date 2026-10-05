@@ -72,23 +72,27 @@ class ObjectQuotaListenerTest extends TestCase {
 		$this->schemas = $this->createMock(SchemaMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 
-		// The count path the service really takes (countObjectsInRegisterSchemaTable).
-		// This used to stub searchObjects() with an integer, which the real
-		// mapper never answers on this path (live pass O10); the real mapper's
-		// path is pinned in ObjectQuotaThroughMagicMapperTest.
-		$this->objects->method('countObjectsInRegisterSchemaTable')->willReturnCallback(
-			function (array $query, Register $register, Schema $schema, bool $failLoud = false): int {
-				$this->counts[] = [
-					'query' => $query,
-					'rbac' => $query['_rbac'] ?? true,
-					'multitenancy' => $query['_multitenancy'] ?? true,
-					'register' => $register->getId(),
-					'schema' => $schema->getId(),
-					'failLoud' => $failLoud,
-				];
-				return $this->existing;
-			}
-		);
+		// The count path the service really takes (countObjectsOrFail, the
+		// mapper's count that throws instead of answering 0). This used to stub
+		// searchObjects() with an integer, which the real mapper never answers
+		// on this path (live pass O10); the real mapper's path is pinned in
+		// ObjectQuotaThroughMagicMapperTest. The lenient count is recorded too,
+		// so a service that falls back to it is caught.
+		foreach (['countObjectsOrFail' => true, 'countObjectsInRegisterSchemaTable' => false] as $method => $strict) {
+			$this->objects->method($method)->willReturnCallback(
+				function (array $query, Register $register, Schema $schema) use ($strict): int {
+					$this->counts[] = [
+						'query' => $query,
+						'rbac' => $query['_rbac'] ?? true,
+						'multitenancy' => $query['_multitenancy'] ?? true,
+						'register' => $register->getId(),
+						'schema' => $schema->getId(),
+						'strict' => $strict,
+					];
+					return $this->existing;
+				}
+			);
+		}
 	}//end setUp()
 
 	/**
@@ -177,7 +181,7 @@ class ObjectQuotaListenerTest extends TestCase {
 		$this->assertSame(['organisation' => self::ORG], $this->counts[0]['query']['@self'] ?? null);
 		$this->assertSame(7, $this->counts[0]['register']);
 		$this->assertSame(42, $this->counts[0]['schema']);
-		$this->assertTrue($this->counts[0]['failLoud'], 'A failed count must throw, never answer 0.');
+		$this->assertTrue($this->counts[0]['strict'], 'The quota must count through countObjectsOrFail: a failed count must throw, never answer 0.');
 	}//end testTheCountIsUnrestrictedAndScopedToTheOrganisation()
 
 	public function testASchemaWithoutAQuotaIsNeverCounted(): void {
@@ -244,7 +248,7 @@ class ObjectQuotaListenerTest extends TestCase {
 	public function testAFailingCountRefusesTheCreateAndLogsAnError(): void {
 		$this->schemaWith(['x-openregister-quota' => ['perOrganisation' => 1]]);
 		$objects = $this->createMock(MagicMapper::class);
-		$objects->method('countObjectsInRegisterSchemaTable')->willThrowException(new RuntimeException('table gone'));
+		$objects->method('countObjectsOrFail')->willThrowException(new RuntimeException('table gone'));
 		$this->logger->expects($this->once())->method('error');
 
 		$event = new ObjectCreatingEvent($this->newObject());

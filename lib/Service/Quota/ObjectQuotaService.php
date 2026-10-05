@@ -108,19 +108,18 @@ class ObjectQuotaService {
 	public function count(int $registerId, Schema $schema, string $organisationUuid): int {
 		// Through the COUNT path, not searchObjects(): with one register and
 		// one schema searchObjects() turns the integer count into [] (live
-		// pass O10), and the quota could never fire. failLoud: a count that
+		// pass O10), and the quota could never fire. OrFail: a count that
 		// cannot be made throws instead of answering 0.
 		$register = $this->registers->find($registerId, _multitenancy: false, _rbac: false);
 
-		return $this->objects->countObjectsInRegisterSchemaTable(
+		return $this->objects->countObjectsOrFail(
 			query: [
 				'@self' => ['organisation' => $organisationUuid],
 				'_rbac' => false,
 				'_multitenancy' => false,
 			],
 			register: $register,
-			schema: $schema,
-			failLoud: true
+			schema: $schema
 		);
 	}//end count()
 
