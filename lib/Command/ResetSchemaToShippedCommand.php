@@ -37,7 +37,7 @@ use Throwable;
 /**
  * Preview by default; `--apply --actor=<admin>` performs the reset as that administrator.
  *
- * occ has no session, and the guard refuses a reset without an actor, so the
+ * The occ runner has no session, and the guard refuses a reset without an actor, so the
  * administrator is named explicitly and the trail records that name.
  *
  * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
