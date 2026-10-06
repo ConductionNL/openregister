@@ -5,9 +5,19 @@ depends_on: [permission-provenance-and-deny]
 
 # Proposal: rights-administration-hardening
 
+## Summary
+
+Rights administration an auditor can trust: an administrator exports the full authorisation matrix, nobody can grant a right beyond their own, and product-owned groups are restored to their shipped rights.
+
+- Rows: 12.23, 12.24 and 12.26 (not statutory).
+- Wave 1, size L.
+- Dependencies: `openregister/permission-provenance-and-deny` (built, no issue). Whichever of this change and `openregister/scoped-api-tokens` (https://github.com/ConductionNL/openregister/issues/4396) lands second wires `GrantCeiling` into the token path. `openregister/history-schema-and-settings-edits-audited` (https://github.com/ConductionNL/openregister/issues/4387) gives the audit rows their administrative category.
+- No Ruben decision bears on it.
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
-Three rows ask for rights administration an auditor can trust. Our column (`baseline/openwoo.tsv`):
+Three rows ask for rights administration an auditor can trust. Our column (the round 1 baseline):
 
 | row | capability | ours today |
 |---|---|---|
