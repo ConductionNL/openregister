@@ -5,9 +5,19 @@ depends_on: [search-quality-operators-and-facets]
 
 # Proposal: recompute-and-reindex-on-demand
 
+## Summary
+
+Derived values follow their sources: an administrator recomputes over a selection, and a parent's change reaches its children.
+
+- Rows: 4.17 and 9.15 (not statutory; 9.15 checked applicable for materialised calculations).
+- Wave 2, size M.
+- Dependencies: `openregister/search-quality-operators-and-facets` (https://github.com/ConductionNL/openregister/issues/4398) supplies the recorded reindex run.
+- No Ruben decision bears on it.
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
-Two rows ask that derived values follow their sources on demand and on change. Our column (`baseline/openwoo.tsv`):
+Two rows ask that derived values follow their sources on demand and on change. Our column (the round 1 baseline):
 
 | row | capability | ours today |
 |---|---|---|
