@@ -143,8 +143,8 @@ class ApiCallRecordMapper extends QBMapper {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from(self::TABLE)
-			->where($qb->expr()->gte('last_seen', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATE)))
-			->andWhere($qb->expr()->lte('last_seen', $qb->createNamedParameter($to, IQueryBuilder::PARAM_DATE)))
+			->where($qb->expr()->gte('last_seen', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->andWhere($qb->expr()->lte('last_seen', $qb->createNamedParameter($to, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
 			->orderBy('call_count', 'DESC')
 			->setMaxResults(max(1, $limit));
 
@@ -172,7 +172,7 @@ class ApiCallRecordMapper extends QBMapper {
 	public function pruneBefore(DateTime $before): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->delete(self::TABLE)
-			->where($qb->expr()->lt('last_seen', $qb->createNamedParameter($before, IQueryBuilder::PARAM_DATE)));
+			->where($qb->expr()->lt('last_seen', $qb->createNamedParameter($before, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
 
 		return (int)$qb->executeStatement();
 
@@ -199,7 +199,7 @@ class ApiCallRecordMapper extends QBMapper {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update(self::TABLE)
 			->set('call_count', $qb->createFunction($qb->getColumnName('call_count') . ' + 1'))
-			->set('last_seen', $qb->createNamedParameter($moment, IQueryBuilder::PARAM_DATE))
+			->set('last_seen', $qb->createNamedParameter($moment, IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			->where($qb->expr()->eq('principal', $qb->createNamedParameter($principal)))
 			->andWhere($qb->expr()->eq('route', $qb->createNamedParameter($route)))
 			->andWhere($qb->expr()->eq('method', $qb->createNamedParameter($method)))

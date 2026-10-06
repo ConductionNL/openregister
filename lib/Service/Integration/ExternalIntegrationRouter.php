@@ -56,6 +56,8 @@ use RuntimeException;
  * implementations themselves. The router only provides the safe transport.
  */
 class ExternalIntegrationRouter {
+	use ConnectorRequestTrait;
+
 
 	/**
 	 * The schema slug the connector stores its sources under.
@@ -653,6 +655,8 @@ class ExternalIntegrationRouter {
 	 */
 	private function invoke($source, string $method, string $path, array $options): array {
 		$callService = $this->container->get($this->callServiceClass());
+		$options = $this->connectorOptions(options: $options);
+		$path = $this->connectorEndpoint(source: $source, path: $path);
 
 		if (method_exists($callService, 'call') === true) {
 			$response = $callService->call($source, $path, $method, $options);
@@ -688,6 +692,8 @@ class ExternalIntegrationRouter {
 	 */
 	private function invokeWithMeta($source, string $method, string $path, array $options): array {
 		$callService = $this->container->get($this->callServiceClass());
+		$options = $this->connectorOptions(options: $options);
+		$path = $this->connectorEndpoint(source: $source, path: $path);
 
 		if (method_exists($callService, 'call') === true) {
 			$response = $callService->call($source, $path, $method, $options);

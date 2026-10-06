@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  * $eventDispatcher->addListener(
  *     ToolRegistrationEvent::class,
  *     function(ToolRegistrationEvent $event) {
- *         $tool = \OC::$server->get(MyCustomTool::class);
+ *         $tool = \OCP\Server::get(MyCustomTool::class);
  *         $event->registerTool('myapp.customtool', $tool, [
  *             'name' => 'Custom Tool',
  *             'description' => 'Does custom things',

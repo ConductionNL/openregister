@@ -388,7 +388,7 @@ class FlowRunMapper extends QBMapper {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('uuid')
 			->from($this->getTableName())
-			->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATE)))
+			->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
 			->andWhere(
 				$qb->expr()->in(
 					'status',
@@ -524,7 +524,7 @@ class FlowRunMapper extends QBMapper {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('uuid')
 			->from($this->getTableName())
-			->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATE)))
+			->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
 			->andWhere(
 				$qb->expr()->in(
 					'status',
