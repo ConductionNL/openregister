@@ -47,6 +47,7 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use Doctrine\DBAL\Types\Types;
 use OCP\DB\ISchemaWrapper;
+use OCP\DB\Schema\ITable;
 use Doctrine\DBAL\Schema\Table;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
@@ -72,10 +73,12 @@ class Version1Date20260831120000 extends SimpleMigrationStep {
 	 *   TypeError: addColumns(): Argument #1 ($table) must be of type
 	 *   OCP\DB\Schema\ITable, Doctrine\DBAL\Schema\Table given
 	 *
-	 * The docblocks name the Doctrine type because that is what psalm resolves
-	 * against `nextcloud/ocp: ^34.0`; both objects carry the same
-	 * addColumn/addIndex/hasIndex surface these helpers use. Widen the docblock
-	 * to a union when this app's ocp dev dependency moves to ^35.
+	 * The docblocks name the union `ITable|Table`: the analysers resolve
+	 * against `nextcloud/ocp: ^35.0`, where ISchemaWrapper returns ITable, while
+	 * NC 32-34 still pass the Doctrine Table at runtime. Both objects carry the
+	 * same addColumn/addIndex/hasIndex surface these helpers use. A docblock
+	 * naming a class that is absent on 32-34 is harmless there: it is never
+	 * loaded.
 	 */
 	/**
 	 * The task table.
@@ -255,7 +258,7 @@ class Version1Date20260831120000 extends SimpleMigrationStep {
 	/**
 	 * The task table's indexes: one per query the inbox and propagation run.
 	 *
-	 * @param Table $table The task table.
+	 * @param ITable|Table $table The task table.
 	 *
 	 * @return void
 	 *

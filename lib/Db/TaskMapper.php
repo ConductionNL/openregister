@@ -169,7 +169,7 @@ class TaskMapper extends QBMapper {
 	 *
 	 * @return array<int, Task> The due tasks, earliest expiry first.
 	 *
-	 * @spec openspec/changes/task-expiry-and-outcomes/specs/task-expiry-and-outcomes/spec.md#requirement-the-timer-sweep-enforces-a-declared-task-expiry
+	 * @spec openspec/specs/task-expiry-and-outcomes/spec.md#requirement-the-timer-sweep-enforces-a-declared-task-expiry
 	 */
 	public function findDueTimeouts(\DateTimeInterface $now, int $limit): array {
 		$qb = $this->db->getQueryBuilder();

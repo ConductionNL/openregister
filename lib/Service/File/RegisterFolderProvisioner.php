@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/register-folder-at-import/specs/file-actions/spec.md#requirement-an-app-imported-register-has-its-files-folder-when-the-import-returns-req-rfai-001
+ * @spec openspec/specs/file-actions/spec.md#requirement-an-app-imported-register-has-its-files-folder-when-the-import-returns-req-rfai-001
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Throwable;
 /**
  * Ensures a Files folder for each register it is given, without ever throwing.
  *
- * @spec openspec/changes/register-folder-at-import/specs/file-actions/spec.md#requirement-an-app-imported-register-has-its-files-folder-when-the-import-returns-req-rfai-001
+ * @spec openspec/specs/file-actions/spec.md#requirement-an-app-imported-register-has-its-files-folder-when-the-import-returns-req-rfai-001
  */
 class RegisterFolderProvisioner {
 
@@ -64,7 +64,7 @@ class RegisterFolderProvisioner {
 	 * @return array{provisioned: int, present: int, failed: int} How many got a new folder id,
 	 *                                                            already had one that resolves, or could not get one.
 	 *
-	 * @spec openspec/changes/register-folder-at-import/specs/file-actions/spec.md#requirement-an-app-imported-register-has-its-files-folder-when-the-import-returns-req-rfai-001
+	 * @spec openspec/specs/file-actions/spec.md#requirement-an-app-imported-register-has-its-files-folder-when-the-import-returns-req-rfai-001
 	 */
 	public function ensureFolders(iterable $registers): array {
 		$tally = ['provisioned' => 0, 'present' => 0, 'failed' => 0];

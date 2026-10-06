@@ -27,11 +27,8 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use Psr\Log\LoggerInterface;
 
@@ -198,11 +195,23 @@ class PreviewHandler {
 				$schemasBySlug[strtolower($schema->getSlug() ?? '')] = $schema;
 			}
 
+			// Registers and schemas this same import creates: their objects
+			// are created too, not skipped as "not found locally" (live pass O13).
+			$objectPreview = new ObjectChangePreview(
+				objectMapper: $this->objectMapper,
+				compare: fn (array $current, array $proposed): array => $this->compareArrays(current: $current, proposed: $proposed)
+			);
+			$planned = [
+				'registers' => $objectPreview->createdSlugs(rows: $preview['registers']),
+				'schemas'   => $objectPreview->createdSlugs(rows: $preview['schemas']),
+			];
+
 			foreach ($remoteData['components']['objects'] as $objectData) {
-				$preview['objects'][] = $this->previewObjectChange(
+				$preview['objects'][] = $objectPreview->preview(
 					objectData: (array)$objectData,
 					registersBySlug: $registersBySlug,
-					schemasBySlug: $schemasBySlug
+					schemasBySlug: $schemasBySlug,
+					planned: $planned
 				);
 			}
 		}//end if
@@ -380,101 +389,6 @@ class PreviewHandler {
 	}//end previewSchemaChange()
 
 	/**
-	 * Preview what importing one remote object would do.
-	 *
-	 * Mirrors the import: the object is matched on register, schema and slug,
-	 * without RBAC or tenancy, and only a strictly newer version updates it.
-	 * The row carries the register and schema slugs and the object slug, which
-	 * is the key ImportSelection reads back when the administrator picks it.
-	 *
-	 * @param array<string, mixed> $objectData The remote object.
-	 * @param array<string, Register> $registersBySlug Local registers by lowercased slug.
-	 * @param array<string, Schema> $schemasBySlug Local schemas by lowercased slug.
-	 *
-	 * @return array<string, mixed> Preview row: type, action, slug, title, register, schema, current, proposed, changes, and reason on a skip.
-	 *
-	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-configuration-preview-names-what-an-import-would-change
-	 */
-	private function previewObjectChange(array $objectData, array $registersBySlug, array $schemasBySlug): array {
-		$self = (array)($objectData['@self'] ?? []);
-		$slug = (string)($self['slug'] ?? '');
-		$registerSlug = (string)($self['register'] ?? '');
-		$schemaSlug = (string)($self['schema'] ?? '');
-
-		$preview = [
-			'type' => 'object',
-			'action' => 'skip',
-			'slug' => $slug,
-			'title' => $this->objectTitle(objectData: $objectData, slug: $slug),
-			'register' => $registerSlug,
-			'schema' => $schemaSlug,
-			'current' => null,
-			'proposed' => $objectData,
-			'changes' => [],
-		];
-
-		if ($slug === '' || $registerSlug === '' || $schemaSlug === '') {
-			$preview['reason'] = 'Missing required fields (slug, register, or schema)';
-			return $preview;
-		}
-
-		$register = ($registersBySlug[strtolower($registerSlug)] ?? null);
-		$schema = ($schemasBySlug[strtolower($schemaSlug)] ?? null);
-		if ($register === null || $schema === null) {
-			$preview['reason'] = 'Register or schema not found locally';
-			return $preview;
-		}
-
-		try {
-			$existing = $this->objectMapper->find(
-				identifier: $slug,
-				register: $register,
-				schema: $schema,
-				includeDeleted: false,
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (DoesNotExistException $e) {
-			$preview['action'] = 'create';
-			return $preview;
-		}
-
-		$current = $existing->jsonSerialize();
-		$preview['current'] = $current;
-
-		$currentVersion = (string)($current['@self']['version'] ?? $current['version'] ?? '1.0.0');
-		$proposedVersion = (string)($self['version'] ?? $objectData['version'] ?? '1.0.0');
-		if (version_compare($proposedVersion, $currentVersion, '>') === false) {
-			$preview['reason'] = sprintf(
-				'Remote version (%s) is not newer than current version (%s)',
-				$proposedVersion,
-				$currentVersion
-			);
-			return $preview;
-		}
-
-		// The row is matched on register and schema already, and the remote side
-		// names them by slug where the local side holds ids: comparing them
-		// would report a change on every object.
-		unset($current['@self']['register'], $current['@self']['schema'], $objectData['@self']['register'], $objectData['@self']['schema']);
-
-		// Compare what the import would WRITE (live pass O2). The version only
-		// gates the update: the stored version is OpenRegister's own counter, so
-		// it differs on every row. The seed format's top-level uuid and slug are
-		// identity, stripped from the data on import unless the schema declares
-		// them (ImportHandler::withoutSeedMetadataKeys()), so the stored object
-		// never holds them and they would read as a change on every row.
-		unset($current['@self']['version'], $objectData['@self']['version']);
-		$undeclaredIdentity = array_diff_key(['uuid' => true, 'slug' => true], (array) ($schema->getProperties() ?? []));
-		$objectData = array_diff_key($objectData, $undeclaredIdentity);
-
-		$preview['action'] = 'update';
-		$preview['changes'] = $this->compareArrays(current: $current, proposed: $objectData);
-
-		return $preview;
-	}//end previewObjectChange()
-
-	/**
 	 * List the fields a proposed definition changes against the current one.
 	 *
 	 * Only keys the proposal carries are compared, so a field the remote side
@@ -523,24 +437,6 @@ class PreviewHandler {
 
 		return $changes;
 	}//end compareArrays()
-	/**
-	 * The title a preview row shows for a remote object: its title, its name, or its slug.
-	 *
-	 * @param array<string, mixed> $objectData The remote object.
-	 * @param string $slug The object slug.
-	 *
-	 * @return string
-	 */
-	private function objectTitle(array $objectData, string $slug): string {
-		foreach (['title', 'name'] as $key) {
-			if (is_string($objectData[$key] ?? null) === true && $objectData[$key] !== '') {
-				return $objectData[$key];
-			}
-		}
-
-		return $slug;
-	}//end objectTitle()
-
 	/**
 	 * Whether both values are maps, which compareArrays compares by path rather than whole.
 	 *

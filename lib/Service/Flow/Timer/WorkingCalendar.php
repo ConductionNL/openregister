@@ -274,7 +274,7 @@ final class WorkingCalendar {
 	 *
 	 * @return integer Minutes past midnight.
 	 *
-	 * @spec openspec/changes/the-engine-measures-elapsed-business-hours/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function getDayStartsAtMinute(): int {
 		return $this->dayStartsAtMinute;
@@ -285,7 +285,7 @@ final class WorkingCalendar {
 	 *
 	 * @return integer Minutes past midnight, never beyond the end of the day.
 	 *
-	 * @spec openspec/changes/the-engine-measures-elapsed-business-hours/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function getDayEndsAtMinute(): int {
 		$end = ($this->dayStartsAtMinute + (int)round($this->hoursPerWorkingDay * 60));
@@ -450,7 +450,7 @@ final class WorkingCalendar {
 	 *
 	 * @throws FlowTimerValidationException On a malformed time.
 	 *
-	 * @spec openspec/changes/the-engine-measures-elapsed-business-hours/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	private static function validDayStart(string $slug, mixed $value): int {
 		if ($value === null || (is_string($value) === true && trim($value) === '')) {

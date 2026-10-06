@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/register-folder-on-first-upload/specs/file-actions/spec.md#requirement-recording-a-registers-folder-id-is-bookkeeping-req-rffu-002
+ * @spec openspec/specs/file-actions/spec.md#requirement-recording-a-registers-folder-id-is-bookkeeping-req-rffu-002
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ use OCP\IDBConnection;
 /**
  * Writes a register's folder id, and nothing else, with a compare-and-set; and says who else holds one.
  *
- * @spec openspec/changes/register-folder-on-first-upload/specs/file-actions/spec.md#requirement-recording-a-registers-folder-id-is-bookkeeping-req-rffu-002
+ * @spec openspec/specs/file-actions/spec.md#requirement-recording-a-registers-folder-id-is-bookkeeping-req-rffu-002
  */
 class RegisterFolderRecorder {
 
@@ -71,7 +71,7 @@ class RegisterFolderRecorder {
 	 *
 	 * @return bool True when this call recorded the id; false when another request recorded one first.
 	 *
-	 * @spec openspec/changes/register-folder-on-first-upload/specs/file-actions/spec.md#requirement-recording-a-registers-folder-id-is-bookkeeping-req-rffu-002
+	 * @spec openspec/specs/file-actions/spec.md#requirement-recording-a-registers-folder-id-is-bookkeeping-req-rffu-002
 	 */
 	public function record(int $registerId, ?string $expected, string $folderId): bool {
 		$qb = $this->db->getQueryBuilder();

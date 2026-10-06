@@ -1240,7 +1240,7 @@ class FlowTimerService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/task-expiry-and-outcomes/specs/task-expiry-and-outcomes/spec.md#requirement-a-non-enforcing-expiry-timer-falls-back-to-the-tasks-declared-behaviour
+	 * @spec openspec/specs/task-expiry-and-outcomes/spec.md#requirement-a-non-enforcing-expiry-timer-falls-back-to-the-tasks-declared-behaviour
 	 */
 	private function applyOutcome(FlowTimer $timer): void {
 		if ($timer->getSubjectType() !== 'task') {

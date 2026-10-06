@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-title-and-its-body-text-in-shape-order-req-pptx-002
+ * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-title-and-its-body-text-in-shape-order-req-pptx-002
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use DOMElement;
  * @psalm-type SlideImage = array{target: string, external: bool, name: string, description: string}
  * @psalm-type SlideContent = array{titles: list<string>, body: list<string>, images: list<SlideImage>}
  *
- * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-title-and-its-body-text-in-shape-order-req-pptx-002
+ * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-title-and-its-body-text-in-shape-order-req-pptx-002
  */
 class PresentationSlideParser {
 
@@ -74,7 +74,7 @@ class PresentationSlideParser {
 	 *
 	 * @return list<string> Relationship ids, e.g. `rId2`, in deck order.
 	 *
-	 * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-slides-come-back-in-presentation-order-req-pptx-001
+	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-slides-come-back-in-presentation-order-req-pptx-001
 	 */
 	public function slideRelationshipIds(DOMDocument $presentation): array {
 		$ids = [];
@@ -93,8 +93,8 @@ class PresentationSlideParser {
 	 *
 	 * @return array{hidden: bool, title: string, body: list<string>, images: list<SlideImage>}
 	 *
-	 * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-title-and-its-body-text-in-shape-order-req-pptx-002
-	 * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-image-references-in-shape-order-req-pptx-004
+	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-title-and-its-body-text-in-shape-order-req-pptx-002
+	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-image-references-in-shape-order-req-pptx-004
 	 */
 	public function parseSlide(DOMDocument $slide, array $relationships): array {
 		$content = ['titles' => [], 'body' => [], 'images' => []];
@@ -122,7 +122,7 @@ class PresentationSlideParser {
 	 *
 	 * @return string The notes, or '' when the page holds no notes text.
 	 *
-	 * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-speaker-notes-req-pptx-003
+	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-speaker-notes-req-pptx-003
 	 */
 	public function parseNotes(DOMDocument $notes): string {
 		$paragraphs = [];

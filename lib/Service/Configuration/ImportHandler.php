@@ -433,7 +433,7 @@ class ImportHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/register-folder-at-import/specs/file-actions/spec.md#requirement-an-app-imported-register-has-its-files-folder-when-the-import-returns-req-rfai-001
+	 * @spec openspec/specs/file-actions/spec.md#requirement-an-app-imported-register-has-its-files-folder-when-the-import-returns-req-rfai-001
 	 */
 	public function setRegisterFolderProvisioner(?RegisterFolderProvisioner $provisioner): void {
 		$this->folderProvisioner = $provisioner;

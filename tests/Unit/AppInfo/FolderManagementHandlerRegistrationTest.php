@@ -17,7 +17,7 @@ declare(strict_types=1);
  * @license  EUPL-1.2
  * @link     https://www.OpenRegister.nl
  *
- * @spec openspec/changes/register-folder-on-first-upload/specs/file-actions/spec.md#requirement-a-registers-folder-is-created-on-its-first-upload-by-whoever-uploads-req-rffu-001
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-registers-folder-is-created-on-its-first-upload-by-whoever-uploads-req-rffu-001
  */
 
 namespace OCA\OpenRegister\Tests\Unit\AppInfo;

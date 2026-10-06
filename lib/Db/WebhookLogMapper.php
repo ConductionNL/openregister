@@ -150,7 +150,7 @@ class WebhookLogMapper extends QBMapper {
 			->from($this->getTableName())
 			->where($qb->expr()->eq('success', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)))
 			->andWhere($qb->expr()->isNotNull('next_retry_at'))
-			->andWhere($qb->expr()->lte('next_retry_at', $qb->createNamedParameter($before, IQueryBuilder::PARAM_DATE)))
+			->andWhere($qb->expr()->lte('next_retry_at', $qb->createNamedParameter($before, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
 			->orderBy('next_retry_at', 'ASC');
 
 		return $this->findEntities(query: $qb);

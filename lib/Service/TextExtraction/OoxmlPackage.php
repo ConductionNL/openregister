@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-hostile-input-is-bounded-req-pptx-006
+ * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-hostile-input-is-bounded-req-pptx-006
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use ZipArchive;
 /**
  * Reads XML parts and relationships from an opened OOXML package, within bounds.
  *
- * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-hostile-input-is-bounded-req-pptx-006
+ * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-hostile-input-is-bounded-req-pptx-006
  */
 class OoxmlPackage {
 
@@ -66,7 +66,7 @@ class OoxmlPackage {
 	 *
 	 * @return string|null E.g. `ppt/presentation.xml`.
 	 *
-	 * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-a-deck-that-cannot-be-read-degrades-to-no-result-req-pptx-005
+	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-a-deck-that-cannot-be-read-degrades-to-no-result-req-pptx-005
 	 */
 	public function mainPartPath(): ?string {
 		foreach ($this->relationships(partPath: '') as $relationship) {
@@ -85,7 +85,7 @@ class OoxmlPackage {
 	 *
 	 * @return DOMDocument|null
 	 *
-	 * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-hostile-input-is-bounded-req-pptx-006
+	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-hostile-input-is-bounded-req-pptx-006
 	 */
 	public function readXml(string $path): ?DOMDocument {
 		$index = $this->zip->locateName($path, ZipArchive::FL_NOCASE);
@@ -131,7 +131,7 @@ class OoxmlPackage {
 	 *
 	 * @return array<string, array{type: string, target: string, external: bool}>
 	 *
-	 * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-image-references-in-shape-order-req-pptx-004
+	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-each-slide-carries-its-image-references-in-shape-order-req-pptx-004
 	 */
 	public function relationships(string $partPath): array {
 		$folder = '';
@@ -159,7 +159,7 @@ class OoxmlPackage {
 	 *
 	 * @return list<string>
 	 *
-	 * @spec openspec/changes/pptx-structured-reader/specs/text-extraction-presentation/spec.md#requirement-hostile-input-is-bounded-req-pptx-006
+	 * @spec openspec/specs/text-extraction-presentation/spec.md#requirement-hostile-input-is-bounded-req-pptx-006
 	 */
 	public function refusedParts(): array {
 		return $this->refusedParts;

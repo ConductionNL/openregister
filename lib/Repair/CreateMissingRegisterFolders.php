@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/register-folder-at-import/specs/file-actions/spec.md#requirement-a-repair-step-provisions-folders-for-registers-imported-earlier-req-rfai-002
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-repair-step-provisions-folders-for-registers-imported-earlier-req-rfai-002
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ use Throwable;
 /**
  * Repair step: provision the Files folder of every register that lacks one.
  *
- * @spec openspec/changes/register-folder-at-import/specs/file-actions/spec.md#requirement-a-repair-step-provisions-folders-for-registers-imported-earlier-req-rfai-002
+ * @spec openspec/specs/file-actions/spec.md#requirement-a-repair-step-provisions-folders-for-registers-imported-earlier-req-rfai-002
  */
 class CreateMissingRegisterFolders implements IRepairStep {
 
@@ -64,7 +64,7 @@ class CreateMissingRegisterFolders implements IRepairStep {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/register-folder-at-import/specs/file-actions/spec.md#requirement-a-repair-step-provisions-folders-for-registers-imported-earlier-req-rfai-002
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-repair-step-provisions-folders-for-registers-imported-earlier-req-rfai-002
 	 */
 	public function getName(): string {
 		return 'Create the Files folder of registers that have none';
@@ -77,7 +77,7 @@ class CreateMissingRegisterFolders implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/register-folder-at-import/specs/file-actions/spec.md#requirement-a-repair-step-provisions-folders-for-registers-imported-earlier-req-rfai-002
+	 * @spec openspec/specs/file-actions/spec.md#requirement-a-repair-step-provisions-folders-for-registers-imported-earlier-req-rfai-002
 	 */
 	public function run(IOutput $output): void {
 		try {

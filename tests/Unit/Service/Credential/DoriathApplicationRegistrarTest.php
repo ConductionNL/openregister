@@ -24,7 +24,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/per-app-doriath-application/specs/credential-broker/spec.md#per-app-doriath-application-registration
+ * @spec openspec/specs/credential-broker/spec.md#per-app-doriath-application-registration
  */
 
 declare(strict_types=1);
