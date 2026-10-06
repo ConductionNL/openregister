@@ -14,6 +14,11 @@ wildcards in the term, a declared match type and input control per search
 field, and an administered index rebuild. Four small things that decide
 whether a search layer feels finished.
 
+- Woo programme (wave 1) amendment: closes 9.16 (reconciliation of files, chunks and embeddings on a schedule) and 9.19 (reindex a selection with a visible run), not statutory. See the amendment section below.
+- Dependencies: `openregister/property-vocabulary-published` (all tasks done, no issue). `openregister/recompute-and-reindex-on-demand` (wave 2) builds on the reindex run.
+- No Ruben decision bears on it.
+- Build rules: openspec/woo-build-rules.md
+
 ## Candidates and cluster
 
 Cluster 65 of `procest/_round4/discovery/build-plan.md`
@@ -137,9 +142,9 @@ matched, and neither has an administered rebuild.
 
 ## Woo capability programme amendment (2026-10-05)
 
-The Woo capability programme (round 1, `woo-round1/mi/opencatalogi/_round1/build-plan/plan.md`, wave 1) amends this change with two rows. Re-read on `development` at 1dc6a4667 immediately before writing: the change is open at 15 of 18 tasks (5.1, 5.2 and 6.1 open); the administered rebuild (REQ-SQF-004) is built over the whole index. The operations console the rebuild's note says did not exist has since landed (`admin-operations-console`: `ConsistencyCheckService` probes, `JobRunRecorder`, `/api/operations/*`). Nothing already done is rewritten.
+The Woo capability programme (round 1 build plan, wave 1) amends this change with two rows. Re-read on `development` at 1dc6a4667 immediately before writing: the change is open at 15 of 18 tasks (5.1, 5.2 and 6.1 open); the administered rebuild (REQ-SQF-004) is built over the whole index. The operations console the rebuild's note says did not exist has since landed (`admin-operations-console`: `ConsistencyCheckService` probes, `JobRunRecorder`, `/api/operations/*`). Nothing already done is rewritten.
 
-| row | capability | ours today (`baseline/openwoo.tsv`) |
+| row | capability | ours today (the round 1 baseline) |
 |---|---|---|
 | 9.16 | The product reconciles its register against its index on a schedule, and reports what is missing | no: OpenRegister is its own index, so objects and their table rows cannot diverge; files and their text chunks and embeddings can, and nothing reconciles or reports them |
 | 9.19 | An administrator reindexes a selection of records, and the run is visible while it happens | partial: bulk save and import jobs exist; REQ-SQF-004 rebuilds whole indexes; there is no reindex of a selection with a visible run |
