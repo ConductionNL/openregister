@@ -18,6 +18,11 @@ includes:
     # newly visible; four are real NC 34 API removals. Kept separate so the
     # reason travels with the entries. openregister#2450
     - phpstan-baseline-nc34-ocp.neon
+    # Sixteen findings surfaced by analysing against nextcloud/ocp 35 for NC 35
+    # support. Pre-existing code that is correct at runtime on 32-35; real
+    # NC 35 breaks were fixed in code. Reason at the top of the file.
+    # openregister#4406
+    - phpstan-baseline-nc35-ocp.neon
 
 parameters:
     # App-specific only. The base already sets level, paths, bootstrapFiles,

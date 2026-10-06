@@ -159,7 +159,7 @@ class ExportRunMapper extends QBMapper {
 			->andWhere(
 				$qb->expr()->lte(
 					'expires_at',
-					$qb->createNamedParameter($now, IQueryBuilder::PARAM_DATE)
+					$qb->createNamedParameter($now, IQueryBuilder::PARAM_DATETIME_MUTABLE)
 				)
 			)
 			->andWhere(

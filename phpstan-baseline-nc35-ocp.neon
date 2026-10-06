@@ -1,0 +1,90 @@
+# Sixteen findings surfaced by bumping nextcloud/ocp from ^34 to ^35 for
+# Nextcloud 35 support (openregister#4406).
+#
+# NONE OF THIS IS NEW CODE, and none of it is a runtime break on NC 32-35. Every
+# line listed here is untouched by the NC 35 change; what changed is the API the
+# analyser compares it against. Real NC 35 breaks surfaced by the same bump were
+# fixed in code instead (e.g. Version1Date20260831120000::addTaskIndexes() now
+# documents `ITable|Table`). Kept separate from phpstan-baseline.neon so the
+# reason travels with the entries, the same way phpstan-baseline-nc34-ocp.neon
+# does for the 31 -> 34 bump.
+#
+#   ReportRenderJob.php (1)
+#     OCP 35 documents IRootFolder::getUserFolder() as throwing the (now public)
+#     UserNotFoundException; before 35 it named the server-internal
+#     OC\User\NoUserException, which the analyser cannot resolve and so treated
+#     conservatively. The NotFoundException arm is kept: it is harmless on 35 and
+#     the app still runs on 32-34.
+#
+#   SourcesController.php (3)
+#     OCP 35 types IL10N::t() as returning non-empty-string, so the 403 error
+#     body's inferred type changed from `array{error: string}` to
+#     `array{error: non-empty-string}`. Same pre-existing return-type mismatch as
+#     the `array{error: string}` entries it replaces in phpstan-baseline.neon.
+#
+#   Version1Date20251106000000.php (10)
+#     On NC 35 ISchemaWrapper hands out OCP\DB\Schema\ITable / IColumn wrappers.
+#     The server's OC\DB\Schema\Column::setType() accepts string|DBALType|
+#     ColumnType (OCP only declares the string/ColumnType half), and setComment()
+#     is forwarded to the wrapped Doctrine column through __call(). On NC 32-34
+#     the objects ARE the Doctrine classes. Correct at runtime on 32-35; a
+#     public-API rewrite would have to drop Doctrine\DBAL\Types\Type, which does
+#     not exist as an option on IColumn before 35. Already-applied migration.
+#
+#   FileSharingHandler.php, ObjectSharingService.php (1 + 1)
+#     OCP 35 narrows IShare::setShareType() to the literal union of
+#     IShare::TYPE_* values. Callers pass a validated plain int — the same
+#     finding phpstan-baseline-nc34-ocp.neon already records for
+#     IManager::getSharesBy().
+#
+# This file should shrink once the app's minimum Nextcloud version is 35.
+
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Dead catch \\- OCP\\\\Files\\\\NotFoundException is never thrown in the try block\\.$#"
+			identifier: catch.neverThrown
+			count: 1
+			path: lib/BackgroundJob/ReportRenderJob.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: non\\-empty\\-string\\}, array\\{\\}\\>\\.$#"
+			identifier: return.type
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: non\\-empty\\-string\\}, array\\{\\}\\>\\.$#"
+			identifier: return.type
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: non\\-empty\\-string\\}, array\\{\\}\\>\\.$#"
+			identifier: return.type
+			count: 1
+			path: lib/Controller/SourcesController.php
+
+		-
+			message: "#^Call to an undefined method OCP\\\\DB\\\\Schema\\\\IColumn\\:\\:setComment\\(\\)\\.$#"
+			identifier: method.notFound
+			count: 5
+			path: lib/Migration/Version1Date20251106000000.php
+
+		-
+			message: "#^Parameter \\#1 \\$type of method OCP\\\\DB\\\\Schema\\\\IColumn\\:\\:setType\\(\\) expects 'bigint'\\|'binary'\\|'blob'\\|'boolean'\\|'date'\\|'date_immutable'\\|'datetime'\\|'datetime_immutable'\\|'datetimetz'\\|'datetimetz_immutable'\\|'decimal'\\|'float'\\|'guid'\\|'integer'\\|'json'\\|'smallint'\\|'string'\\|'text'\\|'time'\\|'time_immutable'\\|OCP\\\\DB\\\\Schema\\\\ColumnType, Doctrine\\\\DBAL\\\\Types\\\\Type given\\.$#"
+			identifier: argument.type
+			count: 5
+			path: lib/Migration/Version1Date20251106000000.php
+
+		-
+			message: "#^Parameter \\$shareType of method OCP\\\\Share\\\\IShare\\:\\:setShareType\\(\\) expects 0\\|1\\|2\\|3\\|4\\|6\\|7\\|8\\|9\\|10\\|12\\|13\\|15, int given\\.$#"
+			identifier: argument.type
+			count: 1
+			path: lib/Service/File/FileSharingHandler.php
+
+		-
+			message: "#^Parameter \\#1 \\$shareType of method OCP\\\\Share\\\\IShare\\:\\:setShareType\\(\\) expects 0\\|1\\|2\\|3\\|4\\|6\\|7\\|8\\|9\\|10\\|12\\|13\\|15, int given\\.$#"
+			identifier: argument.type
+			count: 1
+			path: lib/Service/Rbac/ObjectSharingService.php

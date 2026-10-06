@@ -33,20 +33,30 @@ An app adopting AppHost SHALL register OpenRegister's autoload prefix as the fir
 
 ```php
 try {
-    $orPath = \OCP\Server::get(\OCP\App\IAppManager::class)->getAppPath('openregister');
-    \OC_App::registerAutoloading('openregister', $orPath);
+    $appManager = \OCP\Server::get(\OCP\App\IAppManager::class);
+    if ($appManager->isEnabledForAnyone('openregister') === true) {
+        $orLib = rtrim($appManager->getAppPath('openregister'), '/').'/lib/';
+        spl_autoload_register(static function (string $class) use ($orLib): void {
+            if (str_starts_with($class, 'OCA\\OpenRegister\\') === true) {
+                $file = $orLib.str_replace('\\', '/', substr($class, 17)).'.php';
+                if (is_file($file) === true) {
+                    require_once $file;
+                }
+            }
+        });
+    }
 } catch (\Throwable) {
     // OpenRegister absent/disabled — fall through to the degraded path.
 }
 ```
 
-`OC_App::registerAutoloading()` touches only the autoloader and is idempotent (it early-returns on an `$alreadyRegistered` key).
+The prelude SHALL use public API only (`IAppManager::isEnabledForAnyone()` + `getAppPath()` and `spl_autoload_register()`), preferably housed in an `AppInfo\OpenRegisterAutoloader::register()` class that never throws and is idempotent (keepiq#712). It SHALL NOT call `\OC_App::registerAutoloading()`: that is private API and Nextcloud 35 removed it, so the call throws `\Error` into the catch and the AppHost wiring is silently skipped.
 
-An app SHALL NOT substitute `IAppManager::loadApp('openregister')`, which sets `loadedApps[..]=true` and calls `Coordinator::bootApp()`, booting OpenRegister before its own `register()` has run. An app SHALL NOT substitute a relative `include_once` of OpenRegister's `vendor/autoload.php`, which assumes both apps share one apps directory and silently does nothing on a multi-`apps_paths` install.
+An app SHALL NOT substitute `IAppManager::loadApp('openregister')`, which sets `loadedApps[..]=true` and calls `Coordinator::bootApp()`, booting OpenRegister before its own `register()` has run. An app SHALL NOT substitute an `include_once` of OpenRegister's `vendor/autoload.php`, which assumes both apps share one apps directory and silently does nothing on a multi-`apps_paths` install.
 
 The prelude is required regardless of where the app id sorts. Sorting after `openregister` makes an app safe by alphabet alone, which is a property of its name rather than of its design.
 
-Rationale: `OC_App::getEnabledApps()` does `sort($apps)`, and `Coordinator::registerApps()` walks that sorted list calling `OC_App::registerAutoloading($appId, $path)` then `$application->register()` one app at a time. Every app therefore registers before the PSR-4 prefix of every alphabetically-later app exists. Enforced by hydra gate-64 (`apphost-autoload-prelude`).
+Rationale: `OC_App::getEnabledApps()` does `sort($apps)`, and `Coordinator::registerApps()` walks that sorted list registering each app's autoloader then calling `$application->register()` one app at a time. Every app therefore registers before the PSR-4 prefix of every alphabetically-later app exists. Enforced by hydra gate-64 (`apphost-autoload-prelude`).
 
 #### Scenario: A leaf sorting before openregister still wires its AppHost plumbing
 

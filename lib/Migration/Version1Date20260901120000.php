@@ -243,10 +243,10 @@ class Version1Date20260901120000 extends SimpleMigrationStep {
 							'parent_stream_id' => $insert->createNamedParameter(null, IQueryBuilder::PARAM_NULL),
 							'place' => $insert->createNamedParameter($place),
 							'status' => $insert->createNamedParameter((string)($row['status'] ?? FlowRun::STATUS_QUEUED)),
-							'resume_at' => $insert->createNamedParameter($this->dateOrNull(value: ($row['resume_at'] ?? null)), IQueryBuilder::PARAM_DATE),
+							'resume_at' => $insert->createNamedParameter($this->dateOrNull(value: ($row['resume_at'] ?? null)), IQueryBuilder::PARAM_DATETIME_MUTABLE),
 							'next_sequence' => $insert->createNamedParameter($nextSequence, IQueryBuilder::PARAM_INT),
-							'created' => $insert->createNamedParameter($now, IQueryBuilder::PARAM_DATE),
-							'updated' => $insert->createNamedParameter($now, IQueryBuilder::PARAM_DATE),
+							'created' => $insert->createNamedParameter($now, IQueryBuilder::PARAM_DATETIME_MUTABLE),
+							'updated' => $insert->createNamedParameter($now, IQueryBuilder::PARAM_DATETIME_MUTABLE),
 						]
 					);
 				$insert->executeStatement();

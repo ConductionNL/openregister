@@ -207,7 +207,7 @@ class FlowRunStepMapper extends QBMapper {
 			->where(
 				$qb->expr()->lt(
 					'created',
-					$qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATE)
+					$qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATETIME_MUTABLE)
 				)
 			);
 
@@ -238,7 +238,7 @@ class FlowRunStepMapper extends QBMapper {
 			->where(
 				$qb->expr()->lt(
 					'created',
-					$qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATE)
+					$qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATETIME_MUTABLE)
 				)
 			);
 
