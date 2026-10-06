@@ -715,7 +715,8 @@ class EntityRecognitionHandler {
 			$responseData = $this->sendOpenAnonymiserRequest(
 				requestBody: $requestBody,
 				anonEndpoint: $anonEndpoint,
-				useExternal: $useExternal
+				useExternal: $useExternal,
+				authHeaders: $this->openAnonymiserAuthHeaders(fileSettings: $fileSettings)
 			);
 
 			if ($responseData === null) {
@@ -779,12 +780,18 @@ class EntityRecognitionHandler {
 	 * @param array  $requestBody  The analyze request body.
 	 * @param string $anonEndpoint The external endpoint, without a trailing slash; empty when none.
 	 * @param bool   $useExternal  Whether the operator chose the external endpoint.
+	 * @param array<int, string> $authHeaders Credentials for the external endpoint; empty sends none.
 	 *
 	 * @return array|null The response data, or null when OpenAnonymiser could not be reached.
 	 *
 	 * @throws AnalyzeRequestRejectedException When OpenAnonymiser refuses the request.
 	 */
-	private function sendOpenAnonymiserRequest(array $requestBody, string $anonEndpoint, bool $useExternal): ?array {
+	private function sendOpenAnonymiserRequest(
+		array $requestBody,
+		string $anonEndpoint,
+		bool $useExternal,
+		array $authHeaders=[]
+	): ?array {
 		$responseData = null;
 		if ($useExternal === false) {
 			$responseData = $this->anonymisationBackendService->requestOpenAnonymiser(
@@ -811,9 +818,34 @@ class EntityRecognitionHandler {
 		return $this->postAnalyzeRequest(
 			url: $anonEndpoint.'/api/v1/analyze',
 			requestBody: $requestBody,
-			serviceName: 'OpenAnonymiser'
+			serviceName: 'OpenAnonymiser',
+			extraHeaders: $authHeaders
 		);
 	}//end sendOpenAnonymiserRequest()
+
+	/**
+	 * The HTTP Basic header for an external OpenAnonymiser, when configured.
+	 *
+	 * anonymiq can require HTTP Basic on its text routes. With no user name
+	 * configured nothing is sent, which is the behaviour before credentials
+	 * existed. The header is never logged.
+	 *
+	 * @param array $fileSettings The stored file settings.
+	 *
+	 * @return array<int, string> The header lines; empty when no user name is configured.
+	 *
+	 * @spec exclude credential plumbing for the external OpenAnonymiser transport
+	 */
+	private function openAnonymiserAuthHeaders(array $fileSettings): array {
+		$username = trim((string) ($fileSettings['openAnonymiserUsername'] ?? ''));
+		if ($username === '') {
+			return [];
+		}
+
+		$password = $this->settingsService->getOpenAnonymiserPassword();
+
+		return ['Authorization: Basic '.base64_encode($username.':'.$password)];
+	}//end openAnonymiserAuthHeaders()
 
 	/**
 	 * Build the request body for an analyze API call.
@@ -862,12 +894,13 @@ class EntityRecognitionHandler {
 	 * @param string $url The full URL to POST to.
 	 * @param array $requestBody The request body to JSON-encode.
 	 * @param string $serviceName Human-readable service name for log messages.
+	 * @param array<int, string> $extraHeaders Additional header lines, such as credentials.
 	 *
 	 * @return array|null Parsed JSON response array, or null on failure.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) The exception's own status predicate.
 	 */
-	private function postAnalyzeRequest(string $url, array $requestBody, string $serviceName): ?array {
+	private function postAnalyzeRequest(string $url, array $requestBody, string $serviceName, array $extraHeaders=[]): ?array {
 		$ch = curl_init($url);
 		curl_setopt_array(
 			$ch,
@@ -875,10 +908,13 @@ class EntityRecognitionHandler {
 				CURLOPT_RETURNTRANSFER => true,
 				CURLOPT_POST => true,
 				CURLOPT_POSTFIELDS => json_encode($requestBody),
-				CURLOPT_HTTPHEADER => [
-					'Content-Type: application/json',
-					'Accept: application/json',
-				],
+				CURLOPT_HTTPHEADER => array_merge(
+					[
+						'Content-Type: application/json',
+						'Accept: application/json',
+					],
+					$extraHeaders
+				),
 				CURLOPT_TIMEOUT => 30,
 			]
 		);
