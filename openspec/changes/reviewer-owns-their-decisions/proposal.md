@@ -5,9 +5,19 @@ depends_on: [redaction-release-safeguards, access-owner-and-condition-scopes]
 
 # Proposal: reviewer-owns-their-decisions
 
+## Summary
+
+A reviewer edits only their own redaction decisions and comments, and can be barred from seeing another reviewer's.
+
+- Rows: 12.28 (not statutory). The grant on `wooAssessment` is not in this change: it belongs to whichever app ships that schema (D1 moved the Woo request to dossiq), and is open as a follow-up.
+- Wave 1, size M.
+- Dependencies: `openregister/redaction-release-safeguards` (https://github.com/ConductionNL/openregister/issues/4392) for `decidedBy` and `decidedAt`, and `openregister/access-owner-and-condition-scopes` (open, 0 of 5 tasks, no issue yet) for `@creator`.
+- Decision: D1 decides who ships the assessment schema; no decision bears on this change directly.
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
-Row 12.28, "A reviewer edits only their own redactions and comments, and can be barred from seeing another reviewer's", is `no` in our column (`baseline/openwoo.tsv`). `EntityRelationMapper::updateDecisionMetadata()` records the acting user in the immutable audit trail, but `EntityRelationsController::update()` lets any caller who may write the relation's subject change any occurrence, including one another reviewer decided. opencatalogi's `wooAssessment` schema grants read, create, update and delete to `admin` (`lib/Settings/register.d/fix-woo-capability-provisioning.json`), so every administrator edits every other reviewer's assessment, and nothing bars one reviewer from seeing another's.
+Row 12.28, "A reviewer edits only their own redactions and comments, and can be barred from seeing another reviewer's", is `no` in our column (the round 1 baseline). `EntityRelationMapper::updateDecisionMetadata()` records the acting user in the immutable audit trail, but `EntityRelationsController::update()` lets any caller who may write the relation's subject change any occurrence, including one another reviewer decided. opencatalogi's `wooAssessment` schema grants read, create, update and delete to `admin` (`lib/Settings/register.d/fix-woo-capability-provisioning.json`), so every administrator edits every other reviewer's assessment, and nothing bars one reviewer from seeing another's.
 
 A four-eyes review is only four eyes if the second reviewer cannot quietly overwrite the first, and in some organisations a second reviewer must decide without seeing the first decision.
 
