@@ -5,9 +5,19 @@ depends_on: []
 
 # Proposal: redaction-release-safeguards
 
+## Summary
+
+What leaves the building is safe: the engine verifies every redaction is irreversible, finds hidden content in spreadsheets and slides, masks metadata in place, states where the unredacted copy lives and when it is deleted, and can require a person's decision on every finding before release.
+
+- Rows: 4.5, 4.21, 4.22, 4.26 and 4.27 (not statutory). 4.27 "require review" ships off by default until `opencatalogi/woo-review-surface` lands, so the row reads yes once an administrator switches it on.
+- Wave 1, size L.
+- Dependencies: none blocking. Whichever of this change and `openregister/anonymisation-image-seam` (https://github.com/ConductionNL/openregister/issues/4380) lands second adds the image entry to the verifier.
+- Decision: D2 (the irreversibility check and the person-must-check gate live in the engine; filinq retires its own).
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
-Five rows measure whether what leaves the building is safe. Our column (`baseline/openwoo.tsv`):
+Five rows measure whether what leaves the building is safe. Our column (the round 1 baseline):
 
 | row | capability | ours today |
 |---|---|---|
