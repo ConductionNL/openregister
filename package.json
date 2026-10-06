@@ -124,7 +124,7 @@
     "jest-transform-stub": "^2.0.0",
     "postcss": "^8.4.31",
     "postcss-html": "^1.8.1",
-    "prettier": "^3.9.6",
+    "prettier": "^3.9.9",
     "stylelint": "^17.15.0",
     "stylelint-config-recommended-scss": "^17.0.1",
     "stylelint-config-recommended-vue": "^1.6.1",
