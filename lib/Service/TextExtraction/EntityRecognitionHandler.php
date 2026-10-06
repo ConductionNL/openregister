@@ -826,7 +826,7 @@ class EntityRecognitionHandler {
 	/**
 	 * The HTTP Basic header for an external OpenAnonymiser, when configured.
 	 *
-	 * anonymiq can require HTTP Basic on its text routes. With no user name
+	 * The anonymiq service can require HTTP Basic on its text routes. With no user name
 	 * configured nothing is sent, which is the behaviour before credentials
 	 * existed. The header is never logged.
 	 *
