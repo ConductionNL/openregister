@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Migration;
 use Closure;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
+use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
@@ -37,6 +38,16 @@ use OCP\Migration\SimpleMigrationStep;
  * Both applications and organisations now use 'groups' to store arrays of Nextcloud group IDs.
  */
 class Version1Date20251102180000 extends SimpleMigrationStep {
+	/**
+	 * Constructor.
+	 *
+	 * @param IDBConnection $connection Database connection
+	 */
+	public function __construct(
+		private readonly IDBConnection $connection,
+	) {
+	}//end __construct()
+
 	/**
 	 * Pre-schema change: Copy data before modifying structure
 	 *
@@ -121,9 +132,6 @@ class Version1Date20251102180000 extends SimpleMigrationStep {
 
 		$output->info(message: '📋 Migrating data from roles to groups...');
 
-		// Get database connection.
-		$connection = \OCP\Server::get(\OCP\IDBConnection::class);
-
 		try {
 			// Copy data from roles to groups (only where groups is empty or null).
 			// Use try-catch in case roles column doesn't exist.
@@ -131,7 +139,7 @@ class Version1Date20251102180000 extends SimpleMigrationStep {
 				// Update groups column from roles column where groups is empty or null.
 				// Phpcs:ignore Generic.Files.LineLength.MaxExceeded -- SQL query must be on single line.
 				$sql = 'UPDATE `*PREFIX*openregister_organisations` SET `groups` = `roles` WHERE (`groups` = \'[]\' OR `groups` IS NULL) AND `roles` IS NOT NULL';
-				$result = $connection->executeUpdate($sql);
+				$result = $this->connection->executeUpdate($sql);
 
 				if ($result > 0) {
 					$output->info(message: "   ✓ Copied data from roles to groups for {$result} organisations");
