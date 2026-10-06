@@ -359,7 +359,15 @@ class AgentMapper extends QBMapper {
 		// Apply ordering.
 		if (empty($order) === false) {
 			foreach ($order as $field => $direction) {
-				$qb->addOrderBy($field, $direction);
+				// NC 35 types addOrderBy() as (string|..., string|SortDirection|null):
+				// an int key (a list-shaped sort) or a non-string direction is a
+				// TypeError there, so both are normalised here.
+				$sortDirection = 'ASC';
+				if (is_string($direction) === true && strtoupper($direction) === 'DESC') {
+					$sortDirection = 'DESC';
+				}
+
+				$qb->addOrderBy((string)$field, $sortDirection);
 			}
 		}
 
