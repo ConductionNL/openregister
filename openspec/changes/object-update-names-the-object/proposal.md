@@ -54,7 +54,7 @@ on firing again on every import.
 
 ## Impact
 
-- `lib/Db/RegisterMapper.php`, `lib/Service/ActivityService.php`,
+- `lib/Db/RegisterMapper.php`, `lib/Db/RegisterChangeDetector.php` (new), `lib/Service/ActivityService.php`,
   `lib/Activity/ProviderSubjectHandler.php`, `lib/Notification/AnnotationNotifier.php`
 - `l10n/en.*`, `l10n/nl.*` for the new subjects.
 - No API or schema change. A webhook subscribed to `RegisterUpdatedEvent` no

@@ -7,7 +7,7 @@
 
 ## 2. Object activity and notification text
 
-- [ ] 2.1 `ActivityService` adds the schema title to object activity parameters.
-- [ ] 2.2 `ProviderSubjectHandler` renders `{schema} {title} updated` (and created, deleted) when the schema is known.
-- [ ] 2.3 `AnnotationNotifier` drops the register clause when no register name is known.
-- [ ] 2.4 en and nl strings; unit tests for 2.1 to 2.3.
+- [x] 2.1 `ActivityService` adds the schema title to object activity parameters.
+- [x] 2.2 `ProviderSubjectHandler` renders `{schema} {title} updated` (and created, deleted) when the schema is known.
+- [x] 2.3 `AnnotationNotifier` drops the register clause when no register name is known.
+- [x] 2.4 en and nl strings; unit tests for 2.1 to 2.3.

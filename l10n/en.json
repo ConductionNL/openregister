@@ -1,5 +1,14 @@
 {
     "translations": {
+        "%1$s %2$s created": "%1$s %2$s created",
+        "{schema} {title} created": "{schema} {title} created",
+        "%1$s %2$s updated": "%1$s %2$s updated",
+        "{schema} {title} updated": "{schema} {title} updated",
+        "%1$s %2$s deleted": "%1$s %2$s deleted",
+        "{schema} {title} deleted": "{schema} {title} deleted",
+        "Object \"%1$s\" created": "Object \"%1$s\" created",
+        "Object \"%1$s\" updated": "Object \"%1$s\" updated",
+        "Object \"%1$s\" assigned to you": "Object \"%1$s\" assigned to you",
         "3": "3",
         "30": "30",
         "Connect a social or analytics account once. OpenRegister keeps the token and refreshes it, so apps never hold it.": "Connect a social or analytics account once. OpenRegister keeps the token and refreshes it, so apps never hold it.",

@@ -759,80 +759,12 @@ class RegisterMapper extends QBMapper {
 		// Dispatch the update event only when the register actually changed. An
 		// app re-importing its unchanged register (setup wizard, example data)
 		// otherwise told every admin "Register was updated" while they edited an object.
-		if ($this->registerChanged(old: $oldSchema, new: $entity) === true) {
+		if ((new RegisterChangeDetector())->changed(old: $oldSchema, new: $entity) === true) {
 			$this->eventDispatcher->dispatchTyped(new RegisterUpdatedEvent(newRegister: $entity, oldRegister: $oldSchema));
 		}
 
 		return $entity;
 	}//end update()
-
-	/**
-	 * Tell whether a save changed the stored register.
-	 *
-	 * Compares the serialised register before and after the save, leaving out
-	 * the `updated` timestamp: a timestamp bump alone is not a change anyone
-	 * needs to hear about. Scalars are compared as strings, so a schema id
-	 * re-hydrated as "28" equals the stored 28.
-	 *
-	 * @param Entity $old The register as stored before the save.
-	 * @param Entity $new The register after the save.
-	 *
-	 * @return bool True when something other than the timestamp changed.
-	 *
-	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-a-register-save-that-changes-nothing-publishes-nothing
-	 */
-	private function registerChanged(Entity $old, Entity $new): bool {
-		$before = $old->jsonSerialize();
-		$after = $new->jsonSerialize();
-		unset($before['updated'], $after['updated']);
-
-		return $this->normaliseForCompare(value: $before) !== $this->normaliseForCompare(value: $after);
-	}//end registerChanged()
-
-	/**
-	 * Normalise a serialised value so equal content compares equal.
-	 *
-	 * Map keys are sorted, scalars become strings, null stays null and a
-	 * DateTime becomes its ISO 8601 form.
-	 *
-	 * @param mixed $value The value to normalise.
-	 *
-	 * @return mixed The normalised value.
-	 *
-	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-a-register-save-that-changes-nothing-publishes-nothing
-	 */
-	private function normaliseForCompare(mixed $value): mixed {
-		if (is_array($value) === true) {
-			$normalised = [];
-			foreach ($value as $key => $item) {
-				$normalised[(string)$key] = $this->normaliseForCompare(value: $item);
-			}
-
-			if (array_is_list($value) === false) {
-				ksort($normalised);
-			}
-
-			return $normalised;
-		}
-
-		if ($value instanceof \DateTimeInterface) {
-			return $value->format('c');
-		}
-
-		if ($value instanceof \JsonSerializable) {
-			return $this->normaliseForCompare(value: $value->jsonSerialize());
-		}
-
-		if (is_bool($value) === true) {
-			return (string)(int)$value;
-		}
-
-		if (is_scalar($value) === true) {
-			return (string)$value;
-		}
-
-		return $value;
-	}//end normaliseForCompare()
 
 	/**
 	 * Update an existing register from an array of data
