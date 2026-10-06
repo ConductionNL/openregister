@@ -122,7 +122,7 @@ class Version1Date20251102180000 extends SimpleMigrationStep {
 		$output->info(message: '📋 Migrating data from roles to groups...');
 
 		// Get database connection.
-		$connection = \OC::$server->get(\OCP\IDBConnection::class);
+		$connection = \OCP\Server::get(\OCP\IDBConnection::class);
 
 		try {
 			// Copy data from roles to groups (only where groups is empty or null).

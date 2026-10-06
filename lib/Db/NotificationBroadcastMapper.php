@@ -162,8 +162,8 @@ class NotificationBroadcastMapper extends QBMapper {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('b.*')
 			->from($this->getTableName(), 'b')
-			->where($qb->expr()->lte('b.starts_at', $qb->createNamedParameter($moment, IQueryBuilder::PARAM_DATE)))
-			->andWhere($qb->expr()->gte('b.ends_at', $qb->createNamedParameter($moment, IQueryBuilder::PARAM_DATE)))
+			->where($qb->expr()->lte('b.starts_at', $qb->createNamedParameter($moment, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->andWhere($qb->expr()->gte('b.ends_at', $qb->createNamedParameter($moment, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
 			->andWhere(
 				$qb->createFunction(
 					'NOT EXISTS (SELECT 1 FROM `*PREFIX*openregister_notif_bc_receipt` r '
