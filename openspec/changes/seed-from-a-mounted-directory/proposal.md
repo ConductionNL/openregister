@@ -5,9 +5,19 @@ depends_on: [config-import-seed-objects]
 
 # Proposal: seed-from-a-mounted-directory
 
+## Summary
+
+An installation is seeded from data files in a mounted directory at start-up, without anyone using the admin, and reports what it imported.
+
+- Rows: 13.31 (not statutory).
+- Wave 2, size S.
+- Dependencies: `openregister/config-import-seed-objects` (open, 0 of 10 tasks, no issue yet), which makes the importer read top-level `objects`.
+- No Ruben decision bears on it.
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
-Row 13.31, "An installation is seeded from data files at start-up, without anyone using the admin", is `partial` in our column (`baseline/openwoo.tsv`). opencatalogi's `InitializeSettings` repair step imports the app's own shipped `publication_register.json` and its fragments at install and after migration, with no admin action. Those are the app's files. There is no directory an operator mounts with the installation's own registers, schemas and objects to be loaded at start-up; that data goes in through the import API or the admin screen.
+Row 13.31, "An installation is seeded from data files at start-up, without anyone using the admin", is `partial` in our column (the round 1 baseline). opencatalogi's `InitializeSettings` repair step imports the app's own shipped `publication_register.json` and its fragments at install and after migration, with no admin action. Those are the app's files. There is no directory an operator mounts with the installation's own registers, schemas and objects to be loaded at start-up; that data goes in through the import API or the admin screen.
 
 A municipality deploying with Docker or Kubernetes wants its themes, its organisation records and its own registers present on the first start, from files in its own repository, the way it provisions everything else.
 
