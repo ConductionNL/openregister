@@ -5,9 +5,19 @@ depends_on: []
 
 # Proposal: near-duplicate-documents-by-text
 
+## Summary
+
+Near-identical documents are grouped by their text, so a reviewer does not read the same text twice.
+
+- Rows: 19.5 (not statutory).
+- Wave 1, size M.
+- Dependencies: none blocking. `dossiq/woo-request-corpus-collection` and `dossiq/woo-review-triage` read the endpoint; without them the duplicates review in OpenRegister shows the groups.
+- No Ruben decision bears on it.
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
-Row 19.5, "Near-identical documents are grouped, so the same text is not read twice", is `partial` in our column (`baseline/openwoo.tsv`). `lib/Service/Quality/DuplicateDetectionService.php` groups objects by declared match rules (`exact`, `normalized`, `levenshtein` over object properties, with blocking keys from `x-openregister-dedup`). It never looks at a document's text. A Woo request gathers the same mail as a forwarded copy, a reply quoting it and a PDF print; their file names and object properties differ and their text is near-identical, so a reviewer reads it three times.
+Row 19.5, "Near-identical documents are grouped, so the same text is not read twice", is `partial` in our column (the round 1 baseline). `lib/Service/Quality/DuplicateDetectionService.php` groups objects by declared match rules (`exact`, `normalized`, `levenshtein` over object properties, with blocking keys from `x-openregister-dedup`). It never looks at a document's text. A Woo request gathers the same mail as a forwarded copy, a reply quoting it and a PDF print; their file names and object properties differ and their text is near-identical, so a reviewer reads it three times.
 
 ## What changes
 
