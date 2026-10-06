@@ -5,9 +5,19 @@ depends_on: []
 
 # Proposal: large-file-handling
 
+## Summary
+
+Large files become a product promise: a stated extraction ceiling, uploads in parts with resume, and a completeness check by size and SHA-256 before the file exists.
+
+- Rows: 16.7, 17.13 and 17.14 (not statutory).
+- Wave 1, size L.
+- Dependencies: none blocking. Once `openregister/upload-malware-scan` (https://github.com/ConductionNL/openregister/issues/4399) has landed, an assembled file is scanned too.
+- No Ruben decision bears on it.
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
-Three rows ask that large files be a product promise rather than a platform accident. Our column (`baseline/openwoo.tsv`):
+Three rows ask that large files be a product promise rather than a platform accident. Our column (the round 1 baseline):
 
 | row | capability | ours today |
 |---|---|---|
