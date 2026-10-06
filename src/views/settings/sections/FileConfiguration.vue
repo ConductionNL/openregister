@@ -713,10 +713,15 @@
 									autocomplete="new-password"
 									:placeholder="
 										fileSettings.openAnonymiserPasswordSet
-											? t('openregister', 'A password is stored')
+											? t(
+													'openregister',
+													'A password is stored',
+												)
 											: ''
 									"
-									@update:modelValue="openAnonymiserPasswordChanged = true"
+									@update:modelValue="
+										openAnonymiserPasswordChanged = true
+									"
 									@blur="saveOpenAnonymiserPassword">
 									<template #trailing-button-icon>
 										<KeyIcon :size="20" />
