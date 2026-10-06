@@ -5,9 +5,19 @@ depends_on: []
 
 # Proposal: files-create-from-url
 
+## Summary
+
+A caller can create a file from a URL: OpenRegister fetches the bytes itself behind the SSRF guard, records where they came from, and refuses with 422 when the fetch fails.
+
+- Rows: 1.18 (not statutory).
+- Wave 1, size S.
+- Dependencies: none. `opencatalogi/integration-publish-by-reference` calls this endpoint when the editor chooses copy.
+- Decision: D5 for 1.18 (both link and copy, chosen explicitly; link stays opencatalogi REQ-PBR-001).
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
-Row 1.18, "A caller hands the product a URL, and the product fetches the document's bytes itself", is `partial` in our column (`baseline/openwoo.tsv`). `FilePropertyHandler::processStringFileInput()` already fetches bytes from an http(s) URL behind `SecurityService::assertSafeFetchUrl()` with redirects off, but only for a file-typed schema property. `POST /api/objects/{register}/{schema}/{id}/files` (`FilesController::create()`) requires `content` and refuses a URL, and opencatalogi's publication schema has no file-typed property, so the stated case (hand a publication a document by URL) does not work.
+Row 1.18, "A caller hands the product a URL, and the product fetches the document's bytes itself", is `partial` in our column (the round 1 baseline). `FilePropertyHandler::processStringFileInput()` already fetches bytes from an http(s) URL behind `SecurityService::assertSafeFetchUrl()` with redirects off, but only for a file-typed schema property. `POST /api/objects/{register}/{schema}/{id}/files` (`FilesController::create()`) requires `content` and refuses a URL, and opencatalogi's publication schema has no file-typed property, so the stated case (hand a publication a document by URL) does not work.
 
 Decision D5 (Ruben, 2026-10-05) resolved the conflict with opencatalogi's `integration-publish-by-reference` REQ-PBR-001, which stores a URL as a reference and never fetches it: both behaviours exist, and the caller chooses explicitly. Link stays REQ-PBR-001 in opencatalogi. Copy is this change, in OpenRegister.
 
