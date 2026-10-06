@@ -98,18 +98,23 @@ Reuse these ids. To add one, open a PR on this page.
 | Id | Standard |
 |---|---|
 | `zgw-zaken`, `zgw-documenten`, `zgw-catalogi`, `zgw-besluiten`, `zgw-notificaties`, `zgw-autorisaties` | VNG ZGW APIs |
+| `objecten-api`, `objecttypen-api`, `klantinteracties` | VNG Common Ground APIs |
 | `stuf-zkn`, `stuf-bg` | StUF (SOAP) |
 | `cmmn`, `dmn`, `bpmn` | OMG case, decision and process models |
 | `ori`, `popolo`, `akoma-ntoso` | Open Raadsinformatie, Popolo, Akoma Ntoso |
 | `dcat-ap-nl`, `ooapi`, `schema-org`, `diwoo`, `tooi` | Open data and publication |
-| `ubl`, `en16931`, `nlcius`, `peppol`, `factur-x`, `sepa`, `xbrl` | Invoicing, payments and reporting |
+| `ubl`, `en16931`, `nlcius`, `peppol`, `factur-x`, `sepa`, `xbrl`, `xaf` | Invoicing, payments and reporting |
 | `mdto`, `tmlo`, `pdf-a` | Archiving |
-| `haal-centraal-brp`, `bag`, `kvk`, `pdok`, `dso` | Dutch base registries and Omgevingswet |
+| `haal-centraal-brp`, `haal-centraal-brk`, `haal-centraal-woz`, `bag`, `kvk`, `pdok`, `dso` | Dutch base registries and Omgevingswet |
+| `berichtenbox` | MijnOverheid Berichtenbox |
 | `fsc`, `digikoppeling`, `cloudevents` | Connectivity and events |
-| `lti`, `open-badges`, `qti`, `elm` | Education |
-| `oidc`, `openid4vci`, `webauthn`, `fido-cxp` | Identity and credentials |
+| `lti`, `open-badges`, `w3c-vc`, `qti`, `elm`, `xapi`, `cmi5`, `common-cartridge`, `edukoppeling`, `oso`, `uwlr` | Education |
+| `oidc`, `openid4vci`, `oauth-jwt-bearer`, `webauthn`, `fido-cxf`, `fido-cxp`, `x509` | Identity and credentials |
 | `openapi`, `json-schema`, `json-ld`, `skos`, `graphql`, `urn`, `mcp`, `ocm` | Generic API and data |
-| `nl-design-system`, `dtcg` | Design tokens |
+| `nl-design-system`, `dtcg`, `wcag` | Design tokens and accessibility |
+| `icalendar`, `rss`, `atom` | Calendars and feeds |
+| `openai-api` | LLM provider APIs (OpenAI-compatible) |
+| `opencatalogi-federation` | OpenCatalogi directory and federated publications protocol |
 | `archimate`, `cyclonedx`, `spdx` | Architecture and software inventory |
 
 ## Admin controls
