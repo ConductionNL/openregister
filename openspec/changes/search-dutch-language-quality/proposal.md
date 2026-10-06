@@ -5,9 +5,19 @@ depends_on: [redaction-release-safeguards]
 
 # Proposal: search-dutch-language-quality
 
+## Summary
+
+Search behaves for Dutch text on PostgreSQL: Dutch stemming, and a content snippet taken only from the redacted copy of a public document.
+
+- Rows: 6.32 and 6.33 (not statutory).
+- Wave 1, size S.
+- Dependencies: `openregister/redaction-release-safeguards` (https://github.com/ConductionNL/openregister/issues/4392) supplies the verdict a snippet requires; until it lands content hits get no snippet.
+- Decisions: D6 (PostgreSQL `dutch`, PostgreSQL only, stated; MySQL keeps substring matching) and D5 for 6.33 (passage from the redacted copy, public documents only).
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
-Two rows ask that search behave for Dutch text. Our column (`baseline/openwoo.tsv`):
+Two rows ask that search behave for Dutch text. Our column (the round 1 baseline):
 
 | row | capability | ours today |
 |---|---|---|
