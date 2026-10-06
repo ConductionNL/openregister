@@ -5,9 +5,19 @@ depends_on: []
 
 # Proposal: case-insensitive-ordering
 
+## Summary
+
+Ordering on a string property ignores letter case on PostgreSQL and MySQL alike, with a total order so paging stays stable.
+
+- Rows: 6.27 (not statutory).
+- Wave 1, size S.
+- Dependencies: none.
+- No Ruben decision bears on it.
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
-Row 6.27, "Sorting and matching ignore letter case throughout", is `partial` in our column (`baseline/openwoo.tsv`): OpenRegister's search matches case-insensitively (`ILIKE`), but ordering is whatever the database collation does, and nothing asserts it. On PostgreSQL with a C or byte-order collation, "aanvraag" sorts after "Zienswijze"; on MariaDB with a `_ci` collation it does not. The same list sorts differently per installation, and a citizen paging through publications alphabetically misses records.
+Row 6.27, "Sorting and matching ignore letter case throughout", is `partial` in our column (the round 1 baseline): OpenRegister's search matches case-insensitively (`ILIKE`), but ordering is whatever the database collation does, and nothing asserts it. On PostgreSQL with a C or byte-order collation, "aanvraag" sorts after "Zienswijze"; on MariaDB with a `_ci` collation it does not. The same list sorts differently per installation, and a citizen paging through publications alphabetically misses records.
 
 ## What changes
 
