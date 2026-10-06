@@ -98,3 +98,42 @@ naming both.
 - **WHEN** that label is used as a field name
 - **THEN** the query is refused, naming both properties
 - @e2e exclude {resolution behaviour, covered by unit tests}
+
+### Requirement: The register is reconciled against its search index on a schedule (REQ-SQF-006)
+
+The consistency check SHALL include five index probes: `index-file-missing` (a file in extraction scope with no chunks and no recorded skip status), `index-chunk-orphaned` (a chunk whose source file or object no longer exists), `index-chunk-stale` (a chunk older than its source's last modification), `index-embedding-missing` (a chunk without an embedding while vectorisation is enabled) and `index-embedding-orphaned` (an embedding whose chunk is gone). A daily background job SHALL run them and store the report with its run time. The operations console SHALL show each probe's count, up to 20 sample ids and the last run, and SHALL offer the repair: queue extraction for missing and stale, delete orphans. Probes SHALL be read-only.
+
+#### Scenario: an administrator sees what the index is missing
+- **GIVEN** three files in extraction scope that never got chunks and two chunks whose file was deleted
+- **WHEN** the nightly reconciliation has run and an administrator opens the operations console
+- **THEN** it shows three missing files and two orphaned chunks with their ids and the time of the run
+
+#### Scenario: repairing missing files queues their extraction
+<!-- @e2e exclude Covered by PHPUnit IndexReconciliationTest::testRepairQueuesExtractionForMissingFiles through ConsistencyRepairService. -->
+
+- **GIVEN** the report above
+- **WHEN** the administrator repairs the missing-file probe
+- **THEN** an extraction job is queued for each of the three files and nothing else changes
+
+#### Scenario: the check writes nothing
+<!-- @e2e exclude Covered by the existing ConsistencyCheckWouldWriteException guard test, extended to the five probes. -->
+
+- **GIVEN** the five probes
+- **WHEN** they run
+- **THEN** no table they inspect is written
+
+### Requirement: An administrator reindexes a selection and watches it run (REQ-SQF-007)
+
+`POST /api/operations/reindex` SHALL be administrator only and SHALL accept exactly one selection: a register and schema, a register and schema with object list filters, or a list of object ids. It SHALL resolve the selection, refuse more than 50,000 objects with 400, and queue one recorded run that re-extracts each object's text chunks and each attached file's text and embeddings. The run SHALL appear in `GET /api/operations/runs` with `processed`, `total`, `failed` and the failed ids with reasons, updated at least every 100 objects while it runs, and the operations console SHALL show it live.
+
+#### Scenario: an administrator reindexes one request's documents
+- **GIVEN** 240 publications of one Woo request selected by the filter `wooVerzoek=2026-118`
+- **WHEN** an administrator starts a reindex of that selection from the operations console
+- **THEN** a run appears with total 240, its processed count rises while it runs, and it ends with processed 240 and the failures named
+
+#### Scenario: a selection too large is refused
+<!-- @e2e exclude Covered by PHPUnit ReindexSelectionTest::testMoreThanFiftyThousandIsRefused. -->
+
+- **GIVEN** a selection resolving to 60,000 objects
+- **WHEN** it is posted
+- **THEN** the response is 400 naming the whole-index rebuild

@@ -183,3 +183,34 @@ withdrawing and locking SHALL be audit facts.
 - **GIVEN** a locked note
 - **WHEN** an edit is attempted
 - **THEN** it is refused, naming the lock
+
+### Requirement: File writes honour the frozen and archived marker (REQ-OAS-007)
+
+Every write to a file attached to a frozen or archived object SHALL be refused: creating, replacing, updating, renaming, moving out or in, deleting, locking and unlocking, through the OpenRegister file API and through Nextcloud Files or WebDAV in the object's folder. The refusal SHALL use `ObjectStateWriteException` and SHALL name the state, the actor, the moment and the reason from the marker; the API SHALL answer 409 (`423` is not used, so clients keep one code for a state refusal). Reading, downloading and previewing SHALL stay allowed. When the owning object of a node inside the register folder tree cannot be resolved, the write SHALL be refused.
+
+#### Scenario: a withdrawn publication's attachment cannot be replaced
+- **GIVEN** a publication frozen on withdrawal by `functioneel-beheer` with reason "ingetrokken, besluit 2026-114"
+- **WHEN** an officer tries to upload a new version of its attachment in the publication's files tab
+- **THEN** the upload is refused with a message naming the freeze, who froze it, when and the reason
+- **AND** the attachment can still be downloaded
+
+#### Scenario: a WebDAV write into the frozen folder is aborted
+<!-- @e2e exclude WebDAV door; covered by PHPUnit FrozenNodeWriteListenerTest::testAWriteIntoAFrozenObjectFolderIsAborted with the real BeforeNodeWrittenEvent, and by a Newman PUT to remote.php/dav. -->
+
+- **GIVEN** a frozen delivered set whose folder holds `levering-manifest.pdf`
+- **WHEN** a user overwrites that file through WebDAV
+- **THEN** the request fails and the file's bytes are unchanged
+
+#### Scenario: unfreezing lifts the refusal
+<!-- @e2e exclude Covered by PHPUnit FileWriteGuardTest::testAnUnfrozenObjectAcceptsFileWritesAgain. -->
+
+- **GIVEN** a frozen object that is then unfrozen
+- **WHEN** a file is uploaded to it
+- **THEN** the upload succeeds
+
+#### Scenario: an unresolvable owner fails closed
+<!-- @e2e exclude Covered by PHPUnit FrozenNodeWriteListenerTest::testAnUnresolvableOwnerInTheRegisterTreeIsRefused. -->
+
+- **GIVEN** a node inside the register folder tree whose owning object cannot be resolved
+- **WHEN** a write to it is attempted
+- **THEN** the write is refused and the refusal is logged with the node id

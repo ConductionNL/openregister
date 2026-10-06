@@ -14,6 +14,11 @@ gets the handler's whole desk. This change adds a grant on a token and on a
 Consumer: registers, schemas, verbs and an optional row condition, which
 the permission handler intersects with the user's rights on every check.
 
+- Woo programme (wave 1): this change closes row 12.19 (none statutory). Rows 12.20 and 13.11, and the service account (REQ-SAT-004, task C40.3), moved to the second part of this chain, `openregister/scoped-api-tokens-machine-callers` (https://github.com/ConductionNL/openregister/issues/4411), built after this one.
+- Dependencies: none in the Woo programme. Whichever of this change and `openregister/rights-administration-hardening` (https://github.com/ConductionNL/openregister/issues/4395) lands second calls its `GrantCeiling` from the token issue path.
+- No Ruben decision bears on it.
+- Build rules: openspec/woo-build-rules.md
+
 ## Ledger rows
 
 | row | capability | rating | size |
@@ -158,3 +163,22 @@ invisible to validate, list and archive, and `openspec archive` refuses
 any delta against the spec until it is repaired. The original proposal
 already noted the same requirement as invisible. It is on a line neither
 this change nor its extension touches, so it belongs to the debt sweep.
+
+## Woo capability programme amendment (2026-10-05)
+
+The Woo capability programme (round 1 build plan, wave 1) amends this change with three rows. Rows 12.20 and 13.11, with what the amendment adds for them below, moved to `scoped-api-tokens-machine-callers` to keep this change at 20 tasks or fewer; this change keeps 12.19. Re-read on `development` at 1dc6a4667 immediately before writing: the change is open (tasks 1.1c, 1.1d, 2.1c, 2.2, 3.1, 4.1, 4.2b and C40.2b to C40.7 open). Nothing already done is rewritten.
+
+| row | capability | ours today (the round 1 baseline) |
+|---|---|---|
+| 12.19 | A machine credential is scoped, and a call outside its scope is refused rather than ignored | partial: the Consumer grant is built and refuses outside its verbs and schemas (#3913); the `match` row condition is carried and not evaluated (task 1.1d), and the personal token store is open (1.1c) |
+| 12.20 | A call that does not identify the acting human behind it is refused, not logged as anonymous | no: nothing requires a caller to name the acting human |
+| 13.11 | A machine credential is provisioned, listed, named with an owner to contact, and revoked, without a developer | partial: a user creates, lists and revokes their own Nextcloud app passwords; no administrator surface provisions a machine credential with a named contact; REQ-SAT-004 (service account owned by a team) has no implementation |
+
+12.19 is covered as written: it is closed when tasks 1.1d and 2.1c are done and the scenario "a supplier reads only its own cases" passes through the route. The amendment adds a task that proves it through the route.
+
+What the amendment adds:
+
+- **Acting human (12.20).** A setting `api.requireActingHuman` (instance, `off` by default) and a schema annotation `x-openregister-acting-human: required` make a write by a token, a Consumer, a service account or a system caller without a named human refused with 403. The human is named in the header `X-OpenRegister-Acting-User` and verified with `DelegationResolver::resolve()` against an active delegation grant from that user to the calling principal (the existing `or-delegation-grants` consent). A named human without a grant is refused the same way. A verified write records `actingUser` and `actorVia` on its audit row, which is also task 2.2's `actorVia`. Reads are not affected. A session user acting for themself is the acting human and is never refused.
+- **Machine credentials an administrator manages (13.11).** REQ-SAT-004's service account is built: an OpenRegister principal backed by a Nextcloud user that cannot sign in interactively, owned by a group (the team) and carrying a contact (name and e-mail) and a purpose. `/api/admin/machine-credentials` lets an administrator provision a service account and issue its token (grant and end date required, the token shown once), list every machine credential on the instance (service account tokens and Consumers) with owner team, contact, grant summary, expiry and last use, and revoke any one. A page under the OpenRegister administration settings does the same without a developer. Every provision, issue and revoke writes an administrative audit row.
+
+Dependencies: `rights-administration-hardening` (wave 1) calls its `GrantCeiling` from the token issue path; whichever lands second wires it. The delegation grants are built (`openspec/specs/delegation-grants`). No other app is called.

@@ -71,25 +71,6 @@ the actor and the new end date.
 - **THEN** the holder is notified, naming the token and the date
 - @e2e exclude {warning over time, covered by unit tests with a clock fixture}
 
-### Requirement: A service account is a principal owned by a team (REQ-SAT-004)
-
-An integration MAY hold a service account: a principal that carries grants
-and tokens, is owned by a team rather than by a person, and cannot sign in
-interactively. Its tokens SHALL follow every rule an ordinary token
-follows, including the end date.
-
-#### Scenario: an integration survives a leaver
-
-- **GIVEN** a service account owned by a team, whose creator leaves
-- **WHEN** the creator's account is disabled
-- **THEN** the service account and its tokens keep working
-
-#### Scenario: a service account cannot sign in
-
-- **GIVEN** a service account
-- **WHEN** an interactive sign-in is attempted with it
-- **THEN** it is refused
-
 ### Requirement: A token carries its own rate limit, and outbound destinations are allowlisted (REQ-SAT-005)
 
 A token MAY carry a rate limit set at issue. A call over the limit SHALL
