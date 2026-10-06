@@ -278,7 +278,7 @@ class AvgRetentionService {
 				->having(
 					'MAX(created) < ' . $qb->createNamedParameter(
 						$cutoff,
-						IQueryBuilder::PARAM_DATE
+						IQueryBuilder::PARAM_DATETIME_MUTABLE
 					)
 				);
 

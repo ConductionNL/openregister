@@ -188,7 +188,7 @@ class FlowClaimMapper extends QBMapper {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())
-			->where($qb->expr()->lt('claimed_at', $qb->createNamedParameter($before, IQueryBuilder::PARAM_DATE)))
+			->where($qb->expr()->lt('claimed_at', $qb->createNamedParameter($before, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
 			->orderBy('claimed_at', 'ASC')
 			->setMaxResults($limit);
 

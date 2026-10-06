@@ -87,7 +87,7 @@ class StateHistoryMapper extends QBMapper {
 	public function closeOpenInterval(string $objectUuid, string $property, DateTimeInterface $leftAt): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName())
-			->set('left_at', $qb->createNamedParameter($leftAt, IQueryBuilder::PARAM_DATE))
+			->set('left_at', $qb->createNamedParameter($leftAt, IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->eq('property', $qb->createNamedParameter($property)))
 			->andWhere($qb->expr()->isNull('left_at'));
@@ -144,8 +144,8 @@ class StateHistoryMapper extends QBMapper {
 		$qb->selectDistinct('object_uuid')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('property', $qb->createNamedParameter($property)))
-			->andWhere($qb->expr()->gte('entered_at', $qb->createNamedParameter($after, IQueryBuilder::PARAM_DATE)))
-			->andWhere($qb->expr()->lte('entered_at', $qb->createNamedParameter($before, IQueryBuilder::PARAM_DATE)))
+			->andWhere($qb->expr()->gte('entered_at', $qb->createNamedParameter($after, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->andWhere($qb->expr()->lte('entered_at', $qb->createNamedParameter($before, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
 			->setMaxResults(self::CANDIDATE_LIMIT);
 
 		return $this->collectUuids(queryBuilder: $qb);
@@ -189,7 +189,7 @@ class StateHistoryMapper extends QBMapper {
 		$qb->delete($this->getTableName())
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->isNotNull('left_at'))
-			->andWhere($qb->expr()->lte('left_at', $qb->createNamedParameter($horizon, IQueryBuilder::PARAM_DATE)));
+			->andWhere($qb->expr()->lte('left_at', $qb->createNamedParameter($horizon, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
 
 		return (int)$qb->executeStatement();
 	}//end pruneClosedIntervalsBefore()

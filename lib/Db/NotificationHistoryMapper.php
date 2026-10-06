@@ -339,7 +339,7 @@ class NotificationHistoryMapper extends QBMapper {
 		$qb->andWhere(
 			$qb->expr()->orX(
 				$qb->expr()->isNull('snoozed_until'),
-				$qb->expr()->lte('snoozed_until', $qb->createNamedParameter($asOf, IQueryBuilder::PARAM_DATE))
+				$qb->expr()->lte('snoozed_until', $qb->createNamedParameter($asOf, IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			)
 		);
 
@@ -363,7 +363,7 @@ class NotificationHistoryMapper extends QBMapper {
 	public function markRead(int $id, string $recipient, ?DateTime $readAt = null): bool {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName())
-			->set('read_at', $qb->createNamedParameter(($readAt ?? new DateTime()), IQueryBuilder::PARAM_DATE))
+			->set('read_at', $qb->createNamedParameter(($readAt ?? new DateTime()), IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->eq('recipient', $qb->createNamedParameter($recipient)))
 			->andWhere($qb->expr()->isNull('read_at'));
@@ -397,7 +397,7 @@ class NotificationHistoryMapper extends QBMapper {
 	): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName())
-			->set('read_at', $qb->createNamedParameter(($readAt ?? new DateTime()), IQueryBuilder::PARAM_DATE))
+			->set('read_at', $qb->createNamedParameter(($readAt ?? new DateTime()), IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			->where($qb->expr()->eq('recipient', $qb->createNamedParameter($recipient)))
 			->andWhere($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->isNull('read_at'));
@@ -424,7 +424,7 @@ class NotificationHistoryMapper extends QBMapper {
 	public function snooze(int $id, string $recipient, DateTime $until): bool {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName())
-			->set('snoozed_until', $qb->createNamedParameter($until, IQueryBuilder::PARAM_DATE))
+			->set('snoozed_until', $qb->createNamedParameter($until, IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->eq('recipient', $qb->createNamedParameter($recipient)));
 
@@ -450,7 +450,7 @@ class NotificationHistoryMapper extends QBMapper {
 	public function archive(int $id, string $recipient, ?DateTime $archivedAt = null): bool {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName())
-			->set('archived_at', $qb->createNamedParameter(($archivedAt ?? new DateTime()), IQueryBuilder::PARAM_DATE))
+			->set('archived_at', $qb->createNamedParameter(($archivedAt ?? new DateTime()), IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->eq('recipient', $qb->createNamedParameter($recipient)));
 
@@ -474,7 +474,7 @@ class NotificationHistoryMapper extends QBMapper {
 	public function archiveByObject(string $objectUuid, ?DateTime $archivedAt = null): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName())
-			->set('archived_at', $qb->createNamedParameter(($archivedAt ?? new DateTime()), IQueryBuilder::PARAM_DATE))
+			->set('archived_at', $qb->createNamedParameter(($archivedAt ?? new DateTime()), IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->isNull('archived_at'));
 

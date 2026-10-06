@@ -1974,27 +1974,12 @@ parameters:
 			path: lib/Controller/SourcesController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:create\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
-			count: 1
-			path: lib/Controller/SourcesController.php
-
-		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/SourcesController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:destroy\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
-			count: 1
-			path: lib/Controller/SourcesController.php
-
-		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\<string, mixed\\>, array\\{\\}\\>\\.$#"
-			count: 1
-			path: lib/Controller/SourcesController.php
-
-		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\SourcesController\\:\\:update\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, OCA\\\\OpenRegister\\\\Db\\\\Source, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/SourcesController.php
 
