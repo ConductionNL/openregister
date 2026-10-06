@@ -5,9 +5,19 @@ depends_on: []
 
 # Proposal: anonymisation-image-seam
 
+## Summary
+
+OpenRegister gets the seam that finds and burns regions in page images, standalone images and images inside office files, so a scan is redacted like text and an image nobody could look at is never reported clean.
+
+- Rows: 4.13 (not statutory).
+- Wave 1, size L.
+- Dependencies: none. Consumers `anonymiq/object-detection-in-page-images` and `filinq/image-redaction` (wave 2) plug into the seam; with anonymiq absent every run records `objectDetection: not-run` with the reason.
+- Decisions: D6 (the seam is OpenRegister's, the detector anonymiq's) and D5 (faces and plates come only from a detector).
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
-Row 4.13, "Formats other than PDF are redacted, including office files and images", is `partial` in our column (`baseline/openwoo.tsv`): OpenRegister redacts PDF text (`PdfTextReplacer`) and office text (`DocxSanitizer`, `OdtSanitizer`), and has no image redaction path at all. A scanned letter, a photo of a signed form or an image pasted into a Word file goes out as it came in.
+Row 4.13, "Formats other than PDF are redacted, including office files and images", is `partial` in our column (the round 1 baseline): OpenRegister redacts PDF text (`PdfTextReplacer`) and office text (`DocxSanitizer`, `OdtSanitizer`), and has no image redaction path at all. A scanned letter, a photo of a signed form or an image pasted into a Word file goes out as it came in.
 
 Decision D6 (Ruben, 2026-10-05) gave this an owner split: OpenRegister owns the seam every redaction path uses, and anonymiq owns the vision model (`anonymiq/object-detection-in-page-images`, row 4.20, wave 2). Decision D5 keeps filinq's `image-redaction` scope for now: signatures in, faces and plates out until a detector exists, which is what the anonymiq change adds through this seam. OpenRegister has no OCR of its own; OCR text reaches it through `TextExtractionService::extractFromProvidedText()` (#2033), so this change lets that input carry word positions.
 
