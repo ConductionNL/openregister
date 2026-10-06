@@ -5,9 +5,20 @@ depends_on: [anonymiser-backend-selection]
 
 # Proposal: anonymisation-discloses-itself
 
+## Summary
+
+The anonymisation detector states what it is built from, how accurate it is measured to be, when it last changed and what each service behind it does with the text, and its confidence threshold becomes an organisation setting.
+
+- Rows: 14.13, 14.14, 14.16 and 14.17 (none statutory). 13.22 and 14.18 moved to the second part of this chain, `openregister/anonymisation-discloses-itself-pipeline` (https://github.com/ConductionNL/openregister/issues/4409), which is built after this one.
+- Wave 1, size M.
+- Dependencies: none in the Woo programme. Extends `openregister/anonymiser-backend-selection` (https://github.com/ConductionNL/openregister/issues/2738, 35 of 37 tasks done), whose backend-state surface this builds on.
+- Consumers: `openregister/detection-knows-the-person` (https://github.com/ConductionNL/openregister/issues/4385) and `filinq/anonymization-review-workbench` read `anonymisation.confidenceThreshold`.
+- Decision: D10 (Ruben, 2026-10-05) unflagged 14.13 to 14.19 as compliance disclosures for the detector the stack already runs.
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
-The Woo capability programme (round 1, plan `woo-round1/mi/opencatalogi/_round1/build-plan/plan.md`) measured our stack against six rows about what the anonymisation pipeline says about itself. Our column today, from `baseline/openwoo.tsv`:
+The Woo capability programme (round 1 build plan) measured our stack against six rows about what the anonymisation pipeline says about itself. Our column today, from the round 1 baseline:
 
 | row | capability | ours today |
 |---|---|---|
@@ -28,8 +39,8 @@ The confidence threshold is also a literal today (`'confidence_threshold' => 0.5
 - `NlPatternSet` (and every `JurisdictionPatternSet`) declares a version and a change date as public constants.
 - A shipped synthetic evaluation corpus and `occ openregister:anonymisation:evaluate` measure precision and recall per entity type for the active backend. The result is stored with the detector version and shown in backend-state. A result for another detector version is never shown as current.
 - An administrator states, per backend, whether submitted text may be used for training and what the service retains. The internal ExApp is declared `excluded` and `none` by the product.
-- A disclosure record is written per document for every external call that carries its text: service, host, moment, byte count.
-- A pipeline report lists every content-altering step (anonymiser, PDF text replacer, PDF metadata sanitiser, DOCX sanitiser, ODT sanitiser, and the XLSX and PPTX sanitisers once `redaction-release-safeguards` adds them) with its configured state, and each run records whether each step ran.
+- A disclosure record is written per document for every external call that carries its text: service, host, moment, byte count. Moved to `anonymisation-discloses-itself-pipeline`.
+- A pipeline report lists every content-altering step (anonymiser, PDF text replacer, PDF metadata sanitiser, DOCX sanitiser, ODT sanitiser, and the XLSX and PPTX sanitisers once `redaction-release-safeguards` adds them) with its configured state, and each run records whether each step ran. Moved to `anonymisation-discloses-itself-pipeline`.
 - `anonymisation.confidenceThreshold` becomes a file setting (default 0.5, the value used today), read at request time.
 
 ## What does not change
@@ -44,4 +55,4 @@ The confidence threshold is also a literal today (`'confidence_threshold' => 0.5
 
 ## Wave and decision
 
-Wave 1, size M. Implements D10 (14.13 to 14.19 unflagged). Closes 13.22, 14.13, 14.14, 14.16, 14.17, 14.18.
+Wave 1, size M. Implements D10 (14.13 to 14.19 unflagged). Closes 14.13, 14.14, 14.16 and 14.17. 13.22 and 14.18 are closed by `anonymisation-discloses-itself-pipeline`.

@@ -16,18 +16,7 @@
 ## 3. Statements (REQ-ADI-003)
 
 - [ ] 3.1 Add `trainingUse` and `retention` per backend to `FileSettingsHandler`, product-declared and read-only for the internal ExApp and regex, `unknown` default for external ones; write changes through the settings audit writer. Verify: `tests/Unit/Service/Anonymisation/BackendStatementTest.php::testTheInternalExAppIsDeclaredExcluded`, `testAnExternalBackendDefaultsToUnknown`, `testAChangedStatementIsAudited`.
-- [ ] 3.2 Edit both statements on the file configuration page. Verify: `FileConfiguration.spec.js` case for the external backend form.
-
-## 4. Disclosure per document (REQ-ADI-005)
-
-- [ ] 4.1 Add `TextDisclosure` entity, mapper and migration (`file_id`, `service`, `host`, `at`, `bytes`) and `TextDisclosureRecorder`, called from every outbound site in `EntityRecognitionHandler` (Presidio, OpenAnonymiser external, LLM) and the Dolphin extraction client before the request is sent. Verify: `tests/Unit/Service/Anonymisation/TextDisclosureRecorderTest.php::testEveryOutboundSiteRecords` enumerates the outbound clients by reflection so a new client without a record fails; `testAFailingRecordStopsTheExternalCall`.
-- [ ] 4.2 Route `GET /api/files/{fileId}/anonymisation/disclosures` (`#[NoAdminRequired]`, file read access checked in the method). Verify: `tests/Unit/Controller/FileDisclosuresControllerTest.php` with 200 for a reader and 403 for a non-reader; Newman request in `tests/newman/`; hydra gates route-auth and no-admin-idor pass.
-
-## 5. Pipeline report (REQ-ADI-006)
-
-- [ ] 5.1 Add `ContentPipelineReport` listing every step with its state and the setting that controls it; route `GET /api/admin/anonymisation/pipeline` (admin only). Verify: `tests/Unit/Service/Anonymisation/PipelineStepReportTest.php::testEveryRegisteredStepHasAReportEntry` and `testAnOffStepNamesItsSetting`.
-- [ ] 5.2 Record each step's outcome on the `AnonymisationLog` run from the real anonymise path. Verify: `testARunRecordsEveryStepOutcome` through `DocumentProcessingHandler::anonymizeDocument()` with a DOCX fixture.
-- [ ] 5.3 Show the list on the file configuration page. Verify: `tests/e2e/ci/anonymisation-disclosure.spec.ts` opens the page, switches the PDF metadata sanitiser off and sees it reported off; the same spec covers REQ-ADI-002 and REQ-ADI-003's page scenarios and REQ-ADI-005's details view.
+- [ ] 3.2 Edit both statements on the file configuration page. Verify: `FileConfiguration.spec.js` case for the external backend form, and `tests/e2e/ci/anonymisation-disclosure.spec.ts` (created here) opens the page and covers the page scenarios of REQ-ADI-002 and REQ-ADI-003. `anonymisation-discloses-itself-pipeline` extends the same spec.
 
 ## 6. Threshold setting (REQ-ADI-007)
 
@@ -36,7 +25,7 @@
 
 ## V. Verification and done
 
-Follow `/home/rubenlinde/memcap-work/woo-build/LANE-RULES-BUILD.md` (or the copy of those rules in the build brief).
+Follow `openspec/woo-build-rules.md`.
 
 - [ ] V.1 Work in your own clone, branched with `git checkout --no-track -b <branch> origin/development`, with `TMPDIR` set to a sibling directory outside the clone. Verify: `git rev-parse --show-toplevel` runs in the same command as every `git add`.
 - [ ] V.2 Every test named above fails on `origin/development` and passes on the branch. Verify: run each new test file once with the change stashed and once with it applied, and quote both `Tests:` lines in the PR body. A test that passes on today's code proves nothing and does not count.
