@@ -50,9 +50,14 @@ class FileSettingsHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testGetFileSettingsReturnsDefaultWhenEmpty(): void {
+		// The read also asks whether an OpenAnonymiser password is stored.
 		$this->appConfig->method('getValueString')
-			->with('openregister', 'fileManagement', '')
-			->willReturn('');
+			->willReturnMap(
+				[
+					['openregister', 'fileManagement', '', false, ''],
+					['openregister', 'openAnonymiserPassword', '', false, ''],
+				]
+			);
 
 		$result = $this->handler->getFileSettingsOnly();
 
@@ -79,6 +84,9 @@ class FileSettingsHandlerTest extends TestCase {
 		$this->assertSame('', $result['openAnonymiserApiEndpoint']);
 		$this->assertFalse($result['entityRecognitionEnabled']);
 		$this->assertSame('auto', $result['entityRecognitionMethod']);
+		$this->assertSame('', $result['openAnonymiserUsername']);
+		$this->assertFalse($result['openAnonymiserPasswordSet']);
+		$this->assertArrayNotHasKey('openAnonymiserPassword', $result);
 	}
 
 	/**
