@@ -5,9 +5,19 @@ depends_on: [file-publication-window]
 
 # Proposal: published-file-digest
 
+## Summary
+
+A published file is provably the file that was published: its SHA-256 is recorded when it becomes public, returned with it, checked on every public read, and verifiable by anyone who may read it.
+
+- Rows: 11.7 and 11.8 (not statutory).
+- Wave 2, size M.
+- Dependencies: `openregister/file-publication-window` (open, 10 of 12 tasks, no issue yet) decides the moment a file becomes public; `openregister/redaction-release-safeguards` (https://github.com/ConductionNL/openregister/issues/4392) runs its check first.
+- No Ruben decision bears on it.
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
-Two rows ask that a published file be provably the file that was published. Our column (`baseline/openwoo.tsv`):
+Two rows ask that a published file be provably the file that was published. Our column (the round 1 baseline):
 
 | row | capability | ours today |
 |---|---|---|
