@@ -5,9 +5,19 @@ depends_on: [anonymisation-discloses-itself]
 
 # Proposal: detection-knows-the-person
 
+## Summary
+
+A detected person gets a capacity suggestion (public office, professional, private or unknown) and a confidence raised or lowered against the organisation's own registers, always confirmed by a reviewer before it counts.
+
+- Rows: 14.19 and 18.8 (not statutory).
+- Wave 1, size L.
+- Dependencies: `openregister/anonymisation-discloses-itself` (https://github.com/ConductionNL/openregister/issues/4379), for the confidence threshold setting the adjustment works against.
+- Decision: D10 (14.13 to 14.19 unflagged as disclosures for the detector the stack already runs).
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
-Two rows ask the detector to know who a name belongs to. Our column (`baseline/openwoo.tsv`):
+Two rows ask the detector to know who a name belongs to. Our column (the round 1 baseline):
 
 | row | capability | ours today |
 |---|---|---|
