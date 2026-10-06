@@ -5,9 +5,19 @@ depends_on: [redaction-release-safeguards, anonymisation-placeholder-id-scope]
 
 # Proposal: redaction-policy-as-data
 
+## Summary
+
+Redaction policy becomes data the organisation owns: term lists and named profiles that the engine applies on every path, bound to document types.
+
+- Rows: 18.1, 18.2, 18.3, 18.4, 18.5, 18.6 and 18.7 (not statutory).
+- Wave 2, size L.
+- Dependencies: `openregister/redaction-release-safeguards` (https://github.com/ConductionNL/openregister/issues/4392), `openregister/anonymisation-placeholder-id-scope` (https://github.com/ConductionNL/openregister/issues/4381), and `filinq/document-register` (https://github.com/ConductionNL/filinq/issues/481) for 18.7's document type vocabulary.
+- Decisions: D2 (term lists and profiles live in the engine) and D3 (refusal grounds are dossiq's, stored as identifiers; without dossiq a text field).
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
-Seven rows ask that redaction policy be data the organisation owns and the engine applies on every path. Our column (`baseline/openwoo.tsv`):
+Seven rows ask that redaction policy be data the organisation owns and the engine applies on every path. Our column (the round 1 baseline):
 
 | row | capability | ours today |
 |---|---|---|
