@@ -12,6 +12,11 @@ the working lists and the search results, refuses writes, keeps its audit
 trail and its references, and comes back with one action. It is not
 deleted, it is not in the trash, and it is not a destruction date.
 
+- Woo programme (wave 1) amendment, supporting: it closes no row itself and supports 5.18 and 19.15 (not statutory) by refusing every file write on a frozen or archived object (REQ-OAS-007). See the amendment section below.
+- Dependencies: none. Consumers `opencatalogi/publication-withdrawal-aftercare` and `dossiq/woo-delivered-set-is-a-record` (wave 2).
+- No Ruben decision bears on it.
+- Build rules: openspec/woo-build-rules.md
+
 ## Ledger rows
 
 | row | capability | rating | size |
@@ -173,7 +178,7 @@ zaak in bezwaar, a dossier awaiting overbrenging, a vastgesteld besluit.
 
 ## Woo capability programme amendment (2026-10-05)
 
-The Woo capability programme (round 1, `woo-round1/mi/opencatalogi/_round1/build-plan/plan.md`, wave 1) amends this change as a supporting change: it closes no row itself, and it is what two rows need from OpenRegister.
+The Woo capability programme (round 1 build plan, wave 1) amends this change as a supporting change: it closes no row itself, and it is what two rows need from OpenRegister.
 
 | row | capability | needs from here |
 |---|---|---|
