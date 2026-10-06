@@ -5,9 +5,19 @@ depends_on: []
 
 # Proposal: archive-members-are-searchable
 
+## Summary
+
+A zip archive is opened under hard bounds and each file inside it is extracted and searchable on its own, resolving to the owning object under the same read rights.
+
+- Rows: 16.8 (not statutory).
+- Wave 1, size L.
+- Dependencies: none. Shares `ArchiveMemberEnumerator` with `openregister/upload-malware-scan` (https://github.com/ConductionNL/openregister/issues/4399); whichever lands first adds it and the other reuses it.
+- No Ruben decision bears on it.
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
-Row 16.8, "An archive is opened and each file inside it is searchable on its own", is `no` in our column (`baseline/openwoo.tsv`: nothing opens an archive and indexes its members). A Woo request answered with a zip of mails and attachments is a black box to search: an officer cannot find the one letter inside it, and a citizen searching the portal cannot either.
+Row 16.8, "An archive is opened and each file inside it is searchable on its own", is `no` in our column (the round 1 baseline: nothing opens an archive and indexes its members). A Woo request answered with a zip of mails and attachments is a black box to search: an officer cannot find the one letter inside it, and a citizen searching the portal cannot either.
 
 OpenRegister already reads zip containers for OOXML (`DocumentExtractor`, `OoxmlPackage`, bounded reads through `ZipArchive`), and treats `application/zip` as a generic type it does not open. This change opens real archives.
 
