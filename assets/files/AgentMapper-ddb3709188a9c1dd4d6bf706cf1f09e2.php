@@ -359,7 +359,10 @@ class AgentMapper extends QBMapper {
 		// Apply ordering.
 		if (empty($order) === false) {
 			foreach ($order as $field => $direction) {
-				$qb->addOrderBy($field, $direction);
+				// NC 35 types addOrderBy() as (string|..., string|SortDirection|null):
+				// an int key (a list-shaped sort) or a non-string direction is a
+				// TypeError there, so both are normalised here.
+				$qb->addOrderBy((string)$field, $this->normaliseSortDirection(direction: $direction));
 			}
 		}
 
@@ -555,4 +558,23 @@ class AgentMapper extends QBMapper {
 
 		return (int)$qb->executeQuery()->fetchOne();
 	}//end count()
+
+	/**
+	 * Normalise a caller-supplied sort direction to 'ASC' or 'DESC'.
+	 *
+	 * NC 35 types IQueryBuilder::addOrderBy()'s direction as
+	 * string|SortDirection|null, so a non-string value is a TypeError there.
+	 * Anything that is not a case-insensitive 'DESC' sorts ascending.
+	 *
+	 * @param mixed $direction The requested direction
+	 *
+	 * @return string 'ASC' or 'DESC'
+	 */
+	private function normaliseSortDirection(mixed $direction): string {
+		if (is_string($direction) === true && strtoupper($direction) === 'DESC') {
+			return 'DESC';
+		}
+
+		return 'ASC';
+	}//end normaliseSortDirection()
 }//end class
