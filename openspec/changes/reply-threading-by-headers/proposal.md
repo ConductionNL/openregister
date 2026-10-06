@@ -16,6 +16,11 @@ whose subject a citizen edited cannot be matched. This change records the
 a resolve endpoint that answers `In-Reply-To` and `References` before any
 subject tag is consulted.
 
+- Woo programme (wave 1) amendment: closes 19.6 (not statutory) by assembling collected `.eml` files into threads by their headers only. See the amendment section below.
+- Dependencies: `openregister/send-at-on-the-messaging-leaf` (open, 0 of 6 tasks, no issue yet), as before the amendment. `dossiq/woo-review-triage` reads the thread endpoint.
+- No Ruben decision bears on it.
+- Build rules: openspec/woo-build-rules.md
+
 ## Ledger rows
 
 | row | capability | rating | size |
@@ -86,9 +91,9 @@ References is the email leaf; integriq's intake hands it the message".
 
 ## Woo capability programme amendment (2026-10-05)
 
-The Woo capability programme (round 1, `woo-round1/mi/opencatalogi/_round1/build-plan/plan.md`, wave 1) amends this change with one row. Re-read on `development` at 1dc6a4667 immediately before writing: the change is open at 0 of 7 tasks, with `ReplyThreadResolver` built for the header order and the refusals. Nothing already done is rewritten.
+The Woo capability programme (round 1 build plan, wave 1) amends this change with one row. Re-read on `development` at 1dc6a4667 immediately before writing: the change is open at 0 of 7 tasks, with `ReplyThreadResolver` built for the header order and the refusals. Nothing already done is rewritten.
 
-| row | capability | ours today (`baseline/openwoo.tsv`) |
+| row | capability | ours today (the round 1 baseline) |
 |---|---|---|
 | 19.6 | An email conversation is assembled as a thread, and a message is read with the messages around it | no: `EmlParser::extractHeaders()` reads From, To, Cc, Subject, Date and `Message-ID`, and splits body from attachments, so a message is a first-class source; nothing reads `In-Reply-To` or `References`, and nothing assembles collected messages into a thread |
 
