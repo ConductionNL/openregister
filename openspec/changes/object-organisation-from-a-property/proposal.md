@@ -5,11 +5,21 @@ depends_on: []
 
 # Proposal: object-organisation-from-a-property
 
+## Summary
+
+A schema can name the property that sets an object's organisation, so a publication's organisational unit is also the unit its rights are scoped to.
+
+- Rows: supports 12.34 (not statutory); it closes no row itself.
+- Wave 1, size S, supporting.
+- Dependencies: none. Consumed by `opencatalogi/publications-reference-the-shared-organisation` (wave 2); without opencatalogi no shipped schema declares the annotation and behaviour is unchanged.
+- No Ruben decision bears on it.
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
 This is a supporting change: it closes no row itself, and it is what row 12.34 needs from OpenRegister.
 
-Row 12.34, "A publication names the organisational unit it was published for, and rights can be scoped to that unit", is `partial` (`build-plan/gaps.tsv`). A publication's `organization` property names the unit, while the rights OpenRegister's multitenancy enforces follow `@self.organisation`, which `SaveObject` stamps from the caller's active organisation (`SaveObject.php`, the `getOrganisationForNewEntity()` fallback) or from a client-supplied `@self.organisation` the caller is a member of. Nothing ties the two together, so a publication can name unit A while its rights follow unit B. `opencatalogi/publications-reference-the-shared-organisation` (wave 2) adds the opencatalogi half and depends on this.
+Row 12.34, "A publication names the organisational unit it was published for, and rights can be scoped to that unit", is `partial` (the round 1 gap register). A publication's `organization` property names the unit, while the rights OpenRegister's multitenancy enforces follow `@self.organisation`, which `SaveObject` stamps from the caller's active organisation (`SaveObject.php`, the `getOrganisationForNewEntity()` fallback) or from a client-supplied `@self.organisation` the caller is a member of. Nothing ties the two together, so a publication can name unit A while its rights follow unit B. `opencatalogi/publications-reference-the-shared-organisation` (wave 2) adds the opencatalogi half and depends on this.
 
 ## What changes
 
