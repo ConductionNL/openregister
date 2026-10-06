@@ -14,6 +14,11 @@ gets the handler's whole desk. This change adds a grant on a token and on a
 Consumer: registers, schemas, verbs and an optional row condition, which
 the permission handler intersects with the user's rights on every check.
 
+- Woo programme (wave 1): this change closes row 12.19 (none statutory). Rows 12.20 and 13.11, and the service account (REQ-SAT-004, task C40.3), moved to the second part of this chain, `openregister/scoped-api-tokens-machine-callers` (https://github.com/ConductionNL/openregister/issues/4411), built after this one.
+- Dependencies: none in the Woo programme. Whichever of this change and `openregister/rights-administration-hardening` (https://github.com/ConductionNL/openregister/issues/4395) lands second calls its `GrantCeiling` from the token issue path.
+- No Ruben decision bears on it.
+- Build rules: openspec/woo-build-rules.md
+
 ## Ledger rows
 
 | row | capability | rating | size |
@@ -161,9 +166,9 @@ this change nor its extension touches, so it belongs to the debt sweep.
 
 ## Woo capability programme amendment (2026-10-05)
 
-The Woo capability programme (round 1, `woo-round1/mi/opencatalogi/_round1/build-plan/plan.md`, wave 1) amends this change with three rows. Re-read on `development` at 1dc6a4667 immediately before writing: the change is open (tasks 1.1c, 1.1d, 2.1c, 2.2, 3.1, 4.1, 4.2b and C40.2b to C40.7 open). Nothing already done is rewritten.
+The Woo capability programme (round 1 build plan, wave 1) amends this change with three rows. Rows 12.20 and 13.11, with what the amendment adds for them below, moved to `scoped-api-tokens-machine-callers` to keep this change at 20 tasks or fewer; this change keeps 12.19. Re-read on `development` at 1dc6a4667 immediately before writing: the change is open (tasks 1.1c, 1.1d, 2.1c, 2.2, 3.1, 4.1, 4.2b and C40.2b to C40.7 open). Nothing already done is rewritten.
 
-| row | capability | ours today (`baseline/openwoo.tsv`) |
+| row | capability | ours today (the round 1 baseline) |
 |---|---|---|
 | 12.19 | A machine credential is scoped, and a call outside its scope is refused rather than ignored | partial: the Consumer grant is built and refuses outside its verbs and schemas (#3913); the `match` row condition is carried and not evaluated (task 1.1d), and the personal token store is open (1.1c) |
 | 12.20 | A call that does not identify the acting human behind it is refused, not logged as anonymous | no: nothing requires a caller to name the acting human |
