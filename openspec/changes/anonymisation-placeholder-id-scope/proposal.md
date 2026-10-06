@@ -1,3 +1,13 @@
+## Summary
+
+Redaction placeholders stop being a cross-document linking key, and the Woo amendment adds a mask form per data type and prints the exception ground in the delivered file where it applies.
+
+- Rows: 4.18 and 4.28 (not statutory), added by the Woo amendment below; the change's own scope is the placeholder id scope under AVG Art. 4(5).
+- Wave 1. An amend of an open change (25 of 29 tasks done before the amendment); nothing already done is rewritten.
+- Dependencies: none new. The grounds are written onto the relation by `opencatalogi/woo-review-surface` and dossiq; this change only prints them.
+- Decision: D3 (the list of refusal grounds is dossiq's; OpenRegister prints the identifier stored on the relation).
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
 OpenRegister's anonymise pass emits redaction placeholders as `[<TYPE>: <id>]` using the **global** `openregister_entities.id` (`e.id`). Because `findOrCreateEntity(type, value)` deduplicates by value, the same person receives the SAME `e.id` in every file and every publication (`EntityRecognitionHandler::storeDetectedEntities` sets the relation's `entity_id` at `lib/Service/TextExtraction/EntityRecognitionHandler.php:318`; `EntityRelationMapper::findEntityIdsByValueForFile` joins `openregister_entities e` and returns `e.id` as the placeholder id; `DocumentProcessingHandler::anonymizeDocument` interpolates it at `lib/Service/File/DocumentProcessingHandler.php:315-321`).
@@ -42,9 +52,9 @@ Separately, the placeholder's **TYPE label** is always emitted in English (`PERS
 
 ## Woo capability programme amendment (2026-10-05)
 
-The Woo capability programme (round 1, `woo-round1/mi/opencatalogi/_round1/build-plan/plan.md`, wave 1) amends this change with two rows. Re-read on `development` at 1dc6a4667 before writing: the change is open at 25 of 29 tasks, and the open tasks are frontend and cross-app notes (7.1 to 7.3) and a cherry-pick (8.1). Nothing already done is rewritten.
+The Woo capability programme (round 1 build plan, wave 1) amends this change with two rows. Re-read on `development` at 1dc6a4667 before writing: the change is open at 25 of 29 tasks, and the open tasks are frontend and cross-app notes (7.1 to 7.3) and a cherry-pick (8.1). Nothing already done is rewritten.
 
-| row | capability | ours today (`baseline/openwoo.tsv`) |
+| row | capability | ours today (the round 1 baseline) |
 |---|---|---|
 | 4.18 | A detection is masked in part rather than removed whole, and the form of the mask is set per data type | partial: `PdfTextReplacer` substitutes the whole value with `[<TYPE>: <id>]`; `AnonymisationProfile`'s `generalise` treats record properties on the archival path, not document text |
 | 4.28 | The exception ground is printed on the delivered file at the place it applies | no: the ground sits on `EntityRelation::$bases` and in opencatalogi's inventory, never in the file |
