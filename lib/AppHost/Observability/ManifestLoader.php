@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\AppHost\Observability;
 
+use OCA\OpenRegister\AppHost\Discovery\DiscoveryManifest;
 use OCA\OpenRegister\AppHost\Store\StoreManifest;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
@@ -98,6 +99,29 @@ class ManifestLoader {
 
 		return StoreManifest::fromManifest(appId: $appId, manifest: $manifest);
 	}//end loadStore()
+
+	/**
+	 * Load the declarative `discovery` block for an app id.
+	 *
+	 * Same bundled-manifest read as `load()` and `loadStore()`. A missing or
+	 * unreadable manifest yields an empty, non-public manifest: an app that
+	 * declared nothing is simply not listed.
+	 *
+	 * @param string $appId The app id.
+	 *
+	 * @return DiscoveryManifest
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 * @spec openspec/changes/apphost-discovery-manifest/specs/apphost-discovery/spec.md
+	 */
+	public function loadDiscovery(string $appId): DiscoveryManifest {
+		$manifest = $this->loadBundledManifest(appId: $appId);
+		if ($manifest === null) {
+			return new DiscoveryManifest(appId: $appId, public: false);
+		}
+
+		return DiscoveryManifest::fromManifest(appId: $appId, manifest: $manifest);
+	}//end loadDiscovery()
 
 	/**
 	 * Resolve the installed version of an app (for the implicit `{app}_info`).

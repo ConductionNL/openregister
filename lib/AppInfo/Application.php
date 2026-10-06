@@ -982,6 +982,13 @@ class Application extends App implements IBootstrap {
 		// capabilities endpoint.
 		$context->registerCapability(IntegrationsCapability::class);
 
+		// Public, manifest-driven discovery: which standards each enabled app
+		// provides or consumes, readable WITHOUT login so another instance can
+		// tell whether it can connect. Fed by each app's `discovery` manifest
+		// block; autowired (DiscoveryCatalog's deps are all framework services).
+		// @spec openspec/changes/apphost-discovery-manifest/specs/apphost-discovery/spec.md
+		$context->registerCapability(\OCA\OpenRegister\Capabilities\DiscoveryCapability::class);
+
 		// ADR-019 Phase E (Option B): single umbrella widget hosted on
 		// the Nextcloud user-dashboard. Iterates the integration
 		// registry client-side and mounts each leaf's `user-dashboard`
@@ -3035,7 +3042,9 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Listener\PartyMergeListener::class
 		);
 
-		// Advertise the `openregister` OCM resource type in /ocm-provider discovery.
+		// Advertise the `openregister` OCM resource type, plus every type an enabled
+		// app declares in its manifest `discovery.ocmResourceTypes`, in OCM
+		// discovery (/.well-known/ocm and the legacy /ocm-provider/).
 		$context->registerEventListener(
 			\OCP\OCM\Events\ResourceTypeRegisterEvent::class,
 			\OCA\OpenRegister\Listener\OcmResourceTypeListener::class

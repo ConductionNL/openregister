@@ -1041,5 +1041,76 @@
         ]
       }
     ]
+  },
+  "discovery": {
+    "public": true,
+    "standards": [
+      {
+        "id": "openapi",
+        "name": "OpenAPI",
+        "version": "3.1",
+        "role": "provides",
+        "access": "public",
+        "endpoint": "/apps/openregister/api/registers/oas",
+        "specUrl": "https://spec.openapis.org/oas/v3.1.0"
+      },
+      {
+        "id": "json-schema",
+        "name": "JSON Schema",
+        "version": "2020-12",
+        "role": "provides",
+        "access": "public",
+        "specUrl": "https://json-schema.org/specification"
+      },
+      {
+        "id": "json-ld",
+        "name": "JSON-LD with schema.org contexts",
+        "version": "1.1",
+        "role": "provides",
+        "access": "public",
+        "endpoint": "/apps/openregister/api/contexts",
+        "specUrl": "https://www.w3.org/TR/json-ld11/"
+      },
+      {
+        "id": "skos",
+        "name": "SKOS concept registers",
+        "role": "provides",
+        "access": "public",
+        "endpoint": "/apps/openregister/api/vocabulary/concepts",
+        "specUrl": "https://www.w3.org/TR/skos-reference/"
+      },
+      {
+        "id": "graphql",
+        "name": "GraphQL",
+        "role": "provides",
+        "access": "public",
+        "endpoint": "/apps/openregister/api/graphql",
+        "specUrl": "https://spec.graphql.org/"
+      },
+      {
+        "id": "urn",
+        "name": "URN resource addressing (RFC 8141)",
+        "role": "provides",
+        "access": "authenticated",
+        "endpoint": "/apps/openregister/api/urn/resolve",
+        "specUrl": "https://www.rfc-editor.org/rfc/rfc8141"
+      },
+      {
+        "id": "mcp",
+        "name": "Model Context Protocol",
+        "role": "provides",
+        "access": "authenticated",
+        "endpoint": "/apps/openregister/api/mcp",
+        "specUrl": "https://modelcontextprotocol.io/specification"
+      },
+      {
+        "id": "ocm",
+        "name": "Open Cloud Mesh federated sharing",
+        "role": "provides",
+        "access": "token",
+        "endpoint": "/apps/openregister/api/federation",
+        "specUrl": "https://github.com/cs3org/OCM-API"
+      }
+    ]
   }
 }
