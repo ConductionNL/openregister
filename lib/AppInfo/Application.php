@@ -1137,7 +1137,10 @@ class Application extends App implements IBootstrap {
 					temporal: $container->get(\OCA\OpenRegister\Service\Task\TaskTemporalProjection::class),
 					logger: $container->get('Psr\Log\LoggerInterface'),
 					objects: $container->get(MagicMapper::class),
-					deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class)
+					deliveries: $container->get(\OCA\OpenRegister\Db\PortalTaskDeliveryMapper::class),
+					// Reads a located task's subject from its own table instead
+					// of searching every magic table for it.
+					locator: $container->get(\OCA\OpenRegister\Service\Task\TaskSubjectLocator::class)
 				);
 			}
 		);
