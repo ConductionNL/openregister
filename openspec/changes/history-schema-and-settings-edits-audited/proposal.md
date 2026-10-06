@@ -8,6 +8,11 @@ kind: code
 
 A functional administrator can see who changed a schema or a register, when, and what changed: a property added, a type narrowed, an authorization rule widened. Every create, update and delete of a schema or a register writes a row on the same hash-chained audit trail that record changes use. An administrator reads those rows on the schema's and the register's detail page, and through the audit trail API. A change made by an import or a migration says so, so a person's edit and an app update do not look alike.
 
+- Woo programme (wave 1) amendment: closes 12.30 for organisations and 12.22 as re-rated under D5 (not statutory). See the amendment section below.
+- Dependencies: none new.
+- Decision: D5 (Ruben, 2026-10-05) chose the spec over row 12.22: one trail with an administrative category, its own view, reader right and retention, not two stores.
+- Build rules: openspec/woo-build-rules.md
+
 ## Rows this closes
 
 | matrix | row | capability | own rating |
@@ -68,9 +73,9 @@ Schema and register edits leave no audit row.
 
 ## Woo capability programme amendment (2026-10-05)
 
-The Woo capability programme (round 1, `woo-round1/mi/opencatalogi/_round1/build-plan/plan.md`, wave 1) amends this change with two rows. Re-read on `development` at 1dc6a4667 immediately before writing: the change is open at 0 of 9 tasks, so the amendment adds requirements and tasks beside the existing ones and rewrites nothing.
+The Woo capability programme (round 1 build plan, wave 1) amends this change with two rows. Re-read on `development` at 1dc6a4667 immediately before writing: the change is open at 0 of 9 tasks, so the amendment adds requirements and tasks beside the existing ones and rewrites nothing.
 
-| row | capability | ours today (`baseline/openwoo.tsv`) |
+| row | capability | ours today (the round 1 baseline) |
 |---|---|---|
 | 12.22 | The product keeps two separate histories per record: a domain audit trail and an administrative change log | no: one hash-sealed trail, no administrative log |
 | 12.30 | Every change to a controlled list, such as categories, subjects and organisations, is recorded with who and when | partial: themes, categories and publications are objects and get audit rows; organisations are OpenRegister's `Organisation` entity, whose `OrganisationMapper` only dispatches `OrganisationCreatedEvent`, `OrganisationUpdatedEvent` and `OrganisationDeletedEvent` to webhooks and writes no audit row |
