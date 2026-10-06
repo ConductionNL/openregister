@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use OCA\OpenRegister\Db\ObjectViewMapper;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\LikeOperator;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
@@ -90,7 +91,7 @@ class MagicSearchHandler {
 	 *
 	 * @var string[]
 	 */
-	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull'];
+	private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull', LikeOperator::KEY];
 
 	/**
 	 * The working set: archived rows are left out. The default.
@@ -1477,6 +1478,55 @@ class MagicSearchHandler {
 	}//end columnMatchSql()
 
 	/**
+	 * Apply a `like` filter with bound parameters.
+	 *
+	 * @param IQueryBuilder $qb Query builder to modify.
+	 * @param string $columnRef Qualified column reference.
+	 * @param mixed $value The value under the `like` key: one term or a list.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 */
+	private function applyLikeFilter(IQueryBuilder $qb, string $columnRef, mixed $value): void {
+		$like = new LikeOperator(databasePlatform: $this->db->getDatabasePlatform());
+		$placeholders = [];
+		foreach ($like->terms(value: $value) as $term) {
+			$placeholders[] = (string)$qb->createNamedParameter($like->pattern(term: $term));
+		}
+
+		$condition = $like->anyCondition(column: $columnRef, patternSqls: $placeholders);
+		if ($condition !== null) {
+			$qb->andWhere($condition);
+		}
+	}//end applyLikeFilter()
+
+	/**
+	 * Build a `like` condition for the raw UNION path.
+	 *
+	 * That path joins conditions as SQL text and has no parameters to bind, like
+	 * every other condition it builds, so the escaped pattern goes through the
+	 * platform's quote().
+	 *
+	 * @param string $column Quoted column identifier.
+	 * @param mixed $value The value under the `like` key: one term or a list.
+	 * @param object $connection Database connection for value quoting.
+	 *
+	 * @return string|null The SQL condition, or null when no term is left.
+	 *
+	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 */
+	private function likeConditionSql(string $column, mixed $value, object $connection): ?string {
+		$like = new LikeOperator(databasePlatform: $this->db->getDatabasePlatform());
+		$quoted = [];
+		foreach ($like->terms(value: $value) as $term) {
+			$quoted[] = $connection->quote($like->pattern(term: $term));
+		}
+
+		return $like->anyCondition(column: $column, patternSqls: $quoted);
+	}//end likeConditionSql()
+
+	/**
 	 * Whether an `isnull` operator value asks for IS NULL rather than IS NOT NULL.
 	 *
 	 * The operator is documented as a QUERY-STRING filter (`?afgehandeld_op_isnull=true`,
@@ -1510,6 +1560,7 @@ class MagicSearchHandler {
 	 * @return string[] Array of SQL WHERE conditions
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	private function buildObjectFilterConditionsSql(
 		array $query,
@@ -1540,6 +1591,19 @@ class MagicSearchHandler {
 			$columnName = $this->sanitizeColumnName(name: $key);
 			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
 			$propertyType = $properties[$key]['type'] ?? 'string';
+
+			// `like` first, for every column type; see applyObjectFilters().
+			if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
+				$likeCondition = $this->likeConditionSql(column: $quotedCol, value: $value[LikeOperator::KEY], connection: $connection);
+				if ($likeCondition !== null) {
+					$conditions[] = $likeCondition;
+				}
+
+				unset($value[LikeOperator::KEY]);
+				if ($value === []) {
+					continue;
+				}
+			}
 
 			// Handle array-type properties (JSONB columns) with JSON containment operator.
 			if ($propertyType === 'array') {
@@ -1797,8 +1861,22 @@ class MagicSearchHandler {
 	 * @param object $connection Database connection for value quoting
 	 *
 	 * @return string[] Array of SQL conditions
+	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	private function buildMetadataOperatorConditionsSql(string $column, array $value, object $connection): array {
+		$likeConditions = [];
+		if (array_key_exists(LikeOperator::KEY, $value) === true) {
+			$likeCondition = $this->likeConditionSql(column: $column, value: $value[LikeOperator::KEY], connection: $connection);
+			if ($likeCondition !== null) {
+				$likeConditions[] = $likeCondition;
+			}
+
+			unset($value[LikeOperator::KEY]);
+			if ($value === []) {
+				return $likeConditions;
+			}
+		}
+
 		// No operator key at all: a bare list keeps its historical IN(...) meaning.
 		if (empty(array_intersect(array_keys($value), self::COMPARISON_OPERATORS)) === true) {
 			return [$this->metadataInConditionSql(column: $column, values: $value, connection: $connection)];
@@ -1809,6 +1887,7 @@ class MagicSearchHandler {
 		// independent of the others, so splitting them changes nothing but the
 		// number of ways to read the code.
 		return array_merge(
+			$likeConditions,
 			$this->metadataComparisonConditionsSql(column: $column, value: $value, connection: $connection),
 			$this->metadataListConditionsSql(column: $column, value: $value, connection: $connection),
 			$this->metadataNullConditionsSql(column: $column, value: $value)
@@ -2335,8 +2414,17 @@ class MagicSearchHandler {
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
+	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	private function applyMetadataOperators(IQueryBuilder $qb, string $columnRef, array $value): void {
+		if (array_key_exists(LikeOperator::KEY, $value) === true) {
+			$this->applyLikeFilter(qb: $qb, columnRef: $columnRef, value: $value[LikeOperator::KEY]);
+			unset($value[LikeOperator::KEY]);
+			if ($value === []) {
+				return;
+			}
+		}
+
 		// No operator key at all: a bare list keeps its historical IN(...) meaning.
 		if (empty(array_intersect(array_keys($value), self::COMPARISON_OPERATORS)) === true) {
 			$qb->andWhere(
@@ -2447,6 +2535,7 @@ class MagicSearchHandler {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
+	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	private function applyObjectFilters(IQueryBuilder $qb, array $filters, Schema $schema): void {
 		$properties = $schema->getProperties();
@@ -2492,6 +2581,16 @@ class MagicSearchHandler {
 			if ($value === 'IS NULL') {
 				$qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
 				continue;
+			}
+
+			// `like` matches the column's text, whatever the column type, so it is
+			// applied ahead of the type-specific branches and then taken out of the bag.
+			if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
+				$this->applyLikeFilter(qb: $qb, columnRef: "t.{$columnName}", value: $value[LikeOperator::KEY]);
+				unset($value[LikeOperator::KEY]);
+				if ($value === []) {
+					continue;
+				}
 			}
 
 			// Handle array type columns (JSON arrays in PostgreSQL).
