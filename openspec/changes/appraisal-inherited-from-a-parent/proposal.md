@@ -5,6 +5,16 @@ depends_on: []
 
 # Proposal: appraisal-inherited-from-a-parent
 
+## Summary
+
+An object is held back from destruction when a parent it references carries a retain-permanently appraisal, so a hotspot on a subject reaches the publications filed under it.
+
+- Rows: supports 11.14 (not statutory); it closes no row itself.
+- Wave 1, size S, supporting.
+- Dependencies: none. Consumed by `opencatalogi/theme-archive-hotspot` (wave 2); without opencatalogi no shipped schema declares the key and behaviour is unchanged.
+- Decision: D5 (11.14 wins outside the defaults mechanism; opencatalogi RET-004 keeps governing defaults).
+- Build rules: openspec/woo-build-rules.md
+
 ## Why
 
 Supporting change: it closes no row by itself. Row 11.14, "Marking a subject as an archive hotspot keeps every publication under it permanently", is `no` in our column and belongs to `opencatalogi/theme-archive-hotspot` (wave 2). That change needs one thing from the engine: a destruction run that honours an appraisal inherited from a parent object, here the subject a publication sits under.
