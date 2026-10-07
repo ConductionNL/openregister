@@ -3369,7 +3369,17 @@
         "This record has no visible fields.": "Dit record heeft geen zichtbare velden.",
         "Upload": "Uploaden",
         "Edit {field}": "{field} bewerken",
-        "The value could not be saved": "De waarde kon niet worden opgeslagen"
+        "The value could not be saved": "De waarde kon niet worden opgeslagen",
+        "Message category": "Berichtsoort",
+        "Decisions, statutory notices, account and security mail always arrive. Other mail stops after an opt-out. Empty means service.": "Besluiten, wettelijke kennisgevingen, account- en beveiligingsmail komen altijd aan. Andere mail stopt na een afmelding. Leeg betekent service.",
+        "Service message (default)": "Servicebericht (standaard)",
+        "Case update": "Zaakupdate",
+        "Reminder": "Herinnering",
+        "Marketing, such as a newsletter": "Marketing, zoals een nieuwsbrief",
+        "Decision (besluit), always sent": "Besluit, wordt altijd verstuurd",
+        "Statutory notice, always sent": "Wettelijke kennisgeving, wordt altijd verstuurd",
+        "Account message, always sent": "Accountbericht, wordt altijd verstuurd",
+        "Security message, always sent": "Beveiligingsbericht, wordt altijd verstuurd"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
