@@ -1366,6 +1366,16 @@ class Application extends App implements IBootstrap {
 			$logger->warning('[Application] AppImportJobRecorder unavailable for ImportHandler: ' . $e->getMessage());
 		}
 
+		// Installs a schema's flows and notification webhooks when an import
+		// changed nothing and so fired no SchemaUpdatedEvent. Resolved like the
+		// guard: without it an unchanged re-import restores nothing it declares.
+		$schemaInstaller = null;
+		try {
+			$schemaInstaller = $container->get(\OCA\OpenRegister\Service\Configuration\SchemaImportInstaller::class);
+		} catch (\Throwable $e) {
+			$logger->warning('[Application] SchemaImportInstaller unavailable for ImportHandler: ' . $e->getMessage());
+		}
+
 		$importHandler = new ConfigurationImportHandler(
 			schemaMapper: $container->get(SchemaMapper::class),
 			registerMapper: $container->get(RegisterMapper::class),
@@ -1379,7 +1389,8 @@ class Application extends App implements IBootstrap {
 			uploadHandler: $container->get(ConfigurationUploadHandler::class),
 			objectService: $container->get(ObjectService::class),
 			shippedGuard: $shippedGuard,
-			importJobRecorder: $importJobRecorder
+			importJobRecorder: $importJobRecorder,
+			schemaInstaller: $schemaInstaller
 		);
 
 		// Inject MagicMapper for pre-creating magic mapper tables before seed

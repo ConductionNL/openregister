@@ -1,9 +1,9 @@
 <?php
 
 /**
- * OpenRegister RegisterChangeDetector.
+ * OpenRegister EntityChangeDetector.
  *
- * Tells whether a register save changed the stored register.
+ * Tells whether a save changed the stored register or schema.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -27,24 +27,27 @@ namespace OCA\OpenRegister\Db;
 use OCP\AppFramework\Db\Entity;
 
 /**
- * Compares a register before and after a save.
+ * Compares a register or schema before and after a save.
  *
- * RegisterMapper::update() asks it before dispatching RegisterUpdatedEvent,
- * so a save that changed nothing reaches no listener.
+ * RegisterMapper::update() and SchemaMapper::update() ask it before
+ * dispatching their update event, so a save that changed nothing reaches no
+ * listener. An event fires at the level where the change happened, and only
+ * when something there really changed.
  *
+ * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
  * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-a-register-save-that-changes-nothing-publishes-nothing
  */
-class RegisterChangeDetector {
+class EntityChangeDetector {
 	/**
-	 * Tell whether a save changed the stored register.
+	 * Tell whether a save changed the stored entity.
 	 *
-	 * Compares the serialised register before and after the save, leaving out
+	 * Compares the serialised entity before and after the save, leaving out
 	 * the `updated` timestamp: a timestamp bump alone is not a change anyone
 	 * needs to hear about. Scalars are compared as strings, so a schema id
 	 * re-hydrated as "28" equals the stored 28.
 	 *
-	 * @param Entity $old The register as stored before the save.
-	 * @param Entity $new The register after the save.
+	 * @param Entity $old The entity as stored before the save.
+	 * @param Entity $new The entity after the save.
 	 *
 	 * @return bool True when something other than the timestamp changed.
 	 *

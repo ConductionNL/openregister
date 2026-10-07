@@ -289,6 +289,32 @@ class SchemaTypeConverterTest extends TestCase {
 		);
 	}//end testAnArrayTheCallerSuppliedIsLeftAloneSoValidationStillRefusesIt()
 
+	/**
+	 * A PATCH that does not mention a translatable title must leave its locale map alone.
+	 *
+	 * Reported on pipelinq: PATCHing a lead's stage turned its title
+	 * '[Demo] Webshop' into '{"nl":"[Demo] Webshop"}', one level deeper on
+	 * every PATCH, because the locale map was re-encoded as a string here.
+	 *
+	 * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-a-patch-leaves-an-untouched-translatable-property-as-it-is
+	 */
+	public function testAnUntouchedTranslatablePropertyKeepsItsLocaleMap(): void {
+		$stored = json_encode(['nl' => '[Demo] Webshop']);
+		$decoded = $this->converter->convertValue($stored, 'string');
+		$this->assertSame(['nl' => '[Demo] Webshop'], $decoded, 'precondition: the read path decodes the locale map');
+
+		$restored = $this->converter->restoreStringTypedValues(
+			['title' => $decoded, 'stage' => 'won'],
+			[
+				'title' => ['type' => 'string', 'translatable' => true],
+				'stage' => ['type' => 'string'],
+			],
+			['stage']
+		);
+
+		$this->assertSame(['nl' => '[Demo] Webshop'], $restored['title']);
+	}//end testAnUntouchedTranslatablePropertyKeepsItsLocaleMap()
+
 	public function testAnArrayTypedPropertyIsNeverEncoded(): void {
 		$restored = $this->converter->restoreStringTypedValues(
 			['tags' => ['a', 'b']],
