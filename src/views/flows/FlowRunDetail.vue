@@ -790,10 +790,7 @@ export default {
 			} catch (error) {
 				this.actionError =
 					error?.response?.data?.error
-					|| t(
-						'openregister',
-						'That did not work. Try again, or open the run on the canvas.',
-					)
+					|| t('openregister', 'That did not work. Try again.')
 			} finally {
 				this.busy = false
 			}

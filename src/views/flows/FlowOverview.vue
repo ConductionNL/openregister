@@ -801,10 +801,7 @@ export default {
 			} catch (error) {
 				this.actionError =
 					error?.response?.data?.error
-					|| t(
-						'openregister',
-						'That did not work. Try again, or open the flow in the editor.',
-					)
+					|| t('openregister', 'That did not work. Try again.')
 			} finally {
 				this.busy = false
 			}

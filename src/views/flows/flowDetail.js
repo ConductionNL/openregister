@@ -265,15 +265,34 @@ export function formatDuration(ms) {
 	if (typeof ms !== 'number') {
 		return ''
 	}
+	const locale = getCanonicalLocale()
 	if (ms < 1000) {
-		return t('openregister', '{ms} ms', { ms })
+		return unitFormat(locale, 'millisecond', 0).format(ms)
 	}
 	if (ms < 60000) {
-		return t('openregister', '{seconds} s', { seconds: (ms / 1000).toFixed(1) })
+		return unitFormat(locale, 'second', 1).format(ms / 1000)
 	}
 	const minutes = Math.floor(ms / 60000)
 	const seconds = Math.round((ms % 60000) / 1000)
-	return t('openregister', '{minutes} min {seconds} s', { minutes, seconds })
+	return `${unitFormat(locale, 'minute', 0).format(minutes)} ${unitFormat(locale, 'second', 0).format(seconds)}`
+}
+
+/**
+ * A short unit formatter. The browser localises the unit, so a duration
+ * needs no catalogue key per language.
+ *
+ * @param {string} locale The BCP 47 locale.
+ * @param {string} unit An Intl unit identifier.
+ * @param {number} digits The most fraction digits to show.
+ * @return {Intl.NumberFormat} The formatter.
+ */
+function unitFormat(locale, unit, digits) {
+	return new Intl.NumberFormat(locale, {
+		style: 'unit',
+		unit,
+		unitDisplay: 'short',
+		maximumFractionDigits: digits,
+	})
 }
 
 /**
