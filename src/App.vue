@@ -1,6 +1,5 @@
 <template>
 	<CnAppRoot
-		ref="appRoot"
 		appId="openregister"
 		appDisplayName="Open Register"
 		:aiCompanion="true"
@@ -64,7 +63,6 @@ import Modals from './modals/Modals.vue'
 import MainMenu from './navigation/MainMenu.vue'
 import SideBars from './sidebars/SideBars.vue'
 import { initializeAppData } from './services/AppInitializationService.js'
-import { rememberSetupDismissal } from './services/wizardDismissal.js'
 import { setupDashboardStoreWatchers } from './store/modules/dashboard.js'
 
 export default {
@@ -161,10 +159,6 @@ export default {
 
 		// Set up dashboard store watchers to keep dashboard data in sync, after stores are reactive
 		setupDashboardStoreWatchers()
-
-		// The wizard's close is remembered only in this browser; tell the
-		// server too, so it stays closed everywhere.
-		rememberSetupDismissal(this.$refs.appRoot)
 	},
 
 	methods: {
