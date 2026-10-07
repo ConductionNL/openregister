@@ -191,6 +191,234 @@ class LeafRegistryTest extends TestCase {
 	 *
 	 * @return LeafRegistry
 	 */
+	/**
+	 * 🔴 A RENDER SURFACE WITH NO CONVENTIONAL BUNDLE IS REPORTED, NOT REFUSED.
+	 *
+	 * This test asserted the opposite one commit ago, and it was WRONG.
+	 * openregister#3954 skipped the registration, and hermiq is the proof that
+	 * it could not: hermiq ships no `hermiq-leaves.js` and its leaf is not dark.
+	 * It loads its own bundle on EVERY Nextcloud page with
+	 * `Util::addInitScript`, exactly so it runs wherever another app renders the
+	 * integration registry. The skip would have taken down a working feature.
+	 *
+	 * 🔑 WHAT THIS CLASS CAN KNOW IS THE POINT. Whether a bundle reaches the
+	 * page is a fact about the page; the registry sees only the filesystem. The
+	 * absence of one conventional filename is not proof of absence, because it
+	 * is one convention out of at least three and the app chooses.
+	 *
+	 * So the leaf registers, and the error is still logged, because that error
+	 * is what turned hermiq's invisibly-named bundle into a one-line fix.
+	 *
+	 * @return void
+	 */
+	public function testARenderSurfaceWithNoBundleIsReportedNotRefused(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForUser')->willReturn(true);
+		$appManager->method('getAppPath')->willReturn(sys_get_temp_dir());
+
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							id: 'acme-tab',
+							label: 'Tab',
+							icon: 'Cube',
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							requiredApp: 'acme'
+						)
+					);
+				},
+			],
+			null,
+			$appManager
+		);
+
+		$this->assertNotSame(
+			[],
+			$registry->getDescriptors(),
+			'The registry cannot prove a leaf is dark, so it must not refuse one.'
+		);
+	}//end testARenderSurfaceWithNoBundleIsReportedNotRefused()
+
+	/**
+	 * 🔴 A LEAF THAT CLAIMS THE SHARED ENTRY AND HAS NO BUNDLE IS REFUSED.
+	 *
+	 * This is the sound refusal. The platform does the loading for that
+	 * convention, so a missing file is proof the surface cannot render, not an
+	 * inference from one filename out of three.
+	 *
+	 * @return void
+	 */
+	public function testALeafClaimingTheSharedEntryWithNoBundleIsRefused(): void {
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							id: 'acme-tab',
+							label: 'Tab',
+							icon: 'Cube',
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							requiredApp: 'acme',
+							loadStrategy: LeafDescriptor::LOADS_VIA_SHARED_ENTRY
+						)
+					);
+				},
+			],
+			null,
+			$this->appManagerWithPath()
+		);
+
+		$this->assertSame([], $registry->getDescriptors());
+	}//end testALeafClaimingTheSharedEntryWithNoBundleIsRefused()
+
+	/**
+	 * 🔑 A LEAF THAT LOADS ITS OWN SCRIPT IS NOT REFUSED FOR LACKING A BUNDLE.
+	 *
+	 * hermiq and decidiq are this case, and openregister#3954 nearly took both
+	 * of them down. They ship no `<app>-leaves.js` because they do not need one:
+	 * each loads its own registration bundle on every page.
+	 *
+	 * @return void
+	 */
+	public function testALeafThatLoadsItsOwnScriptIsNotRefused(): void {
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							id: 'acme-tab',
+							label: 'Tab',
+							icon: 'Cube',
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							requiredApp: 'acme',
+							loadStrategy: LeafDescriptor::LOADS_VIA_OWN_SCRIPT
+						)
+					);
+				},
+			],
+			null,
+			$this->appManagerWithPath()
+		);
+
+		$this->assertNotSame([], $registry->getDescriptors());
+	}//end testALeafThatLoadsItsOwnScriptIsNotRefused()
+
+	/**
+	 * 🔑 SILENCE IS NOT A CLAIM, so an undeclared leaf still registers.
+	 *
+	 * Every descriptor written before this declaration existed says nothing.
+	 * Refusing them would re-create the #3954 failure wholesale.
+	 *
+	 * @return void
+	 */
+	public function testALeafThatHasNotSaidHowItLoadsIsNotRefused(): void {
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							id: 'acme-tab',
+							label: 'Tab',
+							icon: 'Cube',
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							requiredApp: 'acme'
+						)
+					);
+				},
+			],
+			null,
+			$this->appManagerWithPath()
+		);
+
+		$this->assertNotSame([], $registry->getDescriptors());
+	}//end testALeafThatHasNotSaidHowItLoadsIsNotRefused()
+
+	/**
+	 * An app manager that resolves a path with no leaf bundle in it.
+	 *
+	 * @return IAppManager The double.
+	 */
+	private function appManagerWithPath(): IAppManager {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForUser')->willReturn(true);
+		$appManager->method('getAppPath')->willReturn(sys_get_temp_dir());
+
+		return $appManager;
+	}//end appManagerWithPath()
+
+	/**
+	 * A data provider needs no bundle, so it is not refused for lacking one.
+	 *
+	 * The control that keeps the refusal narrow. Refusing every leaf from an
+	 * app without a bundle would take out every data-only integration on the
+	 * instance, none of which has a client half.
+	 *
+	 * @return void
+	 */
+	public function testADataProviderIsNotRefusedForHavingNoBundle(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForUser')->willReturn(true);
+		$appManager->method('getAppPath')->willReturn(sys_get_temp_dir());
+
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							id: 'acme-data',
+							label: 'Data',
+							icon: 'Cube',
+							kinds: [LeafDescriptor::KIND_DATA_PROVIDER],
+							requiredApp: 'acme'
+						),
+						new _AppLocalNotesProvider()
+					);
+				},
+			],
+			null,
+			$appManager
+		);
+
+		$this->assertNotSame([], $registry->getDescriptors());
+	}//end testADataProviderIsNotRefusedForHavingNoBundle()
+
+	/**
+	 * 🔑 A BUILT-IN LEAF IS NOT REFUSED: it rides OpenRegister's own bundle.
+	 *
+	 * `requiredApp` of null means the leaf belongs to OpenRegister itself,
+	 * whose bundle is already on the page. Refusing those would remove every
+	 * built-in surface on the instance.
+	 *
+	 * @return void
+	 */
+	public function testABuiltInLeafIsNotRefused(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('isEnabledForUser')->willReturn(true);
+		$appManager->method('getAppPath')->willReturn(sys_get_temp_dir());
+
+		$registry = $this->makeRegistry(
+			[
+				function (RegisterLeafProvidersEvent $event) {
+					$event->registerLeaf(
+						new LeafDescriptor(
+							id: 'builtin-tab',
+							label: 'Tab',
+							icon: 'Cube',
+							kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+							requiredApp: null
+						)
+					);
+				},
+			],
+			null,
+			$appManager
+		);
+
+		$this->assertNotSame([], $registry->getDescriptors());
+	}//end testABuiltInLeafIsNotRefused()
+
 	private function makeRegistry(
 		array $listeners,
 		?IntegrationRegistry $integrationRegistry = null,

@@ -57,6 +57,9 @@ use ReflectionMethod;
  * @package OCA\OpenRegister\Tests\Unit\Controller
  *
  * @covers \OCA\OpenRegister\Controller\GitHubIssuesController
+ * @uses \OCA\OpenRegister\Service\Configuration\GitHubGuards
+ * @uses \OCA\OpenRegister\Service\Configuration\GitHubRequestValidator
+ * @uses \OCA\OpenRegister\Service\Configuration\RateLimiterService
  *
  * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-11
  */

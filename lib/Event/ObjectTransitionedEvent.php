@@ -116,7 +116,7 @@ class ObjectTransitionedEvent extends Event {
 	 * the event into two classes to avoid one boolean would force every existing
 	 * listener to subscribe twice.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		ObjectEntity $object,
@@ -148,7 +148,7 @@ class ObjectTransitionedEvent extends Event {
 	 *
 	 * @return bool True when the move was made by a transition's `autoWhen`.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function isAutomatic(): bool {
 		return $this->automatic;

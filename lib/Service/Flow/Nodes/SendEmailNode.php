@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+ * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
  */
 
 declare(strict_types=1);
@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
+use OCA\OpenRegister\Service\Notification\OptOutAuthority;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -120,9 +121,13 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 * @return array<int, string> The accepted config keys.
 	 *
 	 * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
 	 */
 	public function configKeys(): array {
-		return ['recipients', 'subject', 'body'];
+		// `messageCategory`, not `category`: getCategory() already names the
+		// palette category, and a config key of that name would read as it.
+		return ['recipients', 'subject', 'body', 'externalRecipients', 'messageCategory'];
 	}//end configKeys()
 
 	/**
@@ -132,9 +137,13 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 *
 	 * @return void
 	 *
-	 * @throws UnexpectedValueException When the body or the recipients are empty.
+	 * @throws UnexpectedValueException When the body or the recipients are empty,
+	 *                                   `externalRecipients` is not a known mode, or
+	 *                                   `messageCategory` is not a fleet category.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
 	 */
 	public function validateConfig(array $config): void {
 		if (trim((string)($config['body'] ?? '')) === '') {
@@ -153,7 +162,43 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 		if ($recipients === []) {
 			throw new UnexpectedValueException($this->l10n->t('An email needs at least one recipient.'));
 		}
+
+		$mode = trim((string)($config['externalRecipients'] ?? ''));
+		if ($mode !== '' && in_array(strtolower($mode), FlowMessagingService::EXTERNAL_RECIPIENT_MODES, true) === false) {
+			throw new UnexpectedValueException(
+				$this->l10n->t('External recipients must be none, object or any, not "%s".', [$mode])
+			);
+		}
+
+		$this->assertMessageCategory(category: ($config['messageCategory'] ?? ''));
 	}//end validateConfig()
+
+	/**
+	 * Refuse a message category outside the fleet list. Empty reads as `service`.
+	 *
+	 * @param mixed $category The declared value.
+	 *
+	 * @return void
+	 *
+	 * @throws UnexpectedValueException When it is not a fleet category.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
+	 */
+	private function assertMessageCategory(mixed $category): void {
+		$shown = '';
+		if (is_scalar($category) === true) {
+			$shown = strtolower(trim((string)$category));
+		}
+
+		if (($shown !== '' || is_scalar($category) === false) && in_array($shown, OptOutAuthority::CATEGORIES, true) === false) {
+			throw new UnexpectedValueException(
+				$this->l10n->t(
+					'messageCategory must be one of %1$s, not "%2$s".',
+					[implode(', ', OptOutAuthority::CATEGORIES), $shown]
+				)
+			);
+		}
+	}//end assertMessageCategory()
 
 	/**
 	 * The fields this node's configuration is edited through.
@@ -161,6 +206,8 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 * @return array<int, array<string, mixed>> The field descriptions.
 	 *
 	 * @spec openspec/specs/flow-engine/spec.md#requirement-a-node-type-declares-its-own-form-and-its-own-run-log-actions
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
 	 */
 	public function configForm(): array {
 		return [
@@ -168,8 +215,29 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 				'key' => 'recipients',
 				'label' => $this->l10n->t('Who to mail'),
 				'type' => 'text',
-				'help' => $this->l10n->t('User or group ids, or a field on the item such as {{ assignee }}. Groups are expanded.'),
+				'help' => $this->l10n->t(
+					'User or group ids, email addresses, or a field such as {{ assignee }}. Groups are expanded; addresses need external recipients.'
+				),
 				'required' => true,
+			],
+			[
+				'key' => 'externalRecipients',
+				'label' => $this->l10n->t('External recipients'),
+				'type' => 'text',
+				'help' => $this->l10n->t(
+					'Set to none to refuse email addresses, object to mail only addresses on the item, or any to mail every valid address.'
+				),
+			],
+			[
+				// A select over the fleet categories, listed in the form
+				// itself: the shared flow form renders `options` as a picker.
+				'key' => 'messageCategory',
+				'label' => $this->l10n->t('Message category'),
+				'type' => 'select',
+				'options' => $this->messageCategoryOptions(),
+				'help' => $this->l10n->t(
+					'Decisions, statutory notices, account and security mail always arrive. Other mail stops after an opt-out. Empty means service.'
+				),
 			],
 			[
 				'key' => 'subject',
@@ -188,6 +256,45 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	}//end configForm()
 
 	/**
+	 * The message categories as picker options, the default first.
+	 *
+	 * The values are OptOutAuthority::CATEGORIES; a category added there
+	 * without a label here still shows, under its own name.
+	 *
+	 * @return array<int, array{value: string, label: string}> The options.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
+	 */
+	private function messageCategoryOptions(): array {
+		$labels = [
+			'service'     => $this->l10n->t('Service message (default)'),
+			'case-update' => $this->l10n->t('Case update'),
+			'reminder'    => $this->l10n->t('Reminder'),
+			'marketing'   => $this->l10n->t('Marketing, such as a newsletter'),
+			'besluit'     => $this->l10n->t('Decision (besluit), always sent'),
+			'statutory'   => $this->l10n->t('Statutory notice, always sent'),
+			'account'     => $this->l10n->t('Account message, always sent'),
+			'security'    => $this->l10n->t('Security message, always sent'),
+		];
+
+		$ordered = array_values(
+			array_unique(
+				array_merge(
+					[OptOutAuthority::DEFAULT_CATEGORY],
+					array_keys($labels),
+					OptOutAuthority::CATEGORIES
+				)
+			)
+		);
+		$ordered = array_values(array_intersect($ordered, OptOutAuthority::CATEGORIES));
+
+		return array_map(
+			static fn (string $category): array => ['value' => $category, 'label' => ($labels[$category] ?? $category)],
+			$ordered
+		);
+	}//end messageCategoryOptions()
+
+	/**
 	 * Send, then pass the items through unchanged.
 	 *
 	 * Sending is a side effect, not a transformation. Failures throw and are
@@ -200,7 +307,7 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 	 *
 	 * @return array The items, unchanged.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function execute(array $items, array $config, array $context): array {
 		$this->messaging->sendEmail(

@@ -53,7 +53,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
 
 declare(strict_types=1);
@@ -84,7 +84,7 @@ use Throwable;
  * would put the 404 decision in two places, which is how a leaf ends up
  * answering differently from its neighbour.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
 class TaskEventsController extends Controller {
 
@@ -130,7 +130,7 @@ class TaskEventsController extends Controller {
 	 * @return JSONResponse The events and their count; 404 when the task is
 	 *                      absent OR invisible.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -157,7 +157,7 @@ class TaskEventsController extends Controller {
 	 * @return JSONResponse The link row; 404 when the task is absent OR
 	 *                      invisible, 400 when the summary is missing.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -199,7 +199,7 @@ class TaskEventsController extends Controller {
 	 * @return JSONResponse The link row; 404 when the task is absent OR
 	 *                      invisible, 400 when the event is not named in full.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -241,7 +241,7 @@ class TaskEventsController extends Controller {
 	 * @return JSONResponse Confirmation; 404 when the task is absent OR
 	 *                      invisible.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -274,7 +274,7 @@ class TaskEventsController extends Controller {
 	 *                      invisible, and 404 when no linked event carries
 	 *                      that URI.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -323,7 +323,7 @@ class TaskEventsController extends Controller {
 	 *
 	 * @return array{calendarId: mixed, uid: string|null}|null The event, or null.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	private function linkedEvent(string $taskUuid, string $eventId): ?array {
 		foreach ($this->links->getLinkedEvents($taskUuid) as $event) {
@@ -356,7 +356,7 @@ class TaskEventsController extends Controller {
 	 *
 	 * @return Task|null The readable task, or null.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	private function readableTask(string $uuid): ?Task {
 		try {

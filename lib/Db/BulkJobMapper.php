@@ -82,6 +82,43 @@ class BulkJobMapper extends QBMapper {
 	}//end findByUuid()
 
 	/**
+	 * How many jobs stand in each state.
+	 *
+	 * One grouped query rather than one count per state, because the console
+	 * asks for all of them at once and a state the instance has never reached
+	 * must be absent rather than zero: the caller decides which states it
+	 * names, and a missing key is honest about a state nothing has produced.
+	 *
+	 * @return array<string, int> State to count, for the states in use.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function countByState(): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('state')
+			->selectAlias($qb->createFunction('COUNT(*)'), 'job_count')
+			->from($this->getTableName())
+			->groupBy('state');
+
+		$result = $qb->executeQuery();
+		$counts = [];
+
+		foreach ($result->fetchAll() as $row) {
+			$state = ($row['state'] ?? null);
+
+			if ($state === null || $state === '') {
+				continue;
+			}
+
+			$counts[(string)$state] = (int)($row['job_count'] ?? 0);
+		}
+
+		$result->closeCursor();
+
+		return $counts;
+	}//end countByState()
+
+	/**
 	 * List the jobs of one actor, newest first.
 	 *
 	 * @param string $startedBy The actor's uid.

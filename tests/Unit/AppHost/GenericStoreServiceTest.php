@@ -432,4 +432,432 @@ class GenericStoreServiceTest extends TestCase {
 		self::assertArrayHasKey('manifest', $resolved);
 
 	}//end testResolveReturnsTheFullPayload()
+
+	/**
+	 * A descriptor that opted in to publishing, standing in for learniq's.
+	 *
+	 * @param array<int, string> $fields The allowed publish fields.
+	 * @param array<int, string> $groups The publish groups.
+	 *
+	 * @return StoreDescriptor
+	 */
+	private function publishingDescriptor(
+		array $fields = ['title', 'description', 'package'],
+		array $groups = ['instructors']
+	): StoreDescriptor {
+		return new StoreDescriptor(
+			appId: 'learniq',
+			schema: 'shared-course-package',
+			defaultRegister: 'learniq',
+			publishFields: $fields,
+			publishGroups: $groups
+		);
+
+	}//end publishingDescriptor()
+
+	/**
+	 * Stub the HTTP client's POST, capturing the URL and request options.
+	 *
+	 * @param string $body The response body.
+	 * @param int $status The HTTP status code.
+	 * @param array<string, mixed>|null &$options Receives the captured request options.
+	 * @param string|null &$url Receives the captured request URL.
+	 *
+	 * @return void
+	 */
+	private function stubPost(string $body, int $status = 201, ?array &$options = null, ?string &$url = null): void {
+		$response = $this->createMock(IResponse::class);
+		$response->method('getStatusCode')->willReturn($status);
+		$response->method('getBody')->willReturn($body);
+
+		$client = $this->createMock(IClient::class);
+		$client->expects(self::never())->method('get');
+		$client->method('post')->willReturnCallback(
+			static function (string $u, array $o) use ($response, &$options, &$url): IResponse {
+				$url = $u;
+				$options = $o;
+				return $response;
+			}
+		);
+
+		$this->clientService->method('newClient')->willReturn($client);
+
+	}//end stubPost()
+
+	/**
+	 * A descriptor that names fields but no group cannot publish, and no client is built.
+	 *
+	 * @return void
+	 */
+	public function testPublishRefusesADescriptorThatNamesNoGroup(): void {
+		$this->configure(url: 'https://93.184.216.34/');
+		$this->clientService->expects(self::never())->method('newClient');
+		$this->logger->expects(self::once())->method('error')
+			->with(self::stringContains('learniq'));
+
+		$result = $this->service()->publish(
+			descriptor: $this->publishingDescriptor(groups: []),
+			payload: ['slug' => 'course-package-betoog-1a2b3c4d', 'title' => 'Betoog']
+		);
+
+		self::assertSame(GenericStoreService::OUTCOME_NOT_PUBLISHABLE, $result['outcome']);
+		self::assertSame('', $result['slug']);
+
+	}//end testPublishRefusesADescriptorThatNamesNoGroup()
+
+	/**
+	 * A read-only descriptor, and one that names a group but no fields, cannot publish.
+	 *
+	 * The read-only case is every descriptor written before publishing existed.
+	 *
+	 * @return void
+	 */
+	public function testPublishRefusesADescriptorThatAllowsNoFields(): void {
+		$this->configure(url: 'https://93.184.216.34/');
+		$this->clientService->expects(self::never())->method('newClient');
+		$payload = ['slug' => 'course-package-betoog-1a2b3c4d', 'title' => 'Betoog'];
+
+		$readOnly = $this->service()->publish(descriptor: $this->descriptor(), payload: $payload);
+		$noFields = $this->service()->publish(
+			descriptor: $this->publishingDescriptor(fields: []),
+			payload: $payload
+		);
+
+		self::assertSame(GenericStoreService::OUTCOME_NOT_PUBLISHABLE, $readOnly['outcome']);
+		self::assertSame(GenericStoreService::OUTCOME_NOT_PUBLISHABLE, $noFields['outcome']);
+
+	}//end testPublishRefusesADescriptorThatAllowsNoFields()
+
+	/**
+	 * No registry configured means no publish request at all.
+	 *
+	 * @return void
+	 */
+	public function testPublishToAnUnconfiguredStoreMakesNoRequest(): void {
+		$this->configure(url: '   ');
+		$this->clientService->expects(self::never())->method('newClient');
+
+		$result = $this->service()->publish(
+			descriptor: $this->publishingDescriptor(),
+			payload: ['slug' => 'course-package-betoog-1a2b3c4d', 'title' => 'Betoog']
+		);
+
+		self::assertSame(GenericStoreService::OUTCOME_NOT_CONFIGURED, $result['outcome']);
+		self::assertSame('', $result['slug']);
+
+	}//end testPublishToAnUnconfiguredStoreMakesNoRequest()
+
+	/**
+	 * Only the slug and the allowed fields travel.
+	 *
+	 * @return void
+	 */
+	public function testPublishSendsOnlyAllowedFields(): void {
+		$this->configure(url: 'https://93.184.216.34/', register: 'learniq');
+		$options = null;
+		$this->stubPost(body: json_encode(['slug' => 'course-package-betoog-1a2b3c4d']), options: $options);
+
+		$this->service()->publish(
+			descriptor: $this->publishingDescriptor(fields: ['title']),
+			payload: [
+				'slug' => 'course-package-betoog-1a2b3c4d',
+				'title' => 'Betoog',
+				'internalNote' => 'stays home',
+			]
+		);
+
+		$sent = json_decode((string)$options['body'], true);
+		self::assertSame(['slug' => 'course-package-betoog-1a2b3c4d', 'title' => 'Betoog'], $sent);
+		self::assertSame('application/json', $options['headers']['Content-Type']);
+
+	}//end testPublishSendsOnlyAllowedFields()
+
+	/**
+	 * An identity key never travels, even when the descriptor lists it.
+	 *
+	 * A body carrying the id of an object that already lives on the registry
+	 * would replace that object instead of creating one.
+	 *
+	 * @return void
+	 */
+	public function testPublishNeverSendsAnIdentityKey(): void {
+		$this->configure(url: 'https://93.184.216.34/', register: 'learniq');
+		$options = null;
+		$this->stubPost(body: json_encode(['slug' => 'course-package-betoog-1a2b3c4d']), options: $options);
+
+		$this->service()->publish(
+			descriptor: $this->publishingDescriptor(fields: ['id', 'uuid', '@self', 'title']),
+			payload: [
+				'slug' => 'course-package-betoog-1a2b3c4d',
+				'id' => '00000000-0000-0000-0000-000000000001',
+				'uuid' => '00000000-0000-0000-0000-000000000001',
+				'@self' => ['id' => '00000000-0000-0000-0000-000000000001'],
+				'title' => 'Betoog',
+			]
+		);
+
+		$sent = json_decode((string)$options['body'], true);
+		self::assertArrayNotHasKey('id', $sent);
+		self::assertArrayNotHasKey('uuid', $sent);
+		self::assertArrayNotHasKey('@self', $sent);
+		self::assertSame('Betoog', $sent['title']);
+
+	}//end testPublishNeverSendsAnIdentityKey()
+
+	/**
+	 * A payload without a valid slug is refused before any client is built.
+	 *
+	 * @return void
+	 */
+	public function testPublishRefusesAPayloadWithoutAValidSlug(): void {
+		$this->configure(url: 'https://93.184.216.34/');
+		$this->clientService->expects(self::never())->method('newClient');
+
+		$payloads = [
+			['title' => 'no slug'],
+			['slug' => 42],
+			['slug' => 'Course-Package'],
+			['slug' => 'course/../package'],
+			['slug' => '-leading-hyphen'],
+			['slug' => ''],
+		];
+		foreach ($payloads as $payload) {
+			$result = $this->service()->publish(descriptor: $this->publishingDescriptor(), payload: $payload);
+			self::assertSame(
+				GenericStoreService::OUTCOME_NOT_PUBLISHABLE,
+				$result['outcome'],
+				'refused payload: ' . json_encode($payload)
+			);
+		}
+
+	}//end testPublishRefusesAPayloadWithoutAValidSlug()
+
+	/**
+	 * A publish is a POST to the descriptor's register and schema.
+	 *
+	 * @return void
+	 */
+	public function testPublishPostsToTheDescriptorSchema(): void {
+		$this->configure(url: 'https://93.184.216.34/', register: 'learniq');
+		$url = null;
+		$options = null;
+		$this->stubPost(
+			body: json_encode(['slug' => 'course-package-betoog-1a2b3c4d']),
+			options: $options,
+			url: $url
+		);
+
+		$this->service()->publish(
+			descriptor: $this->publishingDescriptor(),
+			payload: ['slug' => 'course-package-betoog-1a2b3c4d', 'title' => 'Betoog']
+		);
+
+		self::assertStringEndsWith(
+			'/index.php/apps/openregister/api/objects/learniq/shared-course-package',
+			(string)$url
+		);
+		self::assertSame(10, $options['timeout']);
+		self::assertSame(10, $options['connect_timeout']);
+
+	}//end testPublishPostsToTheDescriptorSchema()
+
+	/**
+	 * SSRF negative control for the write path.
+	 *
+	 * @return void
+	 */
+	public function testPublishToAPrivateAddressIsRejected(): void {
+		$this->configure(url: 'http://192.168.1.10/');
+		$this->clientService->expects(self::never())->method('newClient');
+
+		$result = $this->service()->publish(
+			descriptor: $this->publishingDescriptor(),
+			payload: ['slug' => 'course-package-betoog-1a2b3c4d', 'title' => 'Betoog']
+		);
+
+		self::assertSame(GenericStoreService::OUTCOME_UNREACHABLE, $result['outcome']);
+		self::assertSame('', $result['slug']);
+
+	}//end testPublishToAPrivateAddressIsRejected()
+
+	/**
+	 * Redirects are refused and the token travels only as a Bearer header.
+	 *
+	 * @return void
+	 */
+	public function testPublishNeverFollowsRedirectsAndSendsTheTokenOnlyAsBearer(): void {
+		$this->configure(url: 'https://93.184.216.34/', register: 'learniq', token: 'TOKEN_PLACEHOLDER');
+		$url = null;
+		$options = null;
+		$this->stubPost(
+			body: json_encode(['slug' => 'course-package-betoog-1a2b3c4d']),
+			options: $options,
+			url: $url
+		);
+
+		$result = $this->service()->publish(
+			descriptor: $this->publishingDescriptor(),
+			payload: ['slug' => 'course-package-betoog-1a2b3c4d', 'title' => 'Betoog']
+		);
+
+		self::assertFalse($options['allow_redirects']);
+		self::assertSame('Bearer TOKEN_PLACEHOLDER', $options['headers']['Authorization']);
+		self::assertStringNotContainsString('TOKEN_PLACEHOLDER', (string)$url);
+		self::assertStringNotContainsString('TOKEN_PLACEHOLDER', (string)$options['body']);
+		self::assertStringNotContainsString('TOKEN_PLACEHOLDER', json_encode($result));
+
+	}//end testPublishNeverFollowsRedirectsAndSendsTheTokenOnlyAsBearer()
+
+	/**
+	 * A body over 20 MiB is not sent.
+	 *
+	 * @return void
+	 */
+	public function testPublishRefusesAnOversizedBody(): void {
+		$this->configure(url: 'https://93.184.216.34/');
+		$this->clientService->expects(self::never())->method('newClient');
+
+		$result = $this->service()->publish(
+			descriptor: $this->publishingDescriptor(),
+			payload: [
+				'slug' => 'course-package-betoog-1a2b3c4d',
+				'package' => str_repeat('a', (20 * 1024 * 1024) + 1),
+			]
+		);
+
+		self::assertSame(GenericStoreService::OUTCOME_TOO_LARGE, $result['outcome']);
+
+	}//end testPublishRefusesAnOversizedBody()
+
+	/**
+	 * A transport failure is unreachable, and the upstream message stays server-side.
+	 *
+	 * @return void
+	 */
+	public function testPublishTransportFailureIsUnreachable(): void {
+		$this->configure(url: 'https://93.184.216.34/');
+		$client = $this->createMock(IClient::class);
+		$client->method('post')->willThrowException(new RuntimeException('connect timeout to 10.0.0.5'));
+		$this->clientService->method('newClient')->willReturn($client);
+
+		$result = $this->service()->publish(
+			descriptor: $this->publishingDescriptor(),
+			payload: ['slug' => 'course-package-betoog-1a2b3c4d', 'title' => 'Betoog']
+		);
+
+		self::assertSame(GenericStoreService::OUTCOME_UNREACHABLE, $result['outcome']);
+		self::assertStringNotContainsString('10.0.0.5', json_encode($result));
+
+	}//end testPublishTransportFailureIsUnreachable()
+
+	/**
+	 * Status codes the registry can answer a publish with, and their outcome.
+	 *
+	 * @return array<string, array{0: int, 1: string}>
+	 */
+	public static function publishStatusProvider(): array {
+		return [
+			'redirect is unreachable' => [302, GenericStoreService::OUTCOME_UNREACHABLE],
+			'validation is rejected' => [422, GenericStoreService::OUTCOME_REJECTED],
+			'duplicate is rejected' => [409, GenericStoreService::OUTCOME_REJECTED],
+			'no write rights is rejected' => [403, GenericStoreService::OUTCOME_REJECTED],
+			'rate limit is itself' => [429, GenericStoreService::OUTCOME_RATE_LIMITED],
+			'server error is unreachable' => [503, GenericStoreService::OUTCOME_UNREACHABLE],
+		];
+
+	}//end publishStatusProvider()
+
+	/**
+	 * A non-2xx answer maps to the outcome that names its remedy.
+	 *
+	 * @param int $status The registry's status.
+	 * @param string $expected The expected outcome.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider publishStatusProvider
+	 */
+	public function testPublishStatusMapsToTheRightOutcome(int $status, string $expected): void {
+		$this->configure(url: 'https://93.184.216.34/');
+		$this->stubPost(body: '{"message":"upstream detail"}', status: $status);
+
+		$result = $this->service()->publish(
+			descriptor: $this->publishingDescriptor(),
+			payload: ['slug' => 'course-package-betoog-1a2b3c4d', 'title' => 'Betoog']
+		);
+
+		self::assertSame($expected, $result['outcome']);
+		self::assertSame('', $result['slug']);
+		self::assertStringNotContainsString('upstream detail', json_encode($result));
+
+	}//end testPublishStatusMapsToTheRightOutcome()
+
+	/**
+	 * A 2xx with a body that is not a JSON object is invalid, not published.
+	 *
+	 * @return void
+	 */
+	public function testPublishUnparseableBodyIsInvalid(): void {
+		$this->configure(url: 'https://93.184.216.34/');
+		$this->stubPost(body: '<html>not json</html>');
+
+		$result = $this->service()->publish(
+			descriptor: $this->publishingDescriptor(),
+			payload: ['slug' => 'course-package-betoog-1a2b3c4d', 'title' => 'Betoog']
+		);
+
+		self::assertSame(GenericStoreService::OUTCOME_INVALID, $result['outcome']);
+		self::assertSame('', $result['slug']);
+
+	}//end testPublishUnparseableBodyIsInvalid()
+
+	/**
+	 * A 201 carrying the sent slug is published, and the slug comes back.
+	 *
+	 * @return void
+	 */
+	public function testPublishReturnsTheVerifiedSlug(): void {
+		$this->configure(url: 'https://93.184.216.34/');
+		$this->stubPost(
+			body: json_encode(
+				[
+					'slug' => 'course-package-betoog-1a2b3c4d',
+					'title' => 'Betoog',
+					'@self' => ['id' => '00000000-0000-0000-0000-000000000002'],
+				]
+			)
+		);
+
+		$result = $this->service()->publish(
+			descriptor: $this->publishingDescriptor(),
+			payload: ['slug' => 'course-package-betoog-1a2b3c4d', 'title' => 'Betoog']
+		);
+
+		self::assertSame(
+			['outcome' => GenericStoreService::OUTCOME_OK, 'slug' => 'course-package-betoog-1a2b3c4d'],
+			$result
+		);
+
+	}//end testPublishReturnsTheVerifiedSlug()
+
+	/**
+	 * A 201 carrying another slug is not reported as published.
+	 *
+	 * @return void
+	 */
+	public function testPublishRejectsAMismatchedSlug(): void {
+		$this->configure(url: 'https://93.184.216.34/');
+		$this->stubPost(body: json_encode(['slug' => 'course-package-betoog-1a2b3c4d-2']));
+		$this->logger->expects(self::atLeastOnce())->method('warning')
+			->with(self::stringContains('course-package-betoog-1a2b3c4d-2'));
+
+		$result = $this->service()->publish(
+			descriptor: $this->publishingDescriptor(),
+			payload: ['slug' => 'course-package-betoog-1a2b3c4d', 'title' => 'Betoog']
+		);
+
+		self::assertSame(GenericStoreService::OUTCOME_INVALID, $result['outcome']);
+		self::assertSame('', $result['slug']);
+
+	}//end testPublishRejectsAMismatchedSlug()
 }//end class

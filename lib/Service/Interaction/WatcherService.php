@@ -40,7 +40,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -125,7 +125,7 @@ class WatcherService {
 	 *
 	 * @return string|null The uid, or null when anonymous.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function callerUid(): ?string {
 		return $this->userSession->getUser()?->getUID();
@@ -145,7 +145,7 @@ class WatcherService {
 	 *
 	 * @return Watcher The subscription.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	public function watch(ObjectEntity $object, ?string $register = null, ?string $schema = null): Watcher {
 		$uid = $this->requireCaller();
@@ -170,7 +170,7 @@ class WatcherService {
 	 *
 	 * @return boolean True when a subscription was removed.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	public function unwatch(ObjectEntity $object): bool {
 		$uid = $this->requireCaller();
@@ -190,7 +190,7 @@ class WatcherService {
 	 *
 	 * @return array<int, Watcher> The subscriptions, oldest first.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
 	public function listWatchers(ObjectEntity $object): array {
 		$this->requireUpdate(object: $object);
@@ -210,7 +210,7 @@ class WatcherService {
 	 *
 	 * @return Watcher The subscription.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
 	public function addWatcher(ObjectEntity $object, string $userId, ?string $register = null, ?string $schema = null): Watcher {
 		$this->requireManage(object: $object);
@@ -281,7 +281,7 @@ class WatcherService {
 	 *
 	 * @return boolean True when a subscription was removed.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
 	public function removeWatcher(ObjectEntity $object, string $userId): bool {
 		if ($this->callerUid() !== $userId) {
@@ -306,7 +306,7 @@ class WatcherService {
 	 *
 	 * @return boolean True when the caller watches it.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	public function isWatchedByCaller(string $objectUuid): bool {
 		if ($objectUuid === '') {
@@ -329,7 +329,7 @@ class WatcherService {
 	 *
 	 * @return array<int, string> The watched uuids; empty when anonymous.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
 	private function watchedUuids(?string $userId = null, ?string $register = null, ?string $schema = null): array {
 		$uid = ($userId ?? $this->callerUid());
@@ -354,7 +354,7 @@ class WatcherService {
 	 *
 	 * @return integer The watcher count.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
 	public function watcherCount(string $objectUuid): int {
 		if ($objectUuid === '') {
@@ -390,7 +390,7 @@ class WatcherService {
 	 *
 	 * @return boolean True when the caller has `update` on the object's schema.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
 	public function maySeeWatchers(ObjectEntity $object): bool {
 		try {
@@ -419,7 +419,7 @@ class WatcherService {
 	 *
 	 * @return array<int, string> The watching uids.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
 	 */
 	public function watcherUids(string $objectUuid): array {
 		if ($objectUuid === '') {
@@ -461,7 +461,7 @@ class WatcherService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-watchers/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
 	 */
 	public function dropWatchers(string $objectUuid, array $userIds): void {
 		foreach ($userIds as $userId) {
@@ -488,7 +488,7 @@ class WatcherService {
 	 *
 	 * @return integer How many subscriptions were removed.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-deleting-an-object-removes-its-watchers
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-deleting-an-object-removes-its-watchers
 	 */
 	public function cleanupForObject(string $objectUuid): int {
 		if ($objectUuid === '') {
@@ -634,7 +634,8 @@ class WatcherService {
 		if ($this->scopeResolver->admitsUnconditionally(
 			userId: $uid,
 			userGroups: $groups,
-			objectOwner: $object->getOwner()
+			objectOwner: $object->getOwner(),
+			authorization: $object->getAuthorization()
 		) === false
 		) {
 			throw new NotAuthorizedException(

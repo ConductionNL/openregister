@@ -33,6 +33,7 @@ use UnexpectedValueException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  */
 final class UnlockObjectNodeTest extends TestCase {
 

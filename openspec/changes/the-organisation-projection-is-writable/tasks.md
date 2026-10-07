@@ -47,8 +47,15 @@
 
 - [ ] 5.1 Each app's own migration off its `organization` schema. This unblocks
       them; it performs none of them.
-- [ ] 5.2 `ObjectsController::destroy()` resolves the uuid through `MagicMapper`
+- [x] 5.2 `ObjectsController::destroy()` resolves the uuid through `MagicMapper`
       before the object-source dispatch, so a delete on ANY virtual schema
       answers 404 rather than the read-only rejection, and `remove()` is never
       reached. Pre-existing, shared with every read-only projection, and the
       reason the delete refusal is tested at the provider rather than over HTTP.
+      Done 5 Oct 2026 on branch `fix/object-source-delete-reaches-provider`:
+      `ObjectService::deleteObject()` sends a sourced schema straight to the
+      handler's provider dispatch after the schema's delete check, so the
+      organisation projection answers with `remove()`'s own refusal and a
+      writable database source deletes its row
+      (`ObjectServiceDeleteOnObjectSourceTest`). 5.1 stays open, so this change
+      is not archived.

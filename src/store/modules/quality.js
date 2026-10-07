@@ -330,7 +330,7 @@ export const useQualityStore = defineStore('quality', {
 		 *
 		 * @param {string|number} id Master object id.
 		 * @return {Promise<Array<object>>} Resolved source records (empty on failure).
-		 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 		 */
 		async fetchMasterSources(id) {
 			if (!id) return []

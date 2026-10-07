@@ -44,6 +44,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use DateTime;
 use LogicException;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\ICache;
@@ -285,6 +286,7 @@ class MagicFacetHandler {
 	 * @return array Facet results with buckets.
 	 *
 	 * @throws \OCP\DB\Exception If a database error occurs.
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
 	public function getSimpleFacets(
 		string $tableName,
@@ -344,7 +346,8 @@ class MagicFacetHandler {
 						field: self::METADATA_PREFIX . $field,
 						interval: $interval,
 						baseQuery: $baseQuery,
-						schema: $schema
+						schema: $schema,
+						register: $register
 					);
 				}
 
@@ -362,6 +365,16 @@ class MagicFacetHandler {
 		);
 
 		foreach ($objectFacetConfig as $field => $config) {
+			// 🔴 AN EXPLICITLY REQUESTED FACET OBEYS THE READ RULE TOO. The
+			// guard in expandFacetConfig() covers only the auto-discovered
+			// `facetable` loop; a caller who names the property in
+			// `_facets[<prop>][type]=terms` skipped it and got the column's
+			// distinct values back (found live on the Rotterdam stack: an
+			// anonymous call listed a property ruled `authenticated`).
+			if ($this->callerMayFacet(schema: $schema, property: (string)$field) === false) {
+				continue;
+			}
+
 			$facetStart = microtime(true);
 			$type = $config['type'] ?? 'terms';
 			// Sanitize field name to match database column (camelCase -> snake_case).
@@ -383,7 +396,8 @@ class MagicFacetHandler {
 					field: $columnName,
 					interval: $interval,
 					baseQuery: $baseQuery,
-					schema: $schema
+					schema: $schema,
+					register: $register
 				);
 			}
 
@@ -418,6 +432,7 @@ class MagicFacetHandler {
 	 * @param array $query The search query with filters and facet config.
 	 *
 	 * @return array Merged facet results across all tables.
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
 	public function getSimpleFacetsUnion(array $tableConfigs, array $query): array {
 		$startTime = microtime(true);
@@ -466,6 +481,14 @@ class MagicFacetHandler {
 		);
 
 		foreach ($objectFacetConfig as $field => $config) {
+			// Same read rule as the single-table path: a facet across several
+			// schemas is omitted when ANY of them withholds the property from
+			// this caller, because the union would hand back that schema's
+			// values among the others.
+			if ($this->callerMayFacetOnEveryTable(tableConfigs: $tableConfigs, property: (string)$field) === false) {
+				continue;
+			}
+
 			$facetStart = microtime(true);
 			$type = $config['type'] ?? 'terms';
 			$columnName = $this->sanitizeColumnName(name: $field);
@@ -645,7 +668,8 @@ class MagicFacetHandler {
 			if ($this->searchHandler !== null) {
 				$whereConditions = $this->searchHandler->buildWhereConditionsSql(
 					query: $baseQuery,
-					schema: $tcSchema
+					schema: $tcSchema,
+					registerId: ($tc['register'] ?? null)?->getId()
 				);
 				foreach ($whereConditions as $condition) {
 					// Skip '1=0' conditions - they mean filter column doesn't exist on this schema.
@@ -893,7 +917,8 @@ class MagicFacetHandler {
 			if ($this->searchHandler !== null && $tcSchema !== null) {
 				$whereConditions = $this->searchHandler->buildWhereConditionsSql(
 					query: $baseQuery,
-					schema: $tcSchema
+					schema: $tcSchema,
+					registerId: ($tc['register'] ?? null)?->getId()
 				);
 				foreach ($whereConditions as $condition) {
 					if ($condition === '1=0') {
@@ -985,6 +1010,21 @@ class MagicFacetHandler {
 			// Performance: Comparable or better than pre-computed (~73ms vs ~97ms in benchmarks).
 			$properties = $schema->getProperties() ?? [];
 			foreach ($properties as $propertyKey => $property) {
+				// 🔴 A FACET IS A READ OF THE COLUMN, SO IT OBEYS THE READ RULE.
+				// This loop offered every `facetable` property to every caller
+				// who could see the rows, and a facet over a governed column
+				// hands back its DISTINCT VALUES. The rows were protected and
+				// the value list was not: for a property scoped to one team,
+				// everybody else could read the set of answers without ever
+				// being allowed to read one.
+				//
+				// It is the quiet kind: the response looks like an ordinary
+				// facet, and the property never appears in any object body, so
+				// nothing on screen suggests a leak.
+				if ($this->callerMayFacet(schema: $schema, property: (string)$propertyKey) === false) {
+					continue;
+				}
+
 				// Check if property is marked as facetable (boolean true or config object).
 				$facetable = $property['facetable'] ?? false;
 				if ($facetable === true || (is_array($facetable) === true && empty($facetable) === false)) {
@@ -1121,6 +1161,87 @@ class MagicFacetHandler {
 	}//end sanitizeColumnName()
 
 	/**
+	 * Whether the caller may be offered a facet over this property.
+	 *
+	 * A facet groups a column and returns its distinct values with counts, which
+	 * is a read of that column for everybody it is offered to. So the question
+	 * is the read question, and it is answered by the ONE thing that already
+	 * answers it: `PropertyRbacHandler`. Asking it here rather than
+	 * reimplementing the rule is the whole point; a second evaluator of "may
+	 * this person see this field" disagrees with the first within a week, and
+	 * the wider one is the one that discloses.
+	 *
+	 * FAILS CLOSED. When the handler cannot be resolved the property is left
+	 * out, because the alternative is offering a facet whose access nobody
+	 * checked.
+	 *
+	 * @param Schema $schema   The schema the property belongs to.
+	 * @param string $property The property name.
+	 *
+	 * @return bool Whether the facet may be offered.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
+	 */
+	private function callerMayFacet(Schema $schema, string $property): bool {
+		if ($schema->hasPropertyAuthorization() === false) {
+			// Nothing on this schema is governed at property level, so there is
+			// no question to ask and no handler to resolve.
+			return true;
+		}
+
+		if ($this->container === null) {
+			$this->logger->warning(
+				message: '[MagicFacetHandler] No container to resolve the property read rule; omitting the facet',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $property]
+			);
+			return false;
+		}
+
+		try {
+			$rbac = $this->container->get(PropertyRbacHandler::class);
+
+			// The object is empty because a facet is not about one record: it
+			// asks whether this property is readable AT ALL for this caller, not
+			// whether it is readable on some particular row. A conditional rule
+			// that depends on a record therefore does not admit the facet, which
+			// is the safe direction.
+			return $rbac->canReadProperty(schema: $schema, property: $property, object: []);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[MagicFacetHandler] Could not check the property read rule; omitting the facet',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'property' => $property,
+					'exception' => $e->getMessage(),
+				]
+			);
+			return false;
+		}
+	}//end callerMayFacet()
+
+	/**
+	 * Whether the caller may facet a property on every table of a union.
+	 *
+	 * @param array  $tableConfigs Entries of ['tableName' => string, 'register' => Register, 'schema' => Schema].
+	 * @param string $property     The property being faceted.
+	 *
+	 * @return bool False when any table's schema withholds the property.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 */
+	private function callerMayFacetOnEveryTable(array $tableConfigs, string $property): bool {
+		foreach ($tableConfigs as $tableConfig) {
+			$schema = ($tableConfig['schema'] ?? null);
+			if ($schema instanceof Schema && $this->callerMayFacet(schema: $schema, property: $property) === false) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end callerMayFacetOnEveryTable()
+
+	/**
 	 * Determine facet type based on property definition.
 	 *
 	 * @param array $property The property definition from the schema.
@@ -1226,10 +1347,17 @@ class MagicFacetHandler {
 		);
 
 		if ($this->searchHandler !== null) {
+			// 🔴 THE REGISTER IS PASSED SO `_related` NARROWS THE COUNTS TOO.
+			// A facet count that ignores a filter the list honours is worse than
+			// no count: the user filters cases down to the ones carrying a
+			// property, and the facet beside the result still describes every
+			// case in the register. Nothing looks broken, the numbers are just
+			// answers to a different question.
 			$queryBuilder = $this->searchHandler->buildFilteredQuery(
 				query: $baseQuery,
 				schema: $schema,
-				tableName: $tableName
+				tableName: $tableName,
+				registerId: $register->getId()
 			);
 			$columnRef = "t.{$field}";
 
@@ -1383,6 +1511,7 @@ class MagicFacetHandler {
 	 * @param string $interval The histogram interval (day, week, month, year).
 	 * @param array $baseQuery Base query filters to apply.
 	 * @param Schema|null $schema The schema for property type checking.
+	 * @param Register|null $register The register the table belongs to, for the register-scoped property lookup.
 	 *
 	 * @return array Facet result with type, interval, and buckets.
 	 *
@@ -1394,6 +1523,7 @@ class MagicFacetHandler {
 		string $interval,
 		array $baseQuery,
 		?Schema $schema = null,
+		?Register $register = null,
 	): array {
 		// Check if column exists.
 		if ($this->columnExists(tableName: $tableName, columnName: $field) === false) {
@@ -1417,10 +1547,13 @@ class MagicFacetHandler {
 			throw new LogicException($msg);
 		}
 
+		// Same reason as the terms facet: a histogram that ignores `_related`
+		// draws a shape of the unfiltered set beside a filtered list.
 		$queryBuilder = $this->searchHandler->buildFilteredQuery(
 			query: $baseQuery,
 			schema: $schema,
-			tableName: $tableName
+			tableName: $tableName,
+			registerId: $register?->getId()
 		);
 
 		// The date-key SQL expression is platform-specific (TO_CHAR on

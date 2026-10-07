@@ -61,6 +61,13 @@ class LifecycleActionContext {
 	private array $declared = [];
 
 	/**
+	 * Apps a transition runs as the system for, a stack per object uuid.
+	 *
+	 * @var array<string, list<string>>
+	 */
+	private array $system = [];
+
+	/**
 	 * Declare that the named transition is being performed on this object.
 	 *
 	 * Pair every call with release() in a `finally`, or the declaration leaks
@@ -71,7 +78,7 @@ class LifecycleActionContext {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function declare(string $uuid, string $action): void {
 		$this->declared[$uuid][] = $action;
@@ -84,7 +91,7 @@ class LifecycleActionContext {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function release(string $uuid): void {
 		if (isset($this->declared[$uuid]) === false) {
@@ -104,7 +111,7 @@ class LifecycleActionContext {
 	 *
 	 * @return string|null The innermost declared action, or null when none.
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function declaredFor(string $uuid): ?string {
 		$stack = ($this->declared[$uuid] ?? []);
@@ -114,4 +121,62 @@ class LifecycleActionContext {
 
 		return $stack[array_key_last($stack)];
 	}//end declaredFor()
+
+	/**
+	 * Mark that a transition on this object runs as the system, for an app.
+	 *
+	 * Set only by {@see TransitionEngine::transitionAsSystem()}, around the
+	 * write, and read by the audit trail so the row says the move skipped
+	 * OpenRegister's own read and update checks and which app took that
+	 * responsibility. The row's user is still the real caller. Pair every call
+	 * with leaveSystem() in a `finally`.
+	 *
+	 * @param string $uuid The object's uuid.
+	 * @param string $app  The app id that approved the caller itself.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function enterSystem(string $uuid, string $app): void {
+		$this->system[$uuid][] = $app;
+	}//end enterSystem()
+
+	/**
+	 * Release the innermost system mark for this object.
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function leaveSystem(string $uuid): void {
+		if (isset($this->system[$uuid]) === false) {
+			return;
+		}
+
+		array_pop($this->system[$uuid]);
+		if ($this->system[$uuid] === []) {
+			unset($this->system[$uuid]);
+		}
+	}//end leaveSystem()
+
+	/**
+	 * The app a transition on this object currently runs as the system for, if any.
+	 *
+	 * @param string $uuid The object's uuid.
+	 *
+	 * @return string|null The innermost app id, or null for an ordinary write.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function systemAppFor(string $uuid): ?string {
+		$stack = ($this->system[$uuid] ?? []);
+		if ($stack === []) {
+			return null;
+		}
+
+		return $stack[array_key_last($stack)];
+	}//end systemAppFor()
 }//end class

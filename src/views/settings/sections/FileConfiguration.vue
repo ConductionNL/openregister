@@ -683,6 +683,60 @@
 								</p>
 							</div>
 
+							<div class="field-group">
+								<label for="openanonymiser-username">{{
+									t('openregister', 'OpenAnonymiser user name')
+								}}</label>
+								<NcTextField
+									id="openanonymiser-username"
+									v-model="fileSettings.openAnonymiserUsername"
+									autocomplete="off"
+									@update:modelValue="saveSettings" />
+								<p class="field-hint">
+									{{
+										t(
+											'openregister',
+											'Leave empty when the endpoint does not ask for a login.',
+										)
+									}}
+								</p>
+							</div>
+
+							<div class="field-group">
+								<label for="openanonymiser-password">{{
+									t('openregister', 'OpenAnonymiser password')
+								}}</label>
+								<NcTextField
+									id="openanonymiser-password"
+									v-model="openAnonymiserPassword"
+									type="password"
+									autocomplete="new-password"
+									:placeholder="
+										fileSettings.openAnonymiserPasswordSet
+											? t(
+													'openregister',
+													'A password is stored',
+												)
+											: ''
+									"
+									@update:modelValue="
+										openAnonymiserPasswordChanged = true
+									"
+									@blur="saveOpenAnonymiserPassword">
+									<template #trailing-button-icon>
+										<KeyIcon :size="20" />
+									</template>
+								</NcTextField>
+								<p class="field-hint">
+									{{
+										t(
+											'openregister',
+											'Stored as a secret and never shown again. Type a new one to replace it.',
+										)
+									}}
+								</p>
+							</div>
+
 							<NcButton
 								variant="secondary"
 								@click="testOpenAnonymiserConnection">
@@ -919,7 +973,14 @@ export default {
 				openAnonymiserApiEndpoint: '',
 				// OpenAnonymiser source: 'internal' (AppAPI ExApp) or 'external' (URL).
 				openAnonymiserSource: 'internal',
+				// HTTP Basic user for the external endpoint; the password is write-only.
+				openAnonymiserUsername: '',
+				openAnonymiserPasswordSet: false,
 			},
+
+			// A newly typed OpenAnonymiser password, sent once and then cleared.
+			openAnonymiserPassword: '',
+			openAnonymiserPasswordChanged: false,
 
 			// Resolved backend state from GET /api/admin/anonymisation/backend-state.
 			backendState: null,
@@ -1462,6 +1523,10 @@ export default {
 						settings.openAnonymiserApiEndpoint || ''
 					this.fileSettings.openAnonymiserSource =
 						settings.openAnonymiserSource || 'internal'
+					this.fileSettings.openAnonymiserUsername =
+						settings.openAnonymiserUsername || ''
+					this.fileSettings.openAnonymiserPasswordSet =
+						settings.openAnonymiserPasswordSet === true
 
 					// Load file types
 					if (settings.enabledFileTypes) {
@@ -1643,7 +1708,13 @@ export default {
 		 */
 		async saveSettings() {
 			try {
-				await this.settingsStore.saveFileSettings({
+				// The password is only sent when it was typed: a save without the
+				// key keeps the stored one, an empty string clears it.
+				const passwordField = this.openAnonymiserPasswordChanged
+					? { openAnonymiserPassword: this.openAnonymiserPassword }
+					: {}
+				const saved = await this.settingsStore.saveFileSettings({
+					...passwordField,
 					extractionScope:
 						this.fileSettings.extractionScope?.id || 'objects',
 					textExtractor: this.fileSettings.textExtractor?.id || 'llphant',
@@ -1666,10 +1737,21 @@ export default {
 						this.fileSettings.openAnonymiserApiEndpoint || '',
 					openAnonymiserSource:
 						this.fileSettings.openAnonymiserSource || 'internal',
+					openAnonymiserUsername:
+						this.fileSettings.openAnonymiserUsername || '',
 					enabledFileTypes: this.fileTypes
 						.filter((ft) => ft.enabled)
 						.map((ft) => ft.extension),
 				})
+
+				if (this.openAnonymiserPasswordChanged) {
+					this.openAnonymiserPassword = ''
+					this.openAnonymiserPasswordChanged = false
+				}
+				if (saved && typeof saved.openAnonymiserPasswordSet === 'boolean') {
+					this.fileSettings.openAnonymiserPasswordSet =
+						saved.openAnonymiserPasswordSet
+				}
 
 				// Refresh resolved backend state so the active/recommended indicators stay in sync.
 				await this.loadBackendState()
@@ -1679,6 +1761,18 @@ export default {
 				console.error('Failed to save file settings:', error)
 				this.showSaveMessage('Failed to save settings', 'error')
 			}
+		},
+
+		/**
+		 * Save a newly typed OpenAnonymiser password when the field loses focus.
+		 *
+		 * @spec exclude UI plumbing: write-only credential field delegating to saveSettings.
+		 */
+		async saveOpenAnonymiserPassword() {
+			if (!this.openAnonymiserPasswordChanged) {
+				return
+			}
+			await this.saveSettings()
 		},
 
 		/**

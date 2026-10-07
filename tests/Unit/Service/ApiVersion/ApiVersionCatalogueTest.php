@@ -30,6 +30,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\ApiVersion\ApiVersionCatalogue
+ * @uses \OCA\OpenRegister\Service\ApiVersion\ApiVersion
  */
 class ApiVersionCatalogueTest extends TestCase {
 

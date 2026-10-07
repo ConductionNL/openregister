@@ -452,6 +452,49 @@ curl -X POST /api/objects/1/3 \
 
 **Status:** `201 Created`
 
+#### Create or update by a declared key
+
+An integration that knows a record by its own key, and not by its uuid, can send the record once and let Open Register decide. Add `_upsertOn` with the name of a uniqueness constraint the schema declares with action `refuse`:
+
+```bash
+curl -X POST "/api/objects/zaken/zaak?_upsertOn=zaaksleutel" \
+  -u "<USER>:<API_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "gemeentecode": "0363",
+    "zaaknummer": "Z-2026-0042",
+    "omschrijving": "Kapvergunning"
+  }'
+```
+
+The schema declares the key in its configuration:
+
+```json
+{
+  "configuration": {
+    "uniqueConstraints": [
+      { "name": "zaaksleutel", "properties": ["gemeentecode", "zaaknummer"], "action": "refuse" }
+    ]
+  }
+}
+```
+
+The legacy `configuration.unique` key works too. Name it by its properties joined with `+`, for example `_upsertOn=gemeentecode+zaaknummer`.
+
+Open Register reads the key's values from the body and looks for the record that holds them, under your own read rights and organisation.
+
+| Status | When |
+|---|---|
+| `201` | No record holds the key, so a new one is created. |
+| `200` | One record holds the key, so that record is updated with the body. The response carries its uuid. |
+| `400` | `_upsertOn` is not a `refuse` constraint of this schema (the answer lists the ones it can be, in `refuseConstraints`), the body has no value for one of the key's properties (named in `property`), or `_failIfExists` was sent as well. |
+| `401` | The call is anonymous. An upsert needs a signed-in caller. |
+| `403` | You can read the record that holds the key but may not change it. |
+| `409` | More than one record holds the key, so nothing is written and `matches` lists them. Also when a record you cannot see holds the key: then the answer names the constraint and no uuid. |
+| `503` | The key could not be looked up or locked, so nothing is written. Try again after the `Retry-After` seconds. |
+
+Two calls with the same key at the same moment are handled one after the other, so they produce one record. Calls with different keys do not wait for each other. A `report` constraint cannot be a key, because it allows duplicates on purpose.
+
 ### Update Object (Full Replace)
 
 **PUT** `/api/objects/{register}/{schema}/{id}`
@@ -571,6 +614,8 @@ files/Open Registers/{Register Name}/{object-uuid}/{fieldName}_{timestamp}_{hash
 ```
 
 For **unauthenticated** (public) requests, files are stored under the OpenRegister system user account. For authenticated requests, files are stored under the requesting user's account.
+
+A register gets its folder when it is created: through the API, or by an app's configuration import, which makes the folder of every register it imports. Registers imported before imports did this get theirs on the next upgrade, from the repair step `CreateMissingRegisterFolders`. If a register still has no folder, the first upload into it makes one, whoever sends it, including a request without a Nextcloud session such as a portal upload. The upload does not need permission to edit the register: the folder's id is saved as bookkeeping. When two first uploads arrive together, both use the same folder.
 
 ### Accessing Files
 

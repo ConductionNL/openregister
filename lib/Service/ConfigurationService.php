@@ -36,16 +36,19 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
 use OCA\OpenRegister\Service\Configuration\CacheHandler;
 use OCA\OpenRegister\Service\Configuration\ExportHandler;
 use OCA\OpenRegister\Service\Configuration\FetchHandler;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\Configuration\GitLabHandler;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
+use OCA\OpenRegister\Service\Configuration\ImportSelection;
 use OCA\OpenRegister\Service\Configuration\PreviewHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
 use OCA\OpenRegister\Support\FleetAppId;
 use OCP\App\IAppManager;
+use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use Psr\Container\ContainerExceptionInterface;
@@ -576,6 +579,88 @@ class ConfigurationService {
 	}//end importFromApp()
 
 	/**
+	 * The recorded import jobs of an app id, oldest first.
+	 *
+	 * Only jobs that created at least one traceable object are recorded, so an
+	 * empty list means there is nothing an app can remove by job; a setup
+	 * wizard hides its "remove this example set" button then.
+	 *
+	 * @param string $appId The app id the imports ran under (e.g. `learniq.demo`).
+	 *
+	 * @return array<int, array{jobId: string, version: string, created: int, importedAt: string}>
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
+	 */
+	public function listImportJobs(string $appId): array {
+		return $this->getImportJobRecorder()->jobs(appId: $appId);
+	}//end listImportJobs()
+
+	/**
+	 * Soft-delete every object the recorded imports of an app id created.
+	 *
+	 * The call a setup wizard's "remove this example set" makes. It runs
+	 * in-process and as a system operation, as importFromApp() did: the
+	 * objects were written by the system, and an administrator's own RBAC on,
+	 * say, an append-only schema must not stop the app removing its own
+	 * example rows. WHO may remove is the calling app's decision; nothing
+	 * routes here over HTTP.
+	 *
+	 * A job whose report has no errors is forgotten. A job with errors stays
+	 * recorded, so the removal can be retried or finished with
+	 * `occ openregister:objects:purge --import-job <id>`.
+	 *
+	 * @param string $appId The app id the imports ran under.
+	 *
+	 * @return array{appId: string, jobs: array<int, array<string, mixed>>, softDeleted: int, errors: array<int, array<string, string>>}
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the static scoped-elevation helper importFromApp() uses.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-must-be-able-to-remove-the-objects-its-recorded-imports-created
+	 */
+	public function softDeleteAppImports(string $appId): array {
+		return SystemOperationContext::run(
+			fn (): array => $this->removeRecordedImports(appId: $appId)
+		);
+	}//end softDeleteAppImports()
+
+	/**
+	 * Remove each recorded import of an app id and forget the clean ones.
+	 *
+	 * @param string $appId The app id the imports ran under.
+	 *
+	 * @return array{appId: string, jobs: array<int, array<string, mixed>>, softDeleted: int, errors: array<int, array<string, string>>}
+	 */
+	private function removeRecordedImports(string $appId): array {
+		$recorder = $this->getImportJobRecorder();
+		$importService = $this->container->get(ImportService::class);
+
+		$summary = ['appId' => $appId, 'jobs' => [], 'softDeleted' => 0, 'errors' => []];
+		foreach ($recorder->jobs(appId: $appId) as $job) {
+			$report = $importService->softDeleteByImportJobId(importJobId: $job['jobId']);
+			$summary['jobs'][] = $report;
+			$summary['softDeleted'] += count($report['softDeleted']);
+			foreach ($report['errors'] as $error) {
+				$summary['errors'][] = ['importJobId' => $job['jobId'], 'uuid' => $error['uuid'], 'error' => $error['error']];
+			}
+
+			if ($report['errors'] === []) {
+				$recorder->forget(appId: $appId, importJobId: $job['jobId']);
+			}
+		}
+
+		return $summary;
+	}//end removeRecordedImports()
+
+	/**
+	 * The app import job recorder, resolved lazily like the ImportHandler.
+	 *
+	 * @return AppImportJobRecorder
+	 */
+	private function getImportJobRecorder(): AppImportJobRecorder {
+		return $this->container->get(AppImportJobRecorder::class);
+	}//end getImportJobRecorder()
+
+	/**
 	 * Check the remote version of a configuration
 	 *
 	 * Fetches the configuration from the source URL and extracts its version.
@@ -977,23 +1062,99 @@ class ConfigurationService {
 	}//end getCacheHandler()
 
 	/**
-	 * Import configuration with selection.
+	 * Import a remote configuration, whole or narrowed to a selection.
 	 *
-	 * Delegates to PreviewHandler.
+	 * The preview's import endpoint passes what the administrator picked; the
+	 * hourly ConfigurationCheckJob passes an empty selection, which means the
+	 * whole remote document (seed data included). The document is fetched
+	 * fresh, narrowed with ImportSelection, and handed to the importer, which
+	 * keeps its per-entity version gates (`force` stays false).
+	 *
+	 * The configuration then tracks every register, schema and object the
+	 * import returned, next to what it already tracked. Only a whole import
+	 * moves `localVersion` to the remote version: after a partial one the rest
+	 * of the update must stay on offer.
 	 *
 	 * @param Configuration $configuration Configuration to import
-	 * @param array $selection Selection of items to import
+	 * @param array $selection Selected `registers`/`schemas` slugs and `register:schema:slug` object keys; empty = all
 	 *
-	 * @return array Import results
+	 * @return array Import results, keyed as importFromJson() returns them
 	 *
-	 * @psalm-return array<never, never>
+	 * @throws Exception When the remote document cannot be fetched or the import fails
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-6
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-selective-configuration-import-and-auto-update-must-import-what-they-name
 	 */
 	public function importConfigurationWithSelection(Configuration $configuration, array $selection): array {
-		return $this->previewHandler->importConfigurationWithSelection(
-			_configuration: $configuration,
-			_selection: $selection
+		$remoteData = $this->fetchRemoteConfiguration(configuration: $configuration);
+		if ($remoteData instanceof JSONResponse) {
+			$error = $remoteData->getData()['error'] ?? 'unknown error';
+			throw new Exception('Failed to fetch remote configuration: ' . $error);
+		}
+
+		$whole = ImportSelection::isEmpty(selection: $selection);
+		$data = $remoteData;
+		if ($whole === false) {
+			$data = ImportSelection::filter(document: $remoteData, selection: $selection);
+			if (ImportSelection::hasContent(filtered: $data) === false) {
+				return ['registers' => [], 'schemas' => [], 'objects' => []];
+			}
+		}
+
+		$remoteVersion = $remoteData['version'] ?? $remoteData['info']['version'] ?? null;
+		$result = $this->importFromJson(
+			data: $data,
+			configuration: $configuration,
+			owner: $configuration->getApp(),
+			appId: $configuration->getApp(),
+			version: $remoteVersion ?? $configuration->getVersion(),
+			force: false
 		);
+
+		$configuration->setRegisters($this->mergeIds(existing: $configuration->getRegisters(), entities: $result['registers'] ?? []));
+		$configuration->setSchemas($this->mergeIds(existing: $configuration->getSchemas(), entities: $result['schemas'] ?? []));
+		$configuration->setObjects($this->mergeIds(existing: $configuration->getObjects(), entities: $result['objects'] ?? []));
+		if ($whole === true && $remoteVersion !== null) {
+			$configuration->setLocalVersion((string)$remoteVersion);
+		}
+
+		$this->configurationMapper->update($configuration);
+
+		$this->logger->info(
+			message: '[ConfigurationService] Imported configuration ' . $configuration->getId(),
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'whole' => $whole,
+				'registers' => count($result['registers'] ?? []),
+				'schemas' => count($result['schemas'] ?? []),
+				'objects' => count($result['objects'] ?? []),
+			]
+		);
+
+		return $result;
 	}//end importConfigurationWithSelection()
+
+	/**
+	 * Add the ids of imported entities to a tracked id list, without duplicates.
+	 *
+	 * @param array|null $existing Ids already tracked.
+	 * @param array $entities Entities the import returned.
+	 *
+	 * @return array<int, int>
+	 */
+	private function mergeIds(?array $existing, array $entities): array {
+		$ids = array_values($existing ?? []);
+		foreach ($entities as $entity) {
+			if (($entity instanceof Entity) === false) {
+				continue;
+			}
+
+			$id = $entity->getId();
+			if ($id !== null && in_array($id, $ids, true) === false) {
+				$ids[] = $id;
+			}
+		}
+
+		return $ids;
+	}//end mergeIds()
 }//end class

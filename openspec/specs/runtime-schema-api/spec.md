@@ -171,3 +171,40 @@ Register's `schemas[]` field if not already present.
 - **THEN** no Register row is auto-created; the existing pre-spec
   behaviour is preserved
 
+
+### Requirement: REQ-SDRAFT-001 A schema edit can be held as a draft until it is published
+
+A schema SHALL accept a draft of its definition that does not affect validation of records until it is published. `PUT /api/schemas/{id}?draft=true` SHALL store the edit as the draft only. `POST /api/schemas/{id}/draft/publish` SHALL apply the draft through the normal update, with its breaking-change gate, version bump and one changelog entry, and SHALL clear it; a refused publish SHALL keep the draft. `DELETE /api/schemas/{id}/draft` SHALL remove it. An import SHALL NOT carry a draft.
+
+#### Scenario: a draft does not refuse live records
+
+- **GIVEN** a published schema and a draft that makes `email` required
+- **WHEN** a client saves a record without `email`
+- **THEN** the record is saved
+- @e2e exclude {asserted against the real versioning service and Opis in tests/Unit/Controller/SchemaDraftTest.php testADraftDoesNotRefuseLiveRecords}
+
+#### Scenario: publishing applies the draft
+
+- **GIVEN** the same draft
+- **WHEN** the administrator publishes it
+- **THEN** a record without `email` is refused, the schema version is bumped and the changelog has one entry for the change
+- @e2e exclude {asserted in tests/Unit/Controller/SchemaDraftTest.php testPublishingAppliesTheDraftOnceWithOneChangelogEntry}
+
+### Requirement: A schema keeps its declared uniqueness constraints on save
+
+A schema SHALL keep `configuration.uniqueConstraints` through every create, update and import, in the list form (`[{name, properties, action}]`) and the keyed form (`{name: {properties, action}}`), beside the legacy `configuration.unique`. The constraints served back SHALL be the ones declared, so the uniqueness check on a record save reads what the schema owner wrote.
+
+#### Scenario: a declared refuse constraint survives the save
+
+- **GIVEN** a client creates a schema with `configuration.uniqueConstraints` `[{"name": "een-bezwaar", "properties": ["besluit", "indiener"], "action": "refuse"}]`
+- **WHEN** the schema is read back
+- **THEN** its configuration carries that constraint unchanged
+- **AND** the uniqueness check reads `een-bezwaar` as a refuse constraint
+- @e2e exclude {asserted on the real entity and the real evaluator in tests/Unit/Db/SchemaUniqueConstraintsConfigTest.php; tests/e2e/ci/code-list-lifecycle.spec.ts drives the refusal live}
+
+#### Scenario: a record that shares its key can still be deleted
+
+- **GIVEN** two records holding the same key, saved before the schema declared a refuse constraint on it
+- **WHEN** either record is deleted
+- **THEN** the delete succeeds, because removing a record never breaches uniqueness
+- @e2e exclude {asserted on the real listener, evaluator and ObjectUpdatingEvent in tests/Unit/Listener/UniqueConstraintListenerDeleteTest.php; the Newman upsert collection deletes both duplicates in its tearDown}

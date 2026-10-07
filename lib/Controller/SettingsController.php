@@ -647,7 +647,7 @@ class SettingsController extends Controller {
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Independent tolerant lookups
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#6.1
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#6.1
 	 */
 	private function getHybridSearchDiagnostics(bool $isPostgres): array {
 		$diagnostics = [

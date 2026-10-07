@@ -26,7 +26,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
+ * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
  */
 
 declare(strict_types=1);
@@ -35,6 +35,7 @@ namespace Unit\Service\Credential;
 
 use OCA\OpenRegister\Service\Credential\CredentialAccessDeniedException;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCA\OpenRegister\Service\Credential\OAuth2ClientNotConfiguredException;
 use OCA\OpenRegister\Service\Credential\OAuth2ClientResolver;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -84,7 +85,8 @@ class OAuth2ClientResolverTest extends TestCase {
 	public function testAProviderWithNoClientConfiguredAnywhereIsRefused(): void {
 		$resolver = $this->makeResolver(config: [], secret: null);
 
-		$this->expectException(CredentialAccessDeniedException::class);
+		// The narrow type is what lets the connect start answer 409 rather than 403.
+		$this->expectException(OAuth2ClientNotConfiguredException::class);
 		$this->expectExceptionMessage('no OAuth2 client id is configured');
 
 		$resolver->resolve(credential: [], provider: 'x', actingUserId: 'alice');

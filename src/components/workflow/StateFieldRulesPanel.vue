@@ -113,7 +113,7 @@ import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
  * What this panel adds is the reading nobody could do before: which status
  * freezes what, for whom, and whether a condition narrows it.
  *
- * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+ * @spec openspec/specs/row-field-level-security/spec.md
  */
 export default {
 	name: 'StateFieldRulesPanel',
@@ -131,7 +131,7 @@ export default {
 		 * The declared statuses that carry rules, normalised for the template.
 		 *
 		 * @return {Array} One entry per status declaring a rule or a condition.
-		 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+		 * @spec openspec/specs/row-field-level-security/spec.md
 		 */
 		stateEntries() {
 			const states =
@@ -164,7 +164,7 @@ export default {
 		 *
 		 * @param {object} fields The declared fields block.
 		 * @return {Array} One entry per declared rule.
-		 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+		 * @spec openspec/specs/row-field-level-security/spec.md
 		 */
 		rulesOf(fields) {
 			if (!fields || typeof fields !== 'object') {
@@ -212,7 +212,7 @@ export default {
 		 *
 		 * @param {string} kind One of hidden, readOnly, required.
 		 * @return {string} The translated label.
-		 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+		 * @spec openspec/specs/row-field-level-security/spec.md
 		 */
 		kindLabel(kind) {
 			if (kind === 'hidden') {

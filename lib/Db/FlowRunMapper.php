@@ -54,7 +54,7 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<FlowRun>
  *
  * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
- * @spec openspec/changes/or-flow-queue-fairness/specs/flow-queue-fairness/spec.md
+ * @spec openspec/specs/flow-queue-fairness/spec.md
  */
 class FlowRunMapper extends QBMapper {
 	/**
@@ -93,7 +93,7 @@ class FlowRunMapper extends QBMapper {
 	 *
 	 * @return FlowRun The updated run.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-that-has-become-moot-is-terminated-not-orphaned
 	 */
 	public function update(Entity $entity): FlowRun {
 		if ($entity instanceof FlowRun === false) {
@@ -147,7 +147,7 @@ class FlowRunMapper extends QBMapper {
 	 *
 	 * @return array<int, FlowRun> Zero, one or two suspended runs.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work-and-gains-a-correlation-key
 	 */
 	public function findSuspendedByCorrelationKey(string $correlationKey): array {
 		$qb = $this->db->getQueryBuilder();
@@ -388,7 +388,7 @@ class FlowRunMapper extends QBMapper {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('uuid')
 			->from($this->getTableName())
-			->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATE)))
+			->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
 			->andWhere(
 				$qb->expr()->in(
 					'status',
@@ -524,7 +524,7 @@ class FlowRunMapper extends QBMapper {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('uuid')
 			->from($this->getTableName())
-			->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATE)))
+			->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
 			->andWhere(
 				$qb->expr()->in(
 					'status',
@@ -648,7 +648,7 @@ class FlowRunMapper extends QBMapper {
 	 * @return boolean True when a non-terminal run exists for this flow.
 	 *
 	 * @spec openspec/changes/or-flow-scheduled-trigger/specs/flow-scheduled-trigger/spec.md
-	 * @spec openspec/changes/or-flow-queue-fairness/specs/flow-queue-fairness/spec.md
+	 * @spec openspec/specs/flow-queue-fairness/spec.md
 	 */
 	public function hasActiveRun(string $flowId): bool {
 		if (trim($flowId) === '') {
@@ -1065,7 +1065,7 @@ class FlowRunMapper extends QBMapper {
 	 *
 	 * @return array<int, FlowRun> The queued runs.
 	 *
-	 * @spec openspec/changes/or-flow-queue-fairness/specs/flow-queue-fairness/spec.md
+	 * @spec openspec/specs/flow-queue-fairness/spec.md
 	 */
 	public function findQueued(int $limit = 25): array {
 		if ($limit < 1) {
@@ -1111,7 +1111,7 @@ class FlowRunMapper extends QBMapper {
 	 *
 	 * @return array<int, string> The flow ids.
 	 *
-	 * @spec openspec/changes/or-flow-queue-fairness/specs/flow-queue-fairness/spec.md
+	 * @spec openspec/specs/flow-queue-fairness/spec.md
 	 */
 	protected function flowsWithQueuedRuns(int $limit): array {
 		$qb = $this->db->getQueryBuilder();
@@ -1142,7 +1142,7 @@ class FlowRunMapper extends QBMapper {
 	 *
 	 * @return array<int, FlowRun> The queued runs.
 	 *
-	 * @spec openspec/changes/or-flow-queue-fairness/specs/flow-queue-fairness/spec.md
+	 * @spec openspec/specs/flow-queue-fairness/spec.md
 	 */
 	protected function queuedForFlow(string $flowId, int $limit): array {
 		$qb = $this->db->getQueryBuilder();
@@ -1184,7 +1184,7 @@ class FlowRunMapper extends QBMapper {
 	 *
 	 * @return array<int, FlowRun> The runs that were expired.
 	 *
-	 * @spec openspec/changes/or-flow-queue-fairness/specs/flow-queue-fairness/spec.md
+	 * @spec openspec/specs/flow-queue-fairness/spec.md
 	 */
 	public function expireQueuedBefore(DateTime $before, string $reason, int $limit = 500): array {
 		if ($limit < 1) {
@@ -1218,7 +1218,7 @@ class FlowRunMapper extends QBMapper {
 	 *
 	 * @return array<int, FlowRun> The runs.
 	 *
-	 * @spec openspec/changes/or-flow-queue-fairness/specs/flow-queue-fairness/spec.md
+	 * @spec openspec/specs/flow-queue-fairness/spec.md
 	 */
 	protected function queuedBefore(DateTime $before, int $limit): array {
 		$qb = $this->db->getQueryBuilder();
@@ -1278,7 +1278,7 @@ class FlowRunMapper extends QBMapper {
 	 *
 	 * @return integer The number of non-terminal runs pinned to that version.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function countActivePinnedTo(string $flowUuid, int $version): int {
 		$qb = $this->db->getQueryBuilder();
@@ -1308,7 +1308,7 @@ class FlowRunMapper extends QBMapper {
 	 *
 	 * @return integer The number of runs pinned.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function pinUnversionedActive(string $flowUuid, int $version): int {
 		$qb = $this->db->getQueryBuilder();

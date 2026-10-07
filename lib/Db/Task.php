@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
  */
 
 declare(strict_types=1);
@@ -49,6 +49,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDescription(?string $description)
  * @method array|null getMetadata()
  * @method void setMetadata(?array $metadata)
+ * @method string|null getKind()
+ * @method void setKind(?string $kind)
  * @method string|null getRunUuid()
  * @method void setRunUuid(?string $runUuid)
  * @method string|null getNodeId()
@@ -174,7 +176,7 @@ use OCP\AppFramework\Db\Entity;
  * @SuppressWarnings(PHPMD.ExcessivePublicCount) Entity getters/setters are
  * the column surface, not an API design choice.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
  */
 class Task extends Entity implements JsonSerializable {
 
@@ -333,6 +335,24 @@ class Task extends Entity implements JsonSerializable {
 	 * @var array|null
 	 */
 	protected ?array $metadata = null;
+
+	/**
+	 * What sort of work this task is, as the creator named it.
+	 *
+	 * A FREE LABEL WITH ONE PRIVILEGE: IT IS INDEXED AND FILTERABLE. The
+	 * engine attaches no behaviour to any value, so `reminder` moves through
+	 * the same lifecycle as an unkinded task and is authorized by the same
+	 * rules. What the column buys is the one thing `metadata` deliberately
+	 * cannot give: an inbox that can be asked for one kind of work without
+	 * reading every row. `metadata` is documented as carried and never
+	 * interpreted, and a filter over it would be exactly the interpretation
+	 * that doc refuses.
+	 *
+	 * Null is the ordinary case, and it means "work", not "unknown".
+	 *
+	 * @var string|null
+	 */
+	protected ?string $kind = null;
 
 	/**
 	 * Provenance: the run whose suspension raised this task. OPTIONAL.
@@ -758,6 +778,7 @@ class Task extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'title', type: 'string');
 		$this->addType(fieldName: 'description', type: 'string');
 		$this->addType(fieldName: 'metadata', type: 'json');
+		$this->addType(fieldName: 'kind', type: 'string');
 		$this->addType(fieldName: 'runUuid', type: 'string');
 		$this->addType(fieldName: 'nodeId', type: 'string');
 		$this->addType(fieldName: 'definitionVersion', type: 'integer');
@@ -826,7 +847,7 @@ class Task extends Entity implements JsonSerializable {
 	 *
 	 * @return boolean True when the state is terminal.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
 	 */
 	public function isInTerminalState(): bool {
 		return in_array($this->state, self::TERMINAL_STATES, true);
@@ -839,7 +860,7 @@ class Task extends Entity implements JsonSerializable {
 	 *
 	 * @return self This task.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function hydrate(array $object): self {
 		foreach ($object as $fieldName => $value) {
@@ -865,7 +886,7 @@ class Task extends Entity implements JsonSerializable {
 	 *
 	 * @return array<string, mixed> The task as plain data.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function jsonSerialize(): array {
 		return [
@@ -875,6 +896,7 @@ class Task extends Entity implements JsonSerializable {
 			'title' => $this->title,
 			'description' => $this->description,
 			'metadata' => $this->metadata,
+			'kind' => $this->kind,
 			'runUuid' => $this->runUuid,
 			'nodeId' => $this->nodeId,
 			'definitionVersion' => $this->definitionVersion,

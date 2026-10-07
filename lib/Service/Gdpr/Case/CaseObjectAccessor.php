@@ -71,7 +71,7 @@ class CaseObjectAccessor {
 	 *
 	 * @return ObjectEntity|null The case, or null when absent or unauthorised.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-case-api/spec.md
+	 * @spec openspec/specs/dsar-case-api/spec.md
 	 */
 	public function load(string $caseUuid): ?ObjectEntity {
 		return $this->objectService->find(
@@ -93,7 +93,7 @@ class CaseObjectAccessor {
 	 *
 	 * @return ObjectEntity[] The case entities (possibly empty).
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-retention-sweep/spec.md
+	 * @spec openspec/specs/dsar-retention-sweep/spec.md
 	 */
 	public function findAllCaseEntities(): array {
 		$rendered = $this->objectService->findAll(
@@ -138,7 +138,7 @@ class CaseObjectAccessor {
 	 *
 	 * @return bool True when the dossier was deleted.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-retention-sweep/spec.md
+	 * @spec openspec/specs/dsar-retention-sweep/spec.md
 	 */
 	public function deleteForSweep(string $caseUuid): bool {
 		return $this->objectService->deleteObject(
@@ -160,7 +160,7 @@ class CaseObjectAccessor {
 	 *
 	 * @return ObjectEntity The saved case.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-case-api/spec.md
+	 * @spec openspec/specs/dsar-case-api/spec.md
 	 */
 	public function save(ObjectEntity $case, array $data): ObjectEntity {
 		$case->setObject($data);

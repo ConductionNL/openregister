@@ -19,7 +19,7 @@
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.app
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ class PushSubscriptionMapper extends QBMapper {
 	 *
 	 * @return PushSubscription[] The user's subscriptions.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	public function findByUser(string $userId): array {
 		$qb = $this->db->getQueryBuilder();
@@ -71,7 +71,7 @@ class PushSubscriptionMapper extends QBMapper {
 	 *
 	 * @return PushSubscription|null The matching subscription, or null.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	public function findByUserAndEndpoint(string $userId, string $endpoint): ?PushSubscription {
 		$qb = $this->db->getQueryBuilder();
@@ -103,7 +103,7 @@ class PushSubscriptionMapper extends QBMapper {
 	 *
 	 * @return PushSubscription The persisted subscription.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	public function store(string $userId, string $endpoint, string $p256dh, string $auth, string $userAgent): PushSubscription {
 		$existing = $this->findByUserAndEndpoint(userId: $userId, endpoint: $endpoint);
@@ -133,7 +133,7 @@ class PushSubscriptionMapper extends QBMapper {
 	 *
 	 * @return int Number of deleted rows (0 or 1).
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	public function deleteByUserAndEndpoint(string $userId, string $endpoint): int {
 		$qb = $this->db->getQueryBuilder();
@@ -152,7 +152,7 @@ class PushSubscriptionMapper extends QBMapper {
 	 *
 	 * @return int Number of deleted rows.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	public function deleteByEndpoint(string $endpoint): int {
 		$qb = $this->db->getQueryBuilder();

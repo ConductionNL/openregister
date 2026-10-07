@@ -40,6 +40,10 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Listener\CaseRunTerminalListener
  * @covers \OCA\OpenRegister\Listener\CaseObjectEventListener
  * @covers \OCA\OpenRegister\Event\TaskTerminalEvent
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Event\ObjectTransitionedEvent
+ * @uses \OCA\OpenRegister\Event\ObjectUpdatedEvent
  */
 class CaseListenersTest extends TestCase {
 

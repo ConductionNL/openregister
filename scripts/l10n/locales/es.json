@@ -53,6 +53,7 @@
 		"sk-...": "Literal example of an API-key prefix; not prose.",
 		"{count} widget(s)": "'widget' is the Spanish term too; the count and the optional-plural parenthesis are unchanged.",
 		"{property} - {other}": "Two placeholders and a separating dash; nothing translatable.",
-		"Normal": "Same spelling and meaning in Spanish (normal)."
+		"Normal": "Same spelling and meaning in Spanish (normal).",
+		"Token": "Established loan; Spanish API and security writing uses 'el token' unchanged, and this bundle already writes 'Crear nuevo token'."
 	}
 }

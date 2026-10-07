@@ -476,7 +476,7 @@ class PortalTaskNodeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
 	 */
 	public function testAHeartbeatRecoveredAnswerIsAuditedOnTheTask(): void {
 		$state = new FlowResumeState();
@@ -496,7 +496,7 @@ class PortalTaskNodeTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-recovered-delivery-is-recorded-on-the-tasks-audit
 	 */
 	public function testASignalDeliveredAnswerRecordsNoHeartbeatRecovery(): void {
 		$state = new FlowResumeState();

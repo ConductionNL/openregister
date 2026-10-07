@@ -95,6 +95,10 @@ class CacheHandlerCoverageTest extends TestCase {
 		parent::setUp();
 
 		$this->objectMapper = $this->createMock(MagicMapper::class);
+		// This suite pins cache mechanics, not the read rule: the object read
+		// path admits every object (CacheHandlerNameReadRightsTest pins the rule).
+		$this->objectMapper->method('filterReadableUuids')
+			->willReturnCallback(fn (int $registerId, int $schemaId, array $uuids): array => array_values($uuids));
 		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->cacheFactory = $this->createMock(ICacheFactory::class);
@@ -493,7 +497,7 @@ class CacheHandlerCoverageTest extends TestCase {
 
 		$this->nameDistributedCache->expects($this->once())
 			->method('set')
-			->with('name_uuid-1', ['n' => 'Test Object', 'o' => null], $this->anything());
+			->with('name_uuid-1', ['n' => 'Test Object', 'o' => null, 's' => null], $this->anything());
 
 		$handler->setObjectName('uuid-1', 'Test Object');
 
@@ -526,7 +530,7 @@ class CacheHandlerCoverageTest extends TestCase {
 		// Very high TTL should be clamped to MAX_CACHE_TTL (86400)
 		$this->nameDistributedCache->expects($this->once())
 			->method('set')
-			->with('name_uuid-1', ['n' => 'Test', 'o' => null], 86400);
+			->with('name_uuid-1', ['n' => 'Test', 'o' => null, 's' => null], 86400);
 
 		$handler->setObjectName('uuid-1', 'Test', 999999);
 	}
@@ -538,6 +542,7 @@ class CacheHandlerCoverageTest extends TestCase {
 	public function testGetSingleObjectNameInMemoryHit(): void {
 		$handler = $this->createHandler();
 		$this->setProperty($handler, 'nameCache', ['uuid-1' => 'Cached Name']);
+		$this->setProperty($handler, 'nameSources', ['uuid-1' => '1:1']);
 
 		$result = $handler->getSingleObjectName('uuid-1');
 		$this->assertSame('Cached Name', $result);
@@ -549,7 +554,7 @@ class CacheHandlerCoverageTest extends TestCase {
 		// SEC-CTRL-2 step 2: tenancy-bearing envelope, not a bare string.
 		$this->nameDistributedCache->method('get')
 			->with('name_uuid-1')
-			->willReturn(['n' => 'Distributed Name', 'o' => null]);
+			->willReturn(['n' => 'Distributed Name', 'o' => null, 's' => '1:1']);
 
 		$result = $handler->getSingleObjectName('uuid-1');
 		$this->assertSame('Distributed Name', $result);

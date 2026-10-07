@@ -84,6 +84,16 @@ final class ThrottledSurfaces {
 	public const OAUTH2_CALLBACK = 'openregisterOauth2Callback';
 
 	/**
+	 * The password confirmation that elevates an administration session.
+	 *
+	 * Throttled because it is the one surface where a correct guess buys the
+	 * right to weaken every other control on this list.
+	 *
+	 * @var string
+	 */
+	public const ELEVATION = 'openregister_elevation';
+
+	/**
 	 * Every throttled surface, as `name => throttler action`.
 	 *
 	 * @var array<string, string>
@@ -95,6 +105,7 @@ final class ThrottledSurfaces {
 		'objectShareLink' => self::OBJECT_SHARE_LINK,
 		'federationShareToken' => self::FEDERATION_SHARE_TOKEN,
 		'oauth2Callback' => self::OAUTH2_CALLBACK,
+		'elevation' => self::ELEVATION,
 	];
 
 	/**

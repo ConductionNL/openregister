@@ -23,8 +23,6 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
- * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
- * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
  */
 
 declare(strict_types=1);
@@ -66,11 +64,13 @@ use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
+use OCA\OpenRegister\Service\Rbac\TokenGrantSource;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\Object\SaveObjects;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
+use OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator;
 use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\RelationHandler;
@@ -89,6 +89,7 @@ use OCA\OpenRegister\Service\Object\MigrationHandler;
 use OCA\OpenRegister\Service\Object\NotSuppliedHandler;
 use OCA\OpenRegister\Service\Object\RepeatingGroupValidator;
 use OCA\OpenRegister\Exception\AppendOnlyException;
+use OCA\OpenRegister\Exception\ReadOnlyTypeException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
@@ -310,6 +311,7 @@ class ObjectService implements ObjectServiceInterface
      * @param IAppContainer                  $container            Application container.
      * @param ObjectSourceRegistry           $objectSourceRegistry Registry of object-source providers (virtual schemas).
      * @param AutoTransitionPass|null        $autoTransitions      Request-scoped pass applying automatic lifecycle moves.
+     * @param TokenGrantSource|null          $tokenGrantSource     The grant the request's token carries; suspended inside runAsAnonymous().
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      */
@@ -367,7 +369,13 @@ class ObjectService implements ObjectServiceInterface
         // default so the many unit tests that build this service positionally
         // keep working; the container resolves the real, SHARED instance by
         // type in production, as it does for FlowRunController's attribution.
-        private readonly ?AutoTransitionPass $autoTransitions = null
+        private readonly ?AutoTransitionPass $autoTransitions = null,
+        // The grant the request's API token carries, if it authenticated with
+        // one. Read here for exactly one reason: runAsAnonymous() has to
+        // suspend it. Nullable with a null default for the same reason as
+        // above — the unit tests build this service positionally — and the
+        // container resolves the real, SHARED instance by type in production.
+        private readonly ?TokenGrantSource $tokenGrantSource = null
         // TODO: CIRCULAR DEPENDENCY ISSUE - ExportService, ImportService, and VectorizationService
         // These services have deep circular dependencies:
         // - ExportService → uses SaveObjects → potentially loops back
@@ -544,6 +552,109 @@ class ObjectService implements ObjectServiceInterface
             $this->userSession->setVolatileActiveUser($previousUser);
         }
     }//end runAs()
+
+
+    /**
+     * Run a callable AS AN ANONYMOUS CALLER, whatever the session holds.
+     *
+     * The narrowing counterpart of runAs(): the subject is cleared instead of
+     * replaced. Every reader of `IUserSession::getUser()` in the RBAC and
+     * organisation layers then sees no user — no admin bypass, no `_owner`
+     * grant, no group rules, no `inheritFromPublic` widening — and only the
+     * `public` group's rules decide what comes back. The permission caches
+     * are keyed by UID and so stay correct by construction, as with runAs().
+     *
+     * Clearing the subject is not enough on its own. Two guards trust a call
+     * WITHOUT a user: the CLI bypass in the RBAC filters and
+     * {@see SystemOperationContext}. Under occ or PHPUnit an empty session
+     * would therefore be judged as the system, which is the opposite of what
+     * is asked. {@see AnonymousEvaluationContext} closes both doors for the
+     * duration of the call.
+     *
+     * A THIRD thing decides access without living on the session: the grant
+     * an API token carries ({@see TokenGrantSource}, bound by
+     * AuthorizationService before it sets a user). PermissionHandler consults
+     * it ahead of even the admin and owner bypasses, so a request that
+     * authenticated with a scoped token would be judged as nobody INTERSECTED
+     * WITH THAT TOKEN'S GRANT — narrower than the public answer, and narrower
+     * by something the public caller has no way to reproduce. Fail-closed, so
+     * never a leak; but this endpoint's contract is that every caller gets the
+     * SAME answer, and "same" is broken by narrowing just as surely as by
+     * widening. The grant is therefore suspended for the duration too. It is a
+     * ceiling on what its holder may do, and inside this scope there is no
+     * holder for it to apply to.
+     *
+     * This exists for public endpoints whose contract is uniform visibility —
+     * OpenCatalogi's `/api/search` (SCH-PFTS-001, WOO-536) — where a signed-in
+     * administrator must see exactly what an anonymous caller sees. It is a
+     * server-side primitive only: nothing in the request can switch it on or
+     * off (WOO-578). It restores the previous subject in a `finally`, so
+     * nesting composes and a throw never leaks the cleared identity forward.
+     *
+     * @param callable $operation The operation to execute as an anonymous caller.
+     *
+     * @return mixed Whatever the callable returns.
+     *
+     * @spec openspec/specs/rbac-scopes/spec.md
+     */
+    public function runAsAnonymous(callable $operation)
+    {
+        // INCOGNITO MODE, NOT setVolatileActiveUser(null).
+        //
+        // `setVolatileActiveUser(null)` looks like the obvious inverse of what
+        // runAs() does, and it is wrong here. In `Session::getUser()`, null is not
+        // "there is no user" — it is "not resolved yet":
+        //
+        //     if (is_null($this->activeUser)) {
+        //         $uid = $this->session->get('user_id');   // still the signed-in user
+        //         ...
+        //         $this->activeUser = $this->manager->get($uid);
+        //     }
+        //
+        // So on a real request the very next getUser() re-reads `user_id` from the
+        // PHP session and hands back the same admin — the scope would be a no-op
+        // exactly where it is supposed to bite. runAs() escapes this only because
+        // it writes a NON-null user.
+        //
+        // `OC_User::isIncognitoMode()` is checked FIRST in getUser(), before the
+        // activeUser fallback, and returns null unconditionally. It is what core
+        // itself uses to serve a public link while a session exists — see
+        // ShareController, PublicAuth and BearerAuth. The volatile clear stays as
+        // well, so the memoised copy does not survive the scope either.
+        $previousIncognito = \OC_User::isIncognitoMode();
+        $previousUser      = $this->userSession->getUser();
+
+        \OC_User::setIncognitoMode(true);
+        $this->userSession->setVolatileActiveUser(null);
+
+        try {
+            // The token grant is per-request state on a DI service, not on the
+            // session, so neither of the two clears above reaches it. Suspend it
+            // around the same callable; TokenGrantSource restores it in its own
+            // `finally`, so the two scopes unwind independently and a throw in
+            // either one still leaves the request as it found it.
+            // `?? null` rather than `=== null`: several unit tests build this
+            // service with newInstanceWithoutConstructor(), which leaves every
+            // promoted property UNINITIALISED — a parameter default is not a
+            // property default. Reading one with `===` raises "must not be
+            // accessed before initialization"; `??` and isset() answer without
+            // throwing. Verified on PHP 8.3.
+            $grantSource = ($this->tokenGrantSource ?? null);
+            if ($grantSource === null) {
+                return AnonymousEvaluationContext::run($operation);
+            }
+
+            return $grantSource->runWithoutGrant(
+                static fn () => AnonymousEvaluationContext::run($operation)
+            );
+        } finally {
+            // ALWAYS restore, including on a throw — see runAs(). Restore the
+            // PREVIOUS incognito state rather than switching it off, so nesting
+            // inside a genuinely incognito request composes.
+            $this->userSession->setVolatileActiveUser($previousUser);
+            \OC_User::setIncognitoMode($previousIncognito);
+        }
+    }//end runAsAnonymous()
 
     /**
      * Set the current register context.
@@ -1590,7 +1701,7 @@ class ObjectService implements ObjectServiceInterface
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Save options are flag-driven; `$currentUser` was added for `@self.folder` access checks.
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-     * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function saveObject(
         array | ObjectEntity $object,
@@ -1653,10 +1764,20 @@ class ObjectService implements ObjectServiceInterface
 
             $this->checkSavePermissions(
                 uuid: $uuid,
-                _rbac: $_rbac
+                _rbac: $_rbac,
+                object: $object
             );
 
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions.check');
+
+            // A type backed by a saved view lists the view's rows; nothing is
+            // written to it (modelling-query-backed-type). 405, like append-only.
+            $viewWrite = 'update';
+            if ($uuid === null) {
+                $viewWrite = 'create';
+            }
+
+            $this->rejectIfViewBacked(operation: $viewWrite);
 
             // Reject updates to transferred objects (archiefstatus = overgebracht).
             if ($uuid !== null) {
@@ -1664,12 +1785,26 @@ class ObjectService implements ObjectServiceInterface
             }
 
             // Reject UPDATE operations on append-only schemas (INSERT is still allowed).
+            //
+            // Carrying a uuid is not the same as updating. A caller may choose
+            // the identifier of a new object (an `id` in the body becomes the
+            // uuid above), and xAPI requires exactly that: a statement is stored
+            // under its own id. Treating every uuid as an update refused every
+            // such insert. So the question is whether the object EXISTS.
             if ($uuid !== null && $this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
-                $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
-                throw new AppendOnlyException(
-                    schemaIdentifier: $schemaSlug,
-                    operation: 'update'
-                );
+                if ($this->appendOnlyTargetExists(uuid: $uuid) === true) {
+                    $schemaSlug = $this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId();
+                    throw new AppendOnlyException(
+                        schemaIdentifier: $schemaSlug,
+                        operation: 'update'
+                    );
+                }
+
+                // Not there now does not mean not there at write time. Make the
+                // write insert-only all the way down, so a concurrent insert of
+                // the same uuid loses at the `_uuid` unique constraint with a
+                // 409 (MagicMapper) instead of being applied as an update.
+                $failIfExists = true;
             }
 
             // Track if UUID was originally null (to distinguish user-provided vs auto-generated UUIDs).
@@ -2073,18 +2208,23 @@ class ObjectService implements ObjectServiceInterface
     /**
      * Check permissions for save operation (CREATE or UPDATE).
      *
-     * @param string|null $uuid  Object UUID (null for CREATE, set for UPDATE)
-     * @param bool        $_rbac Whether to apply RBAC checks
+     * @param string|null $uuid   Object UUID (null for CREATE, set for UPDATE)
+     * @param bool        $_rbac  Whether to apply RBAC checks
+     * @param array       $object The incoming object data, which a create rule's match reads
      *
      * @return void
      *
      * @throws Exception If permission check fails
      */
-    private function checkSavePermissions(?string $uuid, bool $_rbac): void
+    private function checkSavePermissions(?string $uuid, bool $_rbac, array $object=[]): void
     {
         if ($this->currentSchema === null) {
             return;
         }
+
+        // A create rule may carry a `match` on the object being created, so the
+        // create question is asked about the incoming data (openregister#4094).
+        $incoming = $this->buildIncomingObjectForCreateCheck(object: $object);
 
         // No UUID provided, this is a CREATE operation.
         if ($uuid === null) {
@@ -2093,7 +2233,8 @@ class ObjectService implements ObjectServiceInterface
                 action: 'create',
                 userId: null,
                 objectOwner: null,
-                _rbac: $_rbac
+                _rbac: $_rbac,
+                object: $incoming
             );
             return;
         }
@@ -2129,10 +2270,37 @@ class ObjectService implements ObjectServiceInterface
                 action: 'create',
                 userId: null,
                 objectOwner: null,
-                _rbac: $_rbac
+                _rbac: $_rbac,
+                object: $incoming
             );
         }//end try
     }//end checkSavePermissions()
+
+    /**
+     * Build the transient object a create rule's `match` is evaluated against.
+     *
+     * The data is the incoming request body without its `@self` block, so a
+     * caller cannot supply the metadata a match reads. The organisation is the
+     * caller's active organisation, which is the one the save assigns. The owner
+     * stays empty: the permission handler grants an owner every action, so a
+     * caller-chosen owner would bypass the rule.
+     *
+     * @param array $object The incoming object data.
+     *
+     * @return ObjectEntity The transient object, never persisted.
+     *
+     * @spec openspec/specs/rbac-zaaktype/spec.md
+     */
+    private function buildIncomingObjectForCreateCheck(array $object): ObjectEntity
+    {
+        unset($object['@self']);
+
+        $incoming = new ObjectEntity();
+        $incoming->setObject($object);
+        $incoming->setOrganisation($this->permissionHandler->getActiveOrganisationForContext());
+
+        return $incoming;
+    }//end buildIncomingObjectForCreateCheck()
 
     /**
      * Handle cascading relations while preserving context.
@@ -2292,18 +2460,30 @@ class ObjectService implements ObjectServiceInterface
             $messages[] = $violation['message'];
         }
 
+        // A geometry is checked on every write, like the bounds above: a
+        // polygon that does not close cannot be searched or drawn, and the
+        // schema's hard-validation switch was never meant to allow that.
+        $geometries = (new GeoJsonGeometryValidator())->validateObject(
+            object: $object,
+            schema: $this->currentSchema
+        );
+        foreach ($geometries as $property => $errors) {
+            $messages[] = sprintf("Property '%s' is not a valid geometry: %s.", $property, implode('; ', $errors));
+        }
+
         if ($messages === []) {
             return;
         }
 
         $this->logger->info(
-            message: '[ObjectService] repeating-group / not-supplied enforcement rejected the write',
+            message: '[ObjectService] repeating-group / not-supplied / geometry enforcement rejected the write',
             context: [
                 'file'           => __FILE__,
                 'line'           => __LINE__,
                 'schemaId'       => $this->currentSchema->getId(),
                 'groups'         => $groups,
                 'incompleteness' => $incompleteness,
+                'geometries'     => $geometries,
             ]
         );
 
@@ -2780,10 +2960,30 @@ class ObjectService implements ObjectServiceInterface
 
             \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.scope');
 
+            // A schema served by an object source keeps no rows in a magic table,
+            // so the MagicMapper lookups below can only miss, and a scoped miss is
+            // rethrown as "not found" before the delete handler's provider
+            // dispatch runs. That made every DELETE on such a schema a 404: a
+            // writable database source could not delete, and the organisation
+            // projection never gave its own refusal.
+            $sourcedSchema = null;
+            if ($this->currentSchema !== null && $this->currentSchema->getObjectSource() !== null) {
+                $sourcedSchema = $this->currentSchema;
+            }
+
             // Reject deletion of transferred objects (archiefstatus = overgebracht).
-            $this->rejectIfTransferred(uuid: $uuid);
+            // Looked up with the caller's flags, so the guard sees the object the
+            // delete handler below would touch; with the session scope it missed
+            // an object outside it and let a `_multitenancy: false` delete through.
+            // An external row has no retention block, so a sourced schema skips it.
+            if ($sourcedSchema === null) {
+                $this->rejectIfTransferred(uuid: $uuid, _rbac: $_rbac, _multitenancy: $_multitenancy);
+            }
 
             \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.transferred');
+
+            // A view-backed type holds no objects of its own to delete.
+            $this->rejectIfViewBacked(operation: 'delete');
 
             // Reject DELETE operations on append-only schemas.
             if ($this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
@@ -2804,6 +3004,17 @@ class ObjectService implements ObjectServiceInterface
                 );
             }
 
+            if ($sourcedSchema !== null) {
+                return $this->deleteFromObjectSource(
+                    schema: $sourcedSchema,
+                    uuid: $uuid,
+                    actingUserId: $actingUserId,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy,
+                    hasScope: $hasScope
+                );
+            }
+
             // Find the object to get its owner for permission check (include soft-deleted objects).
             // When the caller supplied both register + schema, the lookup is scoped
             // to a single magic table — a UUID in a different scope raises
@@ -2816,11 +3027,17 @@ class ObjectService implements ObjectServiceInterface
             }
 
             try {
+                // With the caller's flags. The delete handler honours them, so a
+                // lookup that ignored them applied the session's RBAC and tenant
+                // scope to a caller that had turned them off, answered "not
+                // found" for an object that exists, and the handler never ran.
                 $objectToDelete = $this->objectMapper->find(
                     identifier: $uuid,
                     register: $scopedRegister,
                     schema: $scopedSchema,
-                    includeDeleted: true
+                    includeDeleted: true,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy
                 );
 
                 // If no schema was provided but we have an object, derive the schema from the object.
@@ -2877,6 +3094,57 @@ class ObjectService implements ObjectServiceInterface
             $this->restoreScopeContext(register: $previousRegister, schema: $previousSchema);
         }
     }//end deleteObject()
+
+    /**
+     * Hand a delete on an object-source schema to the delete handler's provider dispatch.
+     *
+     * Delete rights on the schema are checked first, so the external source is
+     * never consulted for a caller who may not delete (no enumeration oracle).
+     * There is no stored owner to check against: the row lives outside
+     * OpenRegister. The handler then delegates to the writable provider, or
+     * refuses the delete as a read-only projection.
+     *
+     * @param Schema      $schema        The schema served by the object source.
+     * @param string      $uuid          The object id in the source.
+     * @param string|null $actingUserId  Explicit acting user, or null for the session user.
+     * @param bool        $_rbac         Whether to apply RBAC checks.
+     * @param bool        $_multitenancy Whether to apply multitenancy filtering.
+     * @param bool        $hasScope      Whether the caller supplied register and schema.
+     *
+     * @return bool Whether the deletion was successful.
+     *
+     * @throws \Exception If the caller may not delete on this schema, or the source refuses.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors deleteObject()'s own flags.
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     */
+    private function deleteFromObjectSource(
+        Schema $schema,
+        string $uuid,
+        ?string $actingUserId,
+        bool $_rbac,
+        bool $_multitenancy,
+        bool $hasScope
+    ): bool {
+        $this->checkPermission(
+            schema: $schema,
+            action: 'delete',
+            userId: $actingUserId,
+            objectOwner: null,
+            _rbac: $_rbac
+        );
+
+        return $this->deleteHandler->deleteObject(
+            register: $this->currentRegister,
+            schema: $schema,
+            uuid: $uuid,
+            originalObjectId: null,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
+            scoped: $hasScope
+        );
+    }//end deleteFromObjectSource()
 
     /**
      * Check whether a schema declares an `x-openregister-archival` annotation.
@@ -2950,12 +3218,37 @@ class ObjectService implements ObjectServiceInterface
     }//end rejectIfArchivalImmutable()
 
     /**
+     * Refuse a write to a type whose objects are the rows of a saved view.
+     *
+     * @param string $operation The refused operation, for the message.
+     *
+     * @return void
+     *
+     * @throws ReadOnlyTypeException When the current schema is view-backed.
+     *
+     * @spec openspec/changes/modelling-query-backed-type/specs/saved-search-views/spec.md#requirement-req-qtype-001-a-saved-view-can-back-a-read-only-record-type
+     */
+    private function rejectIfViewBacked(string $operation): void
+    {
+        if ($this->currentSchema === null || ($this->currentSchema->getObjectSource()['provider'] ?? null) !== 'view') {
+            return;
+        }
+
+        throw new ReadOnlyTypeException(
+            schemaIdentifier: ($this->currentSchema->getSlug() ?? (string) $this->currentSchema->getId()),
+            operation: $operation
+        );
+    }//end rejectIfViewBacked()
+
+    /**
      * Reject an operation if the object has been transferred to e-Depot.
      *
      * Objects with archiefstatus 'overgebracht' are read-only. The authoritative
      * copy resides in the e-Depot and this system copy MUST NOT be modified.
      *
-     * @param string $uuid The object UUID to check.
+     * @param string $uuid          The object UUID to check.
+     * @param bool   $_rbac         Apply RBAC to the lookup (default: true, today's behaviour).
+     * @param bool   $_multitenancy Apply the tenant scope to the lookup (default: true).
      *
      * @return void
      *
@@ -2964,7 +3257,7 @@ class ObjectService implements ObjectServiceInterface
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
-    private function rejectIfTransferred(string $uuid): void
+    private function rejectIfTransferred(string $uuid, bool $_rbac=true, bool $_multitenancy=true): void
     {
         try {
             // Scoped to the register and schema currently in context: the only
@@ -2975,7 +3268,9 @@ class ObjectService implements ObjectServiceInterface
                 identifier: $uuid,
                 register: $this->currentRegister,
                 schema: $this->currentSchema,
-                includeDeleted: true
+                includeDeleted: true,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
             );
 
             $retention = ($object->getRetention() ?? []);
@@ -2995,6 +3290,41 @@ class ObjectService implements ObjectServiceInterface
             // Object doesn't exist yet (new object), no check needed.
         }//end try
     }//end rejectIfTransferred()
+
+    /**
+     * Whether a write with this uuid on an append-only schema would touch a stored object.
+     *
+     * Asked with RBAC and multitenancy OFF and soft-deleted rows included: the
+     * save handler resolves the uuid the same unfiltered way, so an object the
+     * caller cannot see (another tenant's) would otherwise be the one it
+     * updates. The refusal the caller gets is the same whether the stored row
+     * is visible to them or not, so it says no more than the `_uuid` unique
+     * constraint would. Scoped to the register and schema being written to,
+     * like the permission lookup.
+     *
+     * @param string $uuid The uuid the write carries.
+     *
+     * @return bool True when an object with this identifier is stored.
+     *
+     * @spec exclude bug fix: append-only refused every insert carrying a caller-chosen uuid
+     */
+    private function appendOnlyTargetExists(string $uuid): bool
+    {
+        try {
+            $this->objectMapper->find(
+                identifier: $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                includeDeleted: true,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return false;
+        }
+
+        return true;
+    }//end appendOnlyTargetExists()
 
         /**
          * Get the active organization for the current user
@@ -3053,6 +3383,15 @@ class ObjectService implements ObjectServiceInterface
      *
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
+     *
+     * A reference that names no register or schema is REFUSED here rather than
+     * answered with an empty page, which is what the int-cast used to do
+     * (openregister#3990). The published contract in lib/Contract/ is mirrored
+     * in hydra-gates and is left untouched on purpose: changing it means
+     * changing both copies in one change (ADR-084).
+     *
+     * @throws \OCA\OpenRegister\Exception\RegisterNotFoundException When the register reference names no register.
+     * @throws \OCA\OpenRegister\Exception\SchemaNotFoundException When the schema reference names no schema.
      *
      * @spec exclude One-line delegation to SearchQueryHandler::buildSearchQuery(); query-building owned by zoeken-filteren.
      */
@@ -3476,7 +3815,7 @@ class ObjectService implements ObjectServiceInterface
      *                                   attached-file/object chunk body text via
      *                                   `ChunkMapper::searchByKeyword()`; absent/false is
      *                                   byte-identical to pre-change behaviour (see
-     *                                   openspec/changes/expose-content-search-in-object-service)
+     *                                   openspec/specs/zoeken-filteren/spec.md)
      * @param bool        $_rbac         Whether to apply RBAC checks (default: true)
      * @param bool        $_multitenancy Whether to apply multitenancy filtering (default: true)
      * @param bool        $deleted       Whether to include deleted objects (default: false)
@@ -4437,7 +4776,7 @@ class ObjectService implements ObjectServiceInterface
      *                               lock for this synthetic key without scanning tables
      * @param string|null $runUuid   Flow run releasing the lock, for a run-scoped lock
      *
-     * @return true True if unlocked successfully
+     * @return bool True if unlocked successfully
      *
      * @throws \Exception If unlock operation fails
      *

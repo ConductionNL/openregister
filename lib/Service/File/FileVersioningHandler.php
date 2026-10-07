@@ -27,6 +27,7 @@ use Exception;
 use OCP\App\IAppManager;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -121,7 +122,7 @@ class FileVersioningHandler {
 			// Nextcloud's IVersionManager is in OCA\Files_Versions namespace.
 			if (class_exists('OCA\Files_Versions\Versions\IVersionManager') === true) {
 				$versionManager = $this->container->get('OCA\Files_Versions\Versions\IVersionManager');
-				$user = $this->userSession->getUser();
+				$user = $this->versionUser(file: $file);
 				if ($versionManager !== null && $user !== null) {
 					$fileVersions = $versionManager->getVersionsForFile($user, $file);
 					foreach ($fileVersions as $version) {
@@ -184,7 +185,7 @@ class FileVersioningHandler {
 		try {
 			if (class_exists('OCA\Files_Versions\Versions\IVersionManager') === true) {
 				$versionManager = $this->container->get('OCA\Files_Versions\Versions\IVersionManager');
-				$user = $this->userSession->getUser();
+				$user = $this->versionUser(file: $file);
 				if ($versionManager !== null && $user !== null) {
 					$fileVersions = $versionManager->getVersionsForFile($user, $file);
 					foreach ($fileVersions as $version) {
@@ -209,6 +210,36 @@ class FileVersioningHandler {
 			throw $e;
 		}//end try
 	}//end restoreVersion()
+
+	/**
+	 * The account to ask Nextcloud for a file's versions as.
+	 *
+	 * @param File $file The file.
+	 *
+	 * @return IUser|null The openregister account for an object's file, else the session user.
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 */
+	private function versionUser(File $file): ?IUser {
+		try {
+			$path = $file->getPath();
+		} catch (Exception $e) {
+			return $this->userSession->getUser();
+		}
+
+		// An object's file is owned by the openregister account and sits in
+		// its home, where the caller has no mount. The caller has already
+		// passed the object rule, so the versions are read as that account.
+		if (preg_match('#^/openregister/files/Open Registers/#', $path) === 1) {
+			try {
+				return $this->container->get(FileOwnershipHandler::class)->getUser();
+			} catch (\Throwable $e) {
+				return null;
+			}
+		}
+
+		return $this->userSession->getUser();
+	}//end versionUser()
 
 	/**
 	 * Get the current user ID.

@@ -46,7 +46,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-decision-table-step-evaluates-its-table-against-every-item
+ * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-decision-table-step-evaluates-its-table-against-every-item
  */
 
 declare(strict_types=1);
@@ -67,7 +67,7 @@ final class FlowFieldPath {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-decision-table-step-evaluates-its-table-against-every-item
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-decision-table-step-evaluates-its-table-against-every-item
 	 */
 	public static function assign(array &$json, string $path, mixed $value): void {
 		if (str_contains($path, '.') === false) {

@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+ * @spec openspec/specs/row-field-level-security/spec.md
  */
 
 declare(strict_types=1);
@@ -69,7 +69,7 @@ use Throwable;
  *   the four rule-engine types that record the refusal. The same count and the same reason
  *   as LifecycleValidationListener beside it.
  *
- * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+ * @spec openspec/specs/row-field-level-security/spec.md
  */
 class StateFieldRuleListener implements IEventListener {
 
@@ -115,8 +115,8 @@ class StateFieldRuleListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
-	 * @spec openspec/changes/field-rules-by-state/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ObjectCreatingEvent) {

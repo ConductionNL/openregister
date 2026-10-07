@@ -182,11 +182,11 @@ final class ObjectEventProxyListener implements IEventListener {
 			$this->trace['dispatch']++;
 		}
 
-		[$registerId, $schemaId] = $this->identify(event: $event);
+		[$registerId, $schemaId, $hasObject] = $this->identify(event: $event);
 
 		$listenerNs = 0.0;
 		foreach ($subscriptions as $subscription) {
-			if ($this->wants(subscription: $subscription, registerId: $registerId, schemaId: $schemaId) === false) {
+			if ($this->wants(subscription: $subscription, registerId: $registerId, schemaId: $schemaId, hasObject: $hasObject) === false) {
 				if ($trace === true) {
 					$this->trace['skipped']++;
 				}
@@ -221,29 +221,33 @@ final class ObjectEventProxyListener implements IEventListener {
 	/**
 	 * Read the written object's register and schema ids off the event.
 	 *
-	 * Both are null when the event carries no `ObjectEntity`, which the caller
-	 * reads as "cannot decide" and therefore "invoke".
+	 * The third element says whether the event carries an `ObjectEntity` at
+	 * all. Without one (a merge) the caller cannot apply a filter and invokes.
+	 * With one, a null id means the object has no register or schema, which a
+	 * filtered subscription reads as "not mine" and skips (fail closed).
 	 *
 	 * @param Event $event The dispatched event.
 	 *
-	 * @return array{0: string|null, 1: string|null}
+	 * @return array{0: string|null, 1: string|null, 2: bool}
 	 */
 	private function identify(Event $event): array {
-		if (method_exists($event, 'getObject') === false) {
-			return [null, null];
+		// ObjectUpdatingEvent carries the written object as getNewObject() and
+		// has no getObject(). Reading only getObject() left every pre-update
+		// event undecidable, so every ObjectUpdatingEvent subscriber ran on
+		// every update in every register, whatever it declared.
+		$object = null;
+		if (method_exists($event, 'getObject') === true) {
+			$object = $event->getObject();
+		} else if (method_exists($event, 'getNewObject') === true) {
+			$object = $event->getNewObject();
 		}
 
-		$object = $event->getObject();
 		if (($object instanceof ObjectEntity) === false) {
-			return [null, null];
+			return [null, null, false];
 		}
 
 		$register = $object->getRegister();
 		$schema = $object->getSchema();
-
-		if ($register === null && $schema === null) {
-			return [null, null];
-		}
 
 		$registerId = null;
 		if ($register !== null) {
@@ -255,7 +259,7 @@ final class ObjectEventProxyListener implements IEventListener {
 			$schemaId = (string)$schema;
 		}
 
-		return [$registerId, $schemaId];
+		return [$registerId, $schemaId, true];
 	}//end identify()
 
 	/**
@@ -264,22 +268,36 @@ final class ObjectEventProxyListener implements IEventListener {
 	 * @param array{listener: string, registers: array<int,string>|null, schemas: array<int,string>|null} $subscription The declaration.
 	 * @param string|null $registerId Written object's register id.
 	 * @param string|null $schemaId Written object's schema id.
+	 * @param bool $hasObject Whether the event carries an object at all.
 	 *
 	 * @return boolean
 	 */
-	private function wants(array $subscription, ?string $registerId, ?string $schemaId): bool {
+	private function wants(array $subscription, ?string $registerId, ?string $schemaId, bool $hasObject): bool {
 		if ($this->filterEnabled() === false) {
 			return true;
 		}
 
-		if ($subscription['registers'] !== null && $registerId !== null) {
-			if ($this->tokensMatch(tokens: $subscription['registers'], id: $registerId, isSchema: false) === false) {
+		// No object on the event (a merge): a filter cannot be applied, and
+		// skipping would leave every filtered listener on it silently dead.
+		if ($hasObject === false) {
+			return true;
+		}
+
+		// An object without a register or schema is not in the declared one:
+		// fail closed. Invoking here is how a listener filtered to one schema
+		// once ran on every update instance-wide (live defect H1).
+		if ($subscription['registers'] !== null) {
+			if ($registerId === null
+				|| $this->tokensMatch(tokens: $subscription['registers'], id: $registerId, isSchema: false) === false
+			) {
 				return false;
 			}
 		}
 
-		if ($subscription['schemas'] !== null && $schemaId !== null) {
-			if ($this->tokensMatch(tokens: $subscription['schemas'], id: $schemaId, isSchema: true) === false) {
+		if ($subscription['schemas'] !== null) {
+			if ($schemaId === null
+				|| $this->tokensMatch(tokens: $subscription['schemas'], id: $schemaId, isSchema: true) === false
+			) {
 				return false;
 			}
 		}

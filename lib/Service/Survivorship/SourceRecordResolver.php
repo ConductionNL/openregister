@@ -48,7 +48,7 @@ use Throwable;
  * Mode-aware source-record resolver shared by the survivorship recompute
  * listener and the merge service.
  *
- * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
  */
 class SourceRecordResolver {
 
@@ -74,7 +74,7 @@ class SourceRecordResolver {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
@@ -96,7 +96,7 @@ class SourceRecordResolver {
 	 *
 	 * @return array<int, array<string, mixed>> Resolved source-record payloads.
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
 	public function resolveSources(array $masterData, string $masterUuid, array $config, string $masterRegister = ''): array {
 		$reverseFk = $this->reverseFkConfig(config: $config);
@@ -130,7 +130,7 @@ class SourceRecordResolver {
 	 *
 	 * @return bool True when a well-formed reverse-FK `sourceLink` is present.
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
 	public function isReverseFk(array $config): bool {
 		return $this->reverseFkConfig(config: $config) !== null;
@@ -146,7 +146,7 @@ class SourceRecordResolver {
 	 *
 	 * @return array{sourceSchema: string, referenceField: string, sourceRegister: string}|null
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
 	public function reverseFkDescriptor(array $config): ?array {
 		return $this->reverseFkConfig(config: $config);
@@ -162,7 +162,7 @@ class SourceRecordResolver {
 	 *
 	 * @return string Numeric id when resolvable, otherwise `$ref`.
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
 	public function schemaQueryFilter(string $ref): string {
 		$id = $this->resolveSchemaId(ref: $ref);
@@ -183,7 +183,7 @@ class SourceRecordResolver {
 	 *
 	 * @return string Numeric schema id, or '' when unresolved.
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
 	private function resolveSchemaId(string $ref): string {
 		if ($ref === '') {
@@ -221,7 +221,7 @@ class SourceRecordResolver {
 	 *
 	 * @return array{sourceSchema: string, referenceField: string, sourceRegister: string}|null
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
 	private function reverseFkConfig(array $config): ?array {
 		$sourceLink = ($config['sourceLink'] ?? null);
@@ -262,7 +262,7 @@ class SourceRecordResolver {
 	 *
 	 * @return array<int, array<string, mixed>> Resolved source-record payloads.
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
 	private function resolveReverseFk(
 		string $masterUuid,
@@ -331,7 +331,7 @@ class SourceRecordResolver {
 	 *
 	 * @return array<int, array<string, mixed>> Resolved source-record payloads.
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
 	private function resolveEmbedded(array $data, string $sourceLinkField): array {
 		$raw = ($data[$sourceLinkField] ?? null);
@@ -364,7 +364,7 @@ class SourceRecordResolver {
 	 *
 	 * @return array<string, mixed>|null Resolved payload, or null on lookup failure.
 	 *
-	 * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
 	 */
 	private function resolveReference(string $uuid): ?array {
 		try {

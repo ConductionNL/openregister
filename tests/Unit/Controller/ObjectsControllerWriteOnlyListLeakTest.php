@@ -67,6 +67,17 @@ use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectsController
  * @covers \OCA\OpenRegister\Service\Object\RenderObject
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Calculation\CalculationEvaluator
+ * @uses \OCA\OpenRegister\Service\LanguageService
+ * @uses \OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver
+ * @uses \OCA\OpenRegister\Service\Object\TranslationHandler
+ * @uses \OCA\OpenRegister\Service\PropertyRbacHandler
+ * @uses \OCA\OpenRegister\Service\Rules\ConditionDialect
+ * @uses \OCA\OpenRegister\Service\Search\PlaceholderResolver
+ * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Support\FilterParams
  */
 class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 	use BuildsStateFieldRuleResolver;
@@ -189,6 +200,10 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn($this->sourceSchema());
 
+		// REAL, for the same reason RenderObject itself is: a mocked handler returns []
+		// for its `array` return type, and the list path writes that back over the row.
+		$languageService = new \OCA\OpenRegister\Service\LanguageService();
+
 		$propertyRbacHandler = new PropertyRbacHandler(
 			$this->createMock(IUserSession::class),
 			$this->createMock(IGroupManager::class),
@@ -210,13 +225,13 @@ class ObjectsControllerWriteOnlyListLeakTest extends TestCase {
 			$this->createMock(LoggerInterface::class),
 			$this->createMock(\OCA\OpenRegister\Service\FileService::class),
 			$this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-			$this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+			new \OCA\OpenRegister\Service\Object\TranslationHandler($languageService, $this->createMock(LoggerInterface::class)),
 			$this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
 			$this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
 			$this->createMock(\OCA\OpenRegister\Service\UrnService::class),
 			$this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
 			$this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
-			$this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+			$languageService
 		);
 	}
 

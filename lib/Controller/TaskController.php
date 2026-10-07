@@ -35,7 +35,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
 
 declare(strict_types=1);
@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\TaskInboxCriteria;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskFormRefusedException;
+use OCA\OpenRegister\Exception\TaskSubjectNotFoundException;
 use OCA\OpenRegister\Exception\TaskSubjectWriteRefusedException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Task\TaskAuthorizationService;
@@ -91,7 +92,7 @@ use Throwable;
  * between HTTP and the task services plus their three exception shapes;
  * that is the whole of its job.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
 class TaskController extends Controller {
 
@@ -189,6 +190,10 @@ class TaskController extends Controller {
 	 * @param string|null $state Restrict to CMMN states (comma-separated).
 	 * @param string|null $isTerminal 'true'|'false' to restrict on terminality.
 	 * @param string|null $priority Restrict to one priority.
+	 * @param string|null $kind Restrict to one kind of work, as the creator
+	 *                          named it (`reminder`, and whatever else a
+	 *                          consuming app writes). The engine attaches no
+	 *                          behaviour to the value.
 	 * @param string|null $objectUuid Restrict to tasks anchored to this object.
 	 * @param string|null $runUuid Restrict to the tasks one flow run raised.
 	 *                             This ANCHORS the read rather than filtering
@@ -209,7 +214,7 @@ class TaskController extends Controller {
 	 *
 	 * @return JSONResponse The page: results, total, limit, offset.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -218,6 +223,7 @@ class TaskController extends Controller {
 		?string $state = null,
 		?string $isTerminal = null,
 		?string $priority = null,
+		?string $kind = null,
 		?string $objectUuid = null,
 		?string $runUuid = null,
 		?string $overdue = null,
@@ -269,6 +275,7 @@ class TaskController extends Controller {
 			states: $states,
 			isTerminal: $terminalFilter,
 			priority: $priority,
+			kind: $this->trimmedOrNull(value: $kind),
 			objectUuid: $objectUuid,
 			runUuid: $this->trimmedOrNull(value: $runUuid),
 			overdueAt: $overdueAt,
@@ -294,8 +301,8 @@ class TaskController extends Controller {
 	 *
 	 * @return JSONResponse The task row; 404 when absent OR invisible.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -327,7 +334,7 @@ class TaskController extends Controller {
 	 *
 	 * @return JSONResponse The entries, oldest first.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -350,9 +357,16 @@ class TaskController extends Controller {
 	/**
 	 * Create a task.
 	 *
+	 * The one verb with no task to have a relationship with, so its
+	 * authorization is about the SUBJECT instead: an object the caller may
+	 * not read is an object they may not put a task on, and the refusal is
+	 * the 404 that object's own endpoint gives them
+	 * ({@see \OCA\OpenRegister\Service\Task\TaskSubjectAccessGuard}).
+	 *
 	 * @return JSONResponse The created task, or a named refusal.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -370,7 +384,7 @@ class TaskController extends Controller {
 	 *
 	 * @return JSONResponse The offered task, or a named refusal.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -388,7 +402,7 @@ class TaskController extends Controller {
 	 *
 	 * @return JSONResponse The claimed task; 409 for the race's loser.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -406,7 +420,7 @@ class TaskController extends Controller {
 	 *
 	 * @return JSONResponse The pooled task, or a named refusal.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -425,7 +439,7 @@ class TaskController extends Controller {
 	 *
 	 * @return JSONResponse The assigned task, or a named refusal.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -444,7 +458,7 @@ class TaskController extends Controller {
 	 *
 	 * @return JSONResponse The reassigned task, or a named refusal.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -464,7 +478,7 @@ class TaskController extends Controller {
 	 *
 	 * @return JSONResponse The delegated task, or a named refusal.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-performer-model-spans-people-groups-agents-and-workers
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -484,7 +498,7 @@ class TaskController extends Controller {
 	 *
 	 * @return JSONResponse The resolved task, or a named refusal.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -511,8 +525,8 @@ class TaskController extends Controller {
 	 *
 	 * @return JSONResponse The completed task, or a named refusal.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -548,7 +562,7 @@ class TaskController extends Controller {
 	 *
 	 * @return JSONResponse The terminated task, or a named refusal.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -569,7 +583,7 @@ class TaskController extends Controller {
 	 *
 	 * @return JSONResponse The task with the one item changed.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-templated-task-freezes-its-template-at-creation
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-templated-task-freezes-its-template-at-creation
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -601,8 +615,8 @@ class TaskController extends Controller {
 	 *
 	 * @return JSONResponse The task, or the refusal.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-validation-failure-names-its-fields-and-completes-nothing
 	 */
 	private function respondWith(callable $verb, int $successStatus = Http::STATUS_OK, ?string $uuid = null): JSONResponse {
 		try {
@@ -626,6 +640,14 @@ class TaskController extends Controller {
 			);
 		} catch (TaskValidationException $refused) {
 			return new JSONResponse(['error' => $refused->getMessage()], Http::STATUS_BAD_REQUEST);
+		} catch (TaskSubjectNotFoundException $missing) {
+			// The object a task names is not there for this caller, either
+			// because it is not there at all or because they may not read it.
+			// 404 with the object endpoint's own words, so the two are
+			// indistinguishable and a create cannot be used to find out which
+			// objects exist. This catch sits ABOVE the write refusal because
+			// both are about the subject and only this one is about access.
+			return new JSONResponse(['error' => $missing->getMessage()], Http::STATUS_NOT_FOUND);
 		} catch (TaskSubjectWriteRefusedException $refused) {
 			// The payload passed the form and the SUBJECT refused it, on the
 			// ordinary save path: not malformed, not completed.
@@ -703,7 +725,7 @@ class TaskController extends Controller {
 	 *
 	 * @return DateTime|null The instant, or null.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function parseInstant(?string $value): ?DateTime {
 		$raw = trim((string) ($value ?? ''));
@@ -737,7 +759,7 @@ class TaskController extends Controller {
 	 *
 	 * @return array{after: DateTime|null, before: DateTime|null, error: string|null}
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function dueWindow(?string $dueAfter, ?string $dueBefore): array {
 		$after = $this->parseInstant(value: $dueAfter);

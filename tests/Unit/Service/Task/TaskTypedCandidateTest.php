@@ -85,6 +85,7 @@ class PoolResolver implements IPrincipalResolver {
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalReference
  * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalResolverRegistry
  * @uses \OCA\OpenRegister\Service\Flow\Principal\RegisterPrincipalResolversEvent
+ * @uses \OCA\OpenRegister\Db\Task
  */
 final class TaskTypedCandidateTest extends TestCase {
 

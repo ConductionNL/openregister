@@ -41,7 +41,7 @@ final class SignedBundle {
 	 * @param string $signatureState Human/machine-readable signature state marker.
 	 * @param string $mimeType MIME type of the bytes.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function __construct(
 		private readonly string $bytes,
@@ -57,7 +57,7 @@ final class SignedBundle {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function getBytes(): string {
 		return $this->bytes;
@@ -68,7 +68,7 @@ final class SignedBundle {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function getContentHash(): string {
 		return $this->contentHash;
@@ -79,7 +79,7 @@ final class SignedBundle {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function isSigned(): bool {
 		return $this->signed;
@@ -90,7 +90,7 @@ final class SignedBundle {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function getSignatureState(): string {
 		return $this->signatureState;
@@ -101,7 +101,7 @@ final class SignedBundle {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function getMimeType(): string {
 		return $this->mimeType;

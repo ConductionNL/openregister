@@ -25,7 +25,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-a-connection-records-the-account-it-speaks-for
+ * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-connection-records-the-account-it-speaks-for
  */
 
 declare(strict_types=1);
@@ -42,6 +42,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2AccountIdentity
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2TokenSet
  */
 class OAuth2AccountIdentityTest extends TestCase {
 	/** @var array<int, array<string, mixed>> Every brokered call made. */

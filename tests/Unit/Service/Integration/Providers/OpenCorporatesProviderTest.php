@@ -26,7 +26,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-kvk-opencorporates/tasks.md
+ * @spec openspec/changes/archive/2026-10-05-integration-kvk-opencorporates/tasks.md
  */
 
 declare(strict_types=1);

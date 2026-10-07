@@ -100,7 +100,7 @@ final class AutoTransitionDecision {
 	 *                       so it is the only one that needs to know the entity
 	 *                       may hand back a date object, a string, or nothing.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		string $uuid,

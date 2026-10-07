@@ -47,6 +47,9 @@ use ReflectionClass;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\RelationHandler
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Relation\RelationAnnotationValidator
+ * @uses \OCA\OpenRegister\Service\Relation\RelationTypeResolver
  */
 class RelationHandlerLabelsTest extends TestCase {
 	private RelationHandler $handler;

@@ -23,44 +23,42 @@ This spec integrates with and extends multiple existing OpenRegister subsystems:
 - **What this spec adds**: Verwerkingsactiviteiten register schema, purpose-bound access control middleware, DataSubjectSearchService for cross-schema BSN search, data subject rights workflows (inzage/rectificatie/vergetelheid/portabiliteit), DPIA tracking, consent management, verwerker registration, and Art 30 register export.
 ## Requirements
 ### Requirement: The system MUST maintain a verwerkingsactiviteiten register as an OpenRegister schema
-A central register of all processing activities (verwerkingsactiviteiten) MUST be maintained as a dedicated OpenRegister register and schema, conforming to GDPR Article 30(1) for controllers and Article 30(2) for processors. Each processing activity record MUST contain all fields mandated by the Autoriteit Persoonsgegevens model verwerkingsregister and the VNG model verwerkingsregister for gemeenten.
+A central register of all processing activities (verwerkingsactiviteiten) MUST be maintained as a dedicated OpenRegister register and schema, conforming to GDPR Article 30(1) for controllers and Article 30(2) for processors. Each processing activity record MUST contain all fields mandated by the Autoriteit Persoonsgegevens model verwerkingsregister and the VNG model verwerkingsregister for gemeenten. Field names throughout this requirement use the English identifiers introduced by the `verwerkingsregister-i18n` change (`name`, `purpose`, `legalBasis`, `dataSubjectCategories`, `personalDataCategories`, `recipients`, `retentionPeriod`, `technicalMeasures`/`organisationalMeasures`) — the Dutch labels these fields previously used were the same rename target as the shipped `Verwerkingsactiviteit` entity's columns.
 
 #### Scenario: Create a processing activity with all Art 30 mandatory fields
 - **GIVEN** an administrator or privacy officer (FG/DPO) accesses the verwerkingsregister
 - **WHEN** they create a new verwerkingsactiviteit with:
-  - `naam`: `Behandeling bezwaarschrift`
-  - `doel` (purpose/doelbinding): `Uitvoering wettelijke taak bezwaarschriftprocedure conform Algemene wet bestuursrecht`
-  - `grondslag` (legal basis per Art 6): `Wettelijke verplichting (Art 6 lid 1 sub c AVG) — Awb art. 7:1`
-  - `categorieenBetrokkenen` (data subject categories): `["bezwaarmaker", "belanghebbenden", "gemachtigden"]`
-  - `categorieenPersoonsgegevens` (personal data categories): `["NAW-gegevens", "BSN", "contactgegevens", "zaakinhoud", "financiele gegevens"]`
-  - `ontvangers` (recipients): `["behandelend ambtenaar", "bezwaarschriftencommissie", "rechtbank (bij beroep)"]`
-  - `bewaartermijn` (retention period): `P10Y` (ISO 8601 duration, 10 years after case closure)
-  - `beveiligingsmaatregelen` (security measures per Art 32): `["versleuteling in rust en transit", "toegangscontrole op basis van rollen", "audit logging", "pseudonimisering waar mogelijk"]`
-  - `verwerker` (processor): `Eigen organisatie`
-  - `verwerkersovereenkomst` (processor agreement reference): `null` (own organisation)
-  - `doorgifte` (transfers to third countries): `Geen doorgifte buiten EER`
-  - `dpiaVereist` (DPIA required): `false`
-  - `status`: `actief`
+  - `name`: `Behandeling bezwaarschrift`
+  - `purpose`: `Uitvoering wettelijke taak bezwaarschriftprocedure conform Algemene wet bestuursrecht`
+  - `legalBasis` (per Art 6): `legal_obligation` (Art 6 lid 1 sub c AVG — Awb art. 7:1)
+  - `dataSubjectCategories`: `["bezwaarmaker", "belanghebbenden", "gemachtigden"]`
+  - `personalDataCategories`: `["NAW-gegevens", "BSN", "contactgegevens", "zaakinhoud", "financiele gegevens"]`
+  - `recipients`: `["behandelend ambtenaar", "bezwaarschriftencommissie", "rechtbank (bij beroep)"]`
+  - `retentionPeriod`: `P10Y` (ISO 8601 duration, 10 years after case closure)
+  - `technicalMeasures`/`organisationalMeasures` (security measures per Art 32): `["versleuteling in rust en transit", "toegangscontrole op basis van rollen", "audit logging", "pseudonimisering waar mogelijk"]`
+  - `controller` (processor/verwerkingsverantwoordelijke): `Eigen organisatie`
+  - `dpiaVereist` (DPIA required — not part of this rename, unbuilt DPIA linkage): `false`
+  - `status`: `published`
 - **THEN** the processing activity MUST be stored as an object in the verwerkingsactiviteiten schema
 - **AND** a UUID MUST be generated for cross-referencing from audit trail entries
 - **AND** the `created` and `updated` timestamps MUST be set automatically
 
 #### Scenario: Reject processing activity without mandatory fields
 - **GIVEN** an administrator attempts to create a verwerkingsactiviteit
-- **WHEN** the `doel`, `grondslag`, or `categorieenBetrokkenen` fields are missing
+- **WHEN** the `purpose`, `legalBasis`, or `dataSubjectCategories` fields are missing
 - **THEN** the system MUST reject the creation with HTTP 400
 - **AND** the response MUST list which mandatory Art 30 fields are missing
 - **AND** the error message MUST reference the specific GDPR article (e.g., "Art 30 lid 1 sub b vereist het doel van de verwerking")
 
 #### Scenario: List all processing activities with filtering
 - **GIVEN** 25 verwerkingsactiviteiten exist across multiple organisational units
-- **WHEN** a privacy officer queries `GET /api/objects/{register}/{schema}?grondslag=Wettelijke verplichting`
+- **WHEN** a privacy officer queries `GET /api/objects/{register}/{schema}?legalBasis=legal_obligation`
 - **THEN** the system MUST return only activities with the matching legal basis
 - **AND** results MUST include pagination metadata
 - **AND** the query itself MUST NOT be logged as a processing activity on personal data (it queries the register, not personal data)
 
 #### Scenario: Version processing activity changes
-- **GIVEN** verwerkingsactiviteit `Behandeling bezwaarschrift` exists with `bewaartermijn: P10Y`
+- **GIVEN** verwerkingsactiviteit `Behandeling bezwaarschrift` exists with `retentionPeriod: P10Y`
 - **WHEN** the privacy officer updates the retention period to `P7Y` following a new selectielijst
 - **THEN** the system MUST create an audit trail entry recording the change via the immutable audit trail (see `audit-trail-immutable` spec)
 - **AND** the previous version MUST remain retrievable for compliance evidence
@@ -68,8 +66,8 @@ A central register of all processing activities (verwerkingsactiviteiten) MUST b
 
 #### Scenario: Deactivate a processing activity
 - **GIVEN** verwerkingsactiviteit `Papieren correspondentie archivering` is no longer performed
-- **WHEN** the privacy officer sets its `status` to `inactief`
-- **THEN** the activity MUST remain in the register with status `inactief` (MUST NOT be deleted per Art 30 accountability principle)
+- **WHEN** the privacy officer sets its `status` to `archived`
+- **THEN** the activity MUST remain in the register with status `archived` (MUST NOT be deleted per Art 30 accountability principle)
 - **AND** schemas linked to this activity MUST display a warning that the processing activity is inactive
 - **AND** the deactivation MUST be recorded in the audit trail
 
@@ -142,6 +140,12 @@ Every read, write, update, or delete operation on objects in schemas marked as c
 - **AND** the enforcement MUST occur before any data is returned to the caller
 
 #### Scenario: Logging aligns with VNG Verwerkingenlogging API standard
+> **Carve-out — stays Dutch by design.** The VNG "Verwerkingenlogging" API is an external standard
+> that mandates these exact field names on the wire. Future implementers of this not-yet-built
+> export endpoint MUST NOT "fix" this by translating it — doing so would break interoperability
+> with the standard `verwerkingsregister-i18n` deliberately did not touch this scenario's field
+> names for that reason.
+
 - **GIVEN** the municipality uses the VNG Verwerkingenlogging API standard for cross-system logging
 - **WHEN** processing log entries are created
 - **THEN** the entries MUST be exportable in the VNG Verwerkingenlogging format including:
@@ -340,30 +344,30 @@ When processing is based on consent, the system MUST record, manage, and prove c
 - **AND** the consent records MUST be immutable (withdrawal creates a new record, does not modify the original)
 
 ### Requirement: Third-party processors (verwerkers) MUST be registered with verwerkersovereenkomst tracking
-All third parties that process personal data on behalf of the organisation MUST be registered in the verwerkingsregister with their processor agreement details, conforming to Art 28 AVG.
+All third parties that process personal data on behalf of the organisation MUST be registered in the verwerkingsregister with their processor agreement details, conforming to Art 28 AVG. The `avg-bundle.json` `verwerker` schema was renamed to `processor` by the `verwerkingsregister-i18n` change; its property names below use the renamed English keys.
 
 #### Scenario: Register a third-party processor
 - **GIVEN** the organisation uses `CloudHosting B.V.` for document storage
 - **WHEN** the privacy officer registers the processor
-- **THEN** the verwerker record MUST include:
-  - `naam`: `CloudHosting B.V.`
-  - `kvkNummer`: `12345678`
-  - `contactpersoon`: `privacy@cloudhosting.nl`
-  - `verwerkersovereenkomstDatum`: `2025-03-01`
-  - `verwerkersovereenkomstVerloopt`: `2027-03-01`
-  - `subverwerkers`: `["AWS EU-West", "Backup B.V."]`
-  - `doorgifteDetails`: `Servers in EU, geen doorgifte buiten EER`
-  - `beveiligingsCertificering`: `ISO 27001, SOC 2 Type II`
+- **THEN** the processor record MUST include:
+  - `name`: `CloudHosting B.V.`
+  - `chamberOfCommerceNumber`: `12345678`
+  - `contactPerson`: `privacy@cloudhosting.nl`
+  - `agreementDate`: `2025-03-01`
+  - `agreementExpiresAt`: `2027-03-01`
+  - `subProcessors`: `["AWS EU-West", "Backup B.V."]`
+  - `internationalTransferDetails`: `Servers in EU, geen doorgifte buiten EER`
+  - `securityCertifications`: `ISO 27001, SOC 2 Type II`
 
 #### Scenario: Alert on expiring processor agreement
-- **GIVEN** verwerker `CloudHosting B.V.` has a verwerkersovereenkomst expiring on `2027-03-01`
+- **GIVEN** processor `CloudHosting B.V.` has an `agreementExpiresAt` of `2027-03-01`
 - **WHEN** the current date is within 90 days of expiration
 - **THEN** the system MUST send a notification to the privacy officer
-- **AND** the verwerker record MUST display a warning indicator in the UI
+- **AND** the processor record MUST display a warning indicator in the UI
 
 #### Scenario: Link processor to processing activities
-- **GIVEN** verwerker `CloudHosting B.V.` is registered
-- **WHEN** verwerkingsactiviteit `Documentopslag en -verwerking` lists this verwerker
+- **GIVEN** processor `CloudHosting B.V.` is registered
+- **WHEN** verwerkingsactiviteit `Documentopslag en -verwerking` lists this processor
 - **THEN** the Art 30 export MUST include the processor details alongside the processing activity
 - **AND** if the processor is deactivated, all linked verwerkingsactiviteiten MUST display a compliance warning
 
@@ -371,7 +375,11 @@ All third parties that process personal data on behalf of the organisation MUST 
 The complete verwerkingsregister MUST be exportable in formats suitable for AP supervision, internal audit, and FG/DPO reporting. The export MUST conform to the VNG model verwerkingsregister template structure.
 
 #### Scenario: Export complete Art 30 register as structured document
-- **GIVEN** 25 verwerkingsactiviteiten are defined with linked schemas, verwerkers, and DPIAs
+> **Carve-out — the PDF's column labels stay Dutch by design.** This is human-readable display text
+> for a citizen-facing/AP-facing compliance document mandated by the VNG model verwerkingsregister
+> template, not a code identifier — `verwerkingsregister-i18n` explicitly did not translate it.
+
+- **GIVEN** 25 verwerkingsactiviteiten are defined with linked schemas, processors, and DPIAs
 - **WHEN** the privacy officer triggers `GET /api/verwerkingsregister/export?format=pdf`
 - **THEN** the system MUST generate a PDF document (via DocuDesk if available) listing all activities with:
   - Naam, doel (doelbinding), grondslag, categorieën persoonsgegevens, categorieën betrokkenen
@@ -545,31 +553,38 @@ The system MUST provide a compliance check that lists every `(register, schema)`
 
 ### Requirement: The system MUST expose the data-subject rights as an admin-gated DSAR HTTP surface
 
+> **Scope correction.** This requirement describes real, shipped code — `DsarController` — not
+> aspirational functionality. It was originally left out of this change's delta on the mistaken
+> assumption that nothing here was built yet; `verwerkingsregister-i18n` renames these methods and
+> routes in the same PR as the `Verwerkingsactiviteit` entity fields.
+
 `DsarController` MUST provide the shipped HTTP slice of the AVG data-subject rights as a thin wrapper over `DsarService` and `AvgComplianceService`. Every endpoint MUST require membership of the Nextcloud `admin` group, returning HTTP 403 before doing any work otherwise, because DSAR operations span the whole register surface and bypass per-schema RBAC.
 
-- `inzage` (Art 15) MUST accept `subject` (required), optional `type`, and optional `mode` (`exact` default or `ilike`), delegate to `DsarService::findObjectsForSubject()`, and return `{subject, type, count, results}`. A missing `subject` MUST return HTTP 422.
-- `portabiliteit` (Art 20) MUST use the same lookup but reduce the envelope to the machine-readable export shape `{subject, generated, count, objects}` (object payloads only, no match annotations).
-- `vergetelheid` (Art 17) MUST accept `subject` (required), optional `type`, and a `dryRun` boolean; when `dryRun` is true it MUST return the matches without erasing. It MUST delegate to `DsarService::eraseObjectsForSubject()` and return the service summary.
-- `rectificatie` (Art 16) MUST require `objectId` (non-zero int) and a non-empty `changes` object, returning HTTP 422 when either is missing, HTTP 404 when the object is not found / the update fails, and delegate to `DsarService::rectifyObjectForSubject()`.
-- `compliance` MUST return `AvgComplianceService::runAllChecks()`.
+- `access` (renamed from `inzage`, Art 15) MUST accept `subject` (required), optional `type`, and optional `mode` (`exact` default or `ilike`), delegate to `DsarService::findObjectsForSubject()`, and return `{subject, type, count, results}`. A missing `subject` MUST return HTTP 422.
+- `portability` (renamed from `portabiliteit`, Art 20) MUST use the same lookup but reduce the envelope to the machine-readable export shape `{subject, generated, count, objects}` (object payloads only, no match annotations).
+- `erasure` (renamed from `vergetelheid`, Art 17) MUST accept `subject` (required), optional `type`, and a `dryRun` boolean; when `dryRun` is true it MUST return the matches without erasing. It MUST delegate to `DsarService::eraseObjectsForSubject()` and return the service summary.
+- `rectification` (renamed from `rectificatie`, Art 16) MUST require `objectId` (non-zero int) and a non-empty `changes` object, returning HTTP 422 when either is missing, HTTP 404 when the object is not found / the update fails, and delegate to `DsarService::rectifyObjectForSubject()`.
+- `compliance` (unchanged, already English) MUST return `AvgComplianceService::runAllChecks()`.
+
+Routes move accordingly: `/api/avg/inzage` → `/api/avg/access`, `/api/avg/portabiliteit` → `/api/avg/portability`, `/api/avg/vergetelheid` → `/api/avg/erasure`, `/api/avg/rectificatie` → `/api/avg/rectification`.
 
 #### Scenario: DSAR endpoints are admin-gated
 - **GIVEN** a non-admin authenticated user
-- **WHEN** they call any of `inzage`, `portabiliteit`, `vergetelheid`, `rectificatie`, or `compliance`
+- **WHEN** they call any of `access`, `portability`, `erasure`, `rectification`, or `compliance`
 - **THEN** the response MUST be HTTP 403 with `{error}` and no DSAR work MUST be performed
 
 #### Scenario: Inzage requires a subject
-- **GIVEN** an admin calls `inzage` with no `subject`
+- **GIVEN** an admin calls `access` (renamed from `inzage`) with no `subject`
 - **THEN** the response MUST be HTTP 422 with `{error: "`subject` query parameter is required"}`
 - **AND** a valid call MUST return `{subject, type, count, results}` from `DsarService::findObjectsForSubject()`
 
 #### Scenario: Erasure supports dry-run
-- **GIVEN** an admin calls `vergetelheid` with `dryRun=true` for a subject with matches
+- **GIVEN** an admin calls `erasure` with `dryRun=true` for a subject with matches
 - **WHEN** the request is processed
 - **THEN** the matches MUST be returned without any object being erased
 
 #### Scenario: Rectification validates input
-- **GIVEN** an admin calls `rectificatie` with `objectId=0` or empty `changes`
+- **GIVEN** an admin calls `rectification` with `objectId=0` or empty `changes`
 - **THEN** the response MUST be HTTP 422
 - **AND** a valid call against a non-existent object MUST return HTTP 404 with `{error, objectId}`
 

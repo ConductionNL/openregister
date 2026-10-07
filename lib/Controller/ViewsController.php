@@ -20,14 +20,17 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\View;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\ViewPresentationService;
 use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Service\View\ViewAlert;
+use OCA\OpenRegister\Exception\InvalidViewAlertException;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IUserSession;
+use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -65,18 +68,18 @@ class ViewsController extends Controller {
 	private ViewPresentationService $viewPresentationService;
 
 	/**
-	 * The user session for getting current user
-	 *
-	 * @var IUserSession
-	 */
-	private IUserSession $userSession;
-
-	/**
 	 * The logger interface
 	 *
 	 * @var LoggerInterface
 	 */
 	private LoggerInterface $logger;
+
+	/**
+	 * Who is asking, and how far they reach over views.
+	 *
+	 * @var ViewerReachResolver
+	 */
+	private ViewerReachResolver $viewers;
 
 	/**
 	 * Constructor for ViewsController
@@ -85,23 +88,187 @@ class ViewsController extends Controller {
 	 * @param IRequest $request The request object
 	 * @param ViewService $viewService The view service
 	 * @param ViewPresentationService $viewPresentationService The view presentation (kanban/calendar) service
-	 * @param IUserSession $userSession The user session
 	 * @param LoggerInterface $logger The logger
+	 * @param ViewerReachResolver $viewers Who is asking, and how far they reach
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		ViewService $viewService,
 		ViewPresentationService $viewPresentationService,
-		IUserSession $userSession,
 		LoggerInterface $logger,
+		ViewerReachResolver $viewers,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->viewService = $viewService;
 		$this->viewPresentationService = $viewPresentationService;
-		$this->userSession = $userSession;
 		$this->logger = $logger;
+		$this->viewers = $viewers;
 	}//end __construct()
+
+	/**
+	 * The view behind an id, resolved as the caller's own.
+	 *
+	 * `ViewService::find()` takes the owner and refuses anything else with a
+	 * `DoesNotExistException`, which every endpoint here answers as a 404.
+	 * That is the per-object predicate for a view: a caller who does not own
+	 * it gets the same answer as one asking for a view that does not exist,
+	 * so no endpoint can be used to discover which view ids exist.
+	 *
+	 * Named rather than inlined at five call sites, so the predicate is one
+	 * thing a reader can find and one thing a change has to go through.
+	 *
+	 * @param string $id     The view id.
+	 * @param string $userId The caller.
+	 *
+	 * @return View The view.
+	 *
+	 * @throws DoesNotExistException When the view is not this caller's.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	private function requireOwnedView(string $id, string $userId): View {
+		return $this->viewService->find(id: $id, owner: $userId);
+	}//end requireOwnedView()
+
+	/**
+	 * The view behind an id when it reaches this caller (owned, shared with a
+	 * group, public, or admin); anything else is the 404 of a missing view.
+	 *
+	 * @param string $id     The view id.
+	 * @param string $userId The caller.
+	 *
+	 * @return View The view.
+	 *
+	 * @throws DoesNotExistException When the view does not reach this caller.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	private function requireReachableView(string $id, string $userId): View {
+		$view = $this->viewService->findById(id: $id);
+		if ($this->viewers->reaches(view: $view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId)) === false) {
+			throw new DoesNotExistException('View not found or access denied');
+		}
+
+		return $view;
+	}//end requireReachableView()
+
+	/**
+	 * Refuse a share list that names a group that does not exist, or is malformed.
+	 *
+	 * Absent `sharedWith` is not refused: it leaves the shares as they are.
+	 *
+	 * @param array $data The request body.
+	 *
+	 * @return JSONResponse|null A 400 naming the findings, or null when the shares may be stored.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	private function refuseInvalidShares(array $data): ?JSONResponse {
+		if (array_key_exists('sharedWith', $data) === false) {
+			return null;
+		}
+
+		$findings = $this->viewers->shareFindings(sharedWith: $data['sharedWith']);
+		if ($findings === []) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => 'The view cannot be shared this way: '.implode(' ', array_column($findings, 'message')),
+				'findings' => $findings,
+			],
+			statusCode: 400
+		);
+	}//end refuseInvalidShares()
+
+	/**
+	 * The validated share list from a request body, or null when it does not mention sharing.
+	 *
+	 * @param array $data The request body, already checked by refuseInvalidShares().
+	 *
+	 * @return array|null
+	 */
+	private function sharesFrom(array $data): ?array {
+		if (array_key_exists('sharedWith', $data) === false || $data['sharedWith'] === null) {
+			return null;
+		}
+
+		return $data['sharedWith'];
+	}//end sharesFrom()
+
+	/**
+	 * The answer to a refused save: 422 naming the field of a malformed alert, 400 otherwise.
+	 *
+	 * @param InvalidArgumentException $e The refusal.
+	 *
+	 * @return JSONResponse
+	 */
+	private function refusalFor(InvalidArgumentException $e): JSONResponse {
+		if ($e instanceof InvalidViewAlertException) {
+			return new JSONResponse(data: ['error' => $e->getMessage(), 'field' => $e->getField()], statusCode: 422);
+		}
+
+		return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+	}//end refusalFor()
+
+	/**
+	 * Refuse an update that changes fields this caller does not own.
+	 *
+	 * Answers a response to RETURN, or null when the update may proceed. The
+	 * refusal NAMES the fields, because the message a member needs is which
+	 * field was refused rather than that something was.
+	 *
+	 * Only fields whose VALUE changes are judged: the edit screen sends the
+	 * whole view. The caller resolves the view with requireReachableView().
+	 *
+	 * @param View $view The stored view.
+	 * @param string $userId The caller.
+	 * @param array<string, mixed> $data The request body.
+	 *
+	 * @return JSONResponse|null The refusal, or null when allowed.
+	 *
+	 * @spec openspec/specs/saved-search-views/spec.md
+	 */
+	private function refuseForbiddenViewFields(View $view, string $userId, array $data): ?JSONResponse {
+		// Only keys that name a view property are judged, so a `_limit` or
+		// routing key on the body cannot refuse an update a member may make.
+		$fields = array_intersect_key(
+			$data,
+			array_flip(
+				[
+					'name',
+					'description',
+					'owner',
+					'isPublic',
+					'isDefault',
+					'query',
+					'presentation',
+					'alert',
+					'sharedWith',
+				]
+			)
+		);
+
+		$refused = $this->viewers->refusedFields(
+			view: $view->jsonSerialize(),
+			reach: $this->viewers->reachOf(userId: $userId),
+			update: $fields
+		);
+
+		if ($refused === []) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: [
+				'error' => 'You may not change these fields on this view: ' . implode(', ', $refused),
+				'fields' => $refused,
+			],
+			statusCode: 403
+		);
+	}//end refuseForbiddenViewFields()
 
 	/**
 	 * Get all views for the current user
@@ -121,11 +288,7 @@ class ViewsController extends Controller {
 	 */
 	public function index(): JSONResponse {
 		try {
-			$user = $this->userSession->getUser();
-			$userId = '';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
+			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
 				return new JSONResponse(
@@ -155,7 +318,10 @@ class ViewsController extends Controller {
 			}
 
 			// Note: search parameter not currently used in this endpoint.
-			$views = $this->viewService->findAll($userId);
+			// Ledger row 9.4: the caller's own views, the ones shared with a
+			// group they are in, and the public ones, each carrying the access
+			// they hold on it.
+			$views = $this->viewService->findAllFor(reach: $this->viewers->reachOf(userId: $userId));
 
 			// Apply client-side pagination if parameters are provided.
 			$total = count($views);
@@ -212,11 +378,7 @@ class ViewsController extends Controller {
 	 */
 	public function show(string $id): JSONResponse {
 		try {
-			$user = $this->userSession->getUser();
-			$userId = '';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
+			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
 				return new JSONResponse(
@@ -227,7 +389,7 @@ class ViewsController extends Controller {
 				);
 			}
 
-			$view = $this->viewService->find(id: $id, owner: $userId);
+			$view = $this->requireOwnedView(id: $id, userId: $userId);
 
 			return new JSONResponse(
 				data: [
@@ -276,11 +438,7 @@ class ViewsController extends Controller {
 	 */
 	public function create(): JSONResponse {
 		try {
-			$user = $this->userSession->getUser();
-			$userId = '';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
+			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
 				return new JSONResponse(
@@ -345,6 +503,11 @@ class ViewsController extends Controller {
 				$presentation = null;
 			}
 
+			$shareRefusal = $this->refuseInvalidShares(data: $data);
+			if ($shareRefusal !== null) {
+				return $shareRefusal;
+			}
+
 			$view = $this->viewService->create(
 				name: $data['name'],
 				description: $data['description'] ?? '',
@@ -352,7 +515,9 @@ class ViewsController extends Controller {
 				isPublic: $data['isPublic'] ?? false,
 				isDefault: $data['isDefault'] ?? false,
 				query: $query,
-				presentation: $presentation
+				presentation: $presentation,
+				sharedWith: $this->sharesFrom(data: $data),
+				alert: ViewAlert::declaredIn(body: $data)
 			);
 
 			return new JSONResponse(
@@ -362,12 +527,7 @@ class ViewsController extends Controller {
 				statusCode: 201
 			);
 		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => $e->getMessage(),
-				],
-				statusCode: 400
-			);
+			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ViewsController] Error creating view',
@@ -404,11 +564,7 @@ class ViewsController extends Controller {
 	 */
 	public function update(string $id): JSONResponse {
 		try {
-			$user = $this->userSession->getUser();
-			$userId = '';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
+			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
 				return new JSONResponse(
@@ -420,6 +576,21 @@ class ViewsController extends Controller {
 			}
 
 			$data = $this->request->getParams();
+
+			// 🔴 THE FIELD GUARD RUNS HERE, and it did not before. It was
+			// written, unit-tested and never called, which reads to the next
+			// person who greps as a check and is identical to having none.
+			// Until it was wired, `ViewService::update()`'s own access test
+			// admitted the OWNER or ANY caller on a view whose `isPublic` is
+			// true, so any authenticated account could rename someone else's
+			// shared view, rewrite its query, or un-publish it. The owner and
+			// an administrator are unaffected: `mayAdminister()` answers true
+			// for both and the guard returns null.
+			$stored = $this->requireReachableView(id: $id, userId: $userId);
+			$refusal = $this->refuseForbiddenViewFields(view: $stored, userId: $userId, data: $data);
+			if ($refusal !== null) {
+				return $refusal;
+			}
 
 			// Validate required fields.
 			if (isset($data['name']) === false || empty($data['name']) === true) {
@@ -473,15 +644,23 @@ class ViewsController extends Controller {
 				$presentation = null;
 			}
 
+			$shareRefusal = $this->refuseInvalidShares(data: $data);
+			if ($shareRefusal !== null) {
+				return $shareRefusal;
+			}
+
 			$view = $this->viewService->update(
 				id: $id,
 				name: $data['name'],
 				description: $data['description'] ?? '',
-				owner: $userId,
+				// A write member saves the OWNER's view (default-view bookkeeping too).
+				owner: $stored->getOwner(),
 				isPublic: $data['isPublic'] ?? false,
 				isDefault: $data['isDefault'] ?? false,
 				query: $query,
-				presentation: $presentation
+				presentation: $presentation,
+				sharedWith: $this->sharesFrom(data: $data),
+				alert: ViewAlert::declaredIn(body: $data)
 			);
 
 			return new JSONResponse(
@@ -497,12 +676,7 @@ class ViewsController extends Controller {
 				statusCode: 404
 			);
 		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => $e->getMessage(),
-				],
-				statusCode: 400
-			);
+			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ViewsController] Error updating view',
@@ -543,11 +717,7 @@ class ViewsController extends Controller {
 	 */
 	public function patch(string $id): JSONResponse {
 		try {
-			$user = $this->userSession->getUser();
-			$userId = '';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
+			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
 				return new JSONResponse(
@@ -558,10 +728,17 @@ class ViewsController extends Controller {
 				);
 			}
 
-			// Get existing view.
-			$view = $this->viewService->find(id: $id, owner: $userId);
+			$view = $this->requireReachableView(id: $id, userId: $userId);
 
 			$data = $this->request->getParams();
+
+			// The same guard as `update()`. Leaving it off here would have
+			// left the hole open behind a different verb, and this method
+			// additionally carries `@NoCSRFRequired`.
+			$refusal = $this->refuseForbiddenViewFields(view: $view, userId: $userId, data: $data);
+			if ($refusal !== null) {
+				return $refusal;
+			}
 
 			// Use existing values for fields not provided.
 			$name = $data['name'] ?? $view->getName() ?? '';
@@ -602,17 +779,24 @@ class ViewsController extends Controller {
 				$presentation = $data['presentation'];
 			}
 
+			$shareRefusal = $this->refuseInvalidShares(data: $data);
+			if ($shareRefusal !== null) {
+				return $shareRefusal;
+			}
+
 			// Update view.
 			$updatedView = $this->viewService->update(
 				id: $id,
 				name: $name,
 				description: $description,
-				owner: $userId,
+				owner: $view->getOwner(),
 				isPublic: $isPublic,
 				isDefault: $isDefault,
 				query: $query,
 				favoredBy: $favoredBy,
-				presentation: $presentation
+				presentation: $presentation,
+				sharedWith: $this->sharesFrom(data: $data),
+				alert: ViewAlert::declaredIn(body: $data)
 			);
 
 			return new JSONResponse(
@@ -628,12 +812,7 @@ class ViewsController extends Controller {
 				statusCode: 404
 			);
 		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => $e->getMessage(),
-				],
-				statusCode: 400
-			);
+			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ViewsController] Error patching view',
@@ -669,11 +848,7 @@ class ViewsController extends Controller {
 	 */
 	public function destroy(string $id): JSONResponse {
 		try {
-			$user = $this->userSession->getUser();
-			$userId = '';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
+			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
 				return new JSONResponse(
@@ -684,18 +859,7 @@ class ViewsController extends Controller {
 				);
 			}
 
-			$user = $this->userSession->getUser();
-			if ($user === null) {
-				return new JSONResponse(
-					data: [
-						'success' => false,
-						'error' => 'User not authenticated',
-					],
-					statusCode: 401
-				);
-			}
-
-			$this->viewService->delete(id: $id, owner: $user->getUID());
+			$this->viewService->delete(id: $id, owner: $userId);
 
 			return new JSONResponse(
 				data: [
@@ -751,11 +915,7 @@ class ViewsController extends Controller {
 	 */
 	public function kanban(string $id): JSONResponse {
 		try {
-			$user = $this->userSession->getUser();
-			$userId = '';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
+			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
 				return new JSONResponse(
@@ -766,7 +926,7 @@ class ViewsController extends Controller {
 				);
 			}
 
-			$view = $this->viewService->find(id: $id, owner: $userId);
+			$view = $this->requireOwnedView(id: $id, userId: $userId);
 			$board = $this->viewPresentationService->getKanbanBoard(
 				view: $view,
 				requestParams: $this->request->getParams()
@@ -781,12 +941,7 @@ class ViewsController extends Controller {
 				statusCode: 404
 			);
 		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => $e->getMessage(),
-				],
-				statusCode: 400
-			);
+			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ViewsController] Error building kanban board',
@@ -822,11 +977,7 @@ class ViewsController extends Controller {
 	 */
 	public function calendar(string $id): JSONResponse {
 		try {
-			$user = $this->userSession->getUser();
-			$userId = '';
-			if ($user !== null) {
-				$userId = $user->getUID();
-			}
+			$userId = $this->viewers->currentUid();
 
 			if (empty($userId) === true) {
 				return new JSONResponse(
@@ -850,12 +1001,16 @@ class ViewsController extends Controller {
 				);
 			}
 
-			$view = $this->viewService->find(id: $id, owner: $userId);
+			$view = $this->requireOwnedView(id: $id, userId: $userId);
+			// The whole request is deliberately NOT handed on. The service
+			// took a `$requestParams` array it `unset()` on its first line,
+			// reserved for a filter passthrough nobody wrote, and an argument
+			// that is thrown away is an argument a reader has to check before
+			// they can rule it out.
 			$result = $this->viewPresentationService->getCalendarObjects(
 				view: $view,
 				rangeStart: $rangeStart,
-				rangeEnd: $rangeEnd,
-				requestParams: $params
+				rangeEnd: $rangeEnd
 			);
 
 			return new JSONResponse(data: $result);
@@ -867,12 +1022,7 @@ class ViewsController extends Controller {
 				statusCode: 404
 			);
 		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(
-				data: [
-					'error' => $e->getMessage(),
-				],
-				statusCode: 400
-			);
+			return $this->refusalFor(e: $e);
 		} catch (\Exception $e) {
 			$this->logger->error(
 				message: '[ViewsController] Error querying calendar range',

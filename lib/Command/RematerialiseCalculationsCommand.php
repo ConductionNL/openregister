@@ -34,6 +34,7 @@ namespace OCA\OpenRegister\Command;
 
 use DateTimeInterface;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -192,18 +193,34 @@ class RematerialiseCalculationsCommand extends Command {
 				$payload['@ref'] = $this->references->resolveAll(
 					payload: $payload,
 					references: $referenceSpecs,
-					register: $entity->getRegister()
+					register: $entity->getRegister(),
+					organisation: $entity->getOrganisation()
 				);
 			}
 
 			if ($aggregateSpecs !== null) {
-				$payload['@aggregate'] = $this->aggregates->resolveAll(
+				$outcome = $this->aggregates->resolveAllWithOutcome(
 					payload: $payload,
 					aggregates: $aggregateSpecs,
 					registerRef: $entity->getRegister()
 				);
+				// An aggregate that could not be resolved is not a null to
+				// compare: the row's value is unknown, so the row FAILED (live
+				// pass O9 counted 205 such rows "unchanged" and exited 0).
+				if ($outcome['failed'] !== []) {
+					$failed++;
+					foreach ($outcome['failed'] as $name => $reason) {
+						$output->writeln(sprintf('  <error>! aggregate %s on %s: %s</error>', $name, (string)$entity->getUuid(), $reason));
+					}
+
+					continue;
+				}
+
+				$payload['@aggregate'] = $outcome['values'];
 			}
 
+			$stored = $data;
+			$expected = [];
 			$changed = false;
 			foreach ($calcs as $name => $spec) {
 				if (is_array($spec) === false || ($spec['materialise'] ?? false) !== true) {
@@ -226,7 +243,7 @@ class RematerialiseCalculationsCommand extends Command {
 					}
 
 					if (($data[(string)$name] ?? null) !== $value) {
-						$data[(string)$name] = $value;
+						$expected[(string)$name] = $value;
 						$changed = true;
 					}
 				} catch (\Throwable $e) {
@@ -247,26 +264,39 @@ class RematerialiseCalculationsCommand extends Command {
 				continue;
 			}
 
-			$touched++;
-			if ($dryRun === false) {
-				try {
-					$this->objectService->saveObject(
-						object: $data,
-						register: $entity->getRegister(),
-						schema: $entity->getSchema(),
-						uuid: $entity->getUuid()
-					);
-				} catch (\Throwable $e) {
+			if ($dryRun === true) {
+				$touched++;
+				continue;
+			}
+
+			// Re-read the row: an earlier save in this run can already have
+			// materialised it (saving one enrolment re-saves its siblings), and
+			// saving the snapshot taken at the start would then try to change
+			// the readOnly value back (live pass O11).
+			$current = $this->reread(entity: $entity, register: $register, schema: $schema);
+			if ($current !== null) {
+				$stored = $current;
+				$expected = array_filter(
+					$expected,
+					static fn ($value, $name): bool => ($current[$name] ?? null) !== $value,
+					ARRAY_FILTER_USE_BOTH
+				);
+				if ($expected === []) {
 					$output->writeln(
-						sprintf(
-							'  <error>save failed on %s: %s</error>',
-							(string)$entity->getUuid(),
-							$e->getMessage()
-						)
+						sprintf('  <comment>%s already materialised by an earlier save in this run</comment>', (string)$entity->getUuid()),
+						OutputInterface::VERBOSITY_VERBOSE
 					);
-					$failed++;
+					$touched++;
+					continue;
 				}
 			}
+
+			if ($this->saveForMaterialisation(entity: $entity, stored: $stored, expected: $expected, output: $output) === true) {
+				$touched++;
+				continue;
+			}
+
+			$failed++;
 		}//end foreach
 
 		$output->writeln(
@@ -284,6 +314,95 @@ class RematerialiseCalculationsCommand extends Command {
 
 		return $exitCode;
 	}//end execute()
+
+	/**
+	 * Read a row's stored data as it is now, not as the run's first read saw it.
+	 *
+	 * @param \OCA\OpenRegister\Db\ObjectEntity $entity   The row from the run's first read.
+	 * @param Register                          $register The register.
+	 * @param Schema                            $schema   The schema.
+	 *
+	 * @return array<string, mixed>|null The stored data, or null when the row cannot be read again.
+	 *
+	 * @spec openspec/changes/rematerialise-rereads-before-save/specs/computed-fields/spec.md
+	 */
+	private function reread(\OCA\OpenRegister\Db\ObjectEntity $entity, Register $register, Schema $schema): ?array {
+		try {
+			$fresh = $this->magicMapper->find(
+				identifier: (string)$entity->getUuid(),
+				register: $register,
+				schema: $schema,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		return ($fresh->getObject() ?? []);
+	}//end reread()
+
+	/**
+	 * Re-save a row UNCHANGED so the save path materialises it, and check it did.
+	 *
+	 * The command does not write the values itself: materialised calculations
+	 * are declared readOnly ("never edit by hand"), and ObjectService refuses a
+	 * payload that changes them (live pass O8: "Cannot modify readOnly
+	 * properties"). CalculationOnSaveListener writes them on every save, as the
+	 * temporal sweep relies on; the command re-saves the stored data, as the
+	 * sweep does, and then reads back that each changed value arrived.
+	 *
+	 * @param \OCA\OpenRegister\Db\ObjectEntity $entity   The row.
+	 * @param array<string, mixed>              $stored   Its stored data.
+	 * @param array<string, mixed>              $expected The values the calculations now give, by name.
+	 * @param OutputInterface                   $output   The output.
+	 *
+	 * @return bool True when every expected value is on the saved row.
+	 *
+	 * @spec openspec/changes/rematerialise-writes-calculated-values/specs/computed-fields/spec.md
+	 */
+	private function saveForMaterialisation(
+		\OCA\OpenRegister\Db\ObjectEntity $entity,
+		array $stored,
+		array $expected,
+		OutputInterface $output
+	): bool {
+		try {
+			// No user session under occ: write as the system (live pass O7).
+			$saved = $this->objectService->saveObject(
+				object: $stored,
+				register: $entity->getRegister(),
+				schema: $entity->getSchema(),
+				uuid: $entity->getUuid(),
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (\Throwable $e) {
+			$output->writeln(sprintf('  <error>save failed on %s: %s</error>', (string)$entity->getUuid(), $e->getMessage()));
+			return false;
+		}
+
+		$after = $saved->getObject() ?? [];
+		$missing = [];
+		foreach (array_keys($expected) as $name) {
+			if (($after[$name] ?? null) === ($stored[$name] ?? null)) {
+				$missing[] = $name;
+			}
+		}
+
+		if ($missing === []) {
+			return true;
+		}
+
+		$output->writeln(
+			sprintf(
+				'  <error>saved %s but the save did not materialise: %s</error>',
+				(string)$entity->getUuid(),
+				implode(', ', $missing)
+			)
+		);
+		return false;
+	}//end saveForMaterialisation()
 
 	/**
 	 * Inject the synthetic `@self` metadata into an evaluation payload.

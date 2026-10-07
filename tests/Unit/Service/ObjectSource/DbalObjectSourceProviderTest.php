@@ -331,6 +331,51 @@ class DbalObjectSourceProviderTest extends TestCase {
 	}//end testFindAllAppliesFilterAndLimitInSql()
 
 	/**
+	 * `name[like]` matches a substring, ignoring case, against the real SQLite table.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 */
+	public function testLikeFilterMatchesSubstringIgnoringCase(): void {
+		$objects = $this->provider()->findAll(
+			register: $this->register(),
+			schema: $this->peopleSchema(),
+			query: ['filters' => ['name' => ['like' => 'PERSON 11']], 'limit' => 200, 'offset' => 0],
+			config: $this->peopleConfig()
+		);
+
+		// Person 11 and Person 110 to Person 119.
+		$this->assertCount(11, $objects);
+		foreach ($objects as $object) {
+			$this->assertStringStartsWith('Person 11', $object->getObject()['name']);
+		}
+	}//end testLikeFilterMatchesSubstringIgnoringCase()
+
+	/**
+	 * `_` and `%` in a like term match themselves, so they match no "Person N".
+	 *
+	 * Unescaped, `son_1` would match "Person 1" (the `_` matching the space) and
+	 * `%` would match every row.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-like-matches-percent-underscore-and-backslash-literally
+	 */
+	public function testLikeFilterMatchesWildcardsLiterally(): void {
+		$provider = $this->provider();
+		foreach (['son_1', '%', '\\'] as $term) {
+			$count = $provider->count(
+				register: $this->register(),
+				schema: $this->peopleSchema(),
+				query: ['filters' => ['name' => ['like' => $term]]],
+				config: $this->peopleConfig()
+			);
+			$this->assertSame(0, $count, $term);
+		}
+	}//end testLikeFilterMatchesWildcardsLiterally()
+
+	/**
 	 * Free-text `_search` LIKEs across mixed-type columns via a text CAST.
 	 *
 	 * Live-observed on PostgreSQL: `integer LIKE text` raises "operator does

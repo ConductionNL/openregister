@@ -20,7 +20,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Service\ActivityService;
+use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCP\Activity\IEvent;
 use OCP\Activity\IManager;
 use OCP\IURLGenerator;
@@ -276,5 +279,122 @@ class ActivityServiceTest extends TestCase {
 				"Method $method should exist on ActivityService"
 			);
 		}
+	}
+	/**
+	 * Test: an object update activity carries the schema title.
+	 *
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
+	 */
+	public function testPublishObjectUpdatedCarriesSchemaTitle(): void {
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->expects($this->once())
+			->method('find')
+			->with('12', $this->anything(), false, false)
+			->willReturn($this->createSchema(title: 'Client'));
+
+		$service = new ActivityService($this->activityManager, $this->userSession, $this->urlGenerator, $this->logger, $schemaMapper);
+		$this->userSession->method('getUser')->willReturn($this->mockUser('admin'));
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.com/apps/openregister/');
+
+		$event = $this->mockEvent();
+		$event->expects($this->once())
+			->method('setSubject')
+			->with('object_updated', ['title' => 'Gemeente Demo', 'schema' => 'Client']);
+		$this->activityManager->method('generateEvent')->willReturn($event);
+
+		$service->publishObjectUpdated($this->createObjectEntity(name: 'Gemeente Demo'));
+	}
+
+	/**
+	 * Test: a schema that does not resolve leaves the title-only parameters and still publishes.
+	 */
+	public function testPublishObjectUpdatedWithoutResolvableSchemaStillPublishes(): void {
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('find')->willThrowException(new DoesNotExistException('gone'));
+
+		$service = new ActivityService($this->activityManager, $this->userSession, $this->urlGenerator, $this->logger, $schemaMapper);
+		$this->userSession->method('getUser')->willReturn($this->mockUser('admin'));
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.com/apps/openregister/');
+
+		$event = $this->mockEvent();
+		$event->expects($this->once())->method('setSubject')->with('object_updated', ['title' => 'Gemeente Demo']);
+		$this->activityManager->method('generateEvent')->willReturn($event);
+		$this->activityManager->expects($this->once())->method('publish');
+
+		$service->publishObjectUpdated($this->createObjectEntity(name: 'Gemeente Demo'));
+	}
+
+	/**
+	 * The link an object activity carries, given what the registry answers.
+	 *
+	 * @param string|null $registered What the deep link registry resolves.
+	 *
+	 * @return string The link set on the event.
+	 */
+	private function objectActivityLink(?string $registered): string {
+		$deepLinks = $this->createMock(DeepLinkRegistryService::class);
+		$deepLinks->method('resolveUrl')->willReturnCallback(
+			static function (int $registerId, int $schemaId, array $objectData) use ($registered): ?string {
+				if ($registered === null || $registerId !== 5 || $schemaId !== 12) {
+					return null;
+				}
+
+				return str_replace('{uuid}', (string) $objectData['uuid'], $registered);
+			}
+		);
+		$this->urlGenerator->method('getAbsoluteURL')->willReturnCallback(
+			static fn (string $url): string => 'https://example.com' . $url
+		);
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.com/apps/openregister/');
+		$this->userSession->method('getUser')->willReturn($this->mockUser('admin'));
+
+		$link = '';
+		$event = $this->mockEvent();
+		$event->method('setLink')->willReturnCallback(
+			static function (string $url) use (&$link, $event): IEvent {
+				$link = $url;
+				return $event;
+			}
+		);
+		$this->activityManager->method('generateEvent')->willReturn($event);
+
+		$service = new ActivityService(
+			$this->activityManager,
+			$this->userSession,
+			$this->urlGenerator,
+			$this->logger,
+			null,
+			$deepLinks,
+		);
+		$service->publishObjectUpdated($this->createObjectEntity());
+
+		return $link;
+	}
+
+	/**
+	 * 🔴 An object an app owns links to that app's detail page.
+	 *
+	 * Live audit E1: a pipelinq client update in the activity stream linked to
+	 * /apps/openregister/#/registers/…/objects/…, the register browser.
+	 *
+	 * @spec openspec/specs/activity-provider/spec.md
+	 */
+	public function testAnOwnedObjectLinksToItsAppsDetailPage(): void {
+		self::assertSame(
+			'https://example.com/apps/pipelinq/clients/abc-123',
+			$this->objectActivityLink(registered: '/apps/pipelinq/clients/{uuid}')
+		);
+	}
+
+	/**
+	 * An object no app claims keeps the OpenRegister link.
+	 *
+	 * @spec openspec/specs/activity-provider/spec.md
+	 */
+	public function testAnUnclaimedObjectKeepsTheRegisterLink(): void {
+		self::assertSame(
+			'https://example.com/apps/openregister/#/registers/5/schemas/12/objects/abc-123',
+			$this->objectActivityLink(registered: null)
+		);
 	}
 }

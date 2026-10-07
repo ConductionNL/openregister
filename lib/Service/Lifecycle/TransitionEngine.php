@@ -40,9 +40,11 @@ use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IUserSession;
+use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -98,8 +100,6 @@ class TransitionEngine {
 	 * lifecycles, which reads worse than the count.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly ObjectService $objectService,
@@ -149,7 +149,6 @@ class TransitionEngine {
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	private function dispatchTransitioned(
 		ObjectEntity $object,
@@ -290,7 +289,6 @@ class TransitionEngine {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
 	 */
 	public function transition(string $objectId, string $action, array $data = []): ObjectEntity {
 		// OPEN THE AUTOMATIC-TRANSITION BOUNDARY around the whole transition,
@@ -305,26 +303,82 @@ class TransitionEngine {
 	}//end transition()
 
 	/**
+	 * Apply a named transition as the system, after the calling app approved the caller itself.
+	 *
+	 * For app code whose own check has already decided the session user may
+	 * make this move, on an object that user holds no right on. learniq's
+	 * course evaluation answer is the case that asked for it: the learner may
+	 * submit their answer because learniq found their open invitation, but no
+	 * learner may read or update response rows, and granting them that only
+	 * to let the transition pass was an access hole (DECISIONS row 63).
+	 *
+	 * WHAT IS SKIPPED, and nothing more: OpenRegister's own read check on the
+	 * subject (the find runs without RBAC and without the organisation
+	 * filter), its `update` check on the subject, and RBAC and the
+	 * organisation filter on the save that flips the lifecycle field.
+	 *
+	 * WHAT STILL RUNS: everything the transition itself declares. The save
+	 * still dispatches ObjectUpdatingEvent, so the lifecycle validator still
+	 * refuses an undeclared move, still applies the transition's
+	 * `authorization` and `condition`, and still runs its `requires` guard
+	 * with the session user (the real caller, never "system"). The declared
+	 * `actions[]` and the transitioned event run as for any transition, with
+	 * the real caller as their user.
+	 *
+	 * WHAT IS RECORDED: the audit row keeps the real caller as its user and
+	 * carries `transitionAsSystem: {app}` in its change set, and an info line
+	 * names the app, the caller, the object and the action.
+	 *
+	 * 🔴 NOT REACHABLE FROM THE HTTP API. This is a separate method, not a
+	 * flag on transition(), so no request parameter can select it, and no
+	 * controller calls it (TransitionEngineAsSystemTest pins that structurally).
+	 * Call it only after your own code has checked the caller; never pass a
+	 * decision a client made.
+	 *
+	 * @param string $objectId Object id/uuid/slug.
+	 * @param string $action Transition action name.
+	 * @param string $app The id of the app taking responsibility for the caller check.
+	 * @param array<string, mixed> $data Optional input values for the transition's declared `inputs`.
+	 *
+	 * @return ObjectEntity The saved object after the transition.
+	 *
+	 * @throws InvalidArgumentException When `$app` is empty.
+	 * @throws RuntimeException As transition() does, including a guard refusal.
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	public function transitionAsSystem(string $objectId, string $action, string $app, array $data = []): ObjectEntity {
+		$app = trim($app);
+		if ($app === '') {
+			throw new InvalidArgumentException('A transition run as the system must name the app that approved the caller.');
+		}
+
+		return $this->writeBoundary->around(
+			write: fn (): ObjectEntity => $this->applyTransition(
+				objectId: $objectId,
+				action: $action,
+				data: $data,
+				asSystemFor: $app
+			)
+		);
+	}//end transitionAsSystem()
+
+	/**
 	 * Resolve the object/schema/annotation a transition acts on, guarding presence and permission.
 	 *
 	 * Extracted from {@see applyTransition()} to keep its own mode/transition/from-state
 	 * branching separate from "can this call proceed at all".
 	 *
 	 * @param string $objectId Object id/uuid/slug.
+	 * @param bool $asSystem True on the system path: skip the read and `update` checks.
 	 *
 	 * @return array{object: ObjectEntity, schema: Schema, annotation: array<string, mixed>}
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag selects the system path, which
+	 * only transitionAsSystem() sets; two copies of this method would drift.
 	 */
-	private function resolveTransitionSubject(string $objectId): array {
-		$object = $this->objectService->find(id: $objectId);
-		if ($object === null) {
-			// A distinct type, still a RuntimeException: the write endpoint has
-			// to tell "this object is gone" (404) apart from "this move was
-			// refused" (422) and "the provider broke" (502), and those first two
-			// shared a status code until this type existed.
-			throw new LifecycleSubjectNotFoundException(
-				message: sprintf('Object "%s" not found.', $objectId)
-			);
-		}
+	private function resolveTransitionSubject(string $objectId, bool $asSystem = false): array {
+		$object = $this->findVisibleSubject(objectId: $objectId, asSystem: $asSystem);
 
 		$schema = $this->loadSchema(object: $object);
 		if ($schema === null) {
@@ -335,15 +389,20 @@ class TransitionEngine {
 		// caller MUST hold `update` permission on this object. Gated explicitly
 		// (rather than relying solely on saveObject()'s own RBAC pass) so a
 		// denial surfaces as a clear 403 before the annotation lookup runs.
-		$callerId = $this->userSession->getUser()?->getUID();
-		$allowed = $this->permissionHandler->hasPermission(
-			schema: $schema,
-			action: 'update',
-			userId: $callerId,
-			objectOwner: $object->getOwner(),
-			_rbac: true,
-			object: $object
-		);
+		// On the system path the calling app has made this decision itself
+		// (see transitionAsSystem()), so OpenRegister's own check is skipped.
+		$allowed = true;
+		if ($asSystem === false) {
+			$allowed = $this->permissionHandler->hasPermission(
+				schema: $schema,
+				action: 'update',
+				userId: $this->userSession->getUser()?->getUID(),
+				objectOwner: $object->getOwner(),
+				_rbac: true,
+				object: $object
+			);
+		}
+
 		if ($allowed === false) {
 			throw new NotAuthorizedException(
 				message: sprintf(
@@ -364,6 +423,59 @@ class TransitionEngine {
 	}//end resolveTransitionSubject()
 
 	/**
+	 * Load the object a lifecycle call acts on, as the CALLER sees it.
+	 *
+	 * `ObjectService::find()` is RBAC-filtered and refuses an object the caller
+	 * may not read in two ways: the id-only cross-table lookup drops the row
+	 * and throws OCP's `DoesNotExistException`, and a schema-level read denial
+	 * throws `NotAuthorizedException`. Neither is a `RuntimeException`, so the
+	 * first escaped `TransitionController` as an HTTP 500 and the second
+	 * answered 403, confirming the object exists.
+	 *
+	 * Both now read as "not found", exactly like an object that is not there.
+	 * That is what `GET /api/objects/{register}/{schema}/{id}` answers for an
+	 * object the caller cannot see (404 for both, deliberately, so existence
+	 * does not leak), and the lifecycle endpoints must not leak what the read
+	 * endpoint hides. The `update` denial on an object the caller CAN see stays
+	 * a 403 in {@see resolveTransitionSubject()}.
+	 *
+	 * @param string $objectId Object id/uuid/slug.
+	 * @param bool $asSystem True on the system path: read without RBAC and the organisation filter.
+	 *
+	 * @return ObjectEntity The object, readable by the caller (or by the system, on the system path).
+	 *
+	 * @throws LifecycleSubjectNotFoundException When the object does not exist
+	 *                                           or the caller may not read it.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function findVisibleSubject(string $objectId, bool $asSystem = false): ObjectEntity {
+		$notFound = sprintf('Object "%s" not found.', $objectId);
+
+		try {
+			$object = $this->objectService->find(
+				id: $objectId,
+				_rbac: ($asSystem === false),
+				_multitenancy: ($asSystem === false)
+			);
+		} catch (DoesNotExistException | NotAuthorizedException $e) {
+			throw new LifecycleSubjectNotFoundException(message: $notFound, previous: $e);
+		}
+
+		if ($object === null) {
+			// A distinct type, still a RuntimeException: the write endpoint has
+			// to tell "this object is gone" (404) apart from "this move was
+			// refused" (422) and "the provider broke" (502), and those first two
+			// shared a status code until this type existed.
+			throw new LifecycleSubjectNotFoundException(message: $notFound);
+		}
+
+		return $object;
+	}//end findVisibleSubject()
+
+	/**
 	 * Apply a named transition, without the automatic-transition boundary.
 	 *
 	 * The whole of the pre-existing `transition()` body, split out so the boundary
@@ -372,11 +484,63 @@ class TransitionEngine {
 	 * @param string $objectId Object id/uuid/slug.
 	 * @param string $action Transition action name.
 	 * @param array<string, mixed> $data Optional input values for the transition's declared `inputs`.
+	 * @param string|null $asSystemFor The app a system transition runs for, null for an ordinary one.
 	 *
 	 * @return ObjectEntity The saved object after the transition.
 	 */
-	private function applyTransition(string $objectId, string $action, array $data = []): ObjectEntity {
-		$subject = $this->resolveTransitionSubject(objectId: $objectId);
+	private function applyTransition(
+		string $objectId,
+		string $action,
+		array $data = [],
+		?string $asSystemFor = null,
+	): ObjectEntity {
+		$subject = $this->resolveTransitionSubject(objectId: $objectId, asSystem: ($asSystemFor !== null));
+		if ($asSystemFor === null) {
+			return $this->applyToSubject(subject: $subject, action: $action, data: $data);
+		}
+
+		$uuid = (string)$subject['object']->getUuid();
+		$this->logger->info(
+			'[TransitionEngine] Transition run as the system on behalf of an app; '
+			. 'OpenRegister\'s own read and update checks were skipped, the transition\'s guard still runs.',
+			[
+				'app' => 'openregister',
+				'onBehalfOfApp' => $asSystemFor,
+				'caller' => $this->userSession->getUser()?->getUID(),
+				'uuid' => $uuid,
+				'action' => $action,
+			]
+		);
+
+		return $this->writeBoundary->runningAsSystem(
+			uuid: $uuid,
+			app: $asSystemFor,
+			write: fn (): ObjectEntity => $this->applyToSubject(
+				subject: $subject,
+				action: $action,
+				data: $data,
+				asSystem: true
+			)
+		);
+	}//end applyTransition()
+
+	/**
+	 * Apply a named transition to a subject already resolved and cleared.
+	 *
+	 * @param array<string, mixed> $subject What resolveTransitionSubject() answered.
+	 * @param string $action Transition action name.
+	 * @param array<string, mixed> $data Optional input values for the transition's declared `inputs`.
+	 * @param bool $asSystem True on the system path: the writes skip RBAC and the organisation filter.
+	 *
+	 * @return ObjectEntity The saved object after the transition.
+	 *
+	 * @psalm-param array{object: ObjectEntity, schema: Schema, annotation: array<string, mixed>} $subject
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
+	 *
+	 * @spec openspec/specs/object-lifecycle/spec.md
+	 */
+	private function applyToSubject(array $subject, string $action, array $data, bool $asSystem = false): ObjectEntity {
 		$object = $subject['object'];
 		$annotation = $subject['annotation'];
 
@@ -391,7 +555,8 @@ class TransitionEngine {
 				annotation: $annotation,
 				field: $field,
 				action: $action,
-				data: $data
+				data: $data,
+				asSystem: $asSystem
 			);
 			if ($delegated !== null) {
 				return $delegated;
@@ -454,6 +619,8 @@ class TransitionEngine {
 				register: $object->getRegister(),
 				schema: $object->getSchema(),
 				uuid: $object->getUuid(),
+				_rbac: ($asSystem === false),
+				_multitenancy: ($asSystem === false),
 				currentUser: $actingUser
 			)
 		);
@@ -469,7 +636,7 @@ class TransitionEngine {
 		);
 
 		return $saved;
-	}//end applyTransition()
+	}//end applyToSubject()
 
 	/**
 	 * Apply the transition through a delegating mode, when the annotation declares one.
@@ -490,8 +657,11 @@ class TransitionEngine {
 	 * @param string $field The lifecycle field name on the object.
 	 * @param string $action The action name the caller posted.
 	 * @param array<string, mixed> $data The caller-supplied input values.
+	 * @param bool $asSystem True on the system path, see transitionAsSystem().
 	 *
 	 * @return ObjectEntity|null The saved object, or null when no delegating mode is declared.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
@@ -502,6 +672,7 @@ class TransitionEngine {
 		string $field,
 		string $action,
 		array $data,
+		bool $asSystem = false,
 	): ?ObjectEntity {
 		$provider = trim((string)($annotation['provider'] ?? ''));
 		if ($provider !== '') {
@@ -510,7 +681,8 @@ class TransitionEngine {
 				tag: $provider,
 				field: $field,
 				action: $action,
-				data: $data
+				data: $data,
+				asSystem: $asSystem
 			);
 		}
 
@@ -521,7 +693,8 @@ class TransitionEngine {
 				graph: $graph,
 				field: $field,
 				action: $action,
-				data: $data
+				data: $data,
+				asSystem: $asSystem
 			);
 		}
 
@@ -577,6 +750,8 @@ class TransitionEngine {
 	 * @param string $field The lifecycle field name on the object.
 	 * @param string $action The action name the caller posted.
 	 * @param array<string, mixed> $data The caller-supplied input values.
+	 * @param bool $asSystem True on the system path: the re-read skips RBAC and the organisation
+	 *                       filter. The provider performs its own write and its own checks.
 	 *
 	 * @return ObjectEntity The object re-read after the provider's write.
 	 *
@@ -584,6 +759,8 @@ class TransitionEngine {
 	 * @throws LifecycleProviderException When the tag resolves to nothing, resolves to the wrong
 	 *                          type, the provider fails unexpectedly, or the object cannot be
 	 *                          re-read afterwards.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -593,6 +770,7 @@ class TransitionEngine {
 		string $field,
 		string $action,
 		array $data = [],
+		bool $asSystem = false,
 	): ObjectEntity {
 		$provider = $this->providerRegistry->resolve(tag: $tag);
 
@@ -642,7 +820,11 @@ class TransitionEngine {
 		// Re-read rather than trust the report: what the client is answered
 		// with is the stored object, including whatever the provider's own
 		// side effects stamped onto it.
-		$saved = $this->objectService->find(id: $objectId);
+		$saved = $this->objectService->find(
+			id: $objectId,
+			_rbac: ($asSystem === false),
+			_multitenancy: ($asSystem === false)
+		);
 		if ($saved === null) {
 			$this->logger->error(
 				sprintf(
@@ -726,13 +908,10 @@ class TransitionEngine {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
 	 */
 	public function availableActions(string $objectId): array {
-		$object = $this->objectService->find(id: $objectId);
-		if ($object === null) {
-			throw new RuntimeException(sprintf('Object "%s" not found.', $objectId));
-		}
+		$object = $this->findVisibleSubject(objectId: $objectId);
 
 		$schema = $this->loadSchema(object: $object);
 		if ($schema === null) {
@@ -1111,7 +1290,7 @@ class TransitionEngine {
 	 * @return array{action:string, to:string, label:string, requires:?string, description:?string, inputs:array<int,array{field:string,required:bool}>}
 	 *
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
 	 */
 	private function buildGraphAction(ObjectEntity $sibling): array {
 		$uuid = (string)$sibling->getUuid();
@@ -1150,7 +1329,7 @@ class TransitionEngine {
 	 *
 	 * @return array<int, array{field: string, required: bool}>|null The declared inputs, or null when the action is not declared.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-a-transition-may-declare-inputs-bounding-the-payload-it-accepts
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-transition-may-declare-inputs-bounding-the-payload-it-accepts
 	 */
 	public function declaredInputs(Schema $schema, string $action): ?array {
 		$annotation = $this->getLifecycleAnnotation(schema: $schema);
@@ -1179,7 +1358,7 @@ class TransitionEngine {
 	 *
 	 * @return array<int, array{field: string, required: bool}> The published list, in declaration order.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-the-available-actions-response-must-publish-each-actions-declared-inputs
 	 */
 	private function publishedInputs(array $inputs): array {
 		$published = [];
@@ -1222,7 +1401,7 @@ class TransitionEngine {
 	 *                          key, or a `required` input is absent or empty-string.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/flow-task-forms/specs/object-lifecycle/spec.md#requirement-a-transition-may-declare-inputs-bounding-the-payload-it-accepts
+	 * @spec openspec/specs/object-lifecycle/spec.md#requirement-a-transition-may-declare-inputs-bounding-the-payload-it-accepts
 	 */
 	public function resolveTransitionInputs(array $inputs, array $data, string $action): array {
 		$declared = $this->normaliseDeclaredInputs(inputs: $inputs);
@@ -1333,12 +1512,15 @@ class TransitionEngine {
 	 * @param string $action The requested `move-to-<uuid>` action.
 	 * @param array<string, mixed> $data Caller-supplied input payload; graph-derived
 	 *                                   actions declare no `inputs`, so any payload is rejected.
+	 * @param bool $asSystem True on the system path: the save skips RBAC and the organisation filter.
 	 *
 	 * @return ObjectEntity The saved object after the transition.
 	 *
 	 * @throws RuntimeException When the action is not a current candidate.
 	 * @throws InvalidTransitionInputException When `$data` is non-empty.
 	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
 	 */
 	private function applyGraphTransition(
@@ -1347,6 +1529,7 @@ class TransitionEngine {
 		string $field,
 		string $action,
 		array $data = [],
+		bool $asSystem = false,
 	): ObjectEntity {
 		// Graph-derived actions carry no `inputs` declaration, so nothing is
 		// allowlisted: a non-empty payload is rejected just like an undeclared
@@ -1384,6 +1567,8 @@ class TransitionEngine {
 			register: $object->getRegister(),
 			schema: $object->getSchema(),
 			uuid: $object->getUuid(),
+			_rbac: ($asSystem === false),
+			_multitenancy: ($asSystem === false),
 			currentUser: $actingUser
 		);
 

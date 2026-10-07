@@ -27,7 +27,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+ * @spec openspec/specs/credential-broker/spec.md#credential-metadata-schema
  */
 
 declare(strict_types=1);
@@ -49,6 +49,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\CredentialBrokerService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class CredentialBrokerMintTest extends TestCase {
 	/** @var array<string, mixed>|null Captured saveObject() property bag. */

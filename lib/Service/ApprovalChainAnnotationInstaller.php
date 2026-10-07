@@ -33,7 +33,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-006
+ * @spec openspec/specs/approval-workflow/spec.md#req-006
  */
 
 declare(strict_types=1);
@@ -60,6 +60,20 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 	 * @var integer
 	 */
 	public const TEMPLATE_VERSION = 1;
+
+	/**
+	 * Tiers mode: only the tier with the highest minAmount at or below the amount.
+	 *
+	 * @var string
+	 */
+	public const TIERS_HIGHEST = 'highest';
+
+	/**
+	 * Tiers mode: every tier at or below the amount, lowest first.
+	 *
+	 * @var string
+	 */
+	public const TIERS_CUMULATIVE = 'cumulative';
 
 	/**
 	 * Namespace prefix for the deterministic template id.
@@ -90,7 +104,7 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-006
+	 * @spec openspec/specs/approval-workflow/spec.md#req-006
 	 */
 	public function handle(Event $event): void {
 		$schema = null;
@@ -139,7 +153,7 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 	 *
 	 * @return array<string, mixed>|null The compiled template, or null.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-006
+	 * @spec openspec/specs/approval-workflow/spec.md#req-006
 	 */
 	public function compile(Schema $schema, string $chainKey): ?array {
 		$schemaId = $schema->getId();
@@ -163,6 +177,18 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 			return null;
 		}
 
+		// How amount tiers combine: `highest` (the one tier with the highest
+		// minAmount at or below the amount) or `cumulative` (every tier at or
+		// below it). An unknown mode is a misconfiguration: fail closed.
+		$tiers = (string)($spec['tiers'] ?? self::TIERS_HIGHEST);
+		if (in_array($tiers, [self::TIERS_HIGHEST, self::TIERS_CUMULATIVE], true) === false) {
+			$this->logger->error(
+				message: '[ApprovalChainAnnotationInstaller] Unknown tiers mode; the chain is not compiled.',
+				context: ['chain' => $chainKey, 'tiers' => $tiers]
+			);
+			return null;
+		}
+
 		return [
 			'templateId' => $this->templateIdFor(schemaId: (int)$schemaId, chainKey: $chainKey),
 			'templateVersion' => self::TEMPLATE_VERSION,
@@ -172,6 +198,7 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 			'separationOfDuties' => (($spec['separationOfDuties'] ?? true) !== false),
 			'onApprove' => (string)($spec['onApprove'] ?? ''),
 			'amountField' => (string)($spec['amountField'] ?? ''),
+			'tiers' => $tiers,
 			'positions' => $positions,
 		];
 	}//end compile()
@@ -226,7 +253,7 @@ class ApprovalChainAnnotationInstaller implements IEventListener {
 	 *
 	 * @return string The template id, RFC-4122 shaped.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
+	 * @spec openspec/specs/flow-approval-consolidation/spec.md#requirement-every-in-flight-approval-survives-the-migration-at-the-same-position
 	 */
 	public function templateIdFor(int $schemaId, string $chainKey): string {
 		$hash = md5(self::TEMPLATE_ID_NS . ':' . $schemaId . ':' . $chainKey);

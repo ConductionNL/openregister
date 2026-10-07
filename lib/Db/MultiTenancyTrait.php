@@ -1061,6 +1061,8 @@ trait MultiTenancyTrait {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       RBAC permission checking requires many conditional paths
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	protected function hasRbacPermission(string $action, string $entityType): bool {
 		// Admins always have all permissions.
@@ -1072,8 +1074,9 @@ trait MultiTenancyTrait {
 		$userId = $this->getCurrentUserId();
 		if ($userId === null) {
 			// CLI context (occ commands, repair steps, cron jobs, system listeners) —
-			// no user session exists. These are trusted system operations.
-			if (PHP_SAPI === 'cli') {
+			// no user session exists. These are trusted system operations —
+			// unless the call asked to be judged as an anonymous caller (WOO-578).
+			if (PHP_SAPI === 'cli' && \OCA\OpenRegister\Service\AnonymousEvaluationContext::isActive() === false) {
 				return true;
 			}
 
@@ -1213,10 +1216,17 @@ trait MultiTenancyTrait {
 		}
 
 		$user = $this->userSession->getUser();
+		// UNREACHABLE TODAY, KEPT FOR SYMMETRY. The `$userId === null` block earlier
+		// in this method returns on every branch, and `getCurrentUserId()` is this
+		// same `getUser()?->getUID()`, so reaching here means the session has a user.
+		// The WOO-578 gating below is therefore a no-op; it is written anyway so the
+		// two blocks cannot drift if that early return is ever relaxed. Pre-existing
+		// dead code — removing it is a separate cleanup, not part of a security fix.
 		if ($user === null) {
 			// CLI context (occ commands, repair steps, cron jobs) — no user session exists.
-			// These are trusted system operations that must always succeed.
-			if (PHP_SAPI === 'cli') {
+			// These are trusted system operations that must always succeed —
+			// unless the call asked to be judged as an anonymous caller (WOO-578).
+			if (PHP_SAPI === 'cli' && \OCA\OpenRegister\Service\AnonymousEvaluationContext::isActive() === false) {
 				return true;
 			}
 

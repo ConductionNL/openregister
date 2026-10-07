@@ -2,14 +2,111 @@
 
 ## 1. Data and validation
 
-- [ ] 1.1 `alert` and `alertState` on `View` with a migration; validator reusing the recipient and channel grammar; owner-or-write guard.
+- [x] 1.1 `alert` and `alertState` on `View` with a migration; validator reusing the recipient and channel grammar; owner-or-write guard.
 
 ## 2. Sweep
 
-- [ ] 2.1 `ViewAlertSweepJob` (TimedJob): due selection, cap, watermark, count under the owner's RBAC, crossing state machine, dispatch through the engine with a `view-alert` source.
-- [ ] 2.2 Register the job in `appinfo/info.xml`.
+- [x] 2.1 `ViewAlertSweepJob` (TimedJob): due selection, cap, watermark, count under the owner's RBAC, crossing state machine, dispatch through the engine with a `view-alert` source.
+- [x] 2.2 Register the job in `appinfo/info.xml`.
+- [x] 2.3 Count the view's own query (registers, schemas, filters, search terms) through `ObjectService::countSearchObjects()`, not `count()`, which reads only the service's ambient register/schema context (live pass O5, 5 Oct: a view over three records alerted at five).
 
 ## 3. Tests
 
 - [ ] 3.1 `tests/e2e/ci/view-alert.spec.ts`: set a threshold on a view, push the count over it, see the notification once.
-- [ ] 3.2 Unit tests for the validator, the state machine and the bounded pass.
+- [x] 3.2 Unit tests for the validator, the state machine and the bounded pass.
+
+## Status, 2026-09-18
+
+**Built: the declaration, the crossing rule, and the bounded sweep.**
+
+- `ViewAlert` reads a declared `{operator, threshold, recipients, channels,
+  every}` and refuses anything else **naming its field**. A 422 that does not
+  say what to fix sends somebody back to a form with five inputs and no idea
+  which one. An alert with no recipients is refused too: it is a query run on a
+  timer forever with nobody reading it.
+- The crossing rule is one method with one test. `armed → fired → armed`: a
+  count above the line fires once and stays `fired` until a sweep sees it back,
+  then re-arms SILENTLY. Nobody asked to hear that a backlog cleared, and a
+  "resolved" message they did not ask for is the second half of the noise this
+  design avoids. The scenario is a test: eight sweeps over a standing backlog
+  send one notification.
+- `ViewAlertSweepJob` takes at most 200 views per pass, oldest evaluation
+  first, so a thousand due views take five passes and none starves behind a
+  busier neighbour. `every` has a floor of 300 seconds: one view counting every
+  ten seconds is a load nobody notices, a thousand is an outage, and the person
+  who set the first had no way to know about the other nine hundred.
+- **The count is taken as the view's OWNER**, through `runAs`. A shared view
+  alerts on what its owner may see; counting as the system would turn a
+  threshold on a shared view into a way to learn how many records sit behind a
+  filter the reader is not entitled to. A view whose owner no longer exists is
+  skipped rather than counted as the system.
+- A failed count leaves the state alone. Treating it as "below the threshold"
+  would silently re-arm a fired alert and page somebody again the moment
+  counting worked.
+
+**The notification leg is NOT wired, and 1.1's validator is not on the write
+path.** Both are named rather than half-built:
+
+- **2.1's dispatch is an EVENT, not a notification.** Every notification sender
+  in this app is object-shaped: each takes an `ObjectEntity` and builds a
+  deeplink from its register, schema and uuid. A view alert is about a NUMBER —
+  there is no object it is about — and inventing one to satisfy the signature
+  would put a fabricated record in the link the notification tells somebody to
+  click. `ViewAlertCrossedEvent` carries the view, the alert and the count, is
+  dispatched once per crossing and is tested; what it needs is a sender that
+  can address a person about something other than an object.
+- **1.1's owner-or-write guard and the controller wiring are not built.**
+  `ViewAlert::parse()` is the validator and it refuses correctly, but nothing
+  calls it on the view save path yet, so the column accepts what the API puts
+  in it. That is a write-path change to `ViewService`/`ViewsController` with its
+  own authorisation question, and it is the next piece.
+- **3.1, the e2e**, which the spec already defers until the field ships in
+  nextcloud-vue.
+
+## Status, 2026-10-04
+
+**1.1 is done: the alert is written through the real save path.** Create,
+update and patch read `alert` from the body (`ViewAlert::declaredIn()`), and
+`ViewService::applyAlert()` stores it in the form `ViewAlert::parse()` returns,
+defaults filled in. A malformed alert answers 422 with `field` naming the input
+(`InvalidViewAlertException`), and nothing is written. A body without `alert`
+leaves it as it was; `alert: null` clears it. The alert's state restarts only
+when the declaration changes, because the edit screen resends the whole view
+and re-arming a fired alert on every save would page its recipients again.
+Who may set it is the existing field guard: `alert` is in
+`ViewShareResolver::WRITABLE_BY_MEMBER`, so the owner and a write member may,
+a read member gets 403. `tests/Unit/Controller/ViewAlertOnSaveTest.php` runs
+the real controller over the real `ViewService` and reach resolver.
+
+Still open: 2.1's notification sender (the crossing is an event with no
+sender that can address a person about a number) and 3.1, the e2e.
+
+## Status, 2026-10-05
+
+**2.1 is done: a crossing now reaches people.** `ViewAlertCrossedListener`
+hears the sweep's `ViewAlertCrossedEvent` and delivers it. Recipients are
+the app's RBAC strings: `user:<uid>` for a person, a bare id for a Nextcloud
+group, both resolved through `NotificationRecipientResolver` so uids are
+verified and groups expanded as for a schema rule. A person named directly
+and through a group is told once. `nc-notification` puts it in the bell
+(subject `view_alert_crossed`, rendered by `Notifier`, with an editable
+template in `NotificationTemplateRegistry`), and `email` mails each
+recipient in their own language through `EmailSender`. A recipient the
+server does not have, or a channel nothing delivers, is named in a warning.
+`tests/Unit/Listener/ViewAlertCrossedListenerTest.php` runs the real
+listener over the real event, view, `ViewAlert` and resolver.
+
+Still open: 3.1, the e2e, until the field ships in nextcloud-vue.
+
+## Status, 2026-10-05 (live pass O5)
+
+**2.3: the sweep counts the view, not the service's context.** The live pass
+saw a view over three records alert at five on its first evaluation:
+`ObjectService::count()` ignores the query's `registers` and `schemas` and
+counts whatever register/schema the service last pointed at, and the sweep
+test stubbed `count()`. `ViewObjectQuery::of()` now turns the stored query
+into the search query (registers and schemas as `@self` bounds, `filters`,
+`facetFilters` read as a view-backed schema reads them, search terms), and the
+sweep counts it with `countSearchObjects()` as the owner. A view naming no
+register and no schema is not counted. `ViewAlertCountsTheViewQueryTest`
+runs the real ObjectService and reads what reaches the mapper.

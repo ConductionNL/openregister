@@ -39,6 +39,13 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowStateMapper;
+use OCA\OpenRegister\Exception\BpmnImportRefused;
+use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
+use OCA\OpenRegister\Exception\FlowRunRefused;
+use OCA\OpenRegister\Service\Flow\Bpmn\BpmnSchemaValidator;
+use OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary;
+use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter;
+use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnImporter;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowAccess;
 use OCA\OpenRegister\Service\Flow\FlowAdoptionRefused;
@@ -46,6 +53,7 @@ use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
 use OCA\OpenRegister\Service\Flow\FlowRunVersionPin;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
@@ -54,9 +62,11 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\WorkflowEngine\IManager;
+use Throwable;
 
 /**
  * Catalog and CRUD endpoints for flows.
@@ -343,7 +353,7 @@ class FlowController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/federation-scope-enforcement/specs/federation-scope-enforcement/spec.md
+	 * @spec openspec/specs/federation-scope-enforcement/spec.md
 	 */
 	public function state(string $flowId): JSONResponse {
 		try {
@@ -563,6 +573,176 @@ class FlowController extends Controller {
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
 	 */
+	/**
+	 * A flow as BPMN 2.0 XML, for a modeller or an auditor.
+	 *
+	 * Read-guarded: `flow.read` is what lets a caller see the flow at all, and
+	 * exporting shows nothing a reader could not already read. It does NOT go
+	 * through the run authorization — reading a flow and running one are
+	 * different questions, and asking the run question here would refuse an
+	 * auditor who is meant to read it and never run it.
+	 *
+	 * 🔑 THE FILE IS VALIDATED AGAINST THE VENDORED OMG XSD BEFORE IT IS SENT.
+	 * A document that does not validate never leaves: the caller gets an error
+	 * naming the element and the line instead of a file their modeller refuses
+	 * to open, because "Camunda cannot open this" is not something a user can
+	 * act on.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return DataDownloadResponse|JSONResponse The XML, or a refusal.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	#[NoAdminRequired]
+	public function exportBpmn(string $id): DataDownloadResponse|JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.read');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		try {
+			$flow = $this->flows->find(uuid: $id);
+		} catch (Throwable $e) {
+			return new JSONResponse(['error' => 'No such flow: ' . $id], Http::STATUS_NOT_FOUND);
+		}
+
+		$exporter = new FlowBpmnExporter(
+			vocabulary: new BpmnVocabulary(),
+			validator: new BpmnSchemaValidator()
+		);
+
+		try {
+			$xml = $exporter->export(flow: $flow);
+		} catch (BpmnSchemaInvalid $invalid) {
+			// Our own output failed the standard's schema, which is a bug in
+			// the serializer rather than anything the caller did — so it is
+			// reported as one, with the element that broke it.
+			return new JSONResponse(
+				[
+					'error' => $invalid->getMessage(),
+					'element' => $invalid->getElement(),
+					'line' => $invalid->getViolationLine(),
+				],
+				Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}
+
+		return new DataDownloadResponse(
+			$xml,
+			sprintf('%s.bpmn', ($flow->getName() ?? $id)),
+			'application/xml'
+		);
+	}//end exportBpmn()
+
+	/**
+	 * A BPMN 2.0 file as a new flow, plus the report of everything it lost.
+	 *
+	 * Guarded by `flow.create`, because it creates one.
+	 *
+	 * 🔴 THE REPORT IS RETURNED WHETHER THE IMPORT SUCCEEDED OR NOT. A lenient
+	 * import that dropped three constructs and answers 201 with a flow and no
+	 * list is the failure this whole change is written against; and a strict
+	 * refusal still owes the author the list, or they have to bisect the file
+	 * by hand.
+	 *
+	 * @return JSONResponse The created flow and the report, or a refusal with the report.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	#[NoAdminRequired]
+	public function importBpmn(): JSONResponse {
+		$denied = $this->denyUnless(action: 'flow.create');
+		if ($denied !== null) {
+			return $denied;
+		}
+
+		$xml = (string)$this->request->getParam('xml', '');
+		if (trim($xml) === '') {
+			$xml = (string)file_get_contents('php://input');
+		}
+
+		// 🔴 `(bool)'false'` IS TRUE, and a query string carries `?strict=false`
+		// rather than a JSON boolean — so a bare cast would turn every refusal
+		// into a failed import for a caller who asked for the opposite.
+		$strictParam = $this->request->getParam('strict', false);
+		$strict = ($strictParam === true
+			|| (is_string($strictParam) === true
+				&& in_array(strtolower(trim($strictParam)), ['1', 'true', 'yes'], true) === true));
+
+		$importer = new FlowBpmnImporter(
+			vocabulary: new BpmnVocabulary(),
+			validator: new BpmnSchemaValidator()
+		);
+
+		try {
+			// The two are separate calls, not a flag: "import it and tell me
+			// what was lost" and "refuse unless everything maps" are two
+			// requests, and a flag dropped in the middle silently turns the
+			// second into the first.
+			$result = match ($strict) {
+				true => $importer->importStrictly(xml: $xml),
+				false => $importer->import(xml: $xml),
+			};
+		} catch (BpmnSchemaInvalid $invalid) {
+			// 🔴 A DIFFERENT ANSWER FROM A REFUSAL, deliberately. There is no
+			// report here and there must not be one: nothing was mapped, so
+			// every sentence a report could carry would be about constructs
+			// when the problem is the document. `malformed` is what tells the
+			// caller which of the two answers they got.
+			return new JSONResponse(
+				[
+					'error' => $invalid->getMessage(),
+					'malformed' => true,
+					'element' => $invalid->getElement(),
+					'line' => $invalid->getViolationLine(),
+				],
+				Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		} catch (BpmnImportRefused $refused) {
+			return new JSONResponse(
+				[
+					'error' => $refused->getMessage(),
+					'malformed' => false,
+					'report' => $refused->getReport()?->jsonSerialize(),
+				],
+				Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		try {
+			// `save()`, not `create()` — FlowService has no `create()`, and a
+			// call to one would have been a fatal at runtime that `php -l`
+			// cannot see and no double would catch, because a mock invents the
+			// method it is asked for. Asserted structurally in the test.
+			$flow = $this->flows->save(data: $result['flow']);
+		} catch (Throwable $e) {
+			return new JSONResponse(
+				[
+					'error' => sprintf('The file was read but the flow could not be stored: %s', $e->getMessage()),
+					'report' => $result['report']->jsonSerialize(),
+				],
+				Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		return new JSONResponse(
+			['flow' => $flow->jsonSerialize(), 'report' => $result['report']->jsonSerialize()],
+			Http::STATUS_CREATED
+		);
+	}//end importBpmn()
+
+	/**
+	 * One flow, by its uuid.
+	 *
+	 * @param string $id The flow uuid.
+	 *
+	 * @return JSONResponse The flow, or 404 when no flow carries that uuid.
+	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(string $id): JSONResponse {
@@ -655,7 +835,7 @@ class FlowController extends Controller {
 	 *
 	 * @return JSONResponse The 409.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function refusal(FlowLifecycleRefused $refusal): JSONResponse {
 		return new JSONResponse(
@@ -825,6 +1005,11 @@ class FlowController extends Controller {
 			// escape as a 500 threw that away and told the author only that
 			// something broke.
 			return $this->refusal(refusal: $e);
+		} catch (FlowRunRefused $e) {
+			// A REFUSAL, not a fault. Uncaught it became an HTML 500, so "Run
+			// now" on an imported flow (which arrives with no owner) said only
+			// that something broke, while the reason was already written.
+			return $this->runRefusal(refusal: $e);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
 		} catch (FlowDeadEnd $e) {
@@ -857,6 +1042,25 @@ class FlowController extends Controller {
 	}//end run()
 
 	/**
+	 * A run refusal as the answer the page can show, mapped the way
+	 * FlowRunnableGuard maps it: 401 without a session, 403 otherwise.
+	 *
+	 * @param FlowRunRefused $refusal The refusal.
+	 *
+	 * @return JSONResponse The 401 or 403 with `error` and `verdict`.
+	 *
+	 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md
+	 */
+	private function runRefusal(FlowRunRefused $refusal): JSONResponse {
+		$status = Http::STATUS_FORBIDDEN;
+		if ($refusal->getVerdict() === FlowRunAuthorization::NO_SESSION) {
+			$status = Http::STATUS_UNAUTHORIZED;
+		}
+
+		return new JSONResponse(['error' => $refusal->getMessage(), 'verdict' => $refusal->getVerdict()], $status);
+	}//end runRefusal()
+
+	/**
 	 * List a flow's versions, newest first.
 	 *
 	 * @param string $id The flow uuid.
@@ -869,7 +1073,7 @@ class FlowController extends Controller {
 	 * `FlowService::find()`, which is organisation-scoped, so versions of a
 	 * flow the caller cannot see are refused as "no such flow".
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	#[NoAdminRequired]
 	public function versions(string $id): JSONResponse {
@@ -904,7 +1108,7 @@ class FlowController extends Controller {
 	 *
 	 * @no-admin-idor-exempt Guarded downstream: see versions().
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	#[NoAdminRequired]
 	public function version(string $id, int $version): JSONResponse {
@@ -974,7 +1178,7 @@ class FlowController extends Controller {
 	 *
 	 * @no-admin-idor-exempt Guarded downstream: see versions().
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	#[NoAdminRequired]
 	public function publish(string $id): JSONResponse {
@@ -1025,7 +1229,7 @@ class FlowController extends Controller {
 	 *
 	 * @no-admin-idor-exempt Guarded downstream: see versions().
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	#[NoAdminRequired]
 	public function draft(string $id): JSONResponse {
@@ -1060,7 +1264,7 @@ class FlowController extends Controller {
 	 *
 	 * @no-admin-idor-exempt Guarded downstream: see versions().
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	#[NoAdminRequired]
 	public function deprecate(string $id): JSONResponse {
@@ -1112,7 +1316,7 @@ class FlowController extends Controller {
 	 * one), and `adopt()` writes only the CALLER's uid — there is no
 	 * caller-chosen object state to abuse.
 	 *
-	 * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+	 * @spec openspec/specs/flow-storage/spec.md
 	 */
 	#[NoAdminRequired]
 	public function adopt(string $id): JSONResponse {

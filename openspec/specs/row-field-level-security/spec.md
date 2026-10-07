@@ -10,7 +10,9 @@ status: done
 Implement dynamic per-record access rules based on field values (row-level security / RLS) and per-field visibility and editability rules based on user roles (field-level security / FLS). Beyond schema-level RBAC that controls access to entire object types, the system MUST support row-level security where access to individual objects depends on the object's own properties (e.g., department, classification level, owner), and field-level security where different users see different fields of the same object. Both security layers MUST be enforced consistently across REST, GraphQL, search, export, and MCP access methods, evaluated at the database query level where possible for performance, and composable with schema-level RBAC and multi-tenancy isolation.
 
 **Source**: Gap identified in cross-platform analysis; Directus implements comprehensive row/field-level security with filter-based permissions and dynamic variables ($CURRENT_USER, $CURRENT_ROLE, $NOW). NocoDB provides view-level permissions. 86% of analyzed government tenders require RBAC per zaaktype; 67% require SSO/identity integration with fine-grained data compartmentalization.
+
 ## Requirements
+
 ### Requirement: Schemas MUST support row-level security rules via conditional authorization matching
 Schema authorization blocks MUST accept conditional rules that filter objects based on the current user's context (group membership, identity, organisation) and the object's own field values. Conditional rules use the structure `{ "group": "<group>", "match": { "<property>": "<value-or-operator>" } }` where the user must qualify for the group AND the object must satisfy all match conditions.
 
@@ -618,6 +620,95 @@ The preserved value MUST be read from the RAW stored object (`ObjectEntity::getO
 - **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true`
 - **WHEN** a client creates a new object without `apiToken`
 - **THEN** the save MUST succeed and MUST NOT invent an `apiToken` key
+
+### Requirement: Field rules by state are enforced on save and published on read
+
+On save the system SHALL refuse with 422 an empty field the object's
+resulting state requires for the user, and a changed field that state makes
+read only; a hidden field SHALL be stripped on read and refused on write
+through the property RBAC path. Every object read SHALL carry
+`@self.fieldRules` with the effective `hidden`, `readOnly` and `required`
+lists for the current user and state.
+
+#### Scenario: closing without an outcome is refused
+
+- **GIVEN** a lifecycle whose state `closed` requires `outcome` and an open object without one
+- **WHEN** a user transitions it to `closed`
+- **THEN** the response is 422 naming `outcome` and the object stays `open`
+
+#### Scenario: a closed object's decision is read only for handlers
+
+- **GIVEN** state `closed` marks `decision` read only for group `handlers` and a handler
+- **WHEN** the handler changes `decision` on a closed object
+- **THEN** the response is 422 naming `decision`, and `@self.fieldRules.readOnly` on the read contains `decision`
+- @e2e exclude {readOnly refusal asserted in tests/Unit/Listener/StateFieldRuleListenerTest.php::testAClosedObjectsDecisionIsReadOnlyForHandlers, the published hint in tests/Unit/Service/Lifecycle/StateFieldRuleResolverTest.php::testAGroupScopedRuleAppliesToAMember}
+
+#### Scenario: a hidden field is absent for the role and present for another
+
+- **GIVEN** state `intake` hides `internalNote` for group `frontdesk`
+- **WHEN** a front desk user and a handler read the same object
+- **THEN** the front desk user's response lacks `internalNote` and the handler's holds it
+- @e2e exclude {stripping asserted in tests/Unit/Service/Lifecycle/StateFieldRuleResolverTest.php::testHiddenRulesAreScopedToTheirGroup and ::testAHandlerKeepsTheFieldTheFrontDeskLoses}
+
+### Requirement: A field rule may be conditional on the object's own data
+
+A `hidden`, `readOnly` or `required` entry MAY carry a condition over the
+object's data. The condition operand MAY be any property the schema
+declares, including one declared through an extending form, and not only
+the lifecycle field or a built-in scalar. The rule SHALL apply only when
+its condition holds, and `@self.fieldRules` SHALL report the rules that
+apply to this object as it stands, not the rules that could apply.
+
+#### Scenario: a field becomes required because of a value
+
+- **GIVEN** state `open` requiring `motivering` when `bedrag` is above 50000
+- **WHEN** an object with `bedrag` of 60000 is saved without `motivering`
+- **THEN** the save fails with 422 naming `motivering`
+
+#### Scenario: the same field is not required below the threshold
+
+- **GIVEN** the same rule
+- **WHEN** an object with `bedrag` of 400 is saved without `motivering`
+- **THEN** the save succeeds
+- **AND** `@self.fieldRules.required` does not contain `motivering`
+
+#### Scenario: a condition reads a property an extending form declared
+
+- **GIVEN** a rule whose condition reads a property authored through an extending form
+- **WHEN** the object is saved
+- **THEN** the condition is evaluated against that property's value
+- @e2e exclude {asserted in tests/Unit/Service/Lifecycle/StateFieldRuleResolverTest.php::testAConditionReadsAPropertyTheLifecycleDoesNotDeclare}
+
+### Requirement: A property read rule holds on every route that returns its value
+
+When a property read rule withholds a property from a caller, the system SHALL
+NOT return that property's value to the caller through any copy of it: not in the
+object body, not in `@self.relations`, not in the `@self` name, description,
+summary or image the schema copies from it, and not as facet buckets, whether the
+facet is discovered from `facetable` or requested explicitly with `_facets`.
+Callers the rule admits SHALL see every copy as before.
+
+#### Scenario: The relations mirror
+
+- **GIVEN** a property `contactPerson` ruled `authorization.read: ["authenticated"]` whose uuid value is mirrored in `@self.relations`
+- **WHEN** an anonymous caller reads the object, alone or in a list
+- **THEN** neither the body nor `@self.relations` contains the value
+
+#### Scenario: A metadata copy
+
+- **GIVEN** a schema whose `objectDescriptionField` is a property ruled `authenticated`
+- **WHEN** an anonymous caller reads the object
+- **THEN** `@self.description` does not carry the property's value
+
+#### Scenario: An explicit facet
+
+- **WHEN** an anonymous caller asks `_facets[contactPerson][type]=terms` on that schema
+- **THEN** the response has no `contactPerson` facet and no query reads the column
+
+#### Scenario: A caller the rule admits
+
+- **WHEN** a signed-in caller reads the same object
+- **THEN** `@self.relations` and `@self.description` carry the values
 
 ## Current Implementation Status
 

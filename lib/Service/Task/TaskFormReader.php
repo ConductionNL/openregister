@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
+ * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
  */
 
 declare(strict_types=1);
@@ -54,7 +54,7 @@ use UnexpectedValueException;
  * from refuser would put a declaration's shape and its reasons in two files
  * that must agree.
  *
- * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
+ * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
  */
 class TaskFormReader {
 
@@ -105,7 +105,7 @@ class TaskFormReader {
 	 *
 	 * @throws UnexpectedValueException When the declaration is malformed.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
 	 */
 	public function fromConfig(array $config): TaskForm {
 		return $this->fromRecord(
@@ -129,7 +129,7 @@ class TaskFormReader {
 	 *
 	 * @throws UnexpectedValueException When the declaration is malformed.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
 	 */
 	public function fromRecord(array $record): TaskForm {
 		$requireChecklist = filter_var(($record['requireChecklist'] ?? false), FILTER_VALIDATE_BOOLEAN);
@@ -187,7 +187,7 @@ class TaskFormReader {
 	 *
 	 * @throws UnexpectedValueException When the declaration is refused.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
 	 */
 	public function validate(TaskForm $form): void {
 		if ($form->hasForm() === false) {
@@ -224,7 +224,7 @@ class TaskFormReader {
 	 *
 	 * @throws UnexpectedValueException When the named action is not declared on the schema.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
 	 */
 	public function declaredFields(TaskForm $form, Schema $schema): array {
 		if ($form->action === null) {
@@ -256,7 +256,7 @@ class TaskFormReader {
 	 *
 	 * @return string|null The reason, translated, or null when renderable.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
 	 */
 	public function unrenderableReason(Schema $schema, string $field): ?string {
 		$properties = $schema->getProperties();
@@ -285,7 +285,7 @@ class TaskFormReader {
 	 *
 	 * @throws UnexpectedValueException When the reference is empty or names no schema.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
 	 */
 	public function schema(string $reference): Schema {
 		if (trim($reference) === '') {
@@ -316,7 +316,7 @@ class TaskFormReader {
 	 *
 	 * @throws UnexpectedValueException When the Forms app is not installed.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-the-external-form-path-binds-an-existing-forms-form-and-validates-nothing-about-its-contents
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-external-form-path-binds-an-existing-forms-form-and-validates-nothing-about-its-contents
 	 */
 	private function validateExternal(): void {
 		if ($this->apps->isInstalled(self::FORMS_APP) === false) {

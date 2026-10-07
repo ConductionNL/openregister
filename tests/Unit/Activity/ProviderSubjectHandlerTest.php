@@ -109,4 +109,55 @@ class ProviderSubjectHandlerTest extends TestCase {
 
 		$this->handler->applySubjectText($event, $l, ['title' => 'Rich Test']);
 	}
+	/**
+	 * Test: an object update that carries the schema title names schema and object.
+	 *
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
+	 */
+	public function testObjectUpdatedWithSchemaNamesSchemaAndObject(): void {
+		$l = $this->mockL10n();
+		$event = $this->createMock(IEvent::class);
+		$event->method('getSubject')->willReturn('object_updated');
+		$event->method('getObjectId')->willReturn(6);
+
+		$event->expects($this->once())->method('setParsedSubject')->with('Client Gemeente Demo updated');
+		$event->expects($this->once())->method('setRichSubject')->with(
+			'{schema} {title} updated',
+			$this->callback(
+				static function (array $rich): bool {
+					return $rich['schema']['name'] === 'Client' && $rich['title']['name'] === 'Gemeente Demo';
+				}
+			)
+		);
+
+		$this->handler->applySubjectText($event, $l, ['title' => 'Gemeente Demo', 'schema' => 'Client']);
+	}
+
+	/**
+	 * Test: without a schema title the object update keeps its old form.
+	 */
+	public function testObjectUpdatedWithoutSchemaKeepsOldForm(): void {
+		$l = $this->mockL10n();
+		$event = $this->createMock(IEvent::class);
+		$event->method('getSubject')->willReturn('object_updated');
+		$event->method('getObjectId')->willReturn(6);
+
+		$event->expects($this->once())->method('setParsedSubject')->with('Object updated: Gemeente Demo');
+
+		$this->handler->applySubjectText($event, $l, ['title' => 'Gemeente Demo']);
+	}
+
+	/**
+	 * Test: a schema parameter on a register subject changes nothing.
+	 */
+	public function testRegisterSubjectIgnoresSchemaParameter(): void {
+		$l = $this->mockL10n();
+		$event = $this->createMock(IEvent::class);
+		$event->method('getSubject')->willReturn('register_updated');
+		$event->method('getObjectId')->willReturn(20);
+
+		$event->expects($this->once())->method('setParsedSubject')->with('Register updated: CRM');
+
+		$this->handler->applySubjectText($event, $l, ['title' => 'CRM', 'schema' => 'Client']);
+	}
 }

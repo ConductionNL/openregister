@@ -82,7 +82,7 @@ final class DenialFinaliseGuard implements LifecycleGuardInterface {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) GuardResult::allow()/deny() are the sanctioned value-object factories.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-denial-guard/spec.md
+	 * @spec openspec/specs/dsar-denial-guard/spec.md
 	 */
 	public function check(array $object, string $action, string $userId): GuardResult {
 		// The gate applies ONLY at finalise. draftDenial (and any other

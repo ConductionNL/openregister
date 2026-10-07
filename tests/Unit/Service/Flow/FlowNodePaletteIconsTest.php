@@ -137,6 +137,8 @@ class PaletteProbeNode implements IFlowNode {
  * The palette's icons.
  *
  * @covers \OCA\OpenRegister\Service\Flow\FlowNodeRegistry
+ * @uses \OCA\OpenRegister\Service\Flow\FlowNodeTaxonomyResolver
+ * @uses \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent
  */
 class FlowNodePaletteIconsTest extends TestCase {
 

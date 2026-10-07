@@ -256,4 +256,82 @@ class PortalTaskReminderListenerTest extends TestCase {
 		$this->listener->handle(new FakeTimerFiredEvent('rung', 'preBreach:1:hours', [$this->partyRecipient()], $this->timer()));
 		$this->addToAssertionCount(1);
 	}//end testASeamFailureIsSwallowed()
+	/**
+	 * A postBreach rung addressed to the party records an overdue delivery (#4166).
+	 *
+	 * Driven with the REAL FlowTimerFiredEvent and FlowTimer, so a wrong accessor
+	 * cannot hide behind a fake.
+	 */
+	public function testAPostBreachRungRecordsAnOverdueDeliveryWithItsConsequence(): void {
+		$task = $this->externalTask();
+		$this->tasks->method('get')->with('t-1')->willReturn($task);
+
+		$timer = new \OCA\OpenRegister\Db\FlowTimer();
+		$timer->setSubjectType('task');
+		$timer->setSubjectUuid('t-1');
+		$event = new \OCA\OpenRegister\Event\FlowTimerFiredEvent(
+			timer: $timer,
+			kind: \OCA\OpenRegister\Event\FlowTimerFiredEvent::KIND_RUNG,
+			transition: 'escalation:postBreach:2:calendarDays',
+			rungKey: 'postBreach:2:calendarDays',
+			recipients: [$this->partyRecipient()],
+			priority: 'high',
+			message: 'task.overdue',
+			consequence: 'we decide on what we have'
+		);
+
+		$this->delivery->expects($this->once())
+			->method('request')
+			->with(
+				$task,
+				PortalTaskDelivery::KIND_OVERDUE,
+				$this->callback(
+					static fn (array $message): bool => $message['rungKey'] === 'postBreach:2:calendarDays'
+						&& $message['consequence'] === 'we decide on what we have'
+						&& $message['title'] === 'Send the payslip'
+				)
+			)
+			->willReturn([]);
+
+		$this->listener->handle($event);
+	}//end testAPostBreachRungRecordsAnOverdueDeliveryWithItsConsequence()
+
+	/**
+	 * A postBreach rung not addressed to the party delivers nothing to them.
+	 */
+	public function testAPostBreachRungForTheCaseworkerDeliversNothingToTheParty(): void {
+		$this->tasks->method('get')->willReturn($this->externalTask());
+		$this->delivery->expects($this->never())->method('request');
+
+		$this->listener->handle(
+			new FakeTimerFiredEvent('rung', 'postBreach:2:calendarDays', [['type' => 'role', 'id' => 'teamLeader', 'role' => 'teamLeader']], $this->timer())
+		);
+	}//end testAPostBreachRungForTheCaseworkerDeliversNothingToTheParty()
+	/**
+	 * A preBreach rung on a REAL FlowTimer reaches the party (#4166).
+	 *
+	 * FlowTimer's getters are Entity magic; the listener asked method_exists(),
+	 * which is false for them, so no reminder was ever delivered outside tests.
+	 */
+	public function testAPreBreachRungOnARealTimerRemindsTheParty(): void {
+		$task = $this->externalTask();
+		$this->tasks->method('get')->with('t-1')->willReturn($task);
+		$timer = new \OCA\OpenRegister\Db\FlowTimer();
+		$timer->setSubjectType('task');
+		$timer->setSubjectUuid('t-1');
+
+		$this->delivery->expects($this->once())->method('request')->with($task, PortalTaskDelivery::KIND_REMINDER)->willReturn([]);
+
+		$this->listener->handle(
+			new \OCA\OpenRegister\Event\FlowTimerFiredEvent(
+				timer: $timer,
+				kind: \OCA\OpenRegister\Event\FlowTimerFiredEvent::KIND_RUNG,
+				transition: 'escalation:preBreach:2:businessDays',
+				rungKey: 'preBreach:2:businessDays',
+				recipients: [$this->partyRecipient()],
+				priority: 'medium',
+				message: 'reminder.first'
+			)
+		);
+	}//end testAPreBreachRungOnARealTimerRemindsTheParty()
 }//end class

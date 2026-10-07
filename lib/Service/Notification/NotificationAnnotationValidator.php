@@ -49,7 +49,7 @@ final class NotificationAnnotationValidator {
 
 	private const VALID_TRIGGERS = ['created', 'updated', 'transition', 'scheduled', 'threshold', 'calculatedChange'];
 
-	private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'role', 'relation', 'object-acl', 'expression', 'watchers'];
+	private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'role', 'relation', 'object-acl', 'expression', 'watchers', 'parties'];
 
 	private const VALID_CHANNELS = ['nc-notification', 'email', 'activity', 'webhook', 'talk', 'web-push'];
 
@@ -91,15 +91,27 @@ final class NotificationAnnotationValidator {
 	private ScheduledFilterParser $filterParser;
 
 	/**
-	 * Construct a validator.
+	 * The administered decisions that are not preferences.
 	 *
-	 * The parser is injectable but defaulted, because this class is constructed
-	 * directly (`new NotificationAnnotationValidator()`) in several call sites
-	 * that predate any container wiring.
-	 *
-	 * @param ScheduledFilterParser|null $filterParser Parser for scheduled filters.
+	 * @var ForcedChannelPolicy
 	 */
-	public function __construct(?ScheduledFilterParser $filterParser = null) {
+	private ForcedChannelPolicy $forcedChannels;
+
+	/**
+	 * Constructor.
+	 *
+	 * Both collaborators are injectable but defaulted, because this class is
+	 * constructed directly (`new NotificationAnnotationValidator()`) in several
+	 * call sites that predate any container wiring.
+	 *
+	 * @param ScheduledFilterParser|null $filterParser  Parser for scheduled filters.
+	 * @param ForcedChannelPolicy|null   $forcedChannels The administered channel decisions.
+	 */
+	public function __construct(
+		?ScheduledFilterParser $filterParser = null,
+		?ForcedChannelPolicy $forcedChannels = null,
+	) {
+		$this->forcedChannels = ($forcedChannels ?? new ForcedChannelPolicy());
 		$this->filterParser = ($filterParser ?? new ScheduledFilterParser());
 
 	}//end __construct()
@@ -191,7 +203,7 @@ final class NotificationAnnotationValidator {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-5
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function validate(array $schema): array {
 		if (isset($schema['x-openregister-notifications']) === false) {
@@ -449,6 +461,20 @@ final class NotificationAnnotationValidator {
 				}//end foreach
 			}//end if
 
+			// The two administered decisions that are not preferences
+			// (notification-kinds-an-administrator-forces). Both fail SILENTLY
+			// at send time: a force with no reason renders as a preference a
+			// user cannot explain, and an internal kind whose only channels
+			// leave the organisation renders as a kind that never sends. The
+			// rules live in ForcedChannelPolicy so the save and the send read
+			// one interpretation of them rather than two.
+			foreach ($this->forcedChannels->validate(declaration: $spec) as $forcedError) {
+				$errors[] = [
+					'code' => $forcedError['code'],
+					'message' => sprintf('Notification "%s": %s', $name, $forcedError['message']),
+				];
+			}
+
 			$channels = ($spec['channels'] ?? []);
 			if (is_array($channels) === false || count($channels) === 0) {
 				$errors[] = [
@@ -473,6 +499,29 @@ final class NotificationAnnotationValidator {
 						),
 					];
 				}
+			}
+
+			// Optional `messageCategory` (opt-out-before-send): what kind of
+			// message a `parties` mail is, for integriq's opt-out question.
+			// Absent reads as `service`; anything outside the fleet list is
+			// refused here rather than silently asked as `service`.
+			$category = ($spec['messageCategory'] ?? '');
+			$shown    = '';
+			if (is_scalar($category) === true) {
+				$shown = strtolower(trim((string)$category));
+			}
+
+			if (($shown !== '' || is_scalar($category) === false) && in_array($shown, OptOutAuthority::CATEGORIES, true) === false) {
+
+				$errors[] = [
+					'code' => 'notification-bad-message-category',
+					'message' => sprintf(
+						'Notification "%s" messageCategory "%s" is not in [%s].',
+						$name,
+						$shown,
+						implode(', ', OptOutAuthority::CATEGORIES)
+					),
+				];
 			}
 
 			// Optional `originApp` (foundation contract / ADR-031): identifies
@@ -734,6 +783,41 @@ final class NotificationAnnotationValidator {
 					continue;
 				}
 
+				// 🔴 A RECIPIENT THAT CAN NEVER RESOLVE IS REFUSED HERE, where
+				// somebody is looking, rather than resolving to nobody every
+				// night in silence. `groups: []` and `users: []` name nobody
+				// structurally: no instance state makes them match, so this is
+				// a stub or a typo rather than an unstaffed group.
+				//
+				// ⚠️ A NON-EMPTY GROUP THAT HAPPENS TO BE EMPTY TODAY IS NOT
+				// REFUSED. Declared groups ship empty on purpose across this
+				// fleet, and refusing them would fail the import of every
+				// correctly written annotation on a fresh install. That case is
+				// recorded at dispatch instead; see RuleReachRecorder.
+				foreach (['groups' => 'groups', 'users' => 'users'] as $listKind => $listKey) {
+					if ($kind !== $listKind) {
+						continue;
+					}
+
+					$named = ($recipient[$listKey] ?? null);
+					if (is_array($named) === true && $named !== []) {
+						continue;
+					}
+
+					$errors[] = [
+						'code' => 'notification-recipient-names-nobody',
+						'message' => sprintf(
+							'Notification "%s" recipient[%d] is kind "%s" but names no %s, so it can never '
+							.'resolve to anybody. An unstaffed group is fine and is reported at dispatch; '
+							.'an empty list is a stub.',
+							$name,
+							$i,
+							$kind,
+							$listKey
+						),
+					];
+				}
+
 				if ($kind === 'field') {
 					$field = (string)($recipient['field'] ?? '');
 					if ($field === '' || in_array($field, $propKeys, true) === false) {
@@ -828,7 +912,7 @@ final class NotificationAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}>
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function validateActions(mixed $actions, string $name): array {
 		$errors = [];
@@ -1105,7 +1189,7 @@ final class NotificationAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}>
 	 *
-	 * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function validateMessage(mixed $message, string $name): array {
 		$code = 'notification-bad-message';

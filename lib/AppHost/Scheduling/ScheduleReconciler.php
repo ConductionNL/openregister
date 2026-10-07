@@ -50,7 +50,7 @@ use Throwable;
 /**
  * Enumerates manifest schedules and reconciles them into OpenConnector jobs.
  *
- * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
@@ -172,7 +172,7 @@ class ScheduleReconciler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function reconcile(): void {
 		try {
@@ -242,7 +242,7 @@ class ScheduleReconciler {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	protected function collectSources(): array {
 		$sources = [];
@@ -295,7 +295,7 @@ class ScheduleReconciler {
 	 *
 	 * @return string The `apphost-schedule:{applicationId}:{scheduleId}` key.
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function computeReference(string $applicationId, string $scheduleId): string {
 		return sprintf('%s:%s:%s', self::REFERENCE_PREFIX, $applicationId, $scheduleId);
@@ -318,7 +318,7 @@ class ScheduleReconciler {
 	 *
 	 * @return array<string, mixed> The desired job data properties.
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function buildJobData(
 		ScheduleDescriptor $descriptor,
@@ -380,7 +380,7 @@ class ScheduleReconciler {
 	 *
 	 * @return bool True when a write is required.
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function jobDiffers(?array $existing, array $desired, bool $isCron): bool {
 		if ($existing === null) {
@@ -416,7 +416,7 @@ class ScheduleReconciler {
 	 *
 	 * @return string|null The verified owner UID, or null (fail-closed).
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	protected function resolveOwner(mixed $ownerUid): ?string {
 		if (is_string($ownerUid) === false || trim($ownerUid) === '') {
@@ -442,7 +442,7 @@ class ScheduleReconciler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	protected function upsert(
 		ScheduleDescriptor $descriptor,
@@ -485,7 +485,7 @@ class ScheduleReconciler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	protected function garbageCollect(array $existing, array $desiredKeys): void {
 		foreach ($existing as $reference => $job) {
@@ -516,7 +516,7 @@ class ScheduleReconciler {
 	 *
 	 * @return array<string, array<string, mixed>>|null Keyed jobs, or null when the OC register/schema is absent.
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	protected function loadManagedJobs(): ?array {
 		$register = $this->registerSlug(canonical: self::OC_REGISTER_CANONICAL);
@@ -565,7 +565,7 @@ class ScheduleReconciler {
 	 *
 	 * @return array<int, array<string, mixed>> Rendered application objects (empty on any failure).
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	protected function loadVirtualApplications(): array {
 		$register = $this->registerSlug(canonical: self::OB_REGISTER_CANONICAL);
@@ -642,7 +642,7 @@ class ScheduleReconciler {
 	 *
 	 * @return string|null The resolved owner UID, or null when no matching application/owner exists.
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	protected function resolveOnDiskOwner(string $appId): ?string {
 		foreach ($this->loadVirtualApplications() as $application) {
@@ -663,7 +663,7 @@ class ScheduleReconciler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	protected function saveJob(array $data, ?string $uuid): void {
 		$register = $this->registerSlug(canonical: self::OC_REGISTER_CANONICAL);
@@ -719,7 +719,7 @@ class ScheduleReconciler {
 	 *
 	 * @return array<string, mixed> The decoded manifest (empty when absent/invalid).
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	private function extractManifest(array $application): array {
 		$inline = $this->decodeManifest(value: ($application['manifest'] ?? null));
@@ -737,7 +737,7 @@ class ScheduleReconciler {
 	 *
 	 * @return array<string, mixed> The decoded production manifest, or empty.
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	protected function resolveProductionManifest(array $application): array {
 		$versionId = ($application['productionVersion'] ?? ($application['@self']['relations']['productionVersion'] ?? null));

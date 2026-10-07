@@ -24,7 +24,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -92,7 +92,7 @@ class NoteVersionService {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern.
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function record(
 		int $noteId,
@@ -125,7 +125,7 @@ class NoteVersionService {
 	 *
 	 * @return array<int, array<string, mixed>> The versions, newest first.
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function versions(int $noteId): array {
 		$rows = [];
@@ -152,7 +152,7 @@ class NoteVersionService {
 	 * @return array<int, array{editedAt: string|null, editedBy: string|null,
 	 *         editedByDisplayName: string|null, versionCount: int}> Keyed by note id.
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function summaries(array $noteIds): array {
 		$ids = array_values(array_unique(array_map('intval', $noteIds)));
@@ -209,7 +209,7 @@ class NoteVersionService {
 	 *
 	 * @return integer The number of version rows deleted.
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function forget(array $noteIds): int {
 		try {
@@ -237,7 +237,7 @@ class NoteVersionService {
 	 *
 	 * @return boolean True when an audit entry was written.
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function auditEdit(ObjectEntity $object, int $noteId, int $versions): bool {
 		try {

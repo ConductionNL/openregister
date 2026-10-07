@@ -14,7 +14,9 @@ status: implemented
 Implement an immutable audit trail with cryptographic hash chaining for all register operations. Every create, read (of sensitive data), update, and delete MUST be recorded in a tamper-evident log with minimum 10-year retention. The audit trail MUST be independently verifiable and exportable for compliance auditing.
 
 **Tender demand**: 56% of analyzed government tenders require immutable audit trail capabilities.
+
 ## Requirements
+
 ### Requirement: Every mutation MUST produce an immutable audit trail entry
 All create, update, and delete operations on register objects MUST generate an audit trail entry that cannot be modified or deleted.
 
@@ -223,6 +225,130 @@ The system exposes an admin-only operational escape hatch at `DELETE /api/audit-
 
 - The `ClearAuditTrails.vue` dialog defaults to deleting ALL entries when no filters are active and surfaces a warning note-card to that effect; the UI flow tries to dissuade but does not block.
 - The companion routes `auditTrail#destroy` (DELETE `/api/audit-trails/{id}`) and `auditTrail#destroyMultiple` (DELETE `/api/audit-trails`) DO return HTTP 405 per the existing immutability REQ, which makes the `clear-all` carve-out inconsistent. Flagged as part of the drift in D-1 of the proposal.
+
+### Requirement: The audit trail is readable within a caller's own scope
+
+The system SHALL offer a scoped audit list, separate from the admin-only
+instance-wide index, that returns audit entries only for objects the calling
+user may read. Readability SHALL be decided by the same RBAC funnel the object
+read path uses, so that a grant, a schema rule and a register rule all mean
+here what they mean everywhere else. An anonymous caller SHALL receive
+nothing. An entry whose object cannot be resolved, or whose schema cannot be
+resolved, SHALL be absent rather than present, so that every failure to decide
+hides a row instead of showing it. The scoped list SHALL be cursor paginated,
+SHALL NOT count the table, and SHALL bound the number of rows it inspects per
+request.
+
+#### Scenario: a handler sees only the entries of objects they may read
+
+- **GIVEN** a trail with entries on an object the caller may read and entries on an object they may not
+- **WHEN** the caller lists the scoped audit trail
+- **THEN** only the entries of the readable object are returned
+- @e2e exclude {the scope decision is a unit-level contract on ReadableAuditTrailLister, mutation-checked in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
+
+#### Scenario: an anonymous caller is told nothing
+
+- **GIVEN** a trail with entries
+- **WHEN** an anonymous caller lists the scoped audit trail
+- **THEN** no entries are returned and no query for candidates is made
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php::testAnonymousCallerGetsNothingAndAsksTheMapperNothing}
+
+#### Scenario: an entry whose object is gone is not shown
+
+- **GIVEN** an audit entry whose object no longer resolves
+- **WHEN** a non-admin lists the scoped audit trail
+- **THEN** that entry is absent
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
+
+### Requirement: The scoped audit list withholds the instance-recon fields
+
+The scoped audit list SHALL NOT return the `session`, `request` and
+`ipAddress` of an entry. Those fields describe the instance rather than the
+object, and the admin-only index remains the only surface that carries them.
+
+#### Scenario: a scoped row carries the change but not the session
+
+- **GIVEN** an audit entry with a session, a request id and an IP address on a readable object
+- **WHEN** a non-admin lists the scoped audit trail
+- **THEN** the row carries its action, actor and changes, and carries no `session`, `request` or `ipAddress`
+- @e2e exclude {asserted in tests/Unit/Service/Audit/ReadableAuditTrailListerTest.php}
+
+### Requirement: An app counts and lists the audit actions it writes under its own prefix
+
+An app that writes its own audit rows, such as portaliq's proof records (`portaliq.login`, `portaliq.download`), SHALL be able to count them per action without loading the rows, and an administrator SHALL be able to list every action of one prefix at once. `AuditTrailMapper::countByActionPrefix($prefix)` MUST answer the lifetime row count per full action for the actions that start with the prefix, in one grouped query. The list filter `action=<prefix>.*` MUST answer every row whose action starts with the prefix. The prefix MUST match literally: `_` and `%` are not wildcards. An exact `action` filter MUST keep filtering exactly. Source: DECISIONS row 5 (portaliq audit trail move).
+
+#### Scenario: counts per action of one prefix
+
+- **GIVEN** audit rows `portaliq.login` (twice), `portaliq.logout`, `portaliq.download`, `create` and `portal_q.login`
+- **WHEN** `countByActionPrefix('portaliq.')` is called
+- **THEN** it answers `portaliq.login` 2, `portaliq.logout` 1 and `portaliq.download` 1, and nothing else
+- @e2e exclude {mapper-level contract for sibling apps, asserted in tests/Unit/Db/AuditTrailActionPrefixTest.php}
+
+#### Scenario: the admin list filters on an action prefix
+
+- **GIVEN** the same rows
+- **WHEN** the audit trail is listed with `action=portaliq.*`
+- **THEN** it answers the four `portaliq.` rows only
+- @e2e exclude {filter semantics asserted against the migrated table in tests/Unit/Db/AuditTrailActionPrefixTest.php}
+
+### Requirement: The audit history of one object is read through an index
+
+The audit trail table SHALL carry an index on `(object_uuid, created)`, so a read of one object's history (the history tab, revert, `AuditTrailMapper::findChangesForObject()`) is an index lookup and not a scan of the whole table.
+
+#### Scenario: an upgrade adds the index once
+
+- **GIVEN** an instance whose `openregister_audit_trails` has no index on `object_uuid`
+- **WHEN** the app is upgraded
+- **THEN** the table has the index `or_audit_obj_uuid_created` on `object_uuid`, `created`, and a second run of the migration adds nothing
+- @e2e exclude {schema change, asserted in tests/Unit/Migration/Version1Date20261003090000Test.php; the query plan was measured on the dev instance (planninq live pass, 3 Oct 2026)}
+
+### Requirement: Every user-facing read of an object is logged as a read
+
+`GetObject::find()` (`lib/Service/Object/GetObject.php:149`) SHALL write an audit trail entry with action `read` for every object it returns, on any schema, sensitive or not, while the instance setting `auditTrailsEnabled` is on (default on, `lib/Service/Settings/ConfigurationSettingsHandler.php:327`; read by `GetObject::isAuditTrailsEnabled()` at `:451`, which falls back to on when the setting cannot be read). The entry MUST name the reader and the object and MUST NOT carry a field diff (`AuditTrailMapper::buildAuditTrail()` treats `read` as a no-new-state action, `lib/Db/AuditTrailMapper.php:861`). A caller that loads an object as part of another operation MUST be able to skip the entry: `find()` takes `$_audit` (default `true`, `:157`), passed through by `ObjectService::find()` (`lib/Service/ObjectService.php:1087`), and `findSilent()` (`:228`) never logs. The audit statistics and chart count `read` beside create, update and delete (`lib/Db/AuditTrailMapper.php:1834`), so `/audit-trails` shows who viewed a record.
+
+#### Scenario: opening a record writes a read entry
+
+- **GIVEN** audit trails are enabled and user `medewerker-1` may read object `inwoner-123`
+- **WHEN** `medewerker-1` opens the object through `GET /api/objects/{register}/{schema}/inwoner-123`
+- **THEN** the audit trail MUST hold a new entry with action `read`, user `medewerker-1` and object `inwoner-123`
+- **AND** the entry MUST carry no changed fields
+- @e2e exclude {read logging is a backend side effect; asserted by reading /api/audit-trails after a GET, no page renders the write}
+
+#### Scenario: an internal load skips the entry
+
+- **GIVEN** audit trails are enabled
+- **WHEN** a flow node invocation loads its subject object only to check the boundary, calling `find()` with `_audit: false` (`lib/Controller/FlowNodeRunController.php:402`)
+- **THEN** no `read` entry MUST be written for that load
+- @e2e exclude {internal call path with no page; covered by the `_audit` parameter in GetObject::find()}
+
+#### Scenario: the instance setting switches read logging off
+
+- **GIVEN** the retention setting `auditTrailsEnabled` is `false`
+- **WHEN** any user opens an object
+- **THEN** no `read` entry MUST be written
+- @e2e exclude {instance setting read on the server; no page renders the absence of an entry}
+
+### Requirement: Sortable headers on OpenRegister's own lists sort
+
+A header the schemas list or the audit trail list marks sortable SHALL sort
+the list when clicked, both ways, and SHALL show that state (`aria-sort`).
+The schemas list SHALL keep newest first until a header is chosen. The audit
+trail list SHALL sort on the server by the action, timestamp, object,
+register, user and schema columns, and SHALL keep the chosen sort while
+paging.
+
+#### Scenario: Sort schemas by title
+
+- GIVEN the schemas "Zaak", "adres" and "Besluit"
+- WHEN the administrator clicks the Title header
+- THEN the list reads "adres", "Besluit", "Zaak"
+- AND a second click reverses it
+
+#### Scenario: Sort the audit trail by user and page on
+
+- GIVEN the audit trail sorted by User ascending
+- WHEN the administrator opens page 2
+- THEN the request asks for `sort=user_name&order=ASC`
 
 ## Current Implementation Status
 - **Implemented:**

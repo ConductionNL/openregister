@@ -16,7 +16,7 @@ use Psr\Log\LoggerInterface;
  * to WebPushService::deliver() with a built payload, skips on a missing uid,
  * and swallows delivery failures (best-effort, never escalates).
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 class WebPushDispatchJobTest extends TestCase {
 	private WebPushService&MockObject $webPushService;

@@ -117,6 +117,13 @@ class AnnotationNotificationDispatcher {
 	private ?NotificationTemplating $lazyTemplating = null;
 
 	/**
+	 * Notes rules that resolved to no recipients at all.
+	 *
+	 * @var RuleReachRecorder
+	 */
+	private RuleReachRecorder $reachRecorder;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SchemaMapper $schemaMapper Mapper used to resolve the object's schema.
@@ -150,6 +157,7 @@ class AnnotationNotificationDispatcher {
 	 * @param TalkSender|null $talkSender Shared Talk channel unit (lazily built when absent).
 	 * @param NotificationRecipientResolver|null $recipientResolver Shared recipient resolver (lazily built when absent).
 	 * @param NotificationTemplating|null $templating Shared placeholder evaluator (lazily built when absent).
+	 * @param RuleReachRecorder|null $reachRecorder Notes rules that reached nobody (lazily built when absent).
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
 	 */
@@ -185,7 +193,9 @@ class AnnotationNotificationDispatcher {
 		?TalkSender $talkSender = null,
 		?NotificationRecipientResolver $recipientResolver = null,
 		?NotificationTemplating $templating = null,
+		?RuleReachRecorder $reachRecorder = null,
 	) {
+		$this->reachRecorder = ($reachRecorder ?? new RuleReachRecorder(logger: $logger));
 		$this->lazyNcSender = $ncSender;
 		$this->lazyEmailSender = $emailSender;
 		$this->lazyTalkSender = $talkSender;
@@ -200,7 +210,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return NcNotificationSender The sender.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function ncSender(): NcNotificationSender {
 		$this->lazyNcSender ??= new NcNotificationSender(
@@ -219,7 +229,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return EmailSender The sender.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function emailSender(): EmailSender {
 		$this->lazyEmailSender ??= new EmailSender(
@@ -237,7 +247,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return TalkSender The sender.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function talkSender(): TalkSender {
 		$this->lazyTalkSender ??= new TalkSender(
@@ -255,7 +265,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return NotificationRecipientResolver The resolver.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function recipientResolver(): NotificationRecipientResolver {
 		$this->lazyRecipientResolver ??= new NotificationRecipientResolver(
@@ -274,7 +284,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return NotificationTemplating The evaluator.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	private function templating(): NotificationTemplating {
 		$this->lazyTemplating ??= new NotificationTemplating(
@@ -520,15 +530,57 @@ class AnnotationNotificationDispatcher {
 			// accounts. The recipient resolver answers in verified uids, and
 			// most melders have none, so this kind is dispatched here instead:
 			// over the addresses the party record itself holds.
-			$this->dispatchToParties(
+			// The party mail's BODY is the rule's message, resolved like the
+			// subject; only a rule without one falls back to the subject.
+			// It used to be the subject always (opt-out-before-send 4a.1).
+			$partiesBody = $this->resolveMessageBody(
+				template: $messageTemplate,
+				locale: null,
+				data: $data,
+				context: $context,
+				hasActions: false,
+				originApp: ''
+			);
+			if (trim($partiesBody) === '') {
+				$partiesBody = $broadcastSubject;
+			}
+
+			// Absent or unknown reads as `service`, never as exempt.
+			$partiesCategory = ($spec['messageCategory'] ?? '');
+			if (is_string($partiesCategory) === true) {
+				$partiesCategory = strtolower(trim($partiesCategory));
+			}
+
+			if (in_array($partiesCategory, OptOutAuthority::CATEGORIES, true) === false) {
+				$partiesCategory = OptOutAuthority::DEFAULT_CATEGORY;
+			}
+
+			$partiesReached = $this->dispatchToParties(
 				recipientsSpec: (array)($spec['recipients'] ?? []),
 				object: $object,
 				channels: $channels,
 				ruleId: (string)$name,
-				subject: $broadcastSubject
+				subject: $broadcastSubject,
+				body: $partiesBody,
+				category: $partiesCategory
 			);
 
 			if (count($recipients) === 0) {
+				// 🔴 IT USED TO `continue` IN SILENCE. No log, no counter, no
+				// complaint — and declared groups ship EMPTY across this fleet,
+				// so on a fresh install a correctly written rule resolves to
+				// nobody and reports exactly what it would report having
+				// reached everybody.
+				//
+				// Only when the parties path reached nobody either: a rule
+				// addressed to parties has no account recipients by design.
+				if ($partiesReached === 0) {
+					$this->reachRecorder->reachedNobody(
+						ruleId: (string)$name,
+						objectUuid: (string)($object->getUuid() ?? '')
+					);
+				}
+
 				continue;
 			}
 
@@ -2120,7 +2172,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return bool True when the object satisfies the filter.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function createdFilterMatches(array $filter, array $data): bool {
 		$field = (string)($filter['field'] ?? '');
@@ -2441,7 +2493,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return string The interpolated body string, or '' for the empty back-compat body.
 	 *
-	 * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function resolveMessageBody(
 		mixed $template,
@@ -2484,7 +2536,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return string The human-readable app display name.
 	 *
-	 * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function resolveAppDisplayName(string $app): string {
 		$fallback = ucfirst($app);
@@ -2602,7 +2654,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return string The resolved origin app id.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function resolveOriginApp(array $spec, ObjectEntity $object): string {
 		$declared = ($spec['originApp'] ?? null);
@@ -2648,7 +2700,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return array<int, array{label: array<string,string>, primary: bool, url: string, method: string}>
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
 	 */
 	private function resolveActions(array $spec, ObjectEntity $object, array $data, string $originApp): array {
@@ -2812,7 +2864,7 @@ class AnnotationNotificationDispatcher {
 	 * @SuppressWarnings(PHPMD.NPathComplexity) The fourth kind (task-verb)
 	 * adds one branch; each kind's resolution is a distinct contract.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function resolveActionTarget(mixed $target, ObjectEntity $object, array $data, string $originApp): ?string {
 		if (is_array($target) === false) {
@@ -2894,7 +2946,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return string|null The deeplink, or null when the relation is empty/unreadable.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function resolveRelationDeeplink(string $field, array $data, string $originApp): ?string {
 		if ($field === '' || $this->objectService === null) {
@@ -3039,8 +3091,8 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	private function enqueueWebPush(
 		array $recipients,
@@ -3101,8 +3153,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	private function emitNotification(
 		string $uid,
@@ -3151,10 +3202,14 @@ class AnnotationNotificationDispatcher {
 	 * @param array<int, string> $channels The rule's channels.
 	 * @param string $ruleId The rule, for the history row.
 	 * @param string $subject The rule's subject, in the default locale.
+	 * @param string $body The rule's message, in the default locale; the subject when it has none.
+	 * @param string $category The rule's message category, for integriq's opt-out question.
 	 *
-	 * @return void
+	 * @return int How many people the party path reached.
 	 *
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-a-party-mail-carries-the-rule-s-message-as-its-body-req-ero-006
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-a-parties-notification-asks-integriq-before-it-mails-a-party-req-ero-003
 	 */
 	private function dispatchToParties(
 		array $recipientsSpec,
@@ -3162,14 +3217,23 @@ class AnnotationNotificationDispatcher {
 		array $channels,
 		string $ruleId,
 		string $subject,
-	): void {
+		string $body,
+		string $category,
+	): int {
+		// Returns a COUNT rather than void, because "this rule reached nobody"
+		// cannot be decided from the account recipients alone: a rule addressed
+		// to `parties` legitimately resolves to zero accounts while still
+		// reaching people by e-mail. Reporting those as unreachable would be a
+		// false alarm on every party-addressed rule.
+		$reached = 0;
+
 		if (in_array('email', $channels, true) === false) {
-			return;
+			return $reached;
 		}
 
 		$objectUuid = (string)($object->getUuid() ?? '');
 		if ($objectUuid === '') {
-			return;
+			return $reached;
 		}
 
 		foreach ($recipientsSpec as $recipient) {
@@ -3186,11 +3250,13 @@ class AnnotationNotificationDispatcher {
 			$sent = $this->serverContainer->get(PartyNotificationService::class)->notifyParties(
 				objectUuid: $objectUuid,
 				subject: $subject,
-				body: $subject,
-				role: $onlyRole
+				body: $body,
+				role: $onlyRole,
+				category: $category
 			);
 
 			foreach ($sent as $outcome) {
+				$reached++;
 				$this->recordHistory(
 					ruleId: $ruleId,
 					channel: 'email',
@@ -3202,6 +3268,8 @@ class AnnotationNotificationDispatcher {
 				);
 			}
 		}//end foreach
+
+		return $reached;
 	}//end dispatchToParties()
 
 	/**

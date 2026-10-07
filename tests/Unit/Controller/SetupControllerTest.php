@@ -38,21 +38,37 @@ class SetupControllerTest extends TestCase {
 		);
 	}
 
-	public function testStatusReportsBothDemoDataSteps(): void {
+	public function testStatusReportsEveryManifestStepId(): void {
 		$this->appConfig->method('getValueString')->willReturn('');
 		$this->demoData->method('listChoices')->willReturn([]);
 
 		$data = $this->controller->status()->getData();
 
 		// Absence is the defect this guards: a step the wizard is never told
-		// about cannot be offered and cannot be completed.
-		$this->assertArrayHasKey('demo-data', $data['steps']);
-		$this->assertArrayHasKey('load-demo-data', $data['steps']);
+		// about stays open, and an open step reopens the wizard on every page.
+		// So the ids are read from the manifest the wizard renders, not listed
+		// here by hand.
+		$manifest = json_decode((string)file_get_contents(__DIR__ . '/../../../src/manifest.json'), true);
+		$stepIds = array_column($manifest['setup']['steps'], 'id');
+		$reported = array_values(array_keys($data['steps']));
+		sort($stepIds);
+		sort($reported);
+		$this->assertSame($stepIds, $reported);
+
 		$this->assertFalse($data['steps']['demo-data']['done']);
-		$this->assertFalse($data['steps']['load-demo-data']['done']);
 		// This app declares no REQUIRED step, so setup must never gate the app.
 		$this->assertTrue($data['completed']);
 		$this->assertSame(1, $data['version']);
+	}
+
+	public function testTheDatasetStepLoadsFromItsCards(): void {
+		// One cards step with `loadAction` replaces the choice step plus the
+		// run-action step that loaded the pick (wizard-dataset-card-load).
+		$manifest = json_decode((string)file_get_contents(__DIR__ . '/../../../src/manifest.json'), true);
+		$steps = array_column($manifest['setup']['steps'], null, 'id');
+
+		$this->assertSame('load-demo-data', $steps['demo-data']['loadAction'] ?? null);
+		$this->assertArrayNotHasKey('load-demo-data', $steps);
 	}
 
 	public function testStatusCarriesTheOptionListTheChoiceStepReads(): void {
@@ -74,7 +90,7 @@ class SetupControllerTest extends TestCase {
 		$this->assertSame('DatabaseOutline', $data['datasets'][1]['icon']);
 	}
 
-	public function testChoosingNoneClosesBothStepsWithoutRunningAnything(): void {
+	public function testChoosingNoneClosesTheStepWithoutRunningAnything(): void {
 		// 🔴 THE DEFECT THIS FIXES. Every app in this fleet implemented
 		// `skip-demo-data` and NO manifest step could reach it, so declining was
 		// unsayable: the step stayed `done: false` and CnAppRoot reopened the
@@ -88,7 +104,7 @@ class SetupControllerTest extends TestCase {
 		$data = $this->controller->status()->getData();
 
 		$this->assertTrue($data['steps']['demo-data']['done']);
-		$this->assertTrue($data['steps']['load-demo-data']['done']);
+		$this->assertArrayNotHasKey('load-demo-data', $data['steps']);
 	}
 
 	public function testTheChoiceIsPersisted(): void {
@@ -250,11 +266,17 @@ class SetupControllerTest extends TestCase {
 		$this->demoData->method('install')
 			->willReturn(['objects' => 30, 'registers' => 1, 'schemas' => 4]);
 
-		$this->appConfig->expects($this->once())
-			->method('setValueString')
-			->with('openregister', 'demo_data_decided', 'installed');
+		$written = [];
+		$this->appConfig->method('setValueString')
+			->willReturnCallback(static function (string $app, string $key, string $value) use (&$written): bool {
+				$written[$key] = $value;
+
+				return true;
+			});
 
 		$data = $this->controller->runAction('load-demo-data')->getData();
+
+		$this->assertSame(['demo_dataset' => 'demo', 'demo_data_decided' => 'installed'], $written);
 
 		$this->assertTrue($data['success']);
 		// A success message that names no count cannot be told apart from an
@@ -279,5 +301,119 @@ class SetupControllerTest extends TestCase {
 		$this->assertSame(500, $response->getStatus());
 		$this->assertFalse($response->getData()['success']);
 		$this->assertStringContainsString('OpenRegister is not installed.', $response->getData()['message']);
+	}
+
+	/**
+	 * Build a controller whose request carries the given body params.
+	 *
+	 * @param array<string, mixed> $params The posted body.
+	 *
+	 * @return SetupController
+	 */
+	private function controllerPosting(array $params): SetupController {
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')
+			->willReturnCallback(static fn (string $key) => ($params[$key] ?? null));
+
+		return new SetupController($request, $this->appConfig, $this->logger, $this->demoData);
+	}
+
+	public function testTheCardPostsItsDatasetAndTheLoadRecordsTheChoice(): void {
+		// The card's Load button posts `{ dataset }` to the step's
+		// `loadAction`. Nothing was stored before: the card IS the choice.
+		$this->appConfig->method('getValueString')->willReturn('');
+		$this->demoData->method('listChoices')->willReturn([
+			['id' => 'none', 'label' => 'None', 'description' => '', 'objectCount' => 0, 'icon' => ''],
+			['id' => 'demo', 'label' => 'Example data', 'description' => '', 'objectCount' => 66, 'icon' => ''],
+		]);
+		$this->demoData->expects($this->once())->method('install')
+			->willReturn(['objects' => 66, 'registers' => 1, 'schemas' => 4]);
+
+		$written = [];
+		$this->appConfig->method('setValueString')
+			->willReturnCallback(static function (string $app, string $key, string $value) use (&$written): bool {
+				$written[$key] = $value;
+
+				return true;
+			});
+
+		$data = $this->controllerPosting(['dataset' => 'demo'])->runAction('load-demo-data')->getData();
+
+		$this->assertTrue($data['success']);
+		$this->assertStringContainsString('66', $data['message']);
+		$this->assertSame(['demo_dataset' => 'demo', 'demo_data_decided' => 'installed'], $written);
+	}
+
+	public function testAnUnknownPostedDatasetIsRefusedAndNothingLoads(): void {
+		$this->appConfig->method('getValueString')->willReturn('demo');
+		$this->demoData->method('listChoices')->willReturn([
+			['id' => 'none', 'label' => 'None', 'description' => '', 'objectCount' => 0, 'icon' => ''],
+			['id' => 'demo', 'label' => 'Example data', 'description' => '', 'objectCount' => 66, 'icon' => ''],
+		]);
+		$this->demoData->expects($this->never())->method('install');
+		$this->appConfig->expects($this->never())->method('setValueString');
+
+		$response = $this->controllerPosting(['dataset' => 'atlantis'])->runAction('load-demo-data');
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertStringContainsString('atlantis', $response->getData()['message']);
+	}
+
+	public function testAFailedCardLoadStoresNothing(): void {
+		// The pick is recorded only after a successful load, so a failed card
+		// leaves the step open for an operator who asked for data.
+		$this->appConfig->method('getValueString')->willReturn('');
+		$this->demoData->method('listChoices')->willReturn([
+			['id' => 'demo', 'label' => 'Example data', 'description' => '', 'objectCount' => 66, 'icon' => ''],
+		]);
+		$this->demoData->method('install')->willThrowException(new RuntimeException('OpenRegister is not installed.'));
+		$this->appConfig->expects($this->never())->method('setValueString');
+
+		$response = $this->controllerPosting(['dataset' => 'demo'])->runAction('load-demo-data');
+
+		$this->assertSame(500, $response->getStatus());
+	}
+
+	/**
+	 * 🔴 Closing the wizard is remembered on the server, not only in one browser.
+	 *
+	 * The wizard records a dismissal in localStorage, so on the live instance
+	 * it opened again in every other browser. The app posts `dismiss-setup`
+	 * and the status then reports the step done.
+	 *
+	 * @spec openspec/specs/first-time-setup/spec.md
+	 */
+	public function testClosingTheWizardIsRememberedOnTheServer(): void {
+		$store = [];
+		$this->appConfig->method('getValueString')->willReturnCallback(
+			static fn (string $app, string $key, string $default = ''): string => ($store[$key] ?? $default)
+		);
+		$this->appConfig->method('setValueString')->willReturnCallback(
+			static function (string $app, string $key, string $value) use (&$store): bool {
+				$store[$key] = $value;
+				return true;
+			}
+		);
+		$this->demoData->method('listChoices')->willReturn([]);
+
+		$this->assertFalse($this->controller->status()->getData()['steps']['demo-data']['done']);
+
+		$response = $this->controller->runAction('dismiss-setup');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('dismissed', ($store['demo_data_decided'] ?? null));
+		$this->assertArrayNotHasKey('demo_dataset', $store);
+	}
+
+	/**
+	 * Closing the wizard after a load leaves the recorded load as it was.
+	 *
+	 * @spec openspec/specs/first-time-setup/spec.md
+	 */
+	public function testClosingAfterALoadKeepsTheLoad(): void {
+		$this->appConfig->method('getValueString')->willReturn('loaded');
+		$this->appConfig->expects($this->never())->method('setValueString');
+
+		$this->assertSame(200, $this->controller->runAction('dismiss-setup')->getStatus());
 	}
 }

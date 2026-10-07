@@ -87,7 +87,7 @@ class PgVectorPlatform {
 	 *
 	 * @return bool True on PostgreSQL
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#3.1
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#3.1
 	 */
 	public function isPostgres(): bool {
 		$platform = $this->db->getDatabasePlatform();
@@ -108,7 +108,7 @@ class PgVectorPlatform {
 	 *
 	 * @return int|null Sidecar embedding dimension, or null when unavailable
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#3.1
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#3.1
 	 */
 	public function getVectorColumnDimension(): ?int {
 		if ($this->columnDimension !== false) {
@@ -157,7 +157,7 @@ class PgVectorPlatform {
 	 *
 	 * @return string pgvector literal
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#2.1
 	 */
 	public function formatVector(array $embedding): string {
 		return '[' . implode(',', array_map(static fn ($v): float => (float)$v, $embedding)) . ']';

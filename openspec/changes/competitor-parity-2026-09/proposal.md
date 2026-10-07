@@ -501,7 +501,7 @@ the row.
 |---|---|---|
 | 1.18 | changes/dedup-check-before-create | "A schema declares what a strong match does at create": the matches are returned, `overrideGroups` may override, and the override is audited with the matched objects |
 | 6.26 | specs/notificatie-engine | "Trigger types `created` and `updated` MUST be supported", whose scenario declares `trigger: {type: "updated", only_if_changed: ["assignee"]}`, with recipients resolved from the object by the `recipients` block |
-| 11.37 | changes/field-rules-by-state | "A field rule may be conditional on the object's own data", scenario "a field becomes required because of a value", enforced on save and so on the API |
+| 11.37 | changes/archive/2026-10-05-field-rules-by-state | "A field rule may be conditional on the object's own data", scenario "a field becomes required because of a value", enforced on save and so on the API |
 | 11.38 | changes/rules-engine-operability | REQ-REO-004 "Every write path evaluates the declared rules", with `@self.fieldRules` from `field-rules-by-state` as the form's half |
 | 11.48 | changes/code-list-lifecycle-and-hierarchy | REQ-CLH-001, scenario "a retired value keeps working on old records": outside its window a concept is not offered and still resolves on read |
 | 11.49 | changes/rules-engine-operability | REQ-REO-002 "A rule evaluation records the operand that decided it", readable per rule with filters on verdict and period |

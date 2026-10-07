@@ -28,6 +28,7 @@ use OCA\OpenRegister\AppInfo\Application;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\Activity\IManager;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
@@ -44,14 +45,19 @@ class ActivityService {
 	 * @param IUserSession $userSession The user session.
 	 * @param IURLGenerator $urlGenerator The URL generator.
 	 * @param LoggerInterface $logger The logger.
+	 * @param SchemaMapper|null $schemaMapper Resolves the schema title an object activity names; null only in hand-built tests.
+	 * @param DeepLinkRegistryService|null $deepLinks The owning app's detail route per register and schema.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function __construct(
 		private IManager $activityManager,
 		private IUserSession $userSession,
 		private IURLGenerator $urlGenerator,
 		private LoggerInterface $logger,
+		private ?SchemaMapper $schemaMapper = null,
+		private ?DeepLinkRegistryService $deepLinks = null,
 	) {
 	}//end __construct()
 
@@ -63,6 +69,7 @@ class ActivityService {
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function publishObjectCreated(ObjectEntity $object): void {
 		$title = $this->resolveTitle(primary: $object->getName(), fallback: $object->getUuid());
@@ -71,7 +78,7 @@ class ActivityService {
 		$this->publish(
 			subject: 'object_created',
 			type: 'openregister_objects',
-			parameters: ['title' => $title],
+			parameters: $this->objectParameters(object: $object, title: $title),
 			objectType: 'object',
 			objectId: (string)$object->getId(),
 			objectName: $title,
@@ -91,6 +98,7 @@ class ActivityService {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) — $oldObject reserved for future diff support
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function publishObjectUpdated(ObjectEntity $newObject, ?ObjectEntity $oldObject = null): void {
 		$title = $this->resolveTitle(primary: $newObject->getName(), fallback: $newObject->getUuid());
@@ -99,7 +107,7 @@ class ActivityService {
 		$this->publish(
 			subject: 'object_updated',
 			type: 'openregister_objects',
-			parameters: ['title' => $title],
+			parameters: $this->objectParameters(object: $newObject, title: $title),
 			objectType: 'object',
 			objectId: (string)$newObject->getId(),
 			objectName: $title,
@@ -116,6 +124,7 @@ class ActivityService {
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function publishObjectDeleted(ObjectEntity $object): void {
 		$title = $this->resolveTitle(primary: $object->getName(), fallback: $object->getUuid());
@@ -123,7 +132,7 @@ class ActivityService {
 		$this->publish(
 			subject: 'object_deleted',
 			type: 'openregister_objects',
-			parameters: ['title' => $title],
+			parameters: $this->objectParameters(object: $object, title: $title),
 			objectType: 'object',
 			objectId: (string)$object->getId(),
 			objectName: $title,
@@ -281,19 +290,84 @@ class ActivityService {
 	}//end publishSchemaDeleted()
 
 	/**
-	 * Build a deep link to an object in the OpenRegister UI.
+	 * Build the subject parameters of an object activity.
+	 *
+	 * Always carries the object title. Adds the schema title when the schema
+	 * resolves, so the provider can say "Client Gemeente Demo updated" rather
+	 * than "Object updated: Gemeente Demo". A schema that does not resolve
+	 * leaves the old form in place; it never stops the activity.
+	 *
+	 * @param ObjectEntity $object The object the activity is about.
+	 * @param string $title The resolved object title.
+	 *
+	 * @return array<string, string> The subject parameters.
+	 *
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
+	 */
+	private function objectParameters(ObjectEntity $object, string $title): array {
+		$parameters = ['title' => $title];
+		$schemaId = $object->getSchema();
+		if ($this->schemaMapper === null || $schemaId === null || $schemaId === '') {
+			return $parameters;
+		}
+
+		try {
+			// A read for a label only. The activity goes to the author and the
+			// owner, who both reach the object and so its schema.
+			$schemaTitle = $this->schemaMapper->find(id: $schemaId, _rbac: false, _multitenancy: false)->getTitle();
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				message: '[ActivityService] Schema title not resolved for an object activity',
+				context: ['schema' => $schemaId, 'exception' => $e->getMessage()]
+			);
+			return $parameters;
+		}
+
+		if (is_string($schemaTitle) === true && trim($schemaTitle) !== '') {
+			$parameters['schema'] = trim($schemaTitle);
+		}
+
+		return $parameters;
+	}//end objectParameters()
+
+	/**
+	 * Build a deep link to an object: its owning app's page, else OpenRegister's.
+	 *
+	 * An app that owns a schema registers its detail route through the deep
+	 * link registry (pipelinq: `/apps/pipelinq/clients/{uuid}`). The activity
+	 * stream used to link every object to the OpenRegister admin view, so a
+	 * pipelinq user clicking a client update landed in a register browser
+	 * (live audit E1, 7 October 2026). The admin URL stays the fallback for a
+	 * schema no app claims.
 	 *
 	 * @param ObjectEntity $object The object entity.
 	 *
 	 * @return string The absolute URL to the object.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 * @spec openspec/specs/activity-provider/spec.md
 	 */
 	private function buildObjectLink(ObjectEntity $object): string {
-		$baseUrl = $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page');
 		$registerId = $object->getRegister();
 		$schemaId = $object->getSchema();
 		$uuid = $object->getUuid();
+
+		if ($this->deepLinks !== null && is_numeric($registerId) === true && is_numeric($schemaId) === true) {
+			$owned = $this->deepLinks->resolveUrl(
+				registerId: (int) $registerId,
+				schemaId: (int) $schemaId,
+				objectData: (($object->getObject() ?? []) + ['uuid' => (string) $uuid, 'id' => (string) $uuid])
+			);
+			if ($owned !== null && $owned !== '') {
+				if (str_starts_with($owned, 'http') === true) {
+					return $owned;
+				}
+
+				return $this->urlGenerator->getAbsoluteURL($owned);
+			}
+		}
+
+		$baseUrl = $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page');
 
 		return $baseUrl . '#/registers/' . $registerId . '/schemas/' . $schemaId . '/objects/' . $uuid;
 	}//end buildObjectLink()

@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-user-task-node/spec.md
+ * @spec openspec/specs/flow-user-task-node/spec.md
  */
 
 declare(strict_types=1);
@@ -67,6 +67,8 @@ use UnexpectedValueException;
  * @uses \OCA\OpenRegister\Service\Task\TaskForm
  * @uses \OCA\OpenRegister\Db\FlowRun
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
+ * @uses \OCA\OpenRegister\Service\Flow\Principal\PrincipalReference
  */
 final class UserTaskAttachToTest extends TestCase {
 

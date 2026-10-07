@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-a-daily-job-refreshes-active-token-sets-before-they-expire
+ * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-daily-job-refreshes-active-token-sets-before-they-expire
  */
 
 declare(strict_types=1);
@@ -43,6 +43,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\BackgroundJob\OAuth2TokenRefreshJob
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class OAuth2TokenRefreshJobTest extends TestCase {
 	/** @var array<int, string> Credential ids the sweep actually asked to refresh. */

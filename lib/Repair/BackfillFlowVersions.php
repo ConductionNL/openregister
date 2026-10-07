@@ -31,7 +31,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ use Throwable;
 /**
  * Gives every pre-versioning flow a published version 1, and pins its runs.
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 class BackfillFlowVersions implements IRepairStep {
 	/**
@@ -81,7 +81,7 @@ class BackfillFlowVersions implements IRepairStep {
 	 *
 	 * @return string The name.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function getName(): string {
 		return 'Publish version 1 of every existing flow and pin in-flight runs to it';
@@ -98,7 +98,7 @@ class BackfillFlowVersions implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function run(IOutput $output): void {
 		try {
@@ -184,7 +184,7 @@ class BackfillFlowVersions implements IRepairStep {
 	 *
 	 * @return array<int, \OCA\OpenRegister\Db\Flow> Every flow on the instance.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function everyFlow(): array {
 		$mapper = $this->container->get(FlowMapper::class);
@@ -213,7 +213,7 @@ class BackfillFlowVersions implements IRepairStep {
 	 *
 	 * @return array{published: boolean, pinned: integer} What was done.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function backfillOne(Flow $flow): array {
 		$flowId = (string)$flow->getUuid();

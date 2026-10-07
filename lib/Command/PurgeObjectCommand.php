@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -59,14 +60,16 @@ class PurgeObjectCommand extends Command {
 	/**
 	 * Wire the mappers.
 	 *
-	 * @param MagicMapper  $objectMapper Magic-table object lookup and delete.
-	 * @param SchemaMapper $schemaMapper Schema lookup, to read the archival annotation.
+	 * @param MagicMapper      $objectMapper     Magic-table object lookup and delete.
+	 * @param SchemaMapper     $schemaMapper     Schema lookup, to read the archival annotation.
+	 * @param AuditTrailMapper $auditTrailMapper Resolves the objects an import job created.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly MagicMapper $objectMapper,
 		private readonly SchemaMapper $schemaMapper,
+		private readonly AuditTrailMapper $auditTrailMapper,
 	) {
 		parent::__construct();
 	}//end __construct()
@@ -85,8 +88,14 @@ class PurgeObjectCommand extends Command {
 			)
 			->addArgument(
 				name: 'uuid',
-				mode: (InputArgument::REQUIRED | InputArgument::IS_ARRAY),
-				description: 'One or more object UUIDs to purge'
+				mode: InputArgument::IS_ARRAY,
+				description: 'One or more object UUIDs to purge (optional with --import-job)'
+			)
+			->addOption(
+				name: 'import-job',
+				shortcut: null,
+				mode: InputOption::VALUE_REQUIRED,
+				description: 'Also purge every object this import job created, such as an app\'s example set'
 			)
 			->addOption(
 				name: 'force',
@@ -116,18 +125,25 @@ class PurgeObjectCommand extends Command {
 	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$uuids = $input->getArgument('uuid');
+		$uuids = array_map('strval', (array)$input->getArgument('uuid'));
 		$force = (bool)$input->getOption('force');
 		$apply = (bool)$input->getOption('apply');
+		$fromJob = $this->importJobUuids(importJobId: (string)($input->getOption('import-job') ?? ''), output: $output);
+
+		if ($uuids === [] && $fromJob === null) {
+			$output->writeln('<error>Name at least one object UUID, or an import job with --import-job.</error>');
+			return 1;
+		}
 
 		$failures = 0;
 		foreach ($uuids as $uuid) {
-			$failures += $this->purgeOne(
-				uuid: (string)$uuid,
-				force: $force,
-				apply: $apply,
-				output: $output
-			);
+			$failures += $this->purgeOne(uuid: $uuid, force: $force, apply: $apply, output: $output);
+		}
+
+		// In job mode a missing object was removed already, so a re-run after
+		// a partial purge reports it rather than failing on it.
+		foreach (array_diff(($fromJob ?? []), $uuids) as $uuid) {
+			$failures += $this->purgeOne(uuid: $uuid, force: $force, apply: $apply, output: $output, fromJob: true);
 		}
 
 		if ($apply === false) {
@@ -143,16 +159,42 @@ class PurgeObjectCommand extends Command {
 	}//end execute()
 
 	/**
+	 * The objects an import job created, or null when no job was named.
+	 *
+	 * @param string          $importJobId The --import-job value, or ''.
+	 * @param OutputInterface $output      Console output.
+	 *
+	 * @return array<int, string>|null
+	 *
+	 * @spec openspec/specs/archival-annotation-vocabulary/spec.md#requirement-the-cli-purge-must-accept-an-import-job-instead-of-a-list-of-uuids
+	 */
+	private function importJobUuids(string $importJobId, OutputInterface $output): ?array {
+		$importJobId = trim($importJobId);
+		if ($importJobId === '') {
+			return null;
+		}
+
+		$uuids = $this->auditTrailMapper->objectUuidsByImportJobId(importJobId: $importJobId);
+		$output->writeln(sprintf('import job %s created %d object(s)', $importJobId, count($uuids)));
+
+		return $uuids;
+	}//end importJobUuids()
+
+	/**
 	 * Handle a single UUID.
 	 *
 	 * @param string          $uuid   The object UUID.
 	 * @param bool            $force  Whether archival and live rows may be purged.
 	 * @param bool            $apply  Whether to actually write.
 	 * @param OutputInterface $output Console output.
+	 * @param bool            $fromJob Whether the UUID came from --import-job, where a missing
+	 *                                 object was removed already rather than mistyped.
 	 *
 	 * @return int 1 when the object was refused or could not be handled, 0 otherwise.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the command's own --force and --apply switches.
 	 */
-	private function purgeOne(string $uuid, bool $force, bool $apply, OutputInterface $output): int {
+	private function purgeOne(string $uuid, bool $force, bool $apply, OutputInterface $output, bool $fromJob=false): int {
 		try {
 			$object = $this->objectMapper->find(
 				identifier: $uuid,
@@ -163,6 +205,11 @@ class PurgeObjectCommand extends Command {
 				_multitenancy: false
 			);
 		} catch (\Throwable $e) {
+			if ($fromJob === true) {
+				$output->writeln(sprintf('%s: already gone', $uuid));
+				return 0;
+			}
+
 			$output->writeln(sprintf('<error>%s: not found (%s)</error>', $uuid, $e->getMessage()));
 			return 1;
 		}

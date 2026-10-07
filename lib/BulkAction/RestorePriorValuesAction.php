@@ -29,7 +29,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -108,7 +108,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 *
 	 * @return string The action id.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getId(): string {
 		return self::ID;
@@ -119,7 +119,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 *
 	 * @return string The label.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getLabel(): string {
 		return 'Undo a bulk action';
@@ -130,7 +130,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getDescription(): string {
 		return 'Writes back what an earlier job changed. An object somebody has edited since is left alone and reported by name.';
@@ -141,7 +141,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 *
 	 * @return bool True.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function requiresJustification(): bool {
 		return true;
@@ -156,7 +156,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 *
 	 * @return array<int, string> No guards.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getGuards(): array {
 		return [];
@@ -171,7 +171,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 *
 	 * @throws InvalidArgumentException When the job being undone is not named.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function validateParameters(array $parameters): void {
 		$jobId = ($parameters[self::PARAM_JOB] ?? null);
@@ -188,7 +188,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 *
 	 * @return int The window, in seconds.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getReversalWindow(): int {
 		return self::REVERSAL_WINDOW;
@@ -202,7 +202,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 *
 	 * @return array{prior: array<string, mixed>, applied: array<string, mixed>} The plan.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function reversalPlanFor(ObjectEntity $object, array $parameters): array {
 		$restore = $this->restoreValuesFor(object: $object, parameters: $parameters);
@@ -232,7 +232,7 @@ class RestorePriorValuesAction implements ReversibleBulkActionInterface {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) One executor for the
 	 * rehearsal and the commit is the design property of D-1.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function apply(ObjectEntity $object, array $parameters, bool $commit, ?IUser $actor = null): BulkActionResult {
 		$record = $this->recordFor(object: $object, parameters: $parameters);

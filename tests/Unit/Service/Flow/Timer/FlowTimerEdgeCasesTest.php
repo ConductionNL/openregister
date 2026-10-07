@@ -45,6 +45,8 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Db\FlowTimer
  * @covers \OCA\OpenRegister\Exception\FlowTimerStateException
  * @covers \OCA\OpenRegister\Exception\FlowTimerValidationException
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\ServiceHours
+ * @uses \OCA\OpenRegister\Service\Flow\Timer\SlaDeclaration
  */
 class FlowTimerEdgeCasesTest extends TestCase {
 

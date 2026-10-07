@@ -85,7 +85,7 @@ class VectorSearchHandler {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Filter handling requires multiple conditions
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive semantic search with error handling
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#3.1
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#3.1
 	 */
 	public function semanticSearch(
 		array $queryEmbedding,
@@ -264,7 +264,7 @@ class VectorSearchHandler {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Filter handling requires multiple conditions
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter handling paths
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#3.1
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#3.1
 	 */
 	private function knnSearch(array $queryEmbedding, int $limit, array $filters = []): ?array {
 		$columnDimension = $this->pgVector->getVectorColumnDimension();
@@ -589,7 +589,7 @@ class VectorSearchHandler {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Filter handling requires multiple conditions
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter handling paths
 	 *
-	 * @spec openspec/changes/hybrid-document-search/tasks.md#3.2
+	 * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#3.2
 	 */
 	private function fetchVectors(array $filters = []): array {
 		try {

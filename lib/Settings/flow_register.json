@@ -187,7 +187,8 @@
             },
             "title": "Edges"
           }
-        }
+        },
+        "x-openregister-authorization-governs": "GOVERNS THE OBJECT STORE ONLY. Flows live in the native openregister_flows table, and MigrateRegisterFlowsToTable drained this register into it because every subsystem reads the table and nothing reads the register. So this block does NOT govern who may read, edit or RUN a flow: a run is decided per flow by FlowRunAuthorization (owner, administrator, or the narrowable flow.update right; an unowned flow is refused to everyone). Kept rather than deleted, because a reader finding no declaration at all would conclude the object store is open. See the change flow-runs-honour-their-declaration."
       }
     }
   }

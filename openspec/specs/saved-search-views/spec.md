@@ -10,6 +10,7 @@ retrofit: true
 Lets OpenRegister users save the configuration of an object search — selected registers and schemas, free-text search terms, facet filters, and enabled facets — as a reusable, named **view** backed by `/api/views`. Views can be marked public or default, favorited per user, and re-applied to the live search from the search sidebar. This capability describes the observed frontend contract of `src/sidebars/search/SearchSideBar.vue` and the `viewsStore` it drives. It was retrofitted under ADR-003 on 2026-05-25 (cluster `fe-sidebars`); requirements capture observed behavior rather than original intent.
 
 ## Requirements
+
 ### Requirement: REQ-001 — Saved view lifecycle through the views store and /api/views
 
 The search sidebar (`SearchSideBar.vue`) MUST expose a saved-view surface backed by `viewsStore` and the `/api/views` endpoints. A "view" persists a reusable query configuration — `registers`, `schemas`, `searchTerms`, `facetFilters`, and `enabledFacets` — under a user-supplied `name` and optional `description`, with `isPublic` and `isDefault` flags. The sidebar MUST support: listing available views (`viewOptions` / `selectedViewValue` computeds drawn from `viewsStore.getAllViews`), creating a view (`saveView` → `viewsStore.createView`), updating the active view (`updateActiveView` → `viewsStore.updateView`), activating a view (`handleViewChange` / `loadView` → `viewsStore.fetchView` then `applyViewConfiguration`), and deleting a view (`confirmDeleteView` / `confirmDeleteActiveView` stage `viewToDelete`; `handleDeleteClose` refreshes the list and clears the active view if it was deleted). Applying a view (`applyViewConfiguration`) MUST read the stored config (supporting both the new `query` and legacy `configuration` key), repopulate the sidebar's selection state, set it as the active view via `viewsStore.setActiveView`, and re-run the search when `canSearch` is satisfied. Only query parameters MUST be persisted — never transient UI state such as pagination, sorting, or visible columns.
@@ -158,3 +159,138 @@ re-implement the rendering locally.
 - **THEN** OpenRegister renders it via the nextcloud-vue `CnObjectKanban`
   component wired to the object store, not a bespoke OR-local kanban.
 
+### Requirement: A view can be shared with groups in read or write mode
+
+A View SHALL carry `sharedWith`, a list of `{group, mode}` with `mode`
+`read` or `write`, editable by the owner or an administrator. Listing views
+SHALL return the caller's own views, public views and views shared with a
+group the caller belongs to, each with `@self.access` of `owner`, `write`
+or `read`. Sharing with a group that does not exist SHALL be refused.
+
+#### Scenario: a department sees its view with its columns
+
+- **GIVEN** a view owned by A with `presentation.columns` set and shared `read` with group `handhaving`
+- **WHEN** a member of `handhaving` lists views
+- **THEN** the view is returned with `@self.access` `read` and its columns
+- @e2e exclude {asserted in tests/Unit/Controller/ViewGroupShareWriteTest.php and the ViewMapper list tests; the nextcloud-vue change saved-views-shared-by-role adds the e2e when its control ships}
+
+#### Scenario: a non-member does not see it
+
+- **GIVEN** the same view and a user in no shared group
+- **WHEN** the user lists views
+- **THEN** the view is absent
+- @e2e exclude {list query, covered by ViewMapper unit tests}
+
+### Requirement: Write on a share changes the query, never the audience
+
+A member with `write` SHALL be able to update the view's `query`,
+`presentation` and `alert`, and SHALL NOT be able to change `sharedWith`,
+`owner` or delete the view.
+
+#### Scenario: a writer cannot widen the share
+
+- **GIVEN** a member with `write`
+- **WHEN** the member sends `sharedWith` with a second group
+- **THEN** the response is 403 and `sharedWith` is unchanged
+- @e2e exclude {guard, covered by controller unit tests}
+
+### Requirement: Updating a view is refused on the fields the caller may not change
+
+`ViewsController::update()` SHALL refuse an update that changes a field the
+caller does not own, before it saves anything. The refusal SHALL be a 403
+naming each refused field.
+
+The caller's access SHALL be resolved through `ViewShareResolver`: an owner and
+an administrator may change everything; a `write` member may change only
+`query`, `presentation` and `alert`; a `read` member and a stranger may change
+nothing.
+
+A view that cannot be read SHALL deny rather than fall through.
+
+#### Scenario: a write member cannot rename someone else's view
+
+- **GIVEN** a view owned by another user, shared to a group the caller is in with mode `write`
+- **WHEN** the caller saves it with a different `name`
+- **THEN** the save is refused with 403 naming `name`, and the stored view is unchanged
+- @e2e exclude {asserted over the real controller in tests/Unit/Controller/ViewUpdateJudgedByChangeTest.php}
+
+#### Scenario: a write member cannot change who sees the view
+
+- **GIVEN** the same view and caller
+- **WHEN** the caller saves it with `isPublic` true, a different `owner`, or a changed `sharedWith`
+- **THEN** each is refused with 403 naming that field, and none of them is stored
+- @e2e exclude {as above, probing with the least privileged principal that should be refused}
+
+#### Scenario: a read member changes nothing
+
+- **GIVEN** a view shared to the caller's group with mode `read`
+- **WHEN** the caller saves any change at all
+- **THEN** the save is refused with 403
+- @e2e exclude {as above}
+
+#### Scenario: the owner changes everything
+
+- **GIVEN** a view the caller owns
+- **WHEN** they change `name`, `isPublic` and `sharedWith` in one save
+- **THEN** the save succeeds
+- @e2e exclude {unit-tested on the guard; the owner path has no refusal to probe}
+
+### Requirement: Only fields whose value actually changed are judged
+
+The endpoint SHALL compare the submitted body against the stored view and SHALL
+judge only the fields whose value differs. A field sent with the value it
+already holds SHALL NOT be refused.
+
+The comparison SHALL be by value and SHALL NOT depend on key order or on list
+order, so an equal `query` object or an equal `sharedWith` list is not a
+change.
+
+Keys the body carries that name no view property SHALL be ignored, so
+pagination and routing keys cannot refuse an update the caller is entitled to
+make.
+
+#### Scenario: the edit modal's full body does not refuse an ordinary edit
+
+- **GIVEN** a view shared with the caller in mode `write`, and a body carrying `name`, `description`, `isPublic`, `isDefault` and `query` exactly as `EditView.vue` sends them
+- **WHEN** only `query` differs from the stored view
+- **THEN** the save succeeds and the four unchanged fields are not refused
+- @e2e exclude {the modal body shape is asserted in tests/Unit/Controller/ViewUpdateJudgedByChangeTest.php}
+
+#### Scenario: one changed forbidden field among four unchanged ones is still refused
+
+- **GIVEN** the same caller and body
+- **WHEN** `query` differs and `name` also differs
+- **THEN** the save is refused with 403 naming `name` only
+- @e2e exclude {as above}
+
+#### Scenario: a reordered share list is not a change
+
+- **GIVEN** a view whose `sharedWith` holds two shares, and a `write` member
+- **WHEN** they save the same two shares in the opposite order
+- **THEN** the save is not refused on `sharedWith`
+- @e2e exclude {value comparison is a unit test on the diff helper}
+
+#### Scenario: a pagination key on the body refuses nothing
+
+- **GIVEN** a `write` member saving an unchanged view with `_limit` on the body
+- **WHEN** the endpoint judges the change
+- **THEN** nothing is refused
+- @e2e exclude {as above}
+
+### Requirement: REQ-QTYPE-001 A saved view can back a read-only record type
+
+A schema that declares `x-openregister-view: {"view": "<view id or uuid>"}` SHALL return the rows of that view's query as its objects: the view's one source register and schema, its facet filters and its search terms, narrowed by the caller's own filters and never widened by them, with the reader's access to the source rows still applied. Create, update and delete on it SHALL answer 405 with `SCHEMA_READ_ONLY`.
+
+#### Scenario: the type lists what the query finds
+
+- **GIVEN** a view "active permits" over schema `permit` filtering `status=active`, and a schema `active-permit` backed by it
+- **WHEN** a client lists objects of `active-permit`
+- **THEN** the result holds exactly the active permits
+- @e2e exclude {the query hand-over to the source table is asserted in tests/Unit/Service/ViewBackedTypeTest.php testTheTypeListsWhatTheQueryFinds; live-check recipe in the PR}
+
+#### Scenario: the type is read-only
+
+- **GIVEN** the same schema
+- **WHEN** a client posts an object to it
+- **THEN** the API answers 405
+- @e2e exclude {asserted through ObjectService in tests/Unit/Service/ViewBackedTypeTest.php testCreatingAnObjectOfTheTypeIsRefusedAs405}

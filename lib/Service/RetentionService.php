@@ -39,14 +39,18 @@ namespace OCA\OpenRegister\Service;
 use DateInterval;
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Service\Archival\LegalHoldLedger;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Archival\Appraisal;
 use OCA\OpenRegister\Service\Archival\ArchiveActionDateCalculator;
+use OCA\OpenRegister\Service\Archival\ClassificationOverride;
 use OCA\OpenRegister\Service\Archival\RecordState;
 use OCA\OpenRegister\Service\Archival\RetentionRowScanner;
 use OCA\OpenRegister\Service\Archival\SelectielijstResolver;
@@ -69,6 +73,16 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class RetentionService {
+
+	/**
+	 * Why a destruction rule refused an object (destructionRefusal()).
+	 */
+	public const REFUSAL_NOT_NOMINATED = 'not_nominated_for_destruction';
+	public const REFUSAL_NOT_LIVE = 'record_not_live';
+	public const REFUSAL_NOT_DUE = 'action_date_not_reached';
+	public const REFUSAL_FROZEN = 'record_frozen';
+	public const REFUSAL_LEGAL_HOLD = 'legal_hold';
+	public const REFUSAL_ALREADY_LISTED = 'already_on_a_list';
 
 	/**
 	 * Valid archiefnominatie values.
@@ -159,13 +173,20 @@ class RetentionService {
 			return $object;
 		}
 
-		$applied = $this->resolveArchivalDefaults(archiveConfig: $archiveConfig);
+		// The schema's category, unless this record names its own through the
+		// property the schema declares for that (DECISIONS row 48).
+		$classification = (new ClassificationOverride())->effective(
+			archive: $archiveConfig,
+			data: ($object->getObject() ?? [])
+		);
+
+		$applied = $this->resolveArchivalDefaults(archiveConfig: $archiveConfig, classification: $classification);
 		$retentionPeriod = $applied['bewaartermijn'];
 
 		// Build archival metadata.
 		$retention['archiefnominatie'] = $applied['archiefnominatie'];
 		$retention['archiefstatus'] = RecordState::ACTIVE;
-		$retention['classification'] = ($archiveConfig['classification'] ?? null);
+		$retention['classification'] = $classification;
 		$retention['bewaartermijn'] = $retentionPeriod;
 		$retention['selectielijstBron'] = $applied['selectielijstBron'];
 
@@ -202,13 +223,14 @@ class RetentionService {
 	 * schema's explicit `bewaartermijnOverride`, which wins over both because
 	 * it is a deliberate local decision rather than a fallback.
 	 *
-	 * @param array $archiveConfig The schema's archive block
+	 * @param array       $archiveConfig  The schema's archive block
+	 * @param string|null $classification The record's effective category
 	 *
 	 * @return array{archiefnominatie: string, bewaartermijn: string|null, selectielijstBron: string|null, provenance: array<string, string>}
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	private function resolveArchivalDefaults(array $archiveConfig): array {
+	private function resolveArchivalDefaults(array $archiveConfig, ?string $classification): array {
 		$applied = [
 			'archiefnominatie' => ($archiveConfig['defaultNominatie'] ?? 'nog_niet_bepaald'),
 			'bewaartermijn' => ($archiveConfig['defaultBewaartermijn'] ?? null),
@@ -216,7 +238,6 @@ class RetentionService {
 			'provenance' => [],
 		];
 
-		$classification = $archiveConfig['classification'] ?? null;
 		$entry = null;
 		if ($classification !== null) {
 			$entry = $this->listResolver->entryFor(category: $classification);
@@ -242,6 +263,84 @@ class RetentionService {
 
 
 
+
+	/**
+	 * Refuse a record whose category override names no selectielijst row.
+	 *
+	 * @param Schema               $schema The record's schema
+	 * @param array<string, mixed> $data   The record's data as it will be stored
+	 *
+	 * @return void
+	 *
+	 * @throws ValidationException When the override is not text or matches no selectielijst row
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function guardClassificationOverride(Schema $schema, array $data): void {
+		$override = new ClassificationOverride();
+		$override->guard(
+			property: $override->propertyOf(archive: ($schema->getArchive() ?? []), configuration: ($schema->getConfiguration() ?? [])),
+			data: $data,
+			resolver: $this->listResolver
+		);
+	}//end guardClassificationOverride()
+
+	/**
+	 * Follow a changed category override on an update.
+	 *
+	 * A record that is still active is re-derived from its new category. A
+	 * record already nominated at its terminal state keeps that decision:
+	 * changing its category is refused, because re-nominating it is the
+	 * explicit recompute's job, which records who asked and why.
+	 *
+	 * Only a change of the override itself counts: an edit that leaves it
+	 * alone never re-derives or refuses, even when the schema's own category
+	 * has moved since the record was created.
+	 *
+	 * @param ObjectEntity         $object       The record, with its updated data
+	 * @param Schema               $schema       Its schema
+	 * @param array<string, mixed> $previousData The record's data before this update
+	 *
+	 * @return ObjectEntity The record, re-derived when its category changed
+	 *
+	 * @throws ObjectStateWriteException When a nominated record's category changes
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function applyClassificationOnUpdate(ObjectEntity $object, Schema $schema, array $previousData): ObjectEntity {
+		$archive  = ($schema->getArchive() ?? []);
+		$override = new ClassificationOverride();
+		$property = $override->propertyOf(archive: $archive, configuration: ($schema->getConfiguration() ?? []));
+		if (($archive['enabled'] ?? false) !== true || $property === null) {
+			return $object;
+		}
+
+		$data      = ($object->getObject() ?? []);
+		$retention = ($object->getRetention() ?? []);
+		$effective = $override->effective(archive: $archive, data: $data, configuration: ($schema->getConfiguration() ?? []));
+		if ($override->requested(property: $property, data: $data) === $override->requested(property: $property, data: $previousData)) {
+			return $object;
+		}
+
+		$this->guardClassificationOverride(schema: $schema, data: $data);
+		if ($effective === ($retention['classification'] ?? null)) {
+			return $object;
+		}
+
+		$live = in_array(($retention['archiefstatus'] ?? RecordState::ACTIVE), RecordState::ACTIVE_ALIASES, true);
+		if ($live === false || isset($retention['nomination']) === true) {
+			throw new ObjectStateWriteException(
+				message: 'Cannot change the selectielijst category to "' . (string)$effective
+					. '": this record was already nominated under "' . (string)($retention['classification'] ?? '')
+					. '". Recompute its nomination instead.'
+			);
+		}
+
+		unset($retention['archiefnominatie'], $retention['archiefactiedatum'], $retention['selectielijstBron']);
+		$object->setRetention($retention);
+
+		return $this->applyArchivalMetadata(object: $object, schema: $schema);
+	}//end applyClassificationOnUpdate()
 
 	/**
 	 * Calculate archiefactiedatum based on the schema's afleidingswijze.
@@ -411,30 +510,31 @@ class RetentionService {
 	/**
 	 * Place a legal hold on an object.
 	 *
-	 * @param ObjectEntity $object The object to place hold on
-	 * @param string $reason The reason for the legal hold
+	 * @param ObjectEntity $object   The object to place hold on
+	 * @param string       $reason   The reason for the legal hold
+	 * @param string|null  $ownerKey The matter placing or releasing its own hold; null for a manual hold, or to release every hold.
 	 *
 	 * @return ObjectEntity The object with legal hold applied
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function placeLegalHold(ObjectEntity $object, string $reason): ObjectEntity {
-		$retention = $object->getRetention() ?? [];
+	public function placeLegalHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
 		$user = $this->userSession->getUser();
 		$userId = 'system';
 		if ($user !== null) {
 			$userId = $user->getUID();
 		}
 
-		$retention['legalHold'] = [
-			'active' => true,
-			'reason' => $reason,
-			'placedBy' => $userId,
-			'placedDate' => (new DateTime())->format('c'),
-			'history' => $retention['legalHold']['history'] ?? [],
-		];
-
-		$object->setRetention($retention);
+		// One hold per matter, the same ledger LegalHoldService writes (#4172).
+		$object->setRetention(
+			(new LegalHoldLedger())->place(
+				retention: ($object->getRetention() ?? []),
+				reason: $reason,
+				ownerKey: $ownerKey,
+				userId: $userId,
+				now: (new DateTime())->format('c')
+			)
+		);
 
 		return $object;
 	}//end placeLegalHold()
@@ -442,18 +542,18 @@ class RetentionService {
 	/**
 	 * Release a legal hold on an object.
 	 *
-	 * @param ObjectEntity $object The object to release hold from
-	 * @param string $reason The reason for releasing the hold
+	 * @param ObjectEntity $object   The object to release hold from
+	 * @param string       $reason   The reason for releasing the hold
+	 * @param string|null  $ownerKey The matter placing or releasing its own hold; null for a manual hold, or to release every hold.
 	 *
 	 * @return ObjectEntity The object with legal hold released
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	public function releaseLegalHold(ObjectEntity $object, string $reason): ObjectEntity {
+	public function releaseLegalHold(ObjectEntity $object, string $reason, ?string $ownerKey = null): ObjectEntity {
 		$retention = $object->getRetention() ?? [];
-		$legalHold = $retention['legalHold'] ?? null;
-
-		if ($legalHold === null || ($legalHold['active'] ?? false) === false) {
+		$ledger = new LegalHoldLedger();
+		if ($ledger->activeHolds(retention: $retention) === []) {
 			return $object;
 		}
 
@@ -463,25 +563,15 @@ class RetentionService {
 			$userId = $user->getUID();
 		}
 
-		// Move current hold to history.
-		$historyEntry = [
-			'reason' => $legalHold['reason'] ?? '',
-			'placedBy' => $legalHold['placedBy'] ?? '',
-			'placedDate' => $legalHold['placedDate'] ?? '',
-			'releasedBy' => $userId,
-			'releasedDate' => (new DateTime())->format('c'),
-			'releaseReason' => $reason,
-		];
-
-		$history = $legalHold['history'] ?? [];
-		$history[] = $historyEntry;
-
-		$retention['legalHold'] = [
-			'active' => false,
-			'history' => $history,
-		];
-
-		$object->setRetention($retention);
+		$object->setRetention(
+			$ledger->release(
+				retention: $retention,
+				ownerKey: $ownerKey,
+				releaseReason: $reason,
+				userId: $userId,
+				now: (new DateTime())->format('c')
+			)
+		);
 
 		return $object;
 	}//end releaseLegalHold()
@@ -603,27 +693,46 @@ class RetentionService {
 	 * @param array        $excludeUuids UUIDs already on a pending destruction list.
 	 *
 	 * @return bool True when every destruction rule is satisfied.
+	 */
+	private function isEligibleForDestruction(ObjectEntity $object, string $today, array $excludeUuids): bool {
+		return $this->destructionRefusal(object: $object, today: $today, excludeUuids: $excludeUuids) === null;
+	}//end isEligibleForDestruction()
+
+	/**
+	 * The first destruction rule that refuses one object, or null when none does.
+	 *
+	 * The one rule, read by the daily sweep (through isEligibleForDestruction())
+	 * and by an app that asks for a list of its own (DestructionListCreator),
+	 * so the two cannot drift apart.
+	 *
+	 * @param ObjectEntity $object       The object to judge.
+	 * @param string       $today        Today, as Y-m-d.
+	 * @param array        $excludeUuids UUIDs already on a pending destruction list.
+	 *
+	 * @return string|null One of the REFUSAL_* reasons, or null when the object may be destroyed.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One rule per branch; collapsing
 	 *              them would hide which rule rejected an object.
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
-	private function isEligibleForDestruction(ObjectEntity $object, string $today, array $excludeUuids): bool {
+	public function destructionRefusal(ObjectEntity $object, string $today, array $excludeUuids): ?string {
 		$retention = ($object->getRetention() ?? []);
 
 		// Every spelling that means destroy. Matching only the English one
 		// would make every pre-existing record invisible to this sweep, which
 		// is the direction that keeps personal data past its lawful term.
 		if (in_array(($retention['archiefnominatie'] ?? ''), Appraisal::DESTROY_ALIASES, true) === false) {
-			return false;
+			return self::REFUSAL_NOT_NOMINATED;
 		}
 
 		if ($this->recordStateIsLive(retention: $retention) === false) {
-			return false;
+			return self::REFUSAL_NOT_LIVE;
 		}
 
 		$actiedatum = ($retention['archiefactiedatum'] ?? null);
 		if ($actiedatum === null || $actiedatum > $today) {
-			return false;
+			return self::REFUSAL_NOT_DUE;
 		}
 
 		// Skip objects in an immutable archival status (destroyed, transferred).
@@ -636,15 +745,19 @@ class RetentionService {
 		// a new state counts as live, this line is what stops a transferred
 		// record being swept while nobody is looking at this method.
 		if ($this->validateNotImmutable(object: $object) !== null) {
-			return false;
+			return self::REFUSAL_FROZEN;
 		}
 
 		if ((($retention['legalHold'] ?? [])['active'] ?? false) === true) {
-			return false;
+			return self::REFUSAL_LEGAL_HOLD;
 		}
 
-		return (in_array($object->getUuid(), $excludeUuids, true) === false);
-	}//end isEligibleForDestruction()
+		if (in_array($object->getUuid(), $excludeUuids, true) === true) {
+			return self::REFUSAL_ALREADY_LISTED;
+		}
+
+		return null;
+	}//end destructionRefusal()
 
 	/**
 	 * Is this record still live, for the purposes of a disposal sweep?

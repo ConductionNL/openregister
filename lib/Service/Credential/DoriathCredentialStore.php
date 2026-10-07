@@ -176,7 +176,7 @@ class DoriathCredentialStore implements CredentialStore {
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
-	public function put(string $uuid, string $secret, string $scope = 'personal'): void {
+	public function put(string $uuid, #[\SensitiveParameter] string $secret, string $scope = 'personal'): void {
 		$applicationId = $this->requireApplicationId();
 
 		$publicPem = $this->appConfig->getValueString('openregister', self::APP_CONFIG_PUBLIC_KEY_PEM, '');

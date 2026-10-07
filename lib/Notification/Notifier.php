@@ -226,6 +226,9 @@ class Notifier implements INotifier {
 			'destruction_holds_skipped' => $this->prepareDestructionHoldsSkipped(...),
 			'destruction_review_pending' => $this->prepareDestructionReviewPending(...),
 			'timeline_mention' => $this->prepareTimelineMention(...),
+			'object_ownership_changed' => $this->prepareOwnershipChanged(...),
+			'security_setting_changed' => $this->prepareSecuritySettingChanged(...),
+			'view_alert_crossed' => $this->prepareViewAlertCrossed(...),
 			default => null,
 		};
 
@@ -237,11 +240,98 @@ class Notifier implements INotifier {
 	}//end prepare()
 
 	/**
-	 * Render "somebody named you in a note".
+	 * Render "a security setting changed".
+	 *
+	 * WITHOUT THIS CASE THE ANNOUNCEMENT NEVER RENDERS: an unknown subject
+	 * throws out of prepare(), so the beheerteam would be told nothing at the
+	 * one moment REQ-ATS-004 exists for.
+	 *
+	 * A secret takes the other branch and NEITHER value is shown. It is not
+	 * masked here: the announcer never puts a secret in the parameters at all,
+	 * because Nextcloud stores those in its database and can mail them.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/enhanced-audit-trail/spec.md
+	 */
+	private function prepareSecuritySettingChanged(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$label = (string) ($parameters['label'] ?? ($parameters['setting'] ?? ''));
+		$actor = (string) ($parameters['actor'] ?? '');
+
+		$notification->setParsedSubject($l->t('A security setting changed: %1$s', [$label]));
+
+		if (($parameters['secret'] ?? false) === true) {
+			$notification->setParsedMessage(
+				$l->t(
+					'%1$s changed %2$s. It holds a secret, so neither value is shown here. Open the settings and put it back if nobody planned this.',
+					[$actor, $label]
+				)
+			);
+		}
+
+		if (($parameters['secret'] ?? false) !== true) {
+			$notification->setParsedMessage(
+				$l->t(
+					'%1$s changed %2$s from "%3$s" to "%4$s". Open the settings and put it back if nobody planned this.',
+					[$actor, $label, (string) ($parameters['oldValue'] ?? ''), (string) ($parameters['newValue'] ?? '')]
+				)
+			);
+		}
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareSecuritySettingChanged()
+
+	/**
+	 * Render "a record you owned changed hands".
 	 *
 	 * WITHOUT THIS CASE THE NOTIFICATION NEVER RENDERS: an unknown subject
-	 * throws out of prepare(), so the mention would subscribe the colleague
-	 * and tell them nothing.
+	 * throws out of prepare(), so the previous owner would be told nothing — which
+	 * is the silent handover this capability exists to fix.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	private function prepareOwnershipChanged(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$objectTitle = (string) ($parameters['objectTitle'] ?? '');
+		$newOwner = (string) ($parameters['newOwner'] ?? '');
+
+		$notification->setParsedSubject($l->t('A record you owned changed hands'));
+
+		$notification->setParsedMessage(
+			$l->t(
+				'%1$s is now the owner of "%2$s". You are no longer answerable for it. Ask them if that was not the plan.',
+				[$this->displayName(uid: $newOwner), $objectTitle]
+			)
+		);
+
+		if ($newOwner === '') {
+			$notification->setParsedMessage(
+				$l->t('"%1$s" has a new owner. You are no longer answerable for it.', [$objectTitle])
+			);
+		}
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareOwnershipChanged()
+
+	/**
+	 * Render "somebody named you in a note".
 	 *
 	 * @param INotification $notification The notification to prepare
 	 * @param mixed $l The localization instance
@@ -513,7 +603,7 @@ class Notifier implements INotifier {
 	 *
 	 * @return INotification The prepared notification.
 	 *
-	 * @spec openspec/changes/credential-oauth2-token-set/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
+	 * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-an-invalid-grant-moves-the-credential-to-relink-needed-and-fails-closed
 	 */
 	private function prepareCredentialRelinkNeeded(INotification $notification, $l): INotification {
 		$provider = (string)($notification->getSubjectParameters()['provider'] ?? '');
@@ -676,7 +766,6 @@ class Notifier implements INotifier {
 	 * @return INotification The prepared notification
 	 *
 	 * @spec openspec/specs/scheduled-report-jobs/spec.md
-	 * @spec openspec/specs/scheduled-report-jobs/spec.md
 	 */
 	private function prepareScheduledReportDelivered(INotification $notification, $l): INotification {
 		$parameters = $notification->getSubjectParameters();
@@ -762,4 +851,41 @@ class Notifier implements INotifier {
 
 		return $notification;
 	}//end prepareScheduledReportFailed()
+
+	/**
+	 * Render "a saved view's count crossed its threshold".
+	 *
+	 * The sentence says which side of the line the count is on, because a
+	 * team lead watching a backlog grow and a planner watching free beds run
+	 * out read the same numbers in opposite directions.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/changes/saved-view-count-alert/specs/saved-search-views/spec.md#requirement-a-view-alert-fires-once-per-crossing-and-re-arms
+	 */
+	private function prepareViewAlertCrossed(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+
+		$view = (string)($parameters['view'] ?? '');
+		$count = (string)($parameters['count'] ?? '');
+		$threshold = (string)($parameters['threshold'] ?? '');
+
+		$notification->setParsedSubject($l->t('%1$s is at %2$s', [$view, $count]));
+
+		$message = $l->t('The view %1$s counts %2$s, at or below its threshold of %3$s.', [$view, $count, $threshold]);
+		if (($parameters['operator'] ?? '') === 'gte') {
+			$message = $l->t('The view %1$s counts %2$s, at or above its threshold of %3$s.', [$view, $count, $threshold]);
+		}
+
+		$notification->setParsedMessage($message);
+
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareViewAlertCrossed()
 }//end class

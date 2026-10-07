@@ -44,6 +44,7 @@ use OCA\OpenRegister\Event\ReferenceValidatedEvent;
 use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
 use OCA\OpenRegister\Exception\CircularReferenceException;
 use OCA\OpenRegister\Exception\LockedException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\DuplicateBlockedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ObjectStateWriteException;
@@ -78,7 +79,9 @@ use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration;
 use RuntimeException;
+use Throwable;
 use Symfony\Component\Uid\Uuid;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
@@ -3449,7 +3452,7 @@ class SaveObject {
 	 *
 	 * @return UniqueHintChecker|null The checker, or null when unavailable.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	private function resolveUniqueHintChecker(): ?UniqueHintChecker {
 		if ($this->container === null) {
@@ -3485,7 +3488,7 @@ class SaveObject {
 	 *
 	 * @return DedupCreatePolicy|null The policy, or null when unavailable.
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	private function resolveDedupCreatePolicy(): ?DedupCreatePolicy {
 		if ($this->container === null) {
@@ -3801,6 +3804,18 @@ class SaveObject {
 			currentUser: $currentUser
 		);
 
+		// A record that changes its own selectielijst category (DECISIONS row
+		// 48) is refused when that category has no row, re-derived while it is
+		// still active, and refused once it has been nominated.
+		$retentionService = $this->resolveRetentionService();
+		if ($retentionService !== null) {
+			$preparedObject = $retentionService->applyClassificationOnUpdate(
+				object: $preparedObject,
+				schema: $schema,
+				previousData: ($oldObjectData ?? [])
+			);
+		}
+
 		// If not persisting, return the prepared object. Nothing reached
 		// storage, so from a batching caller's point of view the row changed
 		// nothing.
@@ -3910,6 +3925,14 @@ class SaveObject {
 		// Apply archival metadata from schema archive configuration.
 		$retentionService = $this->resolveRetentionService();
 		if ($retentionService !== null) {
+			// Outside the try below on purpose: a per-object selectielijst
+			// category that names no row is the caller's error, and must be
+			// refused rather than logged and ignored.
+			$retentionService->guardClassificationOverride(
+				schema: $schema,
+				data: ($preparedObject->getObject() ?? [])
+			);
+
 			try {
 				$preparedObject = $retentionService->applyArchivalMetadata($preparedObject, $schema);
 			} catch (\Throwable $e) {
@@ -4412,6 +4435,22 @@ class SaveObject {
 			incoming: $data
 		);
 
+		// A property the writer may not read was stripped from what they were
+		// shown, so omitting it is not a request to clear it: it is carried
+		// forward the same way (openregister#4170).
+		$omittedWriteOnly = array_values(
+			array_unique(
+				array_merge(
+					$omittedWriteOnly,
+					$this->propertyRbacHandler->collectOmittedUnreadableProperties(
+						schema: $schema,
+						incoming: $data,
+						stored: ($oldData ?? [])
+					)
+				)
+			)
+		);
+
 		// Prepare the data.
 		$preparedData = $this->prepareObjectData(objectEntity: $existingObject, schema: $schema, data: $data);
 
@@ -4504,6 +4543,7 @@ class SaveObject {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple optional metadata fields with validation
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
 	 */
 	private function setSelfMetadata(
 		ObjectEntity $objectEntity,
@@ -4527,6 +4567,14 @@ class SaveObject {
 		// - For background / system contexts (no IUserSession user) applyOwnerAttribution
 		// only fills in owner when it is empty, so a client-supplied value would
 		// persist — that is the actual attack vector closed by this change.
+		//
+		// SILENTLY DROPPING IT IS NOT ENOUGH. A write that asks for an owner it
+		// may not have was accepted with a 2xx and a different owner stored, so
+		// the caller was told its request succeeded when the one thing it asked
+		// for did not happen. It is now REFUSED, and the refusal names the
+		// endpoint that does change an owner. See refuseOwnerClaim().
+		$this->refuseOwnerClaim(objectEntity: $objectEntity, selfData: $selfData);
+
 		// SECURITY (wave-11 SB1 / wave-12 Fix 3): organisation must only be accepted from
 		// @self when the caller is an admin or has verified membership in that organisation.
 		// Blindly applying a client-supplied organisation UUID allows any authenticated
@@ -4569,7 +4617,16 @@ class SaveObject {
 			// strings (e.g. "42.5", "4e2", "+42") don't slip through and then
 			// get `(int)`-truncated to a *different* node than was validated.
 			// Legacy non-numeric values fall through to the auto-create path.
-			if (ctype_digit($folderValue) === true) {
+			// A payload that echoes the folder the object already has is not a
+			// bind: the stored value was written by OpenRegister and is
+			// re-validated as a managed folder in ensureObjectFolder(). Asking
+			// the caller-supplied question here refused every editor, because a
+			// managed folder sits in the openregister account's home and in
+			// nobody's own mount.
+			$storedFolder = (string)($objectEntity->getFolder() ?? '');
+			$isUnchanged = ($storedFolder !== '' && $storedFolder === $folderValue);
+
+			if (ctype_digit($folderValue) === true && $isUnchanged === false) {
 				// Pass `$currentUser` through so the access check uses the
 				// SAME user identity that the downstream
 				// `createObjectFolderById` check uses on the lazy-init path.
@@ -4615,6 +4672,69 @@ class SaveObject {
 		// Therefore: strip @self.tmlo entirely here; let populateTmloDefaults() own it.
 		// (No setTmlo() call — the field is intentionally omitted).
 	}//end setSelfMetadata()
+
+	/**
+	 * Refuse a write that asks for an owner the acting user may not take.
+	 *
+	 * OWNERSHIP IS DERIVED FROM THE AUTHENTICATED ACTOR, NEVER CLAIMED BY A
+	 * CALLER. A caller that can set the owner can grant itself edit rights on
+	 * somebody else's record, because the owner is admitted unconditionally by
+	 * every enforcement path. So an ordinary save cannot move the owner, and a
+	 * save that tries is refused rather than quietly accepted: the previous
+	 * behaviour answered 2xx while storing a different owner, which reads as
+	 * success and is not.
+	 *
+	 * WHAT IS ALLOWED THROUGH, and why each one has to be:
+	 *
+	 *  - A value equal to the ACTING USER. Nothing moves, so there is nothing to
+	 *    refuse.
+	 *  - A value equal to the STORED owner. Every read emits `@self.owner`, so the
+	 *    ordinary GET-edit-PUT round trip sends it straight back; refusing that
+	 *    would break every consuming app for asking for no change at all.
+	 *  - A NON-STRING value. A read can render the owner as an expanded user
+	 *    object, and sending that back is the same echo as above.
+	 *  - ANY value when there is no session user. A background job, an import or a
+	 *    migration has no acting user to derive an owner from, and the owner it
+	 *    carries is the one being restored. This path is unauthenticated by
+	 *    construction and is not reachable from a request.
+	 *
+	 * @param ObjectEntity $objectEntity The entity being written; its stored owner on an update, empty on a create.
+	 * @param array $selfData The caller's `@self` block.
+	 *
+	 * @throws NotAuthorizedException When the write asks for a different owner.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/object-ownership/spec.md
+	 */
+	private function refuseOwnerClaim(ObjectEntity $objectEntity, array $selfData): void {
+		if (array_key_exists('owner', $selfData) === false) {
+			return;
+		}
+
+		$requested = $selfData['owner'];
+		if (is_string($requested) === false || $requested === '') {
+			return;
+		}
+
+		$actor = $this->userSession->getUser()?->getUID();
+		if ($actor === null) {
+			return;
+		}
+
+		if ($requested === $actor) {
+			return;
+		}
+
+		$stored = $objectEntity->getOwner();
+		if ($stored !== null && $stored !== '' && $requested === $stored) {
+			return;
+		}
+
+		throw new NotAuthorizedException(
+			message: 'An owner cannot be set through a save. Use the ownership endpoint to hand a record over.'
+		);
+	}//end refuseOwnerClaim()
 
 	/**
 	 * Resolve whether the current session user is in the admin group.
@@ -4849,6 +4969,18 @@ class SaveObject {
 						schemaRef: $ref,
 						register: $targetRegister
 					);
+
+					// And it has to be one the picker would have offered.
+					// Costs nothing for a property that declares no filter:
+					// the reader returns null before any read is made.
+					$this->assertReferenceMatchesFilter(
+						propertyName: $propertyName,
+						property: $property,
+						record: $data,
+						uuid: (string)$uuid,
+						schemaRef: $ref,
+						register: $targetRegister
+					);
 				} catch (ReferenceValidationException $exception) {
 					// Strict mode (`error`) re-raises the 422 so the save
 					// is rejected. `warn` mode swallows the exception
@@ -5063,6 +5195,187 @@ class SaveObject {
 	 * @throws ValidationException If the referenced object does not exist (HTTP 422).
 	 *
 	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+	 */
+	/**
+	 * Refuse a reference the narrowing filter would not have offered.
+	 *
+	 * 🔴 IT CALLS THE SAME `resolve()` THE OPTIONS READ WILL, and that is the
+	 * whole design rather than a tidiness note. A picker that offers one set
+	 * and a save path that accepts another is two evaluators of one rule, and
+	 * they disagree within a week; the one that ends up wider is the one that
+	 * discloses. `ReferenceFilterDeclaration` is the single reader and the
+	 * single resolver, and this method only compares.
+	 *
+	 * 🔴 AN UNRESOLVED OPERAND REFUSES, IT DOES NOT WAVE THROUGH. When the
+	 * record has no organisation yet, the picker would have offered NOTHING,
+	 * so no value can be inside the filter and every value has to be refused.
+	 * Waving it through would make the server accept precisely the writes the
+	 * form was built to prevent, which is the "no options becomes every option"
+	 * failure one layer down.
+	 *
+	 * COST. A property declaring no filter costs one array lookup:
+	 * `fromProperty()` returns null before anything is read. Only a filtered
+	 * reference pays for the extra object read, and only for the values that
+	 * changed, because the caller already skipped unchanged ones.
+	 *
+	 * @param string              $propertyName The property carrying the reference.
+	 * @param array<string,mixed> $property     The property definition.
+	 * @param array<string,mixed> $record       The record being written.
+	 * @param string              $uuid         The referenced object.
+	 * @param string              $schemaRef    The referenced schema.
+	 * @param string|null         $register     The register to look in.
+	 *
+	 * @return void
+	 *
+	 * @throws ReferenceValidationException When the value is outside the filter.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md#requirement-a-reference-property-may-narrow-its-choices-with-a-query-over-the-record-req-fuc-003
+	 */
+	private function assertReferenceMatchesFilter(
+		string $propertyName,
+		array $property,
+		array $record,
+		string $uuid,
+		string $schemaRef,
+		?string $register,
+	): void {
+		$declaration = ReferenceFilterDeclaration::fromProperty(property: $property, path: $propertyName);
+		if ($declaration === null) {
+			return;
+		}
+
+		$answer = $declaration->resolve(record: $record);
+
+		if ($answer['needs'] !== []) {
+			throw new ReferenceValidationException(
+				propertyName: $propertyName,
+				referencedUuid: $uuid,
+				targetSchemaSlug: $schemaRef,
+				targetRegister: $register,
+				message: sprintf(
+					"'%s' is filtered on %s, and this record answers none of them, so nothing may be chosen for it yet.",
+					$propertyName,
+					implode(', ', $answer['needs'])
+				)
+			);
+		}
+
+		$referenced = $this->readReferencedObject(
+			uuid: $uuid,
+			schemaRef: $schemaRef,
+			register: $register
+		);
+		if ($referenced === null) {
+			// Unreadable to this caller, or gone between the existence check
+			// and here. Existence is validateReferenceExists()'s question and
+			// it has already answered it; answering it again differently here
+			// would refuse a save for a reason this method cannot see.
+			return;
+		}
+
+		foreach ($answer['filter'] as $field => $expected) {
+			if ($this->filterFieldMatches(actual: ($referenced[$field] ?? null), expected: $expected) === true) {
+				continue;
+			}
+
+			throw new ReferenceValidationException(
+				propertyName: $propertyName,
+				referencedUuid: $uuid,
+				targetSchemaSlug: $schemaRef,
+				targetRegister: $register,
+				message: sprintf(
+					"'%s' only accepts an object whose '%s' matches this record. '%s' does not.",
+					$propertyName,
+					(string)$field,
+					$uuid
+				)
+			);
+		}
+	}//end assertReferenceMatchesFilter()
+
+	/**
+	 * One condition of a resolved filter, compared.
+	 *
+	 * @param mixed $actual   The referenced object's value.
+	 * @param mixed $expected The resolved expectation.
+	 *
+	 * @return bool True when it matches.
+	 */
+	private function filterFieldMatches(mixed $actual, mixed $expected): bool {
+		if (is_array($expected) === false) {
+			return ((string)$actual === (string)$expected);
+		}
+
+		if (array_key_exists('neq', $expected) === true) {
+			return ((string)$actual !== (string)$expected['neq']);
+		}
+
+		if (array_key_exists('in', $expected) === true) {
+			$allowed = array_map('strval', (array)$expected['in']);
+
+			return in_array((string)$actual, $allowed, true);
+		}
+
+		// An operator this method does not know refuses, rather than passing.
+		// `ReferenceFilterDeclaration::OPERATORS` is the list, and a new entry
+		// there without an arm here would otherwise accept everything.
+		return false;
+	}//end filterFieldMatches()
+
+	/**
+	 * The referenced object as a plain array, or null when it cannot be read.
+	 *
+	 * @param string      $uuid      The object.
+	 * @param string      $schemaRef The schema it belongs to.
+	 * @param string|null $register  The register to look in.
+	 *
+	 * @return array<string,mixed>|null The object's data.
+	 */
+	private function readReferencedObject(string $uuid, string $schemaRef, ?string $register): ?array {
+		$targetSchemaId = $this->resolveSchemaReference(reference: $schemaRef);
+		if ($targetSchemaId === null) {
+			return null;
+		}
+
+		try {
+			$registerEntity = null;
+			if ($register !== null) {
+				$registerEntity = $this->getCachedRegister(registerId: $register);
+			}
+
+			$found = $this->unifiedObjectMapper->find(
+				identifier: $uuid,
+				register: $registerEntity,
+				schema: null,
+				includeDeleted: false,
+				_rbac: false,
+				_multitenancy: false
+			);
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		$data = $found->getObject();
+
+		if (is_array($data) === true) {
+			return $data;
+		}
+
+		return null;
+	}//end readReferencedObject()
+
+	/**
+	 * Refuse a reference that points at no object, or at a cycle.
+	 *
+	 * @param string $propertyName The property carrying the reference, named in the refusal.
+	 * @param string $uuid The referenced object's uuid.
+	 * @param string $schemaRef The schema the reference declares.
+	 * @param string|null $register The register to look in, or null for the object's own.
+	 *
+	 * @throws CircularReferenceException When the reference closes a cycle back onto an object being saved.
+	 * @throws ReferenceValidationException When the reference resolves to no stored object.
+	 *
+	 * @return void
 	 */
 	private function validateReferenceExists(
 		string $propertyName,

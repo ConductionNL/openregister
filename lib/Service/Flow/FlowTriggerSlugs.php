@@ -37,7 +37,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-trigger-canonical-slugs/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ use Throwable;
 /**
  * The one place an id, uuid or slug becomes the slug triggers match on.
  *
- * @spec openspec/changes/flow-trigger-canonical-slugs/specs/flow-engine/spec.md
+ * @spec openspec/specs/flow-engine/spec.md
  */
 class FlowTriggerSlugs {
 
@@ -85,7 +85,7 @@ class FlowTriggerSlugs {
 	 *
 	 * @return string The slug, or the trimmed identifier when it does not resolve.
 	 *
-	 * @spec openspec/changes/flow-trigger-canonical-slugs/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function registerSlug(string $identifier): string {
 		$identifier = trim($identifier);
@@ -120,7 +120,7 @@ class FlowTriggerSlugs {
 	 *
 	 * @return string The slug, or the trimmed identifier when it does not resolve.
 	 *
-	 * @spec openspec/changes/flow-trigger-canonical-slugs/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	public function schemaSlug(string $identifier): string {
 		$identifier = trim($identifier);

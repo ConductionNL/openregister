@@ -28,6 +28,14 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler
+ * @uses \OCA\OpenRegister\Service\Schemas\CodedChoiceDeclaration
+ * @uses \OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration
+ * @uses \OCA\OpenRegister\Service\Schemas\PropertySourceDeclaration
+ * @uses \OCA\OpenRegister\Service\Schemas\PropertyVocabularyException
+ * @uses \OCA\OpenRegister\Service\Schemas\ReferenceFilterDeclaration
+ * @uses \OCA\OpenRegister\Service\Schemas\RepeatingGroupDeclarationValidator
+ * @uses \OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration
+ * @uses \OCA\OpenRegister\Service\Vocabulary\CodedPropertyDeclarationFactory
  */
 final class RepeatingGroupDeclarationTest extends TestCase {
 

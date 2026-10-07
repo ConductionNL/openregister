@@ -34,10 +34,12 @@ namespace OCA\OpenRegister\Service;
 
 use Exception;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\OasValidationException;
-use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
+use OCA\OpenRegister\Service\Oas\OasRbacAnnotator;
 use OCA\OpenRegister\Service\Oas\OasRequestValidator;
+use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Oas\OasValidationReport;
 use OCP\IURLGenerator;
 use Psr\Log\LoggerInterface;
@@ -116,16 +118,36 @@ class OasService {
 	private OasValidationReport $report;
 
 	/**
-	 * NLGov-permitted HTTP methods on documented operations (API-01).
+	 * Standard HTTP methods an operation may use (NLGov API Design Rules 2.2.1).
+	 * Old numbering: API-01 here meant /core/http-methods, API-03 meant /core/http-response-code.
+	 * The rule table names GET, POST, PUT, PATCH and DELETE; HEAD and OPTIONS
+	 * are standard RFC 9110 methods the rule's note allows, so documenting them
+	 * is not a violation.
+	 *
+	 * @var list<string>
 	 */
-	private const ALLOWED_HTTP_METHODS = ['get', 'post', 'put', 'delete', 'parameters'];
+	private const ALLOWED_HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'];
 
 	/**
-	 * NLGov-permitted HTTP response status codes (API-03).
+	 * Path item keys that are not operations (OpenAPI 3.x Path Item Object).
+	 *
+	 * @var list<string>
+	 */
+	private const PATH_ITEM_FIELDS = ['parameters', 'summary', 'description', 'servers', '$ref'];
+
+	/**
+	 * NLGov-permitted HTTP response status codes (/core/http-response-code).
 	 *
 	 * @var list<string>
 	 */
 	private const ALLOWED_STATUS_CODES = ['200', '201', '204', '400', '401', '403', '404', '422', '500', 'default'];
+
+	/**
+	 * What the RBAC declarations mean for the document.
+	 *
+	 * @var OasRbacAnnotator
+	 */
+	private OasRbacAnnotator $rbacAnnotator;
 
 	/**
 	 * Constructor for OasService
@@ -135,6 +157,9 @@ class OasService {
 	 * @param IURLGenerator $urlGenerator URL generator for absolute URLs
 	 * @param LoggerInterface|null $logger PSR-3 logger for surfacing validation issues
 	 * @param ?OasRequestValidator $metaValidator Optional validator for the vendored OAS 3.1 meta-schema check.
+	 * @param PropertyRbacHandler|null $propertyRbac Withholds a property the caller may not read. Nullable and
+	 *                                               last so no construction site shifts; absent, a governed
+	 *                                               property is withheld, which is the safe direction.
 	 */
 	public function __construct(
 		RegisterMapper $registerMapper,
@@ -142,12 +167,21 @@ class OasService {
 		IURLGenerator $urlGenerator,
 		?LoggerInterface $logger = null,
 		private readonly ?OasRequestValidator $metaValidator = null,
+		// LAST AND NULLABLE so every existing construction keeps working. The
+		// container always supplies it; null happens only in a hand-built test,
+		// and then a GOVERNED property is withheld, which is the safe direction.
+		private readonly ?PropertyRbacHandler $propertyRbac = null,
 	) {
 		$this->registerMapper = $registerMapper;
 		$this->schemaMapper = $schemaMapper;
 		$this->urlGenerator = $urlGenerator;
 		$this->logger = $logger;
 		$this->report = new OasValidationReport();
+		$this->rbacAnnotator = new OasRbacAnnotator(
+			registerMapper: $registerMapper,
+			logger: $logger,
+			propertyRbac: $propertyRbac
+		);
 	}//end __construct()
 
 	/**
@@ -299,7 +333,7 @@ class OasService {
 		$schemaRbacMap = [];
 		$allGroups = [];
 		foreach ($schemas as $schemaId => $schema) {
-			$rbac = $this->extractSchemaGroups(schema: $schema);
+			$rbac = $this->rbacAnnotator->extractSchemaGroups(schema: $schema);
 			$schemaRbacMap[$schemaId] = $rbac;
 			$allGroups = array_merge(
 				$allGroups,
@@ -316,7 +350,7 @@ class OasService {
 
 		$scopes = [];
 		foreach ($allGroups as $group) {
-			$scopes[$group] = $this->getScopeDescription(group: $group);
+			$scopes[$group] = $this->rbacAnnotator->getScopeDescription(group: $group);
 		}
 
 		$this->oas['components']['securitySchemes']['oauth2']['flows']['authorizationCode']['scopes'] = $scopes;
@@ -426,176 +460,6 @@ class OasService {
 	}//end getBaseOas()
 
 	/**
-	 * Extract unique RBAC groups from schema-level and property-level authorization rules
-	 *
-	 * Collects groups from the schema's authorization field (CRUD-level access control)
-	 * and from individual property authorization rules (field-level access control).
-	 *
-	 * @param object $schema The schema object
-	 *
-	 * @return array{createGroups: string[], readGroups: string[], updateGroups: string[], deleteGroups: string[]}
-	 *                                                                                                             Unique groups per CRUD action
-	 *
-	 * @spec openspec/specs/deprecate-published-metadata/spec.md
-	 */
-	private function extractSchemaGroups(object $schema): array {
-		$createGroups = [];
-		$readGroups = [];
-		$updateGroups = [];
-		$deleteGroups = [];
-
-		// Step 1: Extract groups from effective authorization (schema-level, or register cascade).
-		$effectiveAuth = $this->resolveEffectiveAuthorization(schema: $schema);
-		if (is_array($effectiveAuth) === true && empty($effectiveAuth) === false) {
-			foreach (['create', 'read', 'update', 'delete'] as $action) {
-				foreach ($effectiveAuth[$action] ?? [] as $rule) {
-					// Skip 'manage' action -- it is not a CRUD action.
-					$group = $this->extractGroupFromRule(rule: $rule);
-					if ($group !== null) {
-						${$action . 'Groups'}[] = $group;
-					}
-				}
-			}
-		}
-
-		// Step 2: Extract groups from property-level authorization.
-		$properties = $schema->getProperties();
-		foreach ($properties ?? [] as $propertyDefinition) {
-			if (is_array($propertyDefinition) === false) {
-				continue;
-			}
-
-			$auth = $propertyDefinition['authorization'] ?? null;
-			if ($auth === null || is_array($auth) === false) {
-				continue;
-			}
-
-			foreach (['create', 'read', 'update', 'delete'] as $action) {
-				foreach ($auth[$action] ?? [] as $rule) {
-					$group = $this->extractGroupFromRule(rule: $rule);
-					if ($group !== null) {
-						${$action . 'Groups'}[] = $group;
-					}
-				}
-			}
-		}//end foreach
-
-		return [
-			'createGroups' => array_values(array_unique($createGroups)),
-			'readGroups' => array_values(array_unique($readGroups)),
-			'updateGroups' => array_values(array_unique($updateGroups)),
-			'deleteGroups' => array_values(array_unique($deleteGroups)),
-		];
-	}//end extractSchemaGroups()
-
-	/**
-	 * Extract group name from an authorization rule
-	 *
-	 * Rules can be either a plain string (group name) or an object with a 'group' key.
-	 *
-	 * @param mixed $rule The authorization rule (string or array)
-	 *
-	 * @return string|null The group name, or null if not extractable
-	 *
-	 * @spec openspec/specs/oas-generation/spec.md
-	 */
-	private function extractGroupFromRule($rule): ?string {
-		// Delegated so the OAS scope map, the configuration export and group
-		// provisioning all read an authorization rule the same way — a divergence
-		// here would mean OR advertises one scope set and enforces another.
-		return (new RbacGroupCollector())->groupFromRule(rule: $rule);
-	}//end extractGroupFromRule()
-
-	/**
-	 * Get a human-readable description for an OAuth2 scope based on group name
-	 *
-	 * @param string $group The Nextcloud group name
-	 *
-	 * @return string The scope description
-	 *
-	 * @spec openspec/specs/oas-generation/spec.md
-	 */
-	private function getScopeDescription(string $group): string {
-		if ($group === 'admin') {
-			return 'Full administrative access';
-		}
-
-		if ($group === 'public') {
-			return 'Public (unauthenticated) access';
-		}
-
-		return 'Access for ' . $group . ' group';
-	}//end getScopeDescription()
-
-	/**
-	 * Apply RBAC information to an operation
-	 *
-	 * Always includes `admin` since admin users have access to all endpoints.
-	 * Merges in any schema-specific groups for this CRUD action and:
-	 *  - appends a human-readable `**Required scopes:**` block to the operation
-	 *    description (Markdown rendered by Swagger UI / Redoc);
-	 *  - adds a 403 response definition pointing at the standard Error schema;
-	 *  - emits a per-operation OpenAPI 3.0 `security` requirement enumerating
-	 *    the groups as OAuth2 scopes alongside `basicAuth` as fallback. This
-	 *    makes the OAS a machine-readable access audit (see the Scope Audit
-	 *    requirement in the rbac-scopes spec) and lets generated client SDKs
-	 *    request the right scope set.
-	 *
-	 * The `security` block is OR-semantics across alternatives in the array
-	 * (per the OpenAPI 3.0 spec), so a caller can either present a Bearer token
-	 * with one of the listed oauth2 scopes OR fall back to Basic auth. The
-	 * registered Nextcloud OAuth2 scope vocabulary is populated globally from
-	 * the union of every schema's groups in createOas().
-	 *
-	 * @param array $operation The operation array (passed by reference)
-	 * @param string[] $groups The schema-specific groups that have access to this operation
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/oas-generation/spec.md
-	 */
-	private function applyRbacToOperation(array &$operation, array $groups): void {
-		// Admin always has access to every endpoint.
-		if (in_array('admin', $groups, true) === false) {
-			array_unshift($groups, 'admin');
-		}
-
-		// Deduplicate while preserving order — admin first, then schema groups.
-		$groups = array_values(array_unique($groups));
-
-		// Build scope list as inline code fragments.
-		$scopeList = implode(
-			', ',
-			array_map(
-				static function (string $group): string {
-					return '`' . $group . '`';
-				},
-				$groups
-			)
-		);
-
-		$operation['description'] .= "\n\n**Required scopes:** " . $scopeList;
-
-		// Add 403 response.
-		$operation['responses']['403'] = [
-			'description' => 'Forbidden — user does not have the required group membership for this action',
-			'content' => [
-				'application/json' => [
-					'schema' => ['$ref' => '#/components/schemas/Error'],
-				],
-			],
-		];
-
-		// Emit per-operation security requirement: oauth2 with the resolved
-		// scope set, OR basicAuth fallback. Two array entries = OR semantics
-		// in OpenAPI 3.0.
-		$operation['security'] = [
-			['oauth2' => $groups],
-			['basicAuth' => []],
-		];
-	}//end applyRbacToOperation()
-
-	/**
 	 * Extended endpoints that should be included in OAS generation
 	 * This whitelist ensures only stable, public-facing endpoints are documented
 	 *
@@ -640,16 +504,54 @@ class OasService {
 			],
 		];
 
-		// Process schema-defined properties and ensure they're valid OAS.
+		// 🔴 A FIELD NAME IS INFORMATION, AND THE GOVERNED NAMES ARE THE ONES
+		// WORTH PROTECTING. `onderzoek_integriteit`, `schuldhulpverlening`,
+		// `bijzondere_bijstand`: the name alone says what category of fact is
+		// held, and on a record about one person it says the fact is held about
+		// them. A property carries an authorization block or a scope precisely
+		// because it is sensitive, so the set of governed names is by
+		// construction the set most worth not printing.
+		//
+		// The objection is that a schema is a contract. It is smaller than it
+		// looks: the API NEVER returns a property this caller may not read, so
+		// describing it promises a field that will never arrive. Leaving it out
+		// makes the document MORE truthful, not less. It describes the API this
+		// caller actually has.
+		$withheld = 0;
 		foreach ($schemaProperties ?? [] as $propertyName => $propertyDefinition) {
+			if ($this->rbacAnnotator->mayDescribe(schema: $schema, property: (string)$propertyName) === false) {
+				$withheld++;
+				continue;
+			}
+
 			$cleanProperties[$propertyName] = $this->sanitizePropertyDefinition(propertyDefinition: $propertyDefinition);
 		}
 
-		return [
+		$described = [
 			'type' => 'object',
 			'x-tags' => [$schema->getTitle()],
 			'properties' => $cleanProperties,
 		];
+
+		// A `required` list naming a property this document does not describe is
+		// not a contract anyone can satisfy: a generated client would fail
+		// validation on a field it cannot even see.
+		$required = $this->rbacAnnotator->describableRequired(schema: $schema, described: $cleanProperties);
+		if ($required !== []) {
+			$described['required'] = $required;
+		}
+
+		if ($withheld > 0) {
+			// A COUNT, NEVER NAMES. Naming them here would be the leak with an
+			// audit trail attached. Saying nothing would be worse in its own
+			// way: an integrator reading four properties cannot tell whether
+			// that is the whole schema or the part they are allowed to see, and
+			// would build as though it were complete. The count says there is
+			// more here and it is not yours, without saying what.
+			$described['x-openregister-withheld-properties'] = $withheld;
+		}
+
+		return $described;
 	}//end enrichSchema()
 
 	/**
@@ -934,8 +836,8 @@ class OasService {
 		}
 
 		// Append RBAC group info to descriptions and add 403 responses.
-		$this->applyRbacToOperation(operation: $getCollection, groups: $rbac['readGroups'] ?? []);
-		$this->applyRbacToOperation(operation: $postOn, groups: $rbac['createGroups'] ?? []);
+		$this->rbacAnnotator->applyRbacToOperation(operation: $getCollection, groups: $rbac['readGroups'] ?? []);
+		$this->rbacAnnotator->applyRbacToOperation(operation: $postOn, groups: $rbac['createGroups'] ?? []);
 
 		$this->oas['paths'][$basePath] = [
 			'get' => $getCollection,
@@ -945,23 +847,27 @@ class OasService {
 		// Individual resource endpoints (tags are inside individual operations).
 		$getOn = $this->createGetOperation(schema: $schema);
 		$putOn = $this->createPutOperation(schema: $schema);
+		$patchOn = $this->createPatchOperation(schema: $schema);
 		$deleteOn = $this->createDeleteOperation(schema: $schema);
 
 		// Apply operationId prefix for uniqueness across registers.
 		if ($operationIdPrefix !== '') {
 			$getOn['operationId'] = $operationIdPrefix . $getOn['operationId'];
 			$putOn['operationId'] = $operationIdPrefix . $putOn['operationId'];
+			$patchOn['operationId'] = $operationIdPrefix . $patchOn['operationId'];
 			$deleteOn['operationId'] = $operationIdPrefix . $deleteOn['operationId'];
 		}
 
 		// Append RBAC group info to descriptions and add 403 responses.
-		$this->applyRbacToOperation(operation: $getOn, groups: $rbac['readGroups'] ?? []);
-		$this->applyRbacToOperation(operation: $putOn, groups: $rbac['updateGroups'] ?? []);
-		$this->applyRbacToOperation(operation: $deleteOn, groups: $rbac['deleteGroups'] ?? []);
+		$this->rbacAnnotator->applyRbacToOperation(operation: $getOn, groups: $rbac['readGroups'] ?? []);
+		$this->rbacAnnotator->applyRbacToOperation(operation: $putOn, groups: $rbac['updateGroups'] ?? []);
+		$this->rbacAnnotator->applyRbacToOperation(operation: $patchOn, groups: $rbac['updateGroups'] ?? []);
+		$this->rbacAnnotator->applyRbacToOperation(operation: $deleteOn, groups: $rbac['deleteGroups'] ?? []);
 
 		$this->oas['paths'][$basePath . '/{id}'] = [
 			'get' => $getOn,
 			'put' => $putOn,
+			'patch' => $patchOn,
 			'delete' => $deleteOn,
 		];
 	}//end addCrudPaths()
@@ -1472,6 +1378,42 @@ class OasService {
 	}//end createPutOperation()
 
 	/**
+	 * Create PATCH operation (partial update, objects#patch).
+	 *
+	 * Same path, response and errors as PUT, but only the fields sent change,
+	 * so the body is a JSON merge patch (RFC 7396) of the object and nothing in
+	 * it is required.
+	 *
+	 * @param object $schema The schema object
+	 *
+	 * @return array OpenAPI operation definition for PATCH.
+	 *
+	 * @spec openspec/specs/oas-validation/spec.md#scenario-standard-http-methods-documented-api-01
+	 */
+	private function createPatchOperation(object $schema): array {
+		$operation = $this->createPutOperation(schema: $schema);
+		$title = $schema->getTitle();
+
+		$operation['summary'] = 'Partially update a ' . $title . ' object';
+		$operation['operationId'] = 'patch' . $this->pascalCase(string: $title);
+		$operation['description'] = 'Change only the fields sent; fields left out keep their stored value';
+		$operation['parameters'][0]['description'] = 'Unique identifier of the ' . $title . ' object to patch';
+		$operation['requestBody'] = [
+			'required' => true,
+			'content' => [
+				'application/merge-patch+json' => [
+					'schema' => ['type' => 'object'],
+				],
+				'application/json' => [
+					'schema' => ['type' => 'object'],
+				],
+			],
+		];
+
+		return $operation;
+	}//end createPatchOperation()
+
+	/**
 	 * Create POST operation.
 	 *
 	 * @param object $schema The schema object
@@ -1487,7 +1429,7 @@ class OasService {
 			$schemaName = $schema->getTitle();
 		}
 
-		return [
+		$operation = [
 			'summary' => 'Create a new ' . $schema->getTitle() . ' object',
 			'operationId' => 'create' . $this->pascalCase(string: $schema->getTitle()),
 			'tags' => [$schema->getTitle()],
@@ -1524,7 +1466,62 @@ class OasService {
 				],
 			],
 		];
+
+		return $this->withUpsertOnKey(operation: $operation, schema: $schema);
 	}//end createPostOperation()
+
+	/**
+	 * Document `_upsertOn` on a POST when the schema declares a key that refuses duplicates.
+	 *
+	 * The parameter's `enum` lists the schema's `refuse` uniqueness constraints
+	 * (the legacy `unique` key named by its properties joined with `+`), the
+	 * only names the upsert accepts, and the statuses only the upsert answers
+	 * are added.
+	 *
+	 * @param array<string, mixed> $operation The POST operation.
+	 * @param object               $schema    The schema object.
+	 *
+	 * @return array<string, mixed> The operation, with the upsert documented when it applies.
+	 *
+	 * @spec openspec/changes/api-upsert-on-a-declared-key/specs/objects-crud/spec.md
+	 */
+	private function withUpsertOnKey(array $operation, object $schema): array {
+		if (method_exists($schema, 'getUpsertKeys') === false) {
+			return $operation;
+		}
+
+		$keys = $schema->getUpsertKeys();
+
+		if ($keys === []) {
+			return $operation;
+		}
+
+		$operation['parameters'][] = [
+			'name' => '_upsertOn',
+			'in' => 'query',
+			'required' => false,
+			'description' => 'Create or update by a key this schema declares unique: the record holding the key is updated (200), '
+				.'or created when none does (201). Needs a signed-in caller; cannot be combined with _failIfExists.',
+			'schema' => ['type' => 'string', 'enum' => $keys],
+		];
+
+		$error = ['application/json' => ['schema' => ['$ref' => '#/components/schemas/Error']]];
+		$operation['responses']['200'] = [
+			'description' => 'Upsert: the record holding the key was updated.',
+			'content' => $operation['responses']['201']['content'],
+		];
+		$operation['responses']['401'] = ['description' => 'Upsert: the caller is not signed in.', 'content' => $error];
+		$operation['responses']['409'] = [
+			'description' => 'Upsert: more than one record holds the key (the matches are listed), or a record you cannot change holds it.',
+			'content' => $error,
+		];
+		$operation['responses']['503'] = [
+			'description' => 'Upsert: the key could not be looked up or locked; nothing was written. Retry after the Retry-After seconds.',
+			'content' => $error,
+		];
+
+		return $operation;
+	}//end withUpsertOnKey()
 
 	/**
 	 * Create DELETE operation
@@ -1981,7 +1978,7 @@ class OasService {
 		// Pass 5: tag consistency — referenced tags must be defined; defined tags must be used.
 		$this->validateTagConsistency();
 
-		// Pass 6: NLGov rules — HTTP method whitelist (API-01) and status code whitelist (API-03).
+		// Pass 6: NLGov rules — /core/http-methods and /core/http-response-code whitelists.
 		$this->validateNlGovRules();
 
 		// Pass 7: Strict-mode meta-schema validation against the
@@ -2195,8 +2192,10 @@ class OasService {
 	 * NLGov API Design Rules — narrow checks that are verifiable from the
 	 * OAS document alone:
 	 *
-	 * - API-01: only GET, POST, PUT, DELETE on documented operations.
-	 * - API-03: only standard HTTP status codes on responses.
+	 * - /core/http-methods (API-03 in the 1.0 numbering): only standard HTTP
+	 *   methods on documented operations: GET, POST, PUT, PATCH, DELETE, and
+	 *   the RFC 9110 methods HEAD and OPTIONS.
+	 * - /core/http-response-code: only standard HTTP status codes on responses.
 	 *
 	 * @return void
 	 */
@@ -2206,6 +2205,7 @@ class OasService {
 		}
 
 		$allowedMethods = array_flip(self::ALLOWED_HTTP_METHODS);
+		$pathItemFields = array_flip(self::PATH_ITEM_FIELDS);
 		$allowedCodes = array_flip(self::ALLOWED_STATUS_CODES);
 
 		foreach ($this->oas['paths'] as $pathName => $pathItem) {
@@ -2215,8 +2215,12 @@ class OasService {
 
 			foreach ($pathItem as $method => $operation) {
 				$methodKey = strtolower((string)$method);
+				if (isset($pathItemFields[$methodKey]) === true) {
+					continue;
+				}
+
 				if (isset($allowedMethods[$methodKey]) === false) {
-					$reason = 'violates NLGov API-01 (only GET, POST, PUT, DELETE allowed).';
+					$reason = 'violates NLGov /core/http-methods (only GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS allowed).';
 					$message = sprintf('Non-standard HTTP method "%s" %s', (string)$method, $reason);
 					$this->report->addError(
 						path: 'paths.' . $pathName . '.' . $method,
@@ -2226,7 +2230,7 @@ class OasService {
 					continue;
 				}
 
-				if ($methodKey === 'parameters' || is_array($operation) === false) {
+				if (is_array($operation) === false) {
 					continue;
 				}
 
@@ -2235,7 +2239,7 @@ class OasService {
 					if (isset($allowedCodes[$statusKey]) === false) {
 						$this->report->addWarning(
 							path: 'paths.' . $pathName . '.' . $method . '.responses.' . $statusCode,
-							message: 'Non-standard HTTP status code "' . $statusCode . '" violates NLGov API-03 conventions.',
+							message: 'Non-standard HTTP status code "' . $statusCode . '" violates NLGov /core/http-response-code conventions.',
 							code: OasValidationReport::CODE_INVALID_STATUS_CODE,
 						);
 					}
@@ -2375,115 +2379,4 @@ class OasService {
 		}
 	}//end validateSchemaReferences()
 
-	/**
-	 * Resolve the effective authorization for a schema in the OAS context.
-	 *
-	 * If the schema has its own authorization block, use it.
-	 * Otherwise, fall back to the parent register's authorization.
-	 * Also expands role references to action-level permissions.
-	 *
-	 * @param object $schema The schema object.
-	 *
-	 * @return array|null The effective authorization array.
-	 *
-	 * @spec openspec/specs/oas-generation/spec.md
-	 */
-	private function resolveEffectiveAuthorization(object $schema): ?array {
-		$authorization = $schema->getAuthorization();
-
-		// If schema has its own authorization, expand roles and return.
-		if (is_array($authorization) === true && empty($authorization) === false) {
-			return $this->expandRolesForOas(authorization: $authorization, schema: $schema);
-		}
-
-		// Fall back to register authorization.
-		try {
-			$registerId = $this->registerMapper->getFirstRegisterWithSchema(schemaId: $schema->getId());
-			if ($registerId !== null) {
-				$register = $this->registerMapper->find(id: $registerId);
-				$registerAuth = $register->getAuthorization();
-				if (is_array($registerAuth) === true && empty($registerAuth) === false) {
-					return $this->expandRolesForOas(authorization: $registerAuth, schema: $schema, register: $register);
-				}
-			}
-		} catch (\Throwable $e) {
-			// Fallback: no register authorization available.
-		}
-
-		return null;
-	}//end resolveEffectiveAuthorization()
-
-	/**
-	 * Expand role references in authorization for OAS scope generation.
-	 *
-	 * @param array $authorization The authorization block.
-	 * @param object $schema The schema object.
-	 * @param object|null $register The register object (optional, looked up if needed).
-	 *
-	 * @return array The authorization with roles expanded.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 *
-	 * @spec openspec/specs/oas-generation/spec.md
-	 */
-	private function expandRolesForOas(array $authorization, object $schema, ?object $register = null): array {
-		if (isset($authorization['roles']) === false || is_array($authorization['roles']) === false) {
-			return $authorization;
-		}
-
-		$roleAssignments = $authorization['roles'];
-		unset($authorization['roles']);
-
-		// Get register for role definitions.
-		if ($register === null) {
-			try {
-				$registerId = $this->registerMapper->getFirstRegisterWithSchema($schema->getId());
-				if ($registerId !== null) {
-					$register = $this->registerMapper->find($registerId);
-				}
-			} catch (\Throwable $e) {
-				return $authorization;
-			}
-		}
-
-		if ($register === null) {
-			return $authorization;
-		}
-
-		$config = $register->getConfiguration();
-		$roles = $config['roles'] ?? [];
-		if (empty($roles) === true) {
-			return $authorization;
-		}
-
-		// Build role map.
-		$roleMap = [];
-		foreach ($roles as $roleDef) {
-			if (isset($roleDef['name']) === true && isset($roleDef['actions']) === true) {
-				$roleMap[$roleDef['name']] = $roleDef['actions'];
-			}
-		}
-
-		// Expand roles to action-level entries.
-		foreach ($roleAssignments as $roleName => $groups) {
-			if (isset($roleMap[$roleName]) === false) {
-				continue;
-			}
-
-			foreach ($roleMap[$roleName] as $action) {
-				if (isset($authorization[$action]) === false) {
-					$authorization[$action] = [];
-				}
-
-				foreach ((array)$groups as $group) {
-					if (in_array($group, $authorization[$action], true) === false) {
-						$authorization[$action][] = $group;
-					}
-				}
-			}
-		}
-
-		return $authorization;
-	}//end expandRolesForOas()
 }//end class

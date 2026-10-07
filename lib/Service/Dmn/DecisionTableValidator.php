@@ -25,7 +25,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
+ * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ namespace OCA\OpenRegister\Service\Dmn;
  * Returns problems rather than throwing, so a caller can show every defect
  * in one refusal instead of one per save attempt.
  *
- * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
+ * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
  */
 class DecisionTableValidator {
 
@@ -75,7 +75,7 @@ class DecisionTableValidator {
 	 *
 	 * @return array<int, string> Problems, each naming the offending part. Empty means the evaluator can execute the table.
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
 	public function validate(array $table): array {
 		$problems = [];
@@ -117,7 +117,7 @@ class DecisionTableValidator {
 	 *
 	 * @return array<int, array{name: string, type: string}> The usable columns, with effective types.
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) `DecisionTableEvaluator::effectiveType()`
 	 * is static precisely so validator and evaluator share one normalisation.
@@ -169,7 +169,7 @@ class DecisionTableValidator {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
 	private function validateRules(mixed $raw, array $inputs, int $outputCount, array &$problems): void {
 		if (is_array($raw) === false || $raw === []) {
@@ -205,7 +205,7 @@ class DecisionTableValidator {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
 	private function validateRule(array $rule, string $ruleId, array $inputs, int $outputCount, array &$problems): void {
 		$inputEntries = [];
@@ -269,7 +269,7 @@ class DecisionTableValidator {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-decision-tables/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
+	 * @spec openspec/specs/flow-decision-tables/spec.md#requirement-a-table-the-evaluator-cannot-execute-is-refused-at-save
 	 */
 	private function probeCell(string $expression, array $column, string $ruleId, array &$problems): void {
 		try {

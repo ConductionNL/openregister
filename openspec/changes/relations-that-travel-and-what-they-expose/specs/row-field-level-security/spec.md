@@ -23,14 +23,12 @@ an unknown property SHALL be refused with HTTP 422 naming it.
 - **GIVEN** the same read
 - **WHEN** the response is inspected for a property outside the exposed set
 - **THEN** it is marked withheld and no value is present
-- @e2e exclude {read shape, covered by unit tests}
 
 #### Scenario: an unknown property is refused at schema save
 
 - **GIVEN** a relation type exposing a property the far schema does not declare
 - **WHEN** the schema is saved
 - **THEN** the save fails with HTTP 422 naming the property
-- @e2e exclude {annotation validator, covered by unit tests}
 
 ### Requirement: An exposure narrows a read and never widens one (REQ-RTE-005)
 

@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-provider-doffin/specs/credential-broker/spec.md#doffin-provider-entry
+ * @spec openspec/specs/credential-broker/spec.md#doffin-provider-entry
  */
 
 declare(strict_types=1);
@@ -172,7 +172,11 @@ class DoffinProviderTest extends TestCase {
 		// counterpart of `GET /search/repositories` which rule 5 already allows.
 		// Narrower per issue than `GET /repos/*` at rule 1: a search result
 		// omits fields a direct issue read returns.
-		$this->assertCount(18, $github['allowRules']);
+		// 19 since 2026-10-01: `GET /search/code`. OpenCatalogi's publiccode
+		// harvest searches ALL of GitHub for publiccode.yml (not one org, so
+		// there is nothing to enumerate) and reads each hit through rule 1.
+		// Read-only and pinned in GithubCodeSearchRuleTest.
+		$this->assertCount(19, $github['allowRules']);
 
 		// The search grant is READ-only and must stay so: a search rule that
 		// grew a write method would be a write to every repository the token can

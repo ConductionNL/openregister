@@ -91,6 +91,13 @@ class Routes {
 	 * `$extra` itself throws, since Symfony silently replaces same-named routes
 	 * and that is always a mistake.
 	 *
+	 * An app that also serves manifest-declared public pages calls
+	 * {@see self::standardWithPublicPages()} instead. The two are separate
+	 * entry points rather than one with a flag: the public-page route needs a
+	 * `publicPage()` method on the app's dashboard controller, so the choice
+	 * is about what the app HAS, not about a setting, and a call site reads
+	 * better saying which table it wants than passing `true`.
+	 *
 	 * @param array<int, array<string, mixed>> $extra App-specific routes.
 	 *
 	 * @return array{routes: array<int, array<string, mixed>>}
@@ -98,22 +105,66 @@ class Routes {
 	 * @throws \InvalidArgumentException When `$extra` contains duplicate route names.
 	 *
 	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
+	 * @spec openspec/changes/public-pages-open-without-a-session/specs/apphost-public-pages/spec.md#requirement-a-page-opens-without-a-session-only-when-the-app-declares-it-public-req-pub-001
 	 */
 	public static function standard(array $extra = []): array {
+		return self::build(extra: $extra, publicPages: false);
+	}//end standard()
+
+	/**
+	 * The canonical route table plus the public-page route.
+	 *
+	 * Adds ONE more route, `dashboard#publicPage` on `/public/{path}`, just
+	 * before the catch-all. It is a separate entry point because it needs a
+	 * `publicPage()` method on the app's dashboard controller: an app that
+	 * aliases the generic one has it already, and an app that writes its own
+	 * would answer HTTP 500 on a route it never asked for. What the route
+	 * serves is still decided per page by the app's manifest, so calling this
+	 * opens nothing by itself.
+	 *
+	 * @param array<int, array<string, mixed>> $extra App-specific routes.
+	 *
+	 * @return array{routes: array<int, array<string, mixed>>}
+	 *
+	 * @throws \InvalidArgumentException When `$extra` contains duplicate route names.
+	 *
+	 * @spec openspec/changes/public-pages-open-without-a-session/specs/apphost-public-pages/spec.md#requirement-a-page-opens-without-a-session-only-when-the-app-declares-it-public-req-pub-001
+	 */
+	public static function standardWithPublicPages(array $extra = []): array {
+		return self::build(extra: $extra, publicPages: true);
+	}//end standardWithPublicPages()
+
+	/**
+	 * Build the merged table, with or without the public-page route.
+	 *
+	 * @param array<int, array<string, mixed>> $extra       App-specific routes.
+	 * @param boolean                          $publicPages Whether to append the public-page route.
+	 *
+	 * @return array{routes: array<int, array<string, mixed>>}
+	 *
+	 * @throws \InvalidArgumentException When `$extra` contains duplicate route names.
+	 *
+	 * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
+	 */
+	private static function build(array $extra, bool $publicPages): array {
 		self::assertNoDuplicateNames(extra: $extra);
 
-		$extraNames = [];
+		$extraKeys = [];
 		foreach ($extra as $route) {
 			if (isset($route['name']) === true) {
-				$extraNames[(string)$route['name']] = true;
+				$extraKeys[self::registrationKey(route: $route)] = true;
 			}
 		}
 
 		// Canonical routes, minus the SPA catch-all (appended last).
 		$canonical = [];
 		foreach (self::canonicalRoutes() as $route) {
-			// An $extra route with the same name overrides the canonical one.
-			if (isset($extraNames[$route['name']]) === true) {
+			// An $extra route that registers under the same key overrides the
+			// canonical one. The key, not the name: an $extra entry carrying a
+			// `postfix` registers under a DIFFERENT name, so it replaces
+			// nothing, and dropping the canonical entry for it would delete a
+			// route no one asked to delete.
+			if (isset($extraKeys[self::registrationKey(route: $route)]) === true) {
 				continue;
 			}
 
@@ -121,10 +172,42 @@ class Routes {
 		}
 
 		$merged = array_merge($canonical, $extra);
+		if ($publicPages === true) {
+			$merged[] = self::publicPageRoute();
+		}
+
 		$merged[] = self::catchAllRoute();
 
+		// The canonical half, which the override above does not reach. The
+		// catch-all and the public page route are appended AFTER `$extra`, so
+		// an `$extra` entry registering under either name is silently replaced
+		// by it rather than overriding it. Assert on the whole merged set, so
+		// the answer is about what registers and not about what was declared.
+		self::assertEveryRouteRegisters(routes: $merged);
+
 		return ['routes' => $merged];
-	}//end standard()
+	}//end build()
+
+	/**
+	 * The route that serves a declared public page without a session.
+	 *
+	 * It sits before the catch-all so `/public/…` reaches the public shell
+	 * rather than the authenticated one, and after `$extra` so an app's own
+	 * route on a `/public/…` address still wins.
+	 *
+	 * @return array<string, mixed> The route.
+	 *
+	 * @spec openspec/changes/public-pages-open-without-a-session/specs/apphost-public-pages/spec.md#requirement-a-page-opens-without-a-session-only-when-the-app-declares-it-public-req-pub-001
+	 */
+	public static function publicPageRoute(): array {
+		return [
+			'name' => 'dashboard#publicPage',
+			'url' => '/public/{path}',
+			'verb' => 'GET',
+			'requirements' => ['path' => '.+'],
+			'defaults' => ['path' => ''],
+		];
+	}//end publicPageRoute()
 
 	/**
 	 * The canonical AppHost routes (everything except the SPA catch-all).
@@ -210,13 +293,36 @@ class Routes {
 	}//end catchAllRoute()
 
 	/**
-	 * Guard against duplicate route names within the caller's `$extra` set.
+	 * The name Nextcloud actually registers a route under, minus the app id.
+	 *
+	 * `OC\AppFramework\Routing\RouteParser::processRoute()` builds
+	 * `strtolower($appName . '.' . $controller . '.' . $action . $postfix)`,
+	 * and `RouteCollection::add()` OVERWRITES an entry of the same name.
+	 * Neither the URL nor the verb is part of it, so two entries on one
+	 * controller action are one route unless a `postfix` separates them, and
+	 * the last one declared is the one that exists.
+	 *
+	 * @param array<string, mixed> $route One route entry.
+	 *
+	 * @return string The registration key.
+	 */
+	private static function registrationKey(array $route): string {
+		return strtolower((string)($route['name'] ?? '') . (string)($route['postfix'] ?? ''));
+	}//end registrationKey()
+
+	/**
+	 * Guard against two `$extra` routes registering under one name.
+	 *
+	 * Keyed on the registration key rather than on the name, because a
+	 * `postfix` is exactly how an app gives a second route on the same
+	 * controller action its own name. Comparing names alone refused that
+	 * legitimate pair and so blocked the one available remedy.
 	 *
 	 * @param array<int, array<string, mixed>> $extra App-specific routes.
 	 *
 	 * @return void
 	 *
-	 * @throws \InvalidArgumentException When two `$extra` routes share a name.
+	 * @throws \InvalidArgumentException When two `$extra` routes register alike.
 	 */
 	private static function assertNoDuplicateNames(array $extra): void {
 		$seen = [];
@@ -225,12 +331,47 @@ class Routes {
 				continue;
 			}
 
-			$name = (string)$route['name'];
-			if (isset($seen[$name]) === true) {
-				throw new InvalidArgumentException(sprintf('Duplicate route name "%s" in AppHost Routes::standard($extra)', $name));
+			$key = self::registrationKey(route: $route);
+			if (isset($seen[$key]) === true) {
+				throw new InvalidArgumentException(
+					sprintf(
+						'Duplicate route name "%s" in AppHost Routes::standard($extra). Give one of them its own "postfix".',
+						$key
+					)
+				);
 			}
 
-			$seen[$name] = true;
+			$seen[$key] = true;
 		}
 	}//end assertNoDuplicateNames()
+
+	/**
+	 * Every entry in the merged table must survive registration.
+	 *
+	 * @param array<int, array<string, mixed>> $routes The merged route table.
+	 *
+	 * @return void
+	 *
+	 * @throws \InvalidArgumentException When two entries register alike.
+	 */
+	private static function assertEveryRouteRegisters(array $routes): void {
+		$seen = [];
+		foreach ($routes as $route) {
+			$key = self::registrationKey(route: $route);
+			if (isset($seen[$key]) === true) {
+				throw new InvalidArgumentException(
+					sprintf(
+						'Route "%s" registers twice in AppHost Routes::standard(): %s %s replaces %s %s. Give one of them its own "postfix".',
+						$key,
+						(string)($route['verb'] ?? 'GET'),
+						(string)($route['url'] ?? '?'),
+						(string)($seen[$key]['verb'] ?? 'GET'),
+						(string)($seen[$key]['url'] ?? '?')
+					)
+				);
+			}
+
+			$seen[$key] = $route;
+		}
+	}//end assertEveryRouteRegisters()
 }//end class

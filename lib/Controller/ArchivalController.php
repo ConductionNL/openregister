@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Archival\ArchivalNominationService;
+use OCA\OpenRegister\Service\Archival\DestructionListCreator;
 use OCA\OpenRegister\Service\Archival\DestructionListRepository;
 use OCA\OpenRegister\Service\Archival\DestructionReviewService;
 use OCA\OpenRegister\Service\Archival\DestructionService;
@@ -64,6 +65,9 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Controller requires many service dependencies
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)   REST endpoints for full destruction workflow
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) The destruction-list, legal-hold, review
+ *              and certificate routes share one archivist check and one set of
+ *              collaborators; the length is their docblocks, one per route.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The complexity is one refusal per rule,
  *              spread over the endpoints rather than piled into one: 401, 403, 404, 409 and
  *              400 each say a different thing to a reviewer who was turned away. Each endpoint
@@ -75,6 +79,11 @@ class ArchivalController extends Controller {
 	 * The archivist group name for authorization.
 	 */
 	private const ARCHIVIST_GROUP = 'archivaris';
+
+	/**
+	 * How many uuids one request to create a destruction list may carry.
+	 */
+	private const CREATE_LIST_LIMIT = 1000;
 
 	/**
 	 * Destruction service.
@@ -135,6 +144,7 @@ class ArchivalController extends Controller {
 	 * @param AuditTrailMapper $auditMapper Records who signed off what.
 	 * @param ArchivalNominationService $nominations Derives and writes an archival nomination.
 	 * @param SchemaMapper $schemaMapper Loads the schema a nomination is derived from.
+	 * @param DestructionListCreator $creator Creates a destruction list for the objects an app names.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) A DI constructor; every parameter is a
 	 *              distinct collaborator, and four of them arrived with the review half of the
@@ -155,6 +165,7 @@ class ArchivalController extends Controller {
 		private readonly AuditTrailMapper $auditMapper,
 		private readonly ArchivalNominationService $nominations,
 		private readonly SchemaMapper $schemaMapper,
+		private readonly DestructionListCreator $creator,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 
@@ -474,7 +485,7 @@ class ArchivalController extends Controller {
 			}
 
 			$object = $this->objectMapper->find($objectId);
-			$result = $this->legalHoldService->placeHold($object, $reason);
+			$result = $this->legalHoldService->placeHold($object, $reason, $this->ownerKeyParam(params: $params));
 
 			return new JSONResponse(
 				data: [
@@ -530,7 +541,7 @@ class ArchivalController extends Controller {
 
 		try {
 			$object = $this->objectMapper->find($id);
-			$result = $this->legalHoldService->releaseHold($object, $reason);
+			$result = $this->legalHoldService->releaseHold($object, $reason, $this->ownerKeyParam(params: $params));
 
 			return new JSONResponse(
 				data: [
@@ -547,6 +558,22 @@ class ArchivalController extends Controller {
 			);
 		}
 	}//end releaseLegalHold()
+
+	/**
+	 * The matter a hold request speaks for, when it names one (#4172)
+	 *
+	 * @param array $params The request parameters.
+	 *
+	 * @return string|null The owner key, or null for a manual hold.
+	 */
+	private function ownerKeyParam(array $params): ?string {
+		$ownerKey = ($params['ownerKey'] ?? null);
+		if (is_string($ownerKey) === false || trim($ownerKey) === '') {
+			return null;
+		}
+
+		return trim($ownerKey);
+	}//end ownerKeyParam()
 
 	/**
 	 * List active legal holds.
@@ -575,31 +602,121 @@ class ArchivalController extends Controller {
 	}//end listLegalHolds()
 
 	/**
-	 * List destruction certificates.
+	 * List the stored destruction certificates, newest first.
 	 *
-	 * @return JSONResponse The list of destruction certificates.
+	 * GET /api/archival/certificates, optionally `?destructionList=<uuid>`.
+	 * Executed lists whose certificate is not stored are named under `missing`.
+	 *
+	 * @return JSONResponse `{results, total, missing, configured}`.
 	 *
 	 * @NoAdminRequired
 	 *
 	 * @spec openspec/specs/archival-destruction-workflow/spec.md
-	 * @spec openspec/specs/archival-destruction-workflow/spec.md
 	 */
+	#[NoAdminRequired]
 	public function listCertificates(): JSONResponse {
 		$authCheck = $this->checkArchivistRole();
 		if ($authCheck !== null) {
 			return $authCheck;
 		}
 
-		// In a full implementation, this would query the archival register
-		// for certificate objects.
+		if ($this->lists->isConfigured() === false) {
+			return new JSONResponse(
+				data: [
+					'results' => [],
+					'total' => 0,
+					'missing' => [],
+					'configured' => false,
+					'error' => 'No destruction list register and schema are configured',
+				],
+				statusCode: Http::STATUS_OK
+			);
+		}
+
+		$listUuid = $this->request->getParam('destructionList');
+		if (is_string($listUuid) === false || trim($listUuid) === '') {
+			$listUuid = null;
+		}
+
+		$found = $this->lists->findCertificates(listUuid: $listUuid);
+
 		return new JSONResponse(
 			data: [
-				'results' => [],
-				'total' => 0,
+				'results' => $found['results'],
+				'total' => count($found['results']),
+				'missing' => $found['missing'],
+				'configured' => true,
 			],
 			statusCode: Http::STATUS_OK
 		);
 	}//end listCertificates()
+
+	/**
+	 * Create a destruction list for the eligible objects among the uuids posted.
+	 *
+	 * POST /api/archival/destruction-lists with `{"objects": ["<uuid>", ...]}`.
+	 * OpenRegister judges every uuid with the daily sweep's own rule; the list
+	 * holds only the eligible ones and every other uuid comes back with its
+	 * reason. 201 with the list, 422 when nothing was eligible, 400 for a body
+	 * without uuids, 409 when no destruction-list register is configured.
+	 *
+	 * @return JSONResponse `{uuid, status, entryCount, refused}`, or the refusal.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	#[NoAdminRequired]
+	public function createDestructionList(): JSONResponse {
+		$authCheck = $this->checkArchivistRole();
+		if ($authCheck !== null) {
+			return $authCheck;
+		}
+
+		$uuids = $this->request->getParam('objects');
+		if (is_array($uuids) === false || $uuids === [] || count($uuids) > self::CREATE_LIST_LIMIT
+			|| count(array_filter($uuids, static fn ($uuid): bool => is_string($uuid) === false || trim($uuid) === '')) > 0
+		) {
+			return new JSONResponse(
+				data: [
+					'error' => sprintf(
+						'Send "objects" as a list of 1 to %d object uuids.',
+						self::CREATE_LIST_LIMIT
+					),
+				],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		try {
+			$created = $this->creator->createFor(uuids: array_values($uuids));
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'configured' => false],
+				statusCode: Http::STATUS_CONFLICT
+			);
+		}
+
+		if ($created['list'] === null) {
+			return new JSONResponse(
+				data: [
+					'error' => 'None of the objects may be destroyed now, so no list was created.',
+					'refused' => $created['refused'],
+				],
+				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		return new JSONResponse(
+			data: [
+				'uuid' => ($created['list']['uuid'] ?? null),
+				'status' => ($created['list']['status'] ?? null),
+				'entryCount' => count(($created['list']['objects'] ?? [])),
+				'refused' => $created['refused'],
+			],
+			statusCode: Http::STATUS_CREATED
+		);
+	}//end createDestructionList()
 
 	/**
 	 * Make one person accountable for one entry on a destruction list.

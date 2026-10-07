@@ -23,7 +23,10 @@
 
 namespace OCA\OpenRegister\Tool;
 
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
+use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
@@ -58,11 +61,13 @@ class SchemaTool extends AbstractTool {
 	 * @param IUserSession $userSession User session service
 	 * @param LoggerInterface $logger Logger service
 	 * @param SchemaMapper $schemaMapper Schema mapper
+	 * @param SchemaVersioningService|null $schemaVersioning Classifies, versions and logs a definition change (#4102)
 	 */
 	public function __construct(
 		IUserSession $userSession,
 		LoggerInterface $logger,
 		SchemaMapper $schemaMapper,
+		private readonly ?SchemaVersioningService $schemaVersioning = null,
 	) {
 		parent::__construct(userSession: $userSession, logger: $logger);
 		$this->schemaMapper = $schemaMapper;
@@ -399,6 +404,10 @@ class SchemaTool extends AbstractTool {
 	): array {
 		$schema = $this->schemaMapper->find(id: $id);
 
+		// Classified against the stored definition before it is changed, as
+		// every definition update is (#4102).
+		$changeSet = $this->classifyAndBump(schema: $schema, properties: $properties, required: $required);
+
 		if ($title !== null) {
 			$schema->setTitle($title);
 		}
@@ -417,6 +426,16 @@ class SchemaTool extends AbstractTool {
 
 		$schema = $this->schemaMapper->update(entity: $schema);
 
+		if ($changeSet !== null) {
+			$this->schemaVersioning?->recordChangelog(
+				schemaId: (int)$schema->getId(),
+				version: $schema->getVersion(),
+				changeSet: $changeSet,
+				acknowledged: false,
+				origin: 'agent tool'
+			);
+		}
+
 		return $this->formatSuccess(
 			data: [
 				'id' => $schema->getId(),
@@ -429,6 +448,39 @@ class SchemaTool extends AbstractTool {
 			message: 'Schema updated successfully'
 		);
 	}//end updateSchema()
+
+	/**
+	 * Classify a definition change against the stored schema and bump its version.
+	 *
+	 * An agent has nobody to answer a breaking-change prompt, so the change is
+	 * versioned and recorded, not refused, as on the configuration import.
+	 *
+	 * @param Schema     $schema     The stored schema, not yet changed.
+	 * @param array|null $properties The new properties, or null to keep them.
+	 * @param array|null $required   The new required list, or null to keep it.
+	 *
+	 * @return SchemaChangeSet|null The change set, or null when nothing was classified.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	private function classifyAndBump(Schema $schema, ?array $properties, ?array $required): ?SchemaChangeSet {
+		if ($this->schemaVersioning === null || ($properties === null && $required === null)) {
+			return null;
+		}
+
+		$changeSet = $this->schemaVersioning->classify(
+			existing: $schema,
+			newDefinition: [
+				'properties' => ($properties ?? $schema->getProperties() ?? []),
+				'required' => ($required ?? $schema->getRequired() ?? []),
+			]
+		);
+		if ($changeSet->hasChanges() === true) {
+			$schema->setVersion($this->schemaVersioning->nextVersion(existing: $schema, changeSet: $changeSet));
+		}
+
+		return $changeSet;
+	}//end classifyAndBump()
 
 	/**
 	 * Delete a schema

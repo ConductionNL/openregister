@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ use OCP\IUserSession;
 /**
  * Web Push subscription + VAPID key + hex-icon REST controller.
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 class WebPushController extends Controller {
 	/**
@@ -84,7 +84,7 @@ class WebPushController extends Controller {
 	 *
 	 * @no-admin-idor-exempt No per-object resource: returns the public VAPID key and configured flag only; the private key is never exposed.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -108,7 +108,7 @@ class WebPushController extends Controller {
 	 *
 	 * @return JSONResponse The stored subscription summary, or an error.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	#[NoAdminRequired]
 	public function subscribe(string $endpoint = '', array $keys = []): JSONResponse {
@@ -141,7 +141,7 @@ class WebPushController extends Controller {
 	 *
 	 * @return JSONResponse `{ deleted: <int> }`, or an error.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	#[NoAdminRequired]
 	public function unsubscribe(string $endpoint = ''): JSONResponse {
@@ -185,7 +185,7 @@ class WebPushController extends Controller {
 	 *   OS notification surface fetches it without a Nextcloud session; the
 	 *   #[AnonRateLimit] above bounds the anonymous render cost.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -210,7 +210,7 @@ class WebPushController extends Controller {
 	 *   scope to the caller. Anonymous by design (the OS notification surface has
 	 *   no session) and bounded by the #[AnonRateLimit] below.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]

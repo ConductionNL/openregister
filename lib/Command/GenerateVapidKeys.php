@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Generate + store the instance VAPID keypair for Web Push.
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 class GenerateVapidKeys extends Command {
 
@@ -71,7 +71,7 @@ class GenerateVapidKeys extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:web-push:generate-vapid')
@@ -93,7 +93,7 @@ class GenerateVapidKeys extends Command {
 	 *
 	 * @return int Symfony command exit code.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$force = (bool)$input->getOption('force');

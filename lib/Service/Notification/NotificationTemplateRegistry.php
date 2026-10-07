@@ -147,15 +147,27 @@ class NotificationTemplateRegistry {
 		'destruction_holds_skipped' => [
 			'group' => 'archival',
 			'variables' => [
-				'schemaSlug' => 'The schema the sweep ran on',
+				// No schemaSlug: this event is raised per destruction LIST and
+				// the job that raises it never knows a schema. Offering the
+				// name would invite an administrator to write a placeholder
+				// nothing can fill.
 				'skippedCount' => 'How many records were left in place',
 			],
 		],
 		'destruction_review_pending' => [
 			'group' => 'archival',
 			'variables' => [
-				'schemaSlug' => 'The schema the review is on',
+				// No schemaSlug: the reminder is raised per REVIEWER and spans
+				// whatever they have waiting, so there is no one schema to name.
 				'pendingCount' => 'How many records are waiting on a reviewer',
+			],
+		],
+		'view_alert_crossed' => [
+			'group' => 'views',
+			'variables' => [
+				'view' => 'The saved view whose count crossed its threshold',
+				'count' => 'The count that crossed it',
+				'threshold' => 'The threshold the alert declares',
 			],
 		],
 	];
@@ -275,25 +287,35 @@ class NotificationTemplateRegistry {
 		'destruction_holds_skipped' => [
 			'nl' => [
 				'subject' => 'De vernietiging liet stukken staan die vastliggen',
-				'body' => 'De vernietiging op {{schemaSlug}} liet {{skippedCount}} stukken staan, omdat er een '
+				'body' => 'De vernietiging liet {{skippedCount}} stukken staan, omdat er een '
 					. 'bewaarplicht op ligt.',
 			],
 			'en' => [
 				'subject' => 'The destruction run kept records that are on hold',
-				'body' => 'The destruction run on {{schemaSlug}} left {{skippedCount}} records in place, because '
+				'body' => 'The destruction run left {{skippedCount}} records in place, because '
 					. 'a legal hold is on them.',
 			],
 		],
 		'destruction_review_pending' => [
 			'nl' => [
 				'subject' => 'Er wachten stukken op een beoordeling',
-				'body' => 'Op {{schemaSlug}} wachten {{pendingCount}} stukken op een beoordeling voor '
+				'body' => 'Er wachten {{pendingCount}} stukken op een beoordeling voor '
 					. 'vernietiging.',
 			],
 			'en' => [
 				'subject' => 'Records are waiting on a review',
-				'body' => '{{pendingCount}} records on {{schemaSlug}} are waiting on a review before '
+				'body' => '{{pendingCount}} records are waiting on a review before '
 					. 'destruction.',
+			],
+		],
+		'view_alert_crossed' => [
+			'nl' => [
+				'subject' => '{{view}} staat op {{count}}',
+				'body' => 'De weergave {{view}} telt {{count}} en is over de drempel van {{threshold}} gegaan.',
+			],
+			'en' => [
+				'subject' => '{{view}} is at {{count}}',
+				'body' => 'The view {{view}} counts {{count}} and has crossed its threshold of {{threshold}}.',
 			],
 		],
 	];

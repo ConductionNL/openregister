@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/field-rules-by-state/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\Lifecycle;
  * that does not exist matches nothing, which reads as enforced and is not, and
  * that is the failure mode the whole change exists to close.
  *
- * @spec openspec/changes/field-rules-by-state/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) A shape validator's complexity IS
  *   its branch count: every accepted spelling and every refusal is one branch, and each
@@ -83,7 +83,7 @@ final class LifecycleStateValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function validateStates(array $annotation, array $schema, ?array $enumSet): array {
 		if (isset($annotation['states']) === false) {
@@ -146,7 +146,7 @@ final class LifecycleStateValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateStateFields(array $block, string $state, array $properties): array {
 		if (isset($block['fields']) === false) {
@@ -221,7 +221,7 @@ final class LifecycleStateValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per accepted spelling and
 	 *   per refusal; see the class docblock.
@@ -318,7 +318,7 @@ final class LifecycleStateValidator {
 	 *
 	 * @return array{code: string, message: string}|null The error, or null.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateFieldRuleGroups(array $entry, string $state, string $kind): ?array {
 		if (isset($entry['groups']) === false) {
@@ -368,7 +368,7 @@ final class LifecycleStateValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateStateConditions(array $block, string $state, array $properties): array {
 		$errors = [];
@@ -409,7 +409,7 @@ final class LifecycleStateValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateStateCondition(mixed $condition, string $state, string $label, array $properties): array {
 		if (is_array($condition) === false || $condition === []) {
@@ -460,7 +460,7 @@ final class LifecycleStateValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> List of errors (empty = valid).
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Two declarations are cross-checked,
 	 *   each in either of its accepted spellings, so the branches are the product.

@@ -977,6 +977,11 @@ class HandoffService {
 					'handoffId' => $entry->getHandoffId(),
 					'targetKind' => $entry->getTargetKind(),
 					'status' => $entry->getStatus(),
+					// The shipped template names `{{target}}` and `{{reason}}`.
+					// Supplied beside the existing keys, never instead of them:
+					// the unedited rendering reads `targetKind` and `status`.
+					'target' => $entry->getTargetKind(),
+					'reason' => $entry->getStatus(),
 				]
 			);
 			$this->notificationManager->notify($notification);

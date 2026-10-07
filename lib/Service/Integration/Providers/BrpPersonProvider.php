@@ -52,7 +52,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-brp-haalcentraal/tasks.md
+ * @spec openspec/changes/archive/2026-10-05-integration-brp-haalcentraal/tasks.md
  */
 
 declare(strict_types=1);
@@ -233,7 +233,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/integration-brp-haalcentraal/tasks.md
+	 * @spec openspec/changes/archive/2026-10-05-integration-brp-haalcentraal/tasks.md
 	 */
 	public function authRequirements(): array {
 		return [
@@ -262,7 +262,7 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 	 * @throws ProviderUnavailableException When the source is missing/down —
 	 *                                      the controller maps the cause.
 	 *
-	 * @spec openspec/changes/integration-brp-haalcentraal/tasks.md
+	 * @spec openspec/changes/archive/2026-10-05-integration-brp-haalcentraal/tasks.md
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/objectId
 	 *   are mandated by the IntegrationProvider contract; this leaf is

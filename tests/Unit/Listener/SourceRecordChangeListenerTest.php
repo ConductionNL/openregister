@@ -20,7 +20,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#6.1
+ * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#6.1
  */
 
 declare(strict_types=1);

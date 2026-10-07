@@ -146,7 +146,7 @@ class DuplicateController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	public function check(string $register, string $schema): JSONResponse {
 		$candidate = $this->candidateFromRequest();
@@ -194,7 +194,7 @@ class DuplicateController extends Controller {
 	 *
 	 * @return array<string, mixed> The candidate body.
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	private function candidateFromRequest(): array {
 		$candidate = $this->request->getParams();
@@ -231,7 +231,7 @@ class DuplicateController extends Controller {
 	 *
 	 * @return float|null The cut-off, or null when none was usably supplied.
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	private function thresholdFromRequest(string $key): ?float {
 		$value = $this->request->getParam($key);
@@ -260,7 +260,7 @@ class DuplicateController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function dismiss(string $register, string $schema): JSONResponse {
 		$objectA = (string)$this->request->getParam('objectA', '');
@@ -318,7 +318,7 @@ class DuplicateController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function undismiss(string $register, string $schema): JSONResponse {
 		$objectA = (string)$this->request->getParam('objectA', '');
@@ -366,7 +366,7 @@ class DuplicateController extends Controller {
 	 *
 	 * @return bool True when the caller may dismiss.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	private function mayDismiss(string $register, string $schema): bool {
 		$annotation = $this->duplicates->dedupAnnotation(register: $register, schema: $schema);
@@ -404,7 +404,7 @@ class DuplicateController extends Controller {
 	 *
 	 * @return string|null The fingerprint, or null when either object cannot be read.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	private function fingerprintOf(string $register, string $schema, string $objectA, string $objectB): ?string {
 		try {

@@ -1,8 +1,10 @@
 # apphost-boilerplate Specification
 
 ## Purpose
-TBD - created by archiving change apphost-boilerplate-controllers. Update Purpose after archive.
+The generic controllers OpenRegister hosts for manifest-driven apps, so an app with no PHP of its own still gets the standard endpoints (settings, initialisation, user preferences) that a classic app would write by hand.
+
 ## Requirements
+
 ### Requirement: One-Call Bootstrap
 
 `AppHost\Bootstrap::register(IRegistrationContext, string $appId, array $options)` SHALL register service aliases mapping the leaf app's conventional controller/service class names to the AppHost generics, as lazy service closures whose bodies are executed only on resolution.
@@ -31,20 +33,30 @@ An app adopting AppHost SHALL register OpenRegister's autoload prefix as the fir
 
 ```php
 try {
-    $orPath = \OCP\Server::get(\OCP\App\IAppManager::class)->getAppPath('openregister');
-    \OC_App::registerAutoloading('openregister', $orPath);
+    $appManager = \OCP\Server::get(\OCP\App\IAppManager::class);
+    if ($appManager->isEnabledForAnyone('openregister') === true) {
+        $orLib = rtrim($appManager->getAppPath('openregister'), '/').'/lib/';
+        spl_autoload_register(static function (string $class) use ($orLib): void {
+            if (str_starts_with($class, 'OCA\\OpenRegister\\') === true) {
+                $file = $orLib.str_replace('\\', '/', substr($class, 17)).'.php';
+                if (is_file($file) === true) {
+                    require_once $file;
+                }
+            }
+        });
+    }
 } catch (\Throwable) {
     // OpenRegister absent/disabled — fall through to the degraded path.
 }
 ```
 
-`OC_App::registerAutoloading()` touches only the autoloader and is idempotent (it early-returns on an `$alreadyRegistered` key).
+The prelude SHALL use public API only (`IAppManager::isEnabledForAnyone()` + `getAppPath()` and `spl_autoload_register()`), preferably housed in an `AppInfo\OpenRegisterAutoloader::register()` class that never throws and is idempotent (keepiq#712). It SHALL NOT call `\OC_App::registerAutoloading()`: that is private API and Nextcloud 35 removed it, so the call throws `\Error` into the catch and the AppHost wiring is silently skipped.
 
-An app SHALL NOT substitute `IAppManager::loadApp('openregister')`, which sets `loadedApps[..]=true` and calls `Coordinator::bootApp()`, booting OpenRegister before its own `register()` has run. An app SHALL NOT substitute a relative `include_once` of OpenRegister's `vendor/autoload.php`, which assumes both apps share one apps directory and silently does nothing on a multi-`apps_paths` install.
+An app SHALL NOT substitute `IAppManager::loadApp('openregister')`, which sets `loadedApps[..]=true` and calls `Coordinator::bootApp()`, booting OpenRegister before its own `register()` has run. An app SHALL NOT substitute an `include_once` of OpenRegister's `vendor/autoload.php`, which assumes both apps share one apps directory and silently does nothing on a multi-`apps_paths` install.
 
 The prelude is required regardless of where the app id sorts. Sorting after `openregister` makes an app safe by alphabet alone, which is a property of its name rather than of its design.
 
-Rationale: `OC_App::getEnabledApps()` does `sort($apps)`, and `Coordinator::registerApps()` walks that sorted list calling `OC_App::registerAutoloading($appId, $path)` then `$application->register()` one app at a time. Every app therefore registers before the PSR-4 prefix of every alphabetically-later app exists. Enforced by hydra gate-64 (`apphost-autoload-prelude`).
+Rationale: `OC_App::getEnabledApps()` does `sort($apps)`, and `Coordinator::registerApps()` walks that sorted list registering each app's autoloader then calling `$application->register()` one app at a time. Every app therefore registers before the PSR-4 prefix of every alphabetically-later app exists. Enforced by hydra gate-64 (`apphost-autoload-prelude`).
 
 #### Scenario: A leaf sorting before openregister still wires its AppHost plumbing
 
@@ -99,3 +111,22 @@ Every AppHost generic class SHALL be subclassable (no `final`, protected hook me
 - **THEN** the app's registers/schemas MUST exist in OpenRegister and the app's settings MUST report the configured register
 - @e2e exclude install-time backend — covered by OR integration test + each app's existing install smoke
 
+### Requirement: Generic Preferences Controller
+
+`AppHost\Controller\GenericPreferencesController` SHALL provide per-user key/value preference get/set endpoints behaviourally identical to the bespoke leaf `PreferencesController`, scoped to the calling leaf app id, so a leaf app aliasing its `Controller\PreferencesController` to it via `Bootstrap::register()` resolves to a real class and serves the `preferences#getPreference` / `preferences#setPreference` routes.
+
+#### Scenario: Preferences round-trip per user
+
+- **WHEN** an authenticated user calls `setPreference('support-dialog-seen', '1')` then `getPreference('support-dialog-seen')` on a leaf app that adopted AppHost
+- **THEN** the value `'1'` is stored under the leaf app's `IConfig` user namespace with key `pref_support-dialog-seen` and returned as `{value: '1'}`
+- **AND** a subsequent `setPreference('support-dialog-seen', '')` clears it and returns `{value: null}`
+
+#### Scenario: User-scoped, no cross-user access
+
+- **WHEN** an anonymous request hits `getPreference`/`setPreference`
+- **THEN** it is rejected with HTTP 401, and the controller never reads a userId or object id from request input — the userId is always the active session user, so a user can only read/write their OWN preferences (no IDOR)
+
+#### Scenario: Bootstrap full-options resolution
+
+- **WHEN** `Bootstrap::register($context, $appId, $options)` is called with all standard options enabled and every aliased factory is resolved through a container
+- **THEN** each factory produces a real generic instance — including `Controller\PreferencesController` → `GenericPreferencesController` — with no dangling reference to a non-existent class

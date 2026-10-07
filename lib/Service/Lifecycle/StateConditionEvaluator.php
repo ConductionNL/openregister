@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/field-rules-by-state/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use OCA\OpenRegister\Service\Rules\RuleVocabulary;
  * The clause that refused is named by {@see ConditionTracer}, the same walk the
  * transition conditions use, so a refusal reads the same wherever it came from.
  *
- * @spec openspec/changes/field-rules-by-state/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 class StateConditionEvaluator {
 
@@ -88,7 +88,7 @@ class StateConditionEvaluator {
 	 *
 	 * @return array<string, mixed>|null The structured refusal, or null.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function refusal(array $annotation, array $newData, ?string $from, ?string $to): ?array {
 		if ($from === $to) {

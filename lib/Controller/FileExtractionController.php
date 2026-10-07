@@ -55,6 +55,7 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The read scope is the object rule for an object's file.
  */
 class FileExtractionController extends Controller {
 	/**
@@ -70,6 +71,7 @@ class FileExtractionController extends Controller {
 	 * @param IRootFolder $rootFolder Root folder for per-user file access checks
 	 * @param IUserSession $userSession Active user session for caller identity
 	 * @param IGroupManager $groupManager Group manager for admin checks
+	 * @param \OCA\OpenRegister\Service\File\FileReadScope|null $fileReadScope The object read rule for an object's file.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -84,6 +86,7 @@ class FileExtractionController extends Controller {
 		private readonly IRootFolder $rootFolder,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
+		private readonly ?\OCA\OpenRegister\Service\File\FileReadScope $fileReadScope = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -101,6 +104,12 @@ class FileExtractionController extends Controller {
 	 * @return bool True when the file is reachable in the caller's user folder.
 	 */
 	private function hasFileAccess(int $fileId): bool {
+		// An object's file sits in the openregister account's home, never in
+		// the caller's own tree: the object's read rule decides it.
+		if ($this->fileReadScope !== null) {
+			return $this->fileReadScope->mayReadFile(fileId: $fileId);
+		}
+
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return false;
@@ -472,6 +481,9 @@ class FileExtractionController extends Controller {
 		}
 
 		try {
+			// Same floor/ceiling as the bulk endpoint: a zero or negative limit
+			// would answer "nothing to do" for a queue that is not empty.
+			$limit = max(1, min($limit, 500));
 			$stats = $this->textExtractor->extractPendingFiles($limit);
 
 			return new JSONResponse(

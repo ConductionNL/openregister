@@ -49,8 +49,12 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\File\RegisterFolderProvisioner;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Schema\SchemaChangeSet;
+use OCA\OpenRegister\Service\Archival\SelectionListSeeder;
+use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\TaskService;
 use OCP\App\IAppManager;
@@ -241,6 +245,13 @@ class ImportHandler {
 	private ?FileService $fileService = null;
 
 	/**
+	 * Optional provisioner that gives every register an app import returns its Files folder.
+	 *
+	 * @var RegisterFolderProvisioner|null
+	 */
+	private ?RegisterFolderProvisioner $folderProvisioner = null;
+
+	/**
 	 * Optional user session for tasks/notes that require a logged-in actor.
 	 *
 	 * @var IUserSession|null
@@ -273,6 +284,22 @@ class ImportHandler {
 	private ?GroupProvisioner $groupProvisioner = null;
 
 	/**
+	 * Classifies a schema change an import makes, bumps its version and
+	 * writes the changelog, as an edit through the schema API does (#4102).
+	 * Null where it could not be resolved; the import then runs unchanged.
+	 *
+	 * @var SchemaVersioningService|null
+	 */
+	private ?SchemaVersioningService $schemaVersioning = null;
+
+	/**
+	 * Writes the selectielijst categories an app ships; optional, set by the factory.
+	 *
+	 * @var SelectionListSeeder|null
+	 */
+	private ?SelectionListSeeder $selectionListSeeder = null;
+
+	/**
 	 * Collector for declared RBAC group ids. Dependency-free value object,
 	 * created lazily via {@see self::rbacGroupCollector()}.
 	 *
@@ -296,6 +323,12 @@ class ImportHandler {
 	 * @param ObjectService $objectService The object service.
 	 * @param ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator Optional schema-shape validator used at import time.
 	 * @param ?IAppManager $appManager App manager for the seed-data app dependency check; null skips that check.
+	 * @param ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard Optional
+	 *        guard that keeps local changes to an app-shipped schema.
+	 * @param ?AppImportJobRecorder $importJobRecorder Stamps each app import with an import job id and
+	 *        records the jobs that created objects; null imports untagged, as before.
+	 * @param ?SchemaImportInstaller $schemaInstaller Installs a schema's flows and webhooks when an
+	 *        import fired no SchemaUpdatedEvent; null leaves an unchanged re-import installing nothing.
 	 */
 	public function __construct(
 		SchemaMapper $schemaMapper,
@@ -311,6 +344,9 @@ class ImportHandler {
 		ObjectService $objectService,
 		private readonly ?\OCA\OpenRegister\Service\Oas\OasRequestValidator $schemaShapeValidator = null,
 		private readonly ?IAppManager $appManager = null,
+		private readonly ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard = null,
+		private readonly ?AppImportJobRecorder $importJobRecorder = null,
+		private readonly ?SchemaImportInstaller $schemaInstaller = null,
 	) {
 		$this->schemaMapper = $schemaMapper;
 		$this->registerMapper = $registerMapper;
@@ -393,6 +429,20 @@ class ImportHandler {
 	}//end setFileService()
 
 	/**
+	 * Inject the provisioner importFromApp() uses to give imported registers their folder.
+	 *
+	 * @param RegisterFolderProvisioner|null $provisioner Optional provisioner; without it the
+	 *                                                    first upload makes the folder instead.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/file-actions/spec.md#requirement-an-app-imported-register-has-its-files-folder-when-the-import-returns-req-rfai-001
+	 */
+	public function setRegisterFolderProvisioner(?RegisterFolderProvisioner $provisioner): void {
+		$this->folderProvisioner = $provisioner;
+	}//end setRegisterFolderProvisioner()
+
+	/**
 	 * Inject the IUserSession used to detect whether a logged-in actor
 	 * exists at seed time. Tasks + notes are skipped without one.
 	 *
@@ -446,6 +496,37 @@ class ImportHandler {
 	public function setGroupProvisioner(?GroupProvisioner $groupProvisioner): void {
 		$this->groupProvisioner = $groupProvisioner;
 	}//end setGroupProvisioner()
+
+	/**
+	 * Set the schema versioning service.
+	 *
+	 * Optional: when null, imported schema changes are written unclassified,
+	 * as they were before #4102.
+	 *
+	 * @param SchemaVersioningService|null $schemaVersioning Optional versioning service.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	public function setSchemaVersioning(?SchemaVersioningService $schemaVersioning): void {
+		$this->schemaVersioning = $schemaVersioning;
+	}//end setSchemaVersioning()
+
+	/**
+	 * Set the selectielijst seeder.
+	 *
+	 * Optional: when null, `components.selectionLists` is not imported.
+	 *
+	 * @param SelectionListSeeder|null $selectionListSeeder The seeder.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/archival-destruction-workflow/spec.md
+	 */
+	public function setSelectionListSeeder(?SelectionListSeeder $selectionListSeeder): void {
+		$this->selectionListSeeder = $selectionListSeeder;
+	}//end setSelectionListSeeder()
 
 	/**
 	 * Lazily resolve the dependency-free RBAC group collector.
@@ -1335,6 +1416,248 @@ class ImportHandler {
 	 *
 	 * @return bool True when a structural field differs and the update must be applied.
 	 */
+	/**
+	 * The keys the shipped-baseline guard compares and resolves.
+	 *
+	 * The same three `schemaContentDiffers()` treats as structural, and the
+	 * ones row 11.36 is written about: a municipality adds a property, or
+	 * tightens a constraint, or widens an authorization rule. Annotations are
+	 * DELIBERATELY not guarded here: `setConfiguration()` drops an unknown
+	 * `x-openregister-*` key, so a guarded annotation would read as removed on
+	 * every import and conflict with itself forever. That narrowing is named in
+	 * the PR body rather than left to be discovered.
+	 *
+	 * @var array<int, string>
+	 */
+	private const SHIPPED_GUARD_KEYS = ['properties', 'required', 'authorization'];
+
+	/**
+	 * Resolve an incoming shipped schema against what the instance changed.
+	 *
+	 * Returns the definition to write. When no guard is wired, or no baseline
+	 * has ever been recorded for this schema, the incoming definition comes
+	 * back untouched: that is exactly today's behaviour, and it is what every
+	 * instance gets on the first import after this ships.
+	 *
+	 * The baseline that goes with that definition is returned, NOT recorded:
+	 * the caller records it with recordPendingBaseline() only once the schema
+	 * write has succeeded. Recorded here, a write that then fails (a property
+	 * the validator refuses) leaves a baseline the instance never ran, and the
+	 * next import reads every old live part as a local edit and keeps it,
+	 * while the version still moves on.
+	 *
+	 * @param array<string, mixed> $data       The incoming schema definition.
+	 * @param Schema               $existing   The schema the instance runs.
+	 * @param string|null          $appId      The app shipping it.
+	 * @param string|null          $appVersion The app version.
+	 *
+	 * @return array{data: array<string, mixed>, baseline: array<string, mixed>|null, slug: string}
+	 *         The definition to write, the baseline to record after it is written
+	 *         (null: nothing to record) and the schema slug.
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	private function applyShippedBaselineGuard(
+		array $data,
+		Schema $existing,
+		?string $appId,
+		?string $appVersion
+	): array {
+		$unguarded = ['data' => $data, 'baseline' => null, 'slug' => ''];
+		if ($this->shippedGuard === null || $appId === null) {
+			return $unguarded;
+		}
+
+		$slug = (string)($data['slug'] ?? $existing->getSlug() ?? '');
+		if ($slug === '') {
+			return $unguarded;
+		}
+
+		$live = [
+			'properties' => $existing->getProperties(),
+			'required' => $existing->getRequired(),
+			'authorization' => ($existing->getAuthorization() ?? []),
+		];
+
+		$incoming = [];
+		foreach (self::SHIPPED_GUARD_KEYS as $key) {
+			if (array_key_exists($key, $data) === true) {
+				$incoming[$key] = $data[$key];
+			}
+		}
+
+		$result = $this->shippedGuard->guardSchemaUpdate(
+			slug: $slug,
+			live: $live,
+			incoming: $incoming,
+			app: $appId,
+			appVersion: ($appVersion ?? ''),
+			record: false
+		);
+
+		$pending = ['data' => $data, 'baseline' => $result['baseline'], 'slug' => $slug];
+		if ($result['guarded'] === false) {
+			return $pending;
+		}
+
+		foreach (self::SHIPPED_GUARD_KEYS as $key) {
+			if (array_key_exists($key, $result['definition']) === true) {
+				$data[$key] = $result['definition'][$key];
+			}
+		}
+
+		if ($result['conflicts'] !== []) {
+			$this->logger->warning(
+				message: '[ImportHandler] schema kept its local definition for parts the app also changed',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'schema_slug' => $slug,
+					'conflicts' => array_column($result['conflicts'], 'path'),
+				]
+			);
+		}
+
+		$pending['data'] = $data;
+		return $pending;
+	}//end applyShippedBaselineGuard()
+
+	/**
+	 * Record the baseline the guard resolved, now that the schema is written.
+	 *
+	 * @param array{data: array<string, mixed>, baseline: array<string, mixed>|null, slug: string} $guarded    What applyShippedBaselineGuard() returned.
+	 * @param string|null                                                                          $appId      The app shipping it.
+	 * @param string|null                                                                          $appVersion The app version.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	private function recordPendingBaseline(array $guarded, ?string $appId, ?string $appVersion): void {
+		if ($this->shippedGuard === null || $appId === null || $guarded['baseline'] === null || $guarded['slug'] === '') {
+			return;
+		}
+
+		$this->shippedGuard->recordShipped(
+			slug: $guarded['slug'],
+			definition: $guarded['baseline'],
+			app: $appId,
+			appVersion: ($appVersion ?? '')
+		);
+	}//end recordPendingBaseline()
+
+	/**
+	 * Record what the app shipped for a schema that has just been created.
+	 *
+	 * @param array<string, mixed> $data       The schema definition.
+	 * @param string|null          $appId      The app shipping it.
+	 * @param string|null          $appVersion The app version.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 */
+	private function recordShippedBaseline(array $data, ?string $appId, ?string $appVersion): void {
+		if ($this->shippedGuard === null || $appId === null) {
+			return;
+		}
+
+		$slug = (string)($data['slug'] ?? '');
+		if ($slug === '') {
+			return;
+		}
+
+		$definition = [];
+		foreach (self::SHIPPED_GUARD_KEYS as $key) {
+			if (array_key_exists($key, $data) === true) {
+				$definition[$key] = $data[$key];
+			}
+		}
+
+		$this->shippedGuard->recordShipped(
+			slug: $slug,
+			definition: $definition,
+			app: $appId,
+			appVersion: ($appVersion ?? '')
+		);
+	}//end recordShippedBaseline()
+
+	/**
+	 * Classify the definition an import is about to write against the stored one.
+	 *
+	 * Null when there is no versioning service, when the import carries no
+	 * definition, or when classifying failed: the import itself never breaks
+	 * on this, it is only left unclassified, which is how it was before.
+	 *
+	 * @param Schema               $existing The schema already stored.
+	 * @param array<string, mixed> $data     The incoming schema, as it will be written.
+	 *
+	 * @return SchemaChangeSet|null The change set, or null when not classified.
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	private function classifyImportedSchemaChange(Schema $existing, array $data): ?SchemaChangeSet {
+		if ($this->schemaVersioning === null
+			|| (isset($data['properties']) === false && isset($data['required']) === false)
+		) {
+			return null;
+		}
+
+		try {
+			return $this->schemaVersioning->classify(
+				existing: $existing,
+				newDefinition: [
+					'properties' => ($data['properties'] ?? $existing->getProperties() ?? []),
+					'required' => ($data['required'] ?? $existing->getRequired() ?? []),
+				]
+			);
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[ImportHandler] Could not classify an imported schema change: ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'schema_id' => $existing->getId()]
+			);
+			return null;
+		}
+	}//end classifyImportedSchemaChange()
+
+	/**
+	 * Write the changelog entry for an imported schema change, and log a breaking one.
+	 *
+	 * @param Schema               $schema    The schema as written.
+	 * @param SchemaChangeSet|null $changeSet The classified change, or null when not classified.
+	 * @param string|null          $appId     The app whose import made the change.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/schema-migration/spec.md
+	 */
+	private function recordImportedSchemaChange(Schema $schema, ?SchemaChangeSet $changeSet, ?string $appId): void {
+		if ($this->schemaVersioning === null || $changeSet === null || $changeSet->hasChanges() === false) {
+			return;
+		}
+
+		$origin = 'configuration import';
+		if ($appId !== null) {
+			$origin .= ' of '.$appId;
+		}
+
+		$this->schemaVersioning->recordChangelog(
+			schemaId: (int)$schema->getId(),
+			version: $schema->getVersion(),
+			changeSet: $changeSet,
+			acknowledged: false,
+			origin: $origin
+		);
+	}//end recordImportedSchemaChange()
+
+	/**
+	 * Whether an incoming schema says anything different from the stored one.
+	 *
+	 * @param array<string, mixed> $data The incoming schema definition.
+	 * @param Schema $existing The schema already stored.
+	 *
+	 * @return bool True when the properties, the required list, the authorization or the annotations differ.
+	 */
 	private function schemaContentDiffers(array $data, Schema $existing): bool {
 		$fields = [
 			'properties' => $existing->getProperties(),
@@ -2040,7 +2363,44 @@ class ImportHandler {
 					);
 				}
 
-				// Update existing schema.
+				// Update existing schema, but NOT with the incoming definition
+				// as it stands: with whatever survives the shipped-baseline
+				// guard. Without this, ADR-005's "descriptor is the source of
+				// truth" means a municipality's added property disappears on
+				// every upgrade and nothing records that it existed (row
+				// 11.36). The guard is null-safe and never throws, so an
+				// instance without a baseline imports exactly as it does
+				// today. Its baseline is recorded only after the write below
+				// succeeds, so a refused write cannot leave a baseline behind.
+				$guarded = $this->applyShippedBaselineGuard(
+					data: $data,
+					existing: $existingSchema,
+					appId: $appId,
+					appVersion: $version
+				);
+				$data = $guarded['data'];
+
+				// Classify the change against the stored definition, whatever
+				// path it came in by (#4102). An import has nobody to answer a
+				// breaking-change prompt, so a breaking change is recorded and
+				// logged rather than refused. The version the app ships is kept
+				// when it is newer; otherwise the classification decides it.
+				$changeSet = $this->classifyImportedSchemaChange(existing: $existingSchema, data: $data);
+				if (version_compare($incomingVersion, $existingVersion, '>') === false) {
+					// An import never moves a schema's version back. Pass 2 of
+					// importFromJson() re-imports the same data after Pass 1
+					// bumped it; nothing classifies then, and writing the
+					// incoming version back lost the bump the changelog names (#4163).
+					if ($existingSchema->getVersion() !== null) {
+						$data['version'] = $existingVersion;
+					}
+
+					if ($changeSet !== null && $changeSet->hasChanges() === true) {
+						$data['version'] = $this->schemaVersioning->nextVersion(existing: $existingSchema, changeSet: $changeSet);
+					}
+				}
+
+				$eventsBefore = $this->schemaMapper->updateEventCount(schemaId: (int)$existingSchema->getId());
 				$existingSchema = $this->schemaMapper->updateFromArray(id: $existingSchema->getId(), object: $data);
 				if ($owner !== null) {
 					$existingSchema->setOwner($owner);
@@ -2050,11 +2410,17 @@ class ImportHandler {
 					$existingSchema->setApplication($appId);
 				}
 
-				return $this->schemaMapper->update($existingSchema);
+				$existingSchema = $this->schemaMapper->update($existingSchema);
+				$this->installWhenNoEventFired(schema: $existingSchema, eventsBefore: $eventsBefore);
+				$this->recordPendingBaseline(guarded: $guarded, appId: $appId, appVersion: $version);
+				$this->recordImportedSchemaChange(schema: $existingSchema, changeSet: $changeSet, appId: $appId);
+
+				return $existingSchema;
 			}//end if
 
 			// Create new schema.
 			$schema = $this->schemaMapper->createFromArray($data);
+			$this->recordShippedBaseline(data: $data, appId: $appId, appVersion: $version);
 			if ($owner !== null) {
 				$schema->setOwner($owner);
 			}
@@ -2074,6 +2440,34 @@ class ImportHandler {
 			throw new Exception('Failed to import schema: ' . $e->getMessage(), $e->getCode(), $e);
 		}//end try
 	}//end importSchema()
+
+	/**
+	 * Run the schema installers when the import's saves fired no update event.
+	 *
+	 * A save that changed nothing fires no SchemaUpdatedEvent, so the listeners
+	 * that install a schema's flows and notification webhooks did not run. The
+	 * import runs them itself, so a re-import still restores what the schema
+	 * declares. When an event did fire, the listeners already ran and this
+	 * does nothing, so nothing runs twice.
+	 *
+	 * @param Schema $schema The imported schema, as saved.
+	 * @param int $eventsBefore SchemaMapper::updateEventCount() before the import's saves.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-an-import-of-an-unchanged-schema-still-installs-what-it-declares
+	 */
+	private function installWhenNoEventFired(Schema $schema, int $eventsBefore): void {
+		if ($this->schemaInstaller === null) {
+			return;
+		}
+
+		if ($this->schemaMapper->updateEventCount(schemaId: (int)$schema->getId()) !== $eventsBefore) {
+			return;
+		}
+
+		$this->schemaInstaller->install(schema: $schema);
+	}//end installWhenNoEventFired()
 
 	/**
 	 * Compute a stable content hash of a configuration's definitional payload.
@@ -2447,6 +2841,21 @@ class ImportHandler {
 
 				if (isset($schemaData['title']) === false && is_string($key) === true) {
 					$schemaData['title'] = $key;
+				}
+
+				// The component key IS the slug in every app configuration this
+				// handler has ever received: the register lists name schemas by
+				// key, and `$schemaSlugLower` below already reads the key when
+				// `slug` is absent. Only importSchema()'s guard disagreed, and
+				// it rejected the fragment outright. pipelinq shipped sixteen
+				// schemas over four fragments without a `slug`, all sixteen
+				// went dark for nine days, and the app's re-import reported
+				// success. Defaulting the slug here, exactly as `title` is
+				// defaulted two lines up, makes the payload say what every
+				// caller already assumed. A slug that is present but blank is
+				// left alone: that is a mistake to reject, not to paper over.
+				if (array_key_exists('slug', $schemaData) === false && is_string($key) === true) {
+					$schemaData['slug'] = $key;
 				}
 
 				// Blanking `schemasMap` is a TEMPORARY mutation of shared state
@@ -2823,12 +3232,25 @@ class ImportHandler {
 			);
 		}//end if
 
+		// Selectielijst categories the app ships (`components.selectionLists`),
+		// written as selectielijst register rows so its schemas' `archive.classification`
+		// resolves on a fresh install. A refused entry is named in the result;
+		// it never stops the rest of the import.
+		if (is_array($data['components']['selectionLists'] ?? null) === true
+			&& $this->selectionListSeeder !== null
+		) {
+			$result['selectionLists'] = $this->selectionListSeeder->seed(
+				entries: $data['components']['selectionLists'],
+				appId: $appId
+			);
+		}
+
 		// Resolve `@ref:<slug>` seed-reference tokens to concrete target UUIDs
 		// before the import loop. Seed objects reference siblings by slug; the
 		// referenced schema properties are `format: uuid`, so the tokens must be
 		// rewritten to the target object's UUID (and the targets given a stable
 		// id) before validation runs inside saveObject().
-		$data = $this->resolveSeedReferenceTokens(data: $data);
+		$data = $this->resolveSeedReferenceTokens(data: $data, appId: $appId);
 
 		// NOTE: We do NOT build ID maps - we'll pass the actual objects to avoid organisation filter issues.
 		// When saveObject() receives Register/Schema objects, it skips the find() lookup entirely.
@@ -2944,6 +3366,14 @@ class ImportHandler {
 						continue;
 					}
 
+					// A seed whose schema slug resolved to ANOTHER app's schema,
+					// one its register does not list, is a stale seed, not a
+					// write target ({@see self::seedSchemaIsForeign()}).
+					if ($this->seedSchemaIsForeign(register: $registerObject, schema: $schemaObject, appId: $appId) === true) {
+						$result['skipped']['objects']++;
+						continue;
+					}
+
 					// Get IDs for searching existing objects.
 					$registerId = $registerObject->getId();
 					$schemaId = $schemaObject->getId();
@@ -3004,6 +3434,14 @@ class ImportHandler {
 					// This prevents any internal lookups from using string slugs.
 					$objectData['@self']['register'] = (int)$registerId;
 					$objectData['@self']['schema'] = (int)$schemaId;
+
+					// Identity, not data (live pass O6): a listed object may carry
+					// its uuid and slug at the top level, as seed data does. The
+					// uuid becomes the new object's uuid (an @self uuid wins), and
+					// both keys leave the data unless the schema declares them, so
+					// MagicMapper has nothing undeclared to discard.
+					$listedUuid = $this->listedObjectUuid(objectData: $objectData);
+					$objectData = $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $schemaObject);
 
 					if ($existingObject !== null) {
 						// Handle both ObjectEntity instances and array results from searchObjects.
@@ -3072,6 +3510,7 @@ class ImportHandler {
 							object: $objectData,
 							register: $registerObject,
 							schema: $schemaObject,
+							uuid: $listedUuid,
 							_rbac: false,
 							_multitenancy: false,
 							currentUser: $actingUser
@@ -3204,10 +3643,11 @@ class ImportHandler {
 	 * left exactly as-is (the import loop assigns their identity as before).
 	 *
 	 * @param array $data The configuration data.
+	 * @param string|null $appId The importing app, for the foreign-schema guard.
 	 *
 	 * @return array The data with target `@self.id` populated and `@ref:` tokens resolved.
 	 */
-	private function resolveSeedReferenceTokens(array $data): array {
+	private function resolveSeedReferenceTokens(array $data, ?string $appId = null): array {
 		if (($data['components']['objects'] ?? null) === null
 			|| is_array($data['components']['objects']) === false
 		) {
@@ -3266,7 +3706,7 @@ class ImportHandler {
 			// would leave referrers pointing at a dangling, never-stored UUID.
 			// Leave it unmapped so replaceRefTokens logs the unresolved reference
 			// instead of silently fabricating one.
-			[$registerObject, $schemaObject] = $this->resolveImportRegisterSchema(objectData: $targetData);
+			[$registerObject, $schemaObject] = $this->resolveImportRegisterSchema(objectData: $targetData, appId: $appId);
 			if ($registerObject === null || $schemaObject === null) {
 				continue;
 			}
@@ -3449,11 +3889,16 @@ class ImportHandler {
 	 * lookup (RBAC/multitenancy bypassed, as everywhere else in this trusted
 	 * import path). Returns nulls when either cannot be resolved.
 	 *
+	 * A schema that resolves to another app's schema its register does not list
+	 * comes back as null, the same answer the import loop acts on, so a stale
+	 * seed is never handed a pre-assigned identity it will not be stored under.
+	 *
 	 * @param array $objectData The seed object (with @self register/schema).
+	 * @param string|null $appId The importing app, for the foreign-schema guard.
 	 *
 	 * @return array{0: ?Register, 1: ?Schema} The resolved register and schema.
 	 */
-	private function resolveImportRegisterSchema(array $objectData): array {
+	private function resolveImportRegisterSchema(array $objectData, ?string $appId = null): array {
 		$rawRegister = $objectData['@self']['register'] ?? null;
 		$rawSchema = $objectData['@self']['schema'] ?? null;
 
@@ -3491,8 +3936,79 @@ class ImportHandler {
 			$schemaObject = null;
 		}
 
+		if ($registerObject !== null
+			&& $schemaObject !== null
+			&& $this->seedSchemaIsForeign(register: $registerObject, schema: $schemaObject, appId: $appId) === true
+		) {
+			$schemaObject = null;
+		}
+
 		return [$registerObject, $schemaObject];
 	}//end resolveImportRegisterSchema()
+
+	/**
+	 * Whether a seed's schema belongs to another app and not to the seed's register.
+	 *
+	 * A seed names its schema by slug, and the import resolves a slug it did
+	 * not import itself with a GLOBAL lookup. Two apps can ship a schema under
+	 * the same slug: stackiq and opencatalogi both used `organization`. When
+	 * opencatalogi dropped its own and kept a stale `organization` seed in its
+	 * `publication` register, the global lookup found stackiq's schema and the
+	 * seed was written into a `publication` x stackiq-`organization` table,
+	 * failing NOT NULL on stackiq's required fields. Whichever app installed
+	 * second broke.
+	 *
+	 * Foreign means all three: the register lists schemas and this one is not
+	 * among them, the schema names an owning application, and that owner is
+	 * neither the importing app nor the register's own app. Each condition
+	 * keeps a legitimate seed working: a register with no schema list yet
+	 * carries no evidence; an app's own schema may not be linked yet on a first
+	 * install that imports its register fragments in several passes; and an app
+	 * seeding into another app's register uses a schema that register lists.
+	 *
+	 * @param Register $register The register the seed names.
+	 * @param Schema $schema The schema its slug resolved to.
+	 * @param string|null $appId The importing app, or null for an import without one.
+	 *
+	 * @return bool True when the seed must be skipped.
+	 *
+	 * @spec openspec/changes/seed-schema-must-belong-to-its-register/specs/data-import-export/spec.md#requirement-a-seed-is-never-written-into-another-apps-schema-its-register-does-not-list
+	 */
+	private function seedSchemaIsForeign(Register $register, Schema $schema, ?string $appId): bool {
+		$linked = array_map('strval', $register->getSchemas());
+		if ($linked === []) {
+			return false;
+		}
+
+		if (in_array((string)$schema->getId(), $linked, true) === true
+			|| in_array((string)$schema->getSlug(), $linked, true) === true
+		) {
+			return false;
+		}
+
+		$owner = (string)($schema->getApplication() ?? '');
+		if ($owner === ''
+			|| $owner === (string)($appId ?? '')
+			|| $owner === (string)($register->getApplication() ?? '')
+		) {
+			return false;
+		}
+
+		$this->logger->warning(
+			message: '[ImportHandler] Skipping seed object: its schema belongs to another app and is not in its register',
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'appId' => $appId,
+				'registerSlug' => $register->getSlug(),
+				'schemaSlug' => $schema->getSlug(),
+				'schemaId' => $schema->getId(),
+				'schemaApplication' => $owner,
+			]
+		);
+
+		return true;
+	}//end seedSchemaIsForeign()
 
 	/**
 	 * Look up the UUID of an already-imported object with the given
@@ -3747,11 +4263,12 @@ class ImportHandler {
 				);
 			}//end if
 
-			// Perform the import using the configuration entity.
-			$result = $this->importFromJson(
+			// Perform the import using the configuration entity, under its own
+			// import job id so the objects it creates can be removed by job
+			// later (a setup wizard's "remove this example set").
+			$result = $this->importFromJsonAsJob(
 				data: $data,
 				configuration: $configuration,
-				owner: $appId,
 				appId: $appId,
 				version: $version,
 				force: $force
@@ -3875,6 +4392,22 @@ class ImportHandler {
 				result: $result
 			);
 
+			// REGISTER FOLDERS AT IMPORT (register-folder-at-import): an
+			// API-created register gets its Files folder at creation; an
+			// app-imported one did not, so the first upload had to make it
+			// (portaliq#29). Every register this import returned, including an
+			// auto-created one, gets its folder here. The id is recorded as
+			// bookkeeping (no update event, no organisation check) and a
+			// failure is logged, never thrown: the first upload still makes it.
+			try {
+				$this->folderProvisioner?->ensureFolders(registers: ($result['registers'] ?? []));
+			} catch (\Throwable $e) {
+				$this->logger->warning(
+					message: "[ImportHandler] Register folder provisioning failed for app {$appId}: " . $e->getMessage(),
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+			}
+
 			// MAGIC-TABLE COLUMN SYNC (fixes #2082): reconcile the physical
 			// table of EVERY imported schema, in every register that holds it.
 			//
@@ -3903,6 +4436,74 @@ class ImportHandler {
 			throw new Exception("Failed to import configuration for app {$appId}: " . $e->getMessage());
 		}//end try
 	}//end importFromApp()
+
+	/**
+	 * Run importFromJson() for an app under its own import job id.
+	 *
+	 * Every audit row the import writes carries the id; the stamp is ended in
+	 * `finally`, so a throwing import never leaks it. A job that created
+	 * objects is recorded per app id, and its id is returned as
+	 * `importJobId` (null when nothing traceable was created).
+	 *
+	 * @param array         $data          The configuration data.
+	 * @param Configuration $configuration The configuration entity.
+	 * @param string        $appId         The app id the import runs under.
+	 * @param string        $version       The configuration version.
+	 * @param bool          $force         Force import regardless of version.
+	 *
+	 * @return array The importFromJson() result plus `importJobId`.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors importFromApp()'s force flag.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-an-app-configuration-import-must-run-under-its-own-import-job-id
+	 */
+	private function importFromJsonAsJob(
+		array $data,
+		Configuration $configuration,
+		string $appId,
+		string $version,
+		bool $force
+	): array {
+		if ($this->importJobRecorder === null) {
+			$result = $this->importFromJson(
+				data: $data,
+				configuration: $configuration,
+				owner: $appId,
+				appId: $appId,
+				version: $version,
+				force: $force
+			);
+			$result['importJobId'] = null;
+			return $result;
+		}
+
+		$importJobId = $this->importJobRecorder->begin();
+		try {
+			$result = $this->importFromJson(
+				data: $data,
+				configuration: $configuration,
+				owner: $appId,
+				appId: $appId,
+				version: $version,
+				force: $force
+			);
+		} finally {
+			$this->importJobRecorder->end();
+		}
+
+		$recorded = $this->importJobRecorder->record(
+			appId: $appId,
+			importJobId: $importJobId,
+			version: $version,
+			objectsWritten: count((array)($result['objects'] ?? []))
+		);
+		$result['importJobId'] = null;
+		if ($recorded === true) {
+			$result['importJobId'] = $importJobId;
+		}
+
+		return $result;
+	}//end importFromJsonAsJob()
 
 	/**
 	 * Reconcile the magic table of every imported schema, in every register that holds it.
@@ -4607,6 +5208,58 @@ class ImportHandler {
 	}//end importSeedData()
 
 	/**
+	 * Remove the seed format's top-level `uuid` and `slug` from an object's data.
+	 *
+	 * A seed object carries its uuid and slug at the top level; the importer
+	 * reads them for the idempotency lookup and sets them as object metadata.
+	 * Left in the data, MagicMapper discards them as undeclared and logs a
+	 * warning for every seeded object on every import. A schema that declares
+	 * a `uuid` or `slug` property keeps it as data.
+	 *
+	 * @param array  $objectData The seed object's data.
+	 * @param Schema $schema     The schema the object is written to.
+	 *
+	 * @return array The data without the undeclared metadata keys.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-seed-metadata-keys-are-not-stored-as-data
+	 */
+	private function withoutSeedMetadataKeys(array $objectData, Schema $schema): array {
+		$declared = $schema->getProperties();
+		if (is_array($declared) === false) {
+			$declared = [];
+		}
+
+		foreach (['uuid', 'slug'] as $metaKey) {
+			if (array_key_exists($metaKey, $declared) === false) {
+				unset($objectData[$metaKey]);
+			}
+		}
+
+		return $objectData;
+	}//end withoutSeedMetadataKeys()
+
+	/**
+	 * The uuid a listed (components.objects) object names for itself, if any.
+	 *
+	 * `@self.uuid` wins over the seed format's top-level `uuid`.
+	 *
+	 * @param array $objectData The listed object.
+	 *
+	 * @return string|null The uuid, or null when the object names none.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-seed-metadata-keys-are-not-stored-as-data
+	 */
+	private function listedObjectUuid(array $objectData): ?string {
+		foreach ([($objectData['@self']['uuid'] ?? null), ($objectData['uuid'] ?? null)] as $candidate) {
+			if (is_string($candidate) === true && trim($candidate) !== '') {
+				return trim($candidate);
+			}
+		}
+
+		return null;
+	}//end listedObjectUuid()
+
+	/**
 	 * Import the seed-data objects themselves.
 	 *
 	 * Split out of {@see importSeedData()} so the whole pass runs inside one
@@ -4760,6 +5413,16 @@ class ImportHandler {
 					continue;
 				}//end try
 			}//end if
+
+			// Same guard as the components.objects path: a slug that resolved
+			// to another app's schema its target register does not list is a
+			// stale seed, so every object under it is skipped.
+			if ($targetRegister instanceof Register
+				&& $this->seedSchemaIsForeign(register: $targetRegister, schema: $schema, appId: $appId) === true
+			) {
+				$result['skipped']['seedObjects'] += count((array)$objects);
+				continue;
+			}
 
 			$this->logger->debug(
 				message: "[ImportHandler] Importing seed objects for schema '{$schemaSlug}'",
@@ -5021,8 +5684,12 @@ class ImportHandler {
 					// SeedData with external config references goes to the external register.
 					$objectEntity->setRegister($targetRegId);
 
-					// Store object data.
-					$objectEntity->setObject($objectData);
+					// Store object data, without the top-level uuid/slug the seed
+					// format carries as metadata (set above) unless the schema
+					// declares them as properties.
+					$objectEntity->setObject(
+						$this->withoutSeedMetadataKeys(objectData: $objectData, schema: $objectSchema)
+					);
 
 					// Set timestamps.
 					$now = new DateTime();

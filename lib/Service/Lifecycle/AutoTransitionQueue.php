@@ -57,7 +57,7 @@ class AutoTransitionQueue {
 	 * @param ListenerDeferralService $deferral Queues an async move under the triggering identity.
 	 * @param LoggerInterface $logger Records that a move was queued rather than applied.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly ListenerDeferralService $deferral,
@@ -73,7 +73,7 @@ class AutoTransitionQueue {
 	 *
 	 * @return boolean True when the move is applied here and now.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function appliesInline(AutoTransitionCandidate $candidate, bool $queueOnly): bool {
 		if ($queueOnly === true) {
@@ -104,7 +104,7 @@ class AutoTransitionQueue {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function queue(AutoTransitionDecision $decision, array $lineage): void {
 		$this->deferral->defer(
@@ -145,7 +145,7 @@ class AutoTransitionQueue {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function flushQueued(): void {
 		$this->deferral->flushAll();

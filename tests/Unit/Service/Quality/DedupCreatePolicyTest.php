@@ -17,7 +17,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+ * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
  */
 
 declare(strict_types=1);
@@ -133,7 +133,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testWarnIsTheDefaultAndDoesNotScore(): void {
 		$this->duplicates->method('dedupAnnotation')->willReturn(['matchRules' => []]);
@@ -147,7 +147,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testDeclaredWarnDoesNotRefuse(): void {
 		$this->duplicates->method('dedupAnnotation')->willReturn(['onCreate' => 'warn']);
@@ -161,7 +161,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testBlockRefusesAndNamesTheMatch(): void {
 		$this->signIn('handler', ['case-handlers']);
@@ -184,7 +184,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testBlockWithoutAMatchAllowsTheCreate(): void {
 		$this->duplicates->method('dedupAnnotation')->willReturn(['onCreate' => 'block']);
@@ -199,7 +199,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testOverrideOutsideTheGroupIsStillRefused(): void {
 		$this->signIn('handler', ['case-handlers']);
@@ -218,7 +218,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testOverrideInsideTheGroupPassesAndReturnsTheMatches(): void {
 		$this->signIn('supervisor', ['case-supervisors']);
@@ -238,7 +238,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testMembershipWithoutTheFlagIsStillRefused(): void {
 		$this->signIn('supervisor', ['case-supervisors']);
@@ -258,7 +258,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testBlockWithoutOverrideGroupsAdmitsNobody(): void {
 		$this->signIn('admin', ['admin']);
@@ -286,7 +286,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testTheOverrideHasAParameterOnEverySaveHopNotOnlyTheBody(): void {
 		foreach (
@@ -315,7 +315,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testOverrideIsOnTheAuditTrail(): void {
 		$object = new ObjectEntity();
@@ -344,7 +344,7 @@ class DedupCreatePolicyTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testNoOverrideWritesNoAuditEntry(): void {
 		$this->auditTrailMapper->expects($this->never())->method('createAuditTrailEntry');

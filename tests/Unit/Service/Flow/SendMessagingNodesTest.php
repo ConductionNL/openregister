@@ -16,7 +16,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md
+ * @spec openspec/specs/flow-messaging-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Flow\FlowMessagingService;
 use OCA\OpenRegister\Service\Flow\Nodes\SendEmailNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendNotificationNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SendTalkMessageNode;
+use OCA\OpenRegister\Service\Notification\OptOutAuthority;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -198,4 +199,96 @@ class SendMessagingNodesTest extends TestCase {
 		$this->assertSame([], glob($nodesDir . '/*Activity*'));
 		$this->assertSame([], glob($nodesDir . '/*WebPush*'));
 	}//end testThePaletteHasExactlyTheseThreeMessagingTypesAndNoWebhook()
+
+	/**
+	 * The external-recipients option is declared, formed and validated.
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-a-send-email-step-reaches-an-address-only-as-far-as-the-step-allows
+	 */
+	public function testSendEmailDeclaresAndValidatesExternalRecipients(): void {
+		$email = new SendEmailNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls);
+
+		$this->assertContains('externalRecipients', $email->configKeys());
+		$formKeys = array_column($email->configForm(), 'key');
+		$this->assertContains('externalRecipients', $formKeys);
+		// Every form field writes a key the node actually reads.
+		$this->assertSame([], array_diff($formKeys, $email->configKeys()));
+
+		$base = ['recipients' => ['bob'], 'body' => 'b'];
+		foreach (['', 'none', 'object', 'any', 'Object'] as $mode) {
+			$email->validateConfig(config: $base + ['externalRecipients' => $mode]);
+		}
+
+		try {
+			$email->validateConfig(config: $base + ['externalRecipients' => 'everyone']);
+			$this->fail('An unknown externalRecipients mode must be refused.');
+		} catch (UnexpectedValueException $e) {
+			$this->assertStringContainsString('everyone', $e->getMessage());
+			$this->assertStringContainsString('none, object or any', $e->getMessage());
+		}
+	}//end testSendEmailDeclaresAndValidatesExternalRecipients()
+
+	/**
+	 * The message category is declared, formed and validated, and an unknown one names the field.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
+	 */
+	public function testSendEmailDeclaresAndValidatesTheMessageCategory(): void {
+		$email = new SendEmailNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls);
+
+		$this->assertContains('messageCategory', $email->configKeys());
+		$this->assertContains('messageCategory', array_column($email->configForm(), 'key'));
+
+		$base = ['recipients' => ['bob'], 'body' => 'b'];
+		foreach (['', 'besluit', 'statutory', 'account', 'security', 'case-update', 'reminder', 'service', 'marketing', 'Besluit'] as $category) {
+			$email->validateConfig(config: $base + ['messageCategory' => $category]);
+		}
+
+		$email->validateConfig(config: $base);
+
+		try {
+			$email->validateConfig(config: $base + ['messageCategory' => 'nieuwsbrief']);
+			$this->fail('An unknown messageCategory must be refused.');
+		} catch (UnexpectedValueException $e) {
+			$this->assertStringContainsString('messageCategory', $e->getMessage());
+			$this->assertStringContainsString('nieuwsbrief', $e->getMessage());
+			$this->assertStringContainsString('besluit, statutory, account, security, case-update, reminder, service, marketing', $e->getMessage());
+		}
+	}//end testSendEmailDeclaresAndValidatesTheMessageCategory()
+
+	/**
+	 * The message category is a select over exactly the fleet categories, each with a label.
+	 *
+	 * The shared flow form renders a `select` with `options` as a picker, so an
+	 * author picks a category by name instead of typing one from the help text.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
+	 */
+	public function testTheMessageCategoryIsASelectOverTheFleetCategories(): void {
+		$email = new SendEmailNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls);
+
+		$fields = array_column($email->configForm(), null, 'key');
+		$field  = $fields['messageCategory'];
+
+		$this->assertSame('select', $field['type']);
+		$this->assertArrayNotHasKey('optionsFrom', $field);
+
+		$values = array_column($field['options'], 'value');
+		sort($values);
+		$expected = OptOutAuthority::CATEGORIES;
+		sort($expected);
+		$this->assertSame($expected, $values);
+
+		// The default comes first, so the picker opens on what an empty value means.
+		$this->assertSame(OptOutAuthority::DEFAULT_CATEGORY, $field['options'][0]['value']);
+		foreach ($field['options'] as $option) {
+			$this->assertNotSame('', trim((string)$option['label']));
+			$this->assertNotSame($option['value'], $option['label']);
+		}
+
+		// Every value the picker offers is one the step accepts.
+		foreach ($values as $value) {
+			$email->validateConfig(config: ['recipients' => ['bob'], 'body' => 'b', 'messageCategory' => $value]);
+		}
+	}//end testTheMessageCategoryIsASelectOverTheFleetCategories()
 }//end class

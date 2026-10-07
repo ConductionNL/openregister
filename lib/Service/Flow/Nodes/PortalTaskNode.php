@@ -269,7 +269,7 @@ class PortalTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigF
 	 *                          the case names nobody, or a re-ask has no reason.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-a-portal-task-step-creates-one-external-task-and-suspends-the-run
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-wake-re-reads-the-awaited-task-and-applies-a-terminal-outcome
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-wake-re-reads-the-awaited-task-and-applies-a-terminal-outcome
 	 */
 	public function execute(array $items, array $config, array $context): array {
 		if ($items === []) {

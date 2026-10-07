@@ -15,7 +15,7 @@ declare(strict_types=1);
  * @author   Conduction Development Team <dev@conduction.nl>
  * @license  EUPL-1.2
  *
- * @spec openspec/changes/hybrid-document-search/tasks.md#7.2
+ * @spec openspec/changes/archive/2026-10-05-hybrid-document-search/tasks.md#7.2
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Db;

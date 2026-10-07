@@ -18,7 +18,7 @@ use PHPUnit\Framework\TestCase;
  * action buttons rendered via addAction(), the implicit single "View" action
  * kept when no actions are declared, and the originApp-driven hex icon.
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 class AnnotationNotifierWebPushTest extends TestCase {
 	private IFactory&MockObject $factory;

@@ -81,7 +81,8 @@ class MagicOrganizationHandler {
 
 	/**
 	 * Rows in the caller's active organisation(s), PLUS rows with no
-	 * organisation at all. Admins only. This is the mode the aggregation API
+	 * organisation at all. Admins, or a caller whose register-cascade grant
+	 * admits org-less rows (see admitOrganisationless()). This is the mode the aggregation API
 	 * used to get wrong: it rendered only the `IN` half, and SQL `=` / `IN`
 	 * never match NULL, so org-less rows vanished from every KPI.
 	 */
@@ -118,6 +119,7 @@ class MagicOrganizationHandler {
 	 * @param bool $adminBypassEnabled Whether admin users can bypass org filtering
 	 * @param int|null $registerId The register this table belongs to, for shared master data
 	 * @param int|null $schemaId The schema this table belongs to, for shared master data
+	 * @param bool $withOrgless Whether the caller's RBAC grant also admits org-less rows
 	 *
 	 * @return void
 	 *
@@ -132,12 +134,16 @@ class MagicOrganizationHandler {
 		bool $adminBypassEnabled = false,
 		?int $registerId = null,
 		?int $schemaId = null,
+		bool $withOrgless = false,
 	): void {
 		$scope = $this->resolveOrganizationScope(
 			adminBypassEnabled: $adminBypassEnabled,
 			registerId: $registerId,
 			schemaId: $schemaId
 		);
+		if ($withOrgless === true) {
+			$scope = self::admitOrganisationless(scope: $scope);
+		}
 
 		if ($scope['mode'] === self::SCOPE_ALL) {
 			return;
@@ -167,7 +173,8 @@ class MagicOrganizationHandler {
 			);
 		}
 
-		// Condition 2: objects with no organisation — ONLY for admin users.
+		// Condition 2: objects with no organisation, for admins and for a
+		// register-cascade grant (admitOrganisationless()).
 		if ($scope['mode'] === self::SCOPE_IN_OR_NULL) {
 			$conditions[] = $qb->expr()->isNull('t._organisation');
 		}
@@ -175,6 +182,37 @@ class MagicOrganizationHandler {
 		$qb->andWhere($qb->expr()->orX(...$conditions));
 
 	}//end applyOrganizationFilter()
+
+	/**
+	 * Widen an organisation scope by the rows with NO organisation.
+	 *
+	 * Used when the caller's RBAC grant comes from the register cascade (see
+	 * MagicRbacHandler::admitsOrganisationlessRowsThroughCascade()): org-less
+	 * rows belong to no tenant, so the grant reaches them, while the rows of
+	 * other organisations stay outside the scope. Only the two modes that
+	 * exclude org-less rows change; every other mode, an unknown one included,
+	 * is returned untouched so each renderer keeps its own fail-closed answer.
+	 *
+	 * @param array{mode: string, uuids: array<int, string>} $scope The decided scope.
+	 *
+	 * @return array{mode: string, uuids: array<int, string>} The widened scope.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
+	 */
+	public static function admitOrganisationless(array $scope): array {
+		$mode = ($scope['mode'] ?? null);
+
+		if ($mode === self::SCOPE_IN) {
+			$scope['mode'] = self::SCOPE_IN_OR_NULL;
+		}
+
+		if ($mode === self::SCOPE_NONE) {
+			$scope['mode'] = self::SCOPE_NULL_ONLY;
+			$scope['uuids'] = [];
+		}
+
+		return $scope;
+	}//end admitOrganisationless()
 
 	/**
 	 * Decide WHICH rows the current caller may see, without building any SQL.
@@ -345,14 +383,46 @@ class MagicOrganizationHandler {
 	 * @param \OCP\IUser|null $user The resolved session user (null in CLI).
 	 *
 	 * @return bool True when the org filter should be bypassed.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AnonymousEvaluationContext is an ambient-context
+	 *   marker; a static read is the whole point of it (WOO-578).
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	private function isSystemContext(?\OCP\IUser $user): bool {
-		if ($user !== null || PHP_SAPI !== 'cli' || $this->isSaasModeEnabled() === true) {
+		if ($user !== null || $this->isSaasModeEnabled() === true) {
+			return false;
+		}
+
+		// The command line, or code inside ObjectService::runAsSystem() in any
+		// SAPI: a system write in a web request (dossiq's portal Woo intake)
+		// resolves its calculation references here too. Same rule as
+		// MagicRbacHandler::isTrustedSystemCaller().
+		if ($this->isCommandLine() === false
+			&& \OCA\OpenRegister\Service\SystemOperationContext::isActive() === false
+		) {
+			return false;
+		}
+
+		// A forced-anonymous evaluation (WOO-578) has no user on purpose; it is
+		// the one CLI case that is a caller, not the system.
+		if (\OCA\OpenRegister\Service\AnonymousEvaluationContext::isActive() === true) {
 			return false;
 		}
 
 		return true;
 	}//end isSystemContext()
+
+	/**
+	 * Whether PHP runs on the command line. A seam, so a test can read as a web request.
+	 *
+	 * @return bool True under the CLI SAPI.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	protected function isCommandLine(): bool {
+		return PHP_SAPI === 'cli';
+	}//end isCommandLine()
 
 	/**
 	 * Get the active organization UUID(s) for the current user

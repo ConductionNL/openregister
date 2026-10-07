@@ -50,9 +50,14 @@ class FileSettingsHandlerTest extends TestCase {
 	 * @return void
 	 */
 	public function testGetFileSettingsReturnsDefaultWhenEmpty(): void {
+		// The read also asks whether an OpenAnonymiser password is stored.
 		$this->appConfig->method('getValueString')
-			->with('openregister', 'fileManagement', '')
-			->willReturn('');
+			->willReturnMap(
+				[
+					['openregister', 'fileManagement', '', false, ''],
+					['openregister', 'openAnonymiserPassword', '', false, ''],
+				]
+			);
 
 		$result = $this->handler->getFileSettingsOnly();
 
@@ -79,6 +84,9 @@ class FileSettingsHandlerTest extends TestCase {
 		$this->assertSame('', $result['openAnonymiserApiEndpoint']);
 		$this->assertFalse($result['entityRecognitionEnabled']);
 		$this->assertSame('auto', $result['entityRecognitionMethod']);
+		$this->assertSame('', $result['openAnonymiserUsername']);
+		$this->assertFalse($result['openAnonymiserPasswordSet']);
+		$this->assertArrayNotHasKey('openAnonymiserPassword', $result);
 	}
 
 	/**
@@ -235,6 +243,71 @@ class FileSettingsHandlerTest extends TestCase {
 		$this->assertNull($result['provider']);
 		$this->assertSame('RECURSIVE_CHARACTER', $result['chunkingStrategy']);
 		$this->assertSame(200, $result['chunkOverlap']);
+	}
+
+	/**
+	 * `batchSize` is bounded on write. A zero or negative value made the cron
+	 * job extract nothing and then log "no pending files" for a queue that was
+	 * not empty; an unbounded one let a single tick attempt
+	 * MAX_PENDING_WINDOWS x batchSize files.
+	 *
+	 * @dataProvider provideBatchSizes
+	 *
+	 * @param mixed $given    The value as supplied by the caller.
+	 * @param int   $expected The value that must be stored.
+	 */
+	public function testBatchSizeIsBoundedOnWrite(mixed $given, int $expected): void {
+		$result = $this->handler->updateFileSettingsOnly(['batchSize' => $given]);
+
+		$this->assertSame($expected, $result['batchSize']);
+	}
+
+	/**
+	 * The same bound applies on read. Installations that stored a batch size
+	 * before the write-side clamp existed still have that value in appconfig, and
+	 * the cron job hands it straight to extractPendingFiles() with nothing in
+	 * between — so a bound that only guards the write path leaves them exposed.
+	 *
+	 * @dataProvider provideBatchSizes
+	 *
+	 * @param mixed $given    The value already stored in appconfig.
+	 * @param int   $expected The value that must come back out.
+	 */
+	public function testBatchSizeIsBoundedOnRead(mixed $given, int $expected): void {
+		$this->appConfig->method('getValueString')
+			->willReturn(json_encode(['batchSize' => $given]));
+
+		$result = $this->handler->getFileSettingsOnly();
+
+		$this->assertSame($expected, $result['batchSize']);
+	}
+
+	/**
+	 * A stored config without a batch size must not gain one on read: the cron
+	 * job has its own DEFAULT_BATCH_SIZE fallback for exactly that case.
+	 *
+	 * @return void
+	 */
+	public function testReadDoesNotInventABatchSize(): void {
+		$this->appConfig->method('getValueString')
+			->willReturn(json_encode(['extractionMode' => 'cron']));
+
+		$result = $this->handler->getFileSettingsOnly();
+
+		$this->assertArrayNotHasKey('batchSize', $result);
+	}
+
+	/**
+	 * @return array<string, array{0: mixed, 1: int}>
+	 */
+	public static function provideBatchSizes(): array {
+		return [
+			'zero becomes one'        => [0, 1],
+			'negative becomes one'    => [-5, 1],
+			'above the cap is capped' => [5000, 500],
+			'a sane value is kept'    => [25, 25],
+			'the cap itself is kept'  => [500, 500],
+		];
 	}
 
 	/**

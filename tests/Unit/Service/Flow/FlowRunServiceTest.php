@@ -766,6 +766,23 @@ class FlowRunServiceTest extends TestCase {
 	}
 
 	/**
+	 * The run's flow id reaches the node context, so a node can name its flow
+	 * (FlowEmailSentEvent does). Stamped from the run: a context-supplied
+	 * value does not win.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-send-email-external-recipients/spec.md#requirement-every-sent-email-is-announced-to-listeners
+	 */
+	public function testTheRunsFlowIdReachesTheNodeContext(): void {
+		$run = $this->service->queue('f1', ['uuid' => 'u1'], 'object.created', ['flowId' => 'forged'], 'alice');
+
+		$this->service->execute($run, $this->captureFlow(), new RunSubject());
+
+		$this->assertSame('f1', ($this->capturer->seenContext[FlowRunService::FLOW_ID_CONTEXT_KEY] ?? null));
+	}
+
+	/**
 	 * An explicit context value wins, so a caller can attribute a run to
 	 * somebody other than whoever queued it.
 	 *

@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-run-subjects-and-answers/specs/flow-run-subjects/spec.md
+ * @spec openspec/specs/flow-run-subjects/spec.md
  */
 
 declare(strict_types=1);
@@ -58,6 +58,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Flow\FlowSuspension
  */
 final class FlowNodeSubjectRecordingTest extends TestCase {
 

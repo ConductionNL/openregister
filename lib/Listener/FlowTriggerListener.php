@@ -139,7 +139,7 @@ class FlowTriggerListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-trigger-canonical-slugs/specs/flow-engine/spec.md
+	 * @spec openspec/specs/flow-engine/spec.md
 	 */
 	private function fireCaseItemTrigger(CaseItemTransitionedEvent $event): void {
 		$trigger = $event->getCatalogTrigger();
@@ -175,7 +175,7 @@ class FlowTriggerListener implements IEventListener {
 	 *
 	 * @return array<string, string> The extra context, empty for most events.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function contextFor(Event $event): array {
 		if ($event instanceof ObjectTransitionedEvent) {

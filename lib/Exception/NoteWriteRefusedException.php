@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Exception;
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
- * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 abstract class NoteWriteRefusedException extends Exception {
 
@@ -53,7 +53,7 @@ abstract class NoteWriteRefusedException extends Exception {
 	 *
 	 * @return integer The status code.
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function getHttpStatus(): int {
 		return static::HTTP_STATUS;

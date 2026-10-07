@@ -118,6 +118,39 @@ class RuleRunSummaryMapper extends QBMapper {
 	}//end findBySchema()
 
 	/**
+	 * The rules whose last evaluation left an error, most recent first.
+	 *
+	 * NARROWED IN SQL RATHER THAN IN THE READER, and the reason is not
+	 * tidiness. Ordering every rule by `last_error_at DESC` and filtering
+	 * afterwards is wrong on Postgres, where a descending sort puts NULLs
+	 * FIRST: the rules that have never errored would fill the page and push
+	 * the ones an administrator has to act on off the end, silently, while
+	 * MySQL put them last and the same code looked correct. A `WHERE` that
+	 * removes them is the same answer on both.
+	 *
+	 * One row per rule, so this table is as long as the instance has rules
+	 * rather than as long as it has evaluations.
+	 *
+	 * @param int $limit How many summaries to return.
+	 *
+	 * @return array<int, RuleRunSummary> The summaries.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function findHoldingAnError(int $limit = 50): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->isNotNull('last_error'))
+			->orderBy('last_error_at', 'DESC')
+			->addOrderBy('id', 'DESC')
+			->setMaxResults(max(1, $limit));
+
+		return $this->findEntities(query: $qb);
+
+	}//end findHoldingAnError()
+
+	/**
 	 * Record one evaluation against a rule's summary.
 	 *
 	 * Creates the row on the rule's first evaluation and updates it after. An

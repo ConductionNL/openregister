@@ -15,6 +15,14 @@ bin/console text eol=lf
 *.ico binary
 *.png binary
 
+# 🔴 THE VENDORED OMG BPMN SCHEMA SET IS BYTE-PINNED, SO GIT MUST NOT TOUCH IT.
+# The five files ship with CRLF endings exactly as omg.org serves them, and
+# `* text=auto eol=lf` above would rewrite every line on checkout: the files on
+# disk would then no longer hash to the SHA-256 sums recorded in
+# schema/PROVENANCE.md, which is both a failing provenance test and, more to
+# the point, a modified copy of a specification we said we had not modified.
+lib/Service/Flow/Bpmn/schema/*.xsd -text
+
 .github export-ignore
 .travis.yml export-ignore
 LICENSE export-ignore

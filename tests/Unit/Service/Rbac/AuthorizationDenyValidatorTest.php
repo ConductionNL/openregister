@@ -38,6 +38,9 @@ use PHPUnit\Framework\TestCase;
  * Pins the save-time refusals.
  *
  * @covers \OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator
+ * @uses \OCA\OpenRegister\Exception\AuthorizationBlockException
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
  */
 class AuthorizationDenyValidatorTest extends TestCase {
 

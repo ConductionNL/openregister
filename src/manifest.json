@@ -3,6 +3,7 @@
     "setup": {
       "version": 1,
       "completionConfigKey": "setup_completed_version",
+      "dismissAction": "dismiss-setup",
       "steps": [
         {
           "id": "welcome",
@@ -16,17 +17,10 @@
           "display": "cards",
           "optionsSource": "datasets",
           "configKey": "demo_dataset",
+          "loadAction": "load-demo-data",
           "title": "Load example data?",
           "required": false,
-          "body": "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install."
-        },
-        {
-          "id": "load-demo-data",
-          "type": "run-action",
-          "action": "load-demo-data",
-          "title": "Load the example data",
-          "required": false,
-          "body": "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards."
+          "body": "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install."
         },
         {
           "id": "done",
@@ -190,10 +184,10 @@
       "route": "/flows",
       "type": "index",
       "title": "Flows",
-      "_note": "Ordinary index over a NAMED SOURCE, not a custom page. A flow lives in OpenRegister's own native flow table rather than a register/schema pair, so an object-backed index had nothing to address and this used to be type:custom over FlowsIndex.vue. Named index sources (nextcloud-vue 2.20.0) close that: config.entitySource names the collection and the index loads it. Columns are stated here rather than left to the source's defaults because this is the ENGINE's cross-app surface — it passes no app filter and so needs the `app` column, which a leaf app's own flow list does not. Migrating also fixes a dead listener: FlowsIndex bound @rowClick while CnIndexPage emits row-click, so opening a flow by clicking its row never worked here. `rowRoute` names the flowDetail page (a route NAME, not a path): without it a named-source page has no schema, so CnPageRenderer never auto-wired editOpensDetail and row Edit opened an EMPTY modal instead of the flow editor.",
+      "_note": "Ordinary index over a NAMED SOURCE, not a custom page. A flow lives in OpenRegister's own native flow table rather than a register/schema pair, so an object-backed index had nothing to address and this used to be type:custom over FlowsIndex.vue. Named index sources (nextcloud-vue 2.20.0) close that: config.entitySource names the collection and the index loads it. Columns are stated here rather than left to the source's defaults because this is the ENGINE's cross-app surface — it passes no app filter and so needs the `app` column, which a leaf app's own flow list does not. Migrating also fixes a dead listener: FlowsIndex bound @rowClick while CnIndexPage emits row-click, so opening a flow by clicking its row never worked here. `rowRoute` names the flow-overview route (a route NAME, not a path, registered in src/main.js by flow-and-run-detail-pages): a row opens the flow's overview, which links on to the editor at /flows/:id. Without a rowRoute a named-source page has no schema, so CnPageRenderer never auto-wired editOpensDetail and row Edit opened an EMPTY modal.",
       "config": {
         "entitySource": "flows",
-        "rowRoute": "flowDetail",
+        "rowRoute": "flow-overview",
         "columns": [
           {
             "key": "name",
@@ -248,6 +242,14 @@
       "title": "Webhooks",
       "component": "WebhooksIndex",
       "_note": "Bespoke webhook pipeline configuration UI."
+    },
+    {
+      "id": "agents",
+      "route": "/agents",
+      "type": "custom",
+      "title": "Agents",
+      "component": "AgentsIndex",
+      "_note": "The tools each AI agent may use (ai-agent-limits-screen). The same grant holds in chat and over MCP for a client that names the agent."
     },
     {
       "id": "webhooks-logs",
@@ -442,6 +444,14 @@
       "title": "Merge Operations",
       "component": "MergeOperationsIndex",
       "_note": "MDM steward surface (ADR-045 follow-on #C): audit list of recent mergeOperation rows with an in-window reverse action, read through the generic object-read surface (design.md D2)."
+    },
+    {
+      "id": "operationsConsole",
+      "route": "/operations",
+      "type": "custom",
+      "title": "Operations",
+      "component": "OperationsConsoleIndex",
+      "_note": "The administrator's one read of what the instance is doing (admin-operations-console). Joins records that already exist: bulk jobs, notification dispatches and rule runs, plus the background jobs whose runs are recorded nowhere and are therefore named as unobserved. The acting verbs stay on bulkJobs#pause / #resume / #retry so one ownership rule lives in one place. type:\"custom\" is forced rather than preferred, and gate-69's custom-page ratchet is knowingly accepted here: CnPageRenderer honours `page.component` ONLY for type:\"custom\" (CnPageRenderer.vue, pageComponent()), so declaring type:\"dashboard\" would dispatch to the library's dashboard component and render this console as a blank page with no error. The screen is also not a widget grid: each pane is a join across four mappers, not a widget over one index endpoint. Moving it to a typed dashboard means rewriting the three panes as registered widgets, which belongs with the run-history branch that gives the job pane real rows."
     }
   ],
   "store": {
@@ -585,11 +595,25 @@
           "order": 95
         },
         {
+          "id": "Agents",
+          "label": "Agents",
+          "icon": "RobotOutline",
+          "route": "agents",
+          "order": 96
+        },
+        {
           "id": "Avg",
           "label": "GDPR / AVG processing register",
           "icon": "DatabaseOutline",
           "route": "avg",
           "order": 100
+        },
+        {
+          "id": "OperationsConsole",
+          "label": "Operations",
+          "icon": "MonitorDashboard",
+          "route": "operationsConsole",
+          "order": 105
         }
       ]
     },
@@ -688,7 +712,7 @@
       "label": "Reports",
       "icon": "ChartBoxOutline",
       "route": "reports",
-      "section": "footer",
+      "section": "settings",
       "order": 95
     },
     {

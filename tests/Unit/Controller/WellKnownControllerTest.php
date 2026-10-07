@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Controller\WellKnownController
+ * @uses \OCA\OpenRegister\Service\WellKnown\SecurityTxtBuilder
  */
 class WellKnownControllerTest extends TestCase {
 

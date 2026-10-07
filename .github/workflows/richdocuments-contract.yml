@@ -1,0 +1,102 @@
+name: Richdocuments Contract
+
+# WHY THIS EXISTS
+#
+# OpenRegister opens an object's document in Nextcloud Office by issuing the
+# WOPI token itself (#4316, OfficeSessionService): owner `openregister`, editor
+# the acting person. That path uses richdocuments classes that are NOT
+# Nextcloud's public API: TokenManager, PermissionManager, Db\WopiMapper,
+# Db\Wopi and the WOPI routes of Controller\WopiController. A richdocuments
+# release can change any of them, and nothing in OpenRegister would notice
+# until an instance updated and Office answered 409, or issued a token that
+# means something else.
+#
+# tests/Contract/Richdocuments runs against a REAL richdocuments tree, the
+# release tarball an instance installs, and goes red on the first change
+# OpenRegister relies on. Two legs:
+#   latest  the newest release of nextcloud-releases/richdocuments, resolved at
+#           run time, so a new release turns this red without a commit here.
+#   pinned  the release the Office path was built and verified against.
+# The schedule is what makes `latest` useful: it runs when richdocuments
+# releases, not only when OpenRegister changes.
+#
+# WHY NOT THE SHARED quality.yml
+#
+# Its `additional-apps` input clones a repo at a fixed ref into every PHPUnit
+# cell and enables it there. That fits none of this: the contract needs the
+# release TARBALL (what instances run, with its own vendor and classmap), a
+# version resolved at run time, two versions side by side, and no change to
+# the main suite's environment. Enabling richdocuments in every cell would
+# also tie OpenRegister's whole NC 32-35 matrix to one richdocuments major.
+# This suite needs no Nextcloud server at all, so it is one cheap job here.
+on:
+  pull_request:
+    branches: [main, beta, development]
+  push:
+    branches: [main, beta, development]
+  schedule:
+    # Daily, 05:17 UTC: richdocuments ships patch releases without notice.
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: richdocuments-contract-${{ github.event_name }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: richdocuments ${{ matrix.richdocuments }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # `pinned` is the release #4316 was verified against, live and line by
+        # line (the design cites richdocuments 12.0.1). Move it only after the
+        # Office path has been checked against the new version.
+        # v11.1.2 is the richdocuments line for Nextcloud 34, which
+        # OpenRegister still supports; it passed the suite on 2026-10-05.
+        richdocuments: [latest, v12.0.1, v11.1.2]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Download richdocuments ${{ matrix.richdocuments }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WANTED: ${{ matrix.richdocuments }}
+        run: |
+          set -euo pipefail
+          if [ "$WANTED" = "latest" ]; then
+            TAG=$(gh release view --repo nextcloud-releases/richdocuments --json tagName -q .tagName)
+          else
+            TAG="$WANTED"
+          fi
+          # An empty tag is a failed lookup, never "nothing to test".
+          if [ -z "$TAG" ]; then
+            echo "::error::Could not resolve the richdocuments release for '$WANTED'."
+            exit 1
+          fi
+          echo "Testing against richdocuments $TAG"
+          mkdir -p "$RUNNER_TEMP/rd"
+          gh release download "$TAG" --repo nextcloud-releases/richdocuments \
+            --pattern "richdocuments-$TAG.tar.gz" --dir "$RUNNER_TEMP/rd"
+          tar -xzf "$RUNNER_TEMP/rd/richdocuments-$TAG.tar.gz" -C "$RUNNER_TEMP/rd"
+          test -f "$RUNNER_TEMP/rd/richdocuments/appinfo/info.xml"
+          echo "RICHDOCUMENTS_PATH=$RUNNER_TEMP/rd/richdocuments" >> "$GITHUB_ENV"
+          echo "### richdocuments contract: $TAG" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Run the contract suite
+        run: composer test:richdocuments-contract

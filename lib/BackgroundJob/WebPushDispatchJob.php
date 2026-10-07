@@ -27,7 +27,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 class WebPushDispatchJob extends QueuedJob {
 	/**
@@ -78,7 +78,7 @@ class WebPushDispatchJob extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	protected function run($argument): void {
 		$uid = ($argument['uid'] ?? null);
@@ -112,7 +112,7 @@ class WebPushDispatchJob extends QueuedJob {
 	 *
 	 * @return array<string, mixed> The payload.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	private function buildPayload(array $argument): array {
 		$originApp = (string)($argument['originApp'] ?? 'openregister');

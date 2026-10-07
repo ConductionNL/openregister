@@ -58,7 +58,7 @@ class AutoTransitionSelector {
 	 * @param LifecycleConditionEvaluator $evaluator The one place a lifecycle rule is evaluated.
 	 * @param LoggerInterface $logger Logs every refusal to select, so a silent no-move is diagnosable.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly LifecycleConditionEvaluator $evaluator,
@@ -76,7 +76,7 @@ class AutoTransitionSelector {
 	 *
 	 * @return AutoTransitionCandidate|null The one eligible move, or null.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function select(
 		array $annotation,
@@ -158,7 +158,7 @@ class AutoTransitionSelector {
 	 *
 	 * @return bool True when at least one transition declares `autoWhen`.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function declaresAutoWhen(array $annotation): bool {
 		$transitions = ($annotation['transitions'] ?? []);
@@ -191,7 +191,7 @@ class AutoTransitionSelector {
 	 *
 	 * @return list<array{action: string, to: string, index: int, spec: array<string, mixed>}>
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function holdingTransitions(
 		array $transitions,
@@ -249,7 +249,7 @@ class AutoTransitionSelector {
 	 *
 	 * @return string|null `Flow::MODE_SYNC`, `Flow::MODE_ASYNC`, or null.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function modeOf(array $spec, string $action, string $schemaSlug): ?string {
 		$mode = ($spec['executionMode'] ?? Flow::MODE_SYNC);
@@ -276,7 +276,7 @@ class AutoTransitionSelector {
 	 *
 	 * @return string|null The shadowing transition's name, or null when there is none.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function shadowOf(
 		array $transitions,
@@ -329,7 +329,7 @@ class AutoTransitionSelector {
 	 *
 	 * @return bool True when the transition can be taken from that value.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function fromContains(array $spec, string $value): bool {
 		$from = ($spec['from'] ?? []);

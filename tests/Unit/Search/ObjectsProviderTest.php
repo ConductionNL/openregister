@@ -160,9 +160,16 @@ class ObjectsProviderTest extends TestCase {
 
 	public function testGetCustomFilters(): void {
 		$filters = $this->provider->getCustomFilters();
-		$this->assertCount(2, $filters);
-		$this->assertInstanceOf(FilterDefinition::class, $filters[0]);
-		$this->assertInstanceOf(FilterDefinition::class, $filters[1]);
+		// `scopes` joined `register` and `schema` in content-search-index.
+		// Asserted by NAME rather than by count, because a count tells the
+		// next reader nothing about which filter went missing.
+		$this->assertCount(3, $filters);
+		foreach ($filters as $filter) {
+			$this->assertInstanceOf(FilterDefinition::class, $filter);
+		}
+
+		$names = array_map(static fn (FilterDefinition $f): string => $f->name(), $filters);
+		$this->assertSame(['register', 'schema', 'scopes'], $names);
 	}
 
 	// --- Empty / short-circuit --------------------------------------------

@@ -60,6 +60,7 @@ class RegistersControllerTest extends TestCase {
 	private OasService&MockObject $oasService;
 	private IGroupManager&MockObject $groupManager;
 	private \Psr\Container\ContainerInterface&MockObject $container;
+	private \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder&MockObject $appImportJobRecorder;
 
 	/**
 	 * The user the mocked session resolves to. Defaults to an admin so write
@@ -99,9 +100,13 @@ class RegistersControllerTest extends TestCase {
 		// checkRegisterManagePermission() resolves IGroupManager via the container
 		// on its no-authorization (admin-only) branch — return the stubbed one.
 		$this->container = $this->createMock(\Psr\Container\ContainerInterface::class);
+		$this->appImportJobRecorder = $this->createMock(\OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class);
 		$this->container->method('get')->willReturnCallback(function ($id) {
 			if ($id === \OCP\IGroupManager::class) {
 				return $this->groupManager;
+			}
+			if ($id === \OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class) {
+				return $this->appImportJobRecorder;
 			}
 			return null;
 		});
@@ -2102,6 +2107,23 @@ class RegistersControllerTest extends TestCase {
 
 		$this->assertSame(401, $result->getStatus());
 		$this->assertSame('Authentication required', $result->getData()['error']);
+	}
+
+	/**
+	 * An app's example data never leaves through the HTTP rollback.
+	 *
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-http-rollback-route-must-refuse-an-app-imports-job-id
+	 */
+	public function testRollbackRefusesAnAppImportJob(): void {
+		$this->stubParams(['importJobId' => 'job-demo']);
+		$this->appImportJobRecorder->method('appForJob')->with('job-demo')->willReturn('learniq.demo');
+		$this->importService->expects($this->never())->method('softDeleteByImportJobId');
+
+		$result = $this->controller->rollbackImport();
+
+		$this->assertSame(409, $result->getStatus());
+		$this->assertSame('learniq.demo', $result->getData()['app']);
+		$this->assertStringContainsString('occ openregister:objects:purge --import-job job-demo', $result->getData()['error']);
 	}
 
 }

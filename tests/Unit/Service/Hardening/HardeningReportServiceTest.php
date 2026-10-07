@@ -32,6 +32,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * @covers \OCA\OpenRegister\Service\Hardening\HardeningReportService
  * @covers \OCA\OpenRegister\Service\Hardening\HardeningControl
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningPolicy
+ * @uses \OCA\OpenRegister\Service\Hardening\ThrottledSurfaces
  */
 class HardeningReportServiceTest extends TestCase {
 

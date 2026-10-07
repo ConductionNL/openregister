@@ -25,46 +25,61 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use Exception;
+use InvalidArgumentException;
 use OCA\OpenRegister\Event\SchemaCreatedEvent;
 use OCA\OpenRegister\Event\SchemaDeletedEvent;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
+use OCA\OpenRegister\Exception\UniqueHintException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
+use OCA\OpenRegister\Service\Archival\ElementMappingValidator;
+use OCA\OpenRegister\Service\Archival\MdtoElementCatalogue;
+use OCA\OpenRegister\Service\BulkJob\ReversibilityAnnotationValidator;
+use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
+use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
+use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
+use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidator;
+use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
+use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
+use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
+use OCA\OpenRegister\Service\Flow\MacroActionBinding;
+use OCA\OpenRegister\Service\Flow\MacroActionValidator;
+use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
+use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
+use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
+use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
+use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
+use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
+use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
+use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
+use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
+use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidator;
+use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
+use OCA\OpenRegister\Service\Rbac\DenyResolver;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixValidator;
+use OCA\OpenRegister\Service\Rbac\HierarchyAnnotationValidator;
+use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
+use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
+use OCA\OpenRegister\Service\Rbac\RevealCollector;
+use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
+use OCA\OpenRegister\Service\Relation\LinkExposure;
+use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
+use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
+use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueValidator;
 use OCA\OpenRegister\Service\Rules\ExpressionDefaultResolver;
-use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
-use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
-use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
-use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
-use OCA\OpenRegister\Service\Archival\ElementMappingValidator;
-use OCA\OpenRegister\Service\Archival\MdtoElementCatalogue;
-use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
-use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
-use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
-use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
-use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
-use OCA\OpenRegister\Service\Registry\RegistryAnnotationValidator;
-use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
-use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
-use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
-use OCA\OpenRegister\Exception\UniqueHintException;
-use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
-use OCA\OpenRegister\Service\Quality\UniqueHintAnnotationValidator;
-use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
-use OCA\OpenRegister\Service\Rbac\AuthorizationDenyValidator;
-use OCA\OpenRegister\Service\BulkJob\ReversibilityAnnotationValidator;
-use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
-use OCA\OpenRegister\Service\Relation\RelationAnnotationValidator;
-use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
-use OCA\OpenRegister\Service\Rbac\DenyResolver;
-use OCA\OpenRegister\Service\Rbac\PermissionCatalogue;
 use OCA\OpenRegister\Service\Schemas\ExtendingFormDeclaration;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use OCA\OpenRegister\Service\Schemas\PropertyVocabularyException;
+use OCA\OpenRegister\Service\Schemas\ScopedPropertyDeclaration;
+use OCA\OpenRegister\Service\Schemas\ScopedPropertyException;
+use OCA\OpenRegister\Service\Schemas\ScopedPropertyGovernance;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
@@ -222,6 +237,13 @@ class SchemaMapper extends QBMapper {
 	// We assign it in the constructor to make it available to the trait methods.
 
 	/**
+	 * SchemaUpdatedEvents dispatched in this request, keyed by schema id.
+	 *
+	 * @var array<int, int>
+	 */
+	private array $updateEventCounts = [];
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes mapper with database connection and required dependencies
@@ -235,6 +257,7 @@ class SchemaMapper extends QBMapper {
 	 * @param IGroupManager $groupManager Group manager for RBAC checks
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
 	 * @param LoggerInterface $logger Structured logger (R07: surfaces unknown annotation keys).
+	 * @param MacroActionValidator|null $macroActions Verifies the flows macro actions bind to.
 	 *
 	 * @return void
 	 */
@@ -247,6 +270,12 @@ class SchemaMapper extends QBMapper {
 		IGroupManager $groupManager,
 		IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
+		// LAST AND NULLABLE so every existing construction of this mapper keeps
+		// working. Nextcloud's container always supplies it; null happens only
+		// in a hand-built test, and then the SHAPE refusals below still fire —
+		// only the three questions about the flow itself are skipped, which the
+		// save says out loud rather than passing over in silence.
+		private readonly ?MacroActionValidator $macroActions = null,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_schemas', entityClass: Schema::class);
@@ -1077,6 +1106,7 @@ class SchemaMapper extends QBMapper {
 	public function insert(Entity $entity): Entity {
 		// Verify RBAC permission to create.
 		$this->verifyRbacPermission(action: 'create', entityType: 'schema');
+		$this->assertScopedPropertiesAreGoverned(entity: $entity);
 		// Auto-set organisation from active session.
 		$this->setOrganisationOnCreate(entity: $entity);
 
@@ -1090,6 +1120,65 @@ class SchemaMapper extends QBMapper {
 
 		return $entity;
 	}//end insert()
+
+	/**
+	 * Every scoped property on this schema is one its author may add, and one
+	 * the scope has room for.
+	 *
+	 * 🔴 WITHOUT THIS THE TWO RULES WOULD HAVE BEEN CHECKS WITH NO CALLER, which
+	 * is the same shape as no check at all. `ScopedPropertyGovernance` can
+	 * answer both questions perfectly and still protect nothing if the save path
+	 * never asks, and the schema would save, and the refusal would exist only in
+	 * a test.
+	 *
+	 * 🔑 IT RUNS ON INSERT AND ON UPDATE. Only on insert, a scope could be added
+	 * to an existing schema by anybody, and the ceiling could be walked past one
+	 * edit at a time. Schemas that carry no scope at all are untouched, because
+	 * the loop finds nothing.
+	 *
+	 * The governance is assembled here rather than injected because this mapper
+	 * already holds all three of its collaborators, and adding a constructor
+	 * argument to a mapper this widely constructed buys nothing.
+	 *
+	 * @param Entity $entity The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws ScopedPropertyException When a scope is not the caller's, or is full.
+	 *
+	 * @spec openspec/changes/fields-a-user-adds-and-choices-a-record-narrows/specs/runtime-schema-api/spec.md
+	 */
+	private function assertScopedPropertiesAreGoverned(Entity $entity): void {
+		if (($entity instanceof Schema) === false) {
+			return;
+		}
+
+		$properties = ($entity->getProperties() ?? []);
+		if ($properties === []) {
+			return;
+		}
+
+		$governance = new ScopedPropertyGovernance(
+			userSession: $this->userSession,
+			groupManager: $this->groupManager,
+			appConfig: $this->appConfig
+		);
+
+		foreach ($properties as $name => $property) {
+			if (is_array($property) === false) {
+				continue;
+			}
+
+			$scope = ($property[ScopedPropertyDeclaration::ANNOTATION] ?? null);
+			if (is_string($scope) === false || trim($scope) === '') {
+				continue;
+			}
+
+			$scope = trim($scope);
+			$governance->assertMayAddAtScope(scope: $scope, path: (string)$name);
+			$governance->assertBelowCeiling(schema: $entity, scope: $scope, property: (string)$name);
+		}
+	}//end assertScopedPropertiesAreGoverned()
 
 	/**
 	 * Ensures that a schema object has a UUID and a slug.
@@ -1107,9 +1196,11 @@ class SchemaMapper extends QBMapper {
 		$this->buildRequiredFieldsArray(schema: $schema);
 		$this->autoPopulateConfigurationFields(schema: $schema);
 		$this->validateLifecycleAnnotation(schema: $schema);
+		$this->validateMacroActions(schema: $schema);
 		$this->validateMdtoMappingAnnotation(schema: $schema);
 		$this->validateAggregationsAnnotation(schema: $schema);
 		$this->validateCalculationsAnnotation(schema: $schema);
+		$this->validateConsentAnnotation(schema: $schema);
 		$this->validateRelationAnnotation(schema: $schema);
 		$this->validateDependentValueTables(schema: $schema);
 		$this->validateQualityAnnotation(schema: $schema);
@@ -1129,6 +1220,9 @@ class SchemaMapper extends QBMapper {
 		$this->validateExternalLinksAnnotation(schema: $schema);
 		$this->validateExtendingFormAnnotation(schema: $schema);
 		$this->validateAuthorizationDeny(schema: $schema);
+		$this->validateHierarchyAnnotation(schema: $schema);
+		$this->validateDepartmentMatrix(schema: $schema);
+		$this->validateRevealAudit(schema: $schema);
 		$this->validateReversibilityDeclaration(schema: $schema);
 		$this->logDroppedAnnotationKeys(schema: $schema);
 	}//end cleanObject()
@@ -1190,7 +1284,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @throws ReversibilityDeclarationException When a declaration contradicts itself.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	private function validateReversibilityDeclaration(Schema $schema): void {
 		$errors = (new ReversibilityAnnotationValidator())->validate(configuration: ($schema->getConfiguration() ?? []));
@@ -1230,6 +1324,50 @@ class SchemaMapper extends QBMapper {
 	}//end logDroppedAnnotationKeys()
 
 	/**
+	 * Refuse a declared action bound to a flow nobody can run.
+	 *
+	 * Three of the refusals are questions about the flow — it exists, it is
+	 * published, it has a manual trigger — and all three are SILENT at run
+	 * time. An action bound to a missing flow appears in the menu, does nothing
+	 * when clicked, and looks exactly like a flow that ran and changed nothing.
+	 * The handler cannot tell those apart and cannot fix either, so the refusal
+	 * belongs here, in front of the author who can.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When a macro binding cannot run.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+	 */
+	private function validateMacroActions(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+
+		if ($this->macroActions === null) {
+			// No validator wired: the shape is still checked, and the save says
+			// which half did not run rather than reporting a clean pass.
+			$refusals = MacroActionBinding::refusals(configuration: $configuration);
+			if ($refusals !== []) {
+				throw new InvalidArgumentException(implode(' ', $refusals));
+			}
+
+			if (MacroActionBinding::parse(configuration: $configuration) !== []) {
+				$this->logger->warning(
+					'[SchemaMapper] Macro bindings saved without verifying their flows: no validator is wired'
+				);
+			}
+
+			return;
+		}
+
+		$refusals = $this->macroActions->refusals(configuration: $configuration);
+		if ($refusals !== []) {
+			throw new InvalidArgumentException(implode(' ', $refusals));
+		}
+	}//end validateMacroActions()
+
+	/**
 	 * Validate the optional `x-openregister-lifecycle` annotation.
 	 *
 	 * The annotation is stored under `configuration['x-openregister-lifecycle']`.
@@ -1244,8 +1382,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function validateLifecycleAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -1503,6 +1640,49 @@ class SchemaMapper extends QBMapper {
 	}//end validateCalculationsAnnotation()
 
 	/**
+	 * Validate the `x-openregister-consent` annotation on a schema's properties.
+	 *
+	 * Blocking, and deliberately so (unlike the optional
+	 * `x-openregister-notifications` annotation, which degrades to a warning):
+	 * an evidentiary consent property that silently never fills evidence is
+	 * worse than a save that names the mistake, since an app author would
+	 * otherwise believe consent is being proven when it is not.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @throws ConsentDeclarationException When a declaration cannot be honoured.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/consent-evidence-envelope/spec.md
+	 */
+	private function validateConsentAnnotation(Schema $schema): void {
+		$properties = ($schema->getProperties() ?? []);
+		if (is_array($properties) === false) {
+			return;
+		}
+
+		$hasAnnotation = false;
+		foreach ($properties as $definition) {
+			if (is_array($definition) === true && isset($definition['x-openregister-consent']) === true) {
+				$hasAnnotation = true;
+				break;
+			}
+		}
+
+		if ($hasAnnotation === false) {
+			return;
+		}
+
+		$errors = (new ConsentAnnotationValidator())->validate(['properties' => $properties]);
+		if ($errors === []) {
+			return;
+		}
+
+		throw new ConsentDeclarationException(errors: $errors);
+	}//end validateConsentAnnotation()
+
+	/**
 	 * Validate the relation declarations on a schema's properties.
 	 *
 	 * Blocking, and deliberately so. Both keys are new, so no register carries
@@ -1536,12 +1716,134 @@ class SchemaMapper extends QBMapper {
 		}
 
 		$errors = (new RelationAnnotationValidator())->validate($shape);
+
+		// What a link EXPOSES is refused here too, and only once the shape above
+		// is sound: a type naming a vocabulary key nobody declared has already
+		// failed, and asking what that type exposes would be asking about
+		// nothing.
+		if ($errors === []) {
+			$errors = $this->exposureRefusals(schema: $schema);
+		}
+
 		if ($errors === []) {
 			return;
 		}
 
 		throw new RelationDeclarationException(errors: $errors);
 	}//end validateRelationAnnotation()
+
+	/**
+	 * Refuse an `exposes` list naming a property the linked schema does not declare.
+	 *
+	 * Refused at SAVE, because the alternative is silent. A name that matches
+	 * nothing is simply absent from every projection afterwards: the author
+	 * reads a 200 and ships a link that hands over one field fewer than they
+	 * wrote, and nothing anywhere says so.
+	 *
+	 * 🔑 A FAR SCHEMA THAT CANNOT BE RESOLVED IS NOT A REFUSAL, deliberately.
+	 * Schemas arrive in whatever order a configuration import walks them, so
+	 * the schema a `$ref` names may genuinely not exist yet when this one is
+	 * saved. Refusing there would make a valid import fail on ordering alone.
+	 * The check is therefore what it can honestly be: a refusal when the far
+	 * schema IS resolvable and does not declare the property. The
+	 * `relation-without-ref` refusal above already covers a link with no `$ref`
+	 * at all.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return array<int, array{code: string, message: string}> The refusals.
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 */
+	private function exposureRefusals(Schema $schema): array {
+		$resolver = new RelationTypeResolver();
+		$exposure = new LinkExposure();
+		$properties = ($schema->getProperties() ?? []);
+
+		if (is_array($properties) === false) {
+			return [];
+		}
+
+		$errors = [];
+		foreach ($resolver->descriptors(schema: $schema) as $property => $descriptor) {
+			if ($exposure->declaresExposure(relationType: $descriptor) === false) {
+				continue;
+			}
+
+			$far = $this->schemaForReference(property: ($properties[$property] ?? null));
+			if ($far === null) {
+				continue;
+			}
+
+			$farProperties = ($far->getProperties() ?? []);
+			if (is_array($farProperties) === false) {
+				$farProperties = [];
+			}
+
+			$reason = $exposure->refusalFor(
+				relationType: $descriptor,
+				farProperties: array_map('strval', array_keys($farProperties)),
+				typeName: (string)(($descriptor['type'] ?? null) ?? $property)
+			);
+
+			if ($reason !== null) {
+				$errors[] = ['code' => 'relation-exposes-unknown-property', 'message' => $reason];
+			}
+		}//end foreach
+
+		return $errors;
+	}//end exposureRefusals()
+
+	/**
+	 * The schema a reference property points at, or null when it cannot be resolved.
+	 *
+	 * @param mixed $property The property definition.
+	 *
+	 * @return Schema|null The linked schema.
+	 *
+	 * @spec openspec/changes/relations-that-travel-and-what-they-expose/specs/referential-integrity/spec.md
+	 */
+	private function schemaForReference(mixed $property): ?Schema {
+		if (is_object($property) === true) {
+			$property = (array)$property;
+		}
+
+		if (is_array($property) === false) {
+			return null;
+		}
+
+		$items = ($property['items'] ?? null);
+		if (is_object($items) === true) {
+			$items = (array)$items;
+		}
+
+		$reference = ($property['$ref'] ?? null);
+		if (is_string($reference) === false && is_array($items) === true) {
+			$reference = ($items['$ref'] ?? null);
+		}
+
+		if (is_string($reference) === false || trim($reference) === '') {
+			return null;
+		}
+
+		// `#/components/schemas/Besluit`, a URL, a uuid, an id or a bare slug.
+		// find() already resolves the last three; the first two reduce to a slug.
+		$identifier = trim($reference);
+		if (str_contains($identifier, '/') === true) {
+			$identifier = substr($identifier, (strrpos($identifier, '/') + 1));
+		}
+
+		if ($identifier === '') {
+			return null;
+		}
+
+		try {
+			return $this->find(id: $identifier, _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			// Unresolvable is not a refusal; see the note on exposureRefusals().
+			return null;
+		}
+	}//end schemaForReference()
 
 	/**
 	 * Validate the two property-level rule annotations this change adds.
@@ -1773,7 +2075,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-nominated-property-warns-when-its-value-already-exists-req-dmd-004
 	 */
 	private function validateUniqueHintAnnotation(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -2032,6 +2334,170 @@ class SchemaMapper extends QBMapper {
 		$messages = array_map(static fn (array $err) => $err['message'], $split['errors']);
 		throw new Exception('x-openregister-archival: ' . implode(' ', $messages));
 	}//end validateArchivalAnnotation()
+
+	/**
+	 * Refuse `audit: true` on a property nobody is kept out of (row 5.6).
+	 *
+	 * THE REFUSAL IS THE POINT OF THE FEATURE. An audited reveal answers "who
+	 * saw the BSN", and it can only answer it while the entries are rare. A
+	 * property with no `read` rule is shown to every reader of the object, so
+	 * auditing it writes an entry per reader per object per request for a
+	 * value nobody was ever kept from — and the handful of entries that matter
+	 * are then somewhere inside several million that do not. A trail nobody can
+	 * search is the same as no trail, arrived at by a route that looks like
+	 * diligence.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When a property audits a reveal it cannot restrict.
+	 *
+	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
+	 */
+	private function validateRevealAudit(Schema $schema): void {
+		$offenders = [];
+		foreach (($schema->getProperties() ?? []) as $name => $config) {
+			if (is_array($config) === false) {
+				continue;
+			}
+
+			$authorization = ($config['authorization'] ?? null);
+			if (is_array($authorization) === false) {
+				continue;
+			}
+
+			if (($authorization[RevealCollector::AUDIT_KEY] ?? null) !== true) {
+				continue;
+			}
+
+			$read = ($authorization['read'] ?? null);
+			if (is_array($read) === true && count($read) > 0) {
+				continue;
+			}
+
+			$offenders[] = (string)$name;
+		}
+
+		if ($offenders === []) {
+			return;
+		}
+
+		throw new Exception(
+			'authorization.audit is only meaningful on a property with a read rule, and these have none: '
+			. implode(', ', $offenders)
+		);
+	}//end validateRevealAudit()
+
+	/**
+	 * Refuse a broken `authorization.matrix` at save (row B13).
+	 *
+	 * THIS ONE THROWS for the same reason the hierarchy validator does: the
+	 * block decides who reaches which objects, and every way of getting it
+	 * wrong is silent afterwards. A matrix on `afdeling` where the schema
+	 * declares `department` compiles to a condition on a column that does not
+	 * exist, which the SQL builder answers by DROPPING the predicate, and a
+	 * rule meant to narrow a group to its own department becomes an
+	 * unconditional grant to the whole group. There is no error anywhere on
+	 * that path; there is only a group that can suddenly read everything.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the matrix cannot be compiled.
+	 *
+	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md
+	 */
+	private function validateDepartmentMatrix(Schema $schema): void {
+		$authorization = $schema->getAuthorization();
+		if (is_array($authorization) === false
+			|| array_key_exists(DepartmentMatrixCompiler::KEY, $authorization) === false
+		) {
+			return;
+		}
+
+		$findings = (new DepartmentMatrixValidator())->validate(
+			properties: ($schema->getProperties() ?? []),
+			authorization: $authorization
+		);
+
+		if (count($findings) === 0) {
+			return;
+		}
+
+		$messages = array_map(static fn (array $finding) => $finding['message'], $findings);
+		throw new Exception('authorization.matrix: ' . implode(' ', $messages));
+	}//end validateDepartmentMatrix()
+
+	/**
+	 * Refuse a broken `x-openregister-hierarchy` declaration at save.
+	 *
+	 * THIS ONE THROWS, and the reason is what the annotation does: it names the
+	 * edge a GRANT travels down. An author who points it at the wrong property
+	 * has not written a cosmetic mistake. `assignee` on a case references a
+	 * USER, so a hierarchy declared over it would hand everybody who may read
+	 * one object every object filed to the same person, and from that moment on
+	 * it is indistinguishable from working inheritance. The save is the only
+	 * point at which the two can be told apart.
+	 *
+	 * An unknown key inside the block is surfaced and ignored, the same rule
+	 * {@see self::validateArchivalAnnotation()} records: it declares nothing, so
+	 * dropping it loses nothing, and refusing it would cost the register every
+	 * object of that schema at import time.
+	 *
+	 * @param Schema $schema The schema being saved.
+	 *
+	 * @return void
+	 *
+	 * @throws Exception When the declaration cannot be honoured.
+	 *
+	 * @spec openspec/changes/rbac-inherits-to-children/specs/rbac-scopes/spec.md
+	 */
+	private function validateHierarchyAnnotation(Schema $schema): void {
+		$configuration = ($schema->getConfiguration() ?? []);
+		$annotation = ($configuration[HierarchyGrantExpander::ANNOTATION] ?? null);
+		if ($annotation === null) {
+			return;
+		}
+
+		$findings = (new HierarchyAnnotationValidator())->validate(
+			[
+				'properties' => ($schema->getProperties() ?? []),
+				'slug' => (string)($schema->getSlug() ?? ''),
+				// The id and the uuid, because the import path rewrites every
+				// `$ref` to the resolved schema id before the schema reaches
+				// this validator. Without them a self-reference that was
+				// written as the slug arrives here as "169" and the whole
+				// schema is refused. See identitiesOf().
+				'id' => (string)($schema->getId() ?? ''),
+				'uuid' => (string)($schema->getUuid() ?? ''),
+				'title' => (string)($schema->getTitle() ?? ''),
+				HierarchyGrantExpander::ANNOTATION => $annotation,
+			]
+		);
+
+		$split = HierarchyAnnotationValidator::partition(findings: $findings);
+
+		if (count($split['warnings']) > 0) {
+			$this->logger->warning(
+				sprintf(
+					'[OpenRegister.SchemaMapper] Ignored %d unknown %s key(s) on schema "%s": %s',
+					count($split['warnings']),
+					HierarchyGrantExpander::ANNOTATION,
+					(string)($schema->getSlug() ?? ''),
+					implode(' ', array_map(static fn (array $finding) => $finding['message'], $split['warnings']))
+				)
+			);
+		}
+
+		if (count($split['errors']) === 0) {
+			return;
+		}
+
+		$messages = array_map(static fn (array $err) => $err['message'], $split['errors']);
+		throw new Exception(HierarchyGrantExpander::ANNOTATION . ': ' . implode(' ', $messages));
+	}//end validateHierarchyAnnotation()
 
 	/**
 	 * Refuse a broken `x-openregister-external-links` declaration at save.
@@ -2600,12 +3066,15 @@ class SchemaMapper extends QBMapper {
 	 * @return Entity The updated entity
 	 *
 	 * @psalm-suppress LessSpecificImplementedReturnType - Schema is more specific than Entity
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
 	 */
 	public function update(Entity $entity): Entity {
 		// Verify RBAC permission to update.
 		$this->verifyRbacPermission(action: 'update', entityType: 'schema');
 		// Verify user has access to this organisation.
 		$this->verifyOrganisationAccess(entity: $entity);
+		$this->assertScopedPropertiesAreGoverned(entity: $entity);
 
 		// Fetch old entity directly without organisation filter for event comparison.
 		$this->traceRead(method: 'update');
@@ -2650,11 +3119,34 @@ class SchemaMapper extends QBMapper {
 
 		$entity = parent::update(entity: $entity);
 
-		// Dispatch update event.
-		$this->eventDispatcher->dispatchTyped(new SchemaUpdatedEvent(newSchema: $entity, oldSchema: $oldSchema));
+		// An event fires at the level where something changed, and only when it
+		// did. An app re-importing an identical schema used to fire this on every
+		// import, so every admin was told "Schema was updated" while nothing was.
+		if ((new EntityChangeDetector())->changed(old: $oldSchema, new: $entity) === true) {
+			$schemaId = (int)$entity->getId();
+			$this->updateEventCounts[$schemaId] = (($this->updateEventCounts[$schemaId] ?? 0) + 1);
+			$this->eventDispatcher->dispatchTyped(new SchemaUpdatedEvent(newSchema: $entity, oldSchema: $oldSchema));
+		}
 
 		return $entity;
 	}//end update()
+
+	/**
+	 * How many SchemaUpdatedEvents this request dispatched for one schema.
+	 *
+	 * A caller that saves a schema and needs to know whether the save reached
+	 * the listeners (the configuration import, which must otherwise run the
+	 * installers itself) reads this before and after its writes.
+	 *
+	 * @param int $schemaId The schema id.
+	 *
+	 * @return int The number of update events dispatched for it so far.
+	 *
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
+	 */
+	public function updateEventCount(int $schemaId): int {
+		return ($this->updateEventCounts[$schemaId] ?? 0);
+	}//end updateEventCount()
 
 	/**
 	 * Updates a schema from an array
@@ -2981,12 +3473,16 @@ class SchemaMapper extends QBMapper {
 	 * @return Schema[]
 	 *
 	 * @psalm-return list<\OCA\OpenRegister\Db\Schema>
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
 	public function getRelated(Schema|int|string $schema): array {
 		// If we received a Schema entity, get its ID, otherwise find the schema.
 		if ($schema instanceof Schema === false) {
 			// Find the target schema to get all its identifiers.
-			$targetSchema = $this->find(id: $schema);
+			// Metadata read: bypasses multitenancy, like the controller's own
+			// outgoing half and every other schema catalog lookup.
+			$targetSchema = $this->find(id: $schema, _multitenancy: false);
 			$targetSchemaId = (string)$targetSchema->getId();
 			$targetSchemaUuid = $targetSchema->getUuid();
 			$targetSchemaSlug = $targetSchema->getSlug();
@@ -2998,8 +3494,8 @@ class SchemaMapper extends QBMapper {
 			$targetSchemaSlug = $schema->getSlug();
 		}
 
-		// Get all schemas to search through their properties.
-		$allSchemas = $this->findAll();
+		// Get all schemas to search through their properties (metadata read).
+		$allSchemas = $this->findAll(_multitenancy: false);
 		$relatedSchemas = [];
 
 		foreach ($allSchemas as $currentSchema) {
@@ -3632,30 +4128,30 @@ class SchemaMapper extends QBMapper {
 	 * @throws \Exception If schema not found
 	 *
 	 * @return Schema The loaded schema
+	 *
+	 * @spec openspec/specs/mariadb-ci-matrix/spec.md#requirement-a-text-identifier-is-never-bound-as-an-integer
 	 */
 	private function loadSchema(string|int $identifier): Schema {
 		try {
 			$this->traceRead(method: 'loadSchema');
 
 			$qb = $this->db->getQueryBuilder();
+			$matches = [
+				$qb->expr()->eq('uuid', $qb->createNamedParameter(value: (string) $identifier, type: IQueryBuilder::PARAM_STR)),
+				$qb->expr()->eq('slug', $qb->createNamedParameter(value: (string) $identifier, type: IQueryBuilder::PARAM_STR)),
+			];
+			// Compare `id` only for an integer: PostgreSQL refuses a uuid or slug
+			// bound as an integer for the whole query (live pass O4, 5 Oct).
+			if (is_int($identifier) === true || ctype_digit($identifier) === true) {
+				$matches[] = $qb->expr()->eq(
+					'id',
+					$qb->createNamedParameter(value: (int) $identifier, type: IQueryBuilder::PARAM_INT)
+				);
+			}
+
 			$qb->select('*')
 				->from('openregister_schemas')
-				->where(
-					$qb->expr()->orX(
-						$qb->expr()->eq(
-							'id',
-							$qb->createNamedParameter(value: $identifier, type: IQueryBuilder::PARAM_INT)
-						),
-						$qb->expr()->eq(
-							'uuid',
-							$qb->createNamedParameter(value: $identifier, type: IQueryBuilder::PARAM_STR)
-						),
-						$qb->expr()->eq(
-							'slug',
-							$qb->createNamedParameter(value: $identifier, type: IQueryBuilder::PARAM_STR)
-						)
-					)
-				);
+				->where($qb->expr()->orX(...$matches));
 
 			return $this->findEntity(query: $qb);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {

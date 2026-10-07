@@ -44,7 +44,7 @@ use Throwable;
  * lost the moment either object was merged away, which is exactly when the
  * pair is most likely to come back around.
  *
- * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+ * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
  */
 class DismissedPairStore {
 
@@ -95,7 +95,7 @@ class DismissedPairStore {
 	 *
 	 * @return array{0: string, 1: string} The pair, ordered.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public static function canonical(string $first, string $second): array {
 		$pair = [$first, $second];
@@ -112,7 +112,7 @@ class DismissedPairStore {
 	 *
 	 * @return string The canonical key.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public static function key(string $first, string $second): string {
 		[$a, $b] = self::canonical(first: $first, second: $second);
@@ -133,7 +133,7 @@ class DismissedPairStore {
 	 *
 	 * @return array<string, array<string, mixed>> Dismissal rows by pair key.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function activeFor(string $registerSlug, string $schemaSlug): array {
 		try {
@@ -192,7 +192,7 @@ class DismissedPairStore {
 	 *
 	 * @return array<string, mixed> The stored row.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function dismiss(
 		string $first,
@@ -252,7 +252,7 @@ class DismissedPairStore {
 	 *
 	 * @return array<string, mixed>|null The updated row, or null when no dismissal existed.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	public function undismiss(
 		string $first,
@@ -296,7 +296,7 @@ class DismissedPairStore {
 	 *
 	 * @return ObjectEntity|null The row, or null when there is none.
 	 *
-	 * @spec openspec/changes/duplicate-merge-and-dismissed-pairs/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
 	 */
 	private function findRow(string $first, string $second, string $registerSlug, string $schemaSlug): ?ObjectEntity {
 		try {

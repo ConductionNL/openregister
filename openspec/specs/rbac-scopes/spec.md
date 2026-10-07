@@ -27,7 +27,9 @@ This spec primarily documents and validates existing functionality, with targete
 - **Scope caching (fully implemented)**: `MagicRbacHandler.$cachedActiveOrg`, `ConditionMatcher.$cachedActiveOrg`, `OasService.$schemaRbacMap`.
 - **Consumer identity mapping (fully implemented)**: `Consumer` entity with `userId` field, `AuthorizationService` resolving all auth methods to Nextcloud users.
 - **What this spec adds as extensions**: Register-level default authorization cascade, permission matrix UI for administrators, scope migration tooling for group renames, and explicit RBAC policy change audit logging.
+
 ## Requirements
+
 ### Requirement: Scope Model Hierarchy (Register > Schema > Object > Property)
 The RBAC scope model SHALL follow a four-level hierarchy: register-level scopes govern access to an entire register and serve as defaults for schemas without their own authorization, schema-level scopes control CRUD operations per schema (zaaktype/objecttype), object-level scopes apply to individual records via conditional matching, and property-level scopes restrict visibility and mutability of specific fields. Each level MUST be independently configurable via the `authorization` JSON structure. Register-level authorization SHALL cascade to schemas that do not define their own authorization block. Named roles defined at register level SHALL be expandable in authorization blocks at any level.
 
@@ -886,6 +888,102 @@ Where the group backend cannot report a count, the member count SHALL be reporte
 - **WHEN** the declared-group inventory is read
 - **THEN** the group's member count is reported as unknown
 - **AND** it is NOT reported as having zero members
+
+### Requirement: A userless read inside runAsSystem is a system read
+A read made without a user inside `ObjectService::runAsSystem()` (SystemOperationContext) SHALL be treated as a system read by the magic-table access filters, the same way a userless read on the command line already is: RBAC filtering (query-builder and raw-SQL paths) and the organisation boundary SHALL NOT clamp it. This SHALL NOT open any user-facing read: a logged-in user inside the scope MUST still be filtered as that user, a forced-anonymous evaluation (AnonymousEvaluationContext) MUST still be filtered as anonymous, and a userless web read outside the scope MUST still be filtered. SaaS mode keeps the organisation boundary.
+
+#### Scenario: A system write's calculation resolves its references in a web request
+- **GIVEN** a web request with no user, and a case written inside `runAsSystem()` whose calculations declare references to `caseType` and `statusType`, schemas readable by staff only
+- **WHEN** ReferenceResolver reads those objects with RBAC and multitenancy on
+- **THEN** the referenced objects MUST be found, so the case gets its deadline and status label
+
+#### Scenario: A logged-in user inside the scope is still that user
+- **GIVEN** a logged-in non-admin user inside `runAsSystem()`
+- **WHEN** a staff-only schema is read
+- **THEN** the read MUST be filtered by that user's rights
+
+#### Scenario: Outside the scope nothing changes
+- **GIVEN** a web request with no user, outside `runAsSystem()`
+- **WHEN** a staff-only schema is read
+- **THEN** the read MUST be filtered as anonymous
+
+### Requirement: Related schemas are a catalog read
+`GET /api/schemas/{id}/related` SHALL resolve the schema and scan the other schemas without the multitenancy filter (a metadata read, like `GET /api/schemas/{id}`), so a caller who may see the schema gets its related schemas whatever their active organisation.
+
+#### Scenario: A non-admin in another organisation gets related schemas
+- **GIVEN** a non-admin whose active organisation does not own schema `module`
+- **WHEN** they request `GET /api/schemas/module/related`
+- **THEN** the response MUST be HTTP 200 with the incoming and outgoing related schemas, not "Schema not found"
+
+### Requirement: The scoped acting-user and trusted-system operations MUST have a stated contract
+
+Two scoped operations exist on the object service and have shipped without a
+spec-level contract: one narrows the caller to a named user for the duration of a
+callable, the other elevates to a trusted userless principal. Both are relied on
+by flow nodes and background jobs to decide access, so their guarantees are
+observable behaviour rather than implementation detail.
+
+The narrowing operation MUST behave as `delegated-identity` requires: it
+establishes the named user as the acting identity for the callable only, restores
+the previously acting identity when the callable ends — including on a throw —
+and grants nothing the named user does not already hold.
+
+The elevating operation MUST be reachable only from code shipped with the
+application, per `delegated-identity`.
+
+#### Scenario: The narrowing operation grants nothing
+
+- **WHEN** a callable runs narrowed to a user who lacks a permission
+- **THEN** an action requiring that permission is refused inside the callable
+- **AND** the refusal names the narrowed user, not the ambient caller
+
+#### Scenario: The elevating operation is not reachable from request handling
+
+- **WHEN** handling of an inbound request attempts a trusted userless operation
+- **THEN** the attempt is refused
+- **AND** the refusal is reported rather than downgraded to a silent no-op
+
+### Requirement: Authorization decisions MUST answer for the acting identity, not the ambient session
+
+Every predicate that decides access — the row-level authorization predicate and
+the tenancy predicate — MUST resolve the subject from the acting identity in
+force. A caller holding an explicit identity MUST NOT have that identity ignored
+in favour of whatever the ambient session carries.
+
+Where no acting identity is in force, an access decision MUST fail closed. A read
+MUST NOT silently drop its authorization predicate and return more than the
+subject may see; a write MUST NOT be attributed to a named owner while being
+decided against a different subject.
+
+#### Scenario: A read and the write it feeds decide against one identity
+
+- **WHEN** a lookup selects the object that a subsequent write or delete acts on,
+  both within one scoped identity
+- **THEN** both the lookup and the action decide against that same identity
+- **AND** an object the identity may not act on is not selected by the lookup
+
+#### Scenario: A sessionless read does not widen
+
+- **WHEN** a read runs with no acting identity in force
+- **THEN** the read is refused
+- **AND** it does not return rows that an authorization predicate would have
+  excluded
+
+### Requirement: Delegation MUST NOT be expressed as a permission verb
+
+Acting as another user is a property of the caller's identity, not an action
+performed on an object. It MUST NOT be added to the permission vocabulary, and
+MUST NOT be expressed as a scope, role or verb on a register, schema or object.
+
+This preserves ADR-010's rule that the core verb set is core's bitmask and that
+extensions are enforced at the endpoint performing the action rather than by
+widening the RBAC vocabulary.
+
+#### Scenario: No delegation verb appears in the permission model
+
+- **WHEN** the permission model for a register or schema is read
+- **THEN** it contains no verb, scope or role expressing "may act as another
+  user"
 
 ## ZGW Autorisaties Mapping Guide
 

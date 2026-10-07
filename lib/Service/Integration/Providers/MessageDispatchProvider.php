@@ -43,7 +43,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/messaging-dispatch-leaf/tasks.md
+ * @spec openspec/changes/archive/2026-10-05-messaging-dispatch-leaf/tasks.md
  */
 
 declare(strict_types=1);
@@ -227,7 +227,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/messaging-dispatch-leaf/tasks.md
+	 * @spec openspec/changes/archive/2026-10-05-messaging-dispatch-leaf/tasks.md
 	 */
 	public function authRequirements(): array {
 		return [
@@ -251,7 +251,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider {
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
-	 * @spec openspec/changes/messaging-dispatch-leaf/tasks.md
+	 * @spec openspec/changes/archive/2026-10-05-messaging-dispatch-leaf/tasks.md
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/objectId/
 	 *   filters are mandated by the IntegrationProvider contract; this leaf is
@@ -287,7 +287,7 @@ class MessageDispatchProvider extends AbstractIntegrationProvider {
 	 *                             `{ unavailable: true, cause }` when the source
 	 *                             is unconfigured/down or the slug is rejected.
 	 *
-	 * @spec openspec/changes/messaging-dispatch-leaf/tasks.md
+	 * @spec openspec/changes/archive/2026-10-05-messaging-dispatch-leaf/tasks.md
 	 */
 	public function dispatch(string $source, array $body, string $path, array $headers = []): array {
 		$source = trim($source);

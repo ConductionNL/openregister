@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
 
 declare(strict_types=1);
@@ -49,7 +49,7 @@ use Throwable;
  * which lives HERE deliberately: a second authorization service would be two
  * places fail-closed has to hold instead of one.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
  */
 class TaskAuthorizationService {
 
@@ -134,7 +134,7 @@ class TaskAuthorizationService {
 	 *
 	 * @throws TaskAccessDeniedException When denied, or undeterminable.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function assertMay(string $verb, Task $task, ?string $uid): void {
 		$uid = $this->assertDeterminable(verb: $verb, task: $task, uid: $uid);
@@ -193,7 +193,7 @@ class TaskAuthorizationService {
 	 * @return boolean True when visible; false otherwise, including every
 	 *                 undeterminable case (fail closed).
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	public function mayRead(Task $task, ?string $uid): bool {
 		if ($uid === null || trim($uid) === '') {
@@ -230,7 +230,7 @@ class TaskAuthorizationService {
 	 *
 	 * @return boolean True only when the group backend affirms it.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	public function isAdministrator(?string $uid): bool {
 		if ($uid === null || trim($uid) === '') {
@@ -247,7 +247,7 @@ class TaskAuthorizationService {
 	 *
 	 * @return boolean True only when the group backend affirms it.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	private function isAdmin(string $uid): bool {
 		if ($this->groupManager === null) {
@@ -276,7 +276,7 @@ class TaskAuthorizationService {
 	 *
 	 * @throws TaskAccessDeniedException When anonymous or undeterminable.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	private function assertDeterminable(string $verb, Task $task, ?string $uid): string {
 		// No verb is anonymous, and no verb is reachable by uuid alone.
@@ -402,7 +402,7 @@ class TaskAuthorizationService {
 	 *
 	 * @throws TaskAccessDeniedException When the caller is not the assignee.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	private function assertAssignee(string $verb, Task $task, string $uid): void {
 		$assignee = trim((string)$task->getAssignee());
@@ -424,7 +424,7 @@ class TaskAuthorizationService {
 	 *
 	 * @throws TaskAccessDeniedException When the caller is not the requester.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	private function assertRequester(string $verb, Task $task, string $uid): void {
 		$requester = trim((string)$task->getRequester());
@@ -452,7 +452,7 @@ class TaskAuthorizationService {
 	 *
 	 * @throws TaskAccessDeniedException When not a member, or undeterminable.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	private function assertPoolMember(string $verb, Task $task, string $uid): void {
 		$users = ($task->getCandidateUsers() ?? []);
@@ -554,7 +554,7 @@ class TaskAuthorizationService {
 	 *
 	 * @return boolean True only when the backend affirms membership.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	private function isInGroup(string $uid, string $groupId): bool {
 		if ($this->groupManager === null || $groupId === '') {
@@ -579,7 +579,7 @@ class TaskAuthorizationService {
 	 *
 	 * @throws TaskAccessDeniedException When the role cannot be resolved.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-every-lifecycle-verb-is-authorized-fail-closed
 	 */
 	private function assertRoleResolvable(string $verb, string $role): void {
 		if ($this->groupManager === null) {

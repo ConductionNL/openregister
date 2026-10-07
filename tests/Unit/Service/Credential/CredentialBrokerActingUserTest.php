@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
+ * @spec openspec/specs/credential-broker/spec.md#background-acting-user-resolution
  */
 
 declare(strict_types=1);
@@ -220,7 +220,8 @@ class CredentialBrokerActingUserTest extends TestCase {
 			$broker,
 			$tokenService,
 			$this->createMock(OrganisationService::class),
-			new SharePrincipalDeriver()
+			new SharePrincipalDeriver(),
+			$this->createMock(\Psr\Log\LoggerInterface::class)
 		);
 
 		$response = $controller->brokerRequest(self::UUID);

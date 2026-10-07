@@ -12,7 +12,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md
+ * @spec openspec/specs/object-read-state/spec.md
  */
 
 declare(strict_types=1);
@@ -156,7 +156,7 @@ class ReadStateServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function testMarkingReadWritesTheCallersOwnRow(): void {
 		$this->mapper->expects($this->once())
@@ -182,7 +182,7 @@ class ReadStateServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function testMarkingUnreadRemovesOnlyTheCallersRow(): void {
 		$this->mapper->expects($this->once())
@@ -204,7 +204,7 @@ class ReadStateServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function testAnotherUsersReadStateIsRefused(): void {
 		$this->mapper->expects($this->never())->method('findOne');
@@ -220,7 +220,7 @@ class ReadStateServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function testAnonymousCannotMarkAnythingRead(): void {
 		$this->mapper->expects($this->never())->method('markSeen');
@@ -239,7 +239,7 @@ class ReadStateServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function testInvalidationSparesTheAuthor(): void {
 		$this->mapper->expects($this->once())
@@ -264,7 +264,7 @@ class ReadStateServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	public function testAPageOfObjectsCostsOneQuery(): void {
 		$this->mapper->expects($this->once())
@@ -297,7 +297,7 @@ class ReadStateServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	public function testTheMemoIsDroppedAfterAWrite(): void {
 		$this->mapper->expects($this->exactly(2))
@@ -320,7 +320,7 @@ class ReadStateServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	public function testTheTabsBadgeFromOneRead(): void {
 		$seenAt = new DateTime('2026-09-01T10:00:00+00:00');
@@ -365,7 +365,7 @@ class ReadStateServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	public function testASubResourceUsesItsOwnSeenMoment(): void {
 		$object = $this->makeObject(

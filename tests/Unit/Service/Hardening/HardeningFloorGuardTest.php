@@ -28,6 +28,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Hardening\HardeningFloorGuard
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningControl
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningFloorException
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningPolicy
  */
 class HardeningFloorGuardTest extends TestCase {
 

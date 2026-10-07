@@ -12,6 +12,8 @@ import { NcActionButton, NcActions, NcAppContent } from '@nextcloud/vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+import EditableCell from '../../components/tables/EditableCell.vue'
+import { isInlineEditable } from '../../services/propertyEditor.js'
 import {
 	navigationStore,
 	objectStore,
@@ -46,6 +48,7 @@ export default {
 		Pencil,
 		ContentCopy,
 		TrashCanOutline,
+		EditableCell,
 	},
 
 	data() {
@@ -71,6 +74,21 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The columns a reader with update rights may edit in their cell:
+		 * scalar text, numbers and choice lists of the searched schema.
+		 *
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+		 * @return {Array<string>}
+		 */
+		inlineEditableColumns() {
+			const properties = this.normalizedSchema?.properties
+			if (!properties) return []
+			return Object.keys(properties).filter((key) =>
+				isInlineEditable(properties[key]),
+			)
+		},
+
 		/**
 		 * Normalized search result objects for table display.
 		 *
@@ -290,12 +308,50 @@ export default {
 	 * @spec exclude UI plumbing — fetch the kanban board on initial mount when a kanban view is already active (e.g. restored from route params)
 	 */
 	mounted() {
+		this.requestUpdateRights()
 		if (this.activeViewId && this.presentationType === 'kanban') {
 			this.fetchKanbanBoard()
 		}
 	},
 
 	methods: {
+		/**
+		 * Ask the list for the reader's update right on each row
+		 * (`_extend[]=@self.can`), which decides where a cell is editable.
+		 *
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+		 * @return {void}
+		 */
+		requestUpdateRights() {
+			const current = objectStore.searchParams?._extend
+			let extend = []
+			if (Array.isArray(current)) {
+				extend = current
+			} else if (current) {
+				extend = [current]
+			}
+			if (extend.includes('@self.can')) return
+			objectStore.updateSearchParams({ _extend: [...extend, '@self.can'] })
+		},
+
+		/**
+		 * A cell saved in place: show the new value in its row.
+		 *
+		 * @param {object} payload The saved cell.
+		 * @param {object} payload.row The row.
+		 * @param {string} payload.field The field.
+		 * @param {*} payload.value The stored value.
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+		 * @return {void}
+		 */
+		handleCellSaved({ row, field, value }) {
+			const id = row?.['@self']?.id ?? row?.id
+			const item = (objectStore.searchCollection || []).find(
+				(candidate) => (candidate?.['@self']?.id ?? candidate?.id) === id,
+			)
+			if (item) item[field] = value
+		},
+
 		/**
 		 * Open the new-object dialog for the selected register and schema.
 		 *
@@ -635,6 +691,18 @@ export default {
 			@pageChanged="handlePageChanged"
 			@pageSizeChanged="handlePageSizeChanged"
 			@select="handleSelect">
+			<template
+				v-for="column in inlineEditableColumns"
+				:key="column"
+				#[`column-${column}`]="{ row, value }">
+				<EditableCell
+					:row="row"
+					:field="column"
+					:value="value"
+					:property="normalizedSchema.properties[column]"
+					@open="handleRowClick"
+					@saved="handleCellSaved" />
+			</template>
 			<template #row-actions="{ row }">
 				<NcActions>
 					<NcActionButton closeAfterClick @click="handleRowClick(row)">

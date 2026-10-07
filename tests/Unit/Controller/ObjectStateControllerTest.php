@@ -39,6 +39,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Controller\ObjectStateController
+ * @uses \OCA\OpenRegister\Exception\ArchiveNotOfferedException
  */
 final class ObjectStateControllerTest extends TestCase {
 

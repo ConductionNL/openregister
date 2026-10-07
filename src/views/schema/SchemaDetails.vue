@@ -33,13 +33,20 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 						<template #icon>
 							<DotsHorizontal :size="20" />
 						</template>
-						<NcActionButton
-							closeAfterClick
-							@click="navigationStore.setModal('editSchema')">
+						<NcActionButton closeAfterClick @click="openEditor(false)">
 							<template #icon>
 								<Pencil :size="20" />
 							</template>
 							Edit
+						</NcActionButton>
+						<NcActionButton
+							closeAfterClick
+							data-testid="edit-schema-as-draft"
+							@click="openEditor(true)">
+							<template #icon>
+								<FileDocumentEditOutline :size="20" />
+							</template>
+							{{ t('openregister', 'Edit as draft') }}
 						</NcActionButton>
 						<NcActionButton
 							closeAfterClick
@@ -84,6 +91,11 @@ import { dashboardStore, navigationStore, schemaStore } from '../../store/store.
 					</NcActions>
 				</div>
 			</span>
+
+			<!-- A pending draft: records use the published schema until it is published. -->
+			<SchemaDraftBar
+				:schema="schemaStore.schemaItem"
+				@editDraft="openEditor(true)" />
 
 			<!-- Tab navigation -->
 			<div class="schemaTabNav">
@@ -266,11 +278,13 @@ import ChartBox from 'vue-material-design-icons/ChartBox.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Download from 'vue-material-design-icons/Download.vue'
+import FileDocumentEditOutline from 'vue-material-design-icons/FileDocumentEditOutline.vue'
 import Gavel from 'vue-material-design-icons/Gavel.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import PlusCircleOutline from 'vue-material-design-icons/PlusCircleOutline.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import SchemaDraftBar from '../../components/schema/SchemaDraftBar.vue'
 import SchemaWorkflowTab from '../schemas/SchemaWorkflowTab.vue'
 import CalendarProviderTab from './CalendarProviderTab.vue'
 import SchemaRulesTab from './SchemaRulesTab.vue'
@@ -289,6 +303,7 @@ export default {
 		TrashCanOutline,
 		PlusCircleOutline,
 		Download,
+		FileDocumentEditOutline,
 		Upload,
 		AlertCircle,
 		CalendarMonth,
@@ -298,6 +313,7 @@ export default {
 		CalendarProviderTab,
 		SchemaWorkflowTab,
 		SchemaRulesTab,
+		SchemaDraftBar,
 	},
 
 	data() {
@@ -414,6 +430,17 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Open the schema editor, publishing directly or saving to the draft.
+		 *
+		 * @param {boolean} asDraft - True to save the edit as the schema's draft
+		 * @spec openspec/changes/modelling-schema-draft/specs/runtime-schema-api/spec.md#requirement-req-sdraft-001-a-schema-edit-can-be-held-as-a-draft-until-it-is-published
+		 */
+		openEditor(asDraft) {
+			schemaStore.setDraftMode(asDraft)
+			navigationStore.setModal('editSchema')
+		},
+
 		/**
 		 * Load schema statistics from the dedicated stats endpoint
 		 *

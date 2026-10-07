@@ -114,6 +114,7 @@ class BulkJob extends Entity implements JsonSerializable {
 	 */
 	public const STATE_PREVIEWED = 'previewed';
 	public const STATE_RUNNING = 'running';
+	public const STATE_PAUSED = 'paused';
 	public const STATE_CANCELLING = 'cancelling';
 	public const STATE_CANCELLED = 'cancelled';
 	public const STATE_COMPLETED = 'completed';
@@ -122,11 +123,16 @@ class BulkJob extends Entity implements JsonSerializable {
 	/**
 	 * The states in which a job still has work ahead of it.
 	 *
+	 * A paused job belongs here: its members are unwalked and its cursor is
+	 * kept, so it has work ahead in exactly the sense a cancelled one does
+	 * not. Only `running` re-enqueues, which is what makes the pause hold.
+	 *
 	 * @var array<int, string>
 	 */
 	public const ACTIVE_STATES = [
 		self::STATE_PREVIEWED,
 		self::STATE_RUNNING,
+		self::STATE_PAUSED,
 		self::STATE_CANCELLING,
 	];
 
@@ -401,7 +407,7 @@ class BulkJob extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True when the job is undoable in principle.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function isReversible(): bool {
 		return ($this->reversalWindow !== null && $this->reversalWindow > 0);

@@ -210,7 +210,7 @@ class CacheHandlerBranchCoverageTest extends TestCase {
 	public function testSetObjectNameStoresInBothCaches(): void {
 		$this->nameDistCache->expects($this->once())
 			->method('set')
-			->with('name_uuid-123', ['n' => 'Test Object', 'o' => null], $this->anything());
+			->with('name_uuid-123', ['n' => 'Test Object', 'o' => null, 's' => null], $this->anything());
 
 		$this->handler->setObjectName('uuid-123', 'Test Object');
 	}

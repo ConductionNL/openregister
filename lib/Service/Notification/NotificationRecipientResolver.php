@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+ * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
  */
 
 declare(strict_types=1);
@@ -90,7 +90,7 @@ class NotificationRecipientResolver {
 	 *
 	 * @return array<int, string> Verified, deduplicated uids.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function resolve(
 		array $recipientsSpec,
@@ -392,7 +392,7 @@ class NotificationRecipientResolver {
 	 *
 	 * @return array<int, string> The watching uids that may still read the object.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
 	 */
 	private function resolveWatcherRecipients(ObjectEntity $object): array {
 		if ($this->serverContainer === null) {
@@ -451,7 +451,7 @@ class NotificationRecipientResolver {
 	 *
 	 * @return bool True when the uid corresponds to a real Nextcloud user.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function userExists(string $uid): bool {
 		if ($uid === '') {
@@ -485,7 +485,7 @@ class NotificationRecipientResolver {
 	 *
 	 * @return bool True when the group exists.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function groupExists(string $gid): bool {
 		if ($gid === '') {
@@ -518,7 +518,7 @@ class NotificationRecipientResolver {
 	 * (null, array-of-strings, array-of-objects with uid/id/userId, plain string); each
 	 * shape requires a separate extraction branch that cannot be unified.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function extractUidsFromRelation(mixed $value): array {
 		if ($value === null) {

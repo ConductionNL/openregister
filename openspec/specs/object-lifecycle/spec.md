@@ -18,6 +18,7 @@ retrofit: true
 @e2e exclude internal object pipeline backend — covered by PHPUnit
 
 Describes the internal pipeline that governs how OpenRegister objects are created, read, updated, and deleted. This capability covers the layered handler pattern used to decompose the save, validate, cache, metadata-hydration, and bulk processing concerns, and is the foundation on which all higher-level capabilities (schema hooks, RBAC, retention, audit trail) attach their side effects.
+
 ## Requirements
 
 ### REQ-001: The system MUST process object mutations through a layered save pipeline
@@ -1226,6 +1227,1236 @@ eliminates.
 - **AND** the transitioning object's `settlementMode` is `passthrough`
 - **WHEN** the executor runs the transition's actions
 - **THEN** the conditioned action MUST NOT run and its handler MUST NOT be resolved
+
+### Requirement: A lifecycle kept as data is validated through one entry point
+An app that lets a person author a state machine as an object (a process template, not a schema annotation) MUST be able to validate that graph through `LifecycleTransitionsValidator::validate(states, initial, transitions, knownGuards)` without wrapping it in a schema. The method MUST return a list of `{code, message}` errors, empty when the graph is valid, and MUST refuse: no named state (`lifecycle-states-empty`), a missing or undeclared initial state (`lifecycle-initial-missing`, `lifecycle-initial-not-declared`), a transition that is not an object or lacks `from` or `to` (`lifecycle-transition-malformed`, `lifecycle-from-missing`, `lifecycle-to-missing`), an endpoint that is not a declared state (`lifecycle-from-not-declared`, `lifecycle-to-not-declared`), a declared state no transition starts or ends in that is not the initial state (`lifecycle-state-unreachable`), and, when the app passes its guard catalogue, a guard token outside it (`lifecycle-guard-unknown`). The unreachable rule MUST NOT be applied to `x-openregister-lifecycle` schema annotations, where an enum value nothing moves to is a legitimate legacy value and refusing it would stop shipped schemas from importing.
+
+#### Scenario: A state no transition touches is refused
+- **GIVEN** states `draft`, `decided` and `orphan`, initial state `draft`, and one transition from `draft` to `decided`
+- **WHEN** the app validates the graph
+- **THEN** the result MUST hold exactly one error, code `lifecycle-state-unreachable`, whose message names `orphan`
+
+#### Scenario: A dangling transition is refused by name
+- **GIVEN** states `draft` and `decided` and a transition from `decided` to `ghost`
+- **WHEN** the app validates the graph
+- **THEN** the result MUST hold `lifecycle-to-not-declared` with a message naming `ghost`
+
+#### Scenario: A guard token outside the catalogue is refused
+- **GIVEN** a transition declaring guards `quorum_met` and `made_up_token`, and the catalogue `quorum_met`
+- **WHEN** the app validates the graph with that catalogue
+- **THEN** the result MUST hold `lifecycle-guard-unknown` naming `made_up_token`, so a typo never disables a guard
+
+#### Scenario: Without a catalogue guards are only shape-checked
+- **GIVEN** a transition whose `guards` is a list of non-empty strings
+- **WHEN** the app validates the graph without a catalogue
+- **THEN** the guards MUST be accepted, and a `guards` value that is not a list MUST be refused with `lifecycle-guards-malformed`
+
+### Requirement: A lifecycle state declares hidden, read-only and required fields per role
+
+`x-openregister-lifecycle.states.<state>.fields` MAY declare `hidden`,
+`readOnly` and `required` lists of `{fields, groups}`. Schema-save
+validation SHALL refuse a field the schema does not declare, a state the
+lifecycle does not declare, and a transition `inputs` entry naming a field
+`hidden` in the target state.
+
+#### Scenario: an unknown field is refused at schema save
+
+- **GIVEN** a lifecycle whose state `open` requires field `outcome` and a schema without `outcome`
+- **WHEN** the schema is saved
+- **THEN** the save fails with 422 naming `outcome` and `open`
+- @e2e exclude {asserted in tests/Unit/Service/Lifecycle/LifecycleStateFieldValidationTest.php::testAnUnknownFieldIsRefusedAtSchemaSave; the HTTP half rides tests/e2e/ci/field-rules-by-state.spec.ts}
+
+### Requirement: A state declares entry and exit conditions
+
+`x-openregister-lifecycle.states.<state>` MAY declare `entry` and `exit`
+conditions over the object's data, grouped with and or or. An entry
+condition SHALL be evaluated on every path into the state and an exit
+condition on every path out of it, whichever transition is used. A refusal
+SHALL name the clause that failed, in the schema author's declared
+message where one is given. Schema-save validation SHALL refuse a
+condition naming a property the schema does not declare.
+
+#### Scenario: one rule guards every path into a state
+
+- **GIVEN** a state `besloten` whose entry condition requires `besluit` to be present, reachable by three transitions
+- **WHEN** an object without `besluit` is moved into it by any of the three
+- **THEN** the move is refused and the refusal names `besluit`
+
+#### Scenario: the failing clause is named
+
+- **GIVEN** an entry condition grouping two clauses with and
+- **WHEN** the second clause is false
+- **THEN** the refusal names the second clause
+- @e2e exclude {asserted in tests/Unit/Service/Lifecycle/StateConditionEvaluatorTest.php::testTheFailingClauseOfAnAndIsNamed}
+
+#### Scenario: a condition on an undeclared property is refused at schema save
+
+- **GIVEN** an exit condition naming a property the schema does not declare
+- **WHEN** the schema is saved
+- **THEN** the save fails with 422 naming the property
+- @e2e exclude {asserted in tests/Unit/Service/Lifecycle/LifecycleStateFieldValidationTest.php::testAConditionOnAnUndeclaredPropertyIsRefused}
+
+### Requirement: Referential-integrity CASCADE deletions MUST be batched
+
+`ReferentialIntegrityService::applyDeletionActions()` SHALL apply the CASCADE
+targets of a pre-computed `DeletionAnalysis` with batched statements: ONE
+cross-magic-table lookup resolving all target UUIDs, one
+`UPDATE ... SET _deleted = CASE _uuid ... END WHERE _uuid IN (...)` per magic
+table (per-target `deletedBy`/`deletedAt`/`objectId`/`organisation` attribution
+metadata bound per row), and ONE multi-row audit INSERT — instead of a
+cross-table scan plus a single-row audit INSERT per target.
+
+Per-target semantics SHALL be preserved: an object-updating event is dispatched
+per target before the write (a hook stopping propagation skips that target; a
+payload-modifying hook routes that target through the full-row save), an
+object-updated event is dispatched per target after the write, and one audit
+row is written per analysis target (a target referenced through two properties
+yields two rows). Targets the uuid-based batch lookup cannot resolve — and all
+targets when the batched resolve or write fails — SHALL fall back to the
+legacy per-object pipeline unchanged. RESTRICT, SET_NULL and SET_DEFAULT
+handling and the SET_NULL → SET_DEFAULT → CASCADE (deepest first) execution
+order are unchanged.
+
+#### Scenario: CASCADE targets are soft-deleted with batched statements
+- **GIVEN** a deletion analysis with N CASCADE targets stored in one magic table
+- **WHEN** `applyDeletionActions()` runs
+- **THEN** the targets are resolved with one batched cross-table lookup
+- **AND** soft-deleted with one UPDATE statement carrying per-target attribution
+  metadata including the acting user and active organisation
+- **AND** N per-object updating and updated events are dispatched
+- **AND** N audit rows are persisted with one multi-row INSERT
+
+#### Scenario: Batch misses keep the per-object pipeline
+- **GIVEN** a deletion analysis where one CASCADE target UUID is not found by the
+  batched lookup
+- **WHEN** `applyDeletionActions()` runs
+- **THEN** that target is deleted and audited through the unchanged per-object
+  pipeline
+- **AND** the resolved targets are still handled by the batched statements
+
+#### Scenario: Batch failure falls back to the per-object pipeline
+- **GIVEN** the batched lookup or the batched soft-delete write fails
+- **WHEN** `applyDeletionActions()` continues
+- **THEN** every CASCADE target is retried through the legacy per-object
+  pipeline and no exception escapes
+
+#### Scenario: Non-CASCADE actions are untouched
+- **GIVEN** a deletion analysis with SET_NULL and SET_DEFAULT targets
+- **WHEN** `applyDeletionActions()` runs
+- **THEN** those targets are processed per object exactly as before, before any
+  CASCADE deletion
+
+### Requirement: An app can run a transition as the system after approving the caller itself (REQ-TAS-001)
+
+OpenRegister SHALL offer a server-side entry point, `TransitionEngine::transitionAsSystem()`,
+through which app code that has already checked the caller runs a named
+transition on an object the caller holds no right on. The entry point SHALL
+require the id of the app taking that decision and SHALL refuse an empty
+one. On that path OpenRegister SHALL skip its own read check on the
+subject, its `update` check on the subject, and RBAC and the organisation
+filter on the lifecycle save, and nothing else.
+
+#### Scenario: the normal path still refuses a caller without rights
+
+- **GIVEN** a draft object the session user may not read or update
+- **WHEN** the user's request runs the transition through `transition()`
+- **THEN** the transition is refused and nothing is written
+- @e2e exclude {engine-level contract, covered by TransitionEngineAsSystemTest}
+
+#### Scenario: the same caller succeeds through the system entry point
+
+- **GIVEN** the same draft and the same session user, and an app that has checked the user itself
+- **WHEN** the app calls `transitionAsSystem()` naming itself
+- **THEN** the object moves to the transition's target state
+- **AND** OpenRegister's `update` check is not consulted
+- @e2e exclude {server-side entry point with no HTTP route, covered by TransitionEngineAsSystemTest}
+
+#### Scenario: an app must name itself
+
+- **WHEN** `transitionAsSystem()` is called with an empty app id
+- **THEN** it is refused before the object is read
+- @e2e exclude {argument check, covered by TransitionEngineAsSystemTest}
+
+### Requirement: What a transition declares still runs on the system path (REQ-TAS-002)
+
+On the system path the lifecycle save SHALL still dispatch the update
+event, so the transition's declared `authorization`, `condition` and
+`requires` guard run and see the session user, the real caller, and a
+refusal from any of them SHALL refuse the transition. The declared
+`actions[]` and the transitioned event SHALL run with the real caller as
+their user.
+
+#### Scenario: the guard runs with the real caller
+
+- **GIVEN** a transition that `requires` an app guard
+- **WHEN** an app runs it through `transitionAsSystem()`
+- **THEN** the guard is asked once, with the session user's id
+- @e2e exclude {listener contract, covered by TransitionEngineAsSystemTest with the real LifecycleValidationListener}
+
+#### Scenario: a guard refusal still refuses
+
+- **GIVEN** a guard that denies the move
+- **WHEN** an app runs the transition through `transitionAsSystem()`
+- **THEN** the transition is refused with `lifecycle-guard-denied`
+- @e2e exclude {listener contract, covered by TransitionEngineAsSystemTest with the real LifecycleValidationListener}
+
+### Requirement: A system transition is recorded with the real caller and the app (REQ-TAS-003)
+
+The audit row of a system transition SHALL name the real caller as its
+user and SHALL carry `transitionAsSystem: {"app": "<app id>"}` in its change
+set. The mark SHALL apply only while the transition's write runs and SHALL
+be released when the write is refused. An ordinary write SHALL carry no
+such mark. Each system transition SHALL also be logged at info level with
+the app, the caller, the object and the action.
+
+#### Scenario: the audit row names both
+
+- **GIVEN** an app runs a transition through `transitionAsSystem()` for user `learner-1`
+- **WHEN** the audit row of that write is built
+- **THEN** its user is `learner-1` and its change set carries `transitionAsSystem` with the app id
+- @e2e exclude {audit row builder, covered by TransitionEngineAsSystemTest}
+
+#### Scenario: the mark does not outlive the write
+
+- **GIVEN** a system transition that finished, or was refused
+- **WHEN** the same object is saved again in the same request
+- **THEN** that save carries no system mark
+- @e2e exclude {request-scoped state, covered by TransitionEngineAsSystemTest}
+
+### Requirement: The HTTP API cannot reach the system path (REQ-TAS-004)
+
+No controller SHALL call `transitionAsSystem()`, and nothing in the
+transition payload SHALL select the system path.
+
+#### Scenario: the payload cannot ask for it
+
+- **GIVEN** a caller without rights on the object
+- **WHEN** the transition endpoint is called with `_rbac`, `asSystem` or `app` in the payload
+- **THEN** the transition is refused as for any caller without rights
+- @e2e exclude {engine-level contract, covered by TransitionEngineAsSystemTest}
+
+#### Scenario: no controller calls it
+
+- **WHEN** the source under `lib/` is searched for calls to `transitionAsSystem()`
+- **THEN** none is found under `lib/Controller`
+- @e2e exclude {structural assertion, covered by TransitionEngineAsSystemTest}
+
+### Requirement: A transition MAY declare `inputs[]` bounding the payload it accepts
+
+A schema's `x-openregister-lifecycle.transitions[<action>]` MAY declare an
+`inputs` array whose entries name a property of that schema and whether it is
+required: `inputs: [{"field": "<propertyName>", "required": true|false}]`.
+
+OpenRegister MUST enforce that declaration as an ALLOWLIST when a transition
+is applied with a payload:
+
+- A payload key the transition does not declare MUST be REJECTED. A
+  transition that declares no `inputs` therefore accepts NO payload at all —
+  which is the existing behaviour of every transition in the fleet and MUST
+  remain so, so that opting in is explicit and no schema changes behaviour by
+  this requirement being written down.
+- A declared `required` input that is absent from the payload, or supplied as
+  an empty string, MUST be REJECTED.
+- Accepted values MUST be merged into the object write that carries the
+  transition, so ordinary save-path schema validation and read-only
+  enforcement apply to them exactly as to any other object write. OpenRegister
+  MUST NOT validate an accepted value only against the `inputs` declaration:
+  the declaration says which fields may be supplied, and the schema says what
+  a legal value is.
+- The accepted values and the lifecycle field change MUST land in ONE save, so
+  a caller cannot observe an object whose values were written while its state
+  change was refused, or the reverse.
+
+A rejection MUST carry the offending field names in a machine-readable form
+alongside the human message, and MUST distinguish an undeclared key from a
+missing required input. A malformed payload is a client error and MUST be
+reported as one, distinctly from a transition that is refused from the current
+state and from one the caller is not authorized to take.
+
+Declaring `inputs` MUST NOT change which transitions are available, who may
+take them, or what any existing declared guard, authorization gate or
+`actions[]` entry does.
+
+#### Scenario: A transition with no declared inputs rejects a payload
+- **GIVEN** a schema whose `approve` transition declares no `inputs`
+- **WHEN** the transition is applied with a payload containing one field
+- **THEN** the call MUST be rejected naming that field as undeclared
+- **AND** the object's lifecycle field MUST be unchanged
+
+#### Scenario: A declared required input is enforced
+- **GIVEN** a `reject` transition declaring `inputs: [{"field": "reason", "required": true}]`
+- **WHEN** the transition is applied with an empty payload
+- **THEN** the call MUST be rejected naming `reason` as a missing required input
+- **AND** the response MUST carry that field name machine-readably
+
+#### Scenario: An accepted value is still validated by the schema
+- **GIVEN** a `reject` transition declaring `reason` as an input, where the
+  schema constrains `reason` to an enumerated set
+- **WHEN** the transition is applied with a `reason` outside that set
+- **THEN** the save-path validation MUST refuse the write
+- **AND** the object's lifecycle field MUST be unchanged
+
+#### Scenario: An accepted value cannot overwrite a read-only property
+- **GIVEN** a transition declaring an input naming a property the schema marks
+  read-only
+- **WHEN** the transition is applied supplying that property
+- **THEN** the read-only enforcement on the save path MUST apply exactly as it
+  does to any other object write
+
+### Requirement: The available-actions response MUST publish each action's declared inputs
+
+Every action returned by the available-actions endpoint MUST carry the
+declared `inputs` for that transition — the field names and their required
+flags — so a client can present the payload the transition expects without
+reading the schema.
+
+An action whose transition declares no inputs MUST carry an EMPTY inputs list
+rather than omitting the key. Absent and empty MUST NOT be the same value on
+this response: empty is the positive statement "this transition accepts no
+payload", which is exactly what the allowlist enforces, and a client must be
+able to read it as such rather than infer it from silence.
+
+This MUST hold for actions derived from a static transition map and for
+actions derived at runtime from a graph block, so a client's handling of the
+response does not have to know which mode a schema uses.
+
+The endpoint's existing per-action keys MUST be unchanged, and the existing
+read-permission check that gates the response MUST be unchanged: publishing
+what a transition accepts MUST NOT be reachable by a caller who may not read
+the object.
+
+#### Scenario: A declaring transition publishes its fields
+- **GIVEN** a schema whose `reject` transition declares two inputs, one required
+- **AND** an object in a state from which `reject` is available
+- **WHEN** the available-actions endpoint is called for that object
+- **THEN** the `reject` action MUST carry both field names with their required flags
+
+#### Scenario: A non-declaring transition publishes an empty list
+- **GIVEN** a transition declaring no `inputs`
+- **WHEN** the available-actions endpoint is called
+- **THEN** that action MUST carry an empty inputs list
+- **AND** the key MUST be present
+
+#### Scenario: A caller without read permission still learns nothing
+- **GIVEN** a user without read permission on an object
+- **WHEN** they call the available-actions endpoint for it
+- **THEN** the call MUST be refused
+- **AND** no field name from any transition MUST appear in the response
+
+### Requirement: A lifecycle transition MAY fire automatically when its `autoWhen` rule holds after a write
+
+A transition declared in `x-openregister-lifecycle.transitions` MAY carry an optional `autoWhen`, whose
+value is a JSONLogic rule object. After an object is created or updated through the object save path,
+OpenRegister SHALL look for a transition whose `from` contains the object's current lifecycle value and
+whose `autoWhen` holds for the object as written. When exactly one such transition exists, OpenRegister
+SHALL fire it as a named transition, exactly as `POST /api/objects/{id}/transition` would with that
+transition's name and no payload.
+
+A transition whose `to` equals the object's current lifecycle value SHALL NOT fire automatically, because
+the move would change nothing and would repeat on every write.
+
+A transition WITHOUT an `autoWhen` key SHALL behave exactly as before and SHALL never fire on its own.
+The key is additive and never required.
+
+A write made inside a system operation (a configuration import, a repair step, seeding) dispatches no
+object events, and SHALL therefore fire no automatic transition. Seeding is not a user action, and an
+automatic move on seed data has no one to act as.
+
+#### Scenario: An automatic transition fires after an update and the response carries the new state
+- **GIVEN** a transition `beslissen` with `from: ["in-behandeling"]`, `to: "besloten"` and `autoWhen: { "!!": { "var": "object.motivering" } }`
+- **AND** an object in state `in-behandeling` without a `motivering`
+- **WHEN** the object is updated through an ordinary object save that sets a non-empty `motivering`
+- **THEN** the response to that save MUST carry the lifecycle value `besloten`
+- **AND** a fresh read of the object MUST return `besloten`
+
+#### Scenario: An automatic transition fires after a create
+- **GIVEN** the same transition and a schema whose declared `initial` state is `in-behandeling`
+- **WHEN** an object is created carrying a non-empty `motivering`
+- **THEN** the response to the create MUST carry the lifecycle value `besloten`
+
+#### Scenario: An automatic transition does not fire while its rule does not hold
+- **GIVEN** the same transition
+- **WHEN** an object in state `in-behandeling` is updated without a `motivering`
+- **THEN** the response MUST carry the lifecycle value `in-behandeling`
+- **AND** no transition MUST be applied
+
+#### Scenario: A transition without autoWhen never fires automatically
+@e2e exclude regression guard on an unchanged path, covered by the existing lifecycle PHPUnit suite
+- **GIVEN** a transition declaring no `autoWhen`
+- **WHEN** an object in its `from` state is saved
+- **THEN** no transition MUST be applied and the lifecycle value MUST be unchanged
+
+#### Scenario: A move to the current value is never fired
+@e2e exclude candidate selection is internal, covered by PHPUnit
+- **GIVEN** a transition whose `from` contains its own `to`, such as `from: ["ontvangen", "in-behandeling"]`, `to: "in-behandeling"`, with an `autoWhen` that holds
+- **WHEN** an object in state `in-behandeling` is saved
+- **THEN** that transition MUST NOT fire
+
+#### Scenario: A write inside a system operation fires no automatic transition
+@e2e exclude system operations have no HTTP surface, covered by PHPUnit
+- **GIVEN** a transition whose `autoWhen` holds
+- **WHEN** the object is written inside a system operation
+- **THEN** no automatic transition MUST be applied
+
+### Requirement: An automatic transition MUST obey every gate a manual transition obeys
+
+An automatic transition SHALL be applied through the same path as a named transition, so every rule
+that can refuse a manual transition SHALL be able to refuse the automatic one, in the same order: the
+object `update` permission, the `from` check, the `authorization` list, the `condition`, the `requires`
+guard, and any approval-chain gate. When the transition is applied, its declared `actions[]` SHALL run
+exactly as they do for a manual transition.
+
+When any of those gates refuses the automatic transition, OpenRegister SHALL NOT apply it, SHALL leave
+the object in the state the triggering write left it in, and SHALL log the refusal at warning level
+naming the schema, the object, the transition and the refusal code. The refusal SHALL NOT be retried,
+SHALL NOT be surfaced to the caller as an error, and SHALL NOT affect the triggering write. A later
+write that finds the rule still holding SHALL try again.
+
+A transition declaring a required input cannot be fired automatically, because an automatic move
+carries no payload. That declaration is refused at schema-save time; see the validation requirement.
+
+#### Scenario: An automatic transition refused by its condition leaves the triggering write intact
+- **GIVEN** a transition with an `autoWhen` that holds and a `condition` that does not hold
+- **WHEN** an object in its `from` state is saved with other field changes
+- **THEN** the save MUST succeed and its field changes MUST be stored
+- **AND** the response MUST carry the unchanged lifecycle value
+- **AND** no transition MUST be applied
+
+#### Scenario: An automatic transition refused by its authorization list is not applied
+@e2e exclude needs a second non-admin principal per run, covered by PHPUnit
+- **GIVEN** a transition with an `autoWhen` that holds and an `authorization` list naming a group the saving user is not in
+- **WHEN** that user saves the object
+- **THEN** the save MUST succeed and the transition MUST NOT be applied
+- **AND** a warning MUST be logged carrying the code `lifecycle-transition-unauthorized`
+
+#### Scenario: A denying guard stops the automatic transition
+@e2e exclude guard resolution is backend wiring, covered by PHPUnit
+- **GIVEN** a transition with an `autoWhen` that holds and a `requires` guard that denies
+- **WHEN** the object is saved
+- **THEN** the transition MUST NOT be applied and a warning MUST be logged carrying the code `lifecycle-guard-denied`
+
+#### Scenario: An automatic transition runs its declared actions
+@e2e exclude action handlers are backend wiring, covered by PHPUnit
+- **GIVEN** a transition with an `autoWhen` that holds and a declared `actions[]` entry
+- **WHEN** the automatic transition is applied
+- **THEN** that action MUST run exactly as it runs for the same transition fired by name
+
+### Requirement: A sync automatic transition MUST be applied after the triggering write completes and MUST NOT unwind it
+
+A `sync` automatic transition SHALL be applied in the same request as the write that triggered it, and
+SHALL be applied only after that write is complete: after its object row, its audit row, and any
+follow-up write the same save makes to the same object. It SHALL be applied before the response is
+produced, so the response of the triggering request SHALL carry the lifecycle value the automatic
+transition reached. This holds for both routes that write an object: an ordinary object save, and a
+named transition whose save makes a further automatic transition hold.
+
+The triggering write SHALL NOT be unwound, failed or delayed in its commit by anything the automatic
+transition does. An exception raised while applying it SHALL be caught and logged at warning level; the
+triggering request SHALL answer as it would have without the automatic transition.
+
+For a named transition that triggers an automatic one, the `ObjectTransitionedEvent` of the named
+transition SHALL be dispatched before that of the automatic transition, so a listener sees the moves in
+the order they happened.
+
+#### Scenario: The named-transition route returns the state an automatic transition reached
+- **GIVEN** a manual transition `indienen` from `concept` to `ingediend`, and a transition `beoordelen` from `ingediend` to `in-beoordeling` whose `autoWhen` holds
+- **WHEN** `POST /api/objects/{id}/transition` is called with action `indienen`
+- **THEN** the response MUST carry the lifecycle value `in-beoordeling`
+
+#### Scenario: The triggering write's audit row precedes the automatic one
+@e2e exclude audit ordering is a backend invariant, covered by PHPUnit
+- **GIVEN** a save that makes an automatic transition hold
+- **WHEN** both writes have been applied
+- **THEN** the audit row of the triggering save MUST precede the audit row of the automatic transition
+
+#### Scenario: A save that also writes file properties keeps the automatic move
+@e2e exclude the stale second write is internal to the save pipeline, covered by PHPUnit
+- **GIVEN** a save carrying a file property that makes an automatic transition hold
+- **WHEN** the save and the automatic transition have been applied
+- **THEN** the stored lifecycle value MUST be the one the automatic transition reached
+
+#### Scenario: The named transition's event precedes the automatic transition's event
+@e2e exclude event order is a backend invariant, covered by PHPUnit
+- **GIVEN** a named transition whose save makes an automatic transition hold
+- **WHEN** both have been applied
+- **THEN** `ObjectTransitionedEvent` for the named transition MUST be dispatched before `ObjectTransitionedEvent` for the automatic one
+
+#### Scenario: An exception while applying an automatic transition does not fail the request
+@e2e exclude provoking an engine exception needs a broken fixture, covered by PHPUnit
+- **GIVEN** a transition with an `autoWhen` that holds, whose application raises an exception
+- **WHEN** the object is saved
+- **THEN** the save MUST answer with the status it would have had without the automatic transition
+- **AND** the exception MUST be logged at warning level naming the transition
+
+### Requirement: `executionMode` selects sync or async, using the flow engine's two values
+
+@e2e exclude background job execution is not browser-observable, covered by PHPUnit
+
+A transition declaring `autoWhen` MAY also declare `executionMode`. Its value SHALL be exactly one of the
+two values the flow engine already defines for the same question, `sync` and `async`, and OpenRegister
+SHALL compare against those definitions rather than spelling the strings anew. When `executionMode` is
+absent, the transition SHALL run `sync`.
+
+An `async` automatic transition SHALL be decided at the moment its `sync` counterpart would be applied,
+using the same document, and SHALL then be queued and applied off-request. The queued move SHALL be
+applied only when the object has not been written since the decision. When it has, the queued move
+SHALL be dropped silently, because the newer write made its own decision.
+
+A write made outside any request-scoped save, such as a bulk save, a deferred create event or a revert,
+has no point at which a `sync` move can be applied after the write completes and before a response. Its
+automatic transitions SHALL be queued as `async`, whatever their declared mode.
+
+When the instance's listener-deferral kill switch is set to run deferred work inline, an `async`
+automatic transition decided inside a request-scoped save SHALL be applied where a `sync` one would be.
+A move decided outside a request-scoped save SHALL still be queued, because there is no safe inline
+point for it.
+
+#### Scenario: An absent executionMode runs sync
+- **GIVEN** a transition declaring `autoWhen` and no `executionMode`
+- **WHEN** its rule holds after a save
+- **THEN** it MUST be applied before the response is produced
+
+#### Scenario: An async automatic transition is applied off-request
+- **GIVEN** a transition declaring `autoWhen` and `executionMode: "async"` whose rule holds after a save
+- **WHEN** the save's response is produced
+- **THEN** the response MUST carry the unchanged lifecycle value
+- **AND** once the queued move is processed, the object MUST carry the transition's `to` value
+
+#### Scenario: A queued move is dropped when the object changed in between
+- **GIVEN** a queued `async` automatic transition
+- **AND** a later write to the same object before the queue is processed
+- **WHEN** the queued move is processed
+- **THEN** it MUST NOT be applied
+
+#### Scenario: A write outside a request-scoped save queues its automatic transitions
+- **GIVEN** a `sync` transition whose rule holds after a bulk save
+- **WHEN** the bulk save completes
+- **THEN** the automatic transition MUST be queued and applied off-request
+
+#### Scenario: An unrecognised stored executionMode does not fire
+- **GIVEN** a stored transition whose `executionMode` is neither `sync` nor `async`
+- **WHEN** its rule holds after a save
+- **THEN** it MUST NOT fire and a warning MUST be logged naming the transition
+
+### Requirement: Automatic transitions MUST be bounded by a loop cap that logs its breach
+
+An automatic transition's own write is a write, so it can make another automatic transition hold. A
+pass is the work started by one write and everything it triggers automatically. Within a pass,
+OpenRegister SHALL keep applying automatic transitions one at a time, re-deciding after each, until no
+rule holds or the pass is cut.
+
+A pass SHALL be cut, for the object concerned, when either limit is reached:
+
+- **Revisit.** A move whose `to` is a state the object already occupied in this pass, including the
+  state it started in, SHALL NOT be made.
+- **Ceiling.** At most 10 automatic transitions SHALL be applied to one object in one pass.
+
+A cut SHALL be logged at error level, naming the schema, the object, the limit reached and the sequence
+of transitions applied so far. The cut SHALL NOT raise an exception and SHALL NOT recurse. The ceiling
+is a fixed constant of the engine and SHALL NOT be configurable per schema or per instance.
+
+A pass SHALL survive an `async` hop: a queued move SHALL carry the pass's count and visited states, and
+the job applying it SHALL continue the same pass rather than start a new one. A loop SHALL NOT escape
+the cap by crossing into a background job.
+
+#### Scenario: A chain of automatic transitions continues in the same pass
+- **GIVEN** transitions `a` from `stap-1` to `stap-2` and `b` from `stap-2` to `stap-3`, both `sync` with an `autoWhen` that holds
+- **WHEN** an object in `stap-1` is saved
+- **THEN** the response MUST carry the lifecycle value `stap-3`
+
+#### Scenario: A ping-pong between two states stops at the first revisit
+- **GIVEN** a transition from `heen` to `terug` and a transition from `terug` to `heen`, both with an `autoWhen` that always holds
+- **WHEN** an object in `heen` is saved
+- **THEN** exactly one automatic transition MUST be applied
+- **AND** the response MUST carry the lifecycle value `terug`
+
+#### Scenario: A chain longer than the ceiling stops at ten moves
+- **GIVEN** twelve states `s0` to `s11` and eleven transitions each moving one state forward, all with an `autoWhen` that always holds
+- **WHEN** an object in `s0` is saved
+- **THEN** exactly ten automatic transitions MUST be applied
+- **AND** the response MUST carry the lifecycle value `s10`
+
+#### Scenario: A cut is logged at error level with the chain
+@e2e exclude log output is not browser-observable, covered by PHPUnit
+- **GIVEN** a pass cut by either limit
+- **WHEN** the cut happens
+- **THEN** one error-level log line MUST name the schema, the object, the limit and the transitions applied
+
+#### Scenario: The count travels with an async hop
+@e2e exclude background job execution, covered by PHPUnit
+- **GIVEN** an `async` automatic transition queued after nine automatic transitions in one pass
+- **WHEN** the job applies it and a further rule holds
+- **THEN** the job MUST apply at most one more move and then cut the pass
+
+### Requirement: The `autoWhen` document is the condition document, read when the move is decided
+
+@e2e exclude document construction is internal, covered by PHPUnit
+
+An `autoWhen` SHALL be evaluated against the same four top-level keys a transition `condition` reads,
+and against no others:
+
+- `object`: the object as the triggering write stored it, so its lifecycle field holds the transition's
+  `from` value;
+- `previous`: the object as it was before the triggering write, or an empty object when that write
+  created it;
+- `user`: the identity the automatic transition acts as, as `uid` and `groups`, with an empty string and
+  an empty list when there is none;
+- `transition`: the candidate transition, as `action`, `from` (the current value) and `to`.
+
+The keys are shared with `condition` and their meaning differs in one place an author must know: in an
+`autoWhen`, `object` holds the state being LEFT, whereas in a `condition` it holds the state being
+ENTERED. An `autoWhen` is decided once per candidate per step of the pass, after the triggering write
+is complete, so it reads computed fields and defaults as stored.
+
+A reference to a key the document does not carry SHALL resolve to null. An expression that cannot be
+evaluated SHALL count as not holding, so an unevaluable rule never moves an object.
+
+#### Scenario: The rule reads the object as stored
+- **GIVEN** an `autoWhen` referencing `object.motivering`
+- **WHEN** it is evaluated after a save that stored a `motivering`
+- **THEN** the reference MUST resolve to the stored value
+
+#### Scenario: The previous state is empty after a create
+- **GIVEN** an `autoWhen` referencing `previous.status`
+- **WHEN** it is evaluated after the object was created
+- **THEN** the reference MUST resolve to null
+
+#### Scenario: The transition key names the candidate
+- **GIVEN** a candidate transition `beslissen` from `in-behandeling` to `besloten`
+- **WHEN** its `autoWhen` is evaluated
+- **THEN** `transition.action`, `transition.from` and `transition.to` MUST resolve to `beslissen`, `in-behandeling` and `besloten`
+
+#### Scenario: An unevaluable rule does not move the object
+- **GIVEN** a stored `autoWhen` that cannot be evaluated for the object at hand
+- **WHEN** the object is saved
+- **THEN** the transition MUST NOT fire
+
+### Requirement: An ambiguous or shadowed automatic transition MUST NOT fire
+
+@e2e exclude candidate selection is internal, covered by PHPUnit
+
+When more than one transition whose `from` contains the current value has an `autoWhen` that holds,
+OpenRegister SHALL fire none of them and SHALL log a warning naming every candidate. Declaration order
+SHALL NOT be used to choose, because it is not preserved by every database Nextcloud supports.
+
+A transition SHALL NOT fire automatically when an earlier-declared transition has the same `to` and a
+`from` that also contains the current value. The save path identifies a transition by its from and to
+values and takes the first match, so it would enforce the earlier transition's gates and run its
+actions, not the automatic transition's. OpenRegister SHALL log a warning naming both transitions.
+
+#### Scenario: Two rules that hold at once fire nothing
+- **GIVEN** two transitions from `ontvangen`, each with an `autoWhen` that holds
+- **WHEN** an object in `ontvangen` is saved
+- **THEN** neither transition MUST be applied
+- **AND** one warning MUST name both transitions
+
+#### Scenario: One rule that holds beside one that does not fires
+- **GIVEN** two transitions from `ontvangen`, of which only one has an `autoWhen` that holds
+- **WHEN** an object in `ontvangen` is saved
+- **THEN** exactly that transition MUST be applied
+
+#### Scenario: A shadowed automatic transition does not fire
+- **GIVEN** a transition `toewijzen` from `ontvangen` to `in-behandeling` with an `autoWhen` that holds
+- **AND** an earlier-declared transition `starten` from `ontvangen` to `in-behandeling`
+- **WHEN** an object in `ontvangen` is saved
+- **THEN** `toewijzen` MUST NOT fire
+- **AND** a warning MUST name both transitions
+
+### Requirement: An automatic transition acts as the caller whose write triggered it
+
+@e2e exclude identity plumbing, covered by PHPUnit
+
+A `sync` automatic transition SHALL act as the identity that made the triggering write. Its
+`authorization` list, its object `update` permission, the `user` key of its `condition` and `autoWhen`,
+its guard's user id and its audit row SHALL all see that identity.
+
+An `async` automatic transition SHALL carry that identity into the queued move and act as it when
+applied. When the identity no longer resolves to an account, or resolves to a disabled one, the queued
+move SHALL NOT be applied and a warning SHALL be logged.
+
+An automatic transition SHALL NEVER act as a system principal or run with elevated rights. When the
+triggering write had no identity, such as a CLI command without a session, the automatic transition
+SHALL act as no one, and any gate that requires an identity SHALL refuse it.
+
+#### Scenario: A sync move is authorized as the saving user
+- **GIVEN** a transition with an `autoWhen` that holds and an `authorization` list naming group `behandelaars`
+- **WHEN** a member of `behandelaars` saves the object
+- **THEN** the transition MUST be applied and its audit row MUST name that user
+
+#### Scenario: A queued move acts as the captured user
+- **GIVEN** an `async` automatic transition decided on a save by user `behandelaar-1`
+- **WHEN** the queued move is applied
+- **THEN** it MUST be authorized and audited as `behandelaar-1`
+
+#### Scenario: A queued move for a disabled account is not applied
+- **GIVEN** an `async` automatic transition decided on a save by a user who is disabled before the move is processed
+- **WHEN** the queued move is processed
+- **THEN** it MUST NOT be applied and a warning MUST be logged
+
+#### Scenario: A session-less write gets no elevated automatic move
+- **GIVEN** a transition with an `autoWhen` that holds and an `authorization` list
+- **WHEN** the object is saved by a caller with no session
+- **THEN** the automatic transition MUST be refused and MUST NOT be applied
+
+### Requirement: An automatic transition MUST be recorded as automatic
+
+@e2e exclude event and audit fields are backend contracts, covered by PHPUnit
+
+The `ObjectTransitionedEvent` of an automatic transition SHALL say it was automatic; the event for a
+manual transition SHALL say it was not. The flag SHALL be additive and default to not automatic, so
+every existing listener and dispatcher is unaffected. A flow triggered by the transition SHALL see the
+flag on its run context beside `action`, `from` and `to`.
+
+The audit row of an automatic transition SHALL identify the move as automatic and name the transition,
+while attributing it to the identity it acted as. An auditor SHALL be able to tell a move a user asked
+for from a move a rule made on that user's write.
+
+#### Scenario: The transition event carries the automatic flag
+- **GIVEN** an automatic transition that is applied
+- **WHEN** its `ObjectTransitionedEvent` is dispatched
+- **THEN** the event MUST report that the transition was automatic
+- **AND** the event for the same transition fired by name MUST report that it was not
+
+#### Scenario: A flow sees the automatic flag
+- **GIVEN** a flow wired to the object state-change trigger
+- **WHEN** an automatic transition fires it
+- **THEN** the run context MUST carry the automatic flag
+
+#### Scenario: The audit row marks the automatic move
+- **GIVEN** an automatic transition that is applied on a save by user `behandelaar-1`
+- **WHEN** its audit row is read
+- **THEN** the row MUST identify the move as automatic, name the transition, and name `behandelaar-1`
+
+### Requirement: A malformed or unsupported automatic transition MUST be refused at schema-save time
+
+@e2e exclude schema-save validation, covered by PHPUnit
+
+At schema-save time OpenRegister SHALL validate every transition that declares `autoWhen` or
+`executionMode`, and SHALL refuse the schema save, not merely warn, when any of these holds:
+
+- `autoWhen` is not a non-empty JSONLogic rule object, or is a rule object the expression engine cannot
+  validate: code `lifecycle-autowhen-malformed`. A scalar, including `true` and a string in the
+  `@self.<field> == '<value>'` form an `actions[]` entry uses, SHALL be refused with this code, because
+  a scalar evaluates as a truthy literal and would fire on every write from that state.
+- `executionMode` is present and is not exactly `sync` or `async`: code
+  `lifecycle-execution-mode-malformed`. Case variants SHALL be refused, not normalised.
+- A transition declaring `autoWhen` also declares an `inputs` entry with `required: true`: code
+  `lifecycle-autowhen-requires-input`, because an automatic move carries no payload and would be refused
+  on every attempt.
+- A graph-mode `graph` block carries `autoWhen`: code `lifecycle-autowhen-graph-unsupported`, stating
+  that graph-mode automatic transitions are not supported while graph-mode moves are unenforced on the
+  ordinary save path.
+
+Each error SHALL name the schema and the offending transition. These errors SHALL refuse the save
+exactly as `lifecycle-condition-malformed` does. Every other lifecycle error SHALL keep its existing
+advisory treatment.
+
+At runtime the evaluation SHALL NOT trust save-time validation: a stored `autoWhen` that is present but
+not a non-empty rule object SHALL count as not holding and SHALL be logged at warning level.
+
+Every test covering this requirement and the loop cap SHALL be proven to fail against a deliberately
+broken guard before it is accepted.
+
+#### Scenario: A scalar autoWhen is refused
+- **GIVEN** a transition declaring `autoWhen: true`
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with code `lifecycle-autowhen-malformed` naming the transition
+
+#### Scenario: An action-dialect string is refused as autoWhen
+- **GIVEN** a transition declaring `autoWhen: "@self.motivering != ''"`
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with code `lifecycle-autowhen-malformed`
+- **AND** the message MUST point the author at the JSONLogic rule-object form
+
+#### Scenario: An unknown operator is refused
+- **GIVEN** a transition declaring an `autoWhen` rule object with an operator the expression engine does not know
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with code `lifecycle-autowhen-malformed`
+
+#### Scenario: An unknown executionMode is refused
+- **GIVEN** a transition declaring `executionMode: "background"`, and another declaring `executionMode: "SYNC"`
+- **WHEN** the schema is saved
+- **THEN** each MUST be refused with code `lifecycle-execution-mode-malformed`
+
+#### Scenario: An automatic transition with a required input is refused
+- **GIVEN** a transition declaring `autoWhen` and `inputs: [{ "field": "motivering", "required": true }]`
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with code `lifecycle-autowhen-requires-input`
+
+#### Scenario: autoWhen on a graph block is refused
+- **GIVEN** an annotation declaring a `graph` block that carries `autoWhen`
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with code `lifecycle-autowhen-graph-unsupported`
+
+#### Scenario: A well-formed declaration passes
+- **GIVEN** a transition declaring `autoWhen: { "!!": { "var": "object.motivering" } }` and `executionMode: "async"`
+- **WHEN** the schema is saved
+- **THEN** no automatic-transition error MUST be returned and the annotation's other rules MUST be unaffected
+
+#### Scenario: A malformed message stays advisory
+- **GIVEN** a transition declaring a valid `autoWhen` and a malformed `message`
+- **WHEN** the schema is saved
+- **THEN** the save MUST succeed with the existing `lifecycle-message-malformed` warning
+
+#### Scenario: A stored malformed autoWhen does not fire
+- **GIVEN** a stored transition whose `autoWhen` is a scalar, written by a path that skipped validation
+- **WHEN** an object in its `from` state is saved
+- **THEN** the transition MUST NOT fire and a warning MUST be logged
+
+#### Scenario: The validation and cap tests are proven to fail first
+- **GIVEN** the PHPUnit tests for this requirement and for the loop cap
+- **WHEN** the scalar refusal, the revisit rule and the ceiling are each deliberately removed
+- **THEN** the test guarding each MUST fail for that reason before it is restored
+
+### Requirement: A lifecycle transition MAY declare a declarative condition that gates it
+
+@e2e exclude backend lifecycle listener — covered by PHPUnit
+
+A transition declared in `x-openregister-lifecycle.transitions` MAY carry an
+optional `condition`, whose value is a JSONLogic rule object, and an optional
+`message`. A `message` SHALL be either a non-empty string or a per-locale map
+(`{"nl": "…", "en": "…"}`, optionally carrying `defaultLocale`), which is the
+same shape `x-openregister-notifications` already uses for its `subject` and
+`message`. Per ADR-007 a map SHOULD declare at least `nl` and `en`.
+
+When a matched transition declares a `condition`, OpenRegister SHALL evaluate it
+on the `ObjectService::saveObject()` path before the write. When the condition
+holds, the transition SHALL proceed exactly as it does without one. When the
+condition does not hold, the save SHALL be refused with the structured error
+code `lifecycle-condition-unmet`, the lifecycle field SHALL NOT be mutated, and
+no object write SHALL occur.
+
+The refusal SHALL carry the transition's `message` when one is declared. A
+string `message` SHALL be used verbatim. A map `message` SHALL be resolved to
+the caller's language as reported by `IL10N::getLanguageCode()`, falling back to
+the map's `defaultLocale`, then to `en`, then to the first declared locale. The
+language SHALL come from `IL10N` rather than from `Accept-Language` negotiation,
+so the message follows the user's configured language. An author's `message` SHALL pass through
+untouched and SHALL NOT be translated by the engine. When a transition declares
+no `message`, the refusal SHALL carry the engine's own generic message naming
+the transition action and the lifecycle field, and that message SHALL be
+translated through the app's translation layer. The refusal SHALL NOT expose the
+expression itself to the caller.
+
+The gate SHALL be reached by BOTH transition routes, because both converge on
+the same save path: the named-action route (`POST /api/objects/{id}/transition`)
+and a direct edit of the lifecycle field through an ordinary object save. A
+transition WITHOUT a `condition` key SHALL behave exactly as before; the key is
+additive and never required.
+
+#### Scenario: A condition that holds lets the transition through
+- **GIVEN** a transition `beslissen` with `from: ["in-behandeling"], to: "besloten"` and `condition: { "!!": { "var": "object.motivering" } }`
+- **AND** an object whose `motivering` is a non-empty string
+- **WHEN** the object's lifecycle field is saved as `besloten`
+- **THEN** the transition MUST be applied and no condition error MUST be raised
+
+#### Scenario: A condition that does not hold refuses the save
+- **GIVEN** the same transition
+- **AND** an object whose `motivering` is absent or empty
+- **WHEN** the transition is attempted
+- **THEN** the save MUST be refused with the structured error code `lifecycle-condition-unmet`
+- **AND** the lifecycle field MUST retain its previous value
+- **AND** no object write MUST occur
+
+#### Scenario: The declared message is what the caller sees
+- **GIVEN** a transition declaring `message: "Een besluit vereist een motivering."` whose condition does not hold
+- **WHEN** the transition is attempted
+- **THEN** the refusal MUST carry that message verbatim
+- **AND** the refusal MUST NOT contain the JSONLogic expression
+
+#### Scenario: A per-locale message is resolved to the caller's language
+- **GIVEN** a transition declaring `message: { "nl": "Een besluit vereist een motivering.", "en": "A decision requires a motivation." }` whose condition does not hold
+- **AND** a caller whose language is `nl`
+- **WHEN** the transition is attempted
+- **THEN** the refusal MUST carry the `nl` string verbatim
+- **AND** the same refusal for a caller whose language is `de`, which the map does not declare, MUST fall back to `defaultLocale` when declared, otherwise to `en`, otherwise to the first declared locale
+
+#### Scenario: A refused condition without a message still names the transition
+- **GIVEN** a transition declaring a `condition` and no `message` whose condition does not hold
+- **WHEN** the transition is attempted
+- **THEN** the refusal MUST carry code `lifecycle-condition-unmet` and the engine's generic message naming the transition action and the lifecycle field
+- **AND** that generic message MUST be produced through the app's translation layer, not as an untranslated literal
+
+#### Scenario: The named-action route is gated identically to a direct field edit
+- **GIVEN** a transition whose condition does not hold
+- **WHEN** the transition is requested through `POST /api/objects/{id}/transition`
+- **THEN** the request MUST be answered with HTTP 422 and the code `lifecycle-condition-unmet`
+- **AND** the same attempt made by editing the lifecycle field through an ordinary object save MUST be refused with the same code
+
+#### Scenario: A transition without a condition is unaffected
+- **GIVEN** a transition declaring no `condition` key
+- **WHEN** an otherwise valid transition is attempted
+- **THEN** no condition MUST be evaluated and the transition MUST proceed
+
+### Requirement: The condition data document exposes the object, its previous state, the caller and the transition
+
+@e2e exclude backend lifecycle listener — covered by PHPUnit
+
+A lifecycle condition SHALL be evaluated against a data document with exactly
+four top-level keys:
+
+- `object`: the object data as it would be written, including the new lifecycle
+  field value;
+- `previous`: the stored object data as it is before the write, including the
+  old lifecycle field value;
+- `user`: the acting caller, as `uid` (an empty string when there is no session
+  user) and `groups` (the caller's Nextcloud group ids, an empty list when there
+  is no session user);
+- `transition`: the matched transition, as `action` (its declared name), `from`
+  (the old lifecycle value) and `to` (the new lifecycle value).
+
+The document SHALL NOT carry the flow engine's `json`, `binary`, `itemIndex`,
+`itemCount`, `context` or `subject` keys: a schema author writing a lifecycle
+rule is looking at an object, not at a flow item. A reference to a key that the
+document does not carry SHALL resolve to null and therefore refuse the
+transition, per the fail-closed rule below.
+
+#### Scenario: A condition reads a field of the object being written
+- **GIVEN** a condition `{ "!!": { "var": "object.motivering" } }`
+- **WHEN** the transition is evaluated for an object carrying a non-empty `motivering`
+- **THEN** the condition MUST hold
+
+#### Scenario: A condition compares the new value against the previous one
+- **GIVEN** a condition referencing `previous.bedrag` and `object.bedrag`
+- **WHEN** the transition is evaluated
+- **THEN** `previous.bedrag` MUST resolve to the stored value and `object.bedrag` to the value being written
+
+#### Scenario: A condition reads the caller's group membership
+- **GIVEN** a condition `{ "in": ["vergunningverleners", { "var": "user.groups" }] }`
+- **AND** a caller belonging to that Nextcloud group
+- **WHEN** the transition is evaluated
+- **THEN** the condition MUST hold
+- **AND** for a caller with no session, `user.uid` MUST be an empty string and `user.groups` MUST be an empty list
+
+#### Scenario: A condition reads the matched transition
+- **GIVEN** a condition referencing `transition.action`, `transition.from` and `transition.to`
+- **WHEN** the transition `beslissen` moves `in-behandeling` to `besloten`
+- **THEN** those keys MUST resolve to `beslissen`, `in-behandeling` and `besloten` respectively
+
+#### Scenario: A flow-shaped reference does not resolve
+- **GIVEN** a condition referencing `json.motivering`
+- **WHEN** the transition is evaluated
+- **THEN** the reference MUST resolve to null and the transition MUST be refused with `lifecycle-condition-unmet`
+
+### Requirement: The condition is evaluated after the authorization gate and before the requires guard
+
+@e2e exclude backend lifecycle listener — covered by PHPUnit
+
+For a matched transition, OpenRegister SHALL evaluate the declarative gates in a
+fixed order: the `authorization` list first, then the `condition`, then the
+`requires` guard. A failure at any stage SHALL refuse the save immediately and
+SHALL NOT evaluate any later stage.
+
+The ordering is normative, not incidental. A `requires` guard is app code that
+may read external state, write a log line or take a lock, so a caller whose
+precondition is not met MUST be refused before any such side channel runs, for
+the same reason `authorization` is already evaluated before `requires`.
+
+#### Scenario: An unauthorized caller is refused before the condition runs
+- **GIVEN** a transition declaring both a non-empty `authorization` list and a `condition`
+- **AND** a caller who satisfies neither
+- **WHEN** the transition is attempted
+- **THEN** the refusal MUST carry code `lifecycle-transition-unauthorized`
+- **AND** the condition MUST NOT be evaluated
+
+#### Scenario: An unmet condition is refused before the guard is resolved
+- **GIVEN** a transition declaring both a `condition` that does not hold and a `requires` guard tag
+- **WHEN** the transition is attempted
+- **THEN** the refusal MUST carry code `lifecycle-condition-unmet`
+- **AND** the guard MUST NOT be resolved and its `check()` MUST NOT be invoked
+
+#### Scenario: A met condition still runs the guard
+- **GIVEN** a transition declaring a `condition` that holds and a `requires` guard that denies
+- **WHEN** the transition is attempted
+- **THEN** the refusal MUST carry code `lifecycle-guard-denied` with the guard's message
+
+### Requirement: A malformed condition MUST be refused at schema-save time and MUST never fail open at runtime
+
+@e2e exclude backend lifecycle listener — covered by PHPUnit
+
+An expression that cannot be evaluated is treated as FALSE by OpenRegister's
+expression engine. For a blocking condition, that turns an author's typo into a
+permanent, silent, unexplained refusal of that transition, with no error raised
+anywhere and nothing in the schema to look at. The engine MUST therefore refuse
+such an expression at the moment it is authored.
+
+At schema-save time, when a transition declares a `condition`, OpenRegister
+SHALL validate it and SHALL return the structured error `lifecycle-condition-malformed`
+when it is not a well-formed expression, naming the offending transition. A
+transition-level `condition` SHALL be a JSONLogic rule object; a scalar,
+including a string in the `@self.<field> == '<value>'` form that a transition's
+`actions[]` entries use, SHALL be refused with the same code, because such a
+string would evaluate as a truthy literal and silently authorize every
+transition it was meant to gate. When a
+transition declares a `message` that is neither a non-empty string nor a
+per-locale map carrying at least one locale key with a non-empty string value,
+OpenRegister SHALL return `lifecycle-message-malformed`; a `defaultLocale` that
+names a locale the map does not declare SHALL be refused with the same code.
+Every malformed `message` shape SHALL return that one code, so an author has a
+single canonical error to look up, exactly as the notification dialect returns
+one code for a broken body template. Both errors SHALL be
+collected and returned alongside the annotation's other validation errors rather
+than thrown, and SHALL cause the schema save to be refused, exactly as every
+other lifecycle annotation error does.
+
+At runtime the evaluation SHALL be fail-closed: an expression that cannot be
+evaluated SHALL refuse the transition with `lifecycle-condition-unmet` and SHALL
+NOT allow it. Save-time validation is what keeps that runtime rule from ever
+firing on a stored schema; it is not a substitute for it.
+
+Every test covering this requirement SHALL be proven to fail against a
+deliberately broken condition before it is accepted. A test that asserts only
+the passing case is green whether or not the engine refuses malformed
+expressions, and therefore proves nothing about this requirement.
+
+#### Scenario: A malformed condition is refused when the schema is saved
+- **GIVEN** a transition declaring a `condition` that is not a well-formed expression, such as an unknown operator
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with an error carrying code `lifecycle-condition-malformed` and naming the transition
+- **AND** the malformed expression MUST NOT be stored
+
+#### Scenario: A well-formed condition passes save-time validation
+- **GIVEN** a transition declaring `condition: { "!!": { "var": "object.motivering" } }`
+- **WHEN** the schema is saved
+- **THEN** no condition error MUST be returned
+- **AND** the annotation's other validation rules MUST be unaffected
+
+#### Scenario: An action-dialect condition string on a transition is refused
+- **GIVEN** a transition declaring `condition: "@self.settlementMode == 'reimbursable'"`, the string form used by an action envelope one level deeper
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with `lifecycle-condition-malformed` naming the transition
+- **AND** the message MUST point the author at the JSONLogic rule-object form
+- **AND** the `condition` an entry of `actions[]` declares MUST keep its existing string dialect and its existing behaviour, unchanged
+
+#### Scenario: A malformed message is refused at schema-save time
+- **GIVEN** a transition declaring a `message` that is a number, an empty string, an empty map, a map whose only values are empty strings, or a map whose `defaultLocale` names an undeclared locale
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with an error carrying code `lifecycle-message-malformed`
+
+#### Scenario: Both message shapes pass save-time validation
+- **GIVEN** one transition declaring `message: "Een besluit vereist een motivering."` and another declaring `message: { "nl": "…", "en": "…" }`
+- **WHEN** the schema is saved
+- **THEN** neither MUST produce a `lifecycle-message-malformed` error
+
+#### Scenario: A condition that cannot be evaluated at runtime refuses the transition
+- **GIVEN** a stored transition whose condition cannot be evaluated for the object at hand
+- **WHEN** the transition is attempted
+- **THEN** the save MUST be refused with `lifecycle-condition-unmet`
+- **AND** the transition MUST NOT be applied
+
+#### Scenario: The malformed-condition test is proven to fail before it is accepted
+- **GIVEN** the PHPUnit test asserting that a malformed condition is refused at schema-save time
+- **WHEN** the validation of the `condition` key is deliberately removed
+- **THEN** that test MUST fail
+- **AND** the same MUST hold for the runtime fail-closed test when the refusal is deliberately inverted
+
+### Requirement: A condition on a graph-mode lifecycle MUST be refused, not partially enforced
+
+@e2e exclude backend lifecycle listener — covered by PHPUnit
+
+A graph-mode lifecycle declares a `graph` block and no `transitions` map, so
+there is no per-transition object on which to declare a `condition`. The only
+available shape is a `condition` (and `message`) on the `graph` block itself,
+applying to every move the graph derives.
+
+That shape SHALL NOT be enforced in this change, and OpenRegister SHALL refuse
+it: when an annotation declares a `graph` block carrying a `condition`, the
+schema save SHALL be refused with the structured error code
+`lifecycle-condition-graph-unsupported`, naming the schema and stating that
+graph-mode conditions are not yet enforced.
+
+The refusal is the requirement, and the reason is enforcement coverage. A
+graph-mode move is validated only inside `TransitionEngine`, which derives the
+candidate set and rejects anything outside it. On the ordinary save path there
+is no graph enforcement at all: `LifecycleValidationListener` reads
+`transitions`, finds it empty for a graph-mode annotation, and returns without
+validating anything. A condition accepted on the `graph` block could therefore
+only ever hold on the named-action route and would be silently absent when the
+same lifecycle field is written directly. A gate that holds on one route and not
+the other is worse than no gate, because the author believes the state is
+unreachable. OpenRegister already takes this posture for a declared action that
+resolves to no handler: it fails loudly rather than skipping silently.
+
+This requirement SHALL be replaced by the enforcing behaviour once graph-mode
+moves are validated on the ordinary save path. Until then the refusal keeps the
+gap visible to the author who would otherwise depend on it.
+
+#### Scenario: A condition on a graph block is refused at schema-save time
+- **GIVEN** an annotation declaring a `graph` block that carries a `condition`
+- **WHEN** the schema is saved
+- **THEN** the save MUST be refused with code `lifecycle-condition-graph-unsupported`
+- **AND** the message MUST state that graph-mode conditions are not yet enforced
+
+#### Scenario: A graph-mode annotation without a condition is unaffected
+- **GIVEN** an annotation declaring a `graph` block and no `condition`
+- **WHEN** the schema is saved
+- **THEN** it MUST validate exactly as it does today, with no new error
+
+#### Scenario: A static transition condition is unaffected by graph-mode refusal
+- **GIVEN** a schema declaring both a non-empty `transitions` map with a `condition` and a `graph` block with no `condition`
+- **WHEN** the schema is saved
+- **THEN** no `lifecycle-condition-graph-unsupported` error MUST be raised
+- **AND** the static transition's condition MUST be validated and enforced as specified above
+
+### Requirement: A named transition MUST be judged by its own declaration, not by a same-pair twin
+
+@e2e exclude backend lifecycle listener — covered by PHPUnit
+
+When a caller performs a transition by name through `TransitionEngine`, the
+lifecycle listeners MUST gate and act on THAT transition: its `authorization`,
+`condition`, `requires` and `actions`. This holds even when an earlier declared
+transition shares the same `from` and `to` values. `TransitionEngine` SHALL
+declare the action on a shared, request-scoped context for the duration of its
+save and SHALL release it afterwards, including when the save fails. A declared
+action SHALL be honoured only when it genuinely moves the old value to the new
+one; it MUST NEVER make an otherwise undeclared move legal. A direct edit of
+the lifecycle field, which names no action, SHALL keep resolving to the first
+declared transition matching the values.
+
+#### Scenario: A named action is gated by its own condition
+- **GIVEN** transitions `openen` and `beslissen`, both from `in-behandeling` to `besloten`, declared in that order, where only `beslissen` declares a condition
+- **WHEN** `beslissen` is performed by name and its condition does not hold
+- **THEN** the save MUST be refused with `lifecycle-condition-unmet` naming `beslissen`
+
+#### Scenario: A direct edit keeps first-match resolution
+- **GIVEN** the same two transitions
+- **WHEN** the lifecycle field is edited directly from `in-behandeling` to `besloten`
+- **THEN** the edit MUST be resolved as `openen` and pass
+
+#### Scenario: A declared action cannot legalise a move
+- **GIVEN** a declared action whose `to` differs from the attempted new value
+- **WHEN** the change is resolved
+- **THEN** the declaration MUST be ignored and resolution MUST fall back to matching by value
+
+#### Scenario: The declaration does not outlive the save
+- **GIVEN** a named transition whose save throws
+- **WHEN** the exception leaves `TransitionEngine`
+- **THEN** no action MUST remain declared for that object
+
+### Requirement: Bulk delete MUST batch-resolve object scopes with a single cross-table lookup
+
+`ObjectService::deleteObjects()` SHALL resolve the entity (and thereby the
+register/schema scope) of every permission-filtered UUID with ONE batched
+cross-magic-table lookup (soft-deleted rows included) before deleting, and SHALL
+pass each pre-resolved entity together with its concrete Register and Schema
+entities into the delete handler so no per-object cross-table re-scan runs.
+
+Identifiers the uuid-based batch lookup cannot resolve (numeric ids, slugs, URIs,
+rows deleted concurrently) SHALL fall back to the legacy per-uuid resolution and
+delete-handler call, preserving prior behaviour including per-pair cache
+invalidation and skip-on-error semantics. Referential-integrity enforcement
+(RESTRICT, CASCADE, SET_NULL, SET_DEFAULT) remains per object.
+
+#### Scenario: Batch-resolved UUIDs skip the per-object lookup
+- **GIVEN** a bulk delete of N objects whose UUIDs all resolve in the batched lookup
+- **WHEN** `deleteObjects()` runs
+- **THEN** exactly one cross-magic-table lookup is issued for all N UUIDs
+- **AND** the delete handler receives each pre-resolved entity with concrete
+  register/schema entities and performs no additional lookup for it
+- **AND** each distinct (register, schema) pair is materialised as entities at most once
+
+#### Scenario: Batch misses keep the legacy pipeline
+- **GIVEN** a bulk delete where one identifier is a slug the uuid-based batch cannot match
+- **WHEN** `deleteObjects()` runs
+- **THEN** that identifier is resolved and deleted through the unchanged legacy
+  per-uuid path
+- **AND** a RESTRICT block on any object skips only that object and the bulk
+  operation continues
+
+### Requirement: Legacy cascade deletion MUST batch each level's targets
+
+`DeleteObject::cascadeDeleteObjects()` SHALL collect all ids referenced by
+`cascade: true` schema properties first, resolve them with ONE batched
+cross-table lookup, and soft-delete the resolved targets with one
+`UPDATE ... WHERE uuid IN (...)` statement per magic table (per-row deletion
+metadata bound via a parameterised CASE expression) and ONE multi-row audit
+INSERT — instead of feeding each id through the full per-object delete pipeline.
+
+Per-object semantics SHALL be preserved: an object-updating event is dispatched
+per target before the write (a hook stopping propagation skips that target; a
+hook modifying the payload routes that target through the full-row save), an
+object-updated event is dispatched per target after the write, caches are
+invalidated per object, and cascade children remain sub-deletions that never
+cascade further. Unresolved ids and total batch-write failures fall back to the
+legacy per-id pipeline. Soft delete remains the only cascade disposition.
+
+#### Scenario: Cascade children are soft-deleted with batched statements
+- **GIVEN** a root object whose schema has a `cascade: true` array property
+  referencing M children stored in one magic table
+- **WHEN** the root object is deleted
+- **THEN** the children are resolved with one batched lookup and soft-deleted with
+  one UPDATE statement carrying per-child deletion metadata
+- **AND** M per-object updating and updated events are dispatched
+- **AND** M audit rows are persisted with one multi-row INSERT
+
+#### Scenario: Hook rejection skips only the rejected child
+- **GIVEN** a cascade where a pre-update hook stops propagation for one child
+- **WHEN** the batched soft delete runs
+- **THEN** that child is not soft-deleted and receives no updated event
+- **AND** the remaining children are soft-deleted normally
+
+#### Scenario: Batch failure falls back to the per-id pipeline
+- **GIVEN** the batched soft-delete write fails entirely
+- **WHEN** the cascade continues
+- **THEN** every collected id is retried through the legacy per-id delete pipeline
+
+### Requirement: Relation detection MUST only record genuine references in @self.relations
+
+A string value MUST be recorded in `@self.relations` ONLY when it is a genuine reference to another object, as the save/import pipeline scans each string property.
+A string value qualifies as a genuine reference when EITHER of the following holds: (a) the value
+matches a reference pattern — a canonical UUID (8-4-4-4-12 hex), a prefixed-UUID (e.g. `id-<uuid>`,
+`ref-<uuid>`), or a value accepted by URL validation; OR (b) the schema property that holds the value
+explicitly declares it a reference — i.e. the property has `type: object`, a `format` of `uuid`,
+`uri`, or `url`, or carries a `$ref` / `inversedBy` declaration. Schema-declared detection is
+authoritative and MUST take precedence over pattern matching.
+
+The pipeline MUST NOT record a string as a relation purely because it is long and contains a hyphen
+or underscore. Ordinary scalar values — dates, enum/code values, and business identifiers — that do
+not match a reference pattern and are not held by a schema-declared reference property MUST NOT be
+recorded in `@self.relations`. This rule MUST be applied identically wherever relation scanning
+occurs in the save/import pipeline, so behavior cannot diverge between the single-save, bulk, and
+cascade code paths.
+
+This requirement governs only the derived `@self.relations` map. It does NOT change which schema
+properties exist, the save pipeline ordering, aggregation, lifecycle transitions, or notification
+declarations.
+
+#### Scenario: Canonical UUID value is recorded as a relation
+- **WHEN** an object property holds the string `00000000-0000-0000-0000-000000000000`
+- **THEN** the pipeline MUST record that property path in `@self.relations` with the UUID value
+
+#### Scenario: Prefixed-UUID value is recorded as a relation
+- **WHEN** an object property holds the string `id-00000000-0000-0000-0000-000000000000`
+- **THEN** the pipeline MUST record that property path in `@self.relations`
+
+#### Scenario: URL value is recorded as a relation
+- **WHEN** an object property holds the string `https://example.com/api/objects/00000000-0000-0000-0000-000000000000`
+- **THEN** the pipeline MUST record that property path in `@self.relations`
+
+#### Scenario: Schema-declared reference property records its value even without a UUID pattern
+- **GIVEN** a schema property declared with `type: object` (or `format: uuid`/`uri`/`url`, or a `$ref`/`inversedBy`)
+- **WHEN** an object holds a string value for that property
+- **THEN** the pipeline MUST record that property path in `@self.relations`
+
+#### Scenario: Date scalar is NOT recorded as a relation
+- **GIVEN** a schema property NOT declared as a reference
+- **WHEN** the property holds the string `2026-05-20`
+- **THEN** the pipeline MUST NOT record that property path in `@self.relations`
+
+#### Scenario: Enum/code value is NOT recorded as a relation
+- **GIVEN** a schema property NOT declared as a reference
+- **WHEN** the property holds the string `bank_transfer`
+- **THEN** the pipeline MUST NOT record that property path in `@self.relations`
+
+#### Scenario: Business identifier is NOT recorded as a relation
+- **GIVEN** a schema property NOT declared as a reference
+- **WHEN** the property holds a hyphenated business identifier such as `DEMO-F-2026-04-02` or `demo-administration`
+- **THEN** the pipeline MUST NOT record that property path in `@self.relations`
+
+#### Scenario: Detection rule is consistent across single, bulk, and cascade paths
+- **GIVEN** the same object payload saved through the single-object path, the bulk path, and the relation-cascade path
+- **WHEN** relation scanning runs in each path
+- **THEN** every path MUST produce the same `@self.relations` set for that payload
 
 ## Cross-References
 - **rbac-scopes** — RBAC checks are applied by `PermissionHandler` at the start of every pipeline stage

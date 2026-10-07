@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    The richdocuments contract suite. Not part of `test:all`: it needs a
+    richdocuments tree (RICHDOCUMENTS_PATH) and runs in its own CI workflow,
+    .github/workflows/richdocuments-contract.yml.
+
+    Run: RICHDOCUMENTS_PATH=/path/to/richdocuments composer test:richdocuments-contract
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="bootstrap.php"
+         colors="true"
+         cacheDirectory="../../../.phpunit.cache/richdocuments-contract"
+         failOnRisky="true"
+         failOnWarning="true"
+         failOnSkipped="true"
+         failOnIncomplete="true">
+    <testsuites>
+        <testsuite name="Richdocuments Contract">
+            <directory>.</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

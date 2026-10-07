@@ -78,7 +78,7 @@ class AutoTransitionJob extends ActorForwardedJob {
 	 * @param TransitionEngine $engine The one path every automatic move goes through.
 	 * @param AutoTransitionPass $pass The pass, resumed with the entry's carried lineage.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		ITimeFactory $time,
@@ -106,7 +106,7 @@ class AutoTransitionJob extends ActorForwardedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	protected function runDeferred(DeferredListenerContext $context): void {
 		if ($this->actorIsUsable(userId: $context->getUserId()) === false) {
@@ -136,7 +136,7 @@ class AutoTransitionJob extends ActorForwardedJob {
 	 *
 	 * @return bool True when the queued moves may be applied.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function actorIsUsable(?string $userId): bool {
 		if ($userId === null) {
@@ -165,7 +165,7 @@ class AutoTransitionJob extends ActorForwardedJob {
 	 *
 	 * @return bool True when version and `updated` both still match.
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function isUnchanged(ObjectEntity $object, array $entry): bool {
 		if ($object->getVersion() !== ($entry['version'] ?? null)) {
@@ -192,7 +192,7 @@ class AutoTransitionJob extends ActorForwardedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/lifecycle-auto-transitions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	private function applyEntry(array $entry): void {
 		$uuid = (string)($entry['uuid'] ?? '');

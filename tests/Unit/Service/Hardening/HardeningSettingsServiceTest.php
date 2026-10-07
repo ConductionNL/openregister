@@ -35,6 +35,11 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Hardening\HardeningSettingsService
+ * @uses \OCA\OpenRegister\Db\AuditTrail
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningControl
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningFloorException
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningFloorGuard
+ * @uses \OCA\OpenRegister\Service\Hardening\HardeningPolicy
  */
 class HardeningSettingsServiceTest extends TestCase {
 

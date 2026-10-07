@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Service\Configuration;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Configuration;
+use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Http\JSONResponse;
@@ -79,23 +80,33 @@ class PreviewHandler {
 	private readonly FetchHandler $fetchHandler;
 
 	/**
+	 * Object mapper, to find the local object a remote one would update.
+	 *
+	 * @var MagicMapper The object mapper.
+	 */
+	private readonly MagicMapper $objectMapper;
+
+	/**
 	 * Constructor for PreviewHandler.
 	 *
 	 * @param RegisterMapper $registerMapper The register mapper.
 	 * @param SchemaMapper $schemaMapper The schema mapper.
 	 * @param LoggerInterface $logger The logger interface.
 	 * @param FetchHandler $fetchHandler The fetch handler for remote data fetching.
+	 * @param MagicMapper $objectMapper The object mapper, to find the local object a remote one would update.
 	 */
 	public function __construct(
 		RegisterMapper $registerMapper,
 		SchemaMapper $schemaMapper,
 		LoggerInterface $logger,
 		FetchHandler $fetchHandler,
+		MagicMapper $objectMapper,
 	) {
 		$this->registerMapper = $registerMapper;
 		$this->schemaMapper = $schemaMapper;
 		$this->logger = $logger;
 		$this->fetchHandler = $fetchHandler;
+		$this->objectMapper = $objectMapper;
 	}//end __construct()
 
 	/**
@@ -173,26 +184,34 @@ class PreviewHandler {
 		if (($remoteData['components']['objects'] ?? null) !== null
 			&& is_array($remoteData['components']['objects']) === true
 		) {
-			// Build register and schema slug to ID maps.
-			$registerSlugToId = [];
-			$schemaSlugToId = [];
-
-			// Get existing registers and schemas to build maps.
-			$allRegisters = $this->registerMapper->findAll();
-			foreach ($allRegisters as $register) {
-				$registerSlugToId[strtolower($register->getSlug() ?? '')] = $register->getId();
+			// Local registers and schemas by lowercased slug.
+			$registersBySlug = [];
+			foreach ($this->registerMapper->findAll() as $register) {
+				$registersBySlug[strtolower($register->getSlug() ?? '')] = $register;
 			}
 
-			$allSchemas = $this->schemaMapper->findAll();
-			foreach ($allSchemas as $schema) {
-				$schemaSlugToId[strtolower($schema->getSlug() ?? '')] = $schema->getId();
+			$schemasBySlug = [];
+			foreach ($this->schemaMapper->findAll() as $schema) {
+				$schemasBySlug[strtolower($schema->getSlug() ?? '')] = $schema;
 			}
+
+			// Registers and schemas this same import creates: their objects
+			// are created too, not skipped as "not found locally" (live pass O13).
+			$objectPreview = new ObjectChangePreview(
+				objectMapper: $this->objectMapper,
+				compare: fn (array $current, array $proposed): array => $this->compareArrays(current: $current, proposed: $proposed)
+			);
+			$planned = [
+				'registers' => $objectPreview->createdSlugs(rows: $preview['registers']),
+				'schemas'   => $objectPreview->createdSlugs(rows: $preview['schemas']),
+			];
 
 			foreach ($remoteData['components']['objects'] as $objectData) {
-				$preview['objects'][] = $this->previewObjectChange(
-					objectData: $objectData,
-					registerSlugToId: $registerSlugToId,
-					schemaSlugToId: $schemaSlugToId
+				$preview['objects'][] = $objectPreview->preview(
+					objectData: (array)$objectData,
+					registersBySlug: $registersBySlug,
+					schemasBySlug: $schemasBySlug,
+					planned: $planned
 				);
 			}
 		}//end if
@@ -370,64 +389,64 @@ class PreviewHandler {
 	}//end previewSchemaChange()
 
 	/**
-	 * Placeholder method - will be populated with extracted method.
+	 * List the fields a proposed definition changes against the current one.
 	 *
-	 * @param array $objectData The object data.
-	 * @param array $registerSlugToId Register slug to ID map.
-	 * @param array $schemaSlugToId Schema slug to ID map.
+	 * Only keys the proposal carries are compared, so a field the remote side
+	 * leaves out is not reported as removed (the import does not remove it
+	 * either). Nested maps are compared by dotted path; lists are compared
+	 * whole. A row's own `id`, `uuid`, `created` and `updated` are ignored.
 	 *
-	 * @return array Preview information.
+	 * @param array<array-key, mixed> $current Current definition.
+	 * @param array<array-key, mixed> $proposed Proposed definition.
+	 * @param string $prefix Path of the parent key, for nested maps.
 	 *
-	 * @psalm-return array<never, never>
+	 * @return array<int, array{field: string, current: mixed, proposed: mixed}>
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
-	 */
-	private function previewObjectChange(array $objectData, array $registerSlugToId, array $schemaSlugToId): array {
-		// Method body will be extracted from ConfigurationService.
-		// Parameters are intentionally unused in this placeholder implementation.
-		unset($objectData, $registerSlugToId, $schemaSlugToId);
-		return [];
-	}//end previewObjectChange()
-
-	/**
-	 * Placeholder method - will be populated with extracted method.
-	 *
-	 * @param array $current Current array.
-	 * @param array $proposed Proposed array.
-	 * @param string $prefix Prefix for nested keys.
-	 *
-	 * @return array Array of changes.
-	 *
-	 * @psalm-suppress UnusedParam Parameters will be used when method is fully implemented
-	 * @psalm-return   array<never, never>
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
+	 * @spec openspec/specs/data-import-export/spec.md#requirement-the-configuration-preview-names-what-an-import-would-change
 	 */
 	public function compareArrays(array $current, array $proposed, string $prefix = ''): array {
-		// Method body will be extracted from ConfigurationService.
-		// Parameters intentionally unused in placeholder.
-		unset($current, $proposed, $prefix);
-		return [];
-	}//end compareArrays()
+		$changes = [];
+		foreach ($proposed as $key => $proposedValue) {
+			if (in_array($key, ['id', 'uuid', 'created', 'updated'], true) === true) {
+				continue;
+			}
 
+			$field = (string)$key;
+			if ($prefix !== '') {
+				$field = $prefix . '.' . $key;
+			}
+
+			if (array_key_exists($key, $current) === false) {
+				$changes[] = ['field' => $field, 'current' => null, 'proposed' => $proposedValue];
+				continue;
+			}
+
+			$currentValue = $current[$key];
+			if ($this->bothMaps(current: $currentValue, proposed: $proposedValue) === true) {
+				$changes = array_merge(
+					$changes,
+					$this->compareArrays(current: $currentValue, proposed: $proposedValue, prefix: $field)
+				);
+				continue;
+			}
+
+			if ($proposedValue !== $currentValue) {
+				$changes[] = ['field' => $field, 'current' => $currentValue, 'proposed' => $proposedValue];
+			}
+		}//end foreach
+
+		return $changes;
+	}//end compareArrays()
 	/**
-	 * Placeholder method - will be populated with extracted method.
+	 * Whether both values are maps, which compareArrays compares by path rather than whole.
 	 *
-	 * @param Configuration $_configuration The configuration.
-	 * @param array $_selection Selection criteria.
+	 * @param mixed $current Current value.
+	 * @param mixed $proposed Proposed value.
 	 *
-	 * @return array Import results.
-	 *
-	 * @throws Exception If import fails.
-	 *
-	 * @psalm-return array<never, never>
-	 *
-	 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
+	 * @return bool
 	 */
-	public function importConfigurationWithSelection(Configuration $_configuration, array $_selection): array {
-		// Method body will be extracted from ConfigurationService.
-		return [];
-	}//end importConfigurationWithSelection()
+	private function bothMaps(mixed $current, mixed $proposed): bool {
+		return is_array($current) === true && is_array($proposed) === true
+			&& array_is_list($current) === false && array_is_list($proposed) === false;
+	}//end bothMaps()
 }//end class

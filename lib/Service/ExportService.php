@@ -28,6 +28,7 @@
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Service\Export\RowsPdfSection;
 use DateTime;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -72,6 +73,13 @@ class ExportService {
 	 * @var int
 	 */
 	public const MAX_PDF_EXPORT_ROWS = 5000;
+
+	/**
+	 * Request parameters of the export route that are not object filters.
+	 *
+	 * @var string[]
+	 */
+	private const NON_FILTER_EXPORT_PARAMS = ['register', 'schema', 'format', 'type', 'multi'];
 
 	/**
 	 * Register mapper instance
@@ -365,6 +373,31 @@ class ExportService {
 
 		return $this->renderPdfDocument(sections: [$section]);
 	}//end exportToPdf()
+
+	/**
+	 * Render rows the caller already fetched as a PDF table
+	 *
+	 * For a caller whose read is not a Nextcloud user's search, such as a
+	 * portal resident's scoped collection (portaliq#765): exportToPdf() fetches
+	 * its own objects with the Nextcloud user's RBAC and only `@self.` filters,
+	 * so it cannot render that read. This renders what it is given, through the
+	 * same Dompdf sandbox and under the same row cap, and reads nothing itself.
+	 *
+	 * @param string                           $title   The heading above the table.
+	 * @param array<int|string, string>        $columns Column keys to labels, or a list of keys that are their own labels.
+	 * @param array<int, array<string, mixed>> $rows    The rows, each keyed by column key.
+	 *
+	 * @return string The PDF bytes.
+	 *
+	 * @throws ExportTooLargeException When there are more rows than {@see self::MAX_PDF_EXPORT_ROWS}.
+	 *
+	 * @spec openspec/specs/export-pdf-format/spec.md
+	 */
+	public function renderRowsToPdf(string $title, array $columns, array $rows): string {
+		$this->guardPdfRowCap(rowCount: count($rows));
+
+		return $this->renderPdfDocument(sections: [(new RowsPdfSection())->build(title: $title, columns: $columns, rows: $rows)]);
+	}//end renderRowsToPdf()
 
 	/**
 	 * Build one PDF section per schema for a register-level export (no
@@ -735,6 +768,45 @@ class ExportService {
 	}//end populateSheet()
 
 	/**
+	 * How many objects an export with these filters would carry.
+	 *
+	 * Used where the produced artefact cannot be counted after the fact. A
+	 * rendered pdf is a box tree, not rows, so the audit trail would otherwise
+	 * have to name a guess. Every other format counts off its own
+	 * bytes, which is one query cheaper and cannot drift from the file.
+	 *
+	 * @param Register|null $register Optional register to export.
+	 * @param Schema|null   $schema   Optional schema to export.
+	 * @param array         $filters  Optional filters to apply.
+	 *
+	 * @return int The object count this export would write.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	public function countExportRows(?Register $register = null, ?Schema $schema = null, array $filters = []): int {
+		return count($this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters));
+	}//end countExportRows()
+
+	/**
+	 * The objects an export with these filters would carry.
+	 *
+	 * The export profile projects its own field set onto these, so it needs the
+	 * entities rather than a written file. Selection stays here: one place
+	 * decides what an export sees, and RBAC and multi-tenancy are applied in it.
+	 *
+	 * @param Register|null $register Optional register to export.
+	 * @param Schema|null   $schema   Optional schema to export.
+	 * @param array         $filters  Optional filters to apply.
+	 *
+	 * @return ObjectEntity[] The objects this export would write.
+	 *
+	 * @spec openspec/changes/export-as-its-own-right/specs/data-import-export/spec.md
+	 */
+	public function fetchExportObjects(?Register $register = null, ?Schema $schema = null, array $filters = []): array {
+		return $this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters);
+	}//end fetchExportObjects()
+
+	/**
 	 * Fetch all objects matching the given register, schema and filters for export.
 	 *
 	 * Builds the query with RBAC, multi-tenancy and metadata filters, then returns
@@ -758,12 +830,20 @@ class ExportService {
 			$objectFilters['schema'] = $schema->getId();
 		}
 
-		// Apply additional filters.
+		// Apply additional filters. A property filter narrows the export as it
+		// narrows the list it came from; it used to be skipped, so a filtered
+		// list exported every row the caller could read (openregister#4088).
+		// The route's own parameters and `_`-prefixed controls are not filters.
+		$propertyFilters = [];
 		foreach ($filters as $key => $value) {
+			$key = (string) $key;
 			if (str_starts_with($key, '@self.') === false) {
-				// These are JSON object property filters - not supported by findAll.
-				// For now, we'll skip them to get basic functionality working.
-				// TODO: Add support for JSON property filtering in MagicMapper.
+				if (str_starts_with($key, '_') === false && str_starts_with($key, '@') === false
+					&& in_array($key, self::NON_FILTER_EXPORT_PARAMS, true) === false
+				) {
+					$propertyFilters[$key] = $value;
+				}
+
 				continue;
 			}
 
@@ -783,13 +863,14 @@ class ExportService {
 
 		// Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering.
 		// Set a very high limit to get all objects (export needs all data).
+		// The export's own keys come first, so no property filter can replace them.
 		$query = [
 			'@self' => $objectFilters,
 			'_limit' => 999999,
 			// Very high limit to get all objects.
 			'_includeDeleted' => false,
 			'_multitenancy_explicit' => $multiExplicitlySet,
-		];
+		] + $propertyFilters;
 
 		return $this->objectService->searchObjects(
 			query: $query,

@@ -15,7 +15,7 @@
  * The rendering half of the "renders as required" scenario is the shared
  * component library's; this suite proves the server half it renders from.
  *
- * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md
+ * @spec openspec/specs/flow-task-forms/spec.md
  */
 import type { APIRequestContext } from '@playwright/test'
 

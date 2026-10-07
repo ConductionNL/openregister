@@ -38,6 +38,7 @@ use Doctrine\DBAL\Exception\DriverException;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Query\QueryBuilder;
+use OCA\OpenRegister\Db\LikeOperator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -848,6 +849,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @return void
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	private function applyFilters(QueryBuilder $qb, Connection $connection, array $query, array $columns, array $config): void {
 		$filterable = $this->filterableColumns(columns: $columns, config: $config);
@@ -856,6 +858,11 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 		if (is_array($filters) === true) {
 			foreach ($filters as $column => $value) {
 				if (is_string($column) === false || in_array($column, $filterable, true) === false) {
+					continue;
+				}
+
+				if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
+					$this->applyLikeFilter(qb: $qb, connection: $connection, column: $column, value: $value[LikeOperator::KEY]);
 					continue;
 				}
 
@@ -871,6 +878,36 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 
 		$this->applySearch(qb: $qb, connection: $connection, query: $query, filterable: $filterable);
 	}//end applyFilters()
+
+	/**
+	 * Apply a `like` filter on one allowlisted column with bound parameters.
+	 *
+	 * The other operators in the bag stay unsupported on this path, as before.
+	 *
+	 * @param QueryBuilder $qb The query builder (mutated).
+	 * @param Connection $connection The DBAL connection.
+	 * @param string $column The allowlisted column.
+	 * @param mixed $value The value under the `like` key: one term or a list.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 */
+	private function applyLikeFilter(QueryBuilder $qb, Connection $connection, string $column, mixed $value): void {
+		$like = new LikeOperator(databasePlatform: $connection->getDatabasePlatform());
+		$placeholders = [];
+		foreach ($like->terms(value: $value) as $term) {
+			$placeholders[] = $qb->createNamedParameter($like->pattern(term: $term));
+		}
+
+		$condition = $like->anyCondition(
+			column: $this->quote(connection: $connection, identifier: $column),
+			patternSqls: $placeholders
+		);
+		if ($condition !== null) {
+			$qb->andWhere($condition);
+		}
+	}//end applyLikeFilter()
 
 	/**
 	 * Apply a `_search` term as a bound LIKE across the filterable columns.

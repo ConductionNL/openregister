@@ -23,7 +23,7 @@
  *
  * @template-extends QBMapper<TaskAudit>
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
  */
 
 declare(strict_types=1);
@@ -43,7 +43,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<TaskAudit>
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
  */
 class TaskAuditMapper extends QBMapper {
 
@@ -64,7 +64,7 @@ class TaskAuditMapper extends QBMapper {
 	 *
 	 * @return TaskAudit The appended entry.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
 	 */
 	public function insert(Entity $entity): TaskAudit {
 		if ($entity instanceof TaskAudit === false) {
@@ -90,7 +90,7 @@ class TaskAuditMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The parameter is the
 	 * inherited signature; refusing it unread is the whole method.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
 	 */
 	public function update(Entity $entity): TaskAudit {
 		throw new LogicException('The task audit is append-only: entries are never updated.');
@@ -108,7 +108,7 @@ class TaskAuditMapper extends QBMapper {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The parameter is the
 	 * inherited signature; refusing it unread is the whole method.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
 	 */
 	public function delete(Entity $entity): TaskAudit {
 		throw new LogicException('The task audit is append-only: entries are never deleted.');
@@ -121,7 +121,7 @@ class TaskAuditMapper extends QBMapper {
 	 *
 	 * @return array<int, TaskAudit> The entries.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-task-audit-is-append-only-and-names-the-performer-type
 	 */
 	public function findForTask(int $taskId): array {
 		$qb = $this->db->getQueryBuilder();

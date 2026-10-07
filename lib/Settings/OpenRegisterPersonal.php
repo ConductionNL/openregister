@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+ * @spec openspec/specs/web-push-delivery/spec.md
  */
 
 namespace OCA\OpenRegister\Settings;
@@ -47,7 +47,7 @@ class OpenRegisterPersonal implements ISettings {
 	 *
 	 * @return TemplateResponse The personal settings template response.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	public function getForm(): TemplateResponse {
 		return new TemplateResponse(
@@ -67,7 +67,7 @@ class OpenRegisterPersonal implements ISettings {
 	 *
 	 * @return string The section id.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	public function getSection(): string {
 		return 'notifications';
@@ -78,7 +78,7 @@ class OpenRegisterPersonal implements ISettings {
 	 *
 	 * @return int Priority (0-100; lower renders earlier).
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+	 * @spec openspec/specs/web-push-delivery/spec.md
 	 */
 	public function getPriority(): int {
 		return 50;

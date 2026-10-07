@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md
+ * @spec openspec/specs/flow-messaging-nodes/spec.md
  */
 
 declare(strict_types=1);
@@ -268,7 +268,8 @@ class FlowMessagingServiceTest extends TestCase {
 			),
 			userManager: $this->userManager,
 			appConfig: $this->appConfig,
-			logger: $logger
+			logger: $logger,
+			eventDispatcher: $this->createMock(\OCP\EventDispatcher\IEventDispatcher::class)
 		);
 	}//end makeService()
 

@@ -35,6 +35,7 @@ use UnexpectedValueException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  */
 class ExplodeNodeTest extends TestCase {
 	private ExplodeNode $node;

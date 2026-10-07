@@ -33,7 +33,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md
+ * @spec openspec/specs/object-read-state/spec.md
  */
 
 declare(strict_types=1);
@@ -105,7 +105,7 @@ class ObjectReadStateMapper extends QBMapper {
 	 *
 	 * @return ObjectReadState|null The row, or null when the user has not seen the object.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md
+	 * @spec openspec/specs/object-read-state/spec.md
 	 */
 	public function findOne(string $userId, string $objectUuid): ?ObjectReadState {
 		$qb = $this->db->getQueryBuilder();
@@ -133,7 +133,7 @@ class ObjectReadStateMapper extends QBMapper {
 	 *
 	 * @return array<int, string> The seen object uuids.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md
+	 * @spec openspec/specs/object-read-state/spec.md
 	 */
 	public function uuidsForUser(
 		string $userId,
@@ -185,7 +185,7 @@ class ObjectReadStateMapper extends QBMapper {
 	 *
 	 * @return ObjectReadState The stored row.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function markSeen(
 		string $userId,
@@ -250,7 +250,7 @@ class ObjectReadStateMapper extends QBMapper {
 	 *
 	 * @return boolean True when a row was removed, false when there was none.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function markUnread(string $userId, string $objectUuid): bool {
 		$qb = $this->db->getQueryBuilder();
@@ -275,7 +275,7 @@ class ObjectReadStateMapper extends QBMapper {
 	 *
 	 * @return integer How many rows were removed.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function invalidate(string $objectUuid, ?string $exceptUserId = null): int {
 		$qb = $this->db->getQueryBuilder();
@@ -300,7 +300,7 @@ class ObjectReadStateMapper extends QBMapper {
 	 *
 	 * @return integer How many rows were removed.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md
+	 * @spec openspec/specs/object-read-state/spec.md
 	 */
 	public function deleteByObject(string $objectUuid): int {
 		$qb = $this->db->getQueryBuilder();
@@ -321,7 +321,7 @@ class ObjectReadStateMapper extends QBMapper {
 	 *
 	 * @return array<int, string> The uuids that are unread for this user.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	public function unreadAmong(string $userId, array $objectUuids): array {
 		if ($objectUuids === []) {

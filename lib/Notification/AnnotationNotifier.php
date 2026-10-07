@@ -59,6 +59,20 @@ class AnnotationNotifier implements INotifier {
 	];
 
 	/**
+	 * The same subjects for a notification that carries no register name.
+	 *
+	 * Nothing fills `registerName` today, so the templates above printed the
+	 * register id ("updated in register "20""). These name the object only.
+	 *
+	 * @var array<string, string>
+	 */
+	private const SUBJECT_TEMPLATES_WITHOUT_REGISTER = [
+		'object_created' => 'Object "%1$s" created',
+		'object_updated' => 'Object "%1$s" updated',
+		'object_transitioned' => 'Object "%1$s" assigned to you',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IFactory $factory L10N factory for localised subjects.
@@ -100,7 +114,8 @@ class AnnotationNotifier implements INotifier {
 	 *                                      annotation/object notification this
 	 *                                      notifier owns.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-a-canonical-object-notification-does-not-print-a-register-id
 	 */
 	public function prepare(INotification $notification, string $languageCode): INotification {
 		if ($notification->getApp() !== 'openregister') {
@@ -125,14 +140,18 @@ class AnnotationNotifier implements INotifier {
 		// dispatcher for this recipient) wins; otherwise render the canonical
 		// localised string with the object title + register name substituted.
 		$objectTitle = (string)($params['objectTitle'] ?? $l->t('object'));
-		$registerName = (string)($params['registerName'] ?? ($params['registerId'] ?? ''));
+		$registerName = trim((string)($params['registerName'] ?? ''));
 		// Only a canonical object subject has a template; a custom subject
 		// (e.g. a flow send's `flow_message`) reaches this point purely on its
 		// `_text`, and indexing SUBJECT_TEMPLATES with it would be an
 		// undefined-key error that killed the render.
 		$parsedSubject = '';
-		if ($isObject === true) {
+		if ($isObject === true && $registerName !== '') {
 			$parsedSubject = $l->t(self::SUBJECT_TEMPLATES[$subject], [$objectTitle, $registerName]);
+		}
+
+		if ($isObject === true && $registerName === '') {
+			$parsedSubject = $l->t(self::SUBJECT_TEMPLATES_WITHOUT_REGISTER[$subject], [$objectTitle]);
 		}
 
 		if ($hasText === true) {
@@ -214,7 +233,7 @@ class AnnotationNotifier implements INotifier {
 	 *
 	 * @return int The number of action buttons actually rendered.
 	 *
-	 * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 * @spec openspec/changes/flow-task-inbox-projections/specs/flow-task-projections/spec.md#requirement-a-binary-decision-is-decidable-from-the-notification
 	 */
 	private function addDeclaredActions(INotification $notification, array $actions, string $languageCode): int {

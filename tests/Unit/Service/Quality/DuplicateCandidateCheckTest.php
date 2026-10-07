@@ -19,7 +19,7 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+ * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
  */
 
 declare(strict_types=1);
@@ -155,7 +155,7 @@ class DuplicateCandidateCheckTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	public function testCandidateMatchingBothFieldsIsReturnedWithTheFieldsNamed(): void {
 		$this->stubSchema(['x-openregister-dedup' => ['matchRules' => $this->rules(), 'threshold' => 0.85]]);
@@ -194,7 +194,7 @@ class DuplicateCandidateCheckTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	public function testCheckAndSweepAgreeOnTheScore(): void {
 		$this->stubSchema(['x-openregister-dedup' => ['matchRules' => $this->rules(), 'threshold' => 0.5]]);
@@ -231,7 +231,7 @@ class DuplicateCandidateCheckTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	public function testCandidateBelowTheThresholdIsNotReturned(): void {
 		$this->stubSchema(['x-openregister-dedup' => ['matchRules' => $this->rules(), 'threshold' => 0.85]]);
@@ -257,7 +257,7 @@ class DuplicateCandidateCheckTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	public function testBlockingIsEvaluatedOnTheNormalisedToken(): void {
 		$this->stubSchema(
@@ -298,7 +298,7 @@ class DuplicateCandidateCheckTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	public function testCandidateWithoutABlockingValueMatchesNothingAndReadsNothing(): void {
 		$this->stubSchema(
@@ -320,7 +320,7 @@ class DuplicateCandidateCheckTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-candidate-can-be-checked-against-the-stored-objects-before-it-is-saved
 	 */
 	public function testSchemaWithoutRulesReturnsNoMatches(): void {
 		$this->stubSchema([]);
@@ -334,7 +334,7 @@ class DuplicateCandidateCheckTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testEffectiveThresholdPrefersTheCallerThenTheSchema(): void {
 		$this->stubSchema(['x-openregister-dedup' => ['matchRules' => $this->rules(), 'threshold' => 0.7]]);
@@ -349,7 +349,7 @@ class DuplicateCandidateCheckTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/dedup-check-before-create/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
+	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-schema-declares-what-a-strong-match-does-at-create
 	 */
 	public function testDedupAnnotationReturnsTheDeclaration(): void {
 		$this->stubSchema(

@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -89,7 +89,7 @@ class WatcherMapper extends QBMapper {
 	 *
 	 * @return Watcher|null The row, or null when the user does not watch the object.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function findOne(string $userId, string $objectUuid): ?Watcher {
 		$qb = $this->db->getQueryBuilder();
@@ -114,7 +114,7 @@ class WatcherMapper extends QBMapper {
 	 *
 	 * @return array<int, Watcher> The rows.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function findByObject(string $objectUuid): array {
 		$qb = $this->db->getQueryBuilder();
@@ -136,7 +136,7 @@ class WatcherMapper extends QBMapper {
 	 *
 	 * @return array<int, string> The watched object uuids.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function uuidsForUser(string $userId, ?string $register = null, ?string $schema = null): array {
 		$qb = $this->db->getQueryBuilder();
@@ -174,7 +174,7 @@ class WatcherMapper extends QBMapper {
 	 *
 	 * @return array<string, int> Object uuid to watcher count.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function countsByObject(int $limit = self::COUNT_MAP_LIMIT): array {
 		$qb = $this->db->getQueryBuilder();
@@ -206,7 +206,7 @@ class WatcherMapper extends QBMapper {
 	 *
 	 * @return integer The number of watchers.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function countForObject(string $objectUuid): int {
 		$qb = $this->db->getQueryBuilder();
@@ -236,7 +236,7 @@ class WatcherMapper extends QBMapper {
 	 *
 	 * @return Watcher The stored row.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function subscribe(string $userId, string $objectUuid, ?string $register = null, ?string $schema = null): Watcher {
 		$existing = $this->findOne(userId: $userId, objectUuid: $objectUuid);
@@ -275,7 +275,7 @@ class WatcherMapper extends QBMapper {
 	 *
 	 * @return boolean True when a row was removed, false when there was none.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function unsubscribe(string $userId, string $objectUuid): bool {
 		$qb = $this->db->getQueryBuilder();
@@ -297,7 +297,7 @@ class WatcherMapper extends QBMapper {
 	 *
 	 * @return integer How many rows were removed.
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-deleting-an-object-removes-its-watchers
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-deleting-an-object-removes-its-watchers
 	 */
 	public function deleteByObject(string $objectUuid): int {
 		$qb = $this->db->getQueryBuilder();

@@ -47,6 +47,15 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Case\CasePlanCascade
  * @covers \OCA\OpenRegister\Service\Case\CasePlanStateMachine
  * @covers \OCA\OpenRegister\Exception\CaseCascadeBoundException
+ * @uses \OCA\OpenRegister\Db\CaseItem
+ * @uses \OCA\OpenRegister\Db\CaseItemAudit
+ * @uses \OCA\OpenRegister\Db\CaseItemAuditMapper
+ * @uses \OCA\OpenRegister\Db\CaseItemMapper
+ * @uses \OCA\OpenRegister\Event\CaseItemTransitionedEvent
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanTransitions
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanTree
+ * @uses \OCA\OpenRegister\Service\Case\CaseSentryEvaluator
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
  */
 class CasePlanCascadeTest extends TestCase {
 

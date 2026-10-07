@@ -193,4 +193,44 @@ class AnnotationNotifierTest extends TestCase {
 
 		$this->notifier->prepare($notification, 'en');
 	}
+	/**
+	 * Without a register name the canonical subject names the object only,
+	 * never the register id.
+	 *
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-a-canonical-object-notification-does-not-print-a-register-id
+	 */
+	public function testCanonicalSubjectWithoutRegisterNameNamesTheObjectOnly(): void {
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static fn (string $text, array $args = []): string => vsprintf($text, $args)
+		);
+		$this->factory->method('get')->with('openregister', 'en')->willReturn($l10n);
+		$this->urlGenerator->method('imagePath')->willReturn('/apps/openregister/img/app.svg');
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.com/apps/openregister');
+
+		$action = $this->createMock(IAction::class);
+		$action->method('setLabel')->willReturnSelf();
+		$action->method('setPrimary')->willReturnSelf();
+		$action->method('setLink')->willReturnSelf();
+
+		$notification = $this->createMock(INotification::class);
+		$notification->method('getApp')->willReturn('openregister');
+		$notification->method('getSubject')->willReturn('object_updated');
+		$notification->method('getSubjectParameters')->willReturn([
+			'objectTitle' => 'Gemeente Demo',
+			'registerId' => '20',
+			'schemaId' => '28',
+			'objectUuid' => 'uuid-1',
+		]);
+		$notification->method('createAction')->willReturn($action);
+		$notification->method('setIcon')->willReturnSelf();
+		$notification->method('addAction')->willReturnSelf();
+
+		$notification->expects($this->once())
+			->method('setParsedSubject')
+			->with('Object "Gemeente Demo" updated')
+			->willReturnSelf();
+
+		$this->notifier->prepare($notification, 'en');
+	}
 }

@@ -12,7 +12,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -103,7 +103,7 @@ class NotificationClearingServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
 	public function testOpeningTheObjectClearsItsNotices(): void {
 		$this->mapper->expects($this->once())
@@ -124,7 +124,7 @@ class NotificationClearingServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
 	public function testOpeningATabClearsOnlyThatTab(): void {
 		$this->mapper->expects($this->once())
@@ -145,7 +145,7 @@ class NotificationClearingServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
 	public function testAnAnonymousReadClearsNothing(): void {
 		$this->mapper->expects($this->never())->method('markReadForSubject');
@@ -164,7 +164,7 @@ class NotificationClearingServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function testArchivingIsNotReading(): void {
 		$this->mapper->method('findOwn')->willReturn($this->notice());
@@ -186,7 +186,7 @@ class NotificationClearingServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function testArchivingSomebodyElsesNoticeIsRefused(): void {
 		// The mapper scopes by recipient, so another user's notice does not
@@ -205,7 +205,7 @@ class NotificationClearingServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function testSnoozingLeavesTheNoticeUnread(): void {
 		$this->mapper->method('findOwn')->willReturn($this->notice());
@@ -223,7 +223,7 @@ class NotificationClearingServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function testAThreadIsMarkedReadAsAWhole(): void {
 		$this->mapper->expects($this->once())
@@ -246,7 +246,7 @@ class NotificationClearingServiceTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
 	public function testADeletedSubjectArchivesRatherThanReads(): void {
 		$this->mapper->expects($this->never())->method('markReadForSubject');

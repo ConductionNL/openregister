@@ -409,6 +409,24 @@ class AccessLinkService {
 	}//end linkUrl()
 
 	/**
+	 * The page a holder opens for an anchor, rendered for a person, not JSON.
+	 *
+	 * @param string $anchor The anchor.
+	 *
+	 * @return string The absolute page URL.
+	 *
+	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md
+	 */
+	public function pageUrl(string $anchor): string {
+		return $this->urlGenerator->getAbsoluteURL(
+			$this->urlGenerator->linkToRoute(
+				'openregister.accessLinkPage.show',
+				['anchor' => $anchor]
+			)
+		);
+	}//end pageUrl()
+
+	/**
 	 * A link row plus the URL it opens, for its owner.
 	 *
 	 * @param AccessLink $link The link.
@@ -417,7 +435,10 @@ class AccessLinkService {
 	 */
 	private function describeForOwner(AccessLink $link): array {
 		$data = $link->jsonSerialize();
+		// `url` stays the JSON API link: dossiq and other API callers read it.
+		// `pageUrl` is the page a person without an account can open.
 		$data['url'] = $this->linkUrl(anchor: (string)$link->getAnchor());
+		$data['pageUrl'] = $this->pageUrl(anchor: (string)$link->getAnchor());
 
 		return $data;
 	}//end describeForOwner()

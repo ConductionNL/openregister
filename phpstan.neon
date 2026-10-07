@@ -18,6 +18,11 @@ includes:
     # newly visible; four are real NC 34 API removals. Kept separate so the
     # reason travels with the entries. openregister#2450
     - phpstan-baseline-nc34-ocp.neon
+    # Sixteen findings surfaced by analysing against nextcloud/ocp 35 for NC 35
+    # support. Pre-existing code that is correct at runtime on 32-35; real
+    # NC 35 breaks were fixed in code. Reason at the top of the file.
+    # openregister#4406
+    - phpstan-baseline-nc35-ocp.neon
 
 parameters:
     # App-specific only. The base already sets level, paths, bootstrapFiles,
@@ -52,6 +57,18 @@ parameters:
         - vendor-bin
 
     ignoreErrors:
+        # `OC_User` is a legacy GLOBAL class from the Nextcloud server source. It
+        # is not in nextcloud/ocp and has no OCP equivalent, so the analyser cannot
+        # resolve it — but it is always present at runtime, and its incognito mode
+        # is the only switch `Session::getUser()` honours BEFORE its `user_id`
+        # fallback. ObjectService::runAsAnonymous() needs exactly that: clearing
+        # the volatile user is not enough, because null there means "unresolved"
+        # and the next read re-hydrates the signed-in user from the session. Core
+        # uses the same mechanism to serve a public link while a session exists
+        # (ShareController, PublicAuth, BearerAuth). WOO-578.
+        -
+            message: '#static method (set|is)IncognitoMode\(\) on an unknown class OC_User#'
+            path: lib/Service/ObjectService.php
         # The shared base already ignores `unknown class OCA\DAV\...` (server-
         # internal, not in nextcloud/ocp). A constructor-promoted parameter of
         # that type is reported with a different spelling, `has invalid type`,

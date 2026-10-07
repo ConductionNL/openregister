@@ -34,6 +34,9 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\ContextChat\ContentProvider
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class ContentProviderTest extends TestCase {
 	private ContextChatSubmissionListener $submissionListener;

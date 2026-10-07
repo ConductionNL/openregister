@@ -39,6 +39,7 @@ use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\SourceCreatedEvent;
 use OCA\OpenRegister\Event\SourceUpdatedEvent;
 use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Service\Notification\SystemEntityChange;
 use OCA\OpenRegister\Service\Notification\SystemEntityObjectAdapter;
 use OCA\OpenRegister\Service\Notification\SystemSchemaRules;
 use OCP\AppFramework\Db\Entity;
@@ -62,12 +63,14 @@ class SystemEntityNotificationListener implements IEventListener {
 	 *
 	 * @param AnnotationNotificationDispatcher $dispatcher Dispatcher used to fire notifications.
 	 * @param SystemSchemaRules $rules Registry of declared system-schema rules.
+	 * @param SystemEntityChange $change Whether an update changed more than bookkeeping.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly AnnotationNotificationDispatcher $dispatcher,
 		private readonly SystemSchemaRules $rules,
+		private readonly SystemEntityChange $change = new SystemEntityChange(),
 	) {
 	}//end __construct()
 
@@ -90,6 +93,7 @@ class SystemEntityNotificationListener implements IEventListener {
 	 * produce many paths; all are required for full system-entity coverage.
 	 *
 	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function handle(Event $event): void {
 		[$entity, $slug, $trigger, $oldData] = $this->extractEventData(event: $event);
@@ -113,6 +117,14 @@ class SystemEntityNotificationListener implements IEventListener {
 			}
 
 			if (is_array($newData) === true) {
+				// An administrator is told about an update only when the content
+				// moved. An app re-import saves every entity it ships; one that
+				// differs only in its stamps, its version or the order of its
+				// keys is not news (Ruben, 7 October 2026).
+				if ($this->change->isReal(old: $oldData, new: $newData) === false) {
+					return;
+				}
+
 				$context['_newData'] = $newData;
 				$context['_oldData'] = $oldData;
 			}

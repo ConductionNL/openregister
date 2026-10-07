@@ -358,4 +358,78 @@ final class ObjectEntityRunLockTest extends TestCase {
 		$this->assertTrue($this->entity->unlock($this->session('admin'), null, true));
 		$this->assertFalse($this->entity->isLocked());
 	}//end testTheBreakFlagReleasesAnotherHoldersLock()
+	// ---------------------------------------------------------------
+	// A lock with no duration. The case that could not fail, because
+	// nothing ever read the object back to check.
+	// ---------------------------------------------------------------
+
+	/**
+	 * 🔴 A LOCK TAKEN WITHOUT A DURATION HELD FOR ZERO SECONDS. Both branches
+	 * of `lock()` wrote `now + ('PT' . ($duration ?? 0) . 'S')`, and
+	 * `isLocked()` answers `$now < $expiration`, so the lock was already
+	 * expired the instant it was written. `POST /lock` still answered
+	 * `locked: true`, because the controller writes that literal instead of
+	 * reading the object back, and the Newman step asserting it therefore
+	 * could not fail. A second editor was never kept out.
+	 *
+	 * @return void
+	 */
+	public function testALockWithNoDurationHoldsUntilItIsReleased(): void {
+		$this->entity->lock($this->session('alice'), 'editing', null, null);
+
+		$this->assertTrue(
+			$this->entity->isLocked(),
+			'a lock taken with no duration must still be held on the very next read'
+		);
+		$this->assertArrayNotHasKey(
+			'expiration',
+			(array)$this->entity->getLocked(),
+			'no duration means no expiry, which is the branch isLocked() reads as permanent'
+		);
+	}//end testALockWithNoDurationHoldsUntilItIsReleased()
+
+	/**
+	 * And it keeps holding other callers out, which is the whole purpose.
+	 *
+	 * @return void
+	 */
+	public function testALockWithNoDurationStillRefusesAnotherCaller(): void {
+		$this->entity->lock($this->session('alice'), 'editing', null, null);
+
+		$this->assertTrue($this->entity->isLockedBySomeoneElse(userId: 'bob'));
+		$this->assertFalse($this->entity->isLockedBySomeoneElse(userId: 'alice'));
+	}//end testALockWithNoDurationStillRefusesAnotherCaller()
+
+	/**
+	 * Extending without a duration does the same, rather than expiring a lock
+	 * that was alive a moment earlier.
+	 *
+	 * @return void
+	 */
+	public function testExtendingWithNoDurationDoesNotExpireTheLock(): void {
+		$this->entity->lock($this->session('alice'), 'editing', 3600, null);
+		$this->entity->lock($this->session('alice'), 'editing', null, null);
+
+		$this->assertTrue($this->entity->isLocked());
+	}//end testExtendingWithNoDurationDoesNotExpireTheLock()
+
+	/**
+	 * The control. A lock that DOES name a duration still expires on it, so
+	 * the change above cannot be read as "locks stopped expiring".
+	 *
+	 * @return void
+	 */
+	public function testALockWithADurationStillExpiresOnIt(): void {
+		$this->entity->lock($this->session('alice'), 'editing', 3600, null);
+
+		$locked = (array)$this->entity->getLocked();
+		$this->assertArrayHasKey('expiration', $locked);
+		$this->assertTrue($this->entity->isLocked());
+
+		$locked['expiration'] = (new DateTime())->sub(new DateInterval('PT1S'))->format('c');
+		$this->entity->setLocked($locked);
+
+		$this->assertFalse($this->entity->isLocked(), 'an expiry in the past is not a lock');
+	}//end testALockWithADurationStillExpiresOnIt()
+
 }//end class

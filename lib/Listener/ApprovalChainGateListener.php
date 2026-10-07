@@ -31,7 +31,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-007
+ * @spec openspec/specs/approval-workflow/spec.md#req-007
  */
 
 declare(strict_types=1);
@@ -89,7 +89,7 @@ class ApprovalChainGateListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-007
+	 * @spec openspec/specs/approval-workflow/spec.md#req-007
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectUpdatingEvent) === false) {
@@ -186,7 +186,7 @@ class ApprovalChainGateListener implements IEventListener {
 	 *
 	 * @return bool True when the transition was blocked.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-007
+	 * @spec openspec/specs/approval-workflow/spec.md#req-007
 	 */
 	private function evaluateGate(
 		ObjectUpdatingEvent $event,
@@ -211,6 +211,12 @@ class ApprovalChainGateListener implements IEventListener {
 				message: sprintf('Approval chain "%s" is declared but not provisioned.', $chainKey)
 			);
 			return true;
+		}
+
+		$tierPositions = $this->resolveTierPositions(template: $template, newData: $newData);
+		if ($tierPositions === []) {
+			// Cumulative tiers and an amount below the lowest tier: nothing to approve.
+			return false;
 		}
 
 		$objectUuid = (string)$object->getUuid();
@@ -248,7 +254,7 @@ class ApprovalChainGateListener implements IEventListener {
 			template: $template,
 			anchorObjectUuid: $objectUuid,
 			requesterId: $requesterId,
-			tierPositions: $this->resolveTierPositions(template: $template, newData: $newData),
+			tierPositions: $tierPositions,
 			registerId: $registerId
 		);
 
@@ -265,15 +271,17 @@ class ApprovalChainGateListener implements IEventListener {
 	 *
 	 * When the declaration carries `amountField`, selects the single
 	 * position with the highest `minAmount` that is `<=` the object's value
-	 * for that field, re-based at order 1. Otherwise returns `null` so
-	 * provisioning uses every declared position in order, unchanged.
+	 * for that field, re-based at order 1. With `tiers: cumulative` it selects
+	 * every such position instead (see resolveCumulativeTiers()). Otherwise
+	 * returns `null` so provisioning uses every declared position in order,
+	 * unchanged.
 	 *
 	 * @param array<string, mixed> $template The compiled template.
-	 * @param array<string, mixed> $newData The object's new (attempted) data.
+	 * @param array<string, mixed> $newData  The object's new (attempted) data.
 	 *
-	 * @return array<int, array<string, mixed>>|null The tier, or null for no routing.
+	 * @return array<int, array<string, mixed>>|null The tier(s), or null for no routing.
 	 *
-	 * @spec openspec/changes/flow-approval-consolidation/specs/approval-workflow/spec.md#req-008
+	 * @spec openspec/specs/approval-workflow/spec.md
 	 */
 	private function resolveTierPositions(array $template, array $newData): ?array {
 		$amountField = (string)($template['amountField'] ?? '');
@@ -282,6 +290,9 @@ class ApprovalChainGateListener implements IEventListener {
 		}
 
 		$amount = (float)($newData[$amountField] ?? 0);
+		if (($template['tiers'] ?? ApprovalChainAnnotationInstaller::TIERS_HIGHEST) === ApprovalChainAnnotationInstaller::TIERS_CUMULATIVE) {
+			return $this->resolveCumulativeTiers(positions: (array)($template['positions'] ?? []), amount: $amount);
+		}
 
 		$best = null;
 		$bestMinAmount = -1.0;
@@ -309,6 +320,38 @@ class ApprovalChainGateListener implements IEventListener {
 
 		return [$best];
 	}//end resolveTierPositions()
+
+	/**
+	 * Every tier at or below the amount, lowest minAmount first, numbered from 1.
+	 *
+	 * An amount below the lowest tier yields an empty list: nothing to approve.
+	 *
+	 * @param array<int, mixed> $positions The compiled positions.
+	 * @param float             $amount    The object's amount.
+	 *
+	 * @return array<int, array<string, mixed>> The positions to provision.
+	 *
+	 * @spec openspec/specs/approval-workflow/spec.md
+	 */
+	private function resolveCumulativeTiers(array $positions, float $amount): array {
+		$applicable = [];
+		foreach ($positions as $position) {
+			if (is_array($position) === true && (float)($position['minAmount'] ?? 0) <= $amount) {
+				$applicable[] = $position;
+			}
+		}
+
+		usort(
+			$applicable,
+			static fn (array $left, array $right): int => ((float)($left['minAmount'] ?? 0) <=> (float)($right['minAmount'] ?? 0))
+		);
+
+		foreach ($applicable as $index => $position) {
+			$applicable[$index]['order'] = ($index + 1);
+		}
+
+		return $applicable;
+	}//end resolveCumulativeTiers()
 
 	/**
 	 * Load the schema referenced by an object, returning null on failure.

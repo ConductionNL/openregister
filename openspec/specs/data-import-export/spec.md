@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 ---
 
 # Data Import and Export
@@ -22,7 +22,9 @@ This spec primarily validates and extends an already-functional import/export sy
 - **RBAC on export (fully implemented)**: `PropertyRbacHandler::canReadProperty()` controls column visibility, admin check gates `@self.*` columns.
 - **SOLR warmup (fully implemented)**: `ImportService::scheduleSmartSolrWarmup()` via `IJobList` after import.
 - **What this spec adds**: JSON/XML/ODS/JSONL format support, interactive column mapping UI, progress tracking with polling endpoint, downloadable error report CSV, import template generation, column selection for exports, streaming for 10k+ rows, scheduled/recurring imports, i18n for headers, and import rollback on critical failure.
+
 ## Requirements
+
 ### Requirement: The system MUST support import from CSV, Excel, JSON, and XML formats @e2e exclude REST API import — covered by Newman
 
 Users MUST be able to upload files in CSV, XLSX, JSON, or XML format. The `ImportService` SHALL detect the file type from the extension and delegate to the appropriate reader. CSV import SHALL use `PhpOffice\PhpSpreadsheet\Reader\Csv`, Excel import SHALL use `PhpOffice\PhpSpreadsheet\Reader\Xlsx`, JSON import SHALL parse the file as a JSON array of objects, and XML import SHALL parse each child element of the root as an object record.
@@ -662,8 +664,11 @@ detailed import/export contract): `exportConfig()` → `Configuration/ExportHand
 `getUploadedJson()` → `Configuration/UploadHandler`, `importFromFilePath()` /
 `importFromApp()` / `importFromJson()` → `Configuration/ImportHandler`,
 `fetchRemoteConfiguration()` → `Configuration/FetchHandler`,
-`previewConfigurationChanges()` / `importConfigurationWithSelection()` →
-`Configuration/PreviewHandler`. The facade MUST pass through the handler results
+`previewConfigurationChanges()` → `Configuration/PreviewHandler`, and
+`importConfigurationWithSelection()` → `Configuration/FetchHandler` plus
+`Configuration/ImportSelection` plus `Configuration/ImportHandler` (see
+"Selective configuration import and auto-update MUST import what they name").
+The facade MUST pass through the handler results
 unchanged and MUST be the single service consuming apps inject for
 configuration import/export.
 
@@ -684,6 +689,81 @@ configuration import/export.
 - **WHEN** `ConfigurationService::getUploadedJson($data, $uploadedFiles)` is called
 - **THEN** it MUST delegate to `Configuration/UploadHandler::getUploadedJson()` which resolves the payload in that precedence order
 - **AND** return either the parsed array or a `JSONResponse` error
+
+### Requirement: Selective configuration import and auto-update MUST import what they name @e2e exclude backend import path driven by the preview modal and a background job — covered by PHPUnit
+
+`ConfigurationService::importConfigurationWithSelection()` MUST fetch the
+configuration's remote document fresh and import it through the ImportHandler
+with its per-entity version gates (`force` false). Its two callers are the
+preview's import endpoint (`POST /api/configurations/{id}/import`, body
+`selection: {registers: [slug], schemas: [slug], objects: ['register:schema:slug']}`)
+and `ConfigurationCheckJob` for a configuration with `autoUpdate` on, which
+passes an empty selection. An empty selection MUST mean the whole document,
+seed data included. A non-empty selection MUST narrow the document to the
+named registers, schemas and objects (slugs compare case-insensitively), keep
+its metadata, and drop seed data and components the preview cannot select.
+The configuration MUST then track the ids of every register, schema and object
+the import returned, next to the ids it already tracked. Only a whole import
+MUST move `localVersion` to the remote version.
+
+#### Scenario: The preview imports only the selection
+- **GIVEN** a remote configuration at version `2.0.0` with schemas `Klant` and `zaak`, two objects and seed data, and a local configuration at `1.0.0` tracking schema `5`
+- **WHEN** an administrator posts `selection: {schemas: ['klant'], objects: ['demo:Klant:k1']}` to its import endpoint
+- **THEN** the importer MUST receive only schema `Klant` and object `k1`, and no seed data
+- **AND** the response MUST be HTTP 200 with `schemasCount` 1 and `objectsCount` 1
+- **AND** the configuration MUST track schema `5` plus the imported schema, and keep `localVersion` `1.0.0`
+
+#### Scenario: A remote that cannot be read is an error
+- **GIVEN** the remote source answers with a body that is not JSON or YAML
+- **WHEN** the import endpoint is called
+- **THEN** it MUST NOT answer 200, and nothing MUST be imported
+
+#### Scenario: Auto-update imports the whole document
+- **GIVEN** a configuration with `autoUpdate` on whose remote version is newer than its `localVersion`
+- **WHEN** `ConfigurationCheckJob` runs
+- **THEN** the importer MUST receive the whole remote document
+- **AND** `localVersion` MUST become the remote version, so the next run finds no update and sends no notification
+
+### Requirement: The configuration preview names what an import would change @e2e exclude backend preview rows read by the preview modal — covered by PHPUnit
+
+`PreviewHandler::previewConfigurationChanges()` MUST return one row per remote
+object with `type` `object`, the object's `register`, `schema` and `slug` as
+the remote document names them, a `title`, and an `action`. These three slugs
+are the `register:schema:slug` key the preview modal posts back as the
+selection, so a row without them cannot be selected. The object MUST be looked
+up the way the import looks it up: by slug in the local register and schema,
+without RBAC or multitenancy. A missing object MUST be `create`; an object whose
+remote version is strictly newer MUST be `update`; any other existing object,
+and an object whose slug, register or schema is missing or not present locally,
+MUST be `skip` with a `reason`. Every `update` row, for registers and schemas as
+well as objects, MUST list the fields it changes as `{field, current, proposed}`:
+only keys the remote side carries are compared, nested maps by dotted path,
+lists whole, and a row's own `id`, `uuid`, `created` and `updated` are ignored.
+An object row MUST compare what the import would write: its `@self.version`
+(which only gates the update) is not a change, and the seed format's top-level
+`uuid` and `slug` are not compared unless the schema declares a property of
+that name, because the import strips them from the data.
+
+#### Scenario: A remote object can be selected from its row
+- **GIVEN** a remote object `omgevingsvergunning` in register `zaken` and schema `zaaktype`, both present locally, and no such object locally
+- **WHEN** the preview is built
+- **THEN** its row MUST be `create` with register `zaken`, schema `zaaktype` and slug `omgevingsvergunning`
+- **AND** the key `zaken:zaaktype:omgevingsvergunning` built from that row MUST select exactly that object for import
+
+#### Scenario: A newer object shows its diff
+- **GIVEN** a local object `bouw` at version `1.0.0` titled `Bouw` and the remote one at `1.1.0` titled `Bouwen`
+- **WHEN** the preview is built
+- **THEN** its row MUST be `update` and its changes MUST include `title` from `Bouw` to `Bouwen`
+
+#### Scenario: An object that is not newer is skipped
+- **GIVEN** a local object at the same version as the remote one
+- **WHEN** the preview is built
+- **THEN** its row MUST be `skip` with a reason naming the versions and no changes
+
+#### Scenario: A seeded object's identity and version are no change
+- **GIVEN** a local object `livepass-lane11-a1` stored at version `0.0.1` with colour `red`, imported from a seed that carries a top-level `slug` and `uuid`
+- **WHEN** the preview is built for the seed at version `1.0.1` with colour `blue`
+- **THEN** its row MUST be `update` and its changes MUST be exactly `colour` from `red` to `blue`
 
 ### Requirement: ConfigurationService MUST track and compare imported-configuration versions @e2e exclude backend version check/compare logic — covered by PHPUnit
 
@@ -973,6 +1053,164 @@ unaffected by this requirement.
 - **AND** running the migration again (index already absent) is a no-op that
   does not error
 - **AND** no existing schema row is modified or deleted by the migration
+
+### Requirement: Seed metadata keys are not stored as data
+
+A seed object under `x-openregister.seedData`, and an object listed under a
+configuration's `components.objects`, carries its `uuid` and `slug` at the top
+level. The importer SHALL use them for the idempotency lookup and set them as
+the object's metadata, and SHALL remove them from the object's data before it
+is written, unless the target schema declares a property of that name. For a
+listed object an `@self.uuid` SHALL win over the top-level `uuid`. An import
+MUST NOT make the storage layer report `uuid` or `slug` as discarded
+undeclared properties.
+
+#### Scenario: A schema that declares neither key
+- **GIVEN** a seed object with top-level `uuid` and `slug` for a schema that
+  declares neither property
+- **WHEN** the seed data is imported
+- **THEN** the stored object's uuid and slug metadata equal the seed's values
+- **AND** the object's data holds neither `uuid` nor `slug`
+- **AND** no "Discarding" warning names them
+
+#### Scenario: A schema that declares slug
+- **GIVEN** the same seed object for a schema that declares a `slug` property
+- **WHEN** the seed data is imported
+- **THEN** the object's data keeps `slug` and drops `uuid`
+
+#### Scenario: An object listed under components.objects
+- **GIVEN** a configuration listing an object under `components.objects` with
+  `@self.slug`, a top-level `uuid` and a top-level `slug`, for a schema that
+  declares neither
+- **WHEN** the configuration is imported and the object does not exist yet
+- **THEN** the object is created under the listed uuid
+- **AND** its data holds neither `uuid` nor `slug`
+- @e2e exclude {import path, covered by ImportHandlerComponentsObjectsIdentityTest}
+
+### Requirement: A remote configuration is read by its content, not its Content-Type
+
+Fetching a configuration from a remote source (github, gitlab or url) SHALL try to decode the body as JSON and then as YAML whatever Content-Type the source answers with; the Content-Type SHALL only decide which is tried first. A body that decodes to neither SHALL be refused with 400 naming the Content-Type.
+
+#### Scenario: a configuration on raw GitHub is previewed
+
+- **GIVEN** a configuration with sourceType github and sourceUrl on raw.githubusercontent.com, which answers valid JSON as `text/plain; charset=utf-8`
+- **WHEN** an administrator opens its preview
+- **THEN** the preview lists what an import would change instead of answering "Failed to parse response body as JSON or YAML"
+- @e2e exclude {remote fetch decoding, covered by FetchHandlerTest}
+
+### Requirement: An app configuration import MUST run under its own import job id
+
+Every call to `importFromApp()` SHALL generate a fresh import job id (UUID v4) and SHALL
+stamp it on every audit row written while the import runs, for created and for updated
+objects alike. The stamp SHALL be cleared when the import ends, including when it throws,
+and a stamp that was already active before the call (an outer import) SHALL be restored
+rather than cleared. The import result SHALL carry the id as `importJobId` when the job was
+recorded (see the next requirement), and `null` otherwise.
+
+@e2e exclude Backend import path with no UI of its own; the consuming app's setup wizard owns the button. Asserted in tests/Unit/Service/Configuration/AppImportJobRecorderTest.php (testBeginStampsAndEndRestoresTheOuterScope) and tests/Unit/Service/Configuration/ImportHandlerImportJobTest.php (testImportFromAppStampsTheImportAndClearsTheStamp, testTheStampIsClearedWhenTheImportThrows). Covered by PHPUnit.
+
+#### Scenario: Objects written by an app import carry the job id
+
+- **GIVEN** an app calls `importFromApp()` with data holding seed objects
+- **WHEN** the import creates two objects and updates one
+- **THEN** the three audit rows MUST carry the same import job id
+- **AND** after the call no import job id MUST be active
+
+#### Scenario: A failing import does not leak its stamp
+
+- **GIVEN** an app import that throws halfway
+- **WHEN** the exception leaves `importFromApp()`
+- **THEN** no import job id MUST be active afterwards
+
+---
+
+### Requirement: The job id of an app import that created objects MUST be recorded per app
+
+After an app import, OpenRegister SHALL count the `create` audit rows carrying the job id.
+When there is at least one, it SHALL append `{jobId, version, created, importedAt}` to the
+list it keeps in its own app config for that app id (the `appId` passed to
+`importFromApp()`, so `learniq` and `learniq.demo` keep separate lists). An import that
+created nothing traceable SHALL NOT be recorded, so re-imports that only update or skip do
+not grow the list. The list SHALL keep at most the 50 most recent jobs.
+
+When the import wrote objects and no audit row at all carries the job id, OpenRegister
+SHALL log a warning naming the app: the audit trail is off, so the import cannot be removed
+by job. A silent empty list would read as "nothing to remove".
+
+@e2e exclude Backend bookkeeping with no UI of its own. Asserted in tests/Unit/Service/Configuration/AppImportJobRecorderTest.php (testRecordAppendsAJobThatCreatedObjects, testRecordSkipsAJobThatCreatedNothing, testRecordWarnsWhenObjectsWereWrittenButNothingWasTraced, testRecordKeepsTheFiftyMostRecentJobs). Covered by PHPUnit.
+
+#### Scenario: A first demo import is recorded
+
+- **GIVEN** `importFromApp('learniq.demo', ...)` creates 405 objects with audit trails on
+- **WHEN** the import returns
+- **THEN** the `learniq.demo` list MUST hold one job with `created` 405
+- **AND** the result's `importJobId` MUST be that job's id
+
+#### Scenario: A re-import that only updates is not recorded
+
+- **GIVEN** a second import of the same data whose objects all exist already
+- **WHEN** it returns
+- **THEN** the list MUST still hold one job
+
+#### Scenario: An untraceable import says so
+
+- **GIVEN** audit trails are disabled and an import writes objects
+- **WHEN** it returns
+- **THEN** no job MUST be recorded
+- **AND** a warning MUST be logged naming the app
+
+---
+
+### Requirement: An app MUST be able to remove the objects its recorded imports created
+
+`ConfigurationService::listImportJobs($appId)` SHALL return the recorded list for that app id.
+`ConfigurationService::softDeleteAppImports($appId)` SHALL soft-delete, through
+`ImportService::softDeleteByImportJobId()`, every object each recorded job created, and
+SHALL run as a system operation, as the import did. A job whose report has no errors SHALL
+be forgotten; a job with errors SHALL stay recorded so the removal can be retried or
+finished with `occ`. The result SHALL name the app, list each job's report, and total the
+soft-deleted objects and the errors.
+
+Objects a job only updated SHALL NOT be removed: they existed before the import. Removal is
+a soft delete, so an object can be restored from the trash. Who may remove is the calling
+app's decision; this method is not reachable over HTTP.
+
+@e2e exclude Backend service call; the consuming app's setup wizard owns the button. Asserted in tests/Unit/Service/ConfigurationServiceAppImportsTest.php (testSoftDeleteAppImportsRemovesEveryRecordedJobAndForgetsCleanOnes, testAJobWithErrorsStaysRecorded, testAnAppWithNoRecordedJobsRemovesNothing). Covered by PHPUnit.
+
+#### Scenario: Removing an example set
+
+- **GIVEN** `learniq.demo` has two recorded jobs that created 405 and 5 objects
+- **WHEN** `softDeleteAppImports('learniq.demo')` runs
+- **THEN** 410 objects MUST be soft-deleted
+- **AND** the `learniq.demo` list MUST be empty afterwards
+- **AND** the `learniq` list MUST be untouched
+
+#### Scenario: A partial removal stays recorded
+
+- **GIVEN** one object of a recorded job cannot be deleted
+- **WHEN** `softDeleteAppImports()` runs
+- **THEN** that job MUST stay in the list
+- **AND** the result MUST name the object and the error
+
+---
+
+### Requirement: The HTTP rollback route MUST refuse an app import's job id
+
+`POST` to the import rollback route SHALL answer `409` when the job id belongs to a
+recorded app import, and SHALL delete nothing. Archival schemas refuse HTTP deletes, and an
+app's example data spans archival and append-only schemas, so it leaves through the app's
+own service call or through `occ openregister:objects:purge --import-job`, never through
+HTTP. The response SHALL name those two paths. CSV and Excel import rollbacks SHALL keep
+working unchanged.
+
+@e2e exclude REST refusal with no UI surface; asserted in tests/Unit/Controller/RegistersControllerTest.php (testRollbackRefusesAnAppImportJob). Covered by PHPUnit.
+
+#### Scenario: An admin tries to roll back a demo import over HTTP
+
+- **GIVEN** a job id recorded for `learniq.demo`
+- **WHEN** an administrator posts it to the rollback route
+- **THEN** the response MUST be `409`
+- **AND** no object MUST be deleted
 
 ## Current Implementation Status
 - **Implemented:**

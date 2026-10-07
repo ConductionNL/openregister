@@ -89,7 +89,7 @@ class OneTimeDownloadTokenStore {
 	 *
 	 * @return string The raw one-time token.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function mint(string $caseUuid, int $ttlSeconds = self::DEFAULT_TTL_SECONDS): string {
 		$token = $this->random->generate(64, ISecureRandom::CHAR_ALPHANUMERIC);
@@ -123,7 +123,7 @@ class OneTimeDownloadTokenStore {
 	 *
 	 * @return bool True when the token was valid for this case (and is now burned).
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-export-bundle/spec.md
+	 * @spec openspec/specs/dsar-export-bundle/spec.md
 	 */
 	public function redeem(string $token, string $caseUuid): bool {
 		if ($token === '') {

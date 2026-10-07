@@ -257,6 +257,78 @@ class TaskInboxServiceTest extends TestCase {
 	}//end testSubjectContextIsBatchedForThePage()
 
 	/**
+	 * A task that records its subject's register and schema is read from that
+	 * one table; only unlocated subjects go to the cross-table search.
+	 *
+	 * The cross-table search unions every magic table on the instance: 1.5 to
+	 * 6 s per inbox call on 1,664 tables (measured 2026-10-06). Asserting the
+	 * ARGUMENTS, so a version that still sent every uuid to the union would fail.
+	 *
+	 * @return void
+	 */
+	public function testALocatedSubjectIsReadFromItsOwnTable(): void {
+		$register = new \OCA\OpenRegister\Db\Register();
+		$schema = new \OCA\OpenRegister\Db\Schema();
+		$registers = $this->createMock(originalClassName: \OCA\OpenRegister\Db\RegisterMapper::class);
+		$registers->expects($this->once())->method('find')->with(7)->willReturn($register);
+		$schemas = $this->createMock(originalClassName: \OCA\OpenRegister\Db\SchemaMapper::class);
+		$schemas->expects($this->once())->method('find')->with(42)->willReturn($schema);
+
+		$located = new ObjectEntity();
+		$located->setUuid('obj-located');
+		$located->setName('Zaak 7');
+		$located->setRegister('7');
+		$located->setSchema('42');
+		$unlocated = new ObjectEntity();
+		$unlocated->setUuid('obj-legacy');
+		$unlocated->setName('Zaak oud');
+		$unlocated->setRegister('7');
+		$unlocated->setSchema('42');
+
+		$objects = $this->createMock(originalClassName: \OCA\OpenRegister\Db\MagicMapper::class);
+		$objects->expects($this->once())->method('findObjectsByUuidsInRegisterSchema')->willReturnCallback(
+			function ($reg, $sch, array $uuids) use ($register, $schema, $located): array {
+				$this->assertSame($register, $reg);
+				$this->assertSame($schema, $sch);
+				$this->assertSame(['obj-located'], $uuids);
+
+				return ['obj-located' => $located];
+			}
+		);
+		$objects->expects($this->once())->method('findMultiple')->willReturnCallback(
+			function (array $ids) use ($unlocated): array {
+				$this->assertSame(['obj-legacy'], $ids, 'only the unlocated subject may reach the cross-table search');
+
+				return [$unlocated];
+			}
+		);
+
+		$inbox = new TaskInboxService(
+			tasks: $this->tasks,
+			temporal: new TaskTemporalProjection(),
+			logger: new NullLogger(),
+			objects: $objects,
+			locator: new \OCA\OpenRegister\Service\Task\TaskSubjectLocator($objects, $registers, $schemas, new NullLogger())
+		);
+
+		$first = new Task();
+		$first->setUuid('t-1');
+		$first->setObjectUuid('obj-located');
+		$first->setRegisterId(7);
+		$first->setSchemaId(42);
+		$second = new Task();
+		$second->setUuid('t-2');
+		$second->setObjectUuid('obj-legacy');
+		$this->tasks->method('findInbox')->willReturn([$first, $second]);
+		$this->tasks->method('countInbox')->willReturn(2);
+
+		$result = $inbox->inbox(criteria: new TaskInboxCriteria(uid: 'alice'));
+
+		$this->assertSame('Zaak 7', $result['results'][0]['subject']['title']);
+		$this->assertSame('Zaak oud', $result['results'][1]['subject']['title']);
+	}//end testALocatedSubjectIsReadFromItsOwnTable()
+
+	/**
 	 * A store that serialises FLAT (uuid/register/schema/name at top level)
 	 * still resolves: the flat keys are the documented fallback for stores
 	 * that are not ObjectEntity.

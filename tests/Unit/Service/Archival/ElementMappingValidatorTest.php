@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Archival;
 
+use DOMDocument;
 use OCA\OpenRegister\Service\Archival\ElementMappingValidator;
 use OCA\OpenRegister\Service\Archival\MdtoElementCatalogue;
 use PHPUnit\Framework\TestCase;
@@ -101,13 +102,12 @@ class ElementMappingValidatorTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheCatalogueReadsUnderNextcloudsNullEntityResolver(): void {
-		// PHP 8.4 hands back the resolver that was installed; 8.3 and below
-		// return a bool, so only restore what is actually callable and fall
-		// back to clearing it, which is the state a bare process starts in.
-		$previous = libxml_set_external_entity_loader(static fn () => null);
-		if (is_callable($previous) === false) {
-			$previous = null;
-		}
+		// Capture how to put the loader back BEFORE replacing it. Clearing it
+		// is not a safe fallback: this process is not bare, it is Nextcloud's,
+		// and Nextcloud installs a blocking resolver of its own.
+		$blockedBefore = self::entityLoadingIsBlocked();
+		$restore       = self::entityLoaderRestore();
+		libxml_set_external_entity_loader(static fn () => null);
 
 		try {
 			$catalogue = new MdtoElementCatalogue();
@@ -124,8 +124,18 @@ class ElementMappingValidatorTest extends TestCase {
 				)
 			);
 		} finally {
-			libxml_set_external_entity_loader($previous);
+			$restore();
 		}
+
+		// The guard this test borrows must be handed back exactly as found.
+		// Leaving it cleared is invisible here and silently disarms every
+		// later test in the process that depends on it.
+		$this->assertSame(
+			expected: $blockedBefore,
+			actual: self::entityLoadingIsBlocked(),
+			message: 'the entity loader must be restored to the state this process was in; '
+				.'clearing it disarms Nextcloud\'s guard for every test that runs after this one'
+		);
 	}
 
 	public function testACompleteMappingIsAccepted(): void {
@@ -224,4 +234,66 @@ class ElementMappingValidatorTest extends TestCase {
 			$this->validator->validate(mapping: [], properties: $this->properties())[0]['code']
 		);
 	}
+
+	/**
+	 * Restore the entity loader to the state this process was already in.
+	 *
+	 * PHP 8.4 hands the current resolver back, so it goes back exactly. Below
+	 * that the setter returns a bool and there is no way to read the previous
+	 * one, so the BEHAVIOUR is probed instead and a process that was refusing
+	 * to load a local file is left refusing it.
+	 *
+	 * This matters beyond this test. Clearing the loader here removed
+	 * Nextcloud's guard for the REST OF THE PROCESS, and because
+	 * tests/Unit/Controller runs before tests/Unit/Service, sixteen BPMN tests
+	 * downstream of this one stopped meeting the condition they exist to
+	 * assert. They passed, and the bug they were written to catch shipped.
+	 *
+	 * @return callable(): void The restore.
+	 */
+	private static function entityLoaderRestore(): callable {
+		if (function_exists('libxml_get_external_entity_loader') === true) {
+			$previous = libxml_get_external_entity_loader();
+
+			return static function () use ($previous): void {
+				libxml_set_external_entity_loader($previous);
+			};
+		}
+
+		$blocking = null;
+		if (self::entityLoadingIsBlocked() === true) {
+			$blocking = static fn (): mixed => null;
+		}
+
+		return static function () use ($blocking): void {
+			// The result is captured and dropped because psalm reads a
+			// discarded libxml_set_external_entity_loader(<literal>) as a
+			// call nobody uses; it is made for its side effect.
+			$replaced = libxml_set_external_entity_loader($blocking);
+			unset($replaced);
+		};
+	}//end entityLoaderRestore()
+
+	/**
+	 * Whether the current loader refuses a readable local file.
+	 *
+	 * The probe writes its own tiny document so it cannot be confused with any
+	 * fixture, and clears its libxml errors so they cannot be mistaken for a
+	 * finding of the code under test.
+	 *
+	 * @return bool True when a loader is blocking local reads.
+	 */
+	private static function entityLoadingIsBlocked(): bool {
+		$path = tempnam(sys_get_temp_dir(), 'orxmlprobe');
+		file_put_contents($path, '<?xml version="1.0"?><probe/>');
+
+		$probe    = new DOMDocument();
+		$previous = libxml_use_internal_errors(true);
+		$loaded   = $probe->load($path, LIBXML_NONET);
+		libxml_clear_errors();
+		libxml_use_internal_errors($previous);
+		unlink($path);
+
+		return ($loaded === false);
+	}//end entityLoadingIsBlocked()
 }

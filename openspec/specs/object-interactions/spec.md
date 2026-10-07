@@ -15,7 +15,9 @@ OpenRegister objects require rich interaction capabilities — notes, tasks, fil
 
 **OpenSpec changes**
 - `fix-object-files-listing-lock-and-limit` (active) — makes the object files listing endpoint resilient to Nextcloud file locks, raises the `_limit` ceiling from 100 to 1000, replaces the `getContent()` ownership probe with `isReadable()`, and adds `locked`/`lock` metadata to each file entry.
+
 ## Requirements
+
 ### Requirement: Notes on Objects via ICommentsManager
 
 The system SHALL provide a `NoteService` that wraps Nextcloud's `OCP\Comments\ICommentsManager` for creating, listing, and deleting notes (comments) on OpenRegister objects. Notes MUST be stored using `objectType: "openregister"` and `objectId: {uuid}`. The service MUST resolve actor display names via `OCP\IUserManager` and indicate whether the current user authored each note.
@@ -573,6 +575,135 @@ Endpoint execution MUST be gated by group-based access control and MUST persist 
 - **WHEN** `logEndpointCall()` runs
 - **THEN** it MUST persist an `EndpointLog` with a generated uuid, the endpoint id, the acting user (when present), the request and response payloads, the status code and message, a creation timestamp, and an expiry one week out
 - **AND** the entry size MUST be computed before insert
+
+### Requirement: A user can star an object without changing it
+
+The system SHALL let a user mark any object they may read as a favourite and
+unmark it, storing the mark per user outside the object, so that starring
+writes no audit entry and no version on the object. Object reads and lists
+SHALL carry `@self.favourite` for the current user.
+
+#### Scenario: starring leaves the object untouched
+
+- **GIVEN** an object with three audit entries
+- **WHEN** a user stars it and reads it back
+- **THEN** `@self.favourite` is true and the object still has three audit entries
+- @e2e tests/e2e/ci/favourites-and-recent.spec.ts
+
+### Requirement: Opening an object records a per-user view
+
+The system SHALL record a view (user, object, time) when a user reads an
+object's detail, at most once per user, object and minute, keeping the most
+recent 100 views per user.
+
+#### Scenario: repeated reads within a minute count once
+
+- **GIVEN** a user who reads the same object four times in ten seconds
+- **WHEN** their view history is listed
+- **THEN** the object appears once with the time of the first read
+- @e2e exclude {the throttle window is a service boundary covered by unit tests}
+
+### Requirement: Favourites and recent are lenses on the object query
+
+The object query SHALL accept `_favourite=true`, returning only the current
+user's starred objects, and `_recent=true`, returning the current user's
+viewed objects ordered by last view descending, each composing with every
+other filter.
+
+#### Scenario: a favourites chip on an index page
+
+- **GIVEN** a user who starred two of five cases
+- **WHEN** the index page queries with `_favourite=true` and `status=open`
+- **THEN** only the starred cases with status open are returned
+- @e2e tests/e2e/ci/favourites-and-recent.spec.ts
+
+### Requirement: An edited note keeps what it said before and who changed it
+
+The system SHALL let a note's author, or a user with `manage` on the object,
+edit the note's message, SHALL store the previous message with the previous
+editor and time as a version before overwriting, SHALL mark the note with
+`editedAt`, `editedBy` and `versionCount`, and SHALL list a note's versions
+newest first to anyone who may read the note. A locked note SHALL refuse the
+edit with HTTP 423.
+
+#### Scenario: the previous text survives an edit
+
+- **GIVEN** a note reading "Applicant called" by user A
+- **WHEN** user A edits it to "Applicant called, will send documents"
+- **THEN** the versions list holds "Applicant called" by A, and the note carries `editedBy` A and `versionCount` 1
+- @e2e tests/e2e/ci/note-edit-history.spec.ts
+
+#### Scenario: a locked note cannot be edited
+
+- **GIVEN** a locked note
+- **WHEN** its author tries to edit it
+- **THEN** the response is 423 and no version is written
+- @e2e exclude {nothing sets the verb yet: the lock ships with notes-leaf-rich-text-lock-export. Asserted in tests/Unit/Service/NoteServiceTest.php::testALockedNoteRefusesTheEditAndWritesNoVersion}
+
+#### Scenario: a colleague with update cannot rewrite another's note
+
+- **GIVEN** a note by user A and user B with `update` but not `manage` on the object
+- **WHEN** user B tries to edit it
+- **THEN** the response is 403
+- @e2e tests/e2e/ci/note-edit-history.spec.ts
+
+### Requirement: A note edit is audited on the object and versions die with the note
+
+Every note edit SHALL write an audit entry on the object naming the note and
+the editor. Deleting a note SHALL delete its versions.
+
+#### Scenario: the trail records the edit, not the text
+
+- **GIVEN** an edited note
+- **WHEN** the object's audit trail is read
+- **THEN** it holds a `note.edited` entry with the note id and editor and no note text
+- @e2e tests/e2e/ci/note-edit-history.spec.ts
+
+### Requirement: A user can watch an object they may read
+
+The system SHALL let a user who may read an object subscribe to it and
+unsubscribe, storing the subscription per user outside the object so that
+watching writes no audit entry and no version on the object. Object reads
+and lists SHALL carry `@self.watching` for the current user.
+
+#### Scenario: following leaves the object untouched
+
+- **GIVEN** an object with three audit entries
+- **WHEN** a user watches it and reads it back
+- **THEN** `@self.watching` is true and the object still has three audit entries
+- `@e2e tests/e2e/ci/object-watchers.spec.ts`
+
+#### Scenario: a user without read cannot watch
+
+- **GIVEN** an object the user may not read
+- **WHEN** the user calls the watch endpoint
+- **THEN** the response is 404 and no row is written
+- `@e2e tests/e2e/ci/object-watchers.spec.ts` and WatcherService unit tests
+
+### Requirement: Watchers are a lens and a list
+
+The object query SHALL accept `_watching=true` returning the current user's
+watched objects. `GET .../watchers` SHALL list an object's watchers for a
+user with `update`; a user with `manage` SHALL be able to add or remove
+another user, and any watcher SHALL be able to remove themselves.
+
+#### Scenario: a team lead lists who follows a case
+
+- **GIVEN** a case watched by two users and a team lead with `update`
+- **WHEN** the team lead lists the watchers
+- **THEN** both users are returned with the time they subscribed
+- `@e2e tests/e2e/ci/object-watchers.spec.ts` and tests/newman/openregister-object-watchers.postman_collection.json
+
+### Requirement: Deleting an object removes its watchers
+
+Deleting an object SHALL delete its watcher rows.
+
+#### Scenario: no orphan subscriptions
+
+- **GIVEN** an object with four watchers
+- **WHEN** it is deleted permanently
+- **THEN** the watcher table holds no row for it
+- @e2e exclude {deletion cleanup has no HTTP surface to read; asserted by WatcherServiceTest::testDeletingAnObjectRemovesItsWatchers and wired by WatcherPruneListener}
 
 ## Non-Functional Requirements
 

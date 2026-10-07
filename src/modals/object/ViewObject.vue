@@ -302,6 +302,96 @@ import {
 																)
 															" />
 
+														<!-- Enum and oneOf properties: a choice list of the declared values (REQ-RFCE-001) -->
+														<NcSelect
+															v-else-if="
+																getPropertyInputComponent(
+																	key,
+																) === 'NcSelect'
+															"
+															:modelValue="
+																enumOptionFor(
+																	key,
+																	formData[key]
+																		!== undefined
+																		? formData[
+																				key
+																			]
+																		: value,
+																)
+															"
+															:options="
+																enumOptionsFor(key)
+															"
+															label="label"
+															:inputLabel="
+																getPropertyDisplayName(
+																	key,
+																)
+															"
+															@update:modelValue="
+																updatePropertyValue(
+																	key,
+																	$event
+																		? $event.value
+																		: null,
+																)
+															" />
+
+														<!-- File properties: a file picker (REQ-RFCE-001) -->
+														<input
+															v-else-if="
+																getPropertyInputComponent(
+																	key,
+																) === 'file'
+															"
+															type="file"
+															class="property-file-input"
+															:aria-label="
+																getPropertyDisplayName(
+																	key,
+																)
+															"
+															@change="
+																onPropertyFilePicked(
+																	key,
+																	$event,
+																)
+															" />
+
+														<!-- Translatable properties: one input per register language (REQ-RFCE-001) -->
+														<TranslationFieldEditor
+															v-else-if="
+																getPropertyInputComponent(
+																	key,
+																)
+																=== 'TranslationFieldEditor'
+															"
+															:value="
+																translationValueFor(
+																	formData[key]
+																		!== undefined
+																		? formData[
+																				key
+																			]
+																		: value,
+																)
+															"
+															:languages="
+																registerLanguages
+															"
+															:label="
+																getPropertyDisplayName(
+																	key,
+																)
+															"
+															@input="
+																updatePropertyValue(
+																	key,
+																	$event,
+																)
+															" />
+
 														<!-- Text/Number properties -->
 														<NcTextField
 															v-else
@@ -1214,6 +1304,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Tag from 'vue-material-design-icons/Tag.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import TranslationFieldEditor from '../../components/i18n/TranslationFieldEditor.vue'
 import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import EmailsTab from '../../components/object-relations/EmailsTab.vue'
@@ -1225,6 +1316,11 @@ import AppTabs from '../../components/tabs/AppTabs.vue'
 import { dateToString, stringToDate } from '../../services/dateUtils.js'
 import { updateFileLabels } from '../../services/fileMetadata.js'
 import { getTheme } from '../../services/getTheme.js'
+import {
+	editorFor,
+	enumOptions,
+	readFileAsDataUri,
+} from '../../services/propertyEditor.js'
 export default {
 	name: 'ViewObject',
 	components: {
@@ -1240,6 +1336,7 @@ export default {
 		NcActionButton,
 		NcEmptyContent,
 		NcSelect,
+		TranslationFieldEditor,
 		CodeMirror,
 		AppTabs,
 		AppTab,
@@ -1461,6 +1558,17 @@ export default {
 		 */
 		currentRegister() {
 			return registerStore.registerItem
+		},
+
+		/**
+		 * The register's languages, which give a translatable field one input each.
+		 *
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
+		 * @return {Array<string>}
+		 */
+		registerLanguages() {
+			const languages = this.currentRegister?.languages
+			return Array.isArray(languages) ? languages : []
 		},
 
 		/**
@@ -2995,31 +3103,78 @@ export default {
 		 * @spec exclude display helper mapping schema type to input component
 		 */
 		getPropertyInputComponent(key) {
-			const schemaProperty = this.currentSchema?.properties?.[key]
-			if (!schemaProperty) return 'NcTextField'
+			// One rule for the record form and the list's cells, in
+			// propertyEditor.js (REQ-RFCE-001).
+			const editor = editorFor(
+				this.currentSchema?.properties?.[key],
+				this.registerLanguages,
+			)
+			return (
+				{
+					switch: 'NcCheckboxRadioSwitch',
+					date: 'NcDateTimePickerNative',
+					select: 'NcSelect',
+					file: 'file',
+					translation: 'TranslationFieldEditor',
+				}[editor] || 'NcTextField'
+			)
+		},
 
-			const type = schemaProperty.type
-			const format = schemaProperty.format
+		/**
+		 * The choices a property declares, for its select.
+		 *
+		 * @param {string} key The property.
+		 * @return {Array<{value: *, label: string}>}
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
+		 */
+		enumOptionsFor(key) {
+			return enumOptions(this.currentSchema?.properties?.[key])
+		},
 
-			// Handle different types and formats
-			switch (type) {
-				case 'boolean':
-					return 'NcCheckboxRadioSwitch'
-				case 'string':
-					if (
-						format === 'date'
-						|| format === 'time'
-						|| format === 'date-time'
-					) {
-						return 'NcDateTimePickerNative'
-					}
-					return 'NcTextField'
-				case 'number':
-				case 'integer':
-					return 'NcTextField'
-				default:
-					return 'NcTextField'
-			}
+		/**
+		 * The option that holds the current value, or null.
+		 *
+		 * @param {string} key The property.
+		 * @param {*} current The current value.
+		 * @return {object|null}
+		 * @spec exclude display helper: the select's current option
+		 */
+		enumOptionFor(key, current) {
+			return (
+				this.enumOptionsFor(key).find((option) => option.value === current)
+				|| null
+			)
+		},
+
+		/**
+		 * A translatable value as the `{lang: value}` map the editor takes. A
+		 * plain string is the default language's value.
+		 *
+		 * @param {*} current The current value.
+		 * @return {object}
+		 * @spec exclude display helper: shape a stored value for the translation editor
+		 */
+		translationValueFor(current) {
+			if (current && typeof current === 'object' && !Array.isArray(current))
+				return current
+			if (current === null || current === undefined || current === '')
+				return {}
+			const first = this.registerLanguages[0]
+			return first ? { [first]: String(current) } : {}
+		},
+
+		/**
+		 * Read a chosen file and store it as the data URI the save path accepts.
+		 *
+		 * @param {string} key The property.
+		 * @param {Event} event The change event of the file input.
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-001-the-record-form-gives-each-declared-field-its-own-editor
+		 */
+		async onPropertyFilePicked(key, event) {
+			const file = event?.target?.files?.[0]
+			if (!file) return
+			this.updatePropertyValue(key, await readFileAsDataUri(file))
 		},
 
 		/**

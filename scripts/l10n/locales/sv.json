@@ -129,6 +129,9 @@
 		"Register #{id}": "\"Register\" is identical in Swedish; the rest is a placeholder.",
 		"{property} - {other}": "Placeholder-only pattern; no translatable text.",
 		"Text": "\"Text\" is the same word in Swedish for the text field type; the only alternatives narrow it (\"Fritext\") or shift to \"Sträng\" (string), so the honest label is identical.",
-		"Operator": "The engine's comparison/logic operator. Swedish uses the identically-spelled international term \"operator\", so the value coincides with the English key; no distinct synonym exists."
+		"Operator": "The engine's comparison/logic operator. Swedish uses the identically-spelled international term \"operator\", so the value coincides with the English key; no distinct synonym exists.",
+		"Period": "'Period' is the ordinary Swedish word for a span of time and is spelled identically to the English.",
+		"Respondent": "'Respondent' is the established Swedish term for a person answering a survey and is spelled identically to the English.",
+		"Token": "'Token' is the established Swedish loanword for a signed credential and is already used unchanged elsewhere in this app (API-token)."
 	}
 }

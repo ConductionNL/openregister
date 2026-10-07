@@ -7,7 +7,7 @@ import type { APIRequestContext } from '@playwright/test'
  * NOTE EDIT HISTORY — what a note said before, over HTTP.
  *
  * Scenario anchors, in the portable `<spec>::<slug>` form so they still
- * resolve once `openspec/changes/note-edit-history/specs/` is archived into
+ * resolve once `openspec/changes/archive/2026-10-05-note-edit-history/specs/` is archived into
  * `openspec/specs/`:
  *
  * @e2e object-interactions::the-previous-text-survives-an-edit

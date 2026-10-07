@@ -721,6 +721,18 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?bool $favourite = null;
 
 	/**
+	 * What the reader may do with this object, as `{"update": bool}`.
+	 *
+	 * Transient, populated by the render layer only when the request asks for
+	 * it (`_extend[]=@self.can`), from PermissionHandler's own verdict. Exposed
+	 * in @self as `can`. The records list reads it to decide where a cell may
+	 * be edited in place (REQ-RFCE-002).
+	 *
+	 * @var array<string, bool>|null
+	 */
+	protected ?array $can = null;
+
+	/**
 	 * AVG / GDPR Art 30 processing-activity override.
 	 *
 	 * Transient field — set by callers that want to tag an upcoming
@@ -911,7 +923,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function setRegistryState(?array $state): void {
 		$this->registryState = $state;
@@ -922,7 +934,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return array<string, mixed>|null
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function getFieldRules(): ?array {
 		return $this->fieldRules;
@@ -955,7 +967,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	public function setWatching(?bool $watching): void {
 		$this->watching = $watching;
@@ -972,7 +984,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-watchers/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
 	 */
 	public function setWatcherCount(?int $count): void {
 		$this->watcherCount = $count;
@@ -992,7 +1004,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-an-object-carries-a-read-state-per-user-req-ors-001
 	 */
 	public function setUnread(?bool $unread): void {
 		$this->unread = $unread;
@@ -1009,7 +1021,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
+	 * @spec openspec/specs/object-read-state/spec.md#requirement-unread-is-a-filter-and-a-badge-resolved-in-the-query-req-ors-002
 	 */
 	public function setUnreadCounts(?array $counts): void {
 		$this->unreadCounts = $counts;
@@ -1029,11 +1041,27 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/favourites-and-recent/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	public function setFavourite(?bool $favourite): void {
 		$this->favourite = $favourite;
 	}//end setFavourite()
+
+	/**
+	 * Write what the reader may do with this object.
+	 *
+	 * Write-only, like setFavourite(): mergeTransientRenderFields() reads the
+	 * property directly. Surfaced in the @self envelope as `can`.
+	 *
+	 * @param array<string, bool>|null $can The reader's rights, e.g. `['update' => true]`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-req-rfce-002-a-cell-in-the-records-list-can-be-edited-in-place
+	 */
+	public function setCan(?array $can): void {
+		$this->can = $can;
+	}//end setCan()
 
 	/**
 	 * Initialize the entity and define field types
@@ -1482,6 +1510,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'watcherCount'            => $this->watcherCount,
 			'unread'                  => $this->unread,
 			'favourite'               => $this->favourite,
+			'can'                     => $this->can,
 		];
 
 		foreach ($transient as $key => $value) {
@@ -1714,41 +1743,98 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			}
 
 			// Same holder: extend the lock.
-			$newExpiration = clone $now;
-			$newExpiration->add(new DateInterval('PT' . ($duration ?? 0) . 'S'));
-
 			$this->setLocked(
-				[
-					'kind' => $kind,
-					'runUuid' => ($runUuid ?? null),
-					'user' => $userId,
-					'process' => ($process ?? $lock['process']),
-					'created' => $lock['created'],
-					'duration' => $duration,
-					'expiration' => $newExpiration->format('c'),
-				]
+				$this->lockPayload(
+					kind: $kind,
+					runUuid: $runUuid,
+					userId: $userId,
+					process: ($process ?? $lock['process']),
+					created: $lock['created'],
+					duration: $duration,
+					now: $now
+				)
 			);
 			return true;
 		}//end if
 
 		// Create new lock.
-		$expiration = clone $now;
-		$expiration->add(new DateInterval('PT' . ($duration ?? 0) . 'S'));
-
 		$this->setLocked(
-			[
-				'kind' => $kind,
-				'runUuid' => ($runUuid ?? null),
-				'user' => $userId,
-				'process' => $process,
-				'created' => $now->format('c'),
-				'duration' => $duration,
-				'expiration' => $expiration->format('c'),
-			]
+			$this->lockPayload(
+				kind: $kind,
+				runUuid: $runUuid,
+				userId: $userId,
+				process: $process,
+				created: $now->format('c'),
+				duration: $duration,
+				now: $now
+			)
 		);
 
 		return true;
 	}//end lock()
+
+	/**
+	 * The stored shape of a lock.
+	 *
+	 * 🔴 A LOCK WITH NO DURATION CARRIES NO EXPIRATION, AND THAT IS THE WHOLE
+	 * POINT OF THIS METHOD. Both callers used to write
+	 * `now + ('PT' . ($duration ?? 0) . 'S')`, so a lock taken without a
+	 * duration expired at the instant it was taken: `isLocked()` answers
+	 * `$now < $expiration`, which is already false by the time the next
+	 * request arrives. `POST /lock` still answered `locked: true`, because the
+	 * controller writes that literal rather than reading the object back, so
+	 * the caller was told they held a lock that had never held anybody out. A
+	 * second editor was never kept out, the owner's own release answered 404
+	 * naming a lock that was not there, and nothing anywhere said so.
+	 *
+	 * Leaving the key out is not a new convention: `isLocked()` has always
+	 * ended "if no expiration info, treat as permanently locked (until
+	 * explicitly unlocked)", which is exactly what a lock with no duration
+	 * means. The `?? 0` was writing an expiration precisely so that branch
+	 * could never be reached.
+	 *
+	 * @param string      $kind     User lock or run lock.
+	 * @param string|null $runUuid  The holding run, for a run lock.
+	 * @param string      $userId   The holder.
+	 * @param string|null $process  What the lock was taken for.
+	 * @param mixed       $created  When the lock was first taken.
+	 * @param int|null    $duration How long it lasts, or null for "until released".
+	 * @param DateTime    $now      The clock, so a take and an extend agree.
+	 *
+	 * @return array<string, mixed> The payload to store.
+	 *
+	 * @spec openspec/specs/object-interactions/spec.md
+	 */
+	private function lockPayload(
+		string $kind,
+		?string $runUuid,
+		string $userId,
+		?string $process,
+		mixed $created,
+		?int $duration,
+		DateTime $now,
+	): array {
+		$payload = [
+			'kind' => $kind,
+			'runUuid' => ($runUuid ?? null),
+			'user' => $userId,
+			'process' => $process,
+			'created' => $created,
+			'duration' => $duration,
+		];
+
+		if ($duration === null) {
+			// No expiration key at all. See the note above: a zero-second one
+			// is not "no expiry", it is "expired".
+			return $payload;
+		}
+
+		$expiration = clone $now;
+		$expiration->add(new DateInterval('PT' . $duration . 'S'));
+		$payload['expiration'] = $expiration->format('c');
+
+		return $payload;
+	}//end lockPayload()
 
 	/**
 	 * Unlock the object

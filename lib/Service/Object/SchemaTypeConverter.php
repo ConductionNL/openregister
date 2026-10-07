@@ -185,6 +185,7 @@ class SchemaTypeConverter {
 	 * @return array The data with untouched string-typed JSON values restored to their stored form.
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-patch-leaves-an-untouched-translatable-property-as-it-is
 	 */
 	public function restoreStringTypedValues(array $data, array $properties, array $suppliedKeys=[]): array {
 		foreach ($data as $key => $value) {
@@ -197,6 +198,14 @@ class SchemaTypeConverter {
 			}
 
 			if (array_key_exists($key, $properties) === false || is_array($properties[$key]) === false) {
+				continue;
+			}
+
+			// A translatable property is stored as a locale map ({"nl": "..."}),
+			// so the array IS its stored form. Encoding it turned an untouched
+			// title into the string '{"nl":"..."}', which the save then wrapped
+			// in a locale map again, one level deeper on every PATCH.
+			if (($properties[$key]['translatable'] ?? false) === true) {
 				continue;
 			}
 

@@ -37,7 +37,7 @@ use Throwable;
 /**
  * Evaluates cron expressions to their next fire time via a vendored library.
  *
- * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+ * @spec openspec/specs/apphost-scheduling/spec.md
  */
 class CronScheduleEvaluator {
 	/**
@@ -49,7 +49,7 @@ class CronScheduleEvaluator {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function isValid(string $expression): bool {
 		return CronExpression::isValidExpression($expression);
@@ -63,7 +63,7 @@ class CronScheduleEvaluator {
 	 *
 	 * @return DateTime|null The next fire time, or null when the expression is unparseable.
 	 *
-	 * @spec openspec/changes/apphost-manifest-schedules/specs/apphost-scheduling/spec.md
+	 * @spec openspec/specs/apphost-scheduling/spec.md
 	 */
 	public function nextRun(string $expression, ?DateTimeInterface $from = null): ?DateTime {
 		if ($this->isValid(expression: $expression) === false) {

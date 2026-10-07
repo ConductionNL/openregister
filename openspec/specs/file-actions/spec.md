@@ -3,8 +3,10 @@
 ## Purpose
 
 @e2e exclude backend file pipeline — covered by PHPUnit
-TBD - created by archiving change retrofit-2026-05-25-bw-svc-file. Update Purpose after archive.
+The file actions on an object: creating, replacing, renaming, moving and deleting the files attached to it, through one pipeline that validates, writes, sets ownership and tags.
+
 ## Requirements
+
 ### Requirement: File creation and upsert run a fixed validate-write-own-tag pipeline
 
 `CreateFileHandler::addFile()` MUST create a Nextcloud file under the object's
@@ -745,3 +747,141 @@ is a facade over `FolderManagementHandler`.
 - **THEN** the new folder ID MUST be returned
 - **AND** the entity's own folder property MUST NOT have been written
 
+### Requirement: Recording an object's folder id is bookkeeping (REQ-OFIB-001)
+
+When the system makes the files folder of an object outside a save, it SHALL record the folder id by changing only the object's folder field, on that one object. It SHALL NOT change any other field and SHALL NOT change the object's version. It SHALL NOT dispatch an object updating or updated event. It SHALL NOT write an audit trail entry, as for a register's folder id (REQ-RFFU-002). It SHALL only take effect while the stored folder field is still empty or holds the value read before the folder was made.
+
+#### Scenario: Only the folder field is written, and no lifecycle event fires
+
+- **GIVEN** an object with no files folder
+- **WHEN** its folder id is recorded
+- **THEN** only the folder field of that object changes
+- **AND** no object updating or updated event is dispatched
+- @e2e exclude {write shape and event absence, covered by PHPUnit in MagicMapperRecordFolderTest}
+
+#### Scenario: A folder id recorded by another request is left alone
+
+- **GIVEN** a request that read the object while it had no folder
+- **AND** another request recorded a folder id since
+- **WHEN** this request records its folder id
+- **THEN** the stored folder id stays the one the other request recorded
+- **AND** this request still gets the object's folder
+- @e2e exclude {compare-and-set write, covered by PHPUnit in MagicMapperRecordFolderTest and FolderManagementHandlerObjectFolderBookkeepingTest}
+
+### Requirement: Reading an object's files never saves the object (REQ-OFIB-002)
+
+Listing or reading the files of an object SHALL NOT run save-time logic on that object. This holds when the read is the first one and the object's files folder has to be made. Save-time logic includes calculations, quality scoring, retention and any listener for object updating or updated events.
+
+#### Scenario: The first file listing on an object without a folder
+
+- **GIVEN** an object with no files folder
+- **AND** a request with no Nextcloud session, such as a portal listing a case's documents
+- **WHEN** the object's files are listed
+- **THEN** the folder is made and its id is recorded on the object
+- **AND** the object is not saved, so no save-time listener runs
+- @e2e exclude {backend read path with no OpenRegister UI; PHPUnit drives the real handler with a fake root in FolderManagementHandlerObjectFolderBookkeepingTest}
+
+#### Scenario: A legacy folder path is replaced without a save
+
+- **GIVEN** an object whose folder field holds a legacy path instead of a node id
+- **WHEN** the object's files are listed
+- **THEN** the path is replaced by the new folder id, only while it is still the stored value
+- **AND** the object is not saved
+- @e2e exclude {legacy data shape, covered by PHPUnit in FolderManagementHandlerObjectFolderBookkeepingTest}
+
+### Requirement: An app-imported register has its Files folder when the import returns (REQ-RFAI-001)
+
+When an app configuration import (`ConfigurationService::importFromApp()`) creates, updates or leaves unchanged a register, the system SHALL ensure that register has a Files folder before the import returns, the way a register created through the API gets one at creation. The folder id SHALL be recorded as bookkeeping (REQ-RFFU-002): no register-updated event, no version change, no organisation check. Provisioning SHALL be idempotent, SHALL only touch the registers the import returned, and SHALL NOT fail the import: a folder that cannot be made is logged and left for the first upload.
+
+#### Scenario: A register created by an app import gets its folder
+
+- **GIVEN** an app configuration that ships a register the instance does not have yet
+- **WHEN** the app imports it through `importFromApp()`
+- **THEN** the register has a recorded folder id when the import returns
+- **AND** no register-updated event is dispatched for the folder
+- @e2e exclude {backend provisioning during app install with no OpenRegister UI; covered by PHPUnit on ImportHandler::importFromApp and RegisterFolderProvisioner}
+
+#### Scenario: Re-importing leaves an existing folder alone
+
+- **GIVEN** a register whose recorded folder still resolves
+- **WHEN** the app import runs again
+- **THEN** no new folder is created and the recorded folder id is unchanged
+- @e2e exclude {backend idempotency, covered by PHPUnit}
+
+#### Scenario: A folder that cannot be made does not fail the import
+
+- **GIVEN** an app import whose folder provisioning fails for a register
+- **WHEN** the import runs
+- **THEN** the import still returns its result
+- **AND** the failure is logged with the register id
+- @e2e exclude {failure injection is a unit concern, covered by PHPUnit}
+
+### Requirement: A repair step provisions folders for registers imported earlier (REQ-RFAI-002)
+
+A post-migration repair step SHALL ensure a Files folder for every register on the instance, across organisations, using the same bookkeeping write. It SHALL report how many folders it provisioned, found present and could not make, and SHALL NOT throw.
+
+#### Scenario: An upgrade provisions a missing folder
+
+- **GIVEN** a register imported before this change, with no folder
+- **WHEN** the post-migration repair steps run
+- **THEN** the register has a recorded folder id
+- **AND** the step reports one provisioned folder
+- @e2e exclude {runs from occ upgrade; covered by PHPUnit on CreateMissingRegisterFolders}
+
+#### Scenario: The repair step skips when its services are unavailable
+
+- **GIVEN** a container that cannot build the register mapper or the provisioner
+- **WHEN** the repair step runs
+- **THEN** it reports that it skipped and does not throw
+- @e2e exclude {container failure, covered by PHPUnit}
+
+### Requirement: A register's folder is created on its first upload, by whoever uploads (REQ-RFFU-001)
+
+When a file is added to an object whose register has no folder yet, the system SHALL create the register's folder and record its id on the register as part of that upload. Recording the folder id SHALL NOT require permission to update registers and SHALL NOT depend on the caller's active organisation, so an upload without a Nextcloud session (a portal request) succeeds on a fresh instance. The folder id SHALL come from the folder the system created or found at the register's conventional path, never from request data. Whether the caller may upload to the object at all is unchanged.
+
+#### Scenario: The first upload without a session creates and records the register folder
+
+- **GIVEN** a register with no folder and a request with no Nextcloud user
+- **AND** the caller is not allowed to update registers
+- **WHEN** a file is added to one of the register's objects
+- **THEN** the folder `Open Registers/<title> Register` is created in the OpenRegister system user's files
+- **AND** its id is recorded on the register
+- **AND** the upload does not fail on a register permission or organisation check
+- @e2e exclude {backend folder provisioning with no OpenRegister UI; PHPUnit drives it with a fake root, and portaliq's portal-document-download e2e runs it live once its exclusion is lifted}
+
+#### Scenario: A second upload reuses the recorded folder
+
+- **GIVEN** a register whose folder was created and recorded by an earlier upload
+- **WHEN** a file is added to another object in that register
+- **THEN** no new register folder is created
+- **AND** the recorded folder id is not written again
+- @e2e exclude {backend folder reuse, covered by PHPUnit with a fake root}
+
+#### Scenario: Two first uploads racing share one folder
+
+- **GIVEN** two first uploads into the same register
+- **AND** the other upload creates the register folder after this one found none
+- **WHEN** this upload's folder creation is refused because the folder now exists
+- **THEN** this upload uses the existing folder and succeeds
+- @e2e exclude {a race cannot be staged in a browser; covered by PHPUnit with a fake root}
+
+### Requirement: Recording a register's folder id is bookkeeping (REQ-RFFU-002)
+
+Recording the folder id SHALL change only the register's folder field, on the register the upload resolved. It SHALL NOT change any other field, SHALL NOT change the register's version, and SHALL NOT dispatch a register-updated event, so no activity entry, webhook or notification says the register was edited. It SHALL only take effect while the stored folder field is still empty or holds the value read before the folder was made, so it never overwrites a folder id another request recorded first.
+
+#### Scenario: Only the folder field is written, and no update event fires
+
+- **GIVEN** a register with no folder
+- **WHEN** its folder id is recorded
+- **THEN** only the folder field of that register changes
+- **AND** no register-updated event is dispatched
+- @e2e exclude {write shape and event absence, covered by PHPUnit}
+
+#### Scenario: A folder id recorded by another request is left alone
+
+- **GIVEN** a request that read the register while it had no folder
+- **AND** another request recorded a folder id since
+- **WHEN** this request records its folder id
+- **THEN** the stored folder id stays the one the other request recorded
+- **AND** this request's upload still succeeds
+- @e2e exclude {compare-and-set write, covered by PHPUnit}

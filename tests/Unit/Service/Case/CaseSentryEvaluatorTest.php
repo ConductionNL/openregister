@@ -33,6 +33,9 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\OpenRegister\Service\Case\CaseSentryEvaluator
  * @covers \OCA\OpenRegister\Service\Flow\EventCatalogService
  * @covers \OCA\OpenRegister\Exception\CaseValidationException
+ * @uses \OCA\OpenRegister\Db\CaseItem
+ * @uses \OCA\OpenRegister\Service\Case\CasePlanTree
+ * @uses \OCA\OpenRegister\Service\Flow\FlowExpression
  */
 class CaseSentryEvaluatorTest extends TestCase {
 

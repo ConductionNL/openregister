@@ -20,7 +20,9 @@ This spec is an extension of existing infrastructure, not a greenfield build:
 - **Payload transformation (implemented)**: `MappingService::executeMapping()` with Twig templates already enables format-agnostic payload transformation. VNG Notificaties format is achieved through Mapping configuration, not hardcoded logic.
 - **Multi-tenancy (implemented)**: Webhook entities already support organisation scoping via the `organisation` field and `MultiTenancyTrait`. Notification rules inherit this isolation.
 - **What this spec adds**: NotificationRule entity, NotificationPreference entity, NotificationHistory entity, digest/batching mechanism, user opt-in/opt-out, rate limiting, threshold/deadline/workflow triggers, and read/unread tracking.
+
 ## Requirements
+
 ### Requirement: The system MUST integrate with Nextcloud's INotificationManager for in-app notifications
 All notification delivery to Nextcloud users MUST go through Nextcloud's native `OCP\Notification\IManager` interface. The object-lifecycle subjects declared by `x-openregister-notifications` — at minimum `object_created`, `object_updated`, and an assignment/transition subject (`object_transitioned`) — MUST be rendered by a registered `INotifier`. In OpenRegister this rendering lives in `AnnotationNotifier` (registered via `registerNotifierService`), which owns those subjects plus anything carrying a pre-rendered `_text` parameter; `Notifier` (registered via `appinfo/info.xml`) continues to own `configuration_update_available`. The two notifiers are mutually exclusive by subject so Nextcloud's sequential `Manager::prepare()` never double-renders. Each object subject MUST be internationalised in Dutch (nl) and English (en) via `IFactory::get('openregister', <languageCode>)` and MUST carry a primary action link to the object detail view. Push delivery is achieved by `notify_push` auto-intercepting the same `IManager` notification — the `push` channel is declared, not coded.
 
@@ -107,51 +109,38 @@ Administrators MUST be able to define notification rules that specify which even
 - AND pending notifications for rule 7 that have not yet been delivered MUST be cancelled
 
 ### Requirement: The system MUST support multiple notification channels
-Notifications MUST be deliverable via Nextcloud in-app notifications, push notifications (via notify_push), email (via n8n workflow), and outbound webhooks. Each channel MUST be independently configurable per rule.
+Notifications MUST be deliverable via Nextcloud in-app notifications, push notifications (via notify_push), email (via n8n workflow), and outbound webhooks. Each channel MUST be independently configurable per rule. Outbound webhook delivery MUST enforce an SSRF guard that rejects loopback, RFC-1918, link-local, and equivalent IPv6 private targets by default, UNLESS the target `Webhook` entity has its per-hook `allowPrivateTargets` flag set to `true` by an admin, in which case the IP-range checks MUST be bypassed for that hook at delivery AND redirect time while the http/https scheme restriction remains enforced.
 
 #### Scenario: Deliver in-app notification
-- GIVEN a notification rule with channel `in-app` and recipient user `behandelaar-1`
-- WHEN the triggering event occurs
-- THEN a Nextcloud notification MUST appear in the user's notification panel via `INotificationManager::notify()`
-- AND clicking the notification MUST navigate to the object detail view
+- **WHEN** a notification rule with channel `in-app` and recipient user `behandelaar-1` fires
+- **THEN** a Nextcloud notification MUST appear in the user's notification panel via `INotificationManager::notify()`
+- **AND** clicking the notification MUST navigate to the object detail view
 
 #### Scenario: Deliver push notification via notify_push
-- GIVEN a notification rule with channel `push` and recipient user `medewerker-1`
-- AND the Nextcloud `notify_push` app is installed and running
-- WHEN the triggering event occurs
-- THEN the system MUST create an `INotification` via `INotificationManager` (which notify_push automatically intercepts)
-- AND the push notification MUST be delivered to the user's connected devices within 5 seconds
-- AND if notify_push is not installed, the notification MUST still be delivered as a standard in-app notification
+- **WHEN** a notification rule with channel `push` and recipient user `medewerker-1` fires and the `notify_push` app is installed
+- **THEN** the system MUST create an `INotification` via `INotificationManager` (which notify_push automatically intercepts)
+- **AND** the push notification MUST be delivered to the user's connected devices within 5 seconds
+- **AND** if notify_push is not installed, the notification MUST still be delivered as a standard in-app notification
 
 #### Scenario: Deliver email notification via n8n workflow
-- GIVEN a notification rule with channel `email` and recipient `user@example.nl`
-- AND an n8n workflow `notification-email-sender` is configured as the email delivery handler
-- WHEN the triggering event occurs
-- THEN the system MUST trigger the n8n workflow via webhook with payload containing:
-  - `to`: `user@example.nl`
-  - `subject`: rendered template subject line
-  - `body`: rendered template body (HTML)
-  - `objectUrl`: deep link to the object in OpenRegister
-- AND the email MUST include a link back to the object in the OpenRegister UI
+- **WHEN** a notification rule with channel `email` and recipient `user@example.nl` fires and an n8n workflow `notification-email-sender` is configured
+- **THEN** the system MUST trigger the n8n workflow via webhook with payload containing `to`, `subject`, `body` (HTML), and `objectUrl` (deep link)
+- **AND** the email MUST include a link back to the object in the OpenRegister UI
 
 #### Scenario: Deliver webhook notification
-- GIVEN a notification rule with channel `webhook` and URL `https://external-system.example.nl/hooks/intake`
-- WHEN the triggering event occurs
-- THEN the system MUST delegate to the existing `WebhookService::deliverWebhook()` with a payload containing:
-  - `event`: the event type (e.g., `object.created`)
-  - `object`: the full object data
-  - `changed`: the changed fields (for updates)
-  - `timestamp`: ISO 8601 timestamp
-  - `register` and `schema` identifiers
-- AND the webhook MUST include an `X-Webhook-Signature` HMAC-SHA256 header if a secret is configured
+- **WHEN** a notification rule with channel `webhook` and URL `https://external-system.example.test/hooks/intake` fires
+- **THEN** the system MUST delegate to the existing `WebhookService::deliverWebhook()` with a payload containing `event`, `object`, `changed`, `timestamp`, and `register`/`schema` identifiers
+- **AND** the webhook MUST include an `X-Webhook-Signature` HMAC-SHA256 header if a secret is configured
+
+#### Scenario: Webhook to a private target is blocked by default
+- **WHEN** a notification rule targets a webhook whose URL resolves to a private/loopback address and `allowPrivateTargets` is `false`
+- **THEN** the delivery MUST be rejected by the SSRF guard and logged as a delivery failure
 
 #### Scenario: Channel-specific failure isolation
-- GIVEN a notification rule with channels `["in-app", "email", "webhook"]`
-- AND the webhook endpoint returns HTTP 503
-- WHEN the triggering event occurs
-- THEN the in-app notification MUST still be delivered successfully
-- AND the email MUST still be delivered successfully
-- AND the webhook failure MUST be logged and retried independently
+- **WHEN** a notification rule with channels `["in-app", "email", "webhook"]` fires and the webhook endpoint returns HTTP 503
+- **THEN** the in-app notification MUST still be delivered successfully
+- **AND** the email MUST still be delivered successfully
+- **AND** the webhook failure MUST be logged and retried independently
 
 ### Requirement: Notification templates MUST support variable substitution with Twig
 Templates MUST support referencing object properties, user properties, event metadata, register/schema metadata, and computed values using Twig template syntax, consistent with the existing `MappingService` Twig integration.
@@ -236,34 +225,33 @@ High-frequency events MUST NOT overwhelm recipients with individual notification
 - THEN the save MUST fail with HTTP 422
 
 ### Requirement: Notification delivery MUST be reliable with retry and dead-letter handling
-Failed notification deliveries MUST be retried with configurable backoff strategies. Permanently failed notifications MUST be moved to a dead-letter queue for admin inspection.
+Failed notification deliveries MUST be retried with configurable backoff strategies. Permanently failed notifications MUST be moved to a dead-letter queue for admin inspection. Retried webhook deliveries MUST apply the same SSRF policy as the initial attempt, including the target hook's `allowPrivateTargets` flag, so a retry of an opted-in hook MUST reach a private target and a retry of a default hook MUST remain blocked.
 
 #### Scenario: Webhook delivery failure and exponential retry
-- GIVEN a webhook notification to `https://external.example.nl/hooks` fails with HTTP 503
-- WHEN the retry mechanism activates
-- THEN the system MUST retry using the webhook's configured `retryPolicy` (exponential, linear, or fixed)
-- AND for exponential policy: retry after 2 minutes, then 4 minutes, then 8 minutes
-- AND after `maxRetries` failed attempts, the notification MUST be marked as `failed` in the `WebhookLog`
+- **WHEN** a webhook notification to `https://external.example.test/hooks` fails with HTTP 503 and the retry mechanism activates
+- **THEN** the system MUST retry using the webhook's configured `retryPolicy` (exponential, linear, or fixed)
+- **AND** for exponential policy: retry after 2 minutes, then 4 minutes, then 8 minutes
+- **AND** after `maxRetries` failed attempts, the notification MUST be marked as `failed` in the `WebhookLog`
+
+#### Scenario: Retry of an opted-in webhook reaches a private target
+- **WHEN** a webhook with `allowPrivateTargets: true` targeting `http://localhost:8000` is retried after a transient failure
+- **THEN** the retry MUST apply the same flag and the SSRF guard MUST allow the request to proceed
 
 #### Scenario: Dead-letter queue for permanently failed notifications
-- GIVEN a webhook notification has exhausted all retries (e.g., 5 attempts over 62 minutes)
-- WHEN the final retry fails
-- THEN the notification MUST be moved to a dead-letter queue
-- AND the admin MUST be able to view failed notifications with: event data, target URL, failure count, last error message, last attempt timestamp
-- AND the admin MUST be able to manually retry or dismiss individual dead-letter entries
+- **WHEN** a webhook notification has exhausted all retries (e.g., 5 attempts over 62 minutes) and the final retry fails
+- **THEN** the notification MUST be moved to a dead-letter queue
+- **AND** the admin MUST be able to view failed notifications with event data, target URL, failure count, last error message, and last attempt timestamp
+- **AND** the admin MUST be able to manually retry or dismiss individual dead-letter entries
 
 #### Scenario: In-app notification delivery failure logging
-- GIVEN `INotificationManager::notify()` throws an exception for user `broken-user`
-- WHEN the error is caught
-- THEN the failure MUST be logged with the user ID, notification subject, and exception message
-- AND delivery to other recipients MUST continue unaffected
+- **WHEN** `INotificationManager::notify()` throws an exception for user `broken-user`
+- **THEN** the failure MUST be logged with the user ID, notification subject, and exception message
+- **AND** delivery to other recipients MUST continue unaffected
 
 #### Scenario: Retry does not duplicate already-delivered notifications
-- GIVEN a notification rule with channels `["in-app", "webhook"]`
-- AND the in-app notification succeeds but the webhook fails
-- WHEN the webhook is retried
-- THEN the in-app notification MUST NOT be re-sent
-- AND only the failed webhook delivery MUST be retried
+- **WHEN** a notification rule with channels `["in-app", "webhook"]` has the in-app notification succeed but the webhook fail, and the webhook is retried
+- **THEN** the in-app notification MUST NOT be re-sent
+- **AND** only the failed webhook delivery MUST be retried
 
 ### Requirement: Users MUST be able to manage their notification preferences
 
@@ -1014,6 +1002,384 @@ Before delivering a non-broadcast channel (`nc-notification`, `email`, `activity
 - WHEN a non-critical notification fires
 - THEN the dispatcher MUST dispatch immediately through the unchanged preference-off / rate-limit / coalesce gates
 - AND no `QueuedNotification` row MUST be created
+
+### Requirement: An administrator MUST be able to force a channel and to mark a kind internal
+
+Preferences answer what a person wants. Two decisions are not preferences and MUST be stateable on the notification declaration: a kind that always goes out on a named channel because the law or the process requires it (`forcedChannels`, carrying the reason), and a kind that MUST never reach a recipient outside the organisation (`internalOnly`).
+
+A forced channel MUST be resolved as a layer ABOVE the user's own value in the existing preference resolution, and MUST NOT be implemented as a second dispatcher: the existing sender remains the only thing that sends, so there is one reading of the canonical dialect rather than two.
+
+Forcing MUST ADD to the channels the preference resolved rather than replacing them. A declaration carrying forced channels and no reason MUST be refused at schema save. A notification marked `internalOnly` MUST NOT be saved with a forced channel that can leave the organisation, and MUST NOT be saved when every channel it declares can leave the organisation.
+
+#### Scenario: A forced channel survives a user who switched the kind off
+- **GIVEN** a notification declaring `forcedChannels` with a reason
+- **AND** a user whose stored override disables that kind
+- **WHEN** the effective decision is resolved for that user
+- **THEN** the kind MUST be enabled on the forced channel
+- **AND** the decision MUST report the administrator as the deciding layer and carry the reason
+
+#### Scenario: Forcing does not take away a channel the user chose
+- **GIVEN** a user whose preference resolved to `email`
+- **AND** a notification forcing `nc-notification`
+- **WHEN** the effective decision is resolved
+- **THEN** both channels MUST be present
+
+#### Scenario: An internal kind aimed outside returns a named refusal
+- **GIVEN** a notification declaring `internalOnly`
+- **WHEN** the recipient is outside the organisation
+- **THEN** the decision MUST carry a named refusal
+- **AND** the outcome MUST NOT be distinguishable only by an empty channel list, because a kind nobody configured produces the same empty list
+
+#### Scenario: A force with no reason is refused at save
+- **WHEN** a schema declares `forcedChannels` without a reason
+- **THEN** the save MUST be refused naming the missing reason
+
+### Requirement: A scheduled message MUST be claimed once, cancellable, and bounded in its retries
+
+A message scheduled with a send-at MUST be claimed by a sweep through a compare-and-set on BOTH its state and its attempt count, so that two sweeps reading one due row cannot both send it.
+
+A cancelled message MUST NOT be sent, including when it is due and including when a worker has already claimed it. A claim that has outlived its window MUST be takeable by another worker. A message whose attempts are spent MUST be parked with its last error rather than dropped or retried indefinitely. A send-at in the past MUST still send, and a send-at that cannot be parsed MUST NOT be treated as now.
+
+#### Scenario: Two sweeps cannot both send one message
+- **GIVEN** a due message in state pending with two attempts recorded
+- **WHEN** two sweeps read it and both attempt to claim it
+- **THEN** the claim MUST compare the state and the attempt count
+- **AND** only one sweep MUST proceed to send
+
+#### Scenario: Cancellation wins over being due
+- **GIVEN** a message that is due and has been cancelled
+- **WHEN** a sweep runs
+- **THEN** the message MUST NOT be claimed or sent
+
+#### Scenario: A spent message is parked with its error
+- **GIVEN** a message that has used its last attempt and failed
+- **THEN** its state MUST become parked
+- **AND** its last error MUST be retained
+
+### Requirement: A reply MUST be threaded by its headers, and MUST NOT be threaded by a guess
+
+A reply MUST be threaded onto an object by matching `In-Reply-To` and then `References` against `Message-ID` values this instance recorded when it sent or linked a mail. `References` MUST be read from its last entry first, that being the nearest ancestor.
+
+Matching MUST be exact. The system MUST NOT thread a reply by a subject tag, a prefix match or any other inexact comparison, because a wrong match files one citizen's reply onto another citizen's object where that object's handler reads it.
+
+When the headers name more than one object the reply MUST NOT be threaded onto any of them and the candidates MUST be reported for a person to decide. When no reference resolves, the outcome MUST be a named unthreaded state rather than an empty result, and only a threaded outcome may be filed without a person.
+
+#### Scenario: A reply with an edited subject still threads
+- **GIVEN** a reply whose subject no longer carries the object's tag
+- **AND** whose `In-Reply-To` names a recorded `Message-ID`
+- **THEN** the reply MUST thread onto that object
+
+#### Scenario: A chain naming two objects threads onto neither
+- **GIVEN** a reply whose `References` resolve to two different objects
+- **THEN** the outcome MUST be ambiguous
+- **AND** both candidates MUST be named
+- **AND** the reply MUST NOT be filed on either
+
+#### Scenario: A reply matching nothing is named rather than dropped
+- **GIVEN** a reply whose headers match no recorded `Message-ID`
+- **THEN** the outcome MUST be a named unthreaded state
+- **AND** the reply MUST NOT be filed automatically
+
+### Requirement: A notification is cleared by opening what it was about (REQ-ORS-003)
+
+When a user opens an object, the system SHALL mark read every
+notification for that user whose subject is that object. When a user opens
+a sub-resource, the system SHALL mark read every notification whose
+subject is that sub-resource. A notification whose subject no longer
+exists SHALL be archived rather than left unread.
+
+#### Scenario: doing the work empties the bell
+
+- **GIVEN** a user with three unread notifications about one object
+- **WHEN** the user opens that object
+- **THEN** those three notifications read as read
+- **AND** the user's unread count drops by three
+
+#### Scenario: a deleted subject does not leave a dead alert
+
+- **GIVEN** an unread notification about an object that is then deleted
+- **WHEN** the notification list is read
+- **THEN** that notification is archived and absent from the unread count
+- @e2e exclude {lifecycle, covered by unit tests}
+
+### Requirement: A notification may be snoozed or archived, and the list has an axis (REQ-ORS-004)
+
+A notification SHALL support `snoozedUntil` and `archivedAt` beside its
+read state. A snoozed notification SHALL be absent from the unread list
+until that moment and SHALL return unread afterwards. An archived
+notification SHALL leave the list without being marked read. The
+notification list SHALL filter by subject type and by object, and a thread
+SHALL be markable read as a whole.
+
+#### Scenario: a snoozed notification comes back
+
+- **GIVEN** an unread notification snoozed until tomorrow
+- **WHEN** the unread list is read today and again after that moment
+- **THEN** it is absent today and present afterwards, still unread
+- @e2e exclude {time-dependent, covered by unit tests with a clock fixture}
+
+#### Scenario: archiving is not reading
+
+- **GIVEN** an unread notification
+- **WHEN** the user archives it
+- **THEN** it leaves the list, its read state stays unread
+- **AND** the archive is visible on the notification
+
+#### Scenario: the bell is filtered by what a notice is about
+
+- **GIVEN** 400 notifications across four subject types
+- **WHEN** the list is requested for one subject type
+- **THEN** only that type's notifications are returned, with their own count
+
+### Requirement: A notification rule may address the object's watchers
+
+A `recipients` block in `x-openregister-notifications` SHALL accept
+`{"watchers": true}`. The dispatcher SHALL resolve it at dispatch time to
+the users watching the triggering object, merged and deduplicated with the
+other recipient blocks, subject to each user's preferences and to a read
+check on the object. A watcher who may no longer read the object SHALL
+receive nothing and SHALL be removed from the watcher list.
+
+#### Scenario: a watcher is told about a status change
+
+- **GIVEN** a schema whose `status-changed` rule declares `recipients: [{"watchers": true}]` and a user watching one object
+- **WHEN** the object's status changes
+- **THEN** the watcher receives the notification once, whether or not they are also the assignee
+- @e2e exclude {delivery runs through the queue and a background job, so an e2e assertion would be a timing race; asserted by NotificationRecipientResolverWatchersTest::testWatchersAreResolvedToUids and ::testAWatcherWhoIsAlsoTheAssigneeIsToldOnce}
+
+#### Scenario: a watcher who lost access hears nothing
+
+- **GIVEN** a watcher whose group membership no longer grants read on the object
+- **WHEN** a rule addressed to watchers fires
+- **THEN** the user receives nothing and is no longer listed as a watcher
+- @e2e exclude {same timing race as above; asserted by NotificationRecipientResolverWatchersTest::testAWatcherWhoLostReadIsSkippedAndDropped}
+
+#### Scenario: the block is validated at schema save
+
+- **GIVEN** a rule with `recipients: [{"watchers": "yes"}]`
+- **WHEN** the schema is saved
+- **THEN** the save fails with HTTP 422
+- `@e2e tests/e2e/ci/object-watchers.spec.ts` and NotificationAnnotationValidatorWatchersTest
+
+### Requirement: Notification title is the subject and the body is the optional message
+
+The engine MUST render the notification TITLE from a rule's `subject` and the notification BODY from a rule's optional `message`. The `message` MUST accept the same shape, locale-resolution, and `{{prop}}` interpolation as `subject` (a single template string OR a per-locale map with an optional `defaultLocale`). A malformed `message` MUST be rejected at schema-save with a `notification-bad-message` error. The resolved body MUST be threaded into the in-app notification (set via `setParsedMessage`) and into the web-push payload body, while the title remains the resolved `subject`.
+
+#### Scenario: Explicit per-locale message becomes the localised body
+
+- GIVEN a rule with `subject: { "nl": "Titel {{title}}", "en": "Title {{title}}" }` and `message: { "nl": "Body voor {{title}}", "en": "Body for {{title}}" }`
+- AND a recipient whose locale is `nl` and an object with `title` = `demo`
+- WHEN the engine dispatches the `nc-notification`
+- THEN the notification title MUST be `Titel demo` and the notification body (`_message`, set via `setParsedMessage`) MUST be `Body voor demo`
+
+#### Scenario: Malformed message is rejected at schema-save
+
+- GIVEN a rule whose `message` is neither a non-empty string nor a per-locale map with at least one non-empty locale
+- WHEN the schema is validated on save
+- THEN validation MUST return a `notification-bad-message` error
+
+#### Scenario: Web-push title and body are distinct
+
+- GIVEN a rule with a `subject` and a distinct `message` delivered over the `web-push` channel
+- WHEN the engine enqueues the web-push dispatch job
+- THEN the job argument MUST carry `title` = the resolved subject and `body` = the resolved message, and the Service-Worker payload body MUST be the message
+
+### Requirement: The body is auto-derived for actions-bearing rules and empty otherwise
+
+When a rule declares NO `message` but DOES declare `actions[]`, the engine MUST compose a default body `"Open in {AppName}."`, where `{AppName}` is the `originApp`'s human display name resolved via `IAppManager` (falling back to the capitalised app id when the app manager or app info is unavailable). When a rule declares neither `message` nor `actions`, the engine MUST leave the body empty and MUST NOT call `setParsedMessage` — preserving the behaviour before this change.
+
+#### Scenario: Actions but no message yields the auto-derived body
+
+- GIVEN a rule with `originApp: "opentalk"` (display name `OpenTalk`), a declared resolvable `actions[]`, and no `message`
+- WHEN the engine dispatches the notification
+- THEN the notification body (`_message`) MUST be `Open in OpenTalk.`
+
+#### Scenario: Neither message nor actions leaves the body empty (back-compat)
+
+- GIVEN a rule with neither `message` nor `actions`
+- WHEN the engine dispatches the notification
+- THEN the body (`_message`) MUST be the empty string and the notifier MUST NOT call `setParsedMessage`
+
+### Requirement: Relation placeholders resolve to display names
+
+The notification `{{prop}}` interpolation SHALL resolve a UUID-shaped field value to the related object's display name (via OpenRegister `ObjectService`, RBAC-scoped) before substitution, and SHALL fall back to the raw value when the value is not a UUID, the object cannot be resolved, or the object has no name.
+
+#### Scenario: Relation UUID renders as a name
+
+- **WHEN** a notification subject/message contains `{{client}}` and the object's `client` field holds the UUID of a Client named "Acme Gemeente BV"
+- **THEN** the rendered text reads "… Acme Gemeente BV …" rather than the UUID
+
+#### Scenario: Non-relation placeholder is unchanged
+
+- **WHEN** a placeholder resolves to a non-UUID scalar (e.g. `{{channel}}` = "telefoon")
+- **THEN** the value is substituted verbatim (no resolution attempted)
+
+#### Scenario: Unresolvable relation keeps the raw value
+
+- **WHEN** a `{{prop}}` UUID cannot be resolved (no access, missing object, or nameless)
+- **THEN** the raw UUID value is substituted and no error is raised
+
+### Requirement: Validator accepts actions, originApp, and the web-push channel
+
+`NotificationAnnotationValidator` SHALL accept the dialect additions from the foundation contract: `web-push` added to the channel enum (`VALID_CHANNELS`), an optional `actions[]` array with a hard cap of 2, and an optional `originApp` string. Each action SHALL declare an i18n `label`, an optional `primary` boolean, and a `target`. A third action SHALL be rejected with `notification-too-many-actions`; a bad label with `notification-action-bad-label`; an unrecognised target kind with `notification-action-bad-target`; a non-string/empty `originApp` with `notification-bad-origin-app`.
+
+#### Scenario: web-push accepted as a channel
+
+- **WHEN** a rule declares `channels: ["web-push"]`
+- **THEN** schema-save validation accepts `web-push` (now in `VALID_CHANNELS`)
+
+#### Scenario: Two actions accepted, three rejected
+
+- **WHEN** a rule declares two actions, then another rule declares three
+- **THEN** the two-action rule validates and the three-action rule is rejected with `notification-too-many-actions` referencing the Web Notification API limit of 2
+
+#### Scenario: Bad action label rejected
+
+- **WHEN** an action's `label` is not a per-locale map with at least one non-empty locale
+- **THEN** validation rejects the rule with `notification-action-bad-label`
+
+#### Scenario: Unrecognised target kind rejected
+
+- **WHEN** an action declares a `target.kind` outside `[object-detail, route, url]`
+- **THEN** validation rejects the rule with `notification-action-bad-target`
+
+#### Scenario: Bad originApp rejected
+
+- **WHEN** a rule declares `originApp` as a non-string or empty string
+- **THEN** validation rejects the rule with `notification-bad-origin-app`
+
+### Requirement: Dispatcher stamps originApp and routes web-push
+
+`AnnotationNotificationDispatcher::emitNotification` SHALL stamp the resolved `originApp` (declared value, or default = the app owning the schema's register) onto the emitted notification, and SHALL route a rule carrying the `web-push` channel through the Web Push send path (the `web-push-delivery` capability) in addition to any other declared channels.
+
+#### Scenario: originApp stamped from declaration
+
+- **WHEN** a rule declares `originApp: "pipelinq"`
+- **THEN** the dispatched notification carries the `pipelinq` origin (driving icon and deeplink base) instead of `openregister`
+
+#### Scenario: originApp defaults to register owner
+
+- **WHEN** a rule omits `originApp`
+- **THEN** the dispatcher resolves the owning app from the schema's register and uses that as the origin
+
+#### Scenario: web-push channel routed to the send path
+
+- **WHEN** a rule declares `channels: ["nc-notification", "web-push"]`
+- **THEN** the dispatcher emits the nc-notification AND hands the payload to the web-push send path (background job)
+
+### Requirement: Dispatcher resolves action targets to deeplinks
+
+For each declared action, `AnnotationNotificationDispatcher` SHALL resolve the `target` to a concrete deeplink server-side at dispatch time: `object-detail` → the triggering object's detail route; `object-detail` with `{ object: { kind: "relation", field } }` → the related object's register/schema/uuid resolved on the triggering object (the "Open client" mechanism), through OR RBAC so the deeplink is only built for objects the recipient may read; `route` → the originApp frontend route with `{{prop}}` interpolation (HTML-escaped) from object fields; `url` → the absolute URL verbatim.
+
+#### Scenario: object-detail deeplinks to the triggering object
+
+- **WHEN** an action declares `target: { "kind": "object-detail" }`
+- **THEN** the dispatcher builds the deeplink from the triggering object's registerId + schemaId + objectUuid against the originApp route base
+
+#### Scenario: relation target deeplinks to the related object
+
+- **WHEN** an action declares `target: { "kind": "object-detail", "object": { "kind": "relation", "field": "client" } }` and the triggering Contactmoment holds a relation in `client`
+- **THEN** the dispatcher resolves the related Client's register/schema/uuid server-side and builds the deeplink to that Client (the "Open client" case), only if the recipient may read it
+
+#### Scenario: route target interpolates fields
+
+- **WHEN** an action declares `target: { "kind": "route", "app": "pipelinq", "route": "/clients/{{clientId}}" }`
+- **THEN** the dispatcher interpolates `{{clientId}}` from the object's fields (HTML-escaped) and builds the named app route link
+
+#### Scenario: url target passthrough
+
+- **WHEN** an action declares `target: { "kind": "url", "href": "https://EXAMPLE_HOST/path" }`
+- **THEN** the dispatcher uses the absolute URL verbatim
+
+### Requirement: Notifier renders declared actions with the originApp icon
+
+`AnnotationNotifier` SHALL render the declared `actions[]` via `addAction()` (keeping the implicit "View" action as the default only when no actions are declared, for back-compat), labelling each in the recipient's locale (nl/en per ADR-007) and marking the `primary` one. It SHALL set the notification icon to the originApp hex composite (served by the hex-icon endpoint) instead of the static openregister image path.
+
+#### Scenario: Declared actions replace the implicit View
+
+- **WHEN** a rule declares one primary action
+- **THEN** the notifier renders that action button (localised, primary) and does not add the implicit "View" action
+
+#### Scenario: No actions keeps the implicit View
+
+- **WHEN** a rule declares no `actions`
+- **THEN** the notifier keeps adding the implicit "View" action deeplinking to the triggering object, exactly as before
+
+#### Scenario: Icon uses the originApp hex composite
+
+- **WHEN** a notification is dispatched with `originApp: "pipelinq"`
+- **THEN** the notifier sets the icon to the pipelinq hex-composite raster URL rather than `IURLGenerator::imagePath('openregister', ...)`
+
+### Requirement: A system entity update notifies only on a real change
+
+When a register, schema, configuration, source or agent is updated, the
+notification bridge SHALL send no notice unless the entity's content changed.
+The comparison SHALL ignore `updated`, `created`, `version`, `lastChecked`,
+`lastSyncDate`, `syncStatus`, `localVersion` and `remoteVersion`, SHALL treat
+`null`, `''` and `[]` as equal, and SHALL ignore the order of map keys and of
+lists of plain values.
+
+#### Scenario: An app re-imports an identical configuration
+
+- GIVEN a configuration "pipelinq example data" at version 0.5.7-unstable.20261005210000
+- WHEN a newer build re-imports it with the same content and a new version
+- THEN no administrator receives a notice
+
+#### Scenario: A schema only reorders its required list
+
+- GIVEN a schema with `required: ["title", "anonymity"]`
+- WHEN it is saved with `required: ["anonymity", "title"]` and `authorization: []` for `null`
+- THEN no notice is sent
+
+#### Scenario: A schema gains a property
+
+- GIVEN a schema with the property `title`
+- WHEN it is saved with the properties `title` and `source`
+- THEN the administrators receive the "updated" notice
+
+### Requirement: An admin MAY opt a webhook into private/loopback targets via a per-hook flag
+
+The webhook delivery pipeline MUST enforce its SSRF guard by default, rejecting
+targets that resolve to loopback, RFC-1918, link-local (incl. cloud-metadata
+169.254.169.254), or the IPv6 equivalents. An admin MAY opt an individual
+`Webhook` entity out of the IP-range portion of this guard via a per-hook
+boolean flag `allowPrivateTargets` (default `false`).
+
+- The flag MUST default to `false`; existing webhooks MUST keep the current
+  blocking behaviour with no migration of behaviour.
+- The flag is per-hook; enabling it on one webhook MUST NOT affect any other
+  webhook.
+- When the flag is `true`, the SSRF guard MUST bypass the private/loopback
+  IP-range checks for that hook at BOTH delivery time AND HTTP-redirect time, so
+  a hook opted into private targets also follows private redirects.
+- The http/https scheme restriction MUST remain enforced regardless of the flag.
+- Setting the flag MUST be available only through the existing admin-gated
+  webhook create/update endpoints; no additional instance-wide flag is
+  introduced.
+
+#### Scenario: Default webhook still blocks a private target
+- **WHEN** a webhook with `allowPrivateTargets` absent or `false` is delivered to `http://localhost:8000`
+- **THEN** the delivery MUST be rejected by the SSRF guard with a blocked-IP-range error
+
+#### Scenario: Opted-in webhook delivers to a private IPv4 target
+- **WHEN** a webhook with `allowPrivateTargets: true` is delivered to `http://localhost:8000`
+- **THEN** the SSRF guard MUST allow the request to proceed
+
+#### Scenario: Opted-in webhook delivers to a private IPv6 target
+- **WHEN** a webhook with `allowPrivateTargets: true` targets an IPv6 loopback literal (`http://[::1]:8000`)
+- **THEN** the SSRF guard MUST allow the request to proceed
+
+#### Scenario: Opted-in webhook follows a private redirect
+- **WHEN** a webhook with `allowPrivateTargets: true` receives a redirect whose `Location` resolves to a private/loopback address
+- **THEN** the redirect re-validation MUST allow the redirect to be followed
+
+#### Scenario: Non-http scheme is rejected even when opted in
+- **WHEN** a webhook with `allowPrivateTargets: true` targets a non-http(s) scheme
+- **THEN** the SSRF guard MUST still reject the request on the scheme check
+
+#### Scenario: Admin sets the flag via the webhook endpoint
+- **WHEN** an admin creates or updates a webhook with `allowPrivateTargets: true` via the admin-gated endpoint
+- **THEN** the value MUST persist on the `Webhook` entity and be returned in its serialized form
 
 ## Current Implementation Status
 - **Partially implemented -- in-app notifications**: `NotificationService` (`lib/Service/NotificationService.php`) exists and integrates with Nextcloud's `IManager` (INotificationManager). Currently limited to `configuration_update_available` notifications. `Notifier` (`lib/Notification/Notifier.php`) implements `INotifier` for formatting notifications with translations. Registered as a notifier service in `appinfo/info.xml`.

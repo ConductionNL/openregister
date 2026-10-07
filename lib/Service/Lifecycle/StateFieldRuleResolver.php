@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+ * @spec openspec/specs/row-field-level-security/spec.md
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use OCP\IUserSession;
  * who wants a rule to spare a role says so with `groups`, which is the axis
  * that exists for exactly that.
  *
- * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+ * @spec openspec/specs/row-field-level-security/spec.md
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The branches are the declaration's
  *   tolerated shapes, not logic: three rule kinds, two spellings of a condition, two of a
@@ -81,7 +81,7 @@ class StateFieldRuleResolver {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
@@ -97,7 +97,7 @@ class StateFieldRuleResolver {
 	 *
 	 * @return array<string, mixed>|null The annotation.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function annotationOf(Schema $schema): ?array {
 		$configuration = ($schema->getConfiguration() ?? []);
@@ -120,7 +120,7 @@ class StateFieldRuleResolver {
 	 *
 	 * @return string The field name, empty when the annotation names none.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function fieldOf(array $annotation): string {
 		return (string)($annotation['field'] ?? ($annotation['property'] ?? ''));
@@ -134,7 +134,7 @@ class StateFieldRuleResolver {
 	 *
 	 * @return string|null The state, or null when the object carries no value.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function stateOf(array $annotation, array $data): ?string {
 		$field = $this->fieldOf(annotation: $annotation);
@@ -159,7 +159,7 @@ class StateFieldRuleResolver {
 	 *
 	 * @return StateFieldRules The three lists, already decided.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function resolve(Schema $schema, array $data, ?string $state = null): StateFieldRules {
 		$annotation = $this->annotationOf(schema: $schema);
@@ -266,7 +266,7 @@ class StateFieldRuleResolver {
 	 *
 	 * @return StateFieldRules The three lists, already decided.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each branch is one way the declaration
 	 *   can legitimately say "nothing applies"; see the class docblock.
@@ -336,7 +336,7 @@ class StateFieldRuleResolver {
 	 *
 	 * @return array<string, mixed>|null The block, or null when there is none to apply.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function blockFor(array $annotation, string $state): ?array {
 		$states = ($annotation['states'] ?? []);
@@ -367,7 +367,7 @@ class StateFieldRuleResolver {
 	 *
 	 * @return array<string, mixed> The evaluation document.
 	 *
-	 * @spec openspec/changes/field-rules-by-state/specs/row-field-level-security/spec.md
+	 * @spec openspec/specs/row-field-level-security/spec.md
 	 */
 	public function document(array $data, string $state): array {
 		$user = $this->userSession->getUser();

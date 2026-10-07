@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\FileService;
@@ -48,6 +49,11 @@ class FolderManagementHandlerTest extends TestCase {
 	 * @var IUserMountCache&MockObject
 	 */
 	private IUserMountCache $mountCache;
+
+	/**
+	 * @var RegisterFolderRecorder&MockObject
+	 */
+	private RegisterFolderRecorder $folderRecorder;
 
 	private FolderManagementHandler $handler;
 
@@ -89,6 +95,7 @@ class FolderManagementHandlerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->mountCache = $this->createMock(IUserMountCache::class);
+		$this->folderRecorder = $this->createMock(RegisterFolderRecorder::class);
 
 		// Common mock: user session returns a user
 		$this->mockUser = $this->createMock(IUser::class);
@@ -109,8 +116,63 @@ class FolderManagementHandlerTest extends TestCase {
 			$this->groupManager,
 			$this->logger,
 			$this->auditTrailMapper,
-			$this->mountCache
+			$this->mountCache,
+			$this->folderRecorder
 		);
+
+		// The openregister account holds every managed folder. It comes from
+		// the FileService facade, as in production.
+		$systemAccount = $this->createMock(FileService::class);
+		$systemAccount->method('getUser')->willReturn($this->mockUser);
+		$this->handler->setFileService($systemAccount);
+	}
+
+	#[Test]
+	public function testASignedInUsersFolderIsMadeInTheOpenRegisterAccountsHome(): void {
+		// A signed-in person, not the openregister account.
+		$alice = $this->createMock(IUser::class);
+		$alice->method('getUID')->willReturn('alice');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($alice);
+
+		$homes = [];
+		$systemHome = $this->createMock(Folder::class);
+		$root = $this->createMock(IRootFolder::class);
+		$root->method('getUserFolder')->willReturnCallback(
+			function (string $uid) use (&$homes, $systemHome): Folder {
+				$homes[] = $uid;
+				return $systemHome;
+			}
+		);
+
+		$made = $this->createMock(Folder::class);
+		$made->method('getId')->willReturn(500);
+		$systemHome->method('get')->willThrowException(new NotFoundException());
+		$systemHome->method('newFolder')->willReturn($made);
+
+		$handler = new FolderManagementHandler(
+			$root,
+			$this->objectEntityMapper,
+			$this->registerMapper,
+			$session,
+			$this->groupManager,
+			$this->logger,
+			$this->auditTrailMapper,
+			$this->mountCache,
+			$this->folderRecorder
+		);
+		$fileService = $this->createMock(FileService::class);
+		$fileService->method('getUser')->willReturn($this->mockUser);
+		// Nothing is handed over or shared back: the folder already has the right owner.
+		$fileService->expects($this->never())->method('transferFolderOwnershipIfNeeded');
+		$handler->setFileService($fileService);
+		$this->groupManager->method('groupExists')->willReturn(true);
+		$this->folderRecorder->method('record')->willReturn(true);
+
+		$handler->createRegisterFolderById($this->createRegister(3, 'Intake'), $alice);
+
+		$this->assertNotSame([], $homes);
+		$this->assertSame(['openregister'], array_values(array_unique($homes)));
 	}
 
 	/**
@@ -256,7 +318,8 @@ class FolderManagementHandlerTest extends TestCase {
 			$this->groupManager,
 			$this->logger,
 			$this->auditTrailMapper,
-			$this->mountCache
+			$this->mountCache,
+			$this->folderRecorder
 		);
 
 		$this->expectException(Exception::class);
@@ -335,7 +398,11 @@ class FolderManagementHandlerTest extends TestCase {
 			->willReturn($mockFolder);
 
 		$this->groupManager->method('groupExists')->willReturn(true);
-		$this->registerMapper->expects($this->once())
+		// The folder id is recorded as bookkeeping, never through RegisterMapper::update().
+		$this->folderRecorder->expects($this->once())
+			->method('record')
+			->willReturn(true);
+		$this->registerMapper->expects($this->never())
 			->method('update');
 
 		$result = $this->handler->createEntityFolder($register);
@@ -391,7 +458,11 @@ class FolderManagementHandlerTest extends TestCase {
 		$this->mockUserFolder->method('newFolder')
 			->willReturn($mockFolder);
 
-		$this->registerMapper->expects($this->once())
+		// The folder id is recorded as bookkeeping, never through RegisterMapper::update().
+		$this->folderRecorder->expects($this->once())
+			->method('record')
+			->willReturn(true);
+		$this->registerMapper->expects($this->never())
 			->method('update');
 
 		$result = $this->handler->getRegisterFolderById($register);
@@ -415,7 +486,11 @@ class FolderManagementHandlerTest extends TestCase {
 		$this->mockUserFolder->method('newFolder')
 			->willReturn($mockFolder);
 
-		$this->registerMapper->expects($this->once())
+		// The folder id is recorded as bookkeeping, never through RegisterMapper::update().
+		$this->folderRecorder->expects($this->once())
+			->method('record')
+			->willReturn(true);
+		$this->registerMapper->expects($this->never())
 			->method('update');
 
 		$result = $this->handler->getRegisterFolderById($register);

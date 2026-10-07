@@ -54,8 +54,8 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md
- * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
+ * @spec openspec/specs/flow-user-task-node/spec.md
+ * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-task-form-is-a-declaration-of-existing-fields-not-a-new-form-definition
  */
 
 declare(strict_types=1);
@@ -128,7 +128,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 * @param FlowRunSubjectRecorder|null $subjects Resolves `attachTo` to the
 	 *                             object the run declared under that role.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md
+	 * @spec openspec/specs/flow-user-task-node/spec.md
 	 */
 	public function __construct(
 		private readonly FlowTaskBridge $bridge,
@@ -157,7 +157,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 *
 	 * @return string The id.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
 	 */
 	public function getId(): string {
 		return 'openregister.user-task';
@@ -168,7 +168,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 *
 	 * @return string The display name.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
 	 */
 	public function getDisplayName(): string {
 		// "or group" because that is what the step has always done and never
@@ -183,7 +183,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-signal-node-keeps-machine-to-machine-work
 	 */
 	public function getDescription(): string {
 		return $this->l10n->t(
@@ -196,7 +196,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 *
 	 * @return string The icon URL.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
 	 */
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/user.svg');
@@ -209,7 +209,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 *
 	 * @return boolean Whether it is available.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
 	 */
 	public function isAvailableForScope(int $scope): bool {
 		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
@@ -220,7 +220,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 *
 	 * @return array<int, string> The accepted config keys.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
 	 */
 	public function configKeys(): array {
 		return [
@@ -272,8 +272,8 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 *
 	 * @return array<int, array<string, mixed>> The field descriptions.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
 	 */
 	public function configForm(): array {
 		return array_merge(
@@ -294,7 +294,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 *
 	 * @throws \UnexpectedValueException When the config is refused.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-node-describes-its-own-form-served-from-the-node-catalog
 	 */
 	public function validateConfig(array $config): void {
 		$this->performers->refuseUnknownTypes(config: $config, l10n: $this->l10n);
@@ -315,8 +315,8 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 * @throws FlowStop When rejected and the step asked to fail on rejection.
 	 * @throws RuntimeException When the node has no resume slot, or its task is gone.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
-	 * @spec openspec/changes/flow-heartbeat-recovery/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-wake-re-reads-the-awaited-task-and-applies-a-terminal-outcome
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 * @spec openspec/specs/flow-heartbeat-recovery/spec.md#requirement-a-heartbeat-wake-re-reads-the-awaited-task-and-applies-a-terminal-outcome
 	 */
 	public function execute(array $items, array $config, array $context): array {
 		if ($items === []) {
@@ -390,7 +390,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-a-user-task-step-creates-exactly-one-task-and-suspends-the-run
 	 */
 	private function createTask(array $items, array $config, array $context, FlowNodeResumeState $resume): void {
 		$runUuid = trim((string)($context[FlowRunContext::CONTEXT_RUN] ?? ($context['runUuid'] ?? '')));
@@ -534,7 +534,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 *
 	 * @return array The items, each carrying the bag.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-outcome-is-written-onto-every-item-not-only-onto-the-run
 	 */
 	private function placeOutcome(array $items, array $config, array $bag): array {
 		$key = $this->config->outcomeKey(config: $config);
@@ -562,7 +562,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 *
 	 * @return FlowSuspension The suspension to throw.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
 	 */
 	private function suspension(array $config, array $items): FlowSuspension {
 		$title = $this->config->renderedTitle(config: $config, items: $items);
@@ -797,7 +797,7 @@ class UserTaskNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFor
 	 *
 	 * @return array<int, array<string, mixed>> The field descriptions.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
 	 */
 	private function formFields(): array {
 		return [

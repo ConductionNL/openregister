@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
+ * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use UnexpectedValueException;
 /**
  * Resolves and describes the form a task presents, per read.
  *
- * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
+ * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
  */
 class TaskFormResolver {
 
@@ -117,7 +117,7 @@ class TaskFormResolver {
 	 *
 	 * @return array{form: array<string, mixed>|null, requireChecklist: bool} The description.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
 	 */
 	public function describe(Task $task): array {
 		try {
@@ -158,7 +158,7 @@ class TaskFormResolver {
 	 *
 	 * @return array<string, string|null> expiresAt, onTimeout and onReject.
 	 *
-	 * @spec openspec/changes/task-expiry-and-outcomes/specs/task-expiry-and-outcomes/spec.md#requirement-a-task-declares-its-timeout-and-reject-behaviour-in-one-vocabulary
+	 * @spec openspec/specs/task-expiry-and-outcomes/spec.md#requirement-a-task-declares-its-timeout-and-reject-behaviour-in-one-vocabulary
 	 */
 	private function behavioursOf(Task $task): array {
 		return [
@@ -177,7 +177,7 @@ class TaskFormResolver {
 	 *
 	 * @throws UnexpectedValueException When the run, its version or its step cannot be resolved.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-form-a-task-presents-is-the-one-its-flow-version-declared
 	 */
 	public function declarationOf(Task $task): TaskForm {
 		$runUuid = trim((string)$task->getRunUuid());
@@ -252,7 +252,7 @@ class TaskFormResolver {
 	 *
 	 * @return array<string, mixed> The description.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-rendered-form-carries-the-declarations-required-flags-and-order
 	 */
 	private function describeNative(TaskForm $declaration): array {
 		try {
@@ -313,7 +313,7 @@ class TaskFormResolver {
 	 *
 	 * @return array<string, mixed> The description.
 	 *
-	 * @spec openspec/changes/flow-task-forms/specs/flow-task-forms/spec.md#requirement-the-external-form-path-binds-an-existing-forms-form-and-validates-nothing-about-its-contents
+	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-the-external-form-path-binds-an-existing-forms-form-and-validates-nothing-about-its-contents
 	 */
 	private function describeExternal(TaskForm $declaration, Task $task): array {
 		$description = [

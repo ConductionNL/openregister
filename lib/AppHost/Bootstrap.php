@@ -34,7 +34,7 @@
  * "Not on the autoloader at that moment" is the NORMAL case for many leaves, not
  * an edge case. `OC_App::getEnabledApps()` does `sort($apps)`, and
  * `Coordinator::registerApps()` walks that sorted list calling
- * `OC_App::registerAutoloading($appId, $path)` and then `$application->register()`
+ * the app's autoloader registration and then `$application->register()`
  * for ONE APP AT A TIME. So every app's `register()` runs BEFORE the PSR-4 prefix
  * of every alphabetically-LATER app exists. Any leaf whose app id sorts before
  * `openregister` — docudesk, doriath, larpingapp, launchpad, mydash, nldesign,
@@ -56,20 +56,39 @@
  * `register()`, before any AppHost reference including a `class_exists()` probe:
  *
  *     try {
- *         $orPath = \OCP\Server::get(\OCP\App\IAppManager::class)
- *             ->getAppPath('openregister');
- *         \OC_App::registerAutoloading('openregister', $orPath);
+ *         $appManager = \OCP\Server::get(\OCP\App\IAppManager::class);
+ *         if ($appManager->isEnabledForAnyone('openregister') === true) {
+ *             $orLib = rtrim($appManager->getAppPath('openregister'), '/').'/lib/';
+ *             spl_autoload_register(static function (string $class) use ($orLib): void {
+ *                 if (str_starts_with($class, 'OCA\\OpenRegister\\') === true) {
+ *                     $file = $orLib.str_replace('\\', '/', substr($class, 17)).'.php';
+ *                     if (is_file($file) === true) {
+ *                         require_once $file;
+ *                     }
+ *                 }
+ *             });
+ *         }
  *     } catch (\Throwable) {
  *         // OpenRegister absent/disabled — fall through to the degraded path.
  *     }
  *
- * `OC_App::registerAutoloading()` touches only the autoloader and is idempotent
- * (it early-returns on an `$alreadyRegistered` key). Do NOT substitute
- * `IAppManager::loadApp('openregister')`: it sets `loadedApps[..]=true` and calls
- * `Coordinator::bootApp()`, booting OpenRegister before its own `register()` has
- * run. Do NOT substitute `include_once __DIR__.'/../../../openregister/vendor/
- * autoload.php'` either — it assumes both apps share one apps directory and
- * silently does nothing on a multi-`apps_paths` install.
+ * Prefer housing it in a small `AppInfo\OpenRegisterAutoloader::register()`
+ * class (keepiq#712, decidiq) so the "never throws" contract is unit-testable
+ * and a second call is a no-op.
+ *
+ * Use PUBLIC API only. Earlier revisions of this docblock prescribed
+ * `\OC_App::registerAutoloading('openregister', $orPath)`; that is private API
+ * and Nextcloud 35 REMOVED it (moved to the equally private
+ * `OC\App\AppManager`). On 35 the call throws `\Error`, lands in the catch,
+ * and the AppHost wiring is skipped in silence. Because OpenRegister ships its
+ * own `vendor/autoload.php`, Nextcloud's own registration for it reduces to a
+ * PSR-4 prefix over `lib/`, which is exactly what the loader above registers.
+ * Do NOT substitute `IAppManager::loadApp('openregister')`: it sets
+ * `loadedApps[..]=true` and calls `Coordinator::bootApp()`, booting
+ * OpenRegister before its own `register()` has run. Do NOT require OpenRegister's
+ * `vendor/autoload.php` either — a relative `include_once` assumes both apps
+ * share one apps directory and silently does nothing on a multi-`apps_paths`
+ * install, and it pulls OpenRegister's whole dependency tree into the process.
  *
  * Note that any single app doing this registers the prefix PROCESS-WIDE, which
  * masks the defect for every app registering after it. That is precisely why
@@ -147,6 +166,11 @@ class Bootstrap {
 	private const GENERIC_ADMIN_SETTINGS = 'OCA\\OpenRegister\\AppHost\\Settings\\GenericAdminSettings';
 	private const GENERIC_SETTINGS_SECTION = 'OCA\\OpenRegister\\AppHost\\Settings\\GenericSettingsSection';
 	private const GENERIC_DEEPLINK_LISTENER = 'OCA\\OpenRegister\\AppHost\\Listener\\GenericDeepLinkRegistrationListener';
+
+	/**
+	 * Decides which of a leaf app's pages open without a session.
+	 */
+	private const PUBLIC_PAGE_RESOLVER = 'OCA\\OpenRegister\\AppHost\\Service\\PublicPageResolver';
 
 	private const GENERIC_SETTINGS_PLANE_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericSettingsService';
 	private const REGISTER_CONFIG_RESOLVER = 'OCA\\OpenRegister\\AppHost\\Service\\RegisterConfigResolver';
@@ -257,7 +281,11 @@ class Bootstrap {
 				$class = self::GENERIC_DASHBOARD_CONTROLLER;
 				return new $class(
 					appName: $appId,
-					request: $c->get('OCP\\IRequest')
+					request: $c->get('OCP\\IRequest'),
+					// The leaf's OWN initial state, so the public flag lands
+					// under the leaf app id the SPA reads it with.
+					publicPages: $c->get(self::PUBLIC_PAGE_RESOLVER),
+					initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState')
 				);
 			}
 		);

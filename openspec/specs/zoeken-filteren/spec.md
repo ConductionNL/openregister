@@ -15,7 +15,9 @@ Provide a comprehensive, backend-agnostic search and filtering system for regist
 
 **OpenSpec changes**
 - `searchable-property-index` (in progress) — backs the existing `_name` fuzzy/full-text search with a `pg_trgm` GIN index (was an unindexed `similarity()`/`ILIKE` scan); adds an opt-in `searchable: true` schema-property flag (mirroring `facetable`) for indexed search on other string properties.
+
 ## Requirements
+
 ### Requirement: Full-text search across object properties
 The system MUST support free-text search across all string-typed properties of register objects. The `_search` query parameter MUST trigger a case-insensitive search that matches against every string column in the schema's dynamic table, plus the metadata fields `_name`, `_description`, and `_summary`. Search MUST be performed using SQL `ILIKE` patterns in the database backend and native query parsing in Solr/Elasticsearch.
 
@@ -83,6 +85,21 @@ A filter value MAY also be the literal string `IS NULL` or `IS NOT NULL` (`?assi
 - **AND** only objects without an `afgehandeld_op` value MUST be returned
 - **AND** `?afgehandeld_op_isnull=false` MUST return exactly the complement
 
+#### Scenario: An operator bag carrying only isnull is not a bare IN list
+@e2e exclude query-layer operator with no browser surface — pinned by the same unit test
+
+- **WHEN** a filter resolves to `assignee => ['isnull' => 'true']`
+- **THEN** it MUST emit a null check
+- **AND** it MUST NOT be treated as the historical bare-list `IN ('true')`, which matches
+  nothing and reads as a correct empty result
+
+#### Scenario: Both filter paths agree
+@e2e exclude query-layer operator with no browser surface — pinned by the same unit test
+
+- **WHEN** the same `isnull` filter runs through the QueryBuilder path and the raw-SQL
+  UNION path
+- **THEN** both MUST emit the same predicate
+
 #### Scenario: Filter on non-existent property returns empty results
 - **GIVEN** schema `meldingen` that does NOT have a property `nonexistent`
 - **WHEN** the user filters with `?nonexistent=somevalue`
@@ -95,7 +112,7 @@ A property filter MAY be written bare (`?origin=manual`) or bracketed (`?filter[
 
 Reserved parameters are never filters, on either spelling: every underscore-prefixed parameter (`_limit`, `_order`, `_search`, …), the object-search context parameters (`register`, `schema`, `registers`, `schemas`, `extend`) and the system parameters `id`, `rbac`, `multi`, `deleted`, plus each aggregation action's own control parameters (`metric`, `field`, `metrics`, `groupBy`, `sort`, `limit`, `interval`, `from`, `to`, `metricField`, `cumulative`, and `name` on the declared-aggregation route). A property that shares one of those names can only be filtered with the bracket spelling. `filter[_limit]` is not a way to reach a control parameter either: the bracket spelling is lifted only for keys that could be bare filters.
 
-On the aggregations, a bare key joins the filter map ONLY when it names a property the schema declares. A bare parameter that names nothing keeps being ignored, because a cache-buster or a stray `v=2` must not start filtering and answer `0` where a widget used to read a total. A bracket key that names no property keeps matching no rows, as it already did.
+On the aggregations, a bare key joins the filter map ONLY when it names a property the schema declares. A bare parameter that names nothing keeps being ignored, because a cache-buster or a stray `v=2` must not start filtering and answer `0` where a widget used to read a total. A bracket key that names no property keeps matching no rows, as it already did. The one exception is `filter[id]`: every aggregation row carries the object's uuid as `id`, so `filter[id]=<uuid>` scopes the figure to that object and MUST NOT be reported as unknown. `filter[uuid]` and `filter[@self.…]` name nothing a row carries, so they still match no rows and are still reported.
 
 An unrecognised filter key MUST be logged once per request as a warning naming the keys, the endpoint and the schema, and MUST NOT be refused: every caller on the wrong spelling would break in the same minute. Refusing it with HTTP 400 is the follow-up once the logs show no caller depends on the old answer.
 
@@ -129,12 +146,56 @@ The ad-hoc aggregation cache key MUST be derived from the NORMALISED filter map,
 - **AND** the response MUST NOT be an HTTP 400
 - @e2e exclude Backend logging and result-preservation on an HTTP read path; verified by PHPUnit unit tests with a logger spy, no browser flow.
 
+#### Scenario: filter[id] scopes an aggregation to one object without a warning
+- **GIVEN** schema `lead` with property `value` and two objects worth 450000 and 2237500
+- **WHEN** the client calls `GET /api/objects/aggregations/pipelinq/lead/value?metric=sum&field=value&filter[id]=<uuid of the first>`
+- **THEN** the value MUST be `450000`
+- **AND** no unknown-filter-key warning MUST be logged
+- @e2e exclude Backend parameter classification and logging; verified by PHPUnit unit tests with a logger spy and a live instance, no browser flow.
+
 #### Scenario: The aggregation cache key follows the normalised filter
 - **GIVEN** an ad-hoc aggregation over schema `TimeEntry`
 - **WHEN** one caller asks `?filter[origin]=manual` and another asks `?origin=manual`
 - **THEN** both MUST resolve to the same cache key
 - **AND** `?origin=manual` and `?origin=migration` MUST resolve to different cache keys
 - @e2e exclude Backend cache-key derivation; verified by PHPUnit unit tests over AggregationCache, no browser flow.
+
+### Requirement: A register or schema reference on the read path resolves or is refused
+The read path MUST accept a register or schema reference in every spelling the write path accepts: a numeric id, a uuid or a slug. It MUST resolve the reference to its numeric id before the search runs, and it MUST refuse a reference that names nothing by raising `RegisterNotFoundException` or `SchemaNotFoundException`, the same two the write path raises.
+
+The read path MUST NOT int-cast a reference. `(int)` turns a slug, a uuid and an empty string into `0`, `0` is not `null`, so the search runs scoped to a register no instance carries, the lookup fails, and the caller receives an empty page. An empty page is indistinguishable from a legitimate answer, and three apps acted on it as a fact about their data.
+
+A reference that is empty or only whitespace MUST drop the filter instead of scoping to `0`, so the search reaches the same global fallbacks a real `null` reaches.
+
+The rule applies wherever a reference enters a search: the query builder's `register` and `schema` parameters, and the `@self.register`, `@self.schema`, `_register` and `_schema` keys of a query a caller built by hand.
+
+#### Scenario: A slug scopes a search the way an id does
+- **GIVEN** register `zaken` with id 19 and schema `zaak` with id 9476, holding 3 objects
+- **WHEN** a caller searches or counts with `@self.register = 'zaken'` and `@self.schema = 'zaak'`
+- **THEN** the answer MUST be the same as for ids 19 and 9476
+- **AND** it MUST NOT be an empty result
+- @e2e exclude Backend reference resolution on a read path; verified by PHPUnit unit tests over the query handler with a mapper double, no browser flow.
+
+#### Scenario: A reference that names nothing is refused
+- **GIVEN** an instance with no register named `no-such-register`
+- **WHEN** a caller searches with that reference
+- **THEN** the search MUST raise `RegisterNotFoundException`
+- **AND** it MUST NOT answer `['results' => [], 'total' => 0]`
+- @e2e exclude Backend refusal on a read path; verified by PHPUnit unit tests, no browser flow.
+
+#### Scenario: An empty reference filters nothing
+- **GIVEN** a query carrying `@self.register = ''`
+- **WHEN** the search runs
+- **THEN** the register filter MUST be absent from the query
+- **AND** the search MUST NOT be scoped to register `0`
+- @e2e exclude Backend query normalisation; verified by PHPUnit unit tests over the resolver, no browser flow.
+
+#### Scenario: A list refuses the member it cannot resolve
+- **GIVEN** a query carrying `_schemas = ['zaak', 'no-such-schema']`
+- **WHEN** the search runs
+- **THEN** it MUST raise `SchemaNotFoundException`
+- **AND** it MUST NOT drop the unresolvable member and search the rest in silence
+- @e2e exclude Backend list resolution; verified by PHPUnit unit tests over the resolver, no browser flow.
 
 ### Requirement: JSON array and object property filtering
 The system MUST support filtering on `type: array` (JSONB array columns) using PostgreSQL's `@>` containment operator, and on `type: object` properties using JSON path extraction. This enables filtering on multi-valued and nested structured properties.
@@ -794,6 +855,140 @@ and `createMissingObjectFields` to inspect and mirror the object collection's fi
 - **WHEN** `delete(id, owner)` is called
 - **THEN** the access-controlled `find()` MUST throw before any deletion occurs
 - **AND** an owned-or-public view MUST be deleted via `ViewMapper::delete()`
+
+### Requirement: `_content_search` opt-in flag widens `searchObjectsPaginated` to include document body text (ZKN-CONTENT-001)
+
+`ObjectService::searchObjectsPaginated()` MUST accept an optional boolean `_content_search` flag (either as a named parameter or as a `_content_search` key inside the `$query` array). When absent or `false`, the method's behaviour MUST be byte-identical to the pre-change baseline (metadata + string properties only, no chunk fan-out) — no envelope drift, no row-order drift, no `total` drift, no additional query fan-out MUST occur.
+
+When `_content_search=true`, the method MUST additionally invoke `ChunkMapper::searchByKeyword($query['_search'])` — scoped by the same `_register` / `_schemas` the caller passed — and include the objects whose file chunks match the query, subject to the mapping and deduplication rules in `ZKN-CONTENT-002` and the response-shape rule in `ZKN-CONTENT-003`.
+
+The flag MUST be exposed at the `SearchBackendInterface` seam so alternate backends can implement it or explicitly fall back. On backends without native `tsvector` (e.g. MariaDB), the backend MAY fall back to unranked `LIKE` on `openregister_chunks.text_content` — behaviour is preserved, ranking degrades. On PostgreSQL, the existing `ts_rank`-scored `ChunkMapper::searchByKeyword()` path MUST be used.
+
+#### Scenario: default omits chunk fan-out
+
+- GIVEN a call to `ObjectService::searchObjectsPaginated($query)` with no `_content_search` key,
+- WHEN the response is compared to the pre-change baseline for the same `$query`,
+- THEN the response envelope, row order, and `total` MUST be byte-identical to that baseline,
+- AND no query MUST be issued against `openregister_chunks`.
+
+#### Scenario: opt-in triggers chunk fan-out
+
+- GIVEN a call to `searchObjectsPaginated($query)` with `_content_search=true` and `_search=<phrase>`,
+- WHEN backend query logs are inspected,
+- THEN exactly one additional query MUST be issued against `openregister_chunks` (or its backend-specific equivalent),
+- AND that query MUST be scoped by the same `_register` / `_schemas` present in `$query`.
+
+#### Scenario: MariaDB fallback preserves match set, degrades ranking
+
+- GIVEN a MariaDB backend without a `tsvector` index on `openregister_chunks.text_content`,
+- WHEN `searchObjectsPaginated(..., _content_search=true)` runs,
+- THEN the response MUST include every object whose chunk `text_content` contains the query as a substring,
+- AND the response ordering MAY differ from the PostgreSQL `ts_rank` ordering,
+- AND the response MUST NOT error or return HTTP 500.
+
+### Requirement: Chunk hits are mapped back to their owning object (ZKN-CONTENT-002)
+
+When `_content_search=true` returns chunk hits, `searchObjectsPaginated` MUST map each chunk to its owning object before merging into the result set:
+
+- Chunks with `source_type = 'object'` MUST map to the object identified by `source_id` directly.
+- Chunks with `source_type = 'file'` MUST map to the object that owns the file, resolved via the existing file→object join OpenRegister already uses for other file-relative queries.
+- Chunks whose owning object cannot be resolved (deleted, cross-tenant, etc.) MUST be silently skipped — no error surfaced to the caller.
+
+The mapped-object set MUST be unioned with the metadata-match set produced by the pre-change search path and deduplicated on object id. An object that matches on BOTH surfaces MUST appear exactly once in the response.
+
+#### Scenario: chunk hit maps to owning object
+
+- GIVEN a chunk in `openregister_chunks` with `source_type='file'` and `source_id=42`, where file 42 is attached to object `obj-X`,
+- WHEN `searchObjectsPaginated(..., _content_search=true, _search=<phrase>)` matches that chunk,
+- THEN `obj-X` MUST appear in the response's result rows.
+
+#### Scenario: object matching both surfaces appears once
+
+- GIVEN an object whose `_name` metadata AND a linked chunk's `text_content` both contain the query,
+- WHEN `searchObjectsPaginated(..., _content_search=true, _search=<query>)` runs,
+- THEN the object MUST appear exactly once in the response's result rows,
+- AND the `total` field MUST count it once.
+
+#### Scenario: chunk with unresolvable owning object is silently skipped
+
+- GIVEN a chunk whose `source_id` references a deleted or cross-tenant object,
+- WHEN `searchObjectsPaginated(..., _content_search=true)` runs,
+- THEN the chunk MUST NOT surface any row in the response,
+- AND the call MUST NOT return an error.
+
+### Requirement: Response envelope stays object-shaped — no raw chunk payloads (ZKN-CONTENT-003)
+
+Chunk hits routed through `_content_search=true` MUST NOT leak chunk-shaped fields into the `searchObjectsPaginated` response. Specifically, the returned rows MUST NOT contain:
+
+- A `chunk_id`, `chunk`, or `source_id` field (unless that field is already part of the object schema for other reasons).
+- A `text_content` field, snippet, or excerpt derived from the chunk.
+- A `ts_rank` / `score` field or any ranking numerical exposed as a row property.
+
+The row shape MUST be exactly what `searchObjectsPaginated` returns for a metadata-only match today — the object as `ObjectEntity` (or its `jsonSerialize()` form), with the caller's existing `_extend` / `_fields` selection semantics applied uniformly.
+
+#### Scenario: no chunk fields in response rows
+
+- GIVEN a `_content_search=true` call whose sole matches are chunk-only (no metadata match),
+- WHEN the response rows are inspected,
+- THEN no row MUST contain a `chunk_id`, `text_content`, `snippet`, or `ts_rank` / `score` field,
+- AND every row MUST be shape-identical to the rows produced by a metadata-only match on the same schemas.
+
+#### Scenario: `_extend` / `_fields` selection applies uniformly
+
+- GIVEN two calls with identical query except one is a metadata match and the other is a chunk-only match,
+- AND both calls pass the same `_extend` / `_fields` selection,
+- WHEN both responses' first rows are compared,
+- THEN the rows MUST have the same set of top-level keys and the same nested shape under `@self`.
+
+### Requirement: A like filter matches a substring ignoring case
+
+The system SHALL support a `like` operator on property filters and on `@self`
+metadata filters, written `?title[like]=foo` or `?title_like=foo`. It SHALL
+return the objects whose value contains the term anywhere, ignoring case, on
+every condition builder (QueryBuilder path and raw UNION path) and on the DBAL
+object source listing. The column SHALL be compared as text, so the operator
+also works on numeric, date and JSON columns. A list of terms SHALL match any
+of them, and an empty term SHALL add no condition.
+
+#### Scenario: a table header filter finds a client by part of its name
+
+- **GIVEN** a client schema with objects named "Gemeente Demo" and "Meridiaan Advies B.V."
+- **WHEN** the client calls `GET /api/objects/{register}/client?name[like]=demo`
+- **THEN** the result holds "Gemeente Demo" and not "Meridiaan Advies B.V."
+- @e2e exclude {query-layer operator; covered by MagicSearchHandlerLikeOperatorTest over both builders and by LikeOperatorTest against a real SQLite table; the header filter UI lives in nextcloud-vue}
+
+#### Scenario: the suffix spelling means the same filter
+
+- **WHEN** the client calls `?name_like=demo`
+- **THEN** `buildSearchQuery()` rebuilds it into `name => ['like' => 'demo']` and the result equals `?name[like]=demo`
+- @e2e exclude {query-layer normalisation, no browser surface}
+
+#### Scenario: a cleared filter shows everything
+
+- **WHEN** the client calls `?name[like]=`
+- **THEN** no condition is added for `name`
+- @e2e exclude {covered by MagicSearchHandlerLikeOperatorTest::testEmptyTermAddsNoCondition}
+
+### Requirement: Like matches percent, underscore and backslash literally
+
+The system SHALL escape `%`, `_` and `\` in a `like` term so they match
+themselves, and SHALL pass the pattern as a bound parameter on every path that
+has a query builder. The raw UNION path, which joins SQL text, SHALL pass it
+through the platform's `quote()`.
+
+#### Scenario: a percent sign is not a wildcard
+
+- **GIVEN** objects named "100% zeker" and "1000 zeker"
+- **WHEN** the client filters `?name[like]=0%`
+- **THEN** only "100% zeker" is returned
+- @e2e exclude {covered by LikeOperatorTest on SQLite and verified on PostgreSQL with a prepared statement}
+
+#### Scenario: an underscore is not a wildcard
+
+- **GIVEN** objects named "a_b" and "axb"
+- **WHEN** the client filters `?name[like]=a_b`
+- **THEN** only "a_b" is returned
+- @e2e exclude {covered by LikeOperatorTest and DbalObjectSourceProviderTest on SQLite}
 
 ## Current Implementation Status
 

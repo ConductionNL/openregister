@@ -40,6 +40,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\IterateNode
+ * @uses \OCA\OpenRegister\Service\Flow\FlowItems
  */
 final class IterateNodeTest extends TestCase {
 

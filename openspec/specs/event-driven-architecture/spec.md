@@ -14,7 +14,9 @@ status: in-progress
 OpenRegister implements a comprehensive event-driven architecture built on Nextcloud's `IEventDispatcher` (OCP\EventDispatcher\IEventDispatcher) that enables loose coupling between internal components and external systems. Every mutation across all entity types -- Objects, Registers, Schemas, Sources, Configurations, Views, Agents, Applications, Conversations, and Organisations -- dispatches a typed PHP event that can be consumed by any Nextcloud app, delivered to external systems via webhooks in CloudEvents v1.0 format, or pushed to real-time subscribers via GraphQL SSE. The architecture distinguishes between pre-mutation events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent) that implement `StoppableEventInterface` to allow hooks to reject or modify operations, and post-mutation events (ObjectCreatedEvent, ObjectUpdatedEvent, ObjectDeletedEvent) that notify downstream systems after persistence is complete.
 
 **Source**: Gap identified in cross-platform analysis; four platforms implement event-driven architectures. Core implementation exists with 39+ typed event classes in `lib/Event/`, 8 event listeners in `lib/Listener/`, and webhook delivery infrastructure.
+
 ## Requirements
+
 ### Requirement: All entity mutations MUST dispatch typed PHP events via IEventDispatcher
 Every create, update, and delete operation across all entity types MUST dispatch a typed event class extending `OCP\EventDispatcher\Event` through Nextcloud's `IEventDispatcher::dispatchTyped()`. This ensures all mutations are observable by any registered listener, whether internal or from another Nextcloud app.
 
@@ -261,6 +263,19 @@ Declaration tokens MUST accept both register/schema slugs and numeric ids. A tok
 - **THEN** the subscription MUST be invoked
 - **AND** the numeric token MUST NOT be resolved as a slug, which would match no row and silently disable the listener
 - **AND** normalisation MUST NOT coerce the token to `int`, which would make `strtolower()` a fatal `TypeError` under `strict_types`
+
+#### Scenario: A filtered subscription holds for every object event class
+- **GIVEN** a subscription declared as `schemas: ['62']` on any object event class that carries an object (created, creating, updating, updated, deleting, deleted, locked, unlocked, reverted, transitioned)
+- **WHEN** that event is dispatched for an object whose schema id is `99`
+- **THEN** the subscription MUST NOT be invoked, whichever accessor the event class carries its object behind (`getObject()` or `getNewObject()`)
+- **AND** a new object event class MUST be covered by the same test before it ships, because an unread accessor is how a listener filtered to humaniq's `managerdeputy` schema ran on every update instance-wide and refused every lifecycle transition (live defect H1, 3 Oct 2026)
+
+#### Scenario: A filtered subscription fails closed on an object without a register or schema
+- **GIVEN** a subscription declared with a schema (or register) filter
+- **WHEN** an event carries an object whose schema (or register) is not set
+- **THEN** the subscription MUST NOT be invoked, because that object is not in the declared schema
+- **AND** an unfiltered subscription MUST still be invoked for it
+- **AND** an event that carries no object at all (`ObjectsMergedEvent`) MUST still invoke a filtered subscription, because no filter can be applied to it and skipping would leave the listener silently dead
 
 #### Scenario: The declared subscription count is observable
 - **GIVEN** an operator needs to tell a working narrowing from an inert one
@@ -677,6 +692,187 @@ short-circuit before any payload serialization.
 - **WHEN** an object is written on an instance with no webhooks configured
 - **THEN** no payload is serialized for webhook purposes
 - **AND** no per-write webhook-subscription query is executed
+
+### Requirement: Deferred listeners MUST forward the acting context to their background jobs
+
+Heavy post-save object-event listeners moved off the write path MUST capture
+the acting context at dispatch time (session user id
+and active organisation uuid, both nullable) into a serializable
+`DeferredListenerContext`, and their background jobs MUST extend
+`ActorForwardedJob`, which re-establishes the captured user via
+`IUserManager::get()` + `IUserSession::setUser()` before the deferred work
+runs and restores the previous session user in a `finally` block — including
+when the deferred work throws — so a cron worker never leaks one job's
+identity into the next. Organisation context re-derives from the restored
+user's persistent configuration; a captured-vs-current drift is logged and
+the job proceeds under the user's current authority.
+
+#### Scenario: Job runs the deferred work as the captured user and restores the session
+
+- **GIVEN** an object save dispatched by user `alice` deferred listener work into a job
+- **WHEN** the job runs in a session-less cron worker
+- **THEN** the job resolves `alice` through `IUserManager` and sets her on `IUserSession` before executing
+- **AND** the deferred work observes `alice` as the session user (e.g. translator attribution records `alice`)
+- **AND** after execution the session user is restored to its pre-job value (null in cron)
+
+#### Scenario: Session user is restored even when the deferred work throws
+
+- **GIVEN** a job whose deferred work throws midway
+- **WHEN** the job runs
+- **THEN** the previous session user is restored in a `finally` block before the exception propagates
+
+#### Scenario: A job for a deleted or unresolvable user never runs under a wrong identity
+
+- **GIVEN** a job captured for a user that no longer exists
+- **WHEN** the job runs
+- **THEN** the deferred work is skipped with a log entry and no impersonation occurs
+
+#### Scenario: A context captured without a session runs without impersonation
+
+- **GIVEN** an object written from occ/cron with no session user
+- **WHEN** the deferral captures a null userId and the job later runs
+- **THEN** the deferred work executes without calling `setUser()` — identical to the inline session-less behaviour
+
+### Requirement: Deferred listener jobs MUST be chunk-level, idempotent, and stale-safe
+
+Listeners deferring through `ListenerDeferralService` MUST enqueue chunk-level
+jobs (buffered entries flushed per chunk and at request shutdown), never one
+job per object of a bulk save. Jobs MUST treat delivery as at-least-once:
+re-fetch each entry's object by (uuid, register, schema), skip entries whose
+object is gone or soft-deleted, and reconcile against current state so a
+re-run converges. Entries MAY declare a dedupe key so writes that share an
+evaluation target (e.g. threshold triggers per schema) coalesce into one
+entry.
+
+#### Scenario: Bulk save enqueues chunked jobs, not per-object jobs
+
+- **GIVEN** a bulk save of 250 objects on a schema with a deferred listener and a chunk size of 100
+- **WHEN** the request completes
+- **THEN** at most ⌈250/100⌉ = 3 jobs are enqueued for that listener, each carrying an entry array
+
+#### Scenario: A job entry whose object was deleted no-ops
+
+- **GIVEN** an enqueued projection entry for object `X`
+- **AND** `X` is deleted before cron runs
+- **WHEN** the job processes the entry
+- **THEN** the entry is skipped (no sidecar rows are resurrected, no notification is dispatched)
+
+#### Scenario: Threshold evaluations coalesce per schema
+
+- **GIVEN** 50 objects of schema `S` saved in one request, where `S` declares a threshold notification
+- **WHEN** the deferral buffers the entries with the (register, schema) dedupe key
+- **THEN** exactly one threshold evaluation entry for `S` is enqueued
+
+#### Scenario: The kill switch restores inline execution
+
+- **GIVEN** app config `openregister/listenerDeferral` set to `inline`
+- **WHEN** an object event fires on a schema using a deferred listener's feature
+- **THEN** the listener performs its work synchronously as before this change and enqueues nothing
+
+### Requirement: Translation projection, annotation notifications and threshold evaluation MUST run via actor-forwarded jobs
+
+Three listeners MUST perform their heavy work in actor-forwarded jobs:
+`TranslationProjectionListener` (created/updated/transitioned),
+`AnnotationNotificationListener` (all triggers) and
+`AggregationThresholdListener` (created/updated/transitioned), keeping only a
+request-cached schema-config gate inline so schemas without the respective
+feature enqueue nothing. Delete-time work stays inline for
+`TranslationProjectionListener` (sidecar purge) and
+`AggregationThresholdListener` (the entity is not re-fetchable post-delete).
+The deferred job MUST produce the same effect the inline listener produced:
+projected translation rows record the acting user as translator; update
+notifications evaluate field-change and calculatedChange conditions against
+the pre-update snapshot captured at dispatch time and the current object
+data; threshold crossings dispatch on the rising edge only.
+
+#### Scenario: Deferred projection matches the inline effect including translator attribution
+
+- **GIVEN** user `alice` updates an object with translatable properties
+- **WHEN** the enqueued `TranslationProjectionJob` runs in cron
+- **THEN** the translations sidecar contains the same rows an inline `project()` would have written, with `alice` recorded as translator
+
+#### Scenario: Deferred update notification keeps old/new condition context
+
+- **GIVEN** an update event with a real pre-update state on a schema with notification rules
+- **WHEN** the enqueued `AnnotationNotificationDispatchJob` runs
+- **THEN** the dispatcher receives trigger `updated` with `_oldData` from the captured snapshot and `_newData` from the re-fetched current object
+- **AND** a `calculatedChange` dispatch follows with the same context, mirroring the inline listener
+
+#### Scenario: Deferred threshold evaluation dispatches on the rising edge
+
+- **GIVEN** a schema with a threshold notification whose aggregation value crosses the boundary
+- **WHEN** the enqueued `AggregationThresholdJob` runs
+- **THEN** the notification is dispatched once and the state cache records `above`, exactly as the inline evaluation did
+
+### Requirement: A schema save that changes nothing publishes nothing
+
+The system SHALL dispatch `SchemaUpdatedEvent` from `SchemaMapper::update()` only
+when the stored schema differs from the schema before the save, ignoring the
+`updated` timestamp. A save that changes nothing SHALL NOT write a
+`schema_updated` activity, SHALL NOT send a `schema-changed` notification and
+SHALL NOT fire a schema webhook. A real change SHALL still do all three.
+
+#### Scenario: an app re-imports an identical schema
+
+- **GIVEN** the pipelinq `lead` schema is installed and unchanged
+- **WHEN** pipelinq imports its register again
+- **THEN** no `SchemaUpdatedEvent` is dispatched for `lead`
+- @e2e exclude {covered by SchemaMapperUpdateEventTest, which drives the real update() with real Schema and SchemaUpdatedEvent classes}
+
+#### Scenario: an import adds a property
+
+- **GIVEN** the stored `lead` schema
+- **WHEN** an import adds the property `stage`
+- **THEN** exactly one `SchemaUpdatedEvent` is dispatched, carrying the old and the new schema
+- @e2e exclude {covered by SchemaMapperUpdateEventTest}
+
+### Requirement: An import of an unchanged schema still installs what it declares
+
+The system SHALL run the flow importer and the notification webhook installer
+for an imported schema whose saves dispatched no `SchemaUpdatedEvent`, so a
+shipped flow or webhook that was deleted, or never installed, arrives on the
+next import. When the import's saves dispatched an event, the import SHALL NOT
+run them again.
+
+#### Scenario: a deleted shipped flow comes back on re-import
+
+- **GIVEN** a schema declaring the flow `Qualify` in `x-openregister-flows`, and no stored flow by that name
+- **WHEN** the app imports the identical schema
+- **THEN** the flow `Qualify` is stored, disabled and unowned, as on a first import
+- @e2e exclude {covered by ImportHandlerUnchangedSchemaInstallsTest with the real SchemaFlowImportListener}
+
+#### Scenario: a changed import does not install twice
+
+- **GIVEN** an import whose save dispatched a `SchemaUpdatedEvent`
+- **WHEN** the import finishes
+- **THEN** the import itself installs nothing, because the listeners already did
+- @e2e exclude {covered by ImportHandlerUnchangedSchemaInstallsTest}
+
+### Requirement: Object CRUD fires object events only
+
+Creating, updating, patching, deleting, bulk-saving or importing objects SHALL
+dispatch object events (and the object notification) only. It SHALL NOT write a
+schema or a register entity and SHALL NOT dispatch a schema or register event.
+No listener of an object event SHALL do so either.
+
+#### Scenario: a user edits a lead
+
+- **GIVEN** a lead in the pipelinq register
+- **WHEN** the user PATCHes it
+- **THEN** one object update is published and no `SchemaUpdatedEvent` or `RegisterUpdatedEvent` is dispatched
+- @e2e exclude {pinned by ObjectCrudFiresOnlyObjectEventsTest over the object path and every object-event listener; checked live on 2026-10-06 with one object_updated activity per PATCH}
+
+### Requirement: A PATCH leaves an untouched translatable property as it is
+
+A PATCH that does not name a translatable property SHALL save that property's
+locale map unchanged.
+
+#### Scenario: PATCHing a lead's stage keeps its title
+
+- **GIVEN** a lead whose translatable `title` is stored as `{"nl": "[Demo] Webshop"}`
+- **WHEN** the client PATCHes only `stage`
+- **THEN** the title is still `{"nl": "[Demo] Webshop"}`, not the string `'{"nl":"[Demo] Webshop"}'`
+- @e2e exclude {covered by SchemaTypeConverterTest::testAnUntouchedTranslatablePropertyKeepsItsLocaleMap}
 
 ## Current Implementation Status
 - **Implemented:**

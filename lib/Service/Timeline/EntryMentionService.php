@@ -34,8 +34,10 @@ namespace OCA\OpenRegister\Service\Timeline;
 use DateTime;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCP\IURLGenerator;
 use OCP\IUserManager;
 use OCP\IUserSession;
 use OCP\Notification\IManager as INotificationManager;
@@ -62,15 +64,18 @@ class EntryMentionService {
 	public const SUBJECT = 'timeline_mention';
 
 	/**
-	 * The token a mention is written as.
+	 * The token a mention is written as, in the shape nextcloud-vue writes it.
 	 *
-	 * Deliberately narrow. A uid may hold letters, digits, dot, dash and
-	 * underscore; anything else ends the token. The lookbehind keeps an e-mail
-	 * address out: `info@conduction.nl` is not a mention of `conduction`.
+	 * Two forms, as `src/utils/mentions.js` serialises them: `@uid` when the
+	 * uid holds only letters, digits, dot, dash, underscore and apostrophe,
+	 * and `@"uid"` for anything else (a space or an `@`, both of which
+	 * Nextcloud allows in a uid). Group 1 is the quoted uid, group 2 the bare
+	 * one. The lookbehind keeps an e-mail address out: `info@conduction.nl`
+	 * is not a mention of `conduction`.
 	 *
 	 * @var string
 	 */
-	private const TOKEN = '/(?<![\p{L}\p{N}._@-])@([\p{L}\p{N}][\p{L}\p{N}._-]{0,62})/u';
+	private const TOKEN = '/(?<![\p{L}\p{N}._@\'-])@(?:"([^"\r\n]{1,64})"|([\p{L}\p{N}][\p{L}\p{N}._\'-]{0,63}))/u';
 
 	/**
 	 * Constructor.
@@ -82,6 +87,8 @@ class EntryMentionService {
 	 * @param PermissionHandler     $permissions   The one RBAC evaluator.
 	 * @param INotificationManager  $notifications Sends the notification.
 	 * @param LoggerInterface       $logger        Logger for the fail-closed paths.
+	 * @param DeepLinkRegistryService $deepLinks   Finds the app page that owns the object.
+	 * @param IURLGenerator         $urls          Builds Open Register's own object page as the fallback link.
 	 *
 	 * @return void
 	 */
@@ -93,6 +100,8 @@ class EntryMentionService {
 		private readonly PermissionHandler $permissions,
 		private readonly INotificationManager $notifications,
 		private readonly LoggerInterface $logger,
+		private readonly DeepLinkRegistryService $deepLinks,
+		private readonly IURLGenerator $urls,
 	) {
 	}//end __construct()
 
@@ -119,13 +128,9 @@ class EntryMentionService {
 		}
 
 		$uids = [];
-		foreach ($matches[1] as $candidate) {
-			$uid = (string)$candidate;
-			if (in_array($uid, $uids, true) === true) {
-				continue;
-			}
-
-			if ($this->userManager->userExists($uid) === false) {
+		foreach (array_keys($matches[0]) as $index) {
+			$uid = $this->resolveToken(quoted: (string)$matches[1][$index], bare: (string)$matches[2][$index]);
+			if ($uid === null || in_array($uid, $uids, true) === true) {
 				continue;
 			}
 
@@ -134,6 +139,37 @@ class EntryMentionService {
 
 		return $uids;
 	}//end parse()
+
+	/**
+	 * The real uid one token names, or null.
+	 *
+	 * A bare token with an apostrophe is tried whole first (`@o'brien`), then
+	 * up to the apostrophe, so a possessive (`@jurist's`) still names the
+	 * person it named before the apostrophe was accepted.
+	 *
+	 * @param string $quoted The uid of the `@"uid"` form, or ''.
+	 * @param string $bare   The uid of the `@uid` form, or ''.
+	 *
+	 * @return string|null The uid, or null when nobody real is named.
+	 */
+	private function resolveToken(string $quoted, string $bare): ?string {
+		$candidates = [$quoted];
+		if ($quoted === '') {
+			$candidates = [$bare];
+			$apostrophe = strpos($bare, "'");
+			if ($apostrophe !== false && $apostrophe > 0) {
+				$candidates[] = substr($bare, 0, $apostrophe);
+			}
+		}
+
+		foreach ($candidates as $candidate) {
+			if ($candidate !== '' && $this->userManager->userExists($candidate) === true) {
+				return $candidate;
+			}
+		}
+
+		return null;
+	}//end resolveToken()
 
 	/**
 	 * Notify and subscribe everybody the entry named and who may read the object.
@@ -269,6 +305,7 @@ class EntryMentionService {
 						'author' => ($author ?? ''),
 					]
 				);
+			$notification->setLink($this->objectLink(object: $object));
 			$this->notifications->notify($notification);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -278,4 +315,40 @@ class EntryMentionService {
 			);
 		}
 	}//end notify()
+
+	/**
+	 * Where the notification takes the named principal: the object's page.
+	 *
+	 * The app that registered a deep link for the register and schema owns
+	 * the page (a case in its case app), as in the other object notifications
+	 * and the timeline search. Without one, Open Register's own object page.
+	 *
+	 * @param ObjectEntity $object The object the entry hangs on.
+	 *
+	 * @return string The absolute url.
+	 */
+	private function objectLink(ObjectEntity $object): string {
+		$registerId = (int)$object->getRegister();
+		$schemaId = (int)$object->getSchema();
+		$uuid = (string)$object->getUuid();
+
+		$url = $this->deepLinks->resolveUrl(
+			registerId: $registerId,
+			schemaId: $schemaId,
+			objectData: ['uuid' => $uuid, 'id' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
+		);
+
+		if ($url === null || $url === '') {
+			return $this->urls->linkToRouteAbsolute(
+				'openregister.ui.objectDetail',
+				['register' => $registerId, 'schema' => $schemaId, 'id' => $uuid]
+			);
+		}
+
+		if (str_starts_with($url, 'http://') === false && str_starts_with($url, 'https://') === false) {
+			return $this->urls->getAbsoluteURL($url);
+		}
+
+		return $url;
+	}//end objectLink()
 }//end class

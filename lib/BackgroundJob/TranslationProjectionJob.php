@@ -47,7 +47,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Deferred translation-sidecar projection under the forwarded actor.
  *
- * @spec openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-2.1
+ * @spec openspec/specs/event-driven-architecture/spec.md
  */
 class TranslationProjectionJob extends ActorForwardedJob {
 	/**

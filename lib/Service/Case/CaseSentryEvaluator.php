@@ -34,7 +34,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+ * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
  * @SuppressWarnings(PHPMD.StaticAccess) FlowExpression is the engine's
  * stateless expression facade; calling it statically IS the reuse.
  *
- * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+ * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
  */
 class CaseSentryEvaluator {
 
@@ -99,7 +99,7 @@ class CaseSentryEvaluator {
 	 *
 	 * @throws CaseValidationException On the first refused sentry.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	public function validateCriteria(mixed $criteria, string $where): void {
 		if ($criteria === null) {
@@ -127,7 +127,7 @@ class CaseSentryEvaluator {
 	 *
 	 * @throws CaseValidationException On the first refused part.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	private function validateSentry(mixed $sentry, string $label, array $known): void {
 		if (is_array($sentry) === false) {
@@ -162,7 +162,7 @@ class CaseSentryEvaluator {
 	 *
 	 * @return string|null The admitting sentry's id, {@see DEFAULT_ENTRY}, or null when none fires.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	public function entrySentry(CaseItem $item, CasePlanTree $tree, array $object, ?string $event = null, array $payload = []): ?string {
 		$criteria = ($item->getEntryCriteria() ?? []);
@@ -185,7 +185,7 @@ class CaseSentryEvaluator {
 	 *
 	 * @return string|null The firing sentry's id, or null.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	public function exitSentry(CaseItem $item, CasePlanTree $tree, array $object, ?string $event = null, array $payload = []): ?string {
 		$criteria = ($item->getExitCriteria() ?? []);
@@ -208,7 +208,7 @@ class CaseSentryEvaluator {
 	 *
 	 * @return array<string, mixed> The data document.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	public function dataFor(CasePlanTree $tree, array $object, ?string $event, array $payload): array {
 		$data = FlowExpression::dataFor(
@@ -240,7 +240,7 @@ class CaseSentryEvaluator {
 	 *
 	 * @return string|null The firing sentry's id, or null.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	private function firingSentry(array $criteria, CasePlanTree $tree, array $object, ?string $event, array $payload): ?string {
 		$data = $this->dataFor(tree: $tree, object: $object, event: $event, payload: $payload);
@@ -268,7 +268,7 @@ class CaseSentryEvaluator {
 	 *
 	 * @return boolean True when both present parts hold.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	private function fires(array $sentry, CasePlanTree $tree, array $data, ?string $event): bool {
 		$hasOn = array_key_exists('on', $sentry);
@@ -302,7 +302,7 @@ class CaseSentryEvaluator {
 	 *
 	 * @return boolean True when it has.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	private function onPartOccurred(mixed $onPart, CasePlanTree $tree, ?string $event): bool {
 		if (is_array($onPart) === false) {
@@ -337,7 +337,7 @@ class CaseSentryEvaluator {
 	 *
 	 * @throws CaseValidationException Naming the unknown event or the missing item.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	private function validateOnPart(mixed $onPart, string $label, array $known): void {
 		if (is_array($onPart) === false || trim((string)($onPart['event'] ?? '')) === '') {
@@ -368,7 +368,7 @@ class CaseSentryEvaluator {
 	 *
 	 * @return boolean True when it is a rule object containing a `var`.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	private function namesField(mixed $logic): bool {
 		if (is_array($logic) === false || $logic === [] || array_is_list($logic) === true) {
@@ -385,7 +385,7 @@ class CaseSentryEvaluator {
 	 *
 	 * @return boolean True when a `var` key occurs at any depth.
 	 *
-	 * @spec openspec/changes/flow-cmmn-case-semantics/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-sentries-are-entry-and-exit-criteria-over-existing-engine-primitives
 	 */
 	private function containsVar(mixed $logic): bool {
 		if (is_array($logic) === false) {

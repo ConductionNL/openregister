@@ -45,6 +45,17 @@ use OCP\IDBConnection;
  * @template-extends QBMapper<NotificationHistory>
  *
  * @psalm-suppress PossiblyUnusedMethod
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Ten named queries and one
+ * writer, each a distinct question this table answers with its own predicate
+ * set: record a delivery, list and count it under a filter, count by status,
+ * and the five per-recipient state changes (read, read-for-subject, snooze,
+ * archive, archive-by-object) plus the ownership-scoped read they all lean on.
+ * The five state changes are separate precisely BECAUSE each writes a
+ * different column under a different `recipient` predicate; collapsing them
+ * into one generic updater would move the choice of column and of guard into
+ * the caller, which is where a per-recipient guard is easiest to forget. Same
+ * argument {@see FlowTimerMapper} and {@see ContactLinkMapper} make.
  */
 class NotificationHistoryMapper extends QBMapper {
 	/**
@@ -197,6 +208,56 @@ class NotificationHistoryMapper extends QBMapper {
 	}//end findFiltered()
 
 	/**
+	 * How the dispatches in a window came out, grouped by outcome.
+	 *
+	 * The dispatcher writes a status per attempt, and it writes more than two:
+	 * `dispatched`, and then every reason a notice never reached anybody, from
+	 * `rate-limited` to `preference-off` to `recipient-unresolved`. Grouping
+	 * rather than counting a list of known statuses is deliberate: whatever the
+	 * dispatcher learns to write next appears on the console by itself, instead
+	 * of being silently dropped into neither column.
+	 *
+	 * Index-backed on `(status, dispatched_at)` (`or_notif_hist_status_idx`),
+	 * which is the pair this groups and windows on (ADR-009).
+	 *
+	 * @param DateTime|null $since Only dispatches at or after this moment.
+	 *
+	 * @return array<string, int> Status to count, for the statuses in use.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-every-background-run-is-listed-with-its-outcome-req-aoc-001
+	 */
+	public function countByStatus(?DateTime $since = null): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('status')
+			->selectAlias($qb->createFunction('COUNT(*)'), 'status_count')
+			->from($this->getTableName())
+			->groupBy('status');
+
+		if ($since !== null) {
+			$qb->where(
+				$qb->expr()->gte('dispatched_at', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE))
+			);
+		}
+
+		$result = $qb->executeQuery();
+		$counts = [];
+
+		foreach ($result->fetchAll() as $row) {
+			$status = ($row['status'] ?? null);
+
+			if ($status === null || $status === '') {
+				continue;
+			}
+
+			$counts[(string)$status] = (int)($row['status_count'] ?? 0);
+		}
+
+		$result->closeCursor();
+
+		return $counts;
+	}//end countByStatus()
+
+	/**
 	 * Count rows matching the same filters as `findFiltered()`.
 	 *
 	 * @param array<string, string|null> $filters Filter map.
@@ -258,7 +319,7 @@ class NotificationHistoryMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	private function applyListStateFilters(IQueryBuilder $qb, array $filters, DateTime $asOf): void {
 		if (filter_var(($filters['unreadOnly'] ?? false), FILTER_VALIDATE_BOOLEAN) === true) {
@@ -278,7 +339,7 @@ class NotificationHistoryMapper extends QBMapper {
 		$qb->andWhere(
 			$qb->expr()->orX(
 				$qb->expr()->isNull('snoozed_until'),
-				$qb->expr()->lte('snoozed_until', $qb->createNamedParameter($asOf, IQueryBuilder::PARAM_DATE))
+				$qb->expr()->lte('snoozed_until', $qb->createNamedParameter($asOf, IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			)
 		);
 
@@ -297,12 +358,12 @@ class NotificationHistoryMapper extends QBMapper {
 	 *
 	 * @return boolean True when a row was marked.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
 	public function markRead(int $id, string $recipient, ?DateTime $readAt = null): bool {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName())
-			->set('read_at', $qb->createNamedParameter(($readAt ?? new DateTime()), IQueryBuilder::PARAM_DATE))
+			->set('read_at', $qb->createNamedParameter(($readAt ?? new DateTime()), IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->eq('recipient', $qb->createNamedParameter($recipient)))
 			->andWhere($qb->expr()->isNull('read_at'));
@@ -326,7 +387,7 @@ class NotificationHistoryMapper extends QBMapper {
 	 *
 	 * @return integer How many notices were cleared.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
 	public function markReadForSubject(
 		string $recipient,
@@ -336,7 +397,7 @@ class NotificationHistoryMapper extends QBMapper {
 	): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName())
-			->set('read_at', $qb->createNamedParameter(($readAt ?? new DateTime()), IQueryBuilder::PARAM_DATE))
+			->set('read_at', $qb->createNamedParameter(($readAt ?? new DateTime()), IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			->where($qb->expr()->eq('recipient', $qb->createNamedParameter($recipient)))
 			->andWhere($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->isNull('read_at'));
@@ -358,12 +419,12 @@ class NotificationHistoryMapper extends QBMapper {
 	 *
 	 * @return boolean True when a row was snoozed.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function snooze(int $id, string $recipient, DateTime $until): bool {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName())
-			->set('snoozed_until', $qb->createNamedParameter($until, IQueryBuilder::PARAM_DATE))
+			->set('snoozed_until', $qb->createNamedParameter($until, IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->eq('recipient', $qb->createNamedParameter($recipient)));
 
@@ -384,12 +445,12 @@ class NotificationHistoryMapper extends QBMapper {
 	 *
 	 * @return boolean True when a row was archived.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function archive(int $id, string $recipient, ?DateTime $archivedAt = null): bool {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName())
-			->set('archived_at', $qb->createNamedParameter(($archivedAt ?? new DateTime()), IQueryBuilder::PARAM_DATE))
+			->set('archived_at', $qb->createNamedParameter(($archivedAt ?? new DateTime()), IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			->where($qb->expr()->eq('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT)))
 			->andWhere($qb->expr()->eq('recipient', $qb->createNamedParameter($recipient)));
 
@@ -408,12 +469,12 @@ class NotificationHistoryMapper extends QBMapper {
 	 *
 	 * @return integer How many notices were archived.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-is-cleared-by-opening-what-it-was-about-req-ors-003
 	 */
 	public function archiveByObject(string $objectUuid, ?DateTime $archivedAt = null): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableName())
-			->set('archived_at', $qb->createNamedParameter(($archivedAt ?? new DateTime()), IQueryBuilder::PARAM_DATE))
+			->set('archived_at', $qb->createNamedParameter(($archivedAt ?? new DateTime()), IQueryBuilder::PARAM_DATETIME_MUTABLE))
 			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
 			->andWhere($qb->expr()->isNull('archived_at'));
 
@@ -429,7 +490,7 @@ class NotificationHistoryMapper extends QBMapper {
 	 *
 	 * @return NotificationHistory|null The row, or null when it is not theirs.
 	 *
-	 * @spec openspec/changes/object-read-state/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-may-be-snoozed-or-archived-and-the-list-has-an-axis-req-ors-004
 	 */
 	public function findOwn(int $id, string $recipient): ?NotificationHistory {
 		$qb = $this->db->getQueryBuilder();

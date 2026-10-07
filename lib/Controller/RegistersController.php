@@ -1764,6 +1764,26 @@ class RegistersController extends Controller {
 			);
 		}
 
+		// An app's example data leaves through the app or through occ, never
+		// through this route: it spans archival and append-only schemas, and
+		// archival schemas refuse HTTP deletes.
+		$owningApp = $this->container->get(\OCA\OpenRegister\Service\Configuration\AppImportJobRecorder::class)
+			->appForJob(importJobId: $importJobId);
+		if ($owningApp !== null) {
+			return new JSONResponse(
+				data: [
+					'error' => sprintf(
+						'This import job loaded data for app %s. Remove it through that app, or with occ openregister:objects:purge --import-job %s.',
+						$owningApp,
+						$importJobId
+					),
+					'importJobId' => $importJobId,
+					'app' => $owningApp,
+				],
+				statusCode: 409
+			);
+		}
+
 		// SECURITY: rollback wipes every object created by an import job.
 		// The only safety net was that `deleteObject` runs RBAC, which is
 		// much weaker than it sounds — any user with broad delete rights

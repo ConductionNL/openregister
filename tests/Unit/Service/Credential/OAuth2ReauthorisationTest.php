@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-token-set/spec.md#requirement-a-re-authorised-credential-returns-to-active-in-place
+ * @spec openspec/specs/credential-oauth2-token-set/spec.md#requirement-a-re-authorised-credential-returns-to-active-in-place
  */
 
 declare(strict_types=1);
@@ -48,6 +48,9 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\Credential\OAuth2ConnectService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2InstanceHost
+ * @uses \OCA\OpenRegister\Service\Credential\OAuth2TokenSet
  */
 class OAuth2ReauthorisationTest extends TestCase {
 	/** @var integer How many brand-new credentials were minted. */

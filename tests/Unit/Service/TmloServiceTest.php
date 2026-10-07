@@ -36,6 +36,7 @@ use Psr\Log\LoggerInterface;
  * Unit tests for TmloService
  *
  * @covers \OCA\OpenRegister\Service\TmloService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class TmloServiceTest extends TestCase {
 

@@ -35,7 +35,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
+ * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use OCP\EventDispatcher\Event;
 /**
  * Carries the task as it was persisted in its terminal state.
  *
- * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
+ * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
  *
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag IS the contract:
  * one event class serves the in-transaction dispatch (timer cancellation)
@@ -77,7 +77,7 @@ class TaskTerminalEvent extends Event {
 	 *
 	 * @return Task The task as persisted.
 	 *
-	 * @spec openspec/changes/flow-user-task-node/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
+	 * @spec openspec/specs/flow-user-task-node/spec.md#requirement-the-run-continues-on-task-terminality-never-on-a-nudge
 	 */
 	public function getTask(): Task {
 		return $this->task;

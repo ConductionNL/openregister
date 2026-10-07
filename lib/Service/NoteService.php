@@ -217,7 +217,7 @@ class NoteService {
 	 *
 	 * @throws Exception If the note is not found
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function noteVersions(int $noteId): array {
 		try {
@@ -242,7 +242,7 @@ class NoteService {
 	 *
 	 * @return bool True when an audit entry was written
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function auditEdit(ObjectEntity $object, int $noteId, int $versions): bool {
 		return $this->versions->auditEdit(object: $object, noteId: $noteId, versions: $versions);
@@ -255,7 +255,7 @@ class NoteService {
 	 *
 	 * @return array<int, array<string, mixed>> The same notes, carrying their summary
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	private function withEditSummaries(array $notes): array {
 		$ids = [];
@@ -378,7 +378,7 @@ class NoteService {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $mayManage is a permission verdict the caller resolved, not a mode switch.
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	public function updateNote(
 		int $noteId,
@@ -540,7 +540,7 @@ class NoteService {
 	 *
 	 * @return int[] The note ids
 	 *
-	 * @spec openspec/changes/note-edit-history/specs/object-interactions/spec.md
+	 * @spec openspec/specs/object-interactions/spec.md
 	 */
 	private function noteIdsForObject(string $objectUuid): array {
 		$ids = [];

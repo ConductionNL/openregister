@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use Throwable;
  *
  * @template-extends QBMapper<FlowDefinition>
  *
- * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+ * @spec openspec/specs/flow-definition-versioning/spec.md
  */
 class FlowDefinitionMapper extends QBMapper {
 	/**
@@ -54,7 +54,7 @@ class FlowDefinitionMapper extends QBMapper {
 	 *
 	 * @return FlowDefinition|null The definition, or null when unknown.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function findByHash(string $hash): ?FlowDefinition {
 		if (trim($hash) === '') {
@@ -92,7 +92,7 @@ class FlowDefinitionMapper extends QBMapper {
 	 *
 	 * @return FlowDefinition|null The stored definition, or null when it could not be stored.
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	public function store(string $hash, string $definition, ?string $flowUuid = null): ?FlowDefinition {
 		$existing = $this->findByHash(hash: $hash);

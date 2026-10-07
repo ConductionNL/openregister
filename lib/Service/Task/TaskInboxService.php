@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use Throwable;
 /**
  * Lists and counts tasks for a caller, with subject context attached.
  *
- * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+ * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
  *
  * @SuppressWarnings(PHPMD.StaticAccess) PortalTaskDelivery::summarise is a
  * stateless fold over rows; an instance to call it would be a second copy.
@@ -78,6 +78,11 @@ class TaskInboxService {
 	 *                                                  for the same reason as
 	 *                                                  the object store; absent,
 	 *                                                  the row says so.
+	 * @param TaskSubjectLocator|null $locator Reads located subjects from
+	 *                                         their own tables. Nullable for
+	 *                                         hand-built test services;
+	 *                                         absent, every subject is
+	 *                                         resolved by the cross-table search.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -85,6 +90,7 @@ class TaskInboxService {
 		private readonly LoggerInterface $logger,
 		private readonly ?AbstractObjectMapper $objects = null,
 		private readonly ?PortalTaskDeliveryMapper $deliveries = null,
+		private readonly ?TaskSubjectLocator $locator = null,
 	) {
 
 	}//end __construct()
@@ -104,7 +110,7 @@ class TaskInboxService {
 	 *
 	 * @return array{results: array<int, array<string, mixed>>, total: int, limit: int, offset: int} The page.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	public function inbox(TaskInboxCriteria $criteria, int $limit = 25, int $offset = 0): array {
 		$limit = max(1, min($limit, 500));
@@ -148,7 +154,7 @@ class TaskInboxService {
 	 *
 	 * @return array<string, mixed> The row.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function row(Task $task, array $subjects, \DateTimeInterface $now): array {
 		$row = $task->jsonSerialize();
@@ -258,7 +264,7 @@ class TaskInboxService {
 	 *
 	 * @return string A non-empty display title.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 */
 	public function displayTitle(Task $task, ?array $subject): string {
 		$stored = trim((string)$task->getTitle());
@@ -294,7 +300,7 @@ class TaskInboxService {
 	 * @return array<string, array<string, mixed>> Context by object uuid:
 	 *         {uuid, registerId, schemaId, title}.
 	 *
-	 * @spec openspec/changes/flow-task-entity/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
 	 */
 	private function subjectContexts(array $tasks): array {
 		$uuids = [];
@@ -309,19 +315,8 @@ class TaskInboxService {
 			return [];
 		}
 
-		try {
-			$found = $this->objects->findMultiple(ids: array_keys($uuids));
-		} catch (Throwable $failure) {
-			$this->logger->debug(
-				'[TaskInboxService] Could not resolve subject objects: ' . $failure->getMessage(),
-				['count' => count($uuids)]
-			);
-
-			return [];
-		}
-
 		$contexts = [];
-		foreach ($found as $object) {
+		foreach ($this->subjectObjects(tasks: $tasks, uuids: array_keys($uuids)) as $object) {
 			$serialised = [];
 			if (method_exists($object, 'jsonSerialize') === true) {
 				$serialised = $object->jsonSerialize();
@@ -335,6 +330,36 @@ class TaskInboxService {
 
 		return $contexts;
 	}//end subjectContexts()
+
+	/**
+	 * The subject objects of a page: located ones from their own tables, the
+	 * rest through the cross-table search.
+	 *
+	 * @param array<int, Task> $tasks The page.
+	 * @param array<int, string> $uuids The page's subject uuids.
+	 *
+	 * @return array<array-key, mixed> The subject objects.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md
+	 */
+	private function subjectObjects(array $tasks, array $uuids): array {
+		$found = ($this->locator?->readLocated(tasks: $tasks) ?? []);
+		$unlocated = array_values(array_diff($uuids, array_keys($found)));
+		if ($unlocated === [] || $this->objects === null) {
+			return $found;
+		}
+
+		try {
+			return array_merge($found, $this->objects->findMultiple(ids: $unlocated));
+		} catch (Throwable $failure) {
+			$this->logger->debug(
+				'[TaskInboxService] Could not resolve subject objects: ' . $failure->getMessage(),
+				['count' => count($unlocated)]
+			);
+
+			return $found;
+		}
+	}//end subjectObjects()
 
 	/**
 	 * One subject's context row, read from its REAL serialised shape.

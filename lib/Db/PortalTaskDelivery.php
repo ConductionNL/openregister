@@ -92,6 +92,11 @@ class PortalTaskDelivery extends Entity implements JsonSerializable {
 	public const KIND_REMINDER = 'reminder';
 
 	/**
+	 * A notice to the party that the task is past its deadline (a postBreach rung, #4166).
+	 */
+	public const KIND_OVERDUE = 'overdue';
+
+	/**
 	 * Delivery states. `not-recorded` is never stored: it is the summary of
 	 * a task with NO rows, which is the outage the spec wants readable.
 	 */

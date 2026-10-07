@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-adoption/specs/flow-storage/spec.md
+ * @spec openspec/specs/flow-storage/spec.md
  */
 
 declare(strict_types=1);
@@ -63,6 +63,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\Flow
  * @uses \OCA\OpenRegister\Db\FlowVersion
  * @uses \OCA\OpenRegister\Service\Flow\FlowLocator
+ * @uses \OCA\OpenRegister\Service\Flow\FlowCaller
  */
 class FlowAdoptionTest extends TestCase {
 

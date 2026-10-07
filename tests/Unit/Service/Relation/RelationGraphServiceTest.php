@@ -35,6 +35,9 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Relation\RelationGraphService
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\ObjectRelation
+ * @uses \OCA\OpenRegister\Service\Relation\RelationTypeResolver
  */
 class RelationGraphServiceTest extends TestCase {
 	/**

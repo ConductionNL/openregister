@@ -58,7 +58,9 @@
 		"Interval": "In Serbian Latin the word is spelled exactly as the English 'Interval'.",
 		"Minimum": "In Serbian Latin the word is spelled exactly as the English 'Minimum'.",
 		"Avatar": "In Serbian Latin this word is spelled exactly as the English 'Avatar'; the Cyrillic form transliterates to it directly.",
-		"Format": "In Serbian Latin this word is spelled exactly as the English 'Format'; the Cyrillic form transliterates to it directly."
+		"Format": "In Serbian Latin this word is spelled exactly as the English 'Format'; the Cyrillic form transliterates to it directly.",
+		"Period": "In Serbian Latin the word is spelled exactly as the English 'Period'; this bundle already records the same cognate for Status, Interval, Minimum and Format.",
+		"Token": "In Serbian Latin the security-token term is spelled exactly as the English 'Token'; the bundle's pre-existing values already inflect it as a Serbian noun ('Naziv tokena', 'Kvota tokena')."
 	},
 	"corrections": {
 		"Audit trail #{id}": "Pre-existing value was 'Revizijski trag #{id}' — wrong on THREE counts at once, which is why it is worth spelling out. It was in LATIN script inside a Cyrillic bundle; 'trag' with that adjective form is CROATIAN rather than Serbian; and 'ревизијски' contradicted the 'ревизорски' this bundle uses in its 24 other audit-trail values. Corrected to 'Ревизорски траг #{id}'. Worth noting the neighbourhood: openbuild ships one Croatian catalogue under sr.json as well as bs/cs/hr/mk/sk/sl (harvest drops it automatically, §6.6), and the identical defect appeared in the sl bundle as 'Revizijski trag' — so a Croatian string in a Serbian bundle is a known contamination path, not a coincidence.",

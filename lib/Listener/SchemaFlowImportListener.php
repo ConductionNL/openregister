@@ -124,9 +124,15 @@ class SchemaFlowImportListener implements IEventListener {
 	 *
 	 * @return void
 	 *
+	 * Public so the configuration import can run it for a schema whose save
+	 * changed nothing, and so fired no SchemaUpdatedEvent: a shipped flow an
+	 * administrator deleted, or one declared before this importer existed,
+	 * still arrives on the next import.
+	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-an-import-of-an-unchanged-schema-still-installs-what-it-declares
 	 */
-	private function importFor(Schema $schema): void {
+	public function importFor(Schema $schema): void {
 		$declared = (($schema->getConfiguration() ?? [])[self::ANNOTATION_KEY] ?? null);
 		if (is_array($declared) === false || $declared === []) {
 			return;
@@ -233,8 +239,52 @@ class SchemaFlowImportListener implements IEventListener {
 		}
 
 		$this->flows->update($flow);
+		$this->publishShippedUpdate(flow: $flow);
 
 	}//end upsert()
+
+	/**
+	 * Publish a changed declaration as the flow's next version.
+	 *
+	 * Runs walk the PUBLISHED version, so an app upgrade that fixed a shipped
+	 * flow but only rewrote its head changed nothing that ran. The rules for
+	 * when an upgrade may publish live in
+	 * {@see \OCA\OpenRegister\Service\Flow\FlowVersionService::publishShippedUpdate()}.
+	 *
+	 * Never raises, for the same reason as {@see self::publishVersionOne()}:
+	 * a flow must not abort a schema import. A refusal leaves the published
+	 * version serving and the shipped graph on the head.
+	 *
+	 * @param Flow $flow The updated flow.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/shipped-flow-update-is-published/specs/flow-definition-versioning/spec.md#requirement-a-changed-shipped-flow-is-published-as-the-next-version
+	 */
+	private function publishShippedUpdate(Flow $flow): void {
+		if ($this->container === null) {
+			return;
+		}
+
+		try {
+			$version = $this->container->get('OCA\OpenRegister\Service\Flow\FlowVersionService')
+				->publishShippedUpdate(flow: $flow);
+			if ($version !== null) {
+				$this->logger->info(
+					message: '[SchemaFlowImport] Published the updated declaration of flow "' . $flow->getUuid()
+						. '" as version ' . $version->getVersion() . '.'
+				);
+			}
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[SchemaFlowImport] The updated declaration of flow "' . $flow->getUuid()
+					. '" could not be published: ' . $e->getMessage()
+					. '. The previous version keeps serving.',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'flow' => $flow->getUuid()]
+			);
+		}
+
+	}//end publishShippedUpdate()
 
 	/**
 	 * Publish version 1 of a freshly imported flow.
@@ -258,7 +308,7 @@ class SchemaFlowImportListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/flow-definition-versioning/specs/flow-definition-versioning/spec.md
+	 * @spec openspec/specs/flow-definition-versioning/spec.md
 	 */
 	private function publishVersionOne(Flow $flow): void {
 		if ($this->container === null) {

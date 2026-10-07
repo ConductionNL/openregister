@@ -164,8 +164,8 @@ class IntegrationRegistry {
 	 *
 	 * ```php
 	 * $context->registerService(MyProvider::class, function ($c) { ... });
-	 * \OC::$server->get(IntegrationRegistry::class)->addProvider(
-	 *     \OC::$server->get(MyProvider::class)
+	 * \OCP\Server::get(IntegrationRegistry::class)->addProvider(
+	 *     \OCP\Server::get(MyProvider::class)
 	 * );
 	 * ```
 	 *

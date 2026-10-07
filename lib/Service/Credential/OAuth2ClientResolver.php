@@ -99,7 +99,7 @@ class OAuth2ClientResolver {
 	 *
 	 * @throws CredentialAccessDeniedException When no client is configured for the provider at all.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
 	public function resolve(array $credential, string $provider, ?string $actingUserId = null): array {
 		$clientRef = trim((string)($credential['clientCredentialRef'] ?? ''));
@@ -113,7 +113,7 @@ class OAuth2ClientResolver {
 		}
 
 		if ($clientId === '') {
-			throw new CredentialAccessDeniedException(message: 'no OAuth2 client id is configured for provider ' . $provider);
+			throw new OAuth2ClientNotConfiguredException(message: 'no OAuth2 client id is configured for provider ' . $provider);
 		}
 
 		$clientSecret = null;
@@ -132,7 +132,7 @@ class OAuth2ClientResolver {
 	 *
 	 * @return string|null The client secret, or null when the referenced credential holds none.
 	 *
-	 * @spec openspec/changes/credential-oauth2-connect-flow/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
+	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-starting-a-connection-returns-an-authorization-url-bound-to-the-caller
 	 */
 	private function secretFor(string $clientRef, ?string $actingUserId): ?string {
 		try {

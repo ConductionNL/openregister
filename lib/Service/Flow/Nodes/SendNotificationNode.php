@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+ * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
  */
 
 declare(strict_types=1);
@@ -137,7 +137,7 @@ class SendNotificationNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeC
 	 *
 	 * @throws UnexpectedValueException When the message or the recipients are empty.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function validateConfig(array $config): void {
 		if (trim((string)($config['message'] ?? '')) === '') {
@@ -203,7 +203,7 @@ class SendNotificationNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeC
 	 *
 	 * @return array The items, unchanged.
 	 *
-	 * @spec openspec/changes/flow-messaging-nodes/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
+	 * @spec openspec/specs/flow-messaging-nodes/spec.md#requirement-flows-send-through-the-notification-subsystem-never-beside-it
 	 */
 	public function execute(array $items, array $config, array $context): array {
 		$this->messaging->sendNotification(

@@ -298,7 +298,7 @@ class XwikiLinksController extends Controller {
 	 * @no-admin-idor-exempt No per-object resource: object-independent free-text knowledge-base search proxied to the
 	 *   admin-configured XWiki source; takes no OpenRegister object id.
 	 *
-	 * @spec openspec/changes/integration-xwiki-query-search/specs/integration-xwiki/spec.md
+	 * @spec openspec/specs/integration-xwiki/spec.md
 	 */
 	public function search(): JSONResponse {
 		$query = $this->request->getParam('q');

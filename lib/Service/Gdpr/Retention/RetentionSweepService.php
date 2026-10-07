@@ -96,7 +96,7 @@ class RetentionSweepService {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Dry-run toggle mirrors AvgRetentionJob's contract.
 	 *
-	 * @spec openspec/changes/dsar-case-engine/specs/dsar-retention-sweep/spec.md
+	 * @spec openspec/specs/dsar-retention-sweep/spec.md
 	 */
 	public function runSweep(bool $dryRun = false): array {
 		$now = $this->time->getTime();

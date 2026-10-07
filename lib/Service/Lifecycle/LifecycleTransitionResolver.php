@@ -51,7 +51,7 @@ class LifecycleTransitionResolver {
 	 *
 	 * @param LifecycleActionContext $context The named action being performed, if any.
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		private readonly LifecycleActionContext $context,
@@ -68,7 +68,7 @@ class LifecycleTransitionResolver {
 	 *
 	 * @return array{0: string, 1: array<string, mixed>}|null
 	 *
-	 * @spec openspec/changes/lifecycle-declarative-conditions/specs/object-lifecycle/spec.md
+	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function resolve(array $transitions, string $uuid, string $oldValue, string $newValue): ?array {
 		$declared = $this->context->declaredFor(uuid: $uuid);
