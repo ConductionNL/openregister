@@ -151,11 +151,14 @@ export function ApplicationDetails(id: string | number): string {
 export const FlowDetailPage = (id: string | number): string => `/flows/${id}`
 
 /** `src/views/flows/FlowOverview.vue` — what one flow is and how its runs went. */
-export const FlowOverviewPage = (id: string | number): string =>
-	`/flows/${id}/overview`
+export function FlowOverviewPage(id: string | number): string {
+	return `/flows/${id}/overview`
+}
 
 /** `src/views/flows/FlowRunDetail.vue` — one run, by uuid. */
-export const FlowRunPage = (uuid: string): string => `/flow-runs/${uuid}`
+export function FlowRunPage(uuid: string): string {
+	return `/flow-runs/${uuid}`
+}
 
 /** `src/views/reports/ReportView.vue` — single report/dashboard, by id. */
 export const ReportView = (id: string | number): string => `/reports/${id}`
