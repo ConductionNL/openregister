@@ -35,8 +35,12 @@
 - [x] 5.1 Jest spec `src/views/flows/flowDetail.spec.js` for the
       derivations and both pages' load and action methods, failing on the
       old code.
-- [ ] 5.2 Playwright journey: index row to overview to run detail, in
-      the verification pass after the design round.
+- [x] 5.2 Playwright journey: index row to overview to run detail, in
+      the verification pass after the design round. Two tests in
+      `tests/e2e/flow-engine.spec.ts` ('the Flows page', gated on
+      `OR_UI_E2E=1` like the rest of that describe): a row opens the
+      overview, the overview links the run, the run page names its steps;
+      a failed run names the step it stopped at.
 
 ## 6. Found in the live check (7 October 2026)
 
