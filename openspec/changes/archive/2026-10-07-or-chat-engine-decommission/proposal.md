@@ -39,3 +39,11 @@ The follow-up deletion change is filed as an issue on merge of this change.
 - **API consumers**: no route is removed; behaviour for API callers is #305's proxy semantics, now on by default.
 - **Operators**: deployments without hermiq keep working via fall-through; deployments with hermiq get one answerer (hermiq) for chat data from both entry points.
 - **Rollback**: `occ config:app:set openregister chat.proxyTo --value=off` restores local-engine answering; the UI removal only rolls back by revert.
+
+## Delta fix-up (2026-10-07)
+
+The delta was rewritten before archiving so it says what the code on development does:
+- The proxy default is a MODIFIED of main `chat-ai` REQ-007 (its exact header), with its five scenarios kept and "Proxy off" now the explicit `off` opt-out.
+- The stats rule is ADDED. Main REQ-005 described the analytics as instance-wide; its header has no `Requirement:` prefix, so a delta cannot target it, and its analytics paragraph and the matching Notes bullet were corrected by hand after the archive.
+- The REMOVED block is gone: main `chat-ai` never had that requirement, and the `/agents` screen came back with ai-agent-limits-screen (spec `agent-tool-governance`) as the agent tool-limits screen. The chat SPA stays removed.
+- Task 3.2 reads as what shipped then; on development `src/views/agents/` and `src/modals/agent/` hold the limits screen and its modal from that later change.
