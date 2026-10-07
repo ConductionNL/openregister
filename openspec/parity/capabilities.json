@@ -4339,7 +4339,7 @@
    "reachedOn": "API only: POST /api/sources/{id}/sync",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Only REST API sources; scheduling cannot be switched on from a screen. Decided no (build-all 2026-09-28): No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says.",
+   "note": "Only REST API sources; scheduling cannot be switched on from a screen. Decided no (build-all 2026-09-28): No competitor rates it yes, no demand row, outside the core area (modelling, records). Reversible. The built half stays and works as the evidence says. The app seam is specified separately as row x-harvest-apps (decision 80, change app-harvest-fetchers-and-flow-node).",
    "objects-api": "no",
    "directus": "partial",
    "strapi": "no",
@@ -4352,6 +4352,29 @@
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/modules/jobs/jobs/at-import/at-import.controller.ts:28-29 trigger an Airtable sync on demand; App Sync and scheduled sync from CRM, HRIS, ticketing and other sources are Enterprise (https://nocodb.com/docs/product/sync/app-sync, https://nocodb.com/docs/product/account-settings/cloud-enterprise-edition/community-vs-paid-editions), code not public",
     "pocketbase": "source read at v0.40.4, not driven: no connector or harvest setting (searched \"harvest|sync source|connector\" in the repo: none); a scheduled pull needs a hand-written cronAdd pocketbase:plugins/jsvm/binds.go:106 with $http.send pocketbase:plugins/jsvm/binds.go:931"
    }
+  },
+  {
+   "id": "x-harvest-apps",
+   "area": "exchange",
+   "name": "Let an app add its own harvest protocol and run its harvests as scheduled flows.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "partial",
+   "built": {
+    "state": "specified",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Read on development 26ff809cfb. The pipeline exists: lib/Service/Sync/HarvestPipelineService.php run() gather, fetch, import with MappingService and SyncConflictResolver; Source and SyncRecord in lib/Db/. Closed to apps: SourceFetcherRegistry is filled in lib/AppInfo/Application.php:919-922 with RestApiSourceFetcher only, and scheduling is the TimedJob lib/BackgroundJob/SyncDataJob.php, outside the flow engine. No conflict reasons, shadowed or rejected states, resolution API, protected fields or tombstones.",
+    "change": "app-harvest-fetchers-and-flow-node",
+    "readOn": "2026-10-07"
+   },
+   "reachedOn": "API only: /api/sources (an app's own screens once built)",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in spec round part 2 (7 Oct 2026) for decision 80: OpenRegister owns the harvest seam, opencatalogi rows od-harvest and od-harvest-conflict rest on it. x-harvest (OpenRegister's own harvesting screen) stays decided-no. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
   },
   {
    "id": "x-package",
