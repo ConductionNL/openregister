@@ -17,9 +17,7 @@
         "Relink needed": "Ny länkning behövs",
         "Server address": "Serveradress",
         "Load example data?": "Läsa in exempeldata?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Exempeldata fyller listor, detaljsidor och instrumentpaneler, så att du direkt ser appen fungera. Välj \"Inga\" vid en produktionsinstallation.",
-        "Load the example data": "Läs in exempeldata",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Läser in det du valde. Det är tydligt exempeldata, åtgärden kan upprepas utan risk och du kan ta bort dem efteråt.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Exempeldata fyller listor, detaljsidor och instrumentpaneler, så att du direkt ser appen fungera. Varje kort har en egen \"Läs in\"-knapp. Välj \"Inga\" vid en produktionsinstallation.",
         "None, I will set this up myself": "Inga, jag ställer in det själv",
         "Nothing is imported. You start with an empty app and add your own data.": "Ingenting importeras. Du börjar med en tom app och lägger till dina egna data.",
         "Example data": "Exempeldata",
@@ -3302,7 +3300,16 @@
         "This record has no visible fields.": "Den här posten har inga synliga fält.",
         "Upload": "Ladda upp",
         "Edit {field}": "Redigera {field}",
-        "The value could not be saved": "Värdet kunde inte sparas"
+        "The value could not be saved": "Värdet kunde inte sparas",
+        "%1$s %2$s created": "%1$s %2$s skapad",
+        "{schema} {title} created": "{schema} {title} skapad",
+        "%1$s %2$s updated": "%1$s %2$s uppdaterad",
+        "{schema} {title} updated": "{schema} {title} uppdaterad",
+        "%1$s %2$s deleted": "%1$s %2$s borttagen",
+        "{schema} {title} deleted": "{schema} {title} borttagen",
+        "Object \"%1$s\" created": "Objekt \"%1$s\" skapad",
+        "Object \"%1$s\" updated": "Objekt \"%1$s\" uppdaterad",
+        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" har tilldelats dig"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

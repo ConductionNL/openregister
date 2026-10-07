@@ -17,9 +17,7 @@
         "Relink needed": "Nouvelle liaison requise",
         "Server address": "Adresse du serveur",
         "Load example data?": "Charger des données d’exemple ?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Les données d’exemple remplissent les listes, les pages de détail et les tableaux de bord, pour voir l’application fonctionner tout de suite. Choisissez \"Aucune\" sur une installation de production.",
-        "Load the example data": "Charger les données d’exemple",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Charge ce que vous avez choisi. Ce sont visiblement des données d’exemple, l’opération peut être relancée sans risque, et vous pouvez les supprimer ensuite.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Les données d’exemple remplissent les listes, les pages de détail et les tableaux de bord, pour voir l’application fonctionner tout de suite. Chaque carte a son propre bouton \"Charger\". Choisissez \"Aucune\" sur une installation de production.",
         "None, I will set this up myself": "Aucune, je configure moi-même",
         "Nothing is imported. You start with an empty app and add your own data.": "Rien n’est importé. Vous commencez avec une application vide et ajoutez vos propres données.",
         "Example data": "Données d’exemple",
@@ -3323,7 +3321,16 @@
         "This record has no visible fields.": "Cet enregistrement n'a aucun champ visible.",
         "Upload": "Téléverser",
         "Edit {field}": "Modifier {field}",
-        "The value could not be saved": "La valeur n'a pas pu être enregistrée"
+        "The value could not be saved": "La valeur n'a pas pu être enregistrée",
+        "%1$s %2$s created": "%1$s %2$s créé",
+        "{schema} {title} created": "{schema} {title} créé",
+        "%1$s %2$s updated": "%1$s %2$s mis à jour",
+        "{schema} {title} updated": "{schema} {title} mis à jour",
+        "%1$s %2$s deleted": "%1$s %2$s supprimé",
+        "{schema} {title} deleted": "{schema} {title} supprimé",
+        "Object \"%1$s\" created": "Objet \"%1$s\" créé",
+        "Object \"%1$s\" updated": "Objet \"%1$s\" mis à jour",
+        "Object \"%1$s\" assigned to you": "Objet \"%1$s\" vous a été attribué"
     },
     "pluralForm": "nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;",
     "plurals": {

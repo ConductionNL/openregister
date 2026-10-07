@@ -17,9 +17,7 @@
         "Relink needed": "Potrebna je nova povezava",
         "Server address": "Naslov strežnika",
         "Load example data?": "Naložim vzorčne podatke?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Vzorčni podatki napolnijo sezname, strani s podrobnostmi in nadzorne plošče, tako da aplikacijo takoj vidite delovati. Pri produkcijski namestitvi izberite \"Brez\".",
-        "Load the example data": "Naloži vzorčne podatke",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Naloži tisto, kar ste izbrali. To so očitno vzorčni podatki, dejanje je varno ponoviti, pozneje pa jih lahko izbrišete.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Vzorčni podatki napolnijo sezname, strani s podrobnostmi in nadzorne plošče, tako da aplikacijo takoj vidite delovati. Vsaka kartica ima svoj gumb \"Naloži\". Pri produkcijski namestitvi izberite \"Brez\".",
         "None, I will set this up myself": "Brez, to bom nastavil sam",
         "Nothing is imported. You start with an empty app and add your own data.": "Nič se ne uvozi. Začnete s prazno aplikacijo in dodate svoje podatke.",
         "Example data": "Vzorčni podatki",
@@ -3344,7 +3342,16 @@
         "This record has no visible fields.": "Ta zapis nima vidnih polj.",
         "Upload": "Naloži",
         "Edit {field}": "Uredi {field}",
-        "The value could not be saved": "Vrednosti ni bilo mogoče shraniti"
+        "The value could not be saved": "Vrednosti ni bilo mogoče shraniti",
+        "%1$s %2$s created": "%1$s %2$s ustvarjen",
+        "{schema} {title} created": "{schema} {title} ustvarjen",
+        "%1$s %2$s updated": "%1$s %2$s posodobljen",
+        "{schema} {title} updated": "{schema} {title} posodobljen",
+        "%1$s %2$s deleted": "%1$s %2$s izbrisan",
+        "{schema} {title} deleted": "{schema} {title} izbrisan",
+        "Object \"%1$s\" created": "Objekt \"%1$s\" ustvarjen",
+        "Object \"%1$s\" updated": "Objekt \"%1$s\" posodobljen",
+        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" vam je dodeljen"
     },
     "pluralForm": "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);",
     "plurals": {

@@ -17,9 +17,7 @@
         "Relink needed": "Nevojitet rilidhje",
         "Server address": "Adresa e serverit",
         "Load example data?": "Të ngarkohen të dhëna shembull?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Të dhënat shembull mbushin listat, faqet e detajeve dhe panelet, që ta shihni aplikacionin duke punuar menjëherë. Zgjidhni \"Asnjë\" në një instalim prodhimi.",
-        "Load the example data": "Ngarko të dhënat shembull",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Ngarkon atë që zgjodhët. Janë qartësisht të dhëna shembull, veprimi mund të përsëritet pa rrezik dhe mund t’i fshini më pas.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Të dhënat shembull mbushin listat, faqet e detajeve dhe panelet, që ta shihni aplikacionin duke punuar menjëherë. Çdo kartë ka butonin e vet \"Ngarko\". Zgjidhni \"Asnjë\" në një instalim prodhimi.",
         "None, I will set this up myself": "Asnjë, do ta konfiguroj vetë",
         "Nothing is imported. You start with an empty app and add your own data.": "Nuk importohet asgjë. Filloni me një aplikacion bosh dhe shtoni të dhënat tuaja.",
         "Example data": "Të dhëna shembull",
@@ -3302,7 +3300,16 @@
         "This record has no visible fields.": "Ky regjistrim nuk ka fusha të dukshme.",
         "Upload": "Ngarko",
         "Edit {field}": "Ndrysho {field}",
-        "The value could not be saved": "Vlera nuk mund të ruhej"
+        "The value could not be saved": "Vlera nuk mund të ruhej",
+        "%1$s %2$s created": "%1$s %2$s u krijua",
+        "{schema} {title} created": "{schema} {title} u krijua",
+        "%1$s %2$s updated": "%1$s %2$s u përditësua",
+        "{schema} {title} updated": "{schema} {title} u përditësua",
+        "%1$s %2$s deleted": "%1$s %2$s u fshi",
+        "{schema} {title} deleted": "{schema} {title} u fshi",
+        "Object \"%1$s\" created": "Objekti \"%1$s\" u krijua",
+        "Object \"%1$s\" updated": "Objekti \"%1$s\" u përditësua",
+        "Object \"%1$s\" assigned to you": "Objekti \"%1$s\" ju është caktuar"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

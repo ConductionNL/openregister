@@ -17,9 +17,7 @@
         "Relink needed": "Reikia susieti iš naujo",
         "Server address": "Serverio adresas",
         "Load example data?": "Ar įkelti pavyzdinius duomenis?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Pavyzdiniai duomenys užpildo sąrašus, detalių puslapius ir skydelius, todėl programėlę iškart pamatysite veikiančią. Gamybinėje diegtyje pasirinkite \"Nėra\".",
-        "Load the example data": "Įkelti pavyzdinius duomenis",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Įkelia tai, ką pasirinkote. Tai akivaizdžiai pavyzdiniai duomenys, veiksmą galima saugiai kartoti, o vėliau juos galima ištrinti.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Pavyzdiniai duomenys užpildo sąrašus, detalių puslapius ir skydelius, todėl programėlę iškart pamatysite veikiančią. Kiekviena kortelė turi savo mygtuką \"Įkelti\". Gamybinėje diegtyje pasirinkite \"Nėra\".",
         "None, I will set this up myself": "Nėra, susitvarkysiu pats",
         "Nothing is imported. You start with an empty app and add your own data.": "Niekas neimportuojama. Pradedate nuo tuščios programėlės ir pridedate savo duomenis.",
         "Example data": "Pavyzdiniai duomenys",
@@ -3323,7 +3321,16 @@
         "This record has no visible fields.": "Šis įrašas neturi matomų laukų.",
         "Upload": "Įkelti",
         "Edit {field}": "Redaguoti {field}",
-        "The value could not be saved": "Nepavyko išsaugoti reikšmės"
+        "The value could not be saved": "Nepavyko išsaugoti reikšmės",
+        "%1$s %2$s created": "%1$s %2$s sukurtas",
+        "{schema} {title} created": "{schema} {title} sukurtas",
+        "%1$s %2$s updated": "%1$s %2$s atnaujintas",
+        "{schema} {title} updated": "{schema} {title} atnaujintas",
+        "%1$s %2$s deleted": "%1$s %2$s ištrintas",
+        "{schema} {title} deleted": "{schema} {title} ištrintas",
+        "Object \"%1$s\" created": "Objektas \"%1$s\" sukurtas",
+        "Object \"%1$s\" updated": "Objektas \"%1$s\" atnaujintas",
+        "Object \"%1$s\" assigned to you": "Objektas \"%1$s\" priskirtas jums"
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);",
     "plurals": {

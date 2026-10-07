@@ -17,9 +17,7 @@
         "Relink needed": "Ny tilknytning er nødvendig",
         "Server address": "Serveradresse",
         "Load example data?": "Indlæs eksempeldata?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Eksempeldata fylder lister, detaljesider og dashboards, så du med det samme ser appen virke. Vælg \"Ingen\" på en produktionsinstallation.",
-        "Load the example data": "Indlæs eksempeldataene",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Indlæser det, du valgte. Det er tydeligvis eksempeldata, handlingen kan gentages uden risiko, og du kan slette dem bagefter.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Eksempeldata fylder lister, detaljesider og dashboards, så du med det samme ser appen virke. Hvert kort har sin egen \"Indlæs\"-knap. Vælg \"Ingen\" på en produktionsinstallation.",
         "None, I will set this up myself": "Ingen, jeg sætter det op selv",
         "Nothing is imported. You start with an empty app and add your own data.": "Der importeres intet. Du starter med en tom app og tilføjer dine egne data.",
         "Example data": "Eksempeldata",
@@ -3302,7 +3300,16 @@
         "This record has no visible fields.": "Denne post har ingen synlige felter.",
         "Upload": "Overfør",
         "Edit {field}": "Rediger {field}",
-        "The value could not be saved": "Værdien kunne ikke gemmes"
+        "The value could not be saved": "Værdien kunne ikke gemmes",
+        "%1$s %2$s created": "%1$s %2$s oprettet",
+        "{schema} {title} created": "{schema} {title} oprettet",
+        "%1$s %2$s updated": "%1$s %2$s opdateret",
+        "{schema} {title} updated": "{schema} {title} opdateret",
+        "%1$s %2$s deleted": "%1$s %2$s slettet",
+        "{schema} {title} deleted": "{schema} {title} slettet",
+        "Object \"%1$s\" created": "Objekt \"%1$s\" oprettet",
+        "Object \"%1$s\" updated": "Objekt \"%1$s\" opdateret",
+        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" er tildelt dig"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

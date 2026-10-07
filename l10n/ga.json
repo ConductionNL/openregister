@@ -17,9 +17,7 @@
         "Relink needed": "Teastaíonn athnascadh",
         "Server address": "Seoladh an fhreastalaí",
         "Load example data?": "Luchtaigh sonraí samplacha?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Líonann sonraí samplacha na liostaí, na leathanaigh mhionsonraí agus na deais, ionas go bhfeicfidh tú an aip ag obair láithreach. Roghnaigh \"Ceann ar bith\" ar shuiteáil táirgthe.",
-        "Load the example data": "Luchtaigh na sonraí samplacha",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Luchtaíonn sé an rud a roghnaigh tú. Is sonraí samplacha go soiléir iad, is féidir é a rith níos mó ná uair amháin gan bhaol, agus is féidir leat iad a scriosadh ina dhiaidh.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Líonann sonraí samplacha na liostaí, na leathanaigh mhionsonraí agus na deais, ionas go bhfeicfidh tú an aip ag obair láithreach. Tá a cnaipe \"Luchtaigh\" féin ag gach cárta. Roghnaigh \"Ceann ar bith\" ar shuiteáil táirgthe.",
         "None, I will set this up myself": "Ceann ar bith, cuirfidh mé féin é seo ar bun",
         "Nothing is imported. You start with an empty app and add your own data.": "Ní iompórtáiltear aon rud. Tosaíonn tú le haip fholamh agus cuireann tú do shonraí féin leis.",
         "Example data": "Sonraí samplacha",
@@ -3365,7 +3363,16 @@
         "This record has no visible fields.": "Níl aon réimsí infheicthe ag an taifead seo.",
         "Upload": "Uaslódáil",
         "Edit {field}": "Cuir {field} in eagar",
-        "The value could not be saved": "Níorbh fhéidir an luach a shábháil"
+        "The value could not be saved": "Níorbh fhéidir an luach a shábháil",
+        "%1$s %2$s created": "%1$s %2$s cruthaithe",
+        "{schema} {title} created": "{schema} {title} cruthaithe",
+        "%1$s %2$s updated": "%1$s %2$s nuashonraithe",
+        "{schema} {title} updated": "{schema} {title} nuashonraithe",
+        "%1$s %2$s deleted": "%1$s %2$s scriosta",
+        "{schema} {title} deleted": "{schema} {title} scriosta",
+        "Object \"%1$s\" created": "Réad \"%1$s\" cruthaithe",
+        "Object \"%1$s\" updated": "Réad \"%1$s\" nuashonraithe",
+        "Object \"%1$s\" assigned to you": "Réad \"%1$s\" sannta duit"
     },
     "pluralForm": "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);",
     "plurals": {

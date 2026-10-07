@@ -20,6 +20,8 @@ namespace OCA\OpenRegister\Tests\Unit\Service;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Service\ActivityService;
 use OCP\Activity\IEvent;
 use OCP\Activity\IManager;
@@ -276,5 +278,48 @@ class ActivityServiceTest extends TestCase {
 				"Method $method should exist on ActivityService"
 			);
 		}
+	}
+	/**
+	 * Test: an object update activity carries the schema title.
+	 *
+	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
+	 */
+	public function testPublishObjectUpdatedCarriesSchemaTitle(): void {
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->expects($this->once())
+			->method('find')
+			->with('12', $this->anything(), false, false)
+			->willReturn($this->createSchema(title: 'Client'));
+
+		$service = new ActivityService($this->activityManager, $this->userSession, $this->urlGenerator, $this->logger, $schemaMapper);
+		$this->userSession->method('getUser')->willReturn($this->mockUser('admin'));
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.com/apps/openregister/');
+
+		$event = $this->mockEvent();
+		$event->expects($this->once())
+			->method('setSubject')
+			->with('object_updated', ['title' => 'Gemeente Demo', 'schema' => 'Client']);
+		$this->activityManager->method('generateEvent')->willReturn($event);
+
+		$service->publishObjectUpdated($this->createObjectEntity(name: 'Gemeente Demo'));
+	}
+
+	/**
+	 * Test: a schema that does not resolve leaves the title-only parameters and still publishes.
+	 */
+	public function testPublishObjectUpdatedWithoutResolvableSchemaStillPublishes(): void {
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('find')->willThrowException(new DoesNotExistException('gone'));
+
+		$service = new ActivityService($this->activityManager, $this->userSession, $this->urlGenerator, $this->logger, $schemaMapper);
+		$this->userSession->method('getUser')->willReturn($this->mockUser('admin'));
+		$this->urlGenerator->method('linkToRouteAbsolute')->willReturn('https://example.com/apps/openregister/');
+
+		$event = $this->mockEvent();
+		$event->expects($this->once())->method('setSubject')->with('object_updated', ['title' => 'Gemeente Demo']);
+		$this->activityManager->method('generateEvent')->willReturn($event);
+		$this->activityManager->expects($this->once())->method('publish');
+
+		$service->publishObjectUpdated($this->createObjectEntity(name: 'Gemeente Demo'));
 	}
 }

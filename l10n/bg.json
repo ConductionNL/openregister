@@ -17,9 +17,7 @@
         "Relink needed": "Нужно е ново свързване",
         "Server address": "Адрес на сървъра",
         "Load example data?": "Да се заредят ли примерни данни?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Примерните данни попълват списъците, страниците с подробности и таблата, за да видите приложението веднага в действие. Изберете \"Няма\" при производствена инсталация.",
-        "Load the example data": "Заредете примерните данни",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Зарежда това, което сте избрали. Данните са явно примерни, действието може да се повтори безопасно и след това можете да ги изтриете.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Примерните данни попълват списъците, страниците с подробности и таблата, за да видите приложението веднага в действие. Всяка карта има собствен бутон \"Зареждане\". Изберете \"Няма\" при производствена инсталация.",
         "None, I will set this up myself": "Няма, ще настроя това сам",
         "Nothing is imported. You start with an empty app and add your own data.": "Нищо не се внася. Започвате с празно приложение и добавяте собствени данни.",
         "Example data": "Примерни данни",
@@ -3302,7 +3300,16 @@
         "This record has no visible fields.": "Този запис няма видими полета.",
         "Upload": "Качване",
         "Edit {field}": "Редактиране на {field}",
-        "The value could not be saved": "Стойността не можа да бъде запазена"
+        "The value could not be saved": "Стойността не можа да бъде запазена",
+        "%1$s %2$s created": "%1$s %2$s създаден",
+        "{schema} {title} created": "{schema} {title} създаден",
+        "%1$s %2$s updated": "%1$s %2$s обновен",
+        "{schema} {title} updated": "{schema} {title} обновен",
+        "%1$s %2$s deleted": "%1$s %2$s изтрит",
+        "{schema} {title} deleted": "{schema} {title} изтрит",
+        "Object \"%1$s\" created": "Обект \"%1$s\" създаден",
+        "Object \"%1$s\" updated": "Обект \"%1$s\" обновен",
+        "Object \"%1$s\" assigned to you": "Обект \"%1$s\" е възложен на вас"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

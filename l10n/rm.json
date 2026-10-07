@@ -17,9 +17,7 @@
         "Relink needed": "Ina nova colliaziun è necessaria",
         "Server address": "Adressa dal server",
         "Load example data?": "Chargiar datas d’exempel?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Las datas d’exempel emplenischan las glistas, las paginas da detagls e las tablas da controlla, uschè che ti vesas immediatamain l’applicaziun funcziunar. Tscherna \"Nagina\" sin ina installaziun da producziun.",
-        "Load the example data": "Chargiar las datas d’exempel",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Chargia quai che ti has tschernì. Igl èn cleramain datas d’exempel, l’acziun po vegnir repetida senza ristg e ti pos las stizzar suenter.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Las datas d’exempel emplenischan las glistas, las paginas da detagls e las tablas da controlla, uschè che ti vesas immediatamain l’applicaziun funcziunar. Mintga carta ha ses agen buttun \"Chargiar\". Tscherna \"Nagina\" sin ina installaziun da producziun.",
         "None, I will set this up myself": "Nagina, jau fatsch quai sez",
         "Nothing is imported. You start with an empty app and add your own data.": "Nagut vegn importà. Ti cumenzas cun ina applicaziun vida ed agiunthas tias atgnas datas.",
         "Example data": "Datas d’exempel",
@@ -3302,7 +3300,16 @@
         "This record has no visible fields.": "Quest register n'ha nagins champs visibels.",
         "Upload": "Chargiar si",
         "Edit {field}": "Modifitgar {field}",
-        "The value could not be saved": "La valur na pudeva betg vegnir memorisada"
+        "The value could not be saved": "La valur na pudeva betg vegnir memorisada",
+        "%1$s %2$s created": "%1$s %2$s creà",
+        "{schema} {title} created": "{schema} {title} creà",
+        "%1$s %2$s updated": "%1$s %2$s actualisà",
+        "{schema} {title} updated": "{schema} {title} actualisà",
+        "%1$s %2$s deleted": "%1$s %2$s stizzà",
+        "{schema} {title} deleted": "{schema} {title} stizzà",
+        "Object \"%1$s\" created": "Object \"%1$s\" creà",
+        "Object \"%1$s\" updated": "Object \"%1$s\" actualisà",
+        "Object \"%1$s\" assigned to you": "Object \"%1$s\" attribuì a Vus"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

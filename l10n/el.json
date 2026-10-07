@@ -17,9 +17,7 @@
         "Relink needed": "Απαιτείται νέα σύνδεση",
         "Server address": "Διεύθυνση διακομιστή",
         "Load example data?": "Να φορτωθούν δεδομένα παραδείγματος;",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Τα δεδομένα παραδείγματος γεμίζουν τις λίστες, τις σελίδες λεπτομερειών και τους πίνακες, ώστε να δείτε αμέσως την εφαρμογή να λειτουργεί. Επιλέξτε \"Κανένα\" σε εγκατάσταση παραγωγής.",
-        "Load the example data": "Φόρτωση των δεδομένων παραδείγματος",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Φορτώνει ό,τι επιλέξατε. Είναι εμφανώς δεδομένα παραδείγματος, η ενέργεια επαναλαμβάνεται με ασφάλεια και μπορείτε να τα διαγράψετε μετά.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Τα δεδομένα παραδείγματος γεμίζουν τις λίστες, τις σελίδες λεπτομερειών και τους πίνακες, ώστε να δείτε αμέσως την εφαρμογή να λειτουργεί. Κάθε κάρτα έχει το δικό της κουμπί \"Φόρτωση\". Επιλέξτε \"Κανένα\" σε εγκατάσταση παραγωγής.",
         "None, I will set this up myself": "Κανένα, θα το ρυθμίσω μόνος μου",
         "Nothing is imported. You start with an empty app and add your own data.": "Δεν εισάγεται τίποτα. Ξεκινάτε με μια κενή εφαρμογή και προσθέτετε τα δικά σας δεδομένα.",
         "Example data": "Δεδομένα παραδείγματος",
@@ -3302,7 +3300,16 @@
         "This record has no visible fields.": "Αυτή η εγγραφή δεν έχει ορατά πεδία.",
         "Upload": "Μεταφόρτωση",
         "Edit {field}": "Επεξεργασία {field}",
-        "The value could not be saved": "Δεν ήταν δυνατή η αποθήκευση της τιμής"
+        "The value could not be saved": "Δεν ήταν δυνατή η αποθήκευση της τιμής",
+        "%1$s %2$s created": "%1$s %2$s δημιουργήθηκε",
+        "{schema} {title} created": "{schema} {title} δημιουργήθηκε",
+        "%1$s %2$s updated": "%1$s %2$s ενημερώθηκε",
+        "{schema} {title} updated": "{schema} {title} ενημερώθηκε",
+        "%1$s %2$s deleted": "%1$s %2$s διαγράφηκε",
+        "{schema} {title} deleted": "{schema} {title} διαγράφηκε",
+        "Object \"%1$s\" created": "Αντικείμενο \"%1$s\" δημιουργήθηκε",
+        "Object \"%1$s\" updated": "Αντικείμενο \"%1$s\" ενημερώθηκε",
+        "Object \"%1$s\" assigned to you": "Αντικείμενο \"%1$s\" ανατέθηκε σε εσάς"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

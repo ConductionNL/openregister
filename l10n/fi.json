@@ -17,9 +17,7 @@
         "Relink needed": "Uudelleenlinkitys tarvitaan",
         "Server address": "Palvelimen osoite",
         "Load example data?": "Ladataanko esimerkkitiedot?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Esimerkkitiedot täyttävät luettelot, tietosivut ja koontinäytöt, joten näet sovelluksen heti toiminnassa. Valitse tuotantoasennuksessa \"Ei mitään\".",
-        "Load the example data": "Lataa esimerkkitiedot",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Lataa sen, minkä valitsit. Tiedot ovat selvästi esimerkkitietoja, toiminnon voi toistaa turvallisesti ja ne voi poistaa jälkeenpäin.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Esimerkkitiedot täyttävät luettelot, tietosivut ja koontinäytöt, joten näet sovelluksen heti toiminnassa. Jokaisessa kortissa on oma \"Lataa\"-painike. Valitse tuotantoasennuksessa \"Ei mitään\".",
         "None, I will set this up myself": "Ei mitään, teen asetukset itse",
         "Nothing is imported. You start with an empty app and add your own data.": "Mitään ei tuoda. Aloitat tyhjästä sovelluksesta ja lisäät omat tietosi.",
         "Example data": "Esimerkkitiedot",
@@ -3302,7 +3300,16 @@
         "This record has no visible fields.": "Tällä tietueella ei ole näkyviä kenttiä.",
         "Upload": "Lähetä",
         "Edit {field}": "Muokkaa kenttää {field}",
-        "The value could not be saved": "Arvoa ei voitu tallentaa"
+        "The value could not be saved": "Arvoa ei voitu tallentaa",
+        "%1$s %2$s created": "%1$s %2$s luotu",
+        "{schema} {title} created": "{schema} {title} luotu",
+        "%1$s %2$s updated": "%1$s %2$s päivitetty",
+        "{schema} {title} updated": "{schema} {title} päivitetty",
+        "%1$s %2$s deleted": "%1$s %2$s poistettu",
+        "{schema} {title} deleted": "{schema} {title} poistettu",
+        "Object \"%1$s\" created": "Objekti \"%1$s\" luotu",
+        "Object \"%1$s\" updated": "Objekti \"%1$s\" päivitetty",
+        "Object \"%1$s\" assigned to you": "Objekti \"%1$s\" on määritetty sinulle"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

@@ -16,17 +16,10 @@
           "display": "cards",
           "optionsSource": "datasets",
           "configKey": "demo_dataset",
+          "loadAction": "load-demo-data",
           "title": "Load example data?",
           "required": false,
-          "body": "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install."
-        },
-        {
-          "id": "load-demo-data",
-          "type": "run-action",
-          "action": "load-demo-data",
-          "title": "Load the example data",
-          "required": false,
-          "body": "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards."
+          "body": "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install."
         },
         {
           "id": "done",
@@ -190,10 +183,10 @@
       "route": "/flows",
       "type": "index",
       "title": "Flows",
-      "_note": "Ordinary index over a NAMED SOURCE, not a custom page. A flow lives in OpenRegister's own native flow table rather than a register/schema pair, so an object-backed index had nothing to address and this used to be type:custom over FlowsIndex.vue. Named index sources (nextcloud-vue 2.20.0) close that: config.entitySource names the collection and the index loads it. Columns are stated here rather than left to the source's defaults because this is the ENGINE's cross-app surface — it passes no app filter and so needs the `app` column, which a leaf app's own flow list does not. Migrating also fixes a dead listener: FlowsIndex bound @rowClick while CnIndexPage emits row-click, so opening a flow by clicking its row never worked here. `rowRoute` names the flowDetail page (a route NAME, not a path): without it a named-source page has no schema, so CnPageRenderer never auto-wired editOpensDetail and row Edit opened an EMPTY modal instead of the flow editor.",
+      "_note": "Ordinary index over a NAMED SOURCE, not a custom page. A flow lives in OpenRegister's own native flow table rather than a register/schema pair, so an object-backed index had nothing to address and this used to be type:custom over FlowsIndex.vue. Named index sources (nextcloud-vue 2.20.0) close that: config.entitySource names the collection and the index loads it. Columns are stated here rather than left to the source's defaults because this is the ENGINE's cross-app surface — it passes no app filter and so needs the `app` column, which a leaf app's own flow list does not. Migrating also fixes a dead listener: FlowsIndex bound @rowClick while CnIndexPage emits row-click, so opening a flow by clicking its row never worked here. `rowRoute` names the flow-overview route (a route NAME, not a path, registered in src/main.js by flow-and-run-detail-pages): a row opens the flow's overview, which links on to the editor at /flows/:id. Without a rowRoute a named-source page has no schema, so CnPageRenderer never auto-wired editOpensDetail and row Edit opened an EMPTY modal.",
       "config": {
         "entitySource": "flows",
-        "rowRoute": "flowDetail",
+        "rowRoute": "flow-overview",
         "columns": [
           {
             "key": "name",
@@ -718,7 +711,7 @@
       "label": "Reports",
       "icon": "ChartBoxOutline",
       "route": "reports",
-      "section": "footer",
+      "section": "settings",
       "order": 95
     },
     {

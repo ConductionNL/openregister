@@ -17,9 +17,7 @@
         "Relink needed": "Potrebno je ponovno povezivanje",
         "Server address": "Adresa servera",
         "Load example data?": "Učitati primjere podataka?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Primjeri podataka popunjavaju liste, stranice s detaljima i kontrolne table, pa aplikaciju odmah vidite kako radi. Odaberite \"Ništa\" na produkcijskoj instalaciji.",
-        "Load the example data": "Učitaj primjere podataka",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Učitava ono što ste odabrali. To su očito primjeri podataka, radnja se može sigurno ponoviti, a poslije ih možete obrisati.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Primjeri podataka popunjavaju liste, stranice s detaljima i kontrolne table, pa aplikaciju odmah vidite kako radi. Svaka kartica ima svoje dugme \"Učitaj\". Odaberite \"Ništa\" na produkcijskoj instalaciji.",
         "None, I will set this up myself": "Ništa, sam ću ovo postaviti",
         "Nothing is imported. You start with an empty app and add your own data.": "Ništa se ne uvozi. Počinjete s praznom aplikacijom i dodajete vlastite podatke.",
         "Example data": "Primjeri podataka",
@@ -3323,7 +3321,16 @@
         "This record has no visible fields.": "Ovaj zapis nema vidljivih polja.",
         "Upload": "Otpremi",
         "Edit {field}": "Uredi {field}",
-        "The value could not be saved": "Vrijednost nije moguće sačuvati"
+        "The value could not be saved": "Vrijednost nije moguće sačuvati",
+        "%1$s %2$s created": "%1$s %2$s kreiran",
+        "{schema} {title} created": "{schema} {title} kreiran",
+        "%1$s %2$s updated": "%1$s %2$s ažuriran",
+        "{schema} {title} updated": "{schema} {title} ažuriran",
+        "%1$s %2$s deleted": "%1$s %2$s obrisan",
+        "{schema} {title} deleted": "{schema} {title} obrisan",
+        "Object \"%1$s\" created": "Objekat \"%1$s\" kreiran",
+        "Object \"%1$s\" updated": "Objekat \"%1$s\" ažuriran",
+        "Object \"%1$s\" assigned to you": "Objekat \"%1$s\" je dodijeljen vama"
     },
     "pluralForm": "nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;",
     "plurals": {

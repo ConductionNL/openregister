@@ -48,6 +48,20 @@ class ProviderSubjectHandler {
 	];
 
 	/**
+	 * Object subjects that name the schema too: subject => [parsedKey, richKey].
+	 *
+	 * Used when the activity carries a `schema` parameter; without it the
+	 * simple map above applies, so older rows keep rendering.
+	 *
+	 * @var array<string, array{string, string}>
+	 */
+	private const SCHEMA_SUBJECTS = [
+		'object_created' => ['%1$s %2$s created', '{schema} {title} created'],
+		'object_updated' => ['%1$s %2$s updated', '{schema} {title} updated'],
+		'object_deleted' => ['%1$s %2$s deleted', '{schema} {title} deleted'],
+	];
+
+	/**
 	 * Apply subject text and rich parameters to the event based on its subject type.
 	 *
 	 * @param IEvent $event The event to modify.
@@ -57,6 +71,7 @@ class ProviderSubjectHandler {
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function applySubjectText(IEvent $event, object $l, array $params): void {
 		$title = $params['title'] ?? '';
@@ -66,6 +81,18 @@ class ProviderSubjectHandler {
 		);
 
 		$subject = $event->getSubject();
+		$schema = $params['schema'] ?? '';
+
+		if (isset(self::SCHEMA_SUBJECTS[$subject]) === true && is_string($schema) === true && $schema !== '') {
+			$richParams['schema'] = [
+				'type' => 'highlight',
+				'id' => $schema,
+				'name' => $schema,
+			];
+			$event->setParsedSubject($l->t(self::SCHEMA_SUBJECTS[$subject][0], [$schema, $title]));
+			$event->setRichSubject($l->t(self::SCHEMA_SUBJECTS[$subject][1]), $richParams);
+			return;
+		}
 
 		if (isset(self::SIMPLE_SUBJECTS[$subject]) === true) {
 			$this->applySimpleSubject(

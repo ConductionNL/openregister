@@ -17,9 +17,7 @@
         "Relink needed": "Потребно је поновно повезивање",
         "Server address": "Адреса сервера",
         "Load example data?": "Учитати примере података?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Примери података попуњавају листе, странице са детаљима и командне табле, па апликацију одмах видите како ради. Изаберите \"Ништа\" на продукцијској инсталацији.",
-        "Load the example data": "Учитај примере података",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Учитава оно што сте изабрали. То су очигледно примери података, радња се може безбедно поновити, а после их можете обрисати.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Примери података попуњавају листе, странице са детаљима и командне табле, па апликацију одмах видите како ради. Свака картица има своје дугме \"Учитај\". Изаберите \"Ништа\" на продукцијској инсталацији.",
         "None, I will set this up myself": "Ништа, сам ћу ово подесити",
         "Nothing is imported. You start with an empty app and add your own data.": "Ништа се не увози. Почињете са празном апликацијом и додајете сопствене податке.",
         "Example data": "Примери података",
@@ -3323,7 +3321,16 @@
         "This record has no visible fields.": "Овај запис нема видљивих поља.",
         "Upload": "Отпреми",
         "Edit {field}": "Уреди {field}",
-        "The value could not be saved": "Вредност није могуће сачувати"
+        "The value could not be saved": "Вредност није могуће сачувати",
+        "%1$s %2$s created": "%1$s %2$s креиран",
+        "{schema} {title} created": "{schema} {title} креиран",
+        "%1$s %2$s updated": "%1$s %2$s ажуриран",
+        "{schema} {title} updated": "{schema} {title} ажуриран",
+        "%1$s %2$s deleted": "%1$s %2$s обрисан",
+        "{schema} {title} deleted": "{schema} {title} обрисан",
+        "Object \"%1$s\" created": "Објекат \"%1$s\" креиран",
+        "Object \"%1$s\" updated": "Објекат \"%1$s\" ажуриран",
+        "Object \"%1$s\" assigned to you": "Објекат \"%1$s\" вам је додељен"
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);",
     "plurals": {

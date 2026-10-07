@@ -327,6 +327,8 @@ class ImportHandler {
 	 *        guard that keeps local changes to an app-shipped schema.
 	 * @param ?AppImportJobRecorder $importJobRecorder Stamps each app import with an import job id and
 	 *        records the jobs that created objects; null imports untagged, as before.
+	 * @param ?SchemaImportInstaller $schemaInstaller Installs a schema's flows and webhooks when an
+	 *        import fired no SchemaUpdatedEvent; null leaves an unchanged re-import installing nothing.
 	 */
 	public function __construct(
 		SchemaMapper $schemaMapper,
@@ -344,6 +346,7 @@ class ImportHandler {
 		private readonly ?IAppManager $appManager = null,
 		private readonly ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard = null,
 		private readonly ?AppImportJobRecorder $importJobRecorder = null,
+		private readonly ?SchemaImportInstaller $schemaInstaller = null,
 	) {
 		$this->schemaMapper = $schemaMapper;
 		$this->registerMapper = $registerMapper;
@@ -2397,6 +2400,7 @@ class ImportHandler {
 					}
 				}
 
+				$eventsBefore = $this->schemaMapper->updateEventCount(schemaId: (int)$existingSchema->getId());
 				$existingSchema = $this->schemaMapper->updateFromArray(id: $existingSchema->getId(), object: $data);
 				if ($owner !== null) {
 					$existingSchema->setOwner($owner);
@@ -2407,6 +2411,7 @@ class ImportHandler {
 				}
 
 				$existingSchema = $this->schemaMapper->update($existingSchema);
+				$this->installWhenNoEventFired(schema: $existingSchema, eventsBefore: $eventsBefore);
 				$this->recordPendingBaseline(guarded: $guarded, appId: $appId, appVersion: $version);
 				$this->recordImportedSchemaChange(schema: $existingSchema, changeSet: $changeSet, appId: $appId);
 
@@ -2435,6 +2440,34 @@ class ImportHandler {
 			throw new Exception('Failed to import schema: ' . $e->getMessage(), $e->getCode(), $e);
 		}//end try
 	}//end importSchema()
+
+	/**
+	 * Run the schema installers when the import's saves fired no update event.
+	 *
+	 * A save that changed nothing fires no SchemaUpdatedEvent, so the listeners
+	 * that install a schema's flows and notification webhooks did not run. The
+	 * import runs them itself, so a re-import still restores what the schema
+	 * declares. When an event did fire, the listeners already ran and this
+	 * does nothing, so nothing runs twice.
+	 *
+	 * @param Schema $schema The imported schema, as saved.
+	 * @param int $eventsBefore SchemaMapper::updateEventCount() before the import's saves.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-an-import-of-an-unchanged-schema-still-installs-what-it-declares
+	 */
+	private function installWhenNoEventFired(Schema $schema, int $eventsBefore): void {
+		if ($this->schemaInstaller === null) {
+			return;
+		}
+
+		if ($this->schemaMapper->updateEventCount(schemaId: (int)$schema->getId()) !== $eventsBefore) {
+			return;
+		}
+
+		$this->schemaInstaller->install(schema: $schema);
+	}//end installWhenNoEventFired()
 
 	/**
 	 * Compute a stable content hash of a configuration's definitional payload.

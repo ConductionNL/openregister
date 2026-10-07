@@ -17,9 +17,7 @@
         "Relink needed": "Hemm bżonn rabta ġdida",
         "Server address": "Indirizz tas-server",
         "Load example data?": "Ittella’ dejta ta’ eżempju?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Id-dejta ta’ eżempju timla l-listi, il-paġni tad-dettalji u d-dashboards, biex tara l-app taħdem mill-ewwel. Agħżel \"Xejn\" fuq installazzjoni tal-produzzjoni.",
-        "Load the example data": "Tella’ d-dejta ta’ eżempju",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Ittella’ dak li għażilt. Din hija b’mod ċar dejta ta’ eżempju, l-azzjoni tista’ terġa’ ssir bla periklu, u tista’ tħassarha wara.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Id-dejta ta’ eżempju timla l-listi, il-paġni tad-dettalji u d-dashboards, biex tara l-app taħdem mill-ewwel. Kull karta għandha l-buttuna \"Għabbi\" tagħha. Agħżel \"Xejn\" fuq installazzjoni tal-produzzjoni.",
         "None, I will set this up myself": "Xejn, se nissettja dan jien stess",
         "Nothing is imported. You start with an empty app and add your own data.": "Ma jiġi impurtat xejn. Tibda b’app vojta u żżid id-dejta tiegħek.",
         "Example data": "Dejta ta’ eżempju",
@@ -3344,7 +3342,16 @@
         "This record has no visible fields.": "Dan ir-rekord m'għandux oqsma viżibbli.",
         "Upload": "Tella'",
         "Edit {field}": "Editja {field}",
-        "The value could not be saved": "Il-valur ma setax jiġi ssejvjat"
+        "The value could not be saved": "Il-valur ma setax jiġi ssejvjat",
+        "%1$s %2$s created": "%1$s %2$s maħluq",
+        "{schema} {title} created": "{schema} {title} maħluq",
+        "%1$s %2$s updated": "%1$s %2$s aġġornat",
+        "{schema} {title} updated": "{schema} {title} aġġornat",
+        "%1$s %2$s deleted": "%1$s %2$s imħassar",
+        "{schema} {title} deleted": "{schema} {title} imħassar",
+        "Object \"%1$s\" created": "Oġġett \"%1$s\" maħluq",
+        "Object \"%1$s\" updated": "Oġġett \"%1$s\" aġġornat",
+        "Object \"%1$s\" assigned to you": "Oġġett \"%1$s\" assenjat lilek"
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);",
     "plurals": {

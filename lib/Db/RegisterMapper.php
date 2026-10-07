@@ -735,6 +735,8 @@ class RegisterMapper extends QBMapper {
 	 * @return Entity The updated entity
 	 *
 	 * @psalm-suppress LessSpecificImplementedReturnType - Register is more specific than Entity
+	 *
+	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-a-register-save-that-changes-nothing-publishes-nothing
 	 */
 	public function update(Entity $entity): Entity {
 		// Verify RBAC permission to update registers.
@@ -754,8 +756,12 @@ class RegisterMapper extends QBMapper {
 
 		$entity = parent::update(entity: $entity);
 
-		// Dispatch update event.
-		$this->eventDispatcher->dispatchTyped(new RegisterUpdatedEvent(newRegister: $entity, oldRegister: $oldSchema));
+		// Dispatch the update event only when the register actually changed. An
+		// app re-importing its unchanged register (setup wizard, example data)
+		// otherwise told every admin "Register was updated" while they edited an object.
+		if ((new EntityChangeDetector())->changed(old: $oldSchema, new: $entity) === true) {
+			$this->eventDispatcher->dispatchTyped(new RegisterUpdatedEvent(newRegister: $entity, oldRegister: $oldSchema));
+		}
 
 		return $entity;
 	}//end update()

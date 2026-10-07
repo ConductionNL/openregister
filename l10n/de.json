@@ -17,9 +17,7 @@
         "Relink needed": "Neuverknüpfung nötig",
         "Server address": "Serveradresse",
         "Load example data?": "Beispieldaten laden?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Beispieldaten füllen die Listen, Detailseiten und Dashboards, damit Sie die App sofort in Betrieb sehen. Wählen Sie \"Keine\" bei einer Produktivinstallation.",
-        "Load the example data": "Die Beispieldaten laden",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Lädt, was Sie gewählt haben. Die Daten sind erkennbar Beispieldaten, der Vorgang kann mehrfach ausgeführt werden, und Sie können sie danach löschen.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Beispieldaten füllen die Listen, Detailseiten und Dashboards, damit Sie die App sofort in Betrieb sehen. Jede Karte hat eine eigene Schaltfläche \"Laden\". Wählen Sie \"Keine\" bei einer Produktivinstallation.",
         "None, I will set this up myself": "Keine, ich richte das selbst ein",
         "Nothing is imported. You start with an empty app and add your own data.": "Es wird nichts importiert. Sie beginnen mit einer leeren App und fügen Ihre eigenen Daten hinzu.",
         "Example data": "Beispieldaten",
@@ -3302,7 +3300,16 @@
         "This record has no visible fields.": "Dieser Datensatz hat keine sichtbaren Felder.",
         "Upload": "Hochladen",
         "Edit {field}": "{field} bearbeiten",
-        "The value could not be saved": "Der Wert konnte nicht gespeichert werden"
+        "The value could not be saved": "Der Wert konnte nicht gespeichert werden",
+        "%1$s %2$s created": "%1$s %2$s erstellt",
+        "{schema} {title} created": "{schema} {title} erstellt",
+        "%1$s %2$s updated": "%1$s %2$s aktualisiert",
+        "{schema} {title} updated": "{schema} {title} aktualisiert",
+        "%1$s %2$s deleted": "%1$s %2$s gelöscht",
+        "{schema} {title} deleted": "{schema} {title} gelöscht",
+        "Object \"%1$s\" created": "Objekt \"%1$s\" erstellt",
+        "Object \"%1$s\" updated": "Objekt \"%1$s\" aktualisiert",
+        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" wurde Ihnen zugewiesen"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

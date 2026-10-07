@@ -17,9 +17,7 @@
         "Relink needed": "Wymagane ponowne połączenie",
         "Server address": "Adres serwera",
         "Load example data?": "Wczytać dane przykładowe?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Dane przykładowe wypełniają listy, strony szczegółów i pulpity, więc od razu zobaczysz działającą aplikację. Na instalacji produkcyjnej wybierz \"Brak\".",
-        "Load the example data": "Wczytaj dane przykładowe",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Wczytuje to, co wybrano. To wyraźnie dane przykładowe, operację można bezpiecznie powtórzyć, a potem je usunąć.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Dane przykładowe wypełniają listy, strony szczegółów i pulpity, więc od razu zobaczysz działającą aplikację. Każda karta ma własny przycisk \"Wczytaj\". Na instalacji produkcyjnej wybierz \"Brak\".",
         "None, I will set this up myself": "Brak, skonfiguruję to sam",
         "Nothing is imported. You start with an empty app and add your own data.": "Nic nie jest importowane. Zaczynasz od pustej aplikacji i dodajesz własne dane.",
         "Example data": "Dane przykładowe",
@@ -3344,7 +3342,16 @@
         "This record has no visible fields.": "Ten rekord nie ma widocznych pól.",
         "Upload": "Prześlij",
         "Edit {field}": "Edytuj {field}",
-        "The value could not be saved": "Nie udało się zapisać wartości"
+        "The value could not be saved": "Nie udało się zapisać wartości",
+        "%1$s %2$s created": "%1$s %2$s utworzono",
+        "{schema} {title} created": "{schema} {title} utworzono",
+        "%1$s %2$s updated": "%1$s %2$s zaktualizowano",
+        "{schema} {title} updated": "{schema} {title} zaktualizowano",
+        "%1$s %2$s deleted": "%1$s %2$s usunięto",
+        "{schema} {title} deleted": "{schema} {title} usunięto",
+        "Object \"%1$s\" created": "Obiekt \"%1$s\" utworzono",
+        "Object \"%1$s\" updated": "Obiekt \"%1$s\" zaktualizowano",
+        "Object \"%1$s\" assigned to you": "Obiekt \"%1$s\" przypisany do Ciebie"
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);",
     "plurals": {

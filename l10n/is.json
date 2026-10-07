@@ -17,9 +17,7 @@
         "Relink needed": "Endurtenging nauðsynleg",
         "Server address": "Vistfang þjóns",
         "Load example data?": "Hlaða inn sýnigögnum?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Sýnigögn fylla listana, upplýsingasíðurnar og mælaborðin, svo þú sérð forritið virka strax. Veldu \"Engin\" á framleiðsluuppsetningu.",
-        "Load the example data": "Hlaða inn sýnigögnunum",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Hleður því sem þú valdir. Þetta eru augljóslega sýnigögn, óhætt er að keyra oftar en einu sinni og þú getur eytt þeim á eftir.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Sýnigögn fylla listana, upplýsingasíðurnar og mælaborðin, svo þú sérð forritið virka strax. Hvert spjald hefur sinn eigin \"Hlaða\"-hnapp. Veldu \"Engin\" á framleiðsluuppsetningu.",
         "None, I will set this up myself": "Engin, ég set þetta upp sjálf",
         "Nothing is imported. You start with an empty app and add your own data.": "Ekkert er flutt inn. Þú byrjar með tómt forrit og bætir við þínum eigin gögnum.",
         "Example data": "Sýnigögn",
@@ -3302,7 +3300,16 @@
         "This record has no visible fields.": "Þessi færsla hefur engin sýnileg svæði.",
         "Upload": "Hlaða upp",
         "Edit {field}": "Breyta {field}",
-        "The value could not be saved": "Ekki tókst að vista gildið"
+        "The value could not be saved": "Ekki tókst að vista gildið",
+        "%1$s %2$s created": "%1$s %2$s stofnað",
+        "{schema} {title} created": "{schema} {title} stofnað",
+        "%1$s %2$s updated": "%1$s %2$s uppfært",
+        "{schema} {title} updated": "{schema} {title} uppfært",
+        "%1$s %2$s deleted": "%1$s %2$s eytt",
+        "{schema} {title} deleted": "{schema} {title} eytt",
+        "Object \"%1$s\" created": "Hlutur \"%1$s\" stofnað",
+        "Object \"%1$s\" updated": "Hlutur \"%1$s\" uppfært",
+        "Object \"%1$s\" assigned to you": "Hlutur \"%1$s\" úthlutað þér"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

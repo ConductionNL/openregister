@@ -17,9 +17,7 @@
         "Relink needed": "Cal tornar a enllaçar",
         "Server address": "Adreça del servidor",
         "Load example data?": "Voleu carregar dades d’exemple?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Les dades d’exemple omplen les llistes, les pàgines de detall i els taulers, perquè vegeu l’aplicació funcionant de seguida. Trieu \"Cap\" en una instal·lació de producció.",
-        "Load the example data": "Carrega les dades d’exemple",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Carrega el que heu triat. Són clarament dades d’exemple, l’operació es pot repetir sense risc i les podeu esborrar després.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Les dades d’exemple omplen les llistes, les pàgines de detall i els taulers, perquè vegeu l’aplicació funcionant de seguida. Cada targeta té el seu propi botó \"Carrega\". Trieu \"Cap\" en una instal·lació de producció.",
         "None, I will set this up myself": "Cap, ja ho configuraré jo mateix",
         "Nothing is imported. You start with an empty app and add your own data.": "No s’importa res. Comenceu amb una aplicació buida i hi afegiu les vostres dades.",
         "Example data": "Dades d’exemple",
@@ -3302,7 +3300,16 @@
         "This record has no visible fields.": "Aquest registre no té camps visibles.",
         "Upload": "Puja",
         "Edit {field}": "Edita {field}",
-        "The value could not be saved": "No s'ha pogut desar el valor"
+        "The value could not be saved": "No s'ha pogut desar el valor",
+        "%1$s %2$s created": "%1$s %2$s creat",
+        "{schema} {title} created": "{schema} {title} creat",
+        "%1$s %2$s updated": "%1$s %2$s actualitzat",
+        "{schema} {title} updated": "{schema} {title} actualitzat",
+        "%1$s %2$s deleted": "%1$s %2$s eliminat",
+        "{schema} {title} deleted": "{schema} {title} eliminat",
+        "Object \"%1$s\" created": "Objecte \"%1$s\" creat",
+        "Object \"%1$s\" updated": "Objecte \"%1$s\" actualitzat",
+        "Object \"%1$s\" assigned to you": "Objecte \"%1$s\" assignat a vostè"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

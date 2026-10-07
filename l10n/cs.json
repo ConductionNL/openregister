@@ -17,9 +17,7 @@
         "Relink needed": "Je potřeba znovu propojit",
         "Server address": "Adresa serveru",
         "Load example data?": "Načíst ukázková data?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Ukázková data naplní seznamy, stránky s podrobnostmi a nástěnky, takže aplikaci uvidíte hned v provozu. Na produkční instalaci zvolte \"Žádná\".",
-        "Load the example data": "Načíst ukázková data",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Načte, co jste vybrali. Jsou to zjevně ukázková data, akci lze bezpečně opakovat a poté je můžete smazat.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Ukázková data naplní seznamy, stránky s podrobnostmi a nástěnky, takže aplikaci uvidíte hned v provozu. Každá karta má vlastní tlačítko \"Načíst\". Na produkční instalaci zvolte \"Žádná\".",
         "None, I will set this up myself": "Žádná, nastavím si to sám",
         "Nothing is imported. You start with an empty app and add your own data.": "Nic se neimportuje. Začínáte s prázdnou aplikací a přidáte vlastní data.",
         "Example data": "Ukázková data",
@@ -3344,7 +3342,16 @@
         "This record has no visible fields.": "Tento záznam nemá žádná viditelná pole.",
         "Upload": "Nahrát",
         "Edit {field}": "Upravit {field}",
-        "The value could not be saved": "Hodnotu se nepodařilo uložit"
+        "The value could not be saved": "Hodnotu se nepodařilo uložit",
+        "%1$s %2$s created": "%1$s %2$s vytvořen",
+        "{schema} {title} created": "{schema} {title} vytvořen",
+        "%1$s %2$s updated": "%1$s %2$s aktualizován",
+        "{schema} {title} updated": "{schema} {title} aktualizován",
+        "%1$s %2$s deleted": "%1$s %2$s smazán",
+        "{schema} {title} deleted": "{schema} {title} smazán",
+        "Object \"%1$s\" created": "Objekt \"%1$s\" vytvořen",
+        "Object \"%1$s\" updated": "Objekt \"%1$s\" aktualizován",
+        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" vám byl přiřazen"
     },
     "pluralForm": "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;",
     "plurals": {

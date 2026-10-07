@@ -17,9 +17,7 @@
         "Relink needed": "Este necesară o nouă legătură",
         "Server address": "Adresa serverului",
         "Load example data?": "Se încarcă datele de exemplu?",
-        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Datele de exemplu umplu listele, paginile de detaliu și tablourile de bord, ca să vedeți imediat aplicația funcționând. Alegeți \"Niciunul\" pe o instalare de producție.",
-        "Load the example data": "Încarcă datele de exemplu",
-        "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Încarcă ceea ce ați ales. Sunt vizibil date de exemplu, operațiunea se poate repeta fără risc, iar apoi le puteți șterge.",
+        "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install.": "Datele de exemplu umplu listele, paginile de detaliu și tablourile de bord, ca să vedeți imediat aplicația funcționând. Fiecare card are propriul buton \"Încarcă\". Alegeți \"Niciunul\" pe o instalare de producție.",
         "None, I will set this up myself": "Niciunul, configurez singur",
         "Nothing is imported. You start with an empty app and add your own data.": "Nu se importă nimic. Începeți cu o aplicație goală și adăugați propriile date.",
         "Example data": "Date de exemplu",
@@ -3323,7 +3321,16 @@
         "This record has no visible fields.": "Această înregistrare nu are câmpuri vizibile.",
         "Upload": "Încărcați",
         "Edit {field}": "Editează {field}",
-        "The value could not be saved": "Valoarea nu a putut fi salvată"
+        "The value could not be saved": "Valoarea nu a putut fi salvată",
+        "%1$s %2$s created": "%1$s %2$s creat",
+        "{schema} {title} created": "{schema} {title} creat",
+        "%1$s %2$s updated": "%1$s %2$s actualizat",
+        "{schema} {title} updated": "{schema} {title} actualizat",
+        "%1$s %2$s deleted": "%1$s %2$s șters",
+        "{schema} {title} deleted": "{schema} {title} șters",
+        "Object \"%1$s\" created": "Obiect \"%1$s\" creat",
+        "Object \"%1$s\" updated": "Obiect \"%1$s\" actualizat",
+        "Object \"%1$s\" assigned to you": "Obiect \"%1$s\" atribuit dumneavoastră"
     },
     "pluralForm": "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));",
     "plurals": {
