@@ -14,6 +14,11 @@
   health cards describe the runs this page loaded, and say so.
 
   @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md
+
+  @visual exclude the baseline is task 5.2 of flow-and-run-detail-pages. This
+  page was built in a design round, where Playwright runs once at the end of
+  the round, after the styling settles; a baseline taken now would be
+  re-recorded with every styling pass.
 -->
 <template>
 	<NcAppContent>
@@ -545,32 +550,53 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-flow-has-an-overview-page-that-the-index-opens
+		 */
 		steps() {
 			return orderedNodes(this.flow?.nodes, this.flow?.edges)
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
+		 */
 		counts() {
 			return runCounts(this.runs)
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
+		 */
 		averageMs() {
 			return averageDuration(this.runs)
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
+		 */
 		lastRun() {
 			return this.runs[0] || null
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-flow-has-an-overview-page-that-the-index-opens
+		 */
 		watching() {
 			const register = this.flow?.triggerRegister
 			const schema = this.flow?.triggerSchema
 			return register && schema ? `${register} › ${schema}` : ''
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-flow-has-an-overview-page-that-the-index-opens
+		 */
 		editorRoute() {
 			return `/flows/${this.id}`
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
+		 */
 		filterOptions() {
 			return [
 				{ id: 'all', label: t('openregister', 'All') },
@@ -580,10 +606,16 @@ export default {
 			]
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
+		 */
 		filteredRuns() {
 			return this.runs.filter((run) => matchesRunFilter(run, this.runFilter))
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
+		 */
 		pagedRuns() {
 			const start = this.page * this.pageSize
 			return this.filteredRuns.slice(start, start + this.pageSize)
@@ -662,6 +694,7 @@ export default {
 		 * @param {string} path The app path.
 		 * @param {object} params Query parameters.
 		 * @return {Promise<object|null>} The response body, or null.
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-flow-has-an-overview-page-that-the-index-opens
 		 */
 		async quietGet(path, params = undefined) {
 			try {
@@ -680,6 +713,7 @@ export default {
 		 *
 		 * @param {object} run The run.
 		 * @return {object} The route.
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
 		 */
 		runRoute(run) {
 			return { name: 'flow-run-detail', params: { uuid: String(run.uuid) } }
@@ -690,6 +724,7 @@ export default {
 		 *
 		 * @param {object} run The run.
 		 * @return {string} "Step: error", the run's error, or an empty string.
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
 		 */
 		stoppedAt(run) {
 			const step = failedStep(run, this.steps, this.names)
@@ -704,6 +739,7 @@ export default {
 		 *
 		 * @param {number|null} version The run's numeric flow version.
 		 * @return {string} "v1.0.0", or "v1" when the version is not listed.
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
 		 */
 		versionLabel(version) {
 			if (version === null || version === undefined) {
@@ -718,6 +754,7 @@ export default {
 		 *
 		 * @param {string} filter The filter id.
 		 * @return {void}
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-the-overview-summarises-the-run-history-it-loaded
 		 */
 		setFilter(filter) {
 			this.runFilter = filter
@@ -792,6 +829,7 @@ export default {
 		 *
 		 * @param {() => Promise<void>} action The action.
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-flow-has-an-overview-page-that-the-index-opens
 		 */
 		async act(action) {
 			this.busy = true

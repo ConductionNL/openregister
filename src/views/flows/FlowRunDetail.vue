@@ -20,6 +20,10 @@
   address.
 
   @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md
+
+  @visual exclude the baseline is task 5.2 of flow-and-run-detail-pages, for
+  the same reason as FlowOverview.vue: a design round runs Playwright once,
+  after the styling settles.
 -->
 <template>
 	<NcAppContent>
@@ -510,18 +514,30 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 */
 		ordered() {
 			return orderedNodes(this.flow?.nodes, this.flow?.edges)
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 */
 		steps() {
 			return stepRows(this.run, this.ordered, this.names)
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 */
 		flowName() {
 			return this.flow?.name || shortUuid(this.run?.flowId)
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 */
 		overviewRoute() {
 			return {
 				name: 'flow-overview',
@@ -529,26 +545,44 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-run-actions-follow-what-the-api-accepts
+		 */
 		canvasRoute() {
 			return { path: `/flows/${this.run?.flowId}`, query: { run: this.uuid } }
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 */
 		finished() {
 			return RUN_TERMINAL_STATUSES.includes(this.run?.status)
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-run-actions-follow-what-the-api-accepts
+		 */
 		canRetry() {
 			return this.finished
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-run-actions-follow-what-the-api-accepts
+		 */
 		canResume() {
 			return this.run?.status === 'suspended'
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 */
 		durationMs() {
 			return runDuration(this.run)
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 */
 		versionLabel() {
 			const version = this.run?.flowVersion
 			if (version === null || version === undefined) {
@@ -597,6 +631,7 @@ export default {
 		 * it declared by role.
 		 *
 		 * @return {Array<{key: string, uuid: string, where: string}>} The subjects.
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
 		 */
 		subjects() {
 			const rows = []
@@ -624,6 +659,9 @@ export default {
 			return rows
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 */
 		changedCount() {
 			return this.changed.reduce(
 				(sum, group) => sum + (group.objects?.length || 0),
@@ -631,6 +669,9 @@ export default {
 			)
 		},
 
+		/**
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
+		 */
 		tabs() {
 			return [
 				{ id: 'steps', label: t('openregister', 'Steps') },
@@ -721,6 +762,7 @@ export default {
 		 * @param {string} path The app path.
 		 * @param {object} params Query parameters.
 		 * @return {Promise<object|null>} The response body, or null.
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
 		 */
 		async quietGet(path, params = undefined) {
 			try {
@@ -781,6 +823,7 @@ export default {
 		 *
 		 * @param {() => Promise<void>} action The action.
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-run-actions-follow-what-the-api-accepts
 		 */
 		async act(action) {
 			this.busy = true
@@ -801,6 +844,7 @@ export default {
 		 *
 		 * @param {number} step 1 for the next tab, -1 for the previous.
 		 * @return {void}
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
 		 */
 		moveTab(step) {
 			const ids = this.tabs.map((tab) => tab.id)
@@ -817,6 +861,7 @@ export default {
 		 *
 		 * @param {string} nodeId The node id.
 		 * @return {string} The step label.
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
 		 */
 		stepNameFor(nodeId) {
 			const node = this.ordered.find(
@@ -828,6 +873,7 @@ export default {
 		/**
 		 * @param {object} step A step row.
 		 * @return {string} ok, failed, waiting or skipped.
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
 		 */
 		dotKind(step) {
 			if (!step.reached) {
@@ -845,6 +891,7 @@ export default {
 		/**
 		 * @param {object} step A step row.
 		 * @return {string} The symbol inside the step's dot.
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
 		 */
 		dotSymbol(step) {
 			return { ok: '✓', failed: '!', waiting: '…', skipped: '·' }[
@@ -855,6 +902,7 @@ export default {
 		/**
 		 * @param {unknown} value Anything JSON can hold.
 		 * @return {string} Indented JSON.
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-run-has-its-own-page
 		 */
 		pretty(value) {
 			try {
