@@ -335,7 +335,7 @@ class DbalObjectSourceProviderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	public function testLikeFilterMatchesSubstringIgnoringCase(): void {
 		$objects = $this->provider()->findAll(
@@ -360,7 +360,7 @@ class DbalObjectSourceProviderTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-like-matches-percent-underscore-and-backslash-literally
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-like-matches-percent-underscore-and-backslash-literally
 	 */
 	public function testLikeFilterMatchesWildcardsLiterally(): void {
 		$provider = $this->provider();

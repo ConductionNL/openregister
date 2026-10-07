@@ -36,7 +36,7 @@ use RecursiveIteratorIterator;
  * this test keeps it that way. A real need for a schema or register write
  * from this path belongs in a reviewed exception below, with its reason.
  *
- * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-object-crud-fires-object-events-only
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-object-crud-fires-object-events-only
  */
 class ObjectCrudFiresOnlyObjectEventsTest extends TestCase {
 	/**

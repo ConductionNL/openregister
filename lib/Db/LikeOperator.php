@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Db;
  * every path that has a query builder, a platform-quoted literal only on the
  * raw UNION path, which has no parameters to bind.
  *
- * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
  */
 class LikeOperator {
 	/**
@@ -66,7 +66,7 @@ class LikeOperator {
 	 *
 	 * @param object $databasePlatform A Doctrine platform, from IDBConnection or a DBAL connection.
 	 *
-	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	public function __construct(object $databasePlatform) {
 		$class = $databasePlatform::class;
@@ -85,7 +85,7 @@ class LikeOperator {
 	 *
 	 * @return string One of the PLATFORM_* constants.
 	 *
-	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	public function platform(): string {
 		return $this->platform;
@@ -102,7 +102,7 @@ class LikeOperator {
 	 *
 	 * @return array<int, string> The non-empty terms.
 	 *
-	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	public function terms(mixed $value): array {
 		$values = [$value];
@@ -132,7 +132,7 @@ class LikeOperator {
 	 *
 	 * @return string The pattern, to bind as a parameter.
 	 *
-	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-like-matches-percent-underscore-and-backslash-literally
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-like-matches-percent-underscore-and-backslash-literally
 	 */
 	public function pattern(string $term): string {
 		return '%' . addcslashes($term, '\\%_') . '%';
@@ -146,7 +146,7 @@ class LikeOperator {
 	 *
 	 * @return string The SQL condition.
 	 *
-	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	public function condition(string $column, string $patternSql): string {
 		if ($this->platform === self::PLATFORM_POSTGRES) {
@@ -172,7 +172,7 @@ class LikeOperator {
 	 *
 	 * @return string|null The SQL condition, or null when there is nothing to match.
 	 *
-	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	public function anyCondition(string $column, array $patternSqls): ?string {
 		if ($patternSqls === []) {

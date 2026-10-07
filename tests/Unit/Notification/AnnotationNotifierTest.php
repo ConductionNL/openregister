@@ -197,7 +197,7 @@ class AnnotationNotifierTest extends TestCase {
 	 * Without a register name the canonical subject names the object only,
 	 * never the register id.
 	 *
-	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-a-canonical-object-notification-does-not-print-a-register-id
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-a-canonical-object-notification-does-not-print-a-register-id
 	 */
 	public function testCanonicalSubjectWithoutRegisterNameNamesTheObjectOnly(): void {
 		$l10n = $this->createMock(IL10N::class);

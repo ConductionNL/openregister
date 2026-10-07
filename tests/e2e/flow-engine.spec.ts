@@ -654,7 +654,7 @@ test.describe('the Flows page', () => {
 	 * of its own that names its steps. A failed run names the step it stopped
 	 * at, which is what the old sidebar run view never did.
 	 *
-	 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md
+	 * @spec openspec/specs/flow-and-run-detail-pages/spec.md
 	 */
 	test('a row opens the overview, and a run opens its own page', async ({
 		page,

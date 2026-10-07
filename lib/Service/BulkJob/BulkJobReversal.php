@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -81,7 +81,7 @@ class BulkJobReversal {
 	 * @throws BulkJobRefusedException When the job cannot be undone, naming the reason.
 	 * @throws InvalidArgumentException When the job names no register or schema, which the create path refuses.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function reverse(BulkJob $original, string $actorUid, ?string $justification = null): BulkJob {
 		$this->assertReversible(job: $original);
@@ -135,7 +135,7 @@ class BulkJobReversal {
 	 *
 	 * @throws BulkJobRefusedException When the job cannot be undone.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	private function assertReversible(BulkJob $job): void {
 		$finished = [BulkJob::STATE_COMPLETED, BulkJob::STATE_CANCELLED, BulkJob::STATE_FAILED];

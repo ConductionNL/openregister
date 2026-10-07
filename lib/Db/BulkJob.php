@@ -407,7 +407,7 @@ class BulkJob extends Entity implements JsonSerializable {
 	 *
 	 * @return bool True when the job is undoable in principle.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function isReversible(): bool {
 		return ($this->reversalWindow !== null && $this->reversalWindow > 0);

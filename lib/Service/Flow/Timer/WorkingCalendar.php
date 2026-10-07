@@ -313,7 +313,7 @@ final class WorkingCalendar {
 	 *
 	 * @return string An IANA zone name.
 	 *
-	 * @spec openspec/changes/the-working-calendar-carries-its-zone/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	public function getTimezone(): string {
 		return $this->timezone;
@@ -495,7 +495,7 @@ final class WorkingCalendar {
 	 *
 	 * @throws FlowTimerValidationException On a zone that does not resolve.
 	 *
-	 * @spec openspec/changes/the-working-calendar-carries-its-zone/specs/flow-business-timers/spec.md
+	 * @spec openspec/specs/flow-business-timers/spec.md
 	 */
 	private static function validTimezone(string $slug, mixed $value): string {
 		if ($value === null || (is_string($value) === true && trim($value) === '')) {

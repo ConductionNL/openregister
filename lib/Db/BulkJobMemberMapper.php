@@ -178,7 +178,7 @@ class BulkJobMemberMapper extends QBMapper {
 	 *
 	 * @return BulkJobMember|null The member, or null when the job never held it.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function findByJobAndObject(int $jobId, string $objectUuid): ?BulkJobMember {
 		$qb = $this->db->getQueryBuilder();
@@ -211,7 +211,7 @@ class BulkJobMemberMapper extends QBMapper {
 	 *
 	 * @return array<int, string> The written members' uuids, in id order.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function findWrittenUuidsByJob(int $jobId): array {
 		$qb = $this->db->getQueryBuilder();

@@ -46,7 +46,7 @@ use Throwable;
  * Both installers are idempotent upserts. A failure is logged and never fails
  * the import, the same contract the listeners keep.
  *
- * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-an-import-of-an-unchanged-schema-still-installs-what-it-declares
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-an-import-of-an-unchanged-schema-still-installs-what-it-declares
  */
 class SchemaImportInstaller {
 	/**
@@ -56,7 +56,7 @@ class SchemaImportInstaller {
 	 * @param NotificationsAnnotationInstaller $notifications Installs the webhooks a schema's notifications declare.
 	 * @param LoggerInterface $logger Logger.
 	 *
-	 * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-an-import-of-an-unchanged-schema-still-installs-what-it-declares
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-an-import-of-an-unchanged-schema-still-installs-what-it-declares
 	 */
 	public function __construct(
 		private readonly SchemaFlowImportListener $flows,
@@ -72,7 +72,7 @@ class SchemaImportInstaller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-an-import-of-an-unchanged-schema-still-installs-what-it-declares
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-an-import-of-an-unchanged-schema-still-installs-what-it-declares
 	 */
 	public function install(Schema $schema): void {
 		try {

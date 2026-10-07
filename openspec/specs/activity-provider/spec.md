@@ -11,7 +11,9 @@ status: done
 Integrate OpenRegister with Nextcloud's Activity app so that all CRUD operations on Objects, Registers, and Schemas are visible in the standard Nextcloud activity stream, dashboard activity widget, and (optionally) email notifications. This gives users and administrators a clear, auditable timeline of who changed what and when, using the standard `OCP\Activity` API (IManager, IProvider, IFilter, ActivitySettings).
 
 **Source**: OpenRegister is a multi-user data registration platform where multiple people collaborate on structured data. Without Activity integration, users have no Nextcloud-native visibility into changes made by others. The existing internal event system (`ObjectCreatedEvent`, etc.) already dispatches events but they are not surfaced to end users.
+
 ## Requirements
+
 ### Requirement: OpenRegister MUST publish activity events for Object CRUD operations
 
 When an object is created, updated, or deleted, the app MUST publish a corresponding activity event via `OCP\Activity\IManager::publish()`. The event MUST contain the app ID, activity type, author, timestamp, subject with parameters, object reference, and a link to the object in the OpenRegister UI.
@@ -328,6 +330,74 @@ The account-page `ActivitySection.vue` component MUST render a paginated list of
 - **WHEN** `fetchActivity()` runs
 - **THEN** the error SHALL be silently caught
 - **AND** `loading` SHALL be reset to `false` in the `finally` block
+
+### Requirement: An object activity links to the owning app's detail page
+
+An object activity SHALL link to the detail route the owning app registered
+in the deep link registry for that register and schema, made absolute. Only
+an object whose schema no app claims SHALL link to the OpenRegister view.
+
+#### Scenario: A pipelinq client update
+
+- GIVEN pipelinq registers `/apps/pipelinq/clients/{uuid}` for `pipelinq::client`
+- WHEN a client is updated
+- THEN the activity links to `/apps/pipelinq/clients/<uuid>`
+
+#### Scenario: An unclaimed schema
+
+- GIVEN no app registered a route for the schema
+- WHEN an object of it is updated
+- THEN the activity links to `/apps/openregister/#/registers/<id>/schemas/<id>/objects/<uuid>`
+
+### Requirement: A register save that changes nothing publishes nothing
+
+The system SHALL dispatch `RegisterUpdatedEvent` from `RegisterMapper::update()`
+only when the stored register differs from the register before the save,
+ignoring the `updated` timestamp. A save that changes nothing SHALL NOT write a
+`register_updated` activity, SHALL NOT send a `register-changed` notification
+and SHALL NOT fire a register webhook.
+
+#### Scenario: an app re-imports its unchanged register
+
+- **GIVEN** the pipelinq register is installed and unchanged
+- **WHEN** pipelinq runs `importFromApp()` again (setup wizard provision step, example data load)
+- **THEN** no `register_updated` activity is written and no admin gets a "Register was updated" popup
+- @e2e exclude {the decision sits in RegisterMapper::update and is covered by RegisterMapperUpdateEventTest, which drives the real update() with real Register and RegisterUpdatedEvent classes}
+
+#### Scenario: an administrator renames a register
+
+- **GIVEN** a register titled "CRM"
+- **WHEN** an administrator saves it with the title "CRM register"
+- **THEN** exactly one `RegisterUpdatedEvent` is dispatched and the `register_updated` activity is written
+- @e2e exclude {covered by RegisterMapperUpdateEventTest; the activity write itself is covered by ActivityEventListenerTest}
+
+### Requirement: An object activity names the schema and the object
+
+The system SHALL publish object activities with the object's schema title when
+the schema can be resolved, and the activity provider SHALL render them as
+`{schema} {title} created`, `{schema} {title} updated` and
+`{schema} {title} deleted`. Without a schema title the provider SHALL keep the
+existing `Object updated: {title}` form.
+
+#### Scenario: a user edits a client in pipelinq
+
+- **GIVEN** a client object "Gemeente Demo" in the schema titled "Client"
+- **WHEN** the user saves a change to it
+- **THEN** the activity stream shows "Client Gemeente Demo updated" and no register activity
+- @e2e exclude {rendering is covered by ProviderSubjectHandlerTest and the parameters by ActivityServiceTest; the activity stream UI is Nextcloud's own}
+
+### Requirement: A canonical object notification does not print a register id
+
+The system SHALL render the canonical object notification subject without the
+register clause when the notification carries no register name, so it reads
+`Object "Gemeente Demo" updated` and never `updated in register "20"`.
+
+#### Scenario: a notification without a register name
+
+- **GIVEN** an `object_updated` notification with `objectTitle` "Gemeente Demo", `registerId` 20, no `registerName` and no `_text`
+- **WHEN** the notifier prepares it
+- **THEN** the subject is `Object "Gemeente Demo" updated`
+- @e2e exclude {covered by AnnotationNotifierTest; no browser path renders a notification without `_text`}
 
 ## Current Implementation Status
 

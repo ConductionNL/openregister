@@ -1,3 +1,8 @@
+## RENAMED Requirements
+
+- FROM: `### Requirement: The system MUST support data subject access requests (inzageverzoek)`
+- TO: `### Requirement: The system MUST support subject-identifier audit-trail lookup (Art 15 AVG — Dutch: inzageverzoek)`
+
 ## MODIFIED Requirements
 
 ### Requirement: The system MUST provide a CRUD REST surface over the dedicated verwerkingsactiviteiten catalog

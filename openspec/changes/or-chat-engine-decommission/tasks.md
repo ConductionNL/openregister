@@ -1,3 +1,5 @@
+> Archive pass 2026-10-07: code done; not archived: the delta's two MODIFIED names are not in main chat-ai (one is really REQ-007, one is ADDED), its REMOVED target does not exist, and task 3.2 (delete src/views/agents) was undone by ai-agent-limits-screen. The delta needs rewriting first (STATE.md, lane 31).
+
 # Tasks: or-chat-engine-decommission
 
 ## 1. Proxy-by-default (PHP)

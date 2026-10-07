@@ -1,3 +1,5 @@
+> Archive pass 2026-10-07: code done; open: 2.4 (marked half done on purpose: the `searchable` filter stays in ObjectsProvider). Needs a decision that this counts as done, or a narrower task text.
+
 ## 1. Register resolution (fix failure #4)
 
 - [x] 1.1 In `MagicMapper::searchObjectsPaginatedMultiSchema`, build a `schema_id → register` map across all candidate registers (the register whose `getSchemas()` contains the schema id) and pair each schema with its real owning register; remove the `reset($registers)` fallback.

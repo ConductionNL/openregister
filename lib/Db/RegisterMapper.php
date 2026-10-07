@@ -736,7 +736,7 @@ class RegisterMapper extends QBMapper {
 	 *
 	 * @psalm-suppress LessSpecificImplementedReturnType - Register is more specific than Entity
 	 *
-	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-a-register-save-that-changes-nothing-publishes-nothing
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-a-register-save-that-changes-nothing-publishes-nothing
 	 */
 	public function update(Entity $entity): Entity {
 		// Verify RBAC permission to update registers.

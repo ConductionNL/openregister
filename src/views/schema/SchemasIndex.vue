@@ -280,7 +280,7 @@ export default {
 		 * headers were declared sortable but nothing handled the click, so the
 		 * order never moved (live audit G2).
 		 *
-		 * @spec openspec/changes/live-audit-round-one/specs/audit-trail-immutable/spec.md
+		 * @spec openspec/specs/audit-trail-immutable/spec.md
 		 * @return {Array<object>}
 		 */
 		orderedSchemas() {
@@ -339,7 +339,7 @@ export default {
 		 * @param {{key: string, order: string}} payload The header and direction.
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/live-audit-round-one/specs/audit-trail-immutable/spec.md
+		 * @spec openspec/specs/audit-trail-immutable/spec.md
 		 */
 		onSort(payload) {
 			this.sortKey = payload && payload.key ? payload.key : null

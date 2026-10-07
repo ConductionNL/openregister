@@ -34,8 +34,8 @@ use OCP\AppFramework\Db\Entity;
  * listener. An event fires at the level where the change happened, and only
  * when something there really changed.
  *
- * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
- * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-a-register-save-that-changes-nothing-publishes-nothing
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
+ * @spec openspec/specs/activity-provider/spec.md#requirement-a-register-save-that-changes-nothing-publishes-nothing
  */
 class EntityChangeDetector {
 	/**
@@ -51,7 +51,7 @@ class EntityChangeDetector {
 	 *
 	 * @return bool True when something other than the timestamp changed.
 	 *
-	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-a-register-save-that-changes-nothing-publishes-nothing
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-a-register-save-that-changes-nothing-publishes-nothing
 	 */
 	public function changed(Entity $old, Entity $new): bool {
 		$before = $old->jsonSerialize();
@@ -71,7 +71,7 @@ class EntityChangeDetector {
 	 *
 	 * @return mixed The normalised value.
 	 *
-	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-a-register-save-that-changes-nothing-publishes-nothing
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-a-register-save-that-changes-nothing-publishes-nothing
 	 */
 	private function normaliseForCompare(mixed $value): mixed {
 		if (is_array($value) === true) {

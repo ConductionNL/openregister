@@ -45,8 +45,8 @@ use ReflectionMethod;
  * Locks `like` on the QueryBuilder path and the raw-SQL UNION path, for object
  * fields and for `@self` metadata, on PostgreSQL and MySQL/MariaDB.
  *
- * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
- * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-like-matches-percent-underscore-and-backslash-literally
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-like-matches-percent-underscore-and-backslash-literally
  */
 class MagicSearchHandlerLikeOperatorTest extends TestCase {
 	/**

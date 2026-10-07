@@ -296,7 +296,7 @@ class SchemaTypeConverterTest extends TestCase {
 	 * '[Demo] Webshop' into '{"nl":"[Demo] Webshop"}', one level deeper on
 	 * every PATCH, because the locale map was re-encoded as a string here.
 	 *
-	 * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-a-patch-leaves-an-untouched-translatable-property-as-it-is
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-patch-leaves-an-untouched-translatable-property-as-it-is
 	 */
 	public function testAnUntouchedTranslatablePropertyKeepsItsLocaleMap(): void {
 		$stored = json_encode(['nl' => '[Demo] Webshop']);
