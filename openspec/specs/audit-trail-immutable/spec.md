@@ -300,6 +300,32 @@ The audit trail table SHALL carry an index on `(object_uuid, created)`, so a rea
 - **THEN** the table has the index `or_audit_obj_uuid_created` on `object_uuid`, `created`, and a second run of the migration adds nothing
 - @e2e exclude {schema change, asserted in tests/Unit/Migration/Version1Date20261003090000Test.php; the query plan was measured on the dev instance (planninq live pass, 3 Oct 2026)}
 
+### Requirement: Every user-facing read of an object is logged as a read
+
+`GetObject::find()` (`lib/Service/Object/GetObject.php:149`) SHALL write an audit trail entry with action `read` for every object it returns, on any schema, sensitive or not, while the instance setting `auditTrailsEnabled` is on (default on, `lib/Service/Settings/ConfigurationSettingsHandler.php:327`; read by `GetObject::isAuditTrailsEnabled()` at `:451`, which falls back to on when the setting cannot be read). The entry MUST name the reader and the object and MUST NOT carry a field diff (`AuditTrailMapper::buildAuditTrail()` treats `read` as a no-new-state action, `lib/Db/AuditTrailMapper.php:861`). A caller that loads an object as part of another operation MUST be able to skip the entry: `find()` takes `$_audit` (default `true`, `:157`), passed through by `ObjectService::find()` (`lib/Service/ObjectService.php:1087`), and `findSilent()` (`:228`) never logs. The audit statistics and chart count `read` beside create, update and delete (`lib/Db/AuditTrailMapper.php:1834`), so `/audit-trails` shows who viewed a record.
+
+#### Scenario: opening a record writes a read entry
+
+- **GIVEN** audit trails are enabled and user `medewerker-1` may read object `inwoner-123`
+- **WHEN** `medewerker-1` opens the object through `GET /api/objects/{register}/{schema}/inwoner-123`
+- **THEN** the audit trail MUST hold a new entry with action `read`, user `medewerker-1` and object `inwoner-123`
+- **AND** the entry MUST carry no changed fields
+- @e2e exclude {read logging is a backend side effect; asserted by reading /api/audit-trails after a GET, no page renders the write}
+
+#### Scenario: an internal load skips the entry
+
+- **GIVEN** audit trails are enabled
+- **WHEN** a flow node invocation loads its subject object only to check the boundary, calling `find()` with `_audit: false` (`lib/Controller/FlowNodeRunController.php:402`)
+- **THEN** no `read` entry MUST be written for that load
+- @e2e exclude {internal call path with no page; covered by the `_audit` parameter in GetObject::find()}
+
+#### Scenario: the instance setting switches read logging off
+
+- **GIVEN** the retention setting `auditTrailsEnabled` is `false`
+- **WHEN** any user opens an object
+- **THEN** no `read` entry MUST be written
+- @e2e exclude {instance setting read on the server; no page renders the absence of an entry}
+
 ## Current Implementation Status
 - **Implemented:**
   - `AuditTrail` entity (`lib/Db/AuditTrail.php`) with fields: uuid, schema, register, object, objectUuid, registerUuid, schemaUuid, action, changed, user, userName, created, organisation, session, request, ipAddress, size, hash, previousHash
