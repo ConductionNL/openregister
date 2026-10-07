@@ -135,7 +135,7 @@ abstract class AbstractPropertyWriteAction implements ReversibleBulkActionInterf
 	 *
 	 * @return int The window, in seconds.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getReversalWindow(): int {
 		return self::REVERSAL_WINDOW;
@@ -153,7 +153,7 @@ abstract class AbstractPropertyWriteAction implements ReversibleBulkActionInterf
 	 *
 	 * @return array{prior: array<string, mixed>, applied: array<string, mixed>} The plan.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function reversalPlanFor(ObjectEntity $object, array $parameters): array {
 		$patch = $this->patchFor(parameters: $parameters);

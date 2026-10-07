@@ -130,7 +130,7 @@ class SchemaFlowImportListener implements IEventListener {
 	 * still arrives on the next import.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
-	 * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-an-import-of-an-unchanged-schema-still-installs-what-it-declares
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-an-import-of-an-unchanged-schema-still-installs-what-it-declares
 	 */
 	public function importFor(Schema $schema): void {
 		$declared = (($schema->getConfiguration() ?? [])[self::ANNOTATION_KEY] ?? null);

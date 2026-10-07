@@ -849,7 +849,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 * @return void
 	 *
 	 * @spec openspec/specs/dbal-virtual-registers/spec.md
-	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	private function applyFilters(QueryBuilder $qb, Connection $connection, array $query, array $columns, array $config): void {
 		$filterable = $this->filterableColumns(columns: $columns, config: $config);
@@ -891,7 +891,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	private function applyLikeFilter(QueryBuilder $qb, Connection $connection, string $column, mixed $value): void {
 		$like = new LikeOperator(databasePlatform: $connection->getDatabasePlatform());

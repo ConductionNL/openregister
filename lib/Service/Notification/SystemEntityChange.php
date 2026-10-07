@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/live-audit-round-one/specs/notificatie-engine/spec.md
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -33,7 +33,7 @@ namespace OCA\OpenRegister\Service\Notification;
 /**
  * Compares two serialised system entities, ignoring bookkeeping.
  *
- * @spec openspec/changes/live-audit-round-one/specs/notificatie-engine/spec.md
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 class SystemEntityChange {
 
@@ -61,7 +61,7 @@ class SystemEntityChange {
 	 *
 	 * @return bool True when something other than bookkeeping changed.
 	 *
-	 * @spec openspec/changes/live-audit-round-one/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function isReal(array $old, array $new): bool {
 		foreach (self::BOOKKEEPING_FIELDS as $field) {

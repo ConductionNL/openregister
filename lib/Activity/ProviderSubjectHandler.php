@@ -71,7 +71,7 @@ class ProviderSubjectHandler {
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function applySubjectText(IEvent $event, object $l, array $params): void {
 		$title = $params['title'] ?? '';

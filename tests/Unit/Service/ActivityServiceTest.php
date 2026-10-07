@@ -283,7 +283,7 @@ class ActivityServiceTest extends TestCase {
 	/**
 	 * Test: an object update activity carries the schema title.
 	 *
-	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function testPublishObjectUpdatedCarriesSchemaTitle(): void {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
@@ -377,7 +377,7 @@ class ActivityServiceTest extends TestCase {
 	 * Live audit E1: a pipelinq client update in the activity stream linked to
 	 * /apps/openregister/#/registers/…/objects/…, the register browser.
 	 *
-	 * @spec openspec/changes/live-audit-round-one/specs/activity-provider/spec.md
+	 * @spec openspec/specs/activity-provider/spec.md
 	 */
 	public function testAnOwnedObjectLinksToItsAppsDetailPage(): void {
 		self::assertSame(
@@ -389,7 +389,7 @@ class ActivityServiceTest extends TestCase {
 	/**
 	 * An object no app claims keeps the OpenRegister link.
 	 *
-	 * @spec openspec/changes/live-audit-round-one/specs/activity-provider/spec.md
+	 * @spec openspec/specs/activity-provider/spec.md
 	 */
 	public function testAnUnclaimedObjectKeepsTheRegisterLink(): void {
 		self::assertSame(

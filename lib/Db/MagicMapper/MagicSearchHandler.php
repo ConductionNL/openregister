@@ -1486,7 +1486,7 @@ class MagicSearchHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	private function applyLikeFilter(IQueryBuilder $qb, string $columnRef, mixed $value): void {
 		$like = new LikeOperator(databasePlatform: $this->db->getDatabasePlatform());
@@ -1514,7 +1514,7 @@ class MagicSearchHandler {
 	 *
 	 * @return string|null The SQL condition, or null when no term is left.
 	 *
-	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	private function likeConditionSql(string $column, mixed $value, object $connection): ?string {
 		$like = new LikeOperator(databasePlatform: $this->db->getDatabasePlatform());
@@ -1560,7 +1560,7 @@ class MagicSearchHandler {
 	 * @return string[] Array of SQL WHERE conditions
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
-	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	private function buildObjectFilterConditionsSql(
 		array $query,
@@ -1861,7 +1861,7 @@ class MagicSearchHandler {
 	 * @param object $connection Database connection for value quoting
 	 *
 	 * @return string[] Array of SQL conditions
-	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	private function buildMetadataOperatorConditionsSql(string $column, array $value, object $connection): array {
 		$likeConditions = [];
@@ -2414,7 +2414,7 @@ class MagicSearchHandler {
 	 * @return void
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
-	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	private function applyMetadataOperators(IQueryBuilder $qb, string $columnRef, array $value): void {
 		if (array_key_exists(LikeOperator::KEY, $value) === true) {
@@ -2535,7 +2535,7 @@ class MagicSearchHandler {
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 *
 	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
-	 * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
 	private function applyObjectFilters(IQueryBuilder $qb, array $filters, Schema $schema): void {
 		$properties = $schema->getProperties();

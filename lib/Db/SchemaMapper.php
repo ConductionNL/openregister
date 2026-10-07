@@ -1284,7 +1284,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @throws ReversibilityDeclarationException When a declaration contradicts itself.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	private function validateReversibilityDeclaration(Schema $schema): void {
 		$errors = (new ReversibilityAnnotationValidator())->validate(configuration: ($schema->getConfiguration() ?? []));
@@ -3067,7 +3067,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @psalm-suppress LessSpecificImplementedReturnType - Schema is more specific than Entity
 	 *
-	 * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
 	 */
 	public function update(Entity $entity): Entity {
 		// Verify RBAC permission to update.
@@ -3142,7 +3142,7 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return int The number of update events dispatched for it so far.
 	 *
-	 * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
 	 */
 	public function updateEventCount(int $schemaId): int {
 		return ($this->updateEventCounts[$schemaId] ?? 0);

@@ -675,7 +675,7 @@ export default {
 		 * @param {{key: string, order: string}} payload The header and direction.
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/live-audit-round-one/specs/audit-trail-immutable/spec.md
+		 * @spec openspec/specs/audit-trail-immutable/spec.md
 		 */
 		async onSort(payload) {
 			const key = payload && payload.key ? payload.key : null

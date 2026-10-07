@@ -385,7 +385,7 @@ class BulkJobsController extends Controller {
 	 *
 	 * @return JSONResponse The previewed reversal, or the refusal.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	#[NoAdminRequired]
 	public function reverse(int $id): JSONResponse {

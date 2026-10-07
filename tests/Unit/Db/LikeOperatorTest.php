@@ -32,8 +32,8 @@ use PHPUnit\Framework\TestCase;
 /**
  * The `like` operator: SQL per platform, escaping, and real matches on SQLite.
  *
- * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
- * @spec openspec/changes/property-filter-like/specs/zoeken-filteren/spec.md#requirement-like-matches-percent-underscore-and-backslash-literally
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-like-matches-percent-underscore-and-backslash-literally
  */
 class LikeOperatorTest extends TestCase {
 	/**

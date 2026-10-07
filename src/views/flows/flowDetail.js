@@ -5,7 +5,7 @@
  * Plain functions over API payloads, kept out of the two views so they are
  * tested without mounting a page. Nothing here fetches.
  *
- * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md
  * @license EUPL-1.2
  * @copyright 2026 Conduction B.V.
  */

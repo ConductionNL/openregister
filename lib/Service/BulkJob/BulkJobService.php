@@ -178,7 +178,7 @@ class BulkJobService {
 	 *
 	 * @return int The ceiling.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function getUndoCeiling(): int {
 		$ceiling = $this->appConfig->getValueInt(self::APP_ID, self::UNDO_CEILING_KEY, self::UNDO_CEILING_DEFAULT);

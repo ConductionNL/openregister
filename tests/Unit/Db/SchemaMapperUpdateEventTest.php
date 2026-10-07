@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
  * is mapped through the real Schema entity, as findEntity() would, and the
  * dispatched event is the real SchemaUpdatedEvent.
  *
- * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
  */
 class SchemaMapperUpdateEventTest extends TestCase {
 	/**

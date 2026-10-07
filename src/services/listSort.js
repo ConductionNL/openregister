@@ -6,7 +6,7 @@
  * headers (or none) that did nothing when clicked (live audit G2, 7 October
  * 2026).
  *
- * @spec openspec/changes/live-audit-round-one/specs/audit-trail-immutable/spec.md
+ * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 
 /**
@@ -30,7 +30,7 @@ export const AUDIT_SORT_FIELDS = {
  * @param {object} sort `{ field: 'ASC' | 'DESC' }`; empty means newest first.
  * @return {{sortKey: string, sortOrder: string}} The header state.
  *
- * @spec openspec/changes/live-audit-round-one/specs/audit-trail-immutable/spec.md
+ * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 export function headerSortOf(sort) {
 	const [field, direction] = Object.entries(sort || {})[0] || ['created', 'DESC']
@@ -73,7 +73,7 @@ function schemaValue(schema, key) {
  * @param {string} sortOrder `asc` or `desc`.
  * @return {Array<object>} A sorted copy.
  *
- * @spec openspec/changes/live-audit-round-one/specs/audit-trail-immutable/spec.md
+ * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 export function sortSchemas(schemas, sortKey, sortOrder = 'asc') {
 	const newestFirst = [...(schemas || [])].sort(

@@ -14,7 +14,9 @@ status: implemented
 Implement an immutable audit trail with cryptographic hash chaining for all register operations. Every create, read (of sensitive data), update, and delete MUST be recorded in a tamper-evident log with minimum 10-year retention. The audit trail MUST be independently verifiable and exportable for compliance auditing.
 
 **Tender demand**: 56% of analyzed government tenders require immutable audit trail capabilities.
+
 ## Requirements
+
 ### Requirement: Every mutation MUST produce an immutable audit trail entry
 All create, update, and delete operations on register objects MUST generate an audit trail entry that cannot be modified or deleted.
 
@@ -325,6 +327,28 @@ The audit trail table SHALL carry an index on `(object_uuid, created)`, so a rea
 - **WHEN** any user opens an object
 - **THEN** no `read` entry MUST be written
 - @e2e exclude {instance setting read on the server; no page renders the absence of an entry}
+
+### Requirement: Sortable headers on OpenRegister's own lists sort
+
+A header the schemas list or the audit trail list marks sortable SHALL sort
+the list when clicked, both ways, and SHALL show that state (`aria-sort`).
+The schemas list SHALL keep newest first until a header is chosen. The audit
+trail list SHALL sort on the server by the action, timestamp, object,
+register, user and schema columns, and SHALL keep the chosen sort while
+paging.
+
+#### Scenario: Sort schemas by title
+
+- GIVEN the schemas "Zaak", "adres" and "Besluit"
+- WHEN the administrator clicks the Title header
+- THEN the list reads "adres", "Besluit", "Zaak"
+- AND a second click reverses it
+
+#### Scenario: Sort the audit trail by user and page on
+
+- GIVEN the audit trail sorted by User ascending
+- WHEN the administrator opens page 2
+- THEN the request asks for `sort=user_name&order=ASC`
 
 ## Current Implementation Status
 - **Implemented:**

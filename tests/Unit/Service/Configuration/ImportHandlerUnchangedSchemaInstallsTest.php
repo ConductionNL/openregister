@@ -49,7 +49,7 @@ use ReflectionProperty;
  * The installers are the real listener classes over doubled stores, so the
  * tests show a flow and a webhook actually being written.
  *
- * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-an-import-of-an-unchanged-schema-still-installs-what-it-declares
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-an-import-of-an-unchanged-schema-still-installs-what-it-declares
  */
 class ImportHandlerUnchangedSchemaInstallsTest extends TestCase {
 	/**

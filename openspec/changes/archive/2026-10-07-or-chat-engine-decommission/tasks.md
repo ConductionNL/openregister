@@ -11,7 +11,7 @@
 ## 3. Remove OR chat/agents SPA (frontend)
 
 - [x] 3.1 `src/manifest.json`: drop the `chat` + `agents` pages and their navigation entries; `src/registry.js`: drop `ChatIndex` + `AgentsIndex` loaders
-- [x] 3.2 Delete `src/views/chat/`, `src/views/agents/`, `src/sidebars/chat/` (unwire `SideBars.vue`), `src/modals/agent/` (unwire `Modals.vue`)
+- [x] 3.2 Delete `src/views/chat/`, `src/views/agents/`, `src/sidebars/chat/` (unwire `SideBars.vue`), `src/modals/agent/` (unwire `Modals.vue`). Note 2026-10-07: `src/views/agents/AgentsIndex.vue` and `src/modals/agent/EditAgentLimits.vue` are back on development as the agent tool-limits screen from ai-agent-limits-screen; the chat views and sidebar stay deleted
 - [x] 3.3 Remove `src/store/modules/conversation.ts` + `src/store/modules/agent.js` and their `store.js` exports; strip conversation/agent bootstrapping from `src/services/AppInitializationService.js`; delete `src/entities/{message,conversation,agent}/` and their `entities/index.js` exports — after grepping each for remaining consumers and unwiring any found
 - [x] 3.4 Remove the `ui#chat` route from `appinfo/routes.php` and `UiController::chat()` (gate: route-reachability both directions)
 

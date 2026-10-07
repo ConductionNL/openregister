@@ -6,7 +6,7 @@
  * do: computed properties become getters on that object, so a test reads
  * the page the way its template does.
  *
- * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md
+ * @spec openspec/specs/flow-and-run-detail-pages/spec.md
  * @license EUPL-1.2
  * @copyright 2026 Conduction B.V.
  */

@@ -185,7 +185,7 @@ class SchemaTypeConverter {
 	 * @return array The data with untouched string-typed JSON values restored to their stored form.
 	 *
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
-	 * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-a-patch-leaves-an-untouched-translatable-property-as-it-is
+	 * @spec openspec/specs/event-driven-architecture/spec.md#requirement-a-patch-leaves-an-untouched-translatable-property-as-it-is
 	 */
 	public function restoreStringTypedValues(array $data, array $properties, array $suppliedKeys=[]): array {
 		foreach ($data as $key => $value) {

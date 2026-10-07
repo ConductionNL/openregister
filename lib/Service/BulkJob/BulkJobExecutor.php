@@ -402,7 +402,7 @@ class BulkJobExecutor {
 	 *
 	 * @return array{prior: array<string, mixed>, applied: array<string, mixed>}|null The plan.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	private function reversalPlanOf(BulkActionInterface $action, ?ObjectEntity $object, BulkJob $job): ?array {
 		if ($object === null || ($action instanceof ReversibleBulkActionInterface) === false) {
@@ -520,7 +520,7 @@ class BulkJobExecutor {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	private function stampReversalDeadline(BulkJob $job): void {
 		if ($job->isReversible() === false) {
