@@ -3365,7 +3365,16 @@
         "This record has no visible fields.": "Níl aon réimsí infheicthe ag an taifead seo.",
         "Upload": "Uaslódáil",
         "Edit {field}": "Cuir {field} in eagar",
-        "The value could not be saved": "Níorbh fhéidir an luach a shábháil"
+        "The value could not be saved": "Níorbh fhéidir an luach a shábháil",
+        "%1$s %2$s created": "%1$s %2$s cruthaithe",
+        "{schema} {title} created": "{schema} {title} cruthaithe",
+        "%1$s %2$s updated": "%1$s %2$s nuashonraithe",
+        "{schema} {title} updated": "{schema} {title} nuashonraithe",
+        "%1$s %2$s deleted": "%1$s %2$s scriosta",
+        "{schema} {title} deleted": "{schema} {title} scriosta",
+        "Object \"%1$s\" created": "Réad \"%1$s\" cruthaithe",
+        "Object \"%1$s\" updated": "Réad \"%1$s\" nuashonraithe",
+        "Object \"%1$s\" assigned to you": "Réad \"%1$s\" sannta duit"
     },
     "pluralForm": "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);",
     "plurals": {

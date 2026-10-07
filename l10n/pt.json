@@ -3302,7 +3302,16 @@
         "This record has no visible fields.": "Este registo não tem campos visíveis.",
         "Upload": "Carregar",
         "Edit {field}": "Editar {field}",
-        "The value could not be saved": "Não foi possível guardar o valor"
+        "The value could not be saved": "Não foi possível guardar o valor",
+        "%1$s %2$s created": "%1$s %2$s criado",
+        "{schema} {title} created": "{schema} {title} criado",
+        "%1$s %2$s updated": "%1$s %2$s atualizado",
+        "{schema} {title} updated": "{schema} {title} atualizado",
+        "%1$s %2$s deleted": "%1$s %2$s eliminado",
+        "{schema} {title} deleted": "{schema} {title} eliminado",
+        "Object \"%1$s\" created": "Objeto \"%1$s\" criado",
+        "Object \"%1$s\" updated": "Objeto \"%1$s\" atualizado",
+        "Object \"%1$s\" assigned to you": "Objeto \"%1$s\" atribuído a si"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

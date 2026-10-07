@@ -3302,7 +3302,16 @@
         "This record has no visible fields.": "Dieser Datensatz hat keine sichtbaren Felder.",
         "Upload": "Hochladen",
         "Edit {field}": "{field} bearbeiten",
-        "The value could not be saved": "Der Wert konnte nicht gespeichert werden"
+        "The value could not be saved": "Der Wert konnte nicht gespeichert werden",
+        "%1$s %2$s created": "%1$s %2$s erstellt",
+        "{schema} {title} created": "{schema} {title} erstellt",
+        "%1$s %2$s updated": "%1$s %2$s aktualisiert",
+        "{schema} {title} updated": "{schema} {title} aktualisiert",
+        "%1$s %2$s deleted": "%1$s %2$s gelöscht",
+        "{schema} {title} deleted": "{schema} {title} gelöscht",
+        "Object \"%1$s\" created": "Objekt \"%1$s\" erstellt",
+        "Object \"%1$s\" updated": "Objekt \"%1$s\" aktualisiert",
+        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" wurde Ihnen zugewiesen"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

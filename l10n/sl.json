@@ -3344,7 +3344,16 @@
         "This record has no visible fields.": "Ta zapis nima vidnih polj.",
         "Upload": "Naloži",
         "Edit {field}": "Uredi {field}",
-        "The value could not be saved": "Vrednosti ni bilo mogoče shraniti"
+        "The value could not be saved": "Vrednosti ni bilo mogoče shraniti",
+        "%1$s %2$s created": "%1$s %2$s ustvarjen",
+        "{schema} {title} created": "{schema} {title} ustvarjen",
+        "%1$s %2$s updated": "%1$s %2$s posodobljen",
+        "{schema} {title} updated": "{schema} {title} posodobljen",
+        "%1$s %2$s deleted": "%1$s %2$s izbrisan",
+        "{schema} {title} deleted": "{schema} {title} izbrisan",
+        "Object \"%1$s\" created": "Objekt \"%1$s\" ustvarjen",
+        "Object \"%1$s\" updated": "Objekt \"%1$s\" posodobljen",
+        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" vam je dodeljen"
     },
     "pluralForm": "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);",
     "plurals": {

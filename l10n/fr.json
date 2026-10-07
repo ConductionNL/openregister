@@ -3323,7 +3323,16 @@
         "This record has no visible fields.": "Cet enregistrement n'a aucun champ visible.",
         "Upload": "Téléverser",
         "Edit {field}": "Modifier {field}",
-        "The value could not be saved": "La valeur n'a pas pu être enregistrée"
+        "The value could not be saved": "La valeur n'a pas pu être enregistrée",
+        "%1$s %2$s created": "%1$s %2$s créé",
+        "{schema} {title} created": "{schema} {title} créé",
+        "%1$s %2$s updated": "%1$s %2$s mis à jour",
+        "{schema} {title} updated": "{schema} {title} mis à jour",
+        "%1$s %2$s deleted": "%1$s %2$s supprimé",
+        "{schema} {title} deleted": "{schema} {title} supprimé",
+        "Object \"%1$s\" created": "Objet \"%1$s\" créé",
+        "Object \"%1$s\" updated": "Objet \"%1$s\" mis à jour",
+        "Object \"%1$s\" assigned to you": "Objet \"%1$s\" vous a été attribué"
     },
     "pluralForm": "nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;",
     "plurals": {

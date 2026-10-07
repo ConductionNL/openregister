@@ -3302,7 +3302,16 @@
         "This record has no visible fields.": "Den här posten har inga synliga fält.",
         "Upload": "Ladda upp",
         "Edit {field}": "Redigera {field}",
-        "The value could not be saved": "Värdet kunde inte sparas"
+        "The value could not be saved": "Värdet kunde inte sparas",
+        "%1$s %2$s created": "%1$s %2$s skapad",
+        "{schema} {title} created": "{schema} {title} skapad",
+        "%1$s %2$s updated": "%1$s %2$s uppdaterad",
+        "{schema} {title} updated": "{schema} {title} uppdaterad",
+        "%1$s %2$s deleted": "%1$s %2$s borttagen",
+        "{schema} {title} deleted": "{schema} {title} borttagen",
+        "Object \"%1$s\" created": "Objekt \"%1$s\" skapad",
+        "Object \"%1$s\" updated": "Objekt \"%1$s\" uppdaterad",
+        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" har tilldelats dig"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

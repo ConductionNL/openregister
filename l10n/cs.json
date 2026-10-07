@@ -3344,7 +3344,16 @@
         "This record has no visible fields.": "Tento záznam nemá žádná viditelná pole.",
         "Upload": "Nahrát",
         "Edit {field}": "Upravit {field}",
-        "The value could not be saved": "Hodnotu se nepodařilo uložit"
+        "The value could not be saved": "Hodnotu se nepodařilo uložit",
+        "%1$s %2$s created": "%1$s %2$s vytvořen",
+        "{schema} {title} created": "{schema} {title} vytvořen",
+        "%1$s %2$s updated": "%1$s %2$s aktualizován",
+        "{schema} {title} updated": "{schema} {title} aktualizován",
+        "%1$s %2$s deleted": "%1$s %2$s smazán",
+        "{schema} {title} deleted": "{schema} {title} smazán",
+        "Object \"%1$s\" created": "Objekt \"%1$s\" vytvořen",
+        "Object \"%1$s\" updated": "Objekt \"%1$s\" aktualizován",
+        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" vám byl přiřazen"
     },
     "pluralForm": "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;",
     "plurals": {

@@ -3323,7 +3323,16 @@
         "This record has no visible fields.": "Această înregistrare nu are câmpuri vizibile.",
         "Upload": "Încărcați",
         "Edit {field}": "Editează {field}",
-        "The value could not be saved": "Valoarea nu a putut fi salvată"
+        "The value could not be saved": "Valoarea nu a putut fi salvată",
+        "%1$s %2$s created": "%1$s %2$s creat",
+        "{schema} {title} created": "{schema} {title} creat",
+        "%1$s %2$s updated": "%1$s %2$s actualizat",
+        "{schema} {title} updated": "{schema} {title} actualizat",
+        "%1$s %2$s deleted": "%1$s %2$s șters",
+        "{schema} {title} deleted": "{schema} {title} șters",
+        "Object \"%1$s\" created": "Obiect \"%1$s\" creat",
+        "Object \"%1$s\" updated": "Obiect \"%1$s\" actualizat",
+        "Object \"%1$s\" assigned to you": "Obiect \"%1$s\" atribuit dumneavoastră"
     },
     "pluralForm": "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));",
     "plurals": {

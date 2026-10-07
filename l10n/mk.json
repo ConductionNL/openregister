@@ -3302,7 +3302,16 @@
         "This record has no visible fields.": "Овој запис нема видливи полиња.",
         "Upload": "Прикачи",
         "Edit {field}": "Уреди {field}",
-        "The value could not be saved": "Вредноста не може да се зачува"
+        "The value could not be saved": "Вредноста не може да се зачува",
+        "%1$s %2$s created": "%1$s %2$s создаден",
+        "{schema} {title} created": "{schema} {title} создаден",
+        "%1$s %2$s updated": "%1$s %2$s ажуриран",
+        "{schema} {title} updated": "{schema} {title} ажуриран",
+        "%1$s %2$s deleted": "%1$s %2$s избришан",
+        "{schema} {title} deleted": "{schema} {title} избришан",
+        "Object \"%1$s\" created": "Објект \"%1$s\" создаден",
+        "Object \"%1$s\" updated": "Објект \"%1$s\" ажуриран",
+        "Object \"%1$s\" assigned to you": "Објект \"%1$s\" ви е доделен"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

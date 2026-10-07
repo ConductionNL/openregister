@@ -3323,7 +3323,16 @@
         "This record has no visible fields.": "Questo record non ha campi visibili.",
         "Upload": "Carica",
         "Edit {field}": "Modifica {field}",
-        "The value could not be saved": "Impossibile salvare il valore"
+        "The value could not be saved": "Impossibile salvare il valore",
+        "%1$s %2$s created": "%1$s %2$s creato",
+        "{schema} {title} created": "{schema} {title} creato",
+        "%1$s %2$s updated": "%1$s %2$s aggiornato",
+        "{schema} {title} updated": "{schema} {title} aggiornato",
+        "%1$s %2$s deleted": "%1$s %2$s eliminato",
+        "{schema} {title} deleted": "{schema} {title} eliminato",
+        "Object \"%1$s\" created": "Oggetto \"%1$s\" creato",
+        "Object \"%1$s\" updated": "Oggetto \"%1$s\" aggiornato",
+        "Object \"%1$s\" assigned to you": "Oggetto \"%1$s\" assegnato a te"
     },
     "pluralForm": "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;",
     "plurals": {

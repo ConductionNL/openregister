@@ -3344,7 +3344,16 @@
         "This record has no visible fields.": "У гэтага запісу няма бачных палёў.",
         "Upload": "Запампаваць",
         "Edit {field}": "Рэдагаваць {field}",
-        "The value could not be saved": "Не ўдалося захаваць значэнне"
+        "The value could not be saved": "Не ўдалося захаваць значэнне",
+        "%1$s %2$s created": "%1$s %2$s створаны",
+        "{schema} {title} created": "{schema} {title} створаны",
+        "%1$s %2$s updated": "%1$s %2$s абноўлены",
+        "{schema} {title} updated": "{schema} {title} абноўлены",
+        "%1$s %2$s deleted": "%1$s %2$s выдалены",
+        "{schema} {title} deleted": "{schema} {title} выдалены",
+        "Object \"%1$s\" created": "Аб’ект \"%1$s\" створаны",
+        "Object \"%1$s\" updated": "Аб’ект \"%1$s\" абноўлены",
+        "Object \"%1$s\" assigned to you": "Аб’ект \"%1$s\" прызначаны вам"
     },
     "pluralForm": "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);",
     "plurals": {

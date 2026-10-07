@@ -3302,7 +3302,16 @@
         "This record has no visible fields.": "Αυτή η εγγραφή δεν έχει ορατά πεδία.",
         "Upload": "Μεταφόρτωση",
         "Edit {field}": "Επεξεργασία {field}",
-        "The value could not be saved": "Δεν ήταν δυνατή η αποθήκευση της τιμής"
+        "The value could not be saved": "Δεν ήταν δυνατή η αποθήκευση της τιμής",
+        "%1$s %2$s created": "%1$s %2$s δημιουργήθηκε",
+        "{schema} {title} created": "{schema} {title} δημιουργήθηκε",
+        "%1$s %2$s updated": "%1$s %2$s ενημερώθηκε",
+        "{schema} {title} updated": "{schema} {title} ενημερώθηκε",
+        "%1$s %2$s deleted": "%1$s %2$s διαγράφηκε",
+        "{schema} {title} deleted": "{schema} {title} διαγράφηκε",
+        "Object \"%1$s\" created": "Αντικείμενο \"%1$s\" δημιουργήθηκε",
+        "Object \"%1$s\" updated": "Αντικείμενο \"%1$s\" ενημερώθηκε",
+        "Object \"%1$s\" assigned to you": "Αντικείμενο \"%1$s\" ανατέθηκε σε εσάς"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

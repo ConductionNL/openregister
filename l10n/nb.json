@@ -3302,7 +3302,16 @@
         "This record has no visible fields.": "Denne posten har ingen synlige felt.",
         "Upload": "Last opp",
         "Edit {field}": "Rediger {field}",
-        "The value could not be saved": "Verdien kunne ikke lagres"
+        "The value could not be saved": "Verdien kunne ikke lagres",
+        "%1$s %2$s created": "%1$s %2$s opprettet",
+        "{schema} {title} created": "{schema} {title} opprettet",
+        "%1$s %2$s updated": "%1$s %2$s oppdatert",
+        "{schema} {title} updated": "{schema} {title} oppdatert",
+        "%1$s %2$s deleted": "%1$s %2$s slettet",
+        "{schema} {title} deleted": "{schema} {title} slettet",
+        "Object \"%1$s\" created": "Objekt \"%1$s\" opprettet",
+        "Object \"%1$s\" updated": "Objekt \"%1$s\" oppdatert",
+        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" er tildelt deg"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
