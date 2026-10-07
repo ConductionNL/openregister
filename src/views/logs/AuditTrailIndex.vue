@@ -690,8 +690,8 @@ export default {
 					page: 1,
 					limit: auditTrailStore.auditTrailPagination.limit,
 				})
-			} catch (error) {
-				console.error('Error sorting audit trails:', error)
+			} catch {
+				showError(t('openregister', 'Error loading audit trails'))
 			}
 		},
 

@@ -145,12 +145,10 @@ describe('AuditTrail Store', () => {
 	describe('Header sort (live audit G2)', () => {
 		it('keeps the sort a header chose when the page changes', async () => {
 			global.OC = { requestToken: 'token' }
-			global.fetch = jest
-				.fn()
-				.mockResolvedValue({
-					ok: true,
-					json: async () => ({ results: [], total: 0 }),
-				})
+			global.fetch = jest.fn().mockResolvedValue({
+				ok: true,
+				json: async () => ({ results: [], total: 0 }),
+			})
 
 			store.setAuditTrailSort({ user_name: 'ASC' })
 			await store.fetchAuditTrails({ page: 2, limit: 50 })
