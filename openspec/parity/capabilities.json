@@ -6053,6 +6053,28 @@
     "nocodb": "source read at 2026.09.0, not driven: REST data API v3 with Swagger output (packages/nocodb/src/controllers/v3, data-v3.controller.ts:67), but NocoDB conventions (/api/v3/data/{baseId}/{tableId}/records, own paging envelope) rather than the Dutch API design rules; searched \"API-Version|nlgov|_links\" in packages/nocodb/src/controllers/v3: no match",
     "pocketbase": "source read at v0.40.4, not driven: PocketBase uses its own REST conventions: page and perPage params (pocketbase:tools/search/provider.go:48-49), its own ApiError body rather than application/problem+json (pocketbase:tools/router/error.go:36), no API-Version header; searched \"problem\\+json|api-version|dutch|api.?design\" in apis: no match"
    }
+  },
+  {
+   "id": "api-incremental-sync",
+   "area": "api",
+   "name": "Fetch only what changed since your last sync through the API, including a list of deleted items.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "partial",
+   "built": {
+    "state": "specified",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Read on development e3c2954612. A changed-since read works: _updated is an @self metadata filter column (lib/Db/MagicMapper/MagicSearchHandler.php:146) with gte among the operators (:94), and _includeDeleted=true returns soft-deleted rows (:483). Deletions are the gap: the soft delete in lib/Service/Object/DeleteObject.php:334-361 writes the deleted block but never sets updated, GET /api/deleted (DeletedController::index) reads only limit and offset, and a destroyed object leaves only a per-object audit-trail destruction entry.",
+    "change": "incremental-sync-for-api-consumers"
+   },
+   "reachedOn": "API only: GET /api/objects/{register}/{schema} and GET /api/deleted",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the spec round of 7 Oct 2026 for planninq row int-incremental-sync, whose note says openregister owns this capability (openregister#4076 corrected planninq's cell to building on 2026-09-27). Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
   }
  ],
  "pending": [
