@@ -668,6 +668,16 @@ is on, the system MUST:
    an error. The proxy MUST NOT be able to turn a request that would have
    succeeded locally into a failed request.
 
+The agents API follows the same switch, by design: when hermiq is installed
+and the proxy is on, hermiq owns agents. Every `AgentsController` API call
+(`GET /api/agents`, `GET /api/agents/tools`, `GET /api/agents/stats`,
+`GET|PUT|PATCH|DELETE /api/agents/{id}`, `POST /api/agents`) MUST be
+forwarded to hermiq's mirrored route, so the agent tool-limits screen (spec
+`agent-tool-governance`) lists hermiq's agents and its edits are written to
+hermiq. The system MUST NOT carve the agents API out of the proxy, nor split
+reads and writes between the two engines. With the proxy off, or hermiq
+absent, OpenRegister MUST answer the agents API from its own agents table.
+
 Deleting OpenRegister's own chat engine (`ChatService`, the `Chat/*`
 handlers, the five controllers, the underlying `openregister_{agents,
 conversations,messages,feedback}` tables) is out of scope for this
@@ -730,6 +740,29 @@ and the vectorization stack being split out.
 - **AND** the failure MUST be logged at warning level, never returned to the
   caller as an error response
 
+#### Scenario: Hermiq installed and proxy on, the agents API is answered by hermiq
+- **GIVEN** `openregister.chat.proxyTo` is unset or set to `hermiq`
+- **AND** hermiq is installed and reachable
+- **WHEN** the agent tool-limits screen calls `GET /apps/openregister/api/agents`
+  and `GET /apps/openregister/api/agents/tools`
+- **THEN** OpenRegister MUST forward both calls to `/apps/hermiq/api/agents`
+  and `/apps/hermiq/api/agents/tools` and return hermiq's status and body
+- **AND** `AgentsController::index()` and `AgentsController::tools()` MUST NOT
+  execute
+- **AND** the limits screen MUST list hermiq's agents
+- **WHEN** the user saves a limit from that screen
+  (`PATCH /apps/openregister/api/agents/{id}`)
+- **THEN** the call MUST be forwarded to `/apps/hermiq/api/agents/{id}`
+
+#### Scenario: Proxy off, OpenRegister answers the agents API
+- **GIVEN** an operator has set `openregister.chat.proxyTo` to `off`
+- **AND** hermiq is installed
+- **WHEN** the agent tool-limits screen calls `GET /apps/openregister/api/agents`
+- **THEN** `AgentsController::index()` MUST execute and return OpenRegister's
+  own agents
+- **AND** no call to hermiq MUST be made
+- **AND** the response MUST carry the three deprecation headers
+
 #### Notes
 - OpenRegister no longer ships its own chat page: `src/views/chat`, the
   `ui#chat` route and `UiController::chat()` were removed by
@@ -739,7 +772,11 @@ and the vectorization stack being split out.
   OpenRegister shows today is the agent tool-limits screen from
   ai-agent-limits-screen (spec `agent-tool-governance`), rendered by the SPA.
   Its calls to `/api/agents` are chat-family API calls, so with the proxy on
-  and hermiq installed they are answered by hermiq.
+  and hermiq installed they are answered by hermiq. This is intended
+  (agents-api-follows-the-chat-proxy, build-all decision 92).
+- `isHermiqInstalled()` uses `IAppManager::isInstalled('hermiq')`. A 4xx or
+  5xx from hermiq is relayed as is; only a transport failure falls back to
+  local serving.
 
 ### Requirement: Usage statistics are organisation-scoped, never instance-wide
 
