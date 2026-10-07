@@ -759,7 +759,7 @@ class RegisterMapper extends QBMapper {
 		// Dispatch the update event only when the register actually changed. An
 		// app re-importing its unchanged register (setup wizard, example data)
 		// otherwise told every admin "Register was updated" while they edited an object.
-		if ((new RegisterChangeDetector())->changed(old: $oldSchema, new: $entity) === true) {
+		if ((new EntityChangeDetector())->changed(old: $oldSchema, new: $entity) === true) {
 			$this->eventDispatcher->dispatchTyped(new RegisterUpdatedEvent(newRegister: $entity, oldRegister: $oldSchema));
 		}
 

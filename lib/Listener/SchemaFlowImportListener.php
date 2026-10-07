@@ -124,9 +124,15 @@ class SchemaFlowImportListener implements IEventListener {
 	 *
 	 * @return void
 	 *
+	 * Public so the configuration import can run it for a schema whose save
+	 * changed nothing, and so fired no SchemaUpdatedEvent: a shipped flow an
+	 * administrator deleted, or one declared before this importer existed,
+	 * still arrives on the next import.
+	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-an-import-of-an-unchanged-schema-still-installs-what-it-declares
 	 */
-	private function importFor(Schema $schema): void {
+	public function importFor(Schema $schema): void {
 		$declared = (($schema->getConfiguration() ?? [])[self::ANNOTATION_KEY] ?? null);
 		if (is_array($declared) === false || $declared === []) {
 			return;

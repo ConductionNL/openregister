@@ -237,6 +237,13 @@ class SchemaMapper extends QBMapper {
 	// We assign it in the constructor to make it available to the trait methods.
 
 	/**
+	 * SchemaUpdatedEvents dispatched in this request, keyed by schema id.
+	 *
+	 * @var array<int, int>
+	 */
+	private array $updateEventCounts = [];
+
+	/**
 	 * Constructor
 	 *
 	 * Initializes mapper with database connection and required dependencies
@@ -3059,6 +3066,8 @@ class SchemaMapper extends QBMapper {
 	 * @return Entity The updated entity
 	 *
 	 * @psalm-suppress LessSpecificImplementedReturnType - Schema is more specific than Entity
+	 *
+	 * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
 	 */
 	public function update(Entity $entity): Entity {
 		// Verify RBAC permission to update.
@@ -3110,11 +3119,34 @@ class SchemaMapper extends QBMapper {
 
 		$entity = parent::update(entity: $entity);
 
-		// Dispatch update event.
-		$this->eventDispatcher->dispatchTyped(new SchemaUpdatedEvent(newSchema: $entity, oldSchema: $oldSchema));
+		// An event fires at the level where something changed, and only when it
+		// did. An app re-importing an identical schema used to fire this on every
+		// import, so every admin was told "Schema was updated" while nothing was.
+		if ((new EntityChangeDetector())->changed(old: $oldSchema, new: $entity) === true) {
+			$schemaId = (int)$entity->getId();
+			$this->updateEventCounts[$schemaId] = (($this->updateEventCounts[$schemaId] ?? 0) + 1);
+			$this->eventDispatcher->dispatchTyped(new SchemaUpdatedEvent(newSchema: $entity, oldSchema: $oldSchema));
+		}
 
 		return $entity;
 	}//end update()
+
+	/**
+	 * How many SchemaUpdatedEvents this request dispatched for one schema.
+	 *
+	 * A caller that saves a schema and needs to know whether the save reached
+	 * the listeners (the configuration import, which must otherwise run the
+	 * installers itself) reads this before and after its writes.
+	 *
+	 * @param int $schemaId The schema id.
+	 *
+	 * @return int The number of update events dispatched for it so far.
+	 *
+	 * @spec openspec/changes/events-at-the-level-of-change/specs/event-driven-architecture/spec.md#requirement-a-schema-save-that-changes-nothing-publishes-nothing
+	 */
+	public function updateEventCount(int $schemaId): int {
+		return ($this->updateEventCounts[$schemaId] ?? 0);
+	}//end updateEventCount()
 
 	/**
 	 * Updates a schema from an array
