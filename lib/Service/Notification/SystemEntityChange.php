@@ -83,16 +83,36 @@ class SystemEntityChange {
 	 * @return mixed The comparable form.
 	 */
 	private function normalise(mixed $value): mixed {
+		$value = $this->plain(value: $value);
+		if ($value === null || $value === '' || $value === []) {
+			return null;
+		}
+
+		if (is_array($value) === false) {
+			return $value;
+		}
+
+		if (array_is_list($value) === true) {
+			return $this->normaliseList(list: $value);
+		}
+
+		return $this->normaliseMap(map: $value);
+	}//end normalise()
+
+	/**
+	 * A date as ISO text, a serialisable object as its data, a scalar as text.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return mixed The plain value.
+	 */
+	private function plain(mixed $value): mixed {
 		if ($value instanceof \DateTimeInterface) {
 			return $value->format('c');
 		}
 
 		if ($value instanceof \JsonSerializable) {
 			$value = $value->jsonSerialize();
-		}
-
-		if ($value === null || $value === '' || $value === []) {
-			return null;
 		}
 
 		if (is_bool($value) === true) {
@@ -103,33 +123,47 @@ class SystemEntityChange {
 			return (string) $value;
 		}
 
-		if (is_array($value) === false) {
-			return $value;
-		}
+		return $value;
+	}//end plain()
 
+	/**
+	 * A map with sorted keys and its empty entries left out, or null when empty.
+	 *
+	 * @param array<string|int, mixed> $map The map.
+	 *
+	 * @return array<string, mixed>|null The comparable form.
+	 */
+	private function normaliseMap(array $map): ?array {
 		$normalised = [];
-		foreach ($value as $key => $item) {
+		foreach ($map as $key => $item) {
 			$item = $this->normalise(value: $item);
-			if ($item !== null || array_is_list($value) === true) {
+			if ($item !== null) {
 				$normalised[(string) $key] = $item;
 			}
 		}
 
-		if (array_is_list($value) === false) {
-			if ($normalised === []) {
-				return null;
-			}
-
-			ksort($normalised);
-
-			return $normalised;
+		if ($normalised === []) {
+			return null;
 		}
 
-		$items = array_values($normalised);
+		ksort($normalised);
+
+		return $normalised;
+	}//end normaliseMap()
+
+	/**
+	 * A list, sorted when it holds only plain values.
+	 *
+	 * @param array<int, mixed> $list The list.
+	 *
+	 * @return array<int, mixed> The comparable form.
+	 */
+	private function normaliseList(array $list): array {
+		$items = array_map(fn (mixed $item): mixed => $this->normalise(value: $item), $list);
 		if (count(array_filter($items, static fn (mixed $item): bool => is_array($item))) === 0) {
 			sort($items, SORT_STRING);
 		}
 
 		return $items;
-	}//end normalise()
+	}//end normaliseList()
 }//end class
