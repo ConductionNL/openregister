@@ -22,9 +22,10 @@ Spec only until Ruben approves ConductionNL/hydra#739. Build after integriq's ev
   - files: `lib/Service/Flow/FlowMessagingService.php`, its test
   - acceptance: the opted-out scenario passes with a real dispatcher and a stub listener. Red before.
   - test: `vendor/bin/phpunit --no-coverage --filter FlowMessagingServiceTest`
-- [ ] 2.3 The flow builder shows the new buckets in the run log. English string in `l10n/en.js`, translated per `docs/l10n-workflow.md` §6.15.
+- [x] 2.3 The flow builder shows the new buckets in the run log. English string in `l10n/en.js`, translated per `docs/l10n-workflow.md` §6.15.
   - files: `src/` run-log component, `l10n/`
   - test: `npm run test:l10n && npm run test:l10n:parity`
+  - done: the run log lives in nextcloud-vue, so the component and its strings (en, nl) are there: `CnFlowStepOutcomes`, rendered by `CnRunDetailSidebar` under each step (nextcloud-vue `feat/static-select-options-and-outcome-labels`). OpenRegister gets it with the release; no `src/` string was added here. The send-email step's `messageCategory` is now a select with labelled options (`SendEmailNode::configForm()`).
 
 ## 3. The party path
 

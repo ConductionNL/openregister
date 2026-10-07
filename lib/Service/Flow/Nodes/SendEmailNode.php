@@ -229,14 +229,14 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 				),
 			],
 			[
-				// A text field, like externalRecipients: the shared form
-				// renderer feeds a select only from an `optionsFrom` url.
+				// A select over the fleet categories, listed in the form
+				// itself: the shared flow form renders `options` as a picker.
 				'key' => 'messageCategory',
 				'label' => $this->l10n->t('Message category'),
-				'type' => 'text',
+				'type' => 'select',
+				'options' => $this->messageCategoryOptions(),
 				'help' => $this->l10n->t(
-					'What kind of mail this is: %s. Empty means service. Only besluit, statutory, account and security reach a person who opted out.',
-					[implode(', ', OptOutAuthority::CATEGORIES)]
+					'Decisions, statutory notices, account and security mail always arrive. Other mail stops for a person who opted out. Empty means service message.'
 				),
 			],
 			[
@@ -254,6 +254,45 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 			],
 		];
 	}//end configForm()
+
+	/**
+	 * The message categories as picker options, the default first.
+	 *
+	 * The values are OptOutAuthority::CATEGORIES; a category added there
+	 * without a label here still shows, under its own name.
+	 *
+	 * @return array<int, array{value: string, label: string}> The options.
+	 *
+	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
+	 */
+	private function messageCategoryOptions(): array {
+		$labels = [
+			'service'     => $this->l10n->t('Service message (default)'),
+			'case-update' => $this->l10n->t('Case update'),
+			'reminder'    => $this->l10n->t('Reminder'),
+			'marketing'   => $this->l10n->t('Marketing, such as a newsletter'),
+			'besluit'     => $this->l10n->t('Decision (besluit), always sent'),
+			'statutory'   => $this->l10n->t('Statutory notice, always sent'),
+			'account'     => $this->l10n->t('Account message, always sent'),
+			'security'    => $this->l10n->t('Security message, always sent'),
+		];
+
+		$ordered = array_values(
+			array_unique(
+				array_merge(
+					[OptOutAuthority::DEFAULT_CATEGORY],
+					array_keys($labels),
+					OptOutAuthority::CATEGORIES
+				)
+			)
+		);
+		$ordered = array_values(array_intersect($ordered, OptOutAuthority::CATEGORIES));
+
+		return array_map(
+			static fn (string $category): array => ['value' => $category, 'label' => ($labels[$category] ?? $category)],
+			$ordered
+		);
+	}//end messageCategoryOptions()
 
 	/**
 	 * Send, then pass the items through unchanged.
