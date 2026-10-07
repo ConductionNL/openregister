@@ -373,4 +373,47 @@ class SetupControllerTest extends TestCase {
 
 		$this->assertSame(500, $response->getStatus());
 	}
+
+	/**
+	 * 🔴 Closing the wizard is remembered on the server, not only in one browser.
+	 *
+	 * The wizard records a dismissal in localStorage, so on the live instance
+	 * it opened again in every other browser. The app posts `dismiss-setup`
+	 * and the status then reports the step done.
+	 *
+	 * @spec openspec/changes/live-audit-round-one/specs/first-time-setup/spec.md
+	 */
+	public function testClosingTheWizardIsRememberedOnTheServer(): void {
+		$store = [];
+		$this->appConfig->method('getValueString')->willReturnCallback(
+			static fn (string $app, string $key, string $default = ''): string => ($store[$key] ?? $default)
+		);
+		$this->appConfig->method('setValueString')->willReturnCallback(
+			static function (string $app, string $key, string $value) use (&$store): bool {
+				$store[$key] = $value;
+				return true;
+			}
+		);
+		$this->demoData->method('listChoices')->willReturn([]);
+
+		$this->assertFalse($this->controller->status()->getData()['steps']['demo-data']['done']);
+
+		$response = $this->controller->runAction('dismiss-setup');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('dismissed', ($store['demo_data_decided'] ?? null));
+		$this->assertArrayNotHasKey('demo_dataset', $store);
+	}
+
+	/**
+	 * Closing the wizard after a load leaves the recorded load as it was.
+	 *
+	 * @spec openspec/changes/live-audit-round-one/specs/first-time-setup/spec.md
+	 */
+	public function testClosingAfterALoadKeepsTheLoad(): void {
+		$this->appConfig->method('getValueString')->willReturn('loaded');
+		$this->appConfig->expects($this->never())->method('setValueString');
+
+		$this->assertSame(200, $this->controller->runAction('dismiss-setup')->getStatus());
+	}
 }
