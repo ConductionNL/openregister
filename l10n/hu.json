@@ -3302,7 +3302,16 @@
         "This record has no visible fields.": "Ennek a rekordnak nincsenek látható mezői.",
         "Upload": "Feltöltés",
         "Edit {field}": "{field} szerkesztése",
-        "The value could not be saved": "Az érték nem menthető"
+        "The value could not be saved": "Az érték nem menthető",
+        "%1$s %2$s created": "%1$s %2$s létrehozva",
+        "{schema} {title} created": "{schema} {title} létrehozva",
+        "%1$s %2$s updated": "%1$s %2$s frissítve",
+        "{schema} {title} updated": "{schema} {title} frissítve",
+        "%1$s %2$s deleted": "%1$s %2$s törölve",
+        "{schema} {title} deleted": "{schema} {title} törölve",
+        "Object \"%1$s\" created": "Objektum \"%1$s\" létrehozva",
+        "Object \"%1$s\" updated": "Objektum \"%1$s\" frissítve",
+        "Object \"%1$s\" assigned to you": "Objektum \"%1$s\" Önhöz rendelve"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

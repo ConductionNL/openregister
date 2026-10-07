@@ -3302,7 +3302,16 @@
         "This record has no visible fields.": "Þessi færsla hefur engin sýnileg svæði.",
         "Upload": "Hlaða upp",
         "Edit {field}": "Breyta {field}",
-        "The value could not be saved": "Ekki tókst að vista gildið"
+        "The value could not be saved": "Ekki tókst að vista gildið",
+        "%1$s %2$s created": "%1$s %2$s stofnað",
+        "{schema} {title} created": "{schema} {title} stofnað",
+        "%1$s %2$s updated": "%1$s %2$s uppfært",
+        "{schema} {title} updated": "{schema} {title} uppfært",
+        "%1$s %2$s deleted": "%1$s %2$s eytt",
+        "{schema} {title} deleted": "{schema} {title} eytt",
+        "Object \"%1$s\" created": "Hlutur \"%1$s\" stofnað",
+        "Object \"%1$s\" updated": "Hlutur \"%1$s\" uppfært",
+        "Object \"%1$s\" assigned to you": "Hlutur \"%1$s\" úthlutað þér"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

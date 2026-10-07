@@ -3302,7 +3302,16 @@
         "This record has no visible fields.": "Ky regjistrim nuk ka fusha të dukshme.",
         "Upload": "Ngarko",
         "Edit {field}": "Ndrysho {field}",
-        "The value could not be saved": "Vlera nuk mund të ruhej"
+        "The value could not be saved": "Vlera nuk mund të ruhej",
+        "%1$s %2$s created": "%1$s %2$s u krijua",
+        "{schema} {title} created": "{schema} {title} u krijua",
+        "%1$s %2$s updated": "%1$s %2$s u përditësua",
+        "{schema} {title} updated": "{schema} {title} u përditësua",
+        "%1$s %2$s deleted": "%1$s %2$s u fshi",
+        "{schema} {title} deleted": "{schema} {title} u fshi",
+        "Object \"%1$s\" created": "Objekti \"%1$s\" u krijua",
+        "Object \"%1$s\" updated": "Objekti \"%1$s\" u përditësua",
+        "Object \"%1$s\" assigned to you": "Objekti \"%1$s\" ju është caktuar"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

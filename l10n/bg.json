@@ -3302,7 +3302,16 @@
         "This record has no visible fields.": "Този запис няма видими полета.",
         "Upload": "Качване",
         "Edit {field}": "Редактиране на {field}",
-        "The value could not be saved": "Стойността не можа да бъде запазена"
+        "The value could not be saved": "Стойността не можа да бъде запазена",
+        "%1$s %2$s created": "%1$s %2$s създаден",
+        "{schema} {title} created": "{schema} {title} създаден",
+        "%1$s %2$s updated": "%1$s %2$s обновен",
+        "{schema} {title} updated": "{schema} {title} обновен",
+        "%1$s %2$s deleted": "%1$s %2$s изтрит",
+        "{schema} {title} deleted": "{schema} {title} изтрит",
+        "Object \"%1$s\" created": "Обект \"%1$s\" създаден",
+        "Object \"%1$s\" updated": "Обект \"%1$s\" обновен",
+        "Object \"%1$s\" assigned to you": "Обект \"%1$s\" е възложен на вас"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

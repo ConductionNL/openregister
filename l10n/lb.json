@@ -3302,7 +3302,16 @@
         "This record has no visible fields.": "Dësen Datesaz huet keng siichtbar Felder.",
         "Upload": "Eroplueden",
         "Edit {field}": "{field} änneren",
-        "The value could not be saved": "De Wäert konnt net gespäichert ginn"
+        "The value could not be saved": "De Wäert konnt net gespäichert ginn",
+        "%1$s %2$s created": "%1$s %2$s erstallt",
+        "{schema} {title} created": "{schema} {title} erstallt",
+        "%1$s %2$s updated": "%1$s %2$s aktualiséiert",
+        "{schema} {title} updated": "{schema} {title} aktualiséiert",
+        "%1$s %2$s deleted": "%1$s %2$s geläscht",
+        "{schema} {title} deleted": "{schema} {title} geläscht",
+        "Object \"%1$s\" created": "Objet \"%1$s\" erstallt",
+        "Object \"%1$s\" updated": "Objet \"%1$s\" aktualiséiert",
+        "Object \"%1$s\" assigned to you": "Objet \"%1$s\" Iech zougewisen"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

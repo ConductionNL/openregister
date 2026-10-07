@@ -3302,7 +3302,16 @@
         "This record has no visible fields.": "Bu kaydın görünür alanı yok.",
         "Upload": "Yükle",
         "Edit {field}": "{field} düzenle",
-        "The value could not be saved": "Değer kaydedilemedi"
+        "The value could not be saved": "Değer kaydedilemedi",
+        "%1$s %2$s created": "%1$s %2$s oluşturuldu",
+        "{schema} {title} created": "{schema} {title} oluşturuldu",
+        "%1$s %2$s updated": "%1$s %2$s güncellendi",
+        "{schema} {title} updated": "{schema} {title} güncellendi",
+        "%1$s %2$s deleted": "%1$s %2$s silindi",
+        "{schema} {title} deleted": "{schema} {title} silindi",
+        "Object \"%1$s\" created": "Nesne \"%1$s\" oluşturuldu",
+        "Object \"%1$s\" updated": "Nesne \"%1$s\" güncellendi",
+        "Object \"%1$s\" assigned to you": "Nesne \"%1$s\" size atandı"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

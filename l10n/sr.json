@@ -3323,7 +3323,16 @@
         "This record has no visible fields.": "Овај запис нема видљивих поља.",
         "Upload": "Отпреми",
         "Edit {field}": "Уреди {field}",
-        "The value could not be saved": "Вредност није могуће сачувати"
+        "The value could not be saved": "Вредност није могуће сачувати",
+        "%1$s %2$s created": "%1$s %2$s креиран",
+        "{schema} {title} created": "{schema} {title} креиран",
+        "%1$s %2$s updated": "%1$s %2$s ажуриран",
+        "{schema} {title} updated": "{schema} {title} ажуриран",
+        "%1$s %2$s deleted": "%1$s %2$s обрисан",
+        "{schema} {title} deleted": "{schema} {title} обрисан",
+        "Object \"%1$s\" created": "Објекат \"%1$s\" креиран",
+        "Object \"%1$s\" updated": "Објекат \"%1$s\" ажуриран",
+        "Object \"%1$s\" assigned to you": "Објекат \"%1$s\" вам је додељен"
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);",
     "plurals": {

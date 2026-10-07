@@ -3302,7 +3302,16 @@
         "This record has no visible fields.": "Denne post har ingen synlige felter.",
         "Upload": "Overfør",
         "Edit {field}": "Rediger {field}",
-        "The value could not be saved": "Værdien kunne ikke gemmes"
+        "The value could not be saved": "Værdien kunne ikke gemmes",
+        "%1$s %2$s created": "%1$s %2$s oprettet",
+        "{schema} {title} created": "{schema} {title} oprettet",
+        "%1$s %2$s updated": "%1$s %2$s opdateret",
+        "{schema} {title} updated": "{schema} {title} opdateret",
+        "%1$s %2$s deleted": "%1$s %2$s slettet",
+        "{schema} {title} deleted": "{schema} {title} slettet",
+        "Object \"%1$s\" created": "Objekt \"%1$s\" oprettet",
+        "Object \"%1$s\" updated": "Objekt \"%1$s\" opdateret",
+        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" er tildelt dig"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

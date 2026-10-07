@@ -3344,7 +3344,16 @@
         "This record has no visible fields.": "Dan ir-rekord m'għandux oqsma viżibbli.",
         "Upload": "Tella'",
         "Edit {field}": "Editja {field}",
-        "The value could not be saved": "Il-valur ma setax jiġi ssejvjat"
+        "The value could not be saved": "Il-valur ma setax jiġi ssejvjat",
+        "%1$s %2$s created": "%1$s %2$s maħluq",
+        "{schema} {title} created": "{schema} {title} maħluq",
+        "%1$s %2$s updated": "%1$s %2$s aġġornat",
+        "{schema} {title} updated": "{schema} {title} aġġornat",
+        "%1$s %2$s deleted": "%1$s %2$s imħassar",
+        "{schema} {title} deleted": "{schema} {title} imħassar",
+        "Object \"%1$s\" created": "Oġġett \"%1$s\" maħluq",
+        "Object \"%1$s\" updated": "Oġġett \"%1$s\" aġġornat",
+        "Object \"%1$s\" assigned to you": "Oġġett \"%1$s\" assenjat lilek"
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);",
     "plurals": {

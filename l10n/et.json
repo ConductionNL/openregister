@@ -3302,7 +3302,16 @@
         "This record has no visible fields.": "Sellel kirjel pole nähtavaid välju.",
         "Upload": "Laadi üles",
         "Edit {field}": "Muuda välja {field}",
-        "The value could not be saved": "Väärtust ei õnnestunud salvestada"
+        "The value could not be saved": "Väärtust ei õnnestunud salvestada",
+        "%1$s %2$s created": "%1$s %2$s loodud",
+        "{schema} {title} created": "{schema} {title} loodud",
+        "%1$s %2$s updated": "%1$s %2$s uuendatud",
+        "{schema} {title} updated": "{schema} {title} uuendatud",
+        "%1$s %2$s deleted": "%1$s %2$s kustutatud",
+        "{schema} {title} deleted": "{schema} {title} kustutatud",
+        "Object \"%1$s\" created": "Objekt \"%1$s\" loodud",
+        "Object \"%1$s\" updated": "Objekt \"%1$s\" uuendatud",
+        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" on sulle määratud"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

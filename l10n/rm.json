@@ -3302,7 +3302,16 @@
         "This record has no visible fields.": "Quest register n'ha nagins champs visibels.",
         "Upload": "Chargiar si",
         "Edit {field}": "Modifitgar {field}",
-        "The value could not be saved": "La valur na pudeva betg vegnir memorisada"
+        "The value could not be saved": "La valur na pudeva betg vegnir memorisada",
+        "%1$s %2$s created": "%1$s %2$s creà",
+        "{schema} {title} created": "{schema} {title} creà",
+        "%1$s %2$s updated": "%1$s %2$s actualisà",
+        "{schema} {title} updated": "{schema} {title} actualisà",
+        "%1$s %2$s deleted": "%1$s %2$s stizzà",
+        "{schema} {title} deleted": "{schema} {title} stizzà",
+        "Object \"%1$s\" created": "Object \"%1$s\" creà",
+        "Object \"%1$s\" updated": "Object \"%1$s\" actualisà",
+        "Object \"%1$s\" assigned to you": "Object \"%1$s\" attribuì a Vus"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

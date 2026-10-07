@@ -3302,7 +3302,16 @@
         "This record has no visible fields.": "Aquest registre no té camps visibles.",
         "Upload": "Puja",
         "Edit {field}": "Edita {field}",
-        "The value could not be saved": "No s'ha pogut desar el valor"
+        "The value could not be saved": "No s'ha pogut desar el valor",
+        "%1$s %2$s created": "%1$s %2$s creat",
+        "{schema} {title} created": "{schema} {title} creat",
+        "%1$s %2$s updated": "%1$s %2$s actualitzat",
+        "{schema} {title} updated": "{schema} {title} actualitzat",
+        "%1$s %2$s deleted": "%1$s %2$s eliminat",
+        "{schema} {title} deleted": "{schema} {title} eliminat",
+        "Object \"%1$s\" created": "Objecte \"%1$s\" creat",
+        "Object \"%1$s\" updated": "Objecte \"%1$s\" actualitzat",
+        "Object \"%1$s\" assigned to you": "Objecte \"%1$s\" assignat a vostè"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

@@ -3323,7 +3323,16 @@
         "This record has no visible fields.": "Šim ierakstam nav redzamu lauku.",
         "Upload": "Augšupielādēt",
         "Edit {field}": "Rediģēt {field}",
-        "The value could not be saved": "Vērtību neizdevās saglabāt"
+        "The value could not be saved": "Vērtību neizdevās saglabāt",
+        "%1$s %2$s created": "%1$s %2$s izveidots",
+        "{schema} {title} created": "{schema} {title} izveidots",
+        "%1$s %2$s updated": "%1$s %2$s atjaunināts",
+        "{schema} {title} updated": "{schema} {title} atjaunināts",
+        "%1$s %2$s deleted": "%1$s %2$s dzēsts",
+        "{schema} {title} deleted": "{schema} {title} dzēsts",
+        "Object \"%1$s\" created": "Objekts \"%1$s\" izveidots",
+        "Object \"%1$s\" updated": "Objekts \"%1$s\" atjaunināts",
+        "Object \"%1$s\" assigned to you": "Objekts \"%1$s\" piešķirts tev"
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);",
     "plurals": {
