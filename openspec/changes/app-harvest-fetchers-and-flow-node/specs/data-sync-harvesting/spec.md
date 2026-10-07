@@ -144,7 +144,7 @@ After mapping, the pipeline SHALL drop every property named in `protectedFields`
 
 #### Scenario: a harvest never publishes
 
-- **GIVEN** a source with `protectedFields: ["publicatiedatum", "status"]` and a mapping that writes `status: "published"`
+- **GIVEN** a source with `protectedFields: ["publicationDate", "depublicationDate", "status"]` and a mapping that writes `status: "published"`
 - **WHEN** the harvest creates an object
 - **THEN** the object MUST carry no `status` from the harvest
 - **AND** its `dct:source` MUST be the item's external id when `provenance.externalIdProperty` is `dct:source`
@@ -152,7 +152,7 @@ After mapping, the pipeline SHALL drop every property named in `protectedFields`
 
 ### Requirement: A conflict is resolved through the API by the person who may edit the record (REQ-HAF-009)
 
-`GET /api/sources/{id}/sync-records?status=conflict` SHALL list conflicts with the harvested payload and the local object uuid, limited for a non-administrator to records whose local object the caller may update. `POST /api/sources/{id}/sync-records/{recordId}/resolve` SHALL take `keep-local` (status `shadowed`), `use-harvested` or `merge` with a per-property choice (status `imported`, `lastAppliedAt` set), or `discard` (status `rejected`). The write SHALL run under the caller's own rights; a caller who may not update the local object SHALL get HTTP 403 and the record SHALL stay `conflict`. Each resolution SHALL append `resolvedBy`, `resolvedAt`, `action`, `fields`, `objectUuid` and `bulk` to the record's `resolutions`. The bulk route SHALL resolve each record on its own and report each outcome; one failure SHALL NOT roll back the others.
+`GET /api/sources/{id}/sync-records?status=conflict` SHALL list conflicts with the harvested payload (`rawData`), the payload after mapping (`mappedData`, see REQ-HAF-012) and the local object uuid, limited for a non-administrator to records whose local object the caller may update. `POST /api/sources/{id}/sync-records/{recordId}/resolve` SHALL take `keep-local` (status `shadowed`), `use-harvested` or `merge` with a per-property choice (status `imported`, `lastAppliedAt` set), or `discard` (status `rejected`). The write SHALL run under the caller's own rights; a caller who may not update the local object SHALL get HTTP 403 and the record SHALL stay `conflict`. Each resolution SHALL append `resolvedBy`, `resolvedAt`, `action`, `fields`, `objectUuid` and `bulk` to the record's `resolutions`. The bulk route SHALL resolve each record on its own and report each outcome; one failure SHALL NOT roll back the others.
 
 #### Scenario: a merge takes one field from each side
 
@@ -169,6 +169,27 @@ After mapping, the pipeline SHALL drop every property named in `protectedFields`
 - **THEN** the response MUST be HTTP 403
 - **AND** the record MUST stay `conflict`
 - @e2e exclude {authorisation check; covered by a controller test with a real RBAC fixture}
+
+### Requirement: The conflict queue carries the payload after mapping (REQ-HAF-012)
+
+Each record in the response of `GET /api/sources/{id}/sync-records` with status `conflict` SHALL carry `mappedData`: the record's `rawData` run through the source's mapping with the same `MappingService::executeMapping()` call the import uses, with every `protectedFields` property removed and the `provenance` properties set, so `mappedData` is exactly the payload `use-harvested` would write. `mappedData` SHALL be computed when the queue is read, so it follows the source's current mapping. When the mapping fails for a record, that record SHALL carry `mappedData: null` and `mappingError` with the failure message, and SHALL stay in the response. `rawData` SHALL stay in the response unchanged.
+
+#### Scenario: a review screen compares mapped fields with the local object
+
+- **GIVEN** a source whose mapping turns `dct:title` into `title` and whose `protectedFields` holds `status`
+- **AND** a `conflict` record whose `rawData` carries `dct:title: "Nieuwe titel"` and `status: "published"`
+- **WHEN** an editor who may update the local object reads `GET /api/sources/{id}/sync-records?status=conflict`
+- **THEN** that record's `mappedData.title` MUST be `"Nieuwe titel"`
+- **AND** `mappedData` MUST carry no `status`
+- **AND** its `rawData` MUST still carry `dct:title`
+- @e2e exclude {API-only in OpenRegister; the review modal and its e2e belong to opencatalogi}
+
+#### Scenario: a mapping that now fails does not hide the record
+
+- **GIVEN** a `conflict` record and a source mapping edited since so that it fails on that record
+- **WHEN** the queue is read
+- **THEN** the record MUST be in the response with `mappedData: null` and a `mappingError` message
+- @e2e exclude {API-only; covered by a controller test with a failing mapping fixture}
 
 ### Requirement: Items missing from a complete fetch are tombstoned, never deleted by default (REQ-HAF-010)
 

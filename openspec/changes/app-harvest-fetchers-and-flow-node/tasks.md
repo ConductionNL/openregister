@@ -1,6 +1,6 @@
 # Tasks: app-harvest-fetchers-and-flow-node
 
-<!-- HYDRA CAP: max 20 unindented `- [ ]` lines. This file uses 19. -->
+<!-- HYDRA CAP: max 20 unindented `- [ ]` lines. This file uses 20. -->
 
 ## 1. Fetcher registration (REQ-HAF-001, REQ-HAF-002, D-2, D-3)
 
@@ -29,6 +29,7 @@
 ## 5. Resolution API (REQ-HAF-009, D-9)
 
 - [ ] 5.1 `lib/Controller/SyncRecordsController.php`: `GET /api/sources/{id}/sync-records` (filter `status`; non-admins see only records whose object they may update), `POST .../sync-records/{recordId}/resolve` and bulk `POST .../sync-records/resolve`; `#[NoAdminRequired]` with the per-object update check before every write; writes under the caller's identity; append to `resolutions`.
+- [ ] 5.2 `mappedData` on every `conflict` record of the queue response (REQ-HAF-012, D-9): run `rawData` through the source's mapping with the import's `MappingService::executeMapping()` call, remove `protectedFields`, set `provenance`; on a mapping failure `mappedData: null` plus `mappingError`, record kept. Unit test in `tests/Unit/Controller/SyncRecordsControllerTest.php`: mapped field present, protected field absent, failing mapping keeps the record. opencatalogi's `harvest-conflict-policies` task 2.2 waits on this.
 
 ## 6. Tombstones and guarded fetch (REQ-HAF-010, REQ-HAF-011, D-10, D-11)
 
