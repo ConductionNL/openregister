@@ -236,7 +236,7 @@ class SendEmailNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigFo
 				'type' => 'select',
 				'options' => $this->messageCategoryOptions(),
 				'help' => $this->l10n->t(
-					'Decisions, statutory notices, account and security mail always arrive. Other mail stops for a person who opted out. Empty means service message.'
+					'Decisions, statutory notices, account and security mail always arrive. Other mail stops after an opt-out. Empty means service.'
 				),
 			],
 			[
