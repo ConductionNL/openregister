@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Подробности за изпълнението",
         "Run history kept, in days": "История на изпълненията се пази, в дни",
         "Run now": "Изпълни сега",
+        "Adopt": "Поеми",
         "Run of {flow}": "Изпълнение на {flow}",
         "Run {id}": "Изпълнение {id}",
         "Running": "Изпълнява се",

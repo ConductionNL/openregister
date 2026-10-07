@@ -3312,6 +3312,7 @@ OC.L10N.register(
         "Run details": "Run details",
         "Run history kept, in days": "Run history kept, in days",
         "Run now": "Run now",
+        "Adopt": "Adopt",
         "Run of {flow}": "Run of {flow}",
         "Run {id}": "Run {id}",
         "Running": "Running",

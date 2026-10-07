@@ -37,3 +37,15 @@
       old code.
 - [ ] 5.2 Playwright journey: index row to overview to run detail, in
       the verification pass after the design round.
+
+## 6. Found in the live check (7 October 2026)
+
+- [x] 6.1 `FlowController::run()` catches `FlowRunRefused` and answers 403
+      (401 without a session) with `error` and `verdict`, as
+      `FlowRunnableGuard` does. Uncaught it became an HTML 500, so Run now
+      on an imported flow, which arrives without an owner, showed only
+      "That did not work". Unit test in `FlowControllerTest`, failing on
+      the old controller.
+- [x] 6.2 The overview offers Adopt when the flow has no owner, through the
+      existing `POST /api/flows/{id}/adopt`. Without it the refusal named a
+      step nobody could take from any screen.

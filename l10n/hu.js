@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "A futtatás részletei",
         "Run history kept, in days": "A futtatási előzmények megőrzése, napokban",
         "Run now": "Futtatás most",
+        "Adopt": "Átvétel",
         "Run of {flow}": "{flow} futtatása",
         "Run {id}": "{id} futtatás",
         "Running": "Fut",

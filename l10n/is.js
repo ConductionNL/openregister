@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Upplýsingar um keyrslu",
         "Run history kept, in days": "Keyrslusaga geymd, í dögum",
         "Run now": "Keyra núna",
+        "Adopt": "Taka yfir",
         "Run of {flow}": "Keyrsla á {flow}",
         "Run {id}": "Keyrsla {id}",
         "Running": "Í gangi",

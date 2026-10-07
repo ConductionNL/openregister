@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Detajet e ekzekutimit",
         "Run history kept, in days": "Historiku i ekzekutimeve ruhet, në ditë",
         "Run now": "Ekzekuto tani",
+        "Adopt": "Merr përsipër",
         "Run of {flow}": "Ekzekutim i {flow}",
         "Run {id}": "Ekzekutimi {id}",
         "Running": "Në ekzekutim",

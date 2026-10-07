@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Sonraí an rith",
         "Run history kept, in days": "Stair na rití coinnithe, i laethanta",
         "Run now": "Rith anois",
+        "Adopt": "Glac seilbh",
         "Run of {flow}": "Rith de {flow}",
         "Run {id}": "Rith {id}",
         "Running": "Ag rith",

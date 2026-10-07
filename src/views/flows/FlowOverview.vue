@@ -85,6 +85,13 @@
 					</div>
 					<div class="flowPage__actions">
 						<NcButton
+							v-if="!flow.owner"
+							data-testid="flow-overview-adopt"
+							:disabled="busy"
+							@click="adopt">
+							{{ t('openregister', 'Adopt') }}
+						</NcButton>
+						<NcButton
 							data-testid="flow-overview-run"
 							:disabled="busy"
 							@click="runNow">
@@ -782,6 +789,24 @@ export default {
 					return
 				}
 				await this.loadRuns()
+			})
+		},
+
+		/**
+		 * Make the signed-in user the owner of a flow that has none. A shipped
+		 * flow arrives without an owner and cannot run until somebody adopts
+		 * it; the run refusal says so, and this is where it can be done.
+		 *
+		 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md#requirement-a-flow-has-an-overview-page-that-the-index-opens
+		 * @return {Promise<void>}
+		 */
+		async adopt() {
+			await this.act(async () => {
+				const response = await axios.post(
+					generateUrl(`/apps/openregister/api/flows/${this.id}/adopt`),
+					{},
+				)
+				this.flow = { ...this.flow, ...(response?.data || {}) }
 			})
 		},
 

@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Dettalji tat-tħaddim",
         "Run history kept, in days": "Storja tat-tħaddim miżmuma, f'jiem",
         "Run now": "Ħaddem issa",
+        "Adopt": "Adotta",
         "Run of {flow}": "Tħaddim ta' {flow}",
         "Run {id}": "Tħaddim {id}",
         "Running": "Għaddej",

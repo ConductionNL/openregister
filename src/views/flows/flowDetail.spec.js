@@ -472,4 +472,34 @@ describe('the flow overview', () => {
 			params: { uuid: 'run-9' },
 		})
 	})
+
+	it('shows why run now was refused', async () => {
+		axios.post.mockRejectedValue({
+			response: {
+				status: 403,
+				data: {
+					error: 'This flow has no owner, so it cannot run. Adopt it first.',
+					verdict: 'no-owner',
+				},
+			},
+		})
+		const vm = makeVm(FlowOverview, { id: 'flow-1' })
+		vm.flow = { ...FLOW, owner: null }
+		await vm.runNow()
+		expect(vm.actionError).toBe(
+			'This flow has no owner, so it cannot run. Adopt it first.',
+		)
+	})
+
+	it('adopts a flow that has no owner', async () => {
+		axios.post.mockResolvedValue({ data: { ...FLOW, owner: 'admin' } })
+		const vm = makeVm(FlowOverview, { id: 'flow-1' })
+		vm.flow = { ...FLOW, owner: null }
+		await vm.adopt()
+		expect(axios.post).toHaveBeenCalledWith(
+			'/apps/openregister/api/flows/flow-1/adopt',
+			{},
+		)
+		expect(vm.flow.owner).toBe('admin')
+	})
 })

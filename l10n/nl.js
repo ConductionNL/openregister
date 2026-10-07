@@ -3374,6 +3374,7 @@ OC.L10N.register(
         "Run details": "Details van de uitvoering",
         "Run history kept, in days": "Uitvoeringsgeschiedenis bewaard, in dagen",
         "Run now": "Nu uitvoeren",
+        "Adopt": "Overnemen",
         "Run of {flow}": "Uitvoering van {flow}",
         "Run {id}": "Uitvoering {id}",
         "Running": "Bezig",

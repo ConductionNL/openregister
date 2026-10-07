@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Podrobnosti zagona",
         "Run history kept, in days": "Zgodovina zagonov se hrani, v dneh",
         "Run now": "Zaženi zdaj",
+        "Adopt": "Prevzemi",
         "Run of {flow}": "Zagon toka {flow}",
         "Run {id}": "Zagon {id}",
         "Running": "Teče",

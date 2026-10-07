@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Λεπτομέρειες εκτέλεσης",
         "Run history kept, in days": "Ιστορικό εκτελέσεων διατηρείται, σε ημέρες",
         "Run now": "Εκτέλεση τώρα",
+        "Adopt": "Ανάληψη",
         "Run of {flow}": "Εκτέλεση της {flow}",
         "Run {id}": "Εκτέλεση {id}",
         "Running": "Σε εξέλιξη",

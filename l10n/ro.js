@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Detaliile rulării",
         "Run history kept, in days": "Istoric de rulări păstrat, în zile",
         "Run now": "Rulează acum",
+        "Adopt": "Preia",
         "Run of {flow}": "Rulare a {flow}",
         "Run {id}": "Rularea {id}",
         "Running": "În desfășurare",
