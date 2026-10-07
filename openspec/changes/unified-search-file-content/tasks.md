@@ -1,3 +1,5 @@
+> Archive pass 2026-10-07: code done; open: task 3 Test (the before and after latency pair on one corpus needs a live instance).
+
 # Tasks: unified-search-file-content
 
 > Widen the fleet-wide NC search provider to extracted file text
