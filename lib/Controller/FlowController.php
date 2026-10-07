@@ -1006,16 +1006,10 @@ class FlowController extends Controller {
 			// something broke.
 			return $this->refusal(refusal: $e);
 		} catch (FlowRunRefused $e) {
-			// A REFUSAL, not a fault, mapped the way FlowRunnableGuard maps it.
-			// Uncaught it became an HTML 500, so "Run now" on an imported flow
-			// (which arrives with no owner) said only that something broke,
-			// while the reason, "adopt it first", was already written.
-			$status = Http::STATUS_FORBIDDEN;
-			if ($e->getVerdict() === FlowRunAuthorization::NO_SESSION) {
-				$status = Http::STATUS_UNAUTHORIZED;
-			}
-
-			return new JSONResponse(['error' => $e->getMessage(), 'verdict' => $e->getVerdict()], $status);
+			// A REFUSAL, not a fault. Uncaught it became an HTML 500, so "Run
+			// now" on an imported flow (which arrives with no owner) said only
+			// that something broke, while the reason was already written.
+			return $this->runRefusal(refusal: $e);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
 		} catch (FlowDeadEnd $e) {
@@ -1046,6 +1040,25 @@ class FlowController extends Controller {
 
 		return new JSONResponse($flowRun->jsonSerialize(), Http::STATUS_CREATED);
 	}//end run()
+
+	/**
+	 * A run refusal as the answer the page can show, mapped the way
+	 * FlowRunnableGuard maps it: 401 without a session, 403 otherwise.
+	 *
+	 * @param FlowRunRefused $refusal The refusal.
+	 *
+	 * @return JSONResponse The 401 or 403 with `error` and `verdict`.
+	 *
+	 * @spec openspec/changes/flow-and-run-detail-pages/specs/flow-and-run-detail-pages/spec.md
+	 */
+	private function runRefusal(FlowRunRefused $refusal): JSONResponse {
+		$status = Http::STATUS_FORBIDDEN;
+		if ($refusal->getVerdict() === FlowRunAuthorization::NO_SESSION) {
+			$status = Http::STATUS_UNAUTHORIZED;
+		}
+
+		return new JSONResponse(['error' => $refusal->getMessage(), 'verdict' => $refusal->getVerdict()], $status);
+	}//end runRefusal()
 
 	/**
 	 * List a flow's versions, newest first.
