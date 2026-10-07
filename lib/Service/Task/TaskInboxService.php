@@ -78,6 +78,11 @@ class TaskInboxService {
 	 *                                                  for the same reason as
 	 *                                                  the object store; absent,
 	 *                                                  the row says so.
+	 * @param TaskSubjectLocator|null $locator Reads located subjects from
+	 *                                         their own tables. Nullable for
+	 *                                         hand-built test services;
+	 *                                         absent, every subject is
+	 *                                         resolved by the cross-table search.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -85,6 +90,7 @@ class TaskInboxService {
 		private readonly LoggerInterface $logger,
 		private readonly ?AbstractObjectMapper $objects = null,
 		private readonly ?PortalTaskDeliveryMapper $deliveries = null,
+		private readonly ?TaskSubjectLocator $locator = null,
 	) {
 
 	}//end __construct()
@@ -309,19 +315,8 @@ class TaskInboxService {
 			return [];
 		}
 
-		try {
-			$found = $this->objects->findMultiple(ids: array_keys($uuids));
-		} catch (Throwable $failure) {
-			$this->logger->debug(
-				'[TaskInboxService] Could not resolve subject objects: ' . $failure->getMessage(),
-				['count' => count($uuids)]
-			);
-
-			return [];
-		}
-
 		$contexts = [];
-		foreach ($found as $object) {
+		foreach ($this->subjectObjects(tasks: $tasks, uuids: array_keys($uuids)) as $object) {
 			$serialised = [];
 			if (method_exists($object, 'jsonSerialize') === true) {
 				$serialised = $object->jsonSerialize();
@@ -335,6 +330,36 @@ class TaskInboxService {
 
 		return $contexts;
 	}//end subjectContexts()
+
+	/**
+	 * The subject objects of a page: located ones from their own tables, the
+	 * rest through the cross-table search.
+	 *
+	 * @param array<int, Task> $tasks The page.
+	 * @param array<int, string> $uuids The page's subject uuids.
+	 *
+	 * @return array<array-key, mixed> The subject objects.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md
+	 */
+	private function subjectObjects(array $tasks, array $uuids): array {
+		$found = ($this->locator?->readLocated(tasks: $tasks) ?? []);
+		$unlocated = array_values(array_diff($uuids, array_keys($found)));
+		if ($unlocated === [] || $this->objects === null) {
+			return $found;
+		}
+
+		try {
+			return array_merge($found, $this->objects->findMultiple(ids: $unlocated));
+		} catch (Throwable $failure) {
+			$this->logger->debug(
+				'[TaskInboxService] Could not resolve subject objects: ' . $failure->getMessage(),
+				['count' => count($unlocated)]
+			);
+
+			return $found;
+		}
+	}//end subjectObjects()
 
 	/**
 	 * One subject's context row, read from its REAL serialised shape.

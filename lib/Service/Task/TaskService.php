@@ -152,6 +152,11 @@ class TaskService {
 	 *                                              service to ask, so a
 	 *                                              missing collaborator denies
 	 *                                              rather than admits.
+	 * @param TaskSubjectLocator|null $locator Records the subject's register
+	 *                                         and schema when the caller did
+	 *                                         not. Nullable for hand-built
+	 *                                         test services; absent, tasks are
+	 *                                         written as given.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -167,6 +172,7 @@ class TaskService {
 		private readonly ?TaskFormReader $forms = null,
 		private readonly ?TaskSequenceDecisionGuard $sequenceGuard = null,
 		private readonly ?TaskSubjectAccessGuard $subjects = null,
+		private readonly ?TaskSubjectLocator $locator = null,
 	) {
 
 	}//end __construct()
@@ -214,6 +220,11 @@ class TaskService {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
 	 */
 	public function create(array $data, ?string $actor): Task {
+		// Located first, so the access guard below reads the subject from its
+		// own table instead of searching every magic table for it. A refusal
+		// reads the same either way: location says where, never whether.
+		$data = $this->locate(data: $data);
+
 		if ($this->authorization->isAdministrator(uid: $actor) === false) {
 			// A task is an annotation ON an object, so it inherits that
 			// object's read authorization: knowing a uuid is not entitlement
@@ -261,6 +272,7 @@ class TaskService {
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
 	 */
 	public function import(array $data, ?string $actor): Task {
+		$data = $this->locate(data: $data);
 		$task = $this->builder->fromData(data: $data, actor: $actor);
 		$this->refuseUnrenderableForm(task: $task);
 		$this->authorizeOrRecord(verb: 'create', task: $task, actor: $actor);
@@ -288,6 +300,28 @@ class TaskService {
 			}
 		);
 	}//end import()
+
+	/**
+	 * Record which register and schema the task's subject lives in, when the
+	 * caller did not say.
+	 *
+	 * Without them every inbox read searches all magic tables for the subject
+	 * (measured 2026-10-06: 1.5 to 6 s per `GET /api/flow-tasks` on 1,664
+	 * tables). One lookup here saves that on every later read.
+	 *
+	 * @param array<string, mixed> $data The task fields.
+	 *
+	 * @return array<string, mixed> The task fields, located where possible.
+	 *
+	 * @spec openspec/specs/flow-tasks/spec.md
+	 */
+	private function locate(array $data): array {
+		if ($this->locator === null) {
+			return $data;
+		}
+
+		return $this->locator->withLocation(data: $data);
+	}//end locate()
 
 	/**
 	 * Offer a task to a candidate pool, optionally routing it.

@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.35-unstable.20261004230000</version>
+    <version>2.1.35-unstable.20261007150104</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -390,6 +390,11 @@ Vrij en open source onder de EUPL-licentie.
 			     home keeps that folder (and its id) instead of getting a new one. -->
 			<step>OCA\OpenRegister\Repair\MoveObjectFilesToOpenRegisterAccount</step>
 			<step>OCA\OpenRegister\Repair\CreateMissingRegisterFolders</step>
+			<!-- Tasks used to carry only their subject's uuid, so the inbox searched
+			     every magic table per subject (1.5 to 6 s per GET /api/flow-tasks on
+			     1,664 tables, measured 2026-10-06). Last, after every step that
+			     creates tasks. Idempotent. -->
+			<step>OCA\OpenRegister\Repair\BackfillTaskSubjectLocation</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
