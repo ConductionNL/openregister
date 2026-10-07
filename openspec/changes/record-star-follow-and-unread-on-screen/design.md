@@ -32,3 +32,12 @@ The Follow toggle carries a tooltip with the follower count. When the record's s
 ## D-5: Recent
 
 The Recent quick filter passes `_recent=true`, which orders by the user's last view. The column sort is disabled while it is on, because the lens owns the order.
+
+## D-6: `manage` in `@self.can`, so the picker knows when to show
+
+nextcloud-vue's `CnFollowToggle` (change `record-favourite-and-follow`, its design D3) shows the "Add a colleague" picker only when `@self.can.manage === true`. Today `RenderObject::applyUpdateRightMarker` (`lib/Service/Object/RenderObject.php:2687`) writes `{update}` only, so the picker never shows.
+
+The new key answers the question the watchers endpoint asks, not a new one. `WatcherService::requireManage` (`lib/Service/Interaction/WatcherService.php:626`) admits the object's owner or an administrator through `ObjectScopeResolver::admitsUnconditionally`. The marker calls that same resolver with the same inputs (caller uid, caller groups, object owner, object authorization). Rejected: `PermissionHandler::hasPermission(action: 'manage')`. That reads a schema-level rule the watchers endpoint never consults, so the marker and the endpoint could disagree and the picker would offer an add that answers 403.
+
+The marker stays opt-in through `_extend=@self.can`, as `update` is. The record page and `CnDetailPage` ask for it on the detail read. A failure to decide leaves `manage: false`: a hidden picker is the safe side.
+

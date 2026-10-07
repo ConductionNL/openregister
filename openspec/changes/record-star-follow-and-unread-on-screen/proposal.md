@@ -35,6 +35,7 @@ No page in OpenRegister's `src/` or in nextcloud-vue calls any of these routes o
 - Record page (`src/views/object/ObjectDetails.vue`): a star and a Follow toggle beside the title, a follower count, a "Mark as unread" action, a `PUT .../read-state` when the page has rendered the record, and a count badge on the Files tab and the other tabs that `@self.unreadCounts` names.
 - Tables page (`src/views/search/SearchIndex.vue`): a star column the user can click, unread rows drawn in bold with a dot, and quick filters Favourites, Recent, Following and Unread that pass the lenses.
 - Both pages use nextcloud-vue components (cross-repo, design D-1), so every leaf app's `CnDetailPage` and `CnIndexPage` get the same affordances.
+- `@self.can` gains `manage` next to `update` (design D-6), so the followers popover shows the "Add a colleague" picker only to a caller the watchers endpoint will admit. Asked for by nextcloud-vue PR #1374 (`record-favourite-and-follow`, design D3).
 
 ## ADRs
 
@@ -45,7 +46,7 @@ No page in OpenRegister's `src/` or in nextcloud-vue calls any of these routes o
 ## Impact
 
 - Extends `object-interactions` and `object-read-state`.
-- Affected code: `src/views/object/ObjectDetails.vue`, `src/views/search/SearchIndex.vue`, the object store in `src/store/modules/`. No backend change.
+- Affected code: `src/views/object/ObjectDetails.vue`, `src/views/search/SearchIndex.vue`, the object store in `src/store/modules/`. One backend addition: `manage` in `@self.can` (`lib/Service/Object/RenderObject.php`).
 - Backwards compatible: nothing changes for a user who never stars, follows or opens a record.
 - Size: M.
 

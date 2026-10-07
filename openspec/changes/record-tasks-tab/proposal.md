@@ -27,7 +27,8 @@ Delivered change: `flow-task-entity` (archived 2026-10-05). Spec round part 2 re
 
 - The record page gets a Tasks tab listing the flow tasks anchored on the record: title, assignee, due date (overdue in red), state, newest open first, completed ones folded under "Done".
 - The tab's form creates a task on the record with title, assignee (a user or a group), due date and an optional description, through `POST /api/flow-tasks`.
-- Each row offers the verbs the current user may run (claim, complete, reassign, cancel), and its title opens `FlowTaskDetail`.
+- Each row offers the verbs the current user may run (claim, complete, reassign, cancel), read from a new per-row `can` list on `GET /api/flow-tasks` (design D-4), and its title opens `FlowTaskDetail`.
+- The create form sends the task entity's own flat keys, as `TaskBuilder::fromData` reads them (design D-2).
 - The tab badge counts the open tasks.
 - The tab is nextcloud-vue's `CnTasksTab` in a flow-task mode (cross-repo, design D-1).
 
@@ -40,7 +41,7 @@ Delivered change: `flow-task-entity` (archived 2026-10-05). Spec round part 2 re
 ## Impact
 
 - Extends `flow-tasks`.
-- Affected code: `src/views/object/ObjectDetails.vue`. No backend change.
+- Affected code: `src/views/object/ObjectDetails.vue`. One backend addition: the per-row `can` list in `lib/Service/Task/TaskInboxService.php` and on the single-task read in `lib/Controller/TaskController.php`. Asked for by nextcloud-vue PR #1374 (`tasks-tab-flow-task-source`, design D3).
 - The VTODO tasks stay in the Integrations tab; see design D-3.
 - Size: S.
 
