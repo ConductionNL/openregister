@@ -283,6 +283,7 @@ All metadata fields support the following operators for precise filtering:
 | `lt` | Less than | `@self[version][lt]=5` |
 | `gte` | Greater than or equal | `@self[created][gte]=2025-01-01T00:00:00` |
 | `lte` | Less than or equal | `@self[updated][lte]=2025-12-31T23:59:59` |
+| `like` | Contains (case insensitive) | `@self[name][like]=budget` |
 | `~` | Contains (case insensitive) | `@self[description][~]=budget` |
 | `^` | Starts with (case insensitive) | `@self[name][^]=annual` |
 | `$` | Ends with (case insensitive) | `@self[name][$]=2025` |
@@ -630,6 +631,25 @@ Returns pets 2 years or older
 GET /api/pets?age[lte]=10
 ```
 Returns pets 10 years or younger
+
+### Contains `like`
+```
+GET /api/pets?name[like]=ne
+GET /api/pets?name_like=ne
+```
+Returns pets with "ne" anywhere in their name ("nemo", "Nero", "ANNE"), ignoring case. Both spellings mean the same filter.
+
+- `%`, `_` and `\` in the value match themselves. `name[like]=50%` finds "50% off" and not "500".
+- Several values match any of them: `name[like][]=nemo&name[like][]=dory`.
+- An empty value adds no condition, so a cleared filter shows everything.
+- The column is compared as text, so `like` also works on numbers, dates and JSON columns. On a JSON column it matches the stored JSON text.
+- It works on `@self` metadata too: `@self[name][like]=report`.
+
+The value is always sent to the database as a bound parameter (or quoted by the database driver on the multi-schema search path), never pasted into the SQL.
+
+:::note
+`like` is the contains filter the object search reads. The `~`, `^` and `$` operators below belonged to the retired object-table search and the current search does not read them.
+:::
 
 ### Contains `~`
 ```
