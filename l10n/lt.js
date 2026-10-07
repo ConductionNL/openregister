@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Vykdymo informacija",
         "Run history kept, in days": "Vykdymų istorija saugoma, dienomis",
         "Run now": "Vykdyti dabar",
+        "Adopt": "Perimti",
         "Run of {flow}": "Srauto {flow} vykdymas",
         "Run {id}": "Vykdymas {id}",
         "Running": "Vykdoma",

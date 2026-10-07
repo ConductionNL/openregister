@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Detagls da l'execuziun",
         "Run history kept, in days": "Istorgia da las execuziuns tegnida, en dis",
         "Run now": "Exequir ussa",
+        "Adopt": "Surpigliar",
         "Run of {flow}": "Execuziun da {flow}",
         "Run {id}": "Execuziun {id}",
         "Running": "En lavur",

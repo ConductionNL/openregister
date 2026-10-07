@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Podrobnosti behu",
         "Run history kept, in days": "História behov uchovávaná, v dňoch",
         "Run now": "Spustiť teraz",
+        "Adopt": "Prevziať",
         "Run of {flow}": "Beh toku {flow}",
         "Run {id}": "Beh {id}",
         "Running": "Prebieha",

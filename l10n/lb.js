@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Detailer vum Laf",
         "Run history kept, in days": "Laf-Historique gehalen, an Deeg",
         "Run now": "Elo lafen",
+        "Adopt": "Iwwerhuelen",
         "Run of {flow}": "Laf vu {flow}",
         "Run {id}": "Laf {id}",
         "Running": "Leeft",

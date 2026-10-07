@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Käivituse üksikasjad",
         "Run history kept, in days": "Käivituste ajalugu hoitakse, päevades",
         "Run now": "Käivita kohe",
+        "Adopt": "Võta üle",
         "Run of {flow}": "Voo {flow} käivitus",
         "Run {id}": "Käivitus {id}",
         "Running": "Töötab",

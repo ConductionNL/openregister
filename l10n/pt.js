@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Detalhes da execução",
         "Run history kept, in days": "Histórico de execuções guardado, em dias",
         "Run now": "Executar agora",
+        "Adopt": "Adotar",
         "Run of {flow}": "Execução de {flow}",
         "Run {id}": "Execução {id}",
         "Running": "Em curso",

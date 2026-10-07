@@ -787,6 +787,31 @@ class FlowControllerTest extends TestCase {
 	}//end testAWriteIsRefusedWhenTheRightIsNotHeld()
 
 	/**
+	 * A flow the caller may not run answers 403 with the reason, not a 500.
+	 *
+	 * An imported flow arrives with no owner, so "Run now" is refused with
+	 * "Adopt it first". That refusal escaped the controller and the page
+	 * could only say that something broke.
+	 *
+	 * @return void
+	 */
+	public function testARunRefusalAnswersWithItsReason(): void {
+		$this->flows->method('run')->willThrowException(
+			new \OCA\OpenRegister\Exception\FlowRunRefused(
+				verdict: \OCA\OpenRegister\Service\Flow\FlowRunAuthorization::NO_OWNER,
+				message: 'This flow has no owner, so it cannot run. Adopt it first.'
+			)
+		);
+
+		$response = $this->controller->run('x');
+
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame('This flow has no owner, so it cannot run. Adopt it first.', $response->getData()['error']);
+		$this->assertSame(\OCA\OpenRegister\Service\Flow\FlowRunAuthorization::NO_OWNER, $response->getData()['verdict']);
+
+	}//end testARunRefusalAnswersWithItsReason()
+
+	/**
 	 * A helper that answers a fixed value for named `getParam()` keys and the
 	 * request-default for anything else, mirroring the `match` pattern already
 	 * used by `AuditQueryControllerTest`.

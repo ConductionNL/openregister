@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Ajon tiedot",
         "Run history kept, in days": "Ajohistoria säilytetään, päivinä",
         "Run now": "Aja nyt",
+        "Adopt": "Ota omaksi",
         "Run of {flow}": "Työnkulun {flow} ajo",
         "Run {id}": "Ajo {id}",
         "Running": "Käynnissä",

@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Izpildes informācija",
         "Run history kept, in days": "Izpilžu vēsture tiek glabāta, dienās",
         "Run now": "Izpildīt tagad",
+        "Adopt": "Pārņemt",
         "Run of {flow}": "Plūsmas {flow} izpilde",
         "Run {id}": "Izpilde {id}",
         "Running": "Notiek",

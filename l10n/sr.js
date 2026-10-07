@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Детаљи извршавања",
         "Run history kept, in days": "Историја извршавања се чува, у данима",
         "Run now": "Изврши сада",
+        "Adopt": "Преузми",
         "Run of {flow}": "Извршавање тока {flow}",
         "Run {id}": "Извршавање {id}",
         "Running": "У току",

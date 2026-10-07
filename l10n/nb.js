@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Detaljer om kjøringen",
         "Run history kept, in days": "Kjøringshistorikk beholdes, i dager",
         "Run now": "Kjør nå",
+        "Adopt": "Overta",
         "Run of {flow}": "Kjøring av {flow}",
         "Run {id}": "Kjøring {id}",
         "Running": "Kjører",

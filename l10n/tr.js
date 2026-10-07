@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Çalıştırma ayrıntıları",
         "Run history kept, in days": "Çalıştırma geçmişinin saklandığı gün",
         "Run now": "Şimdi çalıştır",
+        "Adopt": "Sahiplen",
         "Run of {flow}": "{flow} çalıştırması",
         "Run {id}": "Çalıştırma {id}",
         "Running": "Çalışıyor",

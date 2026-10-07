@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Exception\BpmnImportRefused;
 use OCA\OpenRegister\Exception\BpmnSchemaInvalid;
+use OCA\OpenRegister\Exception\FlowRunRefused;
 use OCA\OpenRegister\Service\Flow\Bpmn\BpmnSchemaValidator;
 use OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary;
 use OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter;
@@ -52,6 +53,7 @@ use OCA\OpenRegister\Service\Flow\FlowDeadEnd;
 use OCA\OpenRegister\Service\Flow\FlowLifecycleRefused;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowRunAuthorization;
 use OCA\OpenRegister\Service\Flow\FlowRunVersionPin;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionService;
@@ -1003,6 +1005,17 @@ class FlowController extends Controller {
 			// escape as a 500 threw that away and told the author only that
 			// something broke.
 			return $this->refusal(refusal: $e);
+		} catch (FlowRunRefused $e) {
+			// A REFUSAL, not a fault, mapped the way FlowRunnableGuard maps it.
+			// Uncaught it became an HTML 500, so "Run now" on an imported flow
+			// (which arrives with no owner) said only that something broke,
+			// while the reason, "adopt it first", was already written.
+			$status = Http::STATUS_FORBIDDEN;
+			if ($e->getVerdict() === FlowRunAuthorization::NO_SESSION) {
+				$status = Http::STATUS_UNAUTHORIZED;
+			}
+
+			return new JSONResponse(['error' => $e->getMessage(), 'verdict' => $e->getVerdict()], $status);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
 		} catch (FlowDeadEnd $e) {

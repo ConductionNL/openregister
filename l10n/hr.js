@@ -3314,6 +3314,7 @@ OC.L10N.register(
         "Run details": "Pojedinosti izvođenja",
         "Run history kept, in days": "Povijest izvođenja čuva se, u danima",
         "Run now": "Izvedi sada",
+        "Adopt": "Preuzmi",
         "Run of {flow}": "Izvođenje toka {flow}",
         "Run {id}": "Izvođenje {id}",
         "Running": "U tijeku",
