@@ -1099,13 +1099,13 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "Change archived 2026-07-25-object-views-kanban-calendar with the renderer and API done: lib/Db/View.php presentation column, lib/Service/ViewService.php:210 validates it, GET /api/views/{id}/kanban appinfo/routes.php:1820 -> lib/Controller/ViewsController.php:916, board drawn by src/views/search/SearchIndex.vue:730 CnObjectKanban when presentation.viewType is kanban (:229). No screen writes presentation: src/modals/view/EditView.vue and the save form in src/sidebars/search/SearchSideBar.vue carry no viewType.",
-    "change": "object-views-kanban-calendar",
+    "change": "saved-view-presentation-picker",
     "readOn": "2026-10-07"
    },
    "reachedOn": "/tables with a saved view whose presentation is kanban",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Archived without the user-facing half: a kanban view can only be made through POST/PUT /api/views with a presentation block. Missing: a view-type picker (table, kanban, calendar) with group-by field in the view editor.",
+   "note": "Archived without the user-facing half: a kanban view can only be made through POST/PUT /api/views with a presentation block. Missing: a view-type picker (table, kanban, calendar) with group-by field in the view editor. Delivered by object-views-kanban-calendar; the missing part is specified in saved-view-presentation-picker (spec round part 3, 2026-10-07).",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "no",
@@ -1129,13 +1129,13 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "Change archived 2026-07-25-object-views-kanban-calendar: GET /api/views/{id}/calendar appinfo/routes.php:1821 -> lib/Controller/ViewsController.php:978, drawn by src/views/search/SearchIndex.vue:747 CnObjectCalendar when presentation.viewType is calendar. No screen writes presentation (src/modals/view/EditView.vue, src/sidebars/search/SearchSideBar.vue). ICS feed remains.",
-    "change": "object-views-kanban-calendar",
+    "change": "saved-view-presentation-picker",
     "readOn": "2026-10-07"
    },
    "reachedOn": "/tables with a saved view whose presentation is calendar",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Archived without the user-facing half: calendar views are only configurable through the views API. Missing: the view-type picker with date field and optional end-date field.",
+   "note": "Archived without the user-facing half: calendar views are only configurable through the views API. Missing: the view-type picker with date field and optional end-date field. Delivered by object-views-kanban-calendar; the missing part is specified in saved-view-presentation-picker (spec round part 3, 2026-10-07).",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "no",
@@ -1217,12 +1217,13 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "Mass delete and mass copy on /tables: src/views/search/SearchIndex.vue:626 showMassDelete, :420 handleMassDelete; export disabled :620 showMassExport=false. Mass change only via API bulk#save appinfo/routes.php:1282 and bulk-jobs :1292 (committed from /operations).",
-    "change": "bulk-action-jobs"
+    "change": "tables-bulk-jobs-and-file-search",
+    "readOn": "2026-10-07"
    },
    "reachedOn": "/tables (delete, copy); API only for bulk change/export",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Bulk export is switched off in the records table.",
+   "note": "Bulk export is switched off in the records table. Delivered by bulk-action-jobs; the missing part is specified in tables-bulk-jobs-and-file-search (spec round part 3, 2026-10-07).",
    "objects-api": "partial",
    "directus": "yes",
    "strapi": "partial",
@@ -1421,13 +1422,13 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "Change archived 2026-10-05-flow-task-entity: openregister_tasks carries assignee, due_at and an object anchor (object_uuid, register_id, schema_id) lib/Migration/Version1Date20260831120000.php:196,211,224; lifecycle verbs /api/flow-tasks appinfo/routes.php:2139-2153 -> lib/Controller/TaskController.php:373; inbox page /flow-tasks src/manifest.json:229 and detail src/views/task/FlowTaskDetail.vue. The record's Integrations tab (src/views/object/ObjectDetails.vue:413 CnIntegrationWidget) still uses the VTODO TasksController (appinfo/routes.php:1507-1510) without a real assignee, and no page creates a flow task on a record (no POST to /api/flow-tasks in src).",
-    "change": "flow-task-entity",
+    "change": "record-tasks-tab",
     "readOn": "2026-10-07"
    },
    "reachedOn": "/objects/:register/:schema/:id (Integrations tab)",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Real assigned tasks exist and show in the inbox, but a user cannot attach one to a record from the record page. Missing: the record tab on the flow-task entity.",
+   "note": "Real assigned tasks exist and show in the inbox, but a user cannot attach one to a record from the record page. Missing: the record tab on the flow-task entity. Delivered by flow-task-entity; the missing part is specified in record-tasks-tab (spec round part 3, 2026-10-07).",
    "objects-api": "no",
    "directus": "no",
    "strapi": "partial",
@@ -1454,7 +1455,7 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "Change archived 2026-10-05-favourites-and-recent, backend only: PUT/DELETE .../favourite appinfo/routes.php:183,189 -> lib/Controller/ObjectFavouriteController.php; views recorded lib/Controller/ObjectsController.php:3035 recordObjectView; _favourite/_recent lenses in lib/Service/Object/SearchQueryHandler.php:88. No page in openregister src/ or in nextcloud-vue development calls it (git grep on 2026-10-07).",
-    "change": "favourites-and-recent",
+    "change": "record-star-follow-and-unread-on-screen",
     "readOn": "2026-10-07"
    },
    "reachedOn": "API only: PUT /api/objects/{r}/{s}/{id}/favourite, GET /api/objects?_favourite / _recent",
@@ -1472,7 +1473,7 @@
     "nocodb": "source read at 2026.09.0, not driven: bookmarks cover bases, tables, views, documents, dashboards, workflows, scripts, not records (docs https://nocodb.com/docs/product/bases/bookmarks, Enterprise only per https://nocodb.com/docs/product/account-settings/cloud-enterprise-edition/community-vs-paid-editions); nocodb:packages/nc-gui/lang/en.json:2258 Recent Views lists views, not records; searched \"favourite|favorite\" in nc-gui/components: no record favourites",
     "pocketbase": "source read at v0.40.4, not driven: only collections can be pinned, per browser: pocketbase:ui/src/collections/collectionsSidebar.js:1 pbPinnedCollections in localStorage; searched \"favourite|favorite|recent\" in ui/src/records: none"
    },
-   "note": "Archived without the user-facing half. Missing: a star on the record page and list, and a recent and favourites list."
+   "note": "Archived without the user-facing half. Missing: a star on the record page and list, and a recent and favourites list. Delivered by favourites-and-recent; the missing part is specified in record-star-follow-and-unread-on-screen (spec round part 3, 2026-10-07)."
   },
   {
    "id": "rec-follow",
@@ -1484,13 +1485,13 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "Change archived 2026-10-05-object-watchers, backend only: PUT/DELETE .../watch appinfo/routes.php:142 -> lib/Controller/ObjectWatchersController.php:98,129; watchers list :160; notify when a schema rule names {\"watchers\": true} lib/Service/Notification/NotificationRecipientResolver.php:160; _watching lens lib/Service/Object/SearchQueryHandler.php:197. No page in openregister src/ or in nextcloud-vue development calls it (git grep on 2026-10-07).",
-    "change": "object-watchers",
+    "change": "record-star-follow-and-unread-on-screen",
     "readOn": "2026-10-07"
    },
    "reachedOn": "API only: PUT /api/objects/{r}/{s}/{id}/watch",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Archived without the user-facing half. Missing: a follow button on the record page. Following alone notifies nobody unless the schema's notification rule lists watchers.",
+   "note": "Archived without the user-facing half. Missing: a follow button on the record page. Following alone notifies nobody unless the schema's notification rule lists watchers. Delivered by object-watchers; the missing part is specified in record-star-follow-and-unread-on-screen (spec round part 3, 2026-10-07).",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -1661,7 +1662,7 @@
     "state": "specified",
     "owner": "ConductionNL/openregister",
     "evidence": "Change archived 2026-10-05-object-read-state, backend only: GET/PUT/DELETE .../read-state appinfo/routes.php:205-217 -> lib/Controller/ObjectReadStateController.php:96,142,194; _unread lens lib/Service/Object/SearchQueryHandler.php:254. No page in openregister src/ or in nextcloud-vue development calls it (git grep on 2026-10-07).",
-    "change": "object-read-state",
+    "change": "record-star-follow-and-unread-on-screen",
     "readOn": "2026-10-07"
    },
    "reachedOn": "API only: GET /api/objects/{r}/{s}?_unread=true",
@@ -1679,7 +1680,7 @@
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nc-gui/lang/en.json:718 'Unread' belongs to the notification centre (notifications.controller.ts:133 mark-all-read); searched \"lastSeen|last_viewed|unread\" in packages/nocodb/src/models: no per-record unread state",
     "pocketbase": "source read at v0.40.4, not driven: searched \"unread|seen|last visit\" in ui/src and core: none"
    },
-   "note": "Archived without the user-facing half. Missing: an unread marker in lists and a mark-as-read action on the record page."
+   "note": "Archived without the user-facing half. Missing: an unread marker in lists and a mark-as-read action on the record page. Delivered by object-read-state; the missing part is specified in record-star-follow-and-unread-on-screen (spec round part 3, 2026-10-07)."
   },
   {
    "id": "api-rest",
@@ -1832,11 +1833,13 @@
     "state": "building",
     "owner": "ConductionNL/openregister",
     "evidence": "lib/Service/Query/RelatedRowFilterParser.php (_related[schema][fk][field]=v) applied via lib/Db/MagicMapper/MagicSearchHandler.php:548/563; plus _relations.<field>=id at :2915. Only reverse direction (rows pointing AT the record); no filter on a field of a forward-referenced record",
-    "change": "query-related-schema-rows"
+    "change": "query-filter-through-a-reference",
+    "readOn": "2026-10-07"
    },
    "reachedOn": "API only: GET /api/objects/{register}/{schema}?_related[...]",
    "provider": "openregister",
    "providerHow": "read-from-code",
+   "note": "Delivered by query-related-schema-rows; the missing part is specified in query-filter-through-a-reference (spec round part 3, 2026-10-07).",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "yes",
@@ -2286,12 +2289,14 @@
    "built": {
     "state": "building",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Controller/FileSearchController.php:154 hybridSearch (ts_rank keyword + vector over file chunks) route appinfo/routes.php:1844. Returns file chunks, not the owning record; no screen; needs extraction+vectorisation",
-    "change": "unified-search-file-content"
+    "evidence": "Nextcloud top-bar search finds the owning record by file text: lib/Search/ObjectsProvider.php:519 passes _content_search; lib/Service/Object/QueryHandler.php:556 widens to chunk hits mapped to the owning object; lib/Service/Object/ContentSearchHandler.php caps candidates at 50 and carries no chunk text (unified-search-file-content). The Tables page search (src/views/search/SearchIndex.vue) never passes _content_search. Needs extraction configured.",
+    "change": "tables-bulk-jobs-and-file-search",
+    "readOn": "2026-10-07"
    },
    "reachedOn": "API only: POST /api/search/files/hybrid",
    "provider": "openregister",
    "providerHow": "read-from-code",
+   "note": "Delivered by unified-search-file-content; the missing part is specified in tables-bulk-jobs-and-file-search (spec round part 3, 2026-10-07).",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",

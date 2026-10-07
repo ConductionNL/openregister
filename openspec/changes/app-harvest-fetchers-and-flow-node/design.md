@@ -127,7 +127,7 @@ opencatalogi's item states map onto these: `new` and `updated` are `imported` (c
 - Outcomes: keep local → `shadowed`; use harvested and merge → `imported` with `lastAppliedAt` set; discard → `rejected`.
 - `protectedFields` and the provenance properties are never taken from the harvested side, also on merge.
 - Each resolution appends `{resolvedBy, resolvedAt, action, fields, objectUuid, bulk}` to the record's new `resolutions` column (append only).
-- `GET /api/sources/{id}/sync-records?status=conflict` lists the queue with `rawData` and the local object's uuid. A non-admin caller sees only records whose local object they may update. These two routes are `NoAdminRequired` with that per-object check, so an app can show a queue to the people who own the records.
+- `GET /api/sources/{id}/sync-records?status=conflict` lists the queue with `rawData`, `mappedData` and the local object's uuid. `mappedData` is the harvested item after the source's mapping, with `protectedFields` and the provenance properties applied: exactly the payload `use-harvested` would write. It is computed when the queue is read, through the same `MappingService::executeMapping()` call the import uses, so it follows a mapping edited after the item was queued. A record whose mapping now fails carries `mappedData: null` and `mappingError` with the message; it stays in the queue. A field-by-field review screen (opencatalogi's review modal) compares `mappedData` with the local object property by property; `rawData` is in the source's own shape and cannot be compared that way. A non-admin caller sees only records whose local object they may update. These two routes are `NoAdminRequired` with that per-object check, so an app can show a queue to the people who own the records.
 
 This is the API opencatalogi's review page needs. OpenRegister ships no review screen in this change.
 
@@ -151,7 +151,7 @@ This is the API opencatalogi's review page needs. OpenRegister ships no review s
 | schema `harvested-item` | `SyncRecord` (+ `conflictReason`, `tombstoned`, `lastAppliedAt`, `resolutions`) |
 | schema `harvest-run` | the flow run of the source's flow, summary as node output |
 | node `opencatalogi.harvest-feed` | fetcher `opencatalogi.dcat-jsonld` registered through `RegisterSourceFetchersEvent`; the node is OpenRegister's |
-| draft-only rule | `protectedFields: [publicatiedatum, status, unlisted]` |
+| draft-only rule | `protectedFields: [publicationDate, depublicationDate, status]`, plus `unlisted` once opencatalogi's `publication-lifecycle-on-or` adds that property to the publication schema |
 | `dct:source`, `prov:wasDerivedFrom` | `provenance: {externalIdProperty: "dct:source", sourceProperty: "prov:wasDerivedFrom"}` |
 | policies `manual-review`, `overlay`, `shadow-local`, `reject-on-conflict` | strategies `manual`, `source-wins`, `local-wins`, `reject` |
 | review queue and modal | app page on D-9's routes |
