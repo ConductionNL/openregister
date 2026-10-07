@@ -5723,6 +5723,72 @@
    }
   },
   {
+   "id": "rec-linked-items",
+   "area": "records",
+   "name": "Link mails, meetings, contacts, Deck cards, Talk conversations and other items from Nextcloud apps to a record and see them on it.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Code carrying @spec openspec/specs/integration-registry: lib/AppInfo/Application.php, lib/Listener/LeafScriptListener.php, lib/Service/Integration/ExternalIntegrationRouter.php, lib/Support/FleetAppId.php.",
+    "spec": "openspec/specs/integration-registry"
+   },
+   "reachedOn": "record detail sidebar tabs",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the spec round of 7 Oct 2026 by the reverse check: main spec integration-registry gives a user this capability and no row mapped it. Also delivered by: openspec/specs/integration-email, openspec/specs/integration-calendar, openspec/specs/integration-contacts, openspec/specs/integration-deck, openspec/specs/integration-talk, openspec/specs/integration-polls, openspec/specs/integration-forms, openspec/specs/integration-bookmarks, openspec/specs/integration-collectives, openspec/specs/integration-cospend, openspec/specs/integration-photos, openspec/specs/integration-time-tracker, openspec/specs/integration-openproject, openspec/specs/integration-xwiki, openspec/specs/integration-activity, openspec/specs/integration-analytics, openspec/specs/integration-flow, openspec/specs/integration-maps, openspec/specs/generic-integrations, openspec/specs/integration-shares, openspec/specs/mail-sidebar, openspec/specs/contacts-actions, openspec/specs/calendar-provider. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
+  },
+  {
+   "id": "rec-smart-picker",
+   "area": "records",
+   "name": "Insert a link to a record into Text, Talk or Mail with the smart picker and see a rich preview of it.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Code carrying @spec openspec/specs/mail-smart-picker: src/reference/ObjectReferenceWidget.vue.",
+    "spec": "openspec/specs/mail-smart-picker"
+   },
+   "reachedOn": "Nextcloud smart picker",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the spec round of 7 Oct 2026 by the reverse check: main spec mail-smart-picker gives a user this capability and no row mapped it. Also delivered by: openspec/specs/schema-scoped-reference-providers. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
+  },
+  {
+   "id": "rec-owner",
+   "area": "records",
+   "name": "Give each record one named owner, let a colleague take it over and let an administrator reassign many at once.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Code carrying @spec openspec/specs/object-ownership: lib/Controller/ObjectOwnershipController.php, lib/Db/MagicMapper/MagicRbacHandler.php, lib/Notification/Notifier.php, lib/Service/Object/SaveObject.php.",
+    "spec": "openspec/specs/object-ownership"
+   },
+   "reachedOn": "record detail",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the spec round of 7 Oct 2026 by the reverse check: main spec object-ownership gives a user this capability and no row mapped it. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
+  },
+  {
    "id": "acc-passkey",
    "area": "access",
    "name": "Sign in with a passkey or security key instead of a password.",
@@ -5814,6 +5880,28 @@
     "nocodb": "source read at 2026.09.0, not driven: no backup feature in the CE repo: searched \"backup|snapshot\" in packages/nocodb/src/services, only an internal column data backup during type changes nocodb:packages/nocodb/src/services/column-data-backup-handler.service.ts:4 and view or hook code; backup and its encryption are left to the database operator",
     "pocketbase": "source read at v0.40.4, not driven: backups are plain zip archives (pocketbase:core/backup_create.go:4 archive/zip, :67 CreateBackup), optionally stored on S3 (pocketbase:core/settings_model.go:128 Backups); searched 'encrypt' in core and apis: only the optional settings encryption, whose comment says backups are not encrypted (pocketbase:core/settings_query.go:54-55)"
    }
+  },
+  {
+   "id": "x-lookup",
+   "area": "exchange",
+   "name": "Look up a company in the trade register or a person in the population register from one configured source.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Code carrying @spec openspec/specs/integration-company-lookup: lib/Controller/CompanyLookupController.php.",
+    "spec": "openspec/specs/integration-company-lookup"
+   },
+   "reachedOn": "API only",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the spec round of 7 Oct 2026 by the reverse check: main spec integration-company-lookup gives a user this capability and no row mapped it. Also delivered by: openspec/specs/integration-person-lookup. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
   },
   {
    "id": "op-mail-language",
@@ -6002,6 +6090,138 @@
    }
   },
   {
+   "id": "auto-sms",
+   "area": "automation",
+   "name": "Send an SMS or WhatsApp message through a configured provider.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Code carrying @spec openspec/specs/integration-message-dispatch: lib/Controller/MessageDispatchController.php.",
+    "spec": "openspec/specs/integration-message-dispatch"
+   },
+   "reachedOn": "API only",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the spec round of 7 Oct 2026 by the reverse check: main spec integration-message-dispatch gives a user this capability and no row mapped it. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
+  },
+  {
+   "id": "auto-human-task",
+   "area": "automation",
+   "name": "Put a task with a form for a person into an automation, and continue when it is completed, rejected or expires.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Code carrying @spec openspec/specs/flow-user-task-node: lib/Event/TaskTerminalEvent.php, lib/Listener/UserTaskTerminalListener.php, lib/Service/Flow/FlowAdvanceBudget.php, lib/Service/Flow/FlowEngine.php.",
+    "spec": "openspec/specs/flow-user-task-node"
+   },
+   "reachedOn": "task inbox and flow editor",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the spec round of 7 Oct 2026 by the reverse check: main spec flow-user-task-node gives a user this capability and no row mapped it. Also delivered by: openspec/specs/flow-task-forms, openspec/specs/task-expiry-and-outcomes, openspec/specs/flow-heartbeat-recovery. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
+  },
+  {
+   "id": "auto-decision-table",
+   "area": "automation",
+   "name": "Decide an outcome inside an automation with a decision table.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Code carrying @spec openspec/specs/flow-decision-tables: lib/Service/Dmn/DecisionTableEvaluator.php, lib/Service/Dmn/DecisionTableValidator.php, lib/Service/Flow/FlowFieldPath.php, lib/Service/Flow/Nodes/DecisionTableNode.php.",
+    "spec": "openspec/specs/flow-decision-tables"
+   },
+   "reachedOn": "flow editor",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the spec round of 7 Oct 2026 by the reverse check: main spec flow-decision-tables gives a user this capability and no row mapped it. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
+  },
+  {
+   "id": "auto-case-plan",
+   "area": "automation",
+   "name": "Run a case through a plan of stages and human tasks on top of the automations.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Code carrying @spec openspec/specs/flow-cases: lib/Controller/CaseController.php, lib/Db/CaseItem.php, lib/Db/CaseItemAudit.php, lib/Db/CaseItemAuditMapper.php.",
+    "spec": "openspec/specs/flow-cases"
+   },
+   "reachedOn": "API only",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the spec round of 7 Oct 2026 by the reverse check: main spec flow-cases gives a user this capability and no row mapped it. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
+  },
+  {
+   "id": "auto-flow-versions",
+   "area": "automation",
+   "name": "Keep versions of an automation, with a draft that does not affect running work until it is published.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Code carrying @spec openspec/specs/flow-definition-versioning: lib/Controller/FlowController.php, lib/Db/FlowDefinition.php, lib/Db/FlowDefinitionMapper.php, lib/Db/FlowRunMapper.php.",
+    "spec": "openspec/specs/flow-definition-versioning"
+   },
+   "reachedOn": "flow editor",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the spec round of 7 Oct 2026 by the reverse check: main spec flow-definition-versioning gives a user this capability and no row mapped it. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
+  },
+  {
+   "id": "auto-working-time",
+   "area": "automation",
+   "name": "Count deadlines in working hours on a working calendar, skipping evenings, weekends and holidays.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Code carrying @spec openspec/specs/flow-business-timers: lib/Service/Flow/Timer/SlaCalculator.php, lib/Service/Flow/Timer/WorkingCalendar.php.",
+    "spec": "openspec/specs/flow-business-timers"
+   },
+   "reachedOn": "API only",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the spec round of 7 Oct 2026 by the reverse check: main spec flow-business-timers gives a user this capability and no row mapped it. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
+  },
+  {
    "id": "acc-classification",
    "area": "access",
    "name": "Label each record type with a confidentiality level such as open, internal or confidential, and list types by that level.",
@@ -6031,6 +6251,50 @@
     "nocodb": "source read at 2026.09.0, not driven: searched \"classification|confidential\" in packages/nocodb/src/models and services: only the OAuth client model; tables carry a description and meta, no confidentiality level and no list by level",
     "pocketbase": "source read at v0.40.4, not driven: collection model has rules, name, type, fields, indexes and a system flag only, no confidentiality label (pocketbase:core/collection_model.go:352-378); searched \"classification|confidential\" in core, apis: no match"
    }
+  },
+  {
+   "id": "acc-self-service",
+   "area": "access",
+   "name": "Change your own password, avatar and personal API tokens on your own account page.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Code carrying @spec openspec/specs/account-self-service: src/views/account/sections/AccountSection.vue, src/views/account/sections/AvatarSection.vue, src/views/account/sections/PasswordSection.vue, src/views/account/sections/TokensSection.vue.",
+    "spec": "openspec/specs/account-self-service"
+   },
+   "reachedOn": "/account",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the spec round of 7 Oct 2026 by the reverse check: main spec account-self-service gives a user this capability and no row mapped it. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
+  },
+  {
+   "id": "acc-credential-broker",
+   "area": "access",
+   "name": "Connect your account at an outside provider once and let apps act on your behalf without ever holding the secret.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Code carrying @spec openspec/specs/credential-broker: lib/AppHost/Repair/GenericInitializeSettings.php, lib/AppInfo/Application.php, lib/Controller/CredentialController.php, lib/Repair/ImportCredentialBrokerRegister.php.",
+    "spec": "openspec/specs/credential-broker"
+   },
+   "reachedOn": "/credentials",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the spec round of 7 Oct 2026 by the reverse check: main spec credential-broker gives a user this capability and no row mapped it. Also delivered by: openspec/specs/credential-oauth2-connect, openspec/specs/credential-oauth2-token-set. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
   },
   {
    "id": "mod-catalogue-meta",
@@ -6095,6 +6359,50 @@
    }
   },
   {
+   "id": "op-app-host",
+   "area": "operate",
+   "name": "Run an app that ships only a manifest, with its settings, dashboard, health check and schedules served by the register.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Code carrying @spec openspec/specs/apphost-boilerplate: lib/AppHost/Bootstrap.php, lib/AppHost/Controller/GenericDashboardController.php, lib/AppHost/Controller/GenericPreferencesController.php, lib/AppHost/Repair/GenericInitializeSettings.php.",
+    "spec": "openspec/specs/apphost-boilerplate"
+   },
+   "reachedOn": "API and app manifests",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the spec round of 7 Oct 2026 by the reverse check: main spec apphost-boilerplate gives a user this capability and no row mapped it. Also delivered by: openspec/specs/apphost-observability, openspec/specs/apphost-scheduling, openspec/specs/apphost-store-plane. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
+  },
+  {
+   "id": "op-feature-requests",
+   "area": "operate",
+   "name": "See an app's features and roadmap and file a feature request from inside the app.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Code carrying @spec openspec/specs/features-roadmap-menu: lib/AppInfo/Application.php.",
+    "spec": "openspec/specs/features-roadmap-menu"
+   },
+   "reachedOn": "/roadmap",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the spec round of 7 Oct 2026 by the reverse check: main spec features-roadmap-menu gives a user this capability and no row mapped it. Also delivered by: openspec/specs/github-issue-proxy. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
+  },
+  {
    "id": "ret-linked-destroy-conflict",
    "area": "retention",
    "name": "Warn when a record's destruction date conflicts with that of the records linked to it.",
@@ -6125,6 +6433,28 @@
     "nocodb": "source read at 2026.09.0, not driven: the only retention is trash_retention_days for deleted records nocodb:packages/nocodb/src/models/Model.ts:119,1429; searched \"retention|destroy\" in packages/nocodb/src/models: no destruction date per record and no check against linked records",
     "pocketbase": "source read at v0.40.4, not driven: no retention or destruction date concept; the only link-aware delete behaviour is the relation field cascadeDelete flag (pocketbase:core/field_relation.go:82-84); searched \"retention|destroy.?date|archiv\" in core, apis: only log retention (pocketbase:apis/middlewares.go:345)"
    }
+  },
+  {
+   "id": "gdpr-consent",
+   "area": "retention",
+   "name": "Keep append-only evidence of the consent a person gave, on the record it belongs to.",
+   "source": "spec-round-2026-10-07",
+   "openregister": "yes",
+   "built": {
+    "state": "built",
+    "owner": "ConductionNL/openregister",
+    "evidence": "Code carrying @spec openspec/specs/consent-evidence-envelope: lib/Db/SchemaMapper.php, lib/Listener/ConsentEnvelopeOnSaveListener.php, lib/Service/Consent/ConsentAnnotationValidator.php, lib/Service/Consent/ConsentDeclarationException.php.",
+    "spec": "openspec/specs/consent-evidence-envelope"
+   },
+   "reachedOn": "API only",
+   "provider": "openregister",
+   "providerHow": "read-from-code",
+   "note": "Added in the spec round of 7 Oct 2026 by the reverse check: main spec consent-evidence-envelope gives a user this capability and no row mapped it. Competitor columns not read.",
+   "objects-api": "unknown",
+   "directus": "unknown",
+   "strapi": "unknown",
+   "nocodb": "unknown",
+   "pocketbase": "unknown"
   },
   {
    "id": "api-nl-design-rules",
