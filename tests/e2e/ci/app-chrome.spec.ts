@@ -104,10 +104,7 @@ test.describe('app chrome (ADR-114)', () => {
 		// Reports sits in the Advanced foldout, so open it first.
 		const nav = page.locator('[data-testid="cn-nav"]')
 		await nav.locator('[data-testid="cn-nav-settings"]').click()
-		await nav
-			.locator('[data-testid="cn-nav-entry-Reports"] a')
-			.first()
-			.click()
+		await nav.locator('[data-testid="cn-nav-entry-Reports"] a').first().click()
 
 		// By PATH. This app's reports surface is `type: "custom"` at the
 		// canonical /reports path rather than the built-in `reports` page type,
@@ -119,16 +116,22 @@ test.describe('app chrome (ADR-114)', () => {
 		await expect(page.locator('[data-testid="cn-nav"]')).toBeVisible()
 	})
 
-	test('Reports sits in the Advanced foldout, not in the main navigation', async ({ page }) => {
+	test('Reports sits in the Advanced foldout, not in the main navigation', async ({
+		page,
+	}) => {
 		// It used to be relocated into the Administration group in the main
 		// navigation. It now sits in the Advanced foldout, as in every other
 		// app; this asserts the move rather than only the arrival.
 		const nav = page.locator('[data-testid="cn-nav"]')
 		await expect(
-			nav.locator('[data-testid="cn-nav-settings"] [data-testid="cn-nav-entry-Reports"]'),
+			nav.locator(
+				'[data-testid="cn-nav-settings"] [data-testid="cn-nav-entry-Reports"]',
+			),
 		).toHaveCount(1)
 		await expect(
-			nav.locator('.cn-app-nav__footer-list').getByRole('link', { name: /^Reports$/ }),
+			nav
+				.locator('.cn-app-nav__footer-list')
+				.getByRole('link', { name: /^Reports$/ }),
 		).toHaveCount(0)
 	})
 
