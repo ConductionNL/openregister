@@ -159,9 +159,7 @@ test.describe('ADR-111 demo data', () => {
 		).not.toContain('load-demo-data')
 	})
 
-	test('a card that names an unknown dataset loads nothing', async ({
-		page,
-	}) => {
+	test('a card that names an unknown dataset loads nothing', async ({ page }) => {
 		// The card's Load button posts `{ dataset }` to the step's loadAction.
 		const res = await api(
 			page,
