@@ -40,6 +40,10 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		// Filters
 		auditTrailFilters: {},
 		auditTrailSearch: '',
+
+		// Sort: `{ field: 'ASC' | 'DESC' }`, empty for the server default
+		// (newest first). Kept here so paging keeps the order a header chose.
+		auditTrailSort: {},
 	}),
 
 	actions: {
@@ -119,6 +123,17 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		},
 
 		/**
+		 * Set the sort the list is fetched in.
+		 *
+		 * @param {object} sort `{ field: 'ASC' | 'DESC' }`, or `{}` for the default.
+		 *
+		 * @spec openspec/changes/live-audit-round-one/specs/audit-trail-immutable/spec.md
+		 */
+		setAuditTrailSort(sort) {
+			this.auditTrailSort = sort && typeof sort === 'object' ? { ...sort } : {}
+		},
+
+		/**
 		 * Fetch audit trails with optional filtering and pagination
 		 *
 		 * @param {object} options - Options for fetching
@@ -151,9 +166,10 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 					}
 				})
 
-				// Add sort
-				if (options.sort) {
-					Object.entries(options.sort).forEach(([field, direction]) => {
+				// Add sort: an explicit one, else the one a header chose.
+				const sort = options.sort || this.auditTrailSort
+				if (sort) {
+					Object.entries(sort).forEach(([field, direction]) => {
 						params.append('sort', field)
 						params.append('order', direction)
 					})

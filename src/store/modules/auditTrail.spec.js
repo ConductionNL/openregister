@@ -141,4 +141,19 @@ describe('AuditTrail Store', () => {
 			expect(store.statistics.total).toBe(0)
 		})
 	})
+
+	describe('Header sort (live audit G2)', () => {
+		it('keeps the sort a header chose when the page changes', async () => {
+			global.OC = { requestToken: 'token' }
+			global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({ results: [], total: 0 }) })
+
+			store.setAuditTrailSort({ user_name: 'ASC' })
+			await store.fetchAuditTrails({ page: 2, limit: 50 })
+
+			const url = global.fetch.mock.calls[0][0]
+			expect(url).toContain('sort=user_name')
+			expect(url).toContain('order=ASC')
+			expect(url).toContain('page=2')
+		})
+	})
 })

@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\Configuration;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\Source;
 use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;
+use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Event\SourceCreatedEvent;
 use OCA\OpenRegister\Event\SourceUpdatedEvent;
 use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
@@ -193,4 +194,75 @@ class SystemEntityNotificationListenerTest extends TestCase {
 		$this->listener->handle($objectEvent);
 	}//end testStoredObjectEventsAreNotHandledBySystemListener()
 
+	/**
+	 * 🔴 A configuration re-imported with identical content notifies nobody.
+	 *
+	 * Seen on the dev instance: "pipelinq example data" re-imported by a newer
+	 * build of the app differed only in `version` and `updated`, and every
+	 * administrator was told it was updated.
+	 *
+	 * @spec openspec/changes/live-audit-round-one/specs/notificatie-engine/spec.md
+	 */
+	public function testAReimportThatOnlyMovesTheVersionNotifiesNobody(): void {
+		$old = new Configuration();
+		$old->setUuid('cfg-uuid-02');
+		$old->setTitle('pipelinq example data');
+		$old->setVersion('0.5.7-unstable.20261005210000');
+		$old->setUpdated(new \DateTime('2026-10-06 16:47:28'));
+
+		$new = new Configuration();
+		$new->setUuid('cfg-uuid-02');
+		$new->setTitle('pipelinq example data');
+		$new->setVersion('0.5.7-unstable.20261006200000');
+		$new->setUpdated(new \DateTime('2026-10-07 14:17:25'));
+
+		$this->dispatcher->expects($this->never())->method('dispatchWithSchema');
+
+		$this->listener->handle(new ConfigurationUpdatedEvent(newConfiguration: $new, oldConfiguration: $old));
+	}//end testAReimportThatOnlyMovesTheVersionNotifiesNobody()
+
+	/**
+	 * 🔴 Key order, list order of `required` and null against [] are not a change.
+	 *
+	 * @spec openspec/changes/live-audit-round-one/specs/notificatie-engine/spec.md
+	 */
+	public function testASchemaThatOnlyReordersNotifiesNobody(): void {
+		$old = new Schema();
+		$old->setUuid('schema-uuid-01');
+		$old->setTitle('Survey');
+		$old->setRequired(['title', 'anonymity']);
+		$old->setProperties(['title' => ['type' => 'string'], 'anonymity' => ['type' => 'boolean']]);
+
+		$new = new Schema();
+		$new->setUuid('schema-uuid-01');
+		$new->setTitle('Survey');
+		$new->setRequired(['anonymity', 'title']);
+		$new->setProperties(['anonymity' => ['type' => 'boolean'], 'title' => ['type' => 'string']]);
+		$new->setAuthorization([]);
+
+		$this->dispatcher->expects($this->never())->method('dispatchWithSchema');
+
+		$this->listener->handle(new SchemaUpdatedEvent(newSchema: $new, oldSchema: $old));
+	}//end testASchemaThatOnlyReordersNotifiesNobody()
+
+	/**
+	 * A schema whose properties really change still notifies.
+	 *
+	 * @spec openspec/changes/live-audit-round-one/specs/notificatie-engine/spec.md
+	 */
+	public function testASchemaWithANewPropertyStillNotifies(): void {
+		$old = new Schema();
+		$old->setUuid('schema-uuid-02');
+		$old->setTitle('Lead');
+		$old->setProperties(['title' => ['type' => 'string']]);
+
+		$new = new Schema();
+		$new->setUuid('schema-uuid-02');
+		$new->setTitle('Lead');
+		$new->setProperties(['title' => ['type' => 'string'], 'source' => ['type' => 'string']]);
+
+		$this->dispatcher->expects($this->once())->method('dispatchWithSchema');
+
+		$this->listener->handle(new SchemaUpdatedEvent(newSchema: $new, oldSchema: $old));
+	}//end testASchemaWithANewPropertyStillNotifies()
 }//end class
