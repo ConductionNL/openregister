@@ -134,6 +134,7 @@ This is the API opencatalogi's review page needs. OpenRegister ships no review s
 ## D-10. Tombstones and the run summary
 
 - After a run whose batch is `complete`, every record of the source not seen in this run gets `tombstoned: true` and `tombstonedAt`. A record seen again clears both. After an incomplete run nothing is tombstoned. This is the rule integriq's `source-owned-records` set (REQ-SOR-004).
+- Seen means returned in `items` or named in `errors`. A fetcher that refuses one item (opencatalogi's DCAT fetchers refuse a dataset that fails SHACL validation, `harvest-observability` D1) still read the whole source, so the batch stays `complete` and the refused item is not tombstoned. Its record keeps the last good `rawData`, hash and object link, and takes status `fetch_error` with the message in `errorMessage`, so the last good object stays published while the error is visible in the queue.
 - `deleteStrategy` gains `flag` (the default for new sources): tombstone only, the local object is untouched. `soft-delete` additionally soft-deletes the object; `ignore` does nothing. `hard-delete` is not offered for app sources.
 - The summary: `status` (`success`, `partial`, `failed`, `skipped`), counts for created, updated, unchanged, conflict, shadowed, rejected, tombstoned and errors, `complete`, and at most 100 errors as `{externalId, message}`.
 

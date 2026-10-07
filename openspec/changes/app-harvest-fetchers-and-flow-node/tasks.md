@@ -35,6 +35,7 @@
 
 - [ ] 6.1 Tombstone pass after a `complete` run; clear on re-seen; `deleteStrategy` `flag` as the default for new sources; `soft-delete` and `ignore` as today's names promise.
 - [ ] 6.2 `lib/Service/Http/OutboundUrlGuard.php` from `WebhookService::assertSafeWebhookUri()`, `isPrivateHost()`, `blockedIpv6Reason()`; `WebhookService` calls it (its tests stay green unchanged). `lib/Service/Sync/HarvestHttpClient.php` with guard per hop, timeouts, retry and backoff, `Retry-After`, 50 MB cap; `RestApiSourceFetcher` moves onto it.
+- [ ] 6.3 `HarvestPipelineService` tombstone pass: the seen set is the batch's `items` keys plus every non-null external id in `errors`; per-item errors do not clear `complete`. An errored id's existing `SyncRecord` keeps `rawData`, `contentHash`, `objectUuid` and `lastAppliedAt` and gets status `fetch_error` plus `errorMessage`; an errored id without a record gets a new `fetch_error` record with no object. PHPUnit in `tests/Unit/Service/Sync/HarvestPipelineServiceTest.php` with a stub batch fetcher: id in errors not tombstoned and run still complete, id in neither tombstoned, errored record keeps its last good data. Unblocks opencatalogi `harvest-observability` D1, which until then reports `complete: false` when it refuses a dataset.
 
 ## 7. Sources page (D-14)
 
