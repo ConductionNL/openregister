@@ -1096,15 +1096,16 @@
    "source": "competitor-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "Board renders: src/views/search/SearchIndex.vue:662 CnObjectKanban, data GET /api/views/{id}/kanban appinfo/routes.php:1790 -> lib/Service/ViewPresentationService.php:125, drag :519. No screen sets presentation.viewType: git grep viewType in src finds only readers.",
-    "change": "object-views-kanban-calendar"
+    "evidence": "Change archived 2026-07-25-object-views-kanban-calendar with the renderer and API done: lib/Db/View.php presentation column, lib/Service/ViewService.php:210 validates it, GET /api/views/{id}/kanban appinfo/routes.php:1820 -> lib/Controller/ViewsController.php:916, board drawn by src/views/search/SearchIndex.vue:730 CnObjectKanban when presentation.viewType is kanban (:229). No screen writes presentation: src/modals/view/EditView.vue and the save form in src/sidebars/search/SearchSideBar.vue carry no viewType.",
+    "change": "object-views-kanban-calendar",
+    "readOn": "2026-10-07"
    },
    "reachedOn": "/tables with a saved view whose presentation is kanban",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "A kanban view must be created through PUT/POST /api/views with a presentation block; no UI offers it.",
+   "note": "Archived without the user-facing half: a kanban view can only be made through POST/PUT /api/views with a presentation block. Missing: a view-type picker (table, kanban, calendar) with group-by field in the view editor.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "no",
@@ -1125,15 +1126,16 @@
    "source": "competitor-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "Calendar renders: src/views/search/SearchIndex.vue:679 CnObjectCalendar, GET /api/views/{id}/calendar appinfo/routes.php:1791 -> lib/Service/ViewPresentationService.php:229. No screen sets presentation.viewType=calendar. Also ICS feed appinfo/routes.php:1024.",
-    "change": "object-views-kanban-calendar"
+    "evidence": "Change archived 2026-07-25-object-views-kanban-calendar: GET /api/views/{id}/calendar appinfo/routes.php:1821 -> lib/Controller/ViewsController.php:978, drawn by src/views/search/SearchIndex.vue:747 CnObjectCalendar when presentation.viewType is calendar. No screen writes presentation (src/modals/view/EditView.vue, src/sidebars/search/SearchSideBar.vue). ICS feed remains.",
+    "change": "object-views-kanban-calendar",
+    "readOn": "2026-10-07"
    },
    "reachedOn": "/tables with a saved view whose presentation is calendar",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Same as kanban: calendar views are only configurable via the views API.",
+   "note": "Archived without the user-facing half: calendar views are only configurable through the views API. Missing: the view-type picker with date field and optional end-date field.",
    "objects-api": "no",
    "directus": "yes",
    "strapi": "no",
@@ -1416,15 +1418,16 @@
    "source": "own-code-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "TasksProvider registered lib/AppInfo/Application.php:2127; lib/Controller/TasksController.php:314 create writes a VTODO with DUE lib/Service/TaskService.php:425; tab via CnIntegrationWidget src/views/object/ObjectDetails.vue:413. Assignee is only an opaque X-OPENREGISTER-DATA blob :433, VTODO lands in the creator's calendar.",
-    "change": "flow-task-entity"
+    "evidence": "Change archived 2026-10-05-flow-task-entity: openregister_tasks carries assignee, due_at and an object anchor (object_uuid, register_id, schema_id) lib/Migration/Version1Date20260831120000.php:196,211,224; lifecycle verbs /api/flow-tasks appinfo/routes.php:2139-2153 -> lib/Controller/TaskController.php:373; inbox page /flow-tasks src/manifest.json:229 and detail src/views/task/FlowTaskDetail.vue. The record's Integrations tab (src/views/object/ObjectDetails.vue:413 CnIntegrationWidget) still uses the VTODO TasksController (appinfo/routes.php:1507-1510) without a real assignee, and no page creates a flow task on a record (no POST to /api/flow-tasks in src).",
+    "change": "flow-task-entity",
+    "readOn": "2026-10-07"
    },
    "reachedOn": "/objects/:register/:schema/:id (Integrations tab)",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Due date is real; the assignee is not a real assignment (TaskService.php:151 says no assignee is carried).",
+   "note": "Real assigned tasks exist and show in the inbox, but a user cannot attach one to a record from the record page. Missing: the record tab on the flow-task entity.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "partial",
@@ -1448,10 +1451,11 @@
    ],
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "API: star/unstar appinfo/routes.php:167 -> lib/Controller/ObjectFavouriteController.php:87; view recorded lib/Controller/ObjectsController.php:3034 recordObjectView; list filters _favourite/_recent lib/Service/Object/SearchQueryHandler.php:325. git grep favourite/recent in src: no star or recents UI.",
-    "change": "favourites-and-recent"
+    "evidence": "Change archived 2026-10-05-favourites-and-recent, backend only: PUT/DELETE .../favourite appinfo/routes.php:183,189 -> lib/Controller/ObjectFavouriteController.php; views recorded lib/Controller/ObjectsController.php:3035 recordObjectView; _favourite/_recent lenses in lib/Service/Object/SearchQueryHandler.php:88. No page in openregister src/ or in nextcloud-vue development calls it (git grep on 2026-10-07).",
+    "change": "favourites-and-recent",
+    "readOn": "2026-10-07"
    },
    "reachedOn": "API only: PUT /api/objects/{r}/{s}/{id}/favourite, GET /api/objects?_favourite / _recent",
    "provider": "openregister",
@@ -1467,7 +1471,8 @@
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/content-manager/admin/src/components/Widgets.tsx:152 LastEditedWidget on the homepage lists recently edited entries; no per-user favourites (searched \"favorite|favourite|bookmark|star\" in packages/core/content-manager/admin/src, packages/core/admin/admin/src: no match)",
     "nocodb": "source read at 2026.09.0, not driven: bookmarks cover bases, tables, views, documents, dashboards, workflows, scripts, not records (docs https://nocodb.com/docs/product/bases/bookmarks, Enterprise only per https://nocodb.com/docs/product/account-settings/cloud-enterprise-edition/community-vs-paid-editions); nocodb:packages/nc-gui/lang/en.json:2258 Recent Views lists views, not records; searched \"favourite|favorite\" in nc-gui/components: no record favourites",
     "pocketbase": "source read at v0.40.4, not driven: only collections can be pinned, per browser: pocketbase:ui/src/collections/collectionsSidebar.js:1 pbPinnedCollections in localStorage; searched \"favourite|favorite|recent\" in ui/src/records: none"
-   }
+   },
+   "note": "Archived without the user-facing half. Missing: a star on the record page and list, and a recent and favourites list."
   },
   {
    "id": "rec-follow",
@@ -1476,15 +1481,16 @@
    "source": "own-code-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "API: PUT .../watch appinfo/routes.php:127 -> lib/Controller/ObjectWatchersController.php:98; notify only when a schema notification rule names {\"watchers\": true} lib/Service/Notification/NotificationRecipientResolver.php:163. No follow button in src (git grep /watch).",
-    "change": "object-watchers"
+    "evidence": "Change archived 2026-10-05-object-watchers, backend only: PUT/DELETE .../watch appinfo/routes.php:142 -> lib/Controller/ObjectWatchersController.php:98,129; watchers list :160; notify when a schema rule names {\"watchers\": true} lib/Service/Notification/NotificationRecipientResolver.php:160; _watching lens lib/Service/Object/SearchQueryHandler.php:197. No page in openregister src/ or in nextcloud-vue development calls it (git grep on 2026-10-07).",
+    "change": "object-watchers",
+    "readOn": "2026-10-07"
    },
    "reachedOn": "API only: PUT /api/objects/{r}/{s}/{id}/watch",
    "provider": "openregister",
    "providerHow": "read-from-code",
-   "note": "Following alone notifies nobody unless the schema's notification rule lists watchers.",
+   "note": "Archived without the user-facing half. Missing: a follow button on the record page. Following alone notifies nobody unless the schema's notification rule lists watchers.",
    "objects-api": "no",
    "directus": "no",
    "strapi": "no",
@@ -1652,10 +1658,11 @@
    "source": "own-code-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "API: read-state appinfo/routes.php:189-202 -> lib/Controller/ObjectReadStateController.php:96/142; list filter _unread lib/Service/Object/SearchQueryHandler.php:275. git grep read-state/_unread in src finds nothing.",
-    "change": "object-read-state"
+    "evidence": "Change archived 2026-10-05-object-read-state, backend only: GET/PUT/DELETE .../read-state appinfo/routes.php:205-217 -> lib/Controller/ObjectReadStateController.php:96,142,194; _unread lens lib/Service/Object/SearchQueryHandler.php:254. No page in openregister src/ or in nextcloud-vue development calls it (git grep on 2026-10-07).",
+    "change": "object-read-state",
+    "readOn": "2026-10-07"
    },
    "reachedOn": "API only: GET /api/objects/{r}/{s}?_unread=true",
    "provider": "openregister",
@@ -1671,7 +1678,8 @@
     "strapi": "source read at v5.55.1, not driven: searched \"unread|seen|last visited\" in packages/core/content-manager/admin/src: no match",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nc-gui/lang/en.json:718 'Unread' belongs to the notification centre (notifications.controller.ts:133 mark-all-read); searched \"lastSeen|last_viewed|unread\" in packages/nocodb/src/models: no per-record unread state",
     "pocketbase": "source read at v0.40.4, not driven: searched \"unread|seen|last visit\" in ui/src and core: none"
-   }
+   },
+   "note": "Archived without the user-facing half. Missing: an unread marker in lists and a mark-as-read action on the record page."
   },
   {
    "id": "api-rest",
@@ -4920,10 +4928,11 @@
    "source": "own-code-derived",
    "openregister": "partial",
    "built": {
-    "state": "building",
+    "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "export profiles appinfo/routes.php:1938-1944, run returns CSV lib/Controller/ExportProfilesController.php:290 at a stable URL a BI tool can pull; no OData or direct connector (grep -i odata in appinfo/routes.php finds none)",
-    "change": "rapportage-bi-export"
+    "evidence": "Change archived 2026-05-01-rapportage-bi-export: GraphQL across every register POST /api/graphql appinfo/routes.php:2021 (lib/Service/GraphQL/), with RBAC and tenant filters, for BI tools that speak GraphQL; export profiles run as CSV at a stable URL GET /api/export-profiles/{id}/run appinfo/routes.php:1975 -> lib/Controller/ExportProfilesController.php. OData was left out on purpose (archived tasks.md:51, design.md).",
+    "change": "rapportage-bi-export",
+    "readOn": "2026-10-07"
    },
    "reachedOn": "API only: GET /api/export-profiles/{id}/run",
    "provider": "openregister",
@@ -4939,7 +4948,8 @@
     "strapi": "source read at v5.55.1, not driven: only the REST and GraphQL APIs (strapi:packages/core/core/src/core-api/routes/index.ts:78, strapi:packages/plugins/graphql/server/src/config/default-config.ts:3); searched \"odata|bi|warehouse|export feed\" in packages: no dedicated BI feed",
     "nocodb": "source read at 2026.09.0, not driven: no BI connector or OData in source (searched \"odata|powerbi|tableau|metabase\" in packages/nocodb/src: only an oData variable name in db/BaseModelSqlv2/insert.ts:69); BI tools can read the REST API (data-table.controller.ts:30) or CSV/JSON exports (data-export.controller.ts:34), or the underlying PostgreSQL or MySQL tables directly",
     "pocketbase": "source read at v0.40.4, not driven: no BI connector; a BI tool can read the REST list API pocketbase:apis/record_crud.go:29 (paged JSON) or a view collection pocketbase:core/collection_model_view_options.go:11, or open the SQLite file pb_data/data.db directly (pocketbase:core/db_connect.go:16)"
-   }
+   },
+   "note": "A BI tool pulls over GraphQL or a CSV export profile. No OData and no packaged connector, by decision in the archived change; that keeps the rating partial."
   },
   {
    "id": "op-install",
