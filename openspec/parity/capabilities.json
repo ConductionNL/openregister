@@ -3066,8 +3066,9 @@
    "built": {
     "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "lib/Service/Object/GetObject.php:198 createAuditTrail(action: 'read') on every user-facing find; 'read' counted in lib/Db/AuditTrailMapper.php:1785",
-    "spec": "none"
+    "evidence": "lib/Service/Object/GetObject.php:197 writes createAuditTrail(action: 'read') on every user-facing find while auditTrailsEnabled is on (:451), opt-out per call via $_audit (:157, used by lib/Controller/FlowNodeRunController.php:402); read entries carry no diff lib/Db/AuditTrailMapper.php:861 and are counted beside create, update and delete :1834",
+    "spec": "openspec/specs/audit-trail-immutable",
+    "readOn": "2026-10-07"
    },
    "reachedOn": "/audit-trails (action read)",
    "provider": "openregister",
@@ -5128,8 +5129,9 @@
    "built": {
     "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "25 occ commands declared in appinfo/info.xml (<command>), classes under lib/Command/ (26 files)",
-    "spec": "none"
+    "evidence": "27 occ commands declared in appinfo/info.xml:469-518, classes under lib/Command/ (28 files; DedupeSharedSchemasCommand is not declared). Repair commands preview first: --apply on openregister:objects:purge lib/Command/PurgeObjectCommand.php:105, --write on registers:relink-schemas lib/Command/RelinkRegisterSchemasCommand.php:115, --dry-run on migrate-application, rechain-audit-trail, encrypt-field",
+    "spec": "openspec/specs/occ-commands",
+    "readOn": "2026-10-07"
    },
    "reachedOn": "occ openregister:*",
    "provider": "openregister",
