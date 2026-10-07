@@ -430,7 +430,7 @@ class SettingsService {
 		return $this->llmSettingsHandler->updateLLMSettingsOnly($data);
 	}//end updateLLMSettingsOnly()
 
-	// FileSettingsHandler methods (2).
+	// FileSettingsHandler methods (3).
 
 	/**
 	 * Get file settings only
@@ -455,6 +455,17 @@ class SettingsService {
 	public function updateFileSettingsOnly(array $data): array {
 		return $this->fileSettingsHandler->updateFileSettingsOnly($data);
 	}//end updateFileSettingsOnly()
+
+	/**
+	 * The stored OpenAnonymiser password, for the outgoing request only.
+	 *
+	 * @return string The password, or an empty string when none is set.
+	 *
+	 * @spec exclude credential plumbing for the external OpenAnonymiser transport
+	 */
+	public function getOpenAnonymiserPassword(): string {
+		return $this->fileSettingsHandler->getOpenAnonymiserPassword();
+	}//end getOpenAnonymiserPassword()
 
 	// ObjectRetentionHandler methods (4).
 

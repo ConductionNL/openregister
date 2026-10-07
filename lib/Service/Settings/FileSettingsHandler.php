@@ -46,6 +46,17 @@ use RuntimeException;
 class FileSettingsHandler {
 
 	/**
+	 * App config key holding the OpenAnonymiser password.
+	 *
+	 * Stored on its own key, marked sensitive, and never inside the
+	 * `fileManagement` blob: that blob is what the settings screen reads
+	 * back, so a password in it would be returned in plain text.
+	 *
+	 * @var string
+	 */
+	public const OPENANONYMISER_PASSWORD_KEY = 'openAnonymiserPassword';
+
+	/**
 	 * Configuration service
 	 *
 	 * @var IAppConfig
@@ -138,6 +149,9 @@ class FileSettingsHandler {
 					'openAnonymiserApiEndpoint' => '',
 					// OpenAnonymiser source: 'internal' (AppAPI ExApp) or 'external' (operator URL).
 					'openAnonymiserSource' => 'internal',
+					// HTTP Basic user for an external OpenAnonymiser; empty sends no credentials.
+					'openAnonymiserUsername' => '',
+					'openAnonymiserPasswordSet' => $this->hasOpenAnonymiserPassword(),
 					'entityRecognitionEnabled' => false,
 					// 'auto' is an internal "not yet configured" marker resolved at state-query
 					// time to the recommended backend; it is never shown as a UI option.
@@ -155,6 +169,13 @@ class FileSettingsHandler {
 			// only guards the write path leaves those installations unprotected.
 			if (is_array($fileSettings) === true && array_key_exists('batchSize', $fileSettings) === true) {
 				$fileSettings['batchSize'] = max(1, min((int) $fileSettings['batchSize'], 500));
+			}
+
+			if (is_array($fileSettings) === true) {
+				// The password is never part of a settings read, only whether one is set.
+				unset($fileSettings[self::OPENANONYMISER_PASSWORD_KEY]);
+				$fileSettings['openAnonymiserUsername'] = (string) ($fileSettings['openAnonymiserUsername'] ?? '');
+				$fileSettings['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
 			}
 
 			return $fileSettings;
@@ -226,20 +247,79 @@ class FileSettingsHandler {
 				'presidioApiEndpoint' => $fileData['presidioApiEndpoint'] ?? '',
 				'openAnonymiserApiEndpoint' => $fileData['openAnonymiserApiEndpoint'] ?? '',
 				'openAnonymiserSource' => $fileData['openAnonymiserSource'] ?? 'internal',
+				'openAnonymiserUsername' => trim((string) ($fileData['openAnonymiserUsername'] ?? '')),
 				'entityRecognitionEnabled' => $fileData['entityRecognitionEnabled'] ?? false,
 				'entityRecognitionMethod' => $fileData['entityRecognitionMethod'] ?? 'auto',
 				// Auto (unconfigured marker), regex, presidio, openanonymiser, llm, hybrid.
 			];
 
-			$before = $this->changeRecorder?->snapshot(keys: ['fileManagement']);
+			$auditKeys = ['fileManagement', OwnSettingsChangeRecorder::PLAIN_PREFIX . self::OPENANONYMISER_PASSWORD_KEY];
+			$before = $this->changeRecorder?->snapshot(keys: $auditKeys);
 			$this->appConfig->setValueString($this->appName, 'fileManagement', json_encode($fileConfig));
+			$this->storeOpenAnonymiserPassword(fileData: $fileData);
 			if ($before !== null) {
-				$this->changeRecorder?->record(before: $before, keys: ['fileManagement']);
+				$this->changeRecorder?->record(before: $before, keys: $auditKeys);
 			}
+
+			$fileConfig['openAnonymiserPasswordSet'] = $this->hasOpenAnonymiserPassword();
 
 			return $fileConfig;
 		} catch (Exception $e) {
 			throw new RuntimeException('Failed to update File Management settings: ' . $e->getMessage());
 		}//end try
 	}//end updateFileSettingsOnly()
+
+	/**
+	 * The stored OpenAnonymiser password, for the outgoing request only.
+	 *
+	 * Never return this from a settings endpoint and never log it.
+	 *
+	 * @return string The password, or an empty string when none is set.
+	 *
+	 * @spec exclude credential plumbing for the external OpenAnonymiser transport
+	 */
+	public function getOpenAnonymiserPassword(): string {
+		return $this->appConfig->getValueString($this->appName, self::OPENANONYMISER_PASSWORD_KEY, '');
+	}//end getOpenAnonymiserPassword()
+
+	/**
+	 * Whether an OpenAnonymiser password is stored.
+	 *
+	 * @return bool True when a non-empty password is stored.
+	 */
+	private function hasOpenAnonymiserPassword(): bool {
+		return $this->getOpenAnonymiserPassword() !== '';
+	}//end hasOpenAnonymiserPassword()
+
+	/**
+	 * Store or clear the OpenAnonymiser password from a settings write.
+	 *
+	 * A write that does not carry the key leaves the stored password alone,
+	 * so the settings screen can save its other fields without knowing it.
+	 * An empty string clears it.
+	 *
+	 * @param array $fileData The settings being written.
+	 *
+	 * @return void
+	 */
+	private function storeOpenAnonymiserPassword(array $fileData): void {
+		if (array_key_exists(self::OPENANONYMISER_PASSWORD_KEY, $fileData) === false
+			|| is_string($fileData[self::OPENANONYMISER_PASSWORD_KEY]) === false
+		) {
+			return;
+		}
+
+		$password = $fileData[self::OPENANONYMISER_PASSWORD_KEY];
+		if ($password === '') {
+			$this->appConfig->deleteKey($this->appName, self::OPENANONYMISER_PASSWORD_KEY);
+			return;
+		}
+
+		$this->appConfig->setValueString(
+			$this->appName,
+			self::OPENANONYMISER_PASSWORD_KEY,
+			$password,
+			sensitive: true
+		);
+	}//end storeOpenAnonymiserPassword()
 }//end class
