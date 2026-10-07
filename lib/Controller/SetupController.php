@@ -180,7 +180,7 @@ class SetupController extends Controller {
 	 *
 	 * Admin-only by Nextcloud's default for an un-attributed method.
 	 *
-	 * @param string $actionId One of `install-demo-data` | `skip-demo-data`.
+	 * @param string $actionId One of `load-demo-data` | `install-demo-data` | `skip-demo-data` | `dismiss-setup`.
 	 *
 	 * @return JSONResponse `{ success, message }`.
 	 *
@@ -200,6 +200,19 @@ class SetupController extends Controller {
 		// 🔴 AND IT ANSWERS *BOTH* STEPS. The wizard now has a choice step and a
 		// run-action step; closing only the second leaves the first outstanding,
 		// and CnAppRoot opens the wizard while ANY optional step is outstanding.
+		// CLOSING OR FINISHING THE WIZARD IS AN ANSWER TOO. The wizard records
+		// its own dismissal only in the browser's localStorage, so every other
+		// browser, device or cleared profile saw it open again on every page
+		// (live audit, 7 October 2026). The app posts this when the wizard is
+		// dismissed or finished; it never overwrites a pick or a load.
+		if ($actionId === 'dismiss-setup') {
+			if ($this->appConfig->getValueString(Application::APP_ID, self::DEMO_DECIDED_KEY, '') === '') {
+				$this->appConfig->setValueString(Application::APP_ID, self::DEMO_DECIDED_KEY, 'dismissed');
+			}
+
+			return new JSONResponse(data: ['success' => true, 'message' => 'Setup was closed.']);
+		}
+
 		if ($actionId === 'skip-demo-data') {
 			$this->appConfig->setValueString(Application::APP_ID, self::DATASET_KEY, DemoDataService::NONE_DATASET);
 			$this->appConfig->setValueString(Application::APP_ID, self::DEMO_DECIDED_KEY, 'skipped');

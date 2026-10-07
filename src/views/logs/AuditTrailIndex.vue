@@ -39,7 +39,10 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			rowKey="id"
 			:rowClass="getRowClass"
 			:refreshing="isRefreshing"
+			:sortKey="sortKey"
+			:sortOrder="sortOrder"
 			@refresh="handleRefresh"
+			@sort="onSort"
 			@pageChanged="onPageChanged"
 			@pageSizeChanged="onPageSizeChanged"
 			@select="onSelect"
@@ -184,6 +187,7 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import eventBus from '../../eventBus.js'
+import { AUDIT_SORT_FIELDS, headerSortOf } from '../../services/listSort.js'
 
 export default {
 	name: 'AuditTrailIndex',
@@ -209,6 +213,7 @@ export default {
 
 	data() {
 		return {
+			...headerSortOf(auditTrailStore.auditTrailSort),
 			copyStates: {}, // Track copy state for each audit trail
 			selectedAuditTrails: [],
 			isRefreshing: false,
@@ -237,31 +242,37 @@ export default {
 					key: 'action',
 					label: t('openregister', 'Action'),
 					width: '100px',
+					sortable: true,
 				},
 				{
 					key: 'created',
 					label: t('openregister', 'Timestamp'),
 					width: '180px',
+					sortable: true,
 				},
 				{
 					key: 'object',
 					label: t('openregister', 'Object ID'),
 					class: 'cn-table-col--constrained',
+					sortable: true,
 				},
 				{
 					key: 'register',
 					label: t('openregister', 'Register ID'),
 					class: 'cn-table-col--constrained',
+					sortable: true,
 				},
 				{
 					key: 'userName',
 					label: t('openregister', 'User'),
 					class: 'cn-table-col--constrained',
+					sortable: true,
 				},
 				{
 					key: 'schema',
 					label: t('openregister', 'Schema ID'),
 					class: 'cn-table-col--constrained',
+					sortable: true,
 				},
 				{ key: 'size', label: t('openregister', 'Size'), width: '100px' },
 			]
@@ -652,6 +663,35 @@ export default {
 			} catch (error) {
 				console.error('Error updating counts:', error)
 				eventBus.emit('audit-trail-filtered-count', 0)
+			}
+		},
+
+		/**
+		 * Sort by a header: the server sorts, because the list is paged there.
+		 *
+		 * The table's column keys are the API's names; the audit trail mapper
+		 * sorts by column names, so `userName` asks for `user_name`.
+		 *
+		 * @param {{key: string, order: string}} payload The header and direction.
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/live-audit-round-one/specs/audit-trail-immutable/spec.md
+		 */
+		async onSort(payload) {
+			const key = payload && payload.key ? payload.key : null
+			this.sortKey = key
+			this.sortOrder = payload && payload.order === 'desc' ? 'desc' : 'asc'
+			const field = AUDIT_SORT_FIELDS[key]
+			auditTrailStore.setAuditTrailSort(
+				field ? { [field]: this.sortOrder.toUpperCase() } : {},
+			)
+			try {
+				await auditTrailStore.fetchAuditTrails({
+					page: 1,
+					limit: auditTrailStore.auditTrailPagination.limit,
+				})
+			} catch {
+				showError(t('openregister', 'Error loading audit trails'))
 			}
 		},
 

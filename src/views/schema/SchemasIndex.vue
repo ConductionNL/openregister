@@ -18,6 +18,8 @@ import {
 			:showTitle="true"
 			:objects="paginatedSchemas"
 			:columns="tableColumns"
+			:sortKey="sortKey"
+			:sortOrder="sortOrder"
 			:pagination="paginationData"
 			:viewMode="schemaStore.viewMode"
 			:selectable="true"
@@ -35,6 +37,7 @@ import {
 			:emptyText="emptyContentName"
 			:rowClass="getRowClass"
 			:refreshing="isRefreshing"
+			@sort="onSort"
 			@add="
 				() => {
 					schemaStore.setSchemaItem(null)
@@ -192,6 +195,7 @@ import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
+import { sortSchemas } from '../../services/listSort.js'
 
 export default {
 	name: 'SchemasIndex',
@@ -211,6 +215,9 @@ export default {
 		return {
 			selectedSchemas: [],
 			isRefreshing: false,
+			// The header the list is sorted by; null keeps newest first.
+			sortKey: null,
+			sortOrder: 'asc',
 		}
 	},
 
@@ -269,17 +276,15 @@ export default {
 		 * existed, which is the honest report of a defect that was already there.
 		 *
 		 * Highest id first, because id is the only monotonic field every schema
-		 * carries. There is no user-facing sort control on this view to conflict
-		 * with — CnIndexPage is in prop mode here and this component handles no
-		 * `@sort` — so this replaces an undefined order, not a chosen one.
+		 * carries. A sortable header the user clicks takes over (`onSort`); the
+		 * headers were declared sortable but nothing handled the click, so the
+		 * order never moved (live audit G2).
 		 *
-		 * @spec exclude UI plumbing — derived display ordering
+		 * @spec openspec/changes/live-audit-round-one/specs/audit-trail-immutable/spec.md
 		 * @return {Array<object>}
 		 */
 		orderedSchemas() {
-			return [...schemaStore.schemaList].sort(
-				(a, b) => Number(b?.id ?? 0) - Number(a?.id ?? 0),
-			)
+			return sortSchemas(schemaStore.schemaList, this.sortKey, this.sortOrder)
 		},
 
 		/**
@@ -327,6 +332,21 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Sort by a clicked header. The list is loaded whole, so it is sorted
+		 * here, and paging goes back to page 1 so the top of the new order shows.
+		 *
+		 * @param {{key: string, order: string}} payload The header and direction.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/live-audit-round-one/specs/audit-trail-immutable/spec.md
+		 */
+		onSort(payload) {
+			this.sortKey = payload && payload.key ? payload.key : null
+			this.sortOrder = payload && payload.order === 'desc' ? 'desc' : 'asc'
+			schemaStore.setPagination(1, schemaStore.pagination.limit || 20)
+		},
+
 		/**
 		 * Reload the schema list from the store.
 		 *

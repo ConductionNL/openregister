@@ -46,6 +46,7 @@ class ActivityService {
 	 * @param IURLGenerator $urlGenerator The URL generator.
 	 * @param LoggerInterface $logger The logger.
 	 * @param SchemaMapper|null $schemaMapper Resolves the schema title an object activity names; null only in hand-built tests.
+	 * @param DeepLinkRegistryService|null $deepLinks The owning app's detail route per register and schema.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
 	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
@@ -56,6 +57,7 @@ class ActivityService {
 		private IURLGenerator $urlGenerator,
 		private LoggerInterface $logger,
 		private ?SchemaMapper $schemaMapper = null,
+		private ?DeepLinkRegistryService $deepLinks = null,
 	) {
 	}//end __construct()
 
@@ -329,19 +331,43 @@ class ActivityService {
 	}//end objectParameters()
 
 	/**
-	 * Build a deep link to an object in the OpenRegister UI.
+	 * Build a deep link to an object: its owning app's page, else OpenRegister's.
+	 *
+	 * An app that owns a schema registers its detail route through the deep
+	 * link registry (pipelinq: `/apps/pipelinq/clients/{uuid}`). The activity
+	 * stream used to link every object to the OpenRegister admin view, so a
+	 * pipelinq user clicking a client update landed in a register browser
+	 * (live audit E1, 7 October 2026). The admin URL stays the fallback for a
+	 * schema no app claims.
 	 *
 	 * @param ObjectEntity $object The object entity.
 	 *
 	 * @return string The absolute URL to the object.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 * @spec openspec/changes/live-audit-round-one/specs/activity-provider/spec.md
 	 */
 	private function buildObjectLink(ObjectEntity $object): string {
-		$baseUrl = $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page');
 		$registerId = $object->getRegister();
 		$schemaId = $object->getSchema();
 		$uuid = $object->getUuid();
+
+		if ($this->deepLinks !== null && is_numeric($registerId) === true && is_numeric($schemaId) === true) {
+			$owned = $this->deepLinks->resolveUrl(
+				registerId: (int) $registerId,
+				schemaId: (int) $schemaId,
+				objectData: (($object->getObject() ?? []) + ['uuid' => (string) $uuid, 'id' => (string) $uuid])
+			);
+			if ($owned !== null && $owned !== '') {
+				if (str_starts_with($owned, 'http') === true) {
+					return $owned;
+				}
+
+				return $this->urlGenerator->getAbsoluteURL($owned);
+			}
+		}
+
+		$baseUrl = $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page');
 
 		return $baseUrl . '#/registers/' . $registerId . '/schemas/' . $schemaId . '/objects/' . $uuid;
 	}//end buildObjectLink()
