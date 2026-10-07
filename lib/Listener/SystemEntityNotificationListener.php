@@ -93,7 +93,7 @@ class SystemEntityNotificationListener implements IEventListener {
 	 * produce many paths; all are required for full system-entity coverage.
 	 *
 	 * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
-	 * @spec openspec/changes/live-audit-round-one/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function handle(Event $event): void {
 		[$entity, $slug, $trigger, $oldData] = $this->extractEventData(event: $event);

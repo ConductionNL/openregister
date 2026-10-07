@@ -381,7 +381,7 @@ class SetupControllerTest extends TestCase {
 	 * it opened again in every other browser. The app posts `dismiss-setup`
 	 * and the status then reports the step done.
 	 *
-	 * @spec openspec/changes/live-audit-round-one/specs/first-time-setup/spec.md
+	 * @spec openspec/specs/first-time-setup/spec.md
 	 */
 	public function testClosingTheWizardIsRememberedOnTheServer(): void {
 		$store = [];
@@ -408,7 +408,7 @@ class SetupControllerTest extends TestCase {
 	/**
 	 * Closing the wizard after a load leaves the recorded load as it was.
 	 *
-	 * @spec openspec/changes/live-audit-round-one/specs/first-time-setup/spec.md
+	 * @spec openspec/specs/first-time-setup/spec.md
 	 */
 	public function testClosingAfterALoadKeepsTheLoad(): void {
 		$this->appConfig->method('getValueString')->willReturn('loaded');

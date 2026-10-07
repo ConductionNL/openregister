@@ -127,7 +127,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 *
 		 * @param {object} sort `{ field: 'ASC' | 'DESC' }`, or `{}` for the default.
 		 *
-		 * @spec openspec/changes/live-audit-round-one/specs/audit-trail-immutable/spec.md
+		 * @spec openspec/specs/audit-trail-immutable/spec.md
 		 */
 		setAuditTrailSort(sort) {
 			this.auditTrailSort = sort && typeof sort === 'object' ? { ...sort } : {}

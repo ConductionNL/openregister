@@ -112,7 +112,7 @@ class ProviderSubjectHandlerTest extends TestCase {
 	/**
 	 * Test: an object update that carries the schema title names schema and object.
 	 *
-	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function testObjectUpdatedWithSchemaNamesSchemaAndObject(): void {
 		$l = $this->mockL10n();

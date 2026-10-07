@@ -201,7 +201,7 @@ class SystemEntityNotificationListenerTest extends TestCase {
 	 * build of the app differed only in `version` and `updated`, and every
 	 * administrator was told it was updated.
 	 *
-	 * @spec openspec/changes/live-audit-round-one/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function testAReimportThatOnlyMovesTheVersionNotifiesNobody(): void {
 		$old = new Configuration();
@@ -224,7 +224,7 @@ class SystemEntityNotificationListenerTest extends TestCase {
 	/**
 	 * 🔴 Key order, list order of `required` and null against [] are not a change.
 	 *
-	 * @spec openspec/changes/live-audit-round-one/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function testASchemaThatOnlyReordersNotifiesNobody(): void {
 		$old = new Schema();
@@ -248,7 +248,7 @@ class SystemEntityNotificationListenerTest extends TestCase {
 	/**
 	 * A schema whose properties really change still notifies.
 	 *
-	 * @spec openspec/changes/live-audit-round-one/specs/notificatie-engine/spec.md
+	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
 	public function testASchemaWithANewPropertyStillNotifies(): void {
 		$old = new Schema();

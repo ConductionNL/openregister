@@ -32,7 +32,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -115,7 +115,7 @@ final class ReversibilityAnnotationValidator {
 	 *
 	 * @return array<int, array{code: string, message: string}> The refusals, empty when the declaration holds.
 	 *
-	 * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+	 * @spec openspec/specs/bulk-action-jobs/spec.md
 	 */
 	public function validate(array $configuration): array {
 		$declared = ($configuration[self::ANNOTATION] ?? null);

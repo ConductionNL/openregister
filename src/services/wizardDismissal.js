@@ -8,7 +8,7 @@
  * The wizard emits no event on close, so this watches the flag CnAppRoot sets
  * on both close and finish, and posts the `dismiss-setup` action once.
  *
- * @spec openspec/changes/live-audit-round-one/specs/first-time-setup/spec.md
+ * @spec openspec/specs/first-time-setup/spec.md
  */
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -61,7 +61,7 @@ function write(storage, key, value) {
  * @param {() => Promise<unknown>} [options.post] Posts the dismissal.
  * @return {() => void} Stops watching.
  *
- * @spec openspec/changes/live-audit-round-one/specs/first-time-setup/spec.md
+ * @spec openspec/specs/first-time-setup/spec.md
  */
 export function rememberSetupDismissal(appRoot, options = {}) {
 	const storage =

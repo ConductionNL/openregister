@@ -45,7 +45,7 @@ use Psr\Log\LoggerInterface;
  * mapped through the real Register entity, exactly as findEntity() would, and
  * the dispatched event is the real RegisterUpdatedEvent.
  *
- * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-a-register-save-that-changes-nothing-publishes-nothing
+ * @spec openspec/specs/activity-provider/spec.md#requirement-a-register-save-that-changes-nothing-publishes-nothing
  */
 class RegisterMapperUpdateEventTest extends TestCase {
 	/**

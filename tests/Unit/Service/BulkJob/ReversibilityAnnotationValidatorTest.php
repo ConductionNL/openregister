@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/undo-a-bulk-action/specs/bulk-action-jobs/spec.md
+ * @spec openspec/specs/bulk-action-jobs/spec.md
  */
 
 declare(strict_types=1);

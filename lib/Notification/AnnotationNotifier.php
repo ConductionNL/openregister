@@ -115,7 +115,7 @@ class AnnotationNotifier implements INotifier {
 	 *                                      notifier owns.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
-	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-a-canonical-object-notification-does-not-print-a-register-id
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-a-canonical-object-notification-does-not-print-a-register-id
 	 */
 	public function prepare(INotification $notification, string $languageCode): INotification {
 		if ($notification->getApp() !== 'openregister') {

@@ -1324,6 +1324,33 @@ For each declared action, `AnnotationNotificationDispatcher` SHALL resolve the `
 - **WHEN** a notification is dispatched with `originApp: "pipelinq"`
 - **THEN** the notifier sets the icon to the pipelinq hex-composite raster URL rather than `IURLGenerator::imagePath('openregister', ...)`
 
+### Requirement: A system entity update notifies only on a real change
+
+When a register, schema, configuration, source or agent is updated, the
+notification bridge SHALL send no notice unless the entity's content changed.
+The comparison SHALL ignore `updated`, `created`, `version`, `lastChecked`,
+`lastSyncDate`, `syncStatus`, `localVersion` and `remoteVersion`, SHALL treat
+`null`, `''` and `[]` as equal, and SHALL ignore the order of map keys and of
+lists of plain values.
+
+#### Scenario: An app re-imports an identical configuration
+
+- GIVEN a configuration "pipelinq example data" at version 0.5.7-unstable.20261005210000
+- WHEN a newer build re-imports it with the same content and a new version
+- THEN no administrator receives a notice
+
+#### Scenario: A schema only reorders its required list
+
+- GIVEN a schema with `required: ["title", "anonymity"]`
+- WHEN it is saved with `required: ["anonymity", "title"]` and `authorization: []` for `null`
+- THEN no notice is sent
+
+#### Scenario: A schema gains a property
+
+- GIVEN a schema with the property `title`
+- WHEN it is saved with the properties `title` and `source`
+- THEN the administrators receive the "updated" notice
+
 ## Current Implementation Status
 - **Partially implemented -- in-app notifications**: `NotificationService` (`lib/Service/NotificationService.php`) exists and integrates with Nextcloud's `IManager` (INotificationManager). Currently limited to `configuration_update_available` notifications. `Notifier` (`lib/Notification/Notifier.php`) implements `INotifier` for formatting notifications with translations. Registered as a notifier service in `appinfo/info.xml`.
 - **Partially implemented -- webhook notifications**: `WebhookService` (`lib/Service/WebhookService.php`) handles outbound webhook delivery with HMAC signing, event filtering, and payload mapping. `WebhookEventListener` (`lib/Listener/WebhookEventListener.php`) listens for 55+ object/register/schema/configuration lifecycle events and triggers webhooks. Webhook entities stored via `WebhookMapper` with `organisation` field for multi-tenant scoping. Delivery logged in `WebhookLog`/`WebhookLogMapper`.

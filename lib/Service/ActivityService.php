@@ -49,7 +49,7 @@ class ActivityService {
 	 * @param DeepLinkRegistryService|null $deepLinks The owning app's detail route per register and schema.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function __construct(
 		private IManager $activityManager,
@@ -69,7 +69,7 @@ class ActivityService {
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function publishObjectCreated(ObjectEntity $object): void {
 		$title = $this->resolveTitle(primary: $object->getName(), fallback: $object->getUuid());
@@ -98,7 +98,7 @@ class ActivityService {
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) — $oldObject reserved for future diff support
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function publishObjectUpdated(ObjectEntity $newObject, ?ObjectEntity $oldObject = null): void {
 		$title = $this->resolveTitle(primary: $newObject->getName(), fallback: $newObject->getUuid());
@@ -124,7 +124,7 @@ class ActivityService {
 	 * @return void
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	public function publishObjectDeleted(ObjectEntity $object): void {
 		$title = $this->resolveTitle(primary: $object->getName(), fallback: $object->getUuid());
@@ -302,7 +302,7 @@ class ActivityService {
 	 *
 	 * @return array<string, string> The subject parameters.
 	 *
-	 * @spec openspec/changes/object-update-names-the-object/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
+	 * @spec openspec/specs/activity-provider/spec.md#requirement-an-object-activity-names-the-schema-and-the-object
 	 */
 	private function objectParameters(ObjectEntity $object, string $title): array {
 		$parameters = ['title' => $title];
@@ -345,7 +345,7 @@ class ActivityService {
 	 * @return string The absolute URL to the object.
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
-	 * @spec openspec/changes/live-audit-round-one/specs/activity-provider/spec.md
+	 * @spec openspec/specs/activity-provider/spec.md
 	 */
 	private function buildObjectLink(ObjectEntity $object): string {
 		$registerId = $object->getRegister();
