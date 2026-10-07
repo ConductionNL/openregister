@@ -193,7 +193,7 @@ Each record in the response of `GET /api/sources/{id}/sync-records` with status 
 
 ### Requirement: Items missing from a complete fetch are tombstoned, never deleted by default (REQ-HAF-010)
 
-After a run whose fetch was `complete`, every sync record of the source not seen in that run SHALL get `tombstoned: true` and `tombstonedAt`; a record seen again SHALL have both cleared. After an incomplete run no record SHALL be tombstoned. `deleteStrategy` SHALL accept `flag` (tombstone only, the default for a source created after this change), `soft-delete` and `ignore`; `hard-delete` SHALL be refused for a source with an `application`.
+After a run whose fetch was `complete`, every sync record of the source not seen in that run SHALL get `tombstoned: true` and `tombstonedAt`; a record seen again SHALL have both cleared. An external id SHALL count as seen when the batch returns it in `items` OR names it in `errors` (for example a dataset the fetcher refused on validation); an error entry without an external id marks nothing seen. Per-item errors SHALL NOT make a batch incomplete. The sync record of an errored id SHALL keep its last good `rawData`, `contentHash`, `objectUuid` and `lastAppliedAt`, leave its object untouched, and record the error in `errorMessage` with status `fetch_error`; an errored id with no record yet SHALL get a new record with status `fetch_error`, the error and no object. After an incomplete run no record SHALL be tombstoned. `deleteStrategy` SHALL accept `flag` (tombstone only, the default for a source created after this change), `soft-delete` and `ignore`; `hard-delete` SHALL be refused for a source with an `application`.
 
 #### Scenario: an incomplete fetch tombstones nothing
 
@@ -201,6 +201,34 @@ After a run whose fetch was `complete`, every sync record of the source not seen
 - **WHEN** the run ends
 - **THEN** the run MUST be `partial` with `complete: false`
 - **AND** no record MUST be tombstoned
+- @e2e exclude {pipeline rule; covered by a unit test with a stub batch fetcher}
+
+#### Scenario: an id the fetcher reports in errors is not tombstoned
+
+- **GIVEN** a source with sync records for `ds-1`, `ds-2` and `ds-3`
+- **AND** a fetch that returns `ds-1` and `ds-2` in `items`, names `ds-3` in `errors` with message `SHACL: dct:title missing`, and reports `complete: true`
+- **WHEN** the run ends
+- **THEN** the run MUST keep `complete: true`
+- **AND** the record for `ds-3` MUST NOT be tombstoned
+- **AND** the run summary MUST count one error, naming `ds-3`
+- @e2e exclude {pipeline rule; covered by a unit test with a stub batch fetcher}
+
+#### Scenario: an id neither returned nor in errors is tombstoned after a complete fetch
+
+- **GIVEN** a source with sync records for `ds-1`, `ds-2` and `ds-4`
+- **AND** a fetch that returns `ds-1` in `items`, names `ds-2` in `errors`, does not mention `ds-4`, and reports `complete: true`
+- **WHEN** the run ends
+- **THEN** the record for `ds-4` MUST get `tombstoned: true` and `tombstonedAt`
+- **AND** the records for `ds-1` and `ds-2` MUST NOT be tombstoned
+- @e2e exclude {pipeline rule; covered by a unit test with a stub batch fetcher}
+
+#### Scenario: the sync record of an errored id keeps its last good data and records the error
+
+- **GIVEN** a sync record for `ds-3` with status `imported`, an `objectUuid`, a `contentHash` and the `rawData` of its last good import
+- **WHEN** a run's fetch names `ds-3` in `errors` with message `SHACL: dct:title missing`
+- **THEN** the record MUST keep its `rawData`, `contentHash`, `objectUuid` and `lastAppliedAt` unchanged
+- **AND** the record MUST get status `fetch_error` and `errorMessage` `SHACL: dct:title missing`
+- **AND** the linked object MUST NOT be updated or deleted
 - @e2e exclude {pipeline rule; covered by a unit test with a stub batch fetcher}
 
 ### Requirement: Harvest HTTP calls pass the outbound guard (REQ-HAF-011)
