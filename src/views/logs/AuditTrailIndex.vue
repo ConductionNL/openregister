@@ -39,9 +39,9 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			rowKey="id"
 			:rowClass="getRowClass"
 			:refreshing="isRefreshing"
-			@refresh="handleRefresh"
 			:sortKey="sortKey"
 			:sortOrder="sortOrder"
+			@refresh="handleRefresh"
 			@sort="onSort"
 			@pageChanged="onPageChanged"
 			@pageSizeChanged="onPageSizeChanged"
@@ -682,7 +682,9 @@ export default {
 			this.sortKey = key
 			this.sortOrder = payload && payload.order === 'desc' ? 'desc' : 'asc'
 			const field = AUDIT_SORT_FIELDS[key]
-			auditTrailStore.setAuditTrailSort(field ? { [field]: this.sortOrder.toUpperCase() } : {})
+			auditTrailStore.setAuditTrailSort(
+				field ? { [field]: this.sortOrder.toUpperCase() } : {},
+			)
 			try {
 				await auditTrailStore.fetchAuditTrails({
 					page: 1,

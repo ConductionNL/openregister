@@ -58,14 +58,24 @@ function write(storage, key, value) {
  * @param {object} appRoot The mounted CnAppRoot instance.
  * @param {object} [options] Seams for tests.
  * @param {Storage|null} [options.storage] The localStorage to read.
- * @param {Function} [options.post] Posts the dismissal; returns a promise.
- * @return {Function} Stops watching.
+ * @param {() => Promise<unknown>} [options.post] Posts the dismissal.
+ * @return {() => void} Stops watching.
  *
  * @spec openspec/changes/live-audit-round-one/specs/first-time-setup/spec.md
  */
 export function rememberSetupDismissal(appRoot, options = {}) {
-	const storage = options.storage !== undefined ? options.storage : (typeof window !== 'undefined' ? window.localStorage : null)
-	const post = options.post || (() => axios.post(generateUrl('/apps/openregister/api/setup/action/dismiss-setup')))
+	const storage =
+		options.storage !== undefined
+			? options.storage
+			: typeof window !== 'undefined'
+				? window.localStorage
+				: null
+	const post =
+		options.post
+		|| (() =>
+			axios.post(
+				generateUrl('/apps/openregister/api/setup/action/dismiss-setup'),
+			))
 
 	let sent = read(storage, RECORDED_KEY) === '1'
 	const record = () => {
@@ -86,7 +96,10 @@ export function rememberSetupDismissal(appRoot, options = {}) {
 		return () => {}
 	}
 
-	const dismissKey = typeof appRoot.setupWizardDismissKey === 'function' ? appRoot.setupWizardDismissKey() : ''
+	const dismissKey =
+		typeof appRoot.setupWizardDismissKey === 'function'
+			? appRoot.setupWizardDismissKey()
+			: ''
 	if (dismissKey !== '' && read(storage, dismissKey) === '1') {
 		record()
 	}

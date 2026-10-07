@@ -1,6 +1,9 @@
 import { rememberSetupDismissal } from './wizardDismissal.js'
 
-jest.mock('@nextcloud/axios', () => ({ __esModule: true, default: { post: jest.fn() } }))
+jest.mock('@nextcloud/axios', () => ({
+	__esModule: true,
+	default: { post: jest.fn() },
+}))
 jest.mock('@nextcloud/router', () => ({ generateUrl: (path) => path }))
 
 /**
@@ -17,7 +20,9 @@ function fakeRoot() {
 			return () => {}
 		},
 		dismiss() {
-			watchers.filter((w) => w.name === 'setupWizardDismissed').forEach((w) => w.cb(true))
+			watchers
+				.filter((w) => w.name === 'setupWizardDismissed')
+				.forEach((w) => w.cb(true))
 		},
 	}
 }
@@ -33,7 +38,9 @@ function memoryStorage(initial = {}) {
 	return {
 		data,
 		getItem: (k) => (k in data ? data[k] : null),
-		setItem: (k, v) => { data[k] = String(v) },
+		setItem: (k, v) => {
+			data[k] = String(v)
+		},
 	}
 }
 
@@ -57,7 +64,9 @@ describe('remembering the setup wizard on the server (live audit)', () => {
 	})
 
 	it('posts on load when this browser dismissed it before', async () => {
-		const storage = memoryStorage({ 'cn-setup-wizard-dismissed:openregister:1': '1' })
+		const storage = memoryStorage({
+			'cn-setup-wizard-dismissed:openregister:1': '1',
+		})
 		const post = jest.fn().mockResolvedValue({})
 
 		rememberSetupDismissal(fakeRoot(), { storage, post })
@@ -83,7 +92,10 @@ describe('remembering the setup wizard on the server (live audit)', () => {
 
 	it('tries again on a later close when the post failed', async () => {
 		const root = fakeRoot()
-		const post = jest.fn().mockRejectedValueOnce(new Error('403')).mockResolvedValue({})
+		const post = jest
+			.fn()
+			.mockRejectedValueOnce(new Error('403'))
+			.mockResolvedValue({})
 
 		rememberSetupDismissal(root, { storage: memoryStorage(), post })
 		root.dismiss()

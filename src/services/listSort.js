@@ -34,8 +34,13 @@ export const AUDIT_SORT_FIELDS = {
  */
 export function headerSortOf(sort) {
 	const [field, direction] = Object.entries(sort || {})[0] || ['created', 'DESC']
-	const key = Object.keys(AUDIT_SORT_FIELDS).find((k) => AUDIT_SORT_FIELDS[k] === field) || 'created'
-	return { sortKey: key, sortOrder: String(direction).toUpperCase() === 'ASC' ? 'asc' : 'desc' }
+	const key =
+		Object.keys(AUDIT_SORT_FIELDS).find((k) => AUDIT_SORT_FIELDS[k] === field)
+		|| 'created'
+	return {
+		sortKey: key,
+		sortOrder: String(direction).toUpperCase() === 'ASC' ? 'asc' : 'desc',
+	}
 }
 
 /**
@@ -83,12 +88,13 @@ export function sortSchemas(schemas, sortKey, sortOrder = 'asc') {
 		.sort((a, b) => {
 			const left = schemaValue(a.schema, sortKey)
 			const right = schemaValue(b.schema, sortKey)
-			let result = 0
-			if (typeof left === 'number' && typeof right === 'number') {
-				result = left - right
-			} else {
-				result = String(left).localeCompare(String(right), undefined, { sensitivity: 'base', numeric: true })
-			}
+			const result =
+				typeof left === 'number' && typeof right === 'number'
+					? left - right
+					: String(left).localeCompare(String(right), undefined, {
+							sensitivity: 'base',
+							numeric: true,
+						})
 			return result !== 0 ? result * direction : a.index - b.index
 		})
 		.map(({ schema }) => schema)

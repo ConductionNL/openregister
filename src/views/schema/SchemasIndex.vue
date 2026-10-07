@@ -189,13 +189,13 @@ import {
 
 <script>
 import { CnIndexPage } from '@conduction/nextcloud-vue'
-import { sortSchemas } from '../../services/listSort.js'
 import { NcActionButton, NcActions, NcAppContent } from '@nextcloud/vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
+import { sortSchemas } from '../../services/listSort.js'
 
 export default {
 	name: 'SchemasIndex',
