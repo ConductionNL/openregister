@@ -30,3 +30,30 @@ The Tables page SHALL offer quick filters Favourites, Recent and Following that 
 - **WHEN** the user filters the Tables page on that schema with status `open` and turns on Favourites
 - **THEN** the list shows exactly those two records and the total says 2
 - @e2e exclude {specified only; task 3.1 covers it}
+
+### Requirement: The record read says whether the reader may change who follows it
+
+When a read or list asks for `_extend=@self.can`, each object's `@self.can` SHALL carry `manage` next to `update`. `manage` SHALL be true exactly when `PUT` and `DELETE .../watchers/{userId}` for another user would be admitted for the caller: the object's owner or an administrator, decided by the same `ObjectScopeResolver::admitsUnconditionally` call that `WatcherService::requireManage` makes. It SHALL NOT be derived from the schema's RBAC rules, because `manage` is not one of core's five RBAC verbs (ADR-010 Rule 4). When the decision cannot be taken, `manage` SHALL be false.
+
+#### Scenario: the owner may add a colleague
+
+- **GIVEN** a record owned by `annemarie`
+- **WHEN** `annemarie` reads it with `_extend=@self.can`
+- **THEN** `@self.can` is `{"update": true, "manage": true}`
+- @e2e exclude {backend marker; covered by a unit test on RenderObject and the Newman request in task 1.3}
+
+#### Scenario: an editor who does not own the record may not
+
+- **GIVEN** a record owned by `annemarie` that `jan` may update through the schema's RBAC rules
+- **WHEN** `jan` reads it with `_extend=@self.can`
+- **THEN** `@self.can.update` is true and `@self.can.manage` is false
+- **AND** `PUT .../watchers/piet` by `jan` answers 403
+- @e2e exclude {backend marker; covered by a unit test that runs the marker and the endpoint against one fixture}
+
+#### Scenario: no extend, no marker
+
+- **GIVEN** any record
+- **WHEN** it is read without `_extend=@self.can`
+- **THEN** the response carries no `@self.can`
+- @e2e exclude {backend marker; covered by a unit test on RenderObject}
+
