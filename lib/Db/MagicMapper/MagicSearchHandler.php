@@ -54,6 +54,7 @@ use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
+use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Search\SearchTermNode;
@@ -222,6 +223,7 @@ class MagicSearchHandler {
 		private readonly SchemaTypeConverter $schemaTypeConverter,
 		private readonly DateTimeNormalizer $dateTimeNormalizer,
 		private readonly RelatedRowQueryApplier $relatedRows,
+		private readonly ?LanguageService $languageService = null,
 	) {
 		$this->termParser = new SearchTermParser();
 		$this->termCompiler = new SearchTermSqlCompiler();
@@ -388,7 +390,8 @@ class MagicSearchHandler {
 			schema: $schema,
 			searchTerm: $searchTerm,
 			recentFor: ($query['_recentFor'] ?? null),
-			dateTimeColumns: $dateTimeColumns
+			dateTimeColumns: $dateTimeColumns,
+			sortLanguages: $this->sortLanguageChain(register: $register)
 		);
 
 		$queryBuilder->setMaxResults($limit)
@@ -2984,10 +2987,12 @@ class MagicSearchHandler {
 	 * @param string|null $searchTerm The search term, for relevance ordering.
 	 * @param mixed $recentFor The user whose view times order a `_recent` page, or null.
 	 * @param array<int, string>|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown.
+	 * @param array<int, string> $sortLanguages Language chain a translatable property sorts by.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+	 * @spec openspec/changes/order-filters-and-notification-links/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 */
 	private function applyResultOrder(
 		IQueryBuilder $qb,
@@ -2995,7 +3000,8 @@ class MagicSearchHandler {
 		?Schema $schema,
 		?string $searchTerm,
 		mixed $recentFor,
-		?array $dateTimeColumns = null
+		?array $dateTimeColumns = null,
+		array $sortLanguages = []
 	): void {
 		if (empty($order) === false) {
 			$this->applySorting(
@@ -3003,7 +3009,8 @@ class MagicSearchHandler {
 				order: $order,
 				schema: $schema,
 				searchTerm: $searchTerm,
-				dateTimeColumns: $dateTimeColumns
+				dateTimeColumns: $dateTimeColumns,
+				sortLanguages: $sortLanguages
 			);
 			return;
 		}
@@ -3410,8 +3417,11 @@ class MagicSearchHandler {
 	 * @param Schema $schema Schema for column mapping
 	 * @param string|null $searchTerm Search term for relevance sorting (optional)
 	 * @param array<int, string>|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown
+	 * @param array<int, string> $sortLanguages Language chain a translatable property sorts by, first wins
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/order-filters-and-notification-links/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 */
 	private function applySorting(
 		IQueryBuilder $qb,
@@ -3419,6 +3429,7 @@ class MagicSearchHandler {
 		Schema $schema,
 		?string $searchTerm = null,
 		?array $dateTimeColumns = null,
+		array $sortLanguages = [],
 	): void {
 		$properties = $schema->getProperties();
 
@@ -3467,6 +3478,24 @@ class MagicSearchHandler {
 			) {
 				// Direct metadata column reference (e.g., _created → t._created).
 				$qb->addOrderBy("t.{$field}", $direction);
+			} elseif (is_array($properties[$field] ?? null) === true
+				&& ($properties[$field]['translatable'] ?? false) === true
+			) {
+				// A translatable property holds a language map on rows saved
+				// since translations arrived and a plain string on older rows.
+				// Ordering on the raw column text put every plain row before
+				// every map row: two sorted runs (dossiq case types, cloud
+				// check 8 October 2026). Order on the value a person sees.
+				$columnName = $this->sanitizeColumnName(name: $field);
+				$qb->addOrderBy(
+					$qb->createFunction(
+						$this->buildTranslatableSortSql(
+							column: $qb->getColumnName($columnName, 't'),
+							languages: $sortLanguages
+						)
+					),
+					$direction
+				);
 			} elseif (($properties[$field] ?? null) !== null) {
 				// Schema property field sorting.
 				$columnName = $this->sanitizeColumnName(name: $field);
@@ -3482,6 +3511,127 @@ class MagicSearchHandler {
 			}//end if
 		}//end foreach
 	}//end applySorting()
+
+	/**
+	 * The languages a translatable property sorts by, in the order rendering
+	 * picks them.
+	 *
+	 * Mirrors TranslationHandler::resolveTranslationsForRender(): the request's
+	 * accepted languages that the register offers (or the preferred language
+	 * when the register lists none), then the register's languages, then its
+	 * default. It reads the language service without calling
+	 * resolveLanguageForRegister(), which would flag a fallback on the
+	 * response for a page that may hold no translatable value at all.
+	 *
+	 * @param Register $register The register being searched.
+	 *
+	 * @return array<int, string> Language codes, first wins.
+	 *
+	 * @spec openspec/changes/order-filters-and-notification-links/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 */
+	private function sortLanguageChain(Register $register): array {
+		$registerLanguages = array_values(
+			array_filter(($register->getLanguages() ?? []), 'is_string')
+		);
+
+		$chain = [];
+		if ($this->languageService !== null) {
+			if ($registerLanguages === []) {
+				$chain[] = $this->languageService->getPreferredLanguage();
+			}
+
+			foreach ($this->languageService->getAcceptedLanguages() as $accepted) {
+				$base = strtolower(explode('-', (string) $accepted)[0]);
+				foreach ([(string) $accepted, $base] as $candidate) {
+					if (in_array($candidate, $registerLanguages, true) === true) {
+						$chain[] = $candidate;
+					}
+				}
+			}
+		}
+
+		$chain = array_merge($chain, $registerLanguages, [$register->getDefaultLanguage()]);
+
+		return array_values(array_unique($chain));
+	}//end sortLanguageChain()
+
+	/**
+	 * Build the ORDER BY expression for a translatable property column.
+	 *
+	 * A row holding a language map (`{"nl": "Woo-verzoek"}`) sorts by its value
+	 * in the first language of the chain that it has, else by its first value.
+	 * A row holding a plain string sorts by that string. PostgreSQL extracts
+	 * with a regular expression rather than a jsonb cast, because a plain value
+	 * that happens to start with a brace would make a cast fail the whole query.
+	 * MySQL and MariaDB guard their JSON functions with JSON_VALID. SQLite uses
+	 * its built-in JSON functions the same way.
+	 *
+	 * Language codes are reduced to `[a-z0-9-]` before they enter the SQL, so
+	 * the expression carries no user input.
+	 *
+	 * @param string $column The quoted column reference.
+	 * @param array<int, string> $languages Language chain, first wins.
+	 *
+	 * @return string The SQL expression.
+	 *
+	 * @spec openspec/changes/order-filters-and-notification-links/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 */
+	private function buildTranslatableSortSql(string $column, array $languages): string {
+		$codes = [];
+		foreach ($languages as $language) {
+			$code = preg_replace('/[^a-z0-9-]/', '', strtolower((string) $language));
+			if (is_string($code) === true && $code !== '' && in_array($code, $codes, true) === false) {
+				$codes[] = $code;
+			}
+		}
+
+		$platform = $this->db->getDatabasePlatform()::class;
+
+		if (stripos($platform, 'PostgreSQL') !== false) {
+			// One JSON string value: quotes around anything but an unescaped quote.
+			$valuePattern = '\s*:\s*"((?:[^"\\\\]|\\\\.)*)"';
+			$text = "CAST({$column} AS TEXT)";
+			$picks = [];
+			foreach ($codes as $code) {
+				$picks[] = "substring({$text} from '\"{$code}\"{$valuePattern}')";
+			}
+
+			$picks[] = "substring({$text} from '^\\{\\s*\"[^\"]*\"{$valuePattern}')";
+			$picks[] = $text;
+
+			return "CASE WHEN {$text} LIKE '{%' THEN COALESCE(".implode(', ', $picks).") ELSE {$text} END";
+		}
+
+		if (stripos($platform, 'MySQL') !== false || stripos($platform, 'MariaDB') !== false) {
+			$picks = [];
+			foreach ($codes as $code) {
+				$picks[] = "JSON_UNQUOTE(JSON_EXTRACT({$column}, '$.\"{$code}\"'))";
+			}
+
+			$picks[] = "JSON_UNQUOTE(JSON_EXTRACT(JSON_EXTRACT({$column}, '$.*'), '$[0]'))";
+			$picks[] = $column;
+
+			// Nested rather than AND: JSON_TYPE() raises an error on a value that
+			// is not JSON, and only CASE promises not to evaluate it then.
+			return "CASE WHEN JSON_VALID({$column}) THEN CASE WHEN JSON_TYPE({$column}) = 'OBJECT'"
+				." THEN COALESCE(".implode(', ', $picks).") ELSE {$column} END ELSE {$column} END";
+		}
+
+		if (stripos($platform, 'Sqlite') !== false) {
+			$picks = [];
+			foreach ($codes as $code) {
+				$picks[] = "json_extract({$column}, '$.\"{$code}\"')";
+			}
+
+			$picks[] = "(SELECT value FROM json_each({$column}) LIMIT 1)";
+			$picks[] = $column;
+
+			return "CASE WHEN json_valid({$column}) THEN CASE WHEN json_type({$column}) = 'object'"
+				." THEN COALESCE(".implode(', ', $picks).") ELSE {$column} END ELSE {$column} END";
+		}
+
+		return $column;
+	}//end buildTranslatableSortSql()
 
 	/**
 	 * Build the ORDER BY expression for one schema property column.
