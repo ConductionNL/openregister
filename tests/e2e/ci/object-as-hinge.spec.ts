@@ -114,6 +114,11 @@ test.describe('an object is the hinge several cases turn on', () => {
 			data: {
 				title: `${title} ${RUN}`,
 				description: 'e2e',
+				// Linked to the register. The reverse view resolves the schema
+				// inside the register the path names and refuses one the
+				// register does not carry, as every shipped configuration's
+				// schemas are carried.
+				register: registerId,
 				properties,
 				configuration: options.configuration ?? {},
 				authorization: {

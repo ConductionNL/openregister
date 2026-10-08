@@ -455,7 +455,7 @@ test.describe('an external grant carries an end date', () => {
 
 		const res = await admin.put(`${API}/schemas/${id}`, {
 			data: {
-				authorization: { read: [{ name: 'adviseur', external: true }] },
+				authorization: { read: [{ group: 'adviseur', external: true }] },
 			},
 		})
 
@@ -481,7 +481,7 @@ test.describe('an external grant carries an end date', () => {
 				authorization: {
 					read: [
 						{
-							name: 'adviseur',
+							group: 'adviseur',
 							external: true,
 							until: '2027-01-01T00:00:00+00:00',
 						},

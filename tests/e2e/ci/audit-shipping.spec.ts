@@ -101,11 +101,15 @@ test.describe('doelbinding and the shipped trail over HTTP', () => {
 		// A processing activity for the bound purpose to name.
 		const activity = await admin.post(ACTIVITIES, {
 			data: {
+				// The processing-activity API speaks the field names of
+				// VerwerkingsactiviteitenController::hydrateFromPayload() and the
+				// legal-basis vocabulary of Verwerkingsactiviteit (AVG Art 6),
+				// both English since #2555.
 				code: `E2E-VA-${RUN}`,
-				naam: `e2e adresonderzoek ${RUN}`,
-				doelbinding: 'e2e',
-				rechtsgrond: 'wettelijke verplichting',
-				status: 'actief',
+				name: `e2e adresonderzoek ${RUN}`,
+				purpose: 'e2e',
+				legalBasis: 'legal_obligation',
+				status: 'published',
 			},
 		})
 		expect(
