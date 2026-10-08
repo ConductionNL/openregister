@@ -56,6 +56,21 @@ class JwtValidator {
 	public const CLOCK_SKEW_SECONDS = 60;
 
 	/**
+	 * The shortest HMAC secret each algorithm accepts, in bytes.
+	 *
+	 * RFC 7518 §3.2: a key of the same size as the hash output or larger MUST
+	 * be used. hash_hmac() itself takes any key, an empty one included, and
+	 * an empty or guessable secret lets anyone mint a token for the consumer.
+	 * The web-token library integriq verified with before gate 23 refused
+	 * these as "Invalid key length."; this keeps that refusal.
+	 */
+	public const HMAC_MIN_KEY_BYTES = [
+		'HS256' => 32,
+		'HS384' => 48,
+		'HS512' => 64,
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ICacheFactory|null $cacheFactory Distributed cache that remembers used token ids.
@@ -147,10 +162,34 @@ class JwtValidator {
 			);
 		}
 
-		if ($this->verifySignature(token: $token, algorithm: $algorithm, key: (string)($configuration['publicKey'] ?? '')) === false) {
+		$key = (string)($configuration['publicKey'] ?? '');
+		if ($this->hmacKeyTooShort(algorithm: $algorithm, key: $key) === true) {
+			throw $this->invalid(reason: 'The issuer\'s HMAC secret is shorter than the algorithm\'s hash output');
+		}
+
+		if ($this->verifySignature(token: $token, algorithm: $algorithm, key: $key) === false) {
 			throw $this->invalid(reason: 'The token does not match the public key');
 		}
 	}//end verifyPinned()
+
+
+	/**
+	 * Whether an HMAC secret is shorter than the algorithm's hash output.
+	 *
+	 * @param string $algorithm The pinned algorithm.
+	 * @param string $key       The issuer's stored secret.
+	 *
+	 * @return bool True for an HMAC algorithm with a secret below HMAC_MIN_KEY_BYTES.
+	 *
+	 * @spec openspec/changes/authorization-service-public-hardened/specs/auth-system/spec.md
+	 */
+	public function hmacKeyTooShort(string $algorithm, string $key): bool {
+		if (isset(self::HMAC_MIN_KEY_BYTES[$algorithm]) === false) {
+			return false;
+		}
+
+		return strlen($key) < self::HMAC_MIN_KEY_BYTES[$algorithm];
+	}//end hmacKeyTooShort()
 
 	/**
 	 * The refusal for a token that could not be validated.
@@ -184,6 +223,10 @@ class JwtValidator {
 		}
 
 		if (isset(self::HMAC_MAP[$algorithm]) === true) {
+			if ($this->hmacKeyTooShort(algorithm: $algorithm, key: $key) === true) {
+				return false;
+			}
+
 			$expected = hash_hmac(self::HMAC_MAP[$algorithm], $parts[0] . '.' . $parts[1], $key, true);
 			return hash_equals($expected, (string)base64_decode(strtr($parts[2], '-_', '+/')));
 		}

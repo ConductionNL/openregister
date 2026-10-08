@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Consumer;
 use OCA\OpenRegister\Db\ConsumerMapper;
 use OCA\OpenRegister\Exception\AuthenticationException;
 use OCA\OpenRegister\Service\AuthorizationService;
+use OCA\OpenRegister\Service\Consumer\JwtValidator;
 use OCA\OpenRegister\Service\Consumer\ConsumerSource;
 use OCA\OpenRegister\Service\Consumer\ResolvedConsumer;
 use OCP\ICache;
@@ -271,6 +272,65 @@ PEM;
 		$this->expectException(AuthenticationException::class);
 		$this->service()->authorizeJwt('Bearer ' . $this->token(JWKFactory::createFromSecret($pem), 'HS256'));
 	}//end testAnHmacTokenAgainstAnRsaConsumerIsRefused()
+
+
+	/**
+	 * A compact JWS signed with hash_hmac, which takes any secret length — the case the length check exists for.
+	 *
+	 * @param string $algorithm The HS algorithm.
+	 * @param string $secret    The signing secret.
+	 *
+	 * @return string
+	 */
+	private function hmacToken(string $algorithm, string $secret): string {
+		$encode = static fn (string $raw): string => rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+		$header = $encode((string)json_encode(['alg' => $algorithm, 'typ' => 'JWT']));
+		$payload = $encode((string)json_encode(['iss' => 'zaaksysteem', 'iat' => time()]));
+		$hash = JwtValidator::HMAC_MAP[$algorithm];
+
+		return $header . '.' . $payload . '.' . $encode(hash_hmac($hash, $header . '.' . $payload, $secret, true));
+	}//end hmacToken()
+
+
+	/**
+	 * An HMAC consumer whose secret is shorter than the hash output is refused, the empty secret included (RFC 7518 §3.2).
+	 *
+	 * @return void
+	 */
+	public function testAnHmacSecretShorterThanTheHashOutputIsRefused(): void {
+		foreach ([['HS256', ''], ['HS256', 'short'], ['HS256', str_repeat('k', 31)], ['HS384', str_repeat('k', 47)], ['HS512', str_repeat('k', 63)]] as [$algorithm, $secret]) {
+			$this->consumers = [];
+			$this->volatileUsers = [];
+			$this->consumer($algorithm, $secret);
+
+			try {
+				$this->service()->authorizeJwt('Bearer ' . $this->hmacToken($algorithm, $secret));
+				$this->fail($algorithm . ' with a ' . strlen($secret) . '-byte secret must be refused');
+			} catch (AuthenticationException $e) {
+				$this->assertStringContainsString('HMAC secret is shorter', (string)json_encode($e->getDetails()), $algorithm);
+			}
+
+			$this->assertSame([], $this->volatileUsers, 'nobody may act as the consumer\'s user after a refusal');
+		}
+	}//end testAnHmacSecretShorterThanTheHashOutputIsRefused()
+
+
+	/**
+	 * A secret of exactly the hash output's size is accepted.
+	 *
+	 * @return void
+	 */
+	public function testAnHmacSecretOfTheHashOutputSizeIsAccepted(): void {
+		foreach ([['HS256', 32], ['HS384', 48], ['HS512', 64]] as [$algorithm, $bytes]) {
+			$this->consumers = [];
+			$secret = str_repeat('k', $bytes);
+			$this->consumer($algorithm, $secret);
+
+			$this->service()->authorizeJwt('Bearer ' . $this->hmacToken($algorithm, $secret));
+			$this->assertCount(1, array_filter($this->volatileUsers), $algorithm);
+			$this->volatileUsers = [];
+		}
+	}//end testAnHmacSecretOfTheHashOutputSizeIsAccepted()
 
 	public function testAReusedJtiIsRefused(): void {
 		$secret = str_repeat('k', 32);
