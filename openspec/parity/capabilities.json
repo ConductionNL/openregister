@@ -408,6 +408,509 @@
    "name_nl": "Beheren en in de lucht houden"
   }
  ],
+ "features": [
+  {
+   "slug": "runtime-schema-api",
+   "title": "Schema-driven registers",
+   "title_nl": "Schemagestuurde registers",
+   "area": "modelling",
+   "overlay": "runtime-schema-api",
+   "specs": [
+    "dbal-virtual-registers",
+    "entity-management-modals",
+    "modelling-schema-diagram",
+    "modelling-type-catalogue-metadata",
+    "openapi-generation",
+    "runtime-schema-api"
+   ]
+  },
+  {
+   "slug": "field-types",
+   "title": "Rich field types and computed fields",
+   "title_nl": "Uitgebreide veldtypen en berekende velden",
+   "area": "modelling",
+   "overlay": null,
+   "specs": [
+    "computed-fields",
+    "geometry-on-a-map",
+    "repeating-groups-and-recorded-corrections",
+    "skos-concept-registers"
+   ]
+  },
+  {
+   "slug": "record-relations",
+   "title": "Links between records that stay sound",
+   "title_nl": "Koppelingen tussen records die kloppen",
+   "area": "modelling",
+   "overlay": null,
+   "specs": [
+    "reference-existence-validation",
+    "referential-integrity",
+    "relation-resource-urls",
+    "relation-types-with-inverses"
+   ]
+  },
+  {
+   "slug": "record-identity",
+   "title": "Stable identifiers and record numbering",
+   "title_nl": "Vaste identificatie en nummering van records",
+   "area": "modelling",
+   "overlay": null,
+   "specs": [
+    "generated-identifier",
+    "identity-survives-a-move",
+    "modelling-composite-identity",
+    "urn-resource-addressing"
+   ]
+  },
+  {
+   "slug": "schema-evolution",
+   "title": "Changing record types without losing data",
+   "title_nl": "Recordtypen wijzigen zonder dataverlies",
+   "area": "modelling",
+   "overlay": null,
+   "specs": [
+    "modelling-property-index-switch",
+    "modelling-rename-without-loss",
+    "schema-migration"
+   ]
+  },
+  {
+   "slug": "validation-and-data-quality",
+   "title": "Validation, duplicates and data quality",
+   "title_nl": "Validatie, dubbelingen en datakwaliteit",
+   "area": "modelling",
+   "overlay": null,
+   "specs": [
+    "data-quality-scoring",
+    "duplicate-detection",
+    "format-validators",
+    "mdm-merge",
+    "modelling-validation-messages",
+    "runtime-schema-api"
+   ]
+  },
+  {
+   "slug": "schema-import",
+   "title": "Schema import",
+   "title_nl": "Schema importeren",
+   "area": "modelling",
+   "overlay": "schema-import",
+   "specs": [
+    "schema-import"
+   ]
+  },
+  {
+   "slug": "record-editing",
+   "title": "Editing records in forms and tables",
+   "title_nl": "Records bewerken in formulieren en tabellen",
+   "area": "records",
+   "overlay": null,
+   "specs": [
+    "deletion-audit-trail",
+    "entity-management-modals",
+    "object-ownership",
+    "records-saved-templates",
+    "tables-bulk-jobs-and-file-search"
+   ]
+  },
+  {
+   "slug": "saved-search-views",
+   "title": "Saved search views",
+   "title_nl": "Opgeslagen zoekweergaven",
+   "area": "records",
+   "overlay": "saved-search-views",
+   "specs": [
+    "geometry-on-a-map",
+    "records-gallery-view",
+    "records-tree-view",
+    "saved-search-views",
+    "saved-view-count-alert",
+    "saved-view-presentation-picker",
+    "zoeken-filteren"
+   ]
+  },
+  {
+   "slug": "record-collaboration",
+   "title": "Working together on a record",
+   "title_nl": "Samenwerken aan een record",
+   "area": "records",
+   "overlay": null,
+   "specs": [
+    "object-interactions",
+    "object-lifecycle",
+    "object-presence",
+    "record-star-follow-and-unread-on-screen",
+    "record-tasks-tab"
+   ]
+  },
+  {
+   "slug": "record-drafts",
+   "title": "Drafts and publishing of records",
+   "title_nl": "Concepten en publiceren van records",
+   "area": "records",
+   "overlay": null,
+   "specs": [
+    "records-draft-versions"
+   ]
+  },
+  {
+   "slug": "content-versioning",
+   "title": "Time-travel and restore",
+   "title_nl": "Tijdreizen en herstellen",
+   "area": "history",
+   "overlay": "content-versioning",
+   "specs": [
+    "history-revert-through-the-save-path"
+   ]
+  },
+  {
+   "slug": "no-code-app-builder",
+   "title": "Low-code app builder",
+   "title_nl": "Low-code app-bouwer",
+   "area": "operate",
+   "overlay": "no-code-app-builder",
+   "specs": [
+    "apphost-boilerplate",
+    "or-form-and-journey-registry"
+   ]
+  },
+  {
+   "slug": "integration-registry",
+   "title": "Integration registry",
+   "title_nl": "Integratieregister",
+   "area": "records",
+   "overlay": "integration-registry",
+   "specs": [
+    "credential-broker",
+    "files-leaf-save-to-object",
+    "integration-company-lookup",
+    "integration-registry",
+    "mail-smart-picker"
+   ]
+  },
+  {
+   "slug": "register-i18n",
+   "title": "Translations of stored data",
+   "title_nl": "Vertalingen van opgeslagen data",
+   "area": "records",
+   "overlay": "register-i18n",
+   "specs": [
+    "ai-translation-with-a-glossary",
+    "i18n-api-language-negotiation"
+   ]
+  },
+  {
+   "slug": "object-interactions",
+   "title": "REST and bulk API for every object",
+   "title_nl": "REST- en bulk-API voor elk object",
+   "area": "api",
+   "overlay": "object-interactions",
+   "specs": [
+    "api-upsert-on-a-declared-key",
+    "incremental-sync-for-api-consumers",
+    "objects-crud",
+    "query-filter-through-a-reference",
+    "search-quality-operators-and-facets"
+   ]
+  },
+  {
+   "slug": "graphql-api",
+   "title": "GraphQL API",
+   "title_nl": "GraphQL-API",
+   "area": "api",
+   "overlay": "graphql-api",
+   "specs": [
+    "graphql-api"
+   ]
+  },
+  {
+   "slug": "oas-generation",
+   "title": "OpenAPI and JSON-LD output",
+   "title_nl": "OpenAPI- en JSON-LD-uitvoer",
+   "area": "api",
+   "overlay": "oas-generation",
+   "specs": [
+    "api-client-libraries",
+    "api-explorer-in-the-app",
+    "api-nl-design-rules-conformance",
+    "json-ld-output",
+    "oas-generation"
+   ]
+  },
+  {
+   "slug": "zoeken-filteren",
+   "title": "Full-text search with faceting",
+   "title_nl": "Zoeken op volledige tekst met facetten",
+   "area": "search",
+   "overlay": "zoeken-filteren",
+   "specs": [
+    "faceting-configuration",
+    "geometry-on-a-map",
+    "search-trail-recording",
+    "tables-bulk-jobs-and-file-search",
+    "unified-search-provider",
+    "zoeken-filteren"
+   ]
+  },
+  {
+   "slug": "vector-embeddings",
+   "title": "Semantic search",
+   "title_nl": "Semantisch zoeken",
+   "area": "search",
+   "overlay": "vector-embeddings",
+   "specs": [
+    "vector-embeddings"
+   ]
+  },
+  {
+   "slug": "rbac-scopes",
+   "title": "Access control to the property level",
+   "title_nl": "Toegangsbeheer tot op veldniveau",
+   "area": "access",
+   "overlay": "rbac-scopes",
+   "specs": [
+    "field-level-encryption",
+    "modelling-type-catalogue-metadata",
+    "object-level-sharing-and-private-scope",
+    "permission-provenance-and-deny",
+    "rbac-department-role-matrix",
+    "rbac-scopes",
+    "row-field-level-security"
+   ]
+  },
+  {
+   "slug": "access-by-link",
+   "title": "Sharing by link without an account",
+   "title_nl": "Delen via een link zonder account",
+   "area": "records",
+   "overlay": null,
+   "specs": [
+    "access-by-link-not-by-account"
+   ]
+  },
+  {
+   "slug": "saas-multi-tenant",
+   "title": "Organisation multi-tenancy",
+   "title_nl": "Organisatie-isolatie per huurder",
+   "area": "access",
+   "overlay": "saas-multi-tenant",
+   "specs": [
+    "rbac-scopes",
+    "tenant-quotas"
+   ]
+  },
+  {
+   "slug": "sign-in-and-accounts",
+   "title": "Sign-in, accounts and API keys",
+   "title_nl": "Inloggen, accounts en API-sleutels",
+   "area": "access",
+   "overlay": null,
+   "specs": [
+    "account-self-service",
+    "scoped-api-tokens"
+   ]
+  },
+  {
+   "slug": "audit-hash-chain",
+   "title": "Immutable audit trail",
+   "title_nl": "Onveranderbaar auditspoor",
+   "area": "history",
+   "overlay": "audit-hash-chain",
+   "specs": [
+    "activity-provider",
+    "audit-hash-chain",
+    "audit-trail-immutable",
+    "deletion-audit-trail",
+    "enhanced-audit-trail",
+    "history-schema-and-settings-edits-audited"
+   ]
+  },
+  {
+   "slug": "retention-and-destruction",
+   "title": "Retention periods, destruction and legal hold",
+   "title_nl": "Bewaartermijnen, vernietiging en bewaarplicht",
+   "area": "retention",
+   "overlay": null,
+   "specs": [
+    "archival-destruction-workflow",
+    "retention-linked-destruction-conflict",
+    "retention-management"
+   ]
+  },
+  {
+   "slug": "edepot-transfer",
+   "title": "Dutch archiving to e-Depot",
+   "title_nl": "Archiveren naar het e-Depot",
+   "area": "retention",
+   "overlay": "edepot-transfer",
+   "specs": [
+    "edepot-transfer",
+    "tmlo-metadata"
+   ]
+  },
+  {
+   "slug": "avg-verwerkingsregister",
+   "title": "AVG processing register and DSAR",
+   "title_nl": "AVG-verwerkingsregister en inzageverzoeken",
+   "area": "retention",
+   "overlay": "avg-verwerkingsregister",
+   "specs": [
+    "an-export-is-a-file-with-a-life",
+    "anonymising-as-an-archival-outcome",
+    "avg-verwerkingsregister",
+    "consent-evidence-envelope",
+    "file-risk-classification",
+    "gdpr-data-subject-rights"
+   ]
+  },
+  {
+   "slug": "file-attachments",
+   "title": "Files on records",
+   "title_nl": "Bestanden bij records",
+   "area": "files",
+   "overlay": null,
+   "specs": [
+    "file-actions",
+    "files-sidebar-tabs",
+    "text-extraction"
+   ]
+  },
+  {
+   "slug": "data-sync-harvesting",
+   "title": "Source sync and webhooks",
+   "title_nl": "Bronsynchronisatie en webhooks",
+   "area": "automation",
+   "overlay": "data-sync-harvesting",
+   "specs": [
+    "app-harvest-fetchers-and-flow-node",
+    "event-driven-architecture",
+    "realtime-updates",
+    "webhook-payload-mapping"
+   ]
+  },
+  {
+   "slug": "automation-flows",
+   "title": "Visual automations and flows",
+   "title_nl": "Visuele automatiseringen en flows",
+   "area": "automation",
+   "overlay": null,
+   "specs": [
+    "bulk-action-jobs",
+    "flow-code-step-in-a-sidecar",
+    "flow-decision-tables",
+    "flow-definition-versioning",
+    "flow-engine",
+    "flow-scheduled-trigger"
+   ]
+  },
+  {
+   "slug": "processes-and-approvals",
+   "title": "Processes, approvals and human tasks",
+   "title_nl": "Processen, goedkeuringen en menselijke taken",
+   "area": "automation",
+   "overlay": null,
+   "specs": [
+    "flow-business-timers",
+    "flow-cases",
+    "flow-user-task-node",
+    "records-change-held-for-approval"
+   ]
+  },
+  {
+   "slug": "notifications-and-messages",
+   "title": "Notifications, e-mail and SMS",
+   "title_nl": "Meldingen, e-mail en sms",
+   "area": "automation",
+   "overlay": null,
+   "specs": [
+    "flow-messaging-nodes",
+    "integration-message-dispatch",
+    "notificatie-engine"
+   ]
+  },
+  {
+   "slug": "import-export-and-backup",
+   "title": "Import, export and backup",
+   "title_nl": "Importeren, exporteren en back-up",
+   "area": "exchange",
+   "overlay": null,
+   "specs": [
+    "data-import-export",
+    "exchange-encrypted-instance-export",
+    "export-pdf-house-style",
+    "import-preview-and-conflict-policy"
+   ]
+  },
+  {
+   "slug": "configuration-packages",
+   "title": "Configuration packages from test to production",
+   "title_nl": "Configuratiepakketten van test naar productie",
+   "area": "exchange",
+   "overlay": null,
+   "specs": [
+    "configuration-as-a-deployment",
+    "data-import-export"
+   ]
+  },
+  {
+   "slug": "ai-mcp",
+   "title": "AI access over MCP",
+   "title_nl": "AI-toegang via MCP",
+   "area": "ai",
+   "overlay": "ai-mcp",
+   "specs": [
+    "ai-mcp"
+   ]
+  },
+  {
+   "slug": "ai-assistant",
+   "title": "AI chat and AI help on records",
+   "title_nl": "AI-chat en AI-hulp bij records",
+   "area": "ai",
+   "overlay": null,
+   "specs": [
+    "chat-ai",
+    "context-chat-provider"
+   ]
+  },
+  {
+   "slug": "rapportage-bi-export",
+   "title": "Reporting and BI export",
+   "title_nl": "Rapportage en BI-export",
+   "area": "operate",
+   "overlay": "rapportage-bi-export",
+   "specs": [
+    "aggregation-api",
+    "built-in-dashboards",
+    "rapportage-bi-export",
+    "scheduled-report-jobs"
+   ]
+  },
+  {
+   "slug": "platform-operations",
+   "title": "Installing, monitoring and running the platform",
+   "title_nl": "Installeren, monitoren en beheren van het platform",
+   "area": "operate",
+   "overlay": null,
+   "specs": [
+    "feature-toggle-surface",
+    "features-roadmap-menu",
+    "occ-commands",
+    "operate-admin-query-console",
+    "operate-load-shedding",
+    "production-observability"
+   ]
+  },
+  {
+   "slug": "language-accessibility-and-theming",
+   "title": "Interface language, accessibility and design system",
+   "title_nl": "Interfacetaal, toegankelijkheid en designsysteem",
+   "area": "operate",
+   "overlay": null,
+   "specs": []
+  }
+ ],
  "providers": [
   {
    "key": "openregister",
@@ -471,6 +974,7 @@
    "strapi": "partial",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "runtime-schema-api",
    "evidence": {
     "objects-api": "driven at 4.2.1 on 2026-09-26 (smoke.sh step 4 and 5): POST /api/v2/objecttypes, POST .../versions with a JSON Schema, PATCH status published, then POST /api/v2/objects with typeVersion 1 stored and returned the record; no restart. source read at 4.2.1: objects-api:src/objects/api/v2/urls.py:21 POST /api/v2/objecttypes and nested /versions; objects-api:src/objects/api/v2/views.py:95 ObjectTypeViewSet, :180 ObjectTypeVersionViewSet; objects-api:src/objects/core/models.py:171 ObjectTypeVersion holds json_schema. Objects of the type are accepted at once (views.py:304 ObjectViewSet), no restart. Since 4.0 objecttypes live in the same app (CHANGELOG.rst:177 open-object 564). Also staff screen: objects-api:src/objects/core/admin.py:140 ObjectTypeAdmin",
     "directus": "source read at v12.4.1, not driven: directus:api/src/controllers/collections.ts:12 POST /collections; directus:api/src/services/collections.ts:169 createTable runs DDL inside the request, schema cache is cleared so the new collection is served at /items/<name> at once; directus:app/src/modules/settings/routes/data-model/new-collection.vue:115 studio posts the new collection. Core licence cap: 25 collections (@directus/license 0.4.0 CORE_LICENSE collections limit 25, counted by api/src/license/entitlements/manager.ts registerCounter 'collections')",
@@ -499,6 +1003,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "runtime-schema-api",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/core/models.py:194 json_schema field; objects-api:src/objects/core/utils.py:117 check_json_schema validates the schema itself; objects-api:src/objects/core/utils.py:82 Draft202012Validator validates records; schema readable at GET /api/v2/objecttypes/{uuid}/versions/{n} (api/serializers.py:47 jsonSchema)",
     "directus": "source read at v12.4.1, not driven: directus:api/src/controllers/server.ts:21 GET /server/specs/oas; directus:api/src/services/specifications.ts:352 generateComponents builds an OpenAPI schema object (JSON Schema dialect) per collection with its fields. No standalone JSON Schema export and collections cannot be defined from JSON Schema; the Directus schema snapshot (api/src/controllers/schema.ts:34) is a proprietary format",
@@ -527,6 +1032,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "runtime-schema-api",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/core/admin.py:56 the objecttype version inline edits json_schema with the JSONSuit widget (objects-api:src/objects/core/widgets.py:6), a raw JSON editor; no field by field form builder. searched \"builder|field_type|add field\" in src/objects/js, templates: no match",
     "directus": "source read at v12.4.1, not driven: directus:app/src/modules/settings/routes/data-model/new-collection.vue:371 new collection form; directus:app/src/modules/settings/routes/data-model/field-detail (field wizard); directus:api/src/services/fields.ts:425 alterTable adds the column",
@@ -556,6 +1062,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "field-types",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/core/utils.py:84 JSON Schema format checker (draft 2020-12, jsonschema[format-nongpl] in requirements/base.in) enforces email, uri, date and more, plus custom color and email checks at :30 and :55, per type switch strict_format_checker at core/models.py:197. Types exist only as JSON Schema keywords: no file field type (no file storage) and no per field editor, the admin shows record data as a JSON textarea (core/admin.py:286 ObjectRecordForm)",
     "directus": "source read at v12.4.1, not driven: directus:packages/constants/src/fields.ts:18 TYPES list (string, text, dateTime, uuid, hash, csv, geometry, json and more); directus:app/src/interfaces has 44 interface folders (input, datetime, select-dropdown, file-image, map, input-rich-text-html, tags) each a dedicated editor",
@@ -584,6 +1091,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "record-relations",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/core/models.py:402 Reference model and objects-api:src/objects/core/constants.py:28 ReferenceType has only 'zaak' (links a record to an Open Zaak case URL, a separate product). No typed link between objects: searched \"ForeignKey|relation|related_object\" in src/objects/core, api: only Object to ObjectType. A URL to another object can sit in data but is not resolved or followed",
     "directus": "source read at v12.4.1, not driven: directus:api/src/services/relations.ts:191 createOne relation; directus:packages/system-data/src/fields/relations.yaml:10 many_field and :16 one_field; directus:app/src/interfaces/list-o2m/index.ts:7 and select-dropdown-m2o show the link from both sides",
@@ -616,6 +1124,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "partial",
+   "feature": "record-relations",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:packages/system-data/src/fields/relations.yaml:16 one_field names the o2m alias on the related side; :27 junction_field for m2m; directus:app/src/interfaces/list-o2m/index.ts:12 alias field renders the inverse",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/content-type-builder/server/src/controllers/validation/relations.ts:62 targetAttribute (named inverse) validated; strapi:packages/core/content-type-builder/admin/src/components/Relation/Relation.tsx:33 relation type derived from relation plus targetAttribute, :54 inverse name input",
@@ -644,6 +1153,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "no",
+   "feature": "runtime-schema-api",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/core/models.py:28 ObjectType has only free labels (:119 labels JSONField) and maintainer metadata; no register or grouping model. searched \"register|catalog|group\" in src/objects/core/models.py, api/serializers.py: no grouping entity. Types are exported one by one or as a selection (core/admin.py:272)",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/content-type-builder/admin/src/components/FolderSelect.tsx:14 content types can only be placed in navigation folders (translations en.json:171 \"New folder\"), a display grouping, not a unit that is managed, permissioned or shared; searched \"register|workspace|project|space\" in packages/core/content-type-builder, packages/core/admin/server/src: no grouping entity",
@@ -673,6 +1183,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "schema-evolution",
    "evidence": {
     "objects-api": "driven at 4.2.1 on 2026-09-26 (smoke.sh step 4): a version is created as draft and published with PATCH {status: published}; objects were accepted against version 1 only after publishing. source read at 4.2.1: objects-api:src/objects/core/models.py:204 version status draft/published/deprecated (objects-api:src/objects/core/constants.py:5); objects-api:src/objects/api/validators.py:39 VersionUpdateValidator 'Only draft versions can be changed'; objects-api:src/objects/api/v2/views.py:232 only drafts can be deleted; staff screen publish and new version buttons objects-api:src/objects/core/admin.py:186 and :199. Records pin the version they were written against (core/models.py:301)",
     "directus": "source read at v12.4.1, not driven: searched \"draft|version\" in api/src/services/collections.ts, api/src/services/fields.ts: schema changes are applied to the database immediately (fields.ts:425 alterTable). Versions (api/src/services/versions.ts) are item content versions, not schema versions. The deployment module (api/src/services/deployment.ts:17) triggers frontend host deploys, not schema drafts",
@@ -705,6 +1216,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "schema-evolution",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/core/models.py:301 each record keeps its typeVersion and is validated only against that version (core/utils.py:92 check_objecttype); searched \"migrate|revalidate|upgrade\" in src/objects/core, api: only the 4.0 objecttype import command, no record migration",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/database/src/schema/index.ts:74 syncSchema diffs stored vs database schema and alters columns at boot (no revalidation of existing rows); strapi:packages/core/database/src/migrations/users.ts user-written migration files for data reshaping",
@@ -736,6 +1248,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "partial",
+   "feature": "field-types",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: no computed field type: searched \"computed|formula\" in api/src/services and packages/system-data/src, no match. Database generated columns are read (packages/schema/src/dialects/postgres.ts:95 is_generated) and flows or hook extensions can write derived values (api/src/flows.ts)",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb-sdk/src/lib/UITypes.ts:39 Formula, :40 Rollup, :41 Count, :17 Lookup; nocodb:packages/nc-gui/components/smartsheet/column/FormulaOptions.vue and RollupOptions.vue",
@@ -767,6 +1280,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "record-identity",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/core/models.py:260 objects get a UUID4; :296 index is the record number within one object, not a business number. searched \"sequence|mask|counter\" in src/objects/core, api: no match",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb-sdk/src/lib/UITypes.ts:45 AutoNumber; nocodb:packages/nc-gui/components/smartsheet/column/EditOrAdd.vue:293-294 shown only on PostgreSQL and only when showEEFeatures (Enterprise tier, code in repo); docs https://nocodb.com/docs/product/account-settings/cloud-enterprise-edition/community-vs-paid-editions lists Auto-number as Enterprise only. No format mask; a masked id needs a Formula",
@@ -795,6 +1309,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "yes",
+   "feature": "validation-and-data-quality",
    "evidence": {
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/core/src/services/entity-validator/validators.ts:423 \"This attribute must be unique\" for a single field with unique:true (schema.ts:281 uniqueSchema), skipped for drafts :439; no multi-field unique constraint in CTB validation (searched \"compound|unique.*fields|indexes\" in packages/core/content-type-builder/server/src/controllers/validation)",
     "pocketbase": "source read at v0.40.4, not driven: pocketbase:ui/src/collections/indexUpsertModal.js:198 Unique checkbox on single or multi-column indexes; pocketbase:core/validators/db.go:60 unique constraint failure mapped to validation_not_unique per field at :70; pocketbase:core/record_model.go:1483",
@@ -823,6 +1338,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "validation-and-data-quality",
    "evidence": {
     "objects-api": "driven at 4.2.1 on 2026-09-26 (smoke.sh step 6): an object missing the required title against the published schema answered 400 (the message body was not inspected). source read at 4.2.1: objects-api:src/objects/api/validators.py:63 ObjectTypeSchemaValidator runs on every create/update (objects-api:src/objects/api/serializers.py:269); objects-api:src/objects/core/utils.py:89 returns the jsonschema error message, which names the failing property (for example a required property) with code invalid_jsonschema; tests src/objects/tests/v2/test_validation.py",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/db/BaseModelSqlv2.ts:4280-4294 validateFuncOnColumn runs column validators on insert/update; nocodb:packages/nocodb/src/helpers/ncError.ts:175 invalidValueForField error carries the field; nocodb:packages/nocodb/src/db/field-handler/handlers/date/date.general.handler.ts:61 type handlers reject bad values",
@@ -852,6 +1368,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "field-types",
    "evidence": {
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/content-type-builder/server/src/controllers/validation/schema.ts:221 enumeration values are stored inline on each field; a managed list is only possible as a relation to a separate collection type (content-type.ts:39 relations)",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nc-gui/components/smartsheet/column/SelectOptions.vue options are stored per column; a shared list is only possible via a lookup table linked with LinkToAnotherRecord (packages/nocodb-sdk/src/lib/UITypes.ts:15)",
@@ -880,6 +1397,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "schema-import",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/core/admin.py:224 import_from_url_view and objects-api:src/objects/core/forms.py:14 UrlImportForm fetch a published objecttype JSON schema by URL and create the type (objects-api:src/objects/core/query.py:11 create_from_schema); the public library github.com/open-objecten/objecttypes publishes such schemas. Staff screen only; over the API a client posts the schema itself",
     "directus": "source read at v12.4.1, not driven: searched \"template|standard|schema.org\" in api/src/cli, packages/create-directus-project, app/src/modules/settings: no catalogue of standard models. A snapshot file can be applied (api/src/cli/commands/schema/apply.ts), which copies a project schema, not a published standard model",
@@ -909,6 +1427,7 @@
    "strapi": "yes",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "field-types",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:app/src/interfaces/list/index.ts:8 'list' interface named repeater stores an array of sub-fields in a JSON field; directus:app/src/interfaces/list-o2m/index.ts:7 for repeating child records",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/content-type-builder/server/src/controllers/validation/schema.ts:558 repeatable components; strapi:packages/core/content-type-builder/server/src/controllers/validation/content-type.ts:63 component and dynamiczone types",
@@ -938,6 +1457,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "partial",
+   "feature": "field-types",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/core/models.py:331 GeometryField (PostGIS) on each record; objects-api:src/objects/core/models.py:135 allow_geometry per type; objects-api:src/objects/api/validators.py:168 GeometryValidator; CRS headers enforced objects-api:src/objects/api/mixins.py:39",
     "directus": "source read at v12.4.1, not driven: directus:packages/constants/src/fields.ts:36 geometry, geometry.Point, geometry.Polygon types; directus:app/src/interfaces/map/index.ts:8 map editor",
@@ -967,6 +1487,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "field-types",
    "evidence": {
     "pocketbase": "source read at v0.40.4, not driven: pocketbase:core/collection_model.go:26 CollectionTypeView; pocketbase:core/collection_model_view_options.go:11 ViewQuery validated at :16; pocketbase:apis/collection.go:31 dry-run-view; pocketbase:ui/src/collections/collectionViewQueryTab.js:3",
     "objects-api": "source read at 4.2.1, not driven: searched \"view|materialized|virtual\" in src/objects/core/models.py, api: no query based types; every type is a JSON schema over stored records",
@@ -996,6 +1517,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "no",
+   "feature": "runtime-schema-api",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/core/models.py:295 all data lives in core_objectrecord.data JSONField in the app's own PostGIS database (conf/base.py:34); searched \"inspectdb|external database|DATABASE_ROUTERS\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: directus:packages/schema/src/dialects/postgres.ts:86 overview() introspects existing tables (BASE TABLE only, :124) with their columns, keys and foreign keys; directus:app/src/modules/settings/routes/data-model/collections/collections.vue:295 existing tables appear as 'database only' and are put under management with a click, without copying data",
@@ -1024,6 +1546,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "saved-search-views",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: staff screen only: objects-api:src/objects/core/admin.py:347 ObjectAdmin changelist with fixed columns (:349 id, object_type, current_record, uuid, modified_on, created_on), filters by type and dates (:360) and key value data search (:377). Columns cannot be chosen per data field and are sortable only on those fixed columns; the API supports ordering on any data attribute (api/filter_backends.py:9)",
     "directus": "source read at v12.4.1, not driven: directus:app/src/layouts/tabular/index.ts:27 tabular layout with column picker and sort; directus:app/src/modules/content/routes/collection.vue renders the chosen layout per collection",
@@ -1053,6 +1576,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "no",
+   "feature": "record-editing",
    "evidence": {
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nc-gui/components/smartsheet/grid/ canvas grid cell editing through nocodb:packages/nc-gui/components/cell/ editors; nocodb:packages/nocodb/src/controllers/data-table.controller.ts:96 PATCH /api/v2/tables/:modelId/records",
     "pocketbase": "source read at v0.40.4, not driven: pocketbase:ui/src/records/recordsList.js:584 a row click opens the record (props.onselect); searched \"contenteditable|dblclick|inline\" in ui/src/records: no cell editor; editing happens in pocketbase:ui/src/records/recordUpsertModal.js:20",
@@ -1081,6 +1605,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "record-editing",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/core/admin.py:296 ObjectRecordInline lets staff add a new record with data as a raw JSON textarea (:286 ObjectRecordForm fields __all__); nothing renders a form from the type's JSON schema. searched \"jsonform|schema form\" in src/objects/js, templates: no match (django-jsonform is a transitive dependency but not used in src)",
     "directus": "source read at v12.4.1, not driven: directus:app/src/modules/content/routes/item.vue item form built by v-form from the collection's fields and their interfaces (app/src/components/v-form)",
@@ -1111,6 +1636,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "no",
+   "feature": "saved-search-views",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:app/src/layouts/kanban/index.ts:27 kanban layout grouped by a field, directus:app/src/layouts/kanban/index.ts:634 editGroup",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/controllers/kanbans.controller.ts:39 create kanban view grouped by a single select; nocodb:packages/nc-gui/components/smartsheet/KanbanOptimized.vue",
@@ -1141,6 +1667,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "no",
+   "feature": "saved-search-views",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:app/src/layouts/calendar/index.ts:33 calendar layout by a date field",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/controllers/calendars.controller.ts:39 create calendar view on a date field; nocodb:packages/nc-gui/components/smartsheet/calendar/",
@@ -1170,6 +1697,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "no",
+   "feature": "saved-search-views",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:app/src/layouts/map/index.ts:23 map layout over a geometry field",
     "objects-api": "source read at 4.2.1, not driven: searched \"leaflet|openlayers|map\" in src/objects/js, templates: no match; geometry is edited as a WKT textarea in the admin (objects-api:src/objects/core/admin.py:322). A map demo app (issue 50) was a separate project, not in this repo",
@@ -1198,6 +1726,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "no",
+   "feature": "saved-search-views",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:app/src/layouts/cards/index.ts:22 cards layout with an image source field",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/controllers/galleries.controller.ts:39 create gallery view with cover image field; nocodb:packages/nc-gui/components/smartsheet/Gallery.vue",
@@ -1229,6 +1758,7 @@
    "strapi": "partial",
    "nocodb": "yes",
    "pocketbase": "partial",
+   "feature": "record-editing",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: staff screen: objects-api:src/objects/core/admin.py:347 ObjectAdmin defines no actions, so only the Django default 'delete selected' bulk action applies; no bulk change or export of objects (the only custom action exports objecttypes, core/admin.py:272). No bulk endpoint in the API (api/v2/views.py:304)",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/controllers/bulk-data-alias.controller.ts:50 bulk PATCH, :68 update all, :86 bulk DELETE, :105 delete all; nocodb:packages/nocodb/src/controllers/data-table.controller.ts:96 array update; export via packages/nocodb/src/modules/jobs/jobs/data-export/",
@@ -1257,6 +1787,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "record-editing",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/api/v2/views.py:445 obj.delete() removes the object and all records; objects-api:src/objects/conf/api.py:84 'Deleting an OBJECT also deletes all RECORDs'; searched \"soft.delete|trash|deleted_at\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: directus:packages/system-data/src/fields/collections.yaml:200 archive_field and :219 archive_value give a soft delete that hides items and can be undone by un-archiving (app/src/modules/content/routes/collection.vue:121); no bin with a retention period, real deletes are permanent; searched \"trash|bin|purge\" in api/src/services: no timed bin",
@@ -1289,6 +1820,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "record-collaboration",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"lock|checkout|If-Match|etag\" in src/objects/api, core: no match (only account lockout from django-axes)",
     "directus": "driven at v12.4.1 on 2026-09-26 over /websocket collab: user A joined drive_pkg/1 and focused title; user B's init listed A's focus and both users, B's focus on title got FORBIDDEN \"Field title is already focused by another user\"; but B's REST PATCH /items/drive_pkg/1 at the same moment answered 200, so the lock is per field, advisory to the studio only. source read at v12.4.1: directus:api/src/websocket/collab/room.ts:604 focus() atomically acquires a per-field focus and broadcasts it with the user (room.ts:441 users list); directus:app/src/views/private/components/collab/CollabIndicatorField.vue shows who holds the field. Opt-in via directus:api/src/database/migrations/20260128A-add-collaborative-editing.ts:5 collaborative_editing_enabled (default false). Field level focus, no whole record lock",
@@ -1317,6 +1849,7 @@
    "strapi": "yes",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "record-drafts",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:packages/system-data/src/fields/collections.yaml:158 versioning toggle per collection; directus:api/src/services/versions.ts:319 save a delta to a version and :436 promote it to the main item; directus:api/src/controllers/versions.ts:259 promote route",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/content-manager/admin/src/hooks/useDocumentActions.ts:360 publishDocument, :316 discardDocument, :521 unpublishDocument; strapi:packages/core/content-type-builder/admin/src/components/DraftAndPublishToggle.tsx per-type draft and publish",
@@ -1346,6 +1879,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "record-drafts",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:api/src/controllers/versions.ts:17 create a named version (key, name) of an item; directus:api/src/services/versions.ts:436 promote after review; comparison view app/src/views/private/components/comparison/use-comparison.ts",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/content-releases/server/src/routes/release.ts:38 named releases grouping publish or unpublish actions, :118 /:id/publish, strapi:packages/core/content-releases/server/src/services/scheduling.ts scheduled publish; gated at strapi:packages/core/content-releases/server/src/register.ts:16 isEnabled('cms-content-releases') (enterprise licence); no approval promotion of a named draft of one record",
@@ -1375,6 +1909,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "content-versioning",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:app/src/views/private/components/revisions-sidebar-detail.vue:149 revert emitted from the revision drawer, directus:app/src/views/private/components/revision-item.vue:41 records the revert. Core plan limit: directus:api/src/services/revisions.ts:75 getHistoryFilterQuery with 'revision_historical_timeframe', which the Core licence sets to 30 days (@directus/license 0.4.0 dist/index.mjs:31 CORE_LICENSE), so without a licence key only revisions from the last 30 days can be read and restored",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/content-manager/server/src/history/routes/history-version.ts:20 POST /history-versions/:versionId/restore; gated at strapi:packages/core/content-manager/server/src/history/index.ts:13 isEnabled('cms-content-history') (enterprise licence), retention from licence at services/utils.ts:154",
@@ -1404,6 +1939,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "no",
+   "feature": "record-collaboration",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:api/src/controllers/comments.ts:16 POST /comments on an item; directus:api/src/services/comments.ts:63 @mentions notify users; directus:app/src/views/private/components/comments-sidebar-detail.vue in the item sidebar",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/controllers/comments.controller.ts:33 GET, :41 POST, :73 PATCH, :56 DELETE /api/v2/meta/comments; nocodb:packages/nc-gui/composables/useRowComments.ts record comment thread. Mentions, resolve and attachments are Enterprise per https://nocodb.com/docs/product/account-settings/cloud-enterprise-edition/community-vs-paid-editions",
@@ -1434,6 +1970,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "record-collaboration",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"task|assignee|due\" in src/objects/core, api: only celery tasks",
     "directus": "source read at v12.4.1, not driven: searched \"assignee|due_date|task\" in packages/system-data/src/fields and api/src/services: no task entity attached to items; only possible as a user-modelled collection",
@@ -1466,6 +2003,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "record-collaboration",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"favourite|favorite|recent\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: searched \"favorite|favourite|recent_items|recentItems\" in app/src and api/src: only test fixtures match. Bookmarks (directus_presets) save views and filters, not individual items",
@@ -1497,6 +2035,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "record-collaboration",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: notifications go per channel 'objecten' to a Notificaties API (objects-api:src/objects/api/v2/views.py:326, conf/base.py:113); subscriptions are held in Open Notificaties (a separate product) and filter on kenmerken such as object_type (objects-api:src/objects/api/kanalen.py:27), not per record and not for people. searched \"follow|subscribe|watch\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: searched \"follow|subscribe|watch\" in api/src/services and packages/system-data/src/fields: no per-item follow; users are notified only when @mentioned (api/src/services/comments.ts:63) or by a flow an admin builds",
@@ -1525,6 +2064,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "record-collaboration",
    "evidence": {
     "directus": "driven at v12.4.1 on 2026-09-26: two users joined the same item over /websocket collab; A received a join event for B, B's init listed both users with colours and A's focused field (collaborativeEditing true in /server/info, no licence needed). source read at v12.4.1: directus:api/src/websocket/collab/room.ts:441 room broadcasts the users present on an item and :401 JOIN, :471 LEAVE; directus:app/src/views/private/components/collab/CollabIndicatorHeader.vue shows avatars on the item. Opt-in setting directus:api/src/database/migrations/20260128A-add-collaborative-editing.ts:5, no licence gate found in api/src/websocket/collab",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nc-gui/components/smartsheet/RecordPresenceBadge.vue:4 'CE placeholder, record presence is EE-only'; code not public. Docs https://nocodb.com/docs/product/tables/table-operations/realtime-presence shows who has a record open; https://nocodb.com/docs/product/account-settings/cloud-enterprise-edition/community-vs-paid-editions lists Realtime collaboration as Enterprise only",
@@ -1554,6 +2094,7 @@
    "strapi": "partial",
    "nocodb": "yes",
    "pocketbase": "partial",
+   "feature": "no-code-app-builder",
    "evidence": {
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/controllers/forms.controller.ts:37 create form view; nocodb:packages/nocodb/src/controllers/views.controller.ts:138 share view; nocodb:packages/nocodb/src/controllers/public-datas.controller.ts:126 POST public dataInsert without account",
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/token/permissions.py:136 every object write needs a token with read_and_write on the type; searched \"AllowAny|anonymous|public form\" in src/objects: no match. Public forms are built in Open Formulieren, a separate product that posts to this API",
@@ -1583,6 +2124,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "access-by-link",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:api/src/controllers/shares.ts:26 create share; directus:packages/system-data/src/fields/shares.yaml:41 date_end expiry, :26 password, :45 max_uses; directus:app/src/views/private/components/shares-sidebar-detail.vue in the item sidebar",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/controllers/views.controller.ts:138 share a view (read-only link, optional password, views.service.ts:74 bcrypt hash); searched \"expir\" in services/views.service.ts and models/View.ts: no link expiry; no single-record share, the view must be filtered down to one record",
@@ -1615,6 +2157,7 @@
    "strapi": "yes",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "register-i18n",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:app/src/interfaces/translations/index.ts:7 translations interface over a languages collection; directus:app/src/interfaces/translations/translations.vue:83 AI translate is gated by the ai_translations_enabled entitlement (false in Core) but manual translation is not",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/plugins/i18n/server/src/services/content-types.ts:16 pluginOptions.i18n.localized per type and per attribute (:35); locale picker in strapi:packages/plugins/i18n/admin/src/components/CMHeaderActions.tsx",
@@ -1644,6 +2187,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "record-identity",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/api/serializers.py:257 the type of an object is immutable (IsImmutableValidator); no register concept exists",
     "directus": "source read at v12.4.1, not driven: searched \"move|transfer\" in api/src/services/items.ts and app/src/modules/content: no action to move an item to another collection; each collection is a separate table",
@@ -1673,6 +2217,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "record-collaboration",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"unread|seen|last_viewed\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: searched \"unread|last_viewed|seen_at\" in api/src and app/src: only app/src/stores/notifications.ts (notification inbox), no per-item new or changed marker",
@@ -1702,6 +2247,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "object-interactions",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/api/v2/urls.py:28 /api/v2/objects and :21 /api/v2/objecttypes (DRF ModelViewSets, objects-api:src/objects/api/v2/views.py:304 and :95) give list, read, create, PUT, PATCH, DELETE; tests src/objects/tests/v2/test_object_api.py",
     "directus": "source read at v12.4.1, not driven: directus:api/src/controllers/items.ts:19 POST, :101 GET, :126 PATCH, :208 DELETE on /items/:collection, generated for every collection from the schema",
@@ -1730,6 +2276,7 @@
    "strapi": "yes",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "graphql-api",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/conf/api.py:5 only JSONRenderer; searched \"graphql|graphene|strawberry\" in src/objects and requirements/base.txt: no match",
     "directus": "source read at v12.4.1, not driven: directus:api/src/controllers/graphql.ts:12 /graphql and /graphql/system routes; directus:api/src/services/graphql builds the schema from collections",
@@ -1758,6 +2305,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "no",
+   "feature": "oas-generation",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/api/v2/urls.py:38 /api/v2/openapi.yaml and openapi.json generated by drf-spectacular; the document describes the generic Objects API, record.data is a free object (objects-api:src/objects/api/serializers.py:187 data), so it does not follow the individual types. Each type's JSON schema is fetched separately at /objecttypes/{uuid}/versions/{n}",
     "directus": "source read at v12.4.1, not driven: directus:api/src/controllers/server.ts:21 GET /server/specs/oas; directus:api/src/services/specifications.ts:57 OASSpecsService generates paths and components from the live schema and the caller's permissions",
@@ -1787,6 +2335,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "partial",
+   "feature": "oas-generation",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/api/v2/urls.py:48 /api/v2/schema/ serves ReDoc (read only reference, no try it out console); a Postman collection is generated in CI (.github/workflows/oas.yml:29) and documented in docs/api/postman.rst",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/controllers/api-docs/api-docs.controller.ts:81 swagger UI and :93 redoc per base; API snippets in the GUI (docs https://nocodb.com/docs/product/account-settings/cloud-enterprise-edition/community-vs-paid-editions lists API snippets and Swagger in Community Edition)",
@@ -1815,6 +2364,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "object-interactions",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/api/v2/filters.py:82 filter_queryset_by_data_attr supports exact, icontains, in, gt, gte, lt, lte on any (nested) data attribute (objects-api:src/objects/api/constants.py:5 Operators); repeatable data_attr parameter :202; tests src/objects/tests/v2/test_filters.py",
     "directus": "source read at v12.4.1, not driven: directus:packages/types/src/filter.ts:58 _contains, :69 _between, :73 _intersects plus _eq, _gt, _in and others, accepted on any field by api/src/utils/sanitize-query.ts",
@@ -1845,6 +2395,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "object-interactions",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no object to object links exist (core/constants.py:28 only zaak references); filters apply to the record's own data only (objects-api:src/objects/api/v2/filters.py:169 ObjectRecordFilterSet)",
     "directus": "source read at v12.4.1, not driven: filters nest through relations (filter[author][name][_eq]) and _some/_none for o2m: directus:packages/types/src/filter.ts relational filter types; directus:api/src/utils/sanitize-query.ts:95 deep for nested query parameters",
@@ -1873,6 +2424,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "object-interactions",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/utils/serializers.py:72 DynamicFieldsMixin reads the fields= query parameter (:142) including nested data paths; tests src/objects/tests/v2/test_object_api_fields.py",
     "directus": "source read at v12.4.1, not driven: fields parameter parsed in directus:api/src/utils/sanitize-query.ts (sanitizeFields), e.g. ?fields=id,title",
@@ -1901,6 +2453,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "object-interactions",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"expand|include|inclusions\" in src/objects/api: no match (djangorestframework-inclusions is installed through open-api-framework, requirements/base.txt, but no viewset uses it); no linked records to embed",
     "directus": "source read at v12.4.1, not driven: nested field paths expand relations in one call (?fields=*,author.*) resolved by api/src/services/items.ts readByQuery through the run-ast query engine; directus:api/src/utils/sanitize-query.ts:95 deep adds per-relation filter, sort and limit",
@@ -1929,6 +2482,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "partial",
+   "feature": "rapportage-bi-export",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:api/src/utils/sanitize-query.ts:48 groupBy and :52 aggregate (count, sum, avg, min, max, countDistinct) on /items",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/controllers/data-table.controller.ts:132 GET /api/v2/tables/:modelId/aggregate (sum, avg, count and more per field) and :313 bulk/aggregate per filter set; nocodb:packages/nocodb/src/controllers/data-alias.controller.ts:93 groupby and :114 groupby/count",
@@ -1957,6 +2511,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "yes",
+   "feature": "object-interactions",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/api/v2/views.py:304 single object create/update per request; searched \"bulk|batch\" in src/objects/api: no match",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/db/BaseModelSqlv2.ts:4364 bulkInsert inside one transaction (:4538), bulk update and delete likewise (bulk-data-alias.controller.ts:50, :86); no mixed create/update/delete batch in one request",
@@ -1985,6 +2540,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "object-interactions",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/api/serializers.py:310 PATCH merges record.data with JSON Merge Patch (objects-api:src/objects/api/utils.py merge_patch); documented at objects-api:src/objects/api/v2/views.py:268",
     "directus": "source read at v12.4.1, not driven: directus:api/src/controllers/items.ts:174 PATCH /items/:collection/:pk merges only the sent fields",
@@ -2014,6 +2570,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "yes",
+   "feature": "data-sync-harvesting",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"websocket|sse|channels|stream\" in src/objects and requirements/base.txt: no match; change events go only as HTTP notifications to a Notificaties API (objects-api:src/objects/api/mixins.py:72), a separate product",
     "directus": "source read at v12.4.1, not driven: directus:api/src/websocket/handlers/subscribe.ts:35 subscriptions push create, update and delete events per collection over WebSocket, filtered by the subscriber's permissions; GraphQL subscriptions in api/src/services/graphql",
@@ -2043,6 +2600,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "partial",
+   "feature": "sign-in-and-accounts",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/token/models.py:13 TokenAuth per application (identifier, application, organization), :92 Permission per objecttype with mode read_only or read_and_write (:99) and optional field list (:105); enforced objects-api:src/objects/token/permissions.py:136; managed in admin (objects-api:src/objects/token/admin.py:129) or by manage.py generate_token and setup_configuration",
     "directus": "source read at v12.4.1, not driven: directus:packages/system-data/src/fields/users.yaml:210 static token per user, so an outside system gets its own user whose policies limit what it may do. Scoping to whole collections works in Core; row filters or field subsets on that user's policy need custom_permission_rules_enabled, false in the Core licence (directus:api/src/services/permissions.ts:66)",
@@ -2071,6 +2629,7 @@
    "strapi": "yes",
    "nocodb": "partial",
    "pocketbase": "yes",
+   "feature": "oas-generation",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no official client library published; CI only smoke tests SDK generation with openapi-generator (.github/workflows/oas.yml:31) and keeps a Postman collection. searched \"sdk|client library\" in docs/: only docs/api/postman.rst",
     "directus": "source read at v12.4.1, not driven: directus:sdk/src official TypeScript/JavaScript SDK (@directus/sdk) with REST, GraphQL and realtime clients; no official SDKs in other languages in the repo",
@@ -2100,6 +2659,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "oas-generation",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: searched \"json-ld|jsonld|@context|urn:\" in api/src: only api/src/services/mcp-oauth/index.ts (OAuth URNs); no linked data output",
     "nocodb": "source read at 2026.09.0, not driven: searched \"json-ld|jsonld|@context|rdf\" in packages/nocodb/src: no linked data output",
@@ -2128,6 +2688,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "oas-generation",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: it implements the VNG Objecten API and Objecttypen API standard (conf/api.py:1 API_VERSION 2.8.0, objects-api:src/objects/api/v2/urls.py:21), with Common Ground conventions: NL GOV geo headers (objects-api:src/objects/api/mixins.py:39), application/problem+json errors (CHANGELOG.rst:208), notifications to the Notificaties API; docs/api/compliancy",
     "directus": "source read at v12.4.1, not driven: searched \"zgw|objects api|haal centraal|nl-api\" in api/src and packages: no match; only possible as a custom endpoint extension",
@@ -2155,6 +2716,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "partial",
+   "feature": "object-interactions",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:api/src/extensions/manager.ts:697 endpoint extensions are registered as Express routes (:741 registerEndpointExtension); requires writing code, not configuration. Flows with a webhook trigger can also return data (api/src/flows.ts)",
     "strapi": "source read at v5.55.1, not driven: custom routes, controllers and services are hand-written code files (strapi:packages/core/strapi/src/cli/commands/generate.ts generators for api/controller/route); no configured query endpoint in the admin",
@@ -2184,6 +2746,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "record-identity",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects are addressed by URL with UUID (objects-api:src/objects/api/v2/views.py:321 lookup object__uuid); searched \"urn\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: searched \"urn|permalink|persistent identifier\" in api/src/services/items.ts and packages/system-data/src/fields: items are addressed by collection plus primary key only; UUID primary keys are optional but change with a move to another collection",
@@ -2212,6 +2775,7 @@
    "strapi": "yes",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "register-i18n",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: no Accept-Language handling: searched \"accept-language\" in api/src/services/items.ts and api/src/utils/sanitize-query.ts. Language selection is done by the client with deep filters on the translations relation (sanitize-query.ts:95 deep)",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/plugins/i18n/server/src/register.ts:49 adds locale and localizations fields to all content types (:61); strapi:packages/plugins/i18n/server/src/services/content-types.ts:16 localized flag; the content API accepts ?locale= (same param modelled for MCP at strapi:packages/core/content-manager/server/src/mcp/permissions.ts:34)",
@@ -2239,6 +2803,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "zoeken-filteren",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/api/v2/filters.py:208 data_icontains searches all string values of record data with a case insensitive jsonpath like_regex (:239); no ranking, no index beyond the GIN index on data (core/models.py:364)",
     "directus": "source read at v12.4.1, not driven: directus:api/src/database/run-ast/lib/apply-query/search.ts:79 ?search= runs LOWER(field) LIKE %term% over searchable fields (:17 honours the field 'searchable' flag, migration 20251012A); substring match, no ranking or stemming",
@@ -2268,6 +2833,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "zoeken-filteren",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"facet|aggregate|count\" in src/objects/api: no match",
     "directus": "source read at v12.4.1, not driven: no facet counts in the studio filter UI; counts per value are available over the API with aggregate[count]=* and groupBy (directus:api/src/utils/sanitize-query.ts:48)",
@@ -2302,6 +2868,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "zoeken-filteren",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no file storage in the product (searched \"FileField|upload\" in src/objects/core/models.py: none); documents live in a separate Documenten API such as Open Zaak",
     "directus": "source read at v12.4.1, not driven: searched \"extract|ocr|pdf-parse|tika\" in api/src/services/files: file metadata only (title, tags, description, EXIF via sharp), no text extraction, so file contents are not searchable",
@@ -2329,6 +2896,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "vector-embeddings",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"embedding|vector|pgvector|semantic\" in src/objects and requirements/base.txt: no match",
     "directus": "source read at v12.4.1, not driven: searched \"embedding|vector|pgvector\" in api/src: no match outside api/src/utils/set-deep.ts; directus:api/src/ai/tools/search-index.ts is a term-frequency index over AI tool descriptions, not over records",
@@ -2362,6 +2930,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "zoeken-filteren",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no host platform; the Django admin search box on objects searches uuid or a key__operator__value pattern in data (objects-api:src/objects/core/admin.py:377), nothing global",
     "directus": "source read at v12.4.1, not driven: searched \"global_search|searchAll|command-palette|spotlight\" in app/src: no global search bar; directus:app/src/views/private/components/search-input.vue searches within one collection's layout",
@@ -2390,6 +2959,7 @@
    "strapi": "partial",
    "nocodb": "yes",
    "pocketbase": "partial",
+   "feature": "saved-search-views",
    "evidence": {
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/controllers/filters.controller.ts:46 filters saved on a view; nocodb:packages/nocodb/src/controllers/grids.controller.ts:24 views persist filters, sorts and field choice and reopen by URL",
     "objects-api": "source read at 4.2.1, not driven: searched \"saved search|SavedQuery|preset\" in src/objects: no match",
@@ -2422,6 +2992,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "no",
+   "feature": "saved-search-views",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no saved searches exist (searched \"saved|preset\" in src/objects: no match)",
     "directus": "source read at v12.4.1, not driven: directus:packages/system-data/src/fields/presets.yaml:19 role and :27 user on a preset: a bookmark with a role and no user is shared with everyone in that role, with neither it is global",
@@ -2454,6 +3025,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "saved-search-views",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"alert|threshold\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: searched \"threshold|alert\" in api/src/services and packages/system-data/src/fields/presets.yaml: presets carry no alert. A scheduled flow that reads items and sends mail could approximate it (api/src/flows.ts), which is hand-built automation",
@@ -2482,6 +3054,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "partial",
+   "feature": "zoeken-filteren",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/api/v2/views.py:506 POST /api/v2/objects/search with geometry.within (GeoJSON polygon) filters records with geometry__within (:512); tests src/objects/tests/v2/test_geo_search.py",
     "directus": "source read at v12.4.1, not driven: directus:packages/types/src/filter.ts:75 _intersects_bbox and _intersects filters on geometry fields; the map layout filters by the visible area (app/src/layouts/map/index.ts)",
@@ -2513,6 +3086,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "zoeken-filteren",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/api/v2/views.py:328 GET /api/v2/objects without a type filter lists objects of every type the token may read (core/query.py:40 filter_for_token), and data_attr and data_icontains filters apply across those types (objects-api:src/objects/api/v2/filters.py:169)",
     "directus": "source read at v12.4.1, not driven: every search is scoped to one collection (directus:api/src/controllers/items.ts:101 /items/:collection); searched \"multi collection search\" style endpoints in api/src/controllers: none",
@@ -2544,6 +3118,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "zoeken-filteren",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/core/query.py:40 filter_for_token limits list and search to the token's objecttypes; field level trimming for read only tokens objects-api:src/objects/utils/serializers.py:153 with an X-Unauthorized-Fields header (conf/api.py:130)",
     "directus": "source read at v12.4.1, not driven: directus:api/src/permissions/modules/process-ast applies the caller's read permissions to every query including ?search, so results only hold readable items and fields; search.ts:17 also skips concealed fields",
@@ -2575,6 +3150,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "zoeken-filteren",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"solr|elasticsearch|opensearch|haystack\" in src/objects and requirements/base.txt: no match; all queries run on PostgreSQL JSONB",
     "directus": "source read at v12.4.1, not driven: searched \"elastic|solr|meilisearch|typesense|opensearch\" in api/src and packages: no search engine driver; open request github.com/directus/directus/discussions/12264",
@@ -2603,6 +3179,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "partial",
+   "feature": "zoeken-filteren",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: request logging exists (objects-api:src/objects/conf/base.py:256 LOG_REQUESTS with django-structlog middleware) but goes to structured logs, no search analytics or zero result report. searched \"search log|zero result\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: searched \"search log|search_query\" in api/src/services/activity.ts and packages/system-data/src/fields/activity.yaml: activity logs mutations and logins, not searches",
@@ -2634,6 +3211,7 @@
    "strapi": "yes",
    "nocodb": "partial",
    "pocketbase": "yes",
+   "feature": "rbac-scopes",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/token/models.py:92 Permission links a token to an objecttype with mode read_only or read_and_write; enforced in objects-api:src/objects/token/permissions.py:136 and list filtering core/query.py:40. The grantee is an application token, not a user group; staff in the admin get Django model permissions over all objects",
     "directus": "source read at v12.4.1, not driven: directus:app/src/modules/settings/routes/policies per-collection create, read, update, delete, share toggles stored in directus_permissions; directus:packages/system-data/src/fields/access.yaml:10 role, :16 user, :22 policy link groups to policies. Whole-collection all-field rules are not a 'custom rule' (directus:api/src/license/entitlements/lib/custom-permission-rules-enabled.ts:9 hasCustomRule) so they work in the unlicensed Core plan",
@@ -2665,6 +3243,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "yes",
+   "feature": "rbac-scopes",
    "evidence": {
     "directus": "driven at v12.4.1 on 2026-09-26 without a licence key: POST /permissions with permissions {num:{_eq:\"1\"}} answered 403 RESOURCE_RESTRICTED \"custom_permission_rules_enabled is a restricted resource\"; the rule engine exists but the unlicensed Core tier refuses it. source read at v12.4.1: item permission filters exist (directus:api/src/permissions/modules/process-ast applies directus_permissions.permissions filters with dynamic variables like $CURRENT_USER), but a permission with a row filter counts as a custom rule (custom-permission-rules-enabled.ts:14) and directus:api/src/services/permissions.ts:66 throws ResourceRestrictedError unless custom_permission_rules_enabled, which is false in the Core licence (@directus/license 0.4.0 CORE_LICENSE custom_permission_rules_enabled default false). Needs a licence key (OIG free under 5M USD revenue, Team or Enterprise)",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/admin/server/src/config/admin-conditions.ts:8 built-in conditions is-creator and :14 has-same-role-as-creator; strapi:packages/core/admin/server/src/bootstrap.ts:33 conditionProvider.registerMany, so rules on other record values need hand-written condition code; admin panel only, not the users-permissions content API",
@@ -2697,6 +3276,7 @@
    "strapi": "yes",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "rbac-scopes",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/token/models.py:105 use_fields and fields per type version, but only for read_only tokens (:124 clean 'Field-based authorization is supported only for read-only mode') and only first level record.data properties (:114); applied in objects-api:src/objects/utils/serializers.py:170; history is refused for such tokens (token/permissions.py:183). No write side field locking",
     "directus": "driven at v12.4.1 on 2026-09-26 without a licence key: POST /permissions with fields [\"num\"] answered 403 RESOURCE_RESTRICTED custom_permission_rules_enabled; only fields [\"*\"] was accepted (200). source read at v12.4.1: field subsets per permission (directus_permissions.fields) are enforced by api/src/permissions, but fields other than '*' count as a custom rule (directus:api/src/license/entitlements/lib/custom-permission-rules-enabled.ts:13) and are refused in the Core plan (directus:api/src/services/permissions.ts:66 and :82). Needs a licence key",
@@ -2730,6 +3310,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "rbac-scopes",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: permissions are per objecttype (objects-api:src/objects/token/models.py:122 unique token_auth, object_type); searched \"object_permission|guardian|share\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: directus:api/src/controllers/shares.ts:26 shares grant one item to anyone holding the link under a chosen role (packages/system-data/src/fields/shares.yaml:20 role); granting one named internal user one item needs a row filter policy, which is licence gated (api/src/services/permissions.ts:66)",
@@ -2758,6 +3339,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "saas-multi-tenant",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no tenant model: objects-api:src/objects/token/models.py:33 organization is a free text label on a token. Separation is achieved only by configuration, giving each organisation its own objecttypes and tokens limited to them (token/models.py:92, core/query.py:40)",
     "directus": "source read at v12.4.1, not driven: no tenant concept: searched \"tenant|organization\" in packages/system-data/src/fields: no match. Separation is built with policies filtered on an organisation field ($CURRENT_USER.org), which is a custom permission rule and licence gated (directus:api/src/services/permissions.ts:66)",
@@ -2790,6 +3372,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "rbac-scopes",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: rights are token by objecttype only (objects-api:src/objects/token/models.py:92); searched \"department|role|matrix\" in src/objects/token: no match (maintainer_department on ObjectType is descriptive metadata, core/models.py:71)",
     "directus": "source read at v12.4.1, not driven: searched \"department|matrix\" in packages/system-data/src and app/src/modules/settings: rights are policy per collection and action; no department by role matrix",
@@ -2823,6 +3406,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "rbac-scopes",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: staff screen: objects-api:src/objects/token/admin.py:129 TokenAuthAdmin with a Permission inline (:112) and objects-api:src/objects/token/admin.py:16 PermissionAdmin with a JavaScript field picker (src/objects/js/components/admin/permissions/auth-fields.js, template templates/admin/token/permission/change_form.html) and a searchable objecttype selector (CHANGELOG.rst:111 open-object 518)",
     "directus": "source read at v12.4.1, not driven: directus:app/src/modules/settings/routes/policies and routes/roles: studio screens for policies, roles and per-collection permissions; directus:packages/system-data/src/fields/policies.yaml:35 app_access, :41 admin_access, :47 ip_access, :55 enforce_tfa",
@@ -2851,6 +3435,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "sign-in-and-accounts",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: staff admin only: objects-api:src/objects/urls.py:60 mozilla-django-oidc and OIDC admin login (mozilla-django-oidc-db, conf/base.py:197 AdminOIDCConfigurationStep); the API itself accepts only static tokens (objects-api:src/objects/conf/api.py:9 TokenAuthentication)",
     "directus": "driven at v12.4.1 on 2026-09-26: GET /auth lists no providers on the stock lab ({data:[]}); an OpenID provider needs AUTH_PROVIDERS env and, per the source read, a licence; not configured in the lab, rating from the source. source read at v12.4.1: drivers directus:api/src/auth/drivers/openid.ts, oauth2.ts, saml.ts, ldap.ts exist, but directus:api/src/auth.ts:39 checks the sso_enabled entitlement and :42 warns that configured SSO providers are unavailable under the current licence tier; directus:api/src/auth/utils/check-sso-enabled.ts:8 returns 404 on SSO routes without it. Core licence sso_enabled default false (@directus/license 0.4.0 CORE_LICENSE). Needs a licence key",
@@ -2879,6 +3464,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "rbac-scopes",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: the built-in Public policy (anonymous accountability) can be granted read on a collection in directus:app/src/modules/settings/routes/policies; a whole-collection read is not a custom rule so it works in Core (custom-permission-rules-enabled.ts:9)",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/plugins/users-permissions/server/src/services/permission.js:3 PUBLIC_ROLE_FILTER, Public role granted find/findOne per type; strapi:packages/plugins/users-permissions/server/src/controllers/role.js:77",
@@ -2907,6 +3493,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "rbac-scopes",
    "evidence": {
     "strapi": "source read at v5.55.1, not driven: password attribute is a one-way hash, not reversible encryption; strapi:packages/core/admin/server/src/services/encryption.ts is used only for token storage (strapi:packages/core/admin/server/src/services/api-token.ts); searched \"encrypt\" in packages/core/core/src, packages/core/database/src: no field encryption",
     "objects-api": "source read at 4.2.1, not driven: searched \"encrypt|cipher|fernet\" in src/objects: no match; data is plain JSONB (objects-api:src/objects/core/models.py:305)",
@@ -2938,6 +3525,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "rbac-scopes",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: records of types the token may not read are filtered out (objects-api:src/objects/core/query.py:48); only hidden fields are signalled, in the X-Unauthorized-Fields header (objects-api:src/objects/api/v2/views.py:530)",
     "directus": "source read at v12.4.1, not driven: searched \"locked|restricted\" in app/src/layouts/tabular: unreadable items are filtered out of queries by api/src/permissions/modules/process-ast, never shown as locked entries",
@@ -2967,6 +3555,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "rbac-scopes",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: staff screen: objects-api:src/objects/token/admin.py:16 PermissionAdmin lists token, objecttype, mode and use_fields (:17), so staff can see which applications reach a type; API /api/v2/permissions shows a token only its own rights (objects-api:src/objects/api/v2/views.py:555). Nothing per record or per person",
     "directus": "source read at v12.4.1, not driven: searched \"who has access|access report\" in app/src/modules and api/src/controllers/permissions.ts: permissions can be read per policy but there is no per-item view of who can access it and why",
@@ -2995,6 +3584,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "partial",
+   "feature": "rbac-scopes",
    "evidence": {
     "pocketbase": "source read at v0.40.4, not driven: pocketbase:apis/record_auth_impersonate.go:35 a superuser can issue a token to act as another user with a set duration (:47 Duration), UI pocketbase:ui/src/records/recordImpersonateModal.js:15; users cannot delegate to each other",
     "objects-api": "source read at 4.2.1, not driven: searched \"delegat|on behalf|impersonat|hijack\" in src/objects and requirements/base.txt: no match",
@@ -3023,6 +3613,7 @@
    "strapi": "yes",
    "nocodb": "no",
    "pocketbase": "yes",
+   "feature": "sign-in-and-accounts",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/accounts/models.py staff users only (createinitialsuperuser, 2FA via maykin-2fa objects-api:src/objects/urls.py:36); API clients are tokens. searched \"signup|register user\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: directus:api/src/controllers/users.ts:466 POST /users/register; directus:packages/system-data/src/fields/settings.yaml:156 public_registration with :165 public_registration_role, :177 verify email and :186 email filter, so end users get their own role separate from staff",
@@ -3051,6 +3642,7 @@
    "strapi": "partial",
    "nocodb": "yes",
    "pocketbase": "no",
+   "feature": "audit-hash-chain",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/api/serializers.py:299 every update writes a new immutable ObjectRecord, objects-api:src/objects/api/v2/views.py:456 /objects/{uuid}/history returns all records with data, startAt, endAt, registrationAt, so values before and after are kept. The actor is not stored on the record: who did it (token identifier and application) goes only to structured log events (objects-api:src/objects/api/serializers.py:288 object_created, :324 object_updated)",
     "directus": "source read at v12.4.1, not driven: directus:packages/system-data/src/fields/revisions.yaml stores data and delta per change linked to directus_activity (user, timestamp, ip, action from packages/constants/src/activity.ts:1). Core plan limit: directus:api/src/services/revisions.ts:75 and api/src/services/activity.ts:26 filter reads to the last 30 days (revision_historical_timeframe and activity_historical_timeframe = 2592000 s in @directus/license 0.4.0 CORE_LICENSE); older history is kept but hidden until a licence key is added",
@@ -3083,6 +3675,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "partial",
+   "feature": "audit-hash-chain",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: reads are not logged per record; GET handlers emit no log event (objects-api:src/objects/api/v2/views.py:328), only the generic request log line (objects-api:src/objects/conf/base.py:256 LOG_REQUESTS) without the token identity",
     "directus": "source read at v12.4.1, not driven: directus:packages/constants/src/activity.ts:1 Action enum holds create, update, delete, revert, version_save, comment, upload, login, logout, run, install; no read action; searched \"action: 'read'\" in api/src/services/activity.ts: no match",
@@ -3112,6 +3705,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "audit-hash-chain",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: records cannot be changed or deleted singly: API updates append a record (objects-api:src/objects/api/serializers.py:319 super().create), the admin record inline refuses change and delete (objects-api:src/objects/core/admin.py:324, :327), corrections are new records (objects-api:src/objects/core/models.py:322 correct). But a whole object with all records can be deleted (objects-api:src/objects/api/v2/views.py:445) and there is no hash chain or signature (searched \"hash|signature|checksum\" in src/objects/core: no match)",
     "directus": "source read at v12.4.1, not driven: searched \"hash chain|signature|merkle|immutable\" in api/src/services/activity.ts, revisions.ts and packages/system-data/src/fields/activity.yaml: activity rows are ordinary table rows, and directus:api/src/schedules/retention.ts:24 even deletes them on a schedule",
@@ -3143,6 +3737,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "audit-hash-chain",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:app/src/modules/activity/routes/collection.vue activity screen with filters and the standard export sidebar; same 30 day Core read window as hist-change-log (directus:api/src/services/activity.ts:26)",
     "nocodb": "source read at 2026.09.0, not driven: CE: per-record revision history only (services/audits.service.ts:16). Workspace audit screen is gated: nocodb:packages/nc-gui/components/workspace/View.vue:31,83-89 isWsAuditEnabled else upgrade prompt (FEATURE_AUDIT_WORKSPACE); docs https://nocodb.com/docs/product/workspaces/workspace-audit filter and browse audit logs, Enterprise only per https://nocodb.com/docs/product/account-settings/cloud-enterprise-edition/community-vs-paid-editions (code not public)",
@@ -3171,6 +3766,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "content-versioning",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/api/v2/views.py:350 date= returns each object as valid on that material date (core/query.py:61 filter_for_date); :357 registrationDate= for the registered state; history detail by index :493",
     "nocodb": "source read at 2026.09.0, not driven: searched \"asOf|as_of|point in time\" in packages/nocodb/src/db and services: no record-as-of query; base snapshots are whole-base copies (Enterprise, https://nocodb.com/docs/product/bases/snapshots)",
@@ -3199,6 +3795,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "content-versioning",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/core/models.py:311 start_at and end_at (material validity) separate from :317 registration_at (formal), :322 correct for corrections; query both axes via date and registrationDate (objects-api:src/objects/api/v2/filters.py:181, :188); tests src/objects/tests/v2/test_stuf.py",
     "nocodb": "source read at 2026.09.0, not driven: searched \"valid_from|valid_to|bitemporal|effective\" in packages/nocodb/src/models and db: none",
@@ -3227,6 +3824,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "audit-hash-chain",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no activity stream; searched \"activity|timeline\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: directus:app/src/modules/activity/index.ts activity module lists every create, update, delete, comment and login across collections (directus:packages/constants/src/activity.ts:1), subject to the Core 30 day read window (api/src/services/activity.ts:26)",
@@ -3255,6 +3853,7 @@
    "strapi": "partial",
    "nocodb": "yes",
    "pocketbase": "partial",
+   "feature": "audit-hash-chain",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: deletes are written to directus_activity with action 'delete', user, timestamp, collection and item key (directus:packages/constants/src/activity.ts:4, api/src/services/items.ts deleteMany logs activity); readable for 30 days in Core, retained until ACTIVITY_RETENTION purges it (api/src/schedules/retention.ts:24)",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/db/BaseModelSqlv2.ts:5339-5357 DATA_DELETE and DATA_BULK_DELETE events, :5580-5587 Audit.insert with the deleted row and user; readable in CE only via the audit table, browsable in the Enterprise workspace audit",
@@ -3282,6 +3881,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "audit-hash-chain",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: every endpoint requires a token (objects-api:src/objects/token/permissions.py:143); no audit endpoint",
     "directus": "source read at v12.4.1, not driven: searched \"public audit\" in api/src and app/src: no public audit feature; the Public policy could be granted read on directus_activity, which would expose the whole log unfiltered because a filtered permission is licence gated (api/src/services/permissions.ts:66)",
@@ -3314,6 +3914,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "retention-and-destruction",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"retention|bewaartermijn|archiefnominatie|expire\" in src/objects: no match; records only have validity dates (objects-api:src/objects/core/models.py:311)",
     "directus": "source read at v12.4.1, not driven: searched \"retention|destroy|expire|ttl\" in packages/system-data/src/fields and api/src/services/items.ts: no record retention; directus:api/src/schedules/retention.ts:24 only purges activity, revisions and flow logs",
@@ -3347,6 +3948,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "retention-and-destruction",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: experimental Open Archiefbeheer support: DELETE /objects/{uuid}?zaak= keeps an object still linked to other cases and only removes that case reference (objects-api:src/objects/api/v2/views.py:405 to :428), with zaak-ontkoppeld cloud events behind ENABLE_CLOUD_EVENTS (objects-api:src/objects/conf/base.py:115 'EXPERIMENTAL'). The destruction list and its approval live in Open Archiefbeheer, a separate product",
     "directus": "source read at v12.4.1, not driven: searched \"destruction|destroy|disposal\" in api/src and app/src: no approved destruction run; only log purging in api/src/schedules/retention.ts:120",
@@ -3375,6 +3977,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "retention-and-destruction",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"hold|legal|freeze\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: searched \"legal hold|legal_hold|hold\" in api/src/services and packages/system-data/src: no match",
@@ -3404,6 +4007,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "edepot-transfer",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"edepot|e-depot|mdto|sip\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: searched \"e-depot|edepot|archive transfer|oais\" in api/src and packages: no match",
@@ -3432,6 +4036,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "edepot-transfer",
    "evidence": {
     "nocodb": "source read at 2026.09.0, not driven: searched \"tmlo|mdto\" in packages/nocodb/src and nc-gui: no match",
     "pocketbase": "source read at v0.40.4, not driven: searched \"tmlo|mdto\" in the repo: none",
@@ -3460,6 +4065,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "retention-and-destruction",
    "evidence": {
     "nocodb": "source read at 2026.09.0, not driven: searched \"selectielijst|selection list|archiefnominatie\" in packages/nocodb/src: no match",
     "pocketbase": "source read at v0.40.4, not driven: searched \"selectielijst|selection list\" in the repo: none",
@@ -3488,6 +4094,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "avg-verwerkingsregister",
    "evidence": {
     "pocketbase": "source read at v0.40.4, not driven: searched \"gdpr|processing activit|avg\" in the repo: none",
     "objects-api": "source read at 4.2.1, not driven: searched \"processing|verwerking|avg|gdpr\" in src/objects: no match",
@@ -3516,6 +4123,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "avg-verwerkingsregister",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"bsn|subject|inzage|gdpr\" in src/objects/api, core: no match; deletion of a whole object is possible (objects-api:src/objects/api/v2/views.py:445, conf/api.py:84 'in accordance with privacy laws') but there is no request workflow",
     "directus": "source read at v12.4.1, not driven: searched \"subject access|data subject|erasure|gdpr\" in api/src and app/src: no match",
@@ -3548,6 +4156,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "avg-verwerkingsregister",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"export|download|expiry\" in src/objects/api: no match; admin export covers objecttypes only (objects-api:src/objects/core/admin.py:272)",
     "directus": "source read at v12.4.1, not driven: directus:api/src/services/export.ts:33 ExportService writes an export file to the file library and notifies the user, but with no expiry and no delivery record; searched \"expir\" in api/src/services/export.ts: no match",
@@ -3577,6 +4186,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "avg-verwerkingsregister",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"anonymi|pseudonym|redact\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: searched \"anonymi|pseudonymi|redact\" in api/src and app/src: no match; the hash field type (packages/constants/src/fields.ts:34) is one-way hashing on write, not anonymisation of existing data",
@@ -3605,6 +4215,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "file-attachments",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"FileField|upload|attachment\" in src/objects/core/models.py, api: no match; documents belong in a Documenten API such as Open Zaak, a separate product, and only zaak references are typed (objects-api:src/objects/core/constants.py:28)",
     "directus": "source read at v12.4.1, not driven: directus:app/src/interfaces/file/index.ts, file-image and files (m2m to directus_files) attach files to items; directus:api/src/controllers/files.ts upload into directus_files through the configured storage driver",
@@ -3633,6 +4244,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "file-attachments",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no attachments exist (searched \"FileField|upload\" in src/objects/core, api: no match)",
     "directus": "source read at v12.4.1, not driven: searched \"pdf-parse|mammoth|tika|extract text|ocr\" in api/src/services/files and api/package.json: no text extraction; uploads read only EXIF/IPTC metadata and dimensions",
@@ -3662,6 +4274,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "file-attachments",
    "evidence": {
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nc-gui/components/cell/attachment/Preview/Image.vue, Pdf.vue, Video.vue, MiscOffice.vue preview in the attachment modal (cell/attachment/Modal.vue, Carousel.vue); the fullscreen files layout is Enterprise",
     "pocketbase": "source read at v0.40.4, not driven: pocketbase:ui/src/base/filePreviewModal.js:83 images inline and other files in an object element (:90); types from pocketbase:ui/src/utils.js:1374 getFileType image, video, audio, document; changelog v0.38.0 serves xlsx/docx/pptx content types for previews",
@@ -3690,6 +4303,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "file-attachments",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no attachments exist; searched \"thumbnail|resize|PIL\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: directus:api/src/services/assets.ts:36 assertTransformsAllowed and api/src/utils/transformations.ts: /assets/:id?width=&height=&fit=&format=webp|avif and named presets, rendered with sharp",
@@ -3717,6 +4331,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "avg-verwerkingsregister",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"redact|pdf\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: searched \"redact|blackout|anonymi\" in api/src and app/src: no match",
@@ -3746,6 +4361,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "file-attachments",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no file store; searched \"FileField\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: searched \"where used|references|usage\" in app/src/modules/files/routes/item.vue: the file detail page shows metadata only, not the items that reference the file",
@@ -3778,6 +4394,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "integration-registry",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no host platform and no file store; searched \"FileField|upload\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: Directus is a standalone platform with no host file or chat system to save from; searched \"save to item\" in app/src: no match. Uploads happen inside the item form or file library only",
@@ -3807,6 +4424,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "avg-verwerkingsregister",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"risk|pii|classif\" in src/objects: only ObjectType.data_classification, a per type confidentiality label (objects-api:src/objects/core/models.py:58), no file scanning",
     "directus": "source read at v12.4.1, not driven: searched \"pii|personal data|risk|sensitive\" in api/src/services/files and app/src/modules/files: no match",
@@ -3835,6 +4453,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "file-attachments",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no attachments; searched \"storages|s3|boto\" in src/objects and requirements/base.txt: no match",
     "directus": "source read at v12.4.1, not driven: packages/storage-driver-s3, storage-driver-azure, storage-driver-gcs, storage-driver-cloudinary, storage-driver-supabase, storage-driver-local, selected per location via STORAGE_LOCATIONS in api/src/storage",
@@ -3863,6 +4482,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "partial",
+   "feature": "data-sync-harvesting",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/api/mixins.py:72 ObjectNotificationMixin publishes create, update and delete to the configured Notificaties API on channel objecten (objects-api:src/objects/conf/base.py:113, objects-api:src/objects/api/kanalen.py:13 with kenmerk object_type); Open Notificaties, a separate standard component, then calls each subscriber's callback URL. Open Object never calls an arbitrary URL itself (searched \"webhook|callback\" in src/objects: no match)",
     "directus": "source read at v12.4.1, not driven: directus:api/src/flows.ts:174 event trigger on items.create, items.update, items.delete; directus:api/src/operations/request/index.ts:17 request operation calls an outside URL. Legacy webhooks were removed (api/src/database/migrations/20251224A-remove-webhooks.ts), flows are the only path. Core licence caps active flows at 5 (@directus/license 0.4.0 CORE_LICENSE flows limit 5; api/src/license/entitlements/manager.ts registerCounter flows)",
@@ -3891,6 +4511,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "data-sync-harvesting",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: automatic retry with exponential backoff (docs/admin/notifications.rst:64); failed notifications and cloud events stored in the database (objects-api:src/objects/conf/base.py:136 LOG_NOTIFICATIONS_IN_DB, :144 retained 60 days) with an admin view to list and reschedule them (CHANGELOG.rst:46 open-object 757, 4.2.0). Delivery to end subscribers is logged in Open Notificaties, a separate product",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/core/src/services/webhook-runner.ts:107 a failed call is only written to the server log (:108), no stored delivery log, no retry (10 s timeout at :129); searched \"retry|attempt|delivery\" in packages/core/core/src/services/webhook-*.ts: no match",
@@ -3920,6 +4541,7 @@
    "strapi": "partial",
    "nocodb": "yes",
    "pocketbase": "partial",
+   "feature": "data-sync-harvesting",
    "evidence": {
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/utils/webhook-invoker.ts:515-524 populateAxiosReq builds method, headers and body from the hook's payload template with record variables; docs https://nocodb.com/docs/product/account-settings/cloud-enterprise-edition/community-vs-paid-editions list Webhooks with custom payload in Community Edition",
     "objects-api": "source read at 4.2.1, not driven: message shape is fixed by the Notificaties API standard (objects-api:src/objects/api/mixins.py:77 construct_message sets resource object, kenmerken from objects-api:src/objects/api/kanalen.py:27); searched \"template|payload\" in src/objects/api: no match",
@@ -3949,6 +4571,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "no",
+   "feature": "automation-flows",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:app/src/modules/flows/flow.vue visual flow canvas with triggers and operations (api/src/operations: condition, exec, item-create, item-update, mail, notification, request, transform, trigger and more). Core licence caps active flows at 5 (@directus/license 0.4.0 CORE_LICENSE flows limit 5; api/src/license/entitlements/manager.ts registerCounter flows)",
     "pocketbase": "source read at v0.40.4, not driven: searched \"flow|workflow|node editor\" in ui/src: none",
@@ -3977,6 +4600,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "automation-flows",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:api/src/flows.ts:231 schedule trigger with a cron expression, :243 invalid cron is logged",
     "pocketbase": "source read at v0.40.4, not driven: scheduled jobs are registered in code: pocketbase:plugins/jsvm/binds.go:106 cronAdd or app.Cron() in Go; the dashboard only lists and manually runs registered jobs pocketbase:apis/cron.go:18 and pocketbase:ui/src/settings/crons/pageCronsSettings.js:4; built-in schedules exist only for backups pocketbase:core/settings_model.go:477",
@@ -4009,6 +4633,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "automation-flows",
    "evidence": {
     "pocketbase": "source read at v0.40.4, not driven: searched \"bpmn|process\" in the repo: none",
     "objects-api": "source read at 4.2.1, not driven: searched \"bpmn|camunda|process\" in src/objects: no match; process engines are separate Common Ground products",
@@ -4037,6 +4662,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "processes-and-approvals",
    "evidence": {
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/review-workflows/server/src/index.ts:10 review workflow stages with assignees, publish can require a stage (strapi:packages/core/review-workflows/admin/src/translations/en.json:20); enterprise licence",
     "pocketbase": "source read at v0.40.4, not driven: searched \"approval|approve|review\" in core and apis: none; could only be approximated with a status field and rules",
@@ -4065,6 +4691,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "partial",
+   "feature": "processes-and-approvals",
    "evidence": {
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/review-workflows/server/src/services/stage-permissions.ts:36 per-role permission to move from a stage (:48 fromStage), enterprise licence; no status transition rules in community edition",
     "pocketbase": "driven at v0.40.4 on 2026-09-26: an updateRule allowing only new->open and open->closed through @request.body.status; PATCH new->closed answered 404 (rule filtered the record out), PATCH new->open answered 200; transitions are expressible as a filter rule, with no state-machine model, no named transitions and a 404 rather than a reason. source read at v0.40.4: no state machine, but an UpdateRule can constrain status changes using the stored value and the submitted one, e.g. status = \"draft\" && @request.body.status = \"review\" (pocketbase:core/record_field_resolver.go:296 @request.* resolution, :changed modifier pocketbase:core/record_field_resolver_runner.go:278, changelog v0.34.0)",
@@ -4094,6 +4721,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "notifications-and-messages",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:api/src/operations/notification in a flow creates in-app notifications (directus_notifications, app/src/stores/notifications.ts inbox); @mentions notify automatically (api/src/services/comments.ts:63)",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/services/notifications/notifications.service.ts:200 and :226 CE creates notifications only for base invites and welcome; comment and mention notifications per docs https://nocodb.com/docs/product/collaboration/notifications, record subscription is Enterprise (nc-gui/composables/useRowComments.ts:310-324). No notification on field changes",
@@ -4122,6 +4750,7 @@
    "strapi": "partial",
    "nocodb": "yes",
    "pocketbase": "partial",
+   "feature": "notifications-and-messages",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:api/src/operations/mail/index.ts:12 type wysiwyg, markdown or template, :15 template name rendered with liquid from the configured EMAIL_TEMPLATES_PATH, triggered by an event flow",
     "objects-api": "source read at 4.2.1, not driven: searched \"send_mail|EmailMessage|template\" in src/objects/core, api: no match (email only for admin password reset, objects-api:src/objects/urls.py:25)",
@@ -4150,6 +4779,7 @@
    "strapi": "yes",
    "nocodb": "partial",
    "pocketbase": "yes",
+   "feature": "automation-flows",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:api/src/extensions/manager.ts:715 hook extensions register filter (before save, may change or throw to refuse) and action (after save) events; directus:api/src/operations/exec/index.ts:28 exec operation runs a script inside isolated-vm in a flow",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/core/src/services/document-service/index.ts:32 document service middlewares (strapi.documents.use) around every action; strapi:packages/core/database/src/lifecycles/index.ts:19 before/after lifecycle subscribers can change or throw",
@@ -4178,6 +4808,7 @@
    "strapi": "partial",
    "nocodb": "yes",
    "pocketbase": "partial",
+   "feature": "automation-flows",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: a workflow tool subscribes to the objecten channel in Open Notificaties (separate product) and receives create, update, delete notifications with the object URL and object_type kenmerk (objects-api:src/objects/api/mixins.py:72, objects-api:src/objects/api/kanalen.py:27), then reads the object over the API",
     "directus": "source read at v12.4.1, not driven: a flow's request operation (directus:api/src/operations/request/index.ts:17) posts the change to an n8n or other webhook URL, and incoming webhook triggers (api/src/flows.ts:249) let the external tool call back; no packaged n8n node in the repo",
@@ -4209,6 +4840,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "automation-flows",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"bulk|batch|rule\" in src/objects/core, api: no match",
     "directus": "source read at v12.4.1, not driven: directus:api/src/operations/item-update/index.ts:15 query option updates every item matching a filter in one step, runnable from a manual flow on selected items or a schedule (api/src/flows.ts:231); flows run asynchronously unless set to blocking",
@@ -4237,6 +4869,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "partial",
+   "feature": "rapportage-bi-export",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"report|schedule\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: a schedule flow (directus:api/src/flows.ts:231) can read items (api/src/operations/item-read) and mail them with a template (api/src/operations/mail/index.ts:15); no report rendering or attachment, the report layout is hand-built in the template",
@@ -4266,6 +4899,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "no",
+   "feature": "import-export-and-backup",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: admin file import accepts only objecttype export zips (objects-api:src/objects/core/admin.py:242, objects-api:src/objects/core/import_export.py:124); no CSV or Excel import of objects. searched \"csv|xlsx|openpyxl\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: directus:api/src/controllers/utils.ts:89 POST /utils/import/:collection accepts CSV and JSON (directus:api/src/services/import/import.ts:142 mimetype check, no xlsx; searched \"xlsx|exceljs|sheetjs\" in api/package.json and app/package.json: no match); studio upload at directus:app/src/views/private/components/export-sidebar-detail.vue:319 writes directly with no row preview. A dry run exists only on the multi-collection API POST /utils/import?dryRun (utils.ts:132, import.ts:602)",
@@ -4294,6 +4928,7 @@
    "strapi": "partial",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "import-export-and-backup",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: bin/dump_data.sh , csv (objects-api:bin/dump_data.sh:14) dumps whole database tables to CSV or SQL from the command line, documented in docs/manual/scripts.rst:26; no per type export in the API or admin (admin export is objecttypes as JSON zip, objects-api:src/objects/core/admin.py:272). The API list is paged JSON",
     "directus": "source read at v12.4.1, not driven: directus:api/src/services/export.ts:63 formats csv, csv_utf8, json, xml, yaml; directus:app/src/views/private/components/export-sidebar-detail.vue exports the filtered set. No Excel export (open request github.com/directus/directus/discussions/20087)",
@@ -4322,6 +4957,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "import-export-and-backup",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"pdf|weasyprint|reportlab\" in src/objects and requirements/base.txt: no match",
     "directus": "source read at v12.4.1, not driven: searched \"pdf|puppeteer|pdfkit\" in api/src/services/export.ts and app/src/views/private/components/export-sidebar-detail.vue: no PDF export",
@@ -4350,6 +4986,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "data-sync-harvesting",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: the admin 'import from URL' (objects-api:src/objects/core/admin.py:224) is a one off import of a type schema, and manage.py import_objecttypes (objects-api:src/objects/core/management/commands/import_objecttypes.py:28) is the one time 4.0 migration from a separate Objecttypes API; nothing harvests records on a schedule. searched \"harvest|sync|schedule\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: no harvester: searched \"harvest|sync source\" in api/src: no match. A schedule flow (api/src/flows.ts:231) with a request operation (api/src/operations/request/index.ts:17) and item-create or item-update can pull a source on a cron, hand-configured with upsert logic in exec or condition steps",
@@ -4379,7 +5016,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "data-sync-harvesting"
   },
   {
    "id": "x-package",
@@ -4401,6 +5039,7 @@
    "strapi": "partial",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "configuration-packages",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/core/import_export.py:82 export_data zips selected objecttypes with all versions, :124 import_data with optional UUID retention (admin action objects-api:src/objects/core/admin.py:272 and import objects-api:src/objects/core/admin.py:242, CHANGELOG.rst:212 open-object 565). Tokens and permissions travel separately through setup_configuration YAML (objects-api:src/objects/setup_configuration/steps/token_auth.py); objects are not packaged",
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/modules/jobs/jobs/export-import/migrate.controller.ts:31 POST /api/v2/meta/migrate/:baseId pulls a whole base from another installation via its migration URL; nocodb:packages/nocodb/src/modules/jobs/jobs/export-import/migrate.service.ts:69 serializeModels exports tables, views and settings; nocodb:packages/nc-gui/components/dlg/NocoDbImport.vue:60,274 copyable migration URL",
@@ -4430,6 +5069,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "configuration-packages",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"github|gitlab|git\" in src/objects/core: no match; import is by uploaded zip or a single schema URL (objects-api:src/objects/core/forms.py:14)",
     "directus": "source read at v12.4.1, not driven: searched \"github|gitlab|git\" in api/src/services/schema.ts and api/src/cli/commands/schema: snapshots are local files or API payloads; no repository import or publish",
@@ -4458,6 +5098,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "data-sync-harvesting",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: 4.0 removed support for objecttypes hosted in another instance (CHANGELOG.rst:159 'no longer supports objecttypes hosted in an external application'); searched \"federat|remote\" in src/objects/api, core: no match",
     "directus": "source read at v12.4.1, not driven: searched \"federat|remote instance|foreign data\" in api/src and packages: no match",
@@ -4487,6 +5128,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "no",
+   "feature": "import-export-and-backup",
    "evidence": {
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb/src/modules/jobs/jobs/at-import/ Airtable base import job; nocodb:packages/nc-gui/components/dlg/AirtableImport.vue",
     "objects-api": "source read at 4.2.1, not driven: searched \"airtable|import\" in src/objects/core: only objecttype import",
@@ -4516,6 +5158,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "yes",
+   "feature": "import-export-and-backup",
    "evidence": {
     "pocketbase": "source read at v0.40.4, not driven: pocketbase:apis/backup.go:18 backups group with create pocketbase:apis/backup_create.go:30, upload :21, download :22, restore :24 pocketbase:core/backup_restore.go:50; auto backups on a cron pocketbase:core/settings_model.go:477; UI pocketbase:ui/src/settings/backups/pageBackupsSettings.js:6",
     "objects-api": "source read at 4.2.1, not driven: no admin backup; objects-api:bin/dump_data.sh is a command line pg_dump wrapper and docs/manual/scripts.rst:12 says it is not meant for migration to another instance",
@@ -4543,6 +5186,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "data-sync-harvesting",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"mapping|transform|jsonata\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: searched \"mapping|field map\" in api/src/services/import: import matches columns to field keys by name (api/src/services/import/import.ts); no saved reusable mapping",
@@ -4572,6 +5216,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "no",
+   "feature": "ai-mcp",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"mcp|llm|openai|anthropic\" in src/objects and requirements/base.txt: no match",
     "directus": "driven at v12.4.1 on 2026-09-26: after PATCH /settings mcp_enabled=true, POST /mcp tools/list with a user token listed system-prompt, items, files, folders, assets, flows, trigger-flow, operations, schema, collections, fields, relations; tools/call items read returned the rows under that user's token. source read at v12.4.1: directus:api/src/ai/mcp/server.ts:89 MCP server requires a user or role accountability and :133 runs every tool with req.accountability, so the agent acts within that user's permissions; tools in api/src/ai/tools (items, collections, fields, files, flows); directus:packages/system-data/src/fields/settings.yaml:1170 mcp_enabled, :1180 mcp_allow_deletes, :1225 OAuth 2.1 (api/src/controllers/mcp/oauth.ts:254)",
@@ -4599,6 +5244,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "ai-assistant",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:app/src/ai/stores/use-ai.ts:175 studio chat posts to /ai/chat (api/src/ai/chat/controllers/chat.post.ts) with tools over items; directus:app/src/ai/components/ai-sidebar-detail.vue and ai-context-menu.vue:84 attach items as context. Needs the admin to add an OpenAI, Anthropic or Google key",
     "nocodb": "source read at 2026.09.0, not driven: CE placeholder: nocodb:packages/nc-gui/components/chat/Panel.vue:1-3 renders only NcSpanHidden; migrations for chat messages exist (packages/nocodb/src/meta/migrations/XcMigrationSourceChatMessages.ts). NocoAI chat is on Cloud Plus+ and self-hosted Business+ (https://nocodb.com/docs/product/noco-ai), code not public",
@@ -4628,6 +5274,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "vector-embeddings",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"embedding|vector\" in src/objects and requirements/base.txt: no match",
     "directus": "source read at v12.4.1, not driven: searched \"embedding|vector|pgvector\" in api/src and packages: no match (only api/src/utils/set-deep.ts on 'vector' substrings); no embedding pipeline",
@@ -4656,6 +5303,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "ai-assistant",
    "evidence": {
     "directus": "driven at v12.4.1 on 2026-09-26 without a licence key: PATCH /settings ai_openai_compatible_base_url=http://localhost:11434/v1 answered 403 RESOURCE_RESTRICTED custom_llms_enabled; the hosted providers (OpenAI, Anthropic, Google keys) are settable. source read at v12.4.1: directus:api/src/ai/providers/registry.ts:19 OpenAI, :26 Anthropic, :33 Google via admin keys (packages/system-data/src/fields/settings.yaml:775, :832, :861). A local model needs the OpenAI compatible provider (registry.ts:3, settings.yaml:1002 to :1016), and directus:api/src/services/settings.ts:36 refuses those CUSTOM_LLM_FIELDS (api/src/constants.ts:126) unless custom_llms_enabled, false in the Core licence",
     "nocodb": "source read at 2026.09.0, not driven: provider interface only: nocodb:packages/noco-integrations/core/src/ai/types.ts:10 LanguageModel from @ai-sdk/provider and :35 capabilities; nocodb:packages/nocodb/src/integrations/index.ts:8 registered integrations list is empty in the public build. OpenAI, Claude, Ollama (local) and Groq integrations are Enterprise per https://nocodb.com/docs/product/account-settings/cloud-enterprise-edition/community-vs-paid-editions, code not public",
@@ -4683,6 +5331,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "ai-assistant",
    "evidence": {
     "nocodb": "source read at 2026.09.0, not driven: nocodb:packages/nocodb-sdk/src/lib/UITypes.ts:111-112 AI Button and AI Text types and :399 isAIPromptCol; nocodb:packages/nc-gui/components/ai/PromptWithFields.vue prompt over other fields. AI prompt field is Enterprise per https://nocodb.com/docs/product/account-settings/cloud-enterprise-edition/community-vs-paid-editions and needs an AI integration that the public build lacks (integrations/index.ts:8)",
     "objects-api": "source read at 4.2.1, not driven: searched \"llm|prompt|openai\" in src/objects: no match",
@@ -4713,6 +5362,7 @@
    "strapi": "no",
    "nocodb": "unknown",
    "pocketbase": "no",
+   "feature": "ai-assistant",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no host platform assistant; searched \"assistant|llm\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: the platform assistant is the studio chat, which gets records as context: directus:app/src/ai/components/ai-context-menu.vue:84 items context, app/src/ai/components/ai-context-card.vue, and the items tool (api/src/ai/tools/items/index.ts) queries records under the user's permissions",
@@ -4741,6 +5391,7 @@
    "strapi": "yes",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "ai-mcp",
    "evidence": {
     "nocodb": "source read at 2026.09.0, not driven: CE: nocodb:packages/nocodb/src/mcp/mcp.controller.ts:18-25 an MCP token is pinned to one base and acts with its owner's role (viewer reads, editor writes); tool set fixed at mcp.service.ts:81-735. Per-connection tool allowlist and base scope are paid features (https://nocodb.com/docs/apis-and-mcp/mcp 'Connection tools and access'), code not public",
     "objects-api": "source read at 4.2.1, not driven: no AI agent interface; searched \"mcp|agent|llm\" in src/objects: no match. API token scopes (token/models.py:92) would be the only limit for any agent using the REST API",
@@ -4769,6 +5420,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "validation-and-data-quality",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"duplicate|dedup|similar\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: searched \"duplicate|dedup|similar\" in api/src/services and app/src/modules/content: only 'item_duplication_fields' (packages/system-data/src/fields/collections.yaml:290), which copies an item, not duplicate detection",
@@ -4797,6 +5449,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "validation-and-data-quality",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"merge\" in src/objects/core, api: only JSON Merge Patch for PATCH (api/utils.py)",
     "directus": "source read at v12.4.1, not driven: searched \"merge|golden record|survivorship\" in api/src/services/items.ts and app/src: no item merge; 'merge' in api/src/services/import/import.ts:602 is an import mode, not duplicate merging",
@@ -4825,6 +5478,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "validation-and-data-quality",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"quality|score|completeness\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: searched \"quality|completeness|score\" in api/src/services and app/src/modules: no data quality score",
@@ -4854,6 +5508,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "record-relations",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: only for the type link: objects-api:src/objects/core/models.py:263 Object.object_type on_delete PROTECT and objects-api:src/objects/api/v2/views.py:130 refuses to delete an objecttype that still has versions; for case links, DELETE with ?zaak= keeps an object still linked to other cases (objects-api:src/objects/api/v2/views.py:405). Links inside record data are not tracked",
     "directus": "source read at v12.4.1, not driven: directus:api/src/services/relations.ts:261 real foreign keys with :266 on_delete (CASCADE, SET NULL, NO ACTION or RESTRICT) chosen in the relation settings, so a delete is refused or links are cleaned up by the database; directus:packages/system-data/src/fields/relations.yaml:33 one_deselect_action nullify or delete for o2m",
@@ -4883,6 +5538,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "record-relations",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: the type URL must resolve to an existing objecttype (objects-api:src/objects/api/fields.py:25 ObjectTypeField with queryset ObjectType.objects.all(), resolved by UUID since 4.0, CHANGELOG.rst:181); case reference URLs (objects-api:src/objects/api/serializers.py:160 ReferenceSerializer, a plain URLField at core/models.py:409) are not checked for existence",
     "directus": "source read at v12.4.1, not driven: directus:api/src/services/relations.ts:261 foreign key constraint on m2o fields; directus:api/src/database/errors/dialects/postgres.ts:3 a missing target is returned as InvalidForeignKeyError",
@@ -4911,6 +5567,7 @@
    "strapi": "yes",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "rapportage-bi-export",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:app/src/modules/insights dashboards with panels (app/src/panels: metric, list, time-series, bar-chart) must be built by hand; the app opens on the content module, and there is no default overview of collections, counts and recent activity (activity is a separate module, app/src/modules/activity)",
     "pocketbase": "source read at v0.40.4, not driven: no overview dashboard: the dashboard routes are collections, logs and settings pocketbase:ui/src/router.js:165-167; the collections page shows one collection's records with a total count and the logs page a request chart pocketbase:ui/src/logs/logsChart.js:303; searched \"dashboard|overview\" in ui/src: only the collections overview modal pocketbase:ui/src/collections/collectionsOverviewModal.js:65 (rules and ERD)",
@@ -4941,6 +5598,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "rapportage-bi-export",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:app/src/modules/insights and app/src/panels: bar-chart, line-chart, pie-chart, time-series, meter, metric, metric-list, list and variable panels over any collection with filters and aggregation, stored in directus_dashboards and directus_panels (api/src/services/dashboards.ts, panels.ts)",
     "objects-api": "source read at 4.2.1, not driven: searched \"chart|report\" in src/objects: no match",
@@ -4971,6 +5629,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "rapportage-bi-export",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no BI connector; a BI tool can page the REST API with filters (api/v2/views.py:304) or load CSV dumps from objects-api:bin/dump_data.sh:14. searched \"odata|bi|warehouse\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: data lives in ordinary SQL tables named after the collections (directus:api/src/services/collections.ts:169 createTable), so a BI tool reads the database directly; the aggregate API (api/src/utils/sanitize-query.ts:52) and GraphQL serve BI tools that read over HTTP. No packaged BI connector",
@@ -5000,6 +5659,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "platform-operations",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: standalone Django service with PostgreSQL/PostGIS, Redis and Celery (objects-api:docker-compose.yml, publiccode.yaml dependsOn); Docker image maykinmedia/open-object and Helm chart openobject (CHANGELOG.rst:165)",
     "directus": "source read at v12.4.1, not driven: standalone Node.js server plus a SQL database (Dockerfile, docker-compose.yml, api/src/start.ts); it is not an app inside a host platform's app store",
@@ -5028,6 +5688,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "saas-multi-tenant",
    "evidence": {
     "strapi": "source read at v5.55.1, not driven: searched \"tenant|quota\" in packages/core/admin/server/src, packages/core/core/src: only seat enforcement for licence limits (strapi:packages/core/admin/ee/server/src/services/seat-enforcement.ts)",
     "pocketbase": "source read at v0.40.4, not driven: one pb_data directory per process pocketbase:core/db_connect.go:16; searched \"tenant|quota\" in core and apis: none",
@@ -5056,6 +5717,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "platform-operations",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: OpenTelemetry metrics: objects-api:src/objects/api/metrics.py:3 meter openobject.api with create, update and delete counters for objects and objecttypes (used at objects-api:src/objects/api/v2/views.py:114, :372), objects-api:src/objects/accounts/metrics.py:9 login and user metrics; docs/installation/observability/metrics.rst; tests src/objects/tests/v2/test_metrics.py",
     "directus": "source read at v12.4.1, not driven: directus:api/src/controllers/metrics.ts:11 GET /metrics for admins or METRICS_TOKENS bearer tokens; directus:api/src/metrics/lib/create-metrics.ts uses prom-client for Prometheus",
@@ -5084,6 +5746,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "language-accessibility-and-theming",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/conf/base.py:62 LANGUAGE_CODE en-us; objects-api:src/objects/conf/locale holds only a README (no nl catalogue); open issue maykinmedia/open-object#722 says translations do not work because LocaleMiddleware is disabled",
     "directus": "source read at v12.4.1, not driven: directus:app/src/lang/translations/nl-NL.yaml (2660 lines against 3402 in en-US.yaml, so recent strings fall back to English), maintained through Crowdin (crowdin.yml)",
@@ -5112,6 +5775,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "configuration-packages",
    "evidence": {
     "strapi": "source read at v5.55.1, not driven: schema and config are code files promoted with the project's own deployment; strapi:packages/core/admin/server/src/routes/transfer.ts:7 push and :17 pull move content between environments with transfer tokens (:27); content-type builder is refused in production (strapi:packages/core/content-type-builder/server/src/middlewares/is-development-mode.ts:15)",
     "pocketbase": "source read at v0.40.4, not driven: schema promotion through migration files: automigrate writes a migration per collection change pocketbase:plugins/migratecmd/automigrate.go:18, applied with migrate up pocketbase:plugins/migratecmd/migratecmd.go:96; or export/import JSON pocketbase:ui/src/settings/sync/pageExportCollections.js:3; no environment pipeline in the product",
@@ -5139,6 +5803,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "no-code-app-builder",
    "evidence": {
     "directus": "source read at v12.4.1, not driven: directus:app/src/modules/settings/routes/marketplace browses and installs extensions from the registry through directus:api/src/controllers/extensions.ts:49 /extensions/registry (@directus/extensions-registry); directus:packages/env/src/constants/defaults.ts:124 MARKETPLACE_TRUST 'sandbox' limits installs to sandboxed extensions by default",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/admin/admin/src/constants.ts:27 marketplace permission remains but no marketplace page route in packages/core/admin/admin/src; plugins are installed with npm and a rebuild, listed at strapi:packages/core/admin/admin/src/pages/Settings/pages/InstalledPlugins.tsx:122; the marketplace itself is external (community.strapi.io/marketplace)",
@@ -5169,6 +5834,7 @@
    "strapi": "yes",
    "nocodb": "no",
    "pocketbase": "partial",
+   "feature": "platform-operations",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: manage.py commands: objects-api:src/objects/token/management/commands/generate_token.py:7, objects-api:src/objects/core/management/commands/import_objecttypes.py:28, check_for_external_objecttypes, createinitialsuperuser, setup_configuration (django-setup-configuration); no commands to create or query objects",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/strapi/src/cli/commands/index.ts:30 commands incl. generate, content-types, routes, export, import, transfer, openapi (directory packages/core/strapi/src/cli/commands)",
@@ -5200,6 +5866,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "partial",
+   "feature": "platform-operations",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: per installation environment flags only: objects-api:src/objects/conf/base.py:115 ENABLE_CLOUD_EVENTS, :79 OBJECTS_ADMIN_SEARCH_DISABLED, :288 JSONSCHEMA_USE_FORMAT_CHECKER (overridable per objecttype, core/models.py:197), :136 LOG_NOTIFICATIONS_IN_DB; no runtime toggle screen",
     "directus": "source read at v12.4.1, not driven: directus:packages/system-data/src/fields/settings.yaml:77 module_bar turns studio modules on or off; :1170 mcp_enabled, :156 public_registration, collaborative_editing_enabled (api/src/database/migrations/20260128A-add-collaborative-editing.ts:5); env flags such as RETENTION_ENABLED (api/src/schedules/retention.ts:120)",
@@ -5227,6 +5894,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "runtime-schema-api",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"llm|openai|generate\" in src/objects/core: only generate_version_number and token generation",
     "directus": "source read at v12.4.1, not driven: the studio assistant has a collections tool that can create collections (directus:api/src/ai/tools/collections/index.ts:22 action 'create', :40 create, read, update, delete) and a fields tool (api/src/ai/tools/fields), so a plain words request drafts a collection and its fields, subject to tool approval (app/src/ai/stores/use-ai-tools.ts:35)",
@@ -5255,6 +5923,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "ai-assistant",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: searched \"llm|summar\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: directus:app/src/ai/components/ai-context-menu.vue:84 attach items to the chat; directus:api/src/ai/files/controllers/upload.ts and api/src/ai/files/adapters (openai, anthropic, google) send attached files to the provider, so the chat can summarise a record or a file. Needs a provider key",
@@ -5288,6 +5957,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "schema-evolution",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: an objecttype is identified by its uuid (objects-api:src/objects/core/models.py:29) and objects point at it by that uuid URL (objects-api:src/objects/api/serializers.py:250-256), so renaming the type name (objects-api:src/objects/core/models.py:41) keeps data and links; a field lives in the JSON schema of an objecttype version (objects-api:src/objects/core/models.py:194), and renaming it means a new version while existing records keep their old typeVersion and old key, with no data migration; searched \"rename|migrate_data\" in src/objects/core, src/objects/api: no match",
     "directus": "source read at v12.4.1, not driven: directus:api/src/services/fields.ts:503 updateField alters type, schema and meta of an existing field key but has no path that renames the column, and directus:api/src/services/collections.ts:457 updateOne changes only collection meta; searched \"renameColumn|renameTable|rename\" in api/src/services: no match (renameColumn only in system migrations api/src/database/migrations/20230927A-themes.ts:39); open request github.com/directus/directus/discussions/2711",
@@ -5319,6 +5989,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "record-identity",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: records store their payload in one JSON data column (objects-api:src/objects/core/models.py:305); the only uniqueness is object uuid and (object, index) (objects-api:src/objects/core/models.py:362, objects-api:src/objects/api/validators.py:15); searched \"unique_together|UniqueConstraint|unique=True\" in src: nothing over data fields",
     "directus": "source read at v12.4.1, not driven: directus:packages/types/src/items.ts:8 PrimaryKey is a single string or number and directus:api/src/services/items.ts:1017 resolves one primary field per collection; the schema helper directus:api/src/database/helpers/schema/types.ts:91 changePrimaryKey can build a composite key but is called only from system migrations (api/src/database/migrations/20240204A-marketplace.ts:80), no route or UI; open request github.com/directus/directus/discussions/12137",
@@ -5351,6 +6022,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "partial",
+   "feature": "object-interactions",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: ObjectViewSet has separate perform_create and perform_update (objects-api:src/objects/api/v2/views.py:370, :383); a client may supply the uuid on create but it must be new (objects-api:src/objects/api/serializers.py:243-248, objects-api:src/objects/api/validators.py:15-17); searched \"upsert|update_or_create\" in src: only setup_configuration steps (objects-api:src/objects/setup_configuration/steps/objecttypes.py:44)",
     "directus": "source read at v12.4.1, not driven: directus:api/src/services/items.ts:1016 upsertOne and :1045 upsertMany match on the primary key only and no /items route calls them (only upsertSingleton at directus:api/src/controllers/items.ts:140); bulk create or update is reachable via POST /utils/import?mode=merge directus:api/src/controllers/utils.ts:120, which calls upsertOne per row directus:api/src/services/import/import.ts:265; no match on a business key other than the primary key",
@@ -5383,6 +6055,7 @@
    "strapi": "no",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "saved-search-views",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no hierarchy on objects or an admin tree view; searched \"tree|mptt|treebeard|parent\" in src/objects/core, src/objects/api: only nested route lookups (objects-api:src/objects/api/serializers.py:38); links between objects are free URLs in data",
     "directus": "source read at v12.4.1, not driven: directus:app/src/interfaces/list-o2m-tree-view/list-o2m-tree-view.vue nested draggable tree of related items inside one item form (NestedDraggable.vue); directus:app/src/layouts has only calendar, cards, kanban, map and tabular, no tree layout for browsing a collection; open request github.com/directus/directus/discussions/3054",
@@ -5414,6 +6087,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "edepot-transfer",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: Open Object stores no files, file storage is delegated to a Documenten API such as Open Zaak; searched \"checksum|sha256|hash\" in src/objects/core, src/objects/api: no match",
     "directus": "source read at v12.4.1, not driven: searched \"checksum|md5|sha256|hash\" in packages/system-data/src/fields/files.yaml and \"checksum|sha256|createHash\" in api/src/services/files.ts and api/src/services/files/: no match; files carry filesize and type only; open request github.com/directus/directus/discussions/5162",
@@ -5445,6 +6119,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "register-i18n",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no AI or translation feature; searched \"openai|llm|translat\" in src/objects (python): only Django gettext for UI strings",
     "directus": "source read at v12.4.1, not driven: directus:packages/system-data/src/fields/settings.yaml:927 ai_translation_default_model, :936 ai_translation_glossary, :970 ai_translation_style_guide; directus:app/src/interfaces/translations/use-translation-job.ts:222 calls /ai/object; gated by the ai_translations_enabled entitlement directus:api/src/license/entitlements/manager.ts:191 and directus:app/src/stores/license.ts:45, which is false in the Core tier without a licence key",
@@ -5475,6 +6150,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "no-code-app-builder",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: API-first product with the Django admin as the only staff screen (objects-api:src/objects/core/admin.py:140-141, :347-348) and a static start page (objects-api:src/objects/templates/index.html); no page or app builder; end user screens are built elsewhere, for example in Open Formulieren or a portal",
     "directus": "source read at v12.4.1, not driven: directus:app/src/modules/insights dashboards built from panels, readable per policy; directus:packages/system-data/src/fields/settings.yaml:77 module_bar hides modules; a truly focused page for a group needs a custom module extension (app/src/modules is extendable through the extension registry), so configuration covers dashboards only, not form or record detail pages with their own access",
@@ -5506,6 +6182,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "no-code-app-builder",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no public form surface in this repo, only the API and the staff admin (objects-api:src/objects/core/admin.py:347); updating an existing object from a form is done by Open Formulieren through the Objects API (PUT or PATCH, objects-api:src/objects/api/v2/views.py:383), outside this product",
     "directus": "source read at v12.4.1, not driven: no hosted forms at all: searched \"form|public\" in app/src/modules and api/src/controllers (see rec-public-form in the r1 pack); shares (directus:api/src/controllers/shares.ts:26) give read access to one item, not edit; an update link would need a custom frontend against PATCH /items with a Public policy",
@@ -5537,6 +6214,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "sign-in-and-accounts",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: admin sign in is local accounts or OIDC (objects-api:src/objects/urls.py:60 mozilla_django_oidc, objects-api:src/objects/conf/base.py:197 AdminOIDCConfigurationStep); searched \"ldap\" in src and requirements/base.txt: no match; LDAP or AD only via an OIDC broker such as Keycloak",
     "directus": "source read at v12.4.1, not driven: directus:api/src/auth/drivers/ldap.ts LDAP driver with bind DN and group mapping (ldap.test.ts); but directus:api/src/auth.ts:39 checks the sso_enabled entitlement and :42 warns configured providers are unavailable under the current licence tier, so LDAP needs a licence key (false in Core)",
@@ -5568,6 +6246,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "yes",
+   "feature": "schema-evolution",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: one fixed GIN index covers the whole data JSON of every record plus fixed type and time indexes (objects-api:src/objects/core/models.py:363-376); an administrator cannot add an index on a chosen field, searched \"Index\" in src/objects/core, src/objects/api: only these model Meta indexes",
     "directus": "source read at v12.4.1, not driven: directus:app/src/modules/settings/routes/data-model/field-detail/field-detail-advanced/field-detail-advanced-schema.vue:459 checkbox \"Field is indexed\" (en-US.yaml:1083); directus:api/src/services/fields.ts:1008 and :1046 create or drop the database index on is_indexed, with an optional concurrent build",
@@ -5599,6 +6278,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "record-editing",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no record templates or default value presets beyond JSON schema defaults; searched \"template|preset|prefill\" in src/objects/core, src/objects/api (python): only admin change_list templates (objects-api:src/objects/core/admin.py:152, :368)",
     "directus": "source read at v12.4.1, not driven: directus:packages/system-data/src/fields/collections.yaml:290 item_duplication_fields lets an admin choose which fields carry over when a user saves an item as a copy; searched \"template\" in app/src/lang/translations/en-US.yaml: no saved record templates (template strings are display templates only, :1086)",
@@ -5630,6 +6310,7 @@
    "strapi": "yes",
    "nocodb": "no",
    "pocketbase": "partial",
+   "feature": "sign-in-and-accounts",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: django-sessionprofile is installed (objects-api:requirements/base.txt:168) to tie sessions to users, but no screen lists a user's sessions or devices or signs them out; searched \"sessionprofile|session\" in src/objects (python, templates): no view",
     "directus": "source read at v12.4.1, not driven: directus:api/src/services/users.ts:129 and :134 only delete a user's rows in directus_sessions when the user is disabled or changed; searched \"sessions\" in api/src/controllers: no route to list or revoke own sessions, and no session list in app/src/modules/users",
@@ -5661,6 +6342,7 @@
    "strapi": "yes",
    "nocodb": "partial",
    "pocketbase": "yes",
+   "feature": "file-attachments",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: Open Object accepts no file uploads, attachments live in a Documenten API (Open Zaak); the API parses JSON only (objects-api:src/objects/conf/api.py:6); searched \"FILE_UPLOAD|mime|upload\" in src/objects: no upload handling",
     "directus": "source read at v12.4.1, not driven: directus:api/src/services/files.ts:291 and directus:api/src/controllers/files.ts:78 refuse an upload whose mime type is outside FILES_MIME_TYPE_ALLOW_LIST (default */* at directus:packages/env/src/constants/defaults.ts:235), also for resumable uploads at directus:api/src/services/tus/data-store.ts:77; configured by environment variable, not per field in the studio",
@@ -5692,6 +6374,7 @@
    "strapi": "yes",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "access-by-link",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no file storage in Open Object, so no private bucket or signed links; files are delegated to a Documenten API such as Open Zaak; searched \"signed|presign|storage\" in src/objects (python): no match",
     "directus": "source read at v12.4.1, not driven: no presigned bucket urls: searched \"presign|getSignedUrl\" in api/src and packages/storage-driver-s3/src, no match; files stay in the (private) storage and are streamed through the authenticated assets route directus:api/src/controllers/assets.ts:158, and time-limited share links exist for items via directus_shares date_end and max_uses directus:packages/system-data/src/fields/shares.yaml:41,45",
@@ -5723,6 +6406,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "audit-hash-chain",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objecttype create and update through the API emit structured log events with the token identity (objects-api:src/objects/api/v2/views.py:103-126), to stdout logs, not a queryable trail; staff screen changes to tokens, permissions and objecttypes go through Django ModelAdmin (objects-api:src/objects/token/admin.py:128-129, objects-api:src/objects/core/admin.py:140-141), which keeps Django's per object admin history; no combined admin audit view. Behaviour here rests partly on open_api_framework, an installed package whose INSTALLED_APPS and admin wiring are not in the objects-api repo, so it was inferred from the dependency; a running instance would settle it.",
     "directus": "source read at v12.4.1, not driven: system collections default to accountability all directus:packages/system-data/src/collections/collections.yaml:11 and only activity, presets, revisions and oauth tables opt out (:22,:58,:66,:127); roles, policies and settings services extend ItemsService (directus:api/src/services/roles.ts:12, policies.ts:9, settings.ts:17), so their create, update and delete write an activity row directus:api/src/services/items.ts:331-341",
@@ -5754,6 +6438,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "record-drafts",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no publish step or website preview for objects; records are valid from start_at (objects-api:src/objects/core/models.py:311); only objecttype versions have a draft or published status (objects-api:src/objects/core/models.py:204); searched \"preview\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: collection meta preview_url directus:packages/system-data/src/fields/collections.yaml:141 drives a live preview of the draft item in a split pane directus:app/src/modules/content/routes/item.vue:440,466",
@@ -5782,7 +6467,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "integration-registry"
   },
   {
    "id": "rec-smart-picker",
@@ -5804,7 +6490,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "integration-registry"
   },
   {
    "id": "rec-owner",
@@ -5826,7 +6513,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "record-editing"
   },
   {
    "id": "acc-passkey",
@@ -5851,6 +6539,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "sign-in-and-accounts",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: maykin_2fa with WebAuthn routes on the admin (objects-api:src/objects/urls.py:10-11, :36-37) and a WebAuthn relying party name (objects-api:src/objects/conf/base.py:109-110): a security key works as a second factor for the staff screen, not as a passwordless sign in; the API itself uses tokens. Behaviour here rests partly on open_api_framework, an installed package whose INSTALLED_APPS and admin wiring are not in the objects-api repo, so it was inferred from the dependency; a running instance would settle it.",
     "directus": "source read at v12.4.1, not driven: searched \"webauthn|passkey\" in api/src, app/src and packages: only an icon name in directus:app/src/interfaces/select-icon/icons.json; sign in is password with optional TOTP, or SSO providers",
@@ -5882,6 +6571,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "partial",
+   "feature": "validation-and-data-quality",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: data is validated against the objecttype JSON schema and the raw jsonschema message is returned (objects-api:src/objects/core/utils.py:81-89); no per field or per language custom message; searched \"errorMessage|error_message\" in src/objects: only fixed developer written messages on filters (objects-api:src/objects/utils/filters.py:10), none configurable per objecttype",
     "directus": "source read at v12.4.1, not driven: per field validation_message directus:packages/system-data/src/fields/fields.yaml:110, shown on a failed rule by directus:app/src/composables/use-validation-error-details.ts:67 and passed through translateLiteral so a $t: translation key gives per language wording directus:app/src/stores/fields.ts:173-174",
@@ -5913,6 +6603,7 @@
    "strapi": "yes",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "import-export-and-backup",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no built in backup feature; bin/dump_data.sh is a pg_dump helper for component data (objects-api:bin/dump_data.sh:3-11) with no encryption option; searched \"encrypt|gpg|openssl\" in bin, src: no match; backups are left to the hosting database",
     "directus": "source read at v12.4.1, not driven: Directus has no built in backup: searched \"backup\" in api/src, only a test file name match (api/src/services/files/lib/assert-valid-storage-path.test.ts); backup and its encryption are left to the database and storage operator",
@@ -5941,7 +6632,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "integration-registry"
   },
   {
    "id": "op-mail-language",
@@ -5966,6 +6658,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "partial",
+   "feature": "language-accessibility-and-theming",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: the system mails are the Django admin password reset (objects-api:src/objects/urls.py:25-28, :39-42), rendered in the site language LANGUAGE_CODE en-us (objects-api:src/objects/conf/base.py:62); the initial superuser mail is a hard coded text (objects-api:src/objects/accounts/management/commands/createinitialsuperuser.py:69); users carry no language preference",
     "directus": "source read at v12.4.1, not driven: one liquid template per mail type (directus:api/src/services/mail/templates/password-reset.liquid, user-invitation.liquid) sent without the recipient language directus:api/src/services/users.ts:646-656; a per language mail needs a hand written email.send filter hook directus:api/src/services/mail/index.ts:67 or overridden templates",
@@ -5997,6 +6690,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "validation-and-data-quality",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: the heart of the product: every record's data is validated against the JSON schema of its objecttype version with Draft 2020-12 (objects-api:src/objects/core/utils.py:68-89, :92-110), schema stored per version (objects-api:src/objects/core/models.py:194) and itself checked on save (objects-api:src/objects/core/models.py:218-221), with optional strict format checking (objects-api:src/objects/core/models.py:197)",
     "directus": "source read at v12.4.1, not driven: searched \"ajv|json-schema|jsonschema\" in api/src: only the AI chat tool schema parser directus:api/src/ai/chat/utils/parse-json-schema-7.ts; field validation is the filter rule language on field meta, not JSON Schema, so a JSON field is only checked by filter rules or a custom hook",
@@ -6028,6 +6722,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "yes",
+   "feature": "platform-operations",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no SQL console; the admin object list offers only a data attribute filter syntax (objects-api:src/objects/templates/admin/core/object_change_list.html:45); searched \"\\.raw\\(|cursor\\(|sql\" in src/objects (python, excluding migrations): no console",
     "directus": "source read at v12.4.1, not driven: searched \"sql console|raw sql|knex.raw(req\" in api/src/controllers: no route that runs ad hoc SQL; the studio offers insights panels and exports over the item API, not SQL",
@@ -6059,6 +6754,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "yes",
+   "feature": "sign-in-and-accounts",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: django-ipware is present only as a django-axes lockout dependency (objects-api:requirements/base.txt:121, :137); searched \"allowlist|whitelist|ALLOWED_IPS|ip_address\" in src/objects: only the lockout signal argument (objects-api:src/objects/accounts/signals.py:54); IP limits would sit in the reverse proxy",
     "directus": "source read at v12.4.1, not driven: policy field ip_access directus:packages/system-data/src/fields/policies.yaml:47 drops a policy (including one with admin access) when the request IP is outside the listed networks directus:api/src/permissions/utils/filter-policies-by-ip.ts:7-17, loaded at directus:api/src/permissions/lib/fetch-policies.ts:37",
@@ -6089,6 +6785,7 @@
    "strapi": "no",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "runtime-schema-api",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no diagram of objecttypes and their links, links between objects are free URLs inside data; searched \"diagram|graph|erd|mermaid\" in src/objects (python, html, js): no match",
     "directus": "source read at v12.4.1, not driven: searched \"diagram|erd|mermaid\" in app/src/modules/settings: no match except unrelated peerDependencies in collection-options.vue; the data model screen is a list of collections and fields, relations are shown per field",
@@ -6121,6 +6818,7 @@
    "strapi": "partial",
    "nocodb": "yes",
    "pocketbase": "yes",
+   "feature": "data-sync-harvesting",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: notifications go to Open Notificaties on one objecten channel whose only kenmerk is object_type (objects-api:src/objects/api/kanalen.py:69-73, get_kenmerken at :26-43), so a subscriber can narrow to a type but not to records whose values match a filter; subscription itself lives in Open Notificaties",
     "directus": "source read at v12.4.1, not driven: a websocket subscription carries a query directus:api/src/websocket/handlers/subscribe.ts:169-171, the changed keys are re read through that query and an empty result is not sent :130-132, so a filter limits events to matching records; for outbound calls a Flow event trigger plus the condition operation directus:api/src/operations/condition/index.ts:11 filters on values",
@@ -6149,7 +6847,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "notifications-and-messages"
   },
   {
    "id": "auto-human-task",
@@ -6171,7 +6870,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "processes-and-approvals"
   },
   {
    "id": "auto-decision-table",
@@ -6193,7 +6893,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "automation-flows"
   },
   {
    "id": "auto-case-plan",
@@ -6215,7 +6916,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "processes-and-approvals"
   },
   {
    "id": "auto-flow-versions",
@@ -6237,7 +6939,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "automation-flows"
   },
   {
    "id": "auto-working-time",
@@ -6259,7 +6962,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "processes-and-approvals"
   },
   {
    "id": "acc-classification",
@@ -6284,6 +6988,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "rbac-scopes",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: each objecttype carries data_classification (objects-api:src/objects/core/models.py:58) with choices open, intern, confidential, strictly confidential (objects-api:src/objects/core/constants.py:11-15), and the objecttypes endpoint filters on dataClassification (objects-api:src/objects/api/v2/filters.py:141-149, used by objects-api:src/objects/api/v2/views.py:99)",
     "directus": "source read at v12.4.1, not driven: searched \"classification|confidential\" in api/src and packages/system-data/src: no match outside file and oauth code; collection meta (directus:packages/system-data/src/fields/collections.yaml:14-269) has note, icon, color, archive and accountability settings, no confidentiality level; a custom field per item is possible but no type level label or list by level",
@@ -6312,7 +7017,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "sign-in-and-accounts"
   },
   {
    "id": "acc-credential-broker",
@@ -6334,7 +7040,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "integration-registry"
   },
   {
    "id": "mod-catalogue-meta",
@@ -6359,6 +7066,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "runtime-schema-api",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: objecttype model carries maintainer organization and department, contact person and e-mail, source system, update frequency, provider organization, documentation URL and labels (objects-api:src/objects/core/models.py:65-123), exposed on the objecttypes API (objects-api:src/objects/api/v2/views.py:95-99)",
     "directus": "source read at v12.4.1, not driven: collection meta has only a free text note, icon, color and translations directus:packages/system-data/src/fields/collections.yaml:21,37,42,70; no owner, contact person, source system or update frequency fields, so catalogue metadata needs a custom collection linked by hand",
@@ -6390,6 +7098,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "partial",
+   "feature": "platform-operations",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: no API throttling or circuit breaker: the only limiter is django-axes login lockout (objects-api:requirements/base.txt:121, objects-api:src/objects/accounts/signals.py:49-51) and a default timeout on outgoing requests (objects-api:src/objects/conf/base.py:90); searched \"throttl|ratelimit|circuit\" in src/objects: no match",
     "directus": "source read at v12.4.1, not driven: pressure limiter on by default directus:packages/env/src/constants/defaults.ts:216-222 rejects requests when event loop utilisation, delay or memory pass thresholds directus:api/src/app.ts:162-172; a separate request rate limiter is configurable by env",
@@ -6418,7 +7127,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "no-code-app-builder"
   },
   {
    "id": "op-feature-requests",
@@ -6440,7 +7150,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "platform-operations"
   },
   {
    "id": "ret-linked-destroy-conflict",
@@ -6466,6 +7177,7 @@
    "strapi": "no",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "retention-and-destruction",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: experimental guard for linked destruction: when Open Archiefbeheer deletes an object for one zaak (zaak query param) and the object still references other zaken, the object is kept and only that reference is removed, answering 200 with behouden (objects-api:src/objects/api/v2/views.py:276-299, :404-426), active only with ENABLE_CLOUD_EVENTS (:407); no destruction dates on objects, so no date conflict warning; searched \"retention|archiefnominatie|destruction\" in src/objects: only this path",
     "directus": "source read at v12.4.1, not driven: Directus has no destruction dates or retention schedule: searched \"retention|destroy|archiefnominatie\" in api/src/services, only matches in files, assets, import and mcp-oauth code for other meanings; the archive setting (collections.yaml:200) is a soft status field, not a destruction date",
@@ -6494,7 +7206,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "avg-verwerkingsregister"
   },
   {
    "id": "api-nl-design-rules",
@@ -6520,6 +7233,7 @@
    "strapi": "partial",
    "nocodb": "partial",
    "pocketbase": "no",
+   "feature": "oas-generation",
    "evidence": {
     "objects-api": "source read at 4.2.1, not driven: a VNG Common Ground standard API built on commonground-api-common (objects-api:requirements/base.txt:65): APIVersionHeaderMiddleware sets API-version (objects-api:src/objects/conf/base.py:56, documented in objects-api:src/objects/api/v2/openapi.yaml:251-255), the vng_api_common exception handler for problem responses (objects-api:src/objects/conf/api.py:17), Accept-Crs and Content-Crs for geo (objects-api:src/objects/api/v2/openapi.yaml:96, :281), OAS 3.0.3 (objects-api:src/objects/api/v2/openapi.yaml:1); full ADR conformance not checked rule by rule",
     "directus": "source read at v12.4.1, not driven: REST API with OpenAPI output (directus:api/src/services/specifications.ts) and filter, sort, fields and paging query params, but its conventions are its own (/items/{collection}, data envelope, meta), not the Dutch API design rules (no _links HAL, no API-Version header, no NLGov profile); searched \"API-Version|nlgov|adr\" in api/src: no match",
@@ -6548,7 +7262,8 @@
    "directus": "unknown",
    "strapi": "unknown",
    "nocodb": "unknown",
-   "pocketbase": "unknown"
+   "pocketbase": "unknown",
+   "feature": "object-interactions"
   }
  ],
  "pending": [
@@ -6569,6 +7284,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "partial",
+   "feature": "language-accessibility-and-theming",
    "evidence": {
     "openregister": "not checked: Needs a screen-reader pass over /objects, /schemas and the record dialog; reading the code cannot settle it.",
     "strapi": "source read at v5.55.1, not driven: strapi:packages/core/admin/admin/src/translations/en.json:408 labelled search, aria labels throughout (e.g. en.json:179 audit filter aria-label); @strapi/design-system components; no published accessibility conformance statement (see sources.json nullReasons)",
@@ -6597,6 +7313,7 @@
    "strapi": "partial",
    "nocodb": "no",
    "pocketbase": "no",
+   "feature": "language-accessibility-and-theming",
    "evidence": {
     "openregister": "not checked: Whether thematiq's NL Design tokens actually reach OpenRegister's screens needs driving with thematiq enabled; the variables alone are a declaration.",
     "objects-api": "source read at 4.2.1, not driven: objects-api:src/objects/scss/admin/themes holds only a Maykin light and dark admin theme; searched \"nl-design|utrecht|@nl-design-system\" in src/objects and package.json: no match",
