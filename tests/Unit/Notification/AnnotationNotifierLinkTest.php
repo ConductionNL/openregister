@@ -151,7 +151,9 @@ class AnnotationNotifierLinkTest extends TestCase {
 		$notification->method('getSubjectParameters')->willReturn($params);
 		$notification->method('setParsedSubject')->willReturnSelf();
 		$notification->method('setIcon')->willReturnSelf();
-		$notification->method('addAction')->willReturnSelf();
+		// Only parsed actions reach the client through Nextcloud's API.
+		$notification->expects($this->never())->method('addAction');
+		$notification->method('addParsedAction')->willReturnSelf();
 		$notification->method('setLink')->willReturnCallback(
 			function (string $link) use ($notification, $refuseRelative) {
 				$refuseRelative($link);
@@ -163,7 +165,8 @@ class AnnotationNotifierLinkTest extends TestCase {
 			function () use ($refuseRelative): IAction {
 				$label = '';
 				$action = $this->createMock(IAction::class);
-				$action->method('setLabel')->willReturnCallback(
+				$action->method('setLabel')->willReturnSelf();
+				$action->method('setParsedLabel')->willReturnCallback(
 					function (string $value) use ($action, &$label) {
 						$label = $value;
 						return $action;

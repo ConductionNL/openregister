@@ -228,7 +228,7 @@ class AnnotationNotifier implements INotifier {
 	}//end prepare()
 
 	/**
-	 * Render the schema-declared action buttons via addAction().
+	 * Render the schema-declared action buttons via addParsedAction().
 	 *
 	 * Each action carries a per-locale `label` map, a `primary` flag, a
 	 * pre-resolved absolute `url` (resolved server-side by the dispatcher
@@ -286,11 +286,16 @@ class AnnotationNotifier implements INotifier {
 				$method = 'GET';
 			}
 
+			// Nextcloud's notification API returns PARSED actions only, so an
+			// action added with addAction() never reached the client. The raw
+			// label is a short key (Nextcloud caps it at 32 characters); the
+			// person reads the parsed label.
 			$actionObject = $notification->createAction();
-			$actionObject->setLabel($label)
+			$actionObject->setLabel('action-'.$rendered)
+				->setParsedLabel($label)
 				->setPrimary((bool)($action['primary'] ?? false))
 				->setLink($url, $method);
-			$notification->addAction($actionObject);
+			$notification->addParsedAction($actionObject);
 			$rendered++;
 		}//end foreach
 
@@ -351,9 +356,10 @@ class AnnotationNotifier implements INotifier {
 	 */
 	private function addViewAction(INotification $notification, string $link, string $label): void {
 		$action = $notification->createAction();
-		$action->setLabel($label)
+		$action->setLabel('view')
+			->setParsedLabel($label)
 			->setPrimary(true)
 			->setLink($link, 'GET');
-		$notification->addAction($action);
+		$notification->addParsedAction($action);
 	}//end addViewAction()
 }//end class

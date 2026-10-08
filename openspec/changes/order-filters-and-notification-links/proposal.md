@@ -28,7 +28,9 @@ the pipelinq review) that OpenRegister owns:
    link registry, with OpenRegister's object view as the fallback. The implicit
    View action uses the same link. A declared action whose deep link came back
    as a path is made absolute, because Nextcloud refuses a relative action
-   link and the notification then failed to render.
+   link and the notification then failed to render. Actions are added as
+   parsed actions: Nextcloud's notification API returns only those, which is
+   why the cloud check saw `actions: []` on every OpenRegister notification.
 
 ## Why
 
