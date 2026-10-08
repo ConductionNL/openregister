@@ -16,3 +16,7 @@
 - [x] 3.1 `AnnotationNotifier::prepare()` sets the notification link to the owning app's detail page through the deep link registry, else OpenRegister's object view. The implicit View action uses the same link. Verify: `tests/Unit/Notification/AnnotationNotifierLinkTest.php` fails on the old code.
 - [x] 3.2 A declared action whose url is a path is made absolute before `setLink()`. Verify: the same test.
 - [x] 3.3 Actions are added as parsed actions, so the notifications API returns them. Verify: live on :8099, a pipelinq client update notification carries the link and a View action (before: `actions: []`).
+
+## 4. Aggregation eviction
+
+- [x] 4.1 `AggregationCacheInvalidationListener` resolves the object's register and schema ids to slugs before `evictForSchema()`, so eviction hits the key `AggregationCache` writes. Verify: `tests/Unit/Listener/AggregationCacheEvictionBySlugTest.php` (real AggregationCache) fails on the old code; live on :8099 the leadProduct count is no longer served stale after a write.

@@ -7,7 +7,7 @@ depends_on: []
 
 ## Summary
 
-Three things a person met on cloud.conduction.nl on 8 October 2026 (round 3 of
+Things a person met on cloud.conduction.nl on 8 October 2026 (round 3 of
 the pipelinq review) that OpenRegister owns:
 
 1. **Ordering by a translatable property gave two sorted runs.** dossiq's case
@@ -31,6 +31,11 @@ the pipelinq review) that OpenRegister owns:
    link and the notification then failed to render. Actions are added as
    parsed actions: Nextcloud's notification API returns only those, which is
    why the cloud check saw `actions: []` on every OpenRegister notification.
+
+4. **An object write never evicted its aggregations.** The invalidation
+   listener evicted by register and schema id, while the aggregation cache
+   keys by slug, so a pipelinq lead's line-item count stayed stale (`cached:
+   true`, value 0) for the 60 second TTL. The listener now resolves the slugs.
 
 ## Why
 
