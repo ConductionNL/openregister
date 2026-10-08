@@ -581,6 +581,8 @@ class PropertyValidatorHandler {
 		'contentMediaType' => 'The media type of the encoded content.',
 		'contentEncoding' => 'How the content is encoded.',
 		'extends' => 'A reference to the property template this definition builds on. Stored, not resolved here.',
+		'enumNames' => 'Display labels for the enum values, in the same order. An export renders a value through them.',
+		'enumLabels' => 'Display labels for the enum values, in the same order; the older spelling of enumNames.',
 	];
 
 	/**
