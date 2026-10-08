@@ -4923,8 +4923,13 @@ class ObjectService implements ObjectServiceInterface
             );
 
             // Invalidate collection caches after successful bulk operations.
-            $createdCount  = (int) ($bulkResult['statistics']['objectsCreated'] ?? 0);
-            $updatedCount  = (int) ($bulkResult['statistics']['objectsUpdated'] ?? 0);
+            // SaveObjects counts `saved` and `updated` (initializeSaveResult()).
+            // This read `objectsCreated` / `objectsUpdated`, keys nothing has
+            // ever written, so the sum was always 0, the cache was never
+            // invalidated, and a list read after a bulk write (an import
+            // commit) served the rows from before it.
+            $createdCount  = (int) ($bulkResult['statistics']['saved'] ?? 0);
+            $updatedCount  = (int) ($bulkResult['statistics']['updated'] ?? 0);
             $totalAffected = $createdCount + $updatedCount;
 
             if ($totalAffected > 0) {
