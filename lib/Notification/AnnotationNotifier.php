@@ -198,14 +198,8 @@ class AnnotationNotifier implements INotifier {
 			);
 		}
 
-		// The notification itself links to the object: the owning app's detail
-		// page when an app claimed the schema, else OpenRegister's object view.
-		// Without it a click on the notification went nowhere (pipelinq
-		// "Client changed", cloud check 8 October 2026: `link: ""`).
-		$objectLink = $this->buildObjectLink(params: $params);
-		if ($objectLink !== null) {
-			$notification->setLink($objectLink);
-		}
+		// Link to the object; without it a click went nowhere (cloud check, `link: ""`).
+		$objectLink = $this->linkToObject(notification: $notification, params: $params);
 
 		// Render declared action buttons when the rule provided any; otherwise
 		// keep the implicit single "View" action (back-compat — existing rules
@@ -303,6 +297,25 @@ class AnnotationNotifier implements INotifier {
 	}//end addDeclaredActions()
 
 	/**
+	 * Set the notification link to the object, and return that link.
+	 *
+	 * @param INotification $notification The notification being prepared.
+	 * @param array<string,mixed> $params Subject parameters from the notification.
+	 *
+	 * @return string|null The link set, or null when the notification names no object.
+	 *
+	 * @spec openspec/changes/order-filters-and-notification-links/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
+	 */
+	private function linkToObject(INotification $notification, array $params): ?string {
+		$link = $this->buildObjectLink(params: $params);
+		if ($link !== null) {
+			$notification->setLink($link);
+		}
+
+		return $link;
+	}//end linkToObject()
+
+	/**
 	 * The absolute link to the object a notification is about.
 	 *
 	 * The owning app's detail page from the deep link registry when an app
@@ -324,24 +337,46 @@ class AnnotationNotifier implements INotifier {
 			return null;
 		}
 
-		if ($this->deepLinks !== null && is_numeric($registerId) === true && is_numeric($schemaId) === true) {
-			$owned = $this->deepLinks->resolveUrl(
-				registerId: (int)$registerId,
-				schemaId: (int)$schemaId,
-				objectData: ['uuid' => $objectUuid, 'id' => $objectUuid]
-			);
-			if ($owned !== null && $owned !== '') {
-				if (str_starts_with($owned, 'http://') === true || str_starts_with($owned, 'https://') === true) {
-					return $owned;
-				}
-
-				return $this->urlGenerator->getAbsoluteURL($owned);
-			}
+		$owned = $this->resolveOwnedLink(registerId: $registerId, schemaId: $schemaId, objectUuid: $objectUuid);
+		if ($owned !== null) {
+			return $owned;
 		}
 
 		return $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page')
 			. sprintf('#/registers/%s/schemas/%s/objects/%s', $registerId, $schemaId, $objectUuid);
 	}//end buildObjectLink()
+
+	/**
+	 * The owning app's absolute detail link from the deep link registry, or null.
+	 *
+	 * @param string $registerId The register id.
+	 * @param string $schemaId The schema id.
+	 * @param string $objectUuid The object uuid.
+	 *
+	 * @return string|null The absolute link, or null when no app claimed the schema.
+	 *
+	 * @spec openspec/changes/order-filters-and-notification-links/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
+	 */
+	private function resolveOwnedLink(string $registerId, string $schemaId, string $objectUuid): ?string {
+		if ($this->deepLinks === null || is_numeric($registerId) === false || is_numeric($schemaId) === false) {
+			return null;
+		}
+
+		$owned = $this->deepLinks->resolveUrl(
+			registerId: (int)$registerId,
+			schemaId: (int)$schemaId,
+			objectData: ['uuid' => $objectUuid, 'id' => $objectUuid]
+		);
+		if ($owned === null || $owned === '') {
+			return null;
+		}
+
+		if (str_starts_with($owned, 'http://') === true || str_starts_with($owned, 'https://') === true) {
+			return $owned;
+		}
+
+		return $this->urlGenerator->getAbsoluteURL($owned);
+	}//end resolveOwnedLink()
 
 	/**
 	 * Attach the primary "View" action, linking where the notification links.

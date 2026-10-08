@@ -214,6 +214,8 @@ class MagicSearchHandler {
 	 * @param DateTimeNormalizer $dateTimeNormalizer Normaliser for date/date-time property formats
 	 * @param RelatedRowQueryApplier $relatedRows Applies a filter that reaches through a reference into the
 	 *                                            related schema's own rows
+	 * @param LanguageService|null $languageService The request's languages, so a translatable property sorts by the
+	 *                                              value the response shows
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
