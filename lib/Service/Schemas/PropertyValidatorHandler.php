@@ -580,6 +580,7 @@ class PropertyValidatorHandler {
 		'dependentRequired' => 'Which properties become required once this one is answered.',
 		'contentMediaType' => 'The media type of the encoded content.',
 		'contentEncoding' => 'How the content is encoded.',
+		'extends' => 'A reference to the property template this definition builds on. Stored, not resolved here.',
 	];
 
 	/**
