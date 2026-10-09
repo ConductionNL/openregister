@@ -1590,6 +1590,9 @@ class ObjectsController extends Controller {
 					// where a `{"nl":...}` map projects to the negotiated language.
 					$renderHandler->resolveTranslationsForRows(rows: $results);
 
+					// Every list row must carry @self.files (file IDs), as on the QueryHandler cheap path.
+					$renderHandler->attachLightweightFilesToRows(rows: $results);
+
 					$serializedResults = [];
 					foreach ($results as $entity) {
 						$serializedResults[] = $entity->jsonSerialize();
@@ -2622,6 +2625,9 @@ class ObjectsController extends Controller {
 						// Same bypass, same gap for translatable properties: renderEntity is
 						// where a `{"nl":...}` map projects to the negotiated language.
 						$renderHandler->resolveTranslationsForRows(rows: $results);
+
+						// Every list row must carry @self.files (file IDs), as on the QueryHandler cheap path.
+						$renderHandler->attachLightweightFilesToRows(rows: $results);
 
 						// Convert ObjectEntity array to JSON-serializable format.
 						$serializedResults = [];
