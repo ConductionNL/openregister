@@ -64,6 +64,9 @@ class ContactSearchController extends Controller {
 	 *
 	 * @return JSONResponse The rows and their count, or 400 for a query that is too short.
 	 *
+	 * @no-admin-idor-exempt No caller-supplied id reaches a lookup: the query is free text, and
+	 *     the contacts manager searches only the signed-in user's own address books.
+	 *
 	 * @spec openspec/changes/contacts-leaf-cases-panel/specs/integration-contacts/spec.md#requirement-the-contacts-leaf-offers-a-name-search
 	 */
 	#[NoAdminRequired]
