@@ -2956,13 +2956,20 @@ class MagicSearchHandler {
 		}
 
 		$viewer = $qb->createNamedParameter($userId);
-		$table = ObjectViewMapper::TABLE;
+
+		// Built on a query builder, as applyPersonalLensFilter() builds its
+		// subquery, so the table name carries the instance's prefix. The raw
+		// string this replaces named `openregister_object_views` bare, which no
+		// installation has, and every `_recent=true` page failed with
+		// "relation does not exist" while the lens filter beside it worked.
+		$sub = $this->db->getQueryBuilder();
+		$sub->select('rv.viewed_at')
+			->from(ObjectViewMapper::TABLE, 'rv')
+			->where($sub->expr()->eq('rv.user_id', $viewer))
+			->andWhere($sub->expr()->eq('rv.object_uuid', 't._uuid'));
 
 		$qb->addOrderBy(
-			$qb->createFunction(
-				'(SELECT rv.viewed_at FROM '.$table.' rv'
-				.' WHERE rv.user_id = '.$viewer.' AND rv.object_uuid = t._uuid)'
-			),
+			$qb->createFunction('('.$sub->getSQL().')'),
 			'DESC'
 		);
 
