@@ -399,9 +399,7 @@ class MagicSearchHandler {
 			->setFirstResult($offset);
 
 		$objects = $this->executeSearchQuery(qb: $queryBuilder, register: $register, schema: $schema, tableName: $tableName);
-
-		// `@self.viewedAt` on a `_recent` page: when the reader last opened
-		// each object, from the read history the lens was resolved with.
+		// `@self.viewedAt` on a `_recent` page (read-history-on-audit-trail).
 		$this->applyViewedAt(objects: $objects, recentViews: ($query['_recentViews'] ?? null));
 
 		return $objects;

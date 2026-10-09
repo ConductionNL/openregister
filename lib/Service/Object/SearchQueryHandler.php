@@ -301,18 +301,11 @@ class SearchQueryHandler {
 	}//end applyUnreadLens()
 
 	/**
-	 * Resolve `_favourite=true` into the uid it reads.
+	 * Resolve `_favourite=true` into the uid it reads, then the recent lens.
 	 *
-	 * Resolved INSIDE the query rather than applied to a fetched page, for the
-	 * reason spelled out on the unread lens above: a post-filter gives a first
-	 * page of 25 against a total of 120 and a second page that skips rows,
-	 * which reads as a paging bug and is not one. The mapper turns
-	 * `_favouriteFor` into a correlated `EXISTS`, so the page, the total and
-	 * the facets see one restriction.
-	 *
-	 * Identity is resolved HERE, at the edge, never in the query builder:
-	 * ADR-005 wants the principal named where the request arrives, and it also
-	 * means the mapper can be tested with a uid rather than a session.
+	 * Resolved INSIDE the query, never on a fetched page, so the page, the
+	 * total and the facets see one restriction. Identity is resolved here, at
+	 * the edge (ADR-005), never in the query builder.
 	 *
 	 * @param array<string, mixed> $query The query built so far.
 	 *
@@ -321,19 +314,17 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
 	 */
 	private function applyPersonalLenses(array $query): array {
-		if (array_key_exists('_favourite', $query) === true) {
-			$asked = filter_var($query['_favourite'], FILTER_VALIDATE_BOOLEAN);
-			unset($query['_favourite']);
-			if ($asked === true) {
-				$uid = $this->userSession?->getUser()?->getUID();
-				if ($uid === null || $uid === '') {
-					// No user, so nothing can be theirs. An honest empty page,
-					// never the whole register.
-					$query['_ids'] = [self::NO_PERSONAL_LENS_USER];
-				} else {
-					$query['_favouriteFor'] = $uid;
-				}
-			}
+		$asked = filter_var(($query['_favourite'] ?? false), FILTER_VALIDATE_BOOLEAN);
+		unset($query['_favourite']);
+		$uid = (string)$this->userSession?->getUser()?->getUID();
+		if ($asked === true && $uid !== '') {
+			$query['_favouriteFor'] = $uid;
+		}
+
+		if ($asked === true && $uid === '') {
+			// No user, so nothing can be theirs: an honest empty page, never
+			// the whole register.
+			$query['_ids'] = [self::NO_PERSONAL_LENS_USER];
 		}
 
 		return $this->applyRecentLens(query: $query);
@@ -342,19 +333,11 @@ class SearchQueryHandler {
 	/**
 	 * Resolve `_recent=true` from the caller's read history on the audit trail.
 	 *
-	 * The history (distinct objects, newest first, capped at a hundred) is read
-	 * once, here, and lands on `_ids`, so the restriction reaches every search
-	 * path and composes with the other lenses by intersection. Its order rides
-	 * along as `_recentViews` (uuid => ISO 8601 last read), which the mapper
-	 * turns into the page order and `@self.viewedAt`. RBAC is untouched: the
-	 * object query still decides which of those uuids this caller may see.
-	 *
-	 * `_recentLens` carries the lens report for the response
-	 * (`@self.lenses.recent`). With the audit trail switched off the lens is
-	 * EMPTY and says why: no shadow log is kept anywhere else.
-	 *
-	 * The three internal keys are stripped from the incoming query first, so a
-	 * caller cannot hand in another user's history or a forged `viewedAt`.
+	 * The history lands on `_ids` (intersected, history order kept), so every
+	 * search path honours it and RBAC still decides. `_recentViews` (uuid =>
+	 * ISO 8601) drives the order and `@self.viewedAt`; `_recentLens` is the
+	 * response report. Audit trail off: empty, with a reason, no shadow log.
+	 * Caller-supplied copies of the internal keys are stripped first.
 	 *
 	 * @param array<string, mixed> $query The query built so far.
 	 *

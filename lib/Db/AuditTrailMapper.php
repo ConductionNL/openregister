@@ -26,6 +26,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use DateTimeInterface;
+use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Audit\AuditAggregationService;
@@ -3463,7 +3465,7 @@ class AuditTrailMapper extends QBMapper {
 	 * @return string|null The ISO 8601 moment, or null when unreadable.
 	 */
 	private function toIsoMoment(mixed $value): ?string {
-		if ($value instanceof \DateTimeInterface) {
+		if ($value instanceof DateTimeInterface) {
 			return $value->format('c');
 		}
 
@@ -3472,7 +3474,7 @@ class AuditTrailMapper extends QBMapper {
 		}
 
 		try {
-			return (new DateTime($value, new \DateTimeZone('UTC')))->format('c');
+			return (new DateTime($value, new DateTimeZone('UTC')))->format('c');
 		} catch (Exception $e) {
 			return null;
 		}
