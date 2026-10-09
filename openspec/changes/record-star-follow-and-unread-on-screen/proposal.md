@@ -23,7 +23,7 @@ Delivered changes, backend only: `favourites-and-recent`, `object-watchers` and 
 ## What is there
 
 - Star: `PUT`/`DELETE /api/objects/{register}/{schema}/{id}/favourite` (`appinfo/routes.php:183,189`, `lib/Controller/ObjectFavouriteController.php`); `@self.favourite` on reads and lists.
-- Recent: the detail read records a view (`lib/Controller/ObjectsController.php:3035` `recordObjectView`).
+- Recent: the detail read is registered on the audit trail through `ReadHistoryService::registerAuditRead()` (`lib/Service/Object/GetObject.php`), and the `_recent` lens reads it back with `@self.viewedAt` (`read-history-on-audit-trail`, which replaced `recordObjectView` and its view table).
 - Follow: `PUT`/`DELETE .../watch` (`appinfo/routes.php:142`, `lib/Controller/ObjectWatchersController.php:98,129`), `GET .../watchers` (`:160`); `@self.watching` and `@self.watcherCount`; a schema notification rule with `{"watchers": true}` notifies followers (`lib/Service/Notification/NotificationRecipientResolver.php:160`).
 - Unread: `GET`/`PUT`/`DELETE .../read-state` (`appinfo/routes.php:205-217`, `lib/Controller/ObjectReadStateController.php:96,142,194`); `@self.unread` on reads and lists; `@self.unreadCounts` per sub-resource on the detail read only (`ObjectsController.php:3048`, `:6774`).
 - Lenses `_favourite`, `_recent`, `_watching`, `_unread` (`lib/Service/Object/SearchQueryHandler.php:88,197,254`).

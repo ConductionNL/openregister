@@ -54,6 +54,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -389,15 +390,18 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 * @return array<string, mixed> Serialized object.
 	 *
 	 * @throws InvalidArgumentException If `id` is missing.
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function get(Schema $schema, ?Register $register, array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
 
-		$object = $this->objectService->find(
+		$object = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $arguments['id'],
 			register: $register,
 			schema: $schema
-		);
+		));
 
 		return $object->jsonSerialize();
 	}//end get()

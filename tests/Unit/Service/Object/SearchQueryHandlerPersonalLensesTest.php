@@ -22,6 +22,7 @@ namespace Unit\Service\Object;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ViewScopeApplier;
+use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -50,10 +51,11 @@ class SearchQueryHandlerPersonalLensesTest extends TestCase {
 	 * A handler acting as the given user.
 	 *
 	 * @param string|null $uid The calling uid, or null for anonymous.
+	 * @param ReadHistoryService|null $readHistory The read history, or null for none.
 	 *
 	 * @return SearchQueryHandler
 	 */
-	private function makeHandler(?string $uid = 'alice'): SearchQueryHandler {
+	private function makeHandler(?string $uid = 'alice', ?ReadHistoryService $readHistory = null): SearchQueryHandler {
 		$schema = $this->createMock(originalClassName: Schema::class);
 		$schema->method('getProperties')->willReturn([]);
 		$schema->method('getObjectSource')->willReturn(null);
@@ -77,7 +79,10 @@ class SearchQueryHandlerPersonalLensesTest extends TestCase {
 			$this->createMock(originalClassName: LoggerInterface::class),
 			$this->createMock(originalClassName: IRequest::class),
 			$this->createMock(originalClassName: SearchTrailService::class),
-			$session
+			$session,
+			null,
+			null,
+			$readHistory
 		);
 
 	}//end makeHandler()
@@ -100,17 +105,110 @@ class SearchQueryHandlerPersonalLensesTest extends TestCase {
 	}//end testFavouriteLensResolvesTheCaller()
 
 	/**
-	 * The recent lens resolves the caller into its own key.
+	 * A read history that answers the given lens for exactly one uid.
+	 *
+	 * @param string|null $uid  The uid the lens must be asked for.
+	 * @param array       $lens The lens answer.
+	 *
+	 * @return ReadHistoryService
+	 */
+	private function historyAnswering(?string $uid, array $lens): ReadHistoryService {
+		$history = $this->createMock(originalClassName: ReadHistoryService::class);
+		$history->expects($this->once())
+			->method('resolveRecentLens')
+			->with($uid)
+			->willReturn($lens);
+
+		return $history;
+
+	}//end historyAnswering()
+
+	/**
+	 * The recent lens asks the read history for the CALLER and lands on `_ids`.
+	 *
+	 * The wiring is asserted from the caller: buildSearchQuery() must reach
+	 * ReadHistoryService::resolveRecentLens() with the session's uid, and the
+	 * history must come back as the id set, its order and the lens report.
 	 *
 	 * @return void
 	 */
-	public function testRecentLensResolvesTheCaller(): void {
-		$query = $this->makeHandler()->buildSearchQuery(['_recent' => 'true'], 1, 777);
+	public function testRecentLensReadsTheCallersHistory(): void {
+		$views = ['uuid-b' => '2026-10-09T10:00:00+00:00', 'uuid-a' => '2026-10-08T09:00:00+00:00'];
+		$history = $this->historyAnswering(uid: 'alice', lens: ['available' => true, 'reason' => null, 'views' => $views]);
 
-		$this->assertSame(expected: 'alice', actual: ($query['_recentFor'] ?? null));
+		$query = $this->makeHandler(readHistory: $history)->buildSearchQuery(['_recent' => 'true'], 1, 777);
+
+		$this->assertSame(expected: ['uuid-b', 'uuid-a'], actual: $query['_ids']);
+		$this->assertSame(expected: $views, actual: $query['_recentViews']);
+		$this->assertSame(expected: ['available' => true, 'reason' => null], actual: $query['_recentLens']);
 		$this->assertArrayNotHasKey(key: '_recent', array: $query);
+		$this->assertArrayNotHasKey(key: '_recentFor', array: $query);
 
-	}//end testRecentLensResolvesTheCaller()
+	}//end testRecentLensReadsTheCallersHistory()
+
+	/**
+	 * Audit trail off: an empty page that says why.
+	 *
+	 * @return void
+	 */
+	public function testRecentLensWithAuditOffIsEmptyAndSaysWhy(): void {
+		$history = $this->historyAnswering(
+			uid: 'alice',
+			lens: ['available' => false, 'reason' => 'audit-trail-disabled', 'views' => []]
+		);
+
+		$query = $this->makeHandler(readHistory: $history)->buildSearchQuery(['_recent' => 'true'], 1, 777);
+
+		$this->assertCount(expectedCount: 1, haystack: $query['_ids']);
+		$this->assertStringStartsWith(prefix: '__', string: $query['_ids'][0]);
+		$this->assertArrayNotHasKey(key: '_recentViews', array: $query);
+		$this->assertSame(
+			expected: ['available' => false, 'reason' => 'audit-trail-disabled'],
+			actual: $query['_recentLens']
+		);
+
+	}//end testRecentLensWithAuditOffIsEmptyAndSaysWhy()
+
+	/**
+	 * An explicit `_ids` intersects with the history and keeps its order.
+	 *
+	 * @return void
+	 */
+	public function testRecentLensIntersectsAnExplicitIdSet(): void {
+		$views = ['uuid-c' => '2026-10-09T11:00:00+00:00', 'uuid-b' => '2026-10-09T10:00:00+00:00'];
+		$history = $this->historyAnswering(uid: 'alice', lens: ['available' => true, 'reason' => null, 'views' => $views]);
+
+		$query = $this->makeHandler(readHistory: $history)->buildSearchQuery(
+			['_recent' => 'true', '_ids' => 'uuid-a,uuid-b'],
+			1,
+			777
+		);
+
+		$this->assertSame(expected: ['uuid-b'], actual: $query['_ids']);
+		$this->assertSame(expected: ['uuid-b' => '2026-10-09T10:00:00+00:00'], actual: $query['_recentViews']);
+
+	}//end testRecentLensIntersectsAnExplicitIdSet()
+
+	/**
+	 * A caller cannot hand in a history: the internal keys are stripped.
+	 *
+	 * Without this a request could carry `_recentViews` and forge both the
+	 * order and `@self.viewedAt`, or `_recentFor` and name another user.
+	 *
+	 * @return void
+	 */
+	public function testAForgedHistoryIsStripped(): void {
+		$query = $this->makeHandler()->buildSearchQuery(
+			['_recentViews' => ['x' => 'y'], '_recentFor' => 'bob', '_recentLens' => ['available' => true]],
+			1,
+			777
+		);
+
+		$this->assertArrayNotHasKey(key: '_recentViews', array: $query);
+		$this->assertArrayNotHasKey(key: '_recentFor', array: $query);
+		$this->assertArrayNotHasKey(key: '_recentLens', array: $query);
+
+	}//end testAForgedHistoryIsStripped()
 
 	/**
 	 * Both lenses at once resolve to two keys, not one overwriting the other.
@@ -118,14 +216,18 @@ class SearchQueryHandlerPersonalLensesTest extends TestCase {
 	 * @return void
 	 */
 	public function testBothLensesResolveTogether(): void {
-		$query = $this->makeHandler()->buildSearchQuery(
+		$history = $this->historyAnswering(
+			uid: 'alice',
+			lens: ['available' => true, 'reason' => null, 'views' => ['uuid-a' => '2026-10-09T10:00:00+00:00']]
+		);
+		$query = $this->makeHandler(readHistory: $history)->buildSearchQuery(
 			['_favourite' => 'true', '_recent' => 'true'],
 			1,
 			777
 		);
 
 		$this->assertSame(expected: 'alice', actual: ($query['_watchingFor'] ?? null));
-		$this->assertSame(expected: 'alice', actual: ($query['_recentFor'] ?? null));
+		$this->assertSame(expected: ['uuid-a'], actual: ($query['_ids'] ?? null));
 
 	}//end testBothLensesResolveTogether()
 
@@ -174,11 +276,16 @@ class SearchQueryHandlerPersonalLensesTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnonymousRecentGetsAnEmptyPage(): void {
-		$query = $this->makeHandler(uid: null)->buildSearchQuery(['_recent' => 'true'], 1, 777);
+		$history = $this->historyAnswering(
+			uid: null,
+			lens: ['available' => false, 'reason' => 'anonymous', 'views' => []]
+		);
+		$query = $this->makeHandler(uid: null, readHistory: $history)->buildSearchQuery(['_recent' => 'true'], 1, 777);
 
 		$this->assertArrayHasKey(key: '_ids', array: $query);
 		$this->assertNotEmpty(actual: $query['_ids']);
-		$this->assertArrayNotHasKey(key: '_recentFor', array: $query);
+		$this->assertArrayNotHasKey(key: '_recentViews', array: $query);
+		$this->assertSame(expected: 'anonymous', actual: $query['_recentLens']['reason']);
 
 	}//end testAnonymousRecentGetsAnEmptyPage()
 
@@ -207,7 +314,8 @@ class SearchQueryHandlerPersonalLensesTest extends TestCase {
 	public function testFalseTurnsTheRecentLensOff(): void {
 		$query = $this->makeHandler()->buildSearchQuery(['_recent' => 'false'], 1, 777);
 
-		$this->assertArrayNotHasKey(key: '_recentFor', array: $query);
+		$this->assertArrayNotHasKey(key: '_recentViews', array: $query);
+		$this->assertArrayNotHasKey(key: '_recentLens', array: $query);
 		$this->assertArrayNotHasKey(key: '_recent', array: $query);
 
 	}//end testFalseTurnsTheRecentLensOff()
@@ -225,7 +333,8 @@ class SearchQueryHandlerPersonalLensesTest extends TestCase {
 		$query = $this->makeHandler()->buildSearchQuery(['status' => 'open'], 1, 777);
 
 		$this->assertArrayNotHasKey(key: '_watchingFor', array: $query);
-		$this->assertArrayNotHasKey(key: '_recentFor', array: $query);
+		$this->assertArrayNotHasKey(key: '_recentViews', array: $query);
+		$this->assertArrayNotHasKey(key: '_recentLens', array: $query);
 
 	}//end testAQueryWithoutALensIsUntouched()
 }//end class

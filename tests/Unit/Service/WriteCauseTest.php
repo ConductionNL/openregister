@@ -205,14 +205,16 @@ final class WriteCauseTest extends TestCase {
 	}
 
 	/**
-	 * The vocabulary is six words and normalisation is case-insensitive.
+	 * The vocabulary is seven words and normalisation is case-insensitive.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/runs-recorded-and-causes-named/specs/enhanced-audit-trail/spec.md#requirement-every-audit-entry-names-the-cause-of-the-write-req-rcn-001
+	 * @spec openspec/changes/recently-opened-means-opened/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
 	 */
-	public function testTheVocabularyIsSixWords(): void {
-		self::assertCount(6, WriteCause::ALL);
+	public function testTheVocabularyIsSevenWords(): void {
+		self::assertCount(7, WriteCause::ALL);
+		self::assertSame(WriteCause::LOOKUP, WriteCause::normalise(cause: 'Lookup'));
 		self::assertSame(WriteCause::MIGRATION, WriteCause::normalise(cause: ' Migration '));
 		self::assertSame(WriteCause::PERSON, WriteCause::normalise(cause: 'whatever'));
 	}
@@ -232,5 +234,58 @@ final class WriteCauseTest extends TestCase {
 		WriteCause::noteClientAttempt();
 
 		self::assertTrue(WriteCause::clientAttempted());
+	}
+	/**
+	 * A lookup made for a person is caused `lookup`, and the frame closes after.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/recently-opened-means-opened/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
+	 */
+	public function testALookupForAPersonIsCausedLookup(): void {
+		$seen = WriteCause::asLookup(operation: static fn (): array => WriteCause::current());
+
+		self::assertSame(['cause' => WriteCause::LOOKUP, 'run' => null], $seen);
+		self::assertSame(WriteCause::PERSON, WriteCause::current()['cause']);
+	}
+
+	/**
+	 * A lookup inside another cause keeps that cause and its run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/recently-opened-means-opened/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
+	 */
+	public function testALookupInsideAScheduledJobKeepsTheJob(): void {
+		$seen = WriteCause::runAs(
+			cause: WriteCause::SCHEDULED,
+			run: 'job-7',
+			operation: static fn (): array => WriteCause::asLookup(
+				operation: static fn (): array => WriteCause::current()
+			)
+		);
+
+		self::assertSame(['cause' => WriteCause::SCHEDULED, 'run' => 'job-7'], $seen);
+	}
+
+	/**
+	 * A throwing lookup does not leave its frame behind.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/recently-opened-means-opened/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
+	 */
+	public function testAThrowingLookupClosesItsFrame(): void {
+		try {
+			WriteCause::asLookup(
+				operation: static function (): never {
+					throw new \RuntimeException('not found');
+				}
+			);
+		} catch (\RuntimeException $e) {
+			// Expected.
+		}
+
+		self::assertSame(WriteCause::PERSON, WriteCause::current()['cause']);
 	}
 }//end class

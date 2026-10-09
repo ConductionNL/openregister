@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IUserSession;
 
@@ -71,6 +72,8 @@ class ObjectReadAccess {
 	 * @return ObjectEntity|null The object, or null when it is not readable.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function readable(string $register, string $schema, string $id): ?ObjectEntity {
 		if ($this->userSession->getUser() === null) {
@@ -84,13 +87,13 @@ class ObjectReadAccess {
 			$this->objectService->setRegister(register: $register);
 			$this->objectService->setSchema(schema: $schema);
 
-			return $this->objectService->find(
+			return WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $id,
 				register: $register,
 				schema: $schema,
 				_rbac: true,
 				_multitenancy: true
-			);
+			));
 		} catch (\Exception $e) {
 			return null;
 		}

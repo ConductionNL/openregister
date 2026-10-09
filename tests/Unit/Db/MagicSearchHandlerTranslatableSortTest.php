@@ -24,7 +24,12 @@
  *
  * @link https://OpenRegister.app
  *
+ * Since 9 October 2026 the same tests also lock that text orders without
+ * regard to case (cloud check: "Leverancier IBAN-wijziging" sorted before
+ * "Leverancier accreditatie").
+ *
  * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+ * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/register-i18n/spec.md#requirement-ordering-by-a-text-property-must-ignore-case
  */
 
 declare(strict_types=1);
@@ -231,15 +236,81 @@ class MagicSearchHandlerTranslatableSortTest extends TestCase {
 		$this->assertSame(['{"fr":"Avis"}', 'Melding', '{"de":"Zulassung"}'], $result);
 	}//end testAMapWithoutAChainLanguageSortsByItsFirstValue()
 
-	public function testANonTranslatablePropertyKeepsItsBareColumn(): void {
+	public function testAPlainTextPropertySortsWithoutRegardToCase(): void {
+		// Cloud check, 9 October 2026: "Leverancier IBAN-wijziging" sorted
+		// before "Leverancier accreditatie" because capitals sort first.
+		$result = $this->sortRows(
+			stored: ['Leverancier IBAN-wijziging', 'leverancier zorg', 'Leverancier accreditatie', 'Aanvraag'],
+			properties: ['title' => ['type' => 'string']],
+			direction: 'asc'
+		);
+
+		$this->assertSame(
+			['Aanvraag', 'Leverancier accreditatie', 'Leverancier IBAN-wijziging', 'leverancier zorg'],
+			$result
+		);
+	}//end testAPlainTextPropertySortsWithoutRegardToCase()
+
+	public function testATranslatablePropertySortsWithoutRegardToCase(): void {
+		$result = $this->sortRows(
+			stored: ['{"nl":"Leverancier IBAN-wijziging"}', 'Leverancier accreditatie', '{"nl":"leverancier zorg"}'],
+			properties: ['title' => ['type' => 'string', 'translatable' => true]],
+			direction: 'desc'
+		);
+
+		$this->assertSame(
+			['{"nl":"leverancier zorg"}', '{"nl":"Leverancier IBAN-wijziging"}', 'Leverancier accreditatie'],
+			$result
+		);
+	}//end testATranslatablePropertySortsWithoutRegardToCase()
+
+	public function testNameMetadataSortsWithoutRegardToCaseAndDatesKeepTheirColumn(): void {
 		$schema = new Schema();
 		$schema->setProperties(['title' => ['type' => 'string']]);
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applySorting');
-		$method->invoke($this->makeHandler(new SqlitePlatform()), $this->makeQueryBuilder(), ['title' => 'asc'], $schema, null, null, ['nl']);
+		$method->invoke(
+			$this->makeHandler(new SqlitePlatform()),
+			$this->makeQueryBuilder(),
+			['@self.name' => 'asc', '_summary' => 'desc', '_created' => 'desc', '@self.updated' => 'asc'],
+			$schema,
+			null,
+			null,
+			['nl']
+		);
 
-		$this->assertSame([['t.title', 'ASC']], $this->orderBy);
-	}//end testANonTranslatablePropertyKeepsItsBareColumn()
+		$this->assertSame(
+			[
+				['LOWER("t"."_name")', 'ASC'],
+				['LOWER("t"."_summary")', 'DESC'],
+				['t._created', 'DESC'],
+				['t._updated', 'ASC'],
+			],
+			$this->orderBy
+		);
+	}//end testNameMetadataSortsWithoutRegardToCaseAndDatesKeepTheirColumn()
+
+	public function testANumberPropertyKeepsItsBareColumn(): void {
+		$schema = new Schema();
+		$schema->setProperties(['amount' => ['type' => 'number'], 'when' => ['type' => 'string', 'format' => 'date']]);
+
+		$method = new ReflectionMethod(MagicSearchHandler::class, 'applySorting');
+		$method->invoke($this->makeHandler(new SqlitePlatform()), $this->makeQueryBuilder(), ['amount' => 'asc', 'when' => 'asc'], $schema, null, null, ['nl']);
+
+		$this->assertSame([['t.amount', 'ASC'], ['t.when', 'ASC']], $this->orderBy);
+	}//end testANumberPropertyKeepsItsBareColumn()
+
+	public function testPostgresLowersTextAfterACastToText(): void {
+		// PostgreSQL has no LOWER() for json or timestamp, and a table keeps
+		// its column type when a property changes type.
+		$schema = new Schema();
+		$schema->setProperties(['title' => ['type' => 'string']]);
+
+		$method = new ReflectionMethod(MagicSearchHandler::class, 'applySorting');
+		$method->invoke($this->makeHandler(new PostgreSQLPlatform()), $this->makeQueryBuilder(), ['title' => 'asc'], $schema, null, null, ['nl']);
+
+		$this->assertSame([['LOWER(CAST("t"."title" AS TEXT))', 'ASC']], $this->orderBy);
+	}//end testPostgresLowersTextAfterACastToText()
 
 	public function testPostgresExpressionNeverCastsToJson(): void {
 		// A plain value that starts with a brace must not fail the query, so the

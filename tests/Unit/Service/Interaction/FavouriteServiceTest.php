@@ -98,16 +98,4 @@ class FavouriteServiceTest extends TestCase {
 		$this->assertFalse(condition: $service->isStarredByCaller(objectUuid: 'uuid-case-2'));
 
 	}//end testStarredMeansFollowed()
-
-	/**
-	 * Cleanup is the follow prune's job, so the facade deletes nothing twice.
-	 *
-	 * @return void
-	 */
-	public function testCleanupLeavesTheFollowsToTheirOwnPrune(): void {
-		$this->watchers->expects($this->never())->method('cleanupForObject');
-
-		$this->assertSame(expected: 0, actual: (new FavouriteService($this->watchers))->cleanupForObject(objectUuid: 'uuid-case-1'));
-
-	}//end testCleanupLeavesTheFollowsToTheirOwnPrune()
 }//end class

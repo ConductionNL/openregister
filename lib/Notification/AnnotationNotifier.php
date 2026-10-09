@@ -328,6 +328,7 @@ class AnnotationNotifier implements INotifier {
 	 * @return string|null The absolute link, or null.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
 	 */
 	private function buildObjectLink(array $params): ?string {
 		$registerId = (string)($params['registerId'] ?? '');
@@ -342,8 +343,11 @@ class AnnotationNotifier implements INotifier {
 			return $owned;
 		}
 
+		// OpenRegister runs in history mode: its object view is
+		// objects/{register}/{schema}/{uuid}. The old #/registers/... hash
+		// opened the dashboard (cloud check, 9 October 2026).
 		return $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page')
-			. sprintf('#/registers/%s/schemas/%s/objects/%s', $registerId, $schemaId, $objectUuid);
+			. sprintf('objects/%s/%s/%s', rawurlencode($registerId), rawurlencode($schemaId), rawurlencode($objectUuid));
 	}//end buildObjectLink()
 
 	/**

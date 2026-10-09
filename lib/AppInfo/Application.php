@@ -67,7 +67,6 @@ use OCA\OpenRegister\Event\AgentCreatedEvent;
 use OCA\OpenRegister\Event\AgentUpdatedEvent;
 use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
 use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;
-use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -106,7 +105,6 @@ use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Listener\DependentValueListener;
 use OCA\OpenRegister\Listener\FacetCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AssigneeFollowListener;
-use OCA\OpenRegister\Listener\FavouritePruneListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
@@ -3604,11 +3602,6 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(ObjectUpdatedEvent::class, ReadStateInvalidationListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, ReadStatePruneListener::class);
 
-		// Favourites and view history (`favourites-and-recent`). Objects live in
-		// per-schema tables, so there is no single table for a foreign key to
-		// cascade from: a star and a view are cleared by a listener instead.
-		$context->registerEventListener(ObjectDeletedEvent::class, FavouritePruneListener::class);
-
 		// Threshold trigger evaluator: re-runs aggregations on writes and dispatches when thresholds are crossed.
 		$context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, AggregationThresholdListener::class);
@@ -4920,8 +4913,10 @@ class Application extends App implements IBootstrap {
 		// resolution, so no circular DI issues during registration.
 		$server = $context->getServerContainer();
 		$dispatcher = $server->get(IEventDispatcher::class);
+		// Through the registry, so a later read in the same process does not
+		// ask a second time.
 		$registry = $server->get(DeepLinkRegistryService::class);
-		$dispatcher->dispatchTyped(new DeepLinkRegistrationEvent(registry: $registry));
+		$registry->requestRegistrations(dispatcher: $dispatcher);
 
 		// Register the built-in IntegrationProvider implementations
 		// with the IntegrationRegistry. The 5 wrap existing services

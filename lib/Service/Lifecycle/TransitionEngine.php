@@ -40,6 +40,7 @@ use OCA\OpenRegister\Exception\LifecycleSubjectNotFoundException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
@@ -450,16 +451,18 @@ class TransitionEngine {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function findVisibleSubject(string $objectId, bool $asSystem = false): ObjectEntity {
 		$notFound = sprintf('Object "%s" not found.', $objectId);
 
 		try {
-			$object = $this->objectService->find(
+			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $objectId,
 				_rbac: ($asSystem === false),
 				_multitenancy: ($asSystem === false)
-			);
+			));
 		} catch (DoesNotExistException | NotAuthorizedException $e) {
 			throw new LifecycleSubjectNotFoundException(message: $notFound, previous: $e);
 		}
@@ -763,6 +766,8 @@ class TransitionEngine {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function applyProviderTransition(
 		ObjectEntity $object,
@@ -820,11 +825,11 @@ class TransitionEngine {
 		// Re-read rather than trust the report: what the client is answered
 		// with is the stored object, including whatever the provider's own
 		// side effects stamped onto it.
-		$saved = $this->objectService->find(
+		$saved = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $objectId,
 			_rbac: ($asSystem === false),
 			_multitenancy: ($asSystem === false)
-		);
+		));
 		if ($saved === null) {
 			$this->logger->error(
 				sprintf(

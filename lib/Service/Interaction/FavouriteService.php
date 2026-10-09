@@ -118,24 +118,4 @@ class FavouriteService {
 		return $this->watchers->isWatchedByCaller(objectUuid: $objectUuid);
 
 	}//end isStarredByCaller()
-
-	/**
-	 * Nothing left to clean: an object's follows are pruned by WatcherPruneListener.
-	 *
-	 * Kept, and kept a no-op, so FavouritePruneListener (which also prunes the
-	 * view history until `read-history-on-audit-trail` lands) keeps its call
-	 * without deleting the same rows twice.
-	 *
-	 * @param string $objectUuid The object's uuid.
-	 *
-	 * @return integer Always 0.
-	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
-	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is the one its callers already use.
-	 */
-	public function cleanupForObject(string $objectUuid): int {
-		return 0;
-
-	}//end cleanupForObject()
 }//end class

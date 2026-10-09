@@ -72,7 +72,7 @@ class Version1Date20261009130000Test extends TestCase {
 		$schema->method('getTable')->willReturn($table);
 
 		$step = new Version1Date20261009130000($this->createMock(IDBConnection::class));
-		$this->assertNull($step->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []));
+		$this->assertSame($schema, $step->changeSchema($this->createMock(IOutput::class), static fn () => $schema, []));
 	}//end testASecondRunChangesNothing()
 
 	/**
@@ -132,7 +132,7 @@ class Version1Date20261009130000Test extends TestCase {
 		$gone = $this->createMock(ISchemaWrapper::class);
 		$gone->method('hasTable')->willReturn(false);
 		$gone->expects($this->never())->method('dropTable');
-		$this->assertNull($step->changeSchema($this->createMock(IOutput::class), static fn () => $gone, []));
+		$this->assertSame($gone, $step->changeSchema($this->createMock(IOutput::class), static fn () => $gone, []));
 	}//end testTheDropStepRemovesTheFavouritesTable()
 
 	/**

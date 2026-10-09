@@ -50,10 +50,14 @@ use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 
 /**
  * Declarative migration engine with rollback.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The thirteenth class is WriteCause, the ambient
+ *                                                  audit-cause frame its object reads run in.
  */
 class SchemaMigrationService {
 
@@ -308,6 +312,8 @@ class SchemaMigrationService {
 	 * @throws \InvalidArgumentException When the run is not a migration.
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function rollback(int $runId, ?string $startedBy = null): SchemaRun {
 		$run = $this->runMapper->find($runId);
@@ -327,13 +333,13 @@ class SchemaMigrationService {
 		$conflicts = 0;
 
 		foreach ($entries as $entry) {
-			$object = $this->objectService->find(
+			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $entry->getObjectUuid(),
 				register: $run->getRegisterId(),
 				schema: $schema,
 				_rbac: false,
 				_multitenancy: false
-			);
+			));
 
 			if ($object === null) {
 				$conflicts++;

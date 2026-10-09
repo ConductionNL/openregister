@@ -1067,6 +1067,86 @@ class ObjectsControllerCoverageTest extends TestCase {
 	}
 
 	/**
+	 * The mapper already applies _offset, so a later page keeps the rows it returns.
+	 */
+	public function testIndexCrossTableSearchDoesNotApplyOffsetTwice(): void {
+		$registerEntity = $this->createMagicMappedRegister(1, 'reg', ['2', '3']);
+		$this->registerMapper->method('find')->willReturn($registerEntity);
+		$this->schemaMapper->method('find')->willReturnCallback(function ($id) {
+			return $this->createSchemaMock((int) $id, 'schema'.$id);
+		});
+
+		$this->request->method('getParams')->willReturn(['schemas' => '2,3']);
+
+		$rows = [];
+		foreach (['page2-a', 'page2-b'] as $uuid) {
+			$row = new ObjectEntity();
+			$row->setUuid($uuid);
+			$row->setObject(['name' => $uuid]);
+			$rows[] = $row;
+		}
+
+		$magicMapper = $this->createMock(MagicMapper::class);
+		$magicMapper->method('searchAcrossMultipleTables')->willReturn($rows);
+		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+			return $magicMapper;
+		});
+
+		$this->objectService->method('buildSearchQuery')->willReturn([
+			'_limit' => 2,
+			'_offset' => 2,
+		]);
+
+		$data = $this->controller->index('1', '2', $this->objectService)->getData();
+
+		$this->assertCount(2, $data['results']);
+		$this->assertSame(2, $data['page']);
+	}
+
+	/**
+	 * The total is every match across the tables, not the size of the page.
+	 */
+	public function testIndexCrossTableSearchTotalIsTheFullCount(): void {
+		$registerEntity = $this->createMagicMappedRegister(1, 'reg', ['2', '3']);
+		$this->registerMapper->method('find')->willReturn($registerEntity);
+		$this->schemaMapper->method('find')->willReturnCallback(function ($id) {
+			return $this->createSchemaMock((int) $id, 'schema'.$id);
+		});
+
+		$this->request->method('getParams')->willReturn(['schemas' => '2,3']);
+
+		$rows = [];
+		foreach (['page2-a', 'page2-b'] as $uuid) {
+			$row = new ObjectEntity();
+			$row->setUuid($uuid);
+			$row->setObject(['name' => $uuid]);
+			$rows[] = $row;
+		}
+
+		$magicMapper = $this->createMock(MagicMapper::class);
+		$magicMapper->method('searchAcrossMultipleTables')->willReturn($rows);
+		$magicMapper->expects($this->once())
+			->method('countAcrossMultipleTables')
+			->with($this->callback(static fn (array $query): bool => ($query['_offset'] ?? null) === 2), $this->countOf(2))
+			->willReturn(7);
+		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+			return $magicMapper;
+		});
+
+		$this->objectService->method('buildSearchQuery')->willReturn([
+			'_limit' => 2,
+			'_offset' => 2,
+		]);
+
+		$data = $this->controller->index('1', '2', $this->objectService)->getData();
+
+		$this->assertCount(2, $data['results']);
+		$this->assertSame(7, $data['total']);
+		$this->assertSame(4, $data['pages']);
+		$this->assertSame(2, $data['page']);
+	}
+
+	/**
 	 * Test crossTableSearch with no valid pairs returns 404.
 	 * Exercises line 706-714 (empty pairs branch).
 	 */
@@ -1710,6 +1790,8 @@ class ObjectsControllerCoverageTest extends TestCase {
 
 		$magicMapper = $this->createMock(MagicMapper::class);
 		$magicMapper->method('searchAcrossMultipleTables')->willReturn($entities);
+		// The total comes from the mapper's count, not the page size.
+		$magicMapper->method('countAcrossMultipleTables')->willReturn(5);
 
 		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
 			return $magicMapper;

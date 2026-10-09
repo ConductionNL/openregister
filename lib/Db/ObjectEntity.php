@@ -719,6 +719,17 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?bool $watchNotify = null;
 
 	/**
+	 * When the reader last opened this object, as ISO 8601.
+	 *
+	 * Transient, set only on a `_recent=true` page from the read history the
+	 * lens was resolved with (the audit trail's `read` rows). Exposed in @self
+	 * as `viewedAt`, and absent on every other read.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $viewedAt = null;
+
+	/**
 	 * What the reader may do with this object, as `{"update": bool}`.
 	 *
 	 * Transient, populated by the render layer only when the request asks for
@@ -1033,6 +1044,22 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function setUnreadCounts(?array $counts): void {
 		$this->unreadCounts = $counts;
 	}//end setUnreadCounts()
+
+	/**
+	 * Write when the reader last opened this object.
+	 *
+	 * Write-only, like setWatching(): mergeTransientRenderFields() reads the
+	 * property directly. Surfaced in the @self envelope as `viewedAt`.
+	 *
+	 * @param string|null $viewedAt ISO 8601 moment of the reader's latest read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+	 */
+	public function setViewedAt(?string $viewedAt): void {
+		$this->viewedAt = $viewedAt;
+	}//end setViewedAt()
 
 	/**
 	 * Write what the reader may do with this object.
@@ -1483,6 +1510,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		//   when they follow (`merge-follow-and-favourites`).
 		// - favourite: DEPRECATED, `watching` under its old name for one
 		//   release, so a client that still reads the star keeps working.
+		// - viewedAt: when the reader last opened this object, on a
+		//   `_recent=true` page only (`read-history-on-audit-trail`).
 		//
 		// This is a map rather than a chain of ifs because the chain grew one
 		// branch per feature and ran past the complexity budget.
@@ -1499,6 +1528,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'unread'                  => $this->unread,
 			'watchNotify'             => $this->watchNotify,
 			'favourite'               => $this->watching,
+			'viewedAt'                => $this->viewedAt,
 			'can'                     => $this->can,
 		];
 
