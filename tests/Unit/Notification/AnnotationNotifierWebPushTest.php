@@ -15,7 +15,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Covers the web-push rendering extensions of AnnotationNotifier: declared
- * action buttons rendered via addAction(), the implicit single "View" action
+ * action buttons rendered via addParsedAction(), the implicit single "View" action
  * kept when no actions are declared, and the originApp-driven hex icon.
  *
  * @spec openspec/specs/notificatie-engine/spec.md
@@ -39,13 +39,15 @@ class AnnotationNotifierWebPushTest extends TestCase {
 	/**
 	 * Build a chainable IAction mock that records the label it is given.
 	 *
-	 * @param array<int, string> $labels Capture sink for setLabel() calls.
+	 * @param array<int, string> $labels Capture sink for setParsedLabel() calls.
 	 *
 	 * @return IAction&MockObject The action mock.
 	 */
 	private function recordingAction(array &$labels): IAction&MockObject {
 		$action = $this->createMock(IAction::class);
-		$action->method('setLabel')->willReturnCallback(
+		$action->method('setLabel')->willReturnSelf();
+		// The person reads the parsed label; the raw label is a short key.
+		$action->method('setParsedLabel')->willReturnCallback(
 			static function (string $label) use (&$labels, $action): IAction {
 				$labels[] = $label;
 				return $action;
@@ -82,7 +84,7 @@ class AnnotationNotifierWebPushTest extends TestCase {
 		$notification->method('setParsedSubject')->willReturnSelf();
 
 		// Exactly the single declared action is added (no implicit "View").
-		$notification->expects($this->once())->method('addAction')->with($action);
+		$notification->expects($this->once())->method('addParsedAction')->with($action);
 
 		$this->notifier->prepare($notification, 'en');
 		$this->assertSame(['Open client'], $labels);
@@ -109,7 +111,7 @@ class AnnotationNotifierWebPushTest extends TestCase {
 		$notification->method('setParsedSubject')->willReturnSelf();
 
 		// The implicit "View" action is added exactly once.
-		$notification->expects($this->once())->method('addAction')->with($action);
+		$notification->expects($this->once())->method('addParsedAction')->with($action);
 
 		$this->notifier->prepare($notification, 'en');
 		$this->assertSame(['View'], $labels);
@@ -124,6 +126,7 @@ class AnnotationNotifierWebPushTest extends TestCase {
 
 		$action = $this->createMock(IAction::class);
 		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
 		$action->method('setPrimary')->willReturnSelf();
 		$action->method('setLink')->willReturnSelf();
 
@@ -136,7 +139,7 @@ class AnnotationNotifierWebPushTest extends TestCase {
 		]);
 		$notification->method('createAction')->willReturn($action);
 		$notification->method('setParsedSubject')->willReturnSelf();
-		$notification->method('addAction')->willReturnSelf();
+		$notification->method('addParsedAction')->willReturnSelf();
 
 		// The icon points at the originApp hex-composite route, not app.svg.
 		$notification->expects($this->once())
