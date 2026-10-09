@@ -565,6 +565,19 @@ class AnnotationNotificationDispatcher {
 				category: $partiesCategory
 			);
 
+			// `{kind: email, field: ...}` mails an address read off the object
+			// or through a reference on it (decision 128). Like parties, it
+			// resolves to no account, so it counts towards the same reach.
+			$partiesReached += $this->dispatchToAddresses(
+				recipientsSpec: (array)($spec['recipients'] ?? []),
+				object: $object,
+				channels: $channels,
+				ruleId: (string)$name,
+				subject: $broadcastSubject,
+				body: $partiesBody,
+				category: $partiesCategory
+			);
+
 			if (count($recipients) === 0) {
 				// 🔴 IT USED TO `continue` IN SILENCE. No log, no counter, no
 				// complaint — and declared groups ship EMPTY across this fleet,
@@ -3271,6 +3284,78 @@ class AnnotationNotificationDispatcher {
 
 		return $reached;
 	}//end dispatchToParties()
+
+	/**
+	 * Mail the `email` recipients of a rule: addresses read off the object or through a reference.
+	 *
+	 * Resolved from the container for the same reason as the party service:
+	 * it reads objects, and the object layer dispatches notifications.
+	 *
+	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
+	 * @param ObjectEntity $object The triggering object.
+	 * @param array<int, string> $channels The rule's channels.
+	 * @param string $ruleId The rule, for the history row.
+	 * @param string $subject The rule's subject, in the default locale.
+	 * @param string $body The rule's message, in the default locale; the subject when it has none.
+	 * @param string $category The rule's message category, for integriq's opt-out question.
+	 *
+	 * @return int How many addresses were put to the mail path (refusals included, missing addresses not).
+	 *
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-rule-may-mail-an-address-it-reads-through-a-reference-req-ero-007
+	 */
+	private function dispatchToAddresses(
+		array $recipientsSpec,
+		ObjectEntity $object,
+		array $channels,
+		string $ruleId,
+		string $subject,
+		string $body,
+		string $category,
+	): int {
+		if (in_array('email', $channels, true) === false) {
+			return 0;
+		}
+
+		$hasEmailKind = false;
+		foreach ($recipientsSpec as $recipient) {
+			if (is_array($recipient) === true && (string)($recipient['kind'] ?? '') === 'email') {
+				$hasEmailKind = true;
+				break;
+			}
+		}
+
+		if ($hasEmailKind === false) {
+			return 0;
+		}
+
+		$outcomes = $this->serverContainer->get(ReferencedAddressNotifier::class)->notify(
+			recipientsSpec: $recipientsSpec,
+			object: $object,
+			subject: $subject,
+			body: $body,
+			category: $category
+		);
+
+		$reached = 0;
+		foreach ($outcomes as $outcome) {
+			$unaddressed = [ReferencedAddressNotifier::OUTCOME_NO_ADDRESS, ReferencedAddressNotifier::OUTCOME_REFERENCE_UNRESOLVED];
+			if (in_array($outcome['outcome'], $unaddressed, true) === false) {
+				$reached++;
+			}
+
+			$this->recordHistory(
+				ruleId: $ruleId,
+				channel: 'email',
+				recipient: 'email-field:' . $outcome['field'],
+				status: $outcome['outcome'],
+				object: $object,
+				subject: $subject,
+				locale: null
+			);
+		}
+
+		return $reached;
+	}//end dispatchToAddresses()
 
 	/**
 	 * Send a transactional email to a Nextcloud user.
