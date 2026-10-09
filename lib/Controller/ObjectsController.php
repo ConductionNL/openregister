@@ -1089,6 +1089,9 @@ class ObjectsController extends Controller {
 		// where a `{"nl":...}` map projects to the negotiated language.
 		$renderHandler->resolveTranslationsForRows(rows: $results);
 
+		// Every list row must carry @self.files (file IDs), as on the QueryHandler cheap path.
+		$renderHandler->attachLightweightFilesToRows(rows: $results);
+
 		// Serialize results.
 		$serializedResults = [];
 		foreach ($results as $entity) {
@@ -1112,17 +1115,16 @@ class ObjectsController extends Controller {
 		$limit = (int)($query['_limit'] ?? 20);
 		$offset = (int)($query['_offset'] ?? 0);
 
-		// PERF-6: the per-table merge can return up to limit×tableCount rows. Slice
-		// down to the requested page window so the response honours _limit/_offset
-		// instead of returning every fetched row.
+		// PERF-6: the sequential per-table merge can return up to limit×tableCount
+		// rows, so cap the page at _limit. The mapper already applied _offset (the
+		// UNION in SQL, the sequential path per table); applying it again here
+		// emptied every page after the first.
 		// NOTE: an exact cross-table total still requires a per-table COUNT(*) in SQL
 		// (MagicMapper, out of this controller's scope); $fetchedCount is the best
 		// available bound here. TODO(PERF-6): sum per-table COUNT(*) in MagicMapper.
 		$fetchedCount = count($serializedResults);
 		if ($limit > 0) {
-			$serializedResults = array_slice($serializedResults, $offset, $limit);
-		} elseif ($offset > 0) {
-			$serializedResults = array_slice($serializedResults, $offset);
+			$serializedResults = array_slice($serializedResults, 0, $limit);
 		}
 
 		// PERF-10: allow callers to skip the (here, in-PHP) total when not needed.
@@ -1590,6 +1592,9 @@ class ObjectsController extends Controller {
 					// Same bypass, same gap for translatable properties: renderEntity is
 					// where a `{"nl":...}` map projects to the negotiated language.
 					$renderHandler->resolveTranslationsForRows(rows: $results);
+
+					// Every list row must carry @self.files (file IDs), as on the QueryHandler cheap path.
+					$renderHandler->attachLightweightFilesToRows(rows: $results);
 
 					$serializedResults = [];
 					foreach ($results as $entity) {
@@ -2623,6 +2628,9 @@ class ObjectsController extends Controller {
 						// Same bypass, same gap for translatable properties: renderEntity is
 						// where a `{"nl":...}` map projects to the negotiated language.
 						$renderHandler->resolveTranslationsForRows(rows: $results);
+
+						// Every list row must carry @self.files (file IDs), as on the QueryHandler cheap path.
+						$renderHandler->attachLightweightFilesToRows(rows: $results);
 
 						// Convert ObjectEntity array to JSON-serializable format.
 						$serializedResults = [];
