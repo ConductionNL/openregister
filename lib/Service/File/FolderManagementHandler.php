@@ -150,6 +150,8 @@ class FolderManagementHandler {
 	 * FileService here builds it, and its constructor wires itself back in.
 	 *
 	 * @return FileService|null The facade, or null when it cannot be resolved.
+	 *
+	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-openregisters-own-account-holds-every-managed-folder-req-ofoa-001
 	 */
 	private function fileService(): ?FileService {
 		if ($this->fileService !== null || $this->container === null) {
@@ -158,8 +160,11 @@ class FolderManagementHandler {
 
 		try {
 			$resolved = $this->container->get(FileService::class);
-			if (($resolved instanceof FileService) === true && $this->fileService === null) {
-				$this->fileService = $resolved;
+			// Building FileService has normally wired it in already; setting the
+			// same instance again is harmless and covers a container that hands
+			// back an already-built one.
+			if (($resolved instanceof FileService) === true) {
+				$this->setFileService(fileService: $resolved);
 			}
 		} catch (\Throwable $e) {
 			$this->logger->warning(
