@@ -79,23 +79,4 @@ class FavouriteServiceTest extends TestCase {
 		$this->assertTrue(condition: (new FavouriteService($this->watchers))->unstar(object: $object));
 
 	}//end testUnstarIsAnUnfollow()
-
-	/**
-	 * "Starred" means "followed", whatever the notify switch says.
-	 *
-	 * @return void
-	 */
-	public function testStarredMeansFollowed(): void {
-		$this->watchers->method('isWatchedByCaller')->willReturnMap(
-			[
-				['uuid-case-1', true],
-				['uuid-case-2', false],
-			]
-		);
-		$service = new FavouriteService($this->watchers);
-
-		$this->assertTrue(condition: $service->isStarredByCaller(objectUuid: 'uuid-case-1'));
-		$this->assertFalse(condition: $service->isStarredByCaller(objectUuid: 'uuid-case-2'));
-
-	}//end testStarredMeansFollowed()
 }//end class

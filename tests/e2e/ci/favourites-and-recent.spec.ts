@@ -211,7 +211,10 @@ test.describe('favourites and recently opened over HTTP', () => {
 		)
 		expect(star.ok(), `starring failed: ${await star.text()}`).toBeTruthy()
 		// merge-follow-and-favourites: the star is a deprecated alias of a quiet follow.
-		expect(star.headers()['deprecation'], 'the favourite route should say it is deprecated').toBe('true')
+		expect(
+			star.headers().deprecation,
+			'the favourite route should say it is deprecated',
+		).toBe('true')
 
 		const read = await owner.get(
 			`${API}/objects/${registerId}/${schemaId}/${target}`,

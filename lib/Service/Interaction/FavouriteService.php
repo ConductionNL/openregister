@@ -104,18 +104,4 @@ class FavouriteService {
 		return $this->watchers->unwatch(object: $object);
 
 	}//end unstar()
-
-	/**
-	 * Whether the calling user follows an object, which is what "starred" now means.
-	 *
-	 * @param string $objectUuid The object's uuid.
-	 *
-	 * @return boolean True when the caller follows the object.
-	 *
-	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
-	 */
-	public function isStarredByCaller(string $objectUuid): bool {
-		return $this->watchers->isWatchedByCaller(objectUuid: $objectUuid);
-
-	}//end isStarredByCaller()
 }//end class
