@@ -45,7 +45,7 @@ class Version1Date20261009130100 extends SimpleMigrationStep {
 	 * @param Closure $schemaClosure Returns the schema wrapper.
 	 * @param array<string, mixed> $options Migration options.
 	 *
-	 * @return ISchemaWrapper|null The changed schema, or null when there was nothing to drop.
+	 * @return ISchemaWrapper|null The schema, changed or not; returning it keeps the shared snapshot.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 *
@@ -54,7 +54,7 @@ class Version1Date20261009130100 extends SimpleMigrationStep {
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(Version1Date20261009130000::FAVOURITES_TABLE) === false) {
-			return null;
+			return $schema;
 		}
 
 		$schema->dropTable(Version1Date20261009130000::FAVOURITES_TABLE);

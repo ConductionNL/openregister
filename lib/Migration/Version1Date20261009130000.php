@@ -82,7 +82,7 @@ class Version1Date20261009130000 extends SimpleMigrationStep {
 	 * @param Closure $schemaClosure Returns the schema wrapper.
 	 * @param array<string, mixed> $options Migration options.
 	 *
-	 * @return ISchemaWrapper|null The changed schema, or null when nothing changed.
+	 * @return ISchemaWrapper|null The schema, changed or not; returning it keeps the shared snapshot.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 *
@@ -91,12 +91,12 @@ class Version1Date20261009130000 extends SimpleMigrationStep {
 	public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper {
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::WATCHERS_TABLE) === false) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(self::WATCHERS_TABLE);
 		if ($table->hasColumn('notify') === true) {
-			return null;
+			return $schema;
 		}
 
 		$table->addColumn('notify', Types::BOOLEAN, ['notnull' => false, 'default' => true]);
