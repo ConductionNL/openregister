@@ -42,6 +42,13 @@ that OpenRegister owns:
    description and summary metadata, now compares lower-cased values on
    PostgreSQL, MySQL/MariaDB and SQLite.
 
+3. **A translatable field left its placeholder in a subject.** "Task changed:
+   {{subject}}" and "Lead changed: {{title}}": the templating skipped every
+   value that is not a scalar, and a translatable property is a language map.
+   It now renders in the recipient's language, then the register's default
+   language, then its first value.
+4. **Related on a lead page was slow.** See tasks section 6.
+
 ## Why
 
 A notification that opens a dashboard is a notification that leads nowhere.

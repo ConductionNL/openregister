@@ -14,6 +14,13 @@
 
 - [x] 3.1 `MagicSearchHandler::applySorting()` orders a plain string property (not a date), a translatable property, and `_name`, `_description`, `_summary` (also as `@self.*`) by `LOWER(...)`. Verify: `tests/Unit/Db/MagicSearchHandlerTranslatableSortTest.php` runs the ORDER BY against SQLite with mixed-case rows; it fails on the old code.
 
-## 4. Live
+## 4. Translatable placeholders
 
-- [x] 4.1 On :8099 a pipelinq notification links to the client page; with the registry empty the fallback opens the object in OpenRegister's object view; `_order={"title":"asc"}` returns one case-insensitive list.
+- [x] 4.1 `NotificationTemplating::interpolate()` and `unanswered()` resolve a language map: recipient language (and its base), then the register's languages, then the first value. The dispatcher passes the recipient locale and the register's languages. Verify: `tests/Unit/Service/Notification/TranslatablePlaceholderTest.php` fails on the old code (5 of 6).
+
+## 5. Live
+
+- [x] 5.1 On :8099, in a PHP process that loads Nextcloud but no apps (as `occ background-job:worker` does), the registry resolves the pipelinq client deep link (`/apps/pipelinq/clients/{uuid}`); with the old registry the same probe returns null.
+- [x] 5.2 On :8099 the fallback `/index.php/apps/openregister/objects/20/28/{uuid}` opens that client in OpenRegister's object view.
+- [x] 5.3 On :8099 `_order={"name":"asc"}` on pipelinq clients lists "Gemeente Voorbeeld" before "GGD Rotterdam-Rijnmond" (case-insensitive).
+- [ ] 5.4 After ConductionNL/.github#832 is merged and a pipelinq beta is released: `GET /apps/openregister/api/manifest/pipelinq` on cloud.conduction.nl answers 200 and a "Client changed" notification opens the client.
