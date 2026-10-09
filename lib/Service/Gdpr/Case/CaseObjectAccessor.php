@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\Gdpr\Case;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\DsarService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 
 /**
  * Load + audited-save helper for data-subject-request case objects.
@@ -72,15 +73,17 @@ class CaseObjectAccessor {
 	 * @return ObjectEntity|null The case, or null when absent or unauthorised.
 	 *
 	 * @spec openspec/specs/dsar-case-api/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function load(string $caseUuid): ?ObjectEntity {
-		return $this->objectService->find(
+		return WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $caseUuid,
 			register: self::REGISTER_SLUG,
 			schema: self::SCHEMA_SLUG,
 			_rbac: true,
 			_multitenancy: true
-		);
+		));
 	}//end load()
 
 	/**

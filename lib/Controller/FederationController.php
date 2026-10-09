@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\FederatedShareMapper;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -274,6 +275,8 @@ class FederationController extends Controller {
 	 * @return JSONResponse The object or an error.
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]
@@ -290,13 +293,13 @@ class FederationController extends Controller {
 		}
 
 		try {
-			$entity = $this->objectService->find(
+			$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $id,
 				register: $share->getRegister(),
 				schema: $share->getSchema(),
 				_rbac: false,
 				_multitenancy: false
-			);
+			));
 		} catch (Throwable $e) {
 			$this->logger->error('[Federation] serve object failed: ' . $e->getMessage());
 			return new JSONResponse(data: ['error' => 'Could not read shared object'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);

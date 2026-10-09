@@ -56,6 +56,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
 use OCP\IUserManager;
@@ -164,7 +165,7 @@ class HandoffService {
 	 *   (Requirement: Handoff REST surface)
 	 */
 	public function listAvailability(string $register, string $schema, string $id): array {
-		$source = $this->objectService->find(id: $id, register: $register, schema: $schema);
+		$source = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, register: $register, schema: $schema));
 		if ($source === null) {
 			throw new HandoffException(
 				errorCode: HandoffException::NOT_DECLARED,
@@ -263,7 +264,7 @@ class HandoffService {
 		?string $correlationId = null,
 	): array {
 		// 1. Load the source under the caller's RBAC (read) — 404/403 surface here.
-		$source = $this->objectService->find(id: $id, register: $register, schema: $schema);
+		$source = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, register: $register, schema: $schema));
 		if ($source === null) {
 			throw new HandoffException(errorCode: HandoffException::NOT_DECLARED, message: 'Object not found.');
 		}

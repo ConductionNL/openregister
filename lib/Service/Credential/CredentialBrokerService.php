@@ -74,6 +74,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
 use OCP\IGroupManager;
 use OCP\IUserManager;
@@ -673,12 +674,12 @@ class CredentialBrokerService {
 		?string $actingOrganisationId = null,
 	): ObjectEntity {
 		try {
-			$credential = $this->objectService->find(
+			$credential = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $credentialId,
 				register: self::REGISTER,
 				schema: self::SCHEMA,
 				_rbac: false
-			);
+			));
 		} catch (Throwable $e) {
 			// Log the REASON. A credential that is genuinely absent and a lookup
 			// that THREW are entirely different problems, and collapsing both

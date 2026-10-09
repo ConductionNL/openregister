@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Party\PartyNotificationService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -3012,7 +3013,7 @@ class AnnotationNotificationDispatcher {
 		}
 
 		try {
-			$related = $this->objectService->find(id: $lookup, _rbac: true);
+			$related = WriteCause::asLookup(fn () => $this->objectService->find(id: $lookup, _rbac: true));
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				sprintf('[AnnotationNotificationDispatcher] relation deeplink resolve failed: %s', $e->getMessage())

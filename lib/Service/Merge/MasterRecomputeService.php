@@ -47,6 +47,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Merge;
 
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -98,7 +99,7 @@ class MasterRecomputeService {
 		}
 
 		try {
-			$master = $this->objectService->find(id: $masterUuid, _rbac: true, _multitenancy: true);
+			$master = WriteCause::asLookup(fn () => $this->objectService->find(id: $masterUuid, _rbac: true, _multitenancy: true));
 			if ($master === null) {
 				return;
 			}

@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\File\AttachNodeHandler;
 use OCA\OpenRegister\Service\Integration\AttachTargetFilter;
 use OCA\OpenRegister\Service\Integration\TalkChatExporter;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -273,6 +274,8 @@ class FilesController extends Controller {
 	 *
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the
 	 *                                                            authenticated caller may not access the object.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function ensureObjectAccess(
 		string $register,
@@ -309,7 +312,7 @@ class FilesController extends Controller {
 		}
 
 		// Legacy wiring without the guard: the object read check alone.
-		$this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true);
+		WriteCause::asLookup(fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true));
 
 	}//end ensureObjectAccess()
 

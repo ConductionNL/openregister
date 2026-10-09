@@ -68,6 +68,7 @@ use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Support\FilterParams;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -939,6 +940,8 @@ class ObjectsController extends Controller {
 	 * @psalm-suppress UnusedParam Params are used in foreach loops and method calls.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 *
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse {
 		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
@@ -1142,21 +1145,27 @@ class ObjectsController extends Controller {
 			$page = (int)floor($offset / $limit) + 1;
 		}
 
-		return new JSONResponse(
-			data: [
-				'results' => $serializedResults,
-				'total' => $total,
-				'pages' => $pages,
-				'page' => $page,
-				'limit' => $limit,
-				'@self' => [
-					'source' => 'cross_table_magic_mapper',
-					'table_count' => count($pairs),
-					'register_count' => count($registers),
-					'schema_count' => count($schemas),
-				],
-			]
-		);
+		$responseData = [
+			'results' => $serializedResults,
+			'total' => $total,
+			'pages' => $pages,
+			'page' => $page,
+			'limit' => $limit,
+			'@self' => [
+				'source' => 'cross_table_magic_mapper',
+				'table_count' => count($pairs),
+				'register_count' => count($registers),
+				'schema_count' => count($schemas),
+			],
+		];
+
+		// The `_recent` lens report, as on the single-schema list
+		// (`recently-opened-means-opened`). Present only when asked.
+		if (is_array($query['_recentLens'] ?? null) === true) {
+			$responseData['@self']['lenses']['recent'] = $query['_recentLens'];
+		}
+
+		return new JSONResponse(data: $responseData);
 	}//end crossTableSearch()
 
 	/**
@@ -2806,13 +2815,13 @@ class ObjectsController extends Controller {
 		// confirm an object exists.
 		$record = [];
 		try {
-			$stored = $this->objectService->find(
+			$stored = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $id,
 				files: false,
 				register: $register,
 				schema: $schema,
 				_render: false
-			);
+			));
 			if ($stored !== null) {
 				$record = $stored->getObject();
 			}
@@ -4444,13 +4453,13 @@ class ObjectsController extends Controller {
 			$objectService->setRegister(register: $register);
 			$objectService->setSchema(schema: $schema);
 
-			$objectEntity = $objectService->find(
+			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $id,
 				register: $register,
 				schema: $schema,
 				_rbac: false,
 				_multitenancy: false
-			);
+			));
 			if ($objectEntity === null) {
 				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 			}
@@ -4777,7 +4786,7 @@ class ObjectsController extends Controller {
 
 		// Try to fetch the object by ID/UUID only (no register/schema filter yet).
 		try {
-			$object = $objectService->find(id: $id);
+			$object = WriteCause::asLookup(fn () => $objectService->find(id: $id));
 			if ($object === null) {
 				return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
 			}
@@ -5517,12 +5526,13 @@ class ObjectsController extends Controller {
 	 * @param string $id       The object.
 	 *
 	 * @return ObjectEntity|null The object, or null when it cannot be read.
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 */
 	private function presenceObject(string $register, string $schema, string $id): ?ObjectEntity {
 		try {
 			$this->objectService->setRegister(register: $register);
 			$this->objectService->setSchema(schema: $schema);
-			$found = $this->objectService->find($id);
+			$found = WriteCause::asLookup(fn () => $this->objectService->find($id));
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -6116,7 +6126,7 @@ class ObjectsController extends Controller {
 			$objectService->setSchema(schema: $schema);
 
 			// Get the object to ensure it exists and we have access.
-			$object = $objectService->find(id: $id);
+			$object = WriteCause::asLookup(fn () => $objectService->find(id: $id));
 
 			/*
 			 * Get the FileService from the container.
@@ -6866,7 +6876,7 @@ class ObjectsController extends Controller {
 		$rbac = ($isAdmin === false);
 
 		try {
-			$objectEntity = $objectService->find(
+			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $id,
 				files: false,
 				register: $register,
@@ -6874,7 +6884,7 @@ class ObjectsController extends Controller {
 				_rbac: $rbac,
 				_multitenancy: $rbac,
 				_render: false
-			);
+			));
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
 		}
@@ -6931,7 +6941,7 @@ class ObjectsController extends Controller {
 		$rbac = ($isAdmin === false);
 
 		try {
-			$objectEntity = $objectService->find(
+			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $id,
 				files: false,
 				register: $register,
@@ -6939,7 +6949,7 @@ class ObjectsController extends Controller {
 				_rbac: $rbac,
 				_multitenancy: $rbac,
 				_render: false
-			);
+			));
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
 		}

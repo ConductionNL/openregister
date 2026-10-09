@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\MdiIconRenderer;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\Collaboration\Reference\IReference;
 use OCP\Collaboration\Reference\Reference;
 use OCP\IL10N;
@@ -317,6 +318,8 @@ final class ObjectPreviewFormatter {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d1
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function buildReference(string $referenceText): ?IReference {
 		$parsed = $this->parseReference(referenceText: $referenceText);
@@ -330,11 +333,11 @@ final class ObjectPreviewFormatter {
 
 		try {
 			// Fetch the object using ObjectService.
-			$object = $this->objectService->find(
+			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $uuid,
 				register: $registerId,
 				schema: $schemaId
-			);
+			));
 
 			if ($object === null) {
 				return null;

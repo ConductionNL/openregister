@@ -48,6 +48,7 @@ use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -815,6 +816,8 @@ class CredentialController extends Controller {
 	 * @return ObjectEntity|JSONResponse The manageable entity, or a static error response.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function ensureManageable(string $id, ?string $uid): ObjectEntity|JSONResponse {
 		if ($uid === null) {
@@ -822,12 +825,12 @@ class CredentialController extends Controller {
 		}
 
 		try {
-			$object = $this->objectService->find(
+			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $id,
 				register: CredentialBrokerService::REGISTER,
 				schema: CredentialBrokerService::SCHEMA,
 				_rbac: false
-			);
+			));
 		} catch (Throwable $e) {
 			$object = null;
 		}

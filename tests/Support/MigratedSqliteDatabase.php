@@ -58,7 +58,7 @@ class MigratedSqliteDatabase {
 	/**
 	 * Expression-builder methods forwarded to Doctrine. Everything else throws.
 	 */
-	private const BRIDGED_EXPR = ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'isNull', 'isNotNull', 'in', 'like'];
+	private const BRIDGED_EXPR = ['eq', 'neq', 'lt', 'lte', 'gt', 'gte', 'isNull', 'isNotNull', 'in', 'like', 'orX', 'andX'];
 
 	private Connection $connection;
 
@@ -328,6 +328,13 @@ class MigratedSqliteDatabase {
 		$expr->method('in')->willReturnCallback(fn ($x, $y) => $doctrine->in(self::sql($x), self::sql($y)));
 		// As Nextcloud's SqliteExpressionBuilder::like(): the backslash escapes `_` and `%`.
 		$expr->method('like')->willReturnCallback(fn ($x, $y) => $doctrine->like(self::sql($x), self::sql($y))." ESCAPE '\\'");
+		// Nextcloud's own composite, which renders `(a) OR (b)` like Doctrine's.
+		$expr->method('orX')->willReturnCallback(
+			fn (...$parts) => new \OC\DB\QueryBuilder\CompositeExpression('OR', array_map(static fn ($part): string => (string) self::sql($part), $parts))
+		);
+		$expr->method('andX')->willReturnCallback(
+			fn (...$parts) => new \OC\DB\QueryBuilder\CompositeExpression('AND', array_map(static fn ($part): string => (string) self::sql($part), $parts))
+		);
 
 		return $expr;
 	}//end expressionBuilder()

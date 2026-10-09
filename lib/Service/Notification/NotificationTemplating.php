@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Notification;
 
+use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -281,6 +282,8 @@ class NotificationTemplating {
 	 * @return string|null The related object's display name, or null to keep the raw value.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function resolveRelationDisplayName(string $value): ?string {
 		if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) !== 1) {
@@ -297,7 +300,7 @@ class NotificationTemplating {
 
 		$name = null;
 		try {
-			$related = $this->objectService->find(id: $value, _rbac: true);
+			$related = WriteCause::asLookup(fn () => $this->objectService->find(id: $value, _rbac: true));
 			if ($related !== null) {
 				$candidate = $related->getName();
 				if (is_string($candidate) === true && $candidate !== '') {
