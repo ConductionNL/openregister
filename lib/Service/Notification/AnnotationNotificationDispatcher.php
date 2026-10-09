@@ -117,6 +117,15 @@ class AnnotationNotificationDispatcher {
 	private ?NotificationTemplating $lazyTemplating = null;
 
 	/**
+	 * The register's languages for the object being dispatched, default first.
+	 *
+	 * A translatable value renders in the recipient's language, then these.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $registerLanguages = [];
+
+	/**
 	 * Notes rules that resolved to no recipients at all.
 	 *
 	 * @var RuleReachRecorder
@@ -382,6 +391,7 @@ class AnnotationNotificationDispatcher {
 		}
 
 		$data = $object->getObject() ?? [];
+		$this->registerLanguages = $this->resolveRegisterLanguages(object: $object);
 
 		// Canonical INotification subject derived from the trigger. The
 		// Notifier renders these (object_created / object_updated /
@@ -2427,7 +2437,7 @@ class AnnotationNotificationDispatcher {
 	): string {
 		if (is_string($template) === true && $template !== '') {
 			// Legacy single-language path — no per-locale map declared.
-			return $this->interpolate(template: $template, data: $data, context: $context);
+			return $this->interpolate(template: $template, data: $data, context: $context, locale: $locale);
 		}
 
 		if (is_array($template) === true) {
@@ -2439,18 +2449,18 @@ class AnnotationNotificationDispatcher {
 
 			// Recipient locale wins when declared.
 			if ($locale !== null && isset($template[$locale]) === true && is_string($template[$locale]) === true) {
-				return $this->interpolate(template: $template[$locale], data: $data, context: $context);
+				return $this->interpolate(template: $template[$locale], data: $data, context: $context, locale: $locale);
 			}
 
 			// Explicit default locale next.
 			if (isset($template[$defaultLocale]) === true && is_string($template[$defaultLocale]) === true) {
-				return $this->interpolate(template: $template[$defaultLocale], data: $data, context: $context);
+				return $this->interpolate(template: $template[$defaultLocale], data: $data, context: $context, locale: $locale);
 			}
 
 			// NL/EN baseline.
 			foreach (['nl', 'en'] as $candidate) {
 				if (isset($template[$candidate]) === true && is_string($template[$candidate]) === true) {
-					return $this->interpolate(template: $template[$candidate], data: $data, context: $context);
+					return $this->interpolate(template: $template[$candidate], data: $data, context: $context, locale: $locale);
 				}
 			}
 
@@ -2461,7 +2471,7 @@ class AnnotationNotificationDispatcher {
 				}
 
 				if (is_string($value) === true) {
-					return $this->interpolate(template: $value, data: $data, context: $context);
+					return $this->interpolate(template: $value, data: $data, context: $context, locale: $locale);
 				}
 			}
 		}//end if
@@ -2619,14 +2629,49 @@ class AnnotationNotificationDispatcher {
 	 * @param string $template The raw subject template.
 	 * @param array<string, mixed> $data Object data for `{{prop}}` lookup.
 	 * @param array<string, mixed> $context Per-event context for `{{prop}}` lookup.
+	 * @param string|null $locale The recipient's language, or null for a broadcast.
 	 *
 	 * @return string The interpolated string.
+	 *
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-a-translatable-value-must-fill-its-placeholder
 	 */
-	private function interpolate(string $template, array $data, array $context): string {
+	private function interpolate(string $template, array $data, array $context, ?string $locale = null): string {
 		// The dialect's ONE placeholder evaluator — the same class the flow
-		// messaging service renders node templates through.
-		return $this->templating()->interpolate(template: $template, data: $data, context: $context);
+		// messaging service renders node templates through. A translatable
+		// value renders in the recipient's language, then the register's.
+		return $this->templating()->interpolate(
+			template: $template,
+			data: $data,
+			context: $context,
+			languages: array_merge([$locale], $this->registerLanguages)
+		);
 	}//end interpolate()
+
+	/**
+	 * The register's default language, then its other languages.
+	 *
+	 * @param ObjectEntity $object The object being dispatched.
+	 *
+	 * @return array<int, string> Language codes, empty when the register is unknown.
+	 *
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-a-translatable-value-must-fill-its-placeholder
+	 */
+	private function resolveRegisterLanguages(ObjectEntity $object): array {
+		$registerId = $object->getRegister();
+		if ($this->registerMapper === null || $registerId === null || (string)$registerId === '') {
+			return [];
+		}
+
+		try {
+			$register = $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			return [];
+		}
+
+		$languages = array_merge([$register->getDefaultLanguage()], ($register->getLanguages() ?? []));
+
+		return array_values(array_unique(array_filter($languages, static fn ($code): bool => is_string($code) === true && $code !== '')));
+	}//end resolveRegisterLanguages()
 
 	/**
 	 * Map a trigger to the canonical INotification subject the Notifier
@@ -2915,14 +2960,12 @@ class AnnotationNotificationDispatcher {
 			if (is_array($relationSpec) === true && (string)($relationSpec['kind'] ?? '') === 'relation') {
 				return $this->resolveRelationDeeplink(
 					field: (string)($relationSpec['field'] ?? ''),
-					data: $data,
-					originApp: $originApp
+					data: $data
 				);
 			}
 
 			// Deeplink to the triggering object itself.
 			return $this->buildObjectDetailLink(
-				originApp: $originApp,
 				registerId: (string)($object->getRegister() ?? ''),
 				schemaId: (string)($object->getSchema() ?? ''),
 				objectUuid: (string)($object->getUuid() ?? '')
@@ -2942,13 +2985,12 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @param string $field The relation field name.
 	 * @param array<string, mixed> $data The triggering object's data.
-	 * @param string $originApp The resolved origin app id.
 	 *
 	 * @return string|null The deeplink, or null when the relation is empty/unreadable.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function resolveRelationDeeplink(string $field, array $data, string $originApp): ?string {
+	private function resolveRelationDeeplink(string $field, array $data): ?string {
 		if ($field === '' || $this->objectService === null) {
 			return null;
 		}
@@ -2983,7 +3025,6 @@ class AnnotationNotificationDispatcher {
 		}
 
 		return $this->buildObjectDetailLink(
-			originApp: $originApp,
 			registerId: (string)($related->getRegister() ?? ''),
 			schemaId: (string)($related->getSchema() ?? ''),
 			objectUuid: (string)($related->getUuid() ?? '')
@@ -2991,16 +3032,18 @@ class AnnotationNotificationDispatcher {
 	}//end resolveRelationDeeplink()
 
 	/**
-	 * Build an object-detail deeplink against the originApp frontend route.
+	 * Build an object-detail deeplink: the owning app's registered route, else
+	 * OpenRegister's object view.
 	 *
-	 * @param string $originApp The resolved origin app id.
 	 * @param string $registerId The object's register id.
 	 * @param string $schemaId The object's schema id.
 	 * @param string $objectUuid The object's uuid.
 	 *
 	 * @return string|null The absolute deeplink, or null when ids are missing.
+	 *
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
 	 */
-	private function buildObjectDetailLink(string $originApp, string $registerId, string $schemaId, string $objectUuid): ?string {
+	private function buildObjectDetailLink(string $registerId, string $schemaId, string $objectUuid): ?string {
 		if ($registerId === '' || $schemaId === '' || $objectUuid === '') {
 			return null;
 		}
@@ -3040,8 +3083,11 @@ class AnnotationNotificationDispatcher {
 			}//end if
 		}//end if
 
-		return $this->appRouteBase(app: $originApp)
-			. sprintf('#/registers/%s/schemas/%s/objects/%s', $registerId, $schemaId, $objectUuid);
+		// No app claimed the schema: open the object in OpenRegister's object
+		// view (history mode). The origin app's #/registers/... hash was never
+		// a route there, so pipelinq redirected it to its dashboard.
+		return $this->appRouteBase(app: 'openregister')
+			. sprintf('objects/%s/%s/%s', rawurlencode($registerId), rawurlencode($schemaId), rawurlencode($objectUuid));
 	}//end buildObjectDetailLink()
 
 	/**
