@@ -57,6 +57,9 @@ use Psr\Log\LoggerInterface;
  * Runs a declared action bound to a manual flow.
  *
  * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The thirteenth type is WriteCause, the static frame
+ *   that marks the pre-action read as a lookup so it stays out of the reader's recently opened list.
  */
 class ObjectActionsController extends Controller {
 
