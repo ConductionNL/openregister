@@ -6,7 +6,9 @@ depends_on: []
 
 ## Summary
 
-OpenRegister knows, per user, which records they starred, which they follow and which changed since they last looked. Three archived changes built that state and its query lenses. Nothing on screen uses it. This change puts a star and a Follow toggle on the record page, marks a record read when its page opens, badges the record's tabs with what is new, and gives the Tables page a star column, an unread marker and four quick filters: Favourites, Recent, Following, Unread.
+> **Amended 2026-10-09 by `merge-follow-and-favourites`.** Ruben merged the star into Follow: there is no star any more, one Follow control carries a notifications switch, and the quick filters are Following, Recent and Unread. The change keeps its name so its tracking issue keeps matching; the text below is the amended scope.
+
+OpenRegister knows, per user, which records they starred, which they follow and which changed since they last looked. Three archived changes built that state and its query lenses. Nothing on screen uses it. This change puts one Follow control (with a notifications switch) on the record page, marks a record read when its page opens, badges the record's tabs with what is new, and gives the Tables page a follow column, an unread marker and three quick filters: Following, Recent, Unread.
 
 ## Rows this closes
 
@@ -32,8 +34,8 @@ No page in OpenRegister's `src/` or in nextcloud-vue calls any of these routes o
 
 ## What changes
 
-- Record page (`src/views/object/ObjectDetails.vue`): a star and a Follow toggle beside the title, a follower count, a "Mark as unread" action, a `PUT .../read-state` when the page has rendered the record, and a count badge on the Files tab and the other tabs that `@self.unreadCounts` names.
-- Tables page (`src/views/search/SearchIndex.vue`): a star column the user can click, unread rows drawn in bold with a dot, and quick filters Favourites, Recent, Following and Unread that pass the lenses.
+- Record page (`src/views/object/ObjectDetails.vue`): one Follow control beside the title, with a notifications on/off switch, a follower count, a "Mark as unread" action, a `PUT .../read-state` when the page has rendered the record, and a count badge on the Files tab and the other tabs that `@self.unreadCounts` names.
+- Tables page (`src/views/search/SearchIndex.vue`): a follow column the user can click, unread rows drawn in bold with a dot, and quick filters Following, Recent and Unread that pass the lenses `_watching`, `_recent` and `_unread`.
 - Both pages use nextcloud-vue components (cross-repo, design D-1), so every leaf app's `CnDetailPage` and `CnIndexPage` get the same affordances.
 - `@self.can` gains `manage` next to `update` (design D-6), so the followers popover shows the "Add a colleague" picker only to a caller the watchers endpoint will admit. Asked for by nextcloud-vue PR #1374 (`record-favourite-and-follow`, design D3).
 
@@ -47,7 +49,7 @@ No page in OpenRegister's `src/` or in nextcloud-vue calls any of these routes o
 
 - Extends `object-interactions` and `object-read-state`.
 - Affected code: `src/views/object/ObjectDetails.vue`, `src/views/search/SearchIndex.vue`, the object store in `src/store/modules/`. One backend addition: `manage` in `@self.can` (`lib/Service/Object/RenderObject.php`).
-- Backwards compatible: nothing changes for a user who never stars, follows or opens a record.
+- Backwards compatible: nothing changes for a user who never follows or opens a record.
 - Size: M.
 
 ## Out of scope

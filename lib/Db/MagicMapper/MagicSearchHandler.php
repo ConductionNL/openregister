@@ -43,13 +43,13 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectFavouriteMapper;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use OCA\OpenRegister\Db\ObjectViewMapper;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\LikeOperator;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
@@ -647,12 +647,14 @@ class MagicSearchHandler {
 		// facets cannot disagree about what was excluded.
 		$this->applyUnreadFilter(qb: $qb, userId: ($query['_unreadFor'] ?? null));
 
-		// The favourites and recent lenses, resolved in the query for the same
+		// The following and recent lenses, resolved in the query for the same
 		// reason, and each guarding itself so this method keeps its branch count.
+		// `_watchingFor` also answers the deprecated `_favourite=true`, since a
+		// favourite is a follow (`merge-follow-and-favourites`).
 		$this->applyPersonalLensFilter(
 			qb: $qb,
-			table: ObjectFavouriteMapper::TABLE,
-			userId: ($query['_favouriteFor'] ?? null)
+			table: WatcherMapper::TABLE,
+			userId: ($query['_watchingFor'] ?? null)
 		);
 		$this->applyPersonalLensFilter(
 			qb: $qb,
@@ -2104,7 +2106,8 @@ class MagicSearchHandler {
 			'_unread',
 			'_unreadFor',
 			'_favourite',
-			'_favouriteFor',
+			'_watching',
+			'_watchingFor',
 			'_recent',
 			'_recentFor',
 			'_count',

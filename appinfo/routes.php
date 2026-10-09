@@ -129,7 +129,8 @@ return [
         ['name' => 'objectPermissions#history', 'url' => '/api/objects/{register}/{schema}/{id}/permissions/history', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectPermissions#index',   'url' => '/api/objects/{register}/{schema}/{id}/permissions',         'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
 
-        // Per-object watchers. Following an object is per-user state that must not
+        // Per-object watchers: following, with a notify switch on the PUT body
+        // (`{"notify": false}` follows quietly). Following an object is per-user state that must not
         // be written through the object itself — that would put a subscription in
         // the object's audit trail and cut a version on every follow — so it gets
         // its own entry point. Anyone who may READ the object may follow it; the
@@ -169,13 +170,11 @@ return [
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'userId' => '[^/]+'],
         ],
 
-        // Per-object favourite (`favourites-and-recent`). A star is a fact about
-        // a person, not about the object, so it is written here and never
-        // through the object: writing it into the object would change that
-        // object's audit trail and cut a version for every reader.
-        // There is no GET here on purpose. Every object read already carries
-        // `@self.favourite`, so a detail page renders the star from data it has
-        // and a list renders a column of them from one query.
+        // Per-object favourite, DEPRECATED (`merge-follow-and-favourites`). A
+        // star is a follow with notifications off now: PUT follows quietly
+        // (an existing follow is left alone), DELETE unfollows, and both answer
+        // with a Deprecation header pointing at `.../watch`. Removed in the
+        // release after the one that ships the merge.
         // Written over several lines, unlike their older neighbours, because a
         // one-line route entry here is over the 150-character line-length rule.
         [

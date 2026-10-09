@@ -105,6 +105,7 @@ use OCA\OpenRegister\Listener\ConceptDeleteGuardListener;
 use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Listener\DependentValueListener;
 use OCA\OpenRegister\Listener\FacetCacheInvalidationListener;
+use OCA\OpenRegister\Listener\AssigneeFollowListener;
 use OCA\OpenRegister\Listener\FavouritePruneListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
@@ -3589,6 +3590,12 @@ class Application extends App implements IBootstrap {
 		// its audience behind, or a re-created uuid inherits followers who
 		// never chose to follow it.
 		$context->registerEventListener(ObjectDeletedEvent::class, WatcherPruneListener::class);
+
+		// Assignment follows (`merge-follow-and-favourites`): the user a save
+		// puts in a schema's `x-openregister-role: assignee` property follows
+		// the object with notifications on.
+		$context->registerEventListener(ObjectCreatedEvent::class, AssigneeFollowListener::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, AssigneeFollowListener::class);
 
 		// Read state (`object-read-state`). A substantive change puts the object
 		// back to unread for every reader but its author; a deletion takes the

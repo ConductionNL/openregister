@@ -23,7 +23,6 @@ use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ViewScopeApplier;
-use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -78,7 +77,6 @@ class SearchQueryHandlerUnreadLensTest extends TestCase {
 			$this->createMock(originalClassName: LoggerInterface::class),
 			$this->createMock(originalClassName: IRequest::class),
 			$this->createMock(originalClassName: SearchTrailService::class),
-			$this->createMock(originalClassName: WatcherMapper::class),
 			$session
 		);
 
