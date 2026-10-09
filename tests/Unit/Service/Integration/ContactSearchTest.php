@@ -112,7 +112,10 @@ class ContactSearchTest extends TestCase {
 				return ($key === 'q' ? array_shift($queries) : $default);
 			}
 		);
-		$controller = new ContactSearchController('openregister', $request, $this->search());
+		$user = $this->createMock(\OCP\IUser::class);
+		$session = $this->createMock(\OCP\IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$controller = new ContactSearchController('openregister', $request, $this->search(), $session);
 
 		$found = $controller->search();
 		$refused = $controller->search();

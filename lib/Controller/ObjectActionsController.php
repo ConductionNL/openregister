@@ -110,7 +110,7 @@ class ObjectActionsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function invoke(string $register, string $schema, string $id, string $action): JSONResponse {
-		$object = $this->objects->find(id: $id);
+		$object = $this->findObject(id: $id);
 		if ($object === null) {
 			return new JSONResponse(['error' => 'No such object'], Http::STATUS_NOT_FOUND);
 		}
@@ -168,7 +168,7 @@ class ObjectActionsController extends Controller {
 		$results = [];
 		$flow    = null;
 		foreach ($ids as $id) {
-			$object = $this->objects->find(id: $id);
+			$object = $this->findObject(id: $id);
 			if ($object === null) {
 				$results[] = ['id' => $id, 'status' => 'failed', 'reason' => 'No such object'];
 				continue;
@@ -208,6 +208,24 @@ class ObjectActionsController extends Controller {
 			]
 		);
 	}//end invokeOnSelection()
+
+	/**
+	 * The object, or null when there is none the caller can reach.
+	 *
+	 * ObjectService::find() throws when the object does not exist; for this
+	 * controller that is a 404, not a 500.
+	 *
+	 * @param string $id The object's id, uuid or slug.
+	 *
+	 * @return ObjectEntity|null The object.
+	 */
+	private function findObject(string $id): ?ObjectEntity {
+		try {
+			return $this->objects->find(id: $id);
+		} catch (\Throwable) {
+			return null;
+		}
+	}//end findObject()
 
 	/**
 	 * Run the macro on one object: the action's own right, the binding, the

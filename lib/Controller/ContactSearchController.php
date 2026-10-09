@@ -30,6 +30,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUserSession;
 
 /**
  * Name search for the contacts leaf.
@@ -43,12 +44,14 @@ class ContactSearchController extends Controller {
 	 *
 	 * @param string        $appName The app name.
 	 * @param IRequest      $request The request.
-	 * @param ContactSearch $search  The search.
+	 * @param ContactSearch $search      The search.
+	 * @param IUserSession  $userSession The signed-in user.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly ContactSearch $search,
+		private readonly IUserSession $userSession,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -66,6 +69,11 @@ class ContactSearchController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function search(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(['error' => 'Authentication required', 'results' => [], 'total' => 0], Http::STATUS_UNAUTHORIZED);
+		}
+
 		$query = trim((string)$this->request->getParam('q', ''));
 		if (mb_strlen($query) < ContactSearch::MIN_QUERY_LENGTH) {
 			return new JSONResponse(

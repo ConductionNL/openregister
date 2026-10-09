@@ -189,6 +189,8 @@ class DepartmentMatrixPersonValues {
 	 * @param string            $userId   The current user.
 	 *
 	 * @return string[] The values, unique and non-empty.
+	 *
+	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md#requirement-a-schema-declares-a-department-by-role-matrix-keyed-on-an-object-field
 	 */
 	public static function collect(array $persons, string $property, string $match, string $userId): array {
 		$values = [];
