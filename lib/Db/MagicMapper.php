@@ -2133,15 +2133,28 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * This is the original implementation - slower but more flexible.
 	 *
+	 * Paging is applied ONCE, to the merged result. Each table is asked for
+	 * its first `offset + limit` rows, the tables are concatenated (and sorted
+	 * by score when there is a search term), and only then is the page cut.
+	 * Passing `_offset` to every table made each one skip that many rows on
+	 * its own, so later pages lost rows and pages ran up to limit x tables.
+	 *
 	 * @param array $query Search parameters.
 	 * @param array $registerSchemaPairs Array of register+schema pairs.
 	 *
 	 * @return array Array of ObjectEntity objects.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-limit-supports-an-explicit-unlimited-value
 	 */
 	private function searchAcrossMultipleTablesSequential(array $query, array $registerSchemaPairs): array {
 		$allResults = [];
+
+		// Each table answers the merged question's first `offset + limit` rows,
+		// the same over-fetch buildUnionBatchQuery() uses for UNION batches.
+		$pageQuery = $query;
+		$query = $this->buildUnionBatchQuery(query: $pageQuery);
 
 		foreach ($registerSchemaPairs as $pair) {
 			$register = $pair['register'] ?? null;
@@ -2232,6 +2245,11 @@ class MagicMapper extends AbstractObjectMapper {
 				}
 			);
 		}//end if
+
+		// The caller's page, cut once from the merged rows.
+		$offset = max(0, (int)($pageQuery['_offset'] ?? 0));
+		$normalisedLimit = QueryLimit::normalise($pageQuery['_limit'] ?? null);
+		$allResults = array_slice($allResults, $offset, $normalisedLimit);
 
 		$this->logger->debug(
 			message: '[MagicMapper] Cross-table search completed',
