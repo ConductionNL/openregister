@@ -3351,7 +3351,10 @@
         "{schema} {title} deleted": "{schema} {title} usunięto",
         "Object \"%1$s\" created": "Obiekt \"%1$s\" utworzono",
         "Object \"%1$s\" updated": "Obiekt \"%1$s\" zaktualizowano",
-        "Object \"%1$s\" assigned to you": "Obiekt \"%1$s\" przypisany do Ciebie"
+        "Object \"%1$s\" assigned to you": "Obiekt \"%1$s\" przypisany do Ciebie",
+        "Audit trail export ready": "Eksport dziennika audytu jest gotowy",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Twój eksport dziennika audytu (%1$s wpisów) zapisano w %2$s%3$s.",
+        "Open Files": "Otwórz Pliki"
     },
     "pluralForm": "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);",
     "plurals": {

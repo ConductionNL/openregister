@@ -3379,7 +3379,10 @@
         "Decision (besluit), always sent": "Besluit, wordt altijd verstuurd",
         "Statutory notice, always sent": "Wettelijke kennisgeving, wordt altijd verstuurd",
         "Account message, always sent": "Accountbericht, wordt altijd verstuurd",
-        "Security message, always sent": "Beveiligingsbericht, wordt altijd verstuurd"
+        "Security message, always sent": "Beveiligingsbericht, wordt altijd verstuurd",
+        "Audit trail export ready": "Export van de audittrail staat klaar",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Je export van de audittrail met %1$s regels is opgeslagen in %2$s%3$s.",
+        "Open Files": "Bestanden openen"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

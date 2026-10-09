@@ -3309,7 +3309,10 @@
         "{schema} {title} deleted": "{schema} {title} stizzà",
         "Object \"%1$s\" created": "Object \"%1$s\" creà",
         "Object \"%1$s\" updated": "Object \"%1$s\" actualisà",
-        "Object \"%1$s\" assigned to you": "Object \"%1$s\" attribuì a Vus"
+        "Object \"%1$s\" assigned to you": "Object \"%1$s\" attribuì a Vus",
+        "Audit trail export ready": "L'export dal protocol da revisiun è pront",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Voss export dal protocol da revisiun cun %1$s endataziuns è vegnì memorisà en %2$s%3$s.",
+        "Open Files": "Avrir Datotecas"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

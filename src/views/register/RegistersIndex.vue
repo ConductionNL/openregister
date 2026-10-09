@@ -444,7 +444,7 @@ export default {
 		 * The registers to list: synthetic rows dropped, header filters
 		 * applied, then sorted by the clicked header when there is one.
 		 *
-		 * @spec openspec/changes/order-filters-and-notification-links/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
+		 * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
 		 */
 		filteredRegisters() {
 			const registers = filterRows(
@@ -558,7 +558,7 @@ export default {
 		 * @param {{key: string, order: string}} payload The header and direction.
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/order-filters-and-notification-links/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
+		 * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
 		 */
 		onSort(payload) {
 			this.sortKey = payload && payload.key ? payload.key : null
@@ -572,7 +572,7 @@ export default {
 		 * @param {{key: string, values: Array}} payload The filter change.
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/order-filters-and-notification-links/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
+		 * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
 		 */
 		onFilterChange(payload) {
 			this.activeFilters = applyFilterChange(this.activeFilters, payload)

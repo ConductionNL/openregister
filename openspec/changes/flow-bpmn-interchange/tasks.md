@@ -116,7 +116,9 @@
       is read as a string, because `(bool)'false'` is true and a bare cast
       would turn every refusal into a failed import for a caller who asked for
       the opposite.
-- [ ] Multipart upload, which wants a file-handling path of its own.
+- [x] Multipart upload: `FlowController::readBpmnUpload()` reads the field `file`;
+      a failed upload answers 400 (`testImportBpmnReadsAMultipartUpload`,
+      `testImportBpmnRefusesAFailedUploadWith400`, both red before).
 - [x] Importer unit tests over fixtures: every verdict class, the
       strict/lenient pair, the no-DI layout, the invalid file; each refusal
       test with a positive control proving the corrected file imports.
@@ -130,7 +132,7 @@
       `FlowController` now imports from `Bpmn\`, which is a CONTROLLER and so
       outside the rule as written — but the rule should be spelled out before
       it is enforced, not after somebody trips it.
-- [ ] UI follow-up filed against nextcloud-vue: export/import actions on the
+- [ ] UI follow-up filed against nextcloud-vue: export/import actions on the (not run: a nextcloud-vue change)
       flow detail surface rendering the mapping report (out of this repo's
       scope; endpoint contract is this change).
 

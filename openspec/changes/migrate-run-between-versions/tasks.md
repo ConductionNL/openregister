@@ -70,7 +70,7 @@
 
 ## 3. Retirement
 
-- [ ] 3.1 A deprecated version with no pinned runs can be retired; refused otherwise with the count.
+- [ ] 3.1 A deprecated version with no pinned runs can be retired; refused otherwise with the count. (not run: the main spec allows only draft, published and deprecated; a retired state is question Q-openregister-1)
 
   NOT BUILT. `runsOnVersion()` is the query it needs and is public for exactly
   that reason, but the retirement gesture belongs with `FlowVersionService::
@@ -78,7 +78,7 @@
 
 ## 4. Tests
 
-- [ ] 4.1 `tests/e2e/ci/run-migration.spec.ts`: publish a version with a renamed node, migrate a parked run, complete the task.
+- [ ] 4.1 `tests/e2e/ci/run-migration.spec.ts`: publish a version with a renamed node, migrate a parked run, complete the task. (not run: e2e needs a live instance with a published flow)
 
   NOT BUILT: it needs a live instance with a published flow, and this lane
   writes no e2e it cannot run.

@@ -2,8 +2,15 @@
 
 ## 1. Backend
 
-- [ ] 1.1 `FileService::attach(objectId, node)` reusing the upsert pipeline.
-- [ ] 1.2 Talk chat export to a `.txt` node, then attach.
+- [x] 1.1 Attach a node reusing the upsert pipeline: `lib/Service/File/AttachNodeHandler.php`
+      (beside FileService, which it calls: every byte goes through `FileService::addFile()`),
+      route `POST /api/objects/{register}/{schema}/{id}/files/attach` with `nodeId`, looked up in
+      the CALLER's own Files (an id they cannot open is 404). A folder attaches the files directly
+      inside it, at most 50, and reports how many it skipped. `AttachNodeHandlerTest` (4).
+- [x] 1.2 Talk chat export to a `.txt` file, then attach: `TalkChatExporter` (oldest first, author
+      and UTC time per line, header says who saved it), route
+      `POST /api/objects/{register}/{schema}/{id}/files/chat` with `conversation` and `messages`
+      (the Talk action reads the messages in the browser as the user). `TalkChatExporterTest` (3).
 - [x] 1.3 The picker's rule, in `lib/Service/Integration/AttachTargetFilter.php`:
       which schemas may be offered (writable AND holding files, two different
       silent failures), which search hits may be shown, and why an attach is
@@ -31,5 +38,5 @@
       including both silent failures, the declaration that cannot widen, the
       bounded search, and the refusals that name a schema to nobody who did
       not already pick it. Attach-by-node waits on 1.1.
-- [ ] 3.2 `tests/e2e/ci/files-leaf-save-to-object.spec.ts`: from Files,
+- [ ] 3.2 `tests/e2e/ci/files-leaf-save-to-object.spec.ts`: from Files, (not run: e2e needs a browser and the Files action (2.1))
       run the action on a file, pick an object, see the file on the object.

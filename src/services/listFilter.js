@@ -8,7 +8,7 @@
  * this, the registers list showed header filters that narrowed nothing and the
  * schemas list showed none (cloud check, 8 October 2026).
  *
- * @spec openspec/changes/order-filters-and-notification-links/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
+ * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
  */
 
 /**
@@ -18,7 +18,7 @@
  * @param {{key: string, values: Array}} payload The change from CnIndexPage.
  * @return {object} A new map; an empty list removes the key.
  *
- * @spec openspec/changes/order-filters-and-notification-links/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
+ * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
  */
 export function applyFilterChange(activeFilters, payload) {
 	const next = { ...(activeFilters || {}) }
@@ -137,7 +137,7 @@ function rowPasses(row, paramKey, values, valueOf) {
  * @param {function(object, string): unknown} [valueOf] Reads a field from a row; defaults to `row[field]`.
  * @return {Array<object>} The rows that pass, in their original order.
  *
- * @spec openspec/changes/order-filters-and-notification-links/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
+ * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
  */
 export function filterRows(
 	rows,
