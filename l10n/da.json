@@ -3309,7 +3309,10 @@
         "{schema} {title} deleted": "{schema} {title} slettet",
         "Object \"%1$s\" created": "Objekt \"%1$s\" oprettet",
         "Object \"%1$s\" updated": "Objekt \"%1$s\" opdateret",
-        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" er tildelt dig"
+        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" er tildelt dig",
+        "Audit trail export ready": "Eksporten af revisionssporet er klar",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Din eksport af revisionssporet med %1$s poster er gemt i %2$s%3$s.",
+        "Open Files": "Åbn Filer"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

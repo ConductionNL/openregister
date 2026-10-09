@@ -3309,7 +3309,10 @@
         "{schema} {title} deleted": "{schema} {title} poistettu",
         "Object \"%1$s\" created": "Objekti \"%1$s\" luotu",
         "Object \"%1$s\" updated": "Objekti \"%1$s\" päivitetty",
-        "Object \"%1$s\" assigned to you": "Objekti \"%1$s\" on määritetty sinulle"
+        "Object \"%1$s\" assigned to you": "Objekti \"%1$s\" on määritetty sinulle",
+        "Audit trail export ready": "Kirjausketjun vienti on valmis",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Kirjausketjun vienti (%1$s merkintää) tallennettiin kohteeseen %2$s%3$s.",
+        "Open Files": "Avaa Tiedostot"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

@@ -3309,7 +3309,10 @@
         "{schema} {title} deleted": "{schema} {title} eliminat",
         "Object \"%1$s\" created": "Objecte \"%1$s\" creat",
         "Object \"%1$s\" updated": "Objecte \"%1$s\" actualitzat",
-        "Object \"%1$s\" assigned to you": "Objecte \"%1$s\" assignat a vostè"
+        "Object \"%1$s\" assigned to you": "Objecte \"%1$s\" assignat a vostè",
+        "Audit trail export ready": "L'exportació del registre d'auditoria és a punt",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "La vostra exportació del registre d'auditoria amb %1$s entrades s'ha desat a %2$s%3$s.",
+        "Open Files": "Obre Fitxers"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

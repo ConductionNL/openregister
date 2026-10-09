@@ -3309,7 +3309,10 @@
         "{schema} {title} deleted": "{schema} {title} törölve",
         "Object \"%1$s\" created": "Objektum \"%1$s\" létrehozva",
         "Object \"%1$s\" updated": "Objektum \"%1$s\" frissítve",
-        "Object \"%1$s\" assigned to you": "Objektum \"%1$s\" Önhöz rendelve"
+        "Object \"%1$s\" assigned to you": "Objektum \"%1$s\" Önhöz rendelve",
+        "Audit trail export ready": "Az auditnapló exportálása elkészült",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Az auditnapló %1$s bejegyzést tartalmazó exportja mentve ide: %2$s%3$s.",
+        "Open Files": "Fájlok megnyitása"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

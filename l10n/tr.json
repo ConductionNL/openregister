@@ -3309,7 +3309,10 @@
         "{schema} {title} deleted": "{schema} {title} silindi",
         "Object \"%1$s\" created": "Nesne \"%1$s\" oluşturuldu",
         "Object \"%1$s\" updated": "Nesne \"%1$s\" güncellendi",
-        "Object \"%1$s\" assigned to you": "Nesne \"%1$s\" size atandı"
+        "Object \"%1$s\" assigned to you": "Nesne \"%1$s\" size atandı",
+        "Audit trail export ready": "Denetim izi dışa aktarımı hazır",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "%1$s kayıt içeren denetim izi dışa aktarımınız %2$s%3$s konumuna kaydedildi.",
+        "Open Files": "Dosyaları aç"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

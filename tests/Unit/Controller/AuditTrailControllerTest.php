@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\AuditTrailController;
+use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
+use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailPageQuery;
+use OCP\BackgroundJob\IJobList;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
@@ -28,6 +32,8 @@ class AuditTrailControllerTest extends TestCase {
 	private AuditHashService&MockObject $auditHashService;
 	private IUserSession&MockObject $userSession;
 	private IGroupManager&MockObject $groupManager;
+	private AuditTrailPageQuery&MockObject $pageQuery;
+	private IJobList&MockObject $jobList;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -38,6 +44,8 @@ class AuditTrailControllerTest extends TestCase {
 		$this->auditHashService = $this->createMock(AuditHashService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->pageQuery = $this->createMock(AuditTrailPageQuery::class);
+		$this->jobList = $this->createMock(IJobList::class);
 
 		// Default: an authenticated admin so the requireAdmin() gate on
 		// export()/clearAll() lets the happy-path assertions through. Tests
@@ -56,7 +64,7 @@ class AuditTrailControllerTest extends TestCase {
 			$this->userSession,
 			$this->groupManager,
 			$this->createMock(ReadableAuditTrailLister::class),
-			$this->createMock(ExportRunRecorder::class)
+			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList)
 		);
 	}
 
@@ -576,7 +584,7 @@ class AuditTrailControllerTest extends TestCase {
 			$session,
 			$groupMgr,
 			$this->createMock(ReadableAuditTrailLister::class),
-			$this->createMock(ExportRunRecorder::class)
+			new \OCA\OpenRegister\Service\Audit\AuditTrailPageService($this->pageQuery, $this->logService, $this->jobList)
 		);
 	}
 
@@ -718,5 +726,89 @@ class AuditTrailControllerTest extends TestCase {
 		$this->auditHashService->expects($this->never())->method('verifyChain');
 
 		$controller->verify();
+	}
+
+	/**
+	 * With a cursor the list pages by keyset over the six filters and never
+	 * counts: the page query is asked, the legacy count is not.
+	 *
+	 * @return void
+	 */
+	public function testIndexWithACursorPagesByKeysetOverTheFilters(): void {
+		$this->request->method('getParams')->willReturn(
+			['cursor' => '', 'actor' => 'anna', 'from' => '2026-10-07', 'to' => '2026-10-09', 'register' => '1', 'limit' => '2']
+		);
+		$entry = new AuditTrail();
+		$entry->setId(2);
+		$this->pageQuery->expects($this->once())->method('page')
+			->with(
+				['actor' => 'anna', 'from' => '2026-10-07', 'to' => '2026-10-09', 'register' => '1'],
+				null,
+				2,
+				0
+			)
+			->willReturn(['results' => [$entry], 'nextCursor' => 2]);
+		$this->logService->expects($this->never())->method('countAllLogs');
+
+		$response = $this->controller->index();
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(2, $response->getData()['nextCursor']);
+		$this->assertArrayNotHasKey('total', $response->getData());
+	}
+
+	/**
+	 * A period that is not a date answers 400, not the unfiltered trail.
+	 *
+	 * @return void
+	 */
+	public function testIndexWithABadPeriodAnswers400(): void {
+		$this->request->method('getParams')->willReturn(['cursor' => '', 'from' => 'gisteren']);
+		$this->pageQuery->method('page')->willThrowException(new \InvalidArgumentException('"gisteren" is not a date.'));
+
+		$this->assertSame(400, $this->controller->index()->getStatus());
+	}
+
+	/**
+	 * A filtered export up to the inline limit answers the file in the request
+	 * from exactly the selected rows.
+	 *
+	 * @return void
+	 */
+	public function testAFilteredExportAnswersTheSelectedRows(): void {
+		$this->request->method('getParams')->willReturn(['actor' => 'anna']);
+		$this->request->method('getParam')->willReturnCallback(static fn ($key, $default = null) => ($key === 'format' ? 'csv' : $default));
+		$rows = [new AuditTrail(), new AuditTrail()];
+		$this->pageQuery->method('collect')->willReturn(['results' => $rows, 'truncated' => false]);
+		$this->logService->expects($this->once())->method('exportRows')
+			->with('csv', $rows, ['includeChanges' => true])
+			->willReturn(['content' => "id,hash,previousHash\n", 'filename' => 'audit.csv', 'contentType' => 'text/csv']);
+		$this->jobList->expects($this->never())->method('add');
+
+		$response = $this->controller->export();
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(2, $response->getData()['data']['rows']);
+	}
+
+	/**
+	 * Past the inline limit the export is queued for the requester (202).
+	 *
+	 * @return void
+	 */
+	public function testALargeExportIsQueuedForTheRequester(): void {
+		$this->request->method('getParams')->willReturn(['actor' => 'anna']);
+		$this->request->method('getParam')->willReturnCallback(static fn ($key, $default = null) => ($key === 'format' ? 'json' : $default));
+		$this->pageQuery->method('collect')->willReturn(['results' => [], 'truncated' => true]);
+		$this->logService->expects($this->never())->method('exportRows');
+		$this->jobList->expects($this->once())->method('add')->with(
+			AuditTrailExportJob::class,
+			$this->callback(static fn (array $arg): bool => $arg['actor'] === 'admin' && $arg['format'] === 'json' && $arg['filters'] === ['actor' => 'anna'])
+		);
+
+		$response = $this->controller->export();
+
+		$this->assertSame(202, $response->getStatus());
+		$this->assertTrue($response->getData()['queued']);
 	}
 }
