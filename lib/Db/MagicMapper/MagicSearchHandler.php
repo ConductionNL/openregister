@@ -795,6 +795,14 @@ class MagicSearchHandler {
 		);
 		$conditions = array_merge($conditions, $metadataConditions);
 
+		// `_ids`, as applyIdFilters() applies it on the QueryBuilder path. It
+		// was missing here, so a cross-table `_recent=true` search (the lens
+		// arrives as `_ids`) returned every row of every arm.
+		$idCondition = $this->idConditionSql(query: $query, connection: $connection);
+		if ($idCondition !== null) {
+			$conditions[] = $idCondition;
+		}
+
 		// 4. Full-text search filter with optional fuzzy matching.
 		if ($search !== null && trim($search) !== '') {
 			$searchCondition = $this->buildSearchConditionSql(
@@ -835,6 +843,33 @@ class MagicSearchHandler {
 
 		return $conditions;
 	}//end buildWhereConditionsSql()
+
+	/**
+	 * The `_ids` restriction, as one SQL fragment: uuid or slug.
+	 *
+	 * The string-built twin of applyIdFilters(). Every value is quoted by the
+	 * connection, because this SQL is concatenated and cannot bind.
+	 *
+	 * @param array $query      The query parameters.
+	 * @param mixed $connection The connection, for value quoting.
+	 *
+	 * @return string|null The condition, or null when no `_ids` restriction was asked.
+	 *
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 */
+	private function idConditionSql(array $query, mixed $connection): ?string {
+		$ids = ($query['_ids'] ?? null);
+		if (is_array($ids) === false || $ids === []) {
+			return null;
+		}
+
+		$quoted = implode(
+			', ',
+			array_map(static fn ($id): string => (string) $connection->quote((string) $id), array_values($ids))
+		);
+
+		return '(_uuid IN ('.$quoted.') OR _slug IN ('.$quoted.'))';
+	}//end idConditionSql()
 
 	/**
 	 * The deleted and archived predicates, as SQL fragments.

@@ -52,6 +52,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicStatisticsHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
+use OCA\OpenRegister\Db\MagicMapper\RecentLensOrder;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -1301,8 +1302,58 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param array $registerSchemaPairs Array of ['register' => Register, 'schema' => Schema] pairs.
 	 *
 	 * @return array Array of ObjectEntity objects from all tables, sorted by relevance.
+	 *
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	public function searchAcrossMultipleTables(array $query, array $registerSchemaPairs): array {
+		// The `_recent` lens (`recently-opened-means-opened`): the same order,
+		// paging and `@self.viewedAt` as the single-schema path. When the
+		// history orders the page, the restricted set is fetched whole (it is
+		// bounded by `_ids`, at most the history's 100 objects), sorted, and
+		// only then paged; paging first would cut the wrong slice.
+		$recentViews = RecentLensOrder::views(query: $query);
+		if ($recentViews === null) {
+			return $this->dispatchCrossTableSearch(query: $query, registerSchemaPairs: $registerSchemaPairs);
+		}
+
+		if (RecentLensOrder::ordersPage(query: $query) === false) {
+			$results = $this->dispatchCrossTableSearch(query: $query, registerSchemaPairs: $registerSchemaPairs);
+			RecentLensOrder::stamp(objects: $results, views: $recentViews);
+			return $results;
+		}
+
+		$wholeQuery = $query;
+		$wholeQuery['_offset'] = 0;
+		$wholeQuery['_limit'] = false;
+		$results = RecentLensOrder::sort(
+			objects: $this->dispatchCrossTableSearch(query: $wholeQuery, registerSchemaPairs: $registerSchemaPairs),
+			views: $recentViews
+		);
+
+		$offset = max(0, (int)($query['_offset'] ?? 0));
+		$normalisedLimit = QueryLimit::normalise($query['_limit'] ?? null);
+		$length = null;
+		if ($normalisedLimit !== null) {
+			$length = min($normalisedLimit, self::MAX_PAGE_SIZE);
+		}
+
+		$results = array_slice($results, $offset, $length);
+		RecentLensOrder::stamp(objects: $results, views: $recentViews);
+
+		return $results;
+	}//end searchAcrossMultipleTables()
+
+	/**
+	 * Run a cross-table search on the UNION path or the sequential one.
+	 *
+	 * @param array $query               Search parameters.
+	 * @param array $registerSchemaPairs Array of ['register' => Register, 'schema' => Schema] pairs.
+	 *
+	 * @return array Array of ObjectEntity objects from all tables.
+	 *
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 */
+	private function dispatchCrossTableSearch(array $query, array $registerSchemaPairs): array {
 		$this->logger->debug(
 			message: '[MagicMapper] Starting cross-table search',
 			context: [
@@ -1327,7 +1378,7 @@ class MagicMapper extends AbstractObjectMapper {
 			query: $query,
 			registerSchemaPairs: $registerSchemaPairs
 		);
-	}//end searchAcrossMultipleTables()
+	}//end dispatchCrossTableSearch()
 
 	/**
 	 * Determine if we should use UNION ALL optimization.
@@ -11559,6 +11610,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param bool $_rbac Whether to apply RBAC filtering.
 	 *
 	 * @return array{results: array, total: int, registers: array, schemas: array}
+	 *
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	private function getGlobalSearchResult(array $results, array $searchQuery, bool $_rbac): array {
 		$registersCache = [];
@@ -11595,9 +11648,19 @@ class MagicMapper extends AbstractObjectMapper {
 
 		$total = count($results);
 
+		// A `_recent` page over no register or schema: history order before
+		// paging, `@self.viewedAt` on the page (`recently-opened-means-opened`).
+		$recentViews = RecentLensOrder::views(query: $searchQuery);
+		if ($recentViews !== null && RecentLensOrder::ordersPage(query: $searchQuery) === true) {
+			$results = RecentLensOrder::sort(objects: $results, views: $recentViews);
+		}
+
 		$limit = $searchQuery['_limit'] ?? 1000;
 		$offset = $searchQuery['_offset'] ?? 0;
 		$results = array_slice($results, $offset, $limit);
+		if ($recentViews !== null) {
+			RecentLensOrder::stamp(objects: $results, views: $recentViews);
+		}
 
 		$finalSchemaIds = [];
 		$finalRegisterIds = [];

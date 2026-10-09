@@ -939,6 +939,8 @@ class ObjectsController extends Controller {
 	 * @psalm-suppress UnusedParam Params are used in foreach loops and method calls.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 *
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse {
 		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
@@ -1142,21 +1144,27 @@ class ObjectsController extends Controller {
 			$page = (int)floor($offset / $limit) + 1;
 		}
 
-		return new JSONResponse(
-			data: [
-				'results' => $serializedResults,
-				'total' => $total,
-				'pages' => $pages,
-				'page' => $page,
-				'limit' => $limit,
-				'@self' => [
-					'source' => 'cross_table_magic_mapper',
-					'table_count' => count($pairs),
-					'register_count' => count($registers),
-					'schema_count' => count($schemas),
-				],
-			]
-		);
+		$responseData = [
+			'results' => $serializedResults,
+			'total' => $total,
+			'pages' => $pages,
+			'page' => $page,
+			'limit' => $limit,
+			'@self' => [
+				'source' => 'cross_table_magic_mapper',
+				'table_count' => count($pairs),
+				'register_count' => count($registers),
+				'schema_count' => count($schemas),
+			],
+		];
+
+		// The `_recent` lens report, as on the single-schema list
+		// (`recently-opened-means-opened`). Present only when asked.
+		if (is_array($query['_recentLens'] ?? null) === true) {
+			$responseData['@self']['lenses']['recent'] = $query['_recentLens'];
+		}
+
+		return new JSONResponse(data: $responseData);
 	}//end crossTableSearch()
 
 	/**
