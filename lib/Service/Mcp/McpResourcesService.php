@@ -305,6 +305,8 @@ class McpResourcesService {
 	 *
 	 * @return array Object data (single or list)
 	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function readObjects(int $registerId, int $schemaId, ?string $objectId = null): array {
 		$this->objectService->setRegister($registerId);

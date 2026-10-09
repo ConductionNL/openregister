@@ -148,6 +148,8 @@ class RegistrySubscriptionController extends Controller {
 	 * @throws NotAuthorizedException When the caller lacks `update` on the object.
 	 *
 	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function resolveObjectAndGuardUpdate(string $register, string $schema, string $id): array {
 		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _render: false));

@@ -132,6 +132,8 @@ class TransferRecordService {
 	 *
 	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
 	 *   (Scenario: Show returns a persisted transfer list)
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function loadTransferList(string $uuid): ?array {
 		try {

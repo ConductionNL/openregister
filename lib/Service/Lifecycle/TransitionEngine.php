@@ -451,6 +451,8 @@ class TransitionEngine {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function findVisibleSubject(string $objectId, bool $asSystem = false): ObjectEntity {
 		$notFound = sprintf('Object "%s" not found.', $objectId);
@@ -764,6 +766,8 @@ class TransitionEngine {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Set only on the system path, see transitionAsSystem().
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function applyProviderTransition(
 		ObjectEntity $object,

@@ -51,6 +51,12 @@ use OCP\IUserSession;
 use RuntimeException;
 use Throwable;
 
+/**
+ * Source records and attribute overrides of a master object.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The thirteenth class is WriteCause, the ambient
+ *                                                  audit-cause frame its object reads run in.
+ */
 class SurvivorshipController extends Controller {
 	/**
 	 * Default field the per-object attribute-override map is read/written to
@@ -97,6 +103,8 @@ class SurvivorshipController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function sources(string $id): JSONResponse {
 		try {
@@ -139,6 +147,8 @@ class SurvivorshipController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.4
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function override(string $id): JSONResponse {
 		$attribute = (string)$this->request->getParam('attribute', '');

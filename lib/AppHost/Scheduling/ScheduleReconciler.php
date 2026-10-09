@@ -739,6 +739,8 @@ class ScheduleReconciler {
 	 * @return array<string, mixed> The decoded production manifest, or empty.
 	 *
 	 * @spec openspec/specs/apphost-scheduling/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	protected function resolveProductionManifest(array $application): array {
 		$versionId = ($application['productionVersion'] ?? ($application['@self']['relations']['productionVersion'] ?? null));

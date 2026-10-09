@@ -238,6 +238,8 @@ class DsarDpiaDetectionJob extends TimedJob {
 	 *
 	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
 	 *   (Scenario: Threshold crossing flags the group)
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function flagGroup(array $group, array $config, array &$summary): void {
 		foreach ($group['unflaggedUuids'] as $uuid) {

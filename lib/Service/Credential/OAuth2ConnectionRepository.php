@@ -76,6 +76,8 @@ class OAuth2ConnectionRepository {
 	 * @return ObjectEntity|null The credential, or null when absent or not manageable.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-re-authorisation-overrides-the-same-credential
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function findManageable(string $credentialId, string $uid): ?ObjectEntity {
 		try {

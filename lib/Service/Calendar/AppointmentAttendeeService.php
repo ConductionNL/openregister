@@ -154,6 +154,8 @@ class AppointmentAttendeeService {
 	 * @throws InvalidArgumentException When the status is not an answer, or the object is unknown.
 	 *
 	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function recordResponse(
 		string $objectUuid,
@@ -231,6 +233,8 @@ class AppointmentAttendeeService {
 	 * @throws InvalidArgumentException When the object is unknown.
 	 *
 	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function responsesFor(string $objectUuid): array {
 		$object = WriteCause::asLookup(fn () => $this->objects->find(id: $objectUuid));

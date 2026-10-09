@@ -450,6 +450,8 @@ class MergeService {
 	 * @throws RuntimeException When the operation is missing or no longer reversible.
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.4
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function reverseMerge(string $mergeOperationId, string $reversedBy): array {
 		$operationEntity = WriteCause::asLookup(fn () => $this->objectService->find(id: $mergeOperationId, schema: self::MERGE_SCHEMA));
@@ -857,6 +859,8 @@ class MergeService {
 	 * @return void
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.4
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function restoreObjectState(string $uuid, array $state): void {
 		try {
@@ -889,6 +893,8 @@ class MergeService {
 	 * @return void
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.4
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function restoreSourceLink(string $sourceUuid, $link): void {
 		try {
@@ -918,6 +924,8 @@ class MergeService {
 	 * @return void
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#3.3
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function restoreReverseFkMove(array $move): void {
 		$sourceUuid = (string)($move['sourceUuid'] ?? '');
@@ -1078,6 +1086,8 @@ class MergeService {
 	 * @return ObjectEntity|null The object, or null when it cannot be read.
 	 *
 	 * @spec openspec/specs/mdm-merge/spec.md#requirement-a-merge-is-refused-when-the-merger-cannot-read-everything-being-merged-req-dmd-002
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function loadUnrendered(string $uuid): ?ObjectEntity {
 		try {
@@ -1302,6 +1312,8 @@ class MergeService {
 	 * @throws RuntimeException When the object cannot be found/read.
 	 *
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.2
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function loadReadable(string $uuid): ObjectEntity {
 		try {

@@ -318,6 +318,8 @@ final class ObjectPreviewFormatter {
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 *
 	 * @spec openspec/changes/schema-scoped-smart-picker/design.md#d1
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function buildReference(string $referenceText): ?IReference {
 		$parsed = $this->parseReference(referenceText: $referenceText);

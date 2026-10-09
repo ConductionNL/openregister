@@ -191,6 +191,8 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	 *
 	 * @return array<string, mixed> Serialized object
 	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function getObject(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');

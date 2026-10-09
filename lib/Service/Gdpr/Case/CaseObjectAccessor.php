@@ -73,6 +73,8 @@ class CaseObjectAccessor {
 	 * @return ObjectEntity|null The case, or null when absent or unauthorised.
 	 *
 	 * @spec openspec/specs/dsar-case-api/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function load(string $caseUuid): ?ObjectEntity {
 		return WriteCause::asLookup(fn () => $this->objectService->find(

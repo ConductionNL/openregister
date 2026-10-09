@@ -183,6 +183,8 @@ class ObjectServiceMapperAdapter {
 	 *
 	 * @spec exclude Facade plumbing: PUT/PATCH merge then delegate to ObjectService::saveObject; no standalone
 	 *              contract beyond ObjectService's save path.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function updateFromArray(
 		int|string $id,

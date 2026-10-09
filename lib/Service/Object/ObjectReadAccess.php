@@ -72,6 +72,8 @@ class ObjectReadAccess {
 	 * @return ObjectEntity|null The object, or null when it is not readable.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function readable(string $register, string $schema, string $id): ?ObjectEntity {
 		if ($this->userSession->getUser() === null) {

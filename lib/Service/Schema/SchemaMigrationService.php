@@ -55,6 +55,9 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Declarative migration engine with rollback.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The thirteenth class is WriteCause, the ambient
+ *                                                  audit-cause frame its object reads run in.
  */
 class SchemaMigrationService {
 
@@ -309,6 +312,8 @@ class SchemaMigrationService {
 	 * @throws \InvalidArgumentException When the run is not a migration.
 	 *
 	 * @spec openspec/specs/schema-migration/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function rollback(int $runId, ?string $startedBy = null): SchemaRun {
 		$run = $this->runMapper->find($runId);

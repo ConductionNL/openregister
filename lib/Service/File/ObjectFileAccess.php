@@ -73,6 +73,8 @@ class ObjectFileAccess {
 	 * @throws ObjectFileAccessDeniedException With 404 when the caller may not read it.
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function readable(string $register, string $schema, string $id): ObjectEntity {
 		try {
@@ -130,6 +132,8 @@ class ObjectFileAccess {
 	 * @return bool True when the caller may read it.
 	 *
 	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function mayRead(ObjectEntity $object): bool {
 		$identifier = ($object->getUuid() ?? (string)$object->getId());

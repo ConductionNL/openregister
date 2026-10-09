@@ -180,6 +180,8 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 *                           or the underlying VTODO write fails.
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
 		$registerEntity = $this->registerMapper->find(id: $register);

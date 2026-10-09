@@ -180,11 +180,11 @@ final class WriteCause {
 	 * that cause and its run, because those already say why it happened and
 	 * the run is the part a lookup frame would lose.
 	 *
-	 * @template T
-	 *
 	 * @param callable(): T $operation The read.
 	 *
 	 * @return T Whatever the read returned.
+	 *
+	 * @template T
 	 *
 	 * @spec openspec/changes/recently-opened-means-opened/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
 	 */

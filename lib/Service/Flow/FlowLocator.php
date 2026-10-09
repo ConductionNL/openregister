@@ -140,6 +140,8 @@ class FlowLocator {
 	 * @return object|null The subject, or null when it cannot be found.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function resolveSubject(string $uuid, string $register, string $schema): ?object {
 		if ($uuid === '' || $register === '' || $schema === '') {

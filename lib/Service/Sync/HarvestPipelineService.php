@@ -426,6 +426,8 @@ class HarvestPipelineService {
 	 *
 	 * @return bool True when the local object diverged from the last sync
 	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function localChangedSinceSync(Source $source, string $objectUuid, ?SyncRecord $previous): bool {
 		if ($previous === null || $previous->getContentHash() === null) {

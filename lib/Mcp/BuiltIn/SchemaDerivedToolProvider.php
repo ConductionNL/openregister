@@ -391,6 +391,8 @@ class SchemaDerivedToolProvider implements IMcpToolProvider {
 	 *
 	 * @throws InvalidArgumentException If `id` is missing.
 	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function get(Schema $schema, ?Register $register, array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');

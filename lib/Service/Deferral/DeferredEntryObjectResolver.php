@@ -71,6 +71,8 @@ class DeferredEntryObjectResolver {
 	 *                           has been soft-deleted (stale no-op signal).
 	 *
 	 * @spec openspec/specs/event-driven-architecture/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function resolve(array $entry): ?ObjectEntity {
 		$uuid = $this->nonEmptyString(value: ($entry['uuid'] ?? null));

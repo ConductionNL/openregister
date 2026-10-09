@@ -368,6 +368,8 @@ class ObjectsTool extends AbstractTool {
 	 * @psalm-return array{success: true, message: string, data: mixed}
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function getObject(string $id): array {
 		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id));
@@ -448,6 +450,8 @@ class ObjectsTool extends AbstractTool {
 	 * @psalm-return array{success: true, message: string, data: mixed}
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function updateObject(string $id, array $data): array {
 		// Get existing object.
@@ -491,6 +495,8 @@ class ObjectsTool extends AbstractTool {
 	 * @psalm-return array{success: true, message: string, data: mixed}
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function deleteObject(string $id): array {
 		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id));

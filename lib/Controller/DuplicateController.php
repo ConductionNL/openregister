@@ -406,6 +406,8 @@ class DuplicateController extends Controller {
 	 * @return string|null The fingerprint, or null when either object cannot be read.
 	 *
 	 * @spec openspec/specs/duplicate-detection/spec.md#requirement-a-reviewed-pair-is-recorded-as-not-a-duplicate-and-stops-being-offered-req-dmd-003
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function fingerprintOf(string $register, string $schema, string $objectA, string $objectB): ?string {
 		try {

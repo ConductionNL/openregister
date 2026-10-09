@@ -366,6 +366,8 @@ class SourceRecordResolver {
 	 * @return array<string, mixed>|null Resolved payload, or null on lookup failure.
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function resolveReference(string $uuid): ?array {
 		try {

@@ -397,6 +397,8 @@ class VocabularyController extends Controller {
 	 *
 	 * @return string|null The scheme's uuid, or null when unresolvable.
 	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function resolveSchemeUuid(string $schemeUriOrUuid): ?string {
 		$scheme = $this->findOneBy(schema: self::SCHEMA_SCHEME, filters: ['uri' => $schemeUriOrUuid]);

@@ -816,6 +816,8 @@ class CredentialController extends Controller {
 	 * @return ObjectEntity|JSONResponse The manageable entity, or a static error response.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function ensureManageable(string $id, ?string $uid): ObjectEntity|JSONResponse {
 		if ($uid === null) {

@@ -275,6 +275,8 @@ class FederationController extends Controller {
 	 * @return JSONResponse The object or an error.
 	 *
 	 * @spec openspec/specs/federation-scope-enforcement/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]

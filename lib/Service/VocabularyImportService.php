@@ -496,6 +496,8 @@ class VocabularyImportService {
 	 *
 	 * @return void
 	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function applyRelationFieldsToDraft(string $uuid, array $broader, array $narrower, array $related): void {
 		$existing = WriteCause::asLookup(fn () => $this->objectService->find(id: $uuid, register: self::REGISTER, schema: self::SCHEMA_CONCEPT));

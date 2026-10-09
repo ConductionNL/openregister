@@ -98,6 +98,8 @@ class ObjectActionsController extends Controller {
 	 * @return JSONResponse The run id, its outcome and `next`.
 	 *
 	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

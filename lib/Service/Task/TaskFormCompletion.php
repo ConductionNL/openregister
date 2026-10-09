@@ -345,6 +345,8 @@ class TaskFormCompletion {
 	 * @throws TaskSubjectWriteRefusedException When the schema refuses, or the object is gone.
 	 *
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function save(string $objectUuid, array $accepted, string $runUuid = ''): void {
 		$object = WriteCause::asLookup(fn () => $this->objects->find(id: $objectUuid));

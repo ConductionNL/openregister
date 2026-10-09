@@ -213,6 +213,8 @@ class ReferenceResolver {
 	 *
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
 	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function resolveRelatedObject(
 		array $payload,
