@@ -106,7 +106,7 @@
     "@nextcloud/webpack-vue-config": "^7.0.1",
     "@pinia/testing": "^1.0.3",
     "@playwright/test": "^1.63.0",
-    "@stoplight/spectral-cli": "^6.15.0",
+    "@stoplight/spectral-cli": "^6.17.0",
     "@types/jest": "^29.5.12",
     "@types/node": "^26.6.4",
     "@typescript-eslint/parser": "^8.68.0",
