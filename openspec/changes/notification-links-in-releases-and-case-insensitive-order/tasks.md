@@ -18,7 +18,11 @@
 
 - [x] 4.1 `NotificationTemplating::interpolate()` and `unanswered()` resolve a language map: recipient language (and its base), then the register's languages, then the first value. The dispatcher passes the recipient locale and the register's languages. Verify: `tests/Unit/Service/Notification/TranslatablePlaceholderTest.php` fails on the old code (5 of 6).
 
-## 5. Live
+## 5. Related without a full scan
+
+- [x] 5.0 `getUses()` locates the related UUIDs with `findMultipleAcrossAllMagicTables()` and `getUsedBy()` locates references with `findByRelationAcrossAllMagicTables()`; each then reads only the matching tables through `findAllInRegisterSchemaTable()` as before. Register and schema loads are cached per request. Verify: `tests/Unit/Service/Object/RelationHandlerScalesWithRelationsTest.php` fails on the old code (2 of 2); live on :8099 for lead 09071313-4c14-420e-a419-d3f2a7d270b8 the same two objects come back for each, `/uses` and `/used` about 1.1 s each against 2.1 to 3.3 s for the old code on the same warm instance (7 s under load earlier).
+
+## 6. Live
 
 - [x] 5.1 On :8099, in a PHP process that loads Nextcloud but no apps (as `occ background-job:worker` does), the registry resolves the pipelinq client deep link (`/apps/pipelinq/clients/{uuid}`); with the old registry the same probe returns null.
 - [x] 5.2 On :8099 the fallback `/index.php/apps/openregister/objects/20/28/{uuid}` opens that client in OpenRegister's object view.

@@ -47,7 +47,10 @@ that OpenRegister owns:
    value that is not a scalar, and a translatable property is a language map.
    It now renders in the recipient's language, then the register's default
    language, then its first value.
-4. **Related on a lead page was slow.** See tasks section 6.
+4. **Related on a lead page was slow.** `/uses` loaded every register and
+   every schema (326) and queried tables one by one; `/used` queried all 333
+   magic tables. Both now ask one cross-table lookup which tables hold a match
+   and read only those, through the same filtered query as before.
 
 ## Why
 
