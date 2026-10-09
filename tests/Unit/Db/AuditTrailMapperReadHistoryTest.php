@@ -13,6 +13,7 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+ * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
  */
 
 declare(strict_types=1);
@@ -69,10 +70,11 @@ class AuditTrailMapperReadHistoryTest extends TestCase {
 	 * @param string $uuid    The object.
 	 * @param string $action  The action.
 	 * @param string $created The moment, UTC.
+	 * @param string|null $cause The cause, null for a row written before causes.
 	 *
 	 * @return void
 	 */
-	private function row(string $user, string $uuid, string $action, string $created): void {
+	private function row(string $user, string $uuid, string $action, string $created, ?string $cause = null): void {
 		$this->id++;
 		$this->database->insert(
 			'openregister_audit_trails',
@@ -85,6 +87,7 @@ class AuditTrailMapperReadHistoryTest extends TestCase {
 				'user' => $user,
 				'created' => $created,
 				'changed' => '{}',
+				'cause' => $cause,
 			]
 		);
 	}//end row()
@@ -142,4 +145,26 @@ class AuditTrailMapperReadHistoryTest extends TestCase {
 			array_keys($this->mapper->findLatestReadsByUser(userId: 'alice', limit: 2))
 		);
 	}//end testTheLimitKeepsTheNewest()
+	/**
+	 * A lookup and a read inside a rule stay on the audit trail and out of the
+	 * history; a person's read and a read from before causes count.
+	 *
+	 * @return void
+	 */
+	public function testOnlyAPersonsReadsCount(): void {
+		$this->row(user: 'alice', uuid: self::CASE_A, action: 'read', created: '2026-10-09 08:00:00', cause: 'person');
+		$this->row(user: 'alice', uuid: self::CASE_B, action: 'read', created: '2026-10-09 09:00:00', cause: 'lookup');
+		$this->row(user: 'alice', uuid: self::CASE_C, action: 'read', created: '2026-10-09 09:30:00', cause: 'rule');
+		$this->row(user: 'alice', uuid: self::CASE_C, action: 'read', created: '2026-10-08 07:00:00');
+		// A later lookup of A does not move A's moment.
+		$this->row(user: 'alice', uuid: self::CASE_A, action: 'read', created: '2026-10-09 11:00:00', cause: 'lookup');
+
+		$this->assertSame(
+			[
+				self::CASE_A => '2026-10-09T08:00:00+00:00',
+				self::CASE_C => '2026-10-08T07:00:00+00:00',
+			],
+			$this->mapper->findLatestReadsByUser(userId: 'alice')
+		);
+	}//end testOnlyAPersonsReadsCount()
 }//end class

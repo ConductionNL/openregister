@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Audit\AuditSink;
 use OCA\OpenRegister\Service\Audit\PurposeAttribution;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\TokenAttribution;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -3415,8 +3416,14 @@ class AuditTrailMapper extends QBMapper {
 	 * The objects one user read most recently, newest first.
 	 *
 	 * One row per object: the latest `read` entry this user has on the audit
-	 * trail, capped at `$limit`. Answered by the (user, action, object_uuid,
-	 * created) index, so the grouping reads the index and not the table.
+	 * trail, capped at `$limit`. The (user, action, object_uuid, created)
+	 * index narrows the rows; the cause is read from each candidate row.
+	 *
+	 * Only a read the person made counts: cause `person`, or empty for a row
+	 * written before causes were recorded. A `lookup` (a guard, a relation
+	 * lookup, an agent tool) and a read inside an import, rule, migration,
+	 * scheduled job or cascade stay on the audit trail and stay out of the
+	 * history (`recently-opened-means-opened`).
 	 *
 	 * A tombstoned row (retention purge) carries an empty `user`, so it never
 	 * matches a uid and drops out of every history by itself.
@@ -3427,6 +3434,7 @@ class AuditTrailMapper extends QBMapper {
 	 * @return array<string, string> Object uuid => ISO 8601 moment of the latest read, newest first.
 	 *
 	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 */
 	public function findLatestReadsByUser(string $userId, int $limit = 100): array {
 		$qb = $this->db->getQueryBuilder();
@@ -3435,6 +3443,12 @@ class AuditTrailMapper extends QBMapper {
 			->where($qb->expr()->eq('user', $qb->createNamedParameter($userId)))
 			->andWhere($qb->expr()->eq('action', $qb->createNamedParameter('read')))
 			->andWhere($qb->expr()->isNotNull('object_uuid'))
+			->andWhere(
+				$qb->expr()->orX(
+					$qb->expr()->isNull('cause'),
+					$qb->expr()->eq('cause', $qb->createNamedParameter(WriteCause::PERSON))
+				)
+			)
 			->groupBy('object_uuid')
 			->orderBy('last_read', 'DESC')
 			->setMaxResults(max(1, $limit));

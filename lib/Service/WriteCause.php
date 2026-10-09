@@ -7,7 +7,7 @@
  * filled with whatever each caller felt like and the filter would be useless
  * within a month: "import", "Import", "bulk import", "IMPORT-2026" and
  * "migration script" would all mean the same thing and none of them would
- * match. Six values, fixed, and a value outside them is not stored.
+ * match. Seven values, fixed, and a value outside them is not stored.
  *
  * 🔴 IT IS NEVER READ FROM THE REQUEST, AND THAT IS A SECURITY PROPERTY RATHER
  * THAN TIDINESS. A client that can claim its write was a `migration` can hide a
@@ -101,6 +101,18 @@ final class WriteCause {
 	public const CASCADE = 'cascade';
 
 	/**
+	 * A read the code made while serving a person, not the person opening it.
+	 *
+	 * A permission guard, a relation lookup, a sub-resource of a page already
+	 * open, an agent tool. The `read` row is written exactly as before; the
+	 * cause is what lets "recently opened" leave it out while the audit trail
+	 * keeps it (`recently-opened-means-opened`).
+	 *
+	 * @var string
+	 */
+	public const LOOKUP = 'lookup';
+
+	/**
 	 * The whole vocabulary. Nothing outside it is ever stored.
 	 *
 	 * @var array<int, string>
@@ -112,6 +124,7 @@ final class WriteCause {
 		self::MIGRATION,
 		self::RULE,
 		self::CASCADE,
+		self::LOOKUP,
 	];
 
 	/**
@@ -157,6 +170,30 @@ final class WriteCause {
 			// like one long import.
 			array_pop(self::$frames);
 		}
+	}
+
+	/**
+	 * Run a read the code makes on a person's behalf.
+	 *
+	 * Opens a `lookup` frame only when the acting cause is `person`. Inside an
+	 * import, a rule, a migration, a scheduled job or a cascade the read keeps
+	 * that cause and its run, because those already say why it happened and
+	 * the run is the part a lookup frame would lose.
+	 *
+	 * @template T
+	 *
+	 * @param callable(): T $operation The read.
+	 *
+	 * @return T Whatever the read returned.
+	 *
+	 * @spec openspec/changes/recently-opened-means-opened/specs/enhanced-audit-trail/spec.md#requirement-a-read-made-on-a-persons-behalf-names-its-cause-as-a-lookup
+	 */
+	public static function asLookup(callable $operation): mixed {
+		if (self::current()['cause'] !== self::PERSON) {
+			return $operation();
+		}
+
+		return self::runAs(cause: self::LOOKUP, run: null, operation: $operation);
 	}
 
 	/**
