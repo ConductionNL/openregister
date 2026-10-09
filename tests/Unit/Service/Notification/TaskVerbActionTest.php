@@ -179,6 +179,7 @@ class TaskVerbActionTest extends TestCase {
 		$links = [];
 		$action = $this->createMock(IAction::class);
 		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
 		$action->method('setPrimary')->willReturnSelf();
 		$action->method('setLink')->willReturnCallback(
 			static function (string $url, string $method) use (&$links, $action): IAction {
@@ -202,7 +203,7 @@ class TaskVerbActionTest extends TestCase {
 		$notification->method('createAction')->willReturn($action);
 		$notification->method('setIcon')->willReturnSelf();
 		$notification->method('setParsedSubject')->willReturnSelf();
-		$notification->method('addAction')->willReturnSelf();
+		$notification->method('addParsedAction')->willReturnSelf();
 
 		(new \OCA\OpenRegister\Notification\AnnotationNotifier($factory, $urls))->prepare($notification, 'nl');
 

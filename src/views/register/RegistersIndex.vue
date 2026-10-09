@@ -22,6 +22,9 @@ import {
 			:showTitle="true"
 			:objects="paginatedRegisters"
 			:columns="tableColumns"
+			:sortKey="sortKey"
+			:sortOrder="sortOrder"
+			:activeFilters="activeFilters"
 			:pagination="paginationData"
 			:loading="registerStore.loading"
 			:viewMode="registerStore.viewMode"
@@ -43,6 +46,8 @@ import {
 			:refreshing="isRefreshing"
 			@create="onSaveRegister"
 			@edit="onSaveRegister"
+			@sort="onSort"
+			@filterChange="onFilterChange"
 			@refresh="handleRefresh"
 			@pageChanged="onPageChanged"
 			@pageSizeChanged="onPageSizeChanged"
@@ -332,6 +337,8 @@ import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
+import { applyFilterChange, filterRows } from '../../services/listFilter.js'
+import { sortSchemas } from '../../services/listSort.js'
 
 export default {
 	name: 'RegistersIndex',
@@ -361,6 +368,11 @@ export default {
 			isRefreshing: false,
 			schemaSelectOptions: [],
 			schemasLoading: false,
+			// The header the list is sorted by; null keeps the store's order.
+			sortKey: null,
+			sortOrder: 'asc',
+			// The header filters, as `{ paramKey: values[] }` (`title[like]`).
+			activeFilters: {},
 		}
 	},
 
@@ -406,6 +418,22 @@ export default {
 						title: t('openregister', 'Schemas'),
 						order: 4,
 					},
+
+					// Read-only, so the form leaves them out; they tell the
+					// Created and Updated header filters to filter by date.
+					created: {
+						type: 'string',
+						format: 'date-time',
+						title: t('openregister', 'Created'),
+						readOnly: true,
+					},
+
+					updated: {
+						type: 'string',
+						format: 'date-time',
+						title: t('openregister', 'Updated'),
+						readOnly: true,
+					},
 				},
 
 				required: ['title', 'slug'],
@@ -413,14 +441,23 @@ export default {
 		},
 
 		/**
-		 * @spec exclude list-view list filtering of synthetic rows (computed)
+		 * The registers to list: synthetic rows dropped, header filters
+		 * applied, then sorted by the clicked header when there is one.
+		 *
+		 * @spec openspec/changes/order-filters-and-notification-links/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
 		 */
 		filteredRegisters() {
-			return registerStore.registerList.filter(
-				(register) =>
-					register.title !== 'System Totals'
-					&& register.title !== 'Orphaned Items',
+			const registers = filterRows(
+				registerStore.registerList.filter(
+					(register) =>
+						register.title !== 'System Totals'
+						&& register.title !== 'Orphaned Items',
+				),
+				this.activeFilters,
 			)
+			return this.sortKey
+				? sortSchemas(registers, this.sortKey, this.sortOrder)
+				: registers
 		},
 
 		/**
@@ -512,6 +549,34 @@ export default {
 			} finally {
 				this.isRefreshing = false
 			}
+		},
+
+		/**
+		 * Sort by a clicked header. The list is loaded whole, so it is sorted
+		 * here, and paging goes back to page 1.
+		 *
+		 * @param {{key: string, order: string}} payload The header and direction.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/order-filters-and-notification-links/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
+		 */
+		onSort(payload) {
+			this.sortKey = payload && payload.key ? payload.key : null
+			this.sortOrder = payload && payload.order === 'desc' ? 'desc' : 'asc'
+			registerStore.setPagination(1, registerStore.pagination.limit || 20)
+		},
+
+		/**
+		 * Apply a header filter on the loaded list and go back to page 1.
+		 *
+		 * @param {{key: string, values: Array}} payload The filter change.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/order-filters-and-notification-links/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
+		 */
+		onFilterChange(payload) {
+			this.activeFilters = applyFilterChange(this.activeFilters, payload)
+			registerStore.setPagination(1, registerStore.pagination.limit || 20)
 		},
 
 		/**

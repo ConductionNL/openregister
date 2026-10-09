@@ -589,7 +589,10 @@ class MagicMapper extends AbstractObjectMapper {
 			organizationHandler: $this->organizationHandler,
 			schemaTypeConverter: $this->container->get(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class),
 			dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class),
-			relatedRows: $relatedRowApplier
+			relatedRows: $relatedRowApplier,
+			// The request's language state, so a translatable property sorts by
+			// the value the response shows (order-filters-and-notification-links).
+			languageService: $this->container->get(\OCA\OpenRegister\Service\LanguageService::class)
 		);
 
 		$this->bulkHandler = new MagicBulkHandler(
