@@ -66,6 +66,7 @@ class ExportProfileValidator {
 
 		$this->validateFields(data: $data);
 		$this->validateChoices(data: $data);
+		$this->validateRetention(data: $data);
 	}//end validate()
 
 	/**
@@ -139,15 +140,30 @@ class ExportProfileValidator {
 		if (isset($data['filters']) === true && is_array($data['filters']) === false) {
 			throw new InvalidArgumentException('The filter of an export profile is a map.');
 		}
+	}//end validateChoices()
 
+	/**
+	 * The file retention: whole days from 1 to the cap, or absent to keep the files.
+	 *
+	 * @param array<string, mixed> $data The submission.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the retention is not such a number.
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-an-export-expires-and-the-row-outlives-the-file
+	 */
+	private function validateRetention(array $data): void {
 		$retention = ($data['retentionDays'] ?? null);
-		if ($retention !== null
-			&& (is_int($retention) === false || $retention < 1 || $retention > self::MAX_RETENTION_DAYS)
-		) {
+		if ($retention === null) {
+			return;
+		}
+
+		if (is_int($retention) === false || $retention < 1 || $retention > self::MAX_RETENTION_DAYS) {
 			throw new InvalidArgumentException(
 				'An export profile keeps its files for 1 to ' . self::MAX_RETENTION_DAYS
 				. ' days, or keeps them when no retention is given.'
 			);
 		}
-	}//end validateChoices()
+	}//end validateRetention()
 }//end class
