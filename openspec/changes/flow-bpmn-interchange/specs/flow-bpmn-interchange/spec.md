@@ -66,7 +66,9 @@ the canvas, not as an unlaid-out graph.
 ### Requirement: BPMN import accepts a documented subset and reports every loss
 
 `POST /api/flows/import/bpmn` SHALL create a flow from a BPMN 2.0 file. It is
-guarded by `flow.create`. The importer SHALL accept the constructs the
+guarded by `flow.create`. The file MAY arrive as an `xml` parameter, as the raw request
+body, or as a multipart upload in the field `file`; an upload that did not arrive SHALL be
+answered 400 naming the upload, never passed on as an empty document. The importer SHALL accept the constructs the
 exporter emits (read in reverse) and SHALL handle everything else in exactly
 one of three declared ways, each landing in the **mapping report** returned
 alongside the created flow:
@@ -121,6 +123,14 @@ constructs.
 - **AND** the report MUST list it as needing a type
 - **AND** running the flow MUST be refused exactly as for any typeless node
 - @e2e exclude covered by importer unit tests
+
+#### Scenario: A file chosen in the browser imports as a multipart upload
+
+- **GIVEN** a valid BPMN file posted as a multipart form with the field `file`
+- **WHEN** it is imported
+- **THEN** a flow MUST be created and the report returned, exactly as for a raw body
+- **AND** an upload that failed in transit MUST answer 400 with `malformed: false`
+- @e2e exclude covered by FlowControllerTest over a real temporary upload file
 
 #### Scenario: Diagram positions survive, and absence is laid out
 

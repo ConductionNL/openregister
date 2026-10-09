@@ -25,7 +25,7 @@
 - [x] C61.5 A reference recorded from prose creating a typed relation on both sides, removed with the text.
 - [x] C61.6 A depth-bounded graph read with typed, directed edges, marked when truncated, and its export (D-C61-4).
 - [x] C61.7 Tests: the split provenance, the inheritance at creation, the unchanged child, the external relation, the graph bound.
-- [ ] C61.8 Hand over to the dossiq lane for `case-merge` and `DeelzaakService`, with candidate ids C-case-core-15, -17, -19, -22, -23, -33 and -38.
+- [ ] C61.8 Hand over to the dossiq lane for `case-merge` and `DeelzaakService`, with candidate ids C-case-core-15, -17, -19, -22, -23, -33 and -38. (not run: a hand-over to the dossiq lane; decision 88 says a recorded hand-over is not done, ask filed in for-ruben/openregister-sibling-asks.md)
 
 ## What was built, and what was deliberately left to another lane
 
