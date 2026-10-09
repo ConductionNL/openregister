@@ -1119,18 +1119,16 @@ class ObjectsController extends Controller {
 		// rows, so cap the page at _limit. The mapper already applied _offset (the
 		// UNION in SQL, the sequential path per table); applying it again here
 		// emptied every page after the first.
-		// NOTE: an exact cross-table total still requires a per-table COUNT(*) in SQL
-		// (MagicMapper, out of this controller's scope); $fetchedCount is the best
-		// available bound here. TODO(PERF-6): sum per-table COUNT(*) in MagicMapper.
-		$fetchedCount = count($serializedResults);
 		if ($limit > 0) {
 			$serializedResults = array_slice($serializedResults, 0, $limit);
 		}
 
-		// PERF-10: allow callers to skip the (here, in-PHP) total when not needed.
+		// PERF-10: allow callers to skip the total when not needed. The total is
+		// every match across the tables, counted by the mapper on the search's
+		// own path, never the size of this page (a pager would show one page).
 		$wantTotal = filter_var($params['_count'] ?? true, FILTER_VALIDATE_BOOLEAN);
 		if ($wantTotal === true) {
-			$total = $fetchedCount;
+			$total = $magicMapper->countAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs);
 		} else {
 			$total = null;
 		}
