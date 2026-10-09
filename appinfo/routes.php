@@ -686,6 +686,8 @@ return [
 
         // Contacts matching API — used by ContactsMenuProvider + mail-sidebar.
         ['name' => 'contacts#match', 'url' => '/api/contacts/match', 'verb' => 'GET'],
+        // Contacts leaf: name search over the user's readable address books.
+        ['name' => 'contactSearch#search', 'url' => '/api/integrations/contacts/search', 'verb' => 'GET'],
 
         // Mail sidebar — reverse lookup of OR objects linked to an email.
         // Search + bySender are app-global (no register/schema in path) and
