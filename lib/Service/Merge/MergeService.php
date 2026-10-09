@@ -53,6 +53,7 @@ use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
 use OCA\OpenRegister\Service\Survivorship\SurvivorshipResolver;
 use OCA\OpenRegister\Service\Survivorship\TrustTierResolver;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -451,7 +452,7 @@ class MergeService {
 	 * @spec openspec/changes/mdm-merge-engine/tasks.md#4.4
 	 */
 	public function reverseMerge(string $mergeOperationId, string $reversedBy): array {
-		$operationEntity = $this->objectService->find(id: $mergeOperationId, schema: self::MERGE_SCHEMA);
+		$operationEntity = WriteCause::asLookup(fn () => $this->objectService->find(id: $mergeOperationId, schema: self::MERGE_SCHEMA));
 		if ($operationEntity === null) {
 			throw new RuntimeException('Merge operation not found.');
 		}
@@ -859,7 +860,7 @@ class MergeService {
 	 */
 	private function restoreObjectState(string $uuid, array $state): void {
 		try {
-			$entity = $this->objectService->find(id: $uuid, _rbac: true, _multitenancy: true);
+			$entity = WriteCause::asLookup(fn () => $this->objectService->find(id: $uuid, _rbac: true, _multitenancy: true));
 			if ($entity === null) {
 				return;
 			}
@@ -891,7 +892,7 @@ class MergeService {
 	 */
 	private function restoreSourceLink(string $sourceUuid, $link): void {
 		try {
-			$entity = $this->objectService->find(id: $sourceUuid, _rbac: true, _multitenancy: true);
+			$entity = WriteCause::asLookup(fn () => $this->objectService->find(id: $sourceUuid, _rbac: true, _multitenancy: true));
 			if ($entity === null) {
 				return;
 			}
@@ -927,7 +928,7 @@ class MergeService {
 		}
 
 		try {
-			$entity = $this->objectService->find(id: $sourceUuid, _rbac: true, _multitenancy: true);
+			$entity = WriteCause::asLookup(fn () => $this->objectService->find(id: $sourceUuid, _rbac: true, _multitenancy: true));
 			if ($entity === null) {
 				return;
 			}
@@ -1080,12 +1081,12 @@ class MergeService {
 	 */
 	private function loadUnrendered(string $uuid): ?ObjectEntity {
 		try {
-			return $this->objectService->find(
+			return WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $uuid,
 				_rbac: true,
 				_multitenancy: true,
 				_render: false
-			);
+			));
 		} catch (Throwable $e) {
 			$this->logger->warning('[MergeService] unrendered read failed: ' . $e->getMessage());
 			return null;
@@ -1304,7 +1305,7 @@ class MergeService {
 	 */
 	private function loadReadable(string $uuid): ObjectEntity {
 		try {
-			$object = $this->objectService->find(id: $uuid, _rbac: true, _multitenancy: true);
+			$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $uuid, _rbac: true, _multitenancy: true));
 		} catch (Throwable $e) {
 			throw new RuntimeException(sprintf('Object "%s" is not readable: %s', $uuid, $e->getMessage()));
 		}

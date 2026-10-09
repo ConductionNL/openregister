@@ -40,6 +40,7 @@ namespace OCA\OpenRegister\Service\Edepot;
 
 use DateTime;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -134,11 +135,11 @@ class TransferRecordService {
 	 */
 	public function loadTransferList(string $uuid): ?array {
 		try {
-			$object = $this->objectService->find(
+			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $uuid,
 				register: self::REGISTER_SLUG,
 				schema: self::TRANSFER_SCHEMA_SLUG
-			);
+			));
 		} catch (\Throwable $e) {
 			return null;
 		}

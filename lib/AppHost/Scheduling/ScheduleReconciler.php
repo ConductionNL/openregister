@@ -43,6 +43,7 @@ use DateTime;
 use DateTimeInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -751,12 +752,12 @@ class ScheduleReconciler {
 		}
 
 		try {
-			$version = $this->objectService->find(
+			$version = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $versionId,
 				register: $register,
 				schema: self::OB_APPLICATION_VERSION_SCHEMA_SLUG,
 				_rbac: false
-			);
+			));
 		} catch (Throwable $e) {
 			$this->logger->info(
 				message: '[AppHost\\Scheduling] Could not resolve production version manifest',

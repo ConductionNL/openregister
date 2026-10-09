@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\MdiIconRenderer;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\Collaboration\Reference\IReference;
 use OCP\Collaboration\Reference\Reference;
 use OCP\IL10N;
@@ -330,11 +331,11 @@ final class ObjectPreviewFormatter {
 
 		try {
 			// Fetch the object using ObjectService.
-			$object = $this->objectService->find(
+			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $uuid,
 				register: $registerId,
 				schema: $schemaId
-			);
+			));
 
 			if ($object === null) {
 				return null;

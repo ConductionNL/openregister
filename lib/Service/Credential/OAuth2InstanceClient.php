@@ -39,6 +39,7 @@ namespace OCA\OpenRegister\Service\Credential;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
 use Throwable;
 
@@ -205,14 +206,14 @@ class OAuth2InstanceClient {
 		}
 
 		try {
-			$entity = $this->objectService->find(
+			$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $credentialId,
 				register: CredentialBrokerService::REGISTER,
 				schema: CredentialBrokerService::SCHEMA,
 				_rbac: false,
 				_multitenancy: false,
 				_render: false
-			);
+			));
 		} catch (Throwable $missing) {
 			return null;
 		}

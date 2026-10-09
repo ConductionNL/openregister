@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Survivorship;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -368,7 +369,7 @@ class SourceRecordResolver {
 	 */
 	private function resolveReference(string $uuid): ?array {
 		try {
-			$entity = $this->objectService->find(id: $uuid, _rbac: true, _multitenancy: true);
+			$entity = WriteCause::asLookup(fn () => $this->objectService->find(id: $uuid, _rbac: true, _multitenancy: true));
 		} catch (Throwable) {
 			return null;
 		}

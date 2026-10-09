@@ -37,6 +37,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
 
 /**
@@ -78,14 +79,14 @@ class OAuth2ConnectionRepository {
 	 */
 	public function findManageable(string $credentialId, string $uid): ?ObjectEntity {
 		try {
-			$entity = $this->objectService->find(
+			$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $credentialId,
 				register: CredentialBrokerService::REGISTER,
 				schema: CredentialBrokerService::SCHEMA,
 				_rbac: false,
 				_multitenancy: false,
 				_render: false
-			);
+			));
 		} catch (Throwable $failure) {
 			return null;
 		}

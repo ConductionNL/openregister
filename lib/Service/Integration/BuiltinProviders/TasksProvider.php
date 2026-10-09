@@ -36,6 +36,7 @@ use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\IL10N;
 use RuntimeException;
 
@@ -188,11 +189,11 @@ class TasksProvider extends AbstractIntegrationProvider {
 		// missing object still allows the task to be created with a
 		// synthetic fallback title; the linked-entity scan finds it via
 		// the X-OPENREGISTER-OBJECT uuid regardless.
-		$objectEntity = $this->objectService->find(
+		$objectEntity = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $objectId,
 			register: $registerEntity,
 			schema: $schemaEntity
-		);
+		));
 		$objectTitle = $objectEntity?->getName() ?? $objectId;
 
 		$data = [

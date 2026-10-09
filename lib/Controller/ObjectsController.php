@@ -67,6 +67,7 @@ use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Support\FilterParams;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -2799,13 +2800,13 @@ class ObjectsController extends Controller {
 		// confirm an object exists.
 		$record = [];
 		try {
-			$stored = $this->objectService->find(
+			$stored = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $id,
 				files: false,
 				register: $register,
 				schema: $schema,
 				_render: false
-			);
+			));
 			if ($stored !== null) {
 				$record = $stored->getObject();
 			}
@@ -4437,13 +4438,13 @@ class ObjectsController extends Controller {
 			$objectService->setRegister(register: $register);
 			$objectService->setSchema(schema: $schema);
 
-			$objectEntity = $objectService->find(
+			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $id,
 				register: $register,
 				schema: $schema,
 				_rbac: false,
 				_multitenancy: false
-			);
+			));
 			if ($objectEntity === null) {
 				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 			}
@@ -4770,7 +4771,7 @@ class ObjectsController extends Controller {
 
 		// Try to fetch the object by ID/UUID only (no register/schema filter yet).
 		try {
-			$object = $objectService->find(id: $id);
+			$object = WriteCause::asLookup(fn () => $objectService->find(id: $id));
 			if ($object === null) {
 				return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
 			}
@@ -5510,12 +5511,13 @@ class ObjectsController extends Controller {
 	 * @param string $id       The object.
 	 *
 	 * @return ObjectEntity|null The object, or null when it cannot be read.
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 */
 	private function presenceObject(string $register, string $schema, string $id): ?ObjectEntity {
 		try {
 			$this->objectService->setRegister(register: $register);
 			$this->objectService->setSchema(schema: $schema);
-			$found = $this->objectService->find($id);
+			$found = WriteCause::asLookup(fn () => $this->objectService->find($id));
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -6064,7 +6066,7 @@ class ObjectsController extends Controller {
 			$objectService->setSchema(schema: $schema);
 
 			// Get the object to ensure it exists and we have access.
-			$object = $objectService->find(id: $id);
+			$object = WriteCause::asLookup(fn () => $objectService->find(id: $id));
 
 			/*
 			 * Get the FileService from the container.
@@ -6814,7 +6816,7 @@ class ObjectsController extends Controller {
 		$rbac = ($isAdmin === false);
 
 		try {
-			$objectEntity = $objectService->find(
+			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $id,
 				files: false,
 				register: $register,
@@ -6822,7 +6824,7 @@ class ObjectsController extends Controller {
 				_rbac: $rbac,
 				_multitenancy: $rbac,
 				_render: false
-			);
+			));
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
 		}
@@ -6879,7 +6881,7 @@ class ObjectsController extends Controller {
 		$rbac = ($isAdmin === false);
 
 		try {
-			$objectEntity = $objectService->find(
+			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $id,
 				files: false,
 				register: $register,
@@ -6887,7 +6889,7 @@ class ObjectsController extends Controller {
 				_rbac: $rbac,
 				_multitenancy: $rbac,
 				_render: false
-			);
+			));
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
 		}

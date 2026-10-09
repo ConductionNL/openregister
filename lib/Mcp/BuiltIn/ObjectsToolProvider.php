@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 use InvalidArgumentException;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 
 /**
  * ObjectsToolProvider
@@ -189,10 +190,11 @@ class ObjectsToolProvider implements IMcpToolProvider {
 	 * @param array<string, mixed> $arguments Must contain id (UUID)
 	 *
 	 * @return array<string, mixed> Serialized object
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 */
 	private function getObject(array $arguments): array {
 		$this->requireParam(arguments: $arguments, param: 'id');
-		$object = $this->objectService->find($arguments['id']);
+		$object = WriteCause::asLookup(fn () => $this->objectService->find($arguments['id']));
 		return $object->jsonSerialize();
 	}//end getObject()
 

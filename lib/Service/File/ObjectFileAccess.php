@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
 
 /**
@@ -75,13 +76,13 @@ class ObjectFileAccess {
 	 */
 	public function readable(string $register, string $schema, string $id): ObjectEntity {
 		try {
-			$object = $this->objectService->find(
+			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $id,
 				register: $register,
 				schema: $schema,
 				_rbac: true,
 				_multitenancy: true
-			);
+			));
 		} catch (Throwable $e) {
 			throw new ObjectFileAccessDeniedException(httpStatus: ObjectFileAccessDeniedException::NOT_READABLE, previous: $e);
 		}
@@ -137,13 +138,13 @@ class ObjectFileAccess {
 		}
 
 		try {
-			$readable = $this->objectService->find(
+			$readable = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $identifier,
 				register: $object->getRegister(),
 				schema: $object->getSchema(),
 				_rbac: true,
 				_multitenancy: true
-			);
+			));
 		} catch (Throwable $e) {
 			return false;
 		}

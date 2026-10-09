@@ -37,6 +37,7 @@ use DateTimeInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 
 /**
  * Reads and writes attendee answers on an object.
@@ -177,7 +178,7 @@ class AppointmentAttendeeService {
 			);
 		}
 
-		$object = $this->objects->find(id: $objectUuid);
+		$object = WriteCause::asLookup(fn () => $this->objects->find(id: $objectUuid));
 		if ($object === null) {
 			throw new InvalidArgumentException(
 				sprintf("No object '%s' to record an attendee response on.", $objectUuid)
@@ -232,7 +233,7 @@ class AppointmentAttendeeService {
 	 * @spec openspec/changes/object-dates-as-a-calendar-feed/specs/calendar-provider/spec.md
 	 */
 	public function responsesFor(string $objectUuid): array {
-		$object = $this->objects->find(id: $objectUuid);
+		$object = WriteCause::asLookup(fn () => $this->objects->find(id: $objectUuid));
 
 		if ($object === null) {
 			throw new InvalidArgumentException(

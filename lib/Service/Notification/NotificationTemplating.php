@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Notification;
 
+use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -202,7 +203,7 @@ class NotificationTemplating {
 
 		$name = null;
 		try {
-			$related = $this->objectService->find(id: $value, _rbac: true);
+			$related = WriteCause::asLookup(fn () => $this->objectService->find(id: $value, _rbac: true));
 			if ($related !== null) {
 				$candidate = $related->getName();
 				if (is_string($candidate) === true && $candidate !== '') {

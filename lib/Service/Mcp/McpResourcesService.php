@@ -29,6 +29,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
 
@@ -303,13 +304,14 @@ class McpResourcesService {
 	 * @param string|null $objectId Optional object UUID for single fetch
 	 *
 	 * @return array Object data (single or list)
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 */
 	private function readObjects(int $registerId, int $schemaId, ?string $objectId = null): array {
 		$this->objectService->setRegister($registerId);
 		$this->objectService->setSchema($schemaId);
 
 		if ($objectId !== null) {
-			$object = $this->objectService->find($objectId);
+			$object = WriteCause::asLookup(fn () => $this->objectService->find($objectId));
 			return $object->jsonSerialize();
 		}
 

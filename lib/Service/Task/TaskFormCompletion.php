@@ -56,6 +56,7 @@ use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Flow\FlowRunContext;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserSession;
 use RuntimeException;
 
@@ -346,7 +347,7 @@ class TaskFormCompletion {
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-completion-payload-is-validated-by-the-lifecycle-input-allowlist-and-by-nothing-else
 	 */
 	private function save(string $objectUuid, array $accepted, string $runUuid = ''): void {
-		$object = $this->objects->find(id: $objectUuid);
+		$object = WriteCause::asLookup(fn () => $this->objects->find(id: $objectUuid));
 		if ($object === null) {
 			throw new TaskSubjectWriteRefusedException(
 				message: sprintf('Subject object "%s" no longer exists, so the form values cannot be written.', $objectUuid)

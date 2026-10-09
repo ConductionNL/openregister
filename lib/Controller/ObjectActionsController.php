@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -101,7 +102,7 @@ class ObjectActionsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function invoke(string $register, string $schema, string $id, string $action): JSONResponse {
-		$object = $this->objects->find(id: $id);
+		$object = WriteCause::asLookup(fn () => $this->objects->find(id: $id));
 		if ($object === null) {
 			return new JSONResponse(['error' => 'No such object'], Http::STATUS_NOT_FOUND);
 		}

@@ -36,6 +36,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Registry\RegistrySubscriptionService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
@@ -149,7 +150,7 @@ class RegistrySubscriptionController extends Controller {
 	 * @spec openspec/changes/registry-subscriptions/specs/registry-subscriptions/spec.md#requirement-an-object-carries-a-subscription-state-a-user-can-request-or-end
 	 */
 	private function resolveObjectAndGuardUpdate(string $register, string $schema, string $id): array {
-		$object = $this->objectService->find(id: $id, register: $register, schema: $schema, _render: false);
+		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _render: false));
 		$resolvedSchema = $this->schemaMapper->find(id: (string)$object->getSchema());
 
 		$user = $this->userSession->getUser();

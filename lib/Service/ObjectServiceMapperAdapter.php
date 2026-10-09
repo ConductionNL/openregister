@@ -191,11 +191,11 @@ class ObjectServiceMapperAdapter {
 		bool $patch = false,
 	): ObjectEntity {
 		if ($patch === true) {
-			$existing = $this->objectService->find(
+			$existing = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: (string)$id,
 				register: $this->register,
 				schema: $this->schema
-			);
+			));
 			if ($existing === null) {
 				throw new ValidationException(
 					message: sprintf('Object "%s" not found or not accessible', $id)

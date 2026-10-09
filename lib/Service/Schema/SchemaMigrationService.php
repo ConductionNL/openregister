@@ -50,6 +50,7 @@ use OCA\OpenRegister\Db\SchemaRunEntryMapper;
 use OCA\OpenRegister\Db\SchemaRunMapper;
 use OCA\OpenRegister\Exception\SchemaRunConcurrencyException;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -327,13 +328,13 @@ class SchemaMigrationService {
 		$conflicts = 0;
 
 		foreach ($entries as $entry) {
-			$object = $this->objectService->find(
+			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $entry->getObjectUuid(),
 				register: $run->getRegisterId(),
 				schema: $schema,
 				_rbac: false,
 				_multitenancy: false
-			);
+			));
 
 			if ($object === null) {
 				$conflicts++;

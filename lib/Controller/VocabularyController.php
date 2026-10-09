@@ -45,6 +45,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Vocabulary\CodedOptionsBuilder;
 use OCA\OpenRegister\Service\Vocabulary\VocabularyDeclarationResolver;
 use OCA\OpenRegister\Service\VocabularyImportService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -395,6 +396,7 @@ class VocabularyController extends Controller {
 	 * @param string $schemeUriOrUuid The scheme's source uri (or its OpenRegister uuid).
 	 *
 	 * @return string|null The scheme's uuid, or null when unresolvable.
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 */
 	private function resolveSchemeUuid(string $schemeUriOrUuid): ?string {
 		$scheme = $this->findOneBy(schema: self::SCHEMA_SCHEME, filters: ['uri' => $schemeUriOrUuid]);
@@ -405,11 +407,11 @@ class VocabularyController extends Controller {
 		// Fall back to treating the value as an already-resolved uuid (a
 		// leaf caller that stored the uuid rather than the source uri).
 		try {
-			$byId = $this->objectService->find(
+			$byId = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $schemeUriOrUuid,
 				register: self::REGISTER,
 				schema: self::SCHEMA_SCHEME
-			);
+			));
 		} catch (Throwable $e) {
 			return null;
 		}

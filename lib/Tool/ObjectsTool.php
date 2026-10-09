@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tool;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
@@ -369,7 +370,7 @@ class ObjectsTool extends AbstractTool {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function getObject(string $id): array {
-		$object = $this->objectService->find(id: $id);
+		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id));
 		if ($object === null) {
 			throw new RuntimeException("Object with id {$id} not found.");
 		}
@@ -450,7 +451,7 @@ class ObjectsTool extends AbstractTool {
 	 */
 	public function updateObject(string $id, array $data): array {
 		// Get existing object.
-		$existingObject = $this->objectService->find($id);
+		$existingObject = WriteCause::asLookup(fn () => $this->objectService->find($id));
 
 		// Merge new data with existing data.
 		$mergedData = array_merge(
@@ -492,7 +493,7 @@ class ObjectsTool extends AbstractTool {
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function deleteObject(string $id): array {
-		$object = $this->objectService->find(id: $id);
+		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id));
 		if ($object === null) {
 			throw new RuntimeException("Object with id {$id} not found.");
 		}

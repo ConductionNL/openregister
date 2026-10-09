@@ -38,6 +38,7 @@ namespace OCA\OpenRegister\Service\Deferral;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -78,14 +79,14 @@ class DeferredEntryObjectResolver {
 		}
 
 		try {
-			$object = $this->objectService->find(
+			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $uuid,
 				register: $this->nonEmptyString(value: ($entry['register'] ?? null)),
 				schema: $this->nonEmptyString(value: ($entry['schema'] ?? null)),
 				_rbac: false,
 				_multitenancy: false,
 				_render: false
-			);
+			));
 		} catch (\Throwable $e) {
 			$this->logger->info(
 				message: '[DeferredEntryObjectResolver] Object no longer resolvable — stale entry skipped',

@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -99,7 +100,7 @@ class SurvivorshipController extends Controller {
 	 */
 	public function sources(string $id): JSONResponse {
 		try {
-			$object = $this->objectService->find(id: $id, _rbac: true, _multitenancy: true);
+			$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, _rbac: true, _multitenancy: true));
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found.'], Http::STATUS_NOT_FOUND);
 			}
@@ -148,7 +149,7 @@ class SurvivorshipController extends Controller {
 		try {
 			// RBAC/tenant scoped read — an unreadable object never reaches the
 			// write path below.
-			$object = $this->objectService->find(id: $id, _rbac: true, _multitenancy: true);
+			$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, _rbac: true, _multitenancy: true));
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found.'], Http::STATUS_NOT_FOUND);
 			}
