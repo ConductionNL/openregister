@@ -22,8 +22,12 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\FlowRun;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use Psr\Log\LoggerInterface;
 
 /**
  * Resolves a macro action against the schema's own declarations.
@@ -45,12 +49,16 @@ class MacroActionResolver {
 	/**
 	 * Constructor.
 	 *
-	 * @param SchemaMapper $schemas Loads a schema by id or slug.
-	 * @param FlowService  $flows   Reads the bound flow, for its `next` hint.
+	 * @param SchemaMapper     $schemas    Loads a schema by id or slug.
+	 * @param FlowService      $flows      Reads the bound flow, for its `next` hint.
+	 * @param AuditTrailMapper $auditTrail Writes the entry that names the action and the run.
+	 * @param LoggerInterface  $logger     Diagnostics.
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemas,
 		private readonly FlowService $flows,
+		private readonly AuditTrailMapper $auditTrail,
+		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -97,6 +105,99 @@ class MacroActionResolver {
 			return FlowNextHint::STAY;
 		}
 	}//end nextFor()
+
+	/**
+	 * The `next` hint after a macro ran on a selection.
+	 *
+	 * After a selection the person is on a list, so `list` unless the flow
+	 * declares otherwise; with no bound flow found at all, `list`.
+	 *
+	 * @param string|null $flowUuid The bound flow, when any object had one.
+	 *
+	 * @return string One of FlowNextHint::HINTS.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+	 */
+	public function nextAfterSelection(?string $flowUuid): string {
+		if ($flowUuid === null) {
+			return FlowNextHint::LIST;
+		}
+
+		return $this->nextFor(flowUuid: $flowUuid);
+	}//end nextAfterSelection()
+
+	/**
+	 * The EFFECTIVE `next` hint of a finished run.
+	 *
+	 * The end node the run reached wins when it declares a hint; an end node
+	 * that declares nothing is silence, and the manual trigger's hint stands.
+	 * The reached end node is the last end-node step in the run's log.
+	 *
+	 * @param string  $flowUuid The flow.
+	 * @param FlowRun $run      The run.
+	 *
+	 * @return string One of FlowNextHint::HINTS.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/flow-engine/spec.md#requirement-a-manual-trigger-declares-where-the-person-goes-next
+	 */
+	public function nextForRun(string $flowUuid, FlowRun $run): string {
+		try {
+			$nodes = ($this->flows->find(uuid: $flowUuid)->getNodes() ?? []);
+		} catch (\Throwable) {
+			return FlowNextHint::STAY;
+		}
+
+		$reached = null;
+		foreach (($run->getLog() ?? []) as $entry) {
+			if (is_array($entry) === true && (string)($entry['type'] ?? '') === FlowNextHint::END_NODE) {
+				$reached = (string)($entry['transition'] ?? '');
+			}
+		}
+
+		$endNode = null;
+		foreach ($nodes as $node) {
+			if ($reached !== null && is_array($node) === true && (string)($node['id'] ?? '') === $reached) {
+				$endNode = $node;
+				break;
+			}
+		}
+
+		return FlowNextHint::effective(nodes: $nodes, endNode: $endNode);
+	}//end nextForRun()
+
+	/**
+	 * The audit entry that ties the pressed action and its run together by name.
+	 *
+	 * The writes inside the run audit as usual; this row is what lets a reader
+	 * of the object's trail see that they came from one pressed action. A
+	 * failure to write it is logged and does not undo the run, which has
+	 * already happened.
+	 *
+	 * @param ObjectEntity $object The subject.
+	 * @param string       $action The declared action.
+	 * @param string       $flow   The bound flow's uuid.
+	 * @param string       $run    The run's uuid.
+	 * @param string|null  $userId The acting user.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+	 */
+	public function recordRun(ObjectEntity $object, string $action, string $flow, string $run, ?string $userId): void {
+		try {
+			$this->auditTrail->createAuditTrailEntry(
+				object: $object,
+				action: 'action.macro',
+				context: ['declaredAction' => $action, 'flow' => $flow, 'run' => $run],
+				actorId: $userId
+			);
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				message: '[MacroActionResolver] Could not write the audit entry for macro "' . $action . '": ' . $e->getMessage(),
+				context: ['action' => $action, 'run' => $run]
+			);
+		}
+	}//end recordRun()
 
 	/**
 	 * Load a schema by id or slug.

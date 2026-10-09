@@ -1381,6 +1381,118 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end dispatchCrossTableSearch()
 
 	/**
+	 * Count every row a cross-table search matches, before paging.
+	 *
+	 * Follows the search's own path, so the total and the rows agree on
+	 * every filter: the UNION path is counted with one `SUM` over `COUNT(*)`
+	 * arms built from the same WHERE as its search arms (one statement per
+	 * UNION_ARM_BATCH_SIZE tables), the sequential path by summing the
+	 * single-table count it pages with.
+	 *
+	 * @param array $query               Search parameters (`_limit` and `_offset` are ignored).
+	 * @param array $registerSchemaPairs Array of ['register' => Register, 'schema' => Schema] pairs.
+	 *
+	 * @return int The number of matching rows across all tables.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-limit-supports-an-explicit-unlimited-value
+	 */
+	public function countAcrossMultipleTables(array $query, array $registerSchemaPairs): int {
+		if (count($registerSchemaPairs) > 1 && $this->shouldUseUnionQuery(query: $query) === true) {
+			$total = 0;
+			foreach (array_chunk($registerSchemaPairs, self::UNION_ARM_BATCH_SIZE) as $batch) {
+				$total += $this->countUnionBatch(query: $query, registerSchemaPairs: $batch);
+			}
+
+			return $total;
+		}
+
+		$total = 0;
+		foreach ($registerSchemaPairs as $pair) {
+			$register = ($pair['register'] ?? null);
+			$schema = ($pair['schema'] ?? null);
+			if ($register === null || $schema === null) {
+				continue;
+			}
+
+			$total += $this->countObjectsInRegisterSchemaTable(query: $query, register: $register, schema: $schema);
+		}
+
+		return $total;
+	}//end countAcrossMultipleTables()
+
+	/**
+	 * Count one batch of UNION arms in one statement.
+	 *
+	 * Each arm is `SELECT COUNT(*) AS cnt FROM <table> WHERE <the search arm's
+	 * WHERE>`, so the count matches the rows runUnionBatch() would return
+	 * without its LIMIT. A table that does not exist holds no rows.
+	 *
+	 * @param array $query               Search parameters.
+	 * @param array $registerSchemaPairs The pairs of this batch.
+	 *
+	 * @return int The rows matched in this batch.
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-limit-supports-an-explicit-unlimited-value
+	 */
+	private function countUnionBatch(array $query, array $registerSchemaPairs): int {
+		$arms = [];
+		foreach ($registerSchemaPairs as $pair) {
+			$register = ($pair['register'] ?? null);
+			$schema = ($pair['schema'] ?? null);
+			if ($register === null || $schema === null
+				|| $this->existsTableForRegisterSchema(register: $register, schema: $schema) === false
+			) {
+				continue;
+			}
+
+			$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+
+			// The columns the search arm would search, as buildUnionSelectPart()
+			// collects them for its metadata-only projection.
+			$existingColumns = [];
+			foreach (array_keys($schema->getProperties() ?? []) as $ownProperty) {
+				$ownColumn = $this->sanitizeColumnName(name: $ownProperty);
+				if ($this->columnExistsInTable(tableName: $tableName, columnName: $ownColumn) === true) {
+					$existingColumns[] = $ownColumn;
+				}
+			}
+
+			$armQuery = $query;
+			if (isset($armQuery['@self']) === true && is_array($armQuery['@self']) === true
+				&& array_key_exists('schema', $armQuery['@self']) === true
+			) {
+				$armQuery['@self']['schema'] = $schema->getId();
+			}
+
+			$where = $this->searchHandler->buildWhereConditionsSql(
+				query: $armQuery,
+				schema: $schema,
+				existingColumns: $existingColumns,
+				registerId: $register->getId()
+			);
+
+			$arm = 'SELECT COUNT(*) AS cnt FROM '.$this->getFullTableName(tableName: $tableName);
+			if (empty($where) === false) {
+				$arm .= ' WHERE '.implode(' AND ', $where);
+			}
+
+			$arms[] = $arm;
+		}//end foreach
+
+		if ($arms === []) {
+			return 0;
+		}
+
+		$stmt = $this->db->getQueryBuilder()->getConnection()->prepare(
+			'SELECT SUM(cnt) AS total FROM ('.implode(' UNION ALL ', $arms).') counted'
+		);
+		$stmt->execute();
+		$row = $stmt->fetch();
+
+		return (int) ($row['total'] ?? 0);
+	}//end countUnionBatch()
+
+	/**
 	 * Determine if we should use UNION ALL optimization.
 	 *
 	 * UNION ALL is faster but has limitations:
@@ -1393,8 +1505,10 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @return bool True if UNION ALL can be used.
 	 */
 	private function shouldUseUnionQuery(array $query): bool {
-		// Don't use UNION for aggregations or facets (not supported).
-		if (isset($query['_aggregations']) === true || isset($query['_facets']) === true) {
+		// Don't use UNION for aggregations (not supported). `_facets` does not count:
+		// this search returns rows only, facets are computed separately, and the
+		// sequential fallback neither orders nor pages across tables.
+		if (isset($query['_aggregations']) === true) {
 			return false;
 		}
 
@@ -2182,15 +2296,28 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * This is the original implementation - slower but more flexible.
 	 *
+	 * Paging is applied ONCE, to the merged result. Each table is asked for
+	 * its first `offset + limit` rows, the tables are concatenated (and sorted
+	 * by score when there is a search term), and only then is the page cut.
+	 * Passing `_offset` to every table made each one skip that many rows on
+	 * its own, so later pages lost rows and pages ran up to limit x tables.
+	 *
 	 * @param array $query Search parameters.
 	 * @param array $registerSchemaPairs Array of register+schema pairs.
 	 *
 	 * @return array Array of ObjectEntity objects.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+	 *
+	 * @spec openspec/specs/objects-crud/spec.md#requirement-limit-supports-an-explicit-unlimited-value
 	 */
 	private function searchAcrossMultipleTablesSequential(array $query, array $registerSchemaPairs): array {
 		$allResults = [];
+
+		// Each table answers the merged question's first `offset + limit` rows,
+		// the same over-fetch buildUnionBatchQuery() uses for UNION batches.
+		$pageQuery = $query;
+		$query = $this->buildUnionBatchQuery(query: $pageQuery);
 
 		foreach ($registerSchemaPairs as $pair) {
 			$register = $pair['register'] ?? null;
@@ -2281,6 +2408,11 @@ class MagicMapper extends AbstractObjectMapper {
 				}
 			);
 		}//end if
+
+		// The caller's page, cut once from the merged rows.
+		$offset = max(0, (int)($pageQuery['_offset'] ?? 0));
+		$normalisedLimit = QueryLimit::normalise($pageQuery['_limit'] ?? null);
+		$allResults = array_slice($allResults, $offset, $normalisedLimit);
 
 		$this->logger->debug(
 			message: '[MagicMapper] Cross-table search completed',

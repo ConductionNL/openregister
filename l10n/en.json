@@ -3307,7 +3307,10 @@
         "This record has no visible fields.": "This record has no visible fields.",
         "Upload": "Upload",
         "Edit {field}": "Edit {field}",
-        "The value could not be saved": "The value could not be saved"
+        "The value could not be saved": "The value could not be saved",
+        "Audit trail export ready": "Audit trail export ready",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Your audit trail export of %1$s entries was saved to %2$s%3$s.",
+        "Open Files": "Open Files"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

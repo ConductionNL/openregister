@@ -3330,7 +3330,10 @@
         "{schema} {title} deleted": "{schema} {title} обрисан",
         "Object \"%1$s\" created": "Објекат \"%1$s\" креиран",
         "Object \"%1$s\" updated": "Објекат \"%1$s\" ажуриран",
-        "Object \"%1$s\" assigned to you": "Објекат \"%1$s\" вам је додељен"
+        "Object \"%1$s\" assigned to you": "Објекат \"%1$s\" вам је додељен",
+        "Audit trail export ready": "Извоз ревизорског трага је спреман",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Ваш извоз ревизорског трага са %1$s уноса сачуван је у %2$s%3$s.",
+        "Open Files": "Отвори Датотеке"
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);",
     "plurals": {

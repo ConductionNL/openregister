@@ -3058,7 +3058,7 @@ class MagicSearchHandler {
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
-	 * @spec openspec/changes/order-filters-and-notification-links/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 */
 	private function applyResultOrder(
 		IQueryBuilder $qb,
@@ -3487,7 +3487,8 @@ class MagicSearchHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/order-filters-and-notification-links/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/register-i18n/spec.md#requirement-ordering-by-a-text-property-must-ignore-case
 	 */
 	private function applySorting(
 		IQueryBuilder $qb,
@@ -3524,7 +3525,7 @@ class MagicSearchHandler {
 			if (str_starts_with($field, '@self.') === true) {
 				// Metadata field sorting (e.g., @self.created → t._created).
 				$metadataField = '_' . str_replace('@self.', '', $field);
-				$qb->addOrderBy("t.{$metadataField}", $direction);
+				$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $metadataField), $direction);
 			} elseif (in_array(
 				$field,
 				[
@@ -3543,7 +3544,7 @@ class MagicSearchHandler {
 			) === true
 			) {
 				// Direct metadata column reference (e.g., _created → t._created).
-				$qb->addOrderBy("t.{$field}", $direction);
+				$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $field), $direction);
 			} elseif (is_array($properties[$field] ?? null) === true
 				&& ($properties[$field]['translatable'] ?? false) === true
 			) {
@@ -3552,12 +3553,15 @@ class MagicSearchHandler {
 				// Ordering on the raw column text put every plain row before
 				// every map row: two sorted runs (dossiq case types, cloud
 				// check 8 October 2026). Order on the value a person sees.
+				// Lower-cased, like every text order (see buildPropertySortExpression()).
 				$columnName = $this->sanitizeColumnName(name: $field);
 				$qb->addOrderBy(
 					$qb->createFunction(
-						$this->buildTranslatableSortSql(
-							column: $qb->getColumnName($columnName, 't'),
-							languages: $sortLanguages
+						$this->lowerSql(
+							expression: $this->buildTranslatableSortSql(
+								column: $qb->getColumnName($columnName, 't'),
+								languages: $sortLanguages
+							)
 						)
 					),
 					$direction
@@ -3593,7 +3597,7 @@ class MagicSearchHandler {
 	 *
 	 * @return array<int, string> Language codes, first wins.
 	 *
-	 * @spec openspec/changes/order-filters-and-notification-links/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 */
 	private function sortLanguageChain(Register $register): array {
 		$registerLanguages = array_values(
@@ -3640,7 +3644,7 @@ class MagicSearchHandler {
 	 *
 	 * @return string The SQL expression.
 	 *
-	 * @spec openspec/changes/order-filters-and-notification-links/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 */
 	private function buildTranslatableSortSql(string $column, array $languages): string {
 		$codes = [];
@@ -3700,6 +3704,50 @@ class MagicSearchHandler {
 	}//end buildTranslatableSortSql()
 
 	/**
+	 * The ORDER BY expression for a metadata column.
+	 *
+	 * The text columns a person reads (name, description, summary) sort by
+	 * their lower-cased value; dates, ids and owners keep the bare column.
+	 *
+	 * @param IQueryBuilder $qb     Query builder, used for identifier quoting.
+	 * @param string        $column The metadata column, with its leading underscore.
+	 *
+	 * @return string|IQueryFunction The column reference or LOWER() expression.
+	 *
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/register-i18n/spec.md#requirement-ordering-by-a-text-property-must-ignore-case
+	 */
+	private function metadataSortExpression(IQueryBuilder $qb, string $column): string|IQueryFunction {
+		if (in_array($column, ['_name', '_description', '_summary'], true) === true) {
+			return $qb->createFunction($this->lowerSql(expression: $qb->getColumnName($column, 't')));
+		}
+
+		return "t.{$column}";
+	}//end metadataSortExpression()
+
+	/**
+	 * Lower-case an SQL expression for ordering, on every supported database.
+	 *
+	 * PostgreSQL has no LOWER() for a json, timestamp or numeric column, and a
+	 * table keeps its column type when a property later changes type, so the
+	 * value is cast to text first there. MySQL/MariaDB and SQLite convert to a
+	 * string themselves.
+	 *
+	 * @param string $expression A quoted column reference or SQL expression.
+	 *
+	 * @return string The lower-casing SQL expression.
+	 *
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/register-i18n/spec.md#requirement-ordering-by-a-text-property-must-ignore-case
+	 */
+	private function lowerSql(string $expression): string {
+		$platform = $this->db->getDatabasePlatform();
+		if (is_object($platform) === true && stripos($platform::class, 'PostgreSQL') !== false) {
+			return "LOWER(CAST({$expression} AS TEXT))";
+		}
+
+		return "LOWER({$expression})";
+	}//end lowerSql()
+
+	/**
 	 * Build the ORDER BY expression for one schema property column.
 	 *
 	 * A `date` or `date-time` property sorts as if an empty value held the
@@ -3707,7 +3755,9 @@ class MagicSearchHandler {
 	 * carries). Without that fallback an empty date sorts above the newest
 	 * dated object on PostgreSQL (NULLs are largest there) and below the
 	 * oldest on MySQL/MariaDB (NULLs are smallest), so the same list read
-	 * differently per database. Every other property keeps its bare column.
+	 * differently per database. A text property (a string that is not a
+	 * date, and not encrypted) sorts by its lower-cased value. Every other
+	 * property keeps its bare column.
 	 *
 	 * The fallback is only applied when the column is known to be a real date
 	 * or timestamp column ($dateTimeColumns). A property that gained its date
@@ -3725,7 +3775,7 @@ class MagicSearchHandler {
 	 *
 	 * @return string|IQueryFunction The column reference or COALESCE expression.
 	 *
-	 * @spec exclude Sort fallback for empty date properties, decided by the product owner on 2026-10-04 after a live pipelinq list report.
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/register-i18n/spec.md#requirement-ordering-by-a-text-property-must-ignore-case
 	 */
 	private function buildPropertySortExpression(
 		IQueryBuilder $qb,
@@ -3733,6 +3783,18 @@ class MagicSearchHandler {
 		mixed $propertyConfig,
 		?array $dateTimeColumns = null
 	): string|IQueryFunction {
+		$isText = is_array($propertyConfig) === true
+			&& ($propertyConfig['type'] ?? 'string') === 'string'
+			&& in_array($propertyConfig['format'] ?? null, ['date', 'date-time'], true) === false
+			&& ($propertyConfig['x-openregister-encrypted'] ?? false) === false;
+		if ($isText === true) {
+			// Text orders without regard to case, as OpenRegister's own lists
+			// do: "Leverancier accreditatie" before "Leverancier IBAN-wijziging"
+			// (cloud check, 9 October 2026). LOWER() exists on PostgreSQL,
+			// MySQL/MariaDB and SQLite alike.
+			return $qb->createFunction($this->lowerSql(expression: $qb->getColumnName($columnName, 't')));
+		}
+
 		if ($dateTimeColumns === null
 			|| in_array(strtolower($columnName), $dateTimeColumns, true) === false
 			|| is_array($propertyConfig) === false

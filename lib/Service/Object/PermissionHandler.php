@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
 use OCA\OpenRegister\Service\Rbac\DepartmentMatrixCompiler;
+use OCA\OpenRegister\Service\Rbac\DepartmentMatrixPersonValues;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantResolver;
 use OCA\OpenRegister\Service\Rbac\DerivedGrantStore;
 use OCA\OpenRegister\Service\Rbac\GrantConstraints;
@@ -143,6 +144,13 @@ class PermissionHandler {
 	 * @var array<string, bool>
 	 */
 	private array $permissionCache = [];
+
+	/**
+	 * The person-source reader for department matrices, built on first use.
+	 *
+	 * @var DepartmentMatrixPersonValues|null
+	 */
+	private ?DepartmentMatrixPersonValues $personValues = null;
 
 	/**
 	 * The five canonical action verbs the static rule chain knows.
@@ -2720,15 +2728,23 @@ class PermissionHandler {
 				}
 			}
 
+			$source = $matrix['userSource'] ?? null;
+			if (is_array($source) === false) {
+				$source = null;
+			}
+
+			// Both sources may be declared; the caller's own values are the
+			// union. The person source is read only when it is declared.
+			$ownValues = $compiler->valuesFromGroups(source: $source, userGroups: $userGroups);
+			if (trim((string)($source['schema'] ?? '')) !== '') {
+				$ownValues = array_values(
+					array_unique(array_merge($ownValues, $this->personValues()->valuesFor(source: $source, userId: $userId)))
+				);
+			}
+
 			return $compiler->merge(
 				authorization: $authorization,
-				compiled: $compiler->compile(
-					matrix: $matrix,
-					ownValues: $compiler->valuesFromGroups(
-						source: ($matrix['userSource'] ?? null),
-						userGroups: $userGroups
-					)
-				)
+				compiled: $compiler->compile(matrix: $matrix, ownValues: $ownValues)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->error(
@@ -2738,6 +2754,28 @@ class PermissionHandler {
 			return $authorization;
 		}
 	}//end compileDepartmentMatrix()
+
+	/**
+	 * The reader of a matrix user's own values from a person schema, built once.
+	 *
+	 * Built here rather than injected for the same reason as the resolvers
+	 * above: a new required constructor argument is a fatal at every existing
+	 * construction site.
+	 *
+	 * @return DepartmentMatrixPersonValues The reader.
+	 *
+	 * @spec openspec/changes/rbac-department-role-matrix/specs/rbac-scopes/spec.md#requirement-a-schema-declares-a-department-by-role-matrix-keyed-on-an-object-field
+	 */
+	private function personValues(): DepartmentMatrixPersonValues {
+		$this->personValues ??= new DepartmentMatrixPersonValues(
+			schemas: $this->schemaMapper,
+			registers: $this->container->get(RegisterMapper::class),
+			objects: $this->objectEntityMapper,
+			logger: $this->logger
+		);
+
+		return $this->personValues;
+	}//end personValues()
 
 	/**
 	 * The shared reader of an entry's end and its area.

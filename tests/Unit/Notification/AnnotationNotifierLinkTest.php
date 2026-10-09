@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/order-filters-and-notification-links/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
+ * @spec openspec/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
  */
 
 declare(strict_types=1);
@@ -225,7 +225,7 @@ class AnnotationNotifierLinkTest extends TestCase {
 			'en'
 		);
 
-		$expected = self::BASE . '/index.php/apps/openregister/#/registers/3/schemas/4/objects/o-9';
+		$expected = self::BASE . '/index.php/apps/openregister/objects/3/4/o-9';
 		$this->assertSame($expected, $this->notificationLink);
 		$this->assertSame([['View', $expected]], $this->actionLinks);
 	}//end testAnUnclaimedSchemaLinksToTheOpenRegisterObjectView()
@@ -237,7 +237,7 @@ class AnnotationNotifierLinkTest extends TestCase {
 		);
 
 		$this->assertSame(
-			self::BASE . '/index.php/apps/openregister/#/registers/3/schemas/4/objects/o-9',
+			self::BASE . '/index.php/apps/openregister/objects/3/4/o-9',
 			$this->notificationLink
 		);
 	}//end testWithoutARegistryTheLinkStillPointsAtTheObject()

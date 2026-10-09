@@ -87,6 +87,11 @@ return [
         // authorises it; the flow adds no second permission model (ADR-023).
         ['name' => 'objectActions#invoke', 'url' => '/api/objects/{register}/{schema}/{id}/actions/{action}', 'verb' => 'POST',
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'action' => '[^/]+']],
+        // The same macro on a selection: one run per object, reported per object.
+        // Its own prefix, because `/api/objects/{register}/{schema}/...` with four
+        // segments would be read as an object id by the routes above.
+        ['name' => 'objectActions#invokeOnSelection', 'url' => '/api/object-actions/{register}/{schema}/{action}', 'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'action' => '[^/]+']],
         ['name' => 'objectIntegrations#index',   'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
         ['name' => 'objectIntegrations#show',    'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
         ['name' => 'objectIntegrations#create',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
@@ -681,6 +686,8 @@ return [
 
         // Contacts matching API — used by ContactsMenuProvider + mail-sidebar.
         ['name' => 'contacts#match', 'url' => '/api/contacts/match', 'verb' => 'GET'],
+        // Contacts leaf: name search over the user's readable address books.
+        ['name' => 'contactSearch#search', 'url' => '/api/integrations/contacts/search', 'verb' => 'GET'],
 
         // Mail sidebar — reverse lookup of OR objects linked to an email.
         // Search + bySender are app-global (no register/schema in path) and
@@ -1470,6 +1477,10 @@ return [
         // Files operations under objects.
 		['name' => 'files#create', 'url' => '/api/objects/{register}/{schema}/{id}/files', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'files#save', 'url' => '/api/objects/{register}/{schema}/{id}/files/save', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		// Files leaf: attach a file the caller already has in Files ("Add to object").
+		['name' => 'files#attach', 'url' => '/api/objects/{register}/{schema}/{id}/files/attach', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		// Talk: save a conversation to the object as a text file ("Save chat to object").
+		['name' => 'files#saveChat', 'url' => '/api/objects/{register}/{schema}/{id}/files/chat', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'files#index', 'url' => '/api/objects/{register}/{schema}/{id}/files', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'files#show', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
         ['name' => 'objects#downloadFiles', 'url' => '/api/objects/{register}/{schema}/{id}/files/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],

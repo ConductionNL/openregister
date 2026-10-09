@@ -42,7 +42,7 @@ class NotificationAnnotationValidatorTest extends TestCase {
 	/**
 	 * A parties rule with an unknown messageCategory is refused; a known one passes.
 	 *
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-a-parties-notification-asks-integriq-before-it-mails-a-party-req-ero-003
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-parties-notification-asks-integriq-before-it-mails-a-party-req-ero-003
 	 */
 	public function testAnUnknownMessageCategoryIsRejected(): void {
 		$rule = [

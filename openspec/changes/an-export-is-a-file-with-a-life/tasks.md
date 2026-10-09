@@ -18,6 +18,11 @@ profile and the export verb.
       > the caller in `tests/Unit/Architecture/ExportRunsHaveAProducerTest.php`,
       > mutation-checked by removing the call site. The whole-dataset extract
       > and the remaining export paths do not yet.
+      > 2026-10-09: the API path writes one too. `ObjectsController::recordExportRun()`,
+      > called from `recordExportCompleted()` on every format branch, records source `api`,
+      > no file and no expiry, download count one (`testAnApiExportIsRecordedAsARun`).
+      > Still open: the whole-dataset extract (`ExportWholeSetAction` appends per object, so
+      > it needs one run per file with a growing row count, keyed on the file id).
       - Unit tests, mutation-checked: removing the write from the scheduled
         runner reddens an assertion about the row, not a setup line
 

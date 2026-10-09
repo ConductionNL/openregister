@@ -67,7 +67,6 @@ use OCA\OpenRegister\Event\AgentCreatedEvent;
 use OCA\OpenRegister\Event\AgentUpdatedEvent;
 use OCA\OpenRegister\Event\ConfigurationCreatedEvent;
 use OCA\OpenRegister\Event\ConfigurationUpdatedEvent;
-use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -4913,8 +4912,10 @@ class Application extends App implements IBootstrap {
 		// resolution, so no circular DI issues during registration.
 		$server = $context->getServerContainer();
 		$dispatcher = $server->get(IEventDispatcher::class);
+		// Through the registry, so a later read in the same process does not
+		// ask a second time.
 		$registry = $server->get(DeepLinkRegistryService::class);
-		$dispatcher->dispatchTyped(new DeepLinkRegistrationEvent(registry: $registry));
+		$registry->requestRegistrations(dispatcher: $dispatcher);
 
 		// Register the built-in IntegrationProvider implementations
 		// with the IntegrationRegistry. The 5 wrap existing services
