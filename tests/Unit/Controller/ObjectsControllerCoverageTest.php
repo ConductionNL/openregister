@@ -1067,6 +1067,43 @@ class ObjectsControllerCoverageTest extends TestCase {
 	}
 
 	/**
+	 * The mapper already applies _offset, so a later page keeps the rows it returns.
+	 */
+	public function testIndexCrossTableSearchDoesNotApplyOffsetTwice(): void {
+		$registerEntity = $this->createMagicMappedRegister(1, 'reg', ['2', '3']);
+		$this->registerMapper->method('find')->willReturn($registerEntity);
+		$this->schemaMapper->method('find')->willReturnCallback(function ($id) {
+			return $this->createSchemaMock((int) $id, 'schema'.$id);
+		});
+
+		$this->request->method('getParams')->willReturn(['schemas' => '2,3']);
+
+		$rows = [];
+		foreach (['page2-a', 'page2-b'] as $uuid) {
+			$row = new ObjectEntity();
+			$row->setUuid($uuid);
+			$row->setObject(['name' => $uuid]);
+			$rows[] = $row;
+		}
+
+		$magicMapper = $this->createMock(MagicMapper::class);
+		$magicMapper->method('searchAcrossMultipleTables')->willReturn($rows);
+		$this->registerService(MagicMapper::class, function () use ($magicMapper) {
+			return $magicMapper;
+		});
+
+		$this->objectService->method('buildSearchQuery')->willReturn([
+			'_limit' => 2,
+			'_offset' => 2,
+		]);
+
+		$data = $this->controller->index('1', '2', $this->objectService)->getData();
+
+		$this->assertCount(2, $data['results']);
+		$this->assertSame(2, $data['page']);
+	}
+
+	/**
 	 * Test crossTableSearch with no valid pairs returns 404.
 	 * Exercises line 706-714 (empty pairs branch).
 	 */
