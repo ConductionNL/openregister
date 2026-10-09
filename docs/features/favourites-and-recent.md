@@ -31,6 +31,17 @@ The list holds distinct objects, newest first, up to a hundred. Open a case five
 times and it shows once, with the time of your last open. The audit trail keeps
 all five entries.
 
+### Only what you opened counts
+
+Code also reads objects on your behalf: a permission check before an upload,
+the relations tab of a case you already opened, a lookup of the client a case
+points to, an assistant answering your question. Those reads still go on the
+audit trail, with the cause `lookup`. Your recent list leaves them out, so it
+shows the objects you opened and not the ones the code looked at for you.
+
+Reads made inside an import, a rule, a migration or a scheduled job keep their
+own cause and stay out of your list too.
+
 A view is not a read state. A read state records that nothing changed since you
 looked, and the next write clears it. See
 [Object read state](object-read-state.md).
@@ -88,6 +99,9 @@ last opened it in ISO 8601. The response says whether the lens could answer:
 When `available` is `false` the page is empty and `reason` is one of
 `audit-trail-disabled`, `anonymous` or `read-history-unavailable`.
 
+A search over several schemas or registers, or over none, answers the lens the
+same way: the same order, the same paging and the same `@self.viewedAt`.
+
 An anonymous caller asking for either gets an empty page. A lens over nothing
 answers nothing, never the whole register.
 
@@ -111,5 +125,6 @@ above.
 ## Specification
 
 `openspec/changes/archive/2026-10-05-favourites-and-recent/` and
-`openspec/changes/read-history-on-audit-trail/`, in the `object-interactions`
+`openspec/changes/read-history-on-audit-trail/` and
+`openspec/changes/recently-opened-means-opened/`, in the `object-interactions`
 capability.
