@@ -65,6 +65,7 @@ class AnnotationNotifierTest extends TestCase {
 
 		$action = $this->createMock(IAction::class);
 		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
 		$action->method('setPrimary')->willReturnSelf();
 		$action->method('setLink')->willReturnSelf();
 
@@ -79,11 +80,11 @@ class AnnotationNotifierTest extends TestCase {
 		]);
 		$notification->method('createAction')->willReturn($action);
 		$notification->method('setIcon')->willReturnSelf();
-		$notification->method('addAction')->willReturnSelf();
+		$notification->method('addParsedAction')->willReturnSelf();
 
 		// Custom _text is shown verbatim; a deep-link action is added.
 		$notification->expects($this->once())->method('setParsedSubject')->with('Nieuwe lead: Acme')->willReturnSelf();
-		$notification->expects($this->once())->method('addAction');
+		$notification->expects($this->once())->method('addParsedAction');
 
 		$result = $this->notifier->prepare($notification, 'nl');
 		$this->assertSame($notification, $result);
@@ -100,6 +101,7 @@ class AnnotationNotifierTest extends TestCase {
 
 		$action = $this->createMock(IAction::class);
 		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
 		$action->method('setPrimary')->willReturnSelf();
 		$action->method('setLink')->willReturnSelf();
 
@@ -115,7 +117,7 @@ class AnnotationNotifierTest extends TestCase {
 		]);
 		$notification->method('createAction')->willReturn($action);
 		$notification->method('setIcon')->willReturnSelf();
-		$notification->method('addAction')->willReturnSelf();
+		$notification->method('addParsedAction')->willReturnSelf();
 		$notification->method('setParsedSubject')->willReturnSelf();
 
 		$notification->expects($this->once())->method('setParsedMessage')->with('Open in OpenTalk.')->willReturnSelf();
@@ -134,6 +136,7 @@ class AnnotationNotifierTest extends TestCase {
 
 		$action = $this->createMock(IAction::class);
 		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
 		$action->method('setPrimary')->willReturnSelf();
 		$action->method('setLink')->willReturnSelf();
 
@@ -148,7 +151,7 @@ class AnnotationNotifierTest extends TestCase {
 		]);
 		$notification->method('createAction')->willReturn($action);
 		$notification->method('setIcon')->willReturnSelf();
-		$notification->method('addAction')->willReturnSelf();
+		$notification->method('addParsedAction')->willReturnSelf();
 		$notification->method('setParsedSubject')->willReturnSelf();
 
 		$notification->expects($this->never())->method('setParsedMessage');
@@ -169,6 +172,7 @@ class AnnotationNotifierTest extends TestCase {
 
 		$action = $this->createMock(IAction::class);
 		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
 		$action->method('setPrimary')->willReturnSelf();
 		$action->method('setLink')->willReturnSelf();
 
@@ -184,7 +188,7 @@ class AnnotationNotifierTest extends TestCase {
 		]);
 		$notification->method('createAction')->willReturn($action);
 		$notification->method('setIcon')->willReturnSelf();
-		$notification->method('addAction')->willReturnSelf();
+		$notification->method('addParsedAction')->willReturnSelf();
 
 		$notification->expects($this->once())
 			->method('setParsedSubject')
@@ -210,6 +214,7 @@ class AnnotationNotifierTest extends TestCase {
 
 		$action = $this->createMock(IAction::class);
 		$action->method('setLabel')->willReturnSelf();
+		$action->method('setParsedLabel')->willReturnSelf();
 		$action->method('setPrimary')->willReturnSelf();
 		$action->method('setLink')->willReturnSelf();
 
@@ -224,7 +229,7 @@ class AnnotationNotifierTest extends TestCase {
 		]);
 		$notification->method('createAction')->willReturn($action);
 		$notification->method('setIcon')->willReturnSelf();
-		$notification->method('addAction')->willReturnSelf();
+		$notification->method('addParsedAction')->willReturnSelf();
 
 		$notification->expects($this->once())
 			->method('setParsedSubject')

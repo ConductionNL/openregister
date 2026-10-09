@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Notification;
 
+use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCP\IURLGenerator;
 use OCP\L10N\IFactory;
 use OCP\Notification\INotification;
@@ -77,10 +78,12 @@ class AnnotationNotifier implements INotifier {
 	 *
 	 * @param IFactory $factory L10N factory for localised subjects.
 	 * @param IURLGenerator $urlGenerator URL generator for the icon and action link.
+	 * @param DeepLinkRegistryService|null $deepLinks The owning app's detail route per register and schema.
 	 */
 	public function __construct(
 		private readonly IFactory $factory,
 		private readonly IURLGenerator $urlGenerator,
+		private readonly ?DeepLinkRegistryService $deepLinks = null,
 	) {
 	}//end __construct()
 
@@ -116,6 +119,7 @@ class AnnotationNotifier implements INotifier {
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 * @spec openspec/specs/activity-provider/spec.md#requirement-a-canonical-object-notification-does-not-print-a-register-id
+	 * @spec openspec/changes/order-filters-and-notification-links/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
 	 */
 	public function prepare(INotification $notification, string $languageCode): INotification {
 		if ($notification->getApp() !== 'openregister') {
@@ -194,6 +198,9 @@ class AnnotationNotifier implements INotifier {
 			);
 		}
 
+		// Link to the object; without it a click went nowhere (cloud check, `link: ""`).
+		$objectLink = $this->linkToObject(notification: $notification, params: $params);
+
 		// Render declared action buttons when the rule provided any; otherwise
 		// keep the implicit single "View" action (back-compat — existing rules
 		// are unchanged).
@@ -207,15 +214,15 @@ class AnnotationNotifier implements INotifier {
 		// rendered — either none were declared (back-compat) or every declared
 		// action resolved to an empty link. This guarantees a notification
 		// never ships with zero actions when an object-detail target exists.
-		if ($rendered === 0) {
-			$this->addViewAction(notification: $notification, params: $params, label: $l->t('View'));
+		if ($rendered === 0 && $objectLink !== null) {
+			$this->addViewAction(notification: $notification, link: $objectLink, label: $l->t('View'));
 		}
 
 		return $notification;
 	}//end prepare()
 
 	/**
-	 * Render the schema-declared action buttons via addAction().
+	 * Render the schema-declared action buttons via addParsedAction().
 	 *
 	 * Each action carries a per-locale `label` map, a `primary` flag, a
 	 * pre-resolved absolute `url` (resolved server-side by the dispatcher
@@ -248,6 +255,13 @@ class AnnotationNotifier implements INotifier {
 				continue;
 			}
 
+			// The dispatcher returns a registry deep link as a path, so a browser
+			// keeps the page's own port. Nextcloud refuses a relative action
+			// link and the whole notification then failed to render.
+			if (str_starts_with($url, '/') === true) {
+				$url = $this->urlGenerator->getAbsoluteURL($url);
+			}
+
 			$labelMap = ($action['label'] ?? []);
 			if (is_array($labelMap) === false) {
 				$labelMap = [];
@@ -266,11 +280,16 @@ class AnnotationNotifier implements INotifier {
 				$method = 'GET';
 			}
 
+			// Nextcloud's notification API returns PARSED actions only, so an
+			// action added with addAction() never reached the client. The raw
+			// label is a short key (Nextcloud caps it at 32 characters); the
+			// person reads the parsed label.
 			$actionObject = $notification->createAction();
-			$actionObject->setLabel($label)
+			$actionObject->setLabel('action-'.$rendered)
+				->setParsedLabel($label)
 				->setPrimary((bool)($action['primary'] ?? false))
 				->setLink($url, $method);
-			$notification->addAction($actionObject);
+			$notification->addParsedAction($actionObject);
 			$rendered++;
 		}//end foreach
 
@@ -278,31 +297,104 @@ class AnnotationNotifier implements INotifier {
 	}//end addDeclaredActions()
 
 	/**
-	 * Attach a "View" deep-link action to the notification when all routing
-	 * parameters (registerId, schemaId, objectUuid) are present and non-empty.
+	 * Set the notification link to the object, and return that link.
+	 *
+	 * @param INotification $notification The notification being prepared.
+	 * @param array<string,mixed> $params Subject parameters from the notification.
+	 *
+	 * @return string|null The link set, or null when the notification names no object.
+	 *
+	 * @spec openspec/changes/order-filters-and-notification-links/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
+	 */
+	private function linkToObject(INotification $notification, array $params): ?string {
+		$link = $this->buildObjectLink(params: $params);
+		if ($link !== null) {
+			$notification->setLink($link);
+		}
+
+		return $link;
+	}//end linkToObject()
+
+	/**
+	 * The absolute link to the object a notification is about.
+	 *
+	 * The owning app's detail page from the deep link registry when an app
+	 * claimed the schema (pipelinq: `/apps/pipelinq/clients/{uuid}`), else
+	 * OpenRegister's object view. Null when the notification does not name a
+	 * register, a schema and an object.
+	 *
+	 * @param array<string,mixed> $params Subject parameters from the notification.
+	 *
+	 * @return string|null The absolute link, or null.
+	 *
+	 * @spec openspec/changes/order-filters-and-notification-links/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
+	 */
+	private function buildObjectLink(array $params): ?string {
+		$registerId = (string)($params['registerId'] ?? '');
+		$schemaId = (string)($params['schemaId'] ?? '');
+		$objectUuid = (string)($params['objectUuid'] ?? '');
+		if ($registerId === '' || $schemaId === '' || $objectUuid === '') {
+			return null;
+		}
+
+		$owned = $this->resolveOwnedLink(registerId: $registerId, schemaId: $schemaId, objectUuid: $objectUuid);
+		if ($owned !== null) {
+			return $owned;
+		}
+
+		return $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page')
+			. sprintf('#/registers/%s/schemas/%s/objects/%s', $registerId, $schemaId, $objectUuid);
+	}//end buildObjectLink()
+
+	/**
+	 * The owning app's absolute detail link from the deep link registry, or null.
+	 *
+	 * @param string $registerId The register id.
+	 * @param string $schemaId The schema id.
+	 * @param string $objectUuid The object uuid.
+	 *
+	 * @return string|null The absolute link, or null when no app claimed the schema.
+	 *
+	 * @spec openspec/changes/order-filters-and-notification-links/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
+	 */
+	private function resolveOwnedLink(string $registerId, string $schemaId, string $objectUuid): ?string {
+		if ($this->deepLinks === null || is_numeric($registerId) === false || is_numeric($schemaId) === false) {
+			return null;
+		}
+
+		$owned = $this->deepLinks->resolveUrl(
+			registerId: (int)$registerId,
+			schemaId: (int)$schemaId,
+			objectData: ['uuid' => $objectUuid, 'id' => $objectUuid]
+		);
+		if ($owned === null || $owned === '') {
+			return null;
+		}
+
+		if (str_starts_with($owned, 'http://') === true || str_starts_with($owned, 'https://') === true) {
+			return $owned;
+		}
+
+		return $this->urlGenerator->getAbsoluteURL($owned);
+	}//end resolveOwnedLink()
+
+	/**
+	 * Attach the primary "View" action, linking where the notification links.
 	 *
 	 * @param INotification $notification Notification to attach the action to.
-	 * @param array<string,mixed> $params Subject parameters from the notification.
+	 * @param string $link The absolute link to the object.
 	 * @param string $label Localised label for the action button.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/order-filters-and-notification-links/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
 	 */
-	private function addViewAction(INotification $notification, array $params, string $label): void {
-		$registerId = ($params['registerId'] ?? null);
-		$schemaId = ($params['schemaId'] ?? null);
-		$objectUuid = ($params['objectUuid'] ?? null);
-		if ($registerId === null || $schemaId === null || $objectUuid === null || (string)$objectUuid === '') {
-			return;
-		}
-
+	private function addViewAction(INotification $notification, string $link, string $label): void {
 		$action = $notification->createAction();
-		$action->setLabel($label)
+		$action->setLabel('view')
+			->setParsedLabel($label)
 			->setPrimary(true)
-			->setLink(
-				$this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page')
-				. sprintf('#/registers/%s/schemas/%s/objects/%s', $registerId, $schemaId, $objectUuid),
-				'GET'
-			);
-		$notification->addAction($action);
+			->setLink($link, 'GET');
+		$notification->addParsedAction($action);
 	}//end addViewAction()
 }//end class
