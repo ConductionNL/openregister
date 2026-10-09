@@ -41,6 +41,7 @@ use OCP\Files\NotPermittedException;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -101,6 +102,8 @@ class FolderManagementHandler {
 	 *                                               first upload needs no register-update permission.
 	 * @param FileService|null $fileService File service facade for cross-handler coordination
 	 *                                      (injected lazily to avoid circular dependency).
+	 * @param ContainerInterface|null $container Resolves the facade on first use when nothing
+	 *                                           has injected it yet (see fileService()).
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
@@ -115,6 +118,7 @@ class FolderManagementHandler {
 		private readonly IUserMountCache $mountCache,
 		private readonly RegisterFolderRecorder $folderRecorder,
 		private ?FileService $fileService = null,
+		private readonly ?ContainerInterface $container = null,
 	) {
 	}//end __construct()
 
@@ -134,6 +138,38 @@ class FolderManagementHandler {
 	public function setFileService(FileService $fileService): void {
 		$this->fileService = $fileService;
 	}//end setFileService()
+
+	/**
+	 * The FileService facade, resolved on first use when nobody injected it.
+	 *
+	 * The facade is handed in by FileService's own constructor, so it is only
+	 * set in a request that happened to build FileService first. A request
+	 * that reaches this handler another way (ObjectSharingService granting a
+	 * share or minting a link) found it null, and every system-account lookup
+	 * failed with "The OpenRegister account is not available". Resolving
+	 * FileService here builds it, and its constructor wires itself back in.
+	 *
+	 * @return FileService|null The facade, or null when it cannot be resolved.
+	 */
+	private function fileService(): ?FileService {
+		if ($this->fileService !== null || $this->container === null) {
+			return $this->fileService;
+		}
+
+		try {
+			$resolved = $this->container->get(FileService::class);
+			if (($resolved instanceof FileService) === true && $this->fileService === null) {
+				$this->fileService = $resolved;
+			}
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[FolderManagementHandler] FileService could not be resolved: '.$e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+
+		return $this->fileService;
+	}//end fileService()
 
 	/**
 	 * Creates a folder for an entity (Register or ObjectEntity).
@@ -917,11 +953,12 @@ class FolderManagementHandler {
 	 * @throws Exception When the account cannot be resolved.
 	 */
 	private function getSystemAccount(): IUser {
-		if ($this->fileService === null) {
+		$fileService = $this->fileService();
+		if ($fileService === null) {
 			throw new Exception('The OpenRegister account is not available');
 		}
 
-		return $this->fileService->getUser();
+		return $fileService->getUser();
 	}//end getSystemAccount()
 
 	/**
@@ -1126,12 +1163,13 @@ class FolderManagementHandler {
 	 * @phpstan-return IUser|null
 	 */
 	private function resolveSystemPrincipal(): ?IUser {
-		if ($this->fileService === null) {
+		$fileService = $this->fileService();
+		if ($fileService === null) {
 			return null;
 		}
 
 		try {
-			return $this->fileService->getUser();
+			return $fileService->getUser();
 		} catch (Exception $e) {
 			$this->logger->warning(
 				message: '[FolderManagementHandler] System principal unavailable: ' . $e->getMessage(),
