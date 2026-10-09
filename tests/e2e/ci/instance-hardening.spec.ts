@@ -222,7 +222,12 @@ test.describe('The fresh sign-in, and the statement', () => {
 		// started. It carries the admin credentials and nothing else: the
 		// principal here is a full administrator, and it is still refused.
 		const context = await browser.newContext({
+			// A context of its own: no stored session (test.use above would hand it
+			// the administrator's elevated cookie), basic auth only, and the header
+			// that lets the write past the CSRF check to the elevation check.
+			storageState: { cookies: [], origins: [] },
 			extraHTTPHeaders: {
+				'OCS-APIRequest': 'true',
 				Authorization: `Basic ${Buffer.from(
 					`${process.env.ADMIN_USER || process.env.OR_USER || 'admin'}:${ADMIN_PASS}`,
 				).toString('base64')}`,
@@ -252,7 +257,12 @@ test.describe('The fresh sign-in, and the statement', () => {
 
 	test('a wrong password elevates nothing', async ({ browser }) => {
 		const context = await browser.newContext({
+			// A context of its own: no stored session (test.use above would hand it
+			// the administrator's elevated cookie), basic auth only, and the header
+			// that lets the write past the CSRF check to the elevation check.
+			storageState: { cookies: [], origins: [] },
 			extraHTTPHeaders: {
+				'OCS-APIRequest': 'true',
 				Authorization: `Basic ${Buffer.from(
 					`${process.env.ADMIN_USER || process.env.OR_USER || 'admin'}:${ADMIN_PASS}`,
 				).toString('base64')}`,
