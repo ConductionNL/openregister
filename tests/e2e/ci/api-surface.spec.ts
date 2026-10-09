@@ -61,11 +61,14 @@ test.describe('The published contract', () => {
 	})
 
 	test('the unauthenticated answer names no register and no schema', async () => {
-		// A context of its own, with no Authorization header. The suite's
-		// `request` fixture signs every call in as the administrator (see
-		// playwright.config.ts), so asking it for the unauthenticated answer
-		// read the administrator's answer instead.
-		const anonymous = await pwRequest.newContext({ baseURL: resolveBaseUrl() })
+		// A context of its own, with no Authorization header. The suite signs
+		// every request context in as the administrator (playwright.config.ts),
+		// and a bare newContext() inherits that too: only replacing the headers
+		// with an empty set makes the call anonymous.
+		const anonymous = await pwRequest.newContext({
+			baseURL: resolveBaseUrl(),
+			extraHTTPHeaders: {},
+		})
 		const response = await anonymous.get(CAPABILITIES)
 		expect(response.status(), 'the capabilities read is public').toBe(200)
 		const body = await response.json()
