@@ -33,6 +33,8 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeepLinkRegistration;
+use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -77,6 +79,13 @@ class DeepLinkRegistryService {
 	 * @var array<int, string>|null
 	 */
 	private static ?array $schemaIdMap = null;
+
+	/**
+	 * Whether this process already asked the apps for their deep links.
+	 *
+	 * @var boolean
+	 */
+	private static bool $registrationRequested = false;
 
 	/**
 	 * Container for lazy resolution of mappers (avoids circular DI).
@@ -187,6 +196,12 @@ class DeepLinkRegistryService {
 	 */
 	public function resolve(int $registerId, int $schemaId): ?DeepLinkRegistration {
 		if (empty(self::$registrations) === true) {
+			// A process that never booted OpenRegister (a background worker
+			// does not load apps) never dispatched the registration event.
+			$this->requestRegistrations();
+		}
+
+		if (empty(self::$registrations) === true) {
 			return null;
 		}
 
@@ -279,6 +294,45 @@ class DeepLinkRegistryService {
 	}//end resolveDisplayName()
 
 	/**
+	 * Ask the apps for their deep links, once per process.
+	 *
+	 * OpenRegister's boot() calls this with its dispatcher. A process that
+	 * never boots OpenRegister reaches it through resolve() instead, so the
+	 * registry is filled in a background job the same way as in a request.
+	 *
+	 * @param IEventDispatcher|null $dispatcher The dispatcher, or null to take it from the container.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/deep-link-registry/spec.md#requirement-the-registry-must-fill-itself-in-a-process-that-never-booted-openregister
+	 */
+	public function requestRegistrations(?IEventDispatcher $dispatcher = null): void {
+		if (self::$registrationRequested === true) {
+			return;
+		}
+
+		self::$registrationRequested = true;
+
+		try {
+			if ($dispatcher === null) {
+				$candidate = $this->container->get(IEventDispatcher::class);
+				if ($candidate instanceof IEventDispatcher === false) {
+					return;
+				}
+
+				$dispatcher = $candidate;
+			}
+
+			$dispatcher->dispatchTyped(new DeepLinkRegistrationEvent(registry: $this));
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'[DeepLinkRegistry] Asking the apps for their deep links failed: {error}',
+				['error' => $e->getMessage()]
+			);
+		}
+	}//end requestRegistrations()
+
+	/**
 	 * Lazily build the ID↔slug maps from database.
 	 *
 	 * @return void
@@ -356,5 +410,6 @@ class DeepLinkRegistryService {
 		self::$registrations = [];
 		self::$registerIdMap = null;
 		self::$schemaIdMap = null;
+		self::$registrationRequested = false;
 	}//end reset()
 }//end class

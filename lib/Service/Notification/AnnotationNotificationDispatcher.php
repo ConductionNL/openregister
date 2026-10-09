@@ -2915,14 +2915,12 @@ class AnnotationNotificationDispatcher {
 			if (is_array($relationSpec) === true && (string)($relationSpec['kind'] ?? '') === 'relation') {
 				return $this->resolveRelationDeeplink(
 					field: (string)($relationSpec['field'] ?? ''),
-					data: $data,
-					originApp: $originApp
+					data: $data
 				);
 			}
 
 			// Deeplink to the triggering object itself.
 			return $this->buildObjectDetailLink(
-				originApp: $originApp,
 				registerId: (string)($object->getRegister() ?? ''),
 				schemaId: (string)($object->getSchema() ?? ''),
 				objectUuid: (string)($object->getUuid() ?? '')
@@ -2942,13 +2940,12 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @param string $field The relation field name.
 	 * @param array<string, mixed> $data The triggering object's data.
-	 * @param string $originApp The resolved origin app id.
 	 *
 	 * @return string|null The deeplink, or null when the relation is empty/unreadable.
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 */
-	private function resolveRelationDeeplink(string $field, array $data, string $originApp): ?string {
+	private function resolveRelationDeeplink(string $field, array $data): ?string {
 		if ($field === '' || $this->objectService === null) {
 			return null;
 		}
@@ -2983,7 +2980,6 @@ class AnnotationNotificationDispatcher {
 		}
 
 		return $this->buildObjectDetailLink(
-			originApp: $originApp,
 			registerId: (string)($related->getRegister() ?? ''),
 			schemaId: (string)($related->getSchema() ?? ''),
 			objectUuid: (string)($related->getUuid() ?? '')
@@ -2991,16 +2987,18 @@ class AnnotationNotificationDispatcher {
 	}//end resolveRelationDeeplink()
 
 	/**
-	 * Build an object-detail deeplink against the originApp frontend route.
+	 * Build an object-detail deeplink: the owning app's registered route, else
+	 * OpenRegister's object view.
 	 *
-	 * @param string $originApp The resolved origin app id.
 	 * @param string $registerId The object's register id.
 	 * @param string $schemaId The object's schema id.
 	 * @param string $objectUuid The object's uuid.
 	 *
 	 * @return string|null The absolute deeplink, or null when ids are missing.
+	 *
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
 	 */
-	private function buildObjectDetailLink(string $originApp, string $registerId, string $schemaId, string $objectUuid): ?string {
+	private function buildObjectDetailLink(string $registerId, string $schemaId, string $objectUuid): ?string {
 		if ($registerId === '' || $schemaId === '' || $objectUuid === '') {
 			return null;
 		}
@@ -3040,8 +3038,11 @@ class AnnotationNotificationDispatcher {
 			}//end if
 		}//end if
 
-		return $this->appRouteBase(app: $originApp)
-			. sprintf('#/registers/%s/schemas/%s/objects/%s', $registerId, $schemaId, $objectUuid);
+		// No app claimed the schema: open the object in OpenRegister's object
+		// view (history mode). The origin app's #/registers/... hash was never
+		// a route there, so pipelinq redirected it to its dashboard.
+		return $this->appRouteBase(app: 'openregister')
+			. sprintf('objects/%s/%s/%s', rawurlencode($registerId), rawurlencode($schemaId), rawurlencode($objectUuid));
 	}//end buildObjectDetailLink()
 
 	/**
