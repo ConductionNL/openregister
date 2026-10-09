@@ -3309,7 +3309,10 @@
         "{schema} {title} deleted": "{schema} {title} u fshi",
         "Object \"%1$s\" created": "Objekti \"%1$s\" u krijua",
         "Object \"%1$s\" updated": "Objekti \"%1$s\" u përditësua",
-        "Object \"%1$s\" assigned to you": "Objekti \"%1$s\" ju është caktuar"
+        "Object \"%1$s\" assigned to you": "Objekti \"%1$s\" ju është caktuar",
+        "Audit trail export ready": "Eksporti i gjurmës së auditimit është gati",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Eksporti juaj i gjurmës së auditimit me %1$s regjistrime u ruajt në %2$s%3$s.",
+        "Open Files": "Hap Skedarët"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

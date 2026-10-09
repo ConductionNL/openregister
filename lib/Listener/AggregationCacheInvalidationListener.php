@@ -75,7 +75,7 @@ class AggregationCacheInvalidationListener implements IEventListener {
 	 * @return void
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
-	 * @spec openspec/changes/order-filters-and-notification-links/specs/aggregations-backend-native/spec.md#requirement-an-object-write-must-evict-the-aggregations-of-its-schema
+	 * @spec openspec/specs/aggregations-backend-native/spec.md#requirement-an-object-write-must-evict-the-aggregations-of-its-schema
 	 */
 	public function handle(Event $event): void {
 		$object = $this->extractObject(event: $event);
@@ -104,7 +104,7 @@ class AggregationCacheInvalidationListener implements IEventListener {
 	 *
 	 * @return string The slug.
 	 *
-	 * @spec openspec/changes/order-filters-and-notification-links/specs/aggregations-backend-native/spec.md#requirement-an-object-write-must-evict-the-aggregations-of-its-schema
+	 * @spec openspec/specs/aggregations-backend-native/spec.md#requirement-an-object-write-must-evict-the-aggregations-of-its-schema
 	 */
 	private function slugOf(string $reference, string $mapperClass): string {
 		if ($this->container === null || is_numeric($reference) === false) {

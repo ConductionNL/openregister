@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-openregister-owns-one-shared-list-unsubscribe-helper-req-ero-005
+ * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-openregister-owns-one-shared-list-unsubscribe-helper-req-ero-005
  */
 
 declare(strict_types=1);

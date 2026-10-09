@@ -3351,7 +3351,10 @@
         "{schema} {title} deleted": "{schema} {title} smazán",
         "Object \"%1$s\" created": "Objekt \"%1$s\" vytvořen",
         "Object \"%1$s\" updated": "Objekt \"%1$s\" aktualizován",
-        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" vám byl přiřazen"
+        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" vám byl přiřazen",
+        "Audit trail export ready": "Export auditní stopy je připraven",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Váš export auditní stopy s %1$s záznamy byl uložen do %2$s%3$s.",
+        "Open Files": "Otevřít Soubory"
     },
     "pluralForm": "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;",
     "plurals": {

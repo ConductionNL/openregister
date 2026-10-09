@@ -12,7 +12,7 @@
 
 ## 3. Tests
 
-- [ ] 3.1 `tests/e2e/ci/view-alert.spec.ts`: set a threshold on a view, push the count over it, see the notification once.
+- [ ] 3.1 `tests/e2e/ci/view-alert.spec.ts`: set a threshold on a view, push the count over it, see the notification once. (not run: e2e needs a live instance and a browser)
 - [x] 3.2 Unit tests for the validator, the state machine and the bounded pass.
 
 ## Status, 2026-09-18

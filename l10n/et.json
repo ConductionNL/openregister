@@ -3309,7 +3309,10 @@
         "{schema} {title} deleted": "{schema} {title} kustutatud",
         "Object \"%1$s\" created": "Objekt \"%1$s\" loodud",
         "Object \"%1$s\" updated": "Objekt \"%1$s\" uuendatud",
-        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" on sulle määratud"
+        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" on sulle määratud",
+        "Audit trail export ready": "Auditijälje eksport on valmis",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Teie auditijälje eksport (%1$s kirjet) salvestati asukohta %2$s%3$s.",
+        "Open Files": "Ava Failid"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

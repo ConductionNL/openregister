@@ -220,6 +220,7 @@ class Notifier implements INotifier {
 			'handoff_drain_failed' => $this->prepareHandoffDrainFailed(...),
 			'scheduled_report_delivered' => $this->prepareScheduledReportDelivered(...),
 			'scheduled_report_failed' => $this->prepareScheduledReportFailed(...),
+			'audit_export_ready' => $this->prepareAuditExportReady(...),
 			'delegation_consent_requested' => $this->prepareDelegationConsentRequested(...),
 			'credential_relink_needed' => $this->prepareCredentialRelinkNeeded(...),
 			'retention_holds_skipped' => $this->prepareRetentionHoldsSkipped(...),
@@ -818,6 +819,43 @@ class Notifier implements INotifier {
 
 		return $notification;
 	}//end prepareScheduledReportDelivered()
+
+	/**
+	 * Prepare the notification for a large audit trail export that was saved
+	 * to the requester's Files by AuditTrailExportJob.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed         $l            The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-the-filtered-audit-list-exports-with-its-hash-chain
+	 */
+	private function prepareAuditExportReady(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$folder = (string)($parameters['folder'] ?? 'Audit exports/');
+		$filename = (string)($parameters['filename'] ?? '');
+		$rows = (string)($parameters['rows'] ?? '0');
+
+		$notification->setParsedSubject($l->t('Audit trail export ready'));
+		$notification->setParsedMessage(
+			$l->t('Your audit trail export of %1$s entries was saved to %2$s%3$s.', [$rows, $folder, $filename])
+		);
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		$action = $notification->createAction();
+		$action->setLabel($l->t('Open Files'))
+			->setPrimary(true)
+			->setLink(
+				link: $this->urlGenerator->linkToRouteAbsolute(routeName: 'files.view.index') . '?dir=' . rawurlencode('/' . trim($folder, '/')),
+				requestType: 'GET'
+			);
+		$notification->addAction($action);
+
+		return $notification;
+	}//end prepareAuditExportReady()
 
 	/**
 	 * Prepare the scheduled-report failure notification (scheduled-report-jobs):

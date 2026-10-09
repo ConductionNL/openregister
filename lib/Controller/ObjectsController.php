@@ -52,6 +52,7 @@ use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
+use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
@@ -5820,7 +5821,52 @@ class ObjectsController extends Controller {
 			register: $register->getId(),
 			schema: $schema->getId()
 		);
+
+		$this->recordExportRun(register: $register, schema: $schema, format: $format, rowCount: $rowCount);
 	}//end recordExportCompleted()
+
+	/**
+	 * Put an ad-hoc API export in the export area as a run.
+	 *
+	 * The bytes went straight to the caller, so the run keeps no file and has
+	 * no expiry, and its download count is one: the register served it once,
+	 * in this response. A recorder that cannot be resolved or fails costs the
+	 * row, never the export.
+	 *
+	 * @param Register $register The register exported.
+	 * @param Schema   $schema   The schema exported.
+	 * @param string   $format   The format served.
+	 * @param int      $rowCount The rows served.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
+	 */
+	private function recordExportRun(Register $register, Schema $schema, string $format, int $rowCount): void {
+		try {
+			$runs = $this->container->get(ExportRunRecorder::class);
+			if ($runs instanceof ExportRunRecorder === false) {
+				return;
+			}
+
+			$runs->record(
+				source: 'api',
+				actor: (string)($this->userSession->getUser()?->getUID() ?? ''),
+				format: $format,
+				rowCount: $rowCount,
+				profile: 'ad-hoc',
+				registerName: (string)($register->getSlug() ?? $register->getId()),
+				schemaName: (string)($schema->getSlug() ?? $schema->getId()),
+				retentionSeconds: null,
+				downloadCount: 1
+			);
+		} catch (\Throwable $e) {
+			$this->logger?->warning(
+				message: '[ObjectsController] Could not record the export run; the export itself was served',
+				context: ['error' => $e->getMessage()]
+			);
+		}//end try
+	}//end recordExportRun()
 
 	/**
 	 * The audit recorder, or null when it cannot be resolved.

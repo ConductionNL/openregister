@@ -553,7 +553,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	// ---- Opt-out before send (opt-out-before-send) --------------------------
 
 	/**
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function testAnOptedOutAddressIsSkippedAndNotAnnounced(): void {
 		$this->optedOut = ['jan@example.nl'];
@@ -579,7 +579,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	}//end testAnOptedOutAddressIsSkippedAndNotAnnounced()
 
 	/**
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function testASkippedAddressDoesNotUseTheRateLimit(): void {
 		$this->optedOut = ['jan@example.nl'];
@@ -595,7 +595,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	}//end testASkippedAddressDoesNotUseTheRateLimit()
 
 	/**
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function testWithoutIntegriqAServiceMailIsRefusedAndTheUserStillMailed(): void {
 		$this->integriq = 'ignore';
@@ -608,7 +608,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	}//end testWithoutIntegriqAServiceMailIsRefusedAndTheUserStillMailed()
 
 	/**
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function testWithoutIntegriqABesluitIsSentWithoutALinkOrHeader(): void {
 		$this->integriq = 'ignore';
@@ -622,7 +622,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	}//end testWithoutIntegriqABesluitIsSentWithoutALinkOrHeader()
 
 	/**
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
 	 */
 	public function testAServiceMailCarriesTheLinkAndTheHeaders(): void {
 		$this->sendEmail(config: ['recipients' => ['piet@example.nl'], 'externalRecipients' => 'any']);
@@ -635,7 +635,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	}//end testAServiceMailCarriesTheLinkAndTheHeaders()
 
 	/**
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
 	 */
 	public function testABesluitMailCarriesNoLinkWithIntegriqPresent(): void {
 		$this->sendEmail(config: ['recipients' => ['piet@example.nl'], 'externalRecipients' => 'any', 'messageCategory' => 'besluit']);
@@ -646,7 +646,7 @@ class FlowMessagingServiceExternalRecipientsTest extends TestCase {
 	}//end testABesluitMailCarriesNoLinkWithIntegriqPresent()
 
 	/**
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
 	 */
 	public function testAnOldStepAsksAsServiceAndAUserOnlyStepAsksNothing(): void {
 		$this->sendEmail(config: ['recipients' => ['piet@example.nl'], 'externalRecipients' => 'any']);

@@ -3,21 +3,21 @@
 ## 1. Binding
 
 - [x] 1.1 `flow` and `macro` on declared actions with the three refusals at schema save.
-- [~] 1.2 `next` on the manual trigger node config and on end nodes; effective `next` in the run result.
+- [x] 1.2 `next` on the manual trigger node config and on end nodes; effective `next` in the run result. (`MacroActionResolver::nextForRun()` reads the end node the run reached from the run log; `testTheEndNodeTheRunReachedOverridesTheHint`, red before.)
 
 ## 2. Execution
 
-- [~] 2.1 Single-object action route queueing the flow with subject and attribution, sync by default, answering run id, outcome, `next`; audit entry.
-- [ ] 2.2 Selection route through the bulk write path with a per-object summary.
+- [x] 2.1 Single-object action route queueing the flow with subject and attribution, sync by default, answering run id, outcome, `next`; audit entry. (Audit entry `action.macro` via `MacroActionResolver::recordRun()`; `testAMacroRunWritesAnAuditEntryNamingTheActionAndTheRun`, red before.)
+- [x] 2.2 Selection route with a per-object summary: `POST /api/object-actions/{register}/{schema}/{action}` (`ObjectActionsController::invokeOnSelection()`), at most 100 ids, each through the single-object path (right per object, audit per object). Not a BulkJob: a bulk job is a previewed, asynchronous commit, and the spec asks for the summary in the answer. Tests `testASelectionReportsPerObject`, `testASelectionChecksTheRightPerObject`, `testAnEmptyOrOversizedSelectionIsRefused`.
 
 ## 3. Consumers
 
-- [ ] 3.1 Manifest action schema accepts `macro` so a host renders it in the actions menu and bulk bar (nextcloud-vue).
+- [ ] 3.1 Manifest action schema accepts `macro` so a host renders it in the actions menu and bulk bar (nextcloud-vue). (not run: a nextcloud-vue change)
 
 ## 4. Tests
 
-- [ ] 4.1 `tests/e2e/ci/macro-action.spec.ts`: invoke a macro from a list, see the changes and land on the next item.
-- [~] 4.2 Unit tests for the validator, authorisation, sync result, bulk summary and `next`.
+- [ ] 4.1 `tests/e2e/ci/macro-action.spec.ts`: invoke a macro from a list, see the changes and land on the next item. (not run: e2e needs a live instance and a host that honours next)
+- [x] 4.2 Unit tests for the validator, authorisation, sync result, bulk summary and `next` (`ObjectActionsControllerTest`, 15).
 
 ## Status, 2026-09-18
 

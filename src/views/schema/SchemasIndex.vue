@@ -246,7 +246,7 @@ export default {
 		 * header filter how each column filters: dates by range, the property
 		 * count by number, everything else on contains.
 		 *
-		 * @spec openspec/changes/order-filters-and-notification-links/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
+		 * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
 		 * @return {Array<object>}
 		 */
 		tableColumns() {
@@ -392,7 +392,7 @@ export default {
 		 * @param {{key: string, values: Array}} payload The filter change.
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/order-filters-and-notification-links/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
+		 * @spec openspec/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
 		 */
 		onFilterChange(payload) {
 			this.activeFilters = applyFilterChange(this.activeFilters, payload)

@@ -2,8 +2,10 @@
 
 ## 1. Query
 
-- [ ] 1.1 Filtered, cursor-paginated instance-wide query in
-      `AuditTrailMapper` using the existing indexes.
+- [x] 1.1 Filtered, cursor-paginated instance-wide query: `lib/Db/AuditTrailPageQuery.php`
+      (a class beside the 3,400-line mapper), keyset on the primary key, newest
+      first, one row more than the page instead of a count. `AuditTrailPageQueryTest` (6)
+      over an evaluating query-builder fake.
 - [x] 1.2 RBAC join for non-admins. DELIVERED 2026-09-22 as a separate,
       narrower path rather than a widening of `index()`, exactly as the note
       below asks: `GET /api/audit-trails/readable`, backed by
@@ -46,16 +48,24 @@
 
 ## 2. API and export
 
-- [ ] 2.1 `GET /api/audit-trails` with the six filters and full-text.
-- [ ] 2.2 CSV and JSON export of the filtered result; background job past
-      10,000 rows.
+- [x] 2.1 `GET /api/audit-trails?cursor=` with the six filters (`actor`, `from`/`to`,
+      `action`, `register`, `schema`, `object`) and `search`; without `cursor` the
+      list answers its old shape. A bad date answers 400. `AuditTrailControllerTest`.
+- [x] 2.2 CSV and JSON export of the filtered result; background job past
+      10,000 rows. `AuditTrailPageService::export()` renders exactly the selected
+      rows with `hash` and `previousHash` on every row (`LogService::exportRows()`);
+      past 10,000 it queues `AuditTrailExportJob`, which saves the file under
+      "Audit exports" in the requester's Files and sends `audit_export_ready`
+      (strings in all 37 backend catalogues). `AuditTrailExportJobTest` asserts the
+      chain columns in the written CSV through the real LogService.
 
 ## 3. Surface
 
-- [ ] 3.1 Audit leaf `index` surface with filter bar and export button.
+- [ ] 3.1 Audit leaf `index` surface with filter bar and export button. (not run: the audit leaf surface is nextcloud-vue's)
 
 ## 4. Tests
 
-- [ ] 4.1 Unit tests for filters, RBAC join and export contents.
-- [ ] 4.2 `tests/e2e/ci/audit-log-page.spec.ts`: as admin, filter by actor
+- [x] 4.1 Unit tests for filters, RBAC join and export contents (filters and export
+      above; the RBAC join is 1.2's `ReadableAuditTrailListerTest`).
+- [ ] 4.2 `tests/e2e/ci/audit-log-page.spec.ts`: as admin, filter by actor (not run: e2e needs a browser and 3.1)
       and period, see the rows, export and check the hash columns.
