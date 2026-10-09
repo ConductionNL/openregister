@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
+use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Vocabulary\CodedFilterExpander;
@@ -142,6 +143,7 @@ class SearchQueryHandler {
 	 * @param IUserSession|null $userSession Resolves the caller for that lens.
 	 * @param CodedFilterExpander|null $codedFilters Expands a branch filter into the concepts under it.
 	 * @param SearchReferenceResolver|null $referenceResolver Resolves a register/schema slug or uuid to its id.
+	 * @param ReadHistoryService|null $readHistory The read history behind the `_recent` lens.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 *
@@ -165,6 +167,10 @@ class SearchQueryHandler {
 		// a reference it cannot read rather than int-casting it into an empty
 		// page; present, it resolves a slug or uuid the way the write path does.
 		private readonly ?SearchReferenceResolver $referenceResolver = null,
+		// The read history behind the `_recent` lens. Nullable and last for the
+		// same reason; absent, the lens answers an empty page that says the
+		// history could not be read, never the whole register.
+		private readonly ?ReadHistoryService $readHistory = null,
 	) {
 	}//end __construct()
 
@@ -295,22 +301,11 @@ class SearchQueryHandler {
 	}//end applyUnreadLens()
 
 	/**
-	 * Resolve `_favourite=true` and `_recent=true` into the uid they read.
+	 * Resolve `_favourite=true` into the uid it reads, then the recent lens.
 	 *
-	 * Both are resolved INSIDE the query rather than applied to a fetched page,
-	 * for the reason spelled out on the unread lens above: a post-filter gives a
-	 * first page of 25 against a total of 120 and a second page that skips rows,
-	 * which reads as a paging bug and is not one. The mapper turns `_favouriteFor`
-	 * into a correlated `EXISTS` and `_recentFor` into the same plus the ordering
-	 * by last view, so the page, the total and the facets see one restriction.
-	 *
-	 * Both are handled in ONE method, and the two names are a loop rather than
-	 * two copies of the same eight lines, because the difference between them is
-	 * entirely in the mapper: here they are the same question, "which user".
-	 *
-	 * Identity is resolved HERE, at the edge, never in the query builder:
-	 * ADR-005 wants the principal named where the request arrives, and it also
-	 * means the mapper can be tested with a uid rather than a session.
+	 * Resolved INSIDE the query, never on a fetched page, so the page, the
+	 * total and the facets see one restriction. Identity is resolved here, at
+	 * the edge (ADR-005), never in the query builder.
 	 *
 	 * @param array<string, mixed> $query The query built so far.
 	 *
@@ -319,36 +314,80 @@ class SearchQueryHandler {
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
 	 */
 	private function applyPersonalLenses(array $query): array {
-		// Asked-for flag to the key the mapper reads.
-		$lenses = [
-			'_favourite' => '_favouriteFor',
-			'_recent' => '_recentFor',
+		$asked = filter_var(($query['_favourite'] ?? false), FILTER_VALIDATE_BOOLEAN);
+		unset($query['_favourite']);
+		$uid = (string)$this->userSession?->getUser()?->getUID();
+		if ($asked === true && $uid !== '') {
+			$query['_favouriteFor'] = $uid;
+		}
+
+		if ($asked === true && $uid === '') {
+			// No user, so nothing can be theirs: an honest empty page, never
+			// the whole register.
+			$query['_ids'] = [self::NO_PERSONAL_LENS_USER];
+		}
+
+		return $this->applyRecentLens(query: $query);
+	}//end applyPersonalLenses()
+
+	/**
+	 * Resolve `_recent=true` from the caller's read history on the audit trail.
+	 *
+	 * The history lands on `_ids` (intersected, history order kept), so every
+	 * search path honours it and RBAC still decides. `_recentViews` (uuid =>
+	 * ISO 8601) drives the order and `@self.viewedAt`; `_recentLens` is the
+	 * response report. Audit trail off: empty, with a reason, no shadow log.
+	 * Caller-supplied copies of the internal keys are stripped first.
+	 *
+	 * @param array<string, mixed> $query The query built so far.
+	 *
+	 * @return array<string, mixed> The query, narrowed when the lens was asked for.
+	 *
+	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-the-recent-lens-says-why-it-is-empty
+	 */
+	private function applyRecentLens(array $query): array {
+		unset($query['_recentFor'], $query['_recentViews'], $query['_recentLens']);
+
+		if (array_key_exists('_recent', $query) === false) {
+			return $query;
+		}
+
+		$asked = filter_var($query['_recent'], FILTER_VALIDATE_BOOLEAN);
+		unset($query['_recent']);
+		if ($asked === false) {
+			return $query;
+		}
+
+		$uid = $this->userSession?->getUser()?->getUID();
+		$lens = [
+			'available' => false,
+			'reason' => ReadHistoryService::REASON_UNAVAILABLE,
+			'views' => [],
 		];
+		if ($this->readHistory !== null) {
+			$lens = $this->readHistory->resolveRecentLens(userId: $uid);
+		}
 
-		foreach ($lenses as $flag => $resolved) {
-			if (array_key_exists($flag, $query) === false) {
-				continue;
-			}
+		$query['_recentLens'] = ['available' => $lens['available'], 'reason' => $lens['reason']];
 
-			$asked = filter_var($query[$flag], FILTER_VALIDATE_BOOLEAN);
-			unset($query[$flag]);
-			if ($asked === false) {
-				continue;
-			}
+		$views = $lens['views'];
+		$existing = ($query['_ids'] ?? null);
+		if (is_array($existing) === true && $existing !== []) {
+			// Intersect, keeping the history's order.
+			$views = array_intersect_key($views, array_flip(array_map('strval', $existing)));
+		}
 
-			$uid = $this->userSession?->getUser()?->getUID();
-			if ($uid === null || $uid === '') {
-				// No user, so nothing can be theirs. An honest empty page,
-				// never the whole register.
-				$query['_ids'] = [self::NO_PERSONAL_LENS_USER];
-				continue;
-			}
+		if ($views === []) {
+			// Nothing to show: an honest empty page, never the whole register.
+			$query['_ids'] = [self::NO_PERSONAL_LENS_USER];
+			return $query;
+		}
 
-			$query[$resolved] = $uid;
-		}//end foreach
+		$query['_ids'] = array_keys($views);
+		$query['_recentViews'] = $views;
 
 		return $query;
-	}//end applyPersonalLenses()
+	}//end applyRecentLens()
 
 	/**
 	 * Whether the target schema is served by an external object-source (DBAL

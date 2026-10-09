@@ -16,29 +16,34 @@ and every star cuts a version and adds an audit entry, so a case a hundred
 people find interesting carries a hundred revisions that say nothing about the
 case.
 
-So both live in their own table, keyed by user and object:
+So a star lives in its own table, `openregister_favourites`, keyed by user and
+object. Unstarring deletes the row. Deleting an object clears its stars. Objects
+live in per-schema tables, so no foreign key can cascade from them and a
+listener does the work instead.
 
-| Table | Holds |
-|-------|-------|
-| `openregister_favourites` | One row per star. Unstarring deletes the row |
-| `openregister_object_views` | One row per object you have opened, carrying when you last opened it |
+## Recently opened comes from the audit trail
 
-Deleting an object clears both. Objects live in per-schema tables, so no foreign
-key can cascade from them and a listener does the work instead.
+Opening an object already writes a `read` entry on the audit trail, with you and
+the moment. Your recent list is read straight from those entries. There is no
+second table to keep in step.
 
-## What a view is, and what it is not
+The list holds distinct objects, newest first, up to a hundred. Open a case five
+times and it shows once, with the time of your last open. The audit trail keeps
+all five entries.
 
-A view records that you looked at something. A read state records that nothing
-has changed since you did. The difference shows on the next write: a view
-survives it, a read state does not. See
+A view is not a read state. A read state records that nothing changed since you
+looked, and the next write clears it. See
 [Object read state](object-read-state.md).
 
-Your history holds one row per object, not one per opening. A hundred rows are a
-hundred distinct things you looked at, and the oldest drop off past a hundred.
+### When the audit trail is off
 
-Opening the same object several times in a minute records one view, at the
-moment of the first read. A detail page reads its object more than once while it
-renders, and each of those is the same act of opening it.
+An administrator can switch the audit trail off with the retention setting
+`auditTrailsEnabled`. Your recent list is then empty, and the response says why.
+OpenRegister keeps no shadow log to fill it.
+
+The AVG processing log is separate. It records reads of personal data for
+accountability, whatever the audit setting says, and it is never used for your
+recent list.
 
 ## The API
 
@@ -52,9 +57,7 @@ There is no `GET` here, because every object read already carries
 has, and a list renders a column of them from one query. The marker is omitted
 entirely for an anonymous read, where there is no "you" to answer for.
 
-Opening an object's detail records the view. No call is needed, and no other
-read path records one: a list, an export and a webhook all render objects, and
-none of them is somebody looking at one thing.
+Opening an object records the read. No call is needed.
 
 ## The two lenses
 
@@ -69,6 +72,21 @@ GET /api/objects/cases/case?_recent=true&_limit=10
 Each composes with every other filter, so "my starred open cases" is one query
 and not two. `_recent=true` orders by when you last opened each object, newest
 first, unless you ask for an order of your own.
+
+On a `_recent=true` page every object carries `@self.viewedAt`, the moment you
+last opened it in ISO 8601. The response says whether the lens could answer:
+
+```json
+{
+  "results": [
+    { "@self": { "id": "…", "viewedAt": "2026-10-09T10:15:00+00:00" } }
+  ],
+  "@self": { "lenses": { "recent": { "available": true, "reason": null } } }
+}
+```
+
+When `available` is `false` the page is empty and `reason` is one of
+`audit-trail-disabled`, `anonymous` or `read-history-unavailable`.
 
 An anonymous caller asking for either gets an empty page. A lens over nothing
 answers nothing, never the whole register.
@@ -92,5 +110,6 @@ above.
 
 ## Specification
 
-`openspec/changes/archive/2026-10-05-favourites-and-recent/`, in the `object-interactions`
+`openspec/changes/archive/2026-10-05-favourites-and-recent/` and
+`openspec/changes/read-history-on-audit-trail/`, in the `object-interactions`
 capability.

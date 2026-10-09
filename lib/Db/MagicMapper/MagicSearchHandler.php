@@ -45,7 +45,6 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectFavouriteMapper;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
-use OCA\OpenRegister\Db\ObjectViewMapper;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\LikeOperator;
@@ -391,7 +390,7 @@ class MagicSearchHandler {
 			order: $order,
 			schema: $schema,
 			searchTerm: $searchTerm,
-			recentFor: ($query['_recentFor'] ?? null),
+			recentViews: ($query['_recentViews'] ?? null),
 			dateTimeColumns: $dateTimeColumns,
 			sortLanguages: $this->sortLanguageChain(register: $register)
 		);
@@ -399,7 +398,11 @@ class MagicSearchHandler {
 		$queryBuilder->setMaxResults($limit)
 			->setFirstResult($offset);
 
-		return $this->executeSearchQuery(qb: $queryBuilder, register: $register, schema: $schema, tableName: $tableName);
+		$objects = $this->executeSearchQuery(qb: $queryBuilder, register: $register, schema: $schema, tableName: $tableName);
+		// `@self.viewedAt` on a `_recent` page (read-history-on-audit-trail).
+		$this->applyViewedAt(objects: $objects, recentViews: ($query['_recentViews'] ?? null));
+
+		return $objects;
 	}//end searchObjects()
 
 	/**
@@ -647,17 +650,14 @@ class MagicSearchHandler {
 		// facets cannot disagree about what was excluded.
 		$this->applyUnreadFilter(qb: $qb, userId: ($query['_unreadFor'] ?? null));
 
-		// The favourites and recent lenses, resolved in the query for the same
-		// reason, and each guarding itself so this method keeps its branch count.
+		// The favourites lens, resolved in the query for the same reason. The
+		// recent lens needs no filter here: it arrives as `_ids`, resolved from
+		// the audit trail's read history at the edge (SearchQueryHandler), so
+		// every search path honours it, the cross-table UNION included.
 		$this->applyPersonalLensFilter(
 			qb: $qb,
 			table: ObjectFavouriteMapper::TABLE,
 			userId: ($query['_favouriteFor'] ?? null)
-		);
-		$this->applyPersonalLensFilter(
-			qb: $qb,
-			table: ObjectViewMapper::TABLE,
-			userId: ($query['_recentFor'] ?? null)
 		);
 
 		// Apply full-text search if provided.
@@ -2107,6 +2107,8 @@ class MagicSearchHandler {
 			'_favouriteFor',
 			'_recent',
 			'_recentFor',
+			'_recentViews',
+			'_recentLens',
 			'_count',
 			'_includeDeleted',
 			'_archived',
@@ -2889,13 +2891,12 @@ class MagicSearchHandler {
 	}//end applyUnreadFilter()
 
 	/**
-	 * Narrow a query to the objects one user has starred, or has opened.
+	 * Narrow a query to the objects one user has starred.
 	 *
-	 * The two lenses differ only in which table carries the (user, object) row,
-	 * so they share one `EXISTS` rather than two copies of it. That is also why
-	 * the table is a parameter: the shape of the question is identical, and a
-	 * second copy is a second place for the outer-parameter trap below to be got
-	 * wrong.
+	 * The table is a parameter because the shape of the question, "which
+	 * (user, object) rows exist", is not specific to stars. The recent lens
+	 * used to share it; it now arrives as `_ids` from the audit trail's read
+	 * history (`read-history-on-audit-trail`).
 	 *
 	 * The subquery is built on a SECOND query builder but its parameter is
 	 * created on the OUTER one, because only the outer builder's parameters are
@@ -2934,45 +2935,73 @@ class MagicSearchHandler {
 	/**
 	 * Order a `_recent=true` page by when this user last opened each object.
 	 *
-	 * Ordering by a correlated subquery rather than a join, so the lens adds no
-	 * row to the result set and cannot change the total. Both databases accept
-	 * a scalar subquery in ORDER BY.
+	 * The read history arrives already ordered, newest first, so the order is
+	 * its position: a `CASE` over the page's uuids. That keeps the audit trail
+	 * out of this query entirely, so no table name is concatenated into SQL
+	 * and the table prefix cannot be forgotten (openregister#4507).
+	 *
+	 * Every parameter is created on the OUTER builder, because only its
+	 * parameters are bound at execution.
 	 *
 	 * This never overrides an explicit `_order`: the caller asking for
 	 * "recently opened, alphabetically" means it. It only replaces the default
 	 * `t._id ASC`, which for this lens would be arbitrary and, worse, look
 	 * deliberate.
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify.
-	 * @param mixed $userId The user whose view times order the page, or null.
+	 * @param IQueryBuilder $qb          Query builder to modify.
+	 * @param mixed         $recentViews Object uuid => last read, newest first, or null.
 	 *
 	 * @return boolean True when the recency order was applied.
 	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
 	 */
-	private function applyRecencyOrder(IQueryBuilder $qb, mixed $userId): bool {
-		if (is_string($userId) === false || $userId === '') {
+	private function applyRecencyOrder(IQueryBuilder $qb, mixed $recentViews): bool {
+		if (is_array($recentViews) === false || $recentViews === []) {
 			return false;
 		}
 
-		$viewer = $qb->createNamedParameter($userId);
-		$table = ObjectViewMapper::TABLE;
+		$whens = [];
+		$position = 0;
+		foreach (array_keys($recentViews) as $uuid) {
+			$whens[] = 'WHEN '.$qb->createNamedParameter((string)$uuid).' THEN '.$position;
+			$position++;
+		}
 
 		$qb->addOrderBy(
-			$qb->createFunction(
-				'(SELECT rv.viewed_at FROM '.$table.' rv'
-				.' WHERE rv.user_id = '.$viewer.' AND rv.object_uuid = t._uuid)'
-			),
-			'DESC'
+			$qb->createFunction('CASE t._uuid '.implode(' ', $whens).' ELSE '.$position.' END'),
+			'ASC'
 		);
 
-		// A stable tie-break, so two objects opened in the same second do not
-		// swap places between pages.
+		// A stable tie-break for anything the history did not place.
 		$qb->addOrderBy('t._id', 'ASC');
 
 		return true;
 
 	}//end applyRecencyOrder()
+
+	/**
+	 * Attach `@self.viewedAt` to the objects of a `_recent` page.
+	 *
+	 * @param array<int, ObjectEntity> $objects     The page.
+	 * @param mixed                    $recentViews Object uuid => ISO 8601 last read, or null.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+	 */
+	private function applyViewedAt(array $objects, mixed $recentViews): void {
+		if (is_array($recentViews) === false || $recentViews === []) {
+			return;
+		}
+
+		foreach ($objects as $object) {
+			$moment = ($recentViews[(string)$object->getUuid()] ?? null);
+			if (is_string($moment) === true) {
+				$object->setViewedAt($moment);
+			}
+		}
+
+	}//end applyViewedAt()
 
 	/**
 	 * Decide and apply the result order for one search.
@@ -2987,7 +3016,7 @@ class MagicSearchHandler {
 	 * @param array<int|string, mixed> $order The caller's requested order.
 	 * @param Schema|null $schema The schema being searched.
 	 * @param string|null $searchTerm The search term, for relevance ordering.
-	 * @param mixed $recentFor The user whose view times order a `_recent` page, or null.
+	 * @param mixed $recentViews The read history ordering a `_recent` page (uuid => last read), or null.
 	 * @param array<int, string>|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown.
 	 * @param array<int, string> $sortLanguages Language chain a translatable property sorts by.
 	 *
@@ -3001,7 +3030,7 @@ class MagicSearchHandler {
 		array $order,
 		?Schema $schema,
 		?string $searchTerm,
-		mixed $recentFor,
+		mixed $recentViews,
 		?array $dateTimeColumns = null,
 		array $sortLanguages = []
 	): void {
@@ -3017,7 +3046,7 @@ class MagicSearchHandler {
 			return;
 		}
 
-		if ($this->applyRecencyOrder(qb: $qb, userId: $recentFor) === true) {
+		if ($this->applyRecencyOrder(qb: $qb, recentViews: $recentViews) === true) {
 			return;
 		}
 
