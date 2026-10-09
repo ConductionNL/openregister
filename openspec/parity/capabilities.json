@@ -3248,7 +3248,7 @@
    "built": {
     "state": "specified",
     "owner": "ConductionNL/openregister",
-    "evidence": "Change archived 2026-10-05-favourites-and-recent, backend only: PUT/DELETE .../favourite appinfo/routes.php:183,189 -> lib/Controller/ObjectFavouriteController.php; views recorded lib/Controller/ObjectsController.php:3035 recordObjectView; _favourite/_recent lenses in lib/Service/Object/SearchQueryHandler.php:88. No page in openregister src/ or in nextcloud-vue development calls it (git grep on 2026-10-07).",
+    "evidence": "Change archived 2026-10-05-favourites-and-recent, backend only: PUT/DELETE .../favourite appinfo/routes.php:183,189 -> lib/Controller/ObjectFavouriteController.php; views registered on the audit trail through lib/Service/Interaction/ReadHistoryService.php registerAuditRead (read-history-on-audit-trail, replaced recordObjectView); _favourite/_recent lenses in lib/Service/Object/SearchQueryHandler.php:88. No page in openregister src/ or in nextcloud-vue development calls it (git grep on 2026-10-07).",
     "change": "record-star-follow-and-unread-on-screen",
     "readOn": "2026-10-07"
    },
