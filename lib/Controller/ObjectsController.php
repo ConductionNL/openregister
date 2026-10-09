@@ -1088,6 +1088,9 @@ class ObjectsController extends Controller {
 		// where a `{"nl":...}` map projects to the negotiated language.
 		$renderHandler->resolveTranslationsForRows(rows: $results);
 
+		// Every list row must carry @self.files (file IDs), as on the QueryHandler cheap path.
+		$renderHandler->attachLightweightFilesToRows(rows: $results);
+
 		// Serialize results.
 		$serializedResults = [];
 		foreach ($results as $entity) {
