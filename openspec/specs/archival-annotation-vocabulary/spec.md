@@ -56,11 +56,17 @@ The platform SHALL ship an `OCA\OpenRegister\Service\Archival\ArchivalAnnotation
 
 #### Scenario: Unknown key at the top level is reported, not rejected
 - @e2e exclude schema-save validation — covered by PHPUnit
-- **GIVEN** a schema declares `x-openregister-archival = { retention: { default: "P7Y" }, category: "Archiefwet 1995 selectielijst", action: "destroy" }`
+- **GIVEN** a schema declares `x-openregister-archival = { retention: { default: "P7Y" }, aggregatieniveau: "Dossier" }`
 - **WHEN** the schema is saved
 - **THEN** the save SHALL succeed
 - **AND** `SchemaMapper` SHALL log one warning naming the schema and every ignored key
 - **AND** the import of a register declaring that schema SHALL link it, not drop it
+
+#### Scenario: A key the archive reader reads is not unknown
+- @e2e exclude schema-save validation — covered by PHPUnit
+- **GIVEN** a schema declares `x-openregister-archival = { retention: { default: "P7Y" }, category: "1.1", categoryProperty: "selectielijstCategorie", action: "bewaren" }`
+- **WHEN** the schema is saved
+- **THEN** no `archival-unknown-key` finding SHALL be made, because `ArchivalDeclarationReader` and `ClassificationOverride` read all three keys
 
 #### Scenario: Well-formed annotation passes
 - **GIVEN** a schema declares `x-openregister-archival.retention = { default: "P30D", rules: [{ condition: "statusCode < 400", retention: "PT1H", reason: "successful integrations" }] }`
