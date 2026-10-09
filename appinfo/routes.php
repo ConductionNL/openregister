@@ -87,6 +87,11 @@ return [
         // authorises it; the flow adds no second permission model (ADR-023).
         ['name' => 'objectActions#invoke', 'url' => '/api/objects/{register}/{schema}/{id}/actions/{action}', 'verb' => 'POST',
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'action' => '[^/]+']],
+        // The same macro on a selection: one run per object, reported per object.
+        // Its own prefix, because `/api/objects/{register}/{schema}/...` with four
+        // segments would be read as an object id by the routes above.
+        ['name' => 'objectActions#invokeOnSelection', 'url' => '/api/object-actions/{register}/{schema}/{action}', 'verb' => 'POST',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'action' => '[^/]+']],
         ['name' => 'objectIntegrations#index',   'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
         ['name' => 'objectIntegrations#show',    'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
         ['name' => 'objectIntegrations#create',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],

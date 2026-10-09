@@ -16,6 +16,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectActionsController;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -46,6 +47,10 @@ class ObjectActionsControllerTest extends TestCase {
 
 	private ObjectActionsController $controller;
 
+	private AuditTrailMapper&MockObject $audit;
+
+	private IRequest&MockObject $request;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -53,6 +58,8 @@ class ObjectActionsControllerTest extends TestCase {
 		$this->schemas = $this->createMock(SchemaMapper::class);
 		$this->permissions = $this->createMock(PermissionHandler::class);
 		$this->flows = $this->createMock(FlowService::class);
+		$this->audit = $this->createMock(AuditTrailMapper::class);
+		$this->request = $this->createMock(IRequest::class);
 
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('anna');
@@ -66,9 +73,9 @@ class ObjectActionsControllerTest extends TestCase {
 		// to pin.
 		$this->controller = new ObjectActionsController(
 			'openregister',
-			$this->createMock(IRequest::class),
+			$this->request,
 			$this->objects,
-			new MacroActionResolver(schemas: $this->schemas, flows: $this->flows),
+			new MacroActionResolver(schemas: $this->schemas, flows: $this->flows, auditTrail: $this->audit, logger: $this->createMock(LoggerInterface::class)),
 			$this->permissions,
 			$this->flows,
 			$session,
@@ -279,4 +286,185 @@ class ObjectActionsControllerTest extends TestCase {
 
 		$this->assertSame(FlowNextHint::STAY, $response->getData()['next']);
 	}//end testAnUnreadableHintIsStay()
+
+	/**
+	 * A run writes one audit entry naming the declared action and the run,
+	 * so the object's trail shows the writes came from one pressed action.
+	 *
+	 * @return void
+	 */
+	public function testAMacroRunWritesAnAuditEntryNamingTheActionAndTheRun(): void {
+		$this->objects->method('find')->willReturn($this->object());
+		$this->schemas->method('find')->willReturn($this->schema());
+		$this->permissions->method('hasPermission')->willReturn(true);
+		$this->flows->method('run')->willReturn($this->finishedRun());
+
+		$this->audit->expects($this->once())->method('createAuditTrailEntry')->with(
+			$this->isInstanceOf(ObjectEntity::class),
+			'action.macro',
+			['declaredAction' => 'close-and-notify', 'flow' => 'flow-1', 'run' => 'run-9'],
+			'anna'
+		);
+
+		$this->controller->invoke('3', '5', 'obj-1', 'close-and-notify');
+	}//end testAMacroRunWritesAnAuditEntryNamingTheActionAndTheRun()
+
+	/**
+	 * A refused run writes no audit entry: there is no run to name.
+	 *
+	 * @return void
+	 */
+	public function testARefusedCallerWritesNoAuditEntry(): void {
+		$this->objects->method('find')->willReturn($this->object());
+		$this->schemas->method('find')->willReturn($this->schema());
+		$this->permissions->method('hasPermission')->willReturn(false);
+		$this->audit->expects($this->never())->method('createAuditTrailEntry');
+
+		$this->controller->invoke('3', '5', 'obj-1', 'close-and-notify');
+	}//end testARefusedCallerWritesNoAuditEntry()
+
+	/**
+	 * Three cases, the flow refuses one: two succeeded, one failed with its
+	 * reason, and `next` is the flow's hint (spec scenario "a bulk macro
+	 * reports per object").
+	 *
+	 * @return void
+	 */
+	public function testASelectionReportsPerObject(): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($key === 'ids' ? ['a', 'b', 'c'] : $default)
+		);
+		$this->objects->method('find')->willReturnCallback(
+			function (string $id): ObjectEntity {
+				$object = $this->object();
+				$object->setUuid($id);
+				return $object;
+			}
+		);
+		$this->schemas->method('find')->willReturn($this->schema());
+		$this->permissions->method('hasPermission')->willReturn(true);
+		$this->flows->method('run')->willReturnCallback(
+			function (string $uuid, array $subject): FlowRun {
+				if ($subject['uuid'] === 'b') {
+					throw new \RuntimeException('Zaak b is already closed.');
+				}
+
+				return $this->finishedRun();
+			}
+		);
+
+		$response = $this->controller->invokeOnSelection('3', '5', 'close-and-notify');
+		$data = $response->getData();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['succeeded' => 2, 'failed' => 1], $data['summary']);
+		$this->assertSame('failed', $data['results'][1]['status']);
+		$this->assertSame('Zaak b is already closed.', $data['results'][1]['reason']);
+		$this->assertArrayHasKey('next', $data);
+	}//end testASelectionReportsPerObject()
+
+	/**
+	 * The action's own right is checked per object: one object the caller
+	 * may not act on fails alone and the others still run.
+	 *
+	 * @return void
+	 */
+	public function testASelectionChecksTheRightPerObject(): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => ($key === 'ids' ? ['a', 'b'] : $default)
+		);
+		$this->objects->method('find')->willReturnCallback(
+			function (string $id): ObjectEntity {
+				$object = $this->object();
+				$object->setUuid($id);
+				return $object;
+			}
+		);
+		$this->schemas->method('find')->willReturn($this->schema());
+		$this->permissions->method('hasPermission')->willReturnCallback(
+			static fn (...$args): bool => end($args)->getUuid() !== 'b'
+		);
+		$this->flows->expects($this->once())->method('run')->willReturn($this->finishedRun());
+
+		$data = $this->controller->invokeOnSelection('3', '5', 'close-and-notify')->getData();
+
+		$this->assertSame(['succeeded' => 1, 'failed' => 1], $data['summary']);
+		$this->assertStringContainsString('may not', $data['results'][1]['reason']);
+	}//end testASelectionChecksTheRightPerObject()
+
+	/**
+	 * An empty or oversized selection runs nothing and answers 400.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyOrOversizedSelectionIsRefused(): void {
+		$sizes = [[], array_map('strval', range(1, ObjectActionsController::SELECTION_LIMIT + 1))];
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key, $default = null) use (&$sizes) {
+				return ($key === 'ids' ? array_shift($sizes) : $default);
+			}
+		);
+		$this->flows->expects($this->never())->method('run');
+
+		$statuses = [
+			$this->controller->invokeOnSelection('3', '5', 'close-and-notify')->getStatus(),
+			$this->controller->invokeOnSelection('3', '5', 'close-and-notify')->getStatus(),
+		];
+		$this->assertSame([Http::STATUS_BAD_REQUEST, Http::STATUS_BAD_REQUEST], $statuses);
+	}//end testAnEmptyOrOversizedSelectionIsRefused()
+
+	/**
+	 * The end node the run reached overrides the trigger's hint, and the
+	 * response carries the EFFECTIVE value (flow-engine: "the run result
+	 * SHALL carry the effective next").
+	 *
+	 * @return void
+	 */
+	public function testTheEndNodeTheRunReachedOverridesTheHint(): void {
+		$this->objects->method('find')->willReturn($this->object());
+		$this->schemas->method('find')->willReturn($this->schema());
+		$this->permissions->method('hasPermission')->willReturn(true);
+		$run = $this->finishedRun();
+		$run->setLog([
+			['transition' => 'start', 'type' => FlowNextHint::MANUAL_TRIGGER, 'status' => 'completed'],
+			['transition' => 'done-list', 'type' => FlowNextHint::END_NODE, 'status' => 'completed'],
+		]);
+		$this->flows->method('run')->willReturn($run);
+
+		$flow = new Flow();
+		$flow->setNodes([
+			['id' => 'start', 'type' => FlowNextHint::MANUAL_TRIGGER, 'config' => ['next' => 'next']],
+			['id' => 'done-stay', 'type' => FlowNextHint::END_NODE, 'config' => ['next' => 'stay']],
+			['id' => 'done-list', 'type' => FlowNextHint::END_NODE, 'config' => ['next' => 'list']],
+		]);
+		$this->flows->method('find')->willReturn($flow);
+
+		$response = $this->controller->invoke('zaken', 'zaak', 'obj-1', 'close-and-notify');
+
+		$this->assertSame('list', $response->getData()['next']);
+	}//end testTheEndNodeTheRunReachedOverridesTheHint()
+
+	/**
+	 * An end node that declares nothing is silence, not an override: the
+	 * trigger's hint stands.
+	 *
+	 * @return void
+	 */
+	public function testAnEndNodeWithoutAHintKeepsTheTriggersHint(): void {
+		$this->objects->method('find')->willReturn($this->object());
+		$this->schemas->method('find')->willReturn($this->schema());
+		$this->permissions->method('hasPermission')->willReturn(true);
+		$run = $this->finishedRun();
+		$run->setLog([['transition' => 'done', 'type' => FlowNextHint::END_NODE, 'status' => 'completed']]);
+		$this->flows->method('run')->willReturn($run);
+
+		$flow = new Flow();
+		$flow->setNodes([
+			['id' => 'start', 'type' => FlowNextHint::MANUAL_TRIGGER, 'config' => ['next' => 'next']],
+			['id' => 'done', 'type' => FlowNextHint::END_NODE],
+		]);
+		$this->flows->method('find')->willReturn($flow);
+
+		$this->assertSame('next', $this->controller->invoke('zaken', 'zaak', 'obj-1', 'close-and-notify')->getData()['next']);
+	}//end testAnEndNodeWithoutAHintKeepsTheTriggersHint()
 }//end class
