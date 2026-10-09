@@ -3409,4 +3409,73 @@ class AuditTrailMapper extends QBMapper {
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createExportEntry()
 
+	/**
+	 * The objects one user read most recently, newest first.
+	 *
+	 * One row per object: the latest `read` entry this user has on the audit
+	 * trail, capped at `$limit`. Answered by the (user, action, object_uuid,
+	 * created) index, so the grouping reads the index and not the table.
+	 *
+	 * A tombstoned row (retention purge) carries an empty `user`, so it never
+	 * matches a uid and drops out of every history by itself.
+	 *
+	 * @param string $userId The reader's uid.
+	 * @param int    $limit  How many objects to answer at most.
+	 *
+	 * @return array<string, string> Object uuid => ISO 8601 moment of the latest read, newest first.
+	 *
+	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+	 */
+	public function findLatestReadsByUser(string $userId, int $limit = 100): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('object_uuid', $qb->createFunction('MAX(created) AS last_read'))
+			->from($this->getTableName())
+			->where($qb->expr()->eq('user', $qb->createNamedParameter($userId)))
+			->andWhere($qb->expr()->eq('action', $qb->createNamedParameter('read')))
+			->andWhere($qb->expr()->isNotNull('object_uuid'))
+			->groupBy('object_uuid')
+			->orderBy('last_read', 'DESC')
+			->setMaxResults(max(1, $limit));
+
+		$result = $qb->executeQuery();
+		$reads  = [];
+		while (($row = $result->fetch()) !== false) {
+			$uuid = (string)($row['object_uuid'] ?? '');
+			$moment = $this->toIsoMoment(value: ($row['last_read'] ?? null));
+			if ($uuid !== '' && $moment !== null) {
+				$reads[$uuid] = $moment;
+			}
+		}
+
+		$result->closeCursor();
+
+		return $reads;
+	}//end findLatestReadsByUser()
+
+	/**
+	 * Render a stored `created` value as ISO 8601.
+	 *
+	 * Stored values are UTC wall-clock strings (`Y-m-d H:i:s`), so they are
+	 * read in UTC and rendered with their offset.
+	 *
+	 * @param mixed $value The raw column value.
+	 *
+	 * @return string|null The ISO 8601 moment, or null when unreadable.
+	 */
+	private function toIsoMoment(mixed $value): ?string {
+		if ($value instanceof \DateTimeInterface) {
+			return $value->format('c');
+		}
+
+		if (is_string($value) === false || $value === '') {
+			return null;
+		}
+
+		try {
+			return (new DateTime($value, new \DateTimeZone('UTC')))->format('c');
+		} catch (Exception $e) {
+			return null;
+		}
+	}//end toIsoMoment()
+
 }//end class

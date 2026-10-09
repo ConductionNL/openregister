@@ -13,6 +13,7 @@ import type { APIRequestContext } from '@playwright/test'
  *
  * @e2e object-interactions::starring-leaves-the-object-untouched
  * @e2e object-interactions::a-favourites-chip-on-an-index-page
+ * @e2e object-interactions::a-dashboard-tile-shows-when-each-object-was-opened
  *
  * WHAT THIS FILE CAN PROVE, AND WHY IT HAS TO BE THIS FILE.
  *
@@ -339,12 +340,22 @@ test.describe('favourites and recently opened over HTTP', () => {
 			`${API}/objects/${registerId}/${schemaId}?_recent=true`,
 		)
 		expect(list.ok(), `recent list failed: ${await list.text()}`).toBeTruthy()
-		const returned = uuidsOf(await list.json())
+		const body = await list.json()
+		const returned = uuidsOf(body)
 
 		expect(
 			returned.slice().sort(),
 			'the recent lens should answer exactly what this user opened',
 		).toEqual(opened.slice().sort())
+
+		// read-history-on-audit-trail: the history is the audit trail's read
+		// rows, and each object says when this reader last opened it.
+		expect(body['@self']?.lenses?.recent?.available).toBe(true)
+		for (const item of body.results as Array<Record<string, any>>) {
+			const viewedAt = item['@self']?.viewedAt
+			expect(typeof viewedAt, '@self.viewedAt should be an ISO 8601 string').toBe('string')
+			expect(Number.isNaN(Date.parse(viewedAt))).toBe(false)
+		}
 
 		// Ordering is the half a set comparison cannot see. The three opens land
 		// within the same second, so the order is asserted as "the last one

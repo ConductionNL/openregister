@@ -1347,13 +1347,16 @@ class ObjectService implements ObjectServiceInterface
      * @return void
      *
      * @spec openspec/specs/avg-verwerkingsregister/spec.md
+     * @spec openspec/changes/read-history-on-audit-trail/specs/avg-verwerkingsregister/spec.md#requirement-reads-of-personal-data-are-registered-through-the-one-read-registration
      */
     private function logProcessingRead(ObjectEntity $object): void
     {
+        // Through the one read registration (read-history-on-audit-trail),
+        // which delegates to ProcessingLogService unchanged: same opt-in,
+        // same storage, same retention, same readers.
         try {
-            $service = $this->container->get(\OCA\OpenRegister\Service\ProcessingLogService::class);
-            $service->logRead(object: $object, action: 'read');
-            $service->flush();
+            $this->container->get(\OCA\OpenRegister\Service\Interaction\ReadHistoryService::class)
+                ->registerProcessingRead(object: $object);
         } catch (\Throwable $e) {
             // Fail-soft: read logging never breaks or slows the read path.
             $this->logger->debug(
