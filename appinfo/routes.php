@@ -1477,6 +1477,10 @@ return [
         // Files operations under objects.
 		['name' => 'files#create', 'url' => '/api/objects/{register}/{schema}/{id}/files', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'files#save', 'url' => '/api/objects/{register}/{schema}/{id}/files/save', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		// Files leaf: attach a file the caller already has in Files ("Add to object").
+		['name' => 'files#attach', 'url' => '/api/objects/{register}/{schema}/{id}/files/attach', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
+		// Talk: save a conversation to the object as a text file ("Save chat to object").
+		['name' => 'files#saveChat', 'url' => '/api/objects/{register}/{schema}/{id}/files/chat', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'files#index', 'url' => '/api/objects/{register}/{schema}/{id}/files', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'files#show', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
         ['name' => 'objects#downloadFiles', 'url' => '/api/objects/{register}/{schema}/{id}/files/download', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
