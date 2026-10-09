@@ -21,6 +21,7 @@
  * @e2e openspec/changes/instance-hardening-controls/specs/instance-hardening/spec.md#a-new-version-asks-again
  */
 import { expect, test } from '@playwright/test'
+import * as path from 'path'
 
 const REPORT = '/index.php/apps/openregister/api/hardening/report'
 const FLOORS = '/index.php/apps/openregister/api/hardening/floors'
@@ -30,6 +31,22 @@ const STATEMENT = '/index.php/apps/openregister/api/hardening/statement'
 const ACCEPTANCE = '/index.php/apps/openregister/api/hardening/statement/acceptance'
 
 const ADMIN_PASS = process.env.ADMIN_PASSWORD || process.env.OR_PASS || 'admin'
+
+/*
+ * A SIGNED-IN SESSION, NOT BASIC AUTH. The elevation is held in the Nextcloud
+ * session (ElevationService), and a basic-auth request gets a fresh session
+ * every time: the password is confirmed, the answer says `elevated: true`, and
+ * the very next call is refused with "Administration needs a fresh sign-in".
+ * So these specs run on the browser login global-setup stores, with the
+ * suite's Authorization header replaced, and say they are an API client so
+ * the writes pass the CSRF check.
+ */
+const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
+
+test.use({
+	storageState: STORAGE_STATE,
+	extraHTTPHeaders: { 'OCS-APIRequest': 'true' },
+})
 
 /**
  * Confirm the password, so this context may write.
@@ -205,7 +222,12 @@ test.describe('The fresh sign-in, and the statement', () => {
 		// started. It carries the admin credentials and nothing else: the
 		// principal here is a full administrator, and it is still refused.
 		const context = await browser.newContext({
+			// A context of its own: no stored session (test.use above would hand it
+			// the administrator's elevated cookie), basic auth only, and the header
+			// that lets the write past the CSRF check to the elevation check.
+			storageState: { cookies: [], origins: [] },
 			extraHTTPHeaders: {
+				'OCS-APIRequest': 'true',
 				Authorization: `Basic ${Buffer.from(
 					`${process.env.ADMIN_USER || process.env.OR_USER || 'admin'}:${ADMIN_PASS}`,
 				).toString('base64')}`,
@@ -235,7 +257,12 @@ test.describe('The fresh sign-in, and the statement', () => {
 
 	test('a wrong password elevates nothing', async ({ browser }) => {
 		const context = await browser.newContext({
+			// A context of its own: no stored session (test.use above would hand it
+			// the administrator's elevated cookie), basic auth only, and the header
+			// that lets the write past the CSRF check to the elevation check.
+			storageState: { cookies: [], origins: [] },
 			extraHTTPHeaders: {
+				'OCS-APIRequest': 'true',
 				Authorization: `Basic ${Buffer.from(
 					`${process.env.ADMIN_USER || process.env.OR_USER || 'admin'}:${ADMIN_PASS}`,
 				).toString('base64')}`,

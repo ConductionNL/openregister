@@ -147,7 +147,14 @@ test.describe('upsert-on-key', () => {
 	})
 
 	test('an anonymous call cannot upsert', async ({ playwright, baseURL }) => {
-		const anonymous = await playwright.request.newContext({ baseURL })
+		const anonymous = await playwright.request.newContext({
+			baseURL,
+			// Both are what make it anonymous: a bare newContext() inherits the
+			// suite's Authorization header from playwright.config.ts AND this
+			// describe's storageState, the administrator's session cookie.
+			extraHTTPHeaders: {},
+			storageState: { cookies: [], origins: [] },
+		})
 		const resp = await anonymous.post(`${objects()}?_upsertOn=zaaksleutel`, {
 			headers: JSON_HEADERS,
 			data: {
