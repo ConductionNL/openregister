@@ -353,7 +353,10 @@ test.describe('favourites and recently opened over HTTP', () => {
 		expect(body['@self']?.lenses?.recent?.available).toBe(true)
 		for (const item of body.results as Array<Record<string, any>>) {
 			const viewedAt = item['@self']?.viewedAt
-			expect(typeof viewedAt, '@self.viewedAt should be an ISO 8601 string').toBe('string')
+			expect(
+				typeof viewedAt,
+				'@self.viewedAt should be an ISO 8601 string',
+			).toBe('string')
 			expect(Number.isNaN(Date.parse(viewedAt))).toBe(false)
 		}
 
