@@ -20,6 +20,7 @@ import {
 			:columns="tableColumns"
 			:sortKey="sortKey"
 			:sortOrder="sortOrder"
+			:activeFilters="activeFilters"
 			:pagination="paginationData"
 			:viewMode="schemaStore.viewMode"
 			:selectable="true"
@@ -38,6 +39,7 @@ import {
 			:rowClass="getRowClass"
 			:refreshing="isRefreshing"
 			@sort="onSort"
+			@filterChange="onFilterChange"
 			@add="
 				() => {
 					schemaStore.setSchemaItem(null)
@@ -195,7 +197,22 @@ import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
+import { applyFilterChange, filterRows } from '../../services/listFilter.js'
 import { sortSchemas } from '../../services/listSort.js'
+
+/**
+ * The value a schema row is filtered on: the properties column shows a count.
+ *
+ * @param {object} schema The schema row.
+ * @param {string} field The column key.
+ * @return {unknown} The value.
+ */
+function schemaFilterValue(schema, field) {
+	if (field === 'properties') {
+		return Object.keys(schema?.properties || {}).length
+	}
+	return schema ? schema[field] : undefined
+}
 
 export default {
 	name: 'SchemasIndex',
@@ -218,29 +235,39 @@ export default {
 			// The header the list is sorted by; null keeps newest first.
 			sortKey: null,
 			sortOrder: 'asc',
+			// The header filters, as `{ paramKey: values[] }` (`title[like]`).
+			activeFilters: {},
 		}
 	},
 
 	computed: {
 		/**
-		 * Column definitions for the schemas table.
+		 * Column definitions for the schemas table. The `type` hints tell the
+		 * header filter how each column filters: dates by range, the property
+		 * count by number, everything else on contains.
 		 *
-		 * @spec exclude UI plumbing — static table column list for display
+		 * @spec openspec/changes/order-filters-and-notification-links/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
 		 * @return {Array<object>}
 		 */
 		tableColumns() {
 			return [
 				{ key: 'title', label: t('openregister', 'Title'), sortable: true },
-				{ key: 'properties', label: t('openregister', 'Properties') },
+				{
+					key: 'properties',
+					label: t('openregister', 'Properties'),
+					type: 'integer',
+				},
 				{
 					key: 'created',
 					label: t('openregister', 'Created'),
 					sortable: true,
+					type: 'date-time',
 				},
 				{
 					key: 'updated',
 					label: t('openregister', 'Updated'),
 					sortable: true,
+					type: 'date-time',
 				},
 			]
 		},
@@ -254,7 +281,7 @@ export default {
 		paginationData() {
 			const page = schemaStore.pagination.page || 1
 			const limit = schemaStore.pagination.limit || 20
-			const total = schemaStore.schemaList.length
+			const total = this.orderedSchemas.length
 			const pages = Math.ceil(total / limit)
 			return { page, pages, total, limit }
 		},
@@ -284,7 +311,15 @@ export default {
 		 * @return {Array<object>}
 		 */
 		orderedSchemas() {
-			return sortSchemas(schemaStore.schemaList, this.sortKey, this.sortOrder)
+			return sortSchemas(
+				filterRows(
+					schemaStore.schemaList,
+					this.activeFilters,
+					schemaFilterValue,
+				),
+				this.sortKey,
+				this.sortOrder,
+			)
 		},
 
 		/**
@@ -309,6 +344,9 @@ export default {
 		emptyContentName() {
 			if (!schemaStore.schemaList.length) {
 				return t('openregister', 'No schemas found')
+			}
+			if (!this.orderedSchemas.length) {
+				return t('openregister', 'No matches')
 			}
 			return t('openregister', 'Loading schemas...')
 		},
@@ -344,6 +382,20 @@ export default {
 		onSort(payload) {
 			this.sortKey = payload && payload.key ? payload.key : null
 			this.sortOrder = payload && payload.order === 'desc' ? 'desc' : 'asc'
+			schemaStore.setPagination(1, schemaStore.pagination.limit || 20)
+		},
+
+		/**
+		 * Apply a header filter. The list is loaded whole, so it is filtered
+		 * here, and paging goes back to page 1.
+		 *
+		 * @param {{key: string, values: Array}} payload The filter change.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/order-filters-and-notification-links/specs/admin-list-views/spec.md#requirement-openregister-s-schemas-and-registers-lists-must-filter-from-their-column-headers
+		 */
+		onFilterChange(payload) {
+			this.activeFilters = applyFilterChange(this.activeFilters, payload)
 			schemaStore.setPagination(1, schemaStore.pagination.limit || 20)
 		},
 
