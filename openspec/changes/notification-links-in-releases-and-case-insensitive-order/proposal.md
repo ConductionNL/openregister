@@ -1,6 +1,6 @@
 ---
 kind: code
-depends_on: [order-filters-and-notification-links]
+depends_on: []
 ---
 
 # Proposal: notification-links-in-releases-and-case-insensitive-order

@@ -3351,7 +3351,10 @@
         "{schema} {title} deleted": "{schema} {title} видалено",
         "Object \"%1$s\" created": "Об’єкт \"%1$s\" створено",
         "Object \"%1$s\" updated": "Об’єкт \"%1$s\" оновлено",
-        "Object \"%1$s\" assigned to you": "Об’єкт \"%1$s\" призначено вам"
+        "Object \"%1$s\" assigned to you": "Об’єкт \"%1$s\" призначено вам",
+        "Audit trail export ready": "Експорт журналу аудиту готовий",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Ваш експорт журналу аудиту (%1$s записів) збережено в %2$s%3$s.",
+        "Open Files": "Відкрити Файли"
     },
     "pluralForm": "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);",
     "plurals": {

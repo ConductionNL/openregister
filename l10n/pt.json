@@ -3309,7 +3309,10 @@
         "{schema} {title} deleted": "{schema} {title} eliminado",
         "Object \"%1$s\" created": "Objeto \"%1$s\" criado",
         "Object \"%1$s\" updated": "Objeto \"%1$s\" atualizado",
-        "Object \"%1$s\" assigned to you": "Objeto \"%1$s\" atribuído a si"
+        "Object \"%1$s\" assigned to you": "Objeto \"%1$s\" atribuído a si",
+        "Audit trail export ready": "A exportação do registo de auditoria está pronta",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "A sua exportação do registo de auditoria com %1$s entradas foi guardada em %2$s%3$s.",
+        "Open Files": "Abrir Ficheiros"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

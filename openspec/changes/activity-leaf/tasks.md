@@ -27,7 +27,7 @@
 
 ## 2. Surfaces
 
-- [ ] 2.1 `tab` and `widget` surfaces with kind chips and a date range.
+- [ ] 2.1 `tab` and `widget` surfaces with kind chips and a date range. (not run: a nextcloud-vue change, asked in for-ruben/openregister-sibling-asks.md)
       **This is a nextcloud-vue change, not an openregister one**, and that
       is why it is not cheap here: the leaf surfaces come from the library
       (`registerLeafIntegrations`, `CnActivityTab`), and openregister's
@@ -56,7 +56,7 @@
       per-source bound and its ceiling, a source that could not be read being
       NAMED rather than merged as nothing, and a summary that names changed
       fields and never their values.
-- [ ] 3.2 `tests/e2e/ci/activity-leaf.spec.ts`: waits on 2.1, because there
+- [ ] 3.2 `tests/e2e/ci/activity-leaf.spec.ts`: waits on 2.1, because there (not run: e2e waits on 2.1 and needs a browser)
       is no surface to open yet.
 
 ## Who enforces access to this feed

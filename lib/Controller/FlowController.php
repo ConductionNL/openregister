@@ -663,7 +663,12 @@ class FlowController extends Controller {
 
 		$xml = (string)$this->request->getParam('xml', '');
 		if (trim($xml) === '') {
-			$xml = (string)file_get_contents('php://input');
+			$upload = $this->readBpmnUpload();
+			if ($upload instanceof JSONResponse) {
+				return $upload;
+			}
+
+			$xml = $upload ?? (string)file_get_contents('php://input');
 		}
 
 		// 🔴 `(bool)'false'` IS TRUE, and a query string carries `?strict=false`
@@ -735,6 +740,39 @@ class FlowController extends Controller {
 			Http::STATUS_CREATED
 		);
 	}//end importBpmn()
+
+	/**
+	 * The BPMN document sent as a multipart upload in the field `file`.
+	 *
+	 * A browser's file picker posts a form, not an XML body. A failed upload
+	 * is answered 400 and names the upload: passed on as an empty document it
+	 * would come back as "malformed" and send the user hunting in a file that
+	 * is fine.
+	 *
+	 * @return string|JSONResponse|null The file's content, a 400 refusal, or null when no file was sent.
+	 *
+	 * @spec openspec/changes/flow-bpmn-interchange/specs/flow-bpmn-interchange/spec.md
+	 */
+	private function readBpmnUpload(): string|JSONResponse|null {
+		$file = $this->request->getUploadedFile('file');
+		if (is_array($file) === false || $file === []) {
+			return null;
+		}
+
+		$tmpName = (string)($file['tmp_name'] ?? '');
+		$error   = (int)($file['error'] ?? UPLOAD_ERR_NO_FILE);
+		if ($error !== UPLOAD_ERR_OK || $tmpName === '' || is_readable($tmpName) === false) {
+			return new JSONResponse(
+				[
+					'error' => sprintf('The upload of the BPMN file did not arrive (upload error %d). Send the file again.', $error),
+					'malformed' => false,
+				],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		return (string)file_get_contents($tmpName);
+	}//end readBpmnUpload()
 
 	/**
 	 * One flow, by its uuid.

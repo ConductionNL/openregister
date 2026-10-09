@@ -3309,7 +3309,10 @@
         "{schema} {title} deleted": "{schema} {title} geläscht",
         "Object \"%1$s\" created": "Objet \"%1$s\" erstallt",
         "Object \"%1$s\" updated": "Objet \"%1$s\" aktualiséiert",
-        "Object \"%1$s\" assigned to you": "Objet \"%1$s\" Iech zougewisen"
+        "Object \"%1$s\" assigned to you": "Objet \"%1$s\" Iech zougewisen",
+        "Audit trail export ready": "Den Export vum Audit-Protokoll ass fäerdeg",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Ären Export vum Audit-Protokoll mat %1$s Aträg gouf an %2$s%3$s gespäichert.",
+        "Open Files": "Fichieren opmaachen"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

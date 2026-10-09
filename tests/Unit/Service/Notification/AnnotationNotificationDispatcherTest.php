@@ -1069,7 +1069,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 	/**
 	 * A party mail's body is the rule's message, not its subject.
 	 *
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-a-party-mail-carries-the-rule-s-message-as-its-body-req-ero-006
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-party-mail-carries-the-rule-s-message-as-its-body-req-ero-006
 	 */
 	public function testAPartyMailCarriesTheMessageAsItsBody(): void {
 		$calls = $this->fireAPartiesRule(
@@ -1086,7 +1086,7 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 	/**
 	 * A rule without a message keeps today's body, the subject, and asks as service.
 	 *
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-a-party-mail-carries-the-rule-s-message-as-its-body-req-ero-006
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-party-mail-carries-the-rule-s-message-as-its-body-req-ero-006
 	 */
 	public function testAPartyMailWithoutAMessageKeepsTheSubjectAsItsBody(): void {
 		$calls = $this->fireAPartiesRule(['subject' => 'Your case changed']);

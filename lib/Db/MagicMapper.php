@@ -1342,8 +1342,10 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @return bool True if UNION ALL can be used.
 	 */
 	private function shouldUseUnionQuery(array $query): bool {
-		// Don't use UNION for aggregations or facets (not supported).
-		if (isset($query['_aggregations']) === true || isset($query['_facets']) === true) {
+		// Don't use UNION for aggregations (not supported). `_facets` does not count:
+		// this search returns rows only, facets are computed separately, and the
+		// sequential fallback neither orders nor pages across tables.
+		if (isset($query['_aggregations']) === true) {
 			return false;
 		}
 
