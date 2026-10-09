@@ -31,7 +31,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+ * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
  */
 
 declare(strict_types=1);
@@ -112,7 +112,7 @@ class OptOutAuthority {
 	 *
 	 * @return string One of CATEGORIES.
 	 *
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
 	 */
 	public static function normaliseCategory(mixed $category): string {
 		if (is_string($category) === false) {
@@ -137,7 +137,7 @@ class OptOutAuthority {
 	 *
 	 * @return array<string, array{send: bool, code: string, unsubscribe: array<string, mixed>|null}> By address.
 	 *
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function ask(string $channel, string $category, array $addresses, string $correlationId = ''): array {
 		$addresses = array_values(array_unique(array_filter(array_map('strval', $addresses), static fn (string $a): bool => $a !== '')));
@@ -197,7 +197,7 @@ class OptOutAuthority {
 	 *
 	 * @return array{send: bool, code: string, unsubscribe: array|null} The decision.
 	 *
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	public function decisionFor(array $decisions, string $address): array {
 		return ($decisions[$address] ?? ['send' => false, 'code' => self::CODE_AUTHORITY_UNAVAILABLE, 'unsubscribe' => null]);
@@ -211,7 +211,7 @@ class OptOutAuthority {
 	 *
 	 * @return string The body.
 	 *
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
 	 */
 	public function withLink(string $body, ?array $unsubscribe): string {
 		$url = trim((string)($unsubscribe['url'] ?? ''));
@@ -305,7 +305,7 @@ class OptOutAuthority {
 	 *
 	 * @return string|null The class name.
 	 *
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-flow-step-asks-integriq-before-it-mails-an-external-address-req-ero-001
 	 */
 	protected function resolveEventClass(): ?string {
 		$qualified = '\\' . self::DECISION_EVENT;

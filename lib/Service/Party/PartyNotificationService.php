@@ -121,7 +121,7 @@ class PartyNotificationService {
 	 * @return array<int, array{party: string, address: string|null, outcome: string}> What happened per party.
 	 *
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-a-parties-notification-asks-integriq-before-it-mails-a-party-req-ero-003
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-parties-notification-asks-integriq-before-it-mails-a-party-req-ero-003
 	 */
 	public function notifyParties(
 		string $objectUuid,

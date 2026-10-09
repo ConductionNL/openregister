@@ -138,7 +138,7 @@ class EmailSender {
 	 * @return string One of the OUTCOME_* constants.
 	 *
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-without-an-account-carries-its-own-fields-and-is-reachable-req-prm-002
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-external-mail-carries-the-unsubscribe-link-req-ero-004
 	 */
 	public function sendToAddress(string $address, string $displayName, string $subject, string $body, ?array $unsubscribe = null): string {
 		if ($this->channelPolicy !== null && $this->channelPolicy->isChannelEnabled(channel: 'email') === false) {

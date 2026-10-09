@@ -1381,6 +1381,35 @@ boolean flag `allowPrivateTargets` (default `false`).
 - **WHEN** an admin creates or updates a webhook with `allowPrivateTargets: true` via the admin-gated endpoint
 - **THEN** the value MUST persist on the `Webhook` entity and be returned in its serialized form
 
+### Requirement: An object notification MUST link to the object
+
+`AnnotationNotifier` SHALL set the notification link of every object
+notification that carries a register, a schema and an object uuid. The link
+SHALL be the owning app's detail page from the deep link registry when an app
+claimed the schema, else OpenRegister's object view
+(`openregister.dashboard.page` + `#/registers/{registerId}/schemas/{schemaId}/objects/{objectUuid}`).
+The link SHALL be absolute. The implicit View action SHALL use the same link.
+Declared actions keep their own targets; one whose resolved url is a path
+SHALL be made absolute, because Nextcloud refuses a relative action link.
+Actions SHALL be added as parsed actions (`setParsedLabel()` +
+`addParsedAction()`), because Nextcloud's notification API returns parsed
+actions only: an action added with `addAction()` never reached the client.
+
+#### Scenario: a pipelinq client notification links to pipelinq
+
+- **GIVEN** pipelinq registered `/apps/pipelinq/clients/{uuid}` for its client schema
+- **WHEN** the notifier prepares a "Client changed" notification for client `c-1`
+- **THEN** the notification link is the absolute URL of `/apps/pipelinq/clients/c-1`
+- **AND** the View action links there too and is returned by the notifications API
+- @e2e exclude {notifier rendering; covered by tests/Unit/Notification/AnnotationNotifierLinkTest.php}
+
+#### Scenario: an unclaimed schema links to OpenRegister
+
+- **GIVEN** no app registered a deep link for the object's schema
+- **WHEN** the notifier prepares an object notification
+- **THEN** the link is OpenRegister's object view for that register, schema and uuid
+- @e2e exclude {notifier rendering; covered by tests/Unit/Notification/AnnotationNotifierLinkTest.php}
+
 ## Current Implementation Status
 - **Partially implemented -- in-app notifications**: `NotificationService` (`lib/Service/NotificationService.php`) exists and integrates with Nextcloud's `IManager` (INotificationManager). Currently limited to `configuration_update_available` notifications. `Notifier` (`lib/Notification/Notifier.php`) implements `INotifier` for formatting notifications with translations. Registered as a notifier service in `appinfo/info.xml`.
 - **Partially implemented -- webhook notifications**: `WebhookService` (`lib/Service/WebhookService.php`) handles outbound webhook delivery with HMAC signing, event filtering, and payload mapping. `WebhookEventListener` (`lib/Listener/WebhookEventListener.php`) listens for 55+ object/register/schema/configuration lifecycle events and triggers webhooks. Webhook entities stored via `WebhookMapper` with `organisation` field for multi-tenant scoping. Delivery logged in `WebhookLog`/`WebhookLogMapper`.
