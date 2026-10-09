@@ -85,7 +85,7 @@ class DeepLinkRegistryService {
 	 *
 	 * @var boolean
 	 */
-	private static bool $registrationRequested = false;
+	private static bool $appsAsked = false;
 
 	/**
 	 * Container for lazy resolution of mappers (avoids circular DI).
@@ -307,11 +307,11 @@ class DeepLinkRegistryService {
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/deep-link-registry/spec.md#requirement-the-registry-must-fill-itself-in-a-process-that-never-booted-openregister
 	 */
 	public function requestRegistrations(?IEventDispatcher $dispatcher = null): void {
-		if (self::$registrationRequested === true) {
+		if (self::$appsAsked === true) {
 			return;
 		}
 
-		self::$registrationRequested = true;
+		self::$appsAsked = true;
 
 		try {
 			if ($dispatcher === null) {
@@ -410,6 +410,6 @@ class DeepLinkRegistryService {
 		self::$registrations = [];
 		self::$registerIdMap = null;
 		self::$schemaIdMap = null;
-		self::$registrationRequested = false;
+		self::$appsAsked = false;
 	}//end reset()
 }//end class

@@ -199,29 +199,14 @@ class NotificationTemplating {
 	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-a-translatable-value-must-fill-its-placeholder
 	 */
 	public function translatedValue(mixed $value, array $languages): mixed {
-		if (is_array($value) === false || $value === [] || array_is_list($value) === true) {
+		if ($this->isLanguageMap(value: $value) === false) {
 			return $value;
 		}
 
-		foreach ($value as $code => $text) {
-			if (preg_match('/^[a-z]{2,3}([-_][A-Za-z0-9]{2,8})?$/', (string)$code) !== 1
-				|| ($text !== null && is_scalar($text) === false)
-			) {
-				return $value;
-			}
-		}
-
-		foreach ($languages as $language) {
-			if (is_string($language) === false || $language === '') {
-				continue;
-			}
-
-			$base = strtolower(preg_split('/[-_]/', $language)[0]);
-			foreach ([$language, $base] as $candidate) {
-				$text = ($value[$candidate] ?? null);
-				if ($text !== null && (string)$text !== '') {
-					return (string)$text;
-				}
+		foreach ($this->languageCandidates(languages: $languages) as $candidate) {
+			$text = ($value[$candidate] ?? null);
+			if ($text !== null && (string)$text !== '') {
+				return (string)$text;
 			}
 		}
 
@@ -233,6 +218,56 @@ class NotificationTemplating {
 
 		return $value;
 	}//end translatedValue()
+
+	/**
+	 * Whether a value is a language map: language-code keys, scalar values.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return bool True for a non-empty language map.
+	 *
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-a-translatable-value-must-fill-its-placeholder
+	 */
+	private function isLanguageMap(mixed $value): bool {
+		if (is_array($value) === false || $value === [] || array_is_list($value) === true) {
+			return false;
+		}
+
+		foreach ($value as $code => $text) {
+			if (preg_match('/^[a-z]{2,3}([-_][A-Za-z0-9]{2,8})?$/', (string)$code) !== 1) {
+				return false;
+			}
+
+			if ($text !== null && is_scalar($text) === false) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end isLanguageMap()
+
+	/**
+	 * The codes to try, in order: each language, then its base language.
+	 *
+	 * @param array<int, string|null> $languages Language chain, first wins.
+	 *
+	 * @return array<int, string> Codes to look up.
+	 *
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-a-translatable-value-must-fill-its-placeholder
+	 */
+	private function languageCandidates(array $languages): array {
+		$candidates = [];
+		foreach ($languages as $language) {
+			if (is_string($language) === false || $language === '') {
+				continue;
+			}
+
+			$candidates[] = $language;
+			$candidates[] = strtolower(preg_split('/[-_]/', $language)[0]);
+		}
+
+		return array_values(array_unique($candidates));
+	}//end languageCandidates()
 
 	/**
 	 * Resolve a relation-reference UUID to the related object's display name.
