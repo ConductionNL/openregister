@@ -4,10 +4,10 @@ Small PRs, in this order. PR 1 is what dossiq's drain waits on.
 
 ## 1. System access and convergent ensure (PR 1)
 
-- [ ] 1.1 Migration `Version1Date20261010120000`: column `imported` (boolean, not null, default false) on `openregister_case_item_audit`; `CaseItemAudit` gains `imported`; `CaseItemAuditMapper` keeps a supplied `created` for imported rows. Bump `appinfo/info.xml`.
-- [ ] 1.2 `CasePlanService::createPlanAsSystem()` and `getPlanAsSystem()`: app id validated, actor `system:<app>`, no authorization; unit tests for the main path and a refused app id.
-- [ ] 1.3 `CasePlanService::ensureItems()` per design section 3.6, in a new collaborator `CasePlanEnsurer` with its own unit test: missing-only insert, recorded states, lifecycle check of each state, anchor mismatch refused, audit only for created rows, history imported with `imported: true`, no realisation, no cascade, double run idempotent.
-- [ ] 1.4 Structural test: no file under `lib/Controller/` references `AsSystem` or `ensureItems`.
+- [x] 1.1 Migration `Version1Date20261010120000`: column `imported` (boolean, nullable for Oracle, default false) on `openregister_case_item_audit`; `CaseItemAudit` gains `imported`; `CaseItemAuditMapper` already keeps a supplied `created`. Bump `appinfo/info.xml`. (lib/Migration/Version1Date20261010120000.php, tests/Unit/Migration/Version1Date20261010120000Test.php)
+- [x] 1.2 `CasePlanService::createPlanAsSystem()` and `getPlanAsSystem()`: app id validated, actor `system:<app>`, no authorization; unit tests for the main path and a refused app id. (CasePlanServiceTest::testSystemCallersActAsANamedApp)
+- [x] 1.3 `CasePlanService::ensureItems()` per design section 3.6, in a new collaborator `CasePlanEnsurer` with its own unit test: missing-only insert, recorded states, lifecycle check of each state, anchor mismatch refused, audit only for created rows, history imported with `imported: true`, no realisation, no cascade, double run idempotent. (lib/Service/Case/CasePlanEnsurer.php, CasePlanEnsurerTest, CasePlanServiceTest::testEnsureItemsBringsAPlanOverAsTheApp)
+- [x] 1.4 Structural test: no file under `lib/Controller/` references `AsSystem` or `ensureItems`. (CaseSystemVerbsUnroutedTest)
 
 ## 2. One state list and the process task (PR 2)
 

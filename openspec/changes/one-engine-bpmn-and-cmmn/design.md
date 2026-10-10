@@ -118,7 +118,7 @@ for plan items too.
 ```php
 public function createPlanAsSystem(string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, string $app): array;
 public function getPlanAsSystem(string $objectUuid, string $app): array;
-public function ensureItems(string $objectUuid, ?int $registerId, ?int $schemaId, array $items, array $history, string $app): array;
+public function ensureItems(string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, array $history, string $app): array;
 ```
 
 - `$app` must be a non-empty app id (`[a-z0-9_]+`); the audit actor is
@@ -132,8 +132,8 @@ public function ensureItems(string $objectUuid, ?int $registerId, ?int $schemaId
 
 ### 3.6 `ensureItems` (gap 6)
 
-Input: the same nested node shape `createPlan` takes, where a node MAY carry
-`state` (one of the six; default `available`). History entries are
+Input: the same definition `createPlan` takes (`settings` plus nested
+`items`), where a node MAY carry `state` (one of the six; default `available`). History entries are
 `{item, from, to, at, actor?, reason?}` keyed by item key.
 
 Algorithm, in one transaction:
@@ -150,8 +150,8 @@ Algorithm, in one transaction:
    state, and no realisation: an imported active human item gets no new task,
    because the history it came from had none.
 4. For each row inserted in this call: one audit entry (`from: null`,
-   `to: state`, cause `import`, cause ref `ensure:<app>`, actor
-   `system:<app>`), then each history entry for that key as an audit row with
+   `to: state`, cause `import`, cause ref `ensure:system:<app>`,
+   actor `system:<app>`), then each history entry for that key as an audit row with
    `imported: true` and `created` = its `at`. History for a key that already
    existed is skipped, so a re-run appends nothing.
 5. No cascade runs. A drained case resumes evaluation on its next event or
@@ -172,7 +172,7 @@ over runs, plan items and tasks by the shared anchor, not a merged table.
 
 ## 5. Migration
 
-Additive. `Version1Date20261010120000` adds `imported` (boolean, not null,
+Additive. `Version1Date20261010120000` adds `imported` (boolean, nullable because Nextcloud refuses NOT NULL booleans on Oracle,
 default false) to `openregister_case_item_audit`. Existing rows read as not
 imported, which is true. No data is backfilled. Rollback: drop the column;
 nothing else depends on it.
