@@ -94,6 +94,13 @@ class ObjectStateWriteException extends Exception {
 	private ?string $occurredAt = null;
 
 	/**
+	 * Why the object was put into that state, as the marker recorded it.
+	 *
+	 * @var string|null
+	 */
+	private ?string $reason = null;
+
+	/**
 	 * Build the refusal for an archived object.
 	 *
 	 * Built here, from the entity's own accessors, so every guard refuses in
@@ -124,6 +131,7 @@ class ObjectStateWriteException extends Exception {
 		$exception->state = 'archived';
 		$exception->actor = $actor;
 		$exception->occurredAt = $occurredAt;
+		$exception->reason = self::stringOrNull(value: ($marker['reason'] ?? null));
 
 		return $exception;
 	}//end archived()
@@ -161,6 +169,7 @@ class ObjectStateWriteException extends Exception {
 		$exception->state = 'frozen';
 		$exception->actor = $actor;
 		$exception->occurredAt = $occurredAt;
+		$exception->reason = self::stringOrNull(value: ($marker['reason'] ?? null));
 
 		return $exception;
 	}//end frozen()
@@ -197,6 +206,38 @@ class ObjectStateWriteException extends Exception {
 	public function getAt(): ?string {
 		return $this->occurredAt;
 	}//end getAt()
+
+	/**
+	 * Why the object entered the refusing state.
+	 *
+	 * @return string|null The reason from the marker, or null when it recorded none.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-file-writes-honour-the-frozen-and-archived-marker-req-oas-007
+	 */
+	public function getReason(): ?string {
+		return $this->reason;
+	}//end getReason()
+
+	/**
+	 * The 409 body a file write answers with: the sentence and the marker.
+	 *
+	 * One shape for every door (the files API, the batch, a consumer that
+	 * relays it), so a client reads `state`, `by`, `at` and `reason` the same
+	 * way wherever the refusal came from.
+	 *
+	 * @return array{error: string, state: string|null, by: string|null, at: string|null, reason: string|null}
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-file-writes-honour-the-frozen-and-archived-marker-req-oas-007
+	 */
+	public function toResponseBody(): array {
+		return [
+			'error'  => $this->getMessage(),
+			'state'  => $this->state,
+			'by'     => $this->actor,
+			'at'     => $this->occurredAt,
+			'reason' => $this->reason,
+		];
+	}//end toResponseBody()
 
 	/**
 	 * Narrow a marker value to a non-empty string.

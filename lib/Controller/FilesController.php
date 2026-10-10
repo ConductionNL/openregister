@@ -35,12 +35,14 @@ use OCA\OpenRegister\Event\FileUnlockedEvent;
 use OCA\OpenRegister\Event\FileVersionRestoredEvent;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Exception\OfficeOpenRefusedException;
 use OCA\OpenRegister\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Service\File\FileMetadataFormHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCA\OpenRegister\Service\File\AttachNodeHandler;
 use OCA\OpenRegister\Service\Integration\AttachTargetFilter;
 use OCA\OpenRegister\Service\Integration\TalkChatExporter;
@@ -134,6 +136,7 @@ class FilesController extends Controller {
 	 *                                                Null only in legacy fixtures.
 	 * @param OfficeSessionService|null $officeSessionService Opens documents in Nextcloud Office.
 	 * @param AttachNodeHandler|null $attachNodeHandler Copies a Files node into an object through the upload pipeline.
+	 * @param FileWriteGuard|null $fileWriteGuard Refuses a file write on a frozen or archived object. Null only in legacy fixtures.
 	 *
 	 * @return void
 	 *
@@ -154,6 +157,7 @@ class FilesController extends Controller {
 		private readonly ?ObjectFileAccess $objectFileAccess = null,
 		private readonly ?OfficeSessionService $officeSessionService = null,
 		private readonly ?AttachNodeHandler $attachNodeHandler = null,
+		private readonly ?FileWriteGuard $fileWriteGuard = null,
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
@@ -274,6 +278,7 @@ class FilesController extends Controller {
 	 *
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the
 	 *                                                            authenticated caller may not access the object.
+	 * @throws ObjectStateWriteException When $change is true and the object is frozen or archived (REQ-OAS-007).
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
@@ -303,7 +308,11 @@ class FilesController extends Controller {
 		// update (403 for a reader who may not update).
 		if ($this->objectFileAccess !== null) {
 			if ($change === true) {
-				$this->objectFileAccess->changeable(register: $register, schema: $schema, id: $id);
+				$object = $this->objectFileAccess->changeable(register: $register, schema: $schema, id: $id);
+				// REQ-OAS-007: a frozen or archived object's files do not
+				// change either. Asked after the access rule, so a caller
+				// without access still gets 404/403 and learns nothing of the state.
+				$this->fileWriteGuard?->assertWritable(object: $object);
 				return;
 			}
 
@@ -312,7 +321,10 @@ class FilesController extends Controller {
 		}
 
 		// Legacy wiring without the guard: the object read check alone.
-		WriteCause::asLookup(fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true));
+		$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true));
+		if ($change === true && $object instanceof ObjectEntity) {
+			$this->fileWriteGuard?->assertWritable(object: $object);
+		}
 
 	}//end ensureObjectAccess()
 
@@ -368,6 +380,8 @@ class FilesController extends Controller {
 			return $this->accessDenied(e: $e);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
@@ -422,6 +436,8 @@ class FilesController extends Controller {
 			return $this->accessDenied(e: $e);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
@@ -475,6 +491,24 @@ class FilesController extends Controller {
 			statusCode: 403
 		);
 	}//end accessDenied()
+
+	/**
+	 * The 409 a file write on a frozen or archived object answers with.
+	 *
+	 * The body carries the sentence and the marker (`state`, `by`, `at`,
+	 * `reason`), the same shape for every write action, so a client reads one
+	 * refusal whatever it tried. 409 and not 423: 423 is a file LOCK, which an
+	 * unlock lifts; a freeze is lifted only by an authorised unfreeze.
+	 *
+	 * @param ObjectStateWriteException $e The refusal.
+	 *
+	 * @return JSONResponse The 409 response.
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-file-writes-honour-the-frozen-and-archived-marker-req-oas-007
+	 */
+	private function stateRefused(ObjectStateWriteException $e): JSONResponse {
+		return new JSONResponse(data: $e->toResponseBody(), statusCode: ObjectStateWriteException::HTTP_STATUS);
+	}//end stateRefused()
 
 	/**
 	 * Record a download event: bump the OR-side download counter and
@@ -820,6 +854,8 @@ class FilesController extends Controller {
 			return $this->accessDenied(e: $e);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
@@ -933,6 +969,8 @@ class FilesController extends Controller {
 			return $this->accessDenied(e: $e);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
@@ -1047,6 +1085,8 @@ class FilesController extends Controller {
 			return new JSONResponse($formattedFiles['results']);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(['error' => $e->getMessage()], 400);
 		}//end try
@@ -1376,6 +1416,8 @@ class FilesController extends Controller {
 			return $this->accessDenied(e: $e);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
@@ -1429,6 +1471,8 @@ class FilesController extends Controller {
 			return $this->accessDenied(e: $e);
 		} catch (DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(
 				data: ['error' => $e->getMessage()],
@@ -1769,6 +1813,8 @@ class FilesController extends Controller {
 			return new JSONResponse(data: $this->fileService->formatFile($file));
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			$statusCode = match (true) {
 				str_contains($e->getMessage(), 'already exists') => 409,
@@ -1872,6 +1918,8 @@ class FilesController extends Controller {
 			return new JSONResponse(data: $this->fileService->formatFile($newFile), statusCode: 201);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			$statusCode = 400;
 			if (str_contains($e->getMessage(), 'not found') === true) {
@@ -1971,6 +2019,8 @@ class FilesController extends Controller {
 			return new JSONResponse(data: $this->fileService->formatFile($movedFile));
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			$statusCode = match (true) {
 				str_contains($e->getMessage(), 'not found') => 404,
@@ -2092,6 +2142,8 @@ class FilesController extends Controller {
 			return new JSONResponse(data: $this->fileService->formatFile($file));
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			$statusCode = 400;
 			if (str_contains($e->getMessage(), 'not found') === true) {
@@ -2154,6 +2206,8 @@ class FilesController extends Controller {
 			return new JSONResponse(data: $result);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			$statusCode = 400;
 			if (str_contains($e->getMessage(), 'locked') === true) {
@@ -2224,6 +2278,8 @@ class FilesController extends Controller {
 			return new JSONResponse(data: $result);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			$statusCode = match (true) {
 				str_contains($e->getMessage(), 'Only the lock owner') => 403,
@@ -2286,6 +2342,8 @@ class FilesController extends Controller {
 			return new JSONResponse(data: $result, statusCode: $statusCode);
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
@@ -2441,6 +2499,8 @@ class FilesController extends Controller {
 			return new JSONResponse(data: $entity->jsonSerialize());
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
@@ -2506,6 +2566,8 @@ class FilesController extends Controller {
 			return new JSONResponse(data: $handler->save(object: $object, entries: $entries));
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
@@ -2560,6 +2622,8 @@ class FilesController extends Controller {
 			return new JSONResponse(data: $this->fileService->formatFile($result));
 		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
 			return $this->accessDenied(e: $e);
+		} catch (ObjectStateWriteException $e) {
+			return $this->stateRefused(e: $e);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
 		}//end try
