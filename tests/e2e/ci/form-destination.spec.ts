@@ -160,17 +160,14 @@ test.describe('a form submits into its destination object', () => {
 
 		caseFormId = await form({
 			destination: { register: registerId, schema: caseSchemaId },
-<<<<<<< HEAD
-			mapping: { fields: [{ field: 'onderwerp', property: 'title' }, { field: 'bewijs', property: 'bijlage' }, { field: 'datum', property: 'preferredDate' }], fixed: { caseType: 'ct-1' } },
-=======
 			mapping: {
 				fields: [
 					{ field: 'onderwerp', property: 'title' },
 					{ field: 'bewijs', property: 'bijlage' },
+					{ field: 'datum', property: 'preferredDate' },
 				],
 				fixed: { caseType: 'ct-1' },
 			},
->>>>>>> build/d179-form-destination-validator
 		})
 		journeyFormId = await form({
 			writes: [
@@ -351,41 +348,62 @@ test.describe('a form submits into its destination object', () => {
 		expect(Array.isArray((await updated.json()).errors)).toBe(true)
 	})
 	test('a draft without required data is saved as a draft, and only its owner sees it', async () => {
-		const saved = await admin.post(`${API}/forms/${caseFormId}/draft`, { data: { datum: '2026-11-02T10:00:00+01:00' } })
+		const saved = await admin.post(`${API}/forms/${caseFormId}/draft`, {
+			data: { datum: '2026-11-02T10:00:00+01:00' },
+		})
 		expect(saved.status(), await saved.text()).toBe(200)
 		const draft = await saved.json()
 		expect(draft.status).toBe('draft')
 
-		const read = await admin.get(`${API}/objects/${registerId}/${caseSchemaId}/${draft.id}`)
+		const read = await admin.get(
+			`${API}/objects/${registerId}/${caseSchemaId}/${draft.id}`,
+		)
 		expect((await read.json())['@self'].status).toBe('draft')
 
-		const asVisitor = await visitor.get(`${API}/objects/${registerId}/${caseSchemaId}/${draft.id}`)
+		const asVisitor = await visitor.get(
+			`${API}/objects/${registerId}/${caseSchemaId}/${draft.id}`,
+		)
 		expect(asVisitor.status()).toBe(404)
 	})
 
 	test('a type-invalid draft is refused and nothing is stored', async () => {
-		const res = await admin.post(`${API}/forms/${caseFormId}/draft`, { data: { datum: '06-12345678' } })
+		const res = await admin.post(`${API}/forms/${caseFormId}/draft`, {
+			data: { datum: '06-12345678' },
+		})
 		expect(res.status()).toBe(422)
 		expect((await res.json()).findings[0].property).toBe('preferredDate')
 	})
 
 	test('leaving draft runs full validation and stamps receipt', async () => {
-		const draft = await (await admin.post(`${API}/forms/${caseFormId}/draft`, { data: { datum: '2026-11-02T10:00:00+01:00' } })).json()
+		const draft = await (
+			await admin.post(`${API}/forms/${caseFormId}/draft`, {
+				data: { datum: '2026-11-02T10:00:00+01:00' },
+			})
+		).json()
 
-		const incomplete = await admin.post(`${API}/forms/${caseFormId}/submit`, { data: { _draft: draft.id } })
+		const incomplete = await admin.post(`${API}/forms/${caseFormId}/submit`, {
+			data: { _draft: draft.id },
+		})
 		expect(incomplete.status()).toBe(422)
 
-		const done = await admin.post(`${API}/forms/${caseFormId}/submit`, { data: { _draft: draft.id, onderwerp: 'Kapvergunning' } })
+		const done = await admin.post(`${API}/forms/${caseFormId}/submit`, {
+			data: { _draft: draft.id, onderwerp: 'Kapvergunning' },
+		})
 		expect(done.status(), await done.text()).toBe(201)
 		const answer = await done.json()
 		expect(answer.id).toBe(draft.id)
 		expect(answer.receivedAt).toBeTruthy()
-		const read = await admin.get(`${API}/objects/${registerId}/${caseSchemaId}/${draft.id}`)
+		const read = await admin.get(
+			`${API}/objects/${registerId}/${caseSchemaId}/${draft.id}`,
+		)
 		expect((await read.json())['@self'].status).toBe('active')
 	})
 
 	test('an object without the field reads as before', async () => {
-		const plain = await admin.post(`${API}/objects/${registerId}/${caseSchemaId}`, { data: { title: 'plain', caseType: 'ct-1' } })
+		const plain = await admin.post(
+			`${API}/objects/${registerId}/${caseSchemaId}`,
+			{ data: { title: 'plain', caseType: 'ct-1' } },
+		)
 		expect(plain.ok()).toBeTruthy()
 		expect((await plain.json())['@self'].status ?? null).toBeNull()
 	})
