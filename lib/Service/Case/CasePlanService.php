@@ -81,6 +81,8 @@ class CasePlanService {
 	 * @param CasePlanDefinition $definitions Validates and compiles definitions.
 	 * @param IDBConnection $db Holds the creation transactions.
 	 * @param LoggerInterface $logger Failure reporting.
+	 * @param CasePlanEnsurer|null $ensurer Convergent bring-over; built from the
+	 *                                      same collaborators when not injected.
 	 */
 	public function __construct(
 		private readonly CaseItemMapper $items,
@@ -94,6 +96,7 @@ class CasePlanService {
 		private readonly CasePlanDefinition $definitions,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
+		private ?CasePlanEnsurer $ensurer = null,
 	) {
 
 	}//end __construct()
@@ -112,18 +115,7 @@ class CasePlanService {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
 	 */
 	public function getPlan(string $objectUuid, ?string $uid): array {
-		$rows = $this->visibleRows(objectUuid: $objectUuid, uid: $uid);
-		$ids = [];
-		foreach ($rows as $row) {
-			$ids[] = (int)$row->getId();
-		}
-
-		return [
-			'objectUuid' => $objectUuid,
-			'settings' => (new CasePlanTree(items: $rows))->settings(),
-			'items' => array_map(static fn (CaseItem $row): array => $row->jsonSerialize(), $rows),
-			'audit' => array_map(static fn (CaseItemAudit $entry): array => $entry->jsonSerialize(), $this->audits->findForItems(caseItemIds: $ids)),
-		];
+		return $this->planOf(objectUuid: $objectUuid, rows: $this->visibleRows(objectUuid: $objectUuid, uid: $uid));
 	}//end getPlan()
 
 	/**
@@ -161,30 +153,113 @@ class CasePlanService {
 		$normalised = $this->definitions->validate(definition: $definition);
 		$this->authorization->assertMayAdminister(verb: 'create-plan', settings: $normalised['settings'], uid: $uid);
 
-		if ($this->items->findByObject(objectUuid: $objectUuid) !== []) {
-			throw new CaseValidationException(message: sprintf('Object %s already has a case plan; delete it before creating another.', $objectUuid));
-		}
-
-		$this->transactional(
-			mutation: function () use ($normalised, $objectUuid, $registerId, $schemaId, $uid, $flowUuid, $flowVersion): void {
-				$this->insertNodes(
-					nodes: $normalised['items'],
-					objectUuid: $objectUuid,
-					registerId: $registerId,
-					schemaId: $schemaId,
-					parentId: null,
-					settings: $normalised['settings'],
-					actor: $uid,
-					flowUuid: $flowUuid,
-					flowVersion: $flowVersion
-				);
-			}
+		$this->insertPlan(
+			objectUuid: $objectUuid,
+			registerId: $registerId,
+			schemaId: $schemaId,
+			normalised: $normalised,
+			actor: $uid,
+			provenance: ['flowUuid' => $flowUuid, 'flowVersion' => $flowVersion]
 		);
-
-		$this->cascade->evaluate(objectUuid: $objectUuid, actor: $uid);
 
 		return $this->getPlan(objectUuid: $objectUuid, uid: $uid);
 	}//end createPlan()
+
+	/**
+	 * Create a plan as an app's own in-process code, without a user session
+	 * (a listener, a command, a repair step). Same validation and the same
+	 * evaluation as {@see createPlan()}; no authorization, because only PHP
+	 * running inside the server reaches it, and it can already write every
+	 * row. The audit names `system:<app>`. Never routed.
+	 *
+	 * @param string $objectUuid The anchoring object.
+	 * @param int|null $registerId Its register.
+	 * @param int|null $schemaId Its schema.
+	 * @param array<string, mixed> $definition The definition (`settings`, `items`).
+	 * @param string $app The acting app id.
+	 *
+	 * @return array<string, mixed> The plan as {@see getPlan()} returns it.
+	 *
+	 * @throws CaseValidationException When the app id or the definition is refused, or a plan exists.
+	 *
+	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 */
+	public function createPlanAsSystem(string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, string $app): array {
+		$actor = $this->systemActor(app: $app);
+		$this->insertPlan(
+			objectUuid: $objectUuid,
+			registerId: $registerId,
+			schemaId: $schemaId,
+			normalised: $this->definitions->validate(definition: $definition),
+			actor: $actor,
+			provenance: ['flowUuid' => null, 'flowVersion' => null]
+		);
+
+		return $this->getPlanAsSystem(objectUuid: $objectUuid, app: $app);
+	}//end createPlanAsSystem()
+
+	/**
+	 * Read a plan as an app's own in-process code: no visibility check.
+	 * Never routed.
+	 *
+	 * @param string $objectUuid The anchoring object.
+	 * @param string $app The acting app id.
+	 *
+	 * @return array<string, mixed> objectUuid, items, audit, settings.
+	 *
+	 * @throws CaseValidationException When the app id is refused.
+	 * @throws DoesNotExistException When the object has no plan.
+	 *
+	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 */
+	public function getPlanAsSystem(string $objectUuid, string $app): array {
+		$this->systemActor(app: $app);
+		$rows = $this->items->findByObject(objectUuid: $objectUuid);
+		if ($rows === []) {
+			throw new DoesNotExistException(sprintf('Object %s has no case plan.', $objectUuid));
+		}
+
+		return $this->planOf(objectUuid: $objectUuid, rows: $rows);
+	}//end getPlanAsSystem()
+
+	/**
+	 * Bring plan items over from another engine, convergently, as an app's
+	 * own in-process code: see {@see CasePlanEnsurer}. Never routed.
+	 *
+	 * @param string $objectUuid The anchoring object.
+	 * @param int|null $registerId Its register.
+	 * @param int|null $schemaId Its schema.
+	 * @param array<string, mixed> $definition `settings` + nested `items`, a node MAY carry `state`.
+	 * @param array<int, mixed> $history Entries `{item, from?, to, at, actor?, reason?}`.
+	 * @param string $app The acting app id.
+	 *
+	 * @return array{created: array<int, string>, existing: array<int, string>, items: array<int, array<string, mixed>>}
+	 *
+	 * @throws CaseValidationException On the first refused value, before anything is written.
+	 *
+	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 */
+	public function ensureItems(string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, array $history, string $app): array {
+		$actor = $this->systemActor(app: $app);
+		if ($this->ensurer === null) {
+			$this->ensurer = new CasePlanEnsurer(
+				items: $this->items,
+				audits: $this->audits,
+				definitions: $this->definitions,
+				transitions: new CasePlanTransitions(),
+				db: $this->db
+			);
+		}
+
+		return $this->ensurer->ensure(
+			objectUuid: $objectUuid,
+			registerId: $registerId,
+			schemaId: $schemaId,
+			definition: $definition,
+			history: $history,
+			actor: $actor
+		);
+	}//end ensureItems()
 
 	/**
 	 * A user-driven transition of one item (terminate a stage, reach a
@@ -557,6 +632,92 @@ class CasePlanService {
 
 		return $this->sentries->entrySentry(item: $item, tree: $tree, object: $object) !== null;
 	}//end isEnableable()
+
+	/**
+	 * The read shape of a plan: settings, rows and their audit.
+	 *
+	 * @param string $objectUuid The object.
+	 * @param array<int, CaseItem> $rows Its rows.
+	 *
+	 * @return array<string, mixed> objectUuid, settings, items, audit.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-the-case-is-the-openregister-object
+	 */
+	private function planOf(string $objectUuid, array $rows): array {
+		$ids = [];
+		foreach ($rows as $row) {
+			$ids[] = (int)$row->getId();
+		}
+
+		return [
+			'objectUuid' => $objectUuid,
+			'settings' => (new CasePlanTree(items: $rows))->settings(),
+			'items' => array_map(static fn (CaseItem $row): array => $row->jsonSerialize(), $rows),
+			'audit' => array_map(static fn (CaseItemAudit $entry): array => $entry->jsonSerialize(), $this->audits->findForItems(caseItemIds: $ids)),
+		];
+	}//end planOf()
+
+	/**
+	 * Insert a validated plan in one transaction, then evaluate it.
+	 *
+	 * @param string $objectUuid The anchoring object.
+	 * @param int|null $registerId Its register.
+	 * @param int|null $schemaId Its schema.
+	 * @param array<string, mixed> $normalised The validated definition.
+	 * @param string|null $actor The creating identity.
+	 * @param array{flowUuid: string|null, flowVersion: int|null} $provenance Definition provenance.
+	 *
+	 * @return void
+	 *
+	 * @throws CaseValidationException When the object already has a plan.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
+	 */
+	private function insertPlan(string $objectUuid, ?int $registerId, ?int $schemaId, array $normalised, ?string $actor, array $provenance): void {
+		if ($this->items->findByObject(objectUuid: $objectUuid) !== []) {
+			throw new CaseValidationException(message: sprintf('Object %s already has a case plan; delete it before creating another.', $objectUuid));
+		}
+
+		$this->transactional(
+			mutation: function () use ($normalised, $objectUuid, $registerId, $schemaId, $actor, $provenance): void {
+				$this->insertNodes(
+					nodes: $normalised['items'],
+					objectUuid: $objectUuid,
+					registerId: $registerId,
+					schemaId: $schemaId,
+					parentId: null,
+					settings: $normalised['settings'],
+					actor: $actor,
+					flowUuid: $provenance['flowUuid'],
+					flowVersion: $provenance['flowVersion']
+				);
+			}
+		);
+
+		$this->cascade->evaluate(objectUuid: $objectUuid, actor: $actor);
+	}//end insertPlan()
+
+	/**
+	 * The audit identity of an app's in-process code. A Nextcloud uid cannot
+	 * contain `:`, so it never collides with a user.
+	 *
+	 * @param string $app The app id.
+	 *
+	 * @return string `system:<app>`.
+	 *
+	 * @throws CaseValidationException When the app id is not one.
+	 *
+	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 */
+	private function systemActor(string $app): string {
+		if (preg_match('/^[a-z][a-z0-9_]{0,63}$/', $app) !== 1) {
+			throw new CaseValidationException(
+				message: sprintf("'%s' is not an app id; a system caller names its app in lower case letters, digits and `_`.", $app)
+			);
+		}
+
+		return 'system:' . $app;
+	}//end systemActor()
 
 	/**
 	 * The plan's rows, only if the caller may read the anchoring object.

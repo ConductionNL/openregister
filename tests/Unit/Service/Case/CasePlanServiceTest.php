@@ -544,4 +544,71 @@ class CasePlanServiceTest extends TestCase {
 		$completions = array_filter($this->audits->findForItem(2), static fn (CaseItemAudit $entry): bool => $entry->getToState() === CaseItem::STATE_COMPLETED);
 		$this->assertSame([], $completions);
 	}//end testEventDrivenEvaluationFailuresAreSwallowed()
+	/**
+	 * An app's own code acts without a session as `system:<app>`: it creates
+	 * and reads a plan nobody could see by visibility, the audit names the
+	 * app, and a malformed app id is refused. The user verbs keep refusing a
+	 * missing identity.
+	 *
+	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 *
+	 * @return void
+	 */
+	public function testSystemCallersActAsANamedApp(): void {
+		$this->anchor = $this->createMock(CaseAnchorReader::class);
+		$this->anchor->method('read')->willReturn(['status' => 'open']);
+		$this->anchor->method('mayRead')->willReturn(false);
+
+		$plan = $this->service()->createPlanAsSystem(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), app: 'dossiq');
+		$this->assertCount(7, $plan['items']);
+		$this->assertSame('system:dossiq', $this->audits->findForItem(1)[0]->getActor());
+		$this->assertCount(7, $this->service()->getPlanAsSystem(objectUuid: CaseFixtures::OBJECT, app: 'dossiq')['items']);
+
+		foreach (['', 'Dossiq', 'dos:siq', 'dos siq'] as $bad) {
+			try {
+				$this->service()->getPlanAsSystem(objectUuid: CaseFixtures::OBJECT, app: $bad);
+				$this->fail('app id refused: ' . $bad);
+			} catch (CaseValidationException $refusal) {
+				$this->assertStringContainsString('app id', $refusal->getMessage());
+			}
+		}
+
+		try {
+			$this->service()->createPlan(objectUuid: 'other-object', registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: null);
+			$this->fail('a null identity stays refused on the user verb');
+		} catch (CaseAccessDeniedException $denied) {
+			$this->assertStringContainsString('no acting identity', $denied->getMessage());
+		}
+
+		$this->expectException(DoesNotExistException::class);
+		$this->service()->getPlanAsSystem(objectUuid: 'no-plan', app: 'dossiq');
+	}//end testSystemCallersActAsANamedApp()
+
+	/**
+	 * ensureItems brings a plan over with its recorded states as the named
+	 * app and runs no cascade: an imported active stage does not enter its
+	 * children.
+	 *
+	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 *
+	 * @return void
+	 */
+	public function testEnsureItemsBringsAPlanOverAsTheApp(): void {
+		$result = $this->service()->ensureItems(
+			objectUuid: CaseFixtures::OBJECT,
+			registerId: 1,
+			schemaId: 1,
+			definition: CasePlanEnsurerTest::migrated(),
+			history: [],
+			app: 'dossiq'
+		);
+
+		$this->assertSame(['intake', 'check', 'beoordeling', 'volledig', 'besluit'], $result['created']);
+		$states = array_column($result['items'], 'state', 'key');
+		$this->assertSame('available', $states['besluit'], 'No cascade: nothing entered besluit.');
+		$this->assertSame('system:dossiq', $this->audits->findForItem(1)[0]->getActor());
+
+		$this->expectException(CaseValidationException::class);
+		$this->service()->ensureItems(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanEnsurerTest::migrated(), history: [], app: 'Not An App');
+	}//end testEnsureItemsBringsAPlanOverAsTheApp()
 }//end class

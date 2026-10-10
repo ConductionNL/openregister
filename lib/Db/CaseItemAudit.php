@@ -50,6 +50,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setReason(?string $reason)
  * @method bool|null getAuthorized()
  * @method void setAuthorized(?bool $authorized)
+ * @method bool|null getImported()
+ * @method void setImported(?bool $imported)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  *
@@ -129,6 +131,15 @@ class CaseItemAudit extends Entity implements JsonSerializable {
 	protected ?bool $authorized = true;
 
 	/**
+	 * True on history brought over from another engine
+	 * (`CasePlanEnsurer`); its `created` is the moment it originally
+	 * happened, not the moment it was imported.
+	 *
+	 * @var boolean|null
+	 */
+	protected ?bool $imported = false;
+
+	/**
 	 * When it happened.
 	 *
 	 * @var DateTime|null
@@ -147,6 +158,7 @@ class CaseItemAudit extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'actor', type: 'string');
 		$this->addType(fieldName: 'reason', type: 'string');
 		$this->addType(fieldName: 'authorized', type: 'boolean');
+		$this->addType(fieldName: 'imported', type: 'boolean');
 		$this->addType(fieldName: 'created', type: 'datetime');
 
 	}//end __construct()
@@ -169,6 +181,7 @@ class CaseItemAudit extends Entity implements JsonSerializable {
 			'actor' => $this->actor,
 			'reason' => $this->reason,
 			'authorized' => $this->authorized,
+			'imported' => ($this->imported === true),
 			'created' => $this->created?->format('c'),
 		];
 	}//end jsonSerialize()
