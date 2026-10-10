@@ -161,7 +161,13 @@ class CasePlanEnsurer {
 			$state = (string)($node['state'] ?? CaseItem::STATE_AVAILABLE);
 			if (in_array($state, $this->reachable(type: $type), true) === false) {
 				throw new CaseValidationException(
-					message: sprintf("'%s' (%s) cannot carry state '%s'; its lifecycle reaches %s.", $key, $type, $state, implode(', ', $this->reachable(type: $type)))
+					message: sprintf(
+						"'%s' (%s) cannot carry state '%s'; its lifecycle reaches %s.",
+						$key,
+						$type,
+						$state,
+						implode(', ', $this->reachable(type: $type))
+					)
 				);
 			}
 
@@ -224,7 +230,9 @@ class CasePlanEnsurer {
 			$from = trim((string)($entry['from'] ?? ''));
 			$to = trim((string)($entry['to'] ?? ''));
 			if (in_array($to, CaseItem::STATES, true) === false || ($from !== '' && in_array($from, CaseItem::STATES, true) === false)) {
-				throw new CaseValidationException(message: sprintf("%s has from-state '%s' and to-state '%s'; both must be plan-item states.", $label, $from, $to));
+				throw new CaseValidationException(
+					message: sprintf("%s has from-state '%s' and to-state '%s'; both must be plan-item states.", $label, $from, $to)
+				);
 			}
 
 			$moment = $this->moment(value: ($entry['at'] ?? null));

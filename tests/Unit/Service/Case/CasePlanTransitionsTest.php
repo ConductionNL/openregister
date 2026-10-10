@@ -175,7 +175,7 @@ class CasePlanTransitionsTest extends TestCase {
 			$this->assertFalse($table->isLegal(type: CaseItem::TYPE_STAGE, from: $state, to: $state));
 		}
 
-		$this->assertSame([], $table->targetsFor(type: 'processTask', from: CaseItem::STATE_AVAILABLE));
+		$this->assertSame([], $table->targetsFor(type: 'eventListener', from: CaseItem::STATE_AVAILABLE));
 	}//end testSelfLoopsAndUnknownTypesHaveNoEdges()
 
 	/**
