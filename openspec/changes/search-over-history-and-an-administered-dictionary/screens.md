@@ -1,3 +1,3 @@
 # Screens
 
-- No board found yet (decision 150)
+- Design backlog: OrZoekwoordenboek (decision 157)

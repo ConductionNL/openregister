@@ -1,3 +1,3 @@
 # Screens
 
-- No board found yet (decision 150)
+- OrPrullenbak https://identity.conduction.nl/screens/board?id=openregister/OrPrullenbak

@@ -1,3 +1,3 @@
 # Screens
 
-- No board found yet (decision 150)
+- OrBeheerinstellingen https://identity.conduction.nl/screens/board?id=openregister/OrBeheerinstellingen
