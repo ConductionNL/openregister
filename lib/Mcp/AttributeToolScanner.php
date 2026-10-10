@@ -45,6 +45,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp;
 
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
+use OCA\OpenRegister\Service\Capability\ToolReachResolver;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
@@ -163,15 +164,16 @@ final class AttributeToolScanner {
 				continue;
 			}
 
-			if ($this->hasUnknownScope(attribute: $attributeInstance) === true) {
+			$invalid = $this->unrecognisedDeclaration(attribute: $attributeInstance);
+			if ($invalid !== null) {
 				$logger->warning(
-					'[AttributeToolScanner] #[McpTool] declares an unrecognised `scope`; tool skipped',
+					sprintf('[AttributeToolScanner] #[McpTool] declares an unrecognised `%s`; tool skipped', $invalid['key']),
 					[
 						'appId' => $appId,
 						'class' => $className,
 						'method' => $method->getName(),
-						'scope' => $attributeInstance->scope,
-						'allowedScopes' => McpAnnotationValidator::SCOPES,
+						$invalid['key'] => $invalid['value'],
+						'allowed' => $invalid['allowed'],
 					]
 				);
 				continue;
@@ -256,7 +258,7 @@ final class AttributeToolScanner {
 	}//end buildDescriptor()
 
 	/**
-	 * The grant-matrix taxonomy an attribute declared, or an empty array.
+	 * The grant-matrix taxonomy (subject, action) and the declared reach, or an empty array.
 	 *
 	 * Forwarded on the same additive terms as the annotation hints: a key is
 	 * present ONLY when the author declared it, never inferred from the method
@@ -276,7 +278,7 @@ final class AttributeToolScanner {
 	 *
 	 * @param McpTool $attribute The resolved attribute instance.
 	 *
-	 * @return array<string, string> The declared taxonomy keys only.
+	 * @return array<string, mixed> The declared taxonomy keys only.
 	 */
 	private function taxonomyOf(McpTool $attribute): array {
 		$taxonomy = [];
@@ -285,8 +287,20 @@ final class AttributeToolScanner {
 			$taxonomy['subject'] = $attribute->subject;
 		}
 
+		// Already validated against ToolReachResolver::ORDER at scan time
+		// (REQ-ATTR-006); forwarded only when declared, never inferred.
+		if ($attribute->reach !== null) {
+			$taxonomy[ToolReachResolver::REACH_KEY] = $attribute->reach;
+		}
+
 		if ($attribute->action !== null && trim($attribute->action) !== '') {
 			$taxonomy['action'] = $attribute->action;
+		}
+
+		// Free-form marks a consuming app reads (REQ-ATTR-007), validated at
+		// scan time; an empty map is no declaration and is not forwarded.
+		if ($attribute->annotations !== []) {
+			$taxonomy['annotations'] = $attribute->annotations;
 		}
 
 		return $taxonomy;
@@ -328,6 +342,67 @@ final class AttributeToolScanner {
 
 		return in_array($attribute->scope, McpAnnotationValidator::SCOPES, true) === false;
 	}//end hasUnknownScope()
+
+	/**
+	 * The first closed-vocabulary declaration on the attribute that holds a
+	 * value outside its vocabulary, or null when every declared one is valid.
+	 *
+	 * `scope` is checked against {@see McpAnnotationValidator::SCOPES}
+	 * (REQ-ATTR-005) and `reach` against {@see ToolReachResolver::ORDER}
+	 * (REQ-ATTR-006), and every `annotations` entry must be a string key
+	 * holding a scalar (REQ-ATTR-007). A misspelt reach would otherwise resolve to `external`
+	 * in silence: safe, but the author would never learn why the tool keeps
+	 * asking for a grant, so the scanner refuses it loudly instead.
+	 *
+	 * @param McpTool $attribute The resolved attribute instance.
+	 *
+	 * @return array{key: string, value: string, allowed: list<string>}|null The offending declaration.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-ATTR-006 — A curated attribute tool declares its reach)
+	 */
+	private function unrecognisedDeclaration(McpTool $attribute): ?array {
+		if ($this->hasUnknownScope(attribute: $attribute) === true) {
+			return ['key' => 'scope', 'value' => (string) $attribute->scope, 'allowed' => McpAnnotationValidator::SCOPES];
+		}
+
+		if ($attribute->reach !== null && in_array($attribute->reach, ToolReachResolver::ORDER, true) === false) {
+			return ['key' => 'reach', 'value' => $attribute->reach, 'allowed' => ToolReachResolver::ORDER];
+		}
+
+		$badAnnotation = $this->malformedAnnotation(annotations: $attribute->annotations);
+		if ($badAnnotation !== null) {
+			return ['key' => 'annotations', 'value' => $badAnnotation, 'allowed' => ['non-empty string key => scalar value']];
+		}
+
+		return null;
+	}//end unrecognisedDeclaration()
+
+	/**
+	 * The first entry of a declared annotations map that is not a non-empty
+	 * string key holding a scalar, or null when the whole map is well formed.
+	 *
+	 * The map is free-form on purpose (OpenRegister reads none of it), but
+	 * not shapeless: a nested array or an integer key would reach a consumer
+	 * as something it cannot compare against a mark, and the tool would
+	 * silently never qualify. Refusing it at scan time names the mistake.
+	 *
+	 * @param array<mixed> $annotations The declared map.
+	 *
+	 * @return string|null The offending key, or null.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-ATTR-007 — A curated attribute tool forwards free-form annotations)
+	 */
+	private function malformedAnnotation(array $annotations): ?string {
+		foreach ($annotations as $key => $value) {
+			if (is_string($key) === false || trim($key) === '' || is_scalar($value) === false) {
+				return (string) $key;
+			}
+		}
+
+		return null;
+	}//end malformedAnnotation()
 
 	/**
 	 * Infer the `inputSchema` from the method's parameter type hints and
