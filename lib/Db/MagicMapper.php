@@ -2822,6 +2822,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 *     _deleted: array{name: '_deleted', type: 'json', nullable: true},
 	 *     _archived: array{name: '_archived', type: 'json', nullable: true},
 	 *     _frozen: array{name: '_frozen', type: 'json', nullable: true},
+	 *     _status: array{name: '_status', type: 'string', length: 16, nullable: true, index: true},
 	 *     _geo: array{name: '_geo', type: 'json', nullable: true},
 	 *     _retention: array{name: '_retention', type: 'json', nullable: true},
 	 *     _groups: array{name: '_groups', type: 'json', nullable: true}}
@@ -3017,6 +3018,18 @@ class MagicMapper extends AbstractObjectMapper {
 				'name' => self::METADATA_PREFIX . 'frozen',
 				'type' => 'json',
 				'nullable' => true,
+			],
+			// The explicit lifecycle status (decision 180): `draft`, `active`, or
+			// NULL for every object written before it existed, whose status is
+			// deduced from its dates as before. A column, not a JSON member,
+			// because the list query hides other people's drafts in SQL. Added
+			// to existing tables by addMissingColumns(), like `_frozen`.
+			self::METADATA_PREFIX . 'status' => [
+				'name' => self::METADATA_PREFIX . 'status',
+				'type' => 'string',
+				'length' => 16,
+				'nullable' => true,
+				'index' => true,
 			],
 			self::METADATA_PREFIX . 'geo' => [
 				'name' => self::METADATA_PREFIX . 'geo',
@@ -4259,6 +4272,9 @@ class MagicMapper extends AbstractObjectMapper {
 			// write that could ever clear it.
 			'archived',
 			'frozen',
+			// Carried forward like `frozen`: setSelfMetadata() lets a client
+			// set `draft` on create only, and only the submit leaves it.
+			'status',
 			'geo',
 			'retention',
 			'groups',

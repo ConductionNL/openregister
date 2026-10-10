@@ -172,12 +172,18 @@ class FormsController extends Controller {
 				$key = null;
 			}
 
+			$draftId = trim((string)$this->request->getParam('_draft', ''));
+			if ($draftId === '') {
+				$draftId = null;
+			}
+
 			$answer = $this->submitter->submitAll(
 				$form['writes'],
 				$this->payload(),
 				$subject,
 				$key,
-				$formId
+				$formId,
+				$draftId
 			);
 		} catch (FormSubmitRefusedException $refused) {
 			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
@@ -185,6 +191,56 @@ class FormsController extends Controller {
 
 		return new JSONResponse(data: $answer, statusCode: 201);
 	}//end submit()
+
+	/**
+	 * Save the signed-in subject's draft of this form: the destination object in status `draft`.
+	 *
+	 * Decision 180. Body: the answers so far, and `_draft` to update an
+	 * existing draft. A draft may miss required answers and is never
+	 * type-invalid. It leaves draft through submit with the same `_draft`.
+	 *
+	 * @param string $formId The form object's uuid.
+	 *
+	 * @return JSONResponse 200 `{ id, status }`; 401, 404, 422 or 503 with `{ message, findings }`.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	#[UserRateLimit(limit: 120, period: 60)]
+	public function draft(string $formId): JSONResponse {
+		try {
+			$form = $this->resolveForm(formId: $formId);
+			if (count($form['writes']) !== 1) {
+				$message = $this->l10n->t('A draft is one object; a form that writes several cannot be saved as a draft.');
+				throw new FormSubmitRefusedException(message: $message, status: 422);
+			}
+
+			$draftId = trim((string)$this->request->getParam('_draft', ''));
+			if ($draftId === '') {
+				$draftId = null;
+			}
+
+			$write = $form['writes'][0];
+			$mapping = null;
+			if (is_array($write['mapping'] ?? null) === true) {
+				$mapping = $write['mapping'];
+			}
+
+			$draft = $this->submitter->saveDraft(
+				['register' => ($write['register'] ?? null), 'schema' => ($write['schema'] ?? null)],
+				$mapping,
+				$this->payload(),
+				$this->userSession->getUser(),
+				$draftId,
+				$formId
+			);
+		} catch (FormSubmitRefusedException $refused) {
+			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
+		}
+
+		return new JSONResponse(data: $draft);
+	}//end draft()
 
 	/**
 	 * Hold one file for a later submit of this form, checked against the property's file rules.

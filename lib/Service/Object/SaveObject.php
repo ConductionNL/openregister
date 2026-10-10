@@ -4575,6 +4575,11 @@ class SaveObject {
 		// endpoint that does change an owner. See refuseOwnerClaim().
 		$this->refuseOwnerClaim(objectEntity: $objectEntity, selfData: $selfData);
 
+		// Decision 180: `@self.status`. A client may create an object as a
+		// draft and keep it one; it may not turn a saved object into a draft,
+		// and only the form submit (after full validation) may leave draft.
+		$objectEntity->setStatus((new DraftStatusPolicy())->resolveStatus(entity: $objectEntity, selfData: $selfData));
+
 		// SECURITY (wave-11 SB1 / wave-12 Fix 3): organisation must only be accepted from
 		// @self when the caller is an admin or has verified membership in that organisation.
 		// Blindly applying a client-supplied organisation UUID allows any authenticated

@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Event\ObjectActivatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -32,6 +33,8 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryAppData;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\EventDispatcher\Event;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
 use OCP\ITempManager;
 use OCP\IUser;
@@ -104,6 +107,13 @@ class FormSubmitServiceTest extends TestCase {
 	 */
 	private array $temporary = [];
 
+	/**
+	 * Events the service dispatched.
+	 *
+	 * @var array<int, Event>
+	 */
+	private array $dispatched = [];
+
 	protected function setUp(): void {
 		$this->schemaBySlug = [
 			'case' => $this->schema(
@@ -168,6 +178,13 @@ class FormSubmitServiceTest extends TestCase {
 
 		$time = $this->createMock(ITimeFactory::class);
 		$time->method('getTime')->willReturn(1_760_000_000);
+		$time->method('getDateTime')->willReturnCallback(static fn (): DateTime => new DateTime('2026-10-12T09:15:00+02:00'));
+		$events = $this->createMock(IEventDispatcher::class);
+		$events->method('dispatchTyped')->willReturnCallback(
+			function (Event $event): void {
+				$this->dispatched[] = $event;
+			}
+		);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnCallback(
 			static fn (string $text, array $parameters = []): string => $parameters === [] ? $text : vsprintf($text, $parameters)
@@ -194,7 +211,9 @@ class FormSubmitServiceTest extends TestCase {
 			keys: new FormIdempotencyStore(appData: $appData, time: $time),
 			uploads: $this->uploads,
 			l10n: $l10n,
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(LoggerInterface::class),
+			events: $events,
+			time: $time
 		);
 	}//end setUp()
 
@@ -278,12 +297,26 @@ class FormSubmitServiceTest extends TestCase {
 		bool $_unowned = false,
 	): ObjectEntity {
 		$this->assertInstanceOf(Schema::class, $schema);
-		$this->saves[] = ['object' => $object, 'schema' => $schema->getSlug(), 'rbac' => $_rbac, 'user' => $currentUser, 'unowned' => $_unowned, 'files' => $uploadedFiles];
+		$this->saves[] = ['object' => $object, 'schema' => $schema->getSlug(), 'rbac' => $_rbac, 'user' => $currentUser, 'unowned' => $_unowned, 'files' => $uploadedFiles, 'uuid' => $uuid];
 		if (isset($this->refuseSave[$schema->getSlug()]) === true) {
 			throw $this->refuseSave[$schema->getSlug()];
 		}
 
 		$data = (array)$object;
+		$status = ($data['@self']['status'] ?? null);
+		unset($data['@self']);
+		if ($status === 'draft') {
+			// The fake listener stamps receipt fields only on a received object.
+			$entity = new ObjectEntity();
+			$entity->setUuid($uuid ?? ('uuid-draft-' . count($this->saves)));
+			$entity->setObject($data);
+			$entity->setStatus('draft');
+			$entity->setCreated(new DateTime('2026-10-10T14:03:11+02:00'));
+			$this->stored[$entity->getUuid()] = $entity;
+
+			return $entity;
+		}
+
 		if ($schema->getSlug() === 'case') {
 			// The fake ObjectCreatingEvent listener.
 			$data['identifier'] = '2026-0412';
@@ -292,8 +325,9 @@ class FormSubmitServiceTest extends TestCase {
 		}
 
 		$entity = new ObjectEntity();
-		$entity->setUuid('uuid-' . $schema->getSlug() . '-' . count($this->saves));
+		$entity->setUuid($uuid ?? ('uuid-' . $schema->getSlug() . '-' . count($this->saves)));
 		$entity->setObject($data);
+		$entity->setStatus($status);
 		$entity->setCreated(new DateTime('2026-10-10T14:03:11+02:00'));
 		$this->stored[$entity->getUuid()] = $entity;
 
@@ -552,4 +586,103 @@ class FormSubmitServiceTest extends TestCase {
 			],
 		];
 	}//end organisationThenContact()
+	/**
+	 * Spec scenario: a draft without required data is saved, in status draft, with no receipt.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	public function testADraftWithoutRequiredDataIsSaved(): void {
+		$user = $this->createMock(IUser::class);
+		$draft = $this->service->saveDraft(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'Half af'], subject: $user);
+
+		$this->assertSame('draft', $draft['status']);
+		$this->assertSame('draft', $this->saves[0]['object']['@self']['status']);
+		$this->assertTrue($this->stored[$draft['id']]->isDraft());
+		$this->assertArrayNotHasKey('termStartsAt', $this->stored[$draft['id']]->getObject());
+		$this->assertSame([], $this->dispatched);
+	}//end testADraftWithoutRequiredDataIsSaved()
+
+	/**
+	 * Spec scenario: a type-invalid draft is refused and nothing is stored.
+	 */
+	public function testATypeInvalidDraftIsRefused(): void {
+		try {
+			$this->service->saveDraft(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => ['not', 'a', 'string']], subject: $this->createMock(IUser::class));
+			$this->fail('A type-invalid draft was saved.');
+		} catch (FormSubmitRefusedException $refused) {
+			$this->assertSame(422, $refused->getStatus());
+			$this->assertSame('type', $refused->getFindings()[0]['code']);
+		}
+
+		$this->assertSame([], $this->saves);
+	}//end testATypeInvalidDraftIsRefused()
+
+	/**
+	 * An anonymous visitor cannot save a draft (no way to find it again without an account).
+	 */
+	public function testAnAnonymousDraftIs401(): void {
+		$this->expectException(FormSubmitRefusedException::class);
+		try {
+			$this->service->saveDraft(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: [], subject: null);
+		} catch (FormSubmitRefusedException $refused) {
+			$this->assertSame(401, $refused->getStatus());
+			throw $refused;
+		}
+	}//end testAnAnonymousDraftIs401()
+
+	/**
+	 * Spec scenario: leaving draft runs full validation and stamps receipt.
+	 */
+	public function testLeavingDraftRunsFullValidationAndStampsReceipt(): void {
+		$user = $this->createMock(IUser::class);
+		$draft = $this->service->saveDraft(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'Kapvergunning'], subject: $user);
+
+		$answer = $this->service->submit(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['caseType' => 'ct-1'], subject: $user, draftId: $draft['id']);
+
+		$promotion = $this->saves[1];
+		$this->assertSame($draft['id'], $promotion['uuid']);
+		$this->assertSame('active', $promotion['object']['@self']['status']);
+		$this->assertSame('Kapvergunning', $promotion['object']['title']);
+		$this->assertSame('2026-10-12T09:15:00+02:00', $answer['receivedAt']);
+		$this->assertSame('2026-0412', $answer['reference']);
+		$this->assertArrayHasKey('termStartsAt', $answer['confirmation']);
+		$this->assertCount(1, $this->dispatched);
+		$this->assertInstanceOf(ObjectActivatedEvent::class, $this->dispatched[0]);
+	}//end testLeavingDraftRunsFullValidationAndStampsReceipt()
+
+	/**
+	 * A draft still missing required data cannot leave draft, and stays a draft.
+	 */
+	public function testAnIncompleteDraftCannotLeaveDraft(): void {
+		$user = $this->createMock(IUser::class);
+		$draft = $this->service->saveDraft(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'Half af'], subject: $user);
+
+		try {
+			$this->service->submit(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: [], subject: $user, draftId: $draft['id']);
+			$this->fail('An incomplete draft left draft.');
+		} catch (FormSubmitRefusedException $refused) {
+			$this->assertSame(422, $refused->getStatus());
+			$this->assertSame('caseType', $refused->getFindings()[0]['property']);
+		}
+
+		$this->assertCount(1, $this->saves);
+		$this->assertTrue($this->stored[$draft['id']]->isDraft());
+		$this->assertSame([], $this->dispatched);
+	}//end testAnIncompleteDraftCannotLeaveDraft()
+
+	/**
+	 * A draft id that is not a draft, or not found under the subject's RBAC, is a 404.
+	 */
+	public function testAnUnknownDraftIsA404(): void {
+		$this->service->submit(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'a', 'caseType' => 'b']);
+
+		foreach (['uuid-case-1', 'nope'] as $id) {
+			try {
+				$this->service->submit(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'a', 'caseType' => 'b'], subject: $this->createMock(IUser::class), draftId: $id);
+				$this->fail('Draft ' . $id . ' was accepted.');
+			} catch (FormSubmitRefusedException $refused) {
+				$this->assertSame(404, $refused->getStatus());
+			}
+		}
+	}//end testAnUnknownDraftIsA404()
 }//end class

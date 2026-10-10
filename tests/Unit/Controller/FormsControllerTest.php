@@ -158,7 +158,7 @@ class FormsControllerTest extends TestCase {
 		$this->resolver->method('resolve')->with('form-1')->willReturn($this->form());
 		$answer = ['reference' => '2026-0412', 'id' => 'u', 'receivedAt' => null, 'confirmation' => [], 'objects' => []];
 		$this->submitter->expects($this->once())->method('submitAll')
-			->with($this->form()['writes'], ['onderwerp' => 'Kapvergunning'], null, 'k1', 'form-1')
+			->with($this->form()['writes'], ['onderwerp' => 'Kapvergunning'], null, 'k1', 'form-1', null)
 			->willReturn($answer);
 
 		$response = $this->controller->submit(formId: 'form-1');
@@ -299,8 +299,38 @@ class FormsControllerTest extends TestCase {
 				'forms#validate' => ['/api/forms/validate', 'POST'],
 				'forms#submit' => ['/api/forms/{formId}/submit', 'POST'],
 				'forms#upload' => ['/api/forms/{formId}/uploads', 'POST'],
+				'forms#draft' => ['/api/forms/{formId}/draft', 'POST'],
 			],
 			$found
 		);
 	}//end testTheRoutesAreRegistered()
+	/**
+	 * Decision 180: a signed-in subject saves a draft; submit with `_draft` leaves it.
+	 */
+	public function testADraftIsSavedAndSubmittedByItsId(): void {
+		$user = $this->createMock(IUser::class);
+		$this->session->method('getUser')->willReturn($user);
+		$this->resolver->method('resolve')->willReturn($this->form());
+		$this->params = ['formId' => 'form-1', 'onderwerp' => 'Half af', '_draft' => 'd-1'];
+		$this->submitter->expects($this->once())->method('saveDraft')
+			->with(['register' => 'dossiq', 'schema' => 'case'], null, ['onderwerp' => 'Half af'], $user, 'd-1', 'form-1')
+			->willReturn(['id' => 'd-1', 'status' => 'draft']);
+		$this->submitter->expects($this->once())->method('submitAll')
+			->with($this->anything(), ['onderwerp' => 'Half af'], $user, null, 'form-1', 'd-1')
+			->willReturn(['reference' => 'r', 'id' => 'd-1', 'receivedAt' => 'now', 'confirmation' => [], 'objects' => []]);
+
+		$saved = $this->controller->draft(formId: 'form-1');
+		$this->assertSame(200, $saved->getStatus());
+		$this->assertSame(['id' => 'd-1', 'status' => 'draft'], $saved->getData());
+
+		$this->assertSame(201, $this->controller->submit(formId: 'form-1')->getStatus());
+	}//end testADraftIsSavedAndSubmittedByItsId()
+
+	/**
+	 * The draft route is for signed-in people and is not public.
+	 */
+	public function testTheDraftRouteIsNotPublic(): void {
+		$this->assertContains(NoAdminRequired::class, $this->attributes(method: 'draft'));
+		$this->assertNotContains(PublicPage::class, $this->attributes(method: 'draft'));
+	}//end testTheDraftRouteIsNotPublic()
 }//end class

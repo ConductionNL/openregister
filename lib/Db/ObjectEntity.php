@@ -100,6 +100,8 @@ use OCP\IUserSession;
  * @method void setArchived(?array $archived)
  * @method array|null getFrozen()
  * @method void setFrozen(?array $frozen)
+ * @method string|null getStatus()
+ * @method void setStatus(?string $status)
  * @method array|null getGeo()
  * @method void setGeo(?array $geo)
  * @method array|null getRetention()
@@ -165,6 +167,21 @@ use OCP\IUserSession;
  * @SuppressWarnings(PHPMD.NPathComplexity)
  */
 class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInterface {
+
+	/**
+	 * Lifecycle status: saved to carry on later, not yet received (decision 180).
+	 *
+	 * @var string
+	 */
+	public const STATUS_DRAFT = 'draft';
+
+	/**
+	 * Lifecycle status: left draft through a submit, received.
+	 *
+	 * @var string
+	 */
+	public const STATUS_ACTIVE = 'active';
+
 
 	/**
 	 * Unique identifier for the object.
@@ -346,6 +363,18 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @var array|null Array describing the freeze: `by`, `at`, `reason` and `state`
 	 */
 	protected ?array $frozen = [];
+
+	/**
+	 * The explicit lifecycle status, when one is stored (decision 180).
+	 *
+	 * `draft`: the object may miss required properties, is never type-invalid,
+	 * and is visible to its owner only unless the schema says otherwise.
+	 * `active`: it left draft through a submit. Null: no explicit status, so the
+	 * status is deduced from the object's dates exactly as before.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $status = null;
 
 	/**
 	 * Geographical details for the object.
@@ -1101,6 +1130,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$this->addType(fieldName: 'deleted', type: 'json');
 		$this->addType(fieldName: 'archived', type: 'json');
 		$this->addType(fieldName: 'frozen', type: 'json');
+		$this->addType(fieldName: 'status', type: 'string');
 		$this->addType(fieldName: 'geo', type: 'json');
 		$this->addType(fieldName: 'retention', type: 'json');
 		$this->addType(fieldName: 'tmlo', type: 'json');
@@ -1423,6 +1453,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'deleted' => $this->getDeleted(),
 			'archived' => $this->getArchived(),
 			'frozen' => $this->getFrozen(),
+			'status' => $this->status,
 			'source' => $this->source,
 			'mail' => $this->getMail(),
 			'contacts' => $this->getContacts(),
@@ -2098,6 +2129,20 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	public function isFrozen(): bool {
 		return $this->frozen !== null && $this->frozen !== [];
 	}//end isFrozen()
+
+	/**
+	 * Whether this object is a draft (decision 180).
+	 *
+	 * An object with no stored status is never a draft: its status is deduced
+	 * from its dates, as it was before the field existed.
+	 *
+	 * @return bool True for a stored `draft` status.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	public function isDraft(): bool {
+		return $this->status === self::STATUS_DRAFT;
+	}//end isDraft()
 
 	/**
 	 * Archive the object.
