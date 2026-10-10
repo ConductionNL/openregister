@@ -18,8 +18,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Migration;
 
-use OCP\DB\Schema\ITable;
 use OCA\OpenRegister\Migration\Version1Date20261010120000;
+use OCA\OpenRegister\Tests\Support\SchemaTableMockTrait;
 use OCP\DB\ISchemaWrapper;
 use OCP\DB\Types;
 use OCP\Migration\IOutput;
@@ -29,6 +29,7 @@ use PHPUnit\Framework\TestCase;
  * The imported flag lands once, nullable with a false default.
  */
 class Version1Date20261010120000Test extends TestCase {
+	use SchemaTableMockTrait;
 
 	/**
 	 * A table without the column gains it.
@@ -36,7 +37,7 @@ class Version1Date20261010120000Test extends TestCase {
 	 * @return void
 	 */
 	public function testItAddsTheImportedColumn(): void {
-		$table = $this->createMock(ITable::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->with('imported')->willReturn(false);
 		$table->expects($this->once())->method('addColumn')->with('imported', Types::BOOLEAN, ['notnull' => false, 'default' => false]);
 		$schema = $this->createMock(ISchemaWrapper::class);
@@ -52,7 +53,7 @@ class Version1Date20261010120000Test extends TestCase {
 	 * @return void
 	 */
 	public function testItIsIdempotentAndSkipsAMissingTable(): void {
-		$table = $this->createMock(ITable::class);
+		$table = $this->createTableMock();
 		$table->method('hasColumn')->willReturn(true);
 		$table->expects($this->never())->method('addColumn');
 		$schema = $this->createMock(ISchemaWrapper::class);
