@@ -137,7 +137,7 @@
 		"edgedesign/phpqa": "^1.27",
 		"nextcloud/ocp": "^35.0",
 		"phpcsstandards/phpcsextra": "^1.4",
-		"phpmd/phpmd": "^2.15",
+		"phpmd/phpmd": "^3.0",
 		"phpmetrics/phpmetrics": "^2.8",
 		"phpstan/phpstan": "^2.0",
 		"phpunit/phpunit": "^10.5.62",
