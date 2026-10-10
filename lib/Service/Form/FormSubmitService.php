@@ -361,7 +361,7 @@ class FormSubmitService {
 		}
 
 		try {
-			$draft = $this->objects->find(id: $draftId, register: $register, schema: $schema, _rbac: false, _multitenancy: false);
+			$draft = $this->objects->find(id: $draftId, register: $register, schema: $schema, _rbac: false, _multitenancy: false, _audit: false);
 		} catch (Throwable) {
 			return null;
 		}
@@ -811,7 +811,8 @@ class FormSubmitService {
 				register: $done['plan']['register'],
 				schema: $schema,
 				_rbac: false,
-				_multitenancy: false
+				_multitenancy: false,
+				_audit: false
 			) ?? $done['object']);
 			$data = $entity->getObject();
 			$entry = [

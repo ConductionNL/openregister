@@ -78,7 +78,7 @@ class FormDefinitionResolver {
 			// RBAC off to READ the form definition only: a public form is read
 			// by a visitor with no account. Nothing of the body is returned;
 			// what may be WRITTEN is decided by the destination's RBAC.
-			$entity = $this->objects->find(id: $formId, _rbac: false, _multitenancy: false);
+			$entity = $this->objects->find(id: $formId, _rbac: false, _multitenancy: false, _audit: false);
 		} catch (Throwable) {
 			$entity = null;
 		}

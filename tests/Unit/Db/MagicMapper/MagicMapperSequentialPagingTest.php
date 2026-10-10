@@ -157,8 +157,9 @@ class MagicMapperSequentialPagingTest extends TestCase {
 	 * @return void
 	 */
 	public function testPageTwoContinuesPageOne(): void {
-		$this->assertSame(['z1', 'z2'], $this->page(offset: 0, limit: 2));
-		$this->assertSame(['z3', 't1'], $this->page(offset: 2, limit: 2));
+		$this->assertSame(['t1', 't2'], $this->page(offset: 0, limit: 2));
+		$this->assertSame(['t3', 't4'], $this->page(offset: 2, limit: 2));
+		$this->assertSame(['z1', 'z2'], $this->page(offset: 4, limit: 2));
 	}//end testPageTwoContinuesPageOne()
 
 	/**
@@ -174,6 +175,7 @@ class MagicMapperSequentialPagingTest extends TestCase {
 			$seen = array_merge($seen, $page);
 		}
 
-		$this->assertSame(['z1', 'z2', 'z3', 't1', 't2', 't3', 't4'], $seen);
+		// No `_order`: the merged rows are ordered by uuid, as the UNION path orders them.
+		$this->assertSame(['t1', 't2', 't3', 't4', 'z1', 'z2', 'z3'], $seen);
 	}//end testEveryRowArrivesExactlyOnce()
 }//end class

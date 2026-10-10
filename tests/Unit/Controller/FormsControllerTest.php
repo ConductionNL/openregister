@@ -157,8 +157,8 @@ class FormsControllerTest extends TestCase {
 		$this->headers = ['Idempotency-Key' => 'k1'];
 		$this->resolver->method('resolve')->with('form-1')->willReturn($this->form());
 		$answer = ['reference' => '2026-0412', 'id' => 'u', 'receivedAt' => null, 'confirmation' => [], 'objects' => []];
-		$this->submitter->expects($this->once())->method('submitAll')
-			->with($this->form()['writes'], ['onderwerp' => 'Kapvergunning'], null, 'k1', 'form-1', null)
+		$this->submitter->expects($this->once())->method('submit')
+			->with(['register' => 'dossiq', 'schema' => 'case'], null, ['onderwerp' => 'Kapvergunning'], null, 'k1', 'form-1', null)
 			->willReturn($answer);
 
 		$response = $this->controller->submit(formId: 'form-1');
@@ -168,13 +168,27 @@ class FormsControllerTest extends TestCase {
 	}//end testASubmitAnswers201()
 
 	/**
+	 * A journey form with several writes goes through submitAll(), all or none.
+	 */
+	public function testAJourneyFormGoesThroughSubmitAll(): void {
+		$writes = [['as' => 'org', 'register' => 'crm', 'schema' => 'organisation'], ['as' => 'contact', 'register' => 'crm', 'schema' => 'contact']];
+		$this->params = ['formId' => 'form-2', 'naam' => 'De Korst'];
+		$this->resolver->method('resolve')->willReturn(['id' => 'form-2', 'writes' => $writes, 'audience' => 'public']);
+		$this->submitter->expects($this->never())->method('submit');
+		$this->submitter->expects($this->once())->method('submitAll')->with($writes, ['naam' => 'De Korst'], null, null, 'form-2', null)
+			->willReturn(['reference' => 'r', 'id' => 'i', 'receivedAt' => null, 'confirmation' => [], 'objects' => []]);
+
+		$this->assertSame(201, $this->controller->submit(formId: 'form-2')->getStatus());
+	}//end testAJourneyFormGoesThroughSubmitAll()
+
+	/**
 	 * A refusal answers with its own status and findings.
 	 */
 	public function testARefusalAnswersWithItsStatusAndFindings(): void {
 		$this->params = ['formId' => 'form-1'];
 		$this->resolver->method('resolve')->willReturn($this->form());
 		$findings = [['property' => 'caseType', 'code' => 'required', 'message' => 'm']];
-		$this->submitter->method('submitAll')->willThrowException(new FormSubmitRefusedException(message: 'Not accepted', status: 422, findings: $findings));
+		$this->submitter->method('submit')->willThrowException(new FormSubmitRefusedException(message: 'Not accepted', status: 422, findings: $findings));
 
 		$response = $this->controller->submit(formId: 'form-1');
 
@@ -213,7 +227,7 @@ class FormsControllerTest extends TestCase {
 	public function testTheAudienceIsHonoured(): void {
 		$this->params = ['formId' => 'form-1'];
 		$this->resolver->method('resolve')->willReturn($this->form(audience: 'authenticated'));
-		$this->submitter->expects($this->once())->method('submitAll')->willReturn(['reference' => 'r', 'id' => 'i', 'receivedAt' => null, 'confirmation' => [], 'objects' => []]);
+		$this->submitter->expects($this->once())->method('submit')->willReturn(['reference' => 'r', 'id' => 'i', 'receivedAt' => null, 'confirmation' => [], 'objects' => []]);
 
 		$this->assertSame(401, $this->controller->submit(formId: 'form-1')->getStatus());
 
@@ -316,8 +330,8 @@ class FormsControllerTest extends TestCase {
 		$this->submitter->expects($this->once())->method('saveDraft')
 			->with(['register' => 'dossiq', 'schema' => 'case'], null, ['onderwerp' => 'Half af'], $user, 'd-1', 'form-1')
 			->willReturn(['id' => 'd-1', 'status' => 'draft']);
-		$this->submitter->expects($this->once())->method('submitAll')
-			->with($this->anything(), ['onderwerp' => 'Half af'], $user, null, 'form-1', 'd-1')
+		$this->submitter->expects($this->once())->method('submit')
+			->with(['register' => 'dossiq', 'schema' => 'case'], null, ['onderwerp' => 'Half af'], $user, null, 'form-1', 'd-1')
 			->willReturn(['reference' => 'r', 'id' => 'd-1', 'receivedAt' => 'now', 'confirmation' => [], 'objects' => []]);
 
 		$saved = $this->controller->draft(formId: 'form-1');
