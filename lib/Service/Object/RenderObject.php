@@ -47,7 +47,6 @@ use OCA\OpenRegister\Service\Deletion\RetentionClockService;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Hinge\LensResolver;
-use OCA\OpenRegister\Service\Interaction\FavouriteService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
 use OCA\OpenRegister\Service\Interaction\WatcherService;
 use OCA\OpenRegister\Service\FileService;
@@ -2379,10 +2378,6 @@ class RenderObject {
 		// for the marker rather than one per rendered row.
 		$this->applyReadStateMarkers(entity: $entity);
 
-		// The reader's own star (`favourites-and-recent`). Same lazy posture and
-		// same per-request memo as the two markers above, so a page of objects
-		// costs ONE query for the star rather than one per rendered row.
-		$this->applyFavouriteMarker(entity: $entity);
 
 		// The reader's update right (`@self.can.update`), opt-in through
 		// `_extend[]=@self.can`: the records list's in-place editor asks for it
@@ -2512,7 +2507,11 @@ class RenderObject {
 	}//end applyRetentionClocks()
 
 	/**
-	 * Attach `@self.watching` and, for an editor, `@self.watcherCount`.
+	 * Attach `@self.watching`, `@self.watchNotify` and, for an editor, `@self.watcherCount`.
+	 *
+	 * `@self.favourite` is no longer looked up: it is `watching` under its old
+	 * name for one release (`merge-follow-and-favourites`), so the same one
+	 * query answers both.
 	 *
 	 * Resolved through the container rather than the constructor so the render
 	 * layer does not acquire a hard dependency on the subscription primitive:
@@ -2549,7 +2548,10 @@ class RenderObject {
 				return;
 			}
 
-			$entity->setWatching($watchers->isWatchedByCaller(objectUuid: $uuid));
+			$entity->setWatching(
+				$watchers->isWatchedByCaller(objectUuid: $uuid),
+				$watchers->notifyForCaller(objectUuid: $uuid)
+			);
 
 			// The count is a fact about the object's audience, so it is only
 			// told to a reader who may edit the object.
@@ -2617,53 +2619,6 @@ class RenderObject {
 			);
 		}//end try
 	}//end applyReadStateMarkers()
-
-	/**
-	 * Attach `@self.favourite` for the reader.
-	 *
-	 * Resolved through the container rather than the constructor, for the same
-	 * reason as `applyReadStateMarkers()` above: the render layer does not
-	 * acquire a hard dependency on a primitive that resolves a session and
-	 * would otherwise close a construction cycle.
-	 *
-	 * Anonymous reads get no marker at all. A hard false would read as "you
-	 * have not starred this", which is a claim about a person who is not there.
-	 *
-	 * Failures are logged and swallowed: whether you have starred an object is
-	 * never worth failing the read of that object.
-	 *
-	 * @param ObjectEntity $entity The entity being rendered.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
-	 */
-	private function applyFavouriteMarker(ObjectEntity $entity): void {
-		if ($this->container === null) {
-			return;
-		}
-
-		$uuid = (string)$entity->getUuid();
-		if ($uuid === '') {
-			return;
-		}
-
-		try {
-			$favourites = $this->container->get(FavouriteService::class);
-
-			if ($favourites->callerUid() === null) {
-				return;
-			}
-
-			$entity->setFavourite($favourites->isStarredByCaller(objectUuid: $uuid));
-		} catch (\Throwable $e) {
-			// A favourite lookup must never take out object rendering.
-			$this->logger->debug(
-				sprintf('[RenderObject] favourite marker skipped for %s: %s', $uuid, $e->getMessage())
-			);
-		}//end try
-
-	}//end applyFavouriteMarker()
 
 	/**
 	 * Attach `@self.can.update`: whether the reader may update this object.

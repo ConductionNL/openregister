@@ -28,6 +28,11 @@
  *
  * A watcher may always remove themselves, whatever the posture above says.
  *
+ * ONE FEATURE, NOT TWO (`merge-follow-and-favourites`). Every follow carries a
+ * `notify` switch. A follow with it off is what a favourite was, so the star's
+ * deprecated verbs land here too (`followQuietly()`), and only follows with it
+ * on are handed to the notification dispatcher (`watcherUids()`).
+ *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
@@ -61,11 +66,12 @@ use Psr\Log\LoggerInterface;
 /**
  * The one subscription primitive: watch, unwatch, list, and heal.
  *
- * @SuppressWarnings(PHPMD.TooManyPublicMethods) Twelve, and each one has a caller that
- * no other method can serve: five are the API verbs, three are read by the render layer
- * (the marker, the count, and who may see the count), two are the notification
- * dispatcher's (resolve the audience, drop a watcher who lost read), one is the deletion
- * cleanup and one is the caller's uid. Splitting them would put the three permission
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Sixteen, and each one has a caller that
+ * no other method can serve: five are the API verbs, three subscribe on someone's behalf
+ * (a mention, an assignment, the deprecated star), four are read by the render layer
+ * (the marker, its notify switch, the count, and who may see the count), two are the
+ * notification dispatcher's (resolve the audience, drop a watcher who lost read), one is
+ * the deletion cleanup and one is the caller's uid. Splitting them would put the three permission
  * postures in more than one class, which is the drift this class exists to prevent.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The count is 51 against a threshold of
  * 50, and almost all of it is guard clauses: every public method is wrapped so a
@@ -75,7 +81,8 @@ use Psr\Log\LoggerInterface;
 class WatcherService {
 
 	/**
-	 * The uuids the current user watches, loaded once per request.
+	 * What the current user follows, loaded once per request: uuid to whether
+	 * that follow notifies.
 	 *
 	 * `@self.watching` is rendered on every row of every list, so reading it
 	 * per row would be an N+1 on the hot read path. Null until first read.
@@ -137,17 +144,26 @@ class WatcherService {
 	 * Idempotent: subscribing twice leaves one row, and writes nothing on the
 	 * object itself — no audit entry, no version.
 	 *
+	 * `$notify` is the follow's notification switch: a bool sets it, null
+	 * keeps what is there (and a new follow notifies).
+	 *
 	 * @param ObjectEntity $object The object to follow, already resolved through RBAC.
 	 * @param string|null $register The register as the caller addressed it.
 	 * @param string|null $schema The schema as the caller addressed it.
+	 * @param bool|null $notify The notification switch, or null to keep it.
 	 *
 	 * @throws NotAuthorizedException When the caller is anonymous.
 	 *
 	 * @return Watcher The subscription.
 	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
-	public function watch(ObjectEntity $object, ?string $register = null, ?string $schema = null): Watcher {
+	public function watch(
+		ObjectEntity $object,
+		?string $register = null,
+		?string $schema = null,
+		?bool $notify = null,
+	): Watcher {
 		$uid = $this->requireCaller();
 		$uuid = $this->requireUuid(object: $object);
 
@@ -157,9 +173,48 @@ class WatcherService {
 			userId: $uid,
 			objectUuid: $uuid,
 			register: $register,
-			schema: $schema
+			schema: $schema,
+			notify: $notify
 		);
 	}//end watch()
+
+	/**
+	 * Follow without notifications, unless the caller already follows.
+	 *
+	 * The deprecated star (`PUT .../favourite`) lands here for one release. A
+	 * star used to be silent, so a new follow from it is quiet; but starring a
+	 * case you already follow loudly must not mute it, so an existing follow
+	 * is returned untouched.
+	 *
+	 * @param ObjectEntity $object The object, already resolved through RBAC.
+	 * @param string|null $register The register as the caller addressed it.
+	 * @param string|null $schema The schema as the caller addressed it.
+	 *
+	 * @throws NotAuthorizedException When the caller is anonymous.
+	 *
+	 * @return Watcher The follow as it now stands.
+	 *
+	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 */
+	public function followQuietly(ObjectEntity $object, ?string $register = null, ?string $schema = null): Watcher {
+		$uid = $this->requireCaller();
+		$uuid = $this->requireUuid(object: $object);
+
+		$existing = $this->mapper->findOne(userId: $uid, objectUuid: $uuid);
+		if ($existing !== null) {
+			return $existing;
+		}
+
+		$this->forgetMemos();
+
+		return $this->mapper->subscribe(
+			userId: $uid,
+			objectUuid: $uuid,
+			register: $register,
+			schema: $schema,
+			notify: false
+		);
+	}//end followQuietly()
 
 	/**
 	 * Remove the calling user's own subscription.
@@ -269,6 +324,45 @@ class WatcherService {
 	}//end subscribeMentioned()
 
 	/**
+	 * Make an assignee follow the object, with notifications on.
+	 *
+	 * Being assigned something means hearing about it, so an existing quiet
+	 * follow is switched on. Like `subscribeMentioned()` this is not
+	 * `addWatcher()`: the act is the assignment, not one person deciding for
+	 * another, and the caller has checked that the assignee may read the
+	 * object (AssigneeFollowListener does, through the same read check a
+	 * mention uses). Public, so an app whose assignment is not an object
+	 * property (a task, a workflow step) can call it.
+	 *
+	 * @param ObjectEntity $object The assigned object.
+	 * @param string $userId The assignee, already checked for read access.
+	 * @param string|null $register The register as the caller addressed it.
+	 * @param string|null $schema The schema as the caller addressed it.
+	 *
+	 * @return Watcher The follow.
+	 *
+	 * @throws NotAuthorizedException When the object carries no uuid to hang the row on.
+	 *
+	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-being-assigned-an-object-follows-it-with-notifications-on
+	 */
+	public function followAssigned(
+		ObjectEntity $object,
+		string $userId,
+		?string $register = null,
+		?string $schema = null,
+	): Watcher {
+		$this->forgetMemos();
+
+		return $this->mapper->subscribe(
+			userId: $userId,
+			objectUuid: $this->requireUuid(object: $object),
+			register: $register,
+			schema: $schema,
+			notify: true
+		);
+	}//end followAssigned()
+
+	/**
 	 * Remove another user's subscription.
 	 *
 	 * A watcher removing THEMSELVES needs nothing beyond being that watcher;
@@ -313,39 +407,52 @@ class WatcherService {
 			return false;
 		}
 
-		return isset($this->watchedSetForCaller()[$objectUuid]);
+		return array_key_exists($objectUuid, $this->watchedSetForCaller());
 	}//end isWatchedByCaller()
 
 	/**
-	 * The uuids one user watches, behind the follow marker.
+	 * Whether the calling user's follow of one object notifies them.
 	 *
-	 * Private: the `_watching=true` lens reads WatcherMapper::uuidsForUser()
-	 * directly (SearchQueryHandler explains why), so the only caller of this is
-	 * the per-request memo below.
+	 * @param string $objectUuid The object's uuid.
 	 *
-	 * @param string|null $userId The user, or null for the caller.
-	 * @param string|null $register Narrow to one register.
-	 * @param string|null $schema Narrow to one schema.
+	 * @return boolean|null The switch, or null when the caller does not follow it.
 	 *
-	 * @return array<int, string> The watched uuids; empty when anonymous.
-	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-watchers-are-a-lens-and-a-list
+	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
-	private function watchedUuids(?string $userId = null, ?string $register = null, ?string $schema = null): array {
-		$uid = ($userId ?? $this->callerUid());
+	public function notifyForCaller(string $objectUuid): ?bool {
+		if ($objectUuid === '') {
+			return null;
+		}
+
+		return ($this->watchedSetForCaller()[$objectUuid] ?? null);
+	}//end notifyForCaller()
+
+	/**
+	 * What the caller follows, with each follow's notify switch.
+	 *
+	 * Private: the `_watching=true` lens is an `EXISTS` in the query
+	 * (SearchQueryHandler explains why), so the only caller of this is the
+	 * per-request memo below.
+	 *
+	 * @return array<string, bool> Uuid to notify; empty when anonymous.
+	 *
+	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 */
+	private function followsOfCaller(): array {
+		$uid = $this->callerUid();
 		if ($uid === null || $uid === '') {
 			return [];
 		}
 
 		try {
-			return $this->mapper->uuidsForUser(userId: $uid, register: $register, schema: $schema);
+			return $this->mapper->notifyMapForUser(userId: $uid);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
-				sprintf('[WatcherService] watched uuid lookup failed for "%s": %s', $uid, $e->getMessage())
+				sprintf('[WatcherService] follow lookup failed for "%s": %s', $uid, $e->getMessage())
 			);
 			return [];
 		}
-	}//end watchedUuids()
+	}//end followsOfCaller()
 
 	/**
 	 * How many users watch one object.
@@ -413,13 +520,16 @@ class WatcherService {
 	}//end maySeeWatchers()
 
 	/**
-	 * The uids watching one object, for the notification dispatcher.
+	 * The uids following one object with notifications on, for the dispatcher.
+	 *
+	 * A quiet follow (a former favourite, or a follower who switched
+	 * notifications off) is left out here and nowhere else.
 	 *
 	 * @param string $objectUuid The object's uuid.
 	 *
-	 * @return array<int, string> The watching uids.
+	 * @return array<int, string> The uids to notify.
 	 *
-	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
+	 * @spec openspec/changes/merge-follow-and-favourites/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
 	 */
 	public function watcherUids(string $objectUuid): array {
 		if ($objectUuid === '') {
@@ -427,7 +537,7 @@ class WatcherService {
 		}
 
 		try {
-			$rows = $this->mapper->findByObject(objectUuid: $objectUuid);
+			$rows = $this->mapper->findNotifyingByObject(objectUuid: $objectUuid);
 		} catch (\Throwable $e) {
 			$this->logger->warning(
 				sprintf('[WatcherService] watcher lookup failed for "%s": %s', $objectUuid, $e->getMessage())
@@ -515,23 +625,18 @@ class WatcherService {
 	}//end forgetMemos()
 
 	/**
-	 * The per-request set of uuids the caller watches.
+	 * The per-request map of what the caller follows.
 	 *
-	 * @return array<string, bool> Uuid to true.
+	 * @return array<string, bool> Uuid to whether that follow notifies.
 	 */
 	private function watchedSetForCaller(): array {
 		if ($this->watchedByCallerMemo !== null) {
 			return $this->watchedByCallerMemo;
 		}
 
-		$set = [];
-		foreach ($this->watchedUuids() as $uuid) {
-			$set[$uuid] = true;
-		}
+		$this->watchedByCallerMemo = $this->followsOfCaller();
 
-		$this->watchedByCallerMemo = $set;
-
-		return $set;
+		return $this->watchedByCallerMemo;
 	}//end watchedSetForCaller()
 
 	/**
