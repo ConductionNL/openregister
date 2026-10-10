@@ -22,6 +22,7 @@ use Adbar\Dot;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -63,6 +64,14 @@ use Symfony\Component\Uid\Uuid;
  * debt rather than done here.
  */
 class RelationHandler {
+
+	/**
+	 * Registers and schemas loaded for relation lookups, keyed "registerId_schemaId".
+	 *
+	 * @var array<string, array{register: Register, schema: Schema}|null>
+	 */
+	private array $pairCache = [];
+
 	/**
 	 * Constructor for RelationHandler.
 	 *
@@ -670,48 +679,29 @@ class RelationHandler {
 				];
 			}
 
-			// Get all register+schema pairs that have magic mapping enabled.
-			$registerMapper = $this->registerMapper;
+			// One UNION query over the magic tables says which tables hold the
+			// related UUIDs. It replaced loading every register and every
+			// schema (326 schema finds on :8099) and then querying the tables
+			// one by one: /uses on a pipelinq lead took 4.5 to 7 seconds for
+			// two results (round 4, 9 October 2026).
 			$magicMapper = $this->objectEntityMapper;
-			$registers = $registerMapper->findAll();
+			$located = $magicMapper->findMultipleAcrossAllMagicTables(uuids: array_values($uniqueIds));
 
-			$registerSchemaPairs = [];
-			foreach ($registers as $reg) {
-				$schemaIds = $reg->getSchemas() ?? [];
-				foreach ($schemaIds as $schemaId) {
-					try {
-						$sch = $this->schemaMapper->find((int)$schemaId);
-						$schemaSlug = $sch->getSlug();
-						if ($reg->isMagicMappingEnabledForSchema((int)$schemaId, $schemaSlug) === true) {
-							$registerSchemaPairs[] = ['register' => $reg, 'schema' => $sch];
-						}
-					} catch (\Exception $e) {
-						// Schema not found, skip.
-					}
-				}
-			}
-
-			// Search each magic table individually for the UUIDs.
-			// This avoids UNION column mismatch issues.
+			// Each table that holds a match is then read through the same
+			// filtered query as before, so access rules apply exactly as they did.
 			$relatedObjects = [];
 			$foundUuids = [];
-			foreach ($registerSchemaPairs as $pair) {
-				// Skip if we've found all the UUIDs already.
-				if (count($foundUuids) >= count($uniqueIds)) {
-					break;
-				}
-
-				// Only search for UUIDs not yet found.
-				$remainingUuids = array_diff($uniqueIds, $foundUuids);
-				if (empty($remainingUuids) === true) {
-					break;
+			foreach ($this->tablesOf(objects: $located) as $table) {
+				$pair = $this->registerSchemaPair(registerId: $table['registerId'], schemaId: $table['schemaId']);
+				if ($pair === null) {
+					continue;
 				}
 
 				try {
 					$results = $magicMapper->findAllInRegisterSchemaTable(
 						register: $pair['register'],
 						schema: $pair['schema'],
-						filters: ['_ids' => array_values($remainingUuids), '_limit' => 200]
+						filters: ['_ids' => $table['uuids'], '_limit' => 200]
 					);
 
 					foreach ($results as $obj) {
@@ -727,10 +717,15 @@ class RelationHandler {
 			}//end foreach
 
 			// Also check main objects table as fallback for any missing UUIDs.
+			// The UNION already fetched those rows, so they are reused rather
+			// than read a second time.
 			$missingUuids = array_diff($uniqueIds, $foundUuids);
 			if (empty($missingUuids) === false) {
-				$fallbackObjects = $this->objectEntityMapper->findMultiple(ids: $missingUuids);
-				$relatedObjects = array_merge($relatedObjects, $fallbackObjects);
+				foreach ($located as $candidate) {
+					if (in_array($candidate->getUuid(), $missingUuids, true) === true) {
+						$relatedObjects[] = $candidate;
+					}
+				}
 			}
 
 			// Apply RBAC filtering to all results.
@@ -927,6 +922,61 @@ class RelationHandler {
 	}//end pathHolding()
 
 	/**
+	 * Group located objects by the table they came from.
+	 *
+	 * @param ObjectEntity[] $objects Objects found by a cross-table lookup.
+	 *
+	 * @return array<int, array{registerId: int, schemaId: int, uuids: array<int, string>}> One entry per table.
+	 *
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/linked-entity-types/spec.md#requirement-related-objects-must-be-found-without-scanning-every-schema
+	 */
+	private function tablesOf(array $objects): array {
+		$tables = [];
+		foreach ($objects as $object) {
+			$registerId = $object->getRegister();
+			$schemaId = $object->getSchema();
+			if (is_numeric($registerId) === false || is_numeric($schemaId) === false) {
+				continue;
+			}
+
+			$key = $registerId.'_'.$schemaId;
+			if (isset($tables[$key]) === false) {
+				$tables[$key] = ['registerId' => (int)$registerId, 'schemaId' => (int)$schemaId, 'uuids' => []];
+			}
+
+			$tables[$key]['uuids'][] = (string)$object->getUuid();
+		}
+
+		return array_values($tables);
+	}//end tablesOf()
+
+	/**
+	 * Load a register and schema, once per request.
+	 *
+	 * @param int $registerId The register id.
+	 * @param int $schemaId   The schema id.
+	 *
+	 * @return array{register: Register, schema: Schema}|null The pair, or null when either cannot be loaded.
+	 *
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/linked-entity-types/spec.md#requirement-related-objects-must-be-found-without-scanning-every-schema
+	 */
+	private function registerSchemaPair(int $registerId, int $schemaId): ?array {
+		$key = $registerId.'_'.$schemaId;
+		if (array_key_exists($key, $this->pairCache) === false) {
+			try {
+				$this->pairCache[$key] = [
+					'register' => $this->registerMapper->find($registerId),
+					'schema' => $this->schemaMapper->find($schemaId),
+				];
+			} catch (\Exception $e) {
+				$this->pairCache[$key] = null;
+			}
+		}
+
+		return $this->pairCache[$key];
+	}//end registerSchemaPair()
+
+	/**
 	 * The schema an object belongs to, loaded without RBAC.
 	 *
 	 * Reading a label is not reading the schema's data, and the objects the
@@ -1055,25 +1105,35 @@ class RelationHandler {
 			);
 			$targetUuid = $object->getUuid();
 
-			// Search across all magic tables for objects that reference this UUID in their _relations.
+			// One UNION query over the magic tables says which tables hold an
+			// object whose _relations name this UUID. It replaced a JSON
+			// query in every one of the 333 tables on :8099, each with a
+			// register and a schema find: /used on a pipelinq lead took 6.4 to
+			// 8 seconds for two results (round 4, 9 October 2026).
 			$results = [];
 			$magicMapper = $this->objectEntityMapper;
-			$registerMapper = $this->registerMapper;
-			$magicTables = $magicMapper->getExistingRegisterSchemaTables();
 			$limit = $query['_limit'] ?? 30;
 			$offset = $query['_offset'] ?? 0;
 			$totalResults = 0;
+			$magicTables = $this->tablesOf(
+				objects: $magicMapper->findByRelationAcrossAllMagicTables(uuid: (string)$targetUuid)
+			);
 
-			// Search each magic table for objects that have this UUID in their _relations.
+			// Each table that holds a match is then read through the same
+			// filtered query as before, so access rules apply exactly as they did.
 			foreach ($magicTables as $tableInfo) {
 				if (count($results) >= $limit) {
 					break;
 				}
 
 				try {
-					// Get register and schema for this table.
-					$tableRegister = $registerMapper->find($tableInfo['registerId']);
-					$tableSchema = $this->schemaMapper->find($tableInfo['schemaId']);
+					$pair = $this->registerSchemaPair(registerId: $tableInfo['registerId'], schemaId: $tableInfo['schemaId']);
+					if ($pair === null) {
+						continue;
+					}
+
+					$tableRegister = $pair['register'];
+					$tableSchema = $pair['schema'];
 
 					// Search for objects where _relations contains the target UUID.
 					// Use JSON contains search on the _relations column.
@@ -1117,7 +1177,7 @@ class RelationHandler {
 						context: [
 							'file' => __FILE__,
 							'line' => __LINE__,
-							'table' => $tableInfo['tableName'] ?? 'unknown',
+							'table' => $tableInfo['registerId'].'_'.$tableInfo['schemaId'],
 							'error' => $e->getMessage(),
 						]
 					);

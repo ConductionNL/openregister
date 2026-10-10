@@ -111,11 +111,14 @@ class GenericDeepLinkRegistrationListener implements IEventListener {
 	 * Load the `deepLinks` array from the leaf app's manifest. Overridable hook.
 	 *
 	 * Always returns an array; a missing/unreadable manifest or block yields
-	 * an empty list (no deep links registered), never a fatal.
+	 * an empty list (no deep links registered), never a fatal. A missing
+	 * manifest is logged as a warning.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess)
+	 *
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/deep-link-registry/spec.md#requirement-the-registry-must-fill-itself-in-a-process-that-never-booted-openregister
 	 */
 	protected function loadDeepLinks(): array {
 		try {
@@ -126,6 +129,12 @@ class GenericDeepLinkRegistrationListener implements IEventListener {
 
 		$manifestPath = $appPath . '/src/manifest.json';
 		if (is_readable($manifestPath) === false) {
+			// Said out loud: a release package without src/ registered nothing
+			// here, and every notification of the app silently fell back to
+			// OpenRegister (cloud check, 9 October 2026).
+			$this->logger->warning(
+				sprintf('[AppHost:%s] no src/manifest.json in the app package; no deep links registered', $this->appId)
+			);
 			return [];
 		}
 

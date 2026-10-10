@@ -691,6 +691,12 @@ class QueryHandler {
 			$paginatedResults['@self']['dictionary'] = $expansion->jsonSerialize();
 		}
 
+		// The `_recent` lens report: whether it could answer, and why not
+		// (`read-history-on-audit-trail`). Present only when the lens was asked.
+		if (is_array($query['_recentLens'] ?? null) === true) {
+			$paginatedResults['@self']['lenses']['recent'] = $query['_recentLens'];
+		}
+
 		// Add registers and schemas indexed by ID to response @self.
 		// Only include when explicitly requested via _extend parameter.
 		// Supports both singular (_register, _schema) and plural (_registers, _schemas) forms.

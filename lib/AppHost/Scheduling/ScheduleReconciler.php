@@ -43,6 +43,7 @@ use DateTime;
 use DateTimeInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -738,6 +739,8 @@ class ScheduleReconciler {
 	 * @return array<string, mixed> The decoded production manifest, or empty.
 	 *
 	 * @spec openspec/specs/apphost-scheduling/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	protected function resolveProductionManifest(array $application): array {
 		$versionId = ($application['productionVersion'] ?? ($application['@self']['relations']['productionVersion'] ?? null));
@@ -751,12 +754,12 @@ class ScheduleReconciler {
 		}
 
 		try {
-			$version = $this->objectService->find(
+			$version = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $versionId,
 				register: $register,
 				schema: self::OB_APPLICATION_VERSION_SCHEMA_SLUG,
 				_rbac: false
-			);
+			));
 		} catch (Throwable $e) {
 			$this->logger->info(
 				message: '[AppHost\\Scheduling] Could not resolve production version manifest',
