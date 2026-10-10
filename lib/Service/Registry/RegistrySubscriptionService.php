@@ -236,11 +236,18 @@ class RegistrySubscriptionService {
 			}
 
 			try {
-				$updated = $this->objectService->saveObject(
-					object: $properties,
+				// A PATCH, never saveObject(): saveObject() is PUT-semantic and
+				// writes every property absent from the payload as null. An
+				// inbound update carries only what the registry changed, so a
+				// save would null the identity this row is matched on (the
+				// BSN, the KvK number) and every field the registry does not
+				// own, on every update. patchObject() merges onto the stored
+				// object and leaves the rest alone.
+				$updated = $this->objectService->patchObject(
+					objectId: (string)$row->getObjectUuid(),
+					data: $properties,
 					register: $row->getRegister(),
 					schema: $row->getSchema(),
-					uuid: $row->getObjectUuid(),
 				);
 			} catch (Throwable $e) {
 				$this->logger->error(
