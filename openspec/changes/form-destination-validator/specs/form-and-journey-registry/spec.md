@@ -5,15 +5,15 @@
 
 ## ADDED Requirements
 
-### Requirement: A journey run MUST store no written ids and MUST commit a step all or none
+### Requirement: A saved journey MUST be its draft objects and MUST commit a step all or none
 
-The API SHALL expose start, answer, resume and submit operations over a `journeyRun`. Answers MAY be persisted to the run only while ADR-117 approves drafts. The run SHALL NOT store ids of written objects. Objects SHALL be created only when a step declaring `writes[]` is submitted, through `FormSubmitService`, all or none, with a later entry able to reference an earlier entry's id.
+There SHALL be no `journeyRun` object holding answers. A saved journey SHALL be its `writes[]` destination objects in status `draft` (decision 180). Objects SHALL leave `draft`, or be created, only when a step declaring `writes[]` is submitted, through `FormSubmitService`, all or none, with a later entry able to reference an earlier entry's id.
 
-#### Scenario: Advancing without a writes step creates nothing
+#### Scenario: Advancing without a writes step activates nothing
 
-- **GIVEN** a run advanced past two steps, neither declaring `writes[]`
+- **GIVEN** a journey advanced past two steps and saved, neither step declaring `writes[]` as submitted
 - **WHEN** the target registers are queried
-- **THEN** no object has been created
+- **THEN** any object for this journey is in status `draft`, and no `journeyRun` object exists
 
 #### Scenario: A partial failure leaves nothing behind
 

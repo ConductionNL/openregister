@@ -17,6 +17,14 @@
 - [x] 2.4 `POST /api/forms/{formId}/submit` route, `#[PublicPage]`, ADR-082 attributes and `registerAttempt`; routes.php entry
 - [x] 2.5 `ObjectsController::create` answers in the update error shape, through the same handler and status update uses (400; 422 for all three is Q-openregister-F1)
 
+## 2b. Lifecycle status `draft` (decision 180)
+
+- [ ] 2b.1 Stored `@self.status` in object metadata (`draft`, `active`); objects without it keep the date-deduced status
+  - Spec ref: specs/form-destination/spec.md, "An object MUST be able to carry the explicit lifecycle status `draft`"
+  - Test: unit tests for each scenario, including the legacy read control
+- [ ] 2b.2 Draft validation skips `required` only; the draft-to-active move goes through `FormSubmitService` with full validation and receipt effects
+- [ ] 2b.3 Flagged to Ruben, not built here: staff list default for drafts, draft expiry
+
 ## 3. Uploads
 
 - [x] 3.1 Upload token endpoint and claim in submit
@@ -28,7 +36,7 @@
 
 ## 5. Journey registry
 
-- [x] 5.1 Apply the MODIFIED requirement to `or-form-and-journey-registry` (no written ids on `journeyRun`; commit through `FormSubmitService`)
+- [ ] 5.1 Apply the MODIFIED requirement to `or-form-and-journey-registry` (`journeyRun` replaced by draft destination objects; commit through `FormSubmitService`)
 
 ## 6. Verification
 
