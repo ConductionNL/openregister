@@ -92,7 +92,7 @@ class CredentialBrokerActsForOrganisationMemberTest extends TestCase {
 		$store->expects($this->once())->method('get')->with(self::UUID, 'organisation')->willReturn(self::SECRET);
 
 		$orgService = $this->createMock(OrganisationService::class);
-		$orgService->expects($this->once())->method('userHasAccessToOrganisation')
+		$orgService->expects($this->once())->method('isMemberOfOrganisation')
 			->with(self::ORG, 'bob')
 			->willReturn(true);
 
@@ -121,11 +121,37 @@ class CredentialBrokerActsForOrganisationMemberTest extends TestCase {
 	}
 
 	/**
+	 * A Nextcloud administrator who is NOT on the organisation's member list is refused on
+	 * the background path, even though the session rule would let an admin in anywhere.
+	 *
+	 * Fails on the first version of this change, which used the session rule (admin passes).
+	 */
+	public function testSessionlessActingAdminWhoIsNotAMemberIsDenied(): void {
+		$orgService = $this->createMock(OrganisationService::class);
+		$orgService->method('userHasAccessToOrganisation')->willReturn(true);
+		$orgService->method('hasAccessToOrganisation')->willReturn(true);
+		$orgService->expects($this->once())->method('isMemberOfOrganisation')
+			->with(self::ORG, 'admin')
+			->willReturn(false);
+
+		$broker = $this->makeBroker(
+			sessionUid: null,
+			client: $this->neverCalledClient(),
+			store: $this->neverReadStore(),
+			orgService: $orgService,
+			users: ['admin' => true]
+		);
+
+		$this->expectException(CredentialAccessDeniedException::class);
+		$broker->request(credentialId: self::UUID, appId: 'hermiq', method: 'POST', path: '/v1/messages', actingUserId: 'admin');
+	}
+
+	/**
 	 * A sessionless call acting for a user outside the organisation is denied before any secret read.
 	 */
 	public function testSessionlessActingNonMemberIsDenied(): void {
 		$orgService = $this->createMock(OrganisationService::class);
-		$orgService->method('userHasAccessToOrganisation')->with(self::ORG, 'mallory')->willReturn(false);
+		$orgService->method('isMemberOfOrganisation')->with(self::ORG, 'mallory')->willReturn(false);
 
 		$broker = $this->makeBroker(
 			sessionUid: null,
@@ -144,7 +170,7 @@ class CredentialBrokerActsForOrganisationMemberTest extends TestCase {
 	 */
 	public function testSessionlessActingUnknownUserIsDenied(): void {
 		$orgService = $this->createMock(OrganisationService::class);
-		$orgService->expects($this->never())->method('userHasAccessToOrganisation');
+		$orgService->expects($this->never())->method('isMemberOfOrganisation');
 
 		$broker = $this->makeBroker(
 			sessionUid: null,
@@ -163,7 +189,7 @@ class CredentialBrokerActsForOrganisationMemberTest extends TestCase {
 	 */
 	public function testSessionlessActingDisabledMemberIsDenied(): void {
 		$orgService = $this->createMock(OrganisationService::class);
-		$orgService->expects($this->never())->method('userHasAccessToOrganisation');
+		$orgService->expects($this->never())->method('isMemberOfOrganisation');
 
 		$broker = $this->makeBroker(
 			sessionUid: null,
@@ -182,7 +208,7 @@ class CredentialBrokerActsForOrganisationMemberTest extends TestCase {
 	 */
 	public function testSessionlessActingMemberWithoutAUserManagerIsDenied(): void {
 		$orgService = $this->createMock(OrganisationService::class);
-		$orgService->method('userHasAccessToOrganisation')->willReturn(true);
+		$orgService->method('isMemberOfOrganisation')->willReturn(true);
 
 		$broker = $this->makeBroker(
 			sessionUid: null,
@@ -201,7 +227,7 @@ class CredentialBrokerActsForOrganisationMemberTest extends TestCase {
 	 */
 	public function testSessionlessActingMemberForAnAppNotAllowedIsDenied(): void {
 		$orgService = $this->createMock(OrganisationService::class);
-		$orgService->method('userHasAccessToOrganisation')->willReturn(true);
+		$orgService->method('isMemberOfOrganisation')->willReturn(true);
 
 		$broker = $this->makeBroker(
 			sessionUid: null,
@@ -220,7 +246,7 @@ class CredentialBrokerActsForOrganisationMemberTest extends TestCase {
 	 */
 	public function testSessionlessActingMemberOutsideTheAllowRulesIsDenied(): void {
 		$orgService = $this->createMock(OrganisationService::class);
-		$orgService->method('userHasAccessToOrganisation')->willReturn(true);
+		$orgService->method('isMemberOfOrganisation')->willReturn(true);
 
 		$broker = $this->makeBroker(
 			sessionUid: null,
@@ -240,7 +266,7 @@ class CredentialBrokerActsForOrganisationMemberTest extends TestCase {
 	public function testSessionNonMemberIsNotRescuedByAnAssertedMember(): void {
 		$orgService = $this->createMock(OrganisationService::class);
 		$orgService->method('hasAccessToOrganisation')->with(self::ORG)->willReturn(false);
-		$orgService->expects($this->never())->method('userHasAccessToOrganisation');
+		$orgService->expects($this->never())->method('isMemberOfOrganisation');
 
 		$broker = $this->makeBroker(
 			sessionUid: 'mallory',
@@ -260,7 +286,7 @@ class CredentialBrokerActsForOrganisationMemberTest extends TestCase {
 	 */
 	public function testPersonalCredentialForAnotherActingUserIsDenied(): void {
 		$orgService = $this->createMock(OrganisationService::class);
-		$orgService->method('userHasAccessToOrganisation')->willReturn(true);
+		$orgService->method('isMemberOfOrganisation')->willReturn(true);
 		$orgService->method('hasAccessToOrganisation')->willReturn(true);
 
 		$broker = $this->makeBroker(

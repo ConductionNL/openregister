@@ -1020,11 +1020,12 @@ class CredentialBrokerService {
 	 *     membership, which is the entire point of organisation scope (ADR-064 Rule 4).
 	 *   - Sessionless, acting for a person (broker-acts-for-an-organisation-member): a trusted
 	 *     in-process caller that asserts `actingUserId` (a Nextcloud Assistant task run from cron
-	 *     for its user) is admitted only when that user exists, is enabled and passes
-	 *     {@see OrganisationService::userHasAccessToOrganisation()}, the same rule the session
-	 *     branch applies. This does not couple the credential to one employee: any member's task
-	 *     may use it, and no member's departure breaks it. It cannot widen access either, because
-	 *     the user it names could already use the credential in a session of their own.
+	 *     for its user) is admitted only when that user exists, is enabled and is a REAL member
+	 *     ({@see OrganisationService::isMemberOfOrganisation()}). Stricter than the session
+	 *     branch on purpose: a Nextcloud administrator gets no blanket pass on this path. This
+	 *     does not couple the credential to one employee: any member's task may use it, and no
+	 *     member's departure breaks it. It cannot widen access either, because the user it
+	 *     names could already use the credential in a session of their own.
 	 *
 	 * @param array<string, mixed> $data The credential's serialised data.
 	 * @param string $credentialId The `credential` object UUID (for logging).
@@ -1092,12 +1093,13 @@ class CredentialBrokerService {
 	 * broker endpoints refuse a caller without a session and never forward an acting user.
 	 *
 	 * Fails CLOSED on every gap: no asserted id, no user manager to resolve it, a user that
-	 * does not exist or is disabled, or a user outside the organisation.
+	 * does not exist or is disabled, or a user outside the organisation. A Nextcloud
+	 * administrator who is not on the organisation's member list is outside it here.
 	 *
 	 * @param string $organisation The credential's organisation UUID (non-empty).
 	 * @param string|null $actingUserId The asserted user, from trusted in-process code only.
 	 *
-	 * @return bool True when the asserted user exists, is enabled and has access to the organisation.
+	 * @return bool True when the asserted user exists, is enabled and is a real member of the organisation.
 	 *
 	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
 	 */
@@ -1111,7 +1113,10 @@ class CredentialBrokerService {
 			return false;
 		}
 
-		return $this->organisationService->userHasAccessToOrganisation(
+		// REAL membership only: unlike the session branch, a Nextcloud administrator gets
+		// no blanket pass here, so an administrator's background task cannot spend the key
+		// of an organisation they do not belong to (Ruben, 2026-10-10).
+		return $this->organisationService->isMemberOfOrganisation(
 			organisationUuid: $organisation,
 			userId: $user->getUID()
 		) === true;

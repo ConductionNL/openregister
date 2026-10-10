@@ -907,6 +907,61 @@ class OrganisationService {
 	}//end userHasAccessToOrganisation()
 
 	/**
+	 * Check whether a named user is a REAL member of an organisation.
+	 *
+	 * Unlike {@see userHasAccessToOrganisation()}, a Nextcloud administrator gets no
+	 * blanket pass here: only the organisation's own member list counts. The credential
+	 * broker uses this for a sessionless call acting for a background task's user, where
+	 * an administrator's task must not spend every organisation's key (Ruben, 2026-10-10).
+	 *
+	 * @param string $organisationUuid The organisation UUID to check.
+	 * @param string $userId The user to check. An empty id is never a member.
+	 *
+	 * @return bool True only when the organisation lists the user as a member.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
+	 */
+	public function isMemberOfOrganisation(string $organisationUuid, string $userId): bool {
+		if ($userId === '' || $organisationUuid === '') {
+			return false;
+		}
+
+		try {
+			$organisation = $this->organisationMapper->findByUuid($organisationUuid);
+		} catch (DoesNotExistException $e) {
+			return false;
+		}
+
+		return $organisation->hasUser($userId);
+	}//end isMemberOfOrganisation()
+
+	/**
+	 * The organisations a user may manage shared resources for.
+	 *
+	 * The same authority as {@see isOrganisationAdmin()}: a Nextcloud administrator
+	 * manages every organisation, anyone else the organisations they own. Powers the
+	 * organisation picker of the organisation-credential form; the create endpoint still
+	 * re-checks {@see isOrganisationAdmin()} for whatever organisation the client sends.
+	 *
+	 * @param string $userId The user.
+	 *
+	 * @return Organisation[] The organisations, by name.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-an-organisation-credential-names-and-lets-the-admin-choose-its-organisation
+	 */
+	public function getManageableOrganisations(string $userId): array {
+		if ($userId === '') {
+			return [];
+		}
+
+		if ($this->groupManager->isAdmin($userId) === true) {
+			return $this->organisationMapper->findAll(limit: 1000);
+		}
+
+		return $this->organisationMapper->findAll(limit: 1000, filters: ['owner' => $userId]);
+	}//end getManageableOrganisations()
+
+	/**
 	 * Whether a user administers an organisation (may manage its shared resources).
 	 *
 	 * Owner-level authority: a Nextcloud administrator, or the organisation's

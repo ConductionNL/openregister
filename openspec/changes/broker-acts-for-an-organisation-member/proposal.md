@@ -25,11 +25,17 @@ App Store.
 
 - The organisation guard gains one sessionless admit path: an in-process caller that asserts an
   `actingUserId` is admitted to an organisation credential only when that user exists, is enabled,
-  and is a member of the credential's organisation (or a Nextcloud administrator, the same rule the
-  session path applies through `hasAccessToOrganisation()`).
-- `OrganisationService::userHasAccessToOrganisation(organisationUuid, userId)` answers that
-  question for a named user. `hasAccessToOrganisation()` now delegates to it for the session user,
-  so the two cannot drift.
+  and is a REAL member of the credential's organisation (`OrganisationService::isMemberOfOrganisation()`).
+  A Nextcloud administrator gets no blanket pass on this path (Ruben, 2026-10-10); the session path
+  keeps admitting administrators.
+- `OrganisationService::userHasAccessToOrganisation(organisationUuid, userId)` is the session rule
+  for a named user (member or administrator). `hasAccessToOrganisation()` delegates to it, so the
+  two cannot drift. The background path does not use it.
+- The organisation-credential form can show and choose its organisation (Ruben, 2026-10-10):
+  `GET /api/credentials/organisations` lists what the caller may manage with the active one
+  flagged, and `GET /api/credentials?scope=organisation&organisation=<uuid>` lists a chosen
+  organisation after checking the caller's access. Create already re-checks
+  `isOrganisationAdmin()` for the organisation the client names; that stays the authority.
 - Nothing changes for a session caller: the session stays authoritative and an asserted user is
   ignored. Nothing changes on the HTTP path: both broker endpoints still require a session and still
   never forward an acting user. A personal credential still admits only its owner. The provider
@@ -46,6 +52,8 @@ App Store.
 ## Impact
 
 - `lib/Service/Credential/CredentialBrokerService.php` (organisation guard)
-- `lib/Service/OrganisationService.php` (one new public method, one delegation)
+- `lib/Service/OrganisationService.php` (three new public methods, one delegation)
+- `lib/Controller/CredentialController.php`, `appinfo/routes.php` (organisation picker endpoint, chosen-organisation listing)
+- `tests/Unit/Controller/CredentialControllerOrganisationTest.php`
 - `tests/Unit/Service/Credential/CredentialBrokerActsForOrganisationMemberTest.php`
 - `tests/Unit/Service/OrganisationServiceGapTest.php` (membership for a named user)

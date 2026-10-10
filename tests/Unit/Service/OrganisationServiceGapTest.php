@@ -490,6 +490,52 @@ class OrganisationServiceGapTest extends TestCase {
 		$this->assertFalse($this->service->userHasAccessToOrganisation('bad-uuid', 'admin'));
 	}
 
+	/**
+	 * isMemberOfOrganisation gives a Nextcloud admin NO blanket pass: only the member list counts.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
+	 */
+	public function testIsMemberOfOrganisationIgnoresAdminStatus(): void {
+		$org = $this->createMock(Organisation::class);
+		$org->method('hasUser')->willReturnCallback(static fn (string $uid): bool => $uid === 'bob');
+
+		$this->organisationMapper->method('findByUuid')->willReturn($org);
+		$this->groupManager->method('isAdmin')->willReturn(true);
+		$this->userSession->expects($this->never())->method('getUser');
+
+		$this->assertFalse($this->service->isMemberOfOrganisation('some-uuid', 'admin'));
+		$this->assertTrue($this->service->isMemberOfOrganisation('some-uuid', 'bob'));
+		$this->assertFalse($this->service->isMemberOfOrganisation('some-uuid', ''));
+		// The session rule is unchanged: an admin still has access everywhere there.
+		$this->assertTrue($this->service->userHasAccessToOrganisation('some-uuid', 'admin'));
+	}
+
+	/**
+	 * getManageableOrganisations: an admin manages all organisations, anyone else only what they own.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-an-organisation-credential-names-and-lets-the-admin-choose-its-organisation
+	 */
+	public function testGetManageableOrganisationsByRole(): void {
+		$this->groupManager->method('isAdmin')->willReturnCallback(static fn (string $uid): bool => $uid === 'admin');
+		$calls = [];
+		$this->organisationMapper->method('findAll')->willReturnCallback(
+			function (int $limit = 50, int $offset = 0, ?array $filters = []) use (&$calls): array {
+				$calls[] = $filters;
+				return [];
+			}
+		);
+
+		$this->service->getManageableOrganisations('admin');
+		$this->service->getManageableOrganisations('carol');
+		$this->assertSame([], $this->service->getManageableOrganisations(''));
+
+		$this->assertSame([[], ['owner' => 'carol']], $calls);
+	}
+
 	// =============================================
 	// getUserOrganisationStats tests
 	// =============================================
