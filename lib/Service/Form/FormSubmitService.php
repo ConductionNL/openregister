@@ -203,7 +203,7 @@ class FormSubmitService {
 
 		$plans = $this->plan(writes: [array_merge($destination, ['mapping' => $mapping])], payload: $payload, scope: $scope);
 		if ($draftId !== null) {
-			$plans[0]['object'] = array_merge($this->draftData(plan: $plans[0], draftId: $draftId), $plans[0]['object']);
+			$plans[0]['object'] = array_merge($this->draftData(plan: $plans[0], draftId: $draftId, subject: $subject), $plans[0]['object']);
 		}
 
 		$this->validateAll(plans: $plans, mode: self::MODE_DRAFT);
@@ -303,7 +303,7 @@ class FormSubmitService {
 			throw new FormSubmitRefusedException(message: $message, status: 422);
 		}
 
-		$plans[0]['object'] = array_merge($this->draftData(plan: $plans[0], draftId: $draftId), $plans[0]['object']);
+		$plans[0]['object'] = array_merge($this->draftData(plan: $plans[0], draftId: $draftId, subject: $subject), $plans[0]['object']);
 		$this->validateAll(plans: $plans);
 
 		DraftStatusPolicy::allowPromotion(uuid: $draftId);
@@ -320,26 +320,76 @@ class FormSubmitService {
 	}//end promoteDraft()
 
 	/**
+	 * Whether a draft of this destination exists and belongs to the subject.
+	 *
+	 * The owner check is explicit, on top of the read RBAC that already keeps
+	 * drafts to their owner: an administrator's session bypasses RBAC, and an
+	 * administrator still may not write into somebody else's draft by id.
+	 *
+	 * @param array{register?: mixed, schema?: mixed} $destination The destination pair.
+	 * @param string                                  $draftId     The draft's uuid.
+	 * @param IUser|null                              $subject     The subject.
+	 *
+	 * @return bool True when it is the subject's own draft.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	public function isOwnerOfDraft(array $destination, string $draftId, ?IUser $subject): bool {
+		try {
+			$register = $this->register(reference: $destination['register'] ?? null);
+			$schema = $this->schema(reference: $destination['schema'] ?? null);
+		} catch (FormSubmitRefusedException) {
+			return false;
+		}
+
+		return $this->ownDraft(register: $register, schema: $schema, draftId: $draftId, subject: $subject) !== null;
+	}//end isOwnerOfDraft()
+
+	/**
+	 * The subject's own draft, or null.
+	 *
+	 * @param Register   $register The register.
+	 * @param Schema     $schema   The schema.
+	 * @param string     $draftId  The draft's uuid.
+	 * @param IUser|null $subject  The subject.
+	 *
+	 * @return ObjectEntity|null The draft, when it is a draft and the subject owns it.
+	 */
+	private function ownDraft(Register $register, Schema $schema, string $draftId, ?IUser $subject): ?ObjectEntity {
+		if ($subject === null) {
+			return null;
+		}
+
+		try {
+			$draft = $this->objects->find(id: $draftId, register: $register, schema: $schema, _rbac: false, _multitenancy: false);
+		} catch (Throwable) {
+			return null;
+		}
+
+		if ($draft === null || $draft->isDraft() === false || $draft->getOwner() !== $subject->getUID()) {
+			return null;
+		}
+
+		return $draft;
+	}//end ownDraft()
+
+	/**
 	 * The stored data of the subject's draft, or 404 when it is not theirs or not a draft.
 	 *
-	 * Read under RBAC, so another person's draft is not found (drafts answer
-	 * to their owner only, decision 180).
+	 * Only the subject's own draft is found (decision 180); anything else
+	 * answers the same 404, so a draft id is not an oracle.
 	 *
 	 * @param array<string, mixed> $plan    The write.
 	 * @param string               $draftId The draft's uuid.
+	 * @param IUser|null           $subject The subject; only their own draft is found.
 	 *
 	 * @return array<string, mixed> The draft's data, without its metadata.
 	 *
 	 * @throws FormSubmitRefusedException 404.
 	 */
-	private function draftData(array $plan, string $draftId): array {
-		try {
-			$draft = $this->objects->find(id: $draftId, register: $plan['register'], schema: $plan['schema'], _rbac: true, _multitenancy: true);
-		} catch (Throwable) {
-			$draft = null;
-		}
-
-		if ($draft === null || $draft->isDraft() === false) {
+	private function draftData(array $plan, string $draftId, ?IUser $subject): array {
+		$draft = $this->ownDraft(register: $plan['register'], schema: $plan['schema'], draftId: $draftId, subject: $subject);
+		if ($draft === null) {
 			throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
 		}
 

@@ -69,6 +69,8 @@ class DraftStatusPolicy {
 	 * Forget every allowance (tests, and a submit that was refused after allowing).
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
 	 */
 	public static function resetPromotions(): void {
 		self::$promotions = [];

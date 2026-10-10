@@ -311,6 +311,7 @@ class FormSubmitServiceTest extends TestCase {
 			$entity->setUuid($uuid ?? ('uuid-draft-' . count($this->saves)));
 			$entity->setObject($data);
 			$entity->setStatus('draft');
+			$entity->setOwner($currentUser?->getUID());
 			$entity->setCreated(new DateTime('2026-10-10T14:03:11+02:00'));
 			$this->stored[$entity->getUuid()] = $entity;
 
@@ -592,7 +593,7 @@ class FormSubmitServiceTest extends TestCase {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
 	 */
 	public function testADraftWithoutRequiredDataIsSaved(): void {
-		$user = $this->createMock(IUser::class);
+		$user = $this->user(uid: 'alice');
 		$draft = $this->service->saveDraft(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'Half af'], subject: $user);
 
 		$this->assertSame('draft', $draft['status']);
@@ -601,6 +602,29 @@ class FormSubmitServiceTest extends TestCase {
 		$this->assertArrayNotHasKey('termStartsAt', $this->stored[$draft['id']]->getObject());
 		$this->assertSame([], $this->dispatched);
 	}//end testADraftWithoutRequiredDataIsSaved()
+
+	/**
+	 * A signed-in user with a uid.
+	 */
+	private function user(string $uid): IUser {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+
+		return $user;
+	}//end user()
+
+	/**
+	 * Somebody else's draft is not found, even by its id: the same 404 as an unknown one.
+	 */
+	public function testSomebodyElsesDraftIsA404(): void {
+		$draft = $this->service->saveDraft(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'Van Alice'], subject: $this->user(uid: 'alice'));
+
+		$this->assertTrue($this->service->isOwnerOfDraft(destination: ['register' => 'dossiq', 'schema' => 'case'], draftId: $draft['id'], subject: $this->user(uid: 'alice')));
+		$this->assertFalse($this->service->isOwnerOfDraft(destination: ['register' => 'dossiq', 'schema' => 'case'], draftId: $draft['id'], subject: $this->user(uid: 'bob')));
+
+		$this->expectException(FormSubmitRefusedException::class);
+		$this->service->submit(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['caseType' => 'x'], subject: $this->user(uid: 'bob'), draftId: $draft['id']);
+	}//end testSomebodyElsesDraftIsA404()
 
 	/**
 	 * Spec scenario: a type-invalid draft is refused and nothing is stored.
@@ -634,7 +658,7 @@ class FormSubmitServiceTest extends TestCase {
 	 * Spec scenario: leaving draft runs full validation and stamps receipt.
 	 */
 	public function testLeavingDraftRunsFullValidationAndStampsReceipt(): void {
-		$user = $this->createMock(IUser::class);
+		$user = $this->user(uid: 'alice');
 		$draft = $this->service->saveDraft(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'Kapvergunning'], subject: $user);
 
 		$answer = $this->service->submit(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['caseType' => 'ct-1'], subject: $user, draftId: $draft['id']);
@@ -654,7 +678,7 @@ class FormSubmitServiceTest extends TestCase {
 	 * A draft still missing required data cannot leave draft, and stays a draft.
 	 */
 	public function testAnIncompleteDraftCannotLeaveDraft(): void {
-		$user = $this->createMock(IUser::class);
+		$user = $this->user(uid: 'alice');
 		$draft = $this->service->saveDraft(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'Half af'], subject: $user);
 
 		try {

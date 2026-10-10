@@ -225,16 +225,23 @@ class FormsController extends Controller {
 			}
 
 			$write = $form['writes'][0];
+			$destination = ['register' => ($write['register'] ?? null), 'schema' => ($write['schema'] ?? null)];
+			$subject = $this->userSession->getUser();
+			if ($draftId !== null && $this->submitter->isOwnerOfDraft($destination, $draftId, $subject) === false) {
+				// The same 404 an unknown id gets, so a draft id is not an oracle.
+				throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
+			}
+
 			$mapping = null;
 			if (is_array($write['mapping'] ?? null) === true) {
 				$mapping = $write['mapping'];
 			}
 
 			$draft = $this->submitter->saveDraft(
-				['register' => ($write['register'] ?? null), 'schema' => ($write['schema'] ?? null)],
+				$destination,
 				$mapping,
 				$this->payload(),
-				$this->userSession->getUser(),
+				$subject,
 				$draftId,
 				$formId
 			);

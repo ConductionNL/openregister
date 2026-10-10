@@ -312,6 +312,7 @@ class FormsControllerTest extends TestCase {
 		$this->session->method('getUser')->willReturn($user);
 		$this->resolver->method('resolve')->willReturn($this->form());
 		$this->params = ['formId' => 'form-1', 'onderwerp' => 'Half af', '_draft' => 'd-1'];
+		$this->submitter->method('isOwnerOfDraft')->with(['register' => 'dossiq', 'schema' => 'case'], 'd-1', $user)->willReturn(true);
 		$this->submitter->expects($this->once())->method('saveDraft')
 			->with(['register' => 'dossiq', 'schema' => 'case'], null, ['onderwerp' => 'Half af'], $user, 'd-1', 'form-1')
 			->willReturn(['id' => 'd-1', 'status' => 'draft']);
@@ -325,6 +326,19 @@ class FormsControllerTest extends TestCase {
 
 		$this->assertSame(201, $this->controller->submit(formId: 'form-1')->getStatus());
 	}//end testADraftIsSavedAndSubmittedByItsId()
+
+	/**
+	 * Another person's draft id answers 404 and nothing is saved.
+	 */
+	public function testSomebodyElsesDraftIdIsA404(): void {
+		$this->session->method('getUser')->willReturn($this->createMock(IUser::class));
+		$this->resolver->method('resolve')->willReturn($this->form());
+		$this->params = ['formId' => 'form-1', '_draft' => 'not-mine'];
+		$this->submitter->method('isOwnerOfDraft')->willReturn(false);
+		$this->submitter->expects($this->never())->method('saveDraft');
+
+		$this->assertSame(404, $this->controller->draft(formId: 'form-1')->getStatus());
+	}//end testSomebodyElsesDraftIdIsA404()
 
 	/**
 	 * The draft route is for signed-in people and is not public.
