@@ -32,6 +32,7 @@ use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\Mcp\ToolRegistryFacade;
 use OCA\OpenRegister\Service\ToolRegistry;
+use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AnnotationFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AttributeFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\HintScopeFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\ReachFixtureService;
@@ -47,6 +48,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
+require_once __DIR__ . '/Fixtures/AnnotationFixtureService.php';
 require_once __DIR__ . '/Fixtures/AttributeFixtureService.php';
 require_once __DIR__ . '/Fixtures/HintScopeFixtureService.php';
 require_once __DIR__ . '/Fixtures/ReachFixtureService.php';
@@ -315,4 +317,36 @@ class AttributeToolDualSurfaceTest extends TestCase {
 		}
 
 	}//end testDeclaredReachArrivesAtTheResolverOnBothSurfaces()
+
+	// ── Declared annotations end to end (REQ-ATTR-007) ───────────────
+
+	public function testDeclaredAnnotationsArriveOnBothSurfaces(): void {
+		$instance = new AnnotationFixtureService();
+		$entries = (new AttributeToolScanner())->scanClass(appId: 'dossiq', className: get_class($instance), logger: $this->logger);
+		foreach ($entries as &$entry) {
+			$entry['instance'] = $instance;
+		}
+
+		unset($entry);
+		$provider = new AttributeToolProvider(appId: 'dossiq', entries: $entries, auditTrailMapper: $this->auditTrailMapper, logger: $this->logger);
+
+		$service = new McpToolsService(providers: [$provider], logger: $this->logger);
+		$jsonRpc = [];
+		foreach ($service->listTools()['tools'] as $tool) {
+			$jsonRpc[$tool['id']] = $tool;
+		}
+
+		$facade = [];
+		foreach ($this->buildFacade($provider)->listTools() as $descriptor) {
+			$facade[$descriptor['mcpId']] = $descriptor;
+		}
+
+		foreach ([$jsonRpc, $facade] as $surface) {
+			$this->assertSame(['citizenIntake' => true], $surface['dossiq.fileCase']['annotations']);
+			$this->assertSame('create', $surface['dossiq.fileCase']['scope']);
+			$this->assertSame('create', $surface['dossiq.fileCase']['action']);
+			$this->assertArrayNotHasKey('annotations', $surface['dossiq.reassignCase']);
+		}
+
+	}//end testDeclaredAnnotationsArriveOnBothSurfaces()
 }//end class

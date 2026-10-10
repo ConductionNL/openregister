@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
+use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AnnotationFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AttributeFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\HintScopeFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\ReachFixtureService;
@@ -32,6 +33,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
+require_once __DIR__ . '/Fixtures/AnnotationFixtureService.php';
 require_once __DIR__ . '/Fixtures/AttributeFixtureService.php';
 require_once __DIR__ . '/Fixtures/HintScopeFixtureService.php';
 require_once __DIR__ . '/Fixtures/ReachFixtureService.php';
@@ -324,4 +326,45 @@ class AttributeToolScannerTest extends TestCase {
 		$this->assertArrayHasKey('reassignCase', $descriptors);
 
 	}//end testUnknownReachIsRejectedAndLogged()
+
+	// ── Declared annotations (REQ-ATTR-007) ──────────────────────────
+
+	/**
+	 * @return array<string, array<string, mixed>> descriptor keyed by `name`
+	 */
+	private function scanAnnotationFixture(): array {
+		$byName = [];
+		foreach ($this->scanner->scanClass(appId: 'dossiq', className: AnnotationFixtureService::class, logger: $this->logger) as $descriptor) {
+			$byName[$descriptor['name']] = $descriptor;
+		}
+
+		return $byName;
+	}//end scanAnnotationFixture()
+
+	public function testDescriptorForwardsDeclaredAnnotations(): void {
+		$descriptor = $this->scanAnnotationFixture()['fileCase'];
+
+		$this->assertSame(['citizenIntake' => true], $descriptor['annotations']);
+		$this->assertSame('create', $descriptor['scope']);
+		$this->assertSame('create', $descriptor['action']);
+
+	}//end testDescriptorForwardsDeclaredAnnotations()
+
+	public function testUndeclaredAnnotationsStayOmitted(): void {
+		$this->assertArrayNotHasKey('annotations', $this->scanAnnotationFixture()['reassignCase']);
+
+	}//end testUndeclaredAnnotationsStayOmitted()
+
+	public function testMalformedAnnotationsAreRejectedAndLogged(): void {
+		$this->logger->expects($this->once())
+			->method('warning')
+			->with($this->stringContains('unrecognised `annotations`'));
+
+		$descriptors = $this->scanAnnotationFixture();
+
+		$this->assertArrayNotHasKey('badAnnotationTool', $descriptors);
+		$this->assertArrayHasKey('fileCase', $descriptors);
+		$this->assertArrayHasKey('reassignCase', $descriptors);
+
+	}//end testMalformedAnnotationsAreRejectedAndLogged()
 }//end class

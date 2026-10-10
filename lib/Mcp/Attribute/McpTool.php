@@ -59,6 +59,8 @@
  *   (Requirement: REQ-ATTR-005 — Attribute-declared hints/scope reach both MCP surfaces)
  * @spec openspec/specs/ai-mcp/spec.md
  *   (Requirement: REQ-ATTR-006 — A curated attribute tool declares its reach)
+ * @spec openspec/specs/ai-mcp/spec.md
+ *   (Requirement: REQ-ATTR-007 — A curated attribute tool forwards free-form annotations)
  */
 
 declare(strict_types=1);
@@ -108,6 +110,12 @@ final class McpTool {
 	 *                           (`self`, `user`, `instance`, `external`), validated by the scanner at
 	 *                           scan time. A curated two-segment id carries no verb to infer a reach
 	 *                           from, so an omitted reach resolves to `external` (fail closed).
+	 * @param array<string, bool|int|float|string> $annotations Free-form marks a consuming app reads
+	 *                           off the descriptor, e.g. `['citizenIntake' => true]` for hermiq's
+	 *                           intake surface. OpenRegister interprets none of them; it forwards the
+	 *                           map under `annotations` only when non-empty. Keys MUST be non-empty
+	 *                           strings and values scalars, validated by the scanner at scan time.
+	 *                           A mark is a claim: a consumer MUST NOT treat one as a grant.
 	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-ATTR-001 — The #[McpTool] service-method attribute)
@@ -124,6 +132,7 @@ final class McpTool {
 		public readonly ?string $subject = null,
 		public readonly ?string $action = null,
 		public readonly ?string $reach = null,
+		public readonly array $annotations = [],
 	) {
 	}//end __construct()
 }//end class
