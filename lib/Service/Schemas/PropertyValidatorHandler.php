@@ -461,6 +461,20 @@ class PropertyValidatorHandler {
 	];
 
 	/**
+	 * The modifiers that take one value from a closed list, and that list.
+	 *
+	 * The save path refuses any other value, so the list is published with the
+	 * vocabulary. An app that ships `inputControl: textarea` learns at build
+	 * time what it otherwise learns from a schema refused at import.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	public const CLOSED_MODIFIER_VALUES = [
+		'matchType' => PropertySearchProfile::MATCH_TYPES,
+		'inputControl' => PropertySearchProfile::INPUT_CONTROLS,
+	];
+
+	/**
 	 * The keys that change how a property behaves rather than what it accepts.
 	 *
 	 * These are OpenRegister's own, they are valid on every type, and they are
@@ -994,12 +1008,7 @@ class PropertyValidatorHandler {
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	private function validateSearchProfile(array $property, string $path): void {
-		$declarations = [
-			'matchType' => PropertySearchProfile::MATCH_TYPES,
-			'inputControl' => PropertySearchProfile::INPUT_CONTROLS,
-		];
-
-		foreach ($declarations as $key => $allowed) {
+		foreach (self::CLOSED_MODIFIER_VALUES as $key => $allowed) {
 			$declared = ($property[$key] ?? null);
 			if ($declared === null) {
 				continue;
