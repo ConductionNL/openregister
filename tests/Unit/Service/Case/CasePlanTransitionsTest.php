@@ -43,7 +43,7 @@ class CasePlanTransitionsTest extends TestCase {
 	 */
 	public static function legalEdges(): array {
 		$cases = [];
-		foreach ([CaseItem::TYPE_STAGE, CaseItem::TYPE_HUMAN_TASK] as $type) {
+		foreach ([CaseItem::TYPE_STAGE, CaseItem::TYPE_HUMAN_TASK, CaseItem::TYPE_PROCESS_TASK] as $type) {
 			foreach ([
 				[CaseItem::STATE_AVAILABLE, CaseItem::STATE_ENABLED],
 				[CaseItem::STATE_AVAILABLE, CaseItem::STATE_ACTIVE],
@@ -111,8 +111,8 @@ class CasePlanTransitionsTest extends TestCase {
 			}
 		}
 
-		// 3 types x 36 pairs = 108 triples, 20 legal.
-		$this->assertSame(88, $refused);
+		// 4 types x 36 pairs = 144 triples, 29 legal.
+		$this->assertSame(115, $refused);
 	}//end testEveryEdgeOutsideTheTableIsRefused()
 
 	/**

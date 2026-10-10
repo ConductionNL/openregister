@@ -11,9 +11,9 @@ Small PRs, in this order. PR 1 is what dossiq's drain waits on.
 
 ## 2. One state list and the process task (PR 2)
 
-- [ ] 2.1 `CaseItem::STATES` / `TERMINAL_STATES` reference `Task::STATES` / `TERMINAL_STATES`; unit test asserts identity.
-- [ ] 2.2 `CaseItem::TYPE_PROCESS_TASK`; `CasePlanTransitions` work-item edges; `CasePlanDefinition` accepts it, refuses one without a flow or with children.
-- [ ] 2.3 `CaseRealisationService::realise()` queues the run for a process task; `CaseRunTerminalListener` drives it as for a stage; unit tests.
+- [x] 2.1 `CaseItem::STATES` / `TERMINAL_STATES` reference `Task::STATES` / `TERMINAL_STATES`; unit test asserts identity. (CaseProcessTaskTest::testPlanItemsAndTasksShareOneListOfStates)
+- [x] 2.2 `CaseItem::TYPE_PROCESS_TASK`; `CasePlanTransitions` work-item edges; `CasePlanDefinition` accepts it, refuses one without a flow or with children. (CaseProcessTaskTest, CasePlanTransitionsTest matrix)
+- [x] 2.3 `CaseRealisationService::realise()` queues the run for a process task; `CaseRunTerminalListener` drives it as for a stage (the cascade's realisation check is type-agnostic, `CasePlanCascade.php:223`); unit tests. (CaseProcessTaskTest::testAProcessTaskQueuesItsFlow)
 
 ## 3. Plan-item timers on the shared clock (PR 3)
 
