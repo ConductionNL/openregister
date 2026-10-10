@@ -343,6 +343,27 @@ class LogService {
 			search: $config['search'] ?? null
 		);
 
+		return $this->exportRows(format: $format, logs: $logs, config: $config);
+	}//end exportLogs()
+
+	/**
+	 * Export rows the caller already selected.
+	 *
+	 * The audit page selects its rows through the keyset query with its own
+	 * filters; this renders exactly those rows and re-queries nothing, so the
+	 * file cannot disagree with the list it was exported from.
+	 *
+	 * @param string                                  $format One of csv, json, xml, txt.
+	 * @param array<int, \OCA\OpenRegister\Db\AuditTrail> $logs   The rows.
+	 * @param array<string, mixed>                    $config includeChanges, includeMetadata.
+	 *
+	 * @return array{content: string, filename: string, contentType: string} The file.
+	 *
+	 * @throws InvalidArgumentException When the format is not supported.
+	 *
+	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-the-filtered-audit-list-exports-with-its-hash-chain
+	 */
+	public function exportRows(string $format, array $logs, array $config = []): array {
 		// Process logs for export.
 		$exportData = $this->prepareLogsForExport(logs: $logs, config: $config);
 
@@ -359,7 +380,7 @@ class LogService {
 			default:
 				throw new InvalidArgumentException("Unsupported export format: {$format}");
 		}
-	}//end exportLogs()
+	}//end exportRows()
 
 	/**
 	 * Prepare logs data for export by filtering and formatting fields
@@ -407,6 +428,10 @@ class LogService {
 				'userName' => $logData['userName'] ?? '',
 				'created' => $logData['created'] ?? '',
 				'size' => $logData['size'] ?? '',
+				// The chain fields travel on every row, so an exported list
+				// can be checked against the chain without the database.
+				'hash' => $logData['hash'] ?? '',
+				'previousHash' => $logData['previousHash'] ?? '',
 			];
 
 			// Include changes if requested.

@@ -36,6 +36,7 @@ use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\IL10N;
 use RuntimeException;
 
@@ -179,6 +180,8 @@ class TasksProvider extends AbstractIntegrationProvider {
 	 *                           or the underlying VTODO write fails.
 	 *
 	 * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function create(string $register, string $schema, string $objectId, array $payload): array {
 		$registerEntity = $this->registerMapper->find(id: $register);
@@ -188,11 +191,11 @@ class TasksProvider extends AbstractIntegrationProvider {
 		// missing object still allows the task to be created with a
 		// synthetic fallback title; the linked-entity scan finds it via
 		// the X-OPENREGISTER-OBJECT uuid regardless.
-		$objectEntity = $this->objectService->find(
+		$objectEntity = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $objectId,
 			register: $registerEntity,
 			schema: $schemaEntity
-		);
+		));
 		$objectTitle = $objectEntity?->getName() ?? $objectId;
 
 		$data = [

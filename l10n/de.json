@@ -3309,7 +3309,10 @@
         "{schema} {title} deleted": "{schema} {title} gelöscht",
         "Object \"%1$s\" created": "Objekt \"%1$s\" erstellt",
         "Object \"%1$s\" updated": "Objekt \"%1$s\" aktualisiert",
-        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" wurde Ihnen zugewiesen"
+        "Object \"%1$s\" assigned to you": "Objekt \"%1$s\" wurde Ihnen zugewiesen",
+        "Audit trail export ready": "Export des Prüfprotokolls ist fertig",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Ihr Export des Prüfprotokolls mit %1$s Einträgen wurde unter %2$s%3$s gespeichert.",
+        "Open Files": "Dateien öffnen"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

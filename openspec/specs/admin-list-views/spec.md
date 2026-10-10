@@ -6,7 +6,9 @@ status: done
 
 ## Purpose
 Provides consistent interaction behaviour across the OpenRegister admin index views (agents, applications, configurations, entities, sources, templates, webhooks). Gives each list a select-all bulk-selection action, an optional detail-sidebar toggle, and a soft refresh of its data on mount so views render instantly from already-loaded store state.
+
 ## Requirements
+
 ### Requirement: Admin index views MUST expose a `toggleSelectAll(checked)` bulk-selection action @e2e exclude isolated Vue component contract (toggleSelectAll populates/clears the selection array keyed off store ids, no API/refresh) — covered by Vitest component unit test. The index views themselves render via manifest-shell.spec.ts
 
 Every admin index view (`AgentsIndex`, `ApplicationsIndex`, `ConfigurationsIndex`, `EntitiesIndex`, `SourcesIndex`) MUST expose a `toggleSelectAll(checked: boolean)` method bound to the column-header checkbox. When invoked with `checked === true`, the method MUST populate the view's `selected*` array with every record `id` currently in the corresponding store's list (e.g. `selectedAgents = agentStore.agentList.map(a => a.id)`). When invoked with `checked === false`, the method MUST replace the array with an empty array. The method MUST NOT mutate the underlying store list, MUST NOT trigger a refresh, and MUST NOT call the API.
@@ -68,3 +70,26 @@ On `mounted()`, each admin index view MUST invoke its owning store's `refresh*Li
 - **THEN** the view MUST render the existing list without a loading overlay
 - **AND** the list MUST update reactively once the refresh resolves
 
+### Requirement: OpenRegister's schemas and registers lists MUST filter from their column headers
+
+The schemas and registers index pages SHALL offer a filter in every column
+header that can filter, and applying one SHALL narrow the list. A text column
+SHALL match on contains, case-insensitive (`{key}[like]`). A date column SHALL
+match a from and to range (`{key}[gte]`, `{key}[lte]`). Clearing a filter SHALL
+show the full list again. A change SHALL return the list to page 1. Both lists
+SHALL sort from their sortable headers.
+
+#### Scenario: a title filter narrows the schemas list
+
+- **GIVEN** the schemas list holds "Case Type", "Client" and "Lead Product"
+- **WHEN** a person types "case" into the title header filter and applies it
+- **THEN** only "Case Type" is listed
+- **AND** clearing the filter lists all three again
+- @e2e exclude {client-side list filter; covered by src/services/listFilter.spec.js and a live check on :8099}
+
+#### Scenario: the registers list sorts by title
+
+- **GIVEN** the registers list holds "pipelinq", "dossiq" and "Tasks"
+- **WHEN** a person clicks the Title header
+- **THEN** the list reads dossiq, pipelinq, Tasks
+- @e2e exclude {client-side list sort; covered by src/services/listSort.spec.js and a live check on :8099}

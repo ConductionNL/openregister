@@ -52,13 +52,13 @@ use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\Export\ExportAuditRecorder;
+use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\Interaction\ReadStateService;
-use OCA\OpenRegister\Service\Interaction\ViewHistoryService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Object\UpsertOnKeyException;
@@ -68,6 +68,7 @@ use OCA\OpenRegister\Service\Schemas\ReferenceFilterException;
 use OCA\OpenRegister\Service\Schemas\ReferenceOptionsReader;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\WebhookService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Support\FilterParams;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -939,6 +940,8 @@ class ObjectsController extends Controller {
 	 * @psalm-suppress UnusedParam Params are used in foreach loops and method calls.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+	 *
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
 	 */
 	private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse {
 		$magicMapper = $this->container->get(\OCA\OpenRegister\Db\MagicMapper::class);
@@ -1088,6 +1091,9 @@ class ObjectsController extends Controller {
 		// where a `{"nl":...}` map projects to the negotiated language.
 		$renderHandler->resolveTranslationsForRows(rows: $results);
 
+		// Every list row must carry @self.files (file IDs), as on the QueryHandler cheap path.
+		$renderHandler->attachLightweightFilesToRows(rows: $results);
+
 		// Serialize results.
 		$serializedResults = [];
 		foreach ($results as $entity) {
@@ -1111,23 +1117,20 @@ class ObjectsController extends Controller {
 		$limit = (int)($query['_limit'] ?? 20);
 		$offset = (int)($query['_offset'] ?? 0);
 
-		// PERF-6: the per-table merge can return up to limit×tableCount rows. Slice
-		// down to the requested page window so the response honours _limit/_offset
-		// instead of returning every fetched row.
-		// NOTE: an exact cross-table total still requires a per-table COUNT(*) in SQL
-		// (MagicMapper, out of this controller's scope); $fetchedCount is the best
-		// available bound here. TODO(PERF-6): sum per-table COUNT(*) in MagicMapper.
-		$fetchedCount = count($serializedResults);
+		// PERF-6: the sequential per-table merge can return up to limit×tableCount
+		// rows, so cap the page at _limit. The mapper already applied _offset (the
+		// UNION in SQL, the sequential path per table); applying it again here
+		// emptied every page after the first.
 		if ($limit > 0) {
-			$serializedResults = array_slice($serializedResults, $offset, $limit);
-		} elseif ($offset > 0) {
-			$serializedResults = array_slice($serializedResults, $offset);
+			$serializedResults = array_slice($serializedResults, 0, $limit);
 		}
 
-		// PERF-10: allow callers to skip the (here, in-PHP) total when not needed.
+		// PERF-10: allow callers to skip the total when not needed. The total is
+		// every match across the tables, counted by the mapper on the search's
+		// own path, never the size of this page (a pager would show one page).
 		$wantTotal = filter_var($params['_count'] ?? true, FILTER_VALIDATE_BOOLEAN);
 		if ($wantTotal === true) {
-			$total = $fetchedCount;
+			$total = $magicMapper->countAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs);
 		} else {
 			$total = null;
 		}
@@ -1142,21 +1145,27 @@ class ObjectsController extends Controller {
 			$page = (int)floor($offset / $limit) + 1;
 		}
 
-		return new JSONResponse(
-			data: [
-				'results' => $serializedResults,
-				'total' => $total,
-				'pages' => $pages,
-				'page' => $page,
-				'limit' => $limit,
-				'@self' => [
-					'source' => 'cross_table_magic_mapper',
-					'table_count' => count($pairs),
-					'register_count' => count($registers),
-					'schema_count' => count($schemas),
-				],
-			]
-		);
+		$responseData = [
+			'results' => $serializedResults,
+			'total' => $total,
+			'pages' => $pages,
+			'page' => $page,
+			'limit' => $limit,
+			'@self' => [
+				'source' => 'cross_table_magic_mapper',
+				'table_count' => count($pairs),
+				'register_count' => count($registers),
+				'schema_count' => count($schemas),
+			],
+		];
+
+		// The `_recent` lens report, as on the single-schema list
+		// (`recently-opened-means-opened`). Present only when asked.
+		if (is_array($query['_recentLens'] ?? null) === true) {
+			$responseData['@self']['lenses']['recent'] = $query['_recentLens'];
+		}
+
+		return new JSONResponse(data: $responseData);
 	}//end crossTableSearch()
 
 	/**
@@ -1590,6 +1599,9 @@ class ObjectsController extends Controller {
 					// where a `{"nl":...}` map projects to the negotiated language.
 					$renderHandler->resolveTranslationsForRows(rows: $results);
 
+					// Every list row must carry @self.files (file IDs), as on the QueryHandler cheap path.
+					$renderHandler->attachLightweightFilesToRows(rows: $results);
+
 					$serializedResults = [];
 					foreach ($results as $entity) {
 						$serializedResults[] = $entity->jsonSerialize();
@@ -1681,6 +1693,12 @@ class ObjectsController extends Controller {
 						'activeOrganisation' => $activeOrganisation,
 					],
 				];
+
+				// The `_recent` lens report: whether it could answer, and why not
+				// (`read-history-on-audit-trail`). Present only when asked.
+				if (is_array($query['_recentLens'] ?? null) === true) {
+					$responseData['@self']['lenses']['recent'] = $query['_recentLens'];
+				}
 
 				// Add ignored filters and developer hint if applicable.
 				if (empty($ignoredFilters) === false) {
@@ -2623,6 +2641,9 @@ class ObjectsController extends Controller {
 						// where a `{"nl":...}` map projects to the negotiated language.
 						$renderHandler->resolveTranslationsForRows(rows: $results);
 
+						// Every list row must carry @self.files (file IDs), as on the QueryHandler cheap path.
+						$renderHandler->attachLightweightFilesToRows(rows: $results);
+
 						// Convert ObjectEntity array to JSON-serializable format.
 						$serializedResults = [];
 						foreach ($results as $entity) {
@@ -2794,13 +2815,13 @@ class ObjectsController extends Controller {
 		// confirm an object exists.
 		$record = [];
 		try {
-			$stored = $this->objectService->find(
+			$stored = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $id,
 				files: false,
 				register: $register,
 				schema: $schema,
 				_render: false
-			);
+			));
 			if ($stored !== null) {
 				$record = $stored->getObject();
 			}
@@ -3027,17 +3048,9 @@ class ObjectsController extends Controller {
 			// Only include when explicitly requested via _extend parameter.
 			// Supports both singular (_register, _schema) and plural (_registers, _schemas) forms.
 			// Note: renderEntity returns an array (already serialized), not an ObjectEntity.
-			// Opening an object's detail is what records a view
-			// (`favourites-and-recent`). It happens HERE and nowhere else,
-			// because this is the read path a person is behind: a list read, an
-			// export and a webhook all render objects too, and none of them is
-			// somebody looking at one thing.
-			$this->recordObjectView(
-				object: $objectEntity,
-				register: $register,
-				schema: $schema
-			);
-
+			// No separate view is recorded here any more: the audited read in
+			// GetObject::find() above IS the view (`read-history-on-audit-trail`),
+			// and the `_recent` lens reads it back from the audit trail.
 			$renderedData = $renderedObject;
 			if (isset($renderedData['@self']) === true) {
 				// The tab badges (`object-read-state`). Attached HERE and
@@ -4440,13 +4453,13 @@ class ObjectsController extends Controller {
 			$objectService->setRegister(register: $register);
 			$objectService->setSchema(schema: $schema);
 
-			$objectEntity = $objectService->find(
+			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $id,
 				register: $register,
 				schema: $schema,
 				_rbac: false,
 				_multitenancy: false
-			);
+			));
 			if ($objectEntity === null) {
 				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 			}
@@ -4773,7 +4786,7 @@ class ObjectsController extends Controller {
 
 		// Try to fetch the object by ID/UUID only (no register/schema filter yet).
 		try {
-			$object = $objectService->find(id: $id);
+			$object = WriteCause::asLookup(fn () => $objectService->find(id: $id));
 			if ($object === null) {
 				return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
 			}
@@ -5513,12 +5526,13 @@ class ObjectsController extends Controller {
 	 * @param string $id       The object.
 	 *
 	 * @return ObjectEntity|null The object, or null when it cannot be read.
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 */
 	private function presenceObject(string $register, string $schema, string $id): ?ObjectEntity {
 		try {
 			$this->objectService->setRegister(register: $register);
 			$this->objectService->setSchema(schema: $schema);
-			$found = $this->objectService->find($id);
+			$found = WriteCause::asLookup(fn () => $this->objectService->find($id));
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -5820,7 +5834,52 @@ class ObjectsController extends Controller {
 			register: $register->getId(),
 			schema: $schema->getId()
 		);
+
+		$this->recordExportRun(register: $register, schema: $schema, format: $format, rowCount: $rowCount);
 	}//end recordExportCompleted()
+
+	/**
+	 * Put an ad-hoc API export in the export area as a run.
+	 *
+	 * The bytes went straight to the caller, so the run keeps no file and has
+	 * no expiry, and its download count is one: the register served it once,
+	 * in this response. A recorder that cannot be resolved or fails costs the
+	 * row, never the export.
+	 *
+	 * @param Register $register The register exported.
+	 * @param Schema   $schema   The schema exported.
+	 * @param string   $format   The format served.
+	 * @param int      $rowCount The rows served.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md
+	 */
+	private function recordExportRun(Register $register, Schema $schema, string $format, int $rowCount): void {
+		try {
+			$runs = $this->container->get(ExportRunRecorder::class);
+			if ($runs instanceof ExportRunRecorder === false) {
+				return;
+			}
+
+			$runs->record(
+				source: 'api',
+				actor: (string)($this->userSession->getUser()?->getUID() ?? ''),
+				format: $format,
+				rowCount: $rowCount,
+				profile: 'ad-hoc',
+				registerName: (string)($register->getSlug() ?? $register->getId()),
+				schemaName: (string)($schema->getSlug() ?? $schema->getId()),
+				retentionSeconds: null,
+				downloadCount: 1
+			);
+		} catch (\Throwable $e) {
+			$this->logger?->warning(
+				message: '[ObjectsController] Could not record the export run; the export itself was served',
+				context: ['error' => $e->getMessage()]
+			);
+		}//end try
+	}//end recordExportRun()
 
 	/**
 	 * The audit recorder, or null when it cannot be resolved.
@@ -6067,7 +6126,7 @@ class ObjectsController extends Controller {
 			$objectService->setSchema(schema: $schema);
 
 			// Get the object to ensure it exists and we have access.
-			$object = $objectService->find(id: $id);
+			$object = WriteCause::asLookup(fn () => $objectService->find(id: $id));
 
 			/*
 			 * Get the FileService from the container.
@@ -6784,41 +6843,6 @@ class ObjectsController extends Controller {
 	}//end withUnreadCounts()
 
 	/**
-	 * Record that the caller opened this object.
-	 *
-	 * Throttled inside `ViewHistoryService` to one record per user, object and
-	 * minute, so a detail page that reads its object several times while it
-	 * renders leaves one row carrying the moment of the first read.
-	 *
-	 * Resolved through the container rather than the constructor, the same lazy
-	 * posture the render layer uses for the sibling primitives: recording that
-	 * somebody looked at an object must never be able to take out the read of
-	 * that object, and an anonymous read records nothing at all.
-	 *
-	 * @param ObjectEntity $object The object being read.
-	 * @param string $register The register as the caller addressed it.
-	 * @param string $schema The schema as the caller addressed it.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-opening-an-object-records-a-per-user-view
-	 */
-	private function recordObjectView(ObjectEntity $object, string $register, string $schema): void {
-		try {
-			$this->container->get(ViewHistoryService::class)->recordView(
-				object: $object,
-				register: $register,
-				schema: $schema
-			);
-		} catch (\Throwable $e) {
-			$this->logger?->debug(
-				sprintf('[ObjectsController] view not recorded: %s', $e->getMessage())
-			);
-		}//end try
-
-	}//end recordObjectView()
-
-	/**
 	 * Read the records that reference this object, grouped by schema.
 	 *
 	 * The reverse of `uses`: an address, an asset or a licence read as the thing
@@ -6852,7 +6876,7 @@ class ObjectsController extends Controller {
 		$rbac = ($isAdmin === false);
 
 		try {
-			$objectEntity = $objectService->find(
+			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $id,
 				files: false,
 				register: $register,
@@ -6860,7 +6884,7 @@ class ObjectsController extends Controller {
 				_rbac: $rbac,
 				_multitenancy: $rbac,
 				_render: false
-			);
+			));
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
 		}
@@ -6917,7 +6941,7 @@ class ObjectsController extends Controller {
 		$rbac = ($isAdmin === false);
 
 		try {
-			$objectEntity = $objectService->find(
+			$objectEntity = WriteCause::asLookup(fn () => $objectService->find(
 				id: $id,
 				files: false,
 				register: $register,
@@ -6925,7 +6949,7 @@ class ObjectsController extends Controller {
 				_rbac: $rbac,
 				_multitenancy: $rbac,
 				_render: false
-			);
+			));
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
 		}

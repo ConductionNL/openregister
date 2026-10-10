@@ -3309,7 +3309,10 @@
         "{schema} {title} deleted": "{schema} {title} διαγράφηκε",
         "Object \"%1$s\" created": "Αντικείμενο \"%1$s\" δημιουργήθηκε",
         "Object \"%1$s\" updated": "Αντικείμενο \"%1$s\" ενημερώθηκε",
-        "Object \"%1$s\" assigned to you": "Αντικείμενο \"%1$s\" ανατέθηκε σε εσάς"
+        "Object \"%1$s\" assigned to you": "Αντικείμενο \"%1$s\" ανατέθηκε σε εσάς",
+        "Audit trail export ready": "Η εξαγωγή του ίχνους ελέγχου είναι έτοιμη",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Η εξαγωγή του ίχνους ελέγχου με %1$s εγγραφές αποθηκεύτηκε στο %2$s%3$s.",
+        "Open Files": "Άνοιγμα Αρχείων"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

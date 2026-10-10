@@ -3330,7 +3330,10 @@
         "{schema} {title} deleted": "{schema} {title} dzēsts",
         "Object \"%1$s\" created": "Objekts \"%1$s\" izveidots",
         "Object \"%1$s\" updated": "Objekts \"%1$s\" atjaunināts",
-        "Object \"%1$s\" assigned to you": "Objekts \"%1$s\" piešķirts tev"
+        "Object \"%1$s\" assigned to you": "Objekts \"%1$s\" piešķirts tev",
+        "Audit trail export ready": "Audita pieraksta eksports ir gatavs",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Jūsu audita pieraksta eksports ar %1$s ierakstiem saglabāts %2$s%3$s.",
+        "Open Files": "Atvērt Datnes"
     },
     "pluralForm": "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);",
     "plurals": {

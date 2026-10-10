@@ -3309,7 +3309,10 @@
         "{schema} {title} deleted": "{schema} {title} eytt",
         "Object \"%1$s\" created": "Hlutur \"%1$s\" stofnað",
         "Object \"%1$s\" updated": "Hlutur \"%1$s\" uppfært",
-        "Object \"%1$s\" assigned to you": "Hlutur \"%1$s\" úthlutað þér"
+        "Object \"%1$s\" assigned to you": "Hlutur \"%1$s\" úthlutað þér",
+        "Audit trail export ready": "Útflutningur endurskoðunarslóðar er tilbúinn",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Útflutningur endurskoðunarslóðar með %1$s færslum var vistaður í %2$s%3$s.",
+        "Open Files": "Opna Skrár"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

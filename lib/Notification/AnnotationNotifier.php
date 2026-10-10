@@ -119,7 +119,7 @@ class AnnotationNotifier implements INotifier {
 	 *
 	 * @spec openspec/specs/notificatie-engine/spec.md
 	 * @spec openspec/specs/activity-provider/spec.md#requirement-a-canonical-object-notification-does-not-print-a-register-id
-	 * @spec openspec/changes/order-filters-and-notification-links/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
 	 */
 	public function prepare(INotification $notification, string $languageCode): INotification {
 		if ($notification->getApp() !== 'openregister') {
@@ -304,7 +304,7 @@ class AnnotationNotifier implements INotifier {
 	 *
 	 * @return string|null The link set, or null when the notification names no object.
 	 *
-	 * @spec openspec/changes/order-filters-and-notification-links/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
 	 */
 	private function linkToObject(INotification $notification, array $params): ?string {
 		$link = $this->buildObjectLink(params: $params);
@@ -327,7 +327,8 @@ class AnnotationNotifier implements INotifier {
 	 *
 	 * @return string|null The absolute link, or null.
 	 *
-	 * @spec openspec/changes/order-filters-and-notification-links/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
 	 */
 	private function buildObjectLink(array $params): ?string {
 		$registerId = (string)($params['registerId'] ?? '');
@@ -342,8 +343,11 @@ class AnnotationNotifier implements INotifier {
 			return $owned;
 		}
 
+		// OpenRegister runs in history mode: its object view is
+		// objects/{register}/{schema}/{uuid}. The old #/registers/... hash
+		// opened the dashboard (cloud check, 9 October 2026).
 		return $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page')
-			. sprintf('#/registers/%s/schemas/%s/objects/%s', $registerId, $schemaId, $objectUuid);
+			. sprintf('objects/%s/%s/%s', rawurlencode($registerId), rawurlencode($schemaId), rawurlencode($objectUuid));
 	}//end buildObjectLink()
 
 	/**
@@ -355,7 +359,7 @@ class AnnotationNotifier implements INotifier {
 	 *
 	 * @return string|null The absolute link, or null when no app claimed the schema.
 	 *
-	 * @spec openspec/changes/order-filters-and-notification-links/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
 	 */
 	private function resolveOwnedLink(string $registerId, string $schemaId, string $objectUuid): ?string {
 		if ($this->deepLinks === null || is_numeric($registerId) === false || is_numeric($schemaId) === false) {
@@ -387,7 +391,7 @@ class AnnotationNotifier implements INotifier {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/order-filters-and-notification-links/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
+	 * @spec openspec/specs/notificatie-engine/spec.md#requirement-an-object-notification-must-link-to-the-object
 	 */
 	private function addViewAction(INotification $notification, string $link, string $label): void {
 		$action = $notification->createAction();

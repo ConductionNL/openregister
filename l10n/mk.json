@@ -3309,7 +3309,10 @@
         "{schema} {title} deleted": "{schema} {title} избришан",
         "Object \"%1$s\" created": "Објект \"%1$s\" создаден",
         "Object \"%1$s\" updated": "Објект \"%1$s\" ажуриран",
-        "Object \"%1$s\" assigned to you": "Објект \"%1$s\" ви е доделен"
+        "Object \"%1$s\" assigned to you": "Објект \"%1$s\" ви е доделен",
+        "Audit trail export ready": "Извозот на ревизорската трага е подготвен",
+        "Your audit trail export of %1$s entries was saved to %2$s%3$s.": "Вашиот извоз на ревизорската трага со %1$s записи е зачуван во %2$s%3$s.",
+        "Open Files": "Отвори Датотеки"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

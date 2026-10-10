@@ -231,7 +231,7 @@ class SendMessagingNodesTest extends TestCase {
 	/**
 	 * The message category is declared, formed and validated, and an unknown one names the field.
 	 *
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
 	 */
 	public function testSendEmailDeclaresAndValidatesTheMessageCategory(): void {
 		$email = new SendEmailNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls);
@@ -262,7 +262,7 @@ class SendMessagingNodesTest extends TestCase {
 	 * The shared flow form renders a `select` with `options` as a picker, so an
 	 * author picks a category by name instead of typing one from the help text.
 	 *
-	 * @spec openspec/changes/opt-out-before-send/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-the-send-email-step-declares-a-message-category-req-ero-002
 	 */
 	public function testTheMessageCategoryIsASelectOverTheFleetCategories(): void {
 		$email = new SendEmailNode(messaging: $this->messaging, l10n: $this->l10n, urls: $this->urls);

@@ -9,7 +9,9 @@ status: done
 Implement multi-language content management for register objects so that translatable properties store per-language variants, APIs negotiate content language via Accept-Language headers, and the UI provides language-aware editing with completeness tracking. The system MUST support at minimum Dutch (NL, required) and English (EN, optional) to comply with Single Digital Gateway (SDG) Regulation (EU) 2018/1724 for cross-border EU service access, while the architecture MUST allow registers to configure any number of BCP 47 languages including RTL scripts. This spec covers data-level i18n for register object content -- it is distinct from the app UI string translations governed by `i18n-infrastructure`, `i18n-string-extraction`, `i18n-backend-messages`, and `i18n-dutch-translations` specs, which handle Nextcloud `IL10N` / `t()` / `$l->t()` for interface labels.
 
 **Source**: Gap identified in cross-platform analysis; four competitors implement field-level i18n. SDG compliance requires English availability for cross-border services. ADR-005 mandates NL+EN as minimum languages for all Conduction apps.
+
 ## Requirements
+
 ### Requirement: Schema properties MUST support a translatable flag
 
 Schema property definitions MUST accept a `translatable: true` attribute indicating the field supports multiple language versions. Properties without the flag (or with `translatable: false`) SHALL store a single value regardless of language context. The `translatable` attribute MUST be stored as part of the property definition in the schema's `properties` JSON and MUST be inspectable by `TranslationHandler::getTranslatableProperties()`.
@@ -726,6 +728,33 @@ The authoritative store for translatable property values MUST remain the languag
 - **THEN** columns matching `<translatable-property>_<lang>` (where `<lang>` matches the language-code pattern) MUST be reassembled into `{property: {lang: value}}`
 - **AND** an empty cell MUST NOT create a slot (the projection treats it as untranslated)
 - **AND** unrecognized or untranslatable columns MUST pass through as-is
+
+### Requirement: Ordering by a translatable property MUST follow the value a person sees
+
+When a search orders by a property marked `translatable: true`, the order SHALL
+compare the value the response shows for each row: the value under the first
+language of the resolved chain (accepted request languages the register
+offers, then the register's languages, then its default language), else any
+value of the language map. A row that holds a plain string instead of a
+language map SHALL sort by that string. Plain rows and language-map rows SHALL
+form one order, never two runs. Non-translatable properties and metadata
+columns SHALL keep ordering on their stored column.
+
+#### Scenario: mixed plain and language-map titles sort as one list
+
+- **GIVEN** a schema whose `title` is translatable, in a register with default language `nl`
+- **AND** rows whose titles are stored as `{"nl": "Cultuursubsidie"}`, `"College-besluit"`, `{"nl": "Woo-verzoek"}` and `"Toezichtzaak Milieu"`
+- **WHEN** a client searches with `_order={"title":"asc"}`
+- **THEN** the rows come back as College-besluit, Cultuursubsidie, Toezichtzaak Milieu, Woo-verzoek
+- @e2e exclude {backend query order; covered by tests/Unit/Db/MagicSearchHandlerTranslatableSortTest.php against a real SQLite engine}
+
+#### Scenario: the accepted language decides the order
+
+- **GIVEN** the same schema in a register offering `nl` and `en`
+- **AND** rows `{"nl": "Aanvraag", "en": "Zoning"}` and `{"nl": "Zienswijze", "en": "Appeal"}`
+- **WHEN** a client that accepts `en` orders by title ascending
+- **THEN** the row shown as Appeal comes before the row shown as Zoning
+- @e2e exclude {backend query order; covered by tests/Unit/Db/MagicSearchHandlerTranslatableSortTest.php}
 
 ## Current Implementation Status
 

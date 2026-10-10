@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use DateTimeImmutable;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\FileCopiedEvent;
@@ -40,6 +41,10 @@ use OCA\OpenRegister\Service\File\OfficeSessionService;
 use OCA\OpenRegister\Service\File\FileMetadataFormHandler;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\File\AttachNodeHandler;
+use OCA\OpenRegister\Service\Integration\AttachTargetFilter;
+use OCA\OpenRegister\Service\Integration\TalkChatExporter;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -128,6 +133,7 @@ class FilesController extends Controller {
 	 * @param ObjectFileAccess|null $objectFileAccess The object rule for file actions.
 	 *                                                Null only in legacy fixtures.
 	 * @param OfficeSessionService|null $officeSessionService Opens documents in Nextcloud Office.
+	 * @param AttachNodeHandler|null $attachNodeHandler Copies a Files node into an object through the upload pipeline.
 	 *
 	 * @return void
 	 *
@@ -147,6 +153,7 @@ class FilesController extends Controller {
 		private readonly ?IL10N $l10n = null,
 		private readonly ?ObjectFileAccess $objectFileAccess = null,
 		private readonly ?OfficeSessionService $officeSessionService = null,
+		private readonly ?AttachNodeHandler $attachNodeHandler = null,
 	) {
 		// Call parent constructor to initialize base controller.
 		parent::__construct(appName: $appName, request: $request);
@@ -267,6 +274,8 @@ class FilesController extends Controller {
 	 *
 	 * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the
 	 *                                                            authenticated caller may not access the object.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function ensureObjectAccess(
 		string $register,
@@ -303,9 +312,142 @@ class FilesController extends Controller {
 		}
 
 		// Legacy wiring without the guard: the object read check alone.
-		$this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true);
+		WriteCause::asLookup(fn () => $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true));
 
 	}//end ensureObjectAccess()
+
+	/**
+	 * Attach a file the caller has in Files (or the files directly inside a
+	 * folder) to this object, through the same pipeline as an upload.
+	 *
+	 * The node is looked up in the CALLER's own Files, so a node id they
+	 * cannot open is simply not found: there is no way to attach somebody
+	 * else's file by guessing its id.
+	 *
+	 * @param string $register The register slug or id.
+	 * @param string $schema   The schema slug or id.
+	 * @param string $id       The object id.
+	 *
+	 * @return JSONResponse The attached files and how many were left out.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/files-leaf-save-to-object/specs/file-actions/spec.md#requirement-a-files-action-attaches-a-file-to-a-register-object
+	 */
+	#[NoAdminRequired]
+	public function attach(string $register, string $schema, string $id): JSONResponse {
+		$this->setObjectContext(register: $register, schema: $schema);
+
+		try {
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
+			$this->objectService->setObject($id);
+			$object = $this->objectService->getObject();
+			if ($object === null) {
+				return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
+			}
+
+			$node = $this->callerNode(nodeId: (int)$this->request->getParam('nodeId', 0));
+			if ($node === null) {
+				return new JSONResponse(
+					data: ['error' => (new AttachTargetFilter())->whyRefused(node: ['readable' => false], target: [])],
+					statusCode: 404
+				);
+			}
+
+			$handler = ($this->attachNodeHandler ?? new AttachNodeHandler(fileService: $this->fileService));
+			$result = $handler->attach(object: $object, node: $node);
+
+			return new JSONResponse(
+				data: [
+					'attached' => array_map(fn ($file) => $this->fileService->formatFile($file), $result['attached']),
+					'skipped' => $result['skipped'],
+				]
+			);
+		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+			return $this->accessDenied(e: $e);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+		}//end try
+	}//end attach()
+
+	/**
+	 * Save a Talk conversation to this object as a text file.
+	 *
+	 * Talk's "Save chat to object" action reads the messages in the browser
+	 * as the signed-in user and posts `conversation` and `messages` here; the
+	 * transcript is attached through the same pipeline as an upload.
+	 *
+	 * @param string $register The register slug or id.
+	 * @param string $schema   The schema slug or id.
+	 * @param string $id       The object id.
+	 *
+	 * @return JSONResponse The attached file.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/files-leaf-save-to-object/specs/file-actions/spec.md#requirement-a-talk-action-saves-a-conversation-to-a-register-object
+	 */
+	#[NoAdminRequired]
+	public function saveChat(string $register, string $schema, string $id): JSONResponse {
+		$this->setObjectContext(register: $register, schema: $schema);
+
+		try {
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
+			$this->objectService->setObject($id);
+			$object = $this->objectService->getObject();
+			if ($object === null) {
+				return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
+			}
+
+			$user = $this->userSession?->getUser();
+			$transcript = (new TalkChatExporter())->export(
+				conversation: (string)$this->request->getParam('conversation', ''),
+				messages: (array)$this->request->getParam('messages', []),
+				savedBy: (string)($user?->getDisplayName() ?? $user?->getUID() ?? ''),
+				savedAt: new DateTimeImmutable()
+			);
+
+			$file = $this->fileService->addFile(
+				objectEntity: $object,
+				fileName: $transcript['filename'],
+				content: $transcript['content']
+			);
+
+			return new JSONResponse(data: $this->fileService->formatFile($file));
+		} catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+			return $this->accessDenied(e: $e);
+		} catch (DoesNotExistException $e) {
+			return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
+		} catch (Exception $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
+		}//end try
+	}//end saveChat()
+
+	/**
+	 * A node from the caller's own Files, by id.
+	 *
+	 * @param int $nodeId The node id.
+	 *
+	 * @return \OCP\Files\Node|null The node, or null when the caller has none with that id.
+	 */
+	private function callerNode(int $nodeId): ?\OCP\Files\Node {
+		$uid = $this->userSession?->getUser()?->getUID();
+		if ($nodeId <= 0 || $uid === null) {
+			return null;
+		}
+
+		try {
+			$nodes = $this->rootFolder->getUserFolder($uid)->getById($nodeId);
+		} catch (\Throwable) {
+			return null;
+		}
+
+		return ($nodes[0] ?? null);
+	}//end callerNode()
 
 	/**
 	 * Answer a refused file action.

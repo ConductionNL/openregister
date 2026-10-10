@@ -32,7 +32,9 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\LogService;
@@ -69,6 +71,7 @@ class AuditTrailController extends Controller {
 	 * @param \OCP\IUserSession $userSession Active user session for caller identity.
 	 * @param \OCP\IGroupManager $groupManager Group manager for admin / role checks.
 	 * @param ReadableAuditTrailLister $readableLister Lists the trail within one caller's read scope.
+	 * @param AuditTrailPageService $auditPage The audit page's keyset list and export.
 	 */
 	public function __construct(
 		string $appName,
@@ -79,6 +82,7 @@ class AuditTrailController extends Controller {
 		private readonly \OCP\IUserSession $userSession,
 		private readonly \OCP\IGroupManager $groupManager,
 		private readonly ReadableAuditTrailLister $readableLister,
+		private readonly AuditTrailPageService $auditPage,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -262,6 +266,66 @@ class AuditTrailController extends Controller {
 	}//end buildFiltersFromParams()
 
 	/**
+	 * Whether the caller asked for the keyset-paged list.
+	 *
+	 * @return bool True when `cursor` (or `_cursor`) is present, even empty for the first page.
+	 */
+	private function wantsCursor(): bool {
+		$params = $this->request->getParams();
+		return array_key_exists('cursor', $params) === true || array_key_exists('_cursor', $params) === true;
+	}//end wantsCursor()
+
+	/**
+	 * The audit page's filters, read from the request.
+	 *
+	 * Actor, period, action, register, schema and object. `user` is accepted
+	 * as a synonym of `actor`.
+	 *
+	 * @return array<string, mixed> The filters for AuditTrailPageQuery.
+	 *
+	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-an-instance-wide-audit-list-with-filters
+	 */
+	private function pageFilters(): array {
+		$params = $this->request->getParams();
+		$filters = [
+			'actor' => ($params['actor'] ?? $params['user'] ?? null),
+			'from' => ($params['from'] ?? null),
+			'to' => ($params['to'] ?? null),
+		];
+		foreach (['action', 'register', 'schema', 'object'] as $key) {
+			$filters[$key] = ($params[$key] ?? null);
+		}
+
+		return array_filter($filters, static fn ($value): bool => $value !== null && $value !== '');
+	}//end pageFilters()
+
+	/**
+	 * One keyset page of the instance-wide audit trail.
+	 *
+	 * @return JSONResponse The rows, newest first, and the cursor of the next page.
+	 *
+	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-an-instance-wide-audit-list-with-filters
+	 */
+	private function cursorPage(): JSONResponse {
+		$params = $this->request->getParams();
+		$limit = (int)($params['limit'] ?? $params['_limit'] ?? 50);
+		$cursor = (int)($params['cursor'] ?? $params['_cursor'] ?? 0);
+
+		try {
+			$page = $this->auditPage->page(
+				filters: $this->pageFilters(),
+				search: ($params['search'] ?? $params['_search'] ?? null),
+				limit: $limit,
+				cursor: $cursor
+			);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
+		}
+
+		return new JSONResponse(data: $page);
+	}//end cursorPage()
+
+	/**
 	 * Get all audit trail logs
 	 *
 	 * Admin-only at the framework level (no @NoAdminRequired). Body
@@ -281,6 +345,13 @@ class AuditTrailController extends Controller {
 		$denial = $this->requireAdmin();
 		if ($denial !== null) {
 			return $denial;
+		}
+
+		// The audit page asks by cursor: keyset paging over the six filters,
+		// no count of the table. Asked without a cursor the list answers as
+		// it always has, so existing callers keep their shape.
+		if ($this->wantsCursor() === true) {
+			return $this->cursorPage();
 		}
 
 		// Extract common parameters.
@@ -574,6 +645,10 @@ class AuditTrailController extends Controller {
 		$includeChanges = $this->request->getParam('includeChanges', true);
 		$includeMetadata = $this->request->getParam('includeMetadata', false);
 
+		if ($this->wantsCursor() === true || $this->pageFilters() !== []) {
+			return $this->exportPage(format: (string)$format, includeChanges: filter_var($includeChanges, FILTER_VALIDATE_BOOLEAN));
+		}
+
 		try {
 			// Build export configuration.
 			$exportConfig = [
@@ -620,6 +695,67 @@ class AuditTrailController extends Controller {
 			);
 		}//end try
 	}//end export()
+
+	/**
+	 * Export the audit page's filtered list, with the chain fields on every row.
+	 *
+	 * Up to AuditTrailExportJob::INLINE_LIMIT rows the file is answered in the
+	 * request; past it the export is queued and the requester is notified
+	 * when the file is in their Files (202).
+	 *
+	 * @param string $format         csv, json, xml or txt.
+	 * @param bool   $includeChanges Whether to include the change summary.
+	 *
+	 * @return JSONResponse The file, a 202 for a queued export, or a refusal.
+	 *
+	 * @spec openspec/changes/audit-log-page/specs/audit-trail-immutable/spec.md#requirement-the-filtered-audit-list-exports-with-its-hash-chain
+	 */
+	private function exportPage(string $format, bool $includeChanges): JSONResponse {
+		$filters = $this->pageFilters();
+		$search = ($this->request->getParam('search') ?? $this->request->getParam('_search'));
+
+		try {
+			$outcome = $this->auditPage->export(
+				filters: $filters,
+				search: $search,
+				format: $format,
+				includeChanges: $includeChanges,
+				actor: $this->userSession->getUser()?->getUID()
+			);
+		} catch (\InvalidArgumentException $e) {
+			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
+		}
+
+		if ($outcome['queued'] === true) {
+			return new JSONResponse(
+				data: [
+					'success' => true,
+					'queued' => true,
+					'message' => sprintf(
+						'More than %d entries match. The export runs in the background and you get a notification when the file is in your Files under "%s".',
+						AuditTrailExportJob::INLINE_LIMIT,
+						AuditTrailExportJob::FOLDER
+					),
+				],
+				statusCode: Http::STATUS_ACCEPTED
+			);
+		}
+
+		$file = $outcome['file'];
+
+		return new JSONResponse(
+			data: [
+				'success' => true,
+				'data' => [
+					'content' => $file['content'],
+					'filename' => $file['filename'],
+					'contentType' => $file['contentType'],
+					'size' => strlen((string)$file['content']),
+					'rows' => $outcome['rows'],
+				],
+			]
+		);
+	}//end exportPage()
 
 	/**
 	 * Reject audit trail deletion (immutability enforcement).

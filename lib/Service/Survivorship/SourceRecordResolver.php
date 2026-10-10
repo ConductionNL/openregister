@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Survivorship;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -365,10 +366,12 @@ class SourceRecordResolver {
 	 * @return array<string, mixed>|null Resolved payload, or null on lookup failure.
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function resolveReference(string $uuid): ?array {
 		try {
-			$entity = $this->objectService->find(id: $uuid, _rbac: true, _multitenancy: true);
+			$entity = WriteCause::asLookup(fn () => $this->objectService->find(id: $uuid, _rbac: true, _multitenancy: true));
 		} catch (Throwable) {
 			return null;
 		}

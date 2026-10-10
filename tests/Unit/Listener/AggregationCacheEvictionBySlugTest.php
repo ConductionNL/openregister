@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/order-filters-and-notification-links/specs/aggregations-backend-native/spec.md#requirement-an-object-write-must-evict-the-aggregations-of-its-schema
+ * @spec openspec/specs/aggregations-backend-native/spec.md#requirement-an-object-write-must-evict-the-aggregations-of-its-schema
  */
 
 declare(strict_types=1);

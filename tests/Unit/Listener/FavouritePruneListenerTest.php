@@ -23,7 +23,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Listener\FavouritePruneListener;
 use OCA\OpenRegister\Service\Interaction\FavouriteService;
-use OCA\OpenRegister\Service\Interaction\ViewHistoryService;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -33,9 +32,9 @@ use Psr\Log\LoggerInterface;
  * The cascade a foreign key cannot express.
  *
  * Objects live in per-schema tables, so nothing in the database removes these
- * rows on its own. If this listener is not registered, or clears only one of
- * the two tables, the leftovers are invisible: no error, no failing read, just
- * stars and views pointing at an object nobody can open.
+ * rows on its own. If this listener is not registered, the
+ * leftovers are invisible: no error, no failing read, just
+ * stars pointing at an object nobody can open.
  *
  * @coversDefaultClass \OCA\OpenRegister\Listener\FavouritePruneListener
  */
@@ -47,13 +46,6 @@ class FavouritePruneListenerTest extends TestCase {
 	 * @var FavouriteService&MockObject
 	 */
 	private $favourites;
-
-	/**
-	 * The view-history double.
-	 *
-	 * @var ViewHistoryService&MockObject
-	 */
-	private $views;
 
 	/**
 	 * The listener under test.
@@ -70,10 +62,8 @@ class FavouritePruneListenerTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->favourites = $this->createMock(originalClassName: FavouriteService::class);
-		$this->views = $this->createMock(originalClassName: ViewHistoryService::class);
 		$this->listener = new FavouritePruneListener(
 			$this->favourites,
-			$this->views,
 			$this->createMock(originalClassName: LoggerInterface::class)
 		);
 
@@ -95,21 +85,22 @@ class FavouritePruneListenerTest extends TestCase {
 	}//end deletionOf()
 
 	/**
-	 * A deletion clears BOTH tables, not one of them.
+	 * A deletion clears the object's stars.
+	 *
+	 * Views are not pruned: they are audit-trail rows now
+	 * (`read-history-on-audit-trail`), and the listener takes no view
+	 * dependency at all, which the constructor above asserts by its shape.
 	 *
 	 * @return void
 	 */
-	public function testADeletionClearsBothTables(): void {
+	public function testADeletionClearsTheStars(): void {
 		$this->favourites->expects($this->once())
-			->method('cleanupForObject')
-			->with('uuid-case-1');
-		$this->views->expects($this->once())
 			->method('cleanupForObject')
 			->with('uuid-case-1');
 
 		$this->listener->handle($this->deletionOf(uuid: 'uuid-case-1'));
 
-	}//end testADeletionClearsBothTables()
+	}//end testADeletionClearsTheStars()
 
 	/**
 	 * An object with no uuid clears nothing.
@@ -118,7 +109,6 @@ class FavouritePruneListenerTest extends TestCase {
 	 */
 	public function testAnObjectWithoutAUuidClearsNothing(): void {
 		$this->favourites->expects($this->never())->method('cleanupForObject');
-		$this->views->expects($this->never())->method('cleanupForObject');
 
 		$this->listener->handle($this->deletionOf(uuid: ''));
 
@@ -128,13 +118,12 @@ class FavouritePruneListenerTest extends TestCase {
 	 * Some other event is not this listener's business.
 	 *
 	 * The control: without it, a listener that cleared on EVERY event would
-	 * pass the test above and quietly empty both tables on unrelated writes.
+	 * pass the test above and quietly empty the favourites on unrelated writes.
 	 *
 	 * @return void
 	 */
 	public function testAnUnrelatedEventIsIgnored(): void {
 		$this->favourites->expects($this->never())->method('cleanupForObject');
-		$this->views->expects($this->never())->method('cleanupForObject');
 
 		$this->listener->handle(new Event());
 

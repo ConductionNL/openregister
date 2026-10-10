@@ -37,6 +37,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\WriteCause;
 use Throwable;
 
 /**
@@ -75,17 +76,19 @@ class OAuth2ConnectionRepository {
 	 * @return ObjectEntity|null The credential, or null when absent or not manageable.
 	 *
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-re-authorisation-overrides-the-same-credential
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function findManageable(string $credentialId, string $uid): ?ObjectEntity {
 		try {
-			$entity = $this->objectService->find(
+			$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $credentialId,
 				register: CredentialBrokerService::REGISTER,
 				schema: CredentialBrokerService::SCHEMA,
 				_rbac: false,
 				_multitenancy: false,
 				_render: false
-			);
+			));
 		} catch (Throwable $failure) {
 			return null;
 		}

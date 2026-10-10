@@ -1233,6 +1233,63 @@ class FlowControllerTest extends TestCase {
 	}//end testImportBpmnStoresTheFlowAndReturnsTheReport()
 
 	/**
+	 * A file sent as a multipart upload (field `file`) imports the same way a
+	 * raw body does: the browser's file picker posts a form, not an XML body.
+	 *
+	 * @return void
+	 */
+	public function testImportBpmnReadsAMultipartUpload(): void {
+		$xml = (new \OCA\OpenRegister\Service\Flow\Bpmn\FlowBpmnExporter(
+			vocabulary: new \OCA\OpenRegister\Service\Flow\Bpmn\BpmnVocabulary(),
+			validator: new \OCA\OpenRegister\Service\Flow\Bpmn\BpmnSchemaValidator()
+		))->export(flow: $this->exportableFlow());
+
+		$tmp = tempnam(sys_get_temp_dir(), 'bpmn');
+		file_put_contents($tmp, $xml);
+
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => $default
+		);
+		$this->request->method('getUploadedFile')->willReturnCallback(
+			static fn (string $key) => ($key === 'file' ? ['name' => 'bezwaar.bpmn', 'tmp_name' => $tmp, 'error' => UPLOAD_ERR_OK, 'size' => strlen($xml)] : null)
+		);
+
+		$stored = new Flow();
+		$stored->setUuid('7f1e2a10-0000-4000-8000-000000000001');
+		$stored->setName('Bezwaar behandelen');
+		$this->flows->expects($this->once())->method('save')->willReturn($stored);
+
+		$response = $this->controller->importBpmn();
+		unlink($tmp);
+
+		$this->assertSame(201, $response->getStatus());
+		$this->assertArrayHasKey('report', $response->getData());
+	}//end testImportBpmnReadsAMultipartUpload()
+
+	/**
+	 * An upload that failed in transit is answered 400 and names the upload,
+	 * rather than reaching the importer as an empty document and coming back
+	 * as "malformed", which would send the user hunting in a file that is fine.
+	 *
+	 * @return void
+	 */
+	public function testImportBpmnRefusesAFailedUploadWith400(): void {
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, $default = null) => $default
+		);
+		$this->request->method('getUploadedFile')->willReturn(
+			['name' => 'bezwaar.bpmn', 'tmp_name' => '', 'error' => UPLOAD_ERR_PARTIAL, 'size' => 0]
+		);
+		$this->flows->expects($this->never())->method('save');
+
+		$response = $this->controller->importBpmn();
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertFalse($response->getData()['malformed']);
+		$this->assertStringContainsString('upload', $response->getData()['error']);
+	}//end testImportBpmnRefusesAFailedUploadWith400()
+
+	/**
 	 * A flow the exporter can serialise, borrowed from the round-trip suite.
 	 *
 	 * @return Flow The flow.

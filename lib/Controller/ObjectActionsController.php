@@ -37,10 +37,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -54,8 +57,18 @@ use Psr\Log\LoggerInterface;
  * Runs a declared action bound to a manual flow.
  *
  * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The thirteenth type is WriteCause, the static frame
+ *   that marks the pre-action read as a lookup so it stays out of the reader's recently opened list.
  */
 class ObjectActionsController extends Controller {
+
+	/**
+	 * The most objects one selection call runs a macro on.
+	 *
+	 * @var int
+	 */
+	public const SELECTION_LIMIT = 100;
 
 	/**
 	 * Constructor.
@@ -101,7 +114,7 @@ class ObjectActionsController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function invoke(string $register, string $schema, string $id, string $action): JSONResponse {
-		$object = $this->objects->find(id: $id);
+		$object = $this->findObject(id: $id);
 		if ($object === null) {
 			return new JSONResponse(['error' => 'No such object'], Http::STATUS_NOT_FOUND);
 		}
@@ -111,32 +124,160 @@ class ObjectActionsController extends Controller {
 			return new JSONResponse(['error' => 'No such schema'], Http::STATUS_NOT_FOUND);
 		}
 
+		$result = $this->runOne(
+			object: $object,
+			subjectSchema: $subjectSchema,
+			action: $action,
+			register: $register,
+			schema: $schema
+		);
+
+		return new JSONResponse($result['body'], $result['status']);
+	}//end invoke()
+
+	/**
+	 * Invoke a declared macro action on a selection of objects.
+	 *
+	 * One run per object, each through the same path as a single click: the
+	 * action's own right is checked per object, a refusal on one object does
+	 * not stop the others, and every outcome is reported by object. The
+	 * selection is capped at {@see self::SELECTION_LIMIT}, because the runs
+	 * are synchronous and a request that runs a thousand flows times out
+	 * half way with no summary at all.
+	 *
+	 * @param string $register The register slug or id.
+	 * @param string $schema   The schema slug or id.
+	 * @param string $action   The declared action.
+	 *
+	 * @return JSONResponse The summary per object and `next`.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function invokeOnSelection(string $register, string $schema, string $action): JSONResponse {
+		$ids = $this->request->getParam('ids', []);
+		if (is_array($ids) === false || $ids === []) {
+			return new JSONResponse(['error' => 'Send the selection as a non-empty list "ids".'], Http::STATUS_BAD_REQUEST);
+		}
+
+		$ids = array_values(array_unique(array_map('strval', $ids)));
+		if (count($ids) > self::SELECTION_LIMIT) {
+			return new JSONResponse(
+				['error' => sprintf('A selection holds at most %d objects; this one holds %d.', self::SELECTION_LIMIT, count($ids))],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$results = [];
+		$flow    = null;
+		foreach ($ids as $id) {
+			$object = $this->findObject(id: $id);
+			if ($object === null) {
+				$results[] = ['id' => $id, 'status' => 'failed', 'reason' => 'No such object'];
+				continue;
+			}
+
+			$subjectSchema = $this->macros->loadSchema(schema: (string)$object->getSchema());
+			if ($subjectSchema === null) {
+				$results[] = ['id' => $id, 'status' => 'failed', 'reason' => 'No such schema'];
+				continue;
+			}
+
+			$one = $this->runOne(
+				object: $object,
+				subjectSchema: $subjectSchema,
+				action: $action,
+				register: $register,
+				schema: $schema
+			);
+			$flow ??= $this->macros->bindingFor(schema: $subjectSchema, action: $action)?->flow;
+
+			if ($one['status'] === Http::STATUS_OK) {
+				$results[] = ['id' => $id, 'status' => 'succeeded', 'run' => $one['body']['run'], 'outcome' => $one['body']['outcome']];
+				continue;
+			}
+
+			$results[] = ['id' => $id, 'status' => 'failed', 'reason' => (string)($one['body']['error'] ?? 'refused')];
+		}//end foreach
+
+		$succeeded = count(array_filter($results, static fn (array $row): bool => $row['status'] === 'succeeded'));
+
+		return new JSONResponse(
+			[
+				'action' => $action,
+				'summary' => ['succeeded' => $succeeded, 'failed' => (count($results) - $succeeded)],
+				'results' => $results,
+				'next' => $this->macros->nextAfterSelection(flowUuid: $flow),
+			]
+		);
+	}//end invokeOnSelection()
+
+	/**
+	 * The object, or null when there is none the caller can reach.
+	 *
+	 * ObjectService::find() throws when the object does not exist; for this
+	 * controller that is a 404, not a 500. The read is a lookup before running
+	 * an action, not the reader opening the object, so it stays out of their
+	 * recently opened list.
+	 *
+	 * @param string $id The object's id, uuid or slug.
+	 *
+	 * @return ObjectEntity|null The object.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
+	 */
+	private function findObject(string $id): ?ObjectEntity {
+		try {
+			return WriteCause::asLookup(fn () => $this->objects->find(id: $id));
+		} catch (\Throwable) {
+			return null;
+		}
+	}//end findObject()
+
+	/**
+	 * Run the macro on one object: the action's own right, the binding, the
+	 * run, and the audit entry that names the action and the run.
+	 *
+	 * @param ObjectEntity $object        The subject.
+	 * @param Schema       $subjectSchema The subject's schema.
+	 * @param string       $action        The declared action.
+	 * @param string       $register      The register as the caller named it.
+	 * @param string       $schema        The schema as the caller named it.
+	 *
+	 * @return array{status: int, body: array<string, mixed>} The HTTP status and body for this object.
+	 *
+	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+	 */
+	private function runOne(ObjectEntity $object, Schema $subjectSchema, string $action, string $register, string $schema): array {
+		$userId = $this->userSession->getUser()?->getUID();
+
 		// THE ACTION'S OWN RIGHT, on this object, before anything is queued.
 		// Being able to see the button is not being allowed to press it, and a
 		// run started and then refused inside would already have written.
 		$allowed = $this->permissions->hasPermission(
 			schema: $subjectSchema,
 			action: $action,
-			userId: $this->userSession->getUser()?->getUID(),
+			userId: $userId,
 			objectOwner: $object->getOwner(),
 			_rbac: true,
 			object: $object
 		);
 		if ($allowed === false) {
-			return new JSONResponse(
-				['error' => sprintf('You may not perform "%s" on this object.', $action)],
-				Http::STATUS_FORBIDDEN
-			);
+			return [
+				'status' => Http::STATUS_FORBIDDEN,
+				'body' => ['error' => sprintf('You may not perform "%s" on this object.', $action)],
+			];
 		}
 
 		$binding = $this->macros->bindingFor(schema: $subjectSchema, action: $action);
 		if ($binding === null) {
 			// Not a macro. Distinct from "you may not": the action exists or
 			// does not, and either way no flow is bound to it here.
-			return new JSONResponse(
-				['error' => sprintf('Action "%s" does not run a flow on this schema.', $action)],
-				Http::STATUS_NOT_FOUND
-			);
+			return [
+				'status' => Http::STATUS_NOT_FOUND,
+				'body' => ['error' => sprintf('Action "%s" does not run a flow on this schema.', $action)],
+			];
 		}
 
 		try {
@@ -156,20 +297,23 @@ class ObjectActionsController extends Controller {
 				['action' => $action, 'error' => $e->getMessage(), 'exception' => $e]
 			);
 
-			return new JSONResponse(
-				['error' => $e->getMessage(), 'action' => $action],
-				Http::STATUS_UNPROCESSABLE_ENTITY
-			);
+			return [
+				'status' => Http::STATUS_UNPROCESSABLE_ENTITY,
+				'body' => ['error' => $e->getMessage(), 'action' => $action],
+			];
 		}//end try
 
-		return new JSONResponse(
-			[
+		$this->macros->recordRun(object: $object, action: $action, flow: $binding->flow, run: (string)$run->getUuid(), userId: $userId);
+
+		return [
+			'status' => Http::STATUS_OK,
+			'body' => [
 				'run' => (string)$run->getUuid(),
 				'outcome' => (string)$run->getStatus(),
 				'action' => $action,
-				'next' => $this->macros->nextFor(flowUuid: $binding->flow),
-			]
-		);
-	}//end invoke()
+				'next' => $this->macros->nextForRun(flowUuid: $binding->flow, run: $run),
+			],
+		];
+	}//end runOne()
 
 }//end class

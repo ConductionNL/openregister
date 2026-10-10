@@ -36,7 +36,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
-use OCA\OpenRegister\Service\SettingsService;
+use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use Psr\Log\LoggerInterface;
 
@@ -61,7 +61,7 @@ class GetObject
      *
      * @param MagicMapper          $objectMapper         Object entity data mapper.
      * @param AuditTrailMapper     $auditTrailMapper     Audit trail mapper for logs.
-     * @param SettingsService      $settingsService      Settings service for accessing trail settings.
+     * @param ReadHistoryService   $readHistory          The one read registration (audit trail and AVG log).
      * @param ObjectSourceRegistry $objectSourceRegistry Registry of object-source providers (virtual schemas).
      * @param LoggerInterface      $logger               Logger for object-source delegation warnings.
      *
@@ -70,7 +70,7 @@ class GetObject
     public function __construct(
         private readonly MagicMapper $objectMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
-        private readonly SettingsService $settingsService,
+        private readonly ReadHistoryService $readHistory,
         private readonly ObjectSourceRegistry $objectSourceRegistry,
         private readonly LoggerInterface $logger
     ) {
@@ -185,7 +185,7 @@ class GetObject
             // TODO.
         }
 
-        // Create an audit trail for the 'read' action if audit trails are enabled.
+        // Register the read on the audit trail (read-history-on-audit-trail).
         //
         // `$_audit` is the PER-CALL opt-out. The instance setting is all or
         // nothing, so a bulk synchronisation reading thousands of objects had no
@@ -194,8 +194,11 @@ class GetObject
         // 3,153,490 rows, in a table carrying 1,596MB of indexes over 1,089MB of
         // data). Machine-to-machine reads inside one operation are not the thing
         // an audit trail exists to record; a person opening an object is.
-        if ($_audit === true && $this->isAuditTrailsEnabled() === true) {
-            $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $object, action: 'read');
+        //
+        // The same row is what "recently opened" (the `_recent` lens) reads
+        // back, so this is the only place a view is recorded.
+        $log = $this->readHistory->registerAuditRead(object: $object, audit: $_audit);
+        if ($log !== null) {
             $object->setLastLog($log->jsonSerialize());
         }
 
@@ -440,22 +443,4 @@ class GetObject
             search: $search
         );
     }//end findLogs()
-
-    /**
-     * Check if audit trails are enabled in the settings
-     *
-     * @return bool True if audit trails are enabled, false otherwise
-     *
-     * @spec openspec/specs/object-lifecycle/spec.md
-     */
-    private function isAuditTrailsEnabled(): bool
-    {
-        try {
-            $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
-            return $retentionSettings['auditTrailsEnabled'] ?? true;
-        } catch (\Exception $e) {
-            // If we can't get settings, default to enabled for safety.
-            return true;
-        }
-    }//end isAuditTrailsEnabled()
 }//end class

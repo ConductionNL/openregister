@@ -5428,7 +5428,7 @@ class ObjectsControllerTest extends TestCase {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) One helper for the two
 	 *     verdicts keeps the container wiring in one place.
 	 */
-	private function grantExport(bool $allowed = true): void {
+	private function grantExport(bool $allowed = true, ?\OCA\OpenRegister\Service\Export\ExportRunRecorder $runs = null): void {
 		$rightService = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRightService::class);
 		$refusal = null;
 		if ($allowed === false) {
@@ -5444,9 +5444,13 @@ class ObjectsControllerTest extends TestCase {
 		$recorder = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportAuditRecorder::class);
 
 		$this->container->method('get')->willReturnCallback(
-			static function (string $id) use ($rightService, $recorder) {
+			static function (string $id) use ($rightService, $recorder, $runs) {
 				if ($id === \OCA\OpenRegister\Service\Export\ExportRightService::class) {
 					return $rightService;
+				}
+
+				if ($id === \OCA\OpenRegister\Service\Export\ExportRunRecorder::class && $runs !== null) {
+					return $runs;
 				}
 
 				if ($id === \OCA\OpenRegister\Service\Export\ExportAuditRecorder::class) {
@@ -5464,6 +5468,61 @@ class ObjectsControllerTest extends TestCase {
 
 	public function testExportReturnsCsvDownloadResponse(): void {
 		$this->grantExport();
+		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
+			->addMethods(['getSlug'])
+			->getMock();
+		$registerEntity->method('getSlug')->willReturn('my-register');
+
+		$schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
+			->addMethods(['getSlug'])
+			->getMock();
+		$schemaEntity->method('getSlug')->willReturn('my-schema');
+
+		$this->registerMapper->method('find')->willReturn($registerEntity);
+		$this->schemaMapper->method('find')->willReturn($schemaEntity);
+
+		$this->request->method('getParams')->willReturn(['format' => 'csv']);
+		$this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
+			if ($key === 'format') {
+				return 'csv';
+			}
+			return $default;
+		});
+
+		$user = $this->createMock(\OCP\IUser::class);
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$this->exportService->method('exportToCsv')->willReturn('col1,col2\nval1,val2');
+
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		// export() reuses the entities setRegister()/setSchema() already resolved
+		// rather than re-resolving the refs globally for the filename — the
+		// re-resolution ignored the register and could name the file after another
+		// app's same-slug schema.
+		$this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+		$this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
+
+		$result = $this->controller->export('1', '2', $this->objectService);
+
+		$this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+		$this->assertStringContainsString('.csv', $result->getHeaders()['Content-Disposition'] ?? '');
+	}
+
+	public function testAnApiExportIsRecordedAsARun(): void {
+		$runs = $this->createMock(originalClassName: \OCA\OpenRegister\Service\Export\ExportRunRecorder::class);
+		$runs->expects($this->once())->method('record')->with(
+			$this->callback(static fn (...$a): bool => true)
+		)->willReturnCallback(
+			function (...$args) {
+				$this->assertSame('api', $args['source'] ?? $args[0]);
+				$this->assertSame('csv', $args['format'] ?? $args[2]);
+				$this->assertSame(1, $args['downloadCount'] ?? null);
+				$this->assertNull($args['retentionSeconds'] ?? 'missing');
+				return new \OCA\OpenRegister\Db\ExportRun();
+			}
+		);
+		$this->grantExport(true, $runs);
 		$registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
 			->addMethods(['getSlug'])
 			->getMock();

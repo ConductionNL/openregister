@@ -26,6 +26,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use DateTimeInterface;
+use DateTimeZone;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Audit\AuditAggregationService;
@@ -33,6 +35,7 @@ use OCA\OpenRegister\Service\Audit\AuditSink;
 use OCA\OpenRegister\Service\Audit\PurposeAttribution;
 use OCA\OpenRegister\Service\Audit\PurposeGuard;
 use OCA\OpenRegister\Service\Audit\TokenAttribution;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
@@ -3408,5 +3411,87 @@ class AuditTrailMapper extends QBMapper {
 
 		return $this->insertHashChained(auditTrail: $auditTrail);
 	}//end createExportEntry()
+
+	/**
+	 * The objects one user read most recently, newest first.
+	 *
+	 * One row per object: the latest `read` entry this user has on the audit
+	 * trail, capped at `$limit`. The (user, action, object_uuid, created)
+	 * index narrows the rows; the cause is read from each candidate row.
+	 *
+	 * Only a read the person made counts: cause `person`, or empty for a row
+	 * written before causes were recorded. A `lookup` (a guard, a relation
+	 * lookup, an agent tool) and a read inside an import, rule, migration,
+	 * scheduled job or cascade stay on the audit trail and stay out of the
+	 * history (`recently-opened-means-opened`).
+	 *
+	 * A tombstoned row (retention purge) carries an empty `user`, so it never
+	 * matches a uid and drops out of every history by itself.
+	 *
+	 * @param string $userId The reader's uid.
+	 * @param int    $limit  How many objects to answer at most.
+	 *
+	 * @return array<string, string> Object uuid => ISO 8601 moment of the latest read, newest first.
+	 *
+	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
+	 */
+	public function findLatestReadsByUser(string $userId, int $limit = 100): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('object_uuid', $qb->createFunction('MAX(created) AS last_read'))
+			->from($this->getTableName())
+			->where($qb->expr()->eq('user', $qb->createNamedParameter($userId)))
+			->andWhere($qb->expr()->eq('action', $qb->createNamedParameter('read')))
+			->andWhere($qb->expr()->isNotNull('object_uuid'))
+			->andWhere(
+				$qb->expr()->orX(
+					$qb->expr()->isNull('cause'),
+					$qb->expr()->eq('cause', $qb->createNamedParameter(WriteCause::PERSON))
+				)
+			)
+			->groupBy('object_uuid')
+			->orderBy('last_read', 'DESC')
+			->setMaxResults(max(1, $limit));
+
+		$result = $qb->executeQuery();
+		$reads  = [];
+		while (($row = $result->fetch()) !== false) {
+			$uuid = (string)($row['object_uuid'] ?? '');
+			$moment = $this->toIsoMoment(value: ($row['last_read'] ?? null));
+			if ($uuid !== '' && $moment !== null) {
+				$reads[$uuid] = $moment;
+			}
+		}
+
+		$result->closeCursor();
+
+		return $reads;
+	}//end findLatestReadsByUser()
+
+	/**
+	 * Render a stored `created` value as ISO 8601.
+	 *
+	 * Stored values are UTC wall-clock strings (`Y-m-d H:i:s`), so they are
+	 * read in UTC and rendered with their offset.
+	 *
+	 * @param mixed $value The raw column value.
+	 *
+	 * @return string|null The ISO 8601 moment, or null when unreadable.
+	 */
+	private function toIsoMoment(mixed $value): ?string {
+		if ($value instanceof DateTimeInterface) {
+			return $value->format('c');
+		}
+
+		if (is_string($value) === false || $value === '') {
+			return null;
+		}
+
+		try {
+			return (new DateTime($value, new DateTimeZone('UTC')))->format('c');
+		} catch (Exception $e) {
+			return null;
+		}
+	}//end toIsoMoment()
 
 }//end class

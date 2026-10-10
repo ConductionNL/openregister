@@ -45,7 +45,6 @@ use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectFavouriteMapper;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
-use OCA\OpenRegister\Db\ObjectViewMapper;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\LikeOperator;
@@ -391,7 +390,7 @@ class MagicSearchHandler {
 			order: $order,
 			schema: $schema,
 			searchTerm: $searchTerm,
-			recentFor: ($query['_recentFor'] ?? null),
+			recentViews: ($query['_recentViews'] ?? null),
 			dateTimeColumns: $dateTimeColumns,
 			sortLanguages: $this->sortLanguageChain(register: $register)
 		);
@@ -399,7 +398,11 @@ class MagicSearchHandler {
 		$queryBuilder->setMaxResults($limit)
 			->setFirstResult($offset);
 
-		return $this->executeSearchQuery(qb: $queryBuilder, register: $register, schema: $schema, tableName: $tableName);
+		$objects = $this->executeSearchQuery(qb: $queryBuilder, register: $register, schema: $schema, tableName: $tableName);
+		// `@self.viewedAt` on a `_recent` page (read-history-on-audit-trail).
+		$this->applyViewedAt(objects: $objects, recentViews: ($query['_recentViews'] ?? null));
+
+		return $objects;
 	}//end searchObjects()
 
 	/**
@@ -647,17 +650,14 @@ class MagicSearchHandler {
 		// facets cannot disagree about what was excluded.
 		$this->applyUnreadFilter(qb: $qb, userId: ($query['_unreadFor'] ?? null));
 
-		// The favourites and recent lenses, resolved in the query for the same
-		// reason, and each guarding itself so this method keeps its branch count.
+		// The favourites lens, resolved in the query for the same reason. The
+		// recent lens needs no filter here: it arrives as `_ids`, resolved from
+		// the audit trail's read history at the edge (SearchQueryHandler), so
+		// every search path honours it, the cross-table UNION included.
 		$this->applyPersonalLensFilter(
 			qb: $qb,
 			table: ObjectFavouriteMapper::TABLE,
 			userId: ($query['_favouriteFor'] ?? null)
-		);
-		$this->applyPersonalLensFilter(
-			qb: $qb,
-			table: ObjectViewMapper::TABLE,
-			userId: ($query['_recentFor'] ?? null)
 		);
 
 		// Apply full-text search if provided.
@@ -795,6 +795,14 @@ class MagicSearchHandler {
 		);
 		$conditions = array_merge($conditions, $metadataConditions);
 
+		// `_ids`, as applyIdFilters() applies it on the QueryBuilder path. It
+		// was missing here, so a cross-table `_recent=true` search (the lens
+		// arrives as `_ids`) returned every row of every arm.
+		$idCondition = $this->idConditionSql(query: $query, connection: $connection);
+		if ($idCondition !== null) {
+			$conditions[] = $idCondition;
+		}
+
 		// 4. Full-text search filter with optional fuzzy matching.
 		if ($search !== null && trim($search) !== '') {
 			$searchCondition = $this->buildSearchConditionSql(
@@ -835,6 +843,33 @@ class MagicSearchHandler {
 
 		return $conditions;
 	}//end buildWhereConditionsSql()
+
+	/**
+	 * The `_ids` restriction, as one SQL fragment: uuid or slug.
+	 *
+	 * The string-built twin of applyIdFilters(). Every value is quoted by the
+	 * connection, because this SQL is concatenated and cannot bind.
+	 *
+	 * @param array $query      The query parameters.
+	 * @param mixed $connection The connection, for value quoting.
+	 *
+	 * @return string|null The condition, or null when no `_ids` restriction was asked.
+	 *
+	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-cross-table-searches-honour-the-recent-lens-like-one-schema
+	 */
+	private function idConditionSql(array $query, mixed $connection): ?string {
+		$ids = ($query['_ids'] ?? null);
+		if (is_array($ids) === false || $ids === []) {
+			return null;
+		}
+
+		$quoted = implode(
+			', ',
+			array_map(static fn ($id): string => (string) $connection->quote((string) $id), array_values($ids))
+		);
+
+		return '(_uuid IN ('.$quoted.') OR _slug IN ('.$quoted.'))';
+	}//end idConditionSql()
 
 	/**
 	 * The deleted and archived predicates, as SQL fragments.
@@ -2107,6 +2142,8 @@ class MagicSearchHandler {
 			'_favouriteFor',
 			'_recent',
 			'_recentFor',
+			'_recentViews',
+			'_recentLens',
 			'_count',
 			'_includeDeleted',
 			'_archived',
@@ -2889,13 +2926,12 @@ class MagicSearchHandler {
 	}//end applyUnreadFilter()
 
 	/**
-	 * Narrow a query to the objects one user has starred, or has opened.
+	 * Narrow a query to the objects one user has starred.
 	 *
-	 * The two lenses differ only in which table carries the (user, object) row,
-	 * so they share one `EXISTS` rather than two copies of it. That is also why
-	 * the table is a parameter: the shape of the question is identical, and a
-	 * second copy is a second place for the outer-parameter trap below to be got
-	 * wrong.
+	 * The table is a parameter because the shape of the question, "which
+	 * (user, object) rows exist", is not specific to stars. The recent lens
+	 * used to share it; it now arrives as `_ids` from the audit trail's read
+	 * history (`read-history-on-audit-trail`).
 	 *
 	 * The subquery is built on a SECOND query builder but its parameter is
 	 * created on the OUTER one, because only the outer builder's parameters are
@@ -2934,45 +2970,73 @@ class MagicSearchHandler {
 	/**
 	 * Order a `_recent=true` page by when this user last opened each object.
 	 *
-	 * Ordering by a correlated subquery rather than a join, so the lens adds no
-	 * row to the result set and cannot change the total. Both databases accept
-	 * a scalar subquery in ORDER BY.
+	 * The read history arrives already ordered, newest first, so the order is
+	 * its position: a `CASE` over the page's uuids. That keeps the audit trail
+	 * out of this query entirely, so no table name is concatenated into SQL
+	 * and the table prefix cannot be forgotten (openregister#4507).
+	 *
+	 * Every parameter is created on the OUTER builder, because only its
+	 * parameters are bound at execution.
 	 *
 	 * This never overrides an explicit `_order`: the caller asking for
 	 * "recently opened, alphabetically" means it. It only replaces the default
 	 * `t._id ASC`, which for this lens would be arbitrary and, worse, look
 	 * deliberate.
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify.
-	 * @param mixed $userId The user whose view times order the page, or null.
+	 * @param IQueryBuilder $qb          Query builder to modify.
+	 * @param mixed         $recentViews Object uuid => last read, newest first, or null.
 	 *
 	 * @return boolean True when the recency order was applied.
 	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
+	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
 	 */
-	private function applyRecencyOrder(IQueryBuilder $qb, mixed $userId): bool {
-		if (is_string($userId) === false || $userId === '') {
+	private function applyRecencyOrder(IQueryBuilder $qb, mixed $recentViews): bool {
+		if (is_array($recentViews) === false || $recentViews === []) {
 			return false;
 		}
 
-		$viewer = $qb->createNamedParameter($userId);
-		$table = ObjectViewMapper::TABLE;
+		$whens = [];
+		$position = 0;
+		foreach (array_keys($recentViews) as $uuid) {
+			$whens[] = 'WHEN '.$qb->createNamedParameter((string)$uuid).' THEN '.$position;
+			$position++;
+		}
 
 		$qb->addOrderBy(
-			$qb->createFunction(
-				'(SELECT rv.viewed_at FROM '.$table.' rv'
-				.' WHERE rv.user_id = '.$viewer.' AND rv.object_uuid = t._uuid)'
-			),
-			'DESC'
+			$qb->createFunction('CASE t._uuid '.implode(' ', $whens).' ELSE '.$position.' END'),
+			'ASC'
 		);
 
-		// A stable tie-break, so two objects opened in the same second do not
-		// swap places between pages.
+		// A stable tie-break for anything the history did not place.
 		$qb->addOrderBy('t._id', 'ASC');
 
 		return true;
 
 	}//end applyRecencyOrder()
+
+	/**
+	 * Attach `@self.viewedAt` to the objects of a `_recent` page.
+	 *
+	 * @param array<int, ObjectEntity> $objects     The page.
+	 * @param mixed                    $recentViews Object uuid => ISO 8601 last read, or null.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/read-history-on-audit-trail/specs/object-interactions/spec.md#requirement-recently-opened-is-read-from-the-audit-trail
+	 */
+	private function applyViewedAt(array $objects, mixed $recentViews): void {
+		if (is_array($recentViews) === false || $recentViews === []) {
+			return;
+		}
+
+		foreach ($objects as $object) {
+			$moment = ($recentViews[(string)$object->getUuid()] ?? null);
+			if (is_string($moment) === true) {
+				$object->setViewedAt($moment);
+			}
+		}
+
+	}//end applyViewedAt()
 
 	/**
 	 * Decide and apply the result order for one search.
@@ -2987,21 +3051,21 @@ class MagicSearchHandler {
 	 * @param array<int|string, mixed> $order The caller's requested order.
 	 * @param Schema|null $schema The schema being searched.
 	 * @param string|null $searchTerm The search term, for relevance ordering.
-	 * @param mixed $recentFor The user whose view times order a `_recent` page, or null.
+	 * @param mixed $recentViews The read history ordering a `_recent` page (uuid => last read), or null.
 	 * @param array<int, string>|null $dateTimeColumns Columns whose real type is a date or timestamp; null when unknown.
 	 * @param array<int, string> $sortLanguages Language chain a translatable property sorts by.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/specs/object-interactions/spec.md#requirement-favourites-and-recent-are-lenses-on-the-object-query
-	 * @spec openspec/changes/order-filters-and-notification-links/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 */
 	private function applyResultOrder(
 		IQueryBuilder $qb,
 		array $order,
 		?Schema $schema,
 		?string $searchTerm,
-		mixed $recentFor,
+		mixed $recentViews,
 		?array $dateTimeColumns = null,
 		array $sortLanguages = []
 	): void {
@@ -3017,7 +3081,7 @@ class MagicSearchHandler {
 			return;
 		}
 
-		if ($this->applyRecencyOrder(qb: $qb, userId: $recentFor) === true) {
+		if ($this->applyRecencyOrder(qb: $qb, recentViews: $recentViews) === true) {
 			return;
 		}
 
@@ -3423,7 +3487,8 @@ class MagicSearchHandler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/order-filters-and-notification-links/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/register-i18n/spec.md#requirement-ordering-by-a-text-property-must-ignore-case
 	 */
 	private function applySorting(
 		IQueryBuilder $qb,
@@ -3460,7 +3525,7 @@ class MagicSearchHandler {
 			if (str_starts_with($field, '@self.') === true) {
 				// Metadata field sorting (e.g., @self.created → t._created).
 				$metadataField = '_' . str_replace('@self.', '', $field);
-				$qb->addOrderBy("t.{$metadataField}", $direction);
+				$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $metadataField), $direction);
 			} elseif (in_array(
 				$field,
 				[
@@ -3479,7 +3544,7 @@ class MagicSearchHandler {
 			) === true
 			) {
 				// Direct metadata column reference (e.g., _created → t._created).
-				$qb->addOrderBy("t.{$field}", $direction);
+				$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $field), $direction);
 			} elseif (is_array($properties[$field] ?? null) === true
 				&& ($properties[$field]['translatable'] ?? false) === true
 			) {
@@ -3488,12 +3553,15 @@ class MagicSearchHandler {
 				// Ordering on the raw column text put every plain row before
 				// every map row: two sorted runs (dossiq case types, cloud
 				// check 8 October 2026). Order on the value a person sees.
+				// Lower-cased, like every text order (see buildPropertySortExpression()).
 				$columnName = $this->sanitizeColumnName(name: $field);
 				$qb->addOrderBy(
 					$qb->createFunction(
-						$this->buildTranslatableSortSql(
-							column: $qb->getColumnName($columnName, 't'),
-							languages: $sortLanguages
+						$this->lowerSql(
+							expression: $this->buildTranslatableSortSql(
+								column: $qb->getColumnName($columnName, 't'),
+								languages: $sortLanguages
+							)
 						)
 					),
 					$direction
@@ -3529,7 +3597,7 @@ class MagicSearchHandler {
 	 *
 	 * @return array<int, string> Language codes, first wins.
 	 *
-	 * @spec openspec/changes/order-filters-and-notification-links/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 */
 	private function sortLanguageChain(Register $register): array {
 		$registerLanguages = array_values(
@@ -3576,7 +3644,7 @@ class MagicSearchHandler {
 	 *
 	 * @return string The SQL expression.
 	 *
-	 * @spec openspec/changes/order-filters-and-notification-links/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
+	 * @spec openspec/specs/register-i18n/spec.md#requirement-ordering-by-a-translatable-property-must-follow-the-value-a-person-sees
 	 */
 	private function buildTranslatableSortSql(string $column, array $languages): string {
 		$codes = [];
@@ -3636,6 +3704,50 @@ class MagicSearchHandler {
 	}//end buildTranslatableSortSql()
 
 	/**
+	 * The ORDER BY expression for a metadata column.
+	 *
+	 * The text columns a person reads (name, description, summary) sort by
+	 * their lower-cased value; dates, ids and owners keep the bare column.
+	 *
+	 * @param IQueryBuilder $qb     Query builder, used for identifier quoting.
+	 * @param string        $column The metadata column, with its leading underscore.
+	 *
+	 * @return string|IQueryFunction The column reference or LOWER() expression.
+	 *
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/register-i18n/spec.md#requirement-ordering-by-a-text-property-must-ignore-case
+	 */
+	private function metadataSortExpression(IQueryBuilder $qb, string $column): string|IQueryFunction {
+		if (in_array($column, ['_name', '_description', '_summary'], true) === true) {
+			return $qb->createFunction($this->lowerSql(expression: $qb->getColumnName($column, 't')));
+		}
+
+		return "t.{$column}";
+	}//end metadataSortExpression()
+
+	/**
+	 * Lower-case an SQL expression for ordering, on every supported database.
+	 *
+	 * PostgreSQL has no LOWER() for a json, timestamp or numeric column, and a
+	 * table keeps its column type when a property later changes type, so the
+	 * value is cast to text first there. MySQL/MariaDB and SQLite convert to a
+	 * string themselves.
+	 *
+	 * @param string $expression A quoted column reference or SQL expression.
+	 *
+	 * @return string The lower-casing SQL expression.
+	 *
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/register-i18n/spec.md#requirement-ordering-by-a-text-property-must-ignore-case
+	 */
+	private function lowerSql(string $expression): string {
+		$platform = $this->db->getDatabasePlatform();
+		if (is_object($platform) === true && stripos($platform::class, 'PostgreSQL') !== false) {
+			return "LOWER(CAST({$expression} AS TEXT))";
+		}
+
+		return "LOWER({$expression})";
+	}//end lowerSql()
+
+	/**
 	 * Build the ORDER BY expression for one schema property column.
 	 *
 	 * A `date` or `date-time` property sorts as if an empty value held the
@@ -3643,7 +3755,9 @@ class MagicSearchHandler {
 	 * carries). Without that fallback an empty date sorts above the newest
 	 * dated object on PostgreSQL (NULLs are largest there) and below the
 	 * oldest on MySQL/MariaDB (NULLs are smallest), so the same list read
-	 * differently per database. Every other property keeps its bare column.
+	 * differently per database. A text property (a string that is not a
+	 * date, and not encrypted) sorts by its lower-cased value. Every other
+	 * property keeps its bare column.
 	 *
 	 * The fallback is only applied when the column is known to be a real date
 	 * or timestamp column ($dateTimeColumns). A property that gained its date
@@ -3661,7 +3775,7 @@ class MagicSearchHandler {
 	 *
 	 * @return string|IQueryFunction The column reference or COALESCE expression.
 	 *
-	 * @spec exclude Sort fallback for empty date properties, decided by the product owner on 2026-10-04 after a live pipelinq list report.
+	 * @spec openspec/changes/notification-links-in-releases-and-case-insensitive-order/specs/register-i18n/spec.md#requirement-ordering-by-a-text-property-must-ignore-case
 	 */
 	private function buildPropertySortExpression(
 		IQueryBuilder $qb,
@@ -3669,6 +3783,18 @@ class MagicSearchHandler {
 		mixed $propertyConfig,
 		?array $dateTimeColumns = null
 	): string|IQueryFunction {
+		$isText = is_array($propertyConfig) === true
+			&& ($propertyConfig['type'] ?? 'string') === 'string'
+			&& in_array($propertyConfig['format'] ?? null, ['date', 'date-time'], true) === false
+			&& ($propertyConfig['x-openregister-encrypted'] ?? false) === false;
+		if ($isText === true) {
+			// Text orders without regard to case, as OpenRegister's own lists
+			// do: "Leverancier accreditatie" before "Leverancier IBAN-wijziging"
+			// (cloud check, 9 October 2026). LOWER() exists on PostgreSQL,
+			// MySQL/MariaDB and SQLite alike.
+			return $qb->createFunction($this->lowerSql(expression: $qb->getColumnName($columnName, 't')));
+		}
+
 		if ($dateTimeColumns === null
 			|| in_array(strtolower($columnName), $dateTimeColumns, true) === false
 			|| is_array($propertyConfig) === false

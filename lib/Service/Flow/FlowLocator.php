@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\FlowTriggerMapper;
 use OCA\OpenRegister\Db\FlowVersionMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -139,6 +140,8 @@ class FlowLocator {
 	 * @return object|null The subject, or null when it cannot be found.
 	 *
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function resolveSubject(string $uuid, string $register, string $schema): ?object {
 		if ($uuid === '' || $register === '' || $schema === '') {
@@ -146,13 +149,13 @@ class FlowLocator {
 		}
 
 		try {
-			$object = $this->objectService->find(
+			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $uuid,
 				register: $register,
 				schema: $schema,
 				_rbac: false,
 				_multitenancy: false
-			);
+			));
 		} catch (Throwable $e) {
 			return null;
 		}

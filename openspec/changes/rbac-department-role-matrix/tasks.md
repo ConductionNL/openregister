@@ -14,12 +14,14 @@
       session in hand, and a `$userDepartments` token would mean teaching both
       evaluators a new word and keeping their two readings identical forever.
       A literal `$in` list leaves one vocabulary.
-- [ ] 2.2b The PERSON-SCHEMA user source (`{schema, property, match}`) is NOT
-      resolved. A matrix declaring one compiles nothing rather than compiling
-      something narrower, because reading a person object to decide
-      authorization means resolving an object through the resolver that is
-      mid-decision. Half a rule is worse than none, so it waits for a seam that
-      can read a person without re-entering the permission handler.
+- [x] 2.2b The PERSON-SCHEMA user source (`{schema, property, match}`, match
+      defaults to `userId`): `DepartmentMatrixPersonValues` reads the person
+      object WITHOUT RBAC (so it cannot re-enter the decision it is part of),
+      re-checks the match field on every returned person, and gives no values
+      on any failure (a `$self` row then compiles to nothing, the closed
+      direction). `PermissionHandler::compileDepartmentMatrix()` unions it with
+      the group-prefix values. Tests: `DepartmentMatrixPersonSourceTest` (4),
+      the caller test red before the wiring.
 - [x] 2.3 Declare `handle` as a custom verb with an `update` fallback.
 
 ## 3. Admin surface
