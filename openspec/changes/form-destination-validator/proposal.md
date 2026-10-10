@@ -5,7 +5,7 @@ depends_on: []
 
 # Proposal: form-destination-validator
 
-OpenRegister's half of decision 179 (Ruben, 10 October 2026): "We dont intake to an intake, we intake into a case, or ticket or something else." Cross-app change: `hydra/openspec/changes/form-submits-into-its-destination-object`, architecture in hydra ADR-117. Every other app change in that chain waits on this one.
+OpenRegister's half of decision 179 (Ruben, 10 October 2026): "We dont intake to an intake, we intake into a case, or ticket or something else." Cross-app change: `hydra/openspec/changes/form-submits-into-its-destination-object`, architecture in hydra ADR-117. Ruben's answers: decisions 180 (drafts) and 181. Every other app change in that chain waits on this one.
 
 ## Why
 
@@ -20,7 +20,9 @@ A form today is checked against its own field list. The destination schema judge
 - **Schema save checks dependent forms**: a schema change that invalidates a published form is refused or unpublishes the form, per the owning app's setting.
 - **Create errors match update errors**: `ObjectsController::create` returns the per-property shape on a validation failure.
 - **Two schema markers**: `x-openregister.confirmation` (returned to the submitter) and `x-openregister.serverSet` (filled by a listener, so not reported as unmapped).
-- **`or-form-and-journey-registry` amended**: `journeyRun` no longer stages written ids; a step commits all or nothing.
+- **Explicit lifecycle status `draft`** (decision 180): object metadata gains a stored `@self.status` with `draft` and `active`. A draft may miss required properties and is never type-invalid. Moving to `active` runs full validation and is the moment of receipt. Objects without the field keep today's date-deduced status.
+- **`or-form-and-journey-registry` amended**: `journeyRun` is replaced by draft destination objects; a step commits all or nothing.
+- **Refuse from the first release** (decision 181): no report-only mode.
 
 ## Out of scope
 
@@ -28,4 +30,4 @@ Authoring screens (buildiq), the public host (portaliq), the case fields (dossiq
 
 ## Rollback
 
-The validator ships in report mode for one release (findings returned, save allowed). The submit service is additive; callers switch to it in their own changes.
+The submit service and the `draft` status are additive; callers switch to them in their own changes. The validator refuses from the first release (decision 181), so rolling back the check means reverting this change.

@@ -89,3 +89,36 @@ When a schema is saved, the validator SHALL run for every published form whose d
 - **GIVEN** an object payload missing a required property
 - **WHEN** it is sent to create and, for an existing object, to update
 - **THEN** both answers carry the property in `errors[]` with the same status
+
+### Requirement: An object MUST be able to carry the explicit lifecycle status `draft`
+
+Object metadata SHALL carry a stored `@self.status` with at least the values `draft` and `active` (decision 180). An object without the field SHALL keep its status deduced from its dates, as today. Saving an object in `draft` SHALL run every schema rule except `required`. Moving an object from `draft` to `active` SHALL go through `FormSubmitService`, SHALL run full validation, and SHALL fire the create-time effects that count as receipt (reference, `receivedAt`, listeners marked as receipt listeners). A form's draft save SHALL create or update its destination object in `draft`.
+
+#### Scenario: A draft without required data is saved
+- **GIVEN** schema `case` requiring `description`
+- **WHEN** a form saves a draft with no `description`
+- **THEN** the object exists with `@self.status` `draft` and no `receivedAt`
+
+#### Scenario: A type-invalid draft is refused
+- **GIVEN** a property `preferredDate` of format date-time
+- **WHEN** a draft is saved with `preferredDate` holding a phone number
+- **THEN** the save is refused with a `format-mismatch` finding and nothing is stored
+
+#### Scenario: Leaving draft runs full validation and stamps receipt
+- **GIVEN** a draft that now holds every required property
+- **WHEN** it is submitted
+- **THEN** `@self.status` becomes `active`, `receivedAt` is set, and the response carries the reference and confirmation fields
+
+#### Scenario: An object without the field reads as today
+- **GIVEN** an object created before this change, with no stored status
+- **WHEN** it is read
+- **THEN** its status is deduced from its dates exactly as before
+
+### Requirement: The form destination check MUST refuse from the first release
+
+Form save, journey save and schema save SHALL refuse on a finding from the first release that ships the validator. There SHALL be no report-only mode (decision 181).
+
+#### Scenario: A form with one finding is not saved
+- **GIVEN** a form with one `required-unmapped` finding
+- **WHEN** it is saved
+- **THEN** the save is refused and the finding is returned
