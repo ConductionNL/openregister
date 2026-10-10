@@ -82,7 +82,10 @@ class ObjectWatchersController extends Controller {
 	 * Follow an object.
 	 *
 	 * Idempotent: following an object you already follow returns the same
-	 * subscription and changes nothing.
+	 * subscription and changes nothing, except the notification switch when
+	 * the body names one: `{"notify": false}` keeps following and stops the
+	 * notifications, `{"notify": true}` turns them back on. Without it a new
+	 * follow notifies and an existing one keeps its setting.
 	 *
 	 * @param string $register Register slug or id.
 	 * @param string $schema Schema slug or id.
@@ -92,7 +95,7 @@ class ObjectWatchersController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
 	#[NoAdminRequired]
 	public function watch(string $register, string $schema, string $id): JSONResponse {
@@ -102,7 +105,12 @@ class ObjectWatchersController extends Controller {
 		}
 
 		try {
-			$watcher = $this->watchers->watch(object: $object, register: $register, schema: $schema);
+			$watcher = $this->watchers->watch(
+				object: $object,
+				register: $register,
+				schema: $schema,
+				notify: $this->notifyParam()
+			);
 		} catch (NotAuthorizedException $e) {
 			return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
 		} catch (\Throwable $e) {
@@ -173,7 +181,11 @@ class ObjectWatchersController extends Controller {
 
 		$results = [];
 		foreach ($rows as $row) {
-			$results[] = $row->jsonSerialize();
+			// Who follows, and since when. Each follower's notification
+			// switch is their own preference and stays out of the list.
+			$result = $row->jsonSerialize();
+			unset($result['notify']);
+			$results[] = $result;
 		}
 
 		return new JSONResponse(['results' => $results, 'total' => count($results)]);
@@ -257,6 +269,23 @@ class ObjectWatchersController extends Controller {
 
 		return new JSONResponse([], Http::STATUS_NO_CONTENT);
 	}//end remove()
+
+	/**
+	 * The notification switch the caller asked for, or null when they named none.
+	 *
+	 * A value that is not a boolean spelling is treated as not named, so a
+	 * typo keeps the current setting rather than silencing a follow.
+	 *
+	 * @return boolean|null The switch, or null.
+	 */
+	private function notifyParam(): ?bool {
+		$raw = $this->request->getParam('notify');
+		if ($raw === null || $raw === '') {
+			return null;
+		}
+
+		return filter_var($raw, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+	}//end notifyParam()
 
 	/**
 	 * Resolve the target object through the RBAC boundary.

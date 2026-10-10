@@ -104,7 +104,7 @@ use OCA\OpenRegister\Listener\ConceptDeleteGuardListener;
 use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
 use OCA\OpenRegister\Listener\DependentValueListener;
 use OCA\OpenRegister\Listener\FacetCacheInvalidationListener;
-use OCA\OpenRegister\Listener\FavouritePruneListener;
+use OCA\OpenRegister\Listener\AssigneeFollowListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
@@ -3598,17 +3598,18 @@ class Application extends App implements IBootstrap {
 		// never chose to follow it.
 		$context->registerEventListener(ObjectDeletedEvent::class, WatcherPruneListener::class);
 
+		// Assignment follows (`merge-follow-and-favourites`): the user a save
+		// puts in a schema's `x-openregister-role: assignee` property follows
+		// the object with notifications on.
+		$context->registerEventListener(ObjectCreatedEvent::class, AssigneeFollowListener::class);
+		$context->registerEventListener(ObjectUpdatedEvent::class, AssigneeFollowListener::class);
+
 		// Read state (`object-read-state`). A substantive change puts the object
 		// back to unread for every reader but its author; a deletion takes the
 		// read states with it and archives the notices that pointed at it, which
 		// would otherwise sit unread for ever pointing at nothing.
 		$context->registerEventListener(ObjectUpdatedEvent::class, ReadStateInvalidationListener::class);
 		$context->registerEventListener(ObjectDeletedEvent::class, ReadStatePruneListener::class);
-
-		// Favourites and view history (`favourites-and-recent`). Objects live in
-		// per-schema tables, so there is no single table for a foreign key to
-		// cascade from: a star and a view are cleared by a listener instead.
-		$context->registerEventListener(ObjectDeletedEvent::class, FavouritePruneListener::class);
 
 		// Threshold trigger evaluator: re-runs aggregations on writes and dispatches when thresholds are crossed.
 		$context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);
