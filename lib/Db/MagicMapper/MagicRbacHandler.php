@@ -41,6 +41,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Db\Schema;
@@ -325,6 +326,8 @@ class MagicRbacHandler {
 	 * @param string $uuidColumn The `_uuid` column as this emitter references it.
 	 * @param string|null $userId The caller, for grant resolution.
 	 * @param string $action The action being filtered; a grant only counts when it carries that permission.
+	 * @param Schema|null $schema The schema, so its drafts can be kept to their owners (decision 180).
+	 * @param string $columnPrefix Table alias with its dot for the `_status` column, empty when unaliased.
 	 *
 	 * @return string A SQL predicate true for rows this caller may reach.
 	 *
@@ -336,14 +339,27 @@ class MagicRbacHandler {
 		string $uuidColumn,
 		?string $userId,
 		string $action,
+		?Schema $schema = null,
+		string $columnPrefix = '',
 	): string {
-		return $this->objectScope()->notPrivateOrGrantedSql(
+		$reachable = $this->objectScope()->notPrivateOrGrantedSql(
 			authColumn: $columnName,
 			defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $authorization),
 			isPostgres: $this->isPostgres(),
 			uuidColumn: $uuidColumn,
 			quotedUuids: $this->quotedGrantedUuids(userId: $userId, action: $action)
 		);
+
+		// Decision 180: a draft answers to its owner only, like a private
+		// object, unless the schema lets others see drafts. Added HERE, the one
+		// predicate both list emitters use, so the owner admits beside it keep
+		// the owner's own drafts in view on every path.
+		$drafts = new DraftStatusPolicy();
+		if ($schema !== null && $drafts->draftsVisibleToOthers(schema: $schema) === false) {
+			$reachable = '(' . $reachable . ' AND ' . $drafts->notADraftSql(columnPrefix: $columnPrefix) . ')';
+		}
+
+		return $reachable;
 	}//end reachableRowSqlFor()
 
 	/**
@@ -576,7 +592,9 @@ class MagicRbacHandler {
 				columnName: 't._authorization',
 				uuidColumn: 't._uuid',
 				userId: $userId,
-				action: $action
+				action: $action,
+				schema: $schema,
+				columnPrefix: 't.'
 			)
 		);
 
@@ -1746,7 +1764,8 @@ class MagicRbacHandler {
 			action: $action,
 			userId: $userId,
 			userGroups: $userGroups,
-			columnPrefix: $columnPrefix
+			columnPrefix: $columnPrefix,
+			schema: $schema
 		);
 		if ($terms === null) {
 			return ['bypass' => false, 'conditions' => []];
@@ -1820,6 +1839,7 @@ class MagicRbacHandler {
 	 *                             UNION member. Unqualified, a column name still parses inside a
 	 *                             subquery and binds to the innermost FROM, which is silently wrong
 	 *                             the moment the related table does not carry it.
+	 * @param Schema|null $schema The schema, so its drafts can be kept to their owners (decision 180).
 	 *
 	 * @return array{denyTerm: string|null, notPrivate: string, ownerAdmits: string[]}|null The term pieces, or null
 	 *                                                                                       when the deny term
@@ -1830,7 +1850,8 @@ class MagicRbacHandler {
 		string $action,
 		?string $userId,
 		array $userGroups,
-		string $columnPrefix = ''
+		string $columnPrefix = '',
+		?Schema $schema = null
 	): ?array {
 		$denyTerm = $this->denyFilterSqlFor(
 			authorization: $authorization,
@@ -1849,7 +1870,9 @@ class MagicRbacHandler {
 			columnName: $columnPrefix . '_authorization',
 			uuidColumn: $columnPrefix . '_uuid',
 			userId: $userId,
-			action: $action
+			action: $action,
+			schema: $schema,
+			columnPrefix: $columnPrefix
 		);
 
 		$ownerAdmits = $this->ownerAdmitConditionsSql(

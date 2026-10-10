@@ -15,6 +15,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Task;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Task\TaskForm;
 use OCA\OpenRegister\Service\Task\TaskFormReader;
@@ -392,4 +393,27 @@ class TaskFormReaderTest extends TestCase {
 		$this->assertTrue($again->requireChecklist);
 		$this->assertSame(TaskForm::KIND_FIELDS, $again->kind);
 	}//end testTheRecordShapeRoundTrips()
+	/**
+	 * Spec scenario: a flow task form uses the same service; the refusal comes from FormDestinationValidator.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-openregister-must-judge-a-forms-mapping-against-its-destination-schema
+	 */
+	public function testTheStepSaveRefusalComesFromTheFormDestinationValidator(): void {
+		$validator = $this->createMock(FormDestinationValidator::class);
+		$validator->expects($this->once())
+			->method('unrenderableReason')
+			->with($this->isInstanceOf(Schema::class), 'locked')
+			->willReturn('judged by the destination validator.');
+
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static fn (string $text, array $parameters = []): string => $parameters === [] ? $text : vsprintf($text, $parameters)
+		);
+		$reader = new TaskFormReader(schemas: $this->schemas, engine: $this->engine, apps: $this->apps, l10n: $l10n, validator: $validator);
+		$this->schemas->method('find')->willReturn($this->caseSchema());
+
+		$this->expectException(UnexpectedValueException::class);
+		$this->expectExceptionMessage('judged by the destination validator.');
+		$reader->validate(form: $reader->fromConfig(config: ['formKind' => 'fields', 'formSchema' => 'case', 'formFields' => ['locked']]));
+	}//end testTheStepSaveRefusalComesFromTheFormDestinationValidator()
 }//end class

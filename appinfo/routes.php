@@ -1193,6 +1193,11 @@ return [
         ['name' => 'objects#geocode', 'url' => '/api/geo/geocode', 'verb' => 'GET'],
 
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
+        // Decision 179 (ADR-117): a form submits into its destination object.
+        ['name' => 'forms#validate', 'url' => '/api/forms/validate', 'verb' => 'POST'],
+        ['name' => 'forms#submit', 'url' => '/api/forms/{formId}/submit', 'verb' => 'POST'],
+        ['name' => 'forms#upload', 'url' => '/api/forms/{formId}/uploads', 'verb' => 'POST'],
+        ['name' => 'forms#draft', 'url' => '/api/forms/{formId}/draft', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
         // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
         // a longer path must be declared first or the generic one swallows it.

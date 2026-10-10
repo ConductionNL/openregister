@@ -94,6 +94,16 @@ final class ThrottledSurfaces {
 	public const ELEVATION = 'openregister_elevation';
 
 	/**
+	 * A form submit or upload into a destination object (decision 179).
+	 *
+	 * An unknown form id registers an attempt, so walking form ids to find
+	 * one that accepts writes slows down like any other token guess.
+	 *
+	 * @var string
+	 */
+	public const FORM_SUBMIT = 'openregister_form_submit';
+
+	/**
 	 * Every throttled surface, as `name => throttler action`.
 	 *
 	 * @var array<string, string>
@@ -106,6 +116,7 @@ final class ThrottledSurfaces {
 		'federationShareToken' => self::FEDERATION_SHARE_TOKEN,
 		'oauth2Callback' => self::OAUTH2_CALLBACK,
 		'elevation' => self::ELEVATION,
+		'formSubmit' => self::FORM_SUBMIT,
 	];
 
 	/**
