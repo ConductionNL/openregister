@@ -93,7 +93,7 @@ profile and the export verb.
 ## 5. Tests
 
 - [x] 5.1 Unit tests for the record, the sweep, the count and the scope.
-      (`ExportRunRecorderTest`, `ExportRunsControllerTest`, `SweepExpiredExportRunsJob` tests.)
+      (`ExportRunRecorderTest` covers record, sweep and count; `ExportRunsControllerTest` the scope.)
 - [ ] 5.2 `tests/e2e/ci/an-export-is-a-file-with-a-life.spec.ts`: run an
       export, see the row, download it, see the count move, expire it, see
       it named as expired.
