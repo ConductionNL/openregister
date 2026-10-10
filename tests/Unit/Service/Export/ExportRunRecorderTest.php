@@ -192,6 +192,8 @@ class ExportRunRecorderTest extends TestCase {
 				}
 
 				$node = $this->createMock(File::class);
+				$node->method('getName')->willReturn('weekly-cases.csv');
+				$node->method('getMimetype')->willReturn('text/csv');
 				$node->method('delete')->willReturnCallback(
 					function () use ($fileId): void {
 						unset($this->files[$fileId]);
@@ -504,4 +506,72 @@ class ExportRunRecorderTest extends TestCase {
 
 		$this->assertCount(3, $this->rows, 'a run whose file is gone is history; a new row opens a new run');
 	}//end testAnotherFileOrAnExpiredRunStartsANewRun()
+
+	/**
+	 * The maker of a run gets its file back from the register.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-downloads-are-counted-on-the-run
+	 */
+	public function testTheMakerGetsTheFileOfTheirRun(): void {
+		$run = $this->recordOne(retention: 3600);
+
+		$found = $this->recorder->openForDownload(uuid: (string)$run->getUuid(), callerUid: 'alice', seesEveryRun: false);
+
+		$this->assertSame(200, $found['status']);
+		$this->assertInstanceOf(File::class, $found['file']);
+	}//end testTheMakerGetsTheFileOfTheirRun()
+
+	/**
+	 * Somebody else's run reads as missing, the same as a uuid nobody has.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-an-exports-area-lists-the-runs
+	 */
+	public function testAnotherPrincipalsRunReadsAsMissing(): void {
+		$run = $this->recordOne(retention: 3600);
+
+		$other = $this->recorder->openForDownload(uuid: (string)$run->getUuid(), callerUid: 'bob', seesEveryRun: false);
+		$none = $this->recorder->openForDownload(uuid: 'no-such-run', callerUid: 'bob', seesEveryRun: false);
+
+		$this->assertSame(404, $other['status']);
+		$this->assertSame($none, $other, 'a refusal must not tell a stranger that the run exists');
+
+		$admin = $this->recorder->openForDownload(uuid: (string)$run->getUuid(), callerUid: 'bob', seesEveryRun: true);
+		$this->assertSame(200, $admin['status']);
+	}//end testAnotherPrincipalsRunReadsAsMissing()
+
+	/**
+	 * An expired run offers no download: it answers gone.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-an-exports-area-lists-the-runs
+	 */
+	public function testAnExpiredRunIsGone(): void {
+		$run = $this->recordOne(retention: 3600);
+		$this->clock += 7200;
+		$this->recorder->sweep();
+
+		$found = $this->recorder->openForDownload(uuid: (string)$run->getUuid(), callerUid: 'alice', seesEveryRun: false);
+
+		$this->assertSame(410, $found['status']);
+		$this->assertArrayNotHasKey('file', $found);
+	}//end testAnExpiredRunIsGone()
+
+	/**
+	 * A run whose file somebody deleted in Files answers gone, not a crash.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-downloads-are-counted-on-the-run
+	 */
+	public function testARunWhoseFileWasDeletedIsGone(): void {
+		$run = $this->recordOne(retention: 3600);
+		unset($this->files[4242]);
+
+		$this->assertSame(410, $this->recorder->openForDownload(uuid: (string)$run->getUuid(), callerUid: 'alice', seesEveryRun: false)['status']);
+	}//end testARunWhoseFileWasDeletedIsGone()
 }//end class

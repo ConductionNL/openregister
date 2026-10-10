@@ -47,6 +47,7 @@ use DateTime;
 use OCA\OpenRegister\Db\ExportRun;
 use OCA\OpenRegister\Db\ExportRunMapper;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use Psr\Log\LoggerInterface;
@@ -230,6 +231,78 @@ class ExportRunRecorder {
 
 		return $this->mapper->update($run);
 	}//end recordAppended()
+
+	/**
+	 * Resolve a run to the file the register may hand back.
+	 *
+	 * The maker of a run gets its file, and so does a caller who sees every
+	 * run. Anybody else gets the same answer as for a uuid nobody has, so a
+	 * refusal never tells a stranger that the run exists. An expired run, or
+	 * one whose file was deleted in Files, answers gone: the row outlives the
+	 * file, and the list names it expired rather than offering a dead link.
+	 *
+	 * @param string $uuid         The run.
+	 * @param string $callerUid    Who asks.
+	 * @param bool   $seesEveryRun Whether the caller sees every run (from ExportRightService).
+	 *
+	 * @return array{status: int, error?: string, run?: ExportRun, file?: File} 200 with the run
+	 *     and its file, or 404/410 with an error.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The caller's scope, answered by
+	 *     ExportRightService, as in listFor().
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-downloads-are-counted-on-the-run
+	 */
+	public function openForDownload(string $uuid, string $callerUid, bool $seesEveryRun): array {
+		$missing = ['status' => 404, 'error' => 'No export with this id.'];
+		try {
+			$run = $this->mapper->findByUuid(uuid: $uuid);
+		} catch (Throwable $e) {
+			return $missing;
+		}
+
+		if ($seesEveryRun === false && $run->getActor() !== $callerUid) {
+			return $missing;
+		}
+
+		$gone = ['status' => 410, 'error' => 'This export has expired. Its file was removed; the record stays.'];
+		$fileId = $run->getFileId();
+		$actor = (string)$run->getActor();
+		if ($run->getStatus() === ExportRun::STATUS_EXPIRED || $fileId === null || $actor === '') {
+			return $gone;
+		}
+
+		$file = $this->fileOf(actor: $actor, fileId: $fileId);
+		if ($file === null) {
+			return ['status' => 410, 'error' => 'The file of this export is no longer in its owner\'s files.'];
+		}
+
+		return ['status' => 200, 'run' => $run, 'file' => $file];
+	}//end openForDownload()
+
+	/**
+	 * The file a run produced, in its maker's files, if it is still there.
+	 *
+	 * @param string $actor  The run's maker.
+	 * @param int    $fileId The file id.
+	 *
+	 * @return File|null The file, or null when it is gone.
+	 */
+	private function fileOf(string $actor, int $fileId): ?File {
+		try {
+			$nodes = $this->rootFolder->getUserFolder($actor)->getById($fileId);
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		foreach ($nodes as $node) {
+			if ($node instanceof File) {
+				return $node;
+			}
+		}
+
+		return null;
+	}//end fileOf()
 
 	/**
 	 * The runs one caller sees in the area.

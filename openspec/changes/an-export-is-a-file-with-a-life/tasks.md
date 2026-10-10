@@ -53,13 +53,19 @@ profile and the export verb.
 
 ## 3. The count
 
-- [ ] 3.1 Count a download on the run when the file is served from the
+- [x] 3.1 Count a download on the run when the file is served from the
       register.
       > PARTLY DONE 2026-09-22. `ExportRunRecorder::countDownload()` exists
       > and the export profile run writes a count of one, because that path
       > does serve the bytes from the register. No endpoint serves a
       > scheduled report's FILE back from the register yet, so there is no
       > call site there and none was invented.
+      > 2026-10-10 (B3): DONE. `GET /api/exports/{uuid}/download` (`ExportRunsController::download()`)
+      > streams the run's file from its maker's files and counts once on the run; the maker or a
+      > caller `ExportRightService` lets see every run gets it, anybody else 404 (same answer as an
+      > unknown uuid), an expired run or a file deleted in Files 410
+      > (`ExportRunRecorder::openForDownload()`, `ExportRunRecorderTest::testAnotherPrincipalsRunReadsAsMissing`,
+      > `testAnExpiredRunIsGone`, `ExportRunsControllerTest::testADownloadStreamsTheFileAndCountsOnTheRun`).
       - Unit tests: the run's count and `openregister_files.downloadCount`
         move independently, and the test says why
 
@@ -86,7 +92,8 @@ profile and the export verb.
 
 ## 5. Tests
 
-- [ ] 5.1 Unit tests for the record, the sweep, the count and the scope.
+- [x] 5.1 Unit tests for the record, the sweep, the count and the scope.
+      (`ExportRunRecorderTest`, `ExportRunsControllerTest`, `SweepExpiredExportRunsJob` tests.)
 - [ ] 5.2 `tests/e2e/ci/an-export-is-a-file-with-a-life.spec.ts`: run an
       export, see the row, download it, see the count move, expire it, see
       it named as expired.

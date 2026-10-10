@@ -1977,6 +1977,7 @@ return [
 		// often the register served it. No catch-all sibling sits on
 		// /api/exports, so nothing here can be swallowed by a {id} route.
 		['name' => 'exportRuns#index', 'url' => '/api/exports', 'verb' => 'GET'],
+		['name' => 'exportRuns#download', 'url' => '/api/exports/{uuid}/download', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'exportProfiles#index', 'url' => '/api/export-profiles', 'verb' => 'GET'],
 		['name' => 'exportProfiles#contract', 'url' => '/api/export-profiles/contract', 'verb' => 'GET'],
 		['name' => 'exportProfiles#create', 'url' => '/api/export-profiles', 'verb' => 'POST'],
