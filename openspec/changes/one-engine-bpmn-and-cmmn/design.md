@@ -77,14 +77,22 @@ children.
 
 ### 3.2 Flow nodes (gap 2)
 
-- `openregister.case-open`: config `{definition}` (the same shape
-  `createPlan` takes). Creates the plan on the run's subject through
-  `createPlan`, acting as the run's attributed identity. An object that
-  already has a plan is not an error for the node: it reports
-  `{opened: false, reason: "exists"}` on its output, so a re-run is safe.
-- `openregister.case-advance`: config `{item, to, reason?}` where `item` is
-  the plan-item key. Resolves the item on the run's subject and calls
-  `transition`. Refusals (illegal edge, authorization) fail the step with the
+Both act on the object the step receives (its `uuid`, or a configured
+`uuid` template), with the register and schema its `@self` block names, as
+the run's acting identity (`runAs`, else the signed-in user; neither is a
+refusal), inside `FlowRunAsScope` so the case layer's reads are checked
+against that identity. Shared resolution lives in the abstract
+`CaseNodeBase`.
+
+- `openregister.case-open`: config `{definition, uuid?}` (the same shape
+  `createPlan` takes). Calls `createPlan`. An object that already has a plan
+  is reported on the item (`case: {opened: false, reason: "exists"}`) via a
+  new `CasePlanExistsException` (a `CaseValidationException`, so the API's
+  400 is unchanged), so a re-run is safe.
+- `openregister.case-advance`: config `{item, to, reason?, uuid?}` where
+  `item` is the plan-item key. Reads the plan with `getPlan`, finds the key,
+  calls `transition`; the item carries `case: {item, state}`. Refusals
+  (illegal edge, authorization, no plan, unknown key) fail the step with the
   engine's message; they are never swallowed.
 
 Both register through `FlowNodeRegistry` like every other node.

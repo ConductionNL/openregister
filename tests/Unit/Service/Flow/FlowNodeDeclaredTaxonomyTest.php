@@ -75,6 +75,8 @@ use ReflectionClass;
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerObjectNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\TriggerScheduleNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UnlockObjectNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\CaseOpenNode
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\CaseAdvanceNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\UserTaskNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\WaitNode
  */
@@ -112,6 +114,9 @@ final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 			'ObjectWriteNode' => ['serviceTask', 'objects'],
 			'LockObjectNode' => ['serviceTask', 'objects'],
 			'UnlockObjectNode' => ['serviceTask', 'objects'],
+			// The flow engine touching the case layer (one-engine-bpmn-and-cmmn).
+			'CaseOpenNode' => ['serviceTask', 'objects'],
+			'CaseAdvanceNode' => ['serviceTask', 'objects'],
 			'LoopNode' => ['serviceTask', 'objects'],
 
 			// Logic. Branches and joins are gateways; reshaping is a scriptTask.

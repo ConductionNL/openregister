@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\CaseItemAudit;
 use OCA\OpenRegister\Db\CaseItemAuditMapper;
 use OCA\OpenRegister\Db\CaseItemMapper;
 use OCA\OpenRegister\Exception\CaseAccessDeniedException;
+use OCA\OpenRegister\Exception\CasePlanExistsException;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
@@ -717,13 +718,13 @@ class CasePlanService {
 	 *
 	 * @return void
 	 *
-	 * @throws CaseValidationException When the object already has a plan.
+	 * @throws CasePlanExistsException When the object already has a plan.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	private function insertPlan(string $objectUuid, ?int $registerId, ?int $schemaId, array $normalised, ?string $actor, array $provenance): void {
 		if ($this->items->findByObject(objectUuid: $objectUuid) !== []) {
-			throw new CaseValidationException(message: sprintf('Object %s already has a case plan; delete it before creating another.', $objectUuid));
+			throw new CasePlanExistsException(message: sprintf('Object %s already has a case plan; delete it before creating another.', $objectUuid));
 		}
 
 		$this->transactional(

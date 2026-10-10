@@ -224,6 +224,7 @@ class CasePlanServiceTest extends TestCase {
 			$this->service()->createPlan(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: 'alice');
 			$this->fail('one plan per object');
 		} catch (CaseValidationException $refusal) {
+			$this->assertInstanceOf(\OCA\OpenRegister\Exception\CasePlanExistsException::class, $refusal, 'An existing plan is told apart by type.');
 			$this->assertStringContainsString('already has a case plan', $refusal->getMessage());
 		}
 

@@ -23,9 +23,9 @@ Small PRs, in this order. PR 1 is what dossiq's drain waits on.
 
 ## 4. Flow nodes that open and advance a case (PR 4)
 
-- [ ] 4.1 `CaseOpenNode` (`openregister.case-open`), own unit test: creates on the run's subject as the run's identity; existing plan reported on output.
-- [ ] 4.2 `CaseAdvanceNode` (`openregister.case-advance`), own unit test: transitions by key; refusal fails the step with the engine's message.
-- [ ] 4.3 Register both in `FlowNodeRegistry`; node catalogue labels in every shipped locale.
+- [x] 4.1 `CaseOpenNode` (`openregister.case-open`), own unit test: creates on the run's subject as the run's identity; existing plan reported on output (`CasePlanExistsException`). (lib/Service/Flow/Nodes/CaseOpenNode.php, CaseNodeBase.php, CaseFlowNodesTest)
+- [x] 4.2 `CaseAdvanceNode` (`openregister.case-advance`), own unit test: transitions by key; refusal fails the step with the engine's message. (lib/Service/Flow/Nodes/CaseAdvanceNode.php, CaseFlowNodesTest)
+- [x] 4.3 Register both through `FlowNodeRegistrationListener` (FlowNodeRegistrationListenerTest: 29 built-ins) and the declared taxonomy table (FlowNodeDeclaredTaxonomyTest). Palette strings follow every other node: through IL10N, not in the backend catalogue (no built-in node's strings are in `l10n/en.json`; adding them would oblige all required locales at once).
 
 ## 5. Close
 
