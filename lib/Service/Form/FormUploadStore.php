@@ -110,7 +110,10 @@ class FormUploadStore {
 			$this->refuse(
 				property: $property,
 				code: 'file-too-large',
-				message: $this->l10n->t('The file is %1$s MB; "%2$s" takes at most %3$s MB.', [$this->megabytes(bytes: $size), $property, $this->megabytes(bytes: $limit)])
+				message: $this->l10n->t(
+					'The file is %1$s MB; "%2$s" takes at most %3$s MB.',
+					[$this->megabytes(bytes: $size), $property, $this->megabytes(bytes: $limit)]
+				)
 			);
 		}
 
@@ -160,7 +163,8 @@ class FormUploadStore {
 	public function materialise(string $formId, string $token): array {
 		$meta = $this->meta(token: $token);
 		if ($meta === null || $meta['formId'] !== $formId || $meta['expiresAt'] <= $this->time->getTime()) {
-			$this->refuse(property: '', code: 'upload-token-unknown', message: $this->l10n->t('An uploaded file has expired or is unknown. Please add it again.'));
+			$message = $this->l10n->t('An uploaded file has expired or is unknown. Please add it again.');
+			$this->refuse(property: '', code: 'upload-token-unknown', message: $message);
 		}
 
 		$path = $this->temp->getTemporaryFile();

@@ -1095,7 +1095,7 @@ class SchemasController extends Controller {
 	 * @param Schema               $existing The stored schema.
 	 * @param array<string, mixed> $data     The update body.
 	 *
-	 * @return array{refused: bool, schema: string, affected: array<int, array<string, mixed>>}|null The assessment, or null when the definition is unchanged.
+	 * @return array<string, mixed>|null The assessment (refused, schema, affected), or null when the definition is unchanged.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
 	 */

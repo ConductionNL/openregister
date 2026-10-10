@@ -86,7 +86,9 @@ class FormDependentsCheck {
 	 *
 	 * @param Schema $schema The proposed schema definition.
 	 *
-	 * @return array{refused: bool, schema: string, affected: array<int, array{id: string, app: string, title: string, break: string, findings: array<int, array<string, mixed>>, form: FormDependent}>} The assessment.
+	 * @return array<string, mixed> The assessment: `refused`, `schema`, and `affected` (id, app, title, break, findings, form).
+	 *
+	 * @psalm-return array{refused: bool, schema: string, affected: list<array<string, mixed>>}
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
 	 */
@@ -124,7 +126,7 @@ class FormDependentsCheck {
 	 *
 	 * @param array{refused: bool, schema: string, affected: array<int, array<string, mixed>>} $assessment The assessment of the saved schema.
 	 *
-	 * @return array<int, array{id: string, app: string, title: string, outcome: string, findings: array<int, array<string, mixed>>}> Each affected form with its outcome, for the save response.
+	 * @return array<int, array<string, mixed>> Each affected form (id, app, title, outcome, findings), for the save response.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
 	 */

@@ -130,7 +130,11 @@ class FormsController extends Controller {
 			$options['audience'] = $audience;
 		}
 
-		$findings = $this->validator->validate(mapping: (is_array($mapping) === true ? $mapping : []), schema: $schema, options: $options);
+		if (is_array($mapping) === false) {
+			$mapping = [];
+		}
+
+		$findings = $this->validator->validate(mapping: $mapping, schema: $schema, options: $options);
 
 		return new JSONResponse(data: ['accepted' => ($findings === []), 'findings' => $findings]);
 	}//end validate()
@@ -164,11 +168,15 @@ class FormsController extends Controller {
 			}
 
 			$key = trim($this->request->getHeader('Idempotency-Key'));
+			if ($key === '') {
+				$key = null;
+			}
+
 			$answer = $this->submitter->submitAll(
 				$form['writes'],
 				$this->payload(),
 				$subject,
-				($key === '' ? null : $key),
+				$key,
 				$formId
 			);
 		} catch (FormSubmitRefusedException $refused) {
@@ -197,11 +205,14 @@ class FormsController extends Controller {
 	public function upload(string $formId): JSONResponse {
 		$property = trim((string)$this->request->getParam('property', ''));
 		$file = $this->request->getUploadedFile('file');
+		if (is_array($file) === false) {
+			$file = [];
+		}
 
 		try {
 			$form = $this->resolveForm(formId: $formId);
 			$rule = $this->ruleFor(writes: $form['writes'], property: $property);
-			$issued = $this->uploads->issue(formId: $formId, property: $property, rule: $rule, file: (is_array($file) === true ? $file : []));
+			$issued = $this->uploads->issue(formId: $formId, property: $property, rule: $rule, file: $file);
 		} catch (FormSubmitRefusedException $refused) {
 			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
 		}

@@ -110,7 +110,7 @@ class FormSubmitService {
 	 * @param string|null                             $idempotencyKey The Idempotency-Key, when the caller sent one.
 	 * @param string                                  $scope          The form id the key and upload tokens belong to.
 	 *
-	 * @return array{reference: string, id: string, receivedAt: string|null, confirmation: array<string, mixed>, objects: array<int, array<string, mixed>>} The answer.
+	 * @return array<string, mixed> The answer: reference, id, receivedAt, confirmation, objects.
 	 *
 	 * @throws FormSubmitRefusedException 422 refused payload, 403 not allowed, 404 no destination, 503 try again later.
 	 *
@@ -147,7 +147,7 @@ class FormSubmitService {
 	 * @param string|null                      $idempotencyKey The Idempotency-Key, when sent.
 	 * @param string                           $scope          The form id the key and tokens belong to.
 	 *
-	 * @return array{reference: string, id: string, receivedAt: string|null, confirmation: array<string, mixed>, objects: array<int, array<string, mixed>>} The answer.
+	 * @return array<string, mixed> The answer: reference, id, receivedAt, confirmation, objects.
 	 *
 	 * @throws FormSubmitRefusedException 422 refused payload, 403 not allowed, 404 no destination, 503 try again later.
 	 *
@@ -166,7 +166,7 @@ class FormSubmitService {
 			$remembered = $this->keys->find(scope: $keyScope, key: $key);
 			if ($remembered !== null) {
 				/*
-				 * @var array{reference: string, id: string, receivedAt: string|null, confirmation: array<string, mixed>, objects: array<int, array<string, mixed>>} $remembered
+				 * @var array<string, mixed> $remembered
 				 */
 				return $remembered;
 			}
@@ -192,7 +192,7 @@ class FormSubmitService {
 	 * @param array<string, mixed>             $payload The payload.
 	 * @param string                           $scope   The form id upload tokens belong to.
 	 *
-	 * @return array<int, array{as: string, named: bool, register: Register, schema: Schema, mapping: array<string, mixed>|null, object: array<string, mixed>, files: array<string, array<string, mixed>>, tokens: array<int, string>}> The plans.
+	 * @return array<int, array<string, mixed>> The plans: as, named, register, schema, mapping, object, files, tokens.
 	 *
 	 * @throws FormSubmitRefusedException 404 when a destination does not exist; 422 for a bad upload token.
 	 */
@@ -241,7 +241,7 @@ class FormSubmitService {
 	 * @param array<string, mixed>      $payload The payload.
 	 * @param string                    $scope   The form id upload tokens belong to.
 	 *
-	 * @return array{0: array<string, mixed>, 1: array<string, array<string, mixed>>, 2: array<int, string>} The object, the uploads by property, the tokens.
+	 * @return array{0: array<string, mixed>, 1: array<string, array<string, mixed>>, 2: array<int, string>} Object, uploads, tokens.
 	 *
 	 * @throws FormSubmitRefusedException 422 for an unknown, expired or misdirected upload token.
 	 */
@@ -276,10 +276,11 @@ class FormSubmitService {
 
 			$file = $this->uploads->materialise(formId: $scope, token: $token);
 			if ($file['property'] !== $property) {
+				$message = $this->l10n->t('An uploaded file was sent for another question. Please add it again.');
 				throw new FormSubmitRefusedException(
-					message: $this->l10n->t('An uploaded file was sent for another question. Please add it again.'),
+					message: $message,
 					status: 422,
-					findings: [['property' => $property, 'code' => 'upload-token-unknown', 'message' => $this->l10n->t('An uploaded file was sent for another question. Please add it again.')]]
+					findings: [['property' => $property, 'code' => 'upload-token-unknown', 'message' => $message]]
 				);
 			}
 
@@ -396,6 +397,11 @@ class FormSubmitService {
 		$created = [];
 		$ids = [];
 		foreach ($plans as $plan) {
+			$files = null;
+			if ($plan['files'] !== []) {
+				$files = $plan['files'];
+			}
+
 			try {
 				$entity = $this->objects->saveObject(
 					object: $this->resolveWriteReferences(object: $plan['object'], ids: $ids, pending: false),
@@ -403,7 +409,7 @@ class FormSubmitService {
 					schema: $plan['schema'],
 					_rbac: true,
 					_multitenancy: true,
-					uploadedFiles: ($plan['files'] === [] ? null : $plan['files']),
+					uploadedFiles: $files,
 					currentUser: $subject,
 					_unowned: $subject === null
 				);
@@ -442,10 +448,11 @@ class FormSubmitService {
 			}
 
 			if (isset($ids[$value['$write']]) === false) {
+				$message = $this->l10n->t('Write "%1$s" is referenced before it is made.', [$value['$write']]);
 				throw new FormSubmitRefusedException(
-					message: $this->l10n->t('Write "%1$s" is referenced before it is made.', [$value['$write']]),
+					message: $message,
 					status: 422,
-					findings: [['property' => (string)$property, 'code' => 'write-unknown', 'message' => $this->l10n->t('Write "%1$s" is referenced before it is made.', [$value['$write']])]]
+					findings: [['property' => (string)$property, 'code' => 'write-unknown', 'message' => $message]]
 				);
 			}
 
@@ -547,7 +554,7 @@ class FormSubmitService {
 	 *
 	 * @param array<int, array{plan: array<string, mixed>, object: ObjectEntity}> $created The writes.
 	 *
-	 * @return array{reference: string, id: string, receivedAt: string|null, confirmation: array<string, mixed>, objects: array<int, array<string, mixed>>} The answer.
+	 * @return array<string, mixed> The answer: reference, id, receivedAt, confirmation, objects.
 	 */
 	private function answer(array $created): array {
 		$objects = [];

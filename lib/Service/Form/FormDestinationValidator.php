@@ -228,7 +228,10 @@ class FormDestinationValidator {
 			$findings[] = $this->finding(
 				property: '',
 				code: self::DESTINATION_IS_STAGING,
-				message: $this->l10n->t('Schema "%1$s" is marked as a staging object. A form submits into the object a person works on, not into a layer before it.', [$slug])
+				message: $this->l10n->t(
+					'Schema "%1$s" is marked as a staging object. A form submits into the object a person works on, not into a layer before it.',
+					[$slug]
+				)
 			);
 		}
 
@@ -300,7 +303,10 @@ class FormDestinationValidator {
 				$this->finding(
 					property: $propertyName,
 					code: self::PROPERTY_UNKNOWN,
-					message: $this->l10n->t('Field "%1$s" writes into "%2$s", which schema "%3$s" does not have.', [$name, $propertyName, (string)$schema->getSlug()]),
+					message: $this->l10n->t(
+						'Field "%1$s" writes into "%2$s", which schema "%3$s" does not have.',
+						[$name, $propertyName, (string)$schema->getSlug()]
+					),
 					field: $name
 				),
 			];
@@ -395,7 +401,10 @@ class FormDestinationValidator {
 				$this->finding(
 					property: $propertyName,
 					code: self::ENUM_UNCONSTRAINED,
-					message: $this->l10n->t('Field "%1$s" lets anything be typed, but "%2$s" accepts only: %3$s.', [$name, $propertyName, $this->listOf(values: $enum)]),
+					message: $this->l10n->t(
+						'Field "%1$s" lets anything be typed, but "%2$s" accepts only: %3$s.',
+						[$name, $propertyName, $this->listOf(values: $enum)]
+					),
 					field: $name
 				),
 			];
