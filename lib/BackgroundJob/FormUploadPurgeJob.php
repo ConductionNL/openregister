@@ -68,6 +68,8 @@ class FormUploadPurgeJob extends TimedJob {
 	 * @throws Throwable When a purge fails, after logging it.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) TimedJob's signature.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
 	protected function run(mixed $argument): void {
 		try {
