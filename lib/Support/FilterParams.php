@@ -62,6 +62,13 @@ final class FilterParams {
 	public const FILTER_KEY = 'filter';
 
 	/**
+	 * The words a boolean-column filter accepts, in the form every supported database reads.
+	 *
+	 * @var array<string, string>
+	 */
+	private const BOOLEAN_WORDS = ['true' => '1', 'false' => '0'];
+
+	/**
 	 * Non-underscore parameters that carry object-search CONTEXT, not a filter.
 	 *
 	 * Also the tail of `MagicSearchHandler::getReservedParams()`, which reads
@@ -366,15 +373,7 @@ final class FilterParams {
 	 */
 	public static function comparableValue(mixed $value, string $propertyType): mixed {
 		if (is_array($value) === true) {
-			$mapped = [];
-			foreach ($value as $key => $item) {
-				$mapped[$key] = $item;
-				if ($key !== 'isnull' && $key !== 'like') {
-					$mapped[$key] = self::comparableValue(value: $item, propertyType: $propertyType);
-				}
-			}
-
-			return $mapped;
+			return self::comparableList(values: $value, propertyType: $propertyType);
 		}
 
 		if ($propertyType === 'boolean') {
@@ -385,16 +384,36 @@ final class FilterParams {
 			return $value;
 		}
 
-		if ($propertyType === 'integer' || $propertyType === 'number') {
+		if (in_array($propertyType, ['integer', 'number'], true) === true) {
 			return (int)$value;
 		}
 
-		if ($value === true) {
-			return 'true';
+		// `'true'` or `'false'`, the value's JSON spelling.
+		return var_export($value, true);
+	}//end comparableValue()
+
+	/**
+	 * Map a value list or an operator bag element by element.
+	 *
+	 * The `isnull` and `like` operator values keep their own rules and are
+	 * returned untouched.
+	 *
+	 * @param array<array-key, mixed> $values       The list or operator bag.
+	 * @param string                  $propertyType The property's declared JSON-Schema type.
+	 *
+	 * @return array<array-key, mixed> The mapped list or bag.
+	 */
+	private static function comparableList(array $values, string $propertyType): array {
+		$mapped = [];
+		foreach ($values as $key => $item) {
+			$mapped[$key] = $item;
+			if (in_array($key, ['isnull', 'like'], true) === false) {
+				$mapped[$key] = self::comparableValue(value: $item, propertyType: $propertyType);
+			}
 		}
 
-		return 'false';
-	}//end comparableValue()
+		return $mapped;
+	}//end comparableList()
 
 	/**
 	 * The `'1'`/`'0'` form of a boolean-column filter value.
@@ -404,20 +423,12 @@ final class FilterParams {
 	 * @return mixed `'1'` or `'0'` for a boolean or its word, the value itself otherwise.
 	 */
 	private static function booleanColumnValue(mixed $value): mixed {
+		if (is_bool($value) === true) {
+			return (string)(int)$value;
+		}
+
 		if (is_string($value) === true) {
-			$value = match (strtolower($value)) {
-				'true' => true,
-				'false' => false,
-				default => $value,
-			};
-		}
-
-		if ($value === true) {
-			return '1';
-		}
-
-		if ($value === false) {
-			return '0';
+			return self::BOOLEAN_WORDS[strtolower($value)] ?? $value;
 		}
 
 		return $value;
