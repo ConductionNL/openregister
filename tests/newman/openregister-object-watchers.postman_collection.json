@@ -357,6 +357,152 @@
       ]
     },
     {
+      "name": "PUT .../watch {notify:false} -> still following, quietly",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watch"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"notify\": false}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('the follow stays and goes quiet', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().notify).to.eql(false); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET the object -> @self.watchNotify is false",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('still following', () => pm.expect(pm.response.json()['@self'].watching).to.eql(true));",
+              "pm.test('without notifications', () => pm.expect(pm.response.json()['@self'].watchNotify).to.eql(false));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET .../watchers -> the quiet follower is listed, without their switch",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watchers"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('still one follower', () => pm.expect(pm.response.json().total).to.eql(1));",
+              "pm.test('nobody else sees the notification switch', () => pm.expect(pm.response.json().results[0]).to.not.have.property('notify'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PUT .../watch {notify:true} -> notifications back on",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "OCS-APIRequest",
+            "value": "true"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/index.php/apps/openregister/api/objects/{{registerId}}/{{schemaId}}/{{objectUuid}}/watch"
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\"notify\": true}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('loud again', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().notify).to.eql(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "GET ?_watching=true -> the lens finds the object",
       "request": {
         "method": "GET",

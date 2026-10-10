@@ -230,7 +230,6 @@ class SearchReferenceResolutionTest extends TestCase {
 			$this->createMock(SearchTrailService::class),
 			null,
 			null,
-			null,
 			$this->resolver()
 		);
 	}//end searchQueryHandler()

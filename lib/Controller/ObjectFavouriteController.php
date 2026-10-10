@@ -1,7 +1,12 @@
 <?php
 
 /**
- * ObjectFavouriteController: the star's two verbs.
+ * ObjectFavouriteController: the star's two verbs, deprecated.
+ *
+ * Since `merge-follow-and-favourites` a star is a follow with notifications
+ * off. These routes stay for one release so nextcloud-vue and the leaf apps
+ * can move to `.../watch` on their own schedule; every response says so in a
+ * `Deprecation` header and points at the successor in a `Link` header.
  *
  * Starring is per-user state that must not be written through the object
  * itself, which would put "alice likes this" in the object's audit trail and
@@ -23,7 +28,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/specs/object-interactions/spec.md
+ * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+ *
+ * @deprecated Use PUT|DELETE .../watch. Removed in the release after merge-follow-and-favourites.
  */
 
 declare(strict_types=1);
@@ -81,7 +88,7 @@ class ObjectFavouriteController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	#[NoAdminRequired]
 	public function star(string $register, string $schema, string $id): JSONResponse {
@@ -102,8 +109,13 @@ class ObjectFavouriteController extends Controller {
 			return $this->unexpected(exception: $e, context: 'star');
 		}
 
-		return new JSONResponse(
-			array_merge($favourite->jsonSerialize(), ['favourite' => true])
+		return $this->deprecated(
+			response: new JSONResponse(
+				array_merge($favourite->jsonSerialize(), ['favourite' => true, 'watching' => true])
+			),
+			register: $register,
+			schema: $schema,
+			id: $id
 		);
 
 	}//end star()
@@ -123,7 +135,7 @@ class ObjectFavouriteController extends Controller {
 	 *
 	 * @NoAdminRequired
 	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
 	 */
 	#[NoAdminRequired]
 	public function unstar(string $register, string $schema, string $id): JSONResponse {
@@ -140,9 +152,35 @@ class ObjectFavouriteController extends Controller {
 			return $this->unexpected(exception: $e, context: 'unstar');
 		}
 
-		return new JSONResponse(['favourite' => false, 'removed' => $removed]);
+		return $this->deprecated(
+			response: new JSONResponse(['favourite' => false, 'watching' => false, 'removed' => $removed]),
+			register: $register,
+			schema: $schema,
+			id: $id
+		);
 
 	}//end unstar()
+
+	/**
+	 * Mark a response as coming from a deprecated route, naming its successor.
+	 *
+	 * @param JSONResponse $response The response to mark.
+	 * @param string $register Register slug or id.
+	 * @param string $schema Schema slug or id.
+	 * @param string $id Object uuid.
+	 *
+	 * @return JSONResponse The same response, with the two headers.
+	 */
+	private function deprecated(JSONResponse $response, string $register, string $schema, string $id): JSONResponse {
+		$successor = '/index.php/apps/openregister/api/objects/'.rawurlencode($register)
+			.'/'.rawurlencode($schema).'/'.rawurlencode($id).'/watch';
+
+		$response->addHeader('Deprecation', 'true');
+		$response->addHeader('Link', '<'.$successor.'>; rel="successor-version"');
+
+		return $response;
+
+	}//end deprecated()
 
 	/**
 	 * Resolve the target object through the RBAC boundary.

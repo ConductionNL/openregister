@@ -43,12 +43,12 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectFavouriteMapper;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\LikeOperator;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
@@ -650,14 +650,16 @@ class MagicSearchHandler {
 		// facets cannot disagree about what was excluded.
 		$this->applyUnreadFilter(qb: $qb, userId: ($query['_unreadFor'] ?? null));
 
-		// The favourites lens, resolved in the query for the same reason. The
-		// recent lens needs no filter here: it arrives as `_ids`, resolved from
-		// the audit trail's read history at the edge (SearchQueryHandler), so
-		// every search path honours it, the cross-table UNION included.
+		// The following lens, resolved in the query for the same reason.
+		// `_watchingFor` also answers the deprecated `_favourite=true`, since a
+		// favourite is a follow (`merge-follow-and-favourites`). The recent lens
+		// needs no filter here: it arrives as `_ids`, resolved from the audit
+		// trail's read history at the edge (SearchQueryHandler), so every search
+		// path honours it, the cross-table UNION included.
 		$this->applyPersonalLensFilter(
 			qb: $qb,
-			table: ObjectFavouriteMapper::TABLE,
-			userId: ($query['_favouriteFor'] ?? null)
+			table: WatcherMapper::TABLE,
+			userId: ($query['_watchingFor'] ?? null)
 		);
 
 		// Apply full-text search if provided.
@@ -2139,7 +2141,8 @@ class MagicSearchHandler {
 			'_unread',
 			'_unreadFor',
 			'_favourite',
-			'_favouriteFor',
+			'_watching',
+			'_watchingFor',
 			'_recent',
 			'_recentFor',
 			'_recentViews',
