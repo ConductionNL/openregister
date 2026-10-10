@@ -706,19 +706,17 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	protected ?array $unreadCounts = null;
 
 	/**
-	 * Whether the current user has starred this object (`favourites-and-recent`).
+	 * Whether the current user's follow of this object notifies them.
 	 *
-	 * Transient, populated by the render layer from
-	 * `FavouriteService::isStarredByCaller()`. Not persisted: a star is
-	 * per-user, per-object state living in `openregister_favourites`, which is
-	 * what keeps starring an object out of its own audit trail and versions.
-	 * Exposed in @self as `favourite`, and omitted for an anonymous read, where
-	 * there is no "you" to answer for and a hard false would read as "you have
-	 * not starred this", which is a different claim.
+	 * Transient, set with the follow marker by `setWatching()`, and only when
+	 * the reader follows the object (`merge-follow-and-favourites`). Exposed
+	 * as `watchNotify` in the self envelope. The deprecated `favourite` marker
+	 * is no longer a property of its own: it is `watching` under its old name
+	 * for one release.
 	 *
 	 * @var boolean|null
 	 */
-	protected ?bool $favourite = null;
+	protected ?bool $watchNotify = null;
 
 	/**
 	 * When the reader last opened this object, as ISO 8601.
@@ -972,16 +970,25 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * at PHPMD's public-member ceiling, and a getter nothing calls is what it is
 	 * there to stop.
 	 *
-	 * Surfaced in the @self envelope as `watching` by getObjectArray().
+	 * Surfaced in the @self envelope as `watching` (and, deprecated, as
+	 * `favourite`) by getObjectArray(). The follow's notification switch rides
+	 * along as the second argument rather than a setter of its own, for the
+	 * same public-member ceiling; it is surfaced as `watchNotify` only when the
+	 * reader follows the object.
 	 *
 	 * @param boolean|null $watching Whether the current user follows this object.
+	 * @param boolean|null $notify   Whether that follow notifies them, or null when not following.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
-	public function setWatching(?bool $watching): void {
+	public function setWatching(?bool $watching, ?bool $notify = null): void {
 		$this->watching = $watching;
+		$this->watchNotify = null;
+		if ($watching === true) {
+			$this->watchNotify = $notify;
+		}
 	}//end setWatching()
 
 	/**
@@ -1039,29 +1046,9 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	}//end setUnreadCounts()
 
 	/**
-	 * Write the current user's favourite marker.
-	 *
-	 * Write-only, for the same reason as `setUnread()` above:
-	 * `mergeTransientRenderFields()` reads the property directly, so a public
-	 * getter would have no caller and this entity is already at PHPMD's
-	 * public-member ceiling.
-	 *
-	 * Surfaced in the @self envelope as `favourite` by getObjectArray().
-	 *
-	 * @param boolean|null $favourite Whether the current user has starred the object.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
-	 */
-	public function setFavourite(?bool $favourite): void {
-		$this->favourite = $favourite;
-	}//end setFavourite()
-
-	/**
 	 * Write when the reader last opened this object.
 	 *
-	 * Write-only, like setFavourite(): mergeTransientRenderFields() reads the
+	 * Write-only, like setWatching(): mergeTransientRenderFields() reads the
 	 * property directly. Surfaced in the @self envelope as `viewedAt`.
 	 *
 	 * @param string|null $viewedAt ISO 8601 moment of the reader's latest read.
@@ -1077,7 +1064,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	/**
 	 * Write what the reader may do with this object.
 	 *
-	 * Write-only, like setFavourite(): mergeTransientRenderFields() reads the
+	 * Write-only, like setWatching(): mergeTransientRenderFields() reads the
 	 * property directly. Surfaced in the @self envelope as `can`.
 	 *
 	 * @param array<string, bool>|null $can The reader's rights, e.g. `['update' => true]`.
@@ -1519,9 +1506,10 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		// - unread: whether the reader has seen this object since it last
 		//   changed (`object-read-state`). Absent for an anonymous read, where
 		//   there is no "you" to answer for.
-		// - favourite: whether the reader has starred this object
-		//   (`favourites-and-recent`). Absent for an anonymous read, for the
-		//   same reason unread is.
+		// - watchNotify: whether the reader's follow notifies them, present only
+		//   when they follow (`merge-follow-and-favourites`).
+		// - favourite: DEPRECATED, `watching` under its old name for one
+		//   release, so a client that still reads the star keeps working.
 		// - viewedAt: when the reader last opened this object, on a
 		//   `_recent=true` page only (`read-history-on-audit-trail`).
 		//
@@ -1538,7 +1526,8 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'watching'                => $this->watching,
 			'watcherCount'            => $this->watcherCount,
 			'unread'                  => $this->unread,
-			'favourite'               => $this->favourite,
+			'watchNotify'             => $this->watchNotify,
+			'favourite'               => $this->watching,
 			'viewedAt'                => $this->viewedAt,
 			'can'                     => $this->can,
 		];
