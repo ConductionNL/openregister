@@ -183,32 +183,18 @@ class ReferencedAddressNotifier {
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
 	 */
 	public function resolveAddress(ObjectEntity $object, array $data, string $path): array {
-		$segments = array_values(array_filter(explode('.', $path), static fn (string $s): bool => $s !== ''));
+		$segments = array_values(array_filter(explode('.', $path), static fn (string $segment): bool => $segment !== ''));
 		if ($segments === [] || count($segments) > (self::MAX_HOPS + 1)) {
 			return ['address' => null, 'reason' => self::REASON_NO_REFERENCE];
 		}
 
 		$last = array_pop($segments);
-		$current = $data;
-		foreach ($segments as $segment) {
-			$reference = $this->referenceOf(value: ($current[$segment] ?? null));
-			if ($reference === null) {
-				return ['address' => null, 'reason' => self::REASON_NO_REFERENCE];
-			}
-
-			$related = $this->findReferenced(id: $reference);
-			if ($related === null) {
-				return ['address' => null, 'reason' => self::REASON_REFERENCE_NOT_FOUND];
-			}
-
-			if ($this->sameTenant(origin: $object, related: $related) === false) {
-				return ['address' => null, 'reason' => self::REASON_OTHER_TENANT];
-			}
-
-			$current = $related->getObject();
+		$followed = $this->follow(object: $object, data: $data, segments: $segments);
+		if ($followed['reason'] !== null) {
+			return ['address' => null, 'reason' => $followed['reason']];
 		}
 
-		$value = ($current[$last] ?? null);
+		$value = ($followed['data'][$last] ?? null);
 		if (is_string($value) === false || trim($value) === '') {
 			return ['address' => null, 'reason' => self::REASON_NO_REFERENCE];
 		}
@@ -220,6 +206,38 @@ class ReferencedAddressNotifier {
 
 		return ['address' => $address, 'reason' => null];
 	}//end resolveAddress()
+
+	/**
+	 * Follow each reference segment to the object it names.
+	 *
+	 * @param ObjectEntity         $object   The triggering object.
+	 * @param array<string, mixed> $data     Its data.
+	 * @param array<int, string>   $segments The reference segments, in order.
+	 *
+	 * @return array{data: array<string, mixed>, reason: string|null} The data reached, or why it was not.
+	 */
+	private function follow(ObjectEntity $object, array $data, array $segments): array {
+		$current = $data;
+		foreach ($segments as $segment) {
+			$reference = $this->referenceOf(value: ($current[$segment] ?? null));
+			if ($reference === null) {
+				return ['data' => [], 'reason' => self::REASON_NO_REFERENCE];
+			}
+
+			$related = $this->findReferenced(id: $reference);
+			if ($related === null) {
+				return ['data' => [], 'reason' => self::REASON_REFERENCE_NOT_FOUND];
+			}
+
+			if ($this->sameTenant(origin: $object, related: $related) === false) {
+				return ['data' => [], 'reason' => self::REASON_OTHER_TENANT];
+			}
+
+			$current = $related->getObject();
+		}
+
+		return ['data' => $current, 'reason' => null];
+	}//end follow()
 
 	/**
 	 * Send one resolved entry, or name why it was not sent.
