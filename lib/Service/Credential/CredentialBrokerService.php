@@ -228,6 +228,7 @@ class CredentialBrokerService {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 * @spec openspec/specs/credential-broker/spec.md
 	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
 	 */
 	public function request(
 		string $credentialId,
@@ -244,10 +245,12 @@ class CredentialBrokerService {
 		// Guard 1 — access (per-object IDOR): scope-dispatched owner/membership check.
 		// TRUST BOUNDARY (openregister#450): request() is HTTP-routed (credential#brokerRequest),
 		// so it MUST NEVER let a caller assert an acting organisation — passing null keeps the
-		// sessionless organisation admit path (assertOrganisationMember) unreachable from a routed
-		// request, exactly as the controller passes no actingUserId. A sessionless proxy call
-		// against an organisation credential therefore still denies; only the non-routed
-		// resolveInjectable() path may carry an in-process organisation assertion.
+		// sessionless organisation-assertion admit path unreachable from a routed request,
+		// exactly as the controller passes no actingUserId. A sessionless proxy call against an
+		// organisation credential is admitted only for an asserted actingUserId that is an
+		// enabled member of the credential's organisation (broker-acts-for-an-organisation-member),
+		// and that value comes only from trusted in-process code: both HTTP endpoints refuse a
+		// caller without a session and never forward one.
 		$credential = $this->loadAdmittedCredential(
 			credentialId: $credentialId,
 			actingUserId: $actingUserId,
@@ -650,15 +653,15 @@ class CredentialBrokerService {
 	 *   - `organisation`: admit when a REAL session user is a member of the
 	 *     credential's `organisation`, OR — for a SESSIONLESS trusted in-process
 	 *     caller (openregister#450) — when the asserted `actingOrganisationId`
-	 *     matches the credential's `organisation`. The `actingUserId` fallback is
-	 *     never consulted for the organisation branch (org scope is deliberately
-	 *     decoupled from any one user's membership, ADR-064 Rule 4).
+	 *     matches the credential's `organisation`, OR when the asserted
+	 *     `actingUserId` is an enabled member of it (a background task acting for
+	 *     its user, broker-acts-for-an-organisation-member).
 	 *
 	 * The `allowedApps`, provider allow-rule, and host-lock guards then run for
 	 * BOTH scopes, unchanged, in {@see request()}.
 	 *
 	 * @param string $credentialId The `credential` object UUID.
-	 * @param string|null $actingUserId Asserted user for sessionless in-process callers (personal branch only).
+	 * @param string|null $actingUserId Asserted user for sessionless in-process callers (owner or membership check).
 	 * @param string|null $actingOrganisationId Asserted organisation for sessionless in-process callers (organisation branch only).
 	 *
 	 * @return ObjectEntity The admitted credential entity.
@@ -791,7 +794,8 @@ class CredentialBrokerService {
 			$this->assertOrganisationMember(
 				data: $data,
 				credentialId: $credentialId,
-				actingOrganisationId: $actingOrganisationId
+				actingOrganisationId: $actingOrganisationId,
+				actingUserId: $actingUserId
 			);
 			return $credential;
 		}
@@ -993,7 +997,7 @@ class CredentialBrokerService {
 	}//end assertPersonalOwner()
 
 	/**
-	 * Organisation membership guard — a session member OR a matching sessionless in-process assertion.
+	 * Organisation membership guard — a session member, a matching organisation assertion, or an asserted member.
 	 *
 	 * ADR-064 Rule 4 REQUIRES an infrastructure credential (a source/consumer secret) to be
 	 * `organisation`-scoped, never `personal` — coupling it to one employee would break the
@@ -1013,22 +1017,35 @@ class CredentialBrokerService {
 	 *     {@see request()} passes null; the controller never reads it; {@see resolveInjectable()}
 	 *     is not HTTP-routed). The match is a consistency guard so an org-A assertion cannot
 	 *     resolve an org-B credential; resolution stays DECOUPLED from any individual user's
-	 *     membership, which is the entire point of organisation scope (ADR-064 Rule 4). The
-	 *     sessionless `actingUserId` fallback is deliberately NOT reused — org scope must not be
-	 *     recoupled to a single user.
+	 *     membership, which is the entire point of organisation scope (ADR-064 Rule 4).
+	 *   - Sessionless, acting for a person (broker-acts-for-an-organisation-member): a trusted
+	 *     in-process caller that asserts `actingUserId` (a Nextcloud Assistant task run from cron
+	 *     for its user) is admitted only when that user exists, is enabled and passes
+	 *     {@see OrganisationService::userHasAccessToOrganisation()}, the same rule the session
+	 *     branch applies. This does not couple the credential to one employee: any member's task
+	 *     may use it, and no member's departure breaks it. It cannot widen access either, because
+	 *     the user it names could already use the credential in a session of their own.
 	 *
 	 * @param array<string, mixed> $data The credential's serialised data.
 	 * @param string $credentialId The `credential` object UUID (for logging).
 	 * @param string|null $actingOrganisationId Asserted organisation for sessionless in-process callers only.
+	 * @param string|null $actingUserId Asserted user for sessionless in-process callers only.
 	 *
 	 * @return void
 	 *
 	 * @throws CredentialAccessDeniedException When the org is malformed, the session user is not a member, or the
-	 *                                         sessionless assertion is absent or does not match the credential organisation.
+	 *                                         sessionless caller asserts neither the credential organisation nor
+	 *                                         an enabled member of it.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
 	 */
-	private function assertOrganisationMember(array $data, string $credentialId, ?string $actingOrganisationId = null): void {
+	private function assertOrganisationMember(
+		array $data,
+		string $credentialId,
+		?string $actingOrganisationId = null,
+		?string $actingUserId = null,
+	): void {
 		$organisation = (string)($data['organisation'] ?? '');
 		if ($organisation === '') {
 			$this->deny(reason: 'organisation credential has no organisation', credentialId: $credentialId);
@@ -1045,15 +1062,60 @@ class CredentialBrokerService {
 		}
 
 		// Sessionless (in-process by construction — request input never reaches
-		// actingOrganisationId). Admit only when the trusted caller asserts THIS
+		// actingOrganisationId). Admit when the trusted caller asserts THIS
 		// credential's organisation; matching decouples resolution from any one user.
-		if ($actingOrganisationId === null || $actingOrganisationId !== $organisation) {
-			$this->deny(
-				reason: 'sessionless organisation resolution requires a matching acting organisation',
-				credentialId: $credentialId
-			);
+		if ($actingOrganisationId !== null && $actingOrganisationId === $organisation) {
+			return;
 		}
+
+		// Sessionless, acting for a named person (broker-acts-for-an-organisation-member):
+		// a background task acting for its user is admitted only when that user could
+		// use the credential in a session of their own, i.e. passes the same membership
+		// rule the session branch above applies. The assertion names a PERSON, never an
+		// organisation, so it cannot reach a credential its user has no access to.
+		if ($this->actingUserIsMember(organisation: $organisation, actingUserId: $actingUserId) === true) {
+			return;
+		}
+
+		$this->deny(
+			reason: 'sessionless organisation resolution requires a matching acting organisation or an acting member',
+			credentialId: $credentialId
+		);
 	}//end assertOrganisationMember()
+
+	/**
+	 * Whether a sessionless caller's asserted user may use an organisation credential.
+	 *
+	 * Only ever reached WITHOUT a user session: {@see assertOrganisationMember()} returns
+	 * from its session branch first, so a session caller can never be admitted on an
+	 * asserted user. The asserted id comes only from trusted in-process code: both HTTP
+	 * broker endpoints refuse a caller without a session and never forward an acting user.
+	 *
+	 * Fails CLOSED on every gap: no asserted id, no user manager to resolve it, a user that
+	 * does not exist or is disabled, or a user outside the organisation.
+	 *
+	 * @param string $organisation The credential's organisation UUID (non-empty).
+	 * @param string|null $actingUserId The asserted user, from trusted in-process code only.
+	 *
+	 * @return bool True when the asserted user exists, is enabled and has access to the organisation.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
+	 */
+	private function actingUserIsMember(string $organisation, ?string $actingUserId): bool {
+		if ($actingUserId === null || $actingUserId === '' || $this->userManager === null) {
+			return false;
+		}
+
+		$user = $this->userManager->get($actingUserId);
+		if ($user === null || $user->isEnabled() === false) {
+			return false;
+		}
+
+		return $this->organisationService->userHasAccessToOrganisation(
+			organisationUuid: $organisation,
+			userId: $user->getUID()
+		) === true;
+	}//end actingUserIsMember()
 
 	/**
 	 * Resolve a credential's scope from its serialised data (absent ⇒ personal).

@@ -455,6 +455,41 @@ class OrganisationServiceGapTest extends TestCase {
 		$this->assertTrue($result);
 	}
 
+	/**
+	 * userHasAccessToOrganisation answers for a NAMED user and reads no session.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
+	 */
+	public function testUserHasAccessToOrganisationChecksTheNamedUserWithoutASession(): void {
+		$org = $this->createMock(Organisation::class);
+		$org->method('hasUser')->willReturnCallback(static fn (string $uid): bool => $uid === 'bob');
+
+		$this->organisationMapper->method('findByUuid')->willReturn($org);
+		$this->userSession->expects($this->never())->method('getUser');
+		$this->groupManager->method('isAdmin')->willReturn(false);
+
+		$this->assertTrue($this->service->userHasAccessToOrganisation('some-uuid', 'bob'));
+		$this->assertFalse($this->service->userHasAccessToOrganisation('some-uuid', 'mallory'));
+	}
+
+	/**
+	 * userHasAccessToOrganisation denies an empty user id and an unknown organisation.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
+	 */
+	public function testUserHasAccessToOrganisationDeniesEmptyUserAndUnknownOrganisation(): void {
+		$this->organisationMapper->method('findByUuid')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('missing'));
+		$this->groupManager->method('isAdmin')->willReturn(true);
+
+		$this->assertFalse($this->service->userHasAccessToOrganisation('some-uuid', ''));
+		$this->assertFalse($this->service->userHasAccessToOrganisation('bad-uuid', 'admin'));
+	}
+
 	// =============================================
 	// getUserOrganisationStats tests
 	// =============================================

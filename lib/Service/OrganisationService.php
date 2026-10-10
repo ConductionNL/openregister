@@ -863,24 +863,48 @@ class OrganisationService {
 	 * @spec openspec/specs/saas-multi-tenant/spec.md
 	 */
 	public function hasAccessToOrganisation(string $organisationUuid): bool {
+		$user = $this->getCurrentUser();
+		if ($user === null) {
+			return false;
+		}
+
+		return $this->userHasAccessToOrganisation(organisationUuid: $organisationUuid, userId: $user->getUID());
+	}//end hasAccessToOrganisation()
+
+	/**
+	 * Check whether a NAMED user has access to an organisation.
+	 *
+	 * The same rule {@see hasAccessToOrganisation()} applies to the session user (which
+	 * delegates here, so the two cannot drift): a Nextcloud administrator has access to
+	 * every organisation, anyone else only to an organisation that lists them as a member.
+	 * It reads no session, so a trusted sessionless caller (the credential broker acting
+	 * for a background task's user) can ask it about the user it acts for.
+	 *
+	 * @param string $organisationUuid The organisation UUID to check.
+	 * @param string $userId The user to check. An empty id never has access.
+	 *
+	 * @return bool True when the user is an administrator or a member of the organisation.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
+	 */
+	public function userHasAccessToOrganisation(string $organisationUuid, string $userId): bool {
+		if ($userId === '' || $organisationUuid === '') {
+			return false;
+		}
+
 		try {
 			$organisation = $this->organisationMapper->findByUuid($organisationUuid);
-			$user = $this->getCurrentUser();
-
-			if ($user === null) {
-				return false;
-			}
-
-			// Admin users have access to all organisations.
-			if ($this->groupManager->isAdmin($user->getUID()) === true) {
-				return true;
-			}
-
-			return $organisation->hasUser($user->getUID());
 		} catch (DoesNotExistException $e) {
 			return false;
 		}
-	}//end hasAccessToOrganisation()
+
+		// Admin users have access to all organisations.
+		if ($this->groupManager->isAdmin($userId) === true) {
+			return true;
+		}
+
+		return $organisation->hasUser($userId);
+	}//end userHasAccessToOrganisation()
 
 	/**
 	 * Whether a user administers an organisation (may manage its shared resources).
