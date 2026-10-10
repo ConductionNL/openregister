@@ -45,6 +45,7 @@ use DateTime;
 use LogicException;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Support\FilterParams;
 use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\ICache;
@@ -1882,6 +1883,9 @@ class MagicFacetHandler {
 				);
 				continue;
 			}
+
+			// A PHP boolean compares in its string form (boolean-filter-values).
+			$value = FilterParams::comparableValue(value: $value, propertyType: $propertyType);
 
 			// Handle regular field filtering.
 			if (is_array($value) === true) {
