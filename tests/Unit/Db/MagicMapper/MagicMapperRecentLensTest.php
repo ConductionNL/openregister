@@ -238,16 +238,16 @@ class MagicMapperRecentLensTest extends TestCase {
 		);
 
 		$this->assertSame(
-			['uuid-a', 'uuid-c', 'uuid-e', 'uuid-b', 'uuid-d'],
+			['uuid-a', 'uuid-b', 'uuid-c', 'uuid-d', 'uuid-e'],
 			array_column($this->shape($results), 0),
-			'the merge order, not the history'
+			'the requested order (no names, so the uuid tiebreaker), not the history'
 		);
 		$this->assertSame(self::VIEWS['uuid-a'], $this->shape($results)[0][1]);
 		$this->assertSame(20, $this->tableQueries[0]['_limit'], 'without the history ordering, paging stays with the tables');
 	}//end testAnExplicitOrderWinsAndKeepsTheMoment()
 
 	/**
-	 * Without the lens nothing changes: no moment, storage order.
+	 * Without the lens nothing changes: no moment, the UNION path's default order (uuid).
 	 *
 	 * @return void
 	 */
@@ -258,7 +258,7 @@ class MagicMapperRecentLensTest extends TestCase {
 		);
 
 		$this->assertSame(
-			[['uuid-a', null], ['uuid-c', null], ['uuid-e', null], ['uuid-b', null], ['uuid-d', null]],
+			[['uuid-a', null], ['uuid-b', null], ['uuid-c', null], ['uuid-d', null], ['uuid-e', null]],
 			$this->shape($results)
 		);
 	}//end testWithoutTheLensNothingChanges()
