@@ -70,6 +70,8 @@ use Throwable;
  *
  * @template-implements IEventListener<Event>
  *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The four node events, the node and the abort are the contract.
+ *
  * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-file-writes-honour-the-frozen-and-archived-marker-req-oas-007
  */
 class FrozenNodeWriteListener implements IEventListener {

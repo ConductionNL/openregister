@@ -69,6 +69,8 @@ class FileWriteGuard {
 	 *
 	 * @return ObjectStateWriteException|null The refusal naming the state, or null.
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) archived() and frozen() are the exception's named constructors, as in SaveObject.
+	 *
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-file-writes-honour-the-frozen-and-archived-marker-req-oas-007
 	 */
 	public function refusalFor(ObjectEntity $object): ?ObjectStateWriteException {
