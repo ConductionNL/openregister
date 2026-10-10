@@ -57,7 +57,9 @@ async function contextFor(user: string, password: string): Promise<APIRequestCon
 
 type Entry = { id: number, name: string, type: string, path: string }
 
-test.describe.configure({ mode: 'serial' })
+// Creating a register, a schema and two objects with folders takes longer
+// than the 30 s default on a busy instance.
+test.describe.configure({ mode: 'serial', timeout: 180_000 })
 
 test.describe('an object folder through the object rule', () => {
 	let admin: APIRequestContext
