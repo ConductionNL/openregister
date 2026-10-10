@@ -223,40 +223,6 @@ class CredentialController extends Controller {
 	}//end indexOrganisation()
 
 	/**
-	 * GET /api/credentials/organisations — the organisations the caller may hold credentials for.
-	 *
-	 * Powers the organisation picker of the organisation-credential form: every
-	 * organisation the caller may manage (a Nextcloud admin: all of them; anyone else:
-	 * the ones they own), with the caller's active organisation flagged as the default.
-	 * Only uuid, name and the flag are returned. The create endpoint re-checks the
-	 * chosen organisation itself, so this list is a convenience, never the authority.
-	 *
-	 * @return JSONResponse `{results: Array<{uuid, name, active}>}`.
-	 *
-	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-an-organisation-credential-names-and-lets-the-admin-choose-its-organisation
-	 */
-	#[NoAdminRequired]
-	public function organisations(): JSONResponse {
-		$uid = $this->currentUid();
-		if ($uid === null) {
-			return new JSONResponse(['message' => 'Unauthorized'], Http::STATUS_UNAUTHORIZED);
-		}
-
-		$active = (string)($this->organisationService->getActiveOrganisation()?->getUuid() ?? '');
-		$results = [];
-		foreach ($this->organisationService->getManageableOrganisations(userId: $uid) as $organisation) {
-			$uuid = (string)$organisation->getUuid();
-			$results[] = [
-				'uuid' => $uuid,
-				'name' => (string)$organisation->getName(),
-				'active' => ($uuid === $active),
-			];
-		}
-
-		return new JSONResponse(['results' => $results]);
-	}//end organisations()
-
-	/**
 	 * GET /api/credentials/providers — list the read-only provider catalogue (id + title only).
 	 *
 	 * Powers the settings-UI provider picker. Exposes ONLY the identifier and title — never a

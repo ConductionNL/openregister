@@ -50,6 +50,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialController
+ * @covers \OCA\OpenRegister\Controller\CredentialOrganisationController
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Organisation
  * @uses \OCA\OpenRegister\Service\Credential\CredentialBrokerService
@@ -227,7 +228,17 @@ class CredentialControllerOrganisationTest extends TestCase {
 		$this->orgService->expects($this->once())->method('getManageableOrganisations')
 			->with('admin-uid')->willReturn([$active, $other]);
 
-		$body = $this->makeController(uid: 'admin-uid', params: [])->organisations()->getData();
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('admin-uid');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$controller = new \OCA\OpenRegister\Controller\CredentialOrganisationController(
+			'openregister',
+			$this->createMock(IRequest::class),
+			$session,
+			$this->orgService
+		);
+		$body = $controller->index()->getData();
 
 		$this->assertSame(
 			[

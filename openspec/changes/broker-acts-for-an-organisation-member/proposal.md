@@ -57,7 +57,7 @@ App Store.
 
 - `lib/Service/Credential/CredentialBrokerService.php` (organisation guard)
 - `lib/Service/OrganisationService.php` (three new public methods, one delegation)
-- `lib/Controller/CredentialController.php`, `appinfo/routes.php` (organisation picker endpoint, chosen-organisation listing)
+- `lib/Controller/CredentialController.php` (chosen-organisation listing), new `lib/Controller/CredentialOrganisationController.php` (picker endpoint), `appinfo/routes.php`
 - `tests/Unit/Controller/CredentialControllerOrganisationTest.php`
 - `tests/Unit/Service/Credential/CredentialBrokerActsForOrganisationMemberTest.php`
 - `tests/Unit/Service/OrganisationServiceGapTest.php` (membership for a named user)

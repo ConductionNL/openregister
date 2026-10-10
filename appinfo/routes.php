@@ -46,7 +46,7 @@ return [
         // so a future `GET /api/credentials/{id}` cannot swallow it.
         ['name' => 'credential#sharedWithMe',  'url' => '/api/credentials/shared-with-me',        'verb' => 'GET'],
         // Organisation picker of the organisation-credential form. A LITERAL, like shared-with-me.
-        ['name' => 'credential#organisations', 'url' => '/api/credentials/organisations',          'verb' => 'GET'],
+        ['name' => 'credentialOrganisation#index', 'url' => '/api/credentials/organisations',     'verb' => 'GET'],
         ['name' => 'credential#shares',        'url' => '/api/credentials/{id}/shares',           'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#updateShares',  'url' => '/api/credentials/{id}/shares',           'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#create',        'url' => '/api/credentials',                       'verb' => 'POST'],
