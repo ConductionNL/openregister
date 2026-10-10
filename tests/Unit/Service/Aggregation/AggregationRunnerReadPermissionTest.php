@@ -111,7 +111,7 @@ class AggregationRunnerReadPermissionTest extends TestCase {
 		$this->pdo->exec(
 			'CREATE TABLE "oc_' . self::TABLE . '" ('
 			. '_uuid TEXT, _owner TEXT, _organisation TEXT, _authorization TEXT,'
-			. ' _deleted TEXT, _archived TEXT, learner_id TEXT, level TEXT)'
+			. ' _deleted TEXT, _archived TEXT, _status TEXT, learner_id TEXT, level TEXT)'
 		);
 		$rows = [
 			['u1', 'learner-a', 'low'],

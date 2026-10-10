@@ -393,8 +393,12 @@ class FormSubmitService {
 			throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
 		}
 
-		$data = $draft->getObject();
-		unset($data['id'], $data['@self']);
+		$data = [];
+		foreach ($draft->getObject() as $property => $value) {
+			if ($property !== 'id' && $property !== '@self') {
+				$data[(string)$property] = $value;
+			}
+		}
 
 		return $data;
 	}//end draftData()
