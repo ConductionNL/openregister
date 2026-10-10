@@ -340,6 +340,90 @@ final class FilterParams {
 	}//end reservedForAggregation()
 
 	/**
+	 * The form a property filter value is compared in, whatever PHP type it came as.
+	 *
+	 * Every object-filter builder turns a value into SQL text. PHP casts `false`
+	 * to `''`, which PostgreSQL refuses for a boolean column (SQLSTATE 22P02), so a
+	 * PHP caller's `['isDraft' => false]` returned zero rows while `'false'` worked.
+	 * This gives every builder the same comparable form:
+	 *
+	 *  - boolean property: `true`/`false`/`'true'`/`'false'` (any case) become
+	 *    `'1'`/`'0'`, which PostgreSQL, MySQL and MariaDB all read as the boolean;
+	 *  - integer or number property: a PHP boolean becomes `1`/`0`;
+	 *  - any other property: a PHP boolean becomes `'true'`/`'false'`.
+	 *
+	 * An array is mapped element by element; in an operator bag the `isnull` and
+	 * `like` values keep their own rules and are returned untouched. Every other
+	 * value is returned as it came. A null or missing column still matches neither
+	 * true nor false: this changes the value, not the predicate.
+	 *
+	 * @param mixed  $value        The filter value as the caller passed it.
+	 * @param string $propertyType The property's declared JSON-Schema type.
+	 *
+	 * @return mixed The value in its comparable form.
+	 *
+	 * @spec openspec/changes/boolean-filter-values/specs/zoeken-filteren/spec.md#requirement-a-boolean-filter-value-filters-like-its-string-form
+	 */
+	public static function comparableValue(mixed $value, string $propertyType): mixed {
+		if (is_array($value) === true) {
+			$mapped = [];
+			foreach ($value as $key => $item) {
+				$mapped[$key] = $item;
+				if ($key !== 'isnull' && $key !== 'like') {
+					$mapped[$key] = self::comparableValue(value: $item, propertyType: $propertyType);
+				}
+			}
+
+			return $mapped;
+		}
+
+		if ($propertyType === 'boolean') {
+			return self::booleanColumnValue(value: $value);
+		}
+
+		if (is_bool($value) === false) {
+			return $value;
+		}
+
+		if ($propertyType === 'integer' || $propertyType === 'number') {
+			return (int)$value;
+		}
+
+		if ($value === true) {
+			return 'true';
+		}
+
+		return 'false';
+	}//end comparableValue()
+
+	/**
+	 * The `'1'`/`'0'` form of a boolean-column filter value.
+	 *
+	 * @param mixed $value A scalar filter value.
+	 *
+	 * @return mixed `'1'` or `'0'` for a boolean or its word, the value itself otherwise.
+	 */
+	private static function booleanColumnValue(mixed $value): mixed {
+		if (is_string($value) === true) {
+			$value = match (strtolower($value)) {
+				'true' => true,
+				'false' => false,
+				default => $value,
+			};
+		}
+
+		if ($value === true) {
+			return '1';
+		}
+
+		if ($value === false) {
+			return '0';
+		}
+
+		return $value;
+	}//end booleanColumnValue()
+
+	/**
 	 * Whether a bracket key names nothing an aggregation row carries.
 	 *
 	 * Underscore-prefixed keys are metadata and the object keys in
