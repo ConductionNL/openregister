@@ -39,6 +39,8 @@ use OCA\OpenRegister\Exception\ObjectStateWriteException;
  *
  * Archived is asked before frozen, the same order `SaveObject` uses, so an
  * object that is both refuses in the same words through every door.
+ *
+ * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-file-writes-honour-the-frozen-and-archived-marker-req-oas-007
  */
 class FileWriteGuard {
 

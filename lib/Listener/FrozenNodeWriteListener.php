@@ -32,7 +32,6 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\Files\Events\Node\AbstractNodeEvent;
-use OCP\Files\Events\Node\AbstractNodesEvent;
 use OCP\Files\Events\Node\BeforeNodeCreatedEvent;
 use OCP\Files\Events\Node\BeforeNodeDeletedEvent;
 use OCP\Files\Events\Node\BeforeNodeRenamedEvent;
@@ -70,6 +69,8 @@ use Throwable;
  * one, and the write never starts.
  *
  * @template-implements IEventListener<Event>
+ *
+ * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-file-writes-honour-the-frozen-and-archived-marker-req-oas-007
  */
 class FrozenNodeWriteListener implements IEventListener {
 
@@ -120,7 +121,12 @@ class FrozenNodeWriteListener implements IEventListener {
 				$event->abortOperation(ex: $refusal);
 			}
 
-			throw new HintException(message: $refusal->getMessage(), hint: $refusal->getMessage(), code: ObjectStateWriteException::HTTP_STATUS, previous: $refusal);
+			throw new HintException(
+				message: $refusal->getMessage(),
+				hint: $refusal->getMessage(),
+				code: ObjectStateWriteException::HTTP_STATUS,
+				previous: $refusal
+			);
 		}
 	}//end handle()
 
@@ -132,7 +138,7 @@ class FrozenNodeWriteListener implements IEventListener {
 	 * @return list<Node> The nodes to check; empty for an event this listener does not handle.
 	 */
 	private function nodesOf(Event $event): array {
-		if ($event instanceof BeforeNodeRenamedEvent && $event instanceof AbstractNodesEvent) {
+		if ($event instanceof BeforeNodeRenamedEvent) {
 			return [$event->getSource(), $event->getTarget()];
 		}
 
