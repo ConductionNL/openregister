@@ -23,4 +23,4 @@
 
 ## 4. After integriq ships the D12 amendments
 
-- [ ] 4.1 Run the e2e spec against an instance with both apps, then archive this change.
+- [ ] 4.1 Run the e2e spec against an instance with both apps, then archive this change. (live pass, decision 139)

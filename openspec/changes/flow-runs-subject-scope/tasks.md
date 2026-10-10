@@ -47,7 +47,7 @@
       parameter; both reads return the summarised row (uuid, flow name,
       step, status, started at, subject block) and never marking, items
       or step log.
-- [ ] 5.3 Playwright coverage for the two `@e2e`-marked scenarios in
+- [ ] 5.3 Playwright coverage for the two `@e2e`-marked scenarios in (live pass, decision 139)
       `specs/flow-runs-subject-scope/spec.md`: the case detail widget
       lists only the case's own runs, and a finished flow appears in the
       case detail's run history.
