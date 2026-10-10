@@ -320,7 +320,7 @@ class FlowNodeRunControllerTest extends TestCase {
 		$done = new FlowRun();
 		$done->setStatus(FlowRun::STATUS_COMPLETED);
 		$this->runner->expects($this->once())->method('executeNode')
-			->with($queued, ['id' => 'f1', 'nodes' => []], $object, 'n1')
+			->with($queued, ['id' => 'f1', 'nodes' => []], $object, 'n1', ['templateSlug' => 'welcome'])
 			->willReturn($done);
 
 		$response = $this->controller->run(id: 'f1', nodeId: 'n1');
