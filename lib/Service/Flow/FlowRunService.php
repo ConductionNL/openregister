@@ -1051,19 +1051,23 @@ class FlowRunService {
 	 * @param array $flow The flow document (used only to resolve the published pin).
 	 * @param object $subject The subject object the node acts on.
 	 * @param string $nodeId The node to run.
+	 * @param array $config The caller's config, overlaid on the published step's config after
+	 *                      pinning (caller keys win). The pin replaces the graph's nodes, so
+	 *                      this is the only way a picker's choice reaches the node.
 	 *
 	 * @return FlowRun The updated run: COMPLETED with the node's output items,
 	 *                 or FAILED with the node's exception recorded. Never
 	 *                 SUSPENDED — see {@see failSuspendedNode()}.
 	 *
 	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#requirement-a-node-type-opts-in-to-direct-invocation
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#scenario-the-callers-config-reaches-the-node
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::fromSubject/normalise are
 	 * stateless value normalisers, the same ones execute() calls under the same
 	 * suppression reasoning already given there: injecting a factory to call
 	 * them would add a dependency without removing any coupling.
 	 */
-	public function executeNode(FlowRun $run, array $flow, object $subject, string $nodeId): FlowRun {
+	public function executeNode(FlowRun $run, array $flow, object $subject, string $nodeId, array $config = []): FlowRun {
 		if ($run->getStatus() !== FlowRun::STATUS_QUEUED) {
 			// Parked awaiting delegated-identity consent, or otherwise not
 			// ready to proceed — the same "do not double-act" rule execute()
@@ -1080,6 +1084,10 @@ class FlowRunService {
 		$step = $this->stepById(pinned: $pinned, nodeId: $nodeId);
 		if ($step === null) {
 			return $this->failMissingNode(run: $run, nodeId: $nodeId);
+		}
+
+		if ($config !== []) {
+			$step['config'] = array_merge((array)($step['config'] ?? []), $config);
 		}
 
 		$run->setStatus(FlowRun::STATUS_RUNNING);
