@@ -47,6 +47,10 @@ use OCP\IL10N;
 /**
  * The one validator for a form's mapping against its destination.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The complexity IS the finding list:
+ * every branch is one named reason a field cannot produce what its property holds. Split,
+ * the codes and the rules that raise them would sit in files that must agree.
+ *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-openregister-must-judge-a-forms-mapping-against-its-destination-schema
  */
 class FormDestinationValidator {
