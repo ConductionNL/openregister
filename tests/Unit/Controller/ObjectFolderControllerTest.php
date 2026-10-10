@@ -38,6 +38,8 @@ use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\File\FileLockHandler;
 use OCA\OpenRegister\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\File\ObjectFolderBrowser;
+use OCA\OpenRegister\Service\File\ObjectFolderResponder;
+use OCA\OpenRegister\Service\File\ObjectFolderUploads;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
@@ -273,6 +275,8 @@ class ObjectFolderControllerTest extends TestCase {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
 
+		$browser = new ObjectFolderBrowser(fileService: $this->fileService);
+
 		return new ObjectFolderController(
 			'openregister',
 			$this->request,
@@ -281,9 +285,9 @@ class ObjectFolderControllerTest extends TestCase {
 				permissionHandler: $permissionHandler,
 				schemaMapper: $schemaMapper
 			),
-			new ObjectFolderBrowser(fileService: $this->fileService),
-			$l10n,
-			$logger
+			$browser,
+			new ObjectFolderUploads(browser: $browser),
+			new ObjectFolderResponder(l10n: $l10n, logger: $logger)
 		);
 	}//end controllerAs()
 

@@ -23,20 +23,17 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
-use OCA\OpenRegister\Exception\ObjectFolderConflictException;
 use OCA\OpenRegister\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\File\ObjectFolderBrowser;
+use OCA\OpenRegister\Service\File\ObjectFolderResponder;
+use OCA\OpenRegister\Service\File\ObjectFolderUploads;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\Files\NotFoundException;
-use OCP\IL10N;
 use OCP\IRequest;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -62,17 +59,17 @@ class ObjectFolderController extends Controller {
 	 * @param string              $appName          The app name.
 	 * @param IRequest            $request          The request.
 	 * @param ObjectFileAccess    $objectFileAccess The object rule for file actions.
-	 * @param ObjectFolderBrowser $browser          The folder tree of one object.
-	 * @param IL10N               $l10n             Translates the error messages.
-	 * @param LoggerInterface     $logger           Logs an unexpected failure.
+	 * @param ObjectFolderBrowser   $browser          The folder tree of one object.
+	 * @param ObjectFolderUploads   $uploads          Stores a batch of uploads.
+	 * @param ObjectFolderResponder $responder        Turns outcomes and failures into responses.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly ObjectFileAccess $objectFileAccess,
 		private readonly ObjectFolderBrowser $browser,
-		private readonly IL10N $l10n,
-		private readonly LoggerInterface $logger,
+		private readonly ObjectFolderUploads $uploads,
+		private readonly ObjectFolderResponder $responder,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -103,7 +100,7 @@ class ObjectFolderController extends Controller {
 
 			return new JSONResponse(data: $listing);
 		} catch (Throwable $e) {
-			return $this->failure(e: $e);
+			return $this->responder->failure(e: $e);
 		}
 	}//end index()
 
@@ -132,7 +129,7 @@ class ObjectFolderController extends Controller {
 				statusCode: 201
 			);
 		} catch (Throwable $e) {
-			return $this->failure(e: $e);
+			return $this->responder->failure(e: $e);
 		}
 	}//end create()
 
@@ -160,12 +157,15 @@ class ObjectFolderController extends Controller {
 			$object = $this->ensureChangeable(register: $register, schema: $schema, id: $id);
 			$uploads = $this->uploadedFiles();
 			if ($uploads === []) {
-				return new JSONResponse(data: ['error' => $this->l10n->t('No file was uploaded')], statusCode: 400);
+				return $this->responder->noUpload();
 			}
 
-			return $this->storeUploads(object: $object, path: $path, uploads: $uploads);
+			return $this->responder->uploaded(
+				outcome: $this->uploads->uploadAll(object: $object, path: $path, uploads: $uploads),
+				total: count($uploads)
+			);
 		} catch (Throwable $e) {
-			return $this->failure(e: $e);
+			return $this->responder->failure(e: $e);
 		}
 	}//end upload()
 
@@ -191,7 +191,7 @@ class ObjectFolderController extends Controller {
 
 			return new JSONResponse(data: $this->browser->rename(object: $object, nodeId: $nodeId, name: $name));
 		} catch (Throwable $e) {
-			return $this->failure(e: $e);
+			return $this->responder->failure(e: $e);
 		}
 	}//end rename()
 
@@ -217,7 +217,7 @@ class ObjectFolderController extends Controller {
 
 			return new JSONResponse(data: ['deleted' => true]);
 		} catch (Throwable $e) {
-			return $this->failure(e: $e);
+			return $this->responder->failure(e: $e);
 		}
 	}//end destroy()
 
@@ -252,85 +252,6 @@ class ObjectFolderController extends Controller {
 	}//end ensureChangeable()
 
 	/**
-	 * Store each upload on its own and answer for the batch.
-	 *
-	 * @param ObjectEntity                                    $object  The object.
-	 * @param string                                          $path    The target folder.
-	 * @param list<array{name: string, tmp_name: string, error: int}> $uploads The uploads.
-	 *
-	 * @return JSONResponse 201, 207, 409 or 400.
-	 */
-	private function storeUploads(ObjectEntity $object, string $path, array $uploads): JSONResponse {
-		$stored = [];
-		$rejected = [];
-		$conflicts = 0;
-		foreach ($uploads as $upload) {
-			try {
-				$stored[] = $this->storeUpload(object: $object, path: $path, upload: $upload);
-			} catch (ObjectFolderConflictException $e) {
-				$conflicts++;
-				$rejected[] = ['name' => $upload['name'], 'error' => $this->l10n->t('A file or folder with that name is already here')];
-			} catch (InvalidArgumentException | NotFoundException | ObjectFileAccessDeniedException $e) {
-				// The path itself is wrong: no file of this batch can land.
-				throw $e;
-			} catch (Throwable $e) {
-				$rejected[] = ['name' => $upload['name'], 'error' => $e->getMessage()];
-			}
-		}
-
-		if ($stored === []) {
-			$status = 400;
-			if ($conflicts === count($uploads)) {
-				$status = 409;
-			}
-
-			return new JSONResponse(
-				data: ['error' => $rejected[0]['error'], 'stored' => [], 'rejected' => $rejected],
-				statusCode: $status
-			);
-		}
-
-		$status = 201;
-		if ($rejected !== []) {
-			$status = 207;
-		}
-
-		return new JSONResponse(data: ['stored' => $stored, 'rejected' => $rejected], statusCode: $status);
-	}//end storeUploads()
-
-	/**
-	 * Store one upload.
-	 *
-	 * @param ObjectEntity                                    $object The object.
-	 * @param string                                          $path   The target folder.
-	 * @param array{name: string, tmp_name: string, error: int} $upload The upload.
-	 *
-	 * @return array<string, mixed> The stored file, as a listing entry.
-	 *
-	 * @throws \Exception When the upload failed or the pipeline refused it.
-	 */
-	private function storeUpload(ObjectEntity $object, string $path, array $upload): array {
-		if ($upload['error'] !== UPLOAD_ERR_OK || is_readable($upload['tmp_name']) === false) {
-			throw new \Exception($this->l10n->t('The upload failed'));
-		}
-
-		// A stream, so the bytes are stored as sent: no data-URI or base64
-		// guessing, which the string path of the pipeline does.
-		$stream = fopen($upload['tmp_name'], 'r');
-		if ($stream === false) {
-			throw new \Exception($this->l10n->t('The upload failed'));
-		}
-
-		try {
-			return $this->browser->upload(object: $object, path: $path, name: $upload['name'], content: $stream);
-		} finally {
-			if (is_resource($stream) === true) {
-				fclose($stream);
-			}
-		}
-	}//end storeUpload()
-
-	/**
 	 * The uploaded files, from `files[]` and `file`, one entry each.
 	 *
 	 * @return list<array{name: string, tmp_name: string, error: int}> The uploads.
@@ -357,71 +278,4 @@ class ObjectFolderController extends Controller {
 
 		return $uploads;
 	}//end uploadedFiles()
-
-	/**
-	 * Answer a failed call.
-	 *
-	 * A person who may not read the object gets 404, the answer an object read
-	 * gives, so a refusal never confirms the object exists; a reader who may not
-	 * change it gets 403. A path that could leave the folder or a bad name is
-	 * 400, a path or node not in the folder is 404, a taken name or a locked file
-	 * is 409. Anything else is a 500 that names nothing internal.
-	 *
-	 * @param Throwable $e The failure.
-	 *
-	 * @return JSONResponse The error response.
-	 */
-	private function failure(Throwable $e): JSONResponse {
-		if ($e instanceof ObjectFileAccessDeniedException === true) {
-			return $this->accessDenied(e: $e);
-		}
-
-		if ($e instanceof InvalidArgumentException === true) {
-			$message = $this->l10n->t('This name cannot be used');
-			if ($e->getCode() === ObjectFolderBrowser::BAD_PATH) {
-				$message = $this->l10n->t('The path is not a folder of this object');
-			}
-
-			return new JSONResponse(data: ['error' => $message], statusCode: 400);
-		}
-
-		if ($e instanceof NotFoundException === true) {
-			return new JSONResponse(data: ['error' => $this->l10n->t('Not found')], statusCode: 404);
-		}
-
-		if ($e instanceof ObjectFolderConflictException === true) {
-			$message = $this->l10n->t('A file or folder with that name is already here');
-			if ($e->getCode() === ObjectFolderBrowser::LOCKED) {
-				$message = $this->l10n->t('A file in this folder is locked by someone else');
-			}
-
-			return new JSONResponse(data: ['error' => $message], statusCode: 409);
-		}
-
-		// Logged in full here, answered without detail.
-		$this->logger->error(
-			message: '[ObjectFolderController] ' . $e->getMessage(),
-			context: ['exception' => $e]
-		);
-
-		return new JSONResponse(data: ['error' => $this->l10n->t('Internal server error')], statusCode: 500);
-	}//end failure()
-
-	/**
-	 * Answer a refused object.
-	 *
-	 * @param ObjectFileAccessDeniedException $e The refusal.
-	 *
-	 * @return JSONResponse 404 without read, 403 with read but without update.
-	 */
-	private function accessDenied(ObjectFileAccessDeniedException $e): JSONResponse {
-		if ($e->getHttpStatus() === ObjectFileAccessDeniedException::NOT_READABLE) {
-			return new JSONResponse(data: ['error' => $this->l10n->t('Object not found')], statusCode: 404);
-		}
-
-		return new JSONResponse(
-			data: ['error' => $this->l10n->t('You do not have access to this object')],
-			statusCode: 403
-		);
-	}//end accessDenied()
 }//end class
