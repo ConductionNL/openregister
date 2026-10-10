@@ -1060,6 +1060,7 @@ class SchemasController extends Controller {
 	 * @return JSONResponse JSON response with updated schema or error
 	 *
 	 * @psalm-return JSONResponse<200, Schema,
+	 *     array<never, never>>|JSONResponse<200, array<string, mixed>,
 	 *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
 	 *     array<never, never>>|JSONResponse<422, array{error: string,
 	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
@@ -1155,6 +1156,7 @@ class SchemasController extends Controller {
 	 * @return JSONResponse JSON response with updated schema or error
 	 *
 	 * @psalm-return JSONResponse<200, Schema,
+	 *     array<never, never>>|JSONResponse<200, array<string, mixed>,
 	 *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
 	 *     array<never, never>>|JSONResponse<422, array{error: string,
 	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
@@ -1599,6 +1601,7 @@ class SchemasController extends Controller {
 	 * @no-admin-idor-exempt Pure delegation to update(), which performs the checkSchemaManagePermission() guard; this method has no body of its own.
 	 *
 	 * @psalm-return JSONResponse<200, Schema,
+	 *     array<never, never>>|JSONResponse<200, array<string, mixed>,
 	 *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
 	 *     array<never, never>>|JSONResponse<422, array{error: string,
 	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>

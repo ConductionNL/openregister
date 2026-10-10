@@ -45,6 +45,7 @@ use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use OCP\Security\Bruteforce\IThrottler;
 use Psr\Log\LoggerInterface;
@@ -175,13 +176,7 @@ class FormsController extends Controller {
 				$key = null;
 			}
 
-			$answer = $this->submitter->submitAll(
-				$form['writes'],
-				$this->payload(),
-				$subject,
-				$key,
-				$formId
-			);
+			$answer = $this->submitForm(form: $form, subject: $subject, key: $key);
 		} catch (FormSubmitRefusedException $refused) {
 			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
 		}
@@ -222,6 +217,38 @@ class FormsController extends Controller {
 
 		return new JSONResponse(data: $issued, statusCode: 201);
 	}//end upload()
+
+	/**
+	 * One destination through FormSubmitService::submit(), a journey's writes through submitAll().
+	 *
+	 * @param array{id: string, writes: array<int, array<string, mixed>>, audience: string} $form    The form.
+	 * @param IUser|null                                                                         $subject The subject.
+	 * @param string|null                                                                   $key     The Idempotency-Key.
+	 *
+	 * @return array<string, mixed> The answer.
+	 *
+	 * @throws FormSubmitRefusedException On any refusal.
+	 */
+	private function submitForm(array $form, ?IUser $subject, ?string $key): array {
+		if (count($form['writes']) !== 1) {
+			return $this->submitter->submitAll($form['writes'], $this->payload(), $subject, $key, $form['id']);
+		}
+
+		$write = $form['writes'][0];
+		$mapping = null;
+		if (is_array($write['mapping'] ?? null) === true) {
+			$mapping = $write['mapping'];
+		}
+
+		return $this->submitter->submit(
+			['register' => ($write['register'] ?? null), 'schema' => ($write['schema'] ?? null)],
+			$mapping,
+			$this->payload(),
+			$subject,
+			$key,
+			$form['id']
+		);
+	}//end submitForm()
 
 	/**
 	 * The stored form, registering a brute-force attempt when it does not resolve.
@@ -267,8 +294,9 @@ class FormsController extends Controller {
 				continue;
 			}
 
-			if ($property !== '' && is_array($properties[$property] ?? null) === true) {
-				return $properties[$property];
+			$rule = ($properties[$property] ?? null);
+			if ($property !== '' && is_array($rule) === true) {
+				return $rule;
 			}
 		}
 

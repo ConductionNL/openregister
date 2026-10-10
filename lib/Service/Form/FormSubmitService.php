@@ -587,7 +587,8 @@ class FormSubmitService {
 				register: $done['plan']['register'],
 				schema: $schema,
 				_rbac: false,
-				_multitenancy: false
+				_multitenancy: false,
+				_audit: false
 			) ?? $done['object']);
 			$data = $entity->getObject();
 			$entry = [
