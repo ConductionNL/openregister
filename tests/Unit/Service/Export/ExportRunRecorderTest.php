@@ -143,6 +143,20 @@ class ExportRunRecorderTest extends TestCase {
 				return $found;
 			}
 		);
+		// The file-keyed lookup, the way the SQL asks it: an available run
+		// that still carries this file id, newest first.
+		$mapper->method('findOpenForFile')->willReturnCallback(
+			function (int $fileId): ?ExportRun {
+				$found = null;
+				foreach ($this->rows as $row) {
+					if ($row->getFileId() === $fileId && $row->getStatus() === ExportRun::STATUS_AVAILABLE) {
+						$found = $row;
+					}
+				}
+
+				return $found;
+			}
+		);
 		// The sweep's predicate, expressed the way the SQL expresses it: a
 		// deadline that is set and has passed, on a run whose file is still
 		// there. Nothing here reads a file timestamp.
@@ -434,4 +448,60 @@ class ExportRunRecorderTest extends TestCase {
 
 		$this->assertSame([], $this->recorder->listFor(actor: null));
 	}//end testAnAnonymousCallerSeesNothing()
+
+	/**
+	 * A whole-set extract appends to one file per schema: the first row opens a
+	 * run keyed on the file id, every later row grows that same run.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-a-produced-export-is-recorded-as-a-run
+	 */
+	public function testAnAppendedFileIsOneRunWhoseCountGrows(): void {
+		$first = $this->recorder->recordAppended(
+			source: 'whole-set',
+			actor: 'eigenaar-1',
+			format: 'csv',
+			profile: 'Datawarehouse',
+			filename: 'datawarehouse_schema-19.csv',
+			fileId: 4242,
+			filePath: '/eigenaar-1/files/Exports/datawarehouse_schema-19.csv',
+			retentionSeconds: null
+		);
+		$this->recorder->recordAppended(
+			source: 'whole-set',
+			actor: 'eigenaar-1',
+			format: 'csv',
+			profile: 'Datawarehouse',
+			filename: 'datawarehouse_schema-19.csv',
+			fileId: 4242,
+			filePath: '/eigenaar-1/files/Exports/datawarehouse_schema-19.csv',
+			retentionSeconds: null
+		);
+
+		$this->assertCount(1, $this->rows, 'two rows into one file are one run, not two');
+		$this->assertSame(2, $this->rows[(string)$first->getUuid()]->getRowCount());
+		$this->assertSame(4242, $this->rows[(string)$first->getUuid()]->getFileId());
+	}//end testAnAppendedFileIsOneRunWhoseCountGrows()
+
+	/**
+	 * A different file is a different run, and so is the same file after its
+	 * run expired and its file was removed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-a-produced-export-is-recorded-as-a-run
+	 */
+	public function testAnotherFileOrAnExpiredRunStartsANewRun(): void {
+		$this->recorder->recordAppended(source: 'whole-set', actor: 'eigenaar-1', format: 'csv', profile: 'P', filename: 'a.csv', fileId: 4242, filePath: '/a.csv', retentionSeconds: 3600);
+		$this->recorder->recordAppended(source: 'whole-set', actor: 'eigenaar-1', format: 'csv', profile: 'P', filename: 'b.csv', fileId: 4343, filePath: '/b.csv', retentionSeconds: 3600);
+		$this->assertCount(2, $this->rows);
+
+		// The first file's run expires and the sweep removes its file.
+		$this->clock += 7200;
+		$this->recorder->sweep();
+		$this->recorder->recordAppended(source: 'whole-set', actor: 'eigenaar-1', format: 'csv', profile: 'P', filename: 'a.csv', fileId: 4242, filePath: '/a.csv', retentionSeconds: 3600);
+
+		$this->assertCount(3, $this->rows, 'a run whose file is gone is history; a new row opens a new run');
+	}//end testAnotherFileOrAnExpiredRunStartsANewRun()
 }//end class

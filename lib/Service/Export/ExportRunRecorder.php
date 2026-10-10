@@ -175,6 +175,63 @@ class ExportRunRecorder {
 	}//end record()
 
 	/**
+	 * Record one row appended to a file that grows, as ONE run per file.
+	 *
+	 * The whole-set extract writes one row per object into one file per
+	 * schema. Recording a run per row would list a single file thousands of
+	 * times; recording none would leave the biggest export of all
+	 * unaccounted for. So the run is keyed on the file id: the first row opens
+	 * it, every later row grows its count. A run whose file was swept no
+	 * longer carries the id, so a file written again opens a new run.
+	 *
+	 * @param string      $source           What produced it, for example `whole-set`.
+	 * @param string      $actor            Who the extract runs as.
+	 * @param string      $format           csv, json and so on.
+	 * @param string|null $profile          The profile it came from.
+	 * @param string      $filename         The file's name.
+	 * @param int         $fileId           The Nextcloud file it appends to.
+	 * @param string      $filePath         Where that file lives.
+	 * @param int|null    $retentionSeconds How long the file is kept, or null to keep it.
+	 *
+	 * @return ExportRun The run, opened or grown.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The same record fields as record(),
+	 *     minus the ones an append decides itself.
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-a-produced-export-is-recorded-as-a-run
+	 */
+	public function recordAppended(
+		string $source,
+		string $actor,
+		string $format,
+		?string $profile,
+		string $filename,
+		int $fileId,
+		string $filePath,
+		?int $retentionSeconds,
+	): ExportRun {
+		$run = $this->mapper->findOpenForFile(fileId: $fileId);
+		if ($run === null) {
+			return $this->record(
+				source: $source,
+				actor: $actor,
+				format: $format,
+				rowCount: 1,
+				profile: $profile,
+				filename: $filename,
+				fileId: $fileId,
+				filePath: $filePath,
+				retentionSeconds: $retentionSeconds
+			);
+		}
+
+		$run->setRowCount(($run->getRowCount() ?? 0) + 1);
+		$run->setUpdated($this->now());
+
+		return $this->mapper->update($run);
+	}//end recordAppended()
+
+	/**
 	 * The runs one caller sees in the area.
 	 *
 	 * @param string|null $actor   The caller.

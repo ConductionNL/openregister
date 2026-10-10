@@ -11,7 +11,7 @@ profile and the export verb.
       - Read `SubjectExport` first and follow its shape where it fits. A
         second differently spelled export record is two answers to one
         question.
-- [ ] 1.2 Every export path writes a run: the API, the scheduled report
+- [x] 1.2 Every export path writes a run: the API, the scheduled report
       runner and the whole-dataset extract.
       > PARTLY DONE 2026-09-22. The scheduled report runner and
       > `exportProfiles#run` both write one, and the wiring is asserted from
@@ -23,6 +23,13 @@ profile and the export verb.
       > no file and no expiry, download count one (`testAnApiExportIsRecordedAsARun`).
       > Still open: the whole-dataset extract (`ExportWholeSetAction` appends per object, so
       > it needs one run per file with a growing row count, keyed on the file id).
+      > 2026-10-10 (B3): DONE. `ExportWholeSetAction::recordRow()` calls
+      > `ExportRunRecorder::recordAppended()` after each appended row: the first row opens a run
+      > keyed on the file id (`ExportRunMapper::findOpenForFile()`), later rows grow its count, a
+      > swept file opens a new run, and the run copies the profile's retention
+      > (`ExportRunRecorderTest::testAnAppendedFileIsOneRunWhoseCountGrows`,
+      > `ExportWholeSetActionTest::testACommittedRowGrowsTheRunOfItsFile`,
+      > `ExportRunsHaveAProducerTest::testTheWholeSetExtractWritesARun`).
       - Unit tests, mutation-checked: removing the write from the scheduled
         runner reddens an assertion about the row, not a setup line
 
