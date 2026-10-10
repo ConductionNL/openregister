@@ -551,7 +551,7 @@ class CasePlanServiceTest extends TestCase {
 	 * app, and a malformed app id is refused. The user verbs keep refusing a
 	 * missing identity.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
 	 *
 	 * @return void
 	 */
@@ -590,7 +590,7 @@ class CasePlanServiceTest extends TestCase {
 	 * app and runs no cascade: an imported active stage does not enter its
 	 * children.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 *
 	 * @return void
 	 */
@@ -617,7 +617,7 @@ class CasePlanServiceTest extends TestCase {
 	 * path, with the timer as the cause; an item already terminal, or gone,
 	 * is left alone.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 *
 	 * @return void
 	 */

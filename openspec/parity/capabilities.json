@@ -8771,8 +8771,9 @@
    "built": {
     "state": "built",
     "owner": "ConductionNL/openregister",
-    "evidence": "Code carrying @spec openspec/specs/flow-cases: lib/Controller/CaseController.php, lib/Db/CaseItem.php, lib/Db/CaseItemAudit.php, lib/Db/CaseItemAuditMapper.php.",
-    "spec": "openspec/specs/flow-cases"
+    "evidence": "Code carrying @spec openspec/specs/flow-cases: lib/Controller/CaseController.php, lib/Db/CaseItem.php, lib/Db/CaseItemAudit.php, lib/Db/CaseItemAuditMapper.php. One engine (one-engine-bpmn-and-cmmn): lib/Service/Case/CasePlanEnsurer.php, lib/Service/Case/CasePlanItemTimers.php, lib/Service/Flow/Nodes/CaseOpenNode.php, lib/Service/Flow/Nodes/CaseAdvanceNode.php.",
+    "spec": "openspec/specs/flow-cases",
+    "change": "2026-10-10-one-engine-bpmn-and-cmmn"
    },
    "reachedOn": "API only",
    "provider": "openregister",

@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+ * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use UnexpectedValueException;
 /**
  * The `openregister.case-open` step.
  *
- * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+ * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
  */
 class CaseOpenNode extends CaseNodeBase {
 
@@ -51,7 +51,7 @@ class CaseOpenNode extends CaseNodeBase {
 	 *
 	 * @return string The node id.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function getId(): string {
 		return self::TYPE;
@@ -62,7 +62,7 @@ class CaseOpenNode extends CaseNodeBase {
 	 *
 	 * @return string The display name.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function getDisplayName(): string {
 		return $this->l10n->t('Open a case');
@@ -73,7 +73,7 @@ class CaseOpenNode extends CaseNodeBase {
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function getDescription(): string {
 		return $this->l10n->t(
@@ -86,7 +86,7 @@ class CaseOpenNode extends CaseNodeBase {
 	 *
 	 * @return array<int, string> The keys.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function configKeys(): array {
 		return ['definition', 'uuid'];
@@ -97,7 +97,7 @@ class CaseOpenNode extends CaseNodeBase {
 	 *
 	 * @return array<int, array<string, mixed>> The fields.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function configForm(): array {
 		return [
@@ -126,7 +126,7 @@ class CaseOpenNode extends CaseNodeBase {
 	 *
 	 * @throws UnexpectedValueException When it has none.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function validateConfig(array $config): void {
 		$definition = ($config['definition'] ?? null);
@@ -144,7 +144,7 @@ class CaseOpenNode extends CaseNodeBase {
 	 *
 	 * @return array The items, each carrying `case` = {opened, reason}.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function execute(array $items, array $config, array $context): array {
 		if ($items === []) {
@@ -182,7 +182,7 @@ class CaseOpenNode extends CaseNodeBase {
 	 *
 	 * @return array{opened: bool, reason: string} What happened.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	private function open(array $target, array $definition, string $uid): array {
 		try {

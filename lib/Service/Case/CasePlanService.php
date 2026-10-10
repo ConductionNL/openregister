@@ -183,7 +183,7 @@ class CasePlanService {
 	 *
 	 * @throws CaseValidationException When the app id or the definition is refused, or a plan exists.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
 	 */
 	public function createPlanAsSystem(string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, string $app): array {
 		$actor = $this->systemActor(app: $app);
@@ -211,7 +211,7 @@ class CasePlanService {
 	 * @throws CaseValidationException When the app id is refused.
 	 * @throws DoesNotExistException When the object has no plan.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
 	 */
 	public function getPlanAsSystem(string $objectUuid, string $app): array {
 		$this->systemActor(app: $app);
@@ -238,7 +238,7 @@ class CasePlanService {
 	 *
 	 * @throws CaseValidationException On the first refused value, before anything is written.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
 	public function ensureItems(string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, array $history, string $app): array {
 		$actor = $this->systemActor(app: $app);
@@ -597,7 +597,7 @@ class CasePlanService {
 	 *
 	 * @return boolean True when the item was terminated.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
 	public function onTimerExpired(string $itemUuid, string $timerUuid): bool {
 		try {
@@ -756,7 +756,7 @@ class CasePlanService {
 	 *
 	 * @throws CaseValidationException When the app id is not one.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
 	 */
 	private function systemActor(string $app): string {
 		if (preg_match('/^[a-z][a-z0-9_]{0,63}$/', $app) !== 1) {

@@ -29,6 +29,6 @@ Small PRs, in this order. PR 1 is what dossiq's drain waits on.
 
 ## 5. Close
 
-- [ ] 5.1 Engine docs: one page on the shared core and the two model types (docs/).
-- [ ] 5.2 Sibling ask for dossiq: move `CasePlanProjectionService` / `CasePlanRollbackService` to `createPlanAsSystem` / `getPlanAsSystem`, and the drain to `ensureItems`.
-- [ ] 5.3 opsx-verify, then archive into `openspec/specs/flow-cases/spec.md`.
+- [x] 5.1 Engine docs: one page on the shared core and the two model types (docs/features/processes-and-cases.md).
+- [x] 5.2 Sibling ask for dossiq (filed in for-ruben/dossiq-sibling-asks.md, 10 Oct): move `CasePlanProjectionService` / `CasePlanRollbackService` to `createPlanAsSystem` / `getPlanAsSystem`, and the drain to `ensureItems`.
+- [x] 5.3 opsx-verify (every scenario maps to a unit test named above; all scenarios are `@e2e exclude` with reasons), then archive into `openspec/specs/flow-cases/spec.md`.

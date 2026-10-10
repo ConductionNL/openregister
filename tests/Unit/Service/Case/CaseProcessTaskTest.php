@@ -16,7 +16,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-process-task-starts-a-flow
+ * @spec openspec/specs/flow-cases/spec.md#requirement-a-process-task-starts-a-flow
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ class CaseProcessTaskTest extends TestCase {
 	/**
 	 * The plan item's states ARE the task's states: one declaration.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-one-engine-carries-both-model-types-on-a-shared-core
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-one-engine-carries-both-model-types-on-a-shared-core
 	 *
 	 * @return void
 	 */

@@ -24,7 +24,7 @@ use PHPUnit\Framework\TestCase;
  * The system verbs carry no authorization, so no HTTP surface may reach
  * them: no controller references them.
  *
- * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+ * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
  */
 class CaseSystemVerbsUnroutedTest extends TestCase {
 

@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+ * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use RuntimeException;
 /**
  * Shared resolution for the case steps.
  *
- * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+ * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
  */
 abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
 
@@ -76,7 +76,7 @@ abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNode
 	 *
 	 * @return string The icon path.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function getIcon(): string {
 		return $this->urls->imagePath('core', 'actions/checkmark.svg');
@@ -89,7 +89,7 @@ abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNode
 	 *
 	 * @return bool True when available.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function isAvailableForScope(int $scope): bool {
 		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
@@ -100,7 +100,7 @@ abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNode
 	 *
 	 * @return string The BPMN kind.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function getKind(): string {
 		return IFlowNodeTaxonomy::KIND_SERVICE_TASK;
@@ -111,7 +111,7 @@ abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNode
 	 *
 	 * @return string The palette category.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function getCategory(): string {
 		return IFlowNodeTaxonomy::CATEGORY_OBJECTS;
@@ -126,7 +126,7 @@ abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNode
 	 *
 	 * @throws RuntimeException When nobody can be named.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	protected function actingUid(array $context): string {
 		$uid = trim((string)($context[FlowRunService::RUN_AS_CONTEXT_KEY] ?? ''));
@@ -157,7 +157,7 @@ abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNode
 	 * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate is the engine's
 	 * stateless template renderer and every node calls it this way.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	protected function targets(array $items, array $config): array {
 		$configured = ($config['uuid'] ?? null);
@@ -199,7 +199,7 @@ abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNode
 	 *
 	 * @return int|null The id.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	private function intOrNull(mixed $value): ?int {
 		if (is_int($value) === true) {

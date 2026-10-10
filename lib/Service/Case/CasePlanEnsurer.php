@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+ * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Throwable;
 /**
  * Ensures plan items with recorded states, idempotently.
  *
- * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+ * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
  */
 class CasePlanEnsurer {
 
@@ -81,7 +81,7 @@ class CasePlanEnsurer {
 	 *
 	 * @throws CaseValidationException On the first refused value, before anything is written.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
 	public function ensure(
 		string $objectUuid,
@@ -152,7 +152,7 @@ class CasePlanEnsurer {
 	 *
 	 * @throws CaseValidationException Naming the item, its type and the state.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
 	private function checkStates(array $nodes, array &$types): void {
 		foreach ($nodes as $node) {
@@ -184,7 +184,7 @@ class CasePlanEnsurer {
 	 *
 	 * @return array<int, string> The reachable states.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
 	private function reachable(string $type): array {
 		$seen = [CaseItem::STATE_AVAILABLE];
@@ -212,7 +212,7 @@ class CasePlanEnsurer {
 	 *
 	 * @throws CaseValidationException On an entry that is not usable.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
 	private function checkHistory(array $history, array $types): array {
 		$byKey = [];
@@ -264,7 +264,7 @@ class CasePlanEnsurer {
 	 *
 	 * @throws CaseValidationException On a mismatch.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
 	private function checkAnchor(CaseItem $row, ?int $registerId, ?int $schemaId): void {
 		$registerDiffers = $registerId !== null && $row->getRegisterId() !== null && $row->getRegisterId() !== $registerId;
@@ -293,7 +293,7 @@ class CasePlanEnsurer {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
 	private function ensureLevel(array $nodes, ?int $parentId, array $context, array &$created, array &$kept): void {
 		foreach ($nodes as $position => $node) {
@@ -323,7 +323,7 @@ class CasePlanEnsurer {
 	 *
 	 * @return CaseItem The inserted row.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
 	private function insert(array $node, ?int $parentId, int $position, array $context): CaseItem {
 		$origin = CaseItem::ORIGIN_DEFINED;
@@ -385,7 +385,7 @@ class CasePlanEnsurer {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag IS the stored column.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
 	private function appendAudit(
 		CaseItem $item,
@@ -421,7 +421,7 @@ class CasePlanEnsurer {
 	 *
 	 * @return DateTime|null The moment, or null when unreadable.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
 	private function moment(mixed $value): ?DateTime {
 		if (is_string($value) === false || trim($value) === '') {
@@ -449,7 +449,7 @@ class CasePlanEnsurer {
 	 *
 	 * @return string|null The string.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
 	private function stringOrNull(mixed $value): ?string {
 		if (is_string($value) === false || trim($value) === '') {

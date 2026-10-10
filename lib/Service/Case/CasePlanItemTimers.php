@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+ * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Throwable;
 /**
  * Arms, cancels and interprets the timers of plan items.
  *
- * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+ * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
  */
 class CasePlanItemTimers {
 
@@ -85,7 +85,7 @@ class CasePlanItemTimers {
 	 *
 	 * @return int How many timers were armed.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
 	public function onEntered(CaseItem $item, ?string $actor, ?DateTimeInterface $now = null): int {
 		$moment = DateTimeImmutable::createFromInterface($now ?? new DateTimeImmutable());
@@ -111,7 +111,7 @@ class CasePlanItemTimers {
 	 *
 	 * @return int How many timers were cancelled.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
 	public function onTerminal(CaseItem $item): int {
 		try {
@@ -139,7 +139,7 @@ class CasePlanItemTimers {
 	 *
 	 * @return string|null The item uuid, or null.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
 	public function itemToTerminate(FlowTimerFiredEvent $event): ?string {
 		$timer = $event->getTimer();
@@ -171,7 +171,7 @@ class CasePlanItemTimers {
 	 *
 	 * @return boolean True when armed.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
 	private function arm(CaseItem $item, string $purpose, DateTimeInterface $deadline, ?string $actor, DateTimeImmutable $now): bool {
 		$seconds = ($deadline->getTimestamp() - $now->getTimestamp());
@@ -233,7 +233,7 @@ class CasePlanItemTimers {
 	 *
 	 * @return string The legal effect.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
 	private function legalEffect(CaseItem $item, string $purpose): string {
 		if ($purpose === FlowTimer::PURPOSE_DUE) {

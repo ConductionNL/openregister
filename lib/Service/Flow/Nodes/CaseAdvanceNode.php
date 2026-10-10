@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+ * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use UnexpectedValueException;
 /**
  * The `openregister.case-advance` step.
  *
- * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+ * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
  */
 class CaseAdvanceNode extends CaseNodeBase {
 
@@ -53,7 +53,7 @@ class CaseAdvanceNode extends CaseNodeBase {
 	 *
 	 * @return string The node id.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function getId(): string {
 		return self::TYPE;
@@ -64,7 +64,7 @@ class CaseAdvanceNode extends CaseNodeBase {
 	 *
 	 * @return string The display name.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function getDisplayName(): string {
 		return $this->l10n->t('Advance a case');
@@ -75,7 +75,7 @@ class CaseAdvanceNode extends CaseNodeBase {
 	 *
 	 * @return string The description.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function getDescription(): string {
 		return $this->l10n->t(
@@ -88,7 +88,7 @@ class CaseAdvanceNode extends CaseNodeBase {
 	 *
 	 * @return array<int, string> The keys.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function configKeys(): array {
 		return ['item', 'to', 'reason', 'uuid'];
@@ -99,7 +99,7 @@ class CaseAdvanceNode extends CaseNodeBase {
 	 *
 	 * @return array<int, array<string, mixed>> The fields.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function configForm(): array {
 		return [
@@ -140,7 +140,7 @@ class CaseAdvanceNode extends CaseNodeBase {
 	 *
 	 * @throws UnexpectedValueException When it does not.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function validateConfig(array $config): void {
 		if (trim((string)($config['item'] ?? '')) === '') {
@@ -163,7 +163,7 @@ class CaseAdvanceNode extends CaseNodeBase {
 	 *
 	 * @return array The items, each carrying `case` = {item, state}.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	public function execute(array $items, array $config, array $context): array {
 		if ($items === []) {
@@ -210,7 +210,7 @@ class CaseAdvanceNode extends CaseNodeBase {
 	 *
 	 * @throws RuntimeException When the plan has no such item.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
 	 */
 	private function advance(string $objectUuid, string $key, string $to, string $uid, ?string $reason): array {
 		$plan = $this->plans->getPlan(objectUuid: $objectUuid, uid: $uid);
