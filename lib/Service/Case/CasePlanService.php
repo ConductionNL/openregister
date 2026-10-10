@@ -183,6 +183,8 @@ class CasePlanService {
 	 *
 	 * @throws CaseValidationException When the app id or the definition is refused, or a plan exists.
 	 *
+	 * @orphaned-write-capability exclude cross-app entry point; caller is dossiq's CasePlanProjectionService (retire-cmmn-caseplanstate)
+	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
 	 */
 	public function createPlanAsSystem(string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, string $app): array {
@@ -237,6 +239,8 @@ class CasePlanService {
 	 * @return array{created: array<int, string>, existing: array<int, string>, items: array<int, array<string, mixed>>}
 	 *
 	 * @throws CaseValidationException On the first refused value, before anything is written.
+	 *
+	 * @orphan-auth exclude cross-app entry point, not an access check; caller is dossiq's retire-cmmn-caseplanstate drain
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
