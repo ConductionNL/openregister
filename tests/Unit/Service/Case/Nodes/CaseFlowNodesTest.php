@@ -7,7 +7,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Tests
- * @package  OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes
+ * @package  OCA\OpenRegister\Tests\Unit\Service\Case\Nodes
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -20,7 +20,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Tests\Unit\Service\Flow\Nodes;
+namespace OCA\OpenRegister\Tests\Unit\Service\Case\Nodes;
 
 use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Exception\CaseAccessDeniedException;
@@ -40,8 +40,8 @@ use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunAsScope;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
-use OCA\OpenRegister\Service\Flow\Nodes\CaseAdvanceNode;
-use OCA\OpenRegister\Service\Flow\Nodes\CaseOpenNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseAdvanceNode;
+use OCA\OpenRegister\Service\Case\Nodes\CaseOpenNode;
 use OCA\OpenRegister\Tests\Unit\Service\Case\CaseFixtures;
 use OCA\OpenRegister\Tests\Unit\Service\Case\FakeCaseItemMapper;
 use OCA\OpenRegister\Tests\Unit\Service\Case\RecordingAuditMapper;

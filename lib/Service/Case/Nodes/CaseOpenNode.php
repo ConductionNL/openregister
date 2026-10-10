@@ -13,7 +13,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Service
- * @package  OCA\OpenRegister\Service\Flow\Nodes
+ * @package  OCA\OpenRegister\Service\Case\Nodes
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,7 +26,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\OpenRegister\Service\Flow\Nodes;
+namespace OCA\OpenRegister\Service\Case\Nodes;
 
 use OCA\OpenRegister\Exception\CasePlanExistsException;
 use OCA\OpenRegister\Service\Flow\FlowItems;
