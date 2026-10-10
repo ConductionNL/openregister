@@ -73,6 +73,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setOutcome(?string $outcome)
  * @method string|null getBlockedReason()
  * @method void setBlockedReason(?string $blockedReason)
+ * @method string|null getBlockedBy()
+ * @method void setBlockedBy(?string $blockedBy)
  * @method string|null getPerformerType()
  * @method void setPerformerType(?string $performerType)
  * @method string|null getAssignee()
@@ -440,6 +442,18 @@ class Task extends Entity implements JsonSerializable {
 	protected ?string $blockedReason = null;
 
 	/**
+	 * The uuid of the task this one waits on, when it waits on one.
+	 *
+	 * Only the declaration is stored. Whether the task is blocked NOW is
+	 * derived on read from the blocker's terminality (see
+	 * {@see \OCA\OpenRegister\Service\Task\TaskInboxService::row()}), so a
+	 * blocker closed by any path releases it without a second write.
+	 *
+	 * @var string|null
+	 */
+	protected ?string $blockedBy = null;
+
+	/**
 	 * user|group|agent|worker (extensible — see PERFORMER_TYPES).
 	 *
 	 * @var string|null
@@ -771,6 +785,7 @@ class Task extends Entity implements JsonSerializable {
 
 	/**
 	 * Constructor: declare field types so the mapper hydrates them correctly.
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	public function __construct() {
 		$this->addType(fieldName: 'uuid', type: 'string');
@@ -790,6 +805,7 @@ class Task extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'lastAction', type: 'string');
 		$this->addType(fieldName: 'outcome', type: 'string');
 		$this->addType(fieldName: 'blockedReason', type: 'string');
+		$this->addType(fieldName: 'blockedBy', type: 'string');
 		$this->addType(fieldName: 'performerType', type: 'string');
 		$this->addType(fieldName: 'assignee', type: 'string');
 		$this->addType(fieldName: 'candidateUsers', type: 'json');
@@ -887,6 +903,7 @@ class Task extends Entity implements JsonSerializable {
 	 * @return array<string, mixed> The task as plain data.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	public function jsonSerialize(): array {
 		return [
@@ -908,6 +925,7 @@ class Task extends Entity implements JsonSerializable {
 			'lastAction' => $this->lastAction,
 			'outcome' => $this->outcome,
 			'blockedReason' => $this->blockedReason,
+			'blockedBy' => $this->blockedBy,
 			'performerType' => $this->performerType,
 			'assignee' => $this->assignee,
 			'candidateUsers' => $this->candidateUsers,

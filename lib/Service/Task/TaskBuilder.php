@@ -65,6 +65,7 @@ class TaskBuilder {
 	 * @throws TaskValidationException On any refused value.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	public function fromData(array $data, ?string $actor): Task {
 		$task = new Task();
@@ -165,6 +166,7 @@ class TaskBuilder {
 		$task->setSchemaId($this->intOrNull(value: ($data['schemaId'] ?? null)));
 		$task->setParentTaskId($this->intOrNull(value: ($data['parentTaskId'] ?? null)));
 		$task->setEpicTaskId($this->intOrNull(value: ($data['epicTaskId'] ?? null)));
+		$task->setBlockedBy($this->stringOrNull(value: $data['blockedBy'] ?? null));
 		$task->setPercentComplete($this->intOrNull(value: ($data['percentComplete'] ?? null)));
 		$task->setResponses($this->arrayOrNull(value: $data['responses'] ?? null));
 		$task->setEvidence($this->arrayOrNull(value: $data['evidence'] ?? null));

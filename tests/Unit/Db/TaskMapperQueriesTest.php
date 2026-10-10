@@ -268,8 +268,11 @@ class TaskMapperQueriesTest extends TestCase {
 		$this->calls = [];
 		$this->functions = [];
 		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_WATCHED));
-		$this->assertCount(1, $this->functions);
-		$this->assertStringContainsString('LIKE', $this->functions[0]);
+		// The blocked-task subquery is a function too; the watcher match is
+		// the one function besides it.
+		$watched = array_values(array_filter($this->functions, static fn (string $sql): bool => $sql !== 'SELECT subquery'));
+		$this->assertCount(1, $watched);
+		$this->assertStringContainsString('LIKE', $watched[0]);
 
 		$this->calls = [];
 		$mapper->findInbox(criteria: new TaskInboxCriteria(uid: 'root', isAdmin: true, scope: TaskInboxCriteria::SCOPE_ALL));

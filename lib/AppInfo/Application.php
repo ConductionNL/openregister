@@ -3239,6 +3239,15 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
 			\OCA\OpenRegister\Listener\CaseTaskTerminalListener::class
 		);
+
+		// A closed task releases the tasks that waited on it
+		// (a-task-may-wait-on-another-task D-4): a `released` audit entry and a
+		// fresh announcement per open dependant. Post-event work on the
+		// committed dispatch; the blocked flag itself is derived on read.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\TaskBlockerReleaseListener::class
+		);
 		$context->registerEventListener(
 			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
 			\OCA\OpenRegister\Listener\CaseRunTerminalListener::class
