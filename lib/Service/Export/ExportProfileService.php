@@ -412,5 +412,15 @@ class ExportProfileService {
 
 		$profile->setValueMode((string)($data['valueMode'] ?? $profile->getValueMode() ?? ExportProfile::MODE_STORED));
 		$profile->setFormat((string)($data['format'] ?? $profile->getFormat() ?? 'csv'));
+
+		// Present and null means "keep the files"; absent leaves it alone.
+		if (array_key_exists('retentionDays', $data) === true) {
+			$retention = null;
+			if ($data['retentionDays'] !== null) {
+				$retention = (int)$data['retentionDays'];
+			}
+
+			$profile->setRetentionDays($retention);
+		}
 	}//end applyShape()
 }//end class
