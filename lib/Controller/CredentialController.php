@@ -55,6 +55,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
+use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -98,6 +99,7 @@ class CredentialController extends Controller {
 	 * @param OrganisationService $organisationService Organisation membership + admin authority resolution.
 	 * @param SharePrincipalDeriver $shareDeriver Validates share lists and derives the principal lists RBAC matches.
 	 * @param LoggerInterface $logger Records a failed update by class, never with its trace.
+	 * @param IL10N|null $l10n Translates the provider titles the picker shows.
 	 *
 	 * @return void
 	 *
@@ -116,6 +118,7 @@ class CredentialController extends Controller {
 		private readonly OrganisationService $organisationService,
 		private readonly SharePrincipalDeriver $shareDeriver,
 		private readonly LoggerInterface $logger,
+		private readonly ?IL10N $l10n=null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -214,6 +217,7 @@ class CredentialController extends Controller {
 	 * @return JSONResponse `{results: Array<{identifier, title}>}`.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/credential-provider-labels-in-plain-words/specs/credential-broker/spec.md
 	 */
 	#[NoAdminRequired]
 	public function providers(): JSONResponse {
@@ -245,7 +249,7 @@ class CredentialController extends Controller {
 
 			$out[] = [
 				'identifier' => $identifier,
-				'title' => (string)($entry['title'] ?? $identifier),
+				'title' => $this->providerTitle(entry: $entry, identifier: $identifier),
 				'kind' => $kind,
 				'requiresInstanceBaseUrl' => (trim((string)($entry['baseUrlFrom'] ?? '')) !== ''),
 				'preview' => (($entry['preview'] ?? false) === true),
@@ -254,6 +258,33 @@ class CredentialController extends Controller {
 
 		return new JSONResponse(['results' => $out]);
 	}//end providers()
+
+	/**
+	 * The title a person reads for one catalogue entry, in their own language.
+	 *
+	 * The catalogue holds the English source title; the backend l10n bundle
+	 * (`l10n/<locale>.json`) carries its translation. An entry with no title
+	 * falls back to its identifier, which is never translated.
+	 *
+	 * @param array<string, mixed> $entry      The catalogue entry.
+	 * @param string               $identifier The entry's identifier.
+	 *
+	 * @return string The translated title, or the identifier.
+	 *
+	 * @spec openspec/changes/credential-provider-labels-in-plain-words/specs/credential-broker/spec.md
+	 */
+	private function providerTitle(array $entry, string $identifier): string {
+		$title = trim((string)($entry['title'] ?? ''));
+		if ($title === '') {
+			return $identifier;
+		}
+
+		if ($this->l10n === null) {
+			return $title;
+		}
+
+		return $this->l10n->t($title);
+	}//end providerTitle()
 
 	/**
 	 * POST /api/credentials — create a credential and store its secret to the vault.
