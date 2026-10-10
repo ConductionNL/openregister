@@ -97,3 +97,7 @@ profile and the export verb.
 - [ ] 5.2 `tests/e2e/ci/an-export-is-a-file-with-a-life.spec.ts`: run an
       export, see the row, download it, see the count move, expire it, see
       it named as expired.
+      (live pass, decision 139) 2026-10-10 (B3): the spec is written for the part an API
+      run can reach: a profile run lands in the area for its maker and not for a stranger,
+      and a run without a file answers 410 to its maker and 404 to a stranger. A run with a
+      file needs a cron tick and expiry needs the clock, so those stay with the unit tests.

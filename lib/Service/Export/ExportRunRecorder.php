@@ -265,11 +265,14 @@ class ExportRunRecorder {
 			return $missing;
 		}
 
-		$gone = ['status' => 410, 'error' => 'This export has expired. Its file was removed; the record stays.'];
+		if ($run->getStatus() === ExportRun::STATUS_EXPIRED) {
+			return ['status' => 410, 'error' => 'This export has expired. Its file was removed; the record stays.'];
+		}
+
 		$fileId = $run->getFileId();
 		$actor = (string)$run->getActor();
-		if ($run->getStatus() === ExportRun::STATUS_EXPIRED || $fileId === null || $actor === '') {
-			return $gone;
+		if ($fileId === null || $actor === '') {
+			return ['status' => 410, 'error' => 'This export was handed over directly and left no file to download.'];
 		}
 
 		$file = $this->fileOf(actor: $actor, fileId: $fileId);
