@@ -82,9 +82,56 @@ final class MaintenanceModeMiddlewareTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheOperationsConsoleIsNotClosedByTheModeItControls(): void {
-		$this->middleware(true)->beforeController(OperationsConsoleController::class, 'maintenance');
+		$this->middleware(true)->beforeController(OperationsConsoleController::class, 'index');
 
 		$this->addToAssertionCount(1);
+	}
+
+	/**
+	 * Every controller that serves a route under /api/operations stays
+	 * reachable while the mode holds, read from appinfo/routes.php.
+	 *
+	 * The allowance used to name one class. When the maintenance and
+	 * consistency endpoints moved to their own controllers (bd7fe3470d) the
+	 * allowance did not follow, so entering the mode worked and leaving it
+	 * answered 503: the lock-out this middleware exists to prevent. Reading the
+	 * routes rather than a list written here is what keeps the next split from
+	 * doing the same.
+	 *
+	 * @spec openspec/changes/admin-operations-console/specs/operations-console/spec.md#requirement-maintenance-mode-closes-the-instance-without-locking-administration-out-req-aoc-006
+	 *
+	 * @return void
+	 */
+	public function testEveryOperationsRouteStaysReachable(): void {
+		$routes = require __DIR__.'/../../../appinfo/routes.php';
+
+		$controllers = [];
+		foreach ($routes['routes'] as $route) {
+			if (str_starts_with($route['url'], '/api/operations/') === false) {
+				continue;
+			}
+
+			[$short, $method] = explode('#', $route['name']);
+			$class            = 'OCA\\OpenRegister\\Controller\\'.ucfirst($short).'Controller';
+			$controllers[$class.'::'.$method] = [$class, $method];
+		}
+
+		$this->assertArrayHasKey(
+			'OCA\\OpenRegister\\Controller\\OperationsMaintenanceController::maintenance',
+			$controllers,
+			'The routes no longer carry the maintenance endpoint this test is about.'
+		);
+
+		$refused = [];
+		foreach ($controllers as $key => [$class, $method]) {
+			try {
+				$this->middleware(true)->beforeController($class, $method);
+			} catch (MaintenanceModeHeldException) {
+				$refused[] = $key;
+			}
+		}
+
+		$this->assertSame([], $refused, 'These operations endpoints are closed by the mode they administer.');
 	}
 
 	/**
