@@ -97,6 +97,20 @@ class DraftStatusPolicy {
 			return $current;
 		}
 
+		return $this->resolveMove(entity: $entity, asked: $asked);
+		}//end resolveStatus()
+
+	/**
+	 * The status a requested move lands on, or a refusal.
+	 *
+	 * @param ObjectEntity $entity The object being saved.
+	 * @param string       $asked  The status asked for, different from the stored one.
+	 *
+	 * @return string The status to store.
+	 *
+	 * @throws ValidationException When the move is not allowed.
+	 */
+	private function resolveMove(ObjectEntity $entity, string $asked): string {
 		if ($asked === ObjectEntity::STATUS_DRAFT) {
 			if ($entity->getId() === null) {
 				return ObjectEntity::STATUS_DRAFT;
@@ -105,7 +119,7 @@ class DraftStatusPolicy {
 			throw new ValidationException(message: 'A saved object cannot go back to draft.');
 		}
 
-		if ($asked === ObjectEntity::STATUS_ACTIVE && $current === ObjectEntity::STATUS_DRAFT) {
+		if ($asked === ObjectEntity::STATUS_ACTIVE && $entity->isDraft() === true) {
 			$uuid = (string)$entity->getUuid();
 			if (isset(self::$promotions[$uuid]) === true) {
 				unset(self::$promotions[$uuid]);
@@ -117,7 +131,7 @@ class DraftStatusPolicy {
 		}
 
 		throw new ValidationException(message: sprintf('Status "%s" is not one an object can be given here.', $asked));
-	}//end resolveStatus()
+	}//end resolveMove()
 
 	/**
 	 * Whether a write saves a draft: the payload asks for draft, or the stored object is one and the payload does not leave it.

@@ -70,7 +70,8 @@ use Throwable;
  * map, validate all, write in order, compensate, answer. Split, the all-or-none rule would
  * live in two files that must agree on what a plan is.
  * @SuppressWarnings(PHPMD.StaticAccess) FormDestinationValidator::marker() and
- * markedProperties() are pure reads of a schema property's `x-openregister` block.
+ * markedProperties() are pure reads of a schema property's `x-openregister` block;
+ * DraftStatusPolicy's promotion allowance is request-scoped state shared with the save path.
  *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
  */
@@ -82,6 +83,20 @@ class FormSubmitService {
 	 * @var string
 	 */
 	public const PENDING_ID = '00000000-0000-4000-8000-000000000000';
+
+	/**
+	 * Validation mode: every rule.
+	 *
+	 * @var string
+	 */
+	private const MODE_FULL = 'full';
+
+	/**
+	 * Validation mode for a draft: every rule except `required` (decision 180).
+	 *
+	 * @var string
+	 */
+	private const MODE_DRAFT = 'draft';
 
 	/**
 	 * Constructor.
@@ -97,6 +112,9 @@ class FormSubmitService {
 	 * @param LoggerInterface      $logger    Records each compensation.
 	 * @param IEventDispatcher     $events    Announces a draft that left draft (receipt).
 	 * @param ITimeFactory         $time      The moment of receipt.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One collaborator per step of the submit
+	 * (resolve, validate, save, find, findings, keys, uploads, receipt) plus translations and logging.
 	 */
 	public function __construct(
 		private readonly RegisterMapper $registers,
@@ -188,7 +206,7 @@ class FormSubmitService {
 			$plans[0]['object'] = array_merge($this->draftData(plan: $plans[0], draftId: $draftId), $plans[0]['object']);
 		}
 
-		$this->validateAll(plans: $plans, draft: true);
+		$this->validateAll(plans: $plans, mode: self::MODE_DRAFT);
 		$created = $this->writeAll(plans: $plans, subject: $subject, status: ObjectEntity::STATUS_DRAFT, uuid: $draftId);
 
 		return ['id' => (string)$created[0]['object']->getUuid(), 'status' => ObjectEntity::STATUS_DRAFT];
@@ -236,13 +254,7 @@ class FormSubmitService {
 		}
 
 		$plans = $this->plan(writes: $writes, payload: $payload, scope: $scope);
-		if ($draftId === null) {
-			$this->validateAll(plans: $plans);
-			$created = $this->writeAll(plans: $plans, subject: $subject);
-			$receivedAt = null;
-		} else {
-			[$created, $receivedAt] = $this->promoteDraft(plans: $plans, subject: $subject, draftId: $draftId);
-		}
+		[$created, $receivedAt] = $this->writeOrPromote(plans: $plans, subject: $subject, draftId: $draftId);
 
 		$this->uploads->claim(tokens: array_merge(...array_map(static fn (array $plan): array => $plan['tokens'], $plans)));
 		$answer = $this->answer(created: $created, receivedAt: $receivedAt);
@@ -252,6 +264,27 @@ class FormSubmitService {
 
 		return $answer;
 	}//end submitAll()
+
+	/**
+	 * Validate and write a fresh submit, or promote a draft.
+	 *
+	 * @param array<int, array<string, mixed>> $plans   The plans.
+	 * @param IUser|null                       $subject The subject.
+	 * @param string|null                      $draftId The draft to leave, or null.
+	 *
+	 * @return array{0: array<int, array{plan: array<string, mixed>, object: ObjectEntity}>, 1: DateTimeImmutable|null} Writes, receipt.
+	 *
+	 * @throws FormSubmitRefusedException 422, 403, 404 or 503.
+	 */
+	private function writeOrPromote(array $plans, ?IUser $subject, ?string $draftId): array {
+		if ($draftId !== null) {
+			return $this->promoteDraft(plans: $plans, subject: $subject, draftId: $draftId);
+		}
+
+		$this->validateAll(plans: $plans);
+
+		return [$this->writeAll(plans: $plans, subject: $subject), null];
+	}//end writeOrPromote()
 
 	/**
 	 * Leave draft: full validation of the draft plus the payload, then one allowed promotion, then receipt.
@@ -463,13 +496,13 @@ class FormSubmitService {
 	 * Validate every write with its destination's full validator before the first write.
 	 *
 	 * @param array<int, array<string, mixed>> $plans The plans.
-	 * @param bool                             $draft True for a draft: every `required` is excused, nothing else.
+	 * @param string                           $mode  MODE_FULL, or MODE_DRAFT: every `required` is excused, nothing else.
 	 *
 	 * @return void
 	 *
 	 * @throws FormSubmitRefusedException 422 with every finding of every write.
 	 */
-	private function validateAll(array $plans, bool $draft = false): void {
+	private function validateAll(array $plans, string $mode = self::MODE_FULL): void {
 		$findings = [];
 		foreach ($plans as $plan) {
 			$write = null;
@@ -479,7 +512,7 @@ class FormSubmitService {
 
 			$object = $this->resolveWriteReferences(object: $plan['object'], ids: [], pending: true);
 			$excused = $this->serverFilled(schema: $plan['schema'], object: $object);
-			if ($draft === true) {
+			if ($mode === self::MODE_DRAFT) {
 				$excused = array_merge((new DraftStatusPolicy())->requiredExcusals(schema: $plan['schema']), $excused);
 			}
 
