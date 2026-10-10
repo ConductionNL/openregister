@@ -10,9 +10,11 @@
  *                       idempotent subscribe, the self-unsubscribe).
  *  - `findByObject()` — who watches this object (the watcher list, and the
  *                       notification dispatcher's recipient resolution).
- *  - `uuidsForUser()` — what does this user watch (the `_watching=true` lens
- *                       and the `@self.watching` marker, loaded once per
- *                       request rather than once per rendered row).
+ *  - `notifyMapForUser()` — what does this user follow, and with which
+ *                       notification setting (the `@self.watching` and
+ *                       `@self.watchNotify` markers, loaded once per request
+ *                       rather than once per rendered row). The `_watching`
+ *                       lens does not read it: it is an `EXISTS` on this table.
  *  - `countsByObject()` — how many watchers per object, for `@self.watcherCount`.
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -55,6 +57,13 @@ use OCP\IDBConnection;
 class WatcherMapper extends QBMapper {
 
 	/**
+	 * The follow table, named once for the query lenses that join on it.
+	 *
+	 * @var string
+	 */
+	public const TABLE = 'openregister_watchers';
+
+	/**
 	 * How many rows the grouped watcher-count query will load in one pass.
 	 *
 	 * `@self.watcherCount` is rendered per row, so a count query per rendered
@@ -75,7 +84,7 @@ class WatcherMapper extends QBMapper {
 	public function __construct(IDBConnection $db) {
 		parent::__construct(
 			db: $db,
-			tableName: 'openregister_watchers',
+			tableName: self::TABLE,
 			entityClass: Watcher::class
 		);
 
@@ -128,44 +137,70 @@ class WatcherMapper extends QBMapper {
 	}//end findByObject()
 
 	/**
-	 * The uuids one user watches, optionally narrowed to a register and schema.
+	 * The subscriptions on one object that notify, oldest first.
 	 *
-	 * @param string $userId The subscribing user's uid.
-	 * @param string|null $register Narrow to this register, as stored on the row.
-	 * @param string|null $schema Narrow to this schema, as stored on the row.
+	 * The notification dispatcher's question: who hears about a change. A
+	 * quiet follow (`notify` false) still follows and is still listed to
+	 * editors, but is not told. A null `notify`, a row from before the column
+	 * existed, counts as on.
 	 *
-	 * @return array<int, string> The watched object uuids.
+	 * @param string $objectUuid The watched object's uuid.
 	 *
-	 * @spec openspec/specs/object-interactions/spec.md
+	 * @return array<int, Watcher> The rows.
+	 *
+	 * @spec openspec/changes/merge-follow-and-favourites/specs/notificatie-engine/spec.md#requirement-a-notification-rule-may-address-the-objects-watchers
 	 */
-	public function uuidsForUser(string $userId, ?string $register = null, ?string $schema = null): array {
+	public function findNotifyingByObject(string $objectUuid): array {
 		$qb = $this->db->getQueryBuilder();
-		$qb->select('object_uuid')
+		$qb->select('*')
+			->from($this->getTableName())
+			->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+			->andWhere(
+				$qb->expr()->orX(
+					$qb->expr()->eq('notify', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)),
+					$qb->expr()->isNull('notify')
+				)
+			)
+			->orderBy('created', 'ASC');
+
+		return $this->findEntities(query: $qb);
+
+	}//end findNotifyingByObject()
+
+	/**
+	 * What one user follows, with each follow's notification setting.
+	 *
+	 * @param string $userId The following user's uid.
+	 *
+	 * @return array<string, bool> Object uuid to whether that follow notifies.
+	 *
+	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
+	 */
+	public function notifyMapForUser(string $userId): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('object_uuid', 'notify')
 			->from($this->getTableName())
 			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)));
 
-		if ($register !== null && $register !== '') {
-			$qb->andWhere($qb->expr()->eq('register', $qb->createNamedParameter($register)));
-		}
-
-		if ($schema !== null && $schema !== '') {
-			$qb->andWhere($qb->expr()->eq('schema', $qb->createNamedParameter($schema)));
-		}
-
 		$result = $qb->executeQuery();
-		$uuids = [];
+		$map = [];
 		while (($row = $result->fetch()) !== false) {
 			$uuid = (string)($row['object_uuid'] ?? '');
-			if ($uuid !== '') {
-				$uuids[] = $uuid;
+			if ($uuid === '') {
+				continue;
 			}
+
+			// Null is a row from before the column: on. Anything else is the
+			// database's boolean spelling (1, '1', true, 't'), read strictly.
+			$notify = $row['notify'] ?? null;
+			$map[$uuid] = ($notify === null || in_array($notify, [true, 1, '1', 't', 'true'], true) === true);
 		}
 
 		$result->closeCursor();
 
-		return array_values(array_unique($uuids));
+		return $map;
 
-	}//end uuidsForUser()
+	}//end notifyMapForUser()
 
 	/**
 	 * Watcher counts per object, in one grouped pass.
@@ -223,25 +258,33 @@ class WatcherMapper extends QBMapper {
 	}//end countForObject()
 
 	/**
-	 * Subscribe a user to an object, idempotently.
+	 * Subscribe a user to an object, idempotently, and set its notify switch.
 	 *
 	 * The unique index on (user_id, object_uuid) is the authority: a second
 	 * subscribe returns the row that is already there rather than writing a
-	 * duplicate.
+	 * duplicate. `$notify` null means "leave it": a new row notifies, an
+	 * existing row keeps its setting. A bool sets it either way.
 	 *
 	 * @param string $userId The subscribing user's uid.
 	 * @param string $objectUuid The watched object's uuid.
 	 * @param string|null $register The object's register, as the caller addressed it.
 	 * @param string|null $schema The object's schema, as the caller addressed it.
+	 * @param bool|null $notify The notification switch, or null to keep it.
 	 *
 	 * @return Watcher The stored row.
 	 *
-	 * @spec openspec/specs/object-interactions/spec.md
+	 * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-watch-an-object-they-may-read
 	 */
-	public function subscribe(string $userId, string $objectUuid, ?string $register = null, ?string $schema = null): Watcher {
+	public function subscribe(
+		string $userId,
+		string $objectUuid,
+		?string $register = null,
+		?string $schema = null,
+		?bool $notify = null,
+	): Watcher {
 		$existing = $this->findOne(userId: $userId, objectUuid: $objectUuid);
 		if ($existing !== null) {
-			return $existing;
+			return $this->applyNotify(watcher: $existing, notify: $notify);
 		}
 
 		$watcher = new Watcher();
@@ -249,6 +292,7 @@ class WatcherMapper extends QBMapper {
 		$watcher->setObjectUuid($objectUuid);
 		$watcher->setRegister($register);
 		$watcher->setSchema($schema);
+		$watcher->setNotify($notify ?? true);
 		$watcher->setCreated(new DateTime());
 
 		try {
@@ -259,11 +303,30 @@ class WatcherMapper extends QBMapper {
 			// true, so read the winner back rather than failing the request.
 			$winner = $this->findOne(userId: $userId, objectUuid: $objectUuid);
 			if ($winner !== null) {
-				return $winner;
+				return $this->applyNotify(watcher: $winner, notify: $notify);
 			}
 
 			throw $e;
 		}
+
+	}//end subscribe()
+
+	/**
+	 * Set an existing row's notify switch when the caller named one.
+	 *
+	 * @param Watcher $watcher The stored row.
+	 * @param bool|null $notify The asked-for setting, or null to keep it.
+	 *
+	 * @return Watcher The row as it now stands.
+	 */
+	private function applyNotify(Watcher $watcher, ?bool $notify): Watcher {
+		if ($notify === null || $watcher->notifies() === $notify) {
+			return $watcher;
+		}
+
+		$watcher->setNotify($notify);
+
+		return $this->update(entity: $watcher);
 
 	}//end subscribe()
 

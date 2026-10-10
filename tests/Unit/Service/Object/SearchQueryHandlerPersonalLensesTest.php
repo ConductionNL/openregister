@@ -22,7 +22,6 @@ namespace Unit\Service\Object;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ViewScopeApplier;
-use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\Interaction\ReadHistoryService;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
@@ -80,7 +79,6 @@ class SearchQueryHandlerPersonalLensesTest extends TestCase {
 			$this->createMock(originalClassName: LoggerInterface::class),
 			$this->createMock(originalClassName: IRequest::class),
 			$this->createMock(originalClassName: SearchTrailService::class),
-			$this->createMock(originalClassName: WatcherMapper::class),
 			$session,
 			null,
 			null,
@@ -92,7 +90,7 @@ class SearchQueryHandlerPersonalLensesTest extends TestCase {
 	/**
 	 * The favourites lens resolves the caller and hands the mapper a uid.
 	 *
-	 * `_favouriteFor` is what the mapper turns into a correlated EXISTS. If it
+	 * `_watchingFor` (the deprecated `_favourite` resolves to the follow lens) is what the mapper turns into a correlated EXISTS. If it
 	 * is absent the whole lens is a no-op and the index page answers every
 	 * object, starred or not.
 	 *
@@ -101,7 +99,7 @@ class SearchQueryHandlerPersonalLensesTest extends TestCase {
 	public function testFavouriteLensResolvesTheCaller(): void {
 		$query = $this->makeHandler()->buildSearchQuery(['_favourite' => 'true'], 1, 777);
 
-		$this->assertSame(expected: 'alice', actual: ($query['_favouriteFor'] ?? null));
+		$this->assertSame(expected: 'alice', actual: ($query['_watchingFor'] ?? null));
 		$this->assertArrayNotHasKey(key: '_favourite', array: $query);
 
 	}//end testFavouriteLensResolvesTheCaller()
@@ -228,7 +226,7 @@ class SearchQueryHandlerPersonalLensesTest extends TestCase {
 			777
 		);
 
-		$this->assertSame(expected: 'alice', actual: ($query['_favouriteFor'] ?? null));
+		$this->assertSame(expected: 'alice', actual: ($query['_watchingFor'] ?? null));
 		$this->assertSame(expected: ['uuid-a'], actual: ($query['_ids'] ?? null));
 
 	}//end testBothLensesResolveTogether()
@@ -248,7 +246,7 @@ class SearchQueryHandlerPersonalLensesTest extends TestCase {
 			777
 		);
 
-		$this->assertSame(expected: 'alice', actual: ($query['_favouriteFor'] ?? null));
+		$this->assertSame(expected: 'alice', actual: ($query['_watchingFor'] ?? null));
 		$this->assertSame(expected: 'open', actual: ($query['status'] ?? null));
 
 	}//end testTheLensLeavesOtherFiltersAlone()
@@ -257,7 +255,7 @@ class SearchQueryHandlerPersonalLensesTest extends TestCase {
 	 * An anonymous caller gets an empty page, never the whole register.
 	 *
 	 * The guard is an id literal no object can carry. Asserting that
-	 * `_favouriteFor` is ABSENT as well is the half that matters: without it the
+	 * `_watchingFor` (the deprecated `_favourite` resolves to the follow lens) is ABSENT as well is the half that matters: without it the
 	 * mapper would see no restriction at all and the `_ids` guard would be the
 	 * only thing standing between anonymous and every row.
 	 *
@@ -268,7 +266,7 @@ class SearchQueryHandlerPersonalLensesTest extends TestCase {
 
 		$this->assertArrayHasKey(key: '_ids', array: $query);
 		$this->assertNotEmpty(actual: $query['_ids']);
-		$this->assertArrayNotHasKey(key: '_favouriteFor', array: $query);
+		$this->assertArrayNotHasKey(key: '_watchingFor', array: $query);
 
 	}//end testAnonymousGetsAnEmptyPage()
 
@@ -303,7 +301,7 @@ class SearchQueryHandlerPersonalLensesTest extends TestCase {
 	public function testFalseTurnsTheLensOff(): void {
 		$query = $this->makeHandler()->buildSearchQuery(['_favourite' => 'false'], 1, 777);
 
-		$this->assertArrayNotHasKey(key: '_favouriteFor', array: $query);
+		$this->assertArrayNotHasKey(key: '_watchingFor', array: $query);
 		$this->assertArrayNotHasKey(key: '_favourite', array: $query);
 
 	}//end testFalseTurnsTheLensOff()
@@ -334,7 +332,7 @@ class SearchQueryHandlerPersonalLensesTest extends TestCase {
 	public function testAQueryWithoutALensIsUntouched(): void {
 		$query = $this->makeHandler()->buildSearchQuery(['status' => 'open'], 1, 777);
 
-		$this->assertArrayNotHasKey(key: '_favouriteFor', array: $query);
+		$this->assertArrayNotHasKey(key: '_watchingFor', array: $query);
 		$this->assertArrayNotHasKey(key: '_recentViews', array: $query);
 		$this->assertArrayNotHasKey(key: '_recentLens', array: $query);
 

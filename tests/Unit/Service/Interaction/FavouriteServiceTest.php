@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Unit tests for FavouriteService.
+ * Unit tests for FavouriteService, the star's deprecated facade over the follow.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Service\Interaction
@@ -12,7 +12,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
+ * @spec openspec/changes/merge-follow-and-favourites/specs/object-interactions/spec.md#requirement-a-user-can-star-an-object-without-changing-it
  */
 
 declare(strict_types=1);
@@ -20,273 +20,63 @@ declare(strict_types=1);
 namespace Unit\Service\Interaction;
 
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Db\ObjectFavourite;
-use OCA\OpenRegister\Db\ObjectFavouriteMapper;
-use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Db\Watcher;
 use OCA\OpenRegister\Service\Interaction\FavouriteService;
-use OCP\IUser;
-use OCP\IUserSession;
+use OCA\OpenRegister\Service\Interaction\WatcherService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
- * The permission rule, the memo, and the cascade.
- *
- * The permission rule is the short one: your own star and nobody else's, with
- * no admin override. The memo is the part that can fail silently, so it is
- * asserted by COUNTING mapper calls rather than by reading a result, which
- * would be the same whether the memo worked or not.
+ * Every star verb answers through the follow, so the two cannot disagree.
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\Interaction\FavouriteService
  */
 class FavouriteServiceTest extends TestCase {
 
 	/**
-	 * The mapper double the service under test is built over.
+	 * The follow primitive the facade delegates to.
 	 *
-	 * @var ObjectFavouriteMapper&MockObject
+	 * @var WatcherService&MockObject
 	 */
-	private $mapper;
+	private $watchers;
 
 	/**
-	 * Build a fresh mapper double for each test.
+	 * Build a fresh double for each test.
 	 *
 	 * @return void
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->mapper = $this->createMock(originalClassName: ObjectFavouriteMapper::class);
+		$this->watchers = $this->createMock(originalClassName: WatcherService::class);
 
 	}//end setUp()
 
 	/**
-	 * An object with a uuid.
+	 * Starring is following quietly, with the addressed scope.
 	 *
-	 * @return ObjectEntity
+	 * @return void
 	 */
-	private function makeObject(): ObjectEntity {
+	public function testStarIsAQuietFollow(): void {
 		$object = $this->createMock(originalClassName: ObjectEntity::class);
-		$object->method('getUuid')->willReturn('uuid-case-1');
+		$this->watchers->expects($this->once())
+			->method('followQuietly')
+			->with($object, 'zaken', 'zaak')
+			->willReturn(new Watcher());
 
-		return $object;
+		(new FavouriteService($this->watchers))->star(object: $object, register: 'zaken', schema: 'zaak');
 
-	}//end makeObject()
-
-	/**
-	 * A service acting as the given user.
-	 *
-	 * @param string|null $uid The acting user's uid, or null for anonymous.
-	 *
-	 * @return FavouriteService
-	 */
-	private function serviceAs(?string $uid): FavouriteService {
-		$session = $this->createMock(originalClassName: IUserSession::class);
-		if ($uid === null) {
-			$session->method('getUser')->willReturn(null);
-		} else {
-			$user = $this->createMock(originalClassName: IUser::class);
-			$user->method('getUID')->willReturn($uid);
-			$session->method('getUser')->willReturn($user);
-		}
-
-		return new FavouriteService(
-			$this->mapper,
-			$session,
-			$this->createMock(originalClassName: LoggerInterface::class)
-		);
-
-	}//end serviceAs()
+	}//end testStarIsAQuietFollow()
 
 	/**
-	 * Starring writes a row for the caller, carrying the addressed scope.
-	 *
-	 * The scope is asserted because it is what a narrowed lens and a purge by
-	 * register both read; a star written without it still works and quietly
-	 * drops out of both.
+	 * Unstarring is unfollowing.
 	 *
 	 * @return void
 	 */
-	public function testStarWritesTheCallersOwnRow(): void {
-		$this->mapper->expects($this->once())
-			->method('star')
-			->with('alice', 'uuid-case-1', 'cases', 'case')
-			->willReturn(new ObjectFavourite());
+	public function testUnstarIsAnUnfollow(): void {
+		$object = $this->createMock(originalClassName: ObjectEntity::class);
+		$this->watchers->expects($this->once())->method('unwatch')->with($object)->willReturn(true);
 
-		$this->serviceAs(uid: 'alice')->star(
-			object: $this->makeObject(),
-			register: 'cases',
-			schema: 'case'
-		);
+		$this->assertTrue(condition: (new FavouriteService($this->watchers))->unstar(object: $object));
 
-	}//end testStarWritesTheCallersOwnRow()
-
-	/**
-	 * An anonymous caller cannot star anything.
-	 *
-	 * @return void
-	 */
-	public function testAnonymousCannotStar(): void {
-		$this->mapper->expects($this->never())->method('star');
-
-		$this->expectException(exception: NotAuthorizedException::class);
-		$this->serviceAs(uid: null)->star(object: $this->makeObject());
-
-	}//end testAnonymousCannotStar()
-
-	/**
-	 * Unstarring removes the caller's own row and nobody else's.
-	 *
-	 * @return void
-	 */
-	public function testUnstarRemovesTheCallersOwnRow(): void {
-		$this->mapper->expects($this->once())
-			->method('unstar')
-			->with('alice', 'uuid-case-1')
-			->willReturn(true);
-
-		$this->assertTrue(condition: $this->serviceAs(uid: 'alice')->unstar(object: $this->makeObject()));
-
-	}//end testUnstarRemovesTheCallersOwnRow()
-
-	/**
-	 * Asking about another user's star is refused, not answered about yourself.
-	 *
-	 * Answering about the caller instead would be a lie the caller cannot
-	 * detect, which is why this is the one place the refusal is explicit.
-	 *
-	 * @return void
-	 */
-	public function testAskingAboutAnotherUserIsRefused(): void {
-		$this->mapper->expects($this->never())->method('findOne');
-
-		$this->expectException(exception: NotAuthorizedException::class);
-		$this->serviceAs(uid: 'alice')->favouriteFor(object: $this->makeObject(), userId: 'bob');
-
-	}//end testAskingAboutAnotherUserIsRefused()
-
-	/**
-	 * Naming yourself is allowed, and reads your own row.
-	 *
-	 * The control for the test above: without it, a refusal that fired for
-	 * every named user would look exactly like the rule working.
-	 *
-	 * @return void
-	 */
-	public function testNamingYourselfIsAllowed(): void {
-		$this->mapper->expects($this->once())
-			->method('findOne')
-			->with('alice', 'uuid-case-1')
-			->willReturn(null);
-
-		$this->assertNull(
-			actual: $this->serviceAs(uid: 'alice')->favouriteFor(object: $this->makeObject(), userId: 'alice')
-		);
-
-	}//end testNamingYourselfIsAllowed()
-
-	/**
-	 * The starred set is loaded once, however many rows are rendered.
-	 *
-	 * This is the N+1 guard, and it can only be asserted by COUNTING: the
-	 * answers are identical whether the memo works or the mapper is asked forty
-	 * times, so a test reading only the return value cannot fail.
-	 *
-	 * @return void
-	 */
-	public function testTheStarredSetIsLoadedOncePerRequest(): void {
-		$this->mapper->expects($this->once())
-			->method('uuidsForUser')
-			->willReturn(['uuid-case-1', 'uuid-case-9']);
-
-		$service = $this->serviceAs(uid: 'alice');
-
-		$this->assertTrue(condition: $service->isStarredByCaller(objectUuid: 'uuid-case-1'));
-		$this->assertTrue(condition: $service->isStarredByCaller(objectUuid: 'uuid-case-9'));
-		$this->assertFalse(condition: $service->isStarredByCaller(objectUuid: 'uuid-case-4'));
-
-	}//end testTheStarredSetIsLoadedOncePerRequest()
-
-	/**
-	 * A write drops the memo, so a star renders as starred immediately.
-	 *
-	 * @return void
-	 */
-	public function testAWriteDropsTheMemo(): void {
-		$this->mapper->expects($this->exactly(count: 2))
-			->method('uuidsForUser')
-			->willReturnOnConsecutiveCalls([], ['uuid-case-1']);
-		$this->mapper->method('star')->willReturn(new ObjectFavourite());
-
-		$service = $this->serviceAs(uid: 'alice');
-
-		$this->assertFalse(condition: $service->isStarredByCaller(objectUuid: 'uuid-case-1'));
-		$service->star(object: $this->makeObject());
-		$this->assertTrue(condition: $service->isStarredByCaller(objectUuid: 'uuid-case-1'));
-
-	}//end testAWriteDropsTheMemo()
-
-	/**
-	 * An anonymous reader is starred by nothing, and the mapper is never asked.
-	 *
-	 * @return void
-	 */
-	public function testAnonymousIsStarredByNothing(): void {
-		$this->mapper->expects($this->never())->method('uuidsForUser');
-
-		$this->assertFalse(
-			condition: $this->serviceAs(uid: null)->isStarredByCaller(objectUuid: 'uuid-case-1')
-		);
-
-	}//end testAnonymousIsStarredByNothing()
-
-	/**
-	 * A failed lookup answers "not starred" rather than taking out the render.
-	 *
-	 * @return void
-	 */
-	public function testAFailedLookupDoesNotTakeOutTheRender(): void {
-		$this->mapper->method('uuidsForUser')->willThrowException(new \RuntimeException('db down'));
-
-		$this->assertFalse(
-			condition: $this->serviceAs(uid: 'alice')->isStarredByCaller(objectUuid: 'uuid-case-1')
-		);
-
-	}//end testAFailedLookupDoesNotTakeOutTheRender()
-
-	/**
-	 * Deleting an object takes every star on it, whoever placed them.
-	 *
-	 * The cascade runs for the OBJECT and not for a user, because the rows it
-	 * removes belong to people who are not making this request.
-	 *
-	 * @return void
-	 */
-	public function testTheCascadeRemovesEveryStarOnTheObject(): void {
-		$this->mapper->expects($this->once())
-			->method('deleteByObject')
-			->with('uuid-case-1')
-			->willReturn(3);
-
-		$this->assertSame(
-			expected: 3,
-			actual: $this->serviceAs(uid: 'alice')->cleanupForObject(objectUuid: 'uuid-case-1')
-		);
-
-	}//end testTheCascadeRemovesEveryStarOnTheObject()
-
-	/**
-	 * The cascade on an empty uuid touches nothing.
-	 *
-	 * @return void
-	 */
-	public function testTheCascadeIgnoresAnEmptyUuid(): void {
-		$this->mapper->expects($this->never())->method('deleteByObject');
-
-		$this->assertSame(
-			expected: 0,
-			actual: $this->serviceAs(uid: 'alice')->cleanupForObject(objectUuid: '')
-		);
-
-	}//end testTheCascadeIgnoresAnEmptyUuid()
+	}//end testUnstarIsAnUnfollow()
 }//end class

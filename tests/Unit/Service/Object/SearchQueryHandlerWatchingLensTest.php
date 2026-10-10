@@ -22,7 +22,6 @@ namespace Unit\Service\Object;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\ViewScopeApplier;
-use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -33,7 +32,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * The lens narrows the id set to the caller's subscriptions.
+ * The lens narrows the query to the caller's follows, in the query.
  *
  * The failure this guards against is the one that makes a lens useless and
  * dangerous at the same time: a `_watching=true` that resolves to "no
@@ -45,9 +44,9 @@ use Psr\Log\LoggerInterface;
 class SearchQueryHandlerWatchingLensTest extends TestCase {
 
 	/**
-	 * A handler whose watcher mapper answers with the given uuids.
+	 * A handler for the given caller.
 	 *
-	 * @param array<int, string> $watched The uuids the caller follows.
+	 * @param array<int, string> $watched Unused since the lens became an EXISTS; kept for the call sites.
 	 * @param string|null $uid The calling uid, or null for anonymous.
 	 *
 	 * @return SearchQueryHandler
@@ -60,8 +59,9 @@ class SearchQueryHandlerWatchingLensTest extends TestCase {
 		$schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn($schema);
 
-		$watcherMapper = $this->createMock(originalClassName: WatcherMapper::class);
-		$watcherMapper->method('uuidsForUser')->willReturn($watched);
+		// The lens no longer reads the follows itself: it is an EXISTS in the
+		// mapper's query, so the list of followed uuids plays no part here.
+		unset($watched);
 
 		$session = $this->createMock(originalClassName: IUserSession::class);
 		if ($uid === null) {
@@ -79,40 +79,50 @@ class SearchQueryHandlerWatchingLensTest extends TestCase {
 			$this->createMock(originalClassName: LoggerInterface::class),
 			$this->createMock(originalClassName: IRequest::class),
 			$this->createMock(originalClassName: SearchTrailService::class),
-			$watcherMapper,
 			$session
 		);
 	}//end makeHandler()
 
 	/**
-	 * The lens restricts the query to the caller's subscriptions.
+	 * The lens is resolved in the query: the caller's uid, and no uuid list.
 	 *
 	 * @return void
 	 */
-	public function testTheLensNarrowsToTheWatchedUuids(): void {
+	public function testTheLensIsResolvedInTheQuery(): void {
 		$query = $this->makeHandler(watched: ['uuid-a', 'uuid-b'])->buildSearchQuery(
 			['_watching' => 'true'],
 			1,
 			777
 		);
 
-		$this->assertSame(expected: ['uuid-a', 'uuid-b'], actual: ($query['_ids'] ?? null));
+		$this->assertSame(expected: 'alice', actual: ($query['_watchingFor'] ?? null));
+		$this->assertArrayNotHasKey(key: '_ids', array: $query);
 		$this->assertArrayNotHasKey(key: '_watching', array: $query);
-	}//end testTheLensNarrowsToTheWatchedUuids()
+	}//end testTheLensIsResolvedInTheQuery()
 
 	/**
-	 * Following nothing answers nothing, never everything.
+	 * The deprecated `_favourite=true` asks the same question.
 	 *
 	 * @return void
 	 */
-	public function testFollowingNothingReturnsAnImpossibleIdSet(): void {
-		$query = $this->makeHandler(watched: [])->buildSearchQuery(['_watching' => 'true'], 1, 777);
+	public function testTheFavouriteFlagIsAnAliasOfTheLens(): void {
+		$query = $this->makeHandler(watched: [])->buildSearchQuery(['_favourite' => 'true'], 1, 777);
 
-		$ids = ($query['_ids'] ?? null);
-		$this->assertIsArray(actual: $ids);
-		$this->assertCount(expectedCount: 1, haystack: $ids);
-		$this->assertStringContainsString(needle: 'no-watched-objects', haystack: $ids[0]);
-	}//end testFollowingNothingReturnsAnImpossibleIdSet()
+		$this->assertSame(expected: 'alice', actual: ($query['_watchingFor'] ?? null));
+		$this->assertArrayNotHasKey(key: '_favourite', array: $query);
+		$this->assertArrayNotHasKey(key: '_favouriteFor', array: $query);
+	}//end testTheFavouriteFlagIsAnAliasOfTheLens()
+
+	/**
+	 * A caller cannot hand in another user's uid as the resolved key.
+	 *
+	 * @return void
+	 */
+	public function testAForgedResolvedKeyIsDropped(): void {
+		$query = $this->makeHandler(watched: [])->buildSearchQuery(['_watchingFor' => 'bob'], 1, 777);
+
+		$this->assertArrayNotHasKey(key: '_watchingFor', array: $query);
+	}//end testAForgedResolvedKeyIsDropped()
 
 	/**
 	 * An anonymous caller follows nothing, and is told nothing.
@@ -130,22 +140,24 @@ class SearchQueryHandlerWatchingLensTest extends TestCase {
 		$this->assertIsArray(actual: $ids);
 		$this->assertCount(expectedCount: 1, haystack: $ids);
 		$this->assertStringContainsString(needle: 'no-watched-objects', haystack: $ids[0]);
+		$this->assertArrayNotHasKey(key: '_watchingFor', array: $query);
 	}//end testAnonymousCallerGetsAnImpossibleIdSet()
 
 	/**
-	 * Combining the lens with explicit ids intersects rather than replaces.
+	 * An explicit id set is kept, and the lens composes with it in the query.
 	 *
 	 * @return void
 	 */
-	public function testTheLensIntersectsWithAnExplicitIdSet(): void {
+	public function testAnExplicitIdSetIsKeptBesideTheLens(): void {
 		$query = $this->makeHandler(watched: ['uuid-a', 'uuid-b'])->buildSearchQuery(
 			['_watching' => 'true', '_ids' => 'uuid-b,uuid-c'],
 			1,
 			777
 		);
 
-		$this->assertSame(expected: ['uuid-b'], actual: ($query['_ids'] ?? null));
-	}//end testTheLensIntersectsWithAnExplicitIdSet()
+		$this->assertSame(expected: ['uuid-b', 'uuid-c'], actual: ($query['_ids'] ?? null));
+		$this->assertSame(expected: 'alice', actual: ($query['_watchingFor'] ?? null));
+	}//end testAnExplicitIdSetIsKeptBesideTheLens()
 
 	/**
 	 * `_watching=false` is not a lens, and must not restrict anything.
