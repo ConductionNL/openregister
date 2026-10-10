@@ -36,7 +36,7 @@
 
 ## 5. Journey registry
 
-- [ ] 5.1 Apply the MODIFIED requirement to `or-form-and-journey-registry` (`journeyRun` replaced by draft destination objects; commit through `FormSubmitService`)
+- [x] 5.1 Apply the MODIFIED requirement to `or-form-and-journey-registry` (`journeyRun` replaced by draft destination objects; commit through `FormSubmitService`); its remaining `journeyRun` text is marked superseded
 
 ## 6. Verification
 

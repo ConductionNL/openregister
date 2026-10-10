@@ -64,22 +64,24 @@ canonical `$defs.visibleWhen`; optional per-step `writes[]` of
 - **WHEN** it is written
 - **THEN** the write is rejected — access is never inferred
 
-### Requirement: A journey run MUST store no written ids and MUST commit a step all or none
+### Requirement: A saved journey MUST be its draft objects and MUST commit a step all or none
 
-Amended by `form-destination-validator` (decision 179, ADR-117; decision 180
-for drafts). The API SHALL expose start, answer, resume and submit operations
-over a `journeyRun`. The run SHALL NOT stage answers or store ids of written
-objects. A resumable draft is the destination object itself, saved with
-lifecycle status `draft` (decision 180), not answers held on the run. Objects
-SHALL be created only when a step declaring `writes[]` is submitted, through
-`FormSubmitService`, all or none, in declared order, with a later entry able
-to reference an earlier entry's id.
+Amended by `form-destination-validator` (decision 179, ADR-117; decision 180).
+There SHALL be no `journeyRun` object holding answers. A saved journey SHALL be
+its `writes[]` destination objects in lifecycle status `draft`, owned by the
+filer. Objects SHALL leave `draft`, or be created, only when a step declaring
+`writes[]` is submitted, through `FormSubmitService`, all or none, in declared
+order, with a later entry able to reference an earlier entry's id. Where this
+change still names `journeyRun` (declaration, resume, retention), that text is
+superseded by decision 180 and is rewritten when this change is built.
 
-#### Scenario: Advancing without a writes step creates nothing
+#### Scenario: Advancing without a writes step activates nothing
 
-- **GIVEN** a run advanced past two steps, neither declaring `writes[]`
+- **GIVEN** a journey advanced past two steps and saved, neither step declaring
+  `writes[]` as submitted
 - **WHEN** the target registers are queried
-- **THEN** no object has been created
+- **THEN** any object for this journey is in status `draft`, and no
+  `journeyRun` object exists
 
 #### Scenario: A dependent write receives the preceding write's id
 

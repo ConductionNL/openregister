@@ -48,12 +48,13 @@ the two can drift, they will.
 `next` rules using `$defs.visibleWhen` verbatim, `writes[]` per step, and
 `access` (`anonymous` | `authenticated` | `minTrust`).
 
-**A `journeyRun` stages nothing** (amended by `form-destination-validator`,
-decision 179, ADR-117). Objects are written only at steps declaring
-`writes[]`, through `FormSubmitService`, all or none, so an abandoned
-registration still leaves no half-built organisation. Resumability comes from
-the destination object itself saved with lifecycle status `draft`
-(decision 180), not from answers held on the run.
+**There is no `journeyRun`** (amended by `form-destination-validator`,
+decisions 179 and 180, ADR-117). A saved journey is its destination objects in
+lifecycle status `draft`, owned by the filer. Objects leave draft only at steps
+declaring `writes[]`, through `FormSubmitService`, all or none, so an abandoned
+registration still leaves no active half-built organisation. The `journeyRun`
+schema, its resume API and its retention below are superseded and are rewritten
+when this change is built.
 
 **Retention ships with the schema, not after it.** A `journeyRun` holds names,
 addresses, e-mail, phone numbers and uploads before any of it is a record.
