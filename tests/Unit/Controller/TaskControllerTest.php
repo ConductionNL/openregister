@@ -589,6 +589,29 @@ class TaskControllerTest extends TestCase {
 	}//end testIndexWithoutADueWindowCarriesNone()
 
 	/**
+	 * `includeBlocked=true` reaches the criteria; without it blocked tasks stay out.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 */
+	public function testIndexPassesIncludeBlockedIntoTheCriteria(): void {
+		$seen = [];
+		$this->inbox->expects($this->exactly(2))->method('inbox')->willReturnCallback(
+			function (TaskInboxCriteria $criteria) use (&$seen): array {
+				$seen[] = $criteria->includeBlocked;
+
+				return ['results' => [], 'total' => 0, 'limit' => 25, 'offset' => 0];
+			}
+		);
+
+		$this->controller->index(includeBlocked: 'true');
+		$this->controller->index();
+
+		$this->assertSame([true, false], $seen);
+	}//end testIndexPassesIncludeBlockedIntoTheCriteria()
+
+	/**
 	 * With overdue unset the criteria carry no clock instant.
 	 *
 	 * @return void

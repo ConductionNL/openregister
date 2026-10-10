@@ -115,13 +115,16 @@ final class ObjectSearchResultFormatter {
 		$uuid = $selfData['id'] ?? $result['id'] ?? '';
 
 		// Build a flat data array for deep link URL resolution. The
-		// resolveUrl method needs {uuid} and other top-level keys.
+		// resolveUrl method needs {uuid} and other top-level keys. The
+		// object's own scalar properties come first so a template can name
+		// one (`/apps/dossiq/cases/{case}`); the metadata wins on a clash.
 		$selfArray = [];
 		if (is_array($selfData) === true) {
 			$selfArray = $selfData;
 		}
 
 		$flatData = array_merge(
+			$this->linkableProperties(result: $result),
 			$selfArray,
 			['uuid' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
 		);
@@ -176,6 +179,42 @@ final class ObjectSearchResultFormatter {
 			$rounded
 		);
 	}//end format()
+
+	/**
+	 * The object's top-level scalar properties, URL-encoded, for a deep-link template.
+	 *
+	 * A property value is record data, so it is encoded: a `/` or `?` in it
+	 * must not change which page the link opens.
+	 *
+	 * @param array<string, mixed> $result The rendered object.
+	 *
+	 * @return array<string, string> Property name to encoded value.
+	 *
+	 * @spec openspec/specs/unified-search-provider/spec.md#requirement-a-deep-link-template-may-name-an-object-property
+	 */
+	private function linkableProperties(array $result): array {
+		$properties = [];
+		foreach ($result as $key => $value) {
+			if (is_string($key) === false || str_starts_with($key, '@') === true) {
+				continue;
+			}
+
+			if (is_scalar($value) === false) {
+				continue;
+			}
+
+			if (is_bool($value) === true) {
+				$value = match ($value) {
+					true => 'true',
+					false => 'false',
+				};
+			}
+
+			$properties[$key] = rawurlencode((string)$value);
+		}
+
+		return $properties;
+	}//end linkableProperties()
 
 	/**
 	 * Icon precedence:

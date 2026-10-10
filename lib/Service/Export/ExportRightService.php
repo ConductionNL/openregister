@@ -105,6 +105,22 @@ class ExportRightService {
 	}//end refusalFor()
 
 	/**
+	 * Whether a principal sees every export run, or only their own.
+	 *
+	 * @param string $userId The principal reading the exports area.
+	 *
+	 * @return bool True when every run is in scope.
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-an-exports-area-lists-the-runs
+	 */
+	public function seesEveryExportRun(string $userId): bool {
+		// The same bypass refusalForUid() grants: an administrator may export
+		// any schema, so they may see every export that was made. Answered
+		// HERE so the exports area has no scope rule of its own to drift.
+		return ($this->groupManager->isAdmin($userId) === true);
+	}//end seesEveryExportRun()
+
+	/**
 	 * The refusal for a named principal, or null when they may export.
 	 *
 	 * The scheduled runner and the whole-set job both act as an owner who is not

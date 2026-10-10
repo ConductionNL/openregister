@@ -58,6 +58,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setWholeSet(?bool $wholeSet)
  * @method DateTime|null getCreatedAt()
  * @method void setCreatedAt(?DateTime $createdAt)
+ * @method int|null getRetentionDays()
+ * @method void setRetentionDays(?int $retentionDays)
  * @method DateTime|null getUpdatedAt()
  * @method void setUpdatedAt(?DateTime $updatedAt)
  *
@@ -174,6 +176,13 @@ class ExportProfile extends Entity implements JsonSerializable {
 	protected ?bool $wholeSet = null;
 
 	/**
+	 * How many days the files this profile produces are kept, or null to keep them.
+	 *
+	 * @var integer|null
+	 */
+	protected ?int $retentionDays = null;
+
+	/**
 	 * When the profile was created.
 	 *
 	 * @var DateTime|null
@@ -202,6 +211,7 @@ class ExportProfile extends Entity implements JsonSerializable {
 		$this->addType(fieldName: 'format', type: 'string');
 		$this->addType(fieldName: 'filters', type: 'string');
 		$this->addType(fieldName: 'wholeSet', type: 'boolean');
+		$this->addType(fieldName: 'retentionDays', type: 'integer');
 		$this->addType(fieldName: 'createdAt', type: 'datetime');
 		$this->addType(fieldName: 'updatedAt', type: 'datetime');
 	}//end __construct()
@@ -266,6 +276,21 @@ class ExportProfile extends Entity implements JsonSerializable {
 	}//end isWholeSet()
 
 	/**
+	 * The retention a run produced under this profile copies, in seconds.
+	 *
+	 * @return int|null Seconds, or null when the profile keeps its files.
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-an-export-expires-and-the-row-outlives-the-file
+	 */
+	public function getRetentionSeconds(): ?int {
+		if ($this->retentionDays === null) {
+			return null;
+		}
+
+		return ($this->retentionDays * 86400);
+	}//end getRetentionSeconds()
+
+	/**
 	 * JSON serialization.
 	 *
 	 * @return array<string, mixed> The published shape.
@@ -286,6 +311,7 @@ class ExportProfile extends Entity implements JsonSerializable {
 			'format' => ($this->format ?? 'csv'),
 			'filters' => $this->getFiltersArray(),
 			'wholeSet' => ($this->wholeSet ?? false),
+			'retentionDays' => $this->retentionDays,
 			'createdAt' => $this->createdAt?->format(DateTime::ATOM),
 			'updatedAt' => $this->updatedAt?->format(DateTime::ATOM),
 		];

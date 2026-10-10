@@ -141,7 +141,7 @@ trait FluentQueryBuilderTrait {
 			}
 		};
 		$expr = $this->createMock(originalClassName: IExpressionBuilder::class);
-		foreach (['eq', 'neq', 'lt', 'gt', 'in', 'like', 'isNull', 'isNotNull'] as $method) {
+		foreach (['eq', 'neq', 'lt', 'gt', 'in', 'notIn', 'like', 'isNull', 'isNotNull'] as $method) {
 			$expr->method($method)->willReturnCallback(
 				function (mixed ...$args) use ($method): string {
 					$this->calls[] = ['expr.' . $method, ($args[0] ?? null)];
@@ -195,6 +195,9 @@ trait FluentQueryBuilderTrait {
 		$this->stubAllRowsReader($result, $rows);
 		$qb->method('executeQuery')->willReturn($result);
 		$qb->method('getTableName')->willReturn('openregister_tasks');
+		// A subquery is embedded through createFunction(getSQL()); the text is
+		// not under test, the predicate around it is.
+		$qb->method('getSQL')->willReturn('SELECT subquery');
 
 		return $qb;
 	}//end fluentBuilder()

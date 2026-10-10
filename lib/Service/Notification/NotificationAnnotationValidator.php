@@ -49,7 +49,7 @@ final class NotificationAnnotationValidator {
 
 	private const VALID_TRIGGERS = ['created', 'updated', 'transition', 'scheduled', 'threshold', 'calculatedChange'];
 
-	private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'role', 'relation', 'object-acl', 'expression', 'watchers', 'parties'];
+	private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'role', 'relation', 'object-acl', 'expression', 'watchers', 'parties', 'email'];
 
 	private const VALID_CHANNELS = ['nc-notification', 'email', 'activity', 'webhook', 'talk', 'web-push'];
 
@@ -825,6 +825,26 @@ final class NotificationAnnotationValidator {
 							'code' => 'notification-recipient-field-unknown',
 							'message' => sprintf(
 								'Notification "%s" recipient[%d] field "%s" is not declared on the schema.',
+								$name,
+								$i,
+								$field
+							),
+						];
+					}
+				}
+
+				if ($kind === 'email') {
+					// `supplierRef.contactEmail`: the first segment is a property
+					// of this schema (the address itself, or a reference to the
+					// object holding it). The rest lives on the other schema and
+					// is checked at dispatch, where a missing value is recorded.
+					$field = trim((string)($recipient['field'] ?? ''));
+					$head = explode('.', $field)[0];
+					if ($field === '' || in_array($head, $propKeys, true) === false) {
+						$errors[] = [
+							'code' => 'notification-recipient-field-unknown',
+							'message' => sprintf(
+								'Notification "%s" recipient[%d] kind=email field "%s" does not start with a property declared on the schema.',
 								$name,
 								$i,
 								$field

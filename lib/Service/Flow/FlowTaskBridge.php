@@ -323,7 +323,10 @@ class FlowTaskBridge {
 	 *
 	 * Three steps, each of which may legitimately do nothing:
 	 *
-	 * 1. `signal()` with an empty payload parks the run as due. Null means the
+	 * 1. `signal()` with the task's outcome bag parks the run as due. The bag,
+	 *    not an empty payload: an empty one overwrote what a leaf app had
+	 *    signalled about the same completion. The node still reads the TASK,
+	 *    never this slot. Null means the
 	 *    run is not suspended: it is mid-walk (and will read the task itself)
 	 *    or already terminal. Nothing more to do.
 	 * 2. The node's stored budget decides whether to go on. Zero returns here,
@@ -361,7 +364,7 @@ class FlowTaskBridge {
 		}
 
 		$runService = $this->container->get(FlowRunService::class);
-		$woken = $runService->signal(run: $run, payload: []);
+		$woken = $runService->signal(run: $run, payload: self::outcomeBagFor(task: $task));
 		if ($woken === null) {
 			return null;
 		}
