@@ -11,6 +11,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Service\Notification\RecipientResolverInterface;
+use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
 use OCA\OpenRegister\Service\Party\PartyNotificationService;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
@@ -1095,6 +1096,61 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 		$this->assertSame('Your case changed', $calls[0]['body']);
 		$this->assertSame('service', $calls[0]['category']);
 	}//end testAPartyMailWithoutAMessageKeepsTheSubjectAsItsBody()
+
+	/**
+	 * An `email` recipient is handed to the address notifier with the rule's
+	 * message and category, and each outcome is recorded.
+	 *
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-rule-may-mail-an-address-it-reads-through-a-reference-req-ero-007
+	 */
+	public function testAnEmailRecipientIsMailedThroughTheAddressNotifier(): void {
+		$recipients = [['kind' => 'email', 'field' => 'supplierRef.contactEmail']];
+		$notifier = $this->createMock(ReferencedAddressNotifier::class);
+		$notifier->expects($this->once())
+			->method('notify')
+			->with($recipients, $this->isInstanceOf(ObjectEntity::class), 'Nieuw bericht', 'Er staat een bericht voor u klaar.', 'case-update')
+			->willReturn([['field' => 'supplierRef.contactEmail', 'outcome' => 'dispatched']]);
+		$this->serverServices[ReferencedAddressNotifier::class] = $notifier;
+
+		$schema = $this->schemaWithNotification(
+			[
+				'supplier-message' => [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['email'],
+					'recipients' => $recipients,
+					'subject' => 'Nieuw bericht',
+					'message' => 'Er staat een bericht voor u klaar.',
+					'messageCategory' => 'case-update',
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->makeDispatcher()->dispatch($this->object($schema), 'updated');
+	}//end testAnEmailRecipientIsMailedThroughTheAddressNotifier()
+
+	/**
+	 * A rule without the email channel never reaches the address notifier.
+	 */
+	public function testAnEmailRecipientWithoutTheEmailChannelIsNotMailed(): void {
+		$notifier = $this->createMock(ReferencedAddressNotifier::class);
+		$notifier->expects($this->never())->method('notify');
+		$this->serverServices[ReferencedAddressNotifier::class] = $notifier;
+
+		$schema = $this->schemaWithNotification(
+			[
+				'x' => [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['nc-notification'],
+					'recipients' => [['kind' => 'email', 'field' => 'email']],
+					'subject' => 's',
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->makeDispatcher()->dispatch($this->object($schema), 'updated');
+	}//end testAnEmailRecipientWithoutTheEmailChannelIsNotMailed()
 
 	/**
 	 * @param array<string, mixed> $notifications

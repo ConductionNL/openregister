@@ -56,7 +56,7 @@ note: "flow-definition-versioning pins a run, it does not move one".
 - `POST /api/flows/{flow}/migrate-runs` migrates every run pinned to one
   version onto another with one mapping, in bounded batches, reporting per
   run; a run that fails validation is skipped and named.
-- A `deprecated` version whose runs are all migrated can be retired.
+- A `deprecated` version is the end state ("retired" in earlier drafts, decision 129): it backs no new run, and its remaining runs can be migrated off.
 
 ## Consumers
 

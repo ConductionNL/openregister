@@ -38,6 +38,9 @@ use OCA\OpenRegister\Service\Export\ExportProfileService;
 use OCA\OpenRegister\Service\Export\ExportProfileWriter;
 use OCA\OpenRegister\Service\Export\ExportRefusedException;
 use OCA\OpenRegister\Service\Export\ExportRightService;
+use OCA\OpenRegister\Service\Export\ExportRunRecorder;
+use OCP\Files\File;
+use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -178,4 +181,89 @@ final class ExportWholeSetActionTest extends TestCase {
 		self::assertSame(BulkJobMember::OUTCOME_REFUSED, $result->getOutcome());
 		self::assertSame('not-authenticated', $result->getReason());
 	}//end testAJobWithNoActorIsRefusedRatherThanRunningAsNobody()
+
+	public function testACommittedRowGrowsTheRunOfItsFile(): void {
+		$profile = $this->profile(true);
+		$profile->setRetentionDays(30);
+		$this->profiles->method('find')->willReturn($profile);
+		$this->rights->method('refusalForUid')->willReturn(null);
+		$this->writer->method('csvLineFor')->willReturn("\"Z-001\"\n");
+		$this->writer->method('csvOpeningFor')->willReturn("#meta\n\"zaaknummer\"\n");
+
+		$path = (string)tempnam(sys_get_temp_dir(), 'wholeset');
+		$stream = fopen($path, 'a');
+		$file = $this->createMock(File::class);
+		$file->method('getId')->willReturn(4242);
+		$file->method('getPath')->willReturn('/eigenaar-1/files/Exports/datawarehouse_schema-19.csv');
+		$file->method('fopen')->willReturn($stream);
+
+		$exports = $this->createMock(Folder::class);
+		$exports->method('nodeExists')->willReturn(true);
+		$exports->method('get')->willReturn($file);
+
+		$userFolder = $this->createMock(Folder::class);
+		$userFolder->method('nodeExists')->willReturn(true);
+		$userFolder->method('get')->willReturn($exports);
+		$this->rootFolder->method('getUserFolder')->willReturn($userFolder);
+
+		$runs = $this->createMock(ExportRunRecorder::class);
+		$runs->expects(self::once())->method('recordAppended')->with(
+			'whole-set',
+			'eigenaar-1',
+			'csv',
+			'Datawarehouse',
+			'datawarehouse_schema-19.csv',
+			4242,
+			'/eigenaar-1/files/Exports/datawarehouse_schema-19.csv',
+			30 * 86400
+		);
+
+		$action = new ExportWholeSetAction(
+			$this->profiles,
+			$this->writer,
+			$this->rights,
+			$this->recorder,
+			$this->createMock(SchemaMapper::class),
+			$this->rootFolder,
+			$runs
+		);
+		$result = $action->apply($this->object(), ['profileId' => 42], true, $this->actor());
+
+		self::assertSame(BulkJobMember::OUTCOME_APPLIED, $result->getOutcome());
+		self::assertSame("\"Z-001\"\n", (string)file_get_contents($path));
+		unlink($path);
+	}//end testACommittedRowGrowsTheRunOfItsFile()
+
+	public function testARunThatCannotBeRecordedDoesNotFailTheRow(): void {
+		$this->profiles->method('find')->willReturn($this->profile(true));
+		$this->rights->method('refusalForUid')->willReturn(null);
+		$this->writer->method('csvLineFor')->willReturn("\"Z-001\"\n");
+
+		$file = $this->createMock(File::class);
+		$file->method('getId')->willReturn(4242);
+		$file->method('getPath')->willReturn('/x.csv');
+		$file->method('fopen')->willReturn(fopen('php://memory', 'w+'));
+		$exports = $this->createMock(Folder::class);
+		$exports->method('nodeExists')->willReturn(true);
+		$exports->method('get')->willReturn($file);
+		$userFolder = $this->createMock(Folder::class);
+		$userFolder->method('nodeExists')->willReturn(true);
+		$userFolder->method('get')->willReturn($exports);
+		$this->rootFolder->method('getUserFolder')->willReturn($userFolder);
+
+		$runs = $this->createMock(ExportRunRecorder::class);
+		$runs->method('recordAppended')->willThrowException(new \RuntimeException('table missing'));
+
+		$action = new ExportWholeSetAction(
+			$this->profiles,
+			$this->writer,
+			$this->rights,
+			$this->recorder,
+			$this->createMock(SchemaMapper::class),
+			$this->rootFolder,
+			$runs
+		);
+
+		self::assertSame(BulkJobMember::OUTCOME_APPLIED, $action->apply($this->object(), ['profileId' => 42], true, $this->actor())->getOutcome());
+	}//end testARunThatCannotBeRecordedDoesNotFailTheRow()
 }//end class

@@ -93,6 +93,15 @@ final class ExportRightServiceTest extends TestCase {
 		return $schema;
 	}//end schema()
 
+	/**
+	 * The exports area's scope is answered here: an administrator sees every
+	 * run, anybody else only their own.
+	 */
+	public function testOnlyAnAdministratorSeesEveryExportRun(): void {
+		$this->assertTrue($this->service(uid: 'admin', isAdmin: true, authorization: null, holds: [])->seesEveryExportRun(userId: 'admin'));
+		$this->assertFalse($this->service(uid: 'alice', isAdmin: false, authorization: null, holds: [])->seesEveryExportRun(userId: 'alice'));
+	}//end testOnlyAnAdministratorSeesEveryExportRun()
+
 	public function testAReaderWhoMayNotTakeTheDataIsRefused(): void {
 		$refusal = $this->service(
 			'behandelaar-1',

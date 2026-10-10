@@ -100,6 +100,30 @@ class NotificationAnnotationValidatorTest extends TestCase {
 		$this->assertContains('notification-recipient-field-unknown', $codes);
 	}
 
+	/**
+	 * `kind: email` reads its address through the first segment of `field`,
+	 * which must be a property of the schema.
+	 *
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-rule-may-mail-an-address-it-reads-through-a-reference-req-ero-007
+	 */
+	public function testAnEmailRecipientFieldStartsWithADeclaredProperty(): void {
+		$rule = static fn (string $field): array => [
+			'x-openregister-notifications' => [
+				'x' => [
+					'trigger' => ['type' => 'created'],
+					'recipients' => [['kind' => 'email', 'field' => $field]],
+					'channels' => ['email'],
+					'subject' => 'Nieuw bericht',
+				],
+			],
+			'properties' => ['supplierRef' => ['type' => 'string', 'format' => 'uuid']],
+		];
+
+		$this->assertSame([], $this->v->validate($rule('supplierRef.contactEmail')));
+		$this->assertContains('notification-recipient-field-unknown', array_column($this->v->validate($rule('ownerRef.contactEmail')), 'code'));
+		$this->assertContains('notification-recipient-field-unknown', array_column($this->v->validate($rule('')), 'code'));
+	}
+
 	public function testValidNoErrors(): void {
 		$errors = $this->v->validate([
 			'x-openregister-notifications' => [

@@ -91,7 +91,8 @@ class ExportRunMapper extends QBMapper {
 	 * ones that are gone as much as the ones that are not.
 	 *
 	 * @param string|null $actor    The actor, or null for every actor (admin).
-	 * @param array       $filters  Optional equality filters on register, schema, profile, source or status.
+	 * @param array       $filters  Optional equality filters on register, schema, profile, source, status
+	 *                              or actor, and `from` / `until` (DateTime) bounding produced_at.
 	 * @param int         $limit    Page size.
 	 * @param int         $offset   Page offset.
 	 *
@@ -108,6 +109,7 @@ class ExportRunMapper extends QBMapper {
 			'profile' => 'profile',
 			'source' => 'source',
 			'status' => 'status',
+			'actor' => 'actor',
 		];
 
 		$qb = $this->db->getQueryBuilder();
@@ -121,11 +123,26 @@ class ExportRunMapper extends QBMapper {
 			$qb->andWhere($qb->expr()->eq('actor', $qb->createNamedParameter($actor)));
 		}
 
+		// The period bounds `produced_at`, inclusive on both ends. They arrive
+		// as DateTime values; the controller parsed and refused a bad
+		// date already, so nothing here guesses at a string.
+		$from = ($filters['from'] ?? null);
+		if ($from instanceof DateTime === true) {
+			$qb->andWhere($qb->expr()->gte('produced_at', $qb->createNamedParameter($from, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+		}
+
+		$until = ($filters['until'] ?? null);
+		if ($until instanceof DateTime === true) {
+			$qb->andWhere($qb->expr()->lte('produced_at', $qb->createNamedParameter($until, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+		}
+
+		unset($filters['from'], $filters['until']);
+
 		foreach ($filters as $key => $value) {
 			// An unknown filter key is DROPPED rather than widening the result:
 			// a query that silently ignores a narrowing term returns more than
 			// the caller asked for, which is the wrong direction to fail in.
-			if (isset($columns[$key]) === false || $value === null || $value === '') {
+			if (isset($columns[$key]) === false || is_scalar($value) === false || $value === '') {
 				continue;
 			}
 
@@ -170,4 +187,31 @@ class ExportRunMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findDueForSweep()
+
+	/**
+	 * The run that still owns a file, if one does.
+	 *
+	 * Only an available run carries a file id: the sweep clears it when the
+	 * file is deleted. So this answers "which run is this file", never an
+	 * expired one.
+	 *
+	 * @param int $fileId The Nextcloud file id.
+	 *
+	 * @return ExportRun|null The newest available run on that file, or null.
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-a-produced-export-is-recorded-as-a-run
+	 */
+	public function findOpenForFile(int $fileId): ?ExportRun {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('*')
+			->from(self::TABLE)
+			->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)))
+			->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(ExportRun::STATUS_AVAILABLE)))
+			->orderBy('id', 'DESC')
+			->setMaxResults(1);
+
+		$runs = $this->findEntities(query: $qb);
+
+		return ($runs[0] ?? null);
+	}//end findOpenForFile()
 }//end class

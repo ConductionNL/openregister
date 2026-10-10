@@ -202,6 +202,24 @@ class FlowTaskBridgeTest extends TestCase {
 	}//end testTheDefaultBudgetParksForTheWorker()
 
 	/**
+	 * The wake carries the task's outcome bag, never an empty payload: an
+	 * empty signal overwrote what a leaf app had signalled (decision, node,
+	 * taskId, completedBy) and left the run's signal slot saying nothing.
+	 */
+	public function testTheWakeCarriesTheOutcomeBag(): void {
+		$run = $this->suspendedRun(advance: null);
+		$this->runs->method('findByUuid')->willReturn($run);
+		$task = $this->terminalTask();
+		$task->setCompletedBy('alice');
+		$this->runService->expects($this->once())
+			->method('signal')
+			->with($run, FlowTaskBridge::outcomeBagFor(task: $task))
+			->willReturn($run);
+
+		$this->bridge->continueRun(task: $task);
+	}//end testTheWakeCarriesTheOutcomeBag()
+
+	/**
 	 * A budget of N continues THE STREAM parked on the node, for N + 1
 	 * firings (the node's own re-entry is the completion landing), through
 	 * the one stream-scoped advance path.

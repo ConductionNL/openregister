@@ -211,10 +211,14 @@ class TaskController extends Controller {
 	 *                     as one parameter.
 	 * @param int $limit Page size.
 	 * @param int $offset Page offset.
+	 * @param string|null $includeBlocked 'true' to list tasks whose blocker is
+	 *                                    still open. An object or run anchor
+	 *                                    lists them regardless.
 	 *
 	 * @return JSONResponse The page: results, total, limit, offset.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -232,6 +236,7 @@ class TaskController extends Controller {
 		string $sort = TaskInboxCriteria::SORT_DUE,
 		int $limit = 25,
 		int $offset = 0,
+		?string $includeBlocked = null,
 	): JSONResponse {
 		$uid = $this->uid();
 		if ($uid === null) {
@@ -283,6 +288,7 @@ class TaskController extends Controller {
 			dueBefore: $dueBeforeAt,
 			sort: $sortKey,
 			sortDescending: $descending,
+			includeBlocked: ($includeBlocked !== null && filter_var($includeBlocked, FILTER_VALIDATE_BOOLEAN) === true),
 		);
 
 		return new JSONResponse($this->inbox->inbox(criteria: $criteria, limit: $limit, offset: $offset));
