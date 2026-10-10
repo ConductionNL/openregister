@@ -429,7 +429,7 @@ class ShippedConfigurationGuard {
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The default keeps every existing caller unchanged.
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function resetToBaseline(string $slug, array $live, string $path, bool $record = true): array {
 		$user = $this->session->getUser();
@@ -477,7 +477,7 @@ class ShippedConfigurationGuard {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function recordReset(string $slug, string $path, mixed $from, mixed $to): void {
 		$this->record(
