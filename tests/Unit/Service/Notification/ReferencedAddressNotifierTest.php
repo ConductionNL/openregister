@@ -37,6 +37,8 @@ use RuntimeException;
  * The `email` recipient kind: an address read off the object, directly or through a reference.
  *
  * @covers \OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier
+ *
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class ReferencedAddressNotifierTest extends TestCase {
 
