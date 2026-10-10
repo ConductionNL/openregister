@@ -41,4 +41,4 @@
 
 - [x] 6.1 `composer check:strict` components green on changed files (phpcs/phpstan/phpmd clean; psalm per-file artifact + full-run results recorded in the change report).
 - [x] 6.2 Full unit suite in php:8.3 container: 14432 tests — 15 red, ALL pre-existing (base commit 40378fa37 has 29 red incl. the 14 fixed here; every remaining failure also fails on the pristine base export).
-- [ ] 6.3 Live end-to-end re-verification of the bulk endpoint against a deployed instance (deferred: shared dev instance must not receive this branch's code until it merges; the pre-change live probe that proved the broken behaviour is documented in proposal.md).
+- [ ] 6.3 Live end-to-end re-verification of the bulk endpoint against a deployed instance (deferred: shared dev instance must not receive this branch's code until it merges; the pre-change live probe that proved the broken behaviour is documented in proposal.md). (live pass, decision 139)
