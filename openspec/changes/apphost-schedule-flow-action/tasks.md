@@ -46,12 +46,12 @@
 
 ## 5. Live verification
 
-- [ ] 5.1 On the dev instance, create a flow containing an `openregister.object-write` step, owned by a live user.
-- [ ] 5.2 Declare a `schedules[]` entry with `action: "openregister:flow-run"` and a short `interval` on a virtual app owned by that user, then let the reconciler sweep.
+- [ ] 5.1 On the dev instance, create a flow containing an `openregister.object-write` step, owned by a live user. (live pass, decision 139)
+- [ ] 5.2 Declare a `schedules[]` entry with `action: "openregister:flow-run"` and a short `interval` on a virtual app owned by that user, then let the reconciler sweep. (live pass, decision 139)
   - A single OpenConnector `job` exists for the schedule with the vetted `jobClass` and the owner's `userId`.
   - A second sweep with an unchanged declaration performs no write.
-- [ ] 5.3 Let the job execute and confirm through the UI that a run appears with a non-null `triggeredBy` and that the object-write actually wrote an object.
+- [ ] 5.3 Let the job execute and confirm through the UI that a run appears with a non-null `triggeredBy` and that the object-write actually wrote an object. (live pass, decision 139)
   - The written object's owner is the application owner, not a system or null user.
-- [ ] 5.4 Delete or disable the schedule's owner and confirm fail-closed behaviour end to end: no ownerless run is queued and the refusal is visible in the job log.
-- [ ] 5.5 Confirm the negative paths live: a non-allow-listed action is skipped and logged, and a `flowId` naming an object in another register queues nothing.
-- [ ] 5.6 Confirm a natively scheduled flow (`trigger: schedule`) now runs attributed, and that an ownerless one is skipped without advancing its last-fire marker.
+- [ ] 5.4 Delete or disable the schedule's owner and confirm fail-closed behaviour end to end: no ownerless run is queued and the refusal is visible in the job log. (live pass, decision 139)
+- [ ] 5.5 Confirm the negative paths live: a non-allow-listed action is skipped and logged, and a `flowId` naming an object in another register queues nothing. (live pass, decision 139)
+- [ ] 5.6 Confirm a natively scheduled flow (`trigger: schedule`) now runs attributed, and that an ownerless one is skipped without advancing its last-fire marker. (live pass, decision 139)

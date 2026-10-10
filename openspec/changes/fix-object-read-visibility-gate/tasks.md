@@ -18,30 +18,30 @@ behavioural change that is no longer being made.
 
 ## 1. openbuild fix (the actual unblock)
 
-- [ ] 1.1 Add `"read": ["authenticated"]` to the authorization block of all six
+- [ ] 1.1 Add `"read": ["authenticated"]` to the authorization block of all six (live pass, decision 139)
       schemas in `openbuild/lib/Settings/openbuild_register.json`.
       Anonymous callers stay excluded — `authenticated` requires `$userId !== null`
       (`MagicRbacHandler.php:414`).
-- [ ] 1.2 Re-import with **force**. A normal import advances the version WITHOUT
+- [ ] 1.2 Re-import with **force**. A normal import advances the version WITHOUT (live pass, decision 139)
       applying the change.
-- [ ] 1.3 Verify against the live instance, not by reading the JSON: a non-admin
+- [ ] 1.3 Verify against the live instance, not by reading the JSON: a non-admin (live pass, decision 139)
       session lists the applications, and an anonymous request still does not.
 
 ## 2. openbuild test follow-through
 
-- [ ] 2.1 Un-skip `versionRouting` 9.2 and the three `schema-access-scopes-rbac`
+- [ ] 2.1 Un-skip `versionRouting` 9.2 and the three `schema-access-scopes-rbac` (live pass, decision 139)
       scenarios; add the viewer-gating assertion omitted from `save-as-template`.
       Fixtures are already in `tests/e2e/support/appRoles.ts`; RBAC users and
       per-role sessions come from `globalSetup`.
-- [ ] 2.2 Full openbuild e2e suite green.
+- [ ] 2.2 Full openbuild e2e suite green. (live pass, decision 139)
 
 ## 3. OpenRegister cleanup (no behavioural change)
 
-- [ ] 3.1 `filterObjectsForPermissions()` — remove it, or wire it up. Removing is
+- [x] 3.1 `filterObjectsForPermissions()` — remove it, or wire it up. Removing is (verified: lib/Service/Object/PermissionHandler.php (method removed; no remaining callers or test references))
       preferred: the live gate is in SQL and a second, post-load object filter
       would duplicate it. If removed, delete
       `tests/Service/ObjectHandlersIntegrationTest.php:1429-1436` with it.
-- [ ] 3.2 `docs/features/organisation-roles.md:670,673` — point Read and List at
+- [x] 3.2 `docs/features/organisation-roles.md:670,673` — point Read and List at (verified: docs/features/organisation-roles.md)
       `MagicRbacHandler::buildRbacConditionsSql()`. This doc line is part of why
       the dead function looked live.
 - [ ] 3.3 Post the correction to Conduction/openbuild#76, which currently carries

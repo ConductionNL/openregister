@@ -18,7 +18,7 @@
 - [x] 3.1 Unit tests for scope parsing and the two paths.
 - [ ] 3.2 `tests/e2e/ci/content-search-index.spec.ts`: attach a text file to
       an object, search a word from the file, see a file hit that deep-links
-      to the object.
+      to the object. (live pass, decision 139)
 
 ## What was built: the scopes (1.2) and their test (part of 3.1)
 

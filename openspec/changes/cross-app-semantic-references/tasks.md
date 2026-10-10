@@ -4,7 +4,7 @@
 
 - [ ] 1.1 Support `configuration.implements: string[]` on `Schema` — default to
   `[jsonld.type]` when absent; validate each entry is an absolute IRI via
-  `JsonLdContextService::isAbsoluteIri()`. Reject non-IRI values on write.
+  `JsonLdContextService::isAbsoluteIri()`. Reject non-IRI values on write. (code exists, test missing: lib/Service/SemanticTypeResolver.php (implements derived from jsonld.type; write-time IRI rejection not confirmed, tests show non-IRI entries are dropped))
 - [ ] 1.2 Unit-test the default (`implements` derives from `jsonld.type`),
   multi-value advertisement, and IRI validation rejection.
 
@@ -13,16 +13,16 @@
 - [ ] 2.1 Add a `PropertySemanticReferenceValidator` (mirror
   `PropertyReferenceTypeValidator`): a property may declare
   `referenceSemanticType` (absolute IRI) and optional `referenceSemanticApp`
-  (string hint). Validate on schema write.
+  (string hint). Validate on schema write. (code exists, test missing: lib/Service/Integration/PropertySemanticReferenceValidator.php)
 - [ ] 2.2 Unit-test valid/invalid `referenceSemanticType`.
 
 ## 3. Resolver (OpenRegister)
 
-- [ ] 3.1 Add `SemanticTypeResolver::resolveSchemaByImplements(string $uri, ?int $consumingRegisterId = null): ?Schema`
+- [x] 3.1 Add `SemanticTypeResolver::resolveSchemaByImplements(string $uri, ?int $consumingRegisterId = null): ?Schema`
   over `SchemaMapper::findAll()`; request-scoped cache; **return null** (never
-  throw) when no installed schema matches.
-- [ ] 3.2 Deterministic tie-break: same register → `referenceSemanticApp` hint →
-  first by slug; `WARN` log naming the pick when >1 candidate.
+  throw) when no installed schema matches. (verified: lib/Service/SemanticTypeResolver.php, tests/Unit/Service/SemanticTypeResolverTest.php)
+- [x] 3.2 Deterministic tie-break: same register → `referenceSemanticApp` hint →
+  first by slug; `WARN` log naming the pick when >1 candidate. (verified: lib/Service/SemanticTypeResolver.php::tieBreak, tests/Unit/Service/SemanticTypeResolverTest.php::testTieBreakPrefersConsumingRegister)
 - [ ] 3.3 Unit-test: 0 providers → null; 1 provider → it; N providers → tie-break
   order; org/RBAC scoping honoured.
 
@@ -31,8 +31,8 @@
 - [ ] 4.1 Extend the integrations OCS capability payload with `semanticProviders:
   [{ uri, register, schema, appId, available, reason }]` computed from
   resolvable schemas + provider availability.
-- [ ] 4.2 Add `@NoAdminRequired` `SchemasController::resolveByImplements(uri)`
-  returning the resolved `{register, schema}` or `null`.
+- [x] 4.2 Add `@NoAdminRequired` `SchemasController::resolveByImplements(uri)`
+  returning the resolved `{register, schema}` or `null`. (verified: lib/Controller/SchemasController.php, appinfo/routes.php, tests/Unit/Controller/SchemasControllerTest.php)
 - [ ] 4.3 API test both surfaces (present provider, absent provider → null,
   RBAC-filtered).
 

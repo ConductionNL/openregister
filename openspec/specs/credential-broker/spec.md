@@ -520,3 +520,110 @@ throw); the app's OR app-key onboarding and the broker SHALL continue unchanged.
 - **WHEN** the onboarding hook runs while Doriath is absent, disabled, or its `ApplicationService` is unloadable
 - **THEN** it logs/outputs a warning and completes without error
 - **AND** the app's OpenRegister app-key onboarding and the credential broker continue to operate unchanged
+
+### Requirement: The catalogue registers anthropic-cli as an inject-only provider
+
+The provider catalogue (`lib/Settings/credential-providers.json`) MUST register an `anthropic-cli`
+provider carrying `inject_only: true`, and it MUST NOT carry a `baseUrl` or `allowRules`. Its secret is a
+Claude Max/Pro subscription OAuth token destined for the `claude` CLI's process environment, so there is
+no outbound request for the broker to proxy and no header for `injectAuth()` to substitute into — the
+constrained-proxy path cannot express this credential at any host.
+
+The entry's `$comment` MUST record that the secret leaves OpenRegister into the calling app, MUST name
+the two guards that bound it (owner/IDOR and `allowedApps`), and MUST state the personal-scope-only
+Terms-of-Service constraint.
+
+#### Scenario: the entry is inject-only and unbounded by host
+
+- **WHEN** the catalogue is read
+- **THEN** `anthropic-cli` carries `inject_only: true`
+- **AND** it declares no `baseUrl` and no `allowRules`
+
+#### Scenario: the existing anthropic proxy providers are untouched
+
+- **WHEN** `anthropic-cli` is added
+- **THEN** the host-locked `anthropic` and `anthropic-oauth` entries are unchanged
+- **AND** both keep their `baseUrl` and `allowRules`, so the zero-knowledge proxy path is unaffected
+
+### Requirement: An inject-only credential is never proxied
+
+The broker MUST refuse to proxy any `inject_only` credential, for every method and every path, and MUST
+release its secret only through the app-side resolution path after both guards pass. This holds for
+`anthropic-cli` by virtue of the flag alone — no provider-specific branch may be added.
+
+#### Scenario: a proxied request against an inject-only credential is denied
+
+- **WHEN** a caller invokes the broker's proxy path with an `anthropic-cli` credential
+- **THEN** the broker denies the call and makes no outbound request
+- **AND** the denial reason directs the caller to the app-side resolution path
+
+#### Scenario: the secret is released app-side only after both guards pass
+
+- **WHEN** the owning user's `anthropic-cli` credential grants the calling app and app-side resolution is requested
+- **THEN** the raw secret is returned only after the owner/IDOR guard and the `allowedApps` guard have both passed
+
+#### Scenario: a non-owner is refused
+
+- **WHEN** app-side resolution is requested for a credential owned by another user, or by an app the credential does not grant
+- **THEN** the broker denies and returns no secret
+
+#### Scenario: proxy providers remain zero-knowledge
+
+- **WHEN** app-side resolution is requested for the host-locked `anthropic-oauth` credential
+- **THEN** it returns nothing, because a proxy credential's secret never leaves OpenRegister
+
+### Requirement: A subscription credential is personal-scope only
+
+An `anthropic-cli` credential MUST be treated as personal-scope only: a Claude Max/Pro subscription
+serves its own subscriber under the Anthropic Terms of Service, so the credential may serve only its
+owner and MUST be rejected at organisation scope.
+
+This catalogue entry *declares* the constraint. Enforcement lives in the consuming app's resolution
+path, which is the only place a scope decision can be made — a catalogue entry has no resolution path of
+its own. Until a consumer exists, no code can use the credential, so the constraint is inert rather than
+bypassed.
+
+#### Scenario: the constraint is recorded normatively
+
+- **WHEN** the `anthropic-cli` entry is reviewed
+- **THEN** its `$comment` states that the credential is personal-scope only and must be rejected at organisation scope
+- **AND** it names the Anthropic Terms of Service as the reason
+
+#### Scenario: the API-key proxy provider is preferred where it works
+
+- **WHEN** an operator needs pay-per-token Anthropic API access rather than a subscription
+- **THEN** the host-locked `anthropic` provider is the correct choice, because it is zero-knowledge and strictly stronger
+
+### Requirement: GitHub code search allow-rule
+
+The provider catalogue's `github` entry SHALL permit `GET /search/code` so a
+caller can find files by name across every repository the token can see. The
+rule SHALL match the path exactly (after the broker strips the query string),
+SHALL be GET only, and SHALL NOT grant any other search endpoint or any sub-path
+of `/search/code`. The per-file read stays covered by the existing
+`GET /repos/*` rule; no additional contents rule is added.
+
+#### Scenario: Code search with a query and a page is allowed
+
+- **WHEN** a brokered call for a `github` credential requests
+  `GET /search/code?q=filename%3Apubliccode.yml+path%3A%2F&per_page=100&page=3`
+- **THEN** the query string is stripped for rule matching and the
+  `GET /search/code` rule matches
+- **AND** the outbound URL is
+  `https://api.github.com/search/code?q=filename%3Apubliccode.yml+path%3A%2F&per_page=100&page=3`
+  with the broker-injected `Authorization` header
+
+#### Scenario: The per-file contents read stays allowed
+
+- **WHEN** a brokered call requests
+  `GET /repos/ConductionNL/opencatalogi/contents/publiccode.yml?ref=main`
+- **THEN** the existing `GET /repos/*` rule matches and the call proceeds
+  host-locked to `api.github.com`
+
+#### Scenario: Writes and other searches stay refused
+
+- **WHEN** a brokered call requests `POST`, `PUT` or `DELETE` on `/search/code`,
+  or `GET /search/commits`, `GET /search/users`, `GET /search/code/extra` or
+  `GET /search/codes`
+- **THEN** the broker refuses it with `no allow-rule matches` and makes no
+  outbound call

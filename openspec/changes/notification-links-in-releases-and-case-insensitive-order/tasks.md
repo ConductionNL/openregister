@@ -27,4 +27,4 @@
 - [x] 6.1 On :8099, in a PHP process that loads Nextcloud but no apps (as `occ background-job:worker` does), the registry resolves the pipelinq client deep link (`/apps/pipelinq/clients/{uuid}`); with the old registry the same probe returns null.
 - [x] 6.2 On :8099 the fallback `/index.php/apps/openregister/objects/20/28/{uuid}` opens that client in OpenRegister's object view.
 - [x] 6.3 On :8099 `_order={"name":"asc"}` on pipelinq clients lists "Gemeente Voorbeeld" before "GGD Rotterdam-Rijnmond" (case-insensitive).
-- [ ] 6.4 After ConductionNL/.github#832 is merged and a pipelinq beta is released: `GET /apps/openregister/api/manifest/pipelinq` on cloud.conduction.nl answers 200 and a "Client changed" notification opens the client.
+- [ ] 6.4 After ConductionNL/.github#832 is merged and a pipelinq beta is released: `GET /apps/openregister/api/manifest/pipelinq` on cloud.conduction.nl answers 200 and a "Client changed" notification opens the client. (live pass, decision 139)

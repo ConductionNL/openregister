@@ -67,5 +67,5 @@
 
 - [x] 4.1 Unit tests for filters, RBAC join and export contents (filters and export
       above; the RBAC join is 1.2's `ReadableAuditTrailListerTest`).
-- [ ] 4.2 `tests/e2e/ci/audit-log-page.spec.ts`: as admin, filter by actor (not run: e2e needs a browser and 3.1)
+- [ ] 4.2 `tests/e2e/ci/audit-log-page.spec.ts`: as admin, filter by actor (not run: e2e needs a browser and 3.1) (live pass, decision 139)
       and period, see the rows, export and check the hash columns.

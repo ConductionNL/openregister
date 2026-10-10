@@ -67,8 +67,8 @@
       unresolvable calendar counted rather than skipped, one failing timer not
       abandoning the batch, and the projection being the engine's own formula.
       Two mutation checks.
-- [ ] 3.1b Fired rungs not repeated, and resume after a killed pass: both are
+- [ ] 3.1b Fired rungs not repeated, and resume after a killed pass: both are (live pass, decision 139)
       properties of `FlowTimerService::supersede()` and of the job's cursor
       against a real database, so they want the live-DB suite rather than a
       double.
-- [ ] 3.2 `tests/e2e/ci/calendar-recompute.spec.ts`: add an exception on the admin page, run the job, read the superseded timer's history.
+- [ ] 3.2 `tests/e2e/ci/calendar-recompute.spec.ts`: add an exception on the admin page, run the job, read the superseded timer's history. (live pass, decision 139)
