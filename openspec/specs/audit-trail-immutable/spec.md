@@ -304,7 +304,7 @@ The audit trail table SHALL carry an index on `(object_uuid, created)`, so a rea
 
 ### Requirement: Every user-facing read of an object is logged as a read
 
-`GetObject::find()` (`lib/Service/Object/GetObject.php:149`) SHALL write an audit trail entry with action `read` for every object it returns, on any schema, sensitive or not, while the instance setting `auditTrailsEnabled` is on (default on, `lib/Service/Settings/ConfigurationSettingsHandler.php:327`; read by `GetObject::isAuditTrailsEnabled()` at `:451`, which falls back to on when the setting cannot be read). The entry MUST name the reader and the object and MUST NOT carry a field diff (`AuditTrailMapper::buildAuditTrail()` treats `read` as a no-new-state action, `lib/Db/AuditTrailMapper.php:861`). A caller that loads an object as part of another operation MUST be able to skip the entry: `find()` takes `$_audit` (default `true`, `:157`), passed through by `ObjectService::find()` (`lib/Service/ObjectService.php:1087`), and `findSilent()` (`:228`) never logs. The audit statistics and chart count `read` beside create, update and delete (`lib/Db/AuditTrailMapper.php:1834`), so `/audit-trails` shows who viewed a record.
+`GetObject::find()` (`lib/Service/Object/GetObject.php`) SHALL write an audit trail entry with action `read` for every object it returns, on any schema, sensitive or not, while the instance setting `auditTrailsEnabled` is on (default on, `lib/Service/Settings/ConfigurationSettingsHandler.php:327`). The entry SHALL be written through `ReadHistoryService::registerAuditRead()` (`lib/Service/Interaction/ReadHistoryService.php`), the one read registration, which reads the setting and falls back to on when it cannot be read. The entry MUST name the reader and the object and MUST NOT carry a field diff (`AuditTrailMapper::buildAuditTrail()` treats `read` as a no-new-state action). A caller that loads an object as part of another operation MUST be able to skip the entry: `find()` takes `$_audit` (default `true`), passed through by `ObjectService::find()`, and `findSilent()` never logs. Read entries MUST NOT be throttled or merged: each audited read is its own row, and features built on reads (the `_recent` lens) collapse repeats at query time. The audit statistics and chart count `read` beside create, update and delete, so `/audit-trails` shows who viewed a record.
 
 #### Scenario: opening a record writes a read entry
 
@@ -319,7 +319,7 @@ The audit trail table SHALL carry an index on `(object_uuid, created)`, so a rea
 - **GIVEN** audit trails are enabled
 - **WHEN** a flow node invocation loads its subject object only to check the boundary, calling `find()` with `_audit: false` (`lib/Controller/FlowNodeRunController.php:402`)
 - **THEN** no `read` entry MUST be written for that load
-- @e2e exclude {internal call path with no page; covered by the `_audit` parameter in GetObject::find()}
+- @e2e exclude {internal call path with no page; covered by ReadHistoryServiceTest and ReadRegistrationWiringTest}
 
 #### Scenario: the instance setting switches read logging off
 
@@ -327,6 +327,13 @@ The audit trail table SHALL carry an index on `(object_uuid, created)`, so a rea
 - **WHEN** any user opens an object
 - **THEN** no `read` entry MUST be written
 - @e2e exclude {instance setting read on the server; no page renders the absence of an entry}
+
+#### Scenario: opening the same record twice writes two entries
+
+- **GIVEN** audit trails are enabled
+- **WHEN** a user opens the same object twice within one minute
+- **THEN** the audit trail MUST hold two `read` entries
+- @e2e exclude {no throttle exists to observe; covered by ReadHistoryServiceTest, which asserts one write per registered read}
 
 ### Requirement: Sortable headers on OpenRegister's own lists sort
 
