@@ -7,7 +7,7 @@
 
 ### Requirement: OpenRegister MUST judge a form's mapping against its destination schema
 
-`FormDestinationValidator::validate(mapping, schema)` SHALL return one finding per problem, each `{ field?, property, code, message }`. It SHALL report a required property with no field, no fixed value, no `default` and no `x-openregister.serverSet` marker as `required-unmapped`; a field into a property the schema lacks as `property-unknown` when the schema forbids additional properties; a type or format that cannot produce the property's as `type-mismatch` or `format-mismatch`; a free-text field into an enum as `enum-unconstrained`; a choice option outside the enum as `enum-value-unknown`; a field constraint looser than the property's as `constraint-looser`; a fixed value the property refuses as `fixed-value-invalid`. It SHALL extend `TaskFormReader::validate` so flow task forms and object forms are judged by one service.
+`FormDestinationValidator::validate(mapping, schema, options)` SHALL return one finding per problem, each `{ field?, property, code, message }`. The mapping is `{ fields: [ { field, property, type?, format?, options?, maxLength?, minLength?, maximum?, minimum?, pattern? } ], fixed: { property: value } }`. It SHALL report a required property (schema `required` list or property `required: true`) with no field, no fixed value, no `default`, no `computed` and no `x-openregister.serverSet` marker as `required-unmapped`; a field or fixed value into a property the schema lacks as `property-unknown`, unless the schema's configuration sets `additionalProperties: true` (OpenRegister schemas carry no top-level `additionalProperties`, so "forbids extras" would never hold); a field into a read-only property as `property-read-only`; a type or format that cannot produce the property's as `type-mismatch` or `format-mismatch`; a free-text field into an enum as `enum-unconstrained`; a choice option outside the enum as `enum-value-unknown`; a field bound looser than the property's (or missing where the property sets one) as `constraint-looser`; a fixed value the property refuses as `fixed-value-invalid`; a form for a `public` or `authenticated` audience into a schema whose authorization does not grant that audience create as `destination-not-public`; and a schema whose configuration sets `staging: true` as `destination-is-staging`. It SHALL extend `TaskFormReader::validate` so flow task forms and object forms are judged by one service. `POST /api/forms/validate` SHALL return `{ accepted, findings }` for an author; a mapping with findings is not accepted, from the first release (Q9, Ruben, 10 October 2026: no report-only release).
 
 #### Scenario: A required property with no source is reported
 
@@ -30,7 +30,7 @@
 
 ### Requirement: A submit MUST create the destination in one request and return its reference
 
-`FormSubmitService::submit(destination, mapping, payload, subject, idempotencyKey)` SHALL validate the payload with the destination schema's full validator, regardless of the schema's hard-validation flag, then create the object under the subject's RBAC. It SHALL return `reference`, `id`, `receivedAt` and a `confirmation` map of every property marked `x-openregister.confirmation: true`, read after every create listener ran. `POST /api/forms/{formId}/submit` SHALL wrap it for forms stored in OpenRegister, with `#[PublicPage]`, `#[AnonRateLimit]` and `#[UserRateLimit]` per ADR-082.
+`FormSubmitService::submit(destination, mapping, payload, subject, idempotencyKey, scope)` and `submitAll(writes, payload, subject, idempotencyKey, scope)` SHALL map the payload through the mapping (only mapped fields and fixed values reach the object; without a mapping the payload minus `_` and `@` keys is the object), validate it with the destination schema's full validator regardless of the schema's hard-validation flag (properties the server fills are excused from `required`), then create the object under the subject's RBAC; an anonymous submit is saved unowned. It SHALL return `reference` (the property marked `x-openregister.reference: true`, else the uuid), `id`, `receivedAt` (the object's created moment), a `confirmation` map of every property marked `x-openregister.confirmation: true`, read after every create listener ran, and `objects[]` listing each write. A refused payload SHALL answer 422 `{ message, findings }`; a subject not allowed to create 403; an unknown destination 404; an unreachable destination 503 "try again later" with nothing created (Q3). `POST /api/forms/{formId}/submit` SHALL wrap it for forms stored in OpenRegister, with `#[PublicPage]`, `#[AnonRateLimit]`, `#[UserRateLimit]` and `#[BruteForceProtection]` per ADR-082; an unknown, unpublished or destination-less form SHALL answer one identical 404 and register a brute-force attempt; a filled honeypot field `_hp` SHALL answer 202 and store nothing; a form whose `audience` is not `public` SHALL answer 401 to an anonymous visitor. A form stored in OpenRegister is any object whose body carries `status: published` (or `published: true`), `destination: { register, schema }` or `writes[]`, and optionally `mapping` and `audience`.
 
 #### Scenario: The response carries the listener-computed fields
 
@@ -62,7 +62,7 @@ The service SHALL validate every write before the first. When a write is refused
 
 ### Requirement: Upload tokens MUST hold bytes only and expire
 
-`POST /api/forms/{formId}/uploads` SHALL accept one file, check it against the destination's file rules, and return a token. A submit SHALL claim tokens by id. Unclaimed tokens SHALL be deleted after 24 hours by a background job that logs its count.
+`POST /api/forms/{formId}/uploads` SHALL accept one file and the destination `property` it is for, check it against that property's file rules (`maxSize` in bytes or `fileConfiguration.maxSize` in MB, `allowedTypes` or `fileConfiguration.allowedMimeTypes`, the same reader the save path uses), and return `{ token, expiresAt }`. A submit SHALL claim tokens by a payload value `{ "uploadToken": "<token>" }` for the property the token was issued for, and only after its last write succeeded, so a refused submit leaves the files for the retry. Unclaimed tokens SHALL be deleted after 24 hours by an hourly background job that logs its count, a zero included.
 
 #### Scenario: An oversized file is refused at upload
 
@@ -72,7 +72,7 @@ The service SHALL validate every write before the first. When a write is refused
 
 ### Requirement: Saving a schema MUST re-check the forms that submit into it
 
-When a schema is saved, the validator SHALL run for every published form whose destination it is. The owning app's setting `formDestinationBreak` (`unpublish`, the default, or `refuse`) SHALL decide the outcome. The save response SHALL list every affected form with its findings.
+When a schema's properties or required list are saved, OpenRegister SHALL dispatch `FormDestinationDependentsEvent` with the proposed definition; each owning app adds its published forms into that schema, and the validator SHALL run for each. The owning app's setting `formDestinationBreak` (`unpublish`, the default, or `refuse`) SHALL decide the outcome (Q7): any `refuse` blocks the save with 409 listing the forms and nothing is unpublished; otherwise, after the save, each broken form is unpublished through its owning app, its author is notified (`form_unpublished`), and the save response SHALL list every affected form with its outcome and findings under `affectedForms`. This applies from the first release (Q9).
 
 #### Scenario: A new required property unpublishes a form that lacks it
 
@@ -82,7 +82,7 @@ When a schema is saved, the validator SHALL run for every published form whose d
 
 ### Requirement: A create refusal MUST use the per-property error shape
 
-`ObjectsController::create` SHALL answer a validation failure with the same `{ status, message, errors: [{ property, message }] }` body that update and patch use, with HTTP 422.
+`ObjectsController::create` SHALL answer a validation failure through the same handler update and patch use, so the body is the same `{ status, message, errors: [{ property, message }] }` and the status is the same (400 today; moving all three to 422 is question Q-openregister-F1).
 
 #### Scenario: Create and update refuse alike
 

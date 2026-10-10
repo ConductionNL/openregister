@@ -64,12 +64,16 @@ canonical `$defs.visibleWhen`; optional per-step `writes[]` of
 - **WHEN** it is written
 - **THEN** the write is rejected — access is never inferred
 
-### Requirement: The run API MUST stage answers and commit only at declared steps
+### Requirement: A journey run MUST store no written ids and MUST commit a step all or none
 
-The API SHALL expose start, answer, resume and submit operations over a
-`journeyRun`. Answers SHALL be persisted to the run. Objects SHALL be created
-or updated only at a step declaring `writes[]`, in declared order, with a later
-entry able to reference an earlier entry's id.
+Amended by `form-destination-validator` (decision 179, ADR-117; decision 180
+for drafts). The API SHALL expose start, answer, resume and submit operations
+over a `journeyRun`. The run SHALL NOT stage answers or store ids of written
+objects. A resumable draft is the destination object itself, saved with
+lifecycle status `draft` (decision 180), not answers held on the run. Objects
+SHALL be created only when a step declaring `writes[]` is submitted, through
+`FormSubmitService`, all or none, in declared order, with a later entry able
+to reference an earlier entry's id.
 
 #### Scenario: Advancing without a writes step creates nothing
 
@@ -84,13 +88,12 @@ entry able to reference an earlier entry's id.
 - **WHEN** the step commits
 - **THEN** the contact carries the organisation's id
 
-#### Scenario: A partial failure is recorded and is not duplicated on retry
+#### Scenario: A partial failure leaves nothing behind
 
-- **GIVEN** a step whose second write fails validation after the first
-  succeeded
-- **WHEN** the step is re-submitted
-- **THEN** the failure is recorded on the run, and the first object is updated
-  rather than created a second time
+- **GIVEN** a step whose second write is refused after the first succeeded
+- **WHEN** the step is submitted
+- **THEN** the first object is deleted before the response, and the filer sees
+  the second write's findings
 
 #### Scenario: An answer for a field the current step does not declare is refused
 

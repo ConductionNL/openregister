@@ -19,7 +19,7 @@ A form today is checked against its own field list. The destination schema judge
 - **Upload tokens**: `POST /api/forms/{formId}/uploads` holds file bytes only, expires after 24 hours, purge counted.
 - **Schema save checks dependent forms**: a schema change that invalidates a published form is refused or unpublishes the form, per the owning app's setting.
 - **Create errors match update errors**: `ObjectsController::create` returns the per-property shape on a validation failure.
-- **Two schema markers**: `x-openregister.confirmation` (returned to the submitter) and `x-openregister.serverSet` (filled by a listener, so not reported as unmapped).
+- **Three schema markers**: `x-openregister.confirmation` (returned to the submitter), `x-openregister.serverSet` (filled by a listener, so not reported as unmapped) and `x-openregister.reference` (the property returned as `reference`). Two schema configuration keys survive a save: `staging` and `additionalProperties`.
 - **`or-form-and-journey-registry` amended**: `journeyRun` no longer stages written ids; a step commits all or nothing.
 
 ## Out of scope
@@ -28,4 +28,4 @@ Authoring screens (buildiq), the public host (portaliq), the case fields (dossiq
 
 ## Rollback
 
-The validator ships in report mode for one release (findings returned, save allowed). The submit service is additive; callers switch to it in their own changes.
+Q9 (Ruben, 10 October 2026): the checks refuse from the first release, with no report-only release. The submit service and routes are additive; callers switch to them in their own changes. The create error body changes from a bare string to the update shape (same status). Drafts (decision 180) are a separate, stacked change.

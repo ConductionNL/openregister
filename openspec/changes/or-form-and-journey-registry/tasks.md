@@ -16,13 +16,13 @@
 - [ ] Implement
 - [ ] Test
 
-### Task 2: Journey run service — staged answers, committed writes
-- **spec_ref**: `openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md#requirement-the-run-api-must-stage-answers-and-commit-only-at-declared-steps`
+### Task 2: Journey run service: committed writes through FormSubmitService
+- **spec_ref**: `openspec/changes/or-form-and-journey-registry/specs/form-and-journey-registry/spec.md#requirement-a-journey-run-must-store-no-written-ids-and-must-commit-a-step-all-or-none`
 - **files**: `lib/Service/JourneyRunService.php`, `tests/Unit/Service/JourneyRunServiceTest.php`
 - **acceptance_criteria**:
-  - Answers persist to the `journeyRun`; no target-register object exists until a step declaring `writes[]` commits — proven by querying the target register mid-run
-  - Writes execute in declared order; a later entry resolves a preceding entry's id
-  - A mid-`writes[]` failure records the failure AND the already-written id; re-submitting UPDATES that object rather than creating a second
+  - No target-register object exists until a step declaring `writes[]` commits, proven by querying the target register mid-run; the run stores no answers and no written ids (decision 179; a draft is the destination object in status `draft`, decision 180)
+  - Writes go through `FormSubmitService::submitAll` (form-destination-validator), in declared order; a later entry resolves a preceding entry's id with `{ "$write": "<as>" }`
+  - A mid-`writes[]` refusal deletes the earlier writes of that step before the response (all or none)
   - An answer for a field outside the current step is refused — the client does not select its own scope
 - [ ] Implement
 - [ ] Test
