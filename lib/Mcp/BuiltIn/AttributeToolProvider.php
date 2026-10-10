@@ -156,7 +156,7 @@ class AttributeToolProvider implements IMcpToolProvider {
 			// `#[McpTool]` reached the scanner and then vanished before the
 			// grant matrix: the attribute, the scanner and the bridge all
 			// carried them, and this one copy step did not.
-			foreach (['subject', 'action'] as $taxonomyKey) {
+			foreach (['subject', 'action', 'reach'] as $taxonomyKey) {
 				if (array_key_exists($taxonomyKey, $entry) === true) {
 					$descriptor[$taxonomyKey] = $entry[$taxonomyKey];
 				}
