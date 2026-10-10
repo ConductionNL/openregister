@@ -224,6 +224,7 @@ class CasePlanServiceTest extends TestCase {
 			$this->service()->createPlan(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: 'alice');
 			$this->fail('one plan per object');
 		} catch (CaseValidationException $refusal) {
+			$this->assertInstanceOf(\OCA\OpenRegister\Exception\CasePlanExistsException::class, $refusal, 'An existing plan is told apart by type.');
 			$this->assertStringContainsString('already has a case plan', $refusal->getMessage());
 		}
 
@@ -544,4 +545,99 @@ class CasePlanServiceTest extends TestCase {
 		$completions = array_filter($this->audits->findForItem(2), static fn (CaseItemAudit $entry): bool => $entry->getToState() === CaseItem::STATE_COMPLETED);
 		$this->assertSame([], $completions);
 	}//end testEventDrivenEvaluationFailuresAreSwallowed()
+	/**
+	 * An app's own code acts without a session as `system:<app>`: it creates
+	 * and reads a plan nobody could see by visibility, the audit names the
+	 * app, and a malformed app id is refused. The user verbs keep refusing a
+	 * missing identity.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 *
+	 * @return void
+	 */
+	public function testSystemCallersActAsANamedApp(): void {
+		$this->anchor = $this->createMock(CaseAnchorReader::class);
+		$this->anchor->method('read')->willReturn(['status' => 'open']);
+		$this->anchor->method('mayRead')->willReturn(false);
+
+		$plan = $this->service()->createPlanAsSystem(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), app: 'dossiq');
+		$this->assertCount(7, $plan['items']);
+		$this->assertSame('system:dossiq', $this->audits->findForItem(1)[0]->getActor());
+		$this->assertCount(7, $this->service()->getPlanAsSystem(objectUuid: CaseFixtures::OBJECT, app: 'dossiq')['items']);
+
+		foreach (['', 'Dossiq', 'dos:siq', 'dos siq'] as $bad) {
+			try {
+				$this->service()->getPlanAsSystem(objectUuid: CaseFixtures::OBJECT, app: $bad);
+				$this->fail('app id refused: ' . $bad);
+			} catch (CaseValidationException $refusal) {
+				$this->assertStringContainsString('app id', $refusal->getMessage());
+			}
+		}
+
+		try {
+			$this->service()->createPlan(objectUuid: 'other-object', registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: null);
+			$this->fail('a null identity stays refused on the user verb');
+		} catch (CaseAccessDeniedException $denied) {
+			$this->assertStringContainsString('no acting identity', $denied->getMessage());
+		}
+
+		$this->expectException(DoesNotExistException::class);
+		$this->service()->getPlanAsSystem(objectUuid: 'no-plan', app: 'dossiq');
+	}//end testSystemCallersActAsANamedApp()
+
+	/**
+	 * ensureItems brings a plan over with its recorded states as the named
+	 * app and runs no cascade: an imported active stage does not enter its
+	 * children.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 *
+	 * @return void
+	 */
+	public function testEnsureItemsBringsAPlanOverAsTheApp(): void {
+		$result = $this->service()->ensureItems(
+			objectUuid: CaseFixtures::OBJECT,
+			registerId: 1,
+			schemaId: 1,
+			definition: CasePlanEnsurerTest::migrated(),
+			history: [],
+			app: 'dossiq'
+		);
+
+		$this->assertSame(['intake', 'check', 'beoordeling', 'volledig', 'besluit'], $result['created']);
+		$states = array_column($result['items'], 'state', 'key');
+		$this->assertSame('available', $states['besluit'], 'No cascade: nothing entered besluit.');
+		$this->assertSame('system:dossiq', $this->audits->findForItem(1)[0]->getActor());
+
+		$this->expectException(CaseValidationException::class);
+		$this->service()->ensureItems(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanEnsurerTest::migrated(), history: [], app: 'Not An App');
+	}//end testEnsureItemsBringsAPlanOverAsTheApp()
+	/**
+	 * An enforcing expiry terminates the item through the one transition
+	 * path, with the timer as the cause; an item already terminal, or gone,
+	 * is left alone.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 *
+	 * @return void
+	 */
+	public function testAnExpiredTimerTerminatesItsItem(): void {
+		$this->items->seed(
+			[
+				CaseFixtures::row(id: 1, key: 'intake', type: CaseItem::TYPE_STAGE, state: CaseItem::STATE_ACTIVE),
+				CaseFixtures::row(id: 2, key: 'check', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE, parentId: 1),
+				CaseFixtures::row(id: 3, key: 'done', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_COMPLETED, parentId: 1),
+			]
+		);
+
+		$this->assertTrue($this->service()->onTimerExpired(itemUuid: 'item-2', timerUuid: 'timer-9'));
+		$this->assertSame(CaseItem::STATE_TERMINATED, $this->items->findByUuid(uuid: 'item-2')->getState());
+		$last = $this->audits->findForItem(2)[count($this->audits->findForItem(2)) - 1];
+		$this->assertSame(CaseItemAudit::CAUSE_REALISATION, $last->getCause());
+		$this->assertSame('flow-timer:timer-9', $last->getCauseRef());
+
+		$this->assertFalse($this->service()->onTimerExpired(itemUuid: 'item-3', timerUuid: 'timer-9'), 'A terminal item is left alone.');
+		$this->assertSame(CaseItem::STATE_COMPLETED, $this->items->findByUuid(uuid: 'item-3')->getState());
+		$this->assertFalse($this->service()->onTimerExpired(itemUuid: 'item-404', timerUuid: 'timer-9'), 'A vanished item is not an error.');
+	}//end testAnExpiredTimerTerminatesItsItem()
 }//end class

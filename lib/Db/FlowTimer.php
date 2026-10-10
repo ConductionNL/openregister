@@ -212,7 +212,7 @@ class FlowTimer extends Entity implements JsonSerializable {
 	 *
 	 * @var array<int, string>
 	 */
-	public const SUBJECT_TYPES = ['task', 'object', 'run'];
+	public const SUBJECT_TYPES = ['task', 'object', 'run', 'case-item'];
 
 	/**
 	 * The three reserved enforcing outcomes; `transition:<action>` is the fourth shape.

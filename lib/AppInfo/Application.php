@@ -3254,6 +3254,17 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Event\CaseItemTransitionedEvent::class,
 			\OCA\OpenRegister\Listener\FlowTriggerListener::class
 		);
+		// Plan items on the shared clock (one-engine-bpmn-and-cmmn): entering
+		// active arms an item's timers, a terminal state cancels them, and an
+		// enforcing expiry terminates the item. The case layer keeps no clock.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\CaseItemTransitionedEvent::class,
+			\OCA\OpenRegister\Listener\CaseItemTimerListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\FlowTimerFiredEvent::class,
+			\OCA\OpenRegister\Listener\CaseItemTimerListener::class
+		);
 
 		// Business-timer cancellation propagation (flow-business-timers, design
 		// D-9): the SAME terminal event, and the run-terminal one, also cancel

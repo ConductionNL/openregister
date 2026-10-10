@@ -98,7 +98,8 @@ class CaseRealisationService {
 		}
 
 		$flow = trim((string)($item->getPlanSettings()['flows'][(string)$item->getItemKey()] ?? ''));
-		if ($item->getPlanItemType() === CaseItem::TYPE_STAGE && $flow !== '') {
+		$runnable = in_array($item->getPlanItemType(), [CaseItem::TYPE_STAGE, CaseItem::TYPE_PROCESS_TASK], true);
+		if ($runnable === true && $flow !== '') {
 			$run = $this->runs->queue(
 				flowId: $flow,
 				subject: [
