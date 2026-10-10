@@ -66,6 +66,11 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The submit IS the meeting point of
  * mapping, validation, save, delete, uploads and idempotency; each collaborator is one
  * of those steps and none is reached any other way.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The complexity is the submit contract:
+ * map, validate all, write in order, compensate, answer. Split, the all-or-none rule would
+ * live in two files that must agree on what a plan is.
+ * @SuppressWarnings(PHPMD.StaticAccess) FormDestinationValidator::marker() and
+ * markedProperties() are pure reads of a schema property's `x-openregister` block.
  *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
  */
@@ -325,10 +330,10 @@ class FormSubmitService {
 	private function plan(array $writes, array $payload, string $scope): array {
 		$plans = [];
 		foreach (array_values($writes) as $index => $write) {
-			$named = trim((string)($write['as'] ?? '')) !== '';
-			$as = (string)($write['as'] ?? ('write' . $index));
+			$writeName = trim((string)($write['as'] ?? ''));
+			$named = $writeName !== '';
 			if ($named === false) {
-				$as = 'write' . $index;
+				$writeName = 'write' . $index;
 			}
 
 			$mapping = null;
@@ -338,7 +343,7 @@ class FormSubmitService {
 
 			[$object, $files, $tokens] = $this->mapPayload(mapping: $mapping, payload: $payload, scope: $scope);
 			$plans[] = [
-				'as' => $as,
+				'as' => $writeName,
 				'named' => $named && count($writes) > 1,
 				'register' => $this->register(reference: $write['register'] ?? null),
 				'schema' => $this->schema(reference: $write['schema'] ?? null),
@@ -372,28 +377,10 @@ class FormSubmitService {
 	 * @throws FormSubmitRefusedException 422 for an unknown, expired or misdirected upload token.
 	 */
 	private function mapPayload(?array $mapping, array $payload, string $scope): array {
-		$pairs = [];
-		if ($mapping === null) {
-			foreach ($payload as $name => $value) {
-				$name = (string)$name;
-				if (str_starts_with($name, '_') === false && str_starts_with($name, '@') === false) {
-					$pairs[$name] = $value;
-				}
-			}
-		}
-
-		foreach ((array)($mapping['fields'] ?? []) as $field) {
-			$name = (string)($field['field'] ?? '');
-			$property = (string)($field['property'] ?? '');
-			if ($property !== '' && array_key_exists($name, $payload) === true) {
-				$pairs[$property] = $payload[$name];
-			}
-		}
-
 		$object = [];
 		$files = [];
 		$tokens = [];
-		foreach ($pairs as $property => $value) {
+		foreach ($this->pairsOf(mapping: $mapping, payload: $payload) as $property => $value) {
 			$token = $this->tokenOf(value: $value);
 			if ($token === null) {
 				$object[$property] = $value;
@@ -424,6 +411,38 @@ class FormSubmitService {
 
 		return [$object, $files, $tokens];
 	}//end mapPayload()
+
+	/**
+	 * Property => value: the mapped fields, or without a mapping the payload minus control and metadata keys.
+	 *
+	 * @param array<string, mixed>|null $mapping The mapping.
+	 * @param array<string, mixed>      $payload The payload.
+	 *
+	 * @return array<string, mixed> The pairs.
+	 */
+	private function pairsOf(?array $mapping, array $payload): array {
+		$pairs = [];
+		if ($mapping === null) {
+			foreach ($payload as $name => $value) {
+				$name = (string)$name;
+				if (str_starts_with($name, '_') === false && str_starts_with($name, '@') === false) {
+					$pairs[$name] = $value;
+				}
+			}
+
+			return $pairs;
+		}
+
+		foreach ((array)($mapping['fields'] ?? []) as $field) {
+			$name = (string)($field['field'] ?? '');
+			$property = (string)($field['property'] ?? '');
+			if ($property !== '' && array_key_exists($name, $payload) === true) {
+				$pairs[$property] = $payload[$name];
+			}
+		}
+
+		return $pairs;
+	}//end pairsOf()
 
 	/**
 	 * The upload token a payload value carries, or null.

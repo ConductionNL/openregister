@@ -81,6 +81,9 @@ class FormsController extends Controller {
 	 * @param IThrottler               $throttler   Counts guesses at form ids.
 	 * @param IL10N                    $l10n        Translations.
 	 * @param LoggerInterface          $logger      Logs a throttler failure.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Three routes over four services, plus the
+	 * request, session, throttler, translations and logger every public controller here takes.
 	 */
 	public function __construct(
 		string $appName,
