@@ -578,37 +578,25 @@ Endpoint execution MUST be gated by group-based access control and MUST persist 
 
 ### Requirement: A user can star an object without changing it
 
-The system SHALL let a user mark any object they may read as a favourite and
-unmark it, storing the mark per user outside the object, so that starring
-writes no audit entry and no version on the object. Object reads and lists
-SHALL carry `@self.favourite` for the current user.
+The star is retired: starring is following with notifications off. For one release the system SHALL keep the favourite surface as a deprecated alias of following. `PUT .../favourite` SHALL follow the object for the current user with notifications off when they do not follow it yet, and SHALL leave an existing follow and its notification setting unchanged. `DELETE .../favourite` SHALL unfollow. Both SHALL answer with a `Deprecation: true` header and a `Link` header naming `.../watch` as `successor-version`. Object reads and lists SHALL carry `@self.favourite` with the same value as `@self.watching`. Neither route SHALL write an audit entry or a version on the object.
 
 #### Scenario: starring leaves the object untouched
 
 - **GIVEN** an object with three audit entries
 - **WHEN** a user stars it and reads it back
-- **THEN** `@self.favourite` is true and the object still has three audit entries
+- **THEN** `@self.favourite` and `@self.watching` are true, `@self.watchNotify` is false, and the object still has three audit entries
 - @e2e tests/e2e/ci/favourites-and-recent.spec.ts
 
-### Requirement: Opening an object records a per-user view
+#### Scenario: starring an object you follow keeps your notifications
 
-The system SHALL record a view (user, object, time) when a user reads an
-object's detail, at most once per user, object and minute, keeping the most
-recent 100 views per user.
-
-#### Scenario: repeated reads within a minute count once
-
-- **GIVEN** a user who reads the same object four times in ten seconds
-- **WHEN** their view history is listed
-- **THEN** the object appears once with the time of the first read
-- @e2e exclude {the throttle window is a service boundary covered by unit tests}
+- **GIVEN** a user who follows an object with notifications on
+- **WHEN** the user calls `PUT .../favourite`
+- **THEN** `@self.watchNotify` is still true and the response carries a `Deprecation` header
+- @e2e exclude {the alias is removed next release; asserted by FavouriteServiceTest::testStarringAFollowedObjectKeepsItsNotifySetting}
 
 ### Requirement: Favourites and recent are lenses on the object query
 
-The object query SHALL accept `_favourite=true`, returning only the current
-user's starred objects, and `_recent=true`, returning the current user's
-viewed objects ordered by last view descending, each composing with every
-other filter.
+The object query SHALL accept `_favourite=true`, returning only the current user's starred objects, and `_recent=true`, returning the objects the current user read most recently according to the audit trail, ordered by the latest read descending. Each lens SHALL compose with every other filter, and RBAC SHALL still decide which objects the caller may see.
 
 #### Scenario: a favourites chip on an index page
 
@@ -616,6 +604,13 @@ other filter.
 - **WHEN** the index page queries with `_favourite=true` and `status=open`
 - **THEN** only the starred cases with status open are returned
 - @e2e tests/e2e/ci/favourites-and-recent.spec.ts
+
+#### Scenario: a recent chip composes with a filter
+
+- **GIVEN** a user who opened three cases, one of them with status `open`
+- **WHEN** the index page queries with `_recent=true` and `status=open`
+- **THEN** only that open case is returned
+- @e2e exclude {composition with a property filter is the generic `_ids` restriction; covered by SearchQueryHandlerPersonalLensesTest and the favourites e2e composition test}
 
 ### Requirement: An edited note keeps what it said before and who changed it
 
@@ -661,16 +656,13 @@ the editor. Deleting a note SHALL delete its versions.
 
 ### Requirement: A user can watch an object they may read
 
-The system SHALL let a user who may read an object subscribe to it and
-unsubscribe, storing the subscription per user outside the object so that
-watching writes no audit entry and no version on the object. Object reads
-and lists SHALL carry `@self.watching` for the current user.
+The system SHALL let a user who may read an object follow it and unfollow it, storing the follow per user outside the object so that following writes no audit entry and no version on the object. Every follow SHALL carry a notification switch. `PUT .../watch` SHALL accept an optional body `{"notify": true|false}`: given, it sets the switch; absent, a new follow notifies and an existing follow keeps its setting. Object reads and lists SHALL carry `@self.watching` and, when the caller follows the object, `@self.watchNotify` for the current user only.
 
 #### Scenario: following leaves the object untouched
 
 - **GIVEN** an object with three audit entries
 - **WHEN** a user watches it and reads it back
-- **THEN** `@self.watching` is true and the object still has three audit entries
+- **THEN** `@self.watching` and `@self.watchNotify` are true and the object still has three audit entries
 - `@e2e tests/e2e/ci/object-watchers.spec.ts`
 
 #### Scenario: a user without read cannot watch
@@ -680,19 +672,30 @@ and lists SHALL carry `@self.watching` for the current user.
 - **THEN** the response is 404 and no row is written
 - `@e2e tests/e2e/ci/object-watchers.spec.ts` and WatcherService unit tests
 
+#### Scenario: a user turns notifications off and keeps following
+
+- **GIVEN** a user who follows an object with notifications on
+- **WHEN** the user sends `PUT .../watch` with `{"notify": false}`
+- **THEN** `@self.watching` is true, `@self.watchNotify` is false, and a rule addressed to watchers no longer reaches them
+- @e2e exclude {notification delivery runs through a background job; asserted by WatcherServiceTest::testWatchWithNotifyFalseKeepsTheFollowQuiet and NotificationRecipientResolverWatchersTest}
+
 ### Requirement: Watchers are a lens and a list
 
-The object query SHALL accept `_watching=true` returning the current user's
-watched objects. `GET .../watchers` SHALL list an object's watchers for a
-user with `update`; a user with `manage` SHALL be able to add or remove
-another user, and any watcher SHALL be able to remove themselves.
+The object query SHALL accept `_watching=true` returning the current user's followed objects, resolved inside the query as an `EXISTS` on the follow table so the page, the total and the facets see one restriction. An anonymous caller SHALL get an empty page. `GET .../watchers` SHALL list an object's followers, whatever their notification setting, for a user with `update`, without anybody's notification setting; a user with `manage` SHALL be able to add or remove another user, and any follower SHALL be able to remove themselves.
 
 #### Scenario: a team lead lists who follows a case
 
-- **GIVEN** a case watched by two users and a team lead with `update`
+- **GIVEN** a case followed by two users, one of them with notifications off, and a team lead with `update`
 - **WHEN** the team lead lists the watchers
-- **THEN** both users are returned with the time they subscribed
+- **THEN** both users are returned with the time they subscribed and no notification setting
 - `@e2e tests/e2e/ci/object-watchers.spec.ts` and tests/newman/openregister-object-watchers.postman_collection.json
+
+#### Scenario: the lens is resolved in the query
+
+- **GIVEN** a signed-in user
+- **WHEN** a query asks `_watching=true`
+- **THEN** the query carries the caller's uid as `_watchingFor` and no uuid list on `_ids`
+- @e2e exclude {query construction; asserted by SearchQueryHandlerWatchingLensTest}
 
 ### Requirement: Deleting an object removes its watchers
 
@@ -704,6 +707,139 @@ Deleting an object SHALL delete its watcher rows.
 - **WHEN** it is deleted permanently
 - **THEN** the watcher table holds no row for it
 - @e2e exclude {deletion cleanup has no HTTP surface to read; asserted by WatcherServiceTest::testDeletingAnObjectRemovesItsWatchers and wired by WatcherPruneListener}
+
+### Requirement: Favourites became follows with notifications off
+
+The upgrade that ships this change SHALL move every favourite into the follow table with notifications off and SHALL then drop the favourites table. When a user had both starred and followed an object, the follow SHALL keep notifications on.
+
+#### Scenario: a favourite survives the upgrade as a quiet follow
+
+- **GIVEN** a user who starred case A and both starred and followed case B
+- **WHEN** the instance upgrades
+- **THEN** the user follows A with notifications off and B with notifications on, and `openregister_favourites` no longer exists
+- @e2e exclude {an upgrade step has no HTTP surface; asserted by Version1Date20261009130000Test}
+
+### Requirement: Being assigned an object follows it with notifications on
+
+When a create or update sets the property a schema marks `x-openregister-role: assignee` to a Nextcloud user who may read the object, the system SHALL make that user follow the object with notifications on, switching an existing quiet follow on. A value that is not a Nextcloud user SHALL be skipped. A reassignment SHALL NOT unfollow the previous assignee. `WatcherService::followAssigned()` SHALL offer the same act to apps whose assignment is not an object property.
+
+#### Scenario: a handler is assigned a case
+
+- **GIVEN** a case schema whose `assignee` property carries `x-openregister-role: assignee`
+- **WHEN** a case is saved with `assignee` set to `jan`, who may read it
+- **THEN** `jan` follows the case with notifications on
+- @e2e exclude {an event listener; asserted by AssigneeFollowListenerTest::testANewAssigneeFollowsWithNotificationsOn}
+
+#### Scenario: a group in the assignee property is not a follower
+
+- **GIVEN** the same schema
+- **WHEN** a case is saved with `assignee` set to the group id `behandelaars`
+- **THEN** no follow is written
+- @e2e exclude {asserted by AssigneeFollowListenerTest::testAValueThatIsNotAUserIsSkipped}
+
+### Requirement: Recently opened is read from the audit trail
+
+The system SHALL answer `_recent=true` from the audit trail's `read` rows of the current user: distinct objects, ordered by the latest read, capped at 100 objects before RBAC. It SHALL NOT keep a separate table of views and SHALL NOT throttle audit rows: repeated reads collapse at query time. Every object on a `_recent=true` page SHALL carry `@self.viewedAt`, the ISO 8601 moment of the current user's latest read of that object. The key `viewedAt` is a contract with consuming apps (dossiq's recent tile) and SHALL NOT be renamed. Reads SHALL be registered through `ReadHistoryService`, the one read registration for the audit trail and the AVG processing log.
+
+#### Scenario: a dashboard tile shows when each object was opened
+
+- **GIVEN** audit trails are enabled and a user opened cases A, B and C, in that order
+- **WHEN** the dashboard queries `_recent=true`
+- **THEN** the page holds C, B and A in that order
+- **AND** each object carries `@self.viewedAt` as an ISO 8601 moment
+- **AND** the response carries `@self.lenses.recent.available` = `true`
+- @e2e tests/e2e/ci/favourites-and-recent.spec.ts
+
+#### Scenario: opening an object twice lists it once
+
+- **GIVEN** a user who opened case A at 09:00 and again at 10:00
+- **WHEN** the user queries `_recent=true`
+- **THEN** case A is listed once with `@self.viewedAt` at 10:00
+- **AND** the audit trail still holds both `read` rows
+- @e2e exclude {the collapse is a GROUP BY in SQL; covered by AuditTrailMapperReadHistoryTest against the migrated table}
+
+#### Scenario: one user's history is never another's
+
+- **GIVEN** two users who opened different cases
+- **WHEN** each queries `_recent=true`
+- **THEN** each sees only the cases they opened themselves
+- **AND** a request carrying `_recentViews`, `_recentFor` or `_recentLens` cannot change that
+- @e2e exclude {per-user separation is asserted by the existing per-user e2e test; the stripping of forged keys by SearchQueryHandlerPersonalLensesTest}
+
+### Requirement: The recent lens says why it is empty
+
+Whenever `_recent=true` is asked, the list response SHALL carry `@self.lenses.recent` as `{"available": bool, "reason": string|null}`. When the lens cannot answer, `available` SHALL be `false`, the page SHALL be empty, and `reason` SHALL be one of `audit-trail-disabled` (the setting `retention.auditTrailsEnabled` is off), `anonymous` (no logged-in user) or `read-history-unavailable` (the history could not be read). With the audit trail off, the system SHALL NOT keep or read a shadow log.
+
+#### Scenario: the audit trail is switched off
+
+- **GIVEN** `retention.auditTrailsEnabled` is `false`
+- **WHEN** a user queries `_recent=true`
+- **THEN** the page is empty
+- **AND** `@self.lenses.recent` is `{"available": false, "reason": "audit-trail-disabled"}`
+- @e2e exclude {switching the instance audit setting would disturb every other e2e spec running against the shared instance; covered by ReadHistoryServiceTest and SearchQueryHandlerPersonalLensesTest}
+
+#### Scenario: an anonymous caller
+
+- **GIVEN** no logged-in user
+- **WHEN** the caller queries `_recent=true`
+- **THEN** the page is empty, never the whole register
+- **AND** `@self.lenses.recent.reason` is `anonymous`
+- @e2e exclude {an anonymous object list is usually refused before the lens runs; the lens answer is covered by ReadHistoryServiceTest and SearchQueryHandlerPersonalLensesTest}
+
+### Requirement: Only a person opening an object counts as recently opened
+
+The `_recent` lens SHALL count an audit `read` row only when its cause is `person`, or empty for a row written before causes were recorded. A read the code makes on a person's behalf (a permission guard, a relation or reference lookup, a sub-resource of a page already opened, an agent tool, a data-management operation) SHALL be written with cause `lookup` and SHALL NOT appear in the person's recent list. A read inside an import, a rule, a migration or a scheduled job keeps its own cause and SHALL NOT appear either. The audit trail SHALL keep every one of these rows: excluding a read from the recent list SHALL NOT remove it from the audit trail.
+
+#### Scenario: opening a case that resolves its client
+
+- **GIVEN** audit trails are enabled and a user who has opened nothing
+- **WHEN** the user opens case A, and rendering case A looks up its client B through `ObjectService::find()`
+- **THEN** the user's `_recent=true` page holds case A and not client B
+- **AND** the audit trail holds a `read` row for A with cause `person` and a `read` row for B with cause `lookup`
+- @e2e exclude {which internal reads a page triggers depends on the schema's relations; the cause stamping is covered by WriteCauseTest and the call-site tests, the history filter by AuditTrailMapperReadHistoryTest against the migrated table}
+
+#### Scenario: a guard before an action is not an open
+
+- **GIVEN** a user who uploads a file to object A without opening it
+- **WHEN** the file controller checks the user may read A
+- **THEN** A is not on the user's `_recent=true` page
+- **AND** the audit trail holds the guard's `read` row for A with cause `lookup`
+- @e2e exclude {asserted from the caller in RecentLensLookupCallSitesTest; an e2e upload would also open the record page}
+
+#### Scenario: a read inside an import keeps its cause
+
+- **GIVEN** an import running with cause `import`
+- **WHEN** code inside it reads an object through a lookup site
+- **THEN** the `read` row carries cause `import`, not `lookup`
+- @e2e exclude {ambient frame behaviour; covered by WriteCauseTest}
+
+### Requirement: Cross-table searches honour the recent lens like one schema
+
+A `_recent=true` search over several schemas or registers, and one over no register or schema at all, SHALL return only the objects in the caller's read history, ordered by the latest read descending unless the caller gives `_order`, paged after that ordering, with `@self.viewedAt` on every object, exactly as a single-schema search does. The cross-table list response SHALL carry `@self.lenses.recent`.
+
+#### Scenario: a dashboard tile over two schemas
+
+- **GIVEN** a user who opened case A in schema `zaak`, then task B in schema `taak`, then case C in schema `zaak`
+- **WHEN** the dashboard queries both schemas with `_recent=true`
+- **THEN** the page holds C, B and A in that order, and no object the user did not open
+- **AND** each carries `@self.viewedAt`
+- **AND** the response carries `@self.lenses.recent.available` = `true`
+- @e2e exclude {the cross-table paths are covered by MagicMapperRecentLensTest (UNION order keys, sequential merge, global `_ids` page) and MagicSearchHandlerIdsSqlTest; the e2e instance has no second schema with read history to spare}
+
+#### Scenario: an explicit order wins
+
+- **GIVEN** the same user and history
+- **WHEN** the dashboard queries both schemas with `_recent=true` and `_order[@self.name]=asc`
+- **THEN** the page holds the three objects ordered by name
+- **AND** each still carries `@self.viewedAt`
+- @e2e exclude {precedence rule; covered by MagicMapperRecentLensTest}
+
+#### Scenario: the second page continues the history
+
+- **GIVEN** a user whose history across two schemas holds five objects
+- **WHEN** the user asks `_recent=true` with `_limit=2` and `_offset=2`
+- **THEN** the page holds the third and fourth most recently read objects
+- @e2e exclude {paging after ordering; covered by MagicMapperRecentLensTest}
 
 ## Non-Functional Requirements
 

@@ -2,7 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change restore-register-schema-rbac-enforcement. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Register and schema mutations enforce role-based permission
 
 Creating, updating, or deleting a Register or a Schema SHALL enforce
@@ -127,3 +129,71 @@ as evidence that a capability works — "not dropped" is not "consumed".
 - **THEN** the key is dropped from the configuration
 - **AND** the key is recorded in the dropped-key buffer so the declaration is
   reported rather than silently accepted
+
+### Requirement: Everything one principal can reach is listed and revoked in one act (REQ-DSR-004)
+
+The system SHALL list everything a principal can reach, resolved from the
+permission resolver rather than by walking surfaces, and SHALL show that
+list before anything is removed. An authorised administrator SHALL be able
+to revoke all of it in one act, which SHALL be recorded naming every grant
+it removed.
+
+#### Scenario: uitdiensttreding is one act
+
+- **GIVEN** a principal holding grants from four sources
+- **WHEN** an administrator opens the reach listing
+- **THEN** all four are listed with where each comes from
+
+#### Scenario: the revocation is recorded in full
+
+- **GIVEN** that listing
+- **WHEN** the administrator revokes everything
+- **THEN** each grant is removed and one audit entry names all of them
+- @e2e exclude {the act removes real grants across the instance, so an API spec would have to seed and then destroy another account's access; asserted in tests/Unit/Service/Rbac/ReachRevocationServiceTest.php::testTheRevocationIsRecordedInFull}
+
+### Requirement: A grant to a principal outside the organisation carries an end date (REQ-DSR-005)
+
+A grant to a principal outside the organisation SHALL carry an end date,
+and SHALL be refused without one. The holder SHALL be warned before it
+lapses. When it lapses, what the principal created SHALL stay with the
+organisation and SHALL stay attributed.
+
+#### Scenario: a temporary adviser stays temporary
+
+- **GIVEN** a grant to an external principal with no end date
+- **WHEN** it is created
+- **THEN** it is refused, naming the requirement
+
+#### Scenario: the work survives the access
+
+- **GIVEN** an external grant that lapses
+- **WHEN** the objects they wrote on are read
+- **THEN** their contributions are present and attributed, and they can no longer reach them
+- @e2e exclude {the lapse happens over time, so it needs a clock fixture; asserted in tests/Unit/Service/Rbac/ExternalGrantGuardTest.php::testTheWorkSurvivesTheAccess}
+
+### Requirement: Export is its own permission verb (REQ-EXP-001)
+
+The authorization layer SHALL carry an `export` verb, evaluated
+independently of `read`. Every export path, the API included, SHALL check
+it, and a refusal SHALL name the verb. A principal MAY hold `read` without
+`export`. On upgrade the verb SHALL default to granted wherever `read` is
+granted, so that no existing instance loses a working export silently.
+
+#### Scenario: a reader who may not take the data
+
+- **GIVEN** a principal holding read but not export on a register
+- **WHEN** they export the list
+- **THEN** the request is refused, naming the export verb
+
+#### Scenario: the API is gated too
+
+- **GIVEN** the same principal and a token that carries their rights
+- **WHEN** the export endpoint is called
+- **THEN** it is refused the same way
+
+#### Scenario: an upgraded instance keeps working
+
+- **GIVEN** an instance upgraded from before this change
+- **WHEN** a principal who could export before exports
+- **THEN** it succeeds
+- @e2e exclude {migration behaviour, covered by unit tests}
