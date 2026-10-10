@@ -50,6 +50,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialController
+ * @covers \OCA\OpenRegister\Controller\CredentialOrganisationController
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Organisation
  * @uses \OCA\OpenRegister\Service\Credential\CredentialBrokerService
@@ -206,6 +207,90 @@ class CredentialControllerOrganisationTest extends TestCase {
 		$this->assertSame('Active org cred', $body['results'][0]['name']);
 		// No secret value is ever present in listed metadata.
 		$this->assertStringNotContainsString('secret', strtolower(json_encode($body['results'])));
+	}
+
+	/**
+	 * The picker's list: every organisation the caller may manage, the active one flagged.
+	 *
+	 * Fails on the old code: there was no such endpoint.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-an-organisation-credential-names-and-lets-the-admin-choose-its-organisation
+	 */
+	public function testOrganisationsListsWhatTheCallerMayManageWithTheActiveOneFlagged(): void {
+		$active = new Organisation();
+		$active->setUuid(self::ACTIVE_ORG);
+		$active->setName('Active municipality');
+		$other = new Organisation();
+		$other->setUuid('org-other');
+		$other->setName('Other municipality');
+
+		$this->orgService->method('getActiveOrganisation')->willReturn($active);
+		$this->orgService->expects($this->once())->method('getManageableOrganisations')
+			->with('admin-uid')->willReturn([$active, $other]);
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('admin-uid');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$controller = new \OCA\OpenRegister\Controller\CredentialOrganisationController(
+			'openregister',
+			$this->createMock(IRequest::class),
+			$session,
+			$this->orgService
+		);
+		$body = $controller->index()->getData();
+
+		$this->assertSame(
+			[
+				['uuid' => self::ACTIVE_ORG, 'name' => 'Active municipality', 'active' => true],
+				['uuid' => 'org-other', 'name' => 'Other municipality', 'active' => false],
+			],
+			$body['results']
+		);
+	}
+
+	/**
+	 * Listing a CHOSEN organisation's credentials: allowed for a caller with access to it.
+	 *
+	 * Fails on the old code: the `organisation` param was ignored and the active
+	 * organisation's credential came back instead.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-an-organisation-credential-names-and-lets-the-admin-choose-its-organisation
+	 */
+	public function testIndexOrganisationListsTheChosenOrganisation(): void {
+		$active = new Organisation();
+		$active->setUuid(self::ACTIVE_ORG);
+		$this->orgService->method('getActiveOrganisation')->willReturn($active);
+		$this->orgService->expects($this->once())->method('userHasAccessToOrganisation')
+			->with('org-other', 'admin-uid')->willReturn(true);
+
+		$this->objectService->method('setRegister')->willReturnSelf();
+		$this->objectService->method('setSchema')->willReturnSelf();
+		$this->objectService->method('findAll')->willReturn(
+			[
+				$this->credential(['scope' => 'organisation', 'organisation' => self::ACTIVE_ORG, 'name' => 'Active org cred'], 'admin-uid'),
+				$this->credential(['scope' => 'organisation', 'organisation' => 'org-other', 'name' => 'Other org cred'], 'admin-uid'),
+			]
+		);
+
+		$body = $this->makeController(uid: 'admin-uid', params: ['scope' => 'organisation', 'organisation' => 'org-other'])->index()->getData();
+
+		$this->assertCount(1, $body['results']);
+		$this->assertSame('Other org cred', $body['results'][0]['name']);
+	}
+
+	/**
+	 * Listing an organisation the caller has no access to is refused, never trusted.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-an-organisation-credential-names-and-lets-the-admin-choose-its-organisation
+	 */
+	public function testIndexOrganisationRefusesAnOrganisationTheCallerCannotSee(): void {
+		$this->orgService->method('userHasAccessToOrganisation')->with('org-foreign', 'member-uid')->willReturn(false);
+		$this->objectService->expects($this->never())->method('findAll');
+
+		$response = $this->makeController(uid: 'member-uid', params: ['scope' => 'organisation', 'organisation' => 'org-foreign'])->index();
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
 	}
 
 	public function testDeleteOrganisationCredentialRequiresAdmin(): void {
