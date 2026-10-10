@@ -38,6 +38,8 @@ namespace OCA\OpenRegister\Service\Task;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Form\FormDestinationValidator;
+use OCA\OpenRegister\Service\Form\FormFieldRules;
 use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -80,20 +82,29 @@ class TaskFormReader {
 	];
 
 	/**
+	 * The one validator for a form against its schema (decision 179).
+	 *
+	 * @var FormDestinationValidator
+	 */
+	private readonly FormDestinationValidator $validator;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param SchemaMapper $schemas Resolves the subject schema.
 	 * @param TransitionEngine $engine Reads a transition's declared inputs.
 	 * @param IAppManager $apps Answers whether the Forms app is installed.
 	 * @param IL10N $l10n Translations, for refusals an author reads.
+	 * @param FormDestinationValidator|null $validator The field check this reader delegates to; built from $l10n when absent.
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemas,
 		private readonly TransitionEngine $engine,
 		private readonly IAppManager $apps,
 		private readonly IL10N $l10n,
+		?FormDestinationValidator $validator = null,
 	) {
-
+		$this->validator = ($validator ?? new FormDestinationValidator(l10n: $l10n, rules: new FormFieldRules()));
 	}//end __construct()
 
 	/**
@@ -247,9 +258,8 @@ class TaskFormReader {
 	/**
 	 * Why a field of this schema cannot be rendered, or null when it can.
 	 *
-	 * The three reasons are the three the shared renderer drops a property for
-	 * BEFORE it consults the field whitelist; a declared field hitting any of
-	 * them renders nothing at all.
+	 * Delegates to {@see FormDestinationValidator}, so a flow task form and an
+	 * object form are judged by one service (decision 179, ADR-117).
 	 *
 	 * @param Schema $schema The live subject schema.
 	 * @param string $field The property name.
@@ -259,21 +269,7 @@ class TaskFormReader {
 	 * @spec openspec/specs/flow-task-forms/spec.md#requirement-a-field-that-cannot-be-rendered-is-refused-when-the-step-is-saved
 	 */
 	public function unrenderableReason(Schema $schema, string $field): ?string {
-		$properties = $schema->getProperties();
-		if (array_key_exists($field, $properties) === false) {
-			return $this->l10n->t('the schema has no such property.');
-		}
-
-		$property = (array)$properties[$field];
-		if (($property['readOnly'] ?? false) === true) {
-			return $this->l10n->t('the schema marks it read-only, so a submitted value would be refused.');
-		}
-
-		if (($property['visible'] ?? true) === false) {
-			return $this->l10n->t('the schema marks it not visible, so no form can show it.');
-		}
-
-		return null;
+		return $this->validator->unrenderableReason(schema: $schema, field: $field);
 	}//end unrenderableReason()
 
 	/**
