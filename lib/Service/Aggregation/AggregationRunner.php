@@ -741,11 +741,20 @@ class AggregationRunner {
 		// the way out. Invalidation is event-driven via
 		// AggregationCacheInvalidationListener which evicts the entire
 		// `openregister_aggregations` cache on every object-write event.
-		$cached = $this->cache->getAdhoc(
-			registerSlug: (string)$register->getSlug(),
-			schemaSlug: (string)$schema->getSlug(),
-			query: $resolvedQuery
-		);
+		//
+		// Not for an internal-system call: the cache key is scoped by the
+		// caller (uid + organisation), not by bypassRbac, so a figure computed
+		// over every row would be served to the same caller's own, narrower
+		// question, and a narrower cached figure to the system's (live pass O14).
+		$cached = null;
+		if ($bypassRbac === false) {
+			$cached = $this->cache->getAdhoc(
+				registerSlug: (string)$register->getSlug(),
+				schemaSlug: (string)$schema->getSlug(),
+				query: $resolvedQuery
+			);
+		}
+
 		if ($cached !== null) {
 			$cached['cached'] = true;
 			// The cache stores RAW group keys (the cache key is language-
@@ -795,6 +804,9 @@ class AggregationRunner {
 		// bucketing expression (date_trunc / DATE_FORMAT / strftime).
 		// Returns null on unsupported query shapes or unrecognised
 		// engines, signaling fall-through to the PHP bucketer below.
+		// rowRbac carries bypassRbac to the SQL, as run() does: under occ or a
+		// cron job there is no user, the row predicate is `1 = 0`, and every
+		// materialised aggregate resolved to 0 (live pass O14).
 		$native = $this->tryNativeAggregation(
 			register: $register,
 			schema: $schema,
@@ -804,7 +816,8 @@ class AggregationRunner {
 			groupBy: $query->groupBy,
 			dateBucket: $query->dateBucket,
 			metrics: $query->getMetrics(),
-			cumulative: $query->cumulative
+			cumulative: $query->cumulative,
+			rowRbac: $bypassRbac === false
 		);
 
 		if ($native !== null) {
@@ -815,12 +828,15 @@ class AggregationRunner {
 			// Cache the RAW (un-projected) group keys — the cache key does
 			// not encode the negotiated language, so language projection
 			// must happen after the cache boundary on every read.
-			$this->cache->setAdhoc(
-				registerSlug: (string)$register->getSlug(),
-				schemaSlug: (string)$schema->getSlug(),
-				query: $resolvedQuery,
-				result: $envelope
-			);
+			if ($bypassRbac === false) {
+				$this->cache->setAdhoc(
+					registerSlug: (string)$register->getSlug(),
+					schemaSlug: (string)$schema->getSlug(),
+					query: $resolvedQuery,
+					result: $envelope
+				);
+			}
+
 			return $this->projectTranslatableGroupKeys(
 				envelope: $envelope,
 				schema: $schema,
