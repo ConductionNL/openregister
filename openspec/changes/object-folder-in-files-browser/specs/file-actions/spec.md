@@ -23,9 +23,11 @@ the reader after the rule that admitted them stops doing so.
 - **GIVEN** `bea` could browse the case folder
 - **WHEN** `bea` is removed from `vergunningen`
 - **THEN** her next request shows neither the folder nor its files
+- @e2e exclude {needs the decision in the proposal; the e2e reference is written with the chosen option}
 
 #### Scenario: no mirror share
 
 - **GIVEN** any reader opening any object's files tab
 - **WHEN** the files browser shows the folder
 - **THEN** no new Nextcloud share exists on the object folder
+- @e2e exclude {needs the decision in the proposal; the e2e reference is written with the chosen option}
