@@ -28,7 +28,6 @@ use OCP\AppFramework\Http\Attribute\BruteForceProtection;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
-use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUser;
@@ -62,8 +61,6 @@ class FormsControllerTest extends TestCase {
 
 	private IUserSession&MockObject $session;
 
-	private IAppConfig&MockObject $appConfig;
-
 	private IThrottler&MockObject $throttler;
 
 	private FormsController $controller;
@@ -91,7 +88,6 @@ class FormsControllerTest extends TestCase {
 		$this->uploads = $this->createMock(FormUploadStore::class);
 		$this->schemas = $this->createMock(SchemaMapper::class);
 		$this->session = $this->createMock(IUserSession::class);
-		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->throttler = $this->createMock(IThrottler::class);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
@@ -105,7 +101,6 @@ class FormsControllerTest extends TestCase {
 			uploads: $this->uploads,
 			schemas: $this->schemas,
 			userSession: $this->session,
-			appConfig: $this->appConfig,
 			throttler: $this->throttler,
 			l10n: $l10n,
 			logger: $this->createMock(LoggerInterface::class)
@@ -227,34 +222,21 @@ class FormsControllerTest extends TestCase {
 	}//end testTheAudienceIsHonoured()
 
 	/**
-	 * Validate returns the findings and, in report mode, accepts the save anyway.
+	 * Q9 (Ruben): refuse from day one. A mapping with findings is not accepted; one without is.
 	 */
-	public function testValidateInReportModeAcceptsWithFindings(): void {
+	public function testValidateRefusesAMappingWithFindings(): void {
 		$schema = new Schema();
 		$this->params = ['mapping' => ['fields' => []], 'destination' => ['register' => 'dossiq', 'schema' => 'case'], 'audience' => 'public'];
 		$this->schemas->method('find')->with('case')->willReturn($schema);
 		$findings = [['property' => 'caseType', 'code' => 'required-unmapped', 'message' => 'm']];
-		$this->validator->expects($this->once())->method('validate')->with(['fields' => []], $schema, ['audience' => 'public'])->willReturn($findings);
-		$this->appConfig->method('getValueString')->with('openregister', 'formDestinationMode', 'report')->willReturn('report');
+		$this->validator->expects($this->exactly(2))->method('validate')->with(['fields' => []], $schema, ['audience' => 'public'])
+			->willReturnOnConsecutiveCalls($findings, []);
 
-		$response = $this->controller->validate();
-
-		$this->assertSame(200, $response->getStatus());
-		$this->assertSame(['mode' => 'report', 'accepted' => true, 'findings' => $findings], $response->getData());
-	}//end testValidateInReportModeAcceptsWithFindings()
-
-	/**
-	 * In refuse mode a mapping with findings is not accepted; one without is.
-	 */
-	public function testValidateInRefuseModeRefusesWithFindings(): void {
-		$this->params = ['mapping' => [], 'destination' => ['schema' => 'case']];
-		$this->schemas->method('find')->willReturn(new Schema());
-		$this->validator->method('validate')->willReturnOnConsecutiveCalls([['property' => 'x', 'code' => 'property-unknown', 'message' => 'm']], []);
-		$this->appConfig->method('getValueString')->willReturn('refuse');
-
-		$this->assertFalse($this->controller->validate()->getData()['accepted']);
-		$this->assertTrue($this->controller->validate()->getData()['accepted']);
-	}//end testValidateInRefuseModeRefusesWithFindings()
+		$refused = $this->controller->validate();
+		$this->assertSame(200, $refused->getStatus());
+		$this->assertSame(['accepted' => false, 'findings' => $findings], $refused->getData());
+		$this->assertSame(['accepted' => true, 'findings' => []], $this->controller->validate()->getData());
+	}//end testValidateRefusesAMappingWithFindings()
 
 	/**
 	 * Validate against a schema that does not exist is a 404.

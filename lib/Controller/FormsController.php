@@ -43,7 +43,6 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
 use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -60,27 +59,6 @@ use Throwable;
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
  */
 class FormsController extends Controller {
-
-	/**
-	 * The app setting that decides whether findings block a form save.
-	 *
-	 * @var string
-	 */
-	public const MODE_SETTING = 'formDestinationMode';
-
-	/**
-	 * Report mode: findings are shown, the save goes ahead (one release, Q9).
-	 *
-	 * @var string
-	 */
-	public const MODE_REPORT = 'report';
-
-	/**
-	 * Refuse mode: a form with findings is not saved.
-	 *
-	 * @var string
-	 */
-	public const MODE_REFUSE = 'refuse';
 
 	/**
 	 * The honeypot field: a person never fills it, a bot does.
@@ -100,7 +78,6 @@ class FormsController extends Controller {
 	 * @param FormUploadStore          $uploads     Holds upload tokens.
 	 * @param SchemaMapper             $schemas     Resolves a destination schema.
 	 * @param IUserSession             $userSession The signed-in subject, if any.
-	 * @param IAppConfig               $appConfig   The report/refuse mode.
 	 * @param IThrottler               $throttler   Counts guesses at form ids.
 	 * @param IL10N                    $l10n        Translations.
 	 * @param LoggerInterface          $logger      Logs a throttler failure.
@@ -114,7 +91,6 @@ class FormsController extends Controller {
 		private readonly FormUploadStore $uploads,
 		private readonly SchemaMapper $schemas,
 		private readonly IUserSession $userSession,
-		private readonly IAppConfig $appConfig,
 		private readonly IThrottler $throttler,
 		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
@@ -126,8 +102,8 @@ class FormsController extends Controller {
 	 * Judge a mapping against a destination schema, for an author building a form.
 	 *
 	 * Body: `{ mapping, destination: { register?, schema }, audience? }`.
-	 * Answer: `{ mode, accepted, findings }`; `accepted` tells the caller
-	 * whether to save the form under the current mode.
+	 * Answer: `{ accepted, findings }`. A form with findings is not saved:
+	 * the check refuses from day one (Q9, Ruben, 10 October 2026).
 	 *
 	 * @return JSONResponse 200 with the findings, 404 when the schema does not exist.
 	 *
@@ -155,15 +131,8 @@ class FormsController extends Controller {
 		}
 
 		$findings = $this->validator->validate(mapping: (is_array($mapping) === true ? $mapping : []), schema: $schema, options: $options);
-		$mode = $this->mode();
 
-		return new JSONResponse(
-			data: [
-				'mode' => $mode,
-				'accepted' => ($mode === self::MODE_REPORT || $findings === []),
-				'findings' => $findings,
-			]
-		);
+		return new JSONResponse(data: ['accepted' => ($findings === []), 'findings' => $findings]);
 	}//end validate()
 
 	/**
@@ -315,18 +284,4 @@ class FormsController extends Controller {
 
 		return $payload;
 	}//end payload()
-
-	/**
-	 * The current mode: report (default, one release) or refuse.
-	 *
-	 * @return string The mode.
-	 */
-	private function mode(): string {
-		$mode = $this->appConfig->getValueString('openregister', self::MODE_SETTING, self::MODE_REPORT);
-		if ($mode !== self::MODE_REFUSE) {
-			return self::MODE_REPORT;
-		}
-
-		return self::MODE_REFUSE;
-	}//end mode()
 }//end class
