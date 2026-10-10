@@ -183,6 +183,8 @@ class ObjectServiceMapperAdapter {
 	 *
 	 * @spec exclude Facade plumbing: PUT/PATCH merge then delegate to ObjectService::saveObject; no standalone
 	 *              contract beyond ObjectService's save path.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function updateFromArray(
 		int|string $id,
@@ -191,11 +193,11 @@ class ObjectServiceMapperAdapter {
 		bool $patch = false,
 	): ObjectEntity {
 		if ($patch === true) {
-			$existing = $this->objectService->find(
+			$existing = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: (string)$id,
 				register: $this->register,
 				schema: $this->schema
-			);
+			));
 			if ($existing === null) {
 				throw new ValidationException(
 					message: sprintf('Object "%s" not found or not accessible', $id)

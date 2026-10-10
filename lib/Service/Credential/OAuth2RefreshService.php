@@ -45,6 +45,7 @@ namespace OCA\OpenRegister\Service\Credential;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\Http\Client\IClientService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -604,14 +605,14 @@ class OAuth2RefreshService {
 	 */
 	private function writeMetadata(string $credentialId, array $metadata): void {
 		try {
-			$existing = $this->objectService->find(
+			$existing = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $credentialId,
 				register: CredentialBrokerService::REGISTER,
 				schema: CredentialBrokerService::SCHEMA,
 				_rbac: false,
 				_multitenancy: false,
 				_render: false
-			);
+			));
 
 			if ($existing === null) {
 				return;

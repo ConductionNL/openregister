@@ -51,6 +51,7 @@ use OCA\OpenRegister\Service\Gdpr\Case\CaseObjectAccessor;
 use OCA\OpenRegister\Service\Gdpr\DpiaPatternDetectionService;
 use OCA\OpenRegister\Service\Gdpr\Policy\DsarPolicyPackResolver;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -237,17 +238,19 @@ class DsarDpiaDetectionJob extends TimedJob {
 	 *
 	 * @spec openspec/changes/dsar-escalation-and-dpia/specs/dsar-dpia-detection/spec.md
 	 *   (Scenario: Threshold crossing flags the group)
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function flagGroup(array $group, array $config, array &$summary): void {
 		foreach ($group['unflaggedUuids'] as $uuid) {
 			try {
-				$entity = $this->objectService->find(
+				$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 					id: $uuid,
 					register: CaseObjectAccessor::REGISTER_SLUG,
 					schema: CaseObjectAccessor::SCHEMA_SLUG,
 					_rbac: false,
 					_multitenancy: false
-				);
+				));
 				if ($entity === null) {
 					continue;
 				}

@@ -49,6 +49,7 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -212,6 +213,8 @@ class ReferenceResolver {
 	 *
 	 * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-3
 	 * @spec openspec/changes/calculations-resolve-references-regardless-of-saver/specs/computed-fields/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function resolveRelatedObject(
 		array $payload,
@@ -237,13 +240,13 @@ class ReferenceResolver {
 		// Read as the system, not as the saver: an anonymous portal write and
 		// an administrator's write must compute the same value. The tenant
 		// boundary is enforced by the guard below instead of by the session.
-		$entity = $this->objectService->find(
+		$entity = WriteCause::asLookup(fn () => $this->objectService->find(
 			id: $id,
 			register: $register,
 			schema: $schema,
 			_rbac: false,
 			_multitenancy: false
-		);
+		));
 
 		return [
 			'entity' => $this->tenantGuard->firstAdmitted(savingOrganisation: $organisation, candidates: [$entity]),

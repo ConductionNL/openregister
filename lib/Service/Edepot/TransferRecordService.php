@@ -40,6 +40,7 @@ namespace OCA\OpenRegister\Service\Edepot;
 
 use DateTime;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -131,14 +132,16 @@ class TransferRecordService {
 	 *
 	 * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
 	 *   (Scenario: Show returns a persisted transfer list)
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function loadTransferList(string $uuid): ?array {
 		try {
-			$object = $this->objectService->find(
+			$object = WriteCause::asLookup(fn () => $this->objectService->find(
 				id: $uuid,
 				register: self::REGISTER_SLUG,
 				schema: self::TRANSFER_SCHEMA_SLUG
-			);
+			));
 		} catch (\Throwable $e) {
 			return null;
 		}

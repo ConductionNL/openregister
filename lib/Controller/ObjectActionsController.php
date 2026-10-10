@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -56,6 +57,9 @@ use Psr\Log\LoggerInterface;
  * Runs a declared action bound to a manual flow.
  *
  * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The thirteenth type is WriteCause, the static frame
+ *   that marks the pre-action read as a lookup so it stays out of the reader's recently opened list.
  */
 class ObjectActionsController extends Controller {
 
@@ -213,15 +217,19 @@ class ObjectActionsController extends Controller {
 	 * The object, or null when there is none the caller can reach.
 	 *
 	 * ObjectService::find() throws when the object does not exist; for this
-	 * controller that is a 404, not a 500.
+	 * controller that is a 404, not a 500. The read is a lookup before running
+	 * an action, not the reader opening the object, so it stays out of their
+	 * recently opened list.
 	 *
 	 * @param string $id The object's id, uuid or slug.
 	 *
 	 * @return ObjectEntity|null The object.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	private function findObject(string $id): ?ObjectEntity {
 		try {
-			return $this->objects->find(id: $id);
+			return WriteCause::asLookup(fn () => $this->objects->find(id: $id));
 		} catch (\Throwable) {
 			return null;
 		}

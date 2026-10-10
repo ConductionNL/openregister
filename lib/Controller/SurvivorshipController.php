@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Survivorship\SourceRecordResolver;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -50,6 +51,12 @@ use OCP\IUserSession;
 use RuntimeException;
 use Throwable;
 
+/**
+ * Source records and attribute overrides of a master object.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The thirteenth class is WriteCause, the ambient
+ *                                                  audit-cause frame its object reads run in.
+ */
 class SurvivorshipController extends Controller {
 	/**
 	 * Default field the per-object attribute-override map is read/written to
@@ -96,10 +103,12 @@ class SurvivorshipController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/archive/2026-10-05-mdm-reverse-fk-source-resolution/tasks.md#2.1
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function sources(string $id): JSONResponse {
 		try {
-			$object = $this->objectService->find(id: $id, _rbac: true, _multitenancy: true);
+			$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, _rbac: true, _multitenancy: true));
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found.'], Http::STATUS_NOT_FOUND);
 			}
@@ -138,6 +147,8 @@ class SurvivorshipController extends Controller {
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/mdm-survivorship-override/tasks.md#1.4
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WriteCause::asLookup() is the ambient audit-cause frame; there is no instance to inject.
 	 */
 	public function override(string $id): JSONResponse {
 		$attribute = (string)$this->request->getParam('attribute', '');
@@ -148,7 +159,7 @@ class SurvivorshipController extends Controller {
 		try {
 			// RBAC/tenant scoped read — an unreadable object never reaches the
 			// write path below.
-			$object = $this->objectService->find(id: $id, _rbac: true, _multitenancy: true);
+			$object = WriteCause::asLookup(fn () => $this->objectService->find(id: $id, _rbac: true, _multitenancy: true));
 			if ($object === null) {
 				return new JSONResponse(['error' => 'Object not found.'], Http::STATUS_NOT_FOUND);
 			}
