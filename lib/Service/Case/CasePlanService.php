@@ -586,6 +586,54 @@ class CasePlanService {
 	}//end onRealisationTerminal()
 
 	/**
+	 * An enforcing expiry reached its deadline: terminate the item through
+	 * the one transition path, cause `realisation`, the timer as reference,
+	 * then evaluate the plan. An item that is already terminal or gone is
+	 * left alone; a failure is logged, never rethrown into the sweep.
+	 *
+	 * @param string $itemUuid The item.
+	 * @param string $timerUuid The timer that fired.
+	 *
+	 * @return boolean True when the item was terminated.
+	 *
+	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 */
+	public function onTimerExpired(string $itemUuid, string $timerUuid): bool {
+		try {
+			$item = $this->items->findByUuid(uuid: $itemUuid);
+		} catch (DoesNotExistException) {
+			return false;
+		}
+
+		if ($item->isInTerminalState() === true) {
+			return false;
+		}
+
+		try {
+			$this->machine->transition(
+				item: $item,
+				to: CaseItem::STATE_TERMINATED,
+				cause: CaseItemAudit::CAUSE_REALISATION,
+				causeRef: 'flow-timer:' . $timerUuid,
+				actor: null,
+				reason: 'Its statutory term expired.',
+				tree: $this->treeFor(item: $item)
+			);
+		} catch (Throwable $failure) {
+			$this->logger->error(
+				'[CasePlanService] An expired term could not terminate its plan item: ' . $failure->getMessage(),
+				['item' => $itemUuid, 'timer' => $timerUuid, 'exception' => $failure]
+			);
+
+			return false;
+		}
+
+		$this->evaluateQuietly(objectUuid: (string)$item->getObjectUuid(), event: null, payload: []);
+
+		return true;
+	}//end onTimerExpired()
+
+	/**
 	 * An object changed: evaluate its plan, if it has a live one, with the
 	 * event in hand so object on-parts can fire.
 	 *

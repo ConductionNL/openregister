@@ -91,20 +91,28 @@ Both register through `FlowNodeRegistry` like every other node.
 
 ### 3.3 Plan-item timers (gap 3)
 
-`FlowTimer::SUBJECT_TYPES` gains `case-item`. `CasePlanItemTimers` (new):
+`FlowTimer::SUBJECT_TYPES` gains `case-item`. `CasePlanItemTimers` (new),
+driven by `CaseItemTimerListener` on `CaseItemTransitionedEvent` (after
+commit) and `FlowTimerFiredEvent`:
 
-- on an item entering `active` with `dueAt` set, arm a `due` timer anchored
-  on now with `fireAt` at `dueAt` (advisory, `legalEffect: none`);
-- with `expiresAt` set, arm an `expiry` timer; legal effect
-  `servicenorm` unless the plan settings mark the item `wettelijk`, in which
-  case `onExpiry: terminate` is allowed by the core's own rule;
-- on an item reaching a terminal state, `cancelForSubject('case-item', uuid)`;
-- a `FlowTimerFiredEvent` of kind expiry for a `case-item` subject with an
-  enforcing outcome terminates the item with cause `realisation` and the
-  timer uuid as cause reference.
+- an item entering `active` with `dueAt` arms a `due` timer (advisory,
+  `legalEffect: none`). The core measures whole hours (calendar days past
+  its 10,000-hour bound) from an anchor, so the anchor is set back from the
+  deadline by the rounded budget: anchor + budget lands on `dueAt` exactly;
+- with `expiresAt` it arms an `expiry` timer, legal effect `servicenorm`
+  (advisory) unless the plan settings list the item key under `statutory`,
+  in which case it is `wettelijk` with `onExpiry: transition:terminate`, the
+  core's own rule for an enforcing outcome;
+- an item reaching a terminal state: `cancelForSubject('case-item', uuid)`;
+- a fired enforcing expiry on a `case-item` subject:
+  `CasePlanService::onTimerExpired()` terminates the item through the state
+  machine, cause `realisation`, cause ref `flow-timer:<uuid>`, then
+  evaluates the plan. An item already terminal is left alone.
 
-The core decides when; the case layer only decides what an expiry means for
-an item. Arming failures are logged and never block the transition.
+A deadline already past at activation arms nothing (logged). Arming and
+cancelling failures are logged and never block the transition. Items
+brought over by `ensureItems` emit no transition event and so get no timers;
+their source engine had none.
 
 ### 3.4 One state list (gap 4)
 

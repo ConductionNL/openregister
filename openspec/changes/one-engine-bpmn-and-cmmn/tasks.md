@@ -17,9 +17,9 @@ Small PRs, in this order. PR 1 is what dossiq's drain waits on.
 
 ## 3. Plan-item timers on the shared clock (PR 3)
 
-- [ ] 3.1 `FlowTimer::SUBJECT_TYPES` gains `case-item`.
-- [ ] 3.2 `CasePlanItemTimers` (new, own unit test): arm on entering active with `dueAt` / `expiresAt`; cancel on terminal; arming failure logged, never thrown.
-- [ ] 3.3 Wire it into `CasePlanStateMachine` transitions; listener for `FlowTimerFiredEvent` (expiry, subject `case-item`) terminates the item; unit tests.
+- [x] 3.1 `FlowTimer::SUBJECT_TYPES` gains `case-item`. (CasePlanItemTimersTest::testCaseItemIsATimerSubject)
+- [x] 3.2 `CasePlanItemTimers` (new, own unit test): arm on entering active with `dueAt` / `expiresAt`; cancel on terminal; arming failure logged, never thrown. (lib/Service/Case/CasePlanItemTimers.php, CasePlanItemTimersTest)
+- [x] 3.3 Wire it through `CaseItemTimerListener` on `CaseItemTransitionedEvent` (no change to the state machine) and `FlowTimerFiredEvent` (expiry, subject `case-item`) -> `CasePlanService::onTimerExpired()` terminates the item; unit tests. (CaseItemTimerListenerTest, CasePlanServiceTest::testAnExpiredTimerTerminatesItsItem)
 
 ## 4. Flow nodes that open and advance a case (PR 4)
 
