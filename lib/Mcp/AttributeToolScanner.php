@@ -356,11 +356,11 @@ final class AttributeToolScanner {
 	 */
 	private function unrecognisedDeclaration(McpTool $attribute): ?array {
 		if ($this->hasUnknownScope(attribute: $attribute) === true) {
-			return ['key' => 'scope', 'value' => (string) $attribute->scope, 'allowed' => array_values(McpAnnotationValidator::SCOPES)];
+			return ['key' => 'scope', 'value' => (string) $attribute->scope, 'allowed' => McpAnnotationValidator::SCOPES];
 		}
 
 		if ($attribute->reach !== null && in_array($attribute->reach, ToolReachResolver::ORDER, true) === false) {
-			return ['key' => 'reach', 'value' => $attribute->reach, 'allowed' => array_values(ToolReachResolver::ORDER)];
+			return ['key' => 'reach', 'value' => $attribute->reach, 'allowed' => ToolReachResolver::ORDER];
 		}
 
 		return null;
