@@ -43,6 +43,14 @@ the fail-closed behaviour SHALL be unchanged.
 - **THEN** the broker denies the call before any secret is read
 - **AND** A, signed in, may still use the credential through the session path
 
+#### Scenario: A background call inside a user switch is still judged as background
+
+- **GIVEN** trusted code answers a background task for user U inside a `runAs()` switch, so a session user exists
+- **WHEN** it calls the PHP-internal `requestForBackgroundUser()` with `actingUserId` U
+- **THEN** every guard ignores the session and only the sessionless rules apply
+- **AND** an administrator switched in by `runAs()` who is not a member of the credential's organisation is refused
+- **AND** a call naming no user is refused
+
 #### Scenario: A personal credential serves only its owner in the background
 
 - **GIVEN** a `personal` credential owned by user A

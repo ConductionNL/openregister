@@ -28,6 +28,10 @@ App Store.
   and is a REAL member of the credential's organisation (`OrganisationService::isMemberOfOrganisation()`).
   A Nextcloud administrator gets no blanket pass on this path (Ruben, 2026-10-10); the session path
   keeps admitting administrators.
+- `CredentialBrokerService::requestForBackgroundUser()` is a PHP-internal, non-routed entry point for
+  work that answers a background task for its user. Every guard ignores the session there, so a
+  `runAs()` user switch (hermiq's contextagent turn) cannot turn a background call into a session
+  call that an administrator would pass. A call naming no user is refused.
 - `OrganisationService::userHasAccessToOrganisation(organisationUuid, userId)` is the session rule
   for a named user (member or administrator). `hasAccessToOrganisation()` delegates to it, so the
   two cannot drift. The background path does not use it.

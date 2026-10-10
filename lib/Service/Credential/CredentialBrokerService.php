@@ -150,6 +150,13 @@ class CredentialBrokerService {
 	private const KIND_OAUTH2_TOKEN_SET = 'oauth2-token-set';
 
 	/**
+	 * True only inside {@see requestForBackgroundUser()}: the guards then see no session.
+	 *
+	 * @var boolean
+	 */
+	private bool $ignoreSession = false;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectService $objectService OR object CRUD (loads credential metadata).
@@ -304,6 +311,81 @@ class CredentialBrokerService {
 			secret: (string)$secret
 		);
 	}//end request()
+
+	/**
+	 * Broker a call for a BACKGROUND task's user, judged by the sessionless rules only.
+	 *
+	 * The PHP-internal counterpart of {@see request()} for trusted same-instance code that
+	 * answers a task on behalf of its user (hermiq answering a Nextcloud Assistant task from
+	 * cron). Such work may run inside a `runAs()` user switch, which {@see request()} would
+	 * read as a signed-in session and judge by the session rule, under which a Nextcloud
+	 * administrator reaches every organisation's credential. Here every guard ignores the
+	 * session for the duration of the call, so only the sessionless rules apply:
+	 *
+	 *   - personal credential: `actingUserId` must be its owner;
+	 *   - organisation credential: `actingUserId` must be an enabled, REAL member of the
+	 *     credential's organisation (no administrator pass, Ruben 2026-10-10).
+	 *
+	 * The allowed-app, allow-rule and host-lock guards run unchanged. This method is NOT
+	 * HTTP-routed: request input can never reach it.
+	 *
+	 * @param string $credentialId The `credential` object UUID.
+	 * @param string $appId The calling app's own id.
+	 * @param string $method The HTTP method.
+	 * @param string $path The provider-relative path.
+	 * @param array<string, string> $headers Optional extra request headers.
+	 * @param string|null $body Optional raw request body.
+	 * @param string $actingUserId The task's user (from trusted server state, never request input).
+	 *
+	 * @return array{status: int, headers: array<string, mixed>, body: string} The upstream answer.
+	 *
+	 * @throws CredentialAccessDeniedException When the user is empty or any guard fails closed.
+	 * @throws CredentialUpstreamException When the outbound call fails at the transport level.
+	 *
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-background-acting-user-resolution
+	 */
+	public function requestForBackgroundUser(
+		string $credentialId,
+		string $appId,
+		string $method,
+		string $path,
+		array $headers = [],
+		?string $body = null,
+		string $actingUserId = '',
+	): array {
+		if (trim($actingUserId) === '') {
+			$this->deny(reason: 'a background call must name the user it acts for', credentialId: $credentialId);
+		}
+
+		$previous = $this->ignoreSession;
+		$this->ignoreSession = true;
+		try {
+			return $this->request(
+				credentialId: $credentialId,
+				appId: $appId,
+				method: $method,
+				path: $path,
+				headers: $headers,
+				body: $body,
+				actingUserId: $actingUserId
+			);
+		} finally {
+			$this->ignoreSession = $previous;
+		}
+	}//end requestForBackgroundUser()
+
+	/**
+	 * The session user the guards see: none inside {@see requestForBackgroundUser()}.
+	 *
+	 * @return \OCP\IUser|null The session user, or null.
+	 */
+	private function sessionUser(): ?\OCP\IUser {
+		if ($this->ignoreSession === true) {
+			return null;
+		}
+
+		return $this->userSession->getUser();
+	}//end sessionUser()
 
 	/**
 	 * Resolve the raw secret for an INJECT-ONLY credential, for same-instance app-side injection.
@@ -910,7 +992,7 @@ class CredentialBrokerService {
 		}
 
 		return $this->objectGrants->grantCarriesVerb(
-			userId: $this->userSession->getUser()?->getUID(),
+			userId: $this->sessionUser()?->getUID(),
 			objectUuid: $uuid,
 			verb: 'use'
 		);
@@ -936,7 +1018,7 @@ class CredentialBrokerService {
 		// Session present: the session is authoritative and any asserted
 		// organisation is ignored, so a request-context caller can never escalate
 		// by asserting one.
-		if ($this->userSession->getUser() !== null) {
+		if ($this->sessionUser() !== null) {
 			return $this->organisationService->hasAccessToOrganisation($organisation) === true;
 		}
 
@@ -959,7 +1041,7 @@ class CredentialBrokerService {
 			return [];
 		}
 
-		$user = $this->userSession->getUser();
+		$user = $this->sessionUser();
 		if ($user === null || $user->getUID() !== $uid) {
 			$user = $this->userManager?->get($uid);
 		}
@@ -1054,7 +1136,7 @@ class CredentialBrokerService {
 
 		// Session present: the session identity is authoritative and the asserted acting
 		// organisation is ignored — membership is resolved exactly as before.
-		if ($this->userSession->getUser() !== null) {
+		if ($this->sessionUser() !== null) {
 			if ($this->organisationService->hasAccessToOrganisation($organisation) === false) {
 				$this->deny(reason: 'caller is not a member of the credential organisation', credentialId: $credentialId);
 			}
@@ -1157,7 +1239,7 @@ class CredentialBrokerService {
 	 * @spec openspec/specs/credential-broker/spec.md
 	 */
 	private function resolveActingIdentity(?string $actingUserId): ?string {
-		$user = $this->userSession->getUser();
+		$user = $this->sessionUser();
 		if ($user !== null) {
 			return $user->getUID();
 		}

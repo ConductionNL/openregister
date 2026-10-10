@@ -303,6 +303,126 @@ class CredentialBrokerActsForOrganisationMemberTest extends TestCase {
 	}
 
 	/**
+	 * requestForBackgroundUser() ignores a session: an administrator switched in by runAs()
+	 * who is not a member is refused, although request() would admit them on the session rule.
+	 *
+	 * Fails on the old code: the method did not exist, and request() admitted the admin.
+	 */
+	public function testBackgroundRequestIgnoresAnAdministratorSession(): void {
+		$orgService = $this->createMock(OrganisationService::class);
+		$orgService->method('hasAccessToOrganisation')->willReturn(true);
+		$orgService->method('userHasAccessToOrganisation')->willReturn(true);
+		$orgService->method('isMemberOfOrganisation')->with(self::ORG, 'admin')->willReturn(false);
+
+		$broker = $this->makeBroker(
+			sessionUid: 'admin',
+			client: $this->neverCalledClient(),
+			store: $this->neverReadStore(),
+			orgService: $orgService,
+			users: ['admin' => true]
+		);
+
+		$this->expectException(CredentialAccessDeniedException::class);
+		$broker->requestForBackgroundUser(
+			credentialId: self::UUID,
+			appId: 'hermiq',
+			method: 'POST',
+			path: '/v1/messages',
+			actingUserId: 'admin'
+		);
+	}
+
+	/**
+	 * requestForBackgroundUser() admits a real member even inside someone else's session.
+	 */
+	public function testBackgroundRequestAdmitsARealMember(): void {
+		$response = $this->createMock(IResponse::class);
+		$response->method('getStatusCode')->willReturn(401);
+		$response->method('getHeaders')->willReturn([]);
+		$response->method('getBody')->willReturn('{"type":"error"}');
+		$client = $this->createMock(IClient::class);
+		$client->expects($this->once())->method('request')->willReturn($response);
+
+		$store = $this->createMock(CredentialStore::class);
+		$store->method('get')->willReturn(self::SECRET);
+
+		$orgService = $this->createMock(OrganisationService::class);
+		$orgService->expects($this->never())->method('hasAccessToOrganisation');
+		$orgService->expects($this->once())->method('isMemberOfOrganisation')->with(self::ORG, 'bob')->willReturn(true);
+
+		$broker = $this->makeBroker(
+			sessionUid: 'someone-else',
+			client: $client,
+			store: $store,
+			orgService: $orgService,
+			users: ['bob' => true]
+		);
+
+		$result = $broker->requestForBackgroundUser(
+			credentialId: self::UUID,
+			appId: 'hermiq',
+			method: 'POST',
+			path: '/v1/messages',
+			actingUserId: 'bob'
+		);
+
+		$this->assertSame(401, $result['status']);
+	}
+
+	/**
+	 * requestForBackgroundUser() refuses a call that names nobody, and a personal credential
+	 * for a user who is not its owner, even when the owner is the session user.
+	 */
+	public function testBackgroundRequestRefusesNobodyAndANonOwner(): void {
+		$orgService = $this->createMock(OrganisationService::class);
+		$broker = $this->makeBroker(
+			sessionUid: 'alice',
+			client: $this->neverCalledClient(),
+			store: $this->neverReadStore(),
+			orgService: $orgService,
+			users: ['bob' => true],
+			personal: true
+		);
+
+		foreach (['', 'bob'] as $acting) {
+			try {
+				$broker->requestForBackgroundUser(
+					credentialId: self::UUID,
+					appId: 'hermiq',
+					method: 'POST',
+					path: '/v1/messages',
+					actingUserId: $acting
+				);
+				$this->fail('A background call for "' . $acting . '" must be refused.');
+			} catch (CredentialAccessDeniedException $e) {
+				$this->assertSame('Request not permitted', $e->getMessage());
+			}
+		}
+	}
+
+	/**
+	 * request() keeps the session rule: a signed-in administrator is admitted as before.
+	 */
+	public function testRequestKeepsTheSessionRuleForAnAdministrator(): void {
+		$response = $this->createMock(IResponse::class);
+		$response->method('getStatusCode')->willReturn(200);
+		$response->method('getHeaders')->willReturn([]);
+		$response->method('getBody')->willReturn('{}');
+		$client = $this->createMock(IClient::class);
+		$client->expects($this->once())->method('request')->willReturn($response);
+		$store = $this->createMock(CredentialStore::class);
+		$store->method('get')->willReturn(self::SECRET);
+
+		$orgService = $this->createMock(OrganisationService::class);
+		$orgService->expects($this->once())->method('hasAccessToOrganisation')->with(self::ORG)->willReturn(true);
+		$orgService->expects($this->never())->method('isMemberOfOrganisation');
+
+		$broker = $this->makeBroker(sessionUid: 'admin', client: $client, store: $store, orgService: $orgService, users: ['admin' => true]);
+
+		$this->assertSame(200, $broker->request(credentialId: self::UUID, appId: 'hermiq', method: 'POST', path: '/v1/messages')['status']);
+	}
+
+	/**
 	 * An unauthenticated HTTP call to either broker endpoint is refused before the broker runs,
 	 * whatever acting-user field it carries.
 	 */
