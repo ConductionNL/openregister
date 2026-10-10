@@ -403,7 +403,9 @@ test.describe('object archive state over HTTP', () => {
 		const upload = { data: { name: `bijlage-${RUN}.txt`, content: 'levering' } }
 
 		const refused = await admin.post(filesUrl, upload)
-		expect(refused.status(), 'an upload to a frozen object answers 409').toBe(409)
+		expect(refused.status(), 'an upload to a frozen object answers 409').toBe(
+			409,
+		)
 		const body = await refused.json()
 		expect(body.state).toBe('frozen')
 		expect(body.reason).toBe('bezwaar')
@@ -411,13 +413,24 @@ test.describe('object archive state over HTTP', () => {
 		expect(body.error).toMatch(/frozen/i)
 
 		const listed = await admin.get(filesUrl)
-		expect(listed.ok(), 'reading a frozen object\'s files stays allowed').toBeTruthy()
+		expect(
+			listed.ok(),
+			"reading a frozen object's files stays allowed",
+		).toBeTruthy()
 
-		const unfrozen = await admin.delete(`${API}/objects/${registerId}/${schemaId}/${frozenUuid}/freeze`)
-		expect(unfrozen.ok(), `unfreeze failed: ${await unfrozen.text()}`).toBeTruthy()
+		const unfrozen = await admin.delete(
+			`${API}/objects/${registerId}/${schemaId}/${frozenUuid}/freeze`,
+		)
+		expect(
+			unfrozen.ok(),
+			`unfreeze failed: ${await unfrozen.text()}`,
+		).toBeTruthy()
 
 		const accepted = await admin.post(filesUrl, upload)
-		expect(accepted.ok(), `after an unfreeze the upload goes through: ${await accepted.text()}`).toBeTruthy()
+		expect(
+			accepted.ok(),
+			`after an unfreeze the upload goes through: ${await accepted.text()}`,
+		).toBeTruthy()
 	})
 
 	test('an immutable property accepts its first value and refuses the next', async () => {
