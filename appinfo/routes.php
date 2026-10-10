@@ -1256,6 +1256,12 @@ return [
             // caller that an object exists when they may not read it.
         ['name' => 'objects#presenceBeat',   'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#presenceDepart', 'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+            // A closing tab can only send a beacon, which is always a POST. The
+            // client marks it `?_method=DELETE`; Nextcloud does not read that
+            // marker, so without this route every beacon answered 405 and the
+            // closed tab lingered for a whole window. The method refuses a POST
+            // that does not carry the marker.
+        ['name' => 'objects#presenceDepartByBeacon', 'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#presenceList',   'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
             // Move an object to another register and schema, keeping its uuid
             // and everything keyed on it (identity-survives-a-move). NOT a
