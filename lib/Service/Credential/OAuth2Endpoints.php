@@ -97,10 +97,8 @@ class OAuth2Endpoints {
 	 * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-the-callback-exchanges-the-code-and-mints-a-token-set-credential
 	 */
 	public function safeReturnUrl(string $candidate): string {
-		$fallback = $this->urlGenerator->linkToRouteAbsolute(
-			'settings.PersonalSettings.index',
-			['section' => 'additional']
-		);
+		// The app's own page: Connected accounts is in its user settings dialog.
+		$fallback = $this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page');
 
 		$candidate = trim($candidate);
 		if ($candidate === '') {
