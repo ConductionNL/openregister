@@ -59,6 +59,8 @@ class ObjectFolderResponder {
 	/**
 	 * Answer a failed call.
 	 *
+	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 *
 	 * @param Throwable $e The failure.
 	 *
 	 * @return JSONResponse The error response.
@@ -101,6 +103,8 @@ class ObjectFolderResponder {
 	/**
 	 * Answer an upload request that carried no file.
 	 *
+	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
+	 *
 	 * @return JSONResponse 400.
 	 */
 	public function noUpload(): JSONResponse {
@@ -109,6 +113,8 @@ class ObjectFolderResponder {
 
 	/**
 	 * Answer an upload batch.
+	 *
+	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 *
 	 * @param array $outcome What was stored and refused, from ObjectFolderUploads::uploadAll().
 	 * @param int   $total   How many files were sent.
