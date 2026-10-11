@@ -303,10 +303,13 @@ class PermissionHandlerRbacTest extends TestCase {
 		$this->logger->expects($this->atLeastOnce())
 			->method('warning');
 
-		// With empty authorization (only unknown roles), all actions should be permitted
-		// because the effective authorization ends up empty after role expansion.
+		// Only unknown roles: the block grants nobody anything. It used to come
+		// back empty, and an empty block is "no authorization", which permitted
+		// every action to every signed in account (roles-block-that-resolves-to-
+		// nothing-grants-nothing). It now names the canonical verbs with nobody.
 		$result = $this->handler->resolveAuthorization($schema);
-		$this->assertEmpty($result);
+		$this->assertSame(['read' => [], 'create' => [], 'update' => [], 'delete' => []], $result);
+		$this->assertFalse($this->handler->hasPermission($schema, 'read'));
 	}
 
 	// === Manage Action Tests ===
