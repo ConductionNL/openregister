@@ -209,7 +209,9 @@ class DecisionOwnershipTest extends TestCase {
 					logger: $logger
 				),
 				decisions: new DecisionService(decisionMapper: $decisionMapper),
-				groupManager: $groups
+				groupManager: $groups,
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				logger: $logger
 			)
 		);
 	}//end controllerAs()
@@ -243,6 +245,24 @@ class DecisionOwnershipTest extends TestCase {
 		self::assertSame('d-1', $this->relation->getDecisionUuid());
 		self::assertCount(1, $this->decisions);
 	}//end testASecondReviewerIsRefused()
+
+	/**
+	 * Under hideOthers the PATCH refusal names neither who decided nor when (REQ-ROD-002).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
+	 */
+	public function testUnderHideOthersTheRefusalNamesNoDecider(): void {
+		$this->schemaConfiguration['x-openregister-review']['hideOthers'] = true;
+		$this->firstReviewerDecides();
+
+		$response = $this->controllerAs(uid: 'p.bakker', body: ['skipAnonymization' => true])->update(7);
+
+		self::assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		self::assertSame(['error' => 'decision-owned', 'decision' => 'd-1'], $response->getData());
+		self::assertStringNotContainsString('j.devries', (string)json_encode($response->getData()));
+	}//end testUnderHideOthersTheRefusalNamesNoDecider()
 
 	/**
 	 * A coordinator's change is a new decision, by the coordinator, superseding the first.

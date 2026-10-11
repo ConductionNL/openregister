@@ -29,8 +29,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Decision;
 
+use OCA\OpenRegister\Db\Decision;
 use OCA\OpenRegister\Db\EntityRelation;
+use OCA\OpenRegister\Event\DecisionVisibilityRequestedEvent;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
+use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * The serialised relation a caller may see.
@@ -56,14 +61,18 @@ class DecisionVisibility {
 	/**
 	 * Constructor.
 	 *
-	 * @param ReviewPolicyResolver $resolver     The policy of the relation's subject.
-	 * @param DecisionService      $decisions    The current decision.
-	 * @param IGroupManager        $groupManager Administrators and supervisors.
+	 * @param ReviewPolicyResolver $resolver        The policy of the relation's subject.
+	 * @param DecisionService      $decisions       The current decision.
+	 * @param IGroupManager        $groupManager    Administrators and supervisors.
+	 * @param IEventDispatcher     $eventDispatcher Asks the app that owns the subject (REQ-DEC-003).
+	 * @param LoggerInterface      $logger          Records a listener that failed.
 	 */
 	public function __construct(
 		private readonly ReviewPolicyResolver $resolver,
 		private readonly DecisionService $decisions,
 		private readonly IGroupManager $groupManager,
+		private readonly IEventDispatcher $eventDispatcher,
+		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
 
@@ -117,7 +126,8 @@ class DecisionVisibility {
 	 * Whether the caller may not see this relation's decision.
 	 *
 	 * Hidden when the relation carries a decision, its policy hides others,
-	 * someone else took it, and the caller neither supervises nor administers.
+	 * someone else took it, the caller neither supervises nor administers,
+	 * and the app that owns the subject does not show it to them (REQ-DEC-003).
 	 * A decision whose record is gone is hidden too: its taker is unknown.
 	 *
 	 * @param EntityRelation $relation The relation.
@@ -133,18 +143,55 @@ class DecisionVisibility {
 			return false;
 		}
 
-		$policy = $this->resolver->forRelation(relation: $relation)['policy'];
+		$resolved = $this->resolver->forRelation(relation: $relation);
+		$policy = $resolved['policy'];
 		if ($policy->hidesOthers() === false) {
 			return false;
 		}
 
+		if ($userId === '') {
+			return true;
+		}
+
 		$decision = $this->decisions->find(uuid: $decisionUuid);
-		if ($decision !== null && $userId !== '' && $decision->getDecidedBy() === $userId) {
+		if ($decision !== null && $decision->getDecidedBy() === $userId) {
 			return false;
 		}
 
-		return $this->supervises(userId: $userId, policy: $policy) === false;
+		if ($this->supervises(userId: $userId, policy: $policy) === true) {
+			return false;
+		}
+
+		return $this->shownByEvent(decision: $decision, userId: $userId, policy: $policy, subject: $resolved['subject']) === false;
 	}//end isHidden()
+
+	/**
+	 * Whether the app that owns the subject shows the decision to the caller.
+	 *
+	 * A listener that throws keeps the decision hidden: the question fails closed.
+	 *
+	 * @param Decision|null        $decision The hidden decision.
+	 * @param string               $userId   The caller.
+	 * @param ReviewPolicy         $policy   The policy.
+	 * @param array<string, mixed> $subject  What the decision is on.
+	 *
+	 * @return bool True when a listener allowed it.
+	 */
+	private function shownByEvent(?Decision $decision, string $userId, ReviewPolicy $policy, array $subject): bool {
+		$event = new DecisionVisibilityRequestedEvent(decision: $decision, actorId: $userId, policy: $policy, subject: $subject);
+
+		try {
+			$this->eventDispatcher->dispatchTyped($event);
+		} catch (Throwable $error) {
+			$this->logger->warning(
+				message: '[DecisionVisibility] A listener failed; the decision stays hidden.',
+				context: ['decision' => $decision?->getUuid(), 'actor' => $userId, 'error' => $error->getMessage()]
+			);
+			return false;
+		}
+
+		return $event->isAllowed();
+	}//end shownByEvent()
 
 	/**
 	 * Whether the caller is an administrator or in one of the policy's supervisor groups.
@@ -155,10 +202,6 @@ class DecisionVisibility {
 	 * @return bool
 	 */
 	private function supervises(string $userId, ReviewPolicy $policy): bool {
-		if ($userId === '') {
-			return false;
-		}
-
 		if ($this->groupManager->isAdmin($userId) === true) {
 			return true;
 		}

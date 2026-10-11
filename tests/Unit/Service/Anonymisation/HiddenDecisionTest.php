@@ -24,12 +24,16 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Anonymisation;
 
 use OCA\OpenRegister\Db\Decision;
 use OCA\OpenRegister\Db\EntityRelation;
+use OCA\OpenRegister\Event\DecisionVisibilityRequestedEvent;
 use OCA\OpenRegister\Service\Decision\DecisionService;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCA\OpenRegister\Service\Decision\ReviewPolicyResolver;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * A blind second review: another reviewer's decision is listed but not shown.
@@ -41,6 +45,20 @@ class HiddenDecisionTest extends TestCase {
 	private const DECISION = 'dec00000-0000-4000-8000-000000000001';
 
 	/**
+	 * What a listener does with the question, if anything.
+	 *
+	 * @var (callable(DecisionVisibilityRequestedEvent): void)|null
+	 */
+	private $listener = null;
+
+	/**
+	 * The events dispatched.
+	 *
+	 * @var array<int, DecisionVisibilityRequestedEvent>
+	 */
+	private array $dispatched = [];
+
+	/**
 	 * The filter over a policy, one decision by j.devries, and group membership.
 	 *
 	 * @param array<string, mixed>|null $declaration The schema's x-openregister-review.
@@ -50,7 +68,7 @@ class HiddenDecisionTest extends TestCase {
 	private function visibility(?array $declaration=['ownership' => 'decider', 'supervisors' => ['woo-coordinator'], 'hideOthers' => true]): DecisionVisibility {
 		$resolver = $this->createMock(ReviewPolicyResolver::class);
 		$resolver->method('forRelation')->willReturn(
-			['policy' => ReviewPolicy::fromDeclaration(declaration: $declaration), 'subject' => []]
+			['policy' => ReviewPolicy::fromDeclaration(declaration: $declaration), 'subject' => ['subjectType' => 'entity-relation', 'subjectId' => '12', 'objectUuid' => 'doc-1']]
 		);
 
 		$decision = new Decision();
@@ -67,7 +85,23 @@ class HiddenDecisionTest extends TestCase {
 			static fn (string $uid, string $group): bool => $uid === 'coordinator' && $group === 'woo-coordinator'
 		);
 
-		return new DecisionVisibility(resolver: $resolver, decisions: $decisions, groupManager: $groups);
+		$dispatcher = $this->createMock(IEventDispatcher::class);
+		$dispatcher->method('dispatchTyped')->willReturnCallback(
+			function (DecisionVisibilityRequestedEvent $event): void {
+				$this->dispatched[] = $event;
+				if ($this->listener !== null) {
+					($this->listener)($event);
+				}
+			}
+		);
+
+		return new DecisionVisibility(
+			resolver: $resolver,
+			decisions: $decisions,
+			groupManager: $groups,
+			eventDispatcher: $dispatcher,
+			logger: $this->createMock(LoggerInterface::class)
+		);
 	}//end visibility()
 
 	/**
@@ -170,6 +204,77 @@ class HiddenDecisionTest extends TestCase {
 
 		self::assertSame([DecisionVisibility::HIDDEN, null], array_column($data, 'decision'));
 	}//end testPresentAllMasksEachRelation()
+
+	/**
+	 * The app that owns the subject may show a hidden decision, e.g. to a case-type supervisor (REQ-DEC-003).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-show-a-hidden-decision-req-dec-003
+	 */
+	public function testTheOwningAppMayShowAHiddenDecision(): void {
+		$this->listener = static function (DecisionVisibilityRequestedEvent $event): void {
+			if ($event->getActorId() === 'case-supervisor') {
+				$event->allow();
+			}
+		};
+
+		$data = $this->visibility()->present(relation: $this->relation(), userId: 'case-supervisor');
+		self::assertSame(self::DECISION, $data['decision']);
+		self::assertSame(['5.1.2e'], $data['bases']);
+
+		self::assertCount(1, $this->dispatched);
+		$event = $this->dispatched[0];
+		self::assertSame(self::DECISION, $event->getDecision()?->getUuid());
+		self::assertSame('doc-1', $event->getSubject()['objectUuid'] ?? null);
+		self::assertTrue($event->getPolicy()->hidesOthers());
+
+		self::assertSame(DecisionVisibility::HIDDEN, $this->visibility()->present(relation: $this->relation(), userId: 'p.bakker')['decision']);
+	}//end testTheOwningAppMayShowAHiddenDecision()
+
+	/**
+	 * A listener that throws leaves the decision hidden.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-show-a-hidden-decision-req-dec-003
+	 */
+	public function testAFailingListenerKeepsItHidden(): void {
+		$this->listener = static function (DecisionVisibilityRequestedEvent $event): void {
+			$event->allow();
+			throw new RuntimeException('case lookup failed');
+		};
+
+		$data = $this->visibility()->present(relation: $this->relation(), userId: 'case-supervisor');
+
+		self::assertSame(DecisionVisibility::HIDDEN, $data['decision']);
+		self::assertNull($data['bases']);
+	}//end testAFailingListenerKeepsItHidden()
+
+	/**
+	 * The question is asked only when the decision would otherwise be hidden from someone signed in.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-show-a-hidden-decision-req-dec-003
+	 */
+	public function testTheQuestionIsAskedOnlyWhenHidden(): void {
+		$this->listener = static function (DecisionVisibilityRequestedEvent $event): void {
+			$event->allow();
+		};
+
+		foreach (['coordinator', 'admin', 'j.devries'] as $userId) {
+			$this->visibility()->present(relation: $this->relation(), userId: $userId);
+		}
+
+		$this->visibility()->present(relation: $this->relation(decisionUuid: null), userId: 'p.bakker');
+		$this->visibility(declaration: ['ownership' => 'decider', 'hideOthers' => false])->present(relation: $this->relation(), userId: 'p.bakker');
+
+		$anonymous = $this->visibility()->present(relation: $this->relation(), userId: '');
+		self::assertSame(DecisionVisibility::HIDDEN, $anonymous['decision']);
+
+		self::assertSame([], $this->dispatched);
+	}//end testTheQuestionIsAskedOnlyWhenHidden()
 
 	/**
 	 * Every controller that serialises an entity relation goes through the filter.
