@@ -45,6 +45,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp;
 
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
+use OCA\OpenRegister\Service\Capability\ToolReachResolver;
 use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
@@ -163,15 +164,16 @@ final class AttributeToolScanner {
 				continue;
 			}
 
-			if ($this->hasUnknownScope(attribute: $attributeInstance) === true) {
+			$invalid = $this->unrecognisedDeclaration(attribute: $attributeInstance);
+			if ($invalid !== null) {
 				$logger->warning(
-					'[AttributeToolScanner] #[McpTool] declares an unrecognised `scope`; tool skipped',
+					sprintf('[AttributeToolScanner] #[McpTool] declares an unrecognised `%s`; tool skipped', $invalid['key']),
 					[
 						'appId' => $appId,
 						'class' => $className,
 						'method' => $method->getName(),
-						'scope' => $attributeInstance->scope,
-						'allowedScopes' => McpAnnotationValidator::SCOPES,
+						$invalid['key'] => $invalid['value'],
+						'allowed' => $invalid['allowed'],
 					]
 				);
 				continue;
@@ -256,7 +258,7 @@ final class AttributeToolScanner {
 	}//end buildDescriptor()
 
 	/**
-	 * The grant-matrix taxonomy an attribute declared, or an empty array.
+	 * The grant-matrix taxonomy (subject, action) and the declared reach, or an empty array.
 	 *
 	 * Forwarded on the same additive terms as the annotation hints: a key is
 	 * present ONLY when the author declared it, never inferred from the method
@@ -283,6 +285,12 @@ final class AttributeToolScanner {
 
 		if ($attribute->subject !== null && trim($attribute->subject) !== '') {
 			$taxonomy['subject'] = $attribute->subject;
+		}
+
+		// Already validated against ToolReachResolver::ORDER at scan time
+		// (REQ-ATTR-006); forwarded only when declared, never inferred.
+		if ($attribute->reach !== null) {
+			$taxonomy[ToolReachResolver::REACH_KEY] = $attribute->reach;
 		}
 
 		if ($attribute->action !== null && trim($attribute->action) !== '') {
@@ -328,6 +336,35 @@ final class AttributeToolScanner {
 
 		return in_array($attribute->scope, McpAnnotationValidator::SCOPES, true) === false;
 	}//end hasUnknownScope()
+
+	/**
+	 * The first closed-vocabulary declaration on the attribute that holds a
+	 * value outside its vocabulary, or null when every declared one is valid.
+	 *
+	 * `scope` is checked against {@see McpAnnotationValidator::SCOPES}
+	 * (REQ-ATTR-005) and `reach` against {@see ToolReachResolver::ORDER}
+	 * (REQ-ATTR-006). A misspelt reach would otherwise resolve to `external`
+	 * in silence: safe, but the author would never learn why the tool keeps
+	 * asking for a grant, so the scanner refuses it loudly instead.
+	 *
+	 * @param McpTool $attribute The resolved attribute instance.
+	 *
+	 * @return array{key: string, value: string, allowed: list<string>}|null The offending declaration.
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-ATTR-006 — A curated attribute tool declares its reach)
+	 */
+	private function unrecognisedDeclaration(McpTool $attribute): ?array {
+		if ($this->hasUnknownScope(attribute: $attribute) === true) {
+			return ['key' => 'scope', 'value' => (string) $attribute->scope, 'allowed' => McpAnnotationValidator::SCOPES];
+		}
+
+		if ($attribute->reach !== null && in_array($attribute->reach, ToolReachResolver::ORDER, true) === false) {
+			return ['key' => 'reach', 'value' => $attribute->reach, 'allowed' => ToolReachResolver::ORDER];
+		}
+
+		return null;
+	}//end unrecognisedDeclaration()
 
 	/**
 	 * Infer the `inputSchema` from the method's parameter type hints and

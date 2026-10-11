@@ -34,6 +34,9 @@ use OCA\OpenRegister\Service\Mcp\ToolRegistryFacade;
 use OCA\OpenRegister\Service\ToolRegistry;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AttributeFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\HintScopeFixtureService;
+use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\ReachFixtureService;
+use OCA\OpenRegister\Service\Capability\ToolGrantResolver;
+use OCA\OpenRegister\Service\Capability\ToolReachResolver;
 use OCA\OpenRegister\Tool\AgentTool;
 use OCA\OpenRegister\Tool\ApplicationTool;
 use OCA\OpenRegister\Tool\ObjectsTool;
@@ -46,6 +49,7 @@ use Psr\Log\LoggerInterface;
 
 require_once __DIR__ . '/Fixtures/AttributeFixtureService.php';
 require_once __DIR__ . '/Fixtures/HintScopeFixtureService.php';
+require_once __DIR__ . '/Fixtures/ReachFixtureService.php';
 
 /**
  * Dual-surface tests for the attribute-derived provider.
@@ -267,4 +271,48 @@ class AttributeToolDualSurfaceTest extends TestCase {
 		$this->assertSame('delete', $deleteLead['scope']);
 
 	}//end testDeclaredHintsAndScopeAreVisibleOnFacadeSurface()
+
+	// ── Declared reach end to end (REQ-ATTR-006) ─────────────────────
+
+	/**
+	 * The ReachFixtureService wrapped in a real provider, under app id `dossiq`.
+	 *
+	 * @return AttributeToolProvider
+	 */
+	private function reachProvider(): AttributeToolProvider {
+		$instance = new ReachFixtureService();
+		$entries = (new AttributeToolScanner())->scanClass(appId: 'dossiq', className: get_class($instance), logger: $this->logger);
+		foreach ($entries as &$entry) {
+			$entry['instance'] = $instance;
+		}
+
+		return new AttributeToolProvider(
+			appId: 'dossiq',
+			entries: $entries,
+			auditTrailMapper: $this->auditTrailMapper,
+			logger: $this->logger
+		);
+
+	}//end reachProvider()
+
+	public function testDeclaredReachArrivesAtTheResolverOnBothSurfaces(): void {
+		$service = new McpToolsService(providers: [$this->reachProvider()], logger: $this->logger);
+		$jsonRpc = [];
+		foreach ($service->listTools()['tools'] as $tool) {
+			$jsonRpc[$tool['id']] = $tool;
+		}
+
+		$facade = [];
+		foreach ($this->buildFacade($this->reachProvider())->listTools() as $descriptor) {
+			$facade[$descriptor['mcpId']] = $descriptor;
+		}
+
+		foreach ([$jsonRpc, $facade] as $surface) {
+			$this->assertSame('user', ToolReachResolver::resolve(toolId: 'dossiq.getWorkload', descriptor: $surface['dossiq.getWorkload']));
+			$this->assertFalse(ToolGrantResolver::requiresGrant(id: 'dossiq.getWorkload', descriptor: $surface['dossiq.getWorkload']));
+			// Undeclared on a two-segment id: still fails closed.
+			$this->assertSame('external', ToolReachResolver::resolve(toolId: 'dossiq.reassignCase', descriptor: $surface['dossiq.reassignCase']));
+		}
+
+	}//end testDeclaredReachArrivesAtTheResolverOnBothSurfaces()
 }//end class

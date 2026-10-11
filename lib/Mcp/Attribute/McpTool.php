@@ -57,6 +57,8 @@
  *   (Requirement: REQ-ATTR-001 — The #[McpTool] service-method attribute)
  * @spec openspec/specs/ai-mcp/spec.md
  *   (Requirement: REQ-ATTR-005 — Attribute-declared hints/scope reach both MCP surfaces)
+ * @spec openspec/specs/ai-mcp/spec.md
+ *   (Requirement: REQ-ATTR-006 — A curated attribute tool declares its reach)
  */
 
 declare(strict_types=1);
@@ -100,6 +102,12 @@ final class McpTool {
 	 *                            to CRUD — a tool that sends, converts or delegates should say so
 	 *                            rather than be filed under the nearest CRUD verb, since the matrix
 	 *                            grants on this value.
+	 * @param string|null $reach The widest set of principals a successful call can affect or
+	 *                           disclose to; when set, MUST be one of
+	 *                           {@see \OCA\OpenRegister\Service\Capability\ToolReachResolver::ORDER}
+	 *                           (`self`, `user`, `instance`, `external`), validated by the scanner at
+	 *                           scan time. A curated two-segment id carries no verb to infer a reach
+	 *                           from, so an omitted reach resolves to `external` (fail closed).
 	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-ATTR-001 — The #[McpTool] service-method attribute)
@@ -115,6 +123,7 @@ final class McpTool {
 		public readonly ?string $scope = null,
 		public readonly ?string $subject = null,
 		public readonly ?string $action = null,
+		public readonly ?string $reach = null,
 	) {
 	}//end __construct()
 }//end class

@@ -33,6 +33,7 @@ use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AttributeFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\HintScopeFixtureService;
+use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\ReachFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\ThrowingFixtureService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -41,6 +42,7 @@ use RuntimeException;
 
 require_once __DIR__ . '/../Fixtures/AttributeFixtureService.php';
 require_once __DIR__ . '/../Fixtures/HintScopeFixtureService.php';
+require_once __DIR__ . '/../Fixtures/ReachFixtureService.php';
 require_once __DIR__ . '/../Fixtures/ThrowingFixtureService.php';
 
 /**
@@ -310,4 +312,19 @@ class AttributeToolProviderTest extends TestCase {
 		$this->assertSame(['subject' => 'x'], $result);
 
 	}//end testAuditFailureDoesNotMaskSuccessfulResult()
+
+	// ── getTools: declared reach (REQ-ATTR-006) ──────────────────────
+
+	public function testGetToolsForwardsDeclaredReachAndOmitsAnUndeclaredOne(): void {
+		$provider = $this->provider($this->entriesFor(new ReachFixtureService(), 'dossiq'), 'dossiq');
+
+		$byId = [];
+		foreach ($provider->getTools() as $tool) {
+			$byId[$tool['id']] = $tool;
+		}
+
+		$this->assertSame('user', $byId['dossiq.getWorkload']['reach']);
+		$this->assertArrayNotHasKey('reach', $byId['dossiq.reassignCase']);
+
+	}//end testGetToolsForwardsDeclaredReachAndOmitsAnUndeclaredOne()
 }//end class
