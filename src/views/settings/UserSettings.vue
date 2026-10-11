@@ -22,9 +22,13 @@
   - CnAppRoot owns.
   -->
 <template>
+	<!-- Order follows board OrPersoonlijkeInstellingen: notices (the library's
+	     pane, then browser notifications), connected accounts, credentials. -->
 	<CnNotificationPreferences />
 
 	<BrowserNotificationsSection />
+
+	<OAuth2ConnectionsSection />
 
 	<!-- The library's own label, as CnAppRoot draws it, so no new app key. -->
 	<NcAppSettingsSection
@@ -34,8 +38,6 @@
 			scope="personal"
 			:appCredentials="(manifest && manifest.credentials) || []" />
 	</NcAppSettingsSection>
-
-	<OAuth2ConnectionsSection />
 
 	<NcAppSettingsSection
 		v-if="walkthrough"
