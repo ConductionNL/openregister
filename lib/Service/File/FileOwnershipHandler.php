@@ -51,7 +51,7 @@ class FileOwnershipHandler {
 	 *
 	 * @var string
 	 */
-	private const APP_USER = 'openregister';
+	public const APP_USER = 'openregister';
 
 	/**
 	 * Application group name.
