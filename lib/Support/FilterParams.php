@@ -62,6 +62,13 @@ final class FilterParams {
 	public const FILTER_KEY = 'filter';
 
 	/**
+	 * The words a boolean-column filter accepts, in the form every supported database reads.
+	 *
+	 * @var array<string, string>
+	 */
+	private const BOOLEAN_WORDS = ['true' => '1', 'false' => '0'];
+
+	/**
 	 * Non-underscore parameters that carry object-search CONTEXT, not a filter.
 	 *
 	 * Also the tail of `MagicSearchHandler::getReservedParams()`, which reads
@@ -338,6 +345,94 @@ final class FilterParams {
 	private static function reservedForAggregation(array $controlParams): array {
 		return array_merge($controlParams, self::AGGREGATION_ROUTE_PARAMS, [self::FILTER_KEY]);
 	}//end reservedForAggregation()
+
+	/**
+	 * The form a property filter value is compared in, whatever PHP type it came as.
+	 *
+	 * Every object-filter builder turns a value into SQL text. PHP casts `false`
+	 * to `''`, which PostgreSQL refuses for a boolean column (SQLSTATE 22P02), so a
+	 * PHP caller's `['isDraft' => false]` returned zero rows while `'false'` worked.
+	 * This gives every builder the same comparable form:
+	 *
+	 *  - boolean property: `true`/`false`/`'true'`/`'false'` (any case) become
+	 *    `'1'`/`'0'`, which PostgreSQL, MySQL and MariaDB all read as the boolean;
+	 *  - integer or number property: a PHP boolean becomes `1`/`0`;
+	 *  - any other property: a PHP boolean becomes `'true'`/`'false'`.
+	 *
+	 * An array is mapped element by element; in an operator bag the `isnull` and
+	 * `like` values keep their own rules and are returned untouched. Every other
+	 * value is returned as it came. A null or missing column still matches neither
+	 * true nor false: this changes the value, not the predicate.
+	 *
+	 * @param mixed  $value        The filter value as the caller passed it.
+	 * @param string $propertyType The property's declared JSON-Schema type.
+	 *
+	 * @return mixed The value in its comparable form.
+	 *
+	 * @spec openspec/changes/boolean-filter-values/specs/zoeken-filteren/spec.md#requirement-a-boolean-filter-value-filters-like-its-string-form
+	 */
+	public static function comparableValue(mixed $value, string $propertyType): mixed {
+		if (is_array($value) === true) {
+			return self::comparableList(values: $value, propertyType: $propertyType);
+		}
+
+		if ($propertyType === 'boolean') {
+			return self::booleanColumnValue(value: $value);
+		}
+
+		if (is_bool($value) === false) {
+			return $value;
+		}
+
+		if (in_array($propertyType, ['integer', 'number'], true) === true) {
+			return (int)$value;
+		}
+
+		// `'true'` or `'false'`, the value's JSON spelling.
+		return var_export($value, true);
+	}//end comparableValue()
+
+	/**
+	 * Map a value list or an operator bag element by element.
+	 *
+	 * The `isnull` and `like` operator values keep their own rules and are
+	 * returned untouched.
+	 *
+	 * @param array<array-key, mixed> $values       The list or operator bag.
+	 * @param string                  $propertyType The property's declared JSON-Schema type.
+	 *
+	 * @return array<array-key, mixed> The mapped list or bag.
+	 */
+	private static function comparableList(array $values, string $propertyType): array {
+		$mapped = [];
+		foreach ($values as $key => $item) {
+			$mapped[$key] = $item;
+			if (in_array($key, ['isnull', 'like'], true) === false) {
+				$mapped[$key] = self::comparableValue(value: $item, propertyType: $propertyType);
+			}
+		}
+
+		return $mapped;
+	}//end comparableList()
+
+	/**
+	 * The `'1'`/`'0'` form of a boolean-column filter value.
+	 *
+	 * @param mixed $value A scalar filter value.
+	 *
+	 * @return mixed `'1'` or `'0'` for a boolean or its word, the value itself otherwise.
+	 */
+	private static function booleanColumnValue(mixed $value): mixed {
+		if (is_bool($value) === true) {
+			return (string)(int)$value;
+		}
+
+		if (is_string($value) === true) {
+			return self::BOOLEAN_WORDS[strtolower($value)] ?? $value;
+		}
+
+		return $value;
+	}//end booleanColumnValue()
 
 	/**
 	 * Whether a bracket key names nothing an aggregation row carries.
