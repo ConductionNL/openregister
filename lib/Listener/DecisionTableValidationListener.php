@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
@@ -62,11 +63,13 @@ class DecisionTableValidationListener implements IEventListener {
 	 * @param SchemaMapper           $schemas   Tells a decision-table row from any other.
 	 * @param DecisionTableValidator $validator The validator the inline step uses.
 	 * @param ObjectService          $objects   Finds a table already carrying the key.
+	 * @param RegisterMapper         $registers Tells the decision-tables register from another app's.
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemas,
 		private readonly DecisionTableValidator $validator,
 		private readonly ObjectService $objects,
+		private readonly RegisterMapper $registers,
 	) {
 	}//end __construct()
 
@@ -146,8 +149,37 @@ class DecisionTableValidationListener implements IEventListener {
 			return false;
 		}
 
-		return $schema->getSlug() === DecisionTableStore::SCHEMA;
+		if ($schema->getSlug() !== DecisionTableStore::SCHEMA) {
+			return false;
+		}
+
+		// The slug alone is not the table: another app may still hold a schema
+		// of the same slug in its own register (buildiq did until decision
+		// 196), and its rows are not OpenRegister's tables to validate.
+		return $this->inDecisionTableRegister(object: $object);
 	}//end isDecisionTable()
+
+	/**
+	 * Whether the object lives in the decision-tables register.
+	 *
+	 * @param ObjectEntity $object The object being saved.
+	 *
+	 * @return bool True when its register is `decision-tables`.
+	 */
+	private function inDecisionTableRegister(ObjectEntity $object): bool {
+		$reference = $object->getRegister();
+		if ($reference === null || $reference === '') {
+			return false;
+		}
+
+		try {
+			$register = $this->registers->find($reference, _rbac: false, _multitenancy: false);
+		} catch (Throwable $unresolved) {
+			return false;
+		}
+
+		return $register->getSlug() === DecisionTableStore::REGISTER;
+	}//end inDecisionTableRegister()
 
 	/**
 	 * The uuid of another table already carrying the key, if any.

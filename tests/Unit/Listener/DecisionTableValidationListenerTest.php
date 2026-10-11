@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Listener;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
@@ -13,6 +15,7 @@ use OCA\OpenRegister\Listener\DecisionTableValidationListener;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Service\Dmn\DecisionTableStoreTest;
+use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -22,7 +25,7 @@ use PHPUnit\Framework\TestCase;
  */
 class DecisionTableValidationListenerTest extends TestCase {
 
-	private function listener(string $slug, array $sameKey = []): DecisionTableValidationListener {
+	private function listener(string $slug, array $sameKey = [], ?string $registerSlug = 'decision-tables'): DecisionTableValidationListener {
 		$schema = new Schema();
 		$schema->setSlug($slug);
 		$schemas = $this->createMock(SchemaMapper::class);
@@ -31,13 +34,23 @@ class DecisionTableValidationListenerTest extends TestCase {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('searchObjectsBySlug')->willReturn($sameKey);
 
-		return new DecisionTableValidationListener($schemas, new DecisionTableValidator(), $objects);
+		$registers = $this->createMock(RegisterMapper::class);
+		if ($registerSlug === null) {
+			$registers->method('find')->willThrowException(new DoesNotExistException('no register'));
+		} else {
+			$register = new Register();
+			$register->setSlug($registerSlug);
+			$registers->method('find')->willReturn($register);
+		}
+
+		return new DecisionTableValidationListener($schemas, new DecisionTableValidator(), $objects, $registers);
 	}
 
 	private function row(array $data, string $uuid = 'u-1'): ObjectEntity {
 		$object = new ObjectEntity();
 		$object->setUuid($uuid);
 		$object->setSchema('7');
+		$object->setRegister('3');
 		$object->setObject($data);
 		return $object;
 	}
@@ -75,6 +88,43 @@ class DecisionTableValidationListenerTest extends TestCase {
 	public function testOtherSchemasAreLeftAlone(): void {
 		$event = new ObjectCreatingEvent($this->row(['anything' => true]));
 		$this->listener('invoice')->handle($event);
+		$this->assertFalse($event->isPropagationStopped());
+	}
+
+	/**
+	 * A schema of the same slug in another app's register is not OpenRegister's
+	 * table: its rows are left alone (buildiq's own `decision-table` until it moved).
+	 *
+	 * @return void
+	 */
+	public function testTheSameSlugInAnotherRegisterIsLeftAlone(): void {
+		$event = new ObjectCreatingEvent($this->row(['ruleSetId' => 'loan', 'hitPolicy' => 'first']));
+		$this->listener('decision-table', [], 'buildiq')->handle($event);
+		$this->assertFalse($event->isPropagationStopped());
+	}
+
+	/**
+	 * A row whose register cannot be resolved is left alone.
+	 *
+	 * @return void
+	 */
+	public function testAnUnresolvableRegisterIsLeftAlone(): void {
+		$event = new ObjectCreatingEvent($this->row(['anything' => true]));
+		$this->listener('decision-table', [], null)->handle($event);
+		$this->assertFalse($event->isPropagationStopped());
+	}
+
+	/**
+	 * A row without a schema is left alone.
+	 *
+	 * @return void
+	 */
+	public function testARowWithoutASchemaIsLeftAlone(): void {
+		$object = new ObjectEntity();
+		$object->setUuid('u-9');
+		$object->setObject(['anything' => true]);
+		$event = new ObjectCreatingEvent($object);
+		$this->listener('decision-table')->handle($event);
 		$this->assertFalse($event->isPropagationStopped());
 	}
 }
