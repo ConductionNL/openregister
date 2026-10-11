@@ -279,4 +279,46 @@ class CaseFlowNodesTest extends TestCase {
 		$this->expectException(UnexpectedValueException::class);
 		$node->validateConfig(config: ['item' => 'besluit-genomen', 'to' => 'done']);
 	}//end testAdvanceMovesTheItemAndRefusalsFailTheStep()
+
+	/**
+	 * An empty batch passes straight through both nodes; an advance with no
+	 * item key is refused at save time.
+	 *
+	 * @return void
+	 */
+	public function testEmptyBatchesPassThroughAndAnAdvanceNeedsAnItemKey(): void {
+		$open = new CaseOpenNode(...$this->collaborators());
+		$advance = new CaseAdvanceNode(...$this->collaborators());
+		$this->assertSame([], $open->execute(items: [], config: ['definition' => self::definition()], context: []));
+		$this->assertSame([], $advance->execute(items: [], config: [], context: []));
+
+		$this->expectException(UnexpectedValueException::class);
+		$advance->validateConfig(config: ['item' => ' ', 'to' => CaseItem::STATE_COMPLETED]);
+	}//end testEmptyBatchesPassThroughAndAnAdvanceNeedsAnItemKey()
+
+	/**
+	 * The object of the case comes from the item, or from a configured
+	 * template; an item with neither fails the step; a malformed payload or
+	 * `@self` is read as empty.
+	 *
+	 * @return void
+	 */
+	public function testTheCaseObjectComesFromTheItemOrAConfiguredTemplate(): void {
+		$collaborators = $this->collaborators();
+		$node = new CaseOpenNode(...$collaborators);
+		$context = [FlowRunService::RUN_AS_CONTEXT_KEY => 'alice'];
+
+		$items = [[FlowItems::JSON => ['ref' => CaseFixtures::OBJECT, '@self' => 'not-an-array']]];
+		$out = $node->execute(items: $items, config: ['definition' => self::definition(), 'uuid' => '{{ref}}'], context: $context);
+		$this->assertSame(['opened' => true, 'reason' => 'opened'], $out[0][FlowItems::JSON]['case']);
+		$rows = $this->items->findByObject(objectUuid: CaseFixtures::OBJECT);
+		$this->assertNull($rows[0]->getRegisterId(), 'A malformed @self carries no register.');
+
+		try {
+			$node->execute(items: [[FlowItems::JSON => 'not-an-array']], config: ['definition' => self::definition()], context: $context);
+			$this->fail('an item with no object cannot open a case');
+		} catch (RuntimeException $refusal) {
+			$this->assertStringContainsString('which object', $refusal->getMessage());
+		}
+	}//end testTheCaseObjectComesFromTheItemOrAConfiguredTemplate()
 }//end class

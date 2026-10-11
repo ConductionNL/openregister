@@ -215,5 +215,9 @@ class CasePlanItemTimersTest extends TestCase {
 		$task = clone $timer;
 		$task->setSubjectType('task');
 		$this->assertNull($this->service()->itemToTerminate(event: $fire($task, FlowTimerFiredEvent::KIND_EXPIRY)));
+
+		$blank = clone $timer;
+		$blank->setSubjectUuid('  ');
+		$this->assertNull($this->service()->itemToTerminate(event: $fire($blank, FlowTimerFiredEvent::KIND_EXPIRY)), 'A timer naming no item terminates nothing.');
 	}//end testOnlyAnEnforcingExpiryOnACaseItemTerminates()
 }//end class

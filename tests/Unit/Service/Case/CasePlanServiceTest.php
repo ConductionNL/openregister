@@ -640,5 +640,9 @@ class CasePlanServiceTest extends TestCase {
 		$this->assertFalse($this->service()->onTimerExpired(itemUuid: 'item-3', timerUuid: 'timer-9'), 'A terminal item is left alone.');
 		$this->assertSame(CaseItem::STATE_COMPLETED, $this->items->findByUuid(uuid: 'item-3')->getState());
 		$this->assertFalse($this->service()->onTimerExpired(itemUuid: 'item-404', timerUuid: 'timer-9'), 'A vanished item is not an error.');
+
+		$this->items->seed([CaseFixtures::row(id: 4, key: 'late', type: CaseItem::TYPE_MILESTONE, state: CaseItem::STATE_ENABLED, parentId: 1)]);
+		$this->assertFalse($this->service()->onTimerExpired(itemUuid: 'item-4', timerUuid: 'timer-9'), 'A term that cannot end its item is logged.');
+		$this->assertSame(CaseItem::STATE_ENABLED, $this->items->findByUuid(uuid: 'item-4')->getState());
 	}//end testAnExpiredTimerTerminatesItsItem()
 }//end class
