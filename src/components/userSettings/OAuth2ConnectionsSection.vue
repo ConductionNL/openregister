@@ -18,15 +18,18 @@
  @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-personal-settings
 -->
 <template>
-	<NcSettingsSection
+	<NcAppSettingsSection
+		id="oauth2-connections"
 		:name="t('openregister', 'Connected accounts')"
-		:description="
-			t(
-				'openregister',
-				'Connect a social or analytics account once. OpenRegister keeps the token and refreshes it, so apps never hold it.',
-			)
-		"
 		data-testid="oauth2-connections-section">
+		<p class="oauth2-connections-section__description">
+			{{
+				t(
+					'openregister',
+					'Connect a social or analytics account once. OpenRegister keeps the token and refreshes it, so apps never hold it.',
+				)
+			}}
+		</p>
 		<NcNoteCard v-if="error" type="error" data-testid="oauth2-connections-error">
 			{{ error }}
 		</NcNoteCard>
@@ -117,7 +120,7 @@
 				</NcButton>
 			</div>
 		</template>
-	</NcSettingsSection>
+	</NcAppSettingsSection>
 </template>
 
 <script>
@@ -125,11 +128,11 @@ import axios from '@nextcloud/axios'
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import {
+	NcAppSettingsSection,
 	NcButton,
 	NcLoadingIcon,
 	NcNoteCard,
 	NcSelect,
-	NcSettingsSection,
 	NcTextField,
 } from '@nextcloud/vue'
 
@@ -140,7 +143,7 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		NcSelect,
-		NcSettingsSection,
+		NcAppSettingsSection,
 		NcTextField,
 	},
 
@@ -408,6 +411,11 @@ export default {
 </script>
 
 <style scoped>
+.oauth2-connections-section__description {
+	margin-bottom: calc(var(--default-grid-baseline) * 3);
+	color: var(--color-text-maxcontrast);
+}
+
 .oauth2-connections__list {
 	display: flex;
 	flex-direction: column;

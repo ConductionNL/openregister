@@ -131,6 +131,7 @@ Vrij en open source onder de EUPL-licentie.
 
 	<background-jobs>
 		<job>OCA\OpenRegister\BackgroundJob\LogCleanUpTask</job>
+		<job>OCA\OpenRegister\BackgroundJob\FormUploadPurgeJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\RecomputeTimersForCalendarJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\StateHistoryRebuildJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ViewAlertSweepJob</job>
@@ -523,7 +524,6 @@ Vrij en open source onder de EUPL-licentie.
 		<admin>OCA\OpenRegister\Settings\OpenRegisterAdmin</admin>
 		<admin>OCA\OpenRegister\Settings\IntegrationsAdminSettings</admin>
 		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
-		<personal>OCA\OpenRegister\Settings\OpenRegisterPersonal</personal>
 	</settings>
 
 	<!-- The notifier is registered in PHP:

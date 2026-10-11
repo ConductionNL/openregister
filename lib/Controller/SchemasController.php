@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Rbac\ExternalGrantGuard;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
+use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
@@ -1059,6 +1060,7 @@ class SchemasController extends Controller {
 	 * @return JSONResponse JSON response with updated schema or error
 	 *
 	 * @psalm-return JSONResponse<200, Schema,
+	 *     array<never, never>>|JSONResponse<200, array<string, mixed>,
 	 *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
 	 *     array<never, never>>|JSONResponse<422, array{error: string,
 	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
@@ -1089,6 +1091,53 @@ class SchemasController extends Controller {
 	}//end update()
 
 	/**
+	 * The dependent-form assessment of an update that changes properties or required.
+	 *
+	 * @param Schema               $existing The stored schema.
+	 * @param array<string, mixed> $data     The update body.
+	 *
+	 * @return array<string, mixed>|null The assessment (refused, schema, affected), or null when the definition is unchanged.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
+	 */
+	private function assessDependentForms(Schema $existing, array $data): ?array {
+		$check = $this->formDependentsCheck();
+		if ($check === null || (isset($data['properties']) === false && isset($data['required']) === false)) {
+			return null;
+		}
+
+		$proposed = clone $existing;
+		if (is_array($data['properties'] ?? null) === true) {
+			$proposed->setProperties($data['properties']);
+		}
+
+		if (is_array($data['required'] ?? null) === true) {
+			$proposed->setRequired($data['required']);
+		}
+
+		return $check->assess(schema: $proposed);
+	}//end assessDependentForms()
+
+	/**
+	 * The dependent-form check, resolved lazily like the audit service.
+	 *
+	 * @return FormDependentsCheck|null The check, or null when it cannot be built.
+	 */
+	private function formDependentsCheck(): ?FormDependentsCheck {
+		try {
+			$check = $this->container->get(FormDependentsCheck::class);
+		} catch (\Throwable) {
+			return null;
+		}
+
+		if ($check instanceof FormDependentsCheck) {
+			return $check;
+		}
+
+		return null;
+	}//end formDependentsCheck()
+
+	/**
 	 * Apply an update body to a schema: permission, validation, versioning gate, write, changelog.
 	 *
 	 * Shared by a direct update and by publishing a draft, so a published draft
@@ -1107,6 +1156,7 @@ class SchemasController extends Controller {
 	 * @return JSONResponse JSON response with updated schema or error
 	 *
 	 * @psalm-return JSONResponse<200, Schema,
+	 *     array<never, never>>|JSONResponse<200, array<string, mixed>,
 	 *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
 	 *     array<never, never>>|JSONResponse<422, array{error: string,
 	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
@@ -1216,6 +1266,21 @@ class SchemasController extends Controller {
 			}
 		}
 
+		// Decision 179 (ADR-117 D2): judge the published forms that submit
+		// into this schema against what it is about to become. An owning app
+		// set to `refuse` blocks the save; otherwise the broken forms are
+		// unpublished after the save, and the response lists them.
+		$formAssessment = $this->assessDependentForms(existing: $existingSchema, data: $data);
+		if ($formAssessment !== null && $formAssessment['refused'] === true) {
+			return new JSONResponse(
+				data: [
+					'error' => 'This change would break published forms that submit into this schema. Their owning app refuses the change.',
+					'affectedForms' => $this->formDependentsCheck()?->apply(assessment: $formAssessment) ?? [],
+				],
+				statusCode: 409
+			);
+		}
+
 		try {
 			// Update the schema with the provided data.
 			$updatedSchema = $this->schemaMapper->updateFromArray(id: $id, object: $data);
@@ -1255,6 +1320,15 @@ class SchemasController extends Controller {
 				schemaId: $updatedSchema->getId(),
 				operation: 'update'
 			);
+
+			if ($formAssessment !== null && $formAssessment['affected'] !== []) {
+				return new JSONResponse(
+					data: array_merge(
+						$updatedSchema->jsonSerialize(),
+						['affectedForms' => $this->formDependentsCheck()?->apply(assessment: $formAssessment) ?? []]
+					)
+				);
+			}
 
 			return new JSONResponse(data: $updatedSchema);
 		} catch (UniqueHintException $e) {
@@ -1527,6 +1601,7 @@ class SchemasController extends Controller {
 	 * @no-admin-idor-exempt Pure delegation to update(), which performs the checkSchemaManagePermission() guard; this method has no body of its own.
 	 *
 	 * @psalm-return JSONResponse<200, Schema,
+	 *     array<never, never>>|JSONResponse<200, array<string, mixed>,
 	 *     array<never, never>>|JSONResponse<400|403|404|409|500, array{error: string},
 	 *     array<never, never>>|JSONResponse<422, array{error: string,
 	 *     errors: array<int, array{code: string, message: string}>}, array<never, never>>
