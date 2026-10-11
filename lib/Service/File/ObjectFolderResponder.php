@@ -62,6 +62,8 @@ class ObjectFolderResponder {
 	 * @param Throwable $e The failure.
 	 *
 	 * @return JSONResponse The error response.
+	 *
+	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 */
 	public function failure(Throwable $e): JSONResponse {
 		if ($e instanceof ObjectFileAccessDeniedException === true) {
@@ -102,6 +104,8 @@ class ObjectFolderResponder {
 	 * Answer an upload request that carried no file.
 	 *
 	 * @return JSONResponse 400.
+	 *
+	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 */
 	public function noUpload(): JSONResponse {
 		return new JSONResponse(data: ['error' => $this->l10n->t('No file was uploaded')], statusCode: 400);
@@ -117,6 +121,8 @@ class ObjectFolderResponder {
 	 * @phpstan-param array{stored: list<array<string, mixed>>, rejected: list<array{name: string, error: string, conflict: bool}>} $outcome
 	 *
 	 * @return JSONResponse 201 when all were stored, 207 when some were, 409 when every file was a taken name, 400 otherwise.
+	 *
+	 * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
 	 */
 	public function uploaded(array $outcome, int $total): JSONResponse {
 		$conflicts = 0;

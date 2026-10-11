@@ -44,7 +44,10 @@ const RUN = Math.random().toString(36).slice(2, 10)
 const API = '/index.php/apps/openregister/api'
 
 /** Build an API context authenticated as one user. */
-async function contextFor(user: string, password: string): Promise<APIRequestContext> {
+async function contextFor(
+	user: string,
+	password: string,
+): Promise<APIRequestContext> {
 	return pwRequest.newContext({
 		baseURL: BASE,
 		extraHTTPHeaders: {
@@ -55,7 +58,7 @@ async function contextFor(user: string, password: string): Promise<APIRequestCon
 	})
 }
 
-type Entry = { id: number, name: string, type: string, path: string }
+type Entry = { id: number; name: string; type: string; path: string }
 
 // Creating a register, a schema and two objects with folders takes longer
 // than the 30 s default on a busy instance.
@@ -79,14 +82,25 @@ test.describe('an object folder through the object rule', () => {
 		delete: [`user:${OWNER}`],
 	})
 
-	const folderUrl = (uuid: string, suffix = '') => `${API}/objects/${registerId}/${schemaId}/${uuid}/folder${suffix}`
+	const folderUrl = (uuid: string, suffix = '') =>
+		`${API}/objects/${registerId}/${schemaId}/${uuid}/folder${suffix}`
 
 	/** Upload one text file into a folder of an object. */
-	async function upload(ctx: APIRequestContext, uuid: string, path: string, name: string, body: string) {
+	async function upload(
+		ctx: APIRequestContext,
+		uuid: string,
+		path: string,
+		name: string,
+		body: string,
+	) {
 		return ctx.post(folderUrl(uuid, '/upload'), {
 			multipart: {
 				path,
-				'files[]': { name, mimeType: 'text/plain', buffer: Buffer.from(body) },
+				'files[]': {
+					name,
+					mimeType: 'text/plain',
+					buffer: Buffer.from(body),
+				},
 			},
 		})
 	}
@@ -98,7 +112,9 @@ test.describe('an object folder through the object rule', () => {
 
 	/** Create an object as the owner. */
 	async function createObject(key: string): Promise<string> {
-		const res = await owner.post(`${API}/objects/${registerId}/${schemaId}`, { data: { key } })
+		const res = await owner.post(`${API}/objects/${registerId}/${schemaId}`, {
+			data: { key },
+		})
 		expect(res.ok(), `object create failed: ${await res.text()}`).toBeTruthy()
 		const body = await res.json()
 		return String(body['@self']?.id ?? body.id ?? body.uuid)
@@ -109,12 +125,20 @@ test.describe('an object folder through the object rule', () => {
 		owner = await contextFor(OWNER, PASS)
 		other = await contextFor(OTHER, PASS)
 
-		for (const [ctx, uid] of [[owner, OWNER], [other, OTHER]] as const) {
+		for (const [ctx, uid] of [
+			[owner, OWNER],
+			[other, OTHER],
+		] as const) {
 			const res = await ctx.get(`${API}/registers`)
-			expect(res.status(), `seeded account '${uid}' cannot authenticate; did seed.sh run?`).toBeLessThan(400)
+			expect(
+				res.status(),
+				`seeded account '${uid}' cannot authenticate; did seed.sh run?`,
+			).toBeLessThan(400)
 		}
 
-		const reg = await admin.post(`${API}/registers`, { data: { title: `e2e object folder ${RUN}`, description: 'e2e' } })
+		const reg = await admin.post(`${API}/registers`, {
+			data: { title: `e2e object folder ${RUN}`, description: 'e2e' },
+		})
 		expect(reg.ok(), `register create failed: ${await reg.text()}`).toBeTruthy()
 		registerId = String((await reg.json()).id)
 
@@ -122,7 +146,9 @@ test.describe('an object folder through the object rule', () => {
 			data: {
 				title: `e2e object folder schema ${RUN}`,
 				description: 'e2e',
-				properties: { key: { type: 'string', title: 'Key', maxLength: 255 } },
+				properties: {
+					key: { type: 'string', title: 'Key', maxLength: 255 },
+				},
 				authorization: authorization([`user:${OWNER}`, `user:${OTHER}`]),
 			},
 		})
@@ -133,7 +159,10 @@ test.describe('an object folder through the object rule', () => {
 		caseB = await createObject('case-b')
 
 		const stored = await upload(owner, caseB, '', 'van-b.txt', 'case b')
-		expect(stored.status(), `upload to case B failed: ${await stored.text()}`).toBe(201)
+		expect(
+			stored.status(),
+			`upload to case B failed: ${await stored.text()}`,
+		).toBe(201)
 		caseBFileId = (await stored.json()).stored[0].id
 	})
 
@@ -150,17 +179,29 @@ test.describe('an object folder through the object rule', () => {
 	})
 
 	test('an updater adds a subfolder and a file in it, and downloads it', async () => {
-		const made = await owner.post(folderUrl(caseA), { data: { name: 'Bijlagen', path: '' } })
+		const made = await owner.post(folderUrl(caseA), {
+			data: { name: 'Bijlagen', path: '' },
+		})
 		expect(made.status(), await made.text()).toBe(201)
 		folderId = (await made.json()).id
 
-		expect((await upload(owner, caseA, '', 'besluit.txt', 'besluit')).status()).toBe(201)
-		const stored = await upload(owner, caseA, 'Bijlagen', 'brief.txt', 'hallo bea')
+		expect(
+			(await upload(owner, caseA, '', 'besluit.txt', 'besluit')).status(),
+		).toBe(201)
+		const stored = await upload(
+			owner,
+			caseA,
+			'Bijlagen',
+			'brief.txt',
+			'hallo bea',
+		)
 		expect(stored.status(), await stored.text()).toBe(201)
 		const file = (await stored.json()).stored[0] as Entry
 		expect(file.path).toBe('Bijlagen/brief.txt')
 
-		const download = await owner.get(`${API}/objects/${registerId}/${schemaId}/${caseA}/files/${file.id}`)
+		const download = await owner.get(
+			`${API}/objects/${registerId}/${schemaId}/${caseA}/files/${file.id}`,
+		)
 		expect(download.status()).toBe(200)
 		expect(await download.text()).toBe('hallo bea')
 	})
@@ -170,7 +211,9 @@ test.describe('an object folder through the object rule', () => {
 		expect(root.status(), await root.text()).toBe(200)
 		const rootBody = await root.json()
 		expect(rootBody.canChange).toBe(false)
-		expect((rootBody.entries as Entry[]).map((e) => `${e.type}:${e.name}`).sort()).toEqual(['file:besluit.txt', 'folder:Bijlagen'])
+		expect(
+			(rootBody.entries as Entry[]).map((e) => `${e.type}:${e.name}`).sort(),
+		).toEqual(['file:besluit.txt', 'folder:Bijlagen'])
 
 		const sub = await list(other, caseA, 'Bijlagen')
 		expect(sub.status()).toBe(200)
@@ -178,26 +221,52 @@ test.describe('an object folder through the object rule', () => {
 		expect(subEntries.map((e) => e.path)).toEqual(['Bijlagen/brief.txt'])
 
 		// The reader downloads through the object's file endpoint, as herself.
-		const download = await other.get(`${API}/objects/${registerId}/${schemaId}/${caseA}/files/${subEntries[0].id}`)
+		const download = await other.get(
+			`${API}/objects/${registerId}/${schemaId}/${caseA}/files/${subEntries[0].id}`,
+		)
 		expect(download.status()).toBe(200)
 		expect(await download.text()).toBe('hallo bea')
 
 		// And may change nothing.
-		expect((await other.post(folderUrl(caseA), { data: { name: 'Nieuw' } })).status()).toBe(403)
-		expect((await upload(other, caseA, 'Bijlagen', 'nee.txt', 'x')).status()).toBe(403)
-		expect((await other.put(folderUrl(caseA, `/${folderId}`), { data: { name: 'Anders' } })).status()).toBe(403)
-		expect((await other.delete(folderUrl(caseA, `/${folderId}`))).status()).toBe(403)
+		expect(
+			(
+				await other.post(folderUrl(caseA), { data: { name: 'Nieuw' } })
+			).status(),
+		).toBe(403)
+		expect(
+			(await upload(other, caseA, 'Bijlagen', 'nee.txt', 'x')).status(),
+		).toBe(403)
+		expect(
+			(
+				await other.put(folderUrl(caseA, `/${folderId}`), {
+					data: { name: 'Anders' },
+				})
+			).status(),
+		).toBe(403)
+		expect((await other.delete(folderUrl(caseA, `/${folderId}`))).status()).toBe(
+			403,
+		)
 		const after = await list(owner, caseA)
-		expect(((await after.json()).entries as Entry[]).map((e) => e.name).sort()).toEqual(['Bijlagen', 'besluit.txt'])
+		expect(
+			((await after.json()).entries as Entry[]).map((e) => e.name).sort(),
+		).toEqual(['Bijlagen', 'besluit.txt'])
 	})
 
 	test('no share is created for the reader', async () => {
-		const shares = await other.get('/ocs/v2.php/apps/files_sharing/api/v1/shares', {
-			params: { shared_with_me: 'true', format: 'json' },
-		})
+		const shares = await other.get(
+			'/ocs/v2.php/apps/files_sharing/api/v1/shares',
+			{
+				params: { shared_with_me: 'true', format: 'json' },
+			},
+		)
 		expect(shares.status()).toBe(200)
-		const data = ((await shares.json()).ocs?.data ?? []) as Array<{ path?: string, file_target?: string }>
-		const mirrors = data.filter((share) => String(share.path ?? share.file_target ?? '').includes(caseA))
+		const data = ((await shares.json()).ocs?.data ?? []) as Array<{
+			path?: string
+			file_target?: string
+		}>
+		const mirrors = data.filter((share) =>
+			String(share.path ?? share.file_target ?? '').includes(caseA),
+		)
 		expect(mirrors, 'a share on the case folder reached the reader').toEqual([])
 	})
 
@@ -207,30 +276,58 @@ test.describe('an object folder through the object rule', () => {
 			expect(res.status(), `path ${path}`).toBe(400)
 		}
 		expect((await list(other, caseA, 'besluit.txt')).status()).toBe(404)
-		expect((await upload(owner, caseA, '../' + caseB, 'x.txt', 'x')).status()).toBe(400)
+		expect(
+			(await upload(owner, caseA, '../' + caseB, 'x.txt', 'x')).status(),
+		).toBe(400)
 	})
 
 	test('a taken name is refused', async () => {
-		expect((await owner.post(folderUrl(caseA), { data: { name: 'Bijlagen' } })).status()).toBe(409)
-		expect((await upload(owner, caseA, 'Bijlagen', 'brief.txt', 'overschreven')).status()).toBe(409)
+		expect(
+			(
+				await owner.post(folderUrl(caseA), { data: { name: 'Bijlagen' } })
+			).status(),
+		).toBe(409)
+		expect(
+			(
+				await upload(owner, caseA, 'Bijlagen', 'brief.txt', 'overschreven')
+			).status(),
+		).toBe(409)
 	})
 
 	test('a node of another object is not reachable', async () => {
-		expect((await owner.put(folderUrl(caseA, `/${caseBFileId}`), { data: { name: 'gestolen.txt' } })).status()).toBe(404)
-		expect((await owner.delete(folderUrl(caseA, `/${caseBFileId}`))).status()).toBe(404)
+		expect(
+			(
+				await owner.put(folderUrl(caseA, `/${caseBFileId}`), {
+					data: { name: 'gestolen.txt' },
+				})
+			).status(),
+		).toBe(404)
+		expect(
+			(await owner.delete(folderUrl(caseA, `/${caseBFileId}`))).status(),
+		).toBe(404)
 		const b = await list(owner, caseB)
-		expect(((await b.json()).entries as Entry[]).map((e) => e.name)).toEqual(['van-b.txt'])
+		expect(((await b.json()).entries as Entry[]).map((e) => e.name)).toEqual([
+			'van-b.txt',
+		])
 	})
 
 	test('an updater renames and deletes a subfolder', async () => {
-		const renamed = await owner.put(folderUrl(caseA, `/${folderId}`), { data: { name: 'Stukken' } })
+		const renamed = await owner.put(folderUrl(caseA, `/${folderId}`), {
+			data: { name: 'Stukken' },
+		})
 		expect(renamed.status(), await renamed.text()).toBe(200)
-		let names = ((await (await list(owner, caseA)).json()).entries as Entry[]).map((e) => e.name).sort()
+		let names = ((await (await list(owner, caseA)).json()).entries as Entry[])
+			.map((e) => e.name)
+			.sort()
 		expect(names).toEqual(['Stukken', 'besluit.txt'])
 		expect((await list(owner, caseA, 'Stukken')).status()).toBe(200)
 
-		expect((await owner.delete(folderUrl(caseA, `/${folderId}`))).status()).toBe(200)
-		names = ((await (await list(owner, caseA)).json()).entries as Entry[]).map((e) => e.name)
+		expect((await owner.delete(folderUrl(caseA, `/${folderId}`))).status()).toBe(
+			200,
+		)
+		names = ((await (await list(owner, caseA)).json()).entries as Entry[]).map(
+			(e) => e.name,
+		)
 		expect(names).toEqual(['besluit.txt'])
 	})
 
@@ -238,7 +335,9 @@ test.describe('an object folder through the object rule', () => {
 		const sch = await admin.put(`${API}/schemas/${schemaId}`, {
 			data: {
 				title: `e2e object folder schema ${RUN}`,
-				properties: { key: { type: 'string', title: 'Key', maxLength: 255 } },
+				properties: {
+					key: { type: 'string', title: 'Key', maxLength: 255 },
+				},
 				authorization: authorization([`user:${OWNER}`]),
 			},
 		})
