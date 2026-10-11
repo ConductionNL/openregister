@@ -1837,6 +1837,13 @@ return [
 		['name' => 'views#update', 'url' => '/api/views/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'views#patch', 'url' => '/api/views/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'views#destroy', 'url' => '/api/views/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+		// Record templates (records-saved-templates D-4): named values for a new record, shared like a view.
+		['name' => 'recordTemplates#index', 'url' => '/api/record-templates', 'verb' => 'GET'],
+		['name' => 'recordTemplates#show', 'url' => '/api/record-templates/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'recordTemplates#create', 'url' => '/api/record-templates', 'verb' => 'POST'],
+		['name' => 'recordTemplates#update', 'url' => '/api/record-templates/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'recordTemplates#patch', 'url' => '/api/record-templates/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'recordTemplates#destroy', 'url' => '/api/record-templates/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
 		// Read-only presentation data — drag-to-move goes through the existing
 		// guarded object PATCH/PUT (/api/objects/{register}/{schema}/{id}), never
 		// a bespoke endpoint here (REQ-VIEW-KANBAN-03).
