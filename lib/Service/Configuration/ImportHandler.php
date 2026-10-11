@@ -2938,7 +2938,7 @@ class ImportHandler {
 		// transaction on purpose: they create and alter magic tables, and on
 		// MySQL/MariaDB any DDL statement silently commits the open
 		// transaction, which then breaks every savepoint and the final commit.
-		$ownsImportTransaction = $this->beginImportTransaction();
+		$ownsTransaction = $this->beginImportTransaction();
 		try {
 			// Process and import schemas if present.
 			// TWO-PASS APPROACH: First create all schemas without resolving cross-references,
@@ -3379,11 +3379,11 @@ class ImportHandler {
 			}//end if
 		} catch (\Throwable $e) {
 			// Keep what completed before the escape, exactly as autocommit did.
-			$this->closeImportTransactionAfterError(owned: $ownsImportTransaction, error: $e);
+			$this->closeImportTransactionAfterError(owned: $ownsTransaction, error: $e);
 			throw $e;
 		}//end try
 
-		$this->commitImportTransaction(owned: $ownsImportTransaction);
+		$this->commitImportTransaction(owned: $ownsTransaction);
 
 		// Selectielijst categories the app ships (`components.selectionLists`),
 		// written as selectielijst register rows so its schemas' `archive.classification`
