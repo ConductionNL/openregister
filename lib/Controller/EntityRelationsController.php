@@ -112,6 +112,8 @@ class EntityRelationsController extends Controller {
 	 * @return JSONResponse Updated relation (200) or a structured error.
 	 *
 	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
 	 */
 	public function update(int $id): JSONResponse {
 		$user = $this->userSession->getUser();
