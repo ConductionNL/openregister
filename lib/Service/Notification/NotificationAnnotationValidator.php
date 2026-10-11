@@ -49,7 +49,18 @@ final class NotificationAnnotationValidator {
 
 	private const VALID_TRIGGERS = ['created', 'updated', 'transition', 'scheduled', 'threshold', 'calculatedChange'];
 
-	private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'role', 'relation', 'object-acl', 'expression', 'watchers', 'parties'];
+	private const VALID_RECIPIENT_KINDS = [
+		'users',
+		'field',
+		'groups',
+		'role',
+		'relation',
+		'object-acl',
+		'expression',
+		'watchers',
+		'parties',
+		ReferencedAddressNotifier::KIND,
+	];
 
 	private const VALID_CHANNELS = ['nc-notification', 'email', 'activity', 'webhook', 'talk', 'web-push'];
 
@@ -833,6 +844,12 @@ final class NotificationAnnotationValidator {
 					}
 				}
 
+				if ($kind === ReferencedAddressNotifier::KIND) {
+					foreach ($this->emailRecipientErrors(recipient: $recipient, spec: $spec, propKeys: $propKeys, name: (string)$name, index: (int)$i) as $error) {
+						$errors[] = $error;
+					}
+				}
+
 				if ($kind === 'object-acl') {
 					$perm = (string)($recipient['permission'] ?? '');
 					if (in_array($perm, ['read', 'manage'], true) === false) {
@@ -894,6 +911,78 @@ final class NotificationAnnotationValidator {
 
 		return $errors;
 	}//end validate()
+
+	/**
+	 * Errors for one `email` recipient entry (REQ-ERO-007).
+	 *
+	 * The first path segment must be a declared property, the path may follow
+	 * at most ReferencedAddressNotifier::MAX_HOPS references, and the rule must
+	 * send e-mail: an `email` entry on a rule without the email channel would
+	 * reach nobody, every time, in silence.
+	 *
+	 * @param array<string, mixed> $recipient The entry.
+	 * @param array<string, mixed> $spec      The rule.
+	 * @param array<int, string>   $propKeys  The schema's declared properties.
+	 * @param string               $name      The rule name, for messages.
+	 * @param int                  $index     The entry's index, for messages.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 *
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
+	 */
+	private function emailRecipientErrors(array $recipient, array $spec, array $propKeys, string $name, int $index): array {
+		$errors = [];
+		$path = trim((string)($recipient['field'] ?? ''));
+		$segments = array_values(array_filter(explode('.', $path), static fn (string $s): bool => $s !== ''));
+		if ($segments === []) {
+			return [[
+				'code' => 'notification-recipient-email-field-missing',
+				'message' => sprintf(
+					'Notification "%s" recipient[%d] kind=email requires a `field` naming the address, e.g. "supplierRef.contactEmail".',
+					$name,
+					$index
+				),
+			]];
+		}
+
+		if (in_array($segments[0], $propKeys, true) === false) {
+			$errors[] = [
+				'code' => 'notification-recipient-field-unknown',
+				'message' => sprintf(
+					'Notification "%s" recipient[%d] field "%s" is not declared on the schema.',
+					$name,
+					$index,
+					$segments[0]
+				),
+			];
+		}
+
+		if (count($segments) > (ReferencedAddressNotifier::MAX_HOPS + 1)) {
+			$errors[] = [
+				'code' => 'notification-recipient-email-path-too-deep',
+				'message' => sprintf(
+					'Notification "%s" recipient[%d] field "%s" follows more than %d references.',
+					$name,
+					$index,
+					$path,
+					ReferencedAddressNotifier::MAX_HOPS
+				),
+			];
+		}
+
+		if (in_array('email', (array)($spec['channels'] ?? []), true) === false) {
+			$errors[] = [
+				'code' => 'notification-recipient-email-needs-email-channel',
+				'message' => sprintf(
+					'Notification "%s" recipient[%d] is kind=email but the rule has no "email" channel, so it would reach nobody.',
+					$name,
+					$index
+				),
+			];
+		}
+
+		return $errors;
+	}//end emailRecipientErrors()
 
 	/**
 	 * Validate the optional `actions[]` array (foundation contract / ADR-031).

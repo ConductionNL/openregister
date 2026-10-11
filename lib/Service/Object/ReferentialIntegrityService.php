@@ -59,6 +59,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.StaticAccess)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.TooManyMethods) One integrity algorithm: relation index, graph walk, uuid and key lookups, actions.
  */
 class ReferentialIntegrityService {
 	/**
@@ -733,6 +734,19 @@ class ReferentialIntegrityService {
 				continue;
 			}
 
+			$referenceKey = $this->extractReferenceKey(property: $property);
+			if ($referenceKey !== null && $onDelete !== 'RESTRICT') {
+				// A reference by key (a code, not a uuid) only refuses. CASCADE,
+				// SET_NULL and SET_DEFAULT rewrite or delete by uuid, so on a key
+				// they would act on the wrong value; the relation is left out and
+				// the schema author told why, rather than half-applied.
+				$this->logger->warning(
+					message: '[ReferentialIntegrity] referenceKey is only honoured with onDelete RESTRICT; relation ignored',
+					context: ['schemaId' => $schemaId, 'property' => $propertyName, 'onDelete' => $onDelete]
+				);
+				continue;
+			}
+
 			$isArray = isset($property['type']) && $property['type'] === 'array';
 
 			if (isset($this->relationIndex[$targetSchemaId]) === false) {
@@ -744,6 +758,7 @@ class ReferentialIntegrityService {
 				'property' => $propertyName,
 				'onDelete' => $onDelete,
 				'isArray' => $isArray,
+				'referenceKey' => $referenceKey,
 			];
 		}//end foreach
 
@@ -788,8 +803,37 @@ class ReferentialIntegrityService {
 			return (string)$property['items']['$ref'];
 		}
 
+		// A reference that is not an object relation (a code citing a row by
+		// key) names its target with `referenceSchema`, so the `$ref` relation
+		// machinery (rendering, _extend, uuid validation) is not engaged.
+		if (isset($property['referenceSchema']) === true) {
+			return (string)$property['referenceSchema'];
+		}
+
+		if (isset($property['items']['referenceSchema']) === true) {
+			return (string)$property['items']['referenceSchema'];
+		}
+
 		return null;
 	}//end extractTargetRef()
+
+	/**
+	 * The target property a reference cites by, when it is not the uuid.
+	 *
+	 * @param array $property The property configuration array.
+	 *
+	 * @return string|null The target's key property, or null for a uuid reference.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function extractReferenceKey(array $property): ?string {
+		$key = ($property['referenceKey'] ?? ($property['items']['referenceKey'] ?? null));
+		if (is_string($key) === false || trim($key) === '' || trim($key) === 'uuid') {
+			return null;
+		}
+
+		return trim($key);
+	}//end extractReferenceKey()
 
 	/**
 	 * Resolve a schema $ref string to a schema ID.
@@ -883,6 +927,14 @@ class ReferentialIntegrityService {
 		$dependents = $this->relationIndex[$schemaId];
 
 		foreach ($dependents as $dep) {
+			if (($dep['referenceKey'] ?? null) !== null) {
+				$blockers = array_merge(
+					$blockers,
+					$this->keyReferenceBlockers(object: $object, dep: $dep, chain: $chain)
+				);
+				continue;
+			}
+
 			// Find actual objects of the dependent schema that reference this object's UUID.
 			$referencingObjects = $this->findReferencingObjects(
 				sourceSchemaId: $dep['sourceSchemaId'],
@@ -1018,6 +1070,116 @@ class ReferentialIntegrityService {
 			chainPaths: $chain
 		);
 	}//end walkDeletionGraph()
+
+	/**
+	 * The RESTRICT blockers for a reference that cites this object by a key property.
+	 *
+	 * FAIL CLOSED. A citation that cannot be checked blocks the delete with
+	 * reason `unverifiable`: deleting a row that may still be cited is the one
+	 * outcome a RESTRICT rules out. Only a citing table that does not exist
+	 * yet answers "nothing cites it", because then nothing can.
+	 *
+	 * @param ObjectEntity $object The object being deleted.
+	 * @param array $dep The relation index entry (with `referenceKey`).
+	 * @param array $chain The chain so far.
+	 *
+	 * @return array<int, array<string, mixed>> The blockers, possibly none.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function keyReferenceBlockers(ObjectEntity $object, array $dep, array $chain): array {
+		$uuid = (string)$object->getUuid();
+		$value = (($object->getObject() ?? [])[$dep['referenceKey']] ?? null);
+		if (is_scalar($value) === false || trim((string)$value) === '') {
+			// Nothing to be cited by.
+			return [];
+		}
+
+		$referencing = $this->findReferencingByKey(
+			sourceSchemaId: $dep['sourceSchemaId'],
+			propertyName: $dep['property'],
+			value: trim((string)$value),
+			isArray: $dep['isArray']
+		);
+
+		$step = "{$uuid} → {$dep['property']}={$value} (RESTRICT by {$dep['referenceKey']})";
+		if ($referencing === null) {
+			return [
+				[
+					'objectUuid' => '',
+					'schema' => $dep['sourceSchemaId'],
+					'property' => $dep['property'],
+					'action' => 'RESTRICT',
+					'reason' => 'unverifiable',
+					'chain' => array_merge($chain, [$step]),
+				],
+			];
+		}
+
+		$blockers = [];
+		foreach ($referencing as $refObj) {
+			if ($refObj->getDeleted() !== null && empty($refObj->getDeleted()) === false) {
+				continue;
+			}
+
+			$blockers[] = [
+				'objectUuid' => $refObj->getUuid(),
+				'schema' => $dep['sourceSchemaId'],
+				'property' => $dep['property'],
+				'action' => 'RESTRICT',
+				'chain' => array_merge($chain, [$step]),
+			];
+		}
+
+		return $blockers;
+	}//end keyReferenceBlockers()
+
+	/**
+	 * Rows of a schema whose property holds a key value, or null when that cannot be read.
+	 *
+	 * @param string $sourceSchemaId The citing schema's id.
+	 * @param string $propertyName The citing property.
+	 * @param string $value The cited key value.
+	 * @param bool $isArray Whether the property is an array.
+	 *
+	 * @return ObjectEntity[]|null The citing rows, or null when unverifiable.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function findReferencingByKey(string $sourceSchemaId, string $propertyName, string $value, bool $isArray): ?array {
+		$this->ensureSchemaDetail();
+
+		$register = $this->schemaRegisterMap[$sourceSchemaId] ?? null;
+		$schema = $this->schemaCache[$sourceSchemaId] ?? null;
+		if ($register === null || $schema === null) {
+			// The broad uuid fallback cannot find a key, so this cannot be checked.
+			$this->logger->warning(
+				message: '[ReferentialIntegrity] key reference cannot be checked: citing schema has no register',
+				context: ['schemaId' => $sourceSchemaId, 'property' => $propertyName]
+			);
+			return null;
+		}
+
+		try {
+			return $this->findReferencingInMagicTable(
+				register: $register,
+				schema: $schema,
+				propertyName: $propertyName,
+				targetUuid: $value,
+				isArray: $isArray
+			);
+		} catch (\Exception $e) {
+			if ($this->db->tableExists('openregister_table_' . $register->getId() . '_' . $schema->getId()) === false) {
+				return [];
+			}
+
+			$this->logger->warning(
+				message: '[ReferentialIntegrity] key reference could not be checked, so the delete is refused',
+				context: ['schemaId' => $sourceSchemaId, 'property' => $propertyName, 'error' => $e->getMessage()]
+			);
+			return null;
+		}
+	}//end findReferencingByKey()
 
 	/**
 	 * Find objects of a specific schema that reference a given UUID in a specific property.

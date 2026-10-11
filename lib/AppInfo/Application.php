@@ -2973,6 +2973,14 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
 		$context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
 
+		// REQ-OAS-007: a write into a frozen or archived object's folder
+		// through Nextcloud Files or WebDAV is aborted; the files API refuses
+		// through FileWriteGuard in FilesController.
+		$context->registerEventListener(\OCP\Files\Events\Node\BeforeNodeWrittenEvent::class, \OCA\OpenRegister\Listener\FrozenNodeWriteListener::class);
+		$context->registerEventListener(\OCP\Files\Events\Node\BeforeNodeCreatedEvent::class, \OCA\OpenRegister\Listener\FrozenNodeWriteListener::class);
+		$context->registerEventListener(\OCP\Files\Events\Node\BeforeNodeDeletedEvent::class, \OCA\OpenRegister\Listener\FrozenNodeWriteListener::class);
+		$context->registerEventListener(\OCP\Files\Events\Node\BeforeNodeRenamedEvent::class, \OCA\OpenRegister\Listener\FrozenNodeWriteListener::class);
+
 		// Access derived from what an identity provider asserted, once per
 		// sign-in. Costs one app-config read on an instance that declares no
 		// rule, and never fails a sign-in: see the listener.
