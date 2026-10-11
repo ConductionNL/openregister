@@ -30,6 +30,7 @@ use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Exception\PortalSubjectException;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
+use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskConflictException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
@@ -54,6 +55,7 @@ use RuntimeException;
  * @covers \OCA\OpenRegister\Exception\PortalSubjectException
  * @covers \OCA\OpenRegister\Db\PortalTaskDelivery
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Exception\TaskCompleteViaAppException
  * @uses \OCA\OpenRegister\Service\Portal\PortalSubject
  */
 class PortalTaskControllerTest extends TestCase {
@@ -280,6 +282,26 @@ class PortalTaskControllerTest extends TestCase {
 			}
 		}
 	}//end testCompletionRefusalsTranslateUniformly()
+
+	/**
+	 * A task completed through an app action answers 409 `complete-via-app`
+	 * and names the app and the action, so the portal can open it.
+	 *
+	 * @return void
+	 */
+	public function testACompletionPastTheNamedAppNamesTheAction(): void {
+		$this->subjectResolves();
+		$this->request->method('getUploadedFile')->willReturn(null);
+		$portal = $this->createMock(PortalTaskService::class);
+		$portal->method('complete')->willThrowException(new TaskCompleteViaAppException(app: 'dossiq', action: 'completeChecklistTask'));
+		$this->portal = $portal;
+
+		$response = $this->controller()->complete(uuid: 't-1');
+
+		$this->assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+		$this->assertSame('complete-via-app', $response->getData()['code']);
+		$this->assertSame(['app' => 'dossiq', 'action' => 'completeChecklistTask'], $response->getData()['completeVia']);
+	}//end testACompletionPastTheNamedAppNamesTheAction()
 
 	/**
 	 * The delivery routes: 401 without a session, 403 for a non-administrator,

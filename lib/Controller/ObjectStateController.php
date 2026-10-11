@@ -167,6 +167,7 @@ class ObjectStateController extends Controller {
 			$result = $this->archiveHandler->freeze(
 				identifier: $id,
 				reason: $this->reasonFromRequest(),
+				state: $this->textFromRequest(key: 'state'),
 				register: $register,
 				schema: $schema
 			);
@@ -235,14 +236,29 @@ class ObjectStateController extends Controller {
 	 * @return string|null The reason, or null when none was sent.
 	 */
 	private function reasonFromRequest(): ?string {
-		$reason = $this->request->getParam('reason');
+		return $this->textFromRequest(key: 'reason');
+	}//end reasonFromRequest()
 
-		if (is_string($reason) === false || trim($reason) === '') {
+	/**
+	 * Read an optional text parameter from the request body.
+	 *
+	 * `state` on a freeze names the lifecycle state (or the consumer's own
+	 * moment, such as a Woo delivery) that froze the object, so the refusal a
+	 * later write gets can say why (REQ-OAS-007 contract).
+	 *
+	 * @param string $key The parameter name.
+	 *
+	 * @return string|null The trimmed text, or null when none was sent.
+	 */
+	private function textFromRequest(string $key): ?string {
+		$value = $this->request->getParam($key);
+
+		if (is_string($value) === false || trim($value) === '') {
 			return null;
 		}
 
-		return trim($reason);
-	}//end reasonFromRequest()
+		return trim($value);
+	}//end textFromRequest()
 
 	/**
 	 * Map a refusal to its status.
