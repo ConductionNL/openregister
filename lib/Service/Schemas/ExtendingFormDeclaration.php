@@ -80,6 +80,22 @@ final class ExtendingFormDeclaration {
 	public const SOURCE_ALIASES = ['definition' => 'description'];
 
 	/**
+	 * Roles the consumer reads to steer the form, not to fill a property key.
+	 *
+	 * `@conduction/nextcloud-vue` 2.79.0 added `hideOnCreate` to the
+	 * `DEFAULT_MAP` of `propertiesFromDefinitions`: a definition whose mapped
+	 * field is `true` gets no field on a create form, because the app fills
+	 * that answer in itself. It forwards no vocabulary key, so it is neither
+	 * counted as forwarded nor written onto a property built from a form.
+	 * Refusing it by name refused dossiq's whole case schema at import.
+	 *
+	 * @var array<string, string>
+	 */
+	public const FORM_ROLES = [
+		'hideOnCreate' => 'The create form leaves the field out, because the app fills it in itself. Edit forms still show it.',
+	];
+
+	/**
 	 * Wire the vocabulary the declaration is checked against.
 	 *
 	 * @param PropertyVocabulary $vocabulary The published vocabulary.
@@ -132,6 +148,7 @@ final class ExtendingFormDeclaration {
 	 * @return array<int, array{code: string, key: string, path: string, message: string}> The refusals, empty when valid.
 	 *
 	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per rule, each naming its own refusal.
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      One branch per rule, each naming its own refusal.
@@ -172,6 +189,10 @@ final class ExtendingFormDeclaration {
 			}
 
 			if (array_key_exists($role, self::SOURCE_ALIASES) === true) {
+				continue;
+			}
+
+			if (array_key_exists($role, self::FORM_ROLES) === true) {
 				continue;
 			}
 
@@ -284,11 +305,16 @@ final class ExtendingFormDeclaration {
 	 * @return array<string, mixed> The property definition.
 	 *
 	 * @spec openspec/changes/property-vocabulary-published/specs/runtime-schema-api/spec.md
+	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
 	 */
 	public function toProperty(mixed $annotation, array $formValues): array {
 		$property = [];
 		foreach ($this->pairs(annotation: $annotation) as $role => $field) {
 			$key = (string)$role;
+			if (array_key_exists($key, self::FORM_ROLES) === true) {
+				continue;
+			}
+
 			if (array_key_exists($key, self::SOURCE_ALIASES) === true) {
 				$key = self::SOURCE_ALIASES[$key];
 			}
