@@ -1265,12 +1265,20 @@ class ObjectsControllerTest extends TestCase {
 		$this->objectService->method('getRegister')->willReturn(1);
 		$this->objectService->method('getSchema')->willReturn(2);
 		// clearCreatedSubObjects is void — no willReturn needed
-		$this->objectService->method('saveObject')
-			->willThrowException(new \OCA\OpenRegister\Exception\ValidationException('Invalid data'));
+		$exception = new \OCA\OpenRegister\Exception\ValidationException('Invalid data');
+		$this->objectService->method('saveObject')->willThrowException($exception);
+		$shaped = new JSONResponse(
+			['status' => 'error', 'message' => 'Validation failed', 'errors' => [['property' => 'title', 'message' => 'Invalid data', 'errors' => []]]],
+			400
+		);
+		$this->objectService->expects($this->once())->method('handleValidationException')->with($exception)->willReturn($shaped);
 
 		$result = $this->controller->create('1', '2', $this->objectService);
 
+		// Decision 179: create refuses in the per-property shape update uses, not a bare string.
+		$this->assertSame($shaped, $result);
 		$this->assertSame(400, $result->getStatus());
+		$this->assertSame('title', $result->getData()['errors'][0]['property']);
 	}
 
 	public function testCreateReturns422OnHookStoppedException(): void {
@@ -2853,10 +2861,14 @@ class ObjectsControllerTest extends TestCase {
 				'Custom validation failed',
 				['name' => 'Name is required']
 			));
+		$this->objectService->expects($this->once())->method('handleValidationException')
+			->willReturn(new JSONResponse(['status' => 'error', 'message' => 'Validation failed', 'errors' => [['name' => 'Name is required']]], 400));
 
 		$result = $this->controller->create('1', '2', $this->objectService);
 
 		$this->assertSame(400, $result->getStatus());
+		$this->assertIsArray($result->getData());
+		$this->assertSame('Validation failed', $result->getData()['message']);
 	}
 
 	// =========================================================================

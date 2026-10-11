@@ -23,6 +23,7 @@ use finfo;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\File\ExecutableContentDetector;
+use OCA\OpenRegister\Service\File\FilePropertyRules;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\SecurityService;
 use OCP\Files\File;
@@ -1143,20 +1144,7 @@ class FilePropertyHandler {
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	private function resolveAllowedTypes(array $fileConfig): array {
-		$types = $fileConfig['allowedTypes'] ?? null;
-		if (is_array($types) === false || $types === []) {
-			$editorConfig = $fileConfig['fileConfiguration'] ?? [];
-			$types = null;
-			if (is_array($editorConfig) === true) {
-				$types = $editorConfig['allowedMimeTypes'] ?? null;
-			}
-		}
-
-		if (is_array($types) === false) {
-			return [];
-		}
-
-		return array_values(array_filter($types, 'is_string'));
+		return (new FilePropertyRules())->allowedTypes(fileConfig: $fileConfig);
 	}//end resolveAllowedTypes()
 
 	/**
@@ -1176,22 +1164,7 @@ class FilePropertyHandler {
 	 * @spec openspec/specs/content-versioning/spec.md
 	 */
 	private function resolveMaxSizeBytes(array $fileConfig): int {
-		$bytes = $fileConfig['maxSize'] ?? null;
-		if (is_numeric($bytes) === true && (float) $bytes > 0) {
-			return (int) $bytes;
-		}
-
-		$editorConfig = $fileConfig['fileConfiguration'] ?? [];
-		if (is_array($editorConfig) === false) {
-			return 0;
-		}
-
-		$megabytes = $editorConfig['maxSize'] ?? null;
-		if (is_numeric($megabytes) === true && (float) $megabytes > 0) {
-			return (int) round((float) $megabytes * 1024 * 1024);
-		}
-
-		return 0;
+		return (new FilePropertyRules())->maxSizeBytes(fileConfig: $fileConfig);
 	}//end resolveMaxSizeBytes()
 
 	/**
