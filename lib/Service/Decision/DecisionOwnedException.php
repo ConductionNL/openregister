@@ -36,7 +36,8 @@ final class DecisionOwnedException extends Exception {
 	/**
 	 * Constructor.
 	 *
-	 * @param array<string, mixed> $refusal The refusal body: error, decision, decidedBy, decidedAt.
+	 * @param array<string, mixed> $refusal The refusal body: error, decision and, unless
+	 *                                      hideOthers is on, decidedBy and decidedAt.
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
 	 */
@@ -47,7 +48,7 @@ final class DecisionOwnedException extends Exception {
 	/**
 	 * The refusal body the API answers with.
 	 *
-	 * @return array<string, mixed> error, decision, decidedBy, decidedAt.
+	 * @return array<string, mixed> error, decision and, unless hideOthers is on, decidedBy and decidedAt.
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
 	 */
