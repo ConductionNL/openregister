@@ -42,6 +42,11 @@ final class ReviewPolicy {
 	public const ANNOTATION = 'x-openregister-review';
 
 	/**
+	 * The instance default's key in the file settings, for files that belong to no schema.
+	 */
+	public const SETTINGS_KEY = 'anonymisationReview';
+
+	/**
 	 * Anyone who may write the subject may change its decision.
 	 */
 	public const OWNERSHIP_OPEN = 'open';

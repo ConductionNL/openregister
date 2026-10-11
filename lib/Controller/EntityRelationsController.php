@@ -47,6 +47,8 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
+use OCA\OpenRegister\Service\Decision\RelationDecisionService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -76,6 +78,7 @@ class EntityRelationsController extends Controller {
 	 * @param RegisterMapper $registerMapper Register loader (for object lookup disambiguation).
 	 * @param EmailLinkMapper $emailLinkMapper EmailLink loader (for email-bound authz indirection).
 	 * @param LoggerInterface $logger Structured log sink.
+	 * @param RelationDecisionService $relationDecisions Takes the decision as its own object, under the ownership rule.
 	 */
 	public function __construct(
 		string $appName,
@@ -89,6 +92,7 @@ class EntityRelationsController extends Controller {
 		private readonly RegisterMapper $registerMapper,
 		private readonly EmailLinkMapper $emailLinkMapper,
 		private readonly LoggerInterface $logger,
+		private readonly RelationDecisionService $relationDecisions,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -96,8 +100,12 @@ class EntityRelationsController extends Controller {
 	/**
 	 * PATCH /api/entity-relations/{id}.
 	 *
-	 * Body: { bases?: ?array<string>, skipAnonymization?: bool } — any other
-	 * key triggers HTTP 400.
+	 * Body: { bases?: ?array<string>, skipAnonymization?: bool,
+	 * decisionNote?: ?string } — any other key triggers HTTP 400.
+	 *
+	 * The decision is recorded as its own object (decision 197) that the
+	 * relation links; under `decider` ownership a decision someone else took
+	 * answers 403 `decision-owned` naming who decided and when (REQ-ROD-001).
 	 *
 	 * @param int $id Relation row id.
 	 *
@@ -162,11 +170,9 @@ class EntityRelationsController extends Controller {
 		unset($body['id'], $body['_route']);
 
 		try {
-			$relation = $this->entityRelationMapper->updateDecisionMetadata(
-				relation: $relation,
-				fields: $body,
-				actingUser: $user
-			);
+			$decided = $this->relationDecisions->decide(relation: $relation, body: $body, actor: $user);
+		} catch (DecisionOwnedException $e) {
+			return new JSONResponse(data: $e->getRefusal(), statusCode: Http::STATUS_FORBIDDEN);
 		} catch (CustomValidationException $e) {
 			return new JSONResponse(
 				data: ['error' => $e->getMessage(), 'details' => $e->getErrors()],
@@ -188,8 +194,11 @@ class EntityRelationsController extends Controller {
 			);
 		}//end try
 
+		$data = $decided['relation']->jsonSerialize();
+		$data['decisionRecord'] = $decided['decision']?->jsonSerialize();
+
 		return new JSONResponse(
-			data: $relation->jsonSerialize(),
+			data: $data,
 			statusCode: Http::STATUS_OK
 		);
 	}//end update()
