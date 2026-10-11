@@ -60,15 +60,16 @@ class DecisionOwnership {
 	/**
 	 * Why a user may not change a decision, or null when they may.
 	 *
-	 * The refusal names who decided and when, never the verdict or the note,
-	 * so a refused reviewer learns nothing a hidden review would keep from them.
+	 * The refusal names who decided and when, never the verdict or the note.
+	 * Under `hideOthers` it names neither who decided nor when, only that the
+	 * decision belongs to another reviewer (REQ-ROD-002).
 	 *
 	 * @param Decision             $decision The current decision.
 	 * @param string               $actorId  The user who wants to change it.
 	 * @param ReviewPolicy         $policy   The policy that applies.
 	 * @param array<string, mixed> $subject  What the decision is on, for listeners.
 	 *
-	 * @return array{error: string, decision: string|null, decidedBy: string|null, decidedAt: string|null}|null
+	 * @return array{error: string, decision: string|null, decidedBy?: string|null, decidedAt?: string|null}|null
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
 	 */
@@ -84,12 +85,18 @@ class DecisionOwnership {
 			return null;
 		}
 
-		return [
+		$refusal = [
 			'error' => 'decision-owned',
 			'decision' => $decision->getUuid(),
-			'decidedBy' => $decision->getDecidedBy(),
-			'decidedAt' => $decision->getDecidedAt()?->format(DateTimeInterface::ATOM),
 		];
+		if ($policy->hidesOthers() === true) {
+			return $refusal;
+		}
+
+		$refusal['decidedBy'] = $decision->getDecidedBy();
+		$refusal['decidedAt'] = $decision->getDecidedAt()?->format(DateTimeInterface::ATOM);
+
+		return $refusal;
 	}//end refusal()
 
 	/**

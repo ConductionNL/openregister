@@ -12,6 +12,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Decision;
 use DateTime;
 use OCA\OpenRegister\Db\Decision;
 use OCA\OpenRegister\Event\DecisionChangeRequestedEvent;
+use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
 use OCA\OpenRegister\Service\Decision\DecisionOwnership;
 use OCA\OpenRegister\Service\Decision\ReviewPolicy;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -115,6 +116,24 @@ class DecisionOwnershipTest extends TestCase {
 		self::assertCount(1, $this->dispatched);
 		self::assertSame(['subjectType' => 'entity-relation', 'subjectId' => '7'], $this->dispatched[0]->getSubject());
 	}//end testASecondReviewerIsRefused()
+
+	/**
+	 * Under hideOthers the refusal names neither who decided nor when (REQ-ROD-002).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-schema-can-hide-one-reviewers-decisions-from-another-req-rod-002
+	 */
+	public function testUnderHideOthersTheRefusalNamesNoDecider(): void {
+		$policy  = ReviewPolicy::fromDeclaration(declaration: ['ownership' => 'decider', 'supervisors' => ['woo-coordinator'], 'hideOthers' => true]);
+		$refusal = $this->ownership()->refusal(decision: $this->decision(), actorId: 'p.bakker', policy: $policy);
+
+		self::assertSame(['error' => 'decision-owned', 'decision' => 'd-1'], $refusal);
+
+		$exception = new DecisionOwnedException(refusal: (array)$refusal);
+		self::assertStringNotContainsString('j.devries', $exception->getMessage());
+		self::assertStringNotContainsString('j.devries', (string)json_encode($exception->getRefusal()));
+	}//end testUnderHideOthersTheRefusalNamesNoDecider()
 
 	/**
 	 * The decider, a supervisor and an administrator may; open ownership lets anyone.
