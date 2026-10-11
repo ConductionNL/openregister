@@ -73,6 +73,8 @@ class ReviewPolicyResolver {
 	 *
 	 * @return array{policy: ReviewPolicy, subject: array<string, mixed>}
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ReviewPolicy::fromDeclaration is its named constructor.
+	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
 	 */
 	public function forRelation(EntityRelation $relation): array {
@@ -156,6 +158,8 @@ class ReviewPolicyResolver {
 	 * The instance default, for files that belong to no schema. Unset is open.
 	 *
 	 * @return ReviewPolicy The policy.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ReviewPolicy::fromDeclaration is its named constructor.
 	 */
 	private function instanceDefault(): ReviewPolicy {
 		$settings = $this->fileSettings->getFileSettingsOnly();

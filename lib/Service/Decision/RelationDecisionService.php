@@ -113,11 +113,16 @@ class RelationDecisionService {
 
 		$before = [$relation->getBases(), $relation->getSkipAnonymization()];
 
+		$given = [];
+		if ($hasNote === true) {
+			$given = [$note];
+		}
+
 		$this->db->beginTransaction();
 		try {
 			$updated = $this->relationMapper->updateDecisionMetadata(relation: $relation, fields: $body, actingUser: $actor);
 
-			if ($this->isNewDecision(current: $current, before: $before, updated: $updated, body: $body, note: $hasNote === true ? [$note] : []) === false) {
+			if ($this->isNewDecision(current: $current, before: $before, updated: $updated, body: $body, note: $given) === false) {
 				$this->db->commit();
 				return ['relation' => $updated, 'decision' => $current];
 			}

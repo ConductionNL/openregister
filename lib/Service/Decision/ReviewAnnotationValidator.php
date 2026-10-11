@@ -57,6 +57,17 @@ final class ReviewAnnotationValidator {
 			return [self::refusal(code: 'review-shape', message: ReviewPolicy::ANNOTATION.' must be an object with ownership, supervisors and hideOthers.')];
 		}
 
+		return array_merge(self::unknownKeys(declaration: $declaration), self::badValues(declaration: $declaration));
+	}//end validate()
+
+	/**
+	 * A refusal for every key the declaration may not hold.
+	 *
+	 * @param array<mixed> $declaration The declaration.
+	 *
+	 * @return array<int, array{code: string, message: string}> The refusals.
+	 */
+	private static function unknownKeys(array $declaration): array {
 		$errors = [];
 		foreach (array_keys($declaration) as $key) {
 			if (in_array($key, ReviewPolicy::KEYS, true) === false) {
@@ -64,12 +75,26 @@ final class ReviewAnnotationValidator {
 			}
 		}
 
+		return $errors;
+	}//end unknownKeys()
+
+	/**
+	 * A refusal for every value the ownership rule cannot honour.
+	 *
+	 * @param array<mixed> $declaration The declaration.
+	 *
+	 * @return array<int, array{code: string, message: string}> The refusals.
+	 */
+	private static function badValues(array $declaration): array {
+		$errors = [];
 		$ownership = ($declaration['ownership'] ?? ReviewPolicy::OWNERSHIP_OPEN);
 		if (in_array($ownership, [ReviewPolicy::OWNERSHIP_OPEN, ReviewPolicy::OWNERSHIP_DECIDER], true) === false) {
-			$errors[] = self::refusal(
-				code: 'review-ownership',
-				message: 'Ownership "'.(is_scalar($ownership) === true ? (string)$ownership : gettype($ownership)).'" is not open or decider.'
-			);
+			$named = gettype($ownership);
+			if (is_scalar($ownership) === true) {
+				$named = (string)$ownership;
+			}
+
+			$errors[] = self::refusal(code: 'review-ownership', message: 'Ownership "'.$named.'" is not open or decider.');
 		}
 
 		if (array_key_exists('supervisors', $declaration) === true && self::isListOfStrings(value: $declaration['supervisors']) === false) {
@@ -81,7 +106,7 @@ final class ReviewAnnotationValidator {
 		}
 
 		return $errors;
-	}//end validate()
+	}//end badValues()
 
 	/**
 	 * Whether a value is a list of non-empty strings.
