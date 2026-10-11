@@ -691,6 +691,18 @@ class NotifierTest extends TestCase {
 	}
 
 	/**
+	 * An author whose form a schema change broke is told which form, which schema, and what to do.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
+	 */
+	public function testPrepareFormUnpublished(): void {
+		$parsed = $this->renderSubject('form_unpublished', ['formTitle' => 'Melding openbare ruimte', 'schema' => 'ticket', 'count' => 2]);
+
+		$this->assertSame('Your form "Melding openbare ruimte" was taken offline', $parsed[0]);
+		$this->assertSame('A change to "ticket" left 2 problems in the form. Fix them and publish the form again.', $parsed[1]);
+	}
+
+	/**
 	 * A falling count reads as falling, not as the same sentence with the numbers swapped.
 	 */
 	public function testPrepareViewAlertCrossedBelow(): void {
