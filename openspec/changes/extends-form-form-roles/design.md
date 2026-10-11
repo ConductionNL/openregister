@@ -20,7 +20,7 @@ The list is taken from the consumer: `DEFAULT_MAP` in
 keys; `definition` is the existing alias, `hideOnCreate` is the new form role.
 A unit test pins that every role the consumer reads is accepted.
 
-`PropertyValidatorHandler::closedModifierValues()` is the one list: the save
+`PropertyValidatorHandler::CLOSED_MODIFIER_VALUES` is the one list: the save
 path's `validateSearchProfile()` iterates it, and `PropertyVocabulary::modifiers()`
 copies it onto the matching rows as `allowedValues`. A unit test asks the
 validator that every published value saves and that `textarea` is refused.

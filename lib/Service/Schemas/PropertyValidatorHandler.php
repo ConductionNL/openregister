@@ -461,6 +461,20 @@ class PropertyValidatorHandler {
 	];
 
 	/**
+	 * The modifiers that take one value from a closed list, and that list.
+	 *
+	 * The save path refuses any other value, so the list is published with the
+	 * vocabulary. An app that ships `inputControl: textarea` learns at build
+	 * time what it otherwise learns from a schema refused at import.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	public const CLOSED_MODIFIER_VALUES = [
+		'matchType' => PropertySearchProfile::MATCH_TYPES,
+		'inputControl' => PropertySearchProfile::INPUT_CONTROLS,
+	];
+
+	/**
 	 * The keys that change how a property behaves rather than what it accepts.
 	 *
 	 * These are OpenRegister's own, they are valid on every type, and they are
@@ -978,24 +992,6 @@ class PropertyValidatorHandler {
 	}//end validateProperty()
 
 	/**
-	 * The modifiers that take one value from a closed list, and that list.
-	 *
-	 * The save path refuses any other value, so the list is published with the
-	 * vocabulary. An app that ships `inputControl: textarea` learns at build
-	 * time what it otherwise learns from a schema refused at import.
-	 *
-	 * @return array<string, array<int, string>> Modifier key to its accepted values.
-	 *
-	 * @spec openspec/changes/extends-form-form-roles/specs/runtime-schema-api/spec.md
-	 */
-	public static function closedModifierValues(): array {
-		return [
-			'matchType' => PropertySearchProfile::MATCH_TYPES,
-			'inputControl' => PropertySearchProfile::INPUT_CONTROLS,
-		];
-	}//end closedModifierValues()
-
-	/**
 	 * Refuse an unknown match type or input control, naming the property.
 	 *
 	 * @param array  $property The property definition to check.
@@ -1012,7 +1008,7 @@ class PropertyValidatorHandler {
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	private function validateSearchProfile(array $property, string $path): void {
-		foreach (self::closedModifierValues() as $key => $allowed) {
+		foreach (self::CLOSED_MODIFIER_VALUES as $key => $allowed) {
 			$declared = ($property[$key] ?? null);
 			if ($declared === null) {
 				continue;

@@ -188,11 +188,9 @@ final class ExtendingFormDeclaration {
 				continue;
 			}
 
-			if (array_key_exists($role, self::SOURCE_ALIASES) === true) {
-				continue;
-			}
-
-			if (array_key_exists($role, self::FORM_ROLES) === true) {
+			// A source alias or a form role is read by the consumer without
+			// being a property key of its own.
+			if (array_key_exists($role, (self::SOURCE_ALIASES + self::FORM_ROLES)) === true) {
 				continue;
 			}
 
@@ -309,12 +307,9 @@ final class ExtendingFormDeclaration {
 	 */
 	public function toProperty(mixed $annotation, array $formValues): array {
 		$property = [];
-		foreach ($this->pairs(annotation: $annotation) as $role => $field) {
+		// A form role steers the form and fills no property key.
+		foreach (array_diff_key($this->pairs(annotation: $annotation), self::FORM_ROLES) as $role => $field) {
 			$key = (string)$role;
-			if (array_key_exists($key, self::FORM_ROLES) === true) {
-				continue;
-			}
-
 			if (array_key_exists($key, self::SOURCE_ALIASES) === true) {
 				$key = self::SOURCE_ALIASES[$key];
 			}

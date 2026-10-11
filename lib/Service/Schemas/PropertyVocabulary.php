@@ -173,7 +173,7 @@ final class PropertyVocabulary {
 	 */
 	public function modifiers(): array {
 		$rows = [];
-		$closed = PropertyValidatorHandler::closedModifierValues();
+		$closed = PropertyValidatorHandler::CLOSED_MODIFIER_VALUES;
 		foreach (PropertyValidatorHandler::MODIFIERS as $key => $descriptor) {
 			$row = [
 				'key' => (string)$key,
