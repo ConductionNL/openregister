@@ -29,3 +29,18 @@ is `hideOnCreate`.
 - **WHEN** the declaration is validated
 - **THEN** it is refused naming the role
 - @e2e exclude {validator, covered by unit tests}
+
+### Requirement: A closed-list modifier publishes its accepted values (REQ-PVP-005)
+
+A modifier whose value the save path checks against a closed list SHALL
+publish that list as `allowedValues` on its row of the property vocabulary.
+The published list SHALL be the list the save path enforces, so an app can
+check its shipped schemas before an import refuses them. Today that is
+`inputControl` and `matchType`.
+
+#### Scenario: inputControl publishes the controls the save path accepts
+
+- **GIVEN** the published property vocabulary
+- **WHEN** the `inputControl` modifier row is read
+- **THEN** it carries `allowedValues`, every listed value saves, and `textarea` is not listed and is refused
+- @e2e exclude {published read, covered by unit tests and the dossiq vocabulary guard}

@@ -33,6 +33,12 @@ later.
   submission.
 - The extending-forms read publishes the form roles and the source aliases, so
   an app can check its declaration against what this layer accepts.
+- The property vocabulary publishes `allowedValues` for the modifiers whose
+  value the save path checks against a closed list (`inputControl`,
+  `matchType`). The same import refused dossiq's `aanvullingsverzoek` for
+  `inputControl: textarea`; `textarea` is a form widget, not a list filter
+  control, so dossiq drops it. Publishing the list lets dossiq pin its shipped
+  schemas against it at build time.
 
 ## Out of scope
 
