@@ -3540,7 +3540,7 @@ class PermissionHandler {
 					'schemaId' => $schema->getId(),
 				]
 			);
-			return $authorization;
+			return $this->grantNothingWhenEmpty(authorization: $authorization);
 		}
 
 		// Build the lookup map with role-hierarchy support. A role
@@ -3591,8 +3591,46 @@ class PermissionHandler {
 			}
 		}//end foreach
 
-		return $authorization;
+		return $this->grantNothingWhenEmpty(authorization: $authorization);
 	}//end expandRoles()
+
+	/**
+	 * A roles block that resolved to nothing grants nothing.
+	 *
+	 * 🔴 THE SAME DIRECTION AS {@see stripMcpScope()}, FOR THE SAME REASON. An
+	 * author who writes `roles` has opted the schema into authorization. When
+	 * none of those roles can be expanded (the register declares no role
+	 * definitions, or every name is unknown) the block used to come back as
+	 * `[]`, and `[]` is "no authorization configured", which is default-OPEN:
+	 * every signed in account could read, change and delete. Found live on
+	 * 2026-10-11, where a case schema declaring `roles` only, written so a
+	 * notification dispatcher could find who holds a role, left every case of
+	 * the register readable by a user in no group at all.
+	 *
+	 * Between a fail-safe and a fail-open reading of an ambiguous block the
+	 * block gets the fail-safe one: the canonical verbs are listed with nobody
+	 * in them. The block is non-empty, so an unlisted verb is refused as well,
+	 * and the administrator and owner bypasses still apply. A denial is loud
+	 * and fixed by declaring the roles; a grant is silent.
+	 *
+	 * @param array<string, mixed> $authorization The block after expansion.
+	 *
+	 * @return array<string, mixed> The block, or one granting nobody when it is empty.
+	 *
+	 * @spec openspec/changes/roles-block-that-resolves-to-nothing-grants-nothing/specs/rbac-scopes/spec.md
+	 */
+	private function grantNothingWhenEmpty(array $authorization): array {
+		if ($authorization !== []) {
+			return $authorization;
+		}
+
+		return [
+			'read' => [],
+			'create' => [],
+			'update' => [],
+			'delete' => [],
+		];
+	}//end grantNothingWhenEmpty()
 
 	/**
 	 * Flatten a role hierarchy into a `name => actions` map.
