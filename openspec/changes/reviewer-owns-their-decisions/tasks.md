@@ -12,7 +12,7 @@
 
 ## 2. Hiding (REQ-ROD-002)
 
-- [ ] 2.1 A `DecisionVisibility` filter applied in every controller that serialises `EntityRelation`; a hidden relation carries `decision: "hidden"` and no decision record. (not built in the first PR: next stretch) Verify: `tests/Unit/Service/Anonymisation/HiddenDecisionTest.php::testAnotherReviewersDecisionIsHidden`, `testTheSupervisorSeesIt`, `testEveryRelationEndpointMasks` (reflection over controllers returning relations, fails on one without the filter).
+- [x] 2.1 A `DecisionVisibility` filter applied in every controller that serialises `EntityRelation`; a hidden relation carries `decision: "hidden"` and no decision record. Done: `lib/Service/Decision/DecisionVisibility.php` (masks `bases`, `skipAnonymization` and an embedded `decisionRecord`, since `skipAnonymization` is the verdict itself), applied in `GdprEntitiesController::show` and the `EntityRelationsController::update` answer. Verify: `tests/Unit/Service/Anonymisation/HiddenDecisionTest.php::testAnotherReviewersDecisionIsHidden`, `testTheSupervisorSeesIt`, `testEveryRelationEndpointMasks` (reflection over controllers returning relations, fails on one without the filter).
 - [ ] 2.2 The review UI in OpenRegister shows "decided by another reviewer" without the decision. Verify: `tests/e2e/ci/blind-second-review.spec.ts` seeds four decisions by one user, signs in as another and sees ten detections, four marked decided without their ground.
 
 ## 3. Assessment records (REQ-ROD-003)

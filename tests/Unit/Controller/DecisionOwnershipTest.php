@@ -23,6 +23,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Decision\DecisionOwnership;
 use OCA\OpenRegister\Service\Decision\DecisionService;
+use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
 use OCA\OpenRegister\Service\Decision\ReviewPolicyResolver;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
@@ -198,7 +199,18 @@ class DecisionOwnershipTest extends TestCase {
 			$this->createMock(RegisterMapper::class),
 			$this->createMock(EmailLinkMapper::class),
 			$logger,
-			$decide
+			$decide,
+			new DecisionVisibility(
+				resolver: new ReviewPolicyResolver(
+					schemaMapper: $schemas,
+					fileSettings: new FileSettingsHandler(appConfig: $this->createMock(IAppConfig::class)),
+					rootFolder: $this->createMock(IRootFolder::class),
+					folders: $this->createMock(FolderManagementHandler::class),
+					logger: $logger
+				),
+				decisions: new DecisionService(decisionMapper: $decisionMapper),
+				groupManager: $groups
+			)
 		);
 	}//end controllerAs()
 
