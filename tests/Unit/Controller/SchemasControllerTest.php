@@ -68,6 +68,8 @@ class SchemasControllerTest extends TestCase {
 
 	private \Psr\Container\ContainerInterface&MockObject $container;
 
+	private ?\OCA\OpenRegister\Service\Form\FormDependentsCheck $formCheck = null;
+
 	private \OCA\OpenRegister\Service\SchemaDeletionService&MockObject $schemaDeletionService;
 
 	/**
@@ -127,6 +129,10 @@ class SchemasControllerTest extends TestCase {
 
 				if ($id === \OCA\OpenRegister\Service\SchemaDeletionService::class) {
 					return $schemaDeletionService;
+				}
+
+				if ($id === \OCA\OpenRegister\Service\Form\FormDependentsCheck::class) {
+					return $this->formCheck;
 				}
 
 				return null;
@@ -314,6 +320,54 @@ class SchemasControllerTest extends TestCase {
 
 		$this->assertSame(200, $result->getStatus());
 	}//end testUpdateReturnsUpdatedSchema()
+
+	/**
+	 * Decision 179: an owning app set to refuse blocks a schema change that breaks its published form.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
+	 */
+	public function testUpdateIsRefusedWhenAnOwningAppRefusesTheBreak(): void {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['required' => ['title', 'priority']]);
+		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
+		$assessment = ['refused' => true, 'schema' => 'ticket', 'affected' => [['id' => 'form-a']]];
+		$check = $this->createMock(\OCA\OpenRegister\Service\Form\FormDependentsCheck::class);
+		$check->expects($this->once())->method('assess')
+			->with($this->callback(static fn (Schema $proposed): bool => $proposed->getRequired() === ['title', 'priority'] && $proposed !== $schema))
+			->willReturn($assessment);
+		$check->method('apply')->willReturn([['id' => 'form-a', 'outcome' => 'refused']]);
+		$this->formCheck = $check;
+		$this->schemaMapper->expects($this->never())->method('updateFromArray');
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(409, $result->getStatus());
+		$this->assertSame([['id' => 'form-a', 'outcome' => 'refused']], $result->getData()['affectedForms']);
+	}//end testUpdateIsRefusedWhenAnOwningAppRefusesTheBreak()
+
+	/**
+	 * Decision 179: a save that breaks a published form goes ahead, and the response lists the unpublished form.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
+	 */
+	public function testUpdateListsTheFormsItUnpublished(): void {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['required' => ['title', 'priority']]);
+		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
+		$check = $this->createMock(\OCA\OpenRegister\Service\Form\FormDependentsCheck::class);
+		$check->method('assess')->willReturn(['refused' => false, 'schema' => 'ticket', 'affected' => [['id' => 'form-a']]]);
+		$check->expects($this->once())->method('apply')->willReturn([['id' => 'form-a', 'outcome' => 'unpublished']]);
+		$this->formCheck = $check;
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertSame('Ticket', $result->getData()['title']);
+		$this->assertSame([['id' => 'form-a', 'outcome' => 'unpublished']], $result->getData()['affectedForms']);
+	}//end testUpdateListsTheFormsItUnpublished()
 
 	public function testPatchDelegatesToUpdate(): void {
 		$schema = $this->createRealSchema(1, 'Patched');

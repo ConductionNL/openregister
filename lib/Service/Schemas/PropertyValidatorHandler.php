@@ -508,6 +508,8 @@ class PropertyValidatorHandler {
 		'calculation' => ['value' => 'object', 'description' => 'Derive the value from other properties instead of asking for it.'],
 		'computed' => ['value' => 'string', 'description' => 'A Twig expression that derives the value.'],
 		'onDelete' => ['value' => 'string', 'description' => 'What happens to this object when the one it points at is deleted.'],
+		'referenceSchema' => ['value' => 'string', 'description' => 'The schema whose rows this value cites by a key, not a uuid.'],
+		'referenceKey' => ['value' => 'string', 'description' => 'The cited schema\'s property this value matches, e.g. code.'],
 		'cascade' => ['value' => 'boolean', 'description' => 'Save the referenced object along with this one.'],
 		'cascadeDelete' => ['value' => 'boolean', 'description' => 'Delete the referenced object along with this one.'],
 		'inversedBy' => ['value' => 'string', 'description' => 'The property on the other side of the relation.'],
@@ -967,9 +969,18 @@ class PropertyValidatorHandler {
 		if (($property['onDelete'] ?? null) !== null) {
 			// OnDelete is only valid on relation properties (those with $ref).
 			$hasRef = isset($property['$ref']) === true
-				|| (isset($property['items']['$ref']) === true);
+				|| (isset($property['items']['$ref']) === true)
+				|| isset($property['referenceSchema']) === true
+				|| (isset($property['items']['referenceSchema']) === true);
 			if ($hasRef === false) {
-				throw new Exception("'onDelete' at '$path' is only valid on relation properties with '\$ref'");
+				throw new Exception("'onDelete' at '$path' is only valid on relation properties with '\$ref' or 'referenceSchema'");
+			}
+
+			// A reference by key only refuses: the other actions rewrite or
+			// delete by uuid and would act on the wrong value.
+			$referenceKey = ($property['referenceKey'] ?? ($property['items']['referenceKey'] ?? null));
+			if ($referenceKey !== null && strtoupper((string)$property['onDelete']) !== 'RESTRICT') {
+				throw new Exception("'referenceKey' at '$path' is only valid with onDelete RESTRICT");
 			}
 
 			$validActions = ['CASCADE', 'RESTRICT', 'SET_NULL', 'SET_DEFAULT', 'NO_ACTION'];
