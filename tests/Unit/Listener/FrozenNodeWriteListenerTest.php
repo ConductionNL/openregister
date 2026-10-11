@@ -185,6 +185,103 @@ class FrozenNodeWriteListenerTest extends TestCase {
 		$this->addToAssertionCount(1);
 	}//end testANodeOutsideTheRegisterTreeIsIgnored()
 
+	public function testANodeWhosePathCannotBeReadIsNotRefused(): void {
+		$node = $this->createMock(File::class);
+		$node->method('getPath')->willThrowException(new \RuntimeException('gone'));
+		$this->objects->expects($this->never())->method('findAcrossAllSources');
+
+		$this->listener()->handle(new BeforeNodeWrittenEvent($node));
+		$this->addToAssertionCount(1);
+	}//end testANodeWhosePathCannotBeReadIsNotRefused()
+
+	public function testAFileDirectlyUnderFilesHasNoOwnerObject(): void {
+		$files = $this->folder('files', 2, '/openregister/files', null);
+		$file = $this->createMock(File::class);
+		$file->method('getName')->willReturn('loose.pdf');
+		$file->method('getPath')->willReturn('/openregister/files/loose.pdf');
+		$file->method('getParent')->willReturn($files);
+		$this->objects->expects($this->never())->method('findAcrossAllSources');
+
+		$this->listener()->handle(new BeforeNodeWrittenEvent($file));
+		$this->addToAssertionCount(1);
+	}//end testAFileDirectlyUnderFilesHasNoOwnerObject()
+
+	public function testAFileWhoseParentCannotBeReadHasNoOwnerObject(): void {
+		$file = $this->createMock(File::class);
+		$file->method('getName')->willReturn('orphan.pdf');
+		$file->method('getPath')->willReturn('/openregister/files/x/orphan.pdf');
+		$file->method('getParent')->willThrowException(new \RuntimeException('no parent'));
+		$this->objects->expects($this->never())->method('findAcrossAllSources');
+
+		$this->listener()->handle(new BeforeNodeWrittenEvent($file));
+		$this->addToAssertionCount(1);
+	}//end testAFileWhoseParentCannotBeReadHasNoOwnerObject()
+
+	public function testAFolderNamedLikeAnObjectWhoseIdCannotBeReadIsNotTheOwner(): void {
+		$objectFolder = $this->createMock(Folder::class);
+		$objectFolder->method('getName')->willReturn(self::UUID);
+		$objectFolder->method('getId')->willThrowException(new \RuntimeException('no id'));
+		$file = $this->createMock(File::class);
+		$file->method('getName')->willReturn('a.pdf');
+		$file->method('getPath')->willReturn('/openregister/files/r/' . self::UUID . '/a.pdf');
+		$file->method('getParent')->willReturn($objectFolder);
+		$this->objects->expects($this->never())->method('findAcrossAllSources');
+
+		$this->listener()->handle(new BeforeNodeWrittenEvent($file));
+		$this->addToAssertionCount(1);
+	}//end testAFolderNamedLikeAnObjectWhoseIdCannotBeReadIsNotTheOwner()
+
+	public function testTheOwnerSearchStopsAfterTheDepthLimit(): void {
+		// A chain deeper than the limit of eight levels, none of them named like a uuid.
+		$node = $this->folder('deepest', 100, '/openregister/files/a', null);
+		for ($level = 0; $level < 10; $level++) {
+			$parent = $this->createMock(Folder::class);
+			$parent->method('getName')->willReturn('level' . $level);
+			$parent->method('getParent')->willReturn($node);
+			$node = $parent;
+		}
+
+		$file = $this->createMock(File::class);
+		$file->method('getName')->willReturn('deep.pdf');
+		$file->method('getPath')->willReturn('/openregister/files/a/b/deep.pdf');
+		$file->method('getParent')->willReturn($node);
+		$this->objects->expects($this->never())->method('findAcrossAllSources');
+
+		$this->listener()->handle(new BeforeNodeWrittenEvent($file));
+		$this->addToAssertionCount(1);
+	}//end testTheOwnerSearchStopsAfterTheDepthLimit()
+
+	public function testAnAnswerWithoutAnObjectIsNotRefused(): void {
+		$this->objects->method('findAcrossAllSources')->willReturn(['object' => null]);
+
+		$this->listener()->handle(new BeforeNodeWrittenEvent($this->fileInObjectFolder()));
+		$this->addToAssertionCount(1);
+	}//end testAnAnswerWithoutAnObjectIsNotRefused()
+
+	public function testTheLogLineSurvivesAFileWhoseIdCannotBeRead(): void {
+		$files = $this->folder('files', 2, '/openregister/files', null);
+		$objectFolder = $this->folder(self::UUID, self::FOLDER_ID, '/openregister/files/' . self::UUID, $files);
+		$file = $this->createMock(File::class);
+		$file->method('getName')->willReturn('new.pdf');
+		$file->method('getId')->willThrowException(new \RuntimeException('not stored yet'));
+		$file->method('getPath')->willReturn('/openregister/files/' . self::UUID . '/new.pdf');
+		$file->method('getParent')->willReturn($objectFolder);
+		$this->objects->method('findAcrossAllSources')->willThrowException(new DbException('connection lost'));
+		$this->logger->expects($this->once())->method('warning')->with(
+			$this->anything(),
+			$this->callback(static fn (array $context): bool => $context['node'] === null)
+		);
+
+		$this->expectException(HintException::class);
+		$this->listener()->handle(new BeforeNodeWrittenEvent($file));
+	}//end testTheLogLineSurvivesAFileWhoseIdCannotBeRead()
+
+	public function testTheRefusalCarriesTheReasonFromTheMarker(): void {
+		$refusal = \OCA\OpenRegister\Exception\ObjectStateWriteException::frozen($this->frozenObject());
+
+		$this->assertSame('geleverd', $refusal->getReason());
+	}//end testTheRefusalCarriesTheReasonFromTheMarker()
+
 	public function testAnOtherEventIsIgnored(): void {
 		$this->objects->expects($this->never())->method('findAcrossAllSources');
 
