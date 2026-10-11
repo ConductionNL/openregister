@@ -1506,8 +1506,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 */
 	private function shouldUseUnionQuery(array $query): bool {
 		// Don't use UNION for aggregations (not supported). `_facets` does not count:
-		// this search returns rows only, facets are computed separately, and the
-		// sequential fallback neither orders nor pages across tables.
+		// this search returns rows only and facets are computed separately. The
+		// sequential fallback orders and pages like UNION, but runs one query per table.
 		if (isset($query['_aggregations']) === true) {
 			return false;
 		}
@@ -2297,10 +2297,15 @@ class MagicMapper extends AbstractObjectMapper {
 	 * This is the original implementation - slower but more flexible.
 	 *
 	 * Paging is applied ONCE, to the merged result. Each table is asked for
-	 * its first `offset + limit` rows, the tables are concatenated (and sorted
-	 * by score when there is a search term), and only then is the page cut.
-	 * Passing `_offset` to every table made each one skip that many rows on
-	 * its own, so later pages lost rows and pages ran up to limit x tables.
+	 * its first `offset + limit` rows, the tables are merged and ordered, and
+	 * only then is the page cut. Passing `_offset` to every table made each
+	 * one skip that many rows on its own, so later pages lost rows and pages
+	 * ran up to limit x tables.
+	 *
+	 * The merged rows are ordered exactly as the UNION path orders them: the
+	 * requested `_order`, else the search score, closed by the uuid. Joining
+	 * the tables one after the other gave the same question a different
+	 * order, and a different page 2, depending on the path that ran.
 	 *
 	 * @param array $query Search parameters.
 	 * @param array $registerSchemaPairs Array of register+schema pairs.
@@ -2310,6 +2315,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/specs/objects-crud/spec.md#requirement-limit-supports-an-explicit-unlimited-value
+	 * @spec openspec/changes/sequential-cross-table-search-orders-like-union/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
 	 */
 	private function searchAcrossMultipleTablesSequential(array $query, array $registerSchemaPairs): array {
 		$allResults = [];
@@ -2318,6 +2324,16 @@ class MagicMapper extends AbstractObjectMapper {
 		// the same over-fetch buildUnionBatchQuery() uses for UNION batches.
 		$pageQuery = $query;
 		$query = $this->buildUnionBatchQuery(query: $pageQuery);
+
+		// The UNION path's own order keys, so both paths answer the same
+		// question in the same order. Every table is asked for its rows in
+		// that order, closed by the uuid; on its own default (`_id`) a table's
+		// first `offset + limit` rows are not the ones the merged page needs.
+		// The platform only changes how the SQL is quoted; the row keys read
+		// here are the same on every database.
+		$orderKeys = $this->buildUnionOrderKeys(query: $pageQuery, isPostgres: false);
+		$propertyFields = $this->orderedPropertyFields(query: $pageQuery);
+		$query['_order'] = $this->buildSequentialTableOrder(orderKeys: $orderKeys, propertyFields: $propertyFields);
 
 		foreach ($registerSchemaPairs as $pair) {
 			$register = $pair['register'] ?? null;
@@ -2383,31 +2399,13 @@ class MagicMapper extends AbstractObjectMapper {
 			context: ['file' => __FILE__, 'line' => __LINE__, 'totalResults' => count($allResults)]
 		);
 
-		// Sort all results by search score if available (from _search parameter).
-		if (isset($query['_search']) === true && empty($query['_search']) === false) {
-			usort(
-				$allResults,
-				function ($a, $b) {
-					// Extract search score from object data if it exists.
-					$scoreA = 0;
-					$scoreB = 0;
-
-					$dataA = $a->getObject();
-					$dataB = $b->getObject();
-
-					if (is_array($dataA) === true && isset($dataA['_search_score']) === true) {
-						$scoreA = (float)$dataA['_search_score'];
-					}
-
-					if (is_array($dataB) === true && isset($dataB['_search_score']) === true) {
-						$scoreB = (float)$dataB['_search_score'];
-					}
-
-					// Sort descending (highest score first).
-					return $scoreB <=> $scoreA;
-				}
-			);
-		}//end if
+		// Order the merged rows on the same keys, with the same comparator, as
+		// the UNION path merges its batches; a search term orders by score.
+		$allResults = $this->sortSequentialResults(
+			results: $allResults,
+			orderKeys: $orderKeys,
+			propertyFields: $propertyFields
+		);
 
 		// The caller's page, cut once from the merged rows.
 		$offset = max(0, (int)($pageQuery['_offset'] ?? 0));
@@ -2426,6 +2424,162 @@ class MagicMapper extends AbstractObjectMapper {
 
 		return $allResults;
 	}//end searchAcrossMultipleTablesSequential()
+
+	/**
+	 * The property fields a query orders by, keyed by their column name.
+	 *
+	 * The UNION order keys name a property by its sanitized column; the
+	 * single-table query and the object data both use the property's own
+	 * name. This maps one back to the other.
+	 *
+	 * @param array $query Search parameters.
+	 *
+	 * @return array<string, string> Column name => property name.
+	 *
+	 * @spec openspec/changes/sequential-cross-table-search-orders-like-union/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 */
+	private function orderedPropertyFields(array $query): array {
+		$orderParams = ($query['_order'] ?? []);
+		if (is_array($orderParams) === false) {
+			return [];
+		}
+
+		$fields = [];
+		foreach (array_keys($orderParams) as $field) {
+			$field = (string) $field;
+			if (str_starts_with($field, '@self.') === true || str_starts_with($field, '_') === true) {
+				continue;
+			}
+
+			$fields[$this->sanitizeColumnName(name: $field)] = $field;
+		}
+
+		return $fields;
+	}//end orderedPropertyFields()
+
+	/**
+	 * Translate the UNION order keys into the `_order` of one table's query.
+	 *
+	 * The score is `_relevance` there, a metadata column is `@self.<name>`
+	 * and a property is its own name. A key neither form can name is left
+	 * out, as the UNION path leaves out an unknown metadata column.
+	 *
+	 * @param array<int, array{row: string, sql: string, dir: string}> $orderKeys      Keys from buildUnionOrderKeys().
+	 * @param array<string, string>                                    $propertyFields Column name => property name.
+	 *
+	 * @return array<string, string> The single-table `_order`.
+	 *
+	 * @spec openspec/changes/sequential-cross-table-search-orders-like-union/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 */
+	private function buildSequentialTableOrder(array $orderKeys, array $propertyFields): array {
+		$metadataColumns = $this->getMetadataColumns();
+		$order = [];
+		foreach ($orderKeys as $key) {
+			$field = null;
+			if ($key['row'] === '_search_score') {
+				$field = '_relevance';
+			} elseif (isset($propertyFields[$key['row']]) === true) {
+				$field = $propertyFields[$key['row']];
+			} elseif (array_key_exists($key['row'], $metadataColumns) === true) {
+				$field = '@self.' . substr($key['row'], strlen(self::METADATA_PREFIX));
+			}
+
+			if ($field !== null && isset($order[$field]) === false) {
+				$order[$field] = $key['dir'];
+			}
+		}
+
+		return $order;
+	}//end buildSequentialTableOrder()
+
+	/**
+	 * Order merged entities on the UNION path's keys with its comparator.
+	 *
+	 * Each entity is projected onto the row keys the UNION statement would
+	 * have produced, sorted with sortUnionRows(), and put back in that order.
+	 *
+	 * @param array<int, ObjectEntity>                                 $results        The merged entities.
+	 * @param array<int, array{row: string, sql: string, dir: string}> $orderKeys      Keys from buildUnionOrderKeys().
+	 * @param array<string, string>                                    $propertyFields Column name => property name.
+	 *
+	 * @return array<int, ObjectEntity> The entities in the merged order.
+	 *
+	 * @spec openspec/changes/sequential-cross-table-search-orders-like-union/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 */
+	private function sortSequentialResults(array $results, array $orderKeys, array $propertyFields): array {
+		$rows = [];
+		foreach (array_values($results) as $index => $entity) {
+			$row = ['__index' => $index];
+			foreach ($orderKeys as $key) {
+				$row[$key['row']] = $this->sequentialOrderValue(
+					entity: $entity,
+					rowKey: $key['row'],
+					propertyFields: $propertyFields
+				);
+			}
+
+			$rows[] = $row;
+		}
+
+		$results = array_values($results);
+		$sorted = [];
+		foreach ($this->sortUnionRows(rows: $rows, orderKeys: $orderKeys) as $row) {
+			$sorted[] = $results[$row['__index']];
+		}
+
+		return $sorted;
+	}//end sortSequentialResults()
+
+	/**
+	 * The value an entity holds for one UNION order key.
+	 *
+	 * The score is the one the row carries (`_search_score` in its data, else
+	 * its relevance as a fraction), 0 without one. A metadata column reads the
+	 * entity's own field, a property column the object's value; dates compare
+	 * as `Y-m-d H:i:s.u`, arrays as JSON, and a missing value is null, which
+	 * sorts where the UNION's `NULL AS alias` arm puts it.
+	 *
+	 * @param ObjectEntity          $entity         The entity.
+	 * @param string                $rowKey         The UNION row key.
+	 * @param array<string, string> $propertyFields Column name => property name.
+	 *
+	 * @return mixed The comparable value.
+	 *
+	 * @spec openspec/changes/sequential-cross-table-search-orders-like-union/specs/objects-crud/spec.md#requirement-a-multi-schema-search-orders-the-same-on-every-path
+	 */
+	private function sequentialOrderValue(ObjectEntity $entity, string $rowKey, array $propertyFields): mixed {
+		$value = null;
+		if ($rowKey === '_search_score') {
+			$data = $entity->getObject();
+			$value = 0;
+			if (isset($data['_search_score']) === true) {
+				$value = (float) $data['_search_score'];
+			} elseif ($entity->getRelevance() !== null) {
+				$value = ($entity->getRelevance() / 100);
+			}
+		} elseif (isset($propertyFields[$rowKey]) === true) {
+			$value = ($entity->getObject()[$propertyFields[$rowKey]] ?? null);
+		} elseif (str_starts_with($rowKey, self::METADATA_PREFIX) === true) {
+			$field = lcfirst(str_replace('_', '', ucwords(substr($rowKey, strlen(self::METADATA_PREFIX)), '_')));
+			if (property_exists($entity, $field) === true) {
+				$value = $entity->{'get' . ucfirst($field)}();
+			}
+		}
+
+		if ($value instanceof \DateTimeInterface) {
+			return $value->format('Y-m-d H:i:s.u');
+		}
+
+		if (is_bool($value) === true) {
+			return (int) $value;
+		}
+
+		if (is_array($value) === true) {
+			return json_encode($value);
+		}
+
+		return $value;
+	}//end sequentialOrderValue()
 
 	/**
 	 * Get cache key for register+schema combination
