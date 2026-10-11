@@ -60,6 +60,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Exception\CustomValidationException
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Event\ObjectActivatedEvent
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  */
 class FormSubmitServiceTest extends TestCase {
 
