@@ -29,6 +29,7 @@
     "schemas": {
       "decision-table": {
         "slug": "decision-table",
+        "x-openregister-demo-data": "Decision tables are the rules an administrator or an app ships, not sample content: a generated table would be evaluated by real flows.",
         "title": "Decision Table",
         "version": "1.0.0",
         "published": "2026-01-01T00:00:00+00:00",
