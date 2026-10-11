@@ -123,27 +123,27 @@ A `parties` notification MUST send the rule's resolved `message` as the mail bod
 - **THEN** the mail's body starts with the subject
 - @e2e exclude notification dispatcher path, covered by PHPUnit
 
-### Requirement: A rule may mail an address it reads through a reference (REQ-ERO-007)
+### Requirement: An email recipient reads its address through a reference (REQ-ERO-007)
 
-An `x-openregister-notifications` rule MUST accept the recipient `{kind: email, field: <path>}`. A path of one segment names a property of the object that holds the address. A longer path reads its first segment as a reference (a uuid, a URL or path ending in one, or an object carrying `id` or `uuid`), loads that object as the system, and reads the rest of the path inside it: `supplierRef.contactEmail` mails the `contactEmail` of the supplier the object points at. The referenced object MUST be inside the firing object's tenant (`ReferenceTenantGuard`, the boundary calculations use); a reference outside it MUST NOT be followed and gets the outcome `reference-unresolved`. A value that is not a valid address gets `no-address`. Every address MUST be put to integriq before it is mailed, exactly as a party's address is (REQ-ERO-003), and the mail carries the rule's message as its body (REQ-ERO-006). The rule mails only when its channels include `email`. The validator MUST refuse a path whose first segment is not a property of the schema, with `notification-recipient-field-unknown`.
+An `x-openregister-notifications` rule MAY address `{kind: "email", field: "<path>"}`. The path's last segment names the address; every segment before it names a reference that OpenRegister MUST follow to the referenced object, at most three references deep. OpenRegister MUST read the referenced object as the system, so the rule reaches the address even when the person whose save fired the rule may not read that object, and MUST refuse a referenced object that belongs to another organisation than the triggering object (outcome `refused-other-tenant`). A value that is not an e-mail address MUST NOT be mailed (`not-an-address`); a missing reference or object MUST be named (`no-reference`, `reference-not-found`). A resolved address MUST be put to integriq like a party address (REQ-ERO-003) and carry the unsubscribe link (REQ-ERO-004). Every entry MUST leave a history row with its outcome, recorded against the path and not the address. The validator MUST refuse an `email` entry without a `field` (`notification-recipient-email-field-missing`), whose first segment is not a declared property (`notification-recipient-field-unknown`), that follows more than three references (`notification-recipient-email-path-too-deep`), or on a rule without the `email` channel (`notification-recipient-email-needs-email-channel`).
 
-#### Scenario: A supplier's contact address is mailed through the reference
+#### Scenario: A supplier message mails the supplier's contact address
 
-- **GIVEN** a schema with a property `supplierRef` and a rule with recipient `{kind: email, field: supplierRef.contactEmail}` on channel `email`
-- **AND** an object whose `supplierRef` names a supplier in the same organisation with `contactEmail: inkoop@leverancier.nl`
-- **WHEN** the rule fires
-- **THEN** integriq is asked about `inkoop@leverancier.nl`, and on `send: true` that address is mailed
-- @e2e exclude notification dispatcher path, covered by PHPUnit (ReferencedAddressNotifierTest)
+- **GIVEN** a `supplierMessage` schema with the rule `{kind: email, field: supplierRef.contactEmail}` on the `email` channel
+- **AND** a message whose `supplierRef` names a supplier of the same organisation with `contactEmail: info@bouw.example`
+- **WHEN** the message is created
+- **THEN** `info@bouw.example` gets the rule's subject and message, with integriq's unsubscribe link
+- @e2e exclude notification dispatcher path, covered by PHPUnit `ReferencedAddressNotifierTest` and `AnnotationNotificationDispatcherTest::testAnEmailRuleIsSentThroughTheReferencedAddressNotifier`
 
-#### Scenario: A reference into another organisation is not followed
+#### Scenario: A reference into another tenant is refused
 
-- **GIVEN** the same rule, and a `supplierRef` that names an object of another organisation
-- **WHEN** the rule fires
-- **THEN** nothing is mailed and the history row reads `reference-unresolved`
-- @e2e exclude notification dispatcher path, covered by PHPUnit (ReferencedAddressNotifierTest)
+- **GIVEN** the same rule and a message whose `supplierRef` names a supplier of another organisation
+- **WHEN** the message is created
+- **THEN** nothing is mailed and the history row reads `refused-other-tenant`
+- @e2e exclude tenant boundary in the dispatcher, covered by PHPUnit `ReferencedAddressNotifierTest::testAnUnresolvableAddressIsNamedAndNothingIsSent`
 
-#### Scenario: A path that starts outside the schema is refused at save
+#### Scenario: An email entry on a rule without the email channel is refused at save
 
-- **WHEN** a schema without an `ownerRef` property is saved with recipient `{kind: email, field: ownerRef.contactEmail}`
-- **THEN** the save is refused with code `notification-recipient-field-unknown`
-- @e2e exclude schema-save validation, covered by PHPUnit
+- **WHEN** a schema is saved with an `email` recipient on a rule whose channels are `["nc-notification"]`
+- **THEN** the save is refused with code `notification-recipient-email-needs-email-channel`
+- @e2e exclude schema validator, covered by PHPUnit `NotificationAnnotationValidatorTest::testAnEmailRecipientNeedsADeclaredFieldAndTheEmailChannel`
