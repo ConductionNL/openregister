@@ -2875,7 +2875,12 @@ class Schema extends Entity implements JsonSerializable {
 		// `exportable` opts the schema into nextcloud-vue's native Export menu
 		// on an index page (or#4103). Off the allowlist it was dropped without
 		// a log line, so `allowExport: true` on every app page was a no-op.
-		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare', 'exportable'];
+		// `staging` and `additionalProperties` are read by FormDestinationValidator
+		// (decision 179): a staging schema is no form destination, and a form
+		// field into an undeclared property is a finding unless the schema opts
+		// into extras. Off this list both were dropped on save, so neither could
+		// ever be declared.
+		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare', 'exportable', 'staging', 'additionalProperties'];
 		// `implements` + `x-schema-org` carry the cross-app semantic-type
 		// markers (ADR-048); they must round-trip through the configuration
 		// column so SemanticTypeResolver can discover the schema. Their IRI

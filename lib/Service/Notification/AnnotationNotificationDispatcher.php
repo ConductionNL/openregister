@@ -576,12 +576,12 @@ class AnnotationNotificationDispatcher {
 				category: $partiesCategory
 			);
 
-			// `{kind: email, field: ...}` mails an address read off the object
-			// or through a reference on it (decision 128). Like parties, it
-			// resolves to no account, so it counts towards the same reach.
+			// An `email` entry reads its address through a reference (REQ-ERO-007):
+			// a supplier holds its own contact address and has no account either.
 			$partiesReached += $this->dispatchToAddresses(
 				recipientsSpec: (array)($spec['recipients'] ?? []),
 				object: $object,
+				data: $data,
 				channels: $channels,
 				ruleId: (string)$name,
 				subject: $broadcastSubject,
@@ -3333,26 +3333,29 @@ class AnnotationNotificationDispatcher {
 	}//end dispatchToParties()
 
 	/**
-	 * Mail the `email` recipients of a rule: addresses read off the object or through a reference.
+	 * Send a rule's `email` entries: addresses read through a reference.
 	 *
 	 * Resolved from the container for the same reason as the party service:
-	 * it reads objects, and the object layer dispatches notifications.
+	 * it reaches the object layer, which dispatches notifications. A rule
+	 * without an `email` entry never resolves it.
 	 *
-	 * @param array<int, mixed> $recipientsSpec The rule's `recipients` declaration.
-	 * @param ObjectEntity $object The triggering object.
-	 * @param array<int, string> $channels The rule's channels.
-	 * @param string $ruleId The rule, for the history row.
-	 * @param string $subject The rule's subject, in the default locale.
-	 * @param string $body The rule's message, in the default locale; the subject when it has none.
-	 * @param string $category The rule's message category, for integriq's opt-out question.
+	 * @param array<int, mixed>    $recipientsSpec The rule's `recipients` declaration.
+	 * @param ObjectEntity         $object         The triggering object.
+	 * @param array<string, mixed> $data           Its data.
+	 * @param array<int, string>   $channels       The rule's channels.
+	 * @param string               $ruleId         The rule, for the history row.
+	 * @param string               $subject        The rule's subject, in the default locale.
+	 * @param string               $body           The rule's message; the subject when it has none.
+	 * @param string               $category       The rule's message category.
 	 *
-	 * @return int How many addresses were put to the mail path (refusals included, missing addresses not).
+	 * @return int How many entries were handed to the mailer.
 	 *
-	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-a-rule-may-mail-an-address-it-reads-through-a-reference-req-ero-007
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
 	 */
 	private function dispatchToAddresses(
 		array $recipientsSpec,
 		ObjectEntity $object,
+		array $data,
 		array $channels,
 		string $ruleId,
 		string $subject,
@@ -3363,21 +3366,22 @@ class AnnotationNotificationDispatcher {
 			return 0;
 		}
 
-		$hasEmailKind = false;
+		$hasEntry = false;
 		foreach ($recipientsSpec as $recipient) {
-			if (is_array($recipient) === true && (string)($recipient['kind'] ?? '') === 'email') {
-				$hasEmailKind = true;
+			if (is_array($recipient) === true && (string)($recipient['kind'] ?? '') === ReferencedAddressNotifier::KIND) {
+				$hasEntry = true;
 				break;
 			}
 		}
 
-		if ($hasEmailKind === false) {
+		if ($hasEntry === false) {
 			return 0;
 		}
 
 		$outcomes = $this->serverContainer->get(ReferencedAddressNotifier::class)->notify(
-			recipientsSpec: $recipientsSpec,
 			object: $object,
+			data: $data,
+			recipientsSpec: $recipientsSpec,
 			subject: $subject,
 			body: $body,
 			category: $category
@@ -3385,15 +3389,14 @@ class AnnotationNotificationDispatcher {
 
 		$reached = 0;
 		foreach ($outcomes as $outcome) {
-			$unaddressed = [ReferencedAddressNotifier::OUTCOME_NO_ADDRESS, ReferencedAddressNotifier::OUTCOME_REFERENCE_UNRESOLVED];
-			if (in_array($outcome['outcome'], $unaddressed, true) === false) {
+			if ($outcome['outcome'] === EmailSender::OUTCOME_DISPATCHED) {
 				$reached++;
 			}
 
 			$this->recordHistory(
 				ruleId: $ruleId,
 				channel: 'email',
-				recipient: 'email-field:' . $outcome['field'],
+				recipient: 'field:' . $outcome['field'],
 				status: $outcome['outcome'],
 				object: $object,
 				subject: $subject,

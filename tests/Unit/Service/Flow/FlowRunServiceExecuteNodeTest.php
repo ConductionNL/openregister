@@ -38,6 +38,9 @@ class ExecuteNodeSubject {
 class CountingNode implements IFlowNode {
 	public int $calls = 0;
 
+	/** @var array<string,mixed> The config the node last ran with. */
+	public array $lastConfig = [];
+
 	public function __construct(
 		private readonly string $id,
 	) {
@@ -68,6 +71,7 @@ class CountingNode implements IFlowNode {
 
 	public function execute(array $items, array $config, array $context): array {
 		$this->calls++;
+		$this->lastConfig = $config;
 
 		return $items;
 	}
@@ -183,7 +187,7 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 		$pin = $this->pinReturning(
 			graph: [
 				'nodes' => [
-					['id' => 'target', 'type' => 'test.target'],
+					['id' => 'target', 'type' => 'test.target', 'config' => ['templateId' => 'authored', 'folder' => 'Besluiten']],
 					['id' => 'downstream', 'type' => 'test.downstream'],
 					['id' => 'boom', 'type' => 'test.explode'],
 					['id' => 'wait', 'type' => 'test.suspend'],
@@ -299,4 +303,39 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 		$this->assertSame(0, $this->target->calls);
 	}//end testExecuteNodeDoesNothingWhenTheRunIsNotQueued()
 
+	/**
+	 * The step runs with the config the flow author published when the caller
+	 * sends none.
+	 *
+	 * @return void
+	 */
+	public function testExecuteNodeRunsWithThePublishedConfigByDefault(): void {
+		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, user: 'alice');
+
+		$this->service->executeNode(run: $run, flow: $this->flowDoc(), subject: new ExecuteNodeSubject(), nodeId: 'target');
+
+		$this->assertSame(['templateId' => 'authored', 'folder' => 'Besluiten'], $this->target->lastConfig);
+	}//end testExecuteNodeRunsWithThePublishedConfigByDefault()
+
+	/**
+	 * The caller's config (a picker's choice) overlays the published step's
+	 * config: caller keys win, authored keys the caller did not send stay.
+	 * Before this, the pin replaced whatever step the controller built, so a
+	 * picked template never reached the node.
+	 *
+	 * @return void
+	 */
+	public function testTheCallersConfigOverlaysThePublishedStep(): void {
+		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, user: 'alice');
+
+		$this->service->executeNode(
+			run: $run,
+			flow: $this->flowDoc(),
+			subject: new ExecuteNodeSubject(),
+			nodeId: 'target',
+			config: ['templateId' => 'picked']
+		);
+
+		$this->assertSame(['templateId' => 'picked', 'folder' => 'Besluiten'], $this->target->lastConfig);
+	}//end testTheCallersConfigOverlaysThePublishedStep()
 }//end class

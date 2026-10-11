@@ -3420,8 +3420,10 @@ class ObjectsController extends Controller {
 			// instead of being flattened by the generic validation handler.
 			return new JSONResponse(data: $exception->toErrorBody(), statusCode: 400);
 		} catch (ValidationException|CustomValidationException $exception) {
-			// Handle validation errors.
-			return new JSONResponse(data: $exception->getMessage(), statusCode: 400);
+			// Decision 179: refuse in the per-property shape update and patch
+			// use ({ status, message, errors[] }), not a bare string, so a form
+			// can mark the field the destination refused.
+			return $objectService->handleValidationException(exception: $exception);
 		} catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
 			// Handle hook rejection — return 422 with validation errors from the workflow.
 			return new JSONResponse(
@@ -5461,6 +5463,38 @@ class ObjectsController extends Controller {
 
 		return new JSONResponse(data: ['present' => $service->present(objectUuid: $id, exceptUser: $caller)]);
 	}//end presenceDepart()
+
+	/**
+	 * Say that the caller has closed this object, from a closing tab.
+	 *
+	 * A closing tab can only send a beacon, and a beacon is always a POST, so
+	 * it cannot reach the DELETE route above. The client marks the request with
+	 * `_method=DELETE` and this route honours exactly that and nothing else:
+	 * a POST without the marker is refused, so a stray POST never makes a
+	 * reader vanish from everybody else's screen. CSRF stays on; the client
+	 * sends the request token in the beacon's form body.
+	 *
+	 * @param string $register The register slug or identifier.
+	 * @param string $schema   The schema slug or identifier.
+	 * @param string $id       The object.
+	 *
+	 * @return JSONResponse Who is left, or 400 without the DELETE marker.
+	 *
+	 * @NoAdminRequired
+	 *
+	 * @psalm-suppress PossiblyUnusedMethod
+	 *
+	 * @spec openspec/changes/presence-departs-from-a-closing-tab/specs/realtime-updates/spec.md#requirement-a-closing-tab-can-say-it-left
+	 */
+	#[NoAdminRequired]
+	public function presenceDepartByBeacon(string $register, string $schema, string $id): JSONResponse {
+		$override = $this->request->getParam('_method');
+		if (is_string($override) === false || strtoupper($override) !== 'DELETE') {
+			return new JSONResponse(data: ['error' => 'POST on presence only departs, with _method=DELETE'], statusCode: 400);
+		}
+
+		return $this->presenceDepart(register: $register, schema: $schema, id: $id);
+	}//end presenceDepartByBeacon()
 
 	/**
 	 * Who has this object open.

@@ -1193,6 +1193,10 @@ return [
         ['name' => 'objects#geocode', 'url' => '/api/geo/geocode', 'verb' => 'GET'],
 
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
+        // Decision 179 (ADR-117): a form submits into its destination object.
+        ['name' => 'forms#validate', 'url' => '/api/forms/validate', 'verb' => 'POST'],
+        ['name' => 'forms#submit', 'url' => '/api/forms/{formId}/submit', 'verb' => 'POST'],
+        ['name' => 'forms#upload', 'url' => '/api/forms/{formId}/uploads', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
         // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
         // a longer path must be declared first or the generic one swallows it.
@@ -1256,6 +1260,12 @@ return [
             // caller that an object exists when they may not read it.
         ['name' => 'objects#presenceBeat',   'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#presenceDepart', 'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+            // A closing tab can only send a beacon, which is always a POST. The
+            // client marks it `?_method=DELETE`; Nextcloud does not read that
+            // marker, so without this route every beacon answered 405 and the
+            // closed tab lingered for a whole window. The method refuses a POST
+            // that does not carry the marker.
+        ['name' => 'objects#presenceDepartByBeacon', 'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'objects#presenceList',   'url' => '/api/objects/{register}/{schema}/{id}/presence', 'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
             // Move an object to another register and schema, keeping its uuid
             // and everything keyed on it (identity-survives-a-move). NOT a
@@ -1509,6 +1519,13 @@ return [
         ['name' => 'files#downloadById', 'url' => '/api/files/{fileId}/download', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
 		['name' => 'files#office', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/office', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#officePage', 'url' => '/office/{register}/{schema}/{id}/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		// An object's folder for the files browser, subfolders included, through
+		// the object's rule instead of WebDAV (object-folder-in-files-browser).
+		['name' => 'objectFolder#index',   'url' => '/api/objects/{register}/{schema}/{id}/folder',          'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+		['name' => 'objectFolder#create',  'url' => '/api/objects/{register}/{schema}/{id}/folder',          'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+		['name' => 'objectFolder#upload',  'url' => '/api/objects/{register}/{schema}/{id}/folder/upload',   'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+		['name' => 'objectFolder#rename',  'url' => '/api/objects/{register}/{schema}/{id}/folder/{nodeId}', 'verb' => 'PUT',    'requirements' => ['id' => '[^/]+', 'nodeId' => '\d+']],
+		['name' => 'objectFolder#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/folder/{nodeId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'nodeId' => '\d+']],
 
         // Tasks: user-scoped listing (all CalDAV VTODOs for current user).
         ['name' => 'tasks#allUserTasks', 'url' => '/api/tasks', 'verb' => 'GET'],

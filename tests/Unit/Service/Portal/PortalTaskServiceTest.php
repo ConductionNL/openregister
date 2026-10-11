@@ -27,6 +27,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Portal;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskAccessDeniedException;
+use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Portal\PortalSubject;
@@ -50,6 +51,7 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Task\TaskAuthorizationService
  * @covers \OCA\OpenRegister\Service\Task\TaskInboxService
  * @covers \OCA\OpenRegister\Db\Task
+ * @covers \OCA\OpenRegister\Exception\TaskCompleteViaAppException
  * @uses \OCA\OpenRegister\Db\PortalTaskDelivery
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Task\TaskTemporalProjection
@@ -452,4 +454,59 @@ class PortalTaskServiceTest extends TestCase {
 		$this->expectException(DoesNotExistException::class);
 		$this->service->show(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1');
 	}//end testShowReadsAForeignOrInternalTaskAsAbsent()
+	/**
+	 * A task naming the app action that completes it: the matched party is
+	 * refused here, naming the action, before anything is stored; the named
+	 * app completes it in-process; a stranger is still denied first.
+	 *
+	 * @return void
+	 */
+	public function testATaskNamingItsAppIsCompletedByThatAppOnly(): void {
+		$task = $this->task(['required' => false]);
+		$task->setMetadata(array_merge($task->getMetadata(), [PortalTaskService::COMPLETE_VIA => ['app' => 'dossiq', 'action' => 'completeChecklistTask']]));
+		$this->openForRuns($task);
+		$this->files->expects($this->never())->method('addFile');
+		$this->tasks->expects($this->once())->method('complete')->willReturn($task);
+
+		try {
+			$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1', files: [['name' => 'x.pdf', 'type' => 'application/pdf', 'size' => 1, 'content' => 'x']]);
+			$this->fail('The seam completed a task its app completes.');
+		} catch (TaskCompleteViaAppException $elsewhere) {
+			$this->assertSame(['app' => 'dossiq', 'action' => 'completeChecklistTask'], $elsewhere->completeVia());
+		}
+
+		try {
+			$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1', viaApp: 'pipelinq');
+			$this->fail('Another app completed the task.');
+		} catch (TaskCompleteViaAppException) {
+			$this->addToAssertionCount(1);
+		}
+
+		try {
+			$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-2'), uuid: 't-1');
+			$this->fail('A stranger learned the task exists.');
+		} catch (TaskAccessDeniedException) {
+			$this->addToAssertionCount(1);
+		}
+
+		$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1', viaApp: 'dossiq');
+	}//end testATaskNamingItsAppIsCompletedByThatAppOnly()
+
+	/**
+	 * Only a whole `{app, action}` locks a task; half of one is ignored.
+	 *
+	 * @return void
+	 */
+	public function testOnlyAWholeCompleteViaCounts(): void {
+		$task = $this->task();
+		$this->assertNull($this->service->completeVia(task: $task));
+
+		foreach ([['app' => 'dossiq'], ['action' => 'x'], ['app' => ' ', 'action' => 'x'], 'dossiq'] as $half) {
+			$task->setMetadata([PortalTaskService::COMPLETE_VIA => $half]);
+			$this->assertNull($this->service->completeVia(task: $task), json_encode($half));
+		}
+
+		$task->setMetadata([PortalTaskService::COMPLETE_VIA => ['app' => ' dossiq ', 'action' => 'completeChecklistTask']]);
+		$this->assertSame(['app' => 'dossiq', 'action' => 'completeChecklistTask'], $this->service->completeVia(task: $task));
+	}//end testOnlyAWholeCompleteViaCounts()
 }//end class
