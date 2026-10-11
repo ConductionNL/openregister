@@ -1657,6 +1657,9 @@ class MagicSearchHandler {
 				continue;
 			}
 
+			// A PHP boolean compares in its string form (boolean-filter-values).
+			$value = FilterParams::comparableValue(value: $value, propertyType: $propertyType);
+
 			// Handle array filter values: comparison operators
 			// (gte/lte/gt/lt/in/notIn/ne) or a bare IN clause.
 			if (is_array($value) === true) {
@@ -2649,6 +2652,9 @@ class MagicSearchHandler {
 				$this->applyJsonObjectFilter(qb: $qb, columnName: $columnName, value: $value, isPostgres: $isPostgres);
 				continue;
 			}
+
+			// A PHP boolean compares in its string form (boolean-filter-values).
+			$value = FilterParams::comparableValue(value: $value, propertyType: $propertyType);
 
 			if (is_array($value) === true) {
 				$comparisonOperators = self::COMPARISON_OPERATORS;
