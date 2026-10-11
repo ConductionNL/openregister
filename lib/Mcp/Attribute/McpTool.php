@@ -117,6 +117,10 @@ final class McpTool {
 	 *                           strings and values scalars, validated by the scanner at scan time.
 	 *                           A mark is a claim: a consumer MUST NOT treat one as a grant.
 	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) An attribute is a flat declaration:
+	 * every field is one named argument at the call site, and grouping them in a value
+	 * object would break every `#[McpTool(...)]` already written.
+	 *
 	 * @spec openspec/specs/ai-mcp/spec.md
 	 *   (Requirement: REQ-ATTR-001 — The #[McpTool] service-method attribute)
 	 * @spec openspec/specs/ai-mcp/spec.md
