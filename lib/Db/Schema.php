@@ -3463,6 +3463,13 @@ class Schema extends Entity implements JsonSerializable {
 		// could never opt an object into a subscription — same
 		// or#460/#462-class trap as every entry above.
 		'x-openregister-registry',
+		// Who owns a decision on this schema's records (open, or the decider
+		// plus supervisors and administrators) and whether one reviewer's
+		// decisions are hidden from another (reviewer-owns-their-decisions).
+		// Read by ReviewPolicyResolver, refused at save by
+		// ReviewAnnotationValidator. Absent from this list it would be dropped,
+		// and a four-eyes review its author had just switched on would stay open.
+		'x-openregister-review',
 		// A property that shows a referenced record's own field, live. Read by
 		// LensResolver at render time; the value is never stored. Absent from
 		// this list, setConfiguration() would drop the block and every lens
