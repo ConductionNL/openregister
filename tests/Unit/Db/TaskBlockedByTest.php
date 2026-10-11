@@ -221,4 +221,38 @@ class TaskBlockedByTest extends TestCase {
 
 		$this->assertTrue($inbox->enrich(task: $waiting)['blocked']);
 	}//end testASingleReadDerivesTheFlagToo()
+
+	/**
+	 * The dependants of a closing task are the open rows naming it.
+	 *
+	 * @return void
+	 */
+	public function testFindOpenBlockedByAsksForTheOpenDependants(): void {
+		$mapper = new TaskBlockerMapper(db: $this->connectionWith());
+
+		$this->assertSame([], $mapper->findOpenBlockedBy(blockerUuid: 'task-visit'));
+		$this->assertTrue($this->saw('expr.eq', 'blocked_by'));
+		$this->assertTrue($this->saw('expr.eq', 'is_terminal'));
+	}//end testFindOpenBlockedByAsksForTheOpenDependants()
+
+	/**
+	 * A blocker lookup that fails leaves the inbox readable: nothing is marked blocked.
+	 *
+	 * @return void
+	 */
+	public function testABlockerLookupThatFailsMarksNothingBlocked(): void {
+		$waiting = new Task();
+		$waiting->setUuid('task-advice');
+		$waiting->setBlockedBy('task-visit');
+		$tasks = $this->createMock(TaskMapper::class);
+		$tasks->method('findInbox')->willReturn([$waiting]);
+		$tasks->method('countInbox')->willReturn(1);
+		$blockers = $this->createMock(TaskBlockerMapper::class);
+		$blockers->method('openBlockerUuids')->willThrowException(new \RuntimeException('database went away'));
+
+		$inbox = new TaskInboxService(tasks: $tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: null, blockers: $blockers);
+		$rows = $inbox->inbox(criteria: new TaskInboxCriteria(uid: 'anna', objectUuid: 'case-1'))['results'];
+
+		$this->assertFalse($rows[0]['blocked']);
+	}//end testABlockerLookupThatFailsMarksNothingBlocked()
 }//end class

@@ -45,7 +45,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Task\TaskPriority
  * @uses \OCA\OpenRegister\Service\Task\TaskState
  * @uses \OCA\OpenRegister\Db\TaskAudit
- * @uses \OCA\OpenRegister\Service\Task\TaskBlockerGuard
+ * @covers \OCA\OpenRegister\Service\Task\TaskBlockerGuard
  */
 class TaskBlockedByCreateTest extends TestCase {
 

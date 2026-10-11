@@ -142,4 +142,19 @@ class TaskBlockerReleaseListenerTest extends TestCase {
 		$listener = new TaskBlockerReleaseListener(tasks: $tasks, service: $this->createMock(TaskService::class), logger: new NullLogger());
 		$listener->handle(event: new Event());
 	}//end testAnotherEventIsIgnored()
+
+	/**
+	 * A failing dependants lookup is logged and releases nothing.
+	 *
+	 * @return void
+	 */
+	public function testAFailingLookupReleasesNothing(): void {
+		$tasks = $this->createMock(TaskMapper::class);
+		$tasks->method('findOpenBlockedBy')->willThrowException(new RuntimeException('database went away'));
+		$service = $this->createMock(TaskService::class);
+		$service->expects($this->never())->method('record');
+
+		$listener = new TaskBlockerReleaseListener(tasks: $tasks, service: $service, logger: new NullLogger());
+		$listener->handle(event: new TaskTerminalEvent(task: $this->task(uuid: 'task-visit')));
+	}//end testAFailingLookupReleasesNothing()
 }//end class
