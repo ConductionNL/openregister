@@ -28,6 +28,8 @@ use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MigrationPack;
 use OCA\OpenRegister\Db\MigrationPackMapper;
+use OCA\OpenRegister\Exception\BuiltinPackSlugLockedException;
+use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\MigrationPack\PackDefinitionValidator;
 use OCP\AppFramework\Db\DoesNotExistException;
 
@@ -42,10 +44,12 @@ class MigrationPackService {
 	 *
 	 * @param MigrationPackMapper $mapper Data mapper.
 	 * @param PackDefinitionValidator $validator Pack definition validator.
+	 * @param MappingEngine $mappingEngine Applies a pack to source rows (preview).
 	 */
 	public function __construct(
 		private readonly MigrationPackMapper $mapper,
 		private readonly PackDefinitionValidator $validator,
+		private readonly MappingEngine $mappingEngine,
 	) {
 	}//end __construct()
 
@@ -130,15 +134,19 @@ class MigrationPackService {
 	/**
 	 * Update an existing migration pack's definition.
 	 *
+	 * The slug of a built-in pack cannot change: the app that seeded it finds
+	 * it again by that slug.
+	 *
 	 * @param int $id The migration pack id.
 	 * @param array<string, mixed> $definition The replacement pack definition document.
 	 *
 	 * @return MigrationPack
 	 *
 	 * @throws DoesNotExistException When no row matches.
+	 * @throws BuiltinPackSlugLockedException When the definition renames a built-in pack.
 	 * @throws InvalidArgumentException When the definition is structurally invalid, or its slug collides with a different pack.
 	 *
-	 * @spec openspec/specs/migration-mapping-packs/spec.md
+	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
 	 */
 	public function update(int $id, array $definition): MigrationPack {
 		$this->validator->assertValid(definition: $definition);
@@ -146,6 +154,12 @@ class MigrationPackService {
 		$pack = $this->mapper->find(id: $id);
 
 		$slug = (string)$definition['id'];
+		if ($pack->getBuiltin() === true && $slug !== $pack->getPackSlug()) {
+			throw new BuiltinPackSlugLockedException(
+				message: 'The id of built-in migration pack "' . $pack->getPackSlug() . '" cannot be changed'
+			);
+		}
+
 		if ($slug !== $pack->getPackSlug() && $this->slugExists(packSlug: $slug) === true) {
 			throw new InvalidArgumentException('A migration pack with id "' . $slug . '" already exists');
 		}
@@ -165,16 +179,65 @@ class MigrationPackService {
 	 *
 	 * @param int $id The migration pack id.
 	 *
-	 * @return void
+	 * @return MigrationPack The deleted pack, so the caller can name it.
 	 *
 	 * @throws DoesNotExistException When no row matches.
 	 *
-	 * @spec openspec/specs/migration-mapping-packs/spec.md
+	 * @spec openspec/specs/migration-mapping-packs/spec.md#migration-packs-must-be-manageable-via-admin-gated-rest-crud-with-json-file-importexport
 	 */
-	public function delete(int $id): void {
+	public function delete(int $id): MigrationPack {
 		$pack = $this->mapper->find(id: $id);
 		$this->mapper->delete(entity: $pack);
+
+		return $pack;
 	}//end delete()
+
+	/**
+	 * Validate a pack definition without storing it.
+	 *
+	 * @param array<string, mixed> $definition The pack definition document.
+	 *
+	 * @return string[] The validation errors; empty when the definition is valid.
+	 *
+	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
+	 */
+	public function validateDefinition(array $definition): array {
+		return $this->validator->validate(definition: $definition);
+	}//end validateDefinition()
+
+	/**
+	 * Map sample source rows through an unsaved pack definition.
+	 *
+	 * Runs the same MappingEngine::mapRow() an import runs, so an editor can
+	 * show what a definition does before it is saved. Rows are numbered from 1
+	 * in the order given. `skipRows` is not applied: those numbers refer to
+	 * rows of a source file, not to positions in the sample.
+	 *
+	 * @param array<string, mixed> $definition The pack definition document.
+	 * @param array<int, array<string, mixed>> $rows Sample source rows, column (or key) => value.
+	 *
+	 * @return list<array{rowNumber: int, data: array<string, mixed>, errors: list<array<string, mixed>>}>
+	 *
+	 * @throws InvalidArgumentException When the definition is structurally invalid.
+	 *
+	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-mapping-engine-must-apply-pack-transforms-per-row-and-never-leak-unresolved-references
+	 */
+	public function previewRows(array $definition, array $rows): array {
+		$this->validator->assertValid(definition: $definition);
+
+		$results = [];
+		foreach (array_values($rows) as $index => $row) {
+			$rowNumber = ($index + 1);
+			$mapped = $this->mappingEngine->mapRow(pack: $definition, sourceRow: $row, rowNumber: $rowNumber);
+			$results[] = [
+				'rowNumber' => $rowNumber,
+				'data' => $mapped['data'],
+				'errors' => $mapped['errors'],
+			];
+		}
+
+		return $results;
+	}//end previewRows()
 
 	/**
 	 * Import a pack document from a JSON file (upload) — upserts by the
