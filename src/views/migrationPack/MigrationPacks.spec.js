@@ -647,6 +647,25 @@ describe('the editor', () => {
 		expect(vm.saveProblem.conflict).toBe(true)
 	})
 
+	it('does not take a failed request-token check (412) for someone else saving', async () => {
+		const vm = await loadedEditor()
+		vm.draft.name = 'Changed'
+		axios.put.mockRejectedValue({
+			response: {
+				status: 412,
+				data: { message: 'CSRF check failed' },
+			},
+		})
+		await vm.save()
+		expect(vm.saveProblem).toEqual({
+			message: 'Could not save the migration pack.',
+			details: [],
+			code: '',
+			status: 412,
+		})
+		expect(vm.dirty).toBe(true)
+	})
+
 	it('keeps the edits of a pack someone deleted, and saves them as a new pack', async () => {
 		const vm = await loadedEditor(storedPack({ builtin: false }))
 		vm.$router = { push: jest.fn().mockResolvedValue(undefined) }

@@ -1211,7 +1211,9 @@ export default {
 		 * same second are still told apart. It narrows the window, but cannot
 		 * close it: a save by someone else between that read and the update
 		 * is overwritten, until the update route checks a precondition itself.
-		 * A 409 or 412 from the server is shown the same way.
+		 * A 409 from the server is shown the same way. A 412 is not: on this
+		 * route Nextcloud sends it only for a failed request-token check, so it
+		 * is explained like any other refusal and the edits are not thrown away.
 		 *
 		 * @return {Promise<void>}
 		 *
@@ -1239,7 +1241,7 @@ export default {
 				if (status === 404) {
 					// Shown with its own actions; the edits stay in the editor.
 					this.packDeleted = true
-				} else if (status === 409 || status === 412) {
+				} else if (status === 409) {
 					this.saveProblem = this.conflictProblem()
 				} else {
 					this.saveProblem = explainError(
