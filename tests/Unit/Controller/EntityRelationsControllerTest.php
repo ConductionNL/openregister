@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\Decision;
 use OCA\OpenRegister\Db\DecisionMapper;
 use OCA\OpenRegister\Service\Decision\DecisionOwnership;
 use OCA\OpenRegister\Service\Decision\DecisionService;
+use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
 use OCA\OpenRegister\Service\Decision\ReviewPolicyResolver;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
@@ -155,9 +156,24 @@ class EntityRelationsControllerTest extends TestCase {
 			$this->registerMapper,
 			$this->emailLinkMapper,
 			$this->logger,
-			$this->relationDecisions
+			$this->relationDecisions,
+			$this->visibleAsIs()
 		);
 	}//end makeController()
+
+	/**
+	 * A visibility filter that hides nothing: these tests are about the PATCH, HiddenDecisionTest about the mask.
+	 *
+	 * @return DecisionVisibility
+	 */
+	private function visibleAsIs(): DecisionVisibility {
+		$visibility = $this->createMock(DecisionVisibility::class);
+		$visibility->method('present')->willReturnCallback(
+			static fn (EntityRelation $relation, string $userId, ?array $serialised = null): array => ($serialised ?? $relation->jsonSerialize())
+		);
+
+		return $visibility;
+	}//end visibleAsIs()
 
 	public function testReturns401WhenNotAuthenticated(): void {
 		$this->userSession->method('getUser')->willReturn(null);

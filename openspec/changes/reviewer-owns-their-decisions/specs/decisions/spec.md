@@ -48,3 +48,21 @@ Before anyone other than the decider or an administrator changes a decider-owned
 - **GIVEN** a listener that throws
 - **WHEN** a supervisor changes another reviewer's decision
 - **THEN** the change is refused with `decision-owned`
+
+### Requirement: The app that owns the subject may show a hidden decision (REQ-DEC-003)
+
+Before a decision is hidden from a caller under `hideOthers` (REQ-ROD-002), OpenRegister SHALL dispatch `DecisionVisibilityRequestedEvent` carrying the decision (null when its record is gone), the caller, the policy and the subject (as in REQ-DEC-002). A listener MAY allow, and the decision is then shown to that caller. Nothing else SHALL make a hidden decision visible: without an allow it stays hidden, and a listener that throws SHALL leave it hidden. The event SHALL NOT be dispatched when nothing would be hidden (no decision, `hideOthers` off, the caller is the decider, an administrator or in a supervisor group of the policy) or when nobody is signed in.
+
+#### Scenario: a case-type supervisor sees hidden decisions on their cases
+<!-- @e2e exclude Covered by PHPUnit HiddenDecisionTest::testTheOwningAppMayShowAHiddenDecision; dossiq's listener is tested in dossiq. -->
+
+- **GIVEN** `hideOthers` on and a decision by `j.devries` on a document of a case whose case type names `woo-coordinator` as supervisor group, which the schema does not name
+- **WHEN** a member of `woo-coordinator` reads the document's detections
+- **THEN** the app that owns the case allows it and the decision, its ground and its verdict are shown
+
+#### Scenario: a failing listener keeps the decision hidden
+<!-- @e2e exclude Covered by PHPUnit HiddenDecisionTest::testAFailingListenerKeepsItHidden. -->
+
+- **GIVEN** a listener that throws
+- **WHEN** a reviewer reads another reviewer's decision under `hideOthers`
+- **THEN** the relation shows `decision: "hidden"` without its ground or verdict

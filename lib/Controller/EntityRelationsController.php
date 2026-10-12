@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
+use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\AppFramework\Controller;
@@ -79,6 +80,7 @@ class EntityRelationsController extends Controller {
 	 * @param EmailLinkMapper $emailLinkMapper EmailLink loader (for email-bound authz indirection).
 	 * @param LoggerInterface $logger Structured log sink.
 	 * @param RelationDecisionService $relationDecisions Takes the decision as its own object, under the ownership rule.
+	 * @param DecisionVisibility $decisionVisibility Masks a decision the caller may not see (REQ-ROD-002).
 	 */
 	public function __construct(
 		string $appName,
@@ -93,6 +95,7 @@ class EntityRelationsController extends Controller {
 		private readonly EmailLinkMapper $emailLinkMapper,
 		private readonly LoggerInterface $logger,
 		private readonly RelationDecisionService $relationDecisions,
+		private readonly DecisionVisibility $decisionVisibility,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -198,6 +201,9 @@ class EntityRelationsController extends Controller {
 
 		$data = $decided['relation']->jsonSerialize();
 		$data['decisionRecord'] = $decided['decision']?->jsonSerialize();
+		// The caller just took this decision, so it is theirs to see; masked
+		// all the same so no relation leaves OpenRegister unfiltered.
+		$data = $this->decisionVisibility->present(relation: $decided['relation'], userId: $user->getUID(), serialised: $data);
 
 		return new JSONResponse(
 			data: $data,

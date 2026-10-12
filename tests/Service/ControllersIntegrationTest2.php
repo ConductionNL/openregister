@@ -1825,7 +1825,8 @@ class ControllersIntegrationTest2 extends TestCase {
 			$this->logger,
 			\OC::$server->get(\OCP\IUserSession::class),
 			\OC::$server->get(\OCP\IGroupManager::class),
-			\OC::$server->get(OrganisationService::class)
+			\OC::$server->get(OrganisationService::class),
+			\OC::$server->get(\OCA\OpenRegister\Service\Decision\DecisionVisibility::class)
 		);
 	}//end buildGdprEntitiesController()
 
