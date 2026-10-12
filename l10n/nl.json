@@ -3436,7 +3436,13 @@
         "Please sign in to save this form and carry on later.": "Log in om dit formulier op te slaan en later verder te gaan.",
         "A draft is one object; a form that writes several cannot leave draft in one step.": "Een concept is één object; een formulier dat er meerdere schrijft kan niet in één stap uit concept.",
         "This draft does not exist.": "Dit concept bestaat niet.",
-        "A draft is one object; a form that writes several cannot be saved as a draft.": "Een concept is één object; een formulier dat er meerdere schrijft kan niet als concept worden opgeslagen."
+        "A draft is one object; a form that writes several cannot be saved as a draft.": "Een concept is één object; een formulier dat er meerdere schrijft kan niet als concept worden opgeslagen.",
+        "This is not a draft, so there is nothing to make definitive.": "Dit is geen concept, dus er valt niets definitief te maken.",
+        "Only the person who started this draft can make it definitive.": "Alleen wie dit concept is begonnen kan het definitief maken.",
+        "You may not save this object.": "U mag dit object niet opslaan.",
+        "This draft is not complete yet. Check the fields marked below.": "Dit concept is nog niet compleet. Controleer de gemarkeerde velden.",
+        "Please sign in to make this draft definitive.": "Log in om dit concept definitief te maken.",
+        "The draft could not be made definitive right now. Nothing was changed; try again later.": "Het concept kon nu niet definitief worden gemaakt. Er is niets gewijzigd; probeer het later opnieuw."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

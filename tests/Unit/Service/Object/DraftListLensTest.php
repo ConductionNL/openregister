@@ -57,6 +57,8 @@ class DraftListLensTest extends TestCase {
 			'the digit' => ['1', DraftListLens::ONLY],
 			'any' => ['any', DraftListLens::ANY],
 			'ANY' => [' ANY ', DraftListLens::ANY],
+			'none' => ['none', DraftListLens::NONE],
+			'none, any case' => [' None ', DraftListLens::NONE],
 			'explicit false' => ['false', DraftListLens::EXCLUDE],
 			'a typo' => ['al', DraftListLens::EXCLUDE],
 			'the empty string' => ['', DraftListLens::EXCLUDE],
@@ -105,6 +107,23 @@ class DraftListLensTest extends TestCase {
 			'The owner is whatever the emitter quoted or bound; the lens never quotes.'
 		);
 	}//end testTheOwnerKeepsTheirOwnDrafts()
+
+	/**
+	 * `_drafts=none` leaves out every draft, the caller's own included (decision 216).
+	 *
+	 * The control is the test above: the same caller on the default lens
+	 * keeps their own drafts, so this clause differs only by the owner admit.
+	 */
+	public function testNoneLeavesOutTheCallersOwnDraftsToo(): void {
+		$lens = new DraftListLens();
+
+		$this->assertSame(
+			"(t._status IS NULL OR t._status <> 'draft')",
+			$lens->sql(mode: DraftListLens::NONE, columnPrefix: 't.', owner: ':dcValue1')
+		);
+		$this->assertSame("(_status IS NULL OR _status <> 'draft')", $lens->sql(mode: DraftListLens::NONE, columnPrefix: '', owner: "'alice'"));
+		$this->assertSame(DraftListLens::NONE, $lens->modeFor(query: ['_drafts' => 'none', '@self' => ['status' => 'draft']]), 'The parameter, when sent, wins.');
+	}//end testNoneLeavesOutTheCallersOwnDraftsToo()
 
 	/**
 	 * Drafts alone, and no clause at all when both were asked for.

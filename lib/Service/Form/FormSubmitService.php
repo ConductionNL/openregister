@@ -641,9 +641,10 @@ class FormSubmitService {
 			}
 
 			$object = $this->resolveWriteReferences(object: $plan['object'], ids: [], pending: true);
-			$excused = $this->serverFilled(schema: $plan['schema'], object: $object);
+			$policy = new DraftStatusPolicy();
+			$excused = $policy->serverFilledExcusals(schema: $plan['schema'], object: $object);
 			if ($mode === self::MODE_DRAFT) {
-				$excused = array_merge((new DraftStatusPolicy())->requiredExcusals(schema: $plan['schema']), $excused);
+				$excused = array_merge($policy->requiredExcusals(schema: $plan['schema']), $excused);
 			}
 
 			try {
@@ -666,36 +667,6 @@ class FormSubmitService {
 			);
 		}
 	}//end validateAll()
-
-	/**
-	 * The properties the server fills, excused from `required` while the payload is judged.
-	 *
-	 * A property with a default, a computation or the serverSet marker is
-	 * filled on save or by a creating listener, so a payload without it is
-	 * complete. The build-time validator excuses the same set.
-	 *
-	 * @param Schema               $schema The destination schema.
-	 * @param array<string, mixed> $object The mapped object.
-	 *
-	 * @return array<string, string> Property => reason, for ValidateObject's notSupplied.
-	 */
-	private function serverFilled(Schema $schema, array $object): array {
-		$excused = [];
-		foreach ($schema->getProperties() as $name => $property) {
-			if (is_array($property) === false || array_key_exists((string)$name, $object) === true) {
-				continue;
-			}
-
-			$filled = array_key_exists('default', $property) === true
-				|| isset($property['computed']) === true
-				|| FormDestinationValidator::marker(property: $property, name: FormDestinationValidator::MARKER_SERVER_SET);
-			if ($filled === true) {
-				$excused[(string)$name] = 'server-set';
-			}
-		}
-
-		return $excused;
-	}//end serverFilled()
 
 	/**
 	 * Write in order; on a refusal, delete what this submit already wrote, then refuse.

@@ -3106,6 +3106,19 @@ class Schema extends Entity implements JsonSerializable {
 			return;
 		}
 
+		// `draftLifetimeDays` (decision 216) is read by DraftStatusPolicy and
+		// acted on by DraftExpiryJob. Off this method it was an unknown key,
+		// and an unknown key is dropped on save without a word, so the
+		// lifetime could be declared and never kept.
+		if ($key === 'draftLifetimeDays') {
+			$days = $this->validateDraftLifetimeValue(value: $value);
+			if ($days !== null) {
+				$validatedConfig[$key] = $days;
+			}
+
+			return;
+		}
+
 		if ($key === 'linkRoles') {
 			$validatedConfig[$key] = $this->validateLinkRolesValue(value: $value);
 			return;
@@ -3159,6 +3172,37 @@ class Schema extends Entity implements JsonSerializable {
 			$this->droppedKeys[] = (string)$key;
 		}//end if
 	}//end validateConfigurationEntry()
+
+	/**
+	 * Validate the `draftLifetimeDays` configuration value.
+	 *
+	 * A whole number of days, one or more. Null means "no lifetime" and is
+	 * not stored. Zero, a negative number, a fraction or text is refused: a
+	 * mistyped lifetime must never read as "remove every draft now".
+	 *
+	 * @param mixed $value The raw value.
+	 *
+	 * @throws \InvalidArgumentException If the value is not a whole number of days, one or more.
+	 *
+	 * @return int|null The days, or null when no lifetime is set.
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-schema-must-be-able-to-set-a-draft-lifetime
+	 */
+	private function validateDraftLifetimeValue(mixed $value): ?int {
+		if ($value === null) {
+			return null;
+		}
+
+		if (is_string($value) === true && preg_match('/^[1-9][0-9]*$/', $value) === 1) {
+			$value = (int)$value;
+		}
+
+		if (is_int($value) === false || $value < 1) {
+			throw new InvalidArgumentException('draftLifetimeDays must be a whole number of days, 1 or more');
+		}
+
+		return $value;
+	}//end validateDraftLifetimeValue()
 
 	/**
 	 * Dropped `x-openregister-*` annotation keys collected during the most

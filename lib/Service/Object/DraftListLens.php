@@ -75,6 +75,16 @@ class DraftListLens {
 	public const ANY = 'any';
 
 	/**
+	 * No drafts at all, the caller's own included. The literal is the value callers send (`_drafts=none`).
+	 *
+	 * For a work list whose drafts live somewhere else on the screen, such as
+	 * a quick entry that keeps its own half-typed draft (decision 216).
+	 *
+	 * @var string
+	 */
+	public const NONE = 'none';
+
+	/**
 	 * The lens a query asks for.
 	 *
 	 * An unrecognised value reads as the work list, because a typo must never
@@ -84,7 +94,7 @@ class DraftListLens {
 	 *
 	 * @param array<string, mixed> $query The search query.
 	 *
-	 * @return string One of EXCLUDE, ONLY and ANY.
+	 * @return string One of EXCLUDE, ONLY, ANY and NONE.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
 	 */
@@ -100,6 +110,10 @@ class DraftListLens {
 		$raw = $query[self::PARAMETER];
 		if (is_string($raw) === true && strtolower(trim($raw)) === self::ANY) {
 			return self::ANY;
+		}
+
+		if (is_string($raw) === true && strtolower(trim($raw)) === self::NONE) {
+			return self::NONE;
 		}
 
 		if (is_scalar($raw) === true && filter_var($raw, FILTER_VALIDATE_BOOLEAN) === true) {
@@ -130,7 +144,7 @@ class DraftListLens {
 	/**
 	 * The clause for a lens, or null when it puts no condition on the list.
 	 *
-	 * @param string      $mode         One of EXCLUDE, ONLY and ANY.
+	 * @param string      $mode         One of EXCLUDE, ONLY, ANY and NONE.
 	 * @param string      $columnPrefix The table alias with its dot, or empty for an unaliased UNION member.
 	 * @param string|null $owner        The caller, already quoted or bound by the emitter; null for nobody.
 	 *
@@ -148,7 +162,7 @@ class DraftListLens {
 		}
 
 		$notADraft = (new DraftStatusPolicy())->notADraftSql(columnPrefix: $columnPrefix);
-		if ($owner === null || $owner === '') {
+		if ($mode === self::NONE || $owner === null || $owner === '') {
 			return $notADraft;
 		}
 

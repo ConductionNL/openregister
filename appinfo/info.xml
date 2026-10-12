@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.35-unstable.20261012120000</version>
+    <version>2.1.35-unstable.20261012153000</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -189,6 +189,12 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\OAuth2TokenRefreshJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledReportJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\GroupReconcilerJob</job>
+		<!--
+			Removes the drafts that outlived the draft lifetime their schema
+			sets (configuration key draftLifetimeDays, decision 216). Without
+			this line the setting is stored and never acted on.
+		-->
+		<job>OCA\OpenRegister\BackgroundJob\DraftExpiryJob</job>
 	</background-jobs>
 
 	<repair-steps>

@@ -26,6 +26,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Exception\ValidationException
+ * @uses \OCA\OpenRegister\Service\Form\FormDestinationValidator
  */
 class DraftStatusPolicyTest extends TestCase {
 
@@ -119,6 +120,49 @@ class DraftStatusPolicyTest extends TestCase {
 
 		$this->assertSame(['title' => 'draft', 'description' => 'draft'], $this->policy->requiredExcusals(schema: $schema));
 	}//end testADraftIsExcusedFromRequiredOnly()
+
+	/**
+	 * What the server fills is not the caller's to supply: a default, a computation, the serverSet marker.
+	 */
+	public function testServerFilledPropertiesAreExcusedWhenAbsent(): void {
+		$schema = new Schema();
+		$schema->setProperties(
+			[
+				'title' => ['type' => 'string'],
+				'priority' => ['type' => 'string', 'default' => 'normal'],
+				'total' => ['type' => 'number', 'computed' => ['expression' => 'a + b']],
+				'number' => ['type' => 'string', 'x-openregister' => ['serverSet' => true]],
+				'reference' => ['type' => 'string', 'x-openregister' => ['serverSet' => false]],
+			]
+		);
+
+		$this->assertSame(
+			['priority' => 'server-set', 'total' => 'server-set', 'number' => 'server-set'],
+			$this->policy->serverFilledExcusals(schema: $schema, object: ['title' => 'x'])
+		);
+		// A value the caller did supply is judged like any other.
+		$this->assertSame(['total' => 'server-set'], $this->policy->serverFilledExcusals(schema: $schema, object: ['priority' => 'high', 'number' => 'T-1']));
+	}//end testServerFilledPropertiesAreExcusedWhenAbsent()
+
+	/**
+	 * A schema sets a draft lifetime in days; without it, or with anything but a whole number of days, drafts are kept.
+	 */
+	public function testTheDraftLifetimeIsReadFromTheSchema(): void {
+		$schema = new Schema();
+		$this->assertNull($this->policy->draftLifetimeDays(schema: $schema));
+
+		$schema->setConfiguration(['draftLifetimeDays' => 7]);
+		$this->assertSame(7, $this->policy->draftLifetimeDays(schema: $schema));
+		$this->assertSame('draftLifetimeDays', DraftStatusPolicy::LIFETIME_KEY);
+
+		// Another draft setting does not set a lifetime.
+		$schema->setConfiguration(['draftsVisible' => true]);
+		$this->assertNull($this->policy->draftLifetimeDays(schema: $schema));
+
+		// A value the schema refused (zero would mean "remove every draft now") leaves no lifetime behind.
+		$schema->setConfiguration(['draftLifetimeDays' => 0]);
+		$this->assertNull($this->policy->draftLifetimeDays(schema: $schema));
+	}//end testTheDraftLifetimeIsReadFromTheSchema()
 
 	/**
 	 * Drafts are owner-only unless the schema says otherwise.
