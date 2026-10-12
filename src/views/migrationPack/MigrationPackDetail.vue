@@ -619,13 +619,44 @@ export default {
 		},
 
 		/**
+		 * The JSON view's text as a definition, or null when it is not a JSON object.
+		 *
+		 * @return {object|null} The definition.
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+		 */
+		jsonDefinition() {
+			try {
+				const parsed = JSON.parse(this.jsonText)
+				return parsed !== null
+					&& typeof parsed === 'object'
+					&& !Array.isArray(parsed)
+					? parsed
+					: null
+			} catch {
+				return null
+			}
+		},
+
+		/**
 		 * Whether a save raises the version: the user left it as stored.
+		 *
+		 * In the JSON view that also needs a change to the definition itself,
+		 * not only to its layout.
 		 *
 		 * @return {boolean} True when the version is unchanged.
 		 *
 		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
 		 */
 		versionWillBump() {
+			if (this.view === 'json') {
+				const definition = this.jsonDefinition
+				return (
+					definition !== null
+					&& definition.version === this.pack?.version
+					&& !sameDefinition(definition, this.pack.definition)
+				)
+			}
 			return this.view === 'form' && this.draft?.version === this.pack?.version
 		},
 
@@ -927,8 +958,16 @@ export default {
 		 */
 		definitionToSave() {
 			if (this.view === 'json') {
-				// The server validates a hand-written definition; send it as written.
-				return this.applyJson() ? JSON.parse(this.jsonText) : null
+				// The server validates a hand-written definition; send it as
+				// written, with the version raised when the user left it.
+				if (!this.applyJson()) {
+					return null
+				}
+				const definition = JSON.parse(this.jsonText)
+				if (this.versionWillBump) {
+					definition.version = nextVersion(definition.version)
+				}
+				return definition
 			}
 			const problems = validateDraft(this.draft)
 			if (problems.length > 0) {

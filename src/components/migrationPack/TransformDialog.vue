@@ -364,6 +364,9 @@ export default {
 		/**
 		 * The three ways to treat a value that is not in the table.
 		 *
+		 * A yes/no table stores every default as true or false, so its empty
+		 * default is offered as storing false.
+		 *
 		 * @return {Array<{value: string, label: string}>} The choices.
 		 *
 		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-the-pack-editor-must-save-a-definition-without-losing-what-it-does-not-show
@@ -376,7 +379,10 @@ export default {
 				},
 				{
 					value: 'empty',
-					label: t('openregister', 'Leave the field empty'),
+					label:
+						this.draft?.type === 'bool-map'
+							? t('openregister', 'Store false')
+							: t('openregister', 'Leave the field empty'),
 				},
 				{ value: 'value', label: t('openregister', 'Store this value') },
 			]

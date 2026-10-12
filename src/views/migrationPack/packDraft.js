@@ -339,11 +339,13 @@ export function transformPayload(draft) {
 	}
 	const values = { type }
 	if (type === 'date') {
-		if (draft.sourceFormat !== '' || has(base, 'sourceFormat')) {
-			values.sourceFormat = draft.sourceFormat
-		}
-		if (draft.targetFormat !== '' || has(base, 'targetFormat')) {
-			values.targetFormat = draft.targetFormat
+		// A cleared format is left out, so the engine's default applies: it
+		// would store every date as '' for an empty targetFormat. A format
+		// stored as '' stays as it is.
+		for (const key of ['sourceFormat', 'targetFormat']) {
+			if (draft[key] !== '' || base[key] === '') {
+				values[key] = draft[key]
+			}
 		}
 	}
 	if (type === 'lookup' || type === 'bool-map') {
@@ -650,6 +652,46 @@ export function sampleColumns(draft) {
 }
 
 /**
+ * The sample row to send to the preview, shaped the way the engine reads it.
+ *
+ * A column that starts with `/` is a JSON Pointer: the mapping engine walks
+ * the row's nested keys for it, so its value is placed at that path
+ * (`/a/b` gives `{ a: { b: value } }`, with `~1` read as `/` and `~0` as
+ * `~`). Any other column is a flat key. A column without a value is sent as
+ * an empty string.
+ *
+ * @param {Array<string>} columns The source columns, as sampleColumns() gives them.
+ * @param {object} sample The typed values by column.
+ * @return {object} The row.
+ *
+ * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-a-pack-must-be-testable-against-sample-rows-without-saving-it
+ */
+export function sampleRowFrom(columns, sample) {
+	const row = {}
+	for (const column of columns) {
+		const value = sample[column] ?? ''
+		if (!column.startsWith('/')) {
+			row[column] = value
+			continue
+		}
+		const segments = column
+			.replace(/^\/+/, '')
+			.split('/')
+			.map((segment) => segment.replace(/~1/g, '/').replace(/~0/g, '~'))
+		let cursor = row
+		segments.slice(0, -1).forEach((segment) => {
+			const next = cursor[segment]
+			if (next === null || typeof next !== 'object') {
+				cursor[segment] = {}
+			}
+			cursor = cursor[segment]
+		})
+		cursor[segments[segments.length - 1]] = value
+	}
+	return row
+}
+
+/**
  * Problems in one transform draft that would make the server refuse the pack.
  *
  * @param {object} draft The transform draft.
@@ -814,7 +856,11 @@ export function transformSummary(draft) {
 	}
 	const unmapped = {
 		none: t('openregister', 'other values are an error'),
-		empty: t('openregister', 'other values stay empty'),
+		// A yes/no table stores its default as true or false.
+		empty:
+			draft.type === 'bool-map'
+				? t('openregister', 'other values are stored as false')
+				: t('openregister', 'other values stay empty'),
 		value: t('openregister', 'other values get a default'),
 	}[draft.defaultMode]
 	switch (draft.type) {

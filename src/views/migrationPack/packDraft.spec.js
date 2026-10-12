@@ -24,7 +24,9 @@ import {
 	payloadFromDraft,
 	sameDefinition,
 	sampleColumns,
+	sampleRowFrom,
 	stableStringify,
+	transformFromStored,
 	transformPayload,
 	transformSummary,
 	unknownTransformKeys,
@@ -485,6 +487,57 @@ describe('helpers', () => {
 		])
 	})
 
+	it('nests the values of JSON Pointer columns the way the engine reads them', () => {
+		const draft = draftFromStored(fixture('openregister', 'zgw-zaken-json.json'))
+		const columns = sampleColumns(draft)
+		expect(columns[0]).toBe('/identificatie')
+		expect(
+			sampleRowFrom(columns, {
+				'/identificatie': 'Z-1',
+				'/omschrijving': 'Test',
+			}),
+		).toEqual({
+			identificatie: 'Z-1',
+			omschrijving: 'Test',
+			startdatum: '',
+			einddatum: '',
+			status: '',
+			zaaktype: '',
+			vertrouwelijkheidaanduiding: '',
+		})
+		expect(
+			sampleRowFrom(['/zaak/id', '/zaak/a~1b', '/m~0n', 'Flat /col'], {
+				'/zaak/id': '7',
+				'/zaak/a~1b': 'x',
+				'/m~0n': 'y',
+				'Flat /col': 'z',
+			}),
+		).toEqual({ zaak: { id: '7', 'a/b': 'x' }, 'm~n': 'y', 'Flat /col': 'z' })
+	})
+
+	it('leaves a cleared date format out, so the engine default applies', () => {
+		const stored = {
+			type: 'date',
+			sourceFormat: '!Y-m-d',
+			targetFormat: 'Y-m-d',
+		}
+		const cleared = {
+			...transformFromStored(stored),
+			sourceFormat: '',
+			targetFormat: '',
+		}
+		expect(transformPayload(cleared)).toEqual({ type: 'date' })
+		expect(transformPayload(transformFromStored(stored))).toEqual(stored)
+
+		const storedEmpty = { type: 'date', targetFormat: '' }
+		expect(transformPayload(transformFromStored(storedEmpty))).toEqual(
+			storedEmpty,
+		)
+		expect(
+			transformPayload({ ...newTransform('date'), targetFormat: 'd-m-Y' }),
+		).toEqual({ type: 'date', targetFormat: 'd-m-Y' })
+	})
+
 	it('summarises each transform type', () => {
 		const draft = draftFromStored(fixture('stackiq', 'topdesk-module.json'))
 		expect(transformSummary(null)).toBe('Copied as is')
@@ -499,6 +552,9 @@ describe('helpers', () => {
 			/other values are an error$/,
 		)
 		expect(transformSummary(newTransform('bool-map'))).toMatch(/^Yes\/no table/)
+		expect(
+			transformSummary({ ...newTransform('bool-map'), defaultMode: 'empty' }),
+		).toBe('Yes/no table, values: 1, other values are stored as false')
 		expect(
 			transformSummary({ ...newTransform('concat'), fields: ['B', 'C'] }),
 		).toBe('Joined with B, C, separated by " "')

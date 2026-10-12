@@ -155,6 +155,7 @@
 import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import { explainError, previewPack } from '../../services/migrationPacks.js'
+import { sampleRowFrom } from '../../views/migrationPack/packDraft.js'
 
 /** Milliseconds between the last change and the automatic test run. */
 export const PREVIEW_DEBOUNCE_MS = 400
@@ -260,10 +261,7 @@ export default {
 			}
 			this.runSequence += 1
 			const sequence = this.runSequence
-			const row = {}
-			for (const column of this.columns) {
-				row[column] = this.sample[column] ?? ''
-			}
+			const row = sampleRowFrom(this.columns, this.sample)
 			this.running = true
 			try {
 				const rows = await previewPack(this.definition, [row])

@@ -552,6 +552,24 @@ describe('the editor', () => {
 		})
 	})
 
+	it('raises the patch version of a JSON view edit that left the version', async () => {
+		const vm = await loadedEditor()
+		vm.showJson()
+		vm.jsonText = JSON.stringify(MODULE_PACK)
+		expect(vm.dirty).toBe(true)
+		expect(vm.versionWillBump).toBe(false)
+
+		vm.jsonText = JSON.stringify({ ...MODULE_PACK, name: 'From JSON' })
+		expect(vm.versionWillBump).toBe(true)
+		axios.put.mockResolvedValue({ data: storedPack() })
+		await vm.save()
+		expect(axios.put.mock.calls[0][1].definition).toEqual({
+			...MODULE_PACK,
+			name: 'From JSON',
+			version: '2.0.1',
+		})
+	})
+
 	it('tests only a draft without problems, over its source columns', async () => {
 		const vm = await loadedEditor()
 		expect(vm.previewDefinition).toEqual(MODULE_PACK)
@@ -595,6 +613,23 @@ describe('the sample-row test', () => {
 			{ name: 'cloudDienstverleningsmodel', value: 'null' },
 		])
 		expect(vm.running).toBe(false)
+	})
+
+	it('sends JSON Pointer columns as nested keys', async () => {
+		axios.post.mockResolvedValueOnce({ data: { rows: [] } })
+		const vm = instance(PackPreviewPanel, {
+			definition: MODULE_PACK,
+			columns: ['/identificatie', '/omschrijving'],
+		})
+		vm.sample = { '/identificatie': 'Z-1', '/omschrijving': 'Test' }
+		await vm.run()
+		expect(axios.post).toHaveBeenCalledWith(
+			'/apps/openregister/api/migration-packs/preview',
+			{
+				definition: MODULE_PACK,
+				rows: [{ identificatie: 'Z-1', omschrijving: 'Test' }],
+			},
+		)
 	})
 
 	it("shows the row's errors and an invalid pack's details", async () => {
@@ -716,6 +751,14 @@ describe('the transform dialog', () => {
 			'empty',
 			'value',
 		])
+	})
+
+	it('says that a yes/no table stores false for a value not in its table', () => {
+		const vm = instance(TransformDialog, { transform: null, rowNumber: 1 })
+		vm.setType('lookup')
+		expect(vm.defaultModes[1].label).toBe('Leave the field empty')
+		vm.setType('bool-map')
+		expect(vm.defaultModes[1]).toEqual({ value: 'empty', label: 'Store false' })
 	})
 
 	it('hands back a valid transform, refuses an invalid one, and none as null', () => {
