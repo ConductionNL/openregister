@@ -59,7 +59,7 @@ The listeners that run before a write (`ObjectCreatingEvent`, `ObjectUpdatingEve
 
 ### Requirement: A draft's updates and delete MUST stay on the draft path
 
-A save of an object that is still a draft SHALL dispatch `DraftUpdatedEvent` and no `ObjectUpdatedEvent`: an autosave is not a change anybody was told about. A delete of a draft SHALL dispatch `DraftDeletedEvent` and no `ObjectDeletedEvent`: a listener that never saw the object created is not told it is gone. That holds for the owner's discard and for the draft cleanup. The audit-trail entry of a removed draft (`draft.removed`) is written by the delete itself and does not depend on an event.
+A save of an object that is still a draft SHALL dispatch `DraftUpdatedEvent` and no `ObjectUpdatedEvent`: an autosave is not a change anybody was told about. A delete of a draft SHALL dispatch `DraftDeletedEvent` and no `ObjectDeletedEvent`: a listener that never saw the object created is not told it is gone. That holds for the owner's discard and for the draft cleanup. This is deliberate and it is the whole rule for a draft's delete: no side-effect listener is told, on any path, and no "deleted" webhook, flow, activity entry or push follows a draft that was never announced. The audit-trail entry of a removed draft (`draft.removed`) is written by the delete itself and does not depend on an event.
 
 #### Scenario: An autosave and a discard reach no side effect
 @e2e exclude unit; ObjectEventGateTest covers both, with an ordinary object's update and delete as control
@@ -67,6 +67,25 @@ A save of an object that is still a draft SHALL dispatch `DraftUpdatedEvent` and
 - **GIVEN** a webhook on "ticket updated" and one on "ticket deleted"
 - **WHEN** a draft ticket is autosaved and then discarded
 - **THEN** neither webhook runs
+
+### Requirement: A generated identifier MUST be issued when the object leaves draft
+
+A draft SHALL NOT take a number from a sequence (decision 201): `GeneratedIdentifierListener` fills nothing and moves no counter on a draft's first save or on a later save that keeps it a draft. The save that takes a stored draft out of draft SHALL issue the number, the way a create does: an empty declared property is filled, a value the object already carries is kept and the counter moves past it, and a counter that cannot answer refuses the save. From then on the number is frozen, as for every object. The listener runs before the write, so it does not receive the gate's events. It SHALL ask `ObjectEventGate` (`holdsCreation()`, `leavesDraft()`) what a creation is, so one class decides that before a write and after it.
+
+#### Scenario: A half-typed case burns no number
+@e2e exclude unit; GeneratedIdentifierListenerTest counts the calls to the sequence service on a draft's first save and on its autosave
+
+- **GIVEN** a schema whose `identifier` is generated from the sequence `case`
+- **WHEN** a draft is saved, and saved again
+- **THEN** it has no identifier and the sequence was not asked
+
+#### Scenario: The number is issued on leaving draft
+@e2e exclude unit; GeneratedIdentifierListenerTest covers the save that leaves draft, a number the draft already carried, a counter that is down, and the freeze afterwards as control; ObjectEventGateTest covers the two answers
+
+- **GIVEN** that draft, and the next free number 7
+- **WHEN** its owner makes it definitive
+- **THEN** the object is stored with the identifier that number 7 renders to
+- **AND** a later save that tries to change the identifier is refused
 
 ### Requirement: The rule MUST be kept by a test, not by attention
 

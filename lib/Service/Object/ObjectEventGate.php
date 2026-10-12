@@ -93,6 +93,30 @@ class ObjectEventGate {
 	}//end created()
 
 	/**
+	 * Whether a write that stores this object for the first time is held from creation work: it is a draft.
+	 * For a listener that runs BEFORE the write and does creation work there
+	 * (issuing a number). It asks here, so before a write and after it the
+	 * same class decides what a creation is.
+	 * @param ObjectEntity $object The object about to be stored.
+	 * @return bool True for a draft.
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-a-generated-identifier-must-be-issued-when-the-object-leaves-draft
+	 */
+	public function holdsCreation(ObjectEntity $object): bool {
+		return $object->isDraft() === true;
+	}//end holdsCreation()
+
+	/**
+	 * Whether a save takes a stored draft out of draft: the moment its held creation work runs.
+	 * @param ObjectEntity      $new The object as it is about to be stored.
+	 * @param ObjectEntity|null $old The object as stored, when the caller knows it.
+	 * @return bool True when the stored object is a draft and the new one is not.
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-a-generated-identifier-must-be-issued-when-the-object-leaves-draft
+	 */
+	public function leavesDraft(ObjectEntity $new, ?ObjectEntity $old): bool {
+		return $old !== null && $old->isDraft() === true && $new->isDraft() === false;
+	}//end leavesDraft()
+
+	/**
 	 * A stored object was saved again.
 	 *
 	 * @param ObjectEntity      $new The object as stored now.

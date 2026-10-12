@@ -176,4 +176,20 @@ class ObjectEventGateTest extends TestCase {
 		$this->assertSame($old, $updated->getOldObject());
 		$this->assertInstanceOf(ObjectUpdatedEvent::class, $updated);
 	}//end testADraftEventIsReadLikeItsCounterpart()
+
+	/**
+	 * Before a write the gate answers the same question it answers after one: is this a creation.
+	 */
+	public function testTheGateSaysWhatACreationIsBeforeAWrite(): void {
+		$this->assertTrue($this->gate->holdsCreation(object: $this->object(status: 'draft')));
+		$this->assertFalse($this->gate->holdsCreation(object: $this->object(status: 'active')));
+		$this->assertFalse($this->gate->holdsCreation(object: $this->object(status: null)));
+
+		$this->assertTrue($this->gate->leavesDraft(new: $this->object(status: 'active'), old: $this->object(status: 'draft')));
+		// Controls: an autosave, an ordinary save, and a save whose stored object is not known.
+		$this->assertFalse($this->gate->leavesDraft(new: $this->object(status: 'draft'), old: $this->object(status: 'draft')));
+		$this->assertFalse($this->gate->leavesDraft(new: $this->object(status: 'active'), old: $this->object(status: 'active')));
+		$this->assertFalse($this->gate->leavesDraft(new: $this->object(status: 'active'), old: null));
+		$this->assertSame([], $this->received);
+	}//end testTheGateSaysWhatACreationIsBeforeAWrite()
 }//end class

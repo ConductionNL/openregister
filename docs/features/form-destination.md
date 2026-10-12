@@ -229,6 +229,10 @@ translation sidecar and cleanup. Do not listen to them from an app.
 `ObjectActivatedEvent` carries the moment of receipt. Do your creation work
 on `ObjectCreatedEvent` only, or it runs twice.
 
+A generated identifier follows the same rule. A draft takes no number. The
+save that leaves draft issues it, so a half-typed case leaves no gap in the
+sequence.
+
 ### Keep your own drafts out of a work list
 
 A list leaves out other people's drafts and keeps your own (decision 201).

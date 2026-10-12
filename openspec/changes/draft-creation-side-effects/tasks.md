@@ -19,6 +19,9 @@
   - Test: ObjectEventRuleTest (the registered listeners equal the list)
 - [x] 2.2 `AnnotationNotificationListener` loses its own draft check and its registration on `ObjectActivatedEvent`; it is an instance of the rule now
   - Test: AnnotationNotificationListenerTest (as on development), ObjectEventRuleTest (no listener on both events)
+- [x] 2.3 `GeneratedIdentifierListener` asks the gate: a draft takes no number, the save that leaves draft issues it (decision 201)
+  - Spec ref: specs/object-events/spec.md, "A generated identifier MUST be issued when the object leaves draft"
+  - Test: GeneratedIdentifierListenerTest (four new cases), ObjectEventGateTest::testTheGateSaysWhatACreationIsBeforeAWrite
 
 ## 3. Kept by a test
 
