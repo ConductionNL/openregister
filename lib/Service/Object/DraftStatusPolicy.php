@@ -138,7 +138,9 @@ class DraftStatusPolicy {
 				return ObjectEntity::STATUS_ACTIVE;
 			}
 
-			throw new ValidationException(message: 'A draft leaves draft through the form submit or its owner\'s activate action, which check every required field first.');
+			throw new ValidationException(
+				message: 'A draft leaves draft through the form submit or its owner\'s activate action, which check every required field first.'
+			);
 		}
 
 		throw new ValidationException(message: sprintf('Status "%s" is not one an object can be given here.', $asked));

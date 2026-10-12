@@ -157,7 +157,15 @@ class DraftActivation {
 				// RBAC off for the read only: the owner comparison below is
 				// stricter than any read rule, and a scope-value owner has
 				// no session to read with.
-				$draft = $this->objects->find(id: $draftId, register: $register, schema: $schema, _rbac: false, _multitenancy: false, _render: false, _audit: false);
+				$draft = $this->objects->find(
+					id: $draftId,
+					register: $register,
+					schema: $schema,
+					_rbac: false,
+					_multitenancy: false,
+					_render: false,
+					_audit: false
+				);
 			} catch (Throwable) {
 				$draft = null;
 			}

@@ -57,6 +57,8 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A controller that resolves a record through the
  * RBAC boundary, its register and its schema, and answers five statuses, names those types.
+ * @SuppressWarnings(PHPMD.StaticAccess) DraftOwner::ofUser() is a named constructor; there is no
+ * instance to inject.
  *
  * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
  */
@@ -117,7 +119,11 @@ class ObjectDraftController extends Controller {
 	public function activate(string $register, string $schema, string $id): JSONResponse {
 		$user = $this->session->getUser();
 		if ($user === null) {
-			return $this->refusal(message: $this->l10n->t('Please sign in to make this draft definitive.'), reason: 'not-signed-in', status: Http::STATUS_UNAUTHORIZED);
+			return $this->refusal(
+				message: $this->l10n->t('Please sign in to make this draft definitive.'),
+				reason: 'not-signed-in',
+				status: Http::STATUS_UNAUTHORIZED
+			);
 		}
 
 		// Through the RBAC boundary first: a record the caller may not read
