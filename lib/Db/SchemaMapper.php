@@ -42,6 +42,8 @@ use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidator;
+use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
+use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
@@ -1224,6 +1226,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateDepartmentMatrix(schema: $schema);
 		$this->validateRevealAudit(schema: $schema);
 		$this->validateReversibilityDeclaration(schema: $schema);
+		$this->validateReviewDeclaration(schema: $schema);
 		$this->logDroppedAnnotationKeys(schema: $schema);
 	}//end cleanObject()
 
@@ -1295,6 +1298,30 @@ class SchemaMapper extends QBMapper {
 
 		throw new ReversibilityDeclarationException(errors: $errors);
 	}//end validateReversibilityDeclaration()
+
+	/**
+	 * Refuse an `x-openregister-review` declaration the ownership rule cannot honour.
+	 *
+	 * Refused rather than logged: a mistyped ownership read as open would leave
+	 * a four-eyes review open while its author believes it is closed.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @return void
+	 *
+	 * @throws ReviewDeclarationException When the declaration is unsound.
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 */
+	private function validateReviewDeclaration(Schema $schema): void {
+		$errors = (new ReviewAnnotationValidator())->validate(configuration: ($schema->getConfiguration() ?? []));
+
+		if ($errors === []) {
+			return;
+		}
+
+		throw new ReviewDeclarationException(errors: $errors);
+	}//end validateReviewDeclaration()
 
 	/**
 	 * R07: surface dropped `x-openregister-*` keys via the structured
