@@ -114,6 +114,24 @@ Object metadata SHALL carry a stored `@self.status` with at least the values `dr
 - **WHEN** it is read
 - **THEN** its status is deduced from its dates exactly as before
 
+### Requirement: A draft MUST be able to be owned by a scope value
+
+A draft's owner SHALL be either a Nextcloud user or a scope value `<scope>:<reference>`, such as `portal:<subjectRef>` for a resident signed in at a portal who has no Nextcloud account (decision 195). A scope is lower case letters, digits and hyphens; the whole value SHALL fit the owner column (64 characters). A Nextcloud user id cannot hold a colon, so a scope value never names a user. A draft owned by a scope value SHALL be found, read, saved and sent only by a caller asserting that same owner; every other caller, a signed-in user included, SHALL get the same 404 an unknown draft id gets. The draft clause in the read RBAC keeps such a draft out of every list, as it keeps any draft to its owner. Generic by construction (decision 182): the owner value carries no app or procedure logic.
+
+#### Scenario: A portal subject saves, reads and sends its own draft
+- **GIVEN** a caller asserting owner `portal:subject-1`
+- **WHEN** it saves a draft, reads it back by id, finds it by destination, and sends it
+- **THEN** the draft is stored with owner `portal:subject-1` and status `draft`, each read answers its data, and the send moves it to `active`
+
+#### Scenario: Anyone else gets 404
+- **GIVEN** a draft owned by `portal:subject-1`
+- **WHEN** a caller asserting `portal:subject-2`, or a signed-in user, reads, saves or sends it by id
+- **THEN** each answers 404 and the draft is unchanged
+
+#### Scenario: A malformed scope value is refused
+- **WHEN** an owner is built from an empty reference, a scope with upper case or a colon, or a value longer than 64 characters
+- **THEN** it is refused before anything is read or written
+
 ### Requirement: The form destination check MUST refuse from the first release
 
 Form save, journey save and schema save SHALL refuse on a finding from the first release that ships the validator. There SHALL be no report-only mode (decision 181).

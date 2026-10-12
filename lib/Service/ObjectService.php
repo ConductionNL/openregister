@@ -1693,6 +1693,9 @@ class ObjectService implements ObjectServiceInterface
      * @param bool                     $_dedupOverride Save through a blocking duplicate match, when the caller is
      *                                                entitled to. Read from the RAW request by ObjectsController,
      *                                                because the body filter there strips `_`-prefixed keys.
+     * @param string|null              $_owner        An explicit owner for a NEW object (a draft's scope value such as
+     *                                                `portal:<subjectRef>`, decision 195). Service-level only: no
+     *                                                controller forwards it. An update keeps the stored owner.
      *
      * @return ObjectEntity The saved and rendered object
      *
@@ -1721,7 +1724,8 @@ class ObjectService implements ObjectServiceInterface
         ?IUser $currentUser=null,
         bool $failIfExists=false,
         bool $_unowned=false,
-        bool $_dedupOverride=false
+        bool $_dedupOverride=false,
+        ?string $_owner=null
     ): ObjectEntity {
         // A SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
         //
@@ -1950,7 +1954,8 @@ class ObjectService implements ObjectServiceInterface
                 currentUser: $currentUser,
                 failIfExists: $failIfExists,
                 _unowned: $_unowned,
-                _dedupOverride: $_dedupOverride
+                _dedupOverride: $_dedupOverride,
+                _owner: $_owner
             );
 
             // Invalidate contact matching cache for objects with email properties.
