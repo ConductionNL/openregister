@@ -200,8 +200,10 @@ class DraftLifetimeImportExportTest extends TestCase {
 		$policy = new DraftStatusPolicy();
 
 		// 1. Import.
-		$imported = $this->import(file: $this->registerFile(ticketConfiguration: ['draftLifetimeDays' => 7, 'draftsVisible' => false]));
+		$imported = $this->import(file: $this->registerFile(ticketConfiguration: ['draftLifetimeDays' => 7, 'draftsListed' => false]));
 		$this->assertSame(7, $imported['ticket']->getConfiguration()['draftLifetimeDays'] ?? null, 'The import dropped the draft lifetime.');
+		$this->assertFalse($policy->ownDraftsListed(schema: $imported['ticket']), 'The import dropped draftsListed.');
+		$this->assertTrue($policy->ownDraftsListed(schema: $imported['note']));
 		$this->assertSame(7, $policy->draftLifetimeDays(schema: $imported['ticket']), 'The cleanup would not see the imported lifetime.');
 		// Control: a schema that sets none has none after the import.
 		$this->assertNull($policy->draftLifetimeDays(schema: $imported['note']));
@@ -231,6 +233,7 @@ class DraftLifetimeImportExportTest extends TestCase {
 			]
 		);
 		$this->assertSame(7, $policy->draftLifetimeDays(schema: $reimported['ticket']), 'The lifetime did not survive the export and a second import.');
+		$this->assertFalse($policy->ownDraftsListed(schema: $reimported['ticket']), 'draftsListed did not survive the export and a second import.');
 		$this->assertNull($policy->draftLifetimeDays(schema: $reimported['note']));
 	}//end testTheLifetimeSurvivesImportExportAndReimport()
 

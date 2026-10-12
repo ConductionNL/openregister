@@ -40,8 +40,8 @@ class SchemaFormConfigurationTest extends TestCase {
 	 */
 	public function testTheDraftLifetimeIsKept(): void {
 		$schema = new Schema();
-		$schema->setConfiguration(['draftLifetimeDays' => 7, 'draftsVisible' => true]);
-		$this->assertSame(['draftLifetimeDays' => 7, 'draftsVisible' => true], $schema->getConfiguration());
+		$schema->setConfiguration(['draftLifetimeDays' => 7, 'draftsVisible' => true, 'draftsListed' => false]);
+		$this->assertSame(['draftLifetimeDays' => 7, 'draftsVisible' => true, 'draftsListed' => false], $schema->getConfiguration());
 
 		// A register file written by hand may carry the number as text.
 		$schema->setConfiguration('{"draftLifetimeDays": "30"}');

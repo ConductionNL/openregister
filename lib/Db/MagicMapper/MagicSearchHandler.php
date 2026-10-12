@@ -510,7 +510,8 @@ class MagicSearchHandler {
 			qb: $queryBuilder,
 			includeDeleted: $includeDeleted,
 			archivedMode: $this->resolveArchivedMode(query: $query),
-			query: $query
+			query: $query,
+			schema: $schema
 		);
 
 		// Apply multi-tenancy and RBAC access control filters.
@@ -777,7 +778,7 @@ class MagicSearchHandler {
 
 		$conditions = array_merge(
 			$conditions,
-			$this->lifecycleConditionsSql(query: $query, includeDeleted: $includeDeleted),
+			$this->lifecycleConditionsSql(query: $query, includeDeleted: $includeDeleted, schema: $schema),
 			$this->boundaryConditionsSql(
 				query: $query,
 				schema: $schema,
@@ -886,14 +887,15 @@ class MagicSearchHandler {
 	 * rows is the dangerous direction, and an archived record surfacing in a
 	 * working list is that failure with a record attached.
 	 *
-	 * @param array      $query          The query parameters.
-	 * @param boolean    $includeDeleted Whether deleted rows were asked for.
+	 * @param array       $query          The query parameters.
+	 * @param boolean     $includeDeleted Whether deleted rows were asked for.
+	 * @param Schema|null $schema         The schema being listed, for its draft list default (`draftsListed`).
 	 *
 	 * @return string[] The conditions, without leading AND.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
 	 */
-	private function lifecycleConditionsSql(array $query, bool $includeDeleted): array {
+	private function lifecycleConditionsSql(array $query, bool $includeDeleted, ?Schema $schema = null): array {
 		$conditions = [];
 
 		if ($includeDeleted === false) {
@@ -918,7 +920,7 @@ class MagicSearchHandler {
 		}
 
 		$lens = new DraftListLens();
-		$drafts = $lens->sql(mode: $lens->modeFor(query: $query), columnPrefix: '', owner: $owner);
+		$drafts = $lens->sql(mode: $lens->modeFor(query: $query, schema: $schema), columnPrefix: '', owner: $owner);
 		if ($drafts !== null) {
 			$conditions[] = $drafts;
 		}
@@ -2191,12 +2193,19 @@ class MagicSearchHandler {
 	 * @param bool $includeDeleted Whether to include deleted objects
 	 * @param string $archivedMode Which archive lens to apply, one of the ARCHIVED_* constants
 	 * @param array<string, mixed> $query The search query, for the draft lens (`_drafts`, decision 201)
+	 * @param Schema|null $schema The schema being listed, for its draft list default (`draftsListed`)
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
 	 */
-	private function applyBasicFilters(IQueryBuilder $qb, bool $includeDeleted, string $archivedMode = self::ARCHIVED_EXCLUDE, array $query = []): void {
+	private function applyBasicFilters(
+		IQueryBuilder $qb,
+		bool $includeDeleted,
+		string $archivedMode = self::ARCHIVED_EXCLUDE,
+		array $query = [],
+		?Schema $schema = null,
+	): void {
 		// Handle deleted filter.
 		if ($includeDeleted === false) {
 			$qb->andWhere($qb->expr()->isNull('t._deleted'));
@@ -2227,7 +2236,7 @@ class MagicSearchHandler {
 		}
 
 		$lens = new DraftListLens();
-		$drafts = $lens->sql(mode: $lens->modeFor(query: $query), columnPrefix: 't.', owner: $owner);
+		$drafts = $lens->sql(mode: $lens->modeFor(query: $query, schema: $schema), columnPrefix: 't.', owner: $owner);
 		if ($drafts !== null) {
 			$qb->andWhere($qb->createFunction($drafts));
 		}

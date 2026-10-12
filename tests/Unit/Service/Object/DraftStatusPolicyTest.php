@@ -176,6 +176,20 @@ class DraftStatusPolicyTest extends TestCase {
 	}//end testDraftsAreOwnerOnlyUnlessTheSchemaSaysOtherwise()
 
 	/**
+	 * A schema's lists show the caller their own drafts unless it says `draftsListed: false`.
+	 */
+	public function testOwnDraftsAreListedUnlessTheSchemaSaysOtherwise(): void {
+		$schema = new Schema();
+		$this->assertTrue($this->policy->ownDraftsListed(schema: $schema));
+
+		$schema->setConfiguration(['draftsListed' => true]);
+		$this->assertTrue($this->policy->ownDraftsListed(schema: $schema));
+
+		$schema->setConfiguration(['draftsListed' => false]);
+		$this->assertFalse($this->policy->ownDraftsListed(schema: $schema));
+	}//end testOwnDraftsAreListedUnlessTheSchemaSaysOtherwise()
+
+	/**
 	 * The SQL clause that hides other people's drafts, for both emitters.
 	 */
 	public function testTheHiddenDraftClause(): void {

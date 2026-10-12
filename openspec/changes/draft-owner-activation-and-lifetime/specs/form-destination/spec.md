@@ -159,3 +159,15 @@ The notification rules a schema declares (`x-openregister-notifications`) SHALL 
 - **GIVEN** the same draft
 - **WHEN** its owner makes it definitive
 - **THEN** the `created` rule fires once, with the object as it was sent
+
+### Requirement: A schema MUST be able to keep the caller's own drafts out of its lists
+
+A schema SHALL be able to declare `draftsListed: false` in its configuration (decision 216). Lists, searches, counts and facets of that schema SHALL then leave out every draft by default, the caller's own included, on every query path. A caller who asks (`_drafts=true`, `_drafts=any`, or a filter on `@self[status]`) SHALL still get the drafts the read RBAC lets them reach. A schema without the key, or with `true`, SHALL keep the caller's own drafts in its lists, as decision 201 set. The key SHALL survive a schema save, an import and an export. It is for a schema whose drafts are offered back on their own entry screen, so a half-typed entry never sits in a work list or its total.
+
+#### Scenario: A work list of such a schema holds no half-typed entry
+@e2e exclude unit; DraftListLensTest and MagicSearchHandlerDraftLensTest cover the default on both query paths, with a schema that does not set the key as control
+
+- **GIVEN** schema `ticket` with `draftsListed: false` and a draft the signed-in agent owns
+- **WHEN** the agent lists the schema without `_drafts`
+- **THEN** the draft is not in the list, its total or its facets
+- **AND** with `_drafts=true` the list holds the draft

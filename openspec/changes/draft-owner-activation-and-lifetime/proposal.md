@@ -23,7 +23,7 @@ A third gap showed while reading for the rework: a list keeps the caller's own d
 - **A schema sets a draft lifetime.** Configuration key `draftLifetimeDays`, a whole number of days, 1 or more. It is declared in `Schema::validateConfigurationEntry()`, because an unknown configuration key is dropped on save without a word. It survives an import and an export.
 - **One cleanup job.** `DraftExpiryJob`, daily, declared in `appinfo/info.xml`. It removes every draft that nobody changed for longer than its schema's lifetime, through `ObjectService::deleteObject()`. No setting, no removal.
 - **A draft can be deleted on every schema.** A stored draft passes the archival delete gate, and a draft's delete is permanent. Without it neither the owner nor the cleanup could remove a draft on a schema with an archival block.
-- **`_drafts=none`.** A list lens that leaves out every draft, the caller's own included.
+- **Lists without your own drafts.** A schema sets `draftsListed: false` and its lists, counts and facets leave out every draft by default, the caller's own included. `_drafts=none` asks the same of one request. Asking for drafts (`_drafts=true` or `any`) still shows them.
 - **One shared excusal set.** The properties the server fills (default, computed, `serverSet`) are excused from `required` by `DraftStatusPolicy::serverFilledExcusals()`, used by the form submit and by the activation, so a draft one accepts the other accepts.
 
 - **A draft notifies nobody.** A schema's `created` notification rules fire when the object leaves draft, once, and not on the draft's first save. Without it every autosaved draft announced a half-typed object, and the finished one was never announced.

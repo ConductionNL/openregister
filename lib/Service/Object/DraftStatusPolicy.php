@@ -260,6 +260,24 @@ class DraftStatusPolicy {
 	}//end draftsVisibleToOthers()
 
 	/**
+	 * Whether the schema's lists show the caller their own drafts by default.
+	 *
+	 * True unless the schema's configuration sets `draftsListed: false`. A
+	 * schema whose drafts live on an entry screen of their own (a quick log
+	 * that offers its draft back) sets it, so a half-typed entry never sits
+	 * in the caller's work list, its total or its facets (decision 216).
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return bool False when the schema keeps the caller's own drafts out of its lists.
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-schema-must-be-able-to-keep-the-callers-own-drafts-out-of-its-lists
+	 */
+	public function ownDraftsListed(Schema $schema): bool {
+		return (($schema->getConfiguration() ?? [])['draftsListed'] ?? true) !== false;
+	}//end ownDraftsListed()
+
+	/**
 	 * The SQL clause true for rows that are not drafts, for both list emitters.
 	 *
 	 * @param string $columnPrefix The table alias with its dot, or empty.

@@ -2880,7 +2880,9 @@ class Schema extends Entity implements JsonSerializable {
 		// field into an undeclared property is a finding unless the schema opts
 		// into extras. Off this list both were dropped on save, so neither could
 		// ever be declared.
-		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare', 'exportable', 'staging', 'additionalProperties', 'draftsVisible'];
+		// `draftsListed` (decision 216) is read by DraftListLens: false keeps the
+		// caller's own drafts out of the schema's lists by default.
+		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare', 'exportable', 'staging', 'additionalProperties', 'draftsVisible', 'draftsListed'];
 		// `implements` + `x-schema-org` carry the cross-app semantic-type
 		// markers (ADR-048); they must round-trip through the configuration
 		// column so SemanticTypeResolver can discover the schema. Their IRI

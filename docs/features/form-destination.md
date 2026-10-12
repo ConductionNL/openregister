@@ -172,9 +172,16 @@ there as before.
 ### Keep your own drafts out of a work list
 
 A list leaves out other people's drafts and keeps your own (decision 201).
-Send `_drafts=none` to leave out your own too, for a work list whose drafts
-live elsewhere on the screen. `_drafts=true` shows drafts alone and
-`_drafts=any` shows drafts beside the rest.
+When your drafts are offered back on their own entry screen, keep them out
+of every list of the schema:
+
+```json
+{ "configuration": { "draftsListed": false } }
+```
+
+Lists, counts and facets then hold no draft by default. `_drafts=none` asks
+the same of one request. `_drafts=true` shows drafts alone and `_drafts=any`
+shows drafts beside the rest, whatever the schema says.
 
 Receipt listeners: treat `ObjectCreatedEvent` for an object that is not a
 draft, and `ObjectActivatedEvent`, as the moment of receipt. Skip an object

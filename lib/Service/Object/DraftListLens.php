@@ -38,6 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 
 /**
  * Which drafts a list shows, and the SQL clause that says so.
@@ -92,19 +93,27 @@ class DraftListLens {
 	 * status (`@self[status]=draft`) is the caller saying which statuses it
 	 * wants, so the default steps aside and that filter decides.
 	 *
-	 * @param array<string, mixed> $query The search query.
+	 * @param array<string, mixed> $query  The search query.
+	 * @param Schema|null          $schema The schema being listed; it may keep the caller's own drafts out by default.
 	 *
 	 * @return string One of EXCLUDE, ONLY, ANY and NONE.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
 	 */
-	public function modeFor(array $query): string {
+	public function modeFor(array $query, ?Schema $schema = null): string {
+		// The work list of this schema: without the caller's own drafts when
+		// the schema says so (`draftsListed: false`), with them otherwise.
+		$workList = self::EXCLUDE;
+		if ($schema !== null && (new DraftStatusPolicy())->ownDraftsListed(schema: $schema) === false) {
+			$workList = self::NONE;
+		}
+
 		if (array_key_exists(self::PARAMETER, $query) === false) {
 			if ($this->filtersOnStatus(query: $query) === true) {
 				return self::ANY;
 			}
 
-			return self::EXCLUDE;
+			return $workList;
 		}
 
 		$raw = $query[self::PARAMETER];
@@ -120,7 +129,7 @@ class DraftListLens {
 			return self::ONLY;
 		}
 
-		return self::EXCLUDE;
+		return $workList;
 	}//end modeFor()
 
 	/**

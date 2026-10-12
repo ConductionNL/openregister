@@ -47,6 +47,9 @@
 - [x] 4.1 `_drafts=none` leaves out every draft, the caller's own included
   - Spec ref: specs/form-destination/spec.md, "A list MUST hide drafts unless asked"
   - Test: DraftListLensTest
+- [x] 4.2 Schema configuration `draftsListed: false` makes that the default for the schema's lists, counts and facets, on both query paths; it survives import and export
+  - Spec ref: specs/form-destination/spec.md, "A schema MUST be able to keep the caller's own drafts out of its lists"
+  - Test: DraftListLensTest, MagicSearchHandlerDraftLensTest, DraftStatusPolicyTest, SchemaFormConfigurationTest, DraftLifetimeImportExportTest
 
 ## 5. Words
 
