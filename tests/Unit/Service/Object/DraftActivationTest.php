@@ -53,6 +53,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  * @uses \OCA\OpenRegister\Exception\ValidationException
  * @uses \OCA\OpenRegister\Event\ObjectActivatedEvent
+ * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
+ * @uses \OCA\OpenRegister\Service\Object\ObjectEventGate
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
@@ -305,11 +307,13 @@ class DraftActivationTest extends TestCase {
 		$this->assertTrue($this->saves[0]['multitenancy']);
 		$this->assertSame($agent, $this->saves[0]['user']);
 
-		// One announcement, with the moment of receipt.
-		$this->assertCount(1, $this->dispatched);
-		$this->assertInstanceOf(ObjectActivatedEvent::class, $this->dispatched[0]);
+		// Leaving draft is the object's creation (decision 227): the created event once, then the receipt with its moment.
+		$this->assertCount(2, $this->dispatched);
+		$this->assertSame(\OCA\OpenRegister\Event\ObjectCreatedEvent::class, get_class($this->dispatched[0]));
 		$this->assertSame($saved, $this->dispatched[0]->getObject());
-		$this->assertSame('2026-10-12T16:00:00+02:00', $this->dispatched[0]->getReceivedAt()->format(DATE_ATOM));
+		$this->assertInstanceOf(ObjectActivatedEvent::class, $this->dispatched[1]);
+		$this->assertSame($saved, $this->dispatched[1]->getObject());
+		$this->assertSame('2026-10-12T16:00:00+02:00', $this->dispatched[1]->getReceivedAt()->format(DATE_ATOM));
 	}//end testTheOwnerMakesACompleteDraftDefinitive()
 
 	/**

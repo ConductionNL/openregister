@@ -3504,8 +3504,6 @@ class Application extends App implements IBootstrap {
 		// Notifications annotation listener — fires INotificationManager
 		// notifications declared on the schema's x-openregister-notifications.
 		$context->registerEventListener(ObjectCreatedEvent::class, AnnotationNotificationListener::class);
-		// A draft notifies nobody; leaving draft is its `created` moment (decision 216).
-		$context->registerEventListener(\OCA\OpenRegister\Event\ObjectActivatedEvent::class, AnnotationNotificationListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
 
@@ -3736,7 +3734,50 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(SchemaCreatedEvent::class, $activityListener);
 		$context->registerEventListener(SchemaUpdatedEvent::class, $activityListener);
 		$context->registerEventListener(SchemaDeletedEvent::class, $activityListener);
+
+		$this->registerDraftListeners(context: $context);
 	}//end registerEventListeners()
+
+	/**
+	 * Register the listeners that must see a draft (decision 227).
+	 *
+	 * A draft's saves and its delete dispatch DraftCreatedEvent,
+	 * DraftUpdatedEvent and DraftDeletedEvent instead of the object events
+	 * (ObjectEventGate), so nothing that reacts to a new object sees a
+	 * half-typed one. The listeners here are the exception, and each is here
+	 * because it keeps the stored draft itself right: what its owner's lists
+	 * and counts show, the sidecar of its own values, and what must go when
+	 * it goes. None of them tells anybody anything.
+	 *
+	 * 🔴 THIS IS THE ONLY PLACE A LISTENER MAY BE REGISTERED ON A DRAFT EVENT,
+	 * and the list is closed: ObjectEventRuleTest compares it with the list
+	 * in the spec and fails on any other. A new listener on object creation
+	 * belongs on ObjectCreatedEvent, where it never sees a draft.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-a-draft-must-have-events-of-its-own-on-a-separate-path
+	 */
+	private function registerDraftListeners(IRegistrationContext $context): void {
+		$saved = [\OCA\OpenRegister\Event\DraftCreatedEvent::class, \OCA\OpenRegister\Event\DraftUpdatedEvent::class];
+		$removed = \OCA\OpenRegister\Event\DraftDeletedEvent::class;
+
+		// The owner sees their own draft in lists, counts and facets, so those caches follow it.
+		// The translation sidecar holds the draft's own values per language.
+		foreach ([...$saved, $removed] as $event) {
+			$context->registerEventListener($event, AggregationCacheInvalidationListener::class);
+			$context->registerEventListener($event, FacetCacheInvalidationListener::class);
+			$context->registerEventListener($event, TranslationProjectionListener::class);
+		}
+
+		// What hangs on a draft goes with it: notes, tasks and links, watchers, read state, notification keys.
+		$context->registerEventListener($removed, ObjectCleanupListener::class);
+		$context->registerEventListener($removed, WatcherPruneListener::class);
+		$context->registerEventListener($removed, ReadStatePruneListener::class);
+		$context->registerEventListener($removed, NotificationDedupePruneListener::class);
+	}//end registerDraftListeners()
 
 	/**
 	 * Register the AppHost declarative observability engine (ADR-040).

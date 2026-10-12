@@ -43,7 +43,6 @@ use DateTimeImmutable;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Event\ObjectActivatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -134,7 +133,8 @@ class DraftActivation {
 		}
 
 		$receivedAt = DateTimeImmutable::createFromMutable($this->time->getDateTime());
-		$this->events->dispatchTyped(new ObjectActivatedEvent(object: $saved, receivedAt: $receivedAt));
+		// Creation side effects run now, once (decision 227): the created event, then the receipt.
+		(new ObjectEventGate(events: $this->events))->leftDraft(object: $saved, receivedAt: $receivedAt);
 
 		return $saved;
 	}//end activate()

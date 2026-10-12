@@ -46,7 +46,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Event\ObjectActivatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
@@ -336,7 +335,8 @@ class FormSubmitService {
 		}
 
 		$receivedAt = DateTimeImmutable::createFromMutable($this->time->getDateTime());
-		$this->events->dispatchTyped(new ObjectActivatedEvent(object: $created[0]['object'], receivedAt: $receivedAt));
+		// Creation side effects run now, once (decision 227): the created event, then the receipt.
+		(new \OCA\OpenRegister\Service\Object\ObjectEventGate(events: $this->events))->leftDraft(object: $created[0]['object'], receivedAt: $receivedAt);
 
 		return [$created, $receivedAt];
 	}//end promoteDraft()

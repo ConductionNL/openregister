@@ -87,62 +87,6 @@ class AnnotationNotificationListenerTest extends TestCase {
 		$this->makeListener()->handle(new ObjectCreatedEvent($this->fixtureObject()));
 	}
 
-	/**
-	 * Decision 216: a draft's first save and its autosaves notify nobody.
-	 */
-	public function testADraftNotifiesNobody(): void {
-		$this->schemaMapper->method('find')->willReturn($this->schemaWithNotifications());
-		$this->deferral->method('isDeferralEnabled')->willReturn(true);
-		$this->dispatcher->expects($this->never())->method('dispatch');
-		$this->deferral->expects($this->never())->method('defer');
-
-		$draft = $this->fixtureObject(['title' => 'Bin']);
-		$draft->setStatus('draft');
-		$older = $this->fixtureObject(['title' => 'B']);
-		$older->setStatus('draft');
-
-		$this->makeListener()->handle(new ObjectCreatedEvent($draft));
-		$this->makeListener()->handle(new ObjectUpdatedEvent($draft, $older));
-	}
-
-	/**
-	 * Leaving draft is the object's `created` moment, announced once: the save that left draft is not an `updated` too.
-	 */
-	public function testLeavingDraftIsAnnouncedAsCreatedOnce(): void {
-		$this->schemaMapper->method('find')->willReturn($this->schemaWithNotifications());
-		$this->deferral->method('isDeferralEnabled')->willReturn(true);
-		$entries = [];
-		$this->deferral->method('defer')->willReturnCallback(
-			function (string $jobClass, array $entry) use (&$entries): void {
-				$entries[] = $entry['trigger'] . ':' . $entry['uuid'];
-			}
-		);
-
-		$active = $this->fixtureObject(['title' => 'Bin not collected']);
-		$active->setStatus('active');
-		$draft = $this->fixtureObject(['title' => 'Bin']);
-		$draft->setStatus('draft');
-
-		// The activation saves the object (an update event) and then announces it.
-		$this->makeListener()->handle(new ObjectUpdatedEvent($active, $draft));
-		$this->makeListener()->handle(new \OCA\OpenRegister\Event\ObjectActivatedEvent(object: $active, receivedAt: new \DateTimeImmutable('2026-10-12T16:00:00+02:00')));
-
-		$this->assertSame(['created:obj-1'], $entries);
-	}
-
-	/**
-	 * Control: an object without a stored status, created outright, is announced as before.
-	 */
-	public function testAnObjectCreatedOutrightIsStillAnnounced(): void {
-		$this->schemaMapper->method('find')->willReturn($this->schemaWithNotifications());
-		$this->deferral->method('isDeferralEnabled')->willReturn(false);
-		$this->dispatcher->expects($this->once())->method('dispatch')->with($this->anything(), 'created');
-
-		$active = $this->fixtureObject(['title' => 'x']);
-		$active->setStatus('active');
-		$this->makeListener()->handle(new ObjectCreatedEvent($active));
-	}
-
 	public function testUpdatedEventCapturesThePreUpdateSnapshot(): void {
 		$this->schemaMapper->method('find')->willReturn($this->schemaWithNotifications());
 		$this->deferral->method('isDeferralEnabled')->willReturn(true);

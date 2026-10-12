@@ -207,6 +207,25 @@ Every removed draft leaves one entry on the audit trail, with the action
 The entry never holds what the draft contained: no property value and no
 property name.
 
+### What a listener sees of a draft
+
+Nothing, until it is real. Listen to `ObjectCreatedEvent` and you get every
+object once: when it is created outright, or when a draft leaves draft. You
+never get a half-typed object, and you need no status check.
+
+| Moment | Event |
+|---|---|
+| A draft is saved for the first time | `DraftCreatedEvent` |
+| A draft is saved again | `DraftUpdatedEvent` |
+| A draft is discarded or expires | `DraftDeletedEvent` |
+| A draft leaves draft | `ObjectCreatedEvent`, then `ObjectActivatedEvent` |
+| Any other object is created, changed or deleted | `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`, as before |
+
+The draft events are for OpenRegister's own bookkeeping: caches, the
+translation sidecar and cleanup. Do not listen to them from an app.
+`ObjectActivatedEvent` carries the moment of receipt. Do your creation work
+on `ObjectCreatedEvent` only, or it runs twice.
+
 ### Keep your own drafts out of a work list
 
 A list leaves out other people's drafts and keeps your own (decision 201).
