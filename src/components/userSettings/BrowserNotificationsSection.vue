@@ -73,7 +73,11 @@
 </template>
 
 <script>
-import { NcAppSettingsSection, NcCheckboxRadioSwitch, NcNoteCard } from '@nextcloud/vue'
+import {
+	NcAppSettingsSection,
+	NcCheckboxRadioSwitch,
+	NcNoteCard,
+} from '@nextcloud/vue'
 
 export default {
 	name: 'BrowserNotificationsSection',

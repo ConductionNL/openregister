@@ -31,9 +31,7 @@
 	<OAuth2ConnectionsSection />
 
 	<!-- The library's own label, as CnAppRoot draws it, so no new app key. -->
-	<NcAppSettingsSection
-		id="credentials"
-		:name="t('nextcloud-vue', 'Credentials')">
+	<NcAppSettingsSection id="credentials" :name="t('nextcloud-vue', 'Credentials')">
 		<CnCredentials
 			scope="personal"
 			:appCredentials="(manifest && manifest.credentials) || []" />
