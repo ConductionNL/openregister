@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Transformare",
         "Transform \"{type}\" (kept as stored)": "Transformare \"{type}\" (păstrată așa cum a fost stocată)",
         "Transform for row {number}": "Transformare pentru rândul {number}",
-        "Transform of row {number}": "Transformarea rândului {number}",
         "Trim spaces": "Eliminare spații",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Introduceți valorile așa cum apar în sursă. Rezultatul folosește maparea de mai sus, inclusiv modificările pe care nu le-ați salvat încă.",
         "Undo changes": "Anulare modificări",

@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Transformation",
         "Transform \"{type}\" (kept as stored)": "Transformation \"{type}\" (bevares som gemt)",
         "Transform for row {number}": "Transformation for række {number}",
-        "Transform of row {number}": "Transformation af række {number}",
         "Trim spaces": "Fjern mellemrum i kanterne",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Skriv værdier, som de står i kilden. Resultatet bruger mappingen ovenfor, inklusive ændringer, du ikke har gemt.",
         "Undo changes": "Fortryd ændringer",

@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Pārveidojums",
         "Transform \"{type}\" (kept as stored)": "Pārveidojums \"{type}\" (paturēts, kā saglabāts)",
         "Transform for row {number}": "Pārveidojums rindai {number}",
-        "Transform of row {number}": "Rindas {number} pārveidojums",
         "Trim spaces": "Apgriezt atstarpes",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Ievadi vērtības tā, kā tās ir avotā. Rezultāts izmanto augstāk esošo kartējumu, ieskaitot izmaiņas, kuras vēl neesi saglabājis.",
         "Undo changes": "Atsaukt izmaiņas",

@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Transformatioun",
         "Transform \"{type}\" (kept as stored)": "Transformatioun \"{type}\" (bleift wéi gespäichert)",
         "Transform for row {number}": "Transformatioun fir d'Rei {number}",
-        "Transform of row {number}": "Transformatioun vun der Rei {number}",
         "Trim spaces": "Espacen um Rand ewechhuelen",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Gitt d'Wäerter esou an, wéi se an der Quell stinn. D'Resultat benotzt d'Mapping uewendriwwer, och Ännerungen, déi Dir nach net gespäichert hutt.",
         "Undo changes": "Ännerungen réckgängeg maachen",

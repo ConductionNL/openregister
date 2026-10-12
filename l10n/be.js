@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Пераўтварэнне",
         "Transform \"{type}\" (kept as stored)": "Пераўтварэнне \"{type}\" (захавана як ёсць)",
         "Transform for row {number}": "Пераўтварэнне для радка {number}",
-        "Transform of row {number}": "Пераўтварэнне радка {number}",
         "Trim spaces": "Абрэзаць прабелы па краях",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Увядзіце значэнні так, як яны выглядаюць у крыніцы. Вынік выкарыстоўвае супастаўленне вышэй, уключаючы незахаваныя змены.",
         "Undo changes": "Адмяніць змены",

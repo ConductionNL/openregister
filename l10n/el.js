@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Μετασχηματισμός",
         "Transform \"{type}\" (kept as stored)": "Μετασχηματισμός \"{type}\" (διατηρείται όπως είναι αποθηκευμένος)",
         "Transform for row {number}": "Μετασχηματισμός για τη γραμμή {number}",
-        "Transform of row {number}": "Μετασχηματισμός της γραμμής {number}",
         "Trim spaces": "Αφαίρεση κενών στα άκρα",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Πληκτρολογήστε τις τιμές όπως εμφανίζονται στην προέλευση. Το αποτέλεσμα χρησιμοποιεί την παραπάνω αντιστοίχιση, μαζί με τις αλλαγές που δεν έχετε αποθηκεύσει.",
         "Undo changes": "Αναίρεση αλλαγών",

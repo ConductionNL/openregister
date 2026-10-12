@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Átalakítás",
         "Transform \"{type}\" (kept as stored)": "\"{type}\" átalakítás (a tárolt formájában megtartva)",
         "Transform for row {number}": "Átalakítás a(z) {number}. sorhoz",
-        "Transform of row {number}": "A(z) {number}. sor átalakítása",
         "Trim spaces": "Szóközök levágása",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Írja be az értékeket úgy, ahogy a forrásban szerepelnek. Az eredmény a fenti leképezést használja, beleértve a még nem mentett módosításokat is.",
         "Undo changes": "Módosítások visszavonása",

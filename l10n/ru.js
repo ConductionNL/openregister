@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Преобразование",
         "Transform \"{type}\" (kept as stored)": "Преобразование \"{type}\" (сохраняется в исходном виде)",
         "Transform for row {number}": "Преобразование для строки {number}",
-        "Transform of row {number}": "Преобразование строки {number}",
         "Trim spaces": "Обрезать пробелы",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Вводите значения так, как они записаны в источнике. Результат использует сопоставление выше, включая несохранённые изменения.",
         "Undo changes": "Отменить изменения",

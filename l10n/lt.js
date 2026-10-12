@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Konvertavimas",
         "Transform \"{type}\" (kept as stored)": "Konvertavimas \"{type}\" (paliekamas toks, koks įrašytas)",
         "Transform for row {number}": "Konvertavimas eilutei {number}",
-        "Transform of row {number}": "Eilutės {number} konvertavimas",
         "Trim spaces": "Pašalinti tarpus",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Įveskite reikšmes taip, kaip jos yra šaltinyje. Rezultatui naudojamas aukščiau esantis susiejimas, įskaitant dar neįrašytus pakeitimus.",
         "Undo changes": "Atšaukti pakeitimus",

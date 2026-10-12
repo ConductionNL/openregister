@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Umwandlung",
         "Transform \"{type}\" (kept as stored)": "Umwandlung \"{type}\" (wie gespeichert erhalten)",
         "Transform for row {number}": "Umwandlung für Zeile {number}",
-        "Transform of row {number}": "Umwandlung von Zeile {number}",
         "Trim spaces": "Leerzeichen entfernen",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Geben Sie Werte so ein, wie sie in der Quelle stehen. Das Ergebnis verwendet die obige Zuordnung, einschließlich Änderungen, die Sie noch nicht gespeichert haben.",
         "Undo changes": "Änderungen verwerfen",

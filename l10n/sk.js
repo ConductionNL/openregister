@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Prevod",
         "Transform \"{type}\" (kept as stored)": "Prevod \"{type}\" (ponechaný tak, ako je uložený)",
         "Transform for row {number}": "Prevod pre riadok {number}",
-        "Transform of row {number}": "Prevod riadka {number}",
         "Trim spaces": "Orezať medzery",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Zadajte hodnoty tak, ako sú v zdroji. Výsledok používa mapovanie vyššie vrátane zmien, ktoré ste ešte neuložili.",
         "Undo changes": "Vrátiť zmeny späť",

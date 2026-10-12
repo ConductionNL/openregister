@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Umbreyting",
         "Transform \"{type}\" (kept as stored)": "Umbreyting \"{type}\" (geymd eins og hún var vistuð)",
         "Transform for row {number}": "Umbreyting fyrir röð {number}",
-        "Transform of row {number}": "Umbreyting raðar {number}",
         "Trim spaces": "Snyrta bil",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Sláðu inn gildi eins og þau birtast í upprunanum. Niðurstaðan notar vörpunina hér að ofan, þar með taldar breytingar sem þú hefur ekki vistað.",
         "Undo changes": "Afturkalla breytingar",

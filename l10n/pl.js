@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Przekształcenie",
         "Transform \"{type}\" (kept as stored)": "Przekształcenie \"{type}\" (zachowane w zapisanej postaci)",
         "Transform for row {number}": "Przekształcenie dla wiersza {number}",
-        "Transform of row {number}": "Przekształcenie wiersza {number}",
         "Trim spaces": "Usuń spacje z brzegów",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Wpisz wartości tak, jak występują w źródle. Wynik używa powyższego mapowania, łącznie ze zmianami, których jeszcze nie zapisano.",
         "Undo changes": "Cofnij zmiany",

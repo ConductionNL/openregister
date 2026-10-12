@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Teisendus",
         "Transform \"{type}\" (kept as stored)": "Teisendus „{type}“ (säilitatud salvestatud kujul)",
         "Transform for row {number}": "Teisendus reale {number}",
-        "Transform of row {number}": "Rea {number} teisendus",
         "Trim spaces": "Kärbi tühikud",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Sisesta väärtused nii, nagu need allikas on. Tulemus kasutab ülalolevat vastendust, sealhulgas muudatusi, mida sa pole veel salvestanud.",
         "Undo changes": "Võta muudatused tagasi",

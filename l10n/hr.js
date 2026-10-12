@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Pretvorba",
         "Transform \"{type}\" (kept as stored)": "Pretvorba \"{type}\" (zadržana kako je spremljena)",
         "Transform for row {number}": "Pretvorba za redak {number}",
-        "Transform of row {number}": "Pretvorba retka {number}",
         "Trim spaces": "Ukloni razmake",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Upišite vrijednosti kako se pojavljuju u izvoru. Rezultat koristi gornje mapiranje, uključujući promjene koje još niste spremili.",
         "Undo changes": "Poništi promjene",

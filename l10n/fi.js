@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Muunnos",
         "Transform \"{type}\" (kept as stored)": "Muunnos \"{type}\" (säilytetty tallennetussa muodossa)",
         "Transform for row {number}": "Muunnos riville {number}",
-        "Transform of row {number}": "Rivin {number} muunnos",
         "Trim spaces": "Poista reunojen välilyönnit",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Kirjoita arvot sellaisina kuin ne ovat lähteessä. Tulos käyttää yllä olevaa kartoitusta, myös muutoksia, joita et ole tallentanut.",
         "Undo changes": "Kumoa muutokset",

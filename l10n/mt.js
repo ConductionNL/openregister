@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Trasformazzjoni",
         "Transform \"{type}\" (kept as stored)": "Trasformazzjoni \"{type}\" (miżmuma kif maħżuna)",
         "Transform for row {number}": "Trasformazzjoni għar-ringiela {number}",
-        "Transform of row {number}": "Trasformazzjoni tar-ringiela {number}",
         "Trim spaces": "Neħħi l-ispazji",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Ikteb il-valuri kif jidhru fis-sors. Ir-riżultat juża l-immappjar ta' hawn fuq, inklużi bidliet li għadek ma ssejvjajtx.",
         "Undo changes": "Annulla l-bidliet",

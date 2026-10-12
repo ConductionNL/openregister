@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Dönüşüm",
         "Transform \"{type}\" (kept as stored)": "\"{type}\" dönüşümü (kaydedildiği gibi korunur)",
         "Transform for row {number}": "{number}. satır için dönüşüm",
-        "Transform of row {number}": "{number}. satırın dönüşümü",
         "Trim spaces": "Boşlukları kırp",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Değerleri kaynakta göründükleri gibi yazın. Sonuç, henüz kaydetmediğiniz değişiklikler dahil yukarıdaki eşlemeyi kullanır.",
         "Undo changes": "Değişiklikleri geri al",

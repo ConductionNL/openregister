@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Transformació",
         "Transform \"{type}\" (kept as stored)": "Transformació \"{type}\" (es conserva tal com està desada)",
         "Transform for row {number}": "Transformació per a la fila {number}",
-        "Transform of row {number}": "Transformació de la fila {number}",
         "Trim spaces": "Retallar espais",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Escriviu els valors tal com apareixen a l'origen. El resultat fa servir el mapatge de dalt, inclosos els canvis que encara no heu desat.",
         "Undo changes": "Desfer els canvis",

@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Transfurmaziun",
         "Transform \"{type}\" (kept as stored)": "Transfurmaziun \"{type}\" (mantegnida sco memorisada)",
         "Transform for row {number}": "Transfurmaziun per la lingia {number}",
-        "Transform of row {number}": "Transfurmaziun da la lingia {number}",
         "Trim spaces": "Allontanar spazis al cumenzament e la fin",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Endatai valurs sco ch'ellas cumparan en la funtauna. Il resultat utilisescha il mapping survart, inclusiv midadas che Vus n'avais anc betg memorisà.",
         "Undo changes": "Revocar las midadas",

@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Claochlú",
         "Transform \"{type}\" (kept as stored)": "Claochlú \"{type}\" (coinnithe mar atá stóráilte)",
         "Transform for row {number}": "Claochlú do ró {number}",
-        "Transform of row {number}": "Claochlú ró {number}",
         "Trim spaces": "Bearr spásanna",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Clóscríobh luachanna mar a thaispeántar iad san fhoinse. Úsáideann an toradh an mhapáil thuas, lena n-áirítear athruithe nár shábháil tú.",
         "Undo changes": "Cealaigh athruithe",

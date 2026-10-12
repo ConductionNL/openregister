@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Трансформација",
         "Transform \"{type}\" (kept as stored)": "Трансформација \"{type}\" (задржана како је сачувана)",
         "Transform for row {number}": "Трансформација за ред {number}",
-        "Transform of row {number}": "Трансформација реда {number}",
         "Trim spaces": "Уклони размаке",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Унесите вредности онако како се појављују у извору. Резултат користи мапирање изнад, укључујући измене које још нисте сачували.",
         "Undo changes": "Поништи измене",

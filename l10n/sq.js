@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Transformim",
         "Transform \"{type}\" (kept as stored)": "Transformim \"{type}\" (mbajtur siç është ruajtur)",
         "Transform for row {number}": "Transformimi për rreshtin {number}",
-        "Transform of row {number}": "Transformimi i rreshtit {number}",
         "Trim spaces": "Hiq hapësirat anësore",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Shkruani vlerat siç shfaqen në burim. Rezultati përdor hartëzimin më sipër, përfshirë ndryshimet që nuk i keni ruajtur.",
         "Undo changes": "Zhbëj ndryshimet",

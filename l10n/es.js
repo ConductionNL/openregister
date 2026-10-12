@@ -3485,7 +3485,6 @@ OC.L10N.register(
         "Transform": "Transformación",
         "Transform \"{type}\" (kept as stored)": "Transformación \"{type}\" (se conserva tal como está guardada)",
         "Transform for row {number}": "Transformación para la fila {number}",
-        "Transform of row {number}": "Transformación de la fila {number}",
         "Trim spaces": "Recortar espacios",
         "Type values as they appear in the source. The result uses the mapping above, including changes you have not saved.": "Escriba los valores tal como aparecen en el origen. El resultado usa el mapeo de arriba, incluidos los cambios que aún no ha guardado.",
         "Undo changes": "Deshacer cambios",
