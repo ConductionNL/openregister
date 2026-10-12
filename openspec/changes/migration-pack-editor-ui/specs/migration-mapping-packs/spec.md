@@ -21,7 +21,11 @@ row for every transform type the validator accepts (trim; date with source and
 stored format; lookup table and yes/no table with their values and a choice of
 what happens to a value that is not in the table; join with its columns and
 separator; fixed value); the pack defaults and the rows to skip; and an
-Advanced (JSON) view of the whole definition. A save SHALL show the server's
+Advanced (JSON) view of the whole definition. In a yes/no table the editor
+SHALL take only yes or no as a value and as the value for other values, and
+SHALL keep a stored 1 or 0 as it is; it SHALL refuse text such as `false`,
+which the import casts to true. The server's validator does not check these
+values, so a pack written through the API is not held to this. A save SHALL show the server's
 refusal readably, one line per validation finding. When the version was not
 changed, a save SHALL raise the patch version and SHALL say so before saving.
 A save SHALL be refused, with a way to reload, when the pack was saved by

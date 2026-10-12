@@ -431,6 +431,24 @@ describe('checking a draft before it is saved', () => {
 		expect(validateTransform(newTransform('trim'))).toEqual([])
 	})
 
+	it('lets a stored yes/no table with 1 and 0 be saved unchanged', () => {
+		const stored = { type: 'bool-map', map: { Ja: 1, Nee: 0 }, default: 0 }
+		const table = transformFromStored(stored)
+		expect(validateTransform(table)).toEqual([])
+		expect(transformPayload(table)).toEqual(stored)
+		expect(
+			validateDraft(
+				draftFromStored({
+					id: 'yes-no',
+					name: 'Yes/no',
+					sourceFormat: 'csv',
+					version: '1.0.0',
+					fieldMappings: [{ source: 'Actief', target: 'active', transform: stored }],
+				}),
+			),
+		).toEqual([])
+	})
+
 	it('accepts only yes or no in a yes/no table, its default included', () => {
 		const table = newTransform('bool-map')
 		table.mapRows = [
@@ -455,6 +473,8 @@ describe('checking a draft before it is saved', () => {
 		})
 		expect(isBooleanCell({ text: 'nee', json: false })).toBe(false)
 		expect(isBooleanCell({ text: '[', json: true })).toBe(false)
+		expect(isBooleanCell({ text: '2', json: true })).toBe(false)
+		expect(isBooleanCell({ text: '"1"', json: true })).toBe(false)
 		// A lookup stores any value, text included.
 		expect(
 			validateTransform({

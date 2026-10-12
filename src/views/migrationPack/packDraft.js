@@ -215,16 +215,20 @@ function cellIsValid(cell) {
  * Whether a cell holds true or false.
  *
  * A yes/no table casts what it stores to a boolean on import, so the text
- * `false` (or `nee`) would become true. Only real booleans are accepted.
+ * `false` (or `nee`) would become true. Only real booleans are accepted, and
+ * the numbers 1 and 0, which cast to true and false and which a pack written
+ * through the API or imported from elsewhere may hold; an unedited 1 or 0 is
+ * saved as it was.
  *
  * @param {{text: string, json: boolean}} cell The cell.
- * @return {boolean} True for a JSON cell holding true or false.
+ * @return {boolean} True for a JSON cell holding true, false, 1 or 0.
  *
  * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
  */
 export function isBooleanCell(cell) {
 	try {
-		return typeof valueFromCell(cell) === 'boolean'
+		const value = valueFromCell(cell)
+		return typeof value === 'boolean' || value === 1 || value === 0
 	} catch {
 		return false
 	}

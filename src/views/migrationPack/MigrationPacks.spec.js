@@ -1337,7 +1337,11 @@ describe('the key/value rows', () => {
 		expect(vm.booleanChoice({ text: 'true', json: true })).toBe('true')
 		expect(vm.booleanChoice({ text: 'false', json: true })).toBe('false')
 		expect(vm.booleanChoice({ text: 'false', json: false })).toBe('')
-		expect(vm.booleanChoice({ text: '1', json: true })).toBe('')
+		// 1 and 0 cast to true and false, as a pack from the API may hold them.
+		expect(vm.booleanChoice({ text: '1', json: true })).toBe('true')
+		expect(vm.booleanChoice({ text: '0', json: true })).toBe('false')
+		expect(vm.booleanChoice({ text: '2', json: true })).toBe('')
+		expect(vm.booleanChoice({ text: '1', json: false })).toBe('')
 	})
 })
 
