@@ -341,7 +341,9 @@ class MigrationPacksController extends Controller {
 	 *
 	 * The body is either `{"definition": {...}}` or the pack document itself.
 	 * The pack row is always the one named in the route. Renaming a built-in
-	 * pack is refused with 422 `builtin-slug-locked`.
+	 * pack is refused with 422 `builtin-slug-locked`. An envelope with
+	 * `expectedUpdatedAt` (the `updatedAt` the caller read) is refused with
+	 * 409 `pack-changed` when the pack was saved since.
 	 *
 	 * @param int $id The migration pack id.
 	 *
@@ -362,7 +364,8 @@ class MigrationPacksController extends Controller {
 
 		try {
 			$definition = $this->requestReader->definition(request: $this->request);
-			$pack       = $this->service->update(id: $id, definition: $definition);
+			$expected   = $this->requestReader->expectedUpdatedAt(request: $this->request);
+			$pack       = $this->service->update(id: $id, definition: $definition, expectedUpdatedAt: $expected);
 		} catch (DoesNotExistException $e) {
 			return $this->errors->notFound();
 		} catch (MigrationPackRefusedException $e) {

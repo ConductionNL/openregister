@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\MigrationPack;
 use OCA\OpenRegister\Exception\BuiltinPackSlugLockedException;
 use OCA\OpenRegister\Exception\MigrationPackRefusedException;
 use OCA\OpenRegister\Exception\MigrationPackRequestException;
+use OCA\OpenRegister\Exception\PackChangedException;
 use OCA\OpenRegister\Exception\PackSlugExistsException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
@@ -103,7 +104,8 @@ class MigrationPackErrorResponder {
 	}//end notFound()
 
 	/**
-	 * Answer a refusal the caller caused: 400 for a malformed request, 422 for a refused definition.
+	 * Answer a refusal the caller caused: 400 for a malformed request, 409
+	 * for an update based on an outdated read, 422 for a refused definition.
 	 *
 	 * @param MigrationPackRefusedException $exception The refusal.
 	 *
@@ -114,6 +116,14 @@ class MigrationPackErrorResponder {
 	public function refused(MigrationPackRefusedException $exception): JSONResponse {
 		if ($exception instanceof MigrationPackRequestException) {
 			return $this->badRequest(exception: $exception);
+		}
+
+		if ($exception instanceof PackChangedException) {
+			return $this->error(
+				status: 409,
+				error: 'pack-changed',
+				message: $this->l10n->t('The migration pack was saved by someone else after it was read')
+			);
 		}
 
 		return $this->refusedDefinition(exception: $exception);

@@ -25,10 +25,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use DateTimeInterface;
 use OCA\OpenRegister\Db\MigrationPack;
 use OCA\OpenRegister\Db\MigrationPackMapper;
 use OCA\OpenRegister\Exception\BuiltinPackSlugLockedException;
 use OCA\OpenRegister\Exception\InvalidPackDefinitionException;
+use OCA\OpenRegister\Exception\PackChangedException;
 use OCA\OpenRegister\Exception\PackSlugExistsException;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackImportResult;
@@ -168,22 +170,36 @@ class MigrationPackService {
 	 * it again by that slug. A pack renamed to the slug of a deleted built-in
 	 * pack becomes built-in.
 	 *
+	 * With `$expectedUpdatedAt`, the update is refused when the stored pack
+	 * was saved at another time, to the second: someone saved it after the
+	 * caller read it. Without it, the update overwrites what is stored.
+	 *
 	 * @param int $id The migration pack id.
 	 * @param array<string, mixed> $definition The replacement pack definition document.
+	 * @param DateTimeInterface|null $expectedUpdatedAt The `updatedAt` the caller read, or null for no check.
 	 *
 	 * @return MigrationPack
 	 *
 	 * @throws DoesNotExistException When no row matches.
+	 * @throws PackChangedException When the pack was saved at another time than `$expectedUpdatedAt`.
 	 * @throws BuiltinPackSlugLockedException When the definition renames a built-in pack.
 	 * @throws InvalidPackDefinitionException When the definition is structurally invalid.
 	 * @throws PackSlugExistsException When its slug collides with a different pack.
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
 	 */
-	public function update(int $id, array $definition): MigrationPack {
+	public function update(int $id, array $definition, ?DateTimeInterface $expectedUpdatedAt = null): MigrationPack {
 		$this->validator->assertValid(definition: $definition);
 
 		$pack = $this->mapper->find(id: $id);
+
+		if ($expectedUpdatedAt !== null
+			&& $pack->getUpdatedAt()?->getTimestamp() !== $expectedUpdatedAt->getTimestamp()
+		) {
+			throw new PackChangedException(
+				message: 'Migration pack ' . $id . ' was saved after ' . $expectedUpdatedAt->format(DATE_ATOM)
+			);
+		}
 
 		$slug = (string)$definition['id'];
 		if ($pack->getBuiltin() === true && $slug !== $pack->getPackSlug()) {

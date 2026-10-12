@@ -65,15 +65,18 @@ to any signed-in user; create, update, delete, import and the sample-row test
 script outside a browser sends `OCS-APIRequest: true` or signs in with an app password.
 
 Create and update take `{"definition": {...}}`; on update the row id in the URL decides which pack
-changes. When the server refuses, the answer is `{"message": "...", "error": "<code>"}`, with the
+changes. Add `"expectedUpdatedAt"`, the `updatedAt` of the pack as you read it, to an update and the
+server refuses it when someone saved the pack since; leave it out and the update replaces whatever is
+stored. When the server refuses, the answer is `{"message": "...", "error": "<code>"}`, with the
 validator's findings in `details.errors` where there are any. Read the code, not the message: the
 message is translated.
 
 | Status | `error` | Meaning |
 | --- | --- | --- |
-| 400 | `invalid-request` | The body is not what the route takes, for example a preview without a `definition` object |
+| 400 | `invalid-request` | The body is not what the route takes, for example a preview without a `definition` object, or an `expectedUpdatedAt` that is not a date-time as the API writes `updatedAt` |
 | 400 | `too-many-rows` | A preview with more than 20 sample rows |
 | 404 | `pack-not-found` | No pack has that row id |
+| 409 | `pack-changed` | The pack was saved after the `expectedUpdatedAt` the update names |
 | 422 | `invalid-pack` | The definition breaks a rule; `details.errors` lists each finding, rows numbered from 1 |
 | 422 | `builtin-slug-locked` | The update would change the slug of a built-in pack |
 | 422 | `pack-slug-exists` | Another pack already has the slug (the definition's `id`) |

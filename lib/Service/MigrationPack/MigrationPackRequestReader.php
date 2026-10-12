@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\MigrationPack;
 
+use DateTimeImmutable;
 use OCA\OpenRegister\Exception\InvalidPackDefinitionException;
 use OCA\OpenRegister\Exception\MigrationPackRequestException;
 use OCP\IL10N;
@@ -143,6 +144,46 @@ class MigrationPackRequestReader {
 
 		throw new InvalidPackDefinitionException(errors: $errors);
 	}//end definition()
+
+	/**
+	 * The `updatedAt` an update was based on, from the envelope's `expectedUpdatedAt`.
+	 *
+	 * An update that names it is refused when the pack was saved since; one
+	 * that does not overwrites whatever is stored. Only the envelope carries
+	 * it: in the raw form every body key belongs to the pack document.
+	 *
+	 * @param IRequest $request The request.
+	 *
+	 * @return DateTimeImmutable|null Null when the request names no version.
+	 *
+	 * @throws MigrationPackRequestException When it is not a date-time as the API answers `updatedAt`.
+	 *
+	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-create-and-update-must-accept-a-definition-envelope-and-keep-the-route-id
+	 */
+	public function expectedUpdatedAt(IRequest $request): ?DateTimeImmutable {
+		$params = $request->getParams();
+		if (is_array($params['definition'] ?? null) === false
+			|| array_key_exists('expectedUpdatedAt', $params) === false
+			|| $params['expectedUpdatedAt'] === null
+		) {
+			return null;
+		}
+
+		$expected = $params['expectedUpdatedAt'];
+		$parsed   = false;
+		if (is_string($expected) === true) {
+			$parsed = DateTimeImmutable::createFromFormat(DATE_ATOM, $expected);
+		}
+
+		if ($parsed === false) {
+			throw new MigrationPackRequestException(
+				errorCode: 'invalid-request',
+				userMessage: $this->l10n->t('The expected update time must be the updatedAt of the pack as it was read')
+			);
+		}
+
+		return $parsed;
+	}//end expectedUpdatedAt()
 
 	/**
 	 * Read the pack document from the uploaded `file` of an import request.

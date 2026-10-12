@@ -813,6 +813,33 @@ test.describe('the API contract', () => {
 		)
 	})
 
+	// @e2e migration-mapping-packs::an-update-based-on-an-older-read-is-refused
+	test('an update based on an older read is refused', async () => {
+		const pack = await createPack(plainPack('older read'))
+		await expectError(
+			await admin.put(`${API}/${pack.id}`, {
+				data: {
+					definition: { ...pack.definition, description: 'Based on an older read' },
+					expectedUpdatedAt: '2000-01-01T00:00:00+00:00',
+				},
+			}),
+			409,
+			'pack-changed',
+		)
+		const unchanged = await readPack(pack.id)
+		expect(unchanged.definition).toEqual(pack.definition)
+		expect(unchanged.updatedAt).toBe(pack.updatedAt)
+
+		const current = await admin.put(`${API}/${pack.id}`, {
+			data: {
+				definition: { ...pack.definition, description: 'Based on the current read' },
+				expectedUpdatedAt: pack.updatedAt,
+			},
+		})
+		expect(current.status(), await current.text()).toBe(200)
+		expect((await readPack(pack.id)).definition.description).toBe('Based on the current read')
+	})
+
 	// @e2e migration-mapping-packs::renaming-a-built-in-pack-through-the-api-is-refused
 	test('renaming a built-in pack through the API is refused', async () => {
 		const builtin = await packBySlug(BUILTIN_SLUG)

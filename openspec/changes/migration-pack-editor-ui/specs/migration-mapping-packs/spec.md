@@ -172,7 +172,14 @@ with `_` and, on update, without the route `id`. A definition the validator
 refuses SHALL be answered with HTTP 422 `{"message": "The pack definition is
 invalid", "error": "invalid-pack", "details": {"errors": [...]}}`, one entry
 per finding with rows numbered from 1. An update of a row that does not exist
-SHALL be answered with HTTP 404 and `error` `pack-not-found`.
+SHALL be answered with HTTP 404 and `error` `pack-not-found`. The update
+envelope MAY carry `expectedUpdatedAt`, the `updatedAt` of the pack as the
+caller read it; when the stored pack was saved at another time, the update
+SHALL be answered with HTTP 409 and `error` `pack-changed`, and the pack SHALL
+stay unchanged. An `expectedUpdatedAt` that is not a date-time in the form the
+API answers `updatedAt` SHALL be answered with HTTP 400 `invalid-request`.
+Without it, an update replaces the stored pack. The editor SHALL send it on
+every save.
 
 #### Scenario: An envelope update keeps the route id and the slug
 
@@ -199,6 +206,14 @@ SHALL be answered with HTTP 404 and `error` `pack-not-found`.
 - **GIVEN** an administrator
 - **WHEN** they send `PUT /api/migration-packs/{id}` for a row id that is not stored
 - **THEN** the server answers 404 with `error` `pack-not-found`
+
+#### Scenario: An update based on an older read is refused
+
+- **GIVEN** an administrator and a stored pack
+- **WHEN** they send `PUT /api/migration-packs/{id}` with `{"definition": {...}, "expectedUpdatedAt": ...}` naming an update time the pack no longer has
+- **THEN** the server answers 409 with `error` `pack-changed`
+- **AND** the pack is unchanged
+- **AND** the same update naming the pack's current `updatedAt` is answered 200
 
 ### Requirement: The slug of a built-in pack MUST NOT change
 
@@ -310,7 +325,7 @@ token.
 ## MODIFIED Requirements
 
 ### Requirement: Migration packs MUST be manageable via admin-gated REST CRUD with JSON file import/export
-The system SHALL expose `/api/migration-packs` REST routes: `index`/`show`/`export` available to any authenticated user (packs are shared instance assets the import flow must browse), `create`/`update`/`destroy`/`import`/`preview` restricted to Nextcloud administrators (HTTP 403 otherwise; HTTP 401 for anonymous callers on all routes). The write routes (`create`, `update`, `destroy`, `import`, `preview`) SHALL require Nextcloud's CSRF request token; a client outside a browser session sends `OCS-APIRequest: true` or authenticates with an app password. `create` and `update` SHALL take the definition from a `{"definition": {...}}` envelope or, without one, from the raw body; on `update` the route `{id}` SHALL name the row. `export` SHALL download the pack's definition as a standalone JSON file named `<packSlug>.json`; `import` SHALL accept an uploaded pack JSON file and upsert by the document's own `id` (create when absent, update the existing row when present), so packs round-trip between instances. A pack that `create`, `import` or a rename stores under the slug of a deleted built-in pack SHALL be built-in, and the slug of a built-in pack SHALL NOT change through `update` or `import`. Every error answer the controller gives SHALL be `{"message": <localised text>, "error": <kebab-case code>, "details"?: {...}}`, where the message never carries an exception's text: 422 `invalid-pack` with the validator's findings in `details.errors`, 422 `builtin-slug-locked`, 422 `pack-slug-exists` for a create or rename to a slug another pack has, 404 `pack-not-found`, 400 `invalid-request` or `too-many-rows`, 401 `not-authenticated`, 403 `admin-required`, and 500 `migration-pack-error` for an unexpected failure, which is logged with the exception. A refusal Nextcloud gives before the controller runs (not signed in, not an administrator, no request token) carries Nextcloud's own body.
+The system SHALL expose `/api/migration-packs` REST routes: `index`/`show`/`export` available to any authenticated user (packs are shared instance assets the import flow must browse), `create`/`update`/`destroy`/`import`/`preview` restricted to Nextcloud administrators (HTTP 403 otherwise; HTTP 401 for anonymous callers on all routes). The write routes (`create`, `update`, `destroy`, `import`, `preview`) SHALL require Nextcloud's CSRF request token; a client outside a browser session sends `OCS-APIRequest: true` or authenticates with an app password. `create` and `update` SHALL take the definition from a `{"definition": {...}}` envelope or, without one, from the raw body; on `update` the route `{id}` SHALL name the row. `export` SHALL download the pack's definition as a standalone JSON file named `<packSlug>.json`; `import` SHALL accept an uploaded pack JSON file and upsert by the document's own `id` (create when absent, update the existing row when present), so packs round-trip between instances. A pack that `create`, `import` or a rename stores under the slug of a deleted built-in pack SHALL be built-in, and the slug of a built-in pack SHALL NOT change through `update` or `import`. Every error answer the controller gives SHALL be `{"message": <localised text>, "error": <kebab-case code>, "details"?: {...}}`, where the message never carries an exception's text: 422 `invalid-pack` with the validator's findings in `details.errors`, 422 `builtin-slug-locked`, 422 `pack-slug-exists` for a create or rename to a slug another pack has, 409 `pack-changed` for an update whose `expectedUpdatedAt` the pack no longer has, 404 `pack-not-found`, 400 `invalid-request` or `too-many-rows`, 401 `not-authenticated`, 403 `admin-required`, and 500 `migration-pack-error` for an unexpected failure, which is logged with the exception. A refusal Nextcloud gives before the controller runs (not signed in, not an administrator, no request token) carries Nextcloud's own body.
 
 #### Scenario: Non-admin cannot mutate packs
 - **GIVEN** an authenticated non-admin user

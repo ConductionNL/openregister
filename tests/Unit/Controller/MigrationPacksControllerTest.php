@@ -29,12 +29,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\MigrationPacksController;
 use OCA\OpenRegister\Db\MigrationPack;
 use OCA\OpenRegister\Db\MigrationPackMapper;
 use OCA\OpenRegister\Exception\BuiltinPackSlugLockedException;
 use OCA\OpenRegister\Exception\InvalidPackDefinitionException;
+use OCA\OpenRegister\Exception\PackChangedException;
 use OCA\OpenRegister\Exception\PackSlugExistsException;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponder;
@@ -547,6 +549,89 @@ class MigrationPacksControllerTest extends TestCase {
 
 		$response = $this->controllerFor($request)->update($request->dispatchedInt('id'));
 		$this->assertSame(200, $response->getStatus());
+	}
+
+	public function testUpdatePassesTheReadUpdateTimeToTheService(): void {
+		$this->setupUser('admin', true);
+		$request = new MergingRequestFake(
+			['_route' => 'openregister.migrationPacks.update', 'id' => '5'],
+			['definition' => $this->validDefinition(), 'expectedUpdatedAt' => '2026-10-12T10:00:00+00:00']
+		);
+
+		$this->service->expects($this->once())
+			->method('update')
+			->with(
+				5,
+				$this->validDefinition(),
+				$this->callback(
+					static fn ($expected): bool => $expected instanceof DateTimeImmutable
+						&& $expected->format(DATE_ATOM) === '2026-10-12T10:00:00+00:00'
+				)
+			)
+			->willReturn($this->packEntity('stackiq-topdesk-module'));
+
+		$response = $this->controllerFor($request)->update($request->dispatchedInt('id'));
+		$this->assertSame(200, $response->getStatus());
+	}
+
+	public function testUpdateWithoutAReadUpdateTimeOverwrites(): void {
+		$this->setupUser('admin', true);
+		$request = new MergingRequestFake(
+			['_route' => 'openregister.migrationPacks.update', 'id' => '5'],
+			['definition' => $this->validDefinition()]
+		);
+
+		$this->service->expects($this->once())
+			->method('update')
+			->with(5, $this->validDefinition(), null)
+			->willReturn($this->packEntity('stackiq-topdesk-module'));
+
+		$this->assertSame(200, $this->controllerFor($request)->update(5)->getStatus());
+	}
+
+	public function testUpdateBasedOnAnOutdatedReadAnswersPackChanged(): void {
+		$this->setupUser('admin', true);
+		$request = new MergingRequestFake(
+			['_route' => 'openregister.migrationPacks.update', 'id' => '5'],
+			['definition' => $this->validDefinition(), 'expectedUpdatedAt' => '2026-10-12T10:00:00+00:00']
+		);
+		$this->service->method('update')
+			->willThrowException(new PackChangedException('Migration pack 5 was saved after 2026-10-12T10:00:00+00:00'));
+		$this->logger->expects($this->never())->method('info');
+
+		$response = $this->controllerFor($request)->update(5);
+
+		$this->assertSame(409, $response->getStatus());
+		$this->assertSame(
+			['message' => 'The migration pack was saved by someone else after it was read', 'error' => 'pack-changed'],
+			$response->getData()
+		);
+	}
+
+	/**
+	 * @return array<string, array{mixed}>
+	 */
+	public static function malformedUpdateTimes(): array {
+		return [
+			'not a date' => ['yesterday'],
+			'no offset' => ['2026-10-12 10:00:00'],
+			'a number' => [1760263200],
+		];
+	}
+
+	#[DataProvider('malformedUpdateTimes')]
+	public function testAMalformedReadUpdateTimeIsABadRequest(mixed $expected): void {
+		$this->setupUser('admin', true);
+		$request = new MergingRequestFake(
+			['_route' => 'openregister.migrationPacks.update', 'id' => '5'],
+			['definition' => $this->validDefinition(), 'expectedUpdatedAt' => $expected]
+		);
+		$this->service->expects($this->never())->method('update');
+
+		$response = $this->controllerFor($request)->update(5);
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame('invalid-request', $response->getData()['error']);
 	}
 
 	public function testUpdateRawBodyWithSlugStillTargetsTheRouteRow(): void {

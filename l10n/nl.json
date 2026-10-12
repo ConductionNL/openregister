@@ -3455,7 +3455,9 @@
         "Failed to create migration pack": "Het aanmaken van het migratiepakket is mislukt",
         "Failed to update migration pack": "Het bijwerken van het migratiepakket is mislukt",
         "Failed to delete migration pack": "Het verwijderen van het migratiepakket is mislukt",
-        "A migration pack with this id already exists": "Er bestaat al een migratiepakket met dit id"
+        "A migration pack with this id already exists": "Er bestaat al een migratiepakket met dit id",
+        "The migration pack was saved by someone else after it was read": "Iemand anders heeft het migratiepakket opgeslagen nadat het werd gelezen",
+        "The expected update time must be the updatedAt of the pack as it was read": "De verwachte bijwerktijd moet de updatedAt van het pakket zijn zoals het werd gelezen"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

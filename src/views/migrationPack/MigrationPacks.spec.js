@@ -530,7 +530,7 @@ describe('the editor', () => {
 		expect(vm.loadError).toBe('This migration pack does not exist.')
 	})
 
-	it('saves with PUT {definition} on the route id and raises the patch version', async () => {
+	it('saves with PUT {definition, expectedUpdatedAt} on the route id and raises the patch version', async () => {
 		const vm = await loadedEditor()
 		vm.draft.rows[0].target = 'title'
 		expect(vm.dirty).toBe(true)
@@ -547,7 +547,7 @@ describe('the editor', () => {
 		await vm.save()
 		const [url, body] = axios.put.mock.calls[0]
 		expect(url).toBe('/apps/openregister/api/migration-packs/12')
-		expect(Object.keys(body)).toEqual(['definition'])
+		expect(Object.keys(body)).toEqual(['definition', 'expectedUpdatedAt'])
 		expect(body.definition.id).toBe('stackiq-topdesk-module')
 		expect(body.definition.version).toBe('2.0.1')
 		expect(body.definition.fieldMappings[0].target).toBe('title')
@@ -637,14 +637,41 @@ describe('the editor', () => {
 		expect(vm.saveProblem.conflict).toBe(true)
 	})
 
-	it('shows a conflict the server reports as one', async () => {
+	it('names the version it loaded, and shows the refusal of a save that came after another', async () => {
 		const vm = await loadedEditor()
 		vm.draft.name = 'Changed'
 		axios.put.mockRejectedValue({
-			response: { status: 409, data: { error: 'pack-conflict' } },
+			response: {
+				status: 409,
+				data: {
+					message: 'The migration pack was saved by someone else after it was read',
+					error: 'pack-changed',
+				},
+			},
 		})
 		await vm.save()
+		expect(axios.put.mock.calls[0][1].expectedUpdatedAt).toBe(
+			'2026-10-12T10:00:00+00:00',
+		)
 		expect(vm.saveProblem.conflict).toBe(true)
+		expect(vm.dirty).toBe(true)
+	})
+
+	it('names the version it saved on the next save', async () => {
+		const vm = await loadedEditor(storedPack({ builtin: false }))
+		vm.draft.name = 'Changed'
+		axios.put.mockResolvedValue({
+			data: storedPack({ builtin: false, updatedAt: '2026-10-12T10:05:00+00:00' }),
+		})
+		await vm.save()
+		axios.get.mockResolvedValue({
+			data: storedPack({ builtin: false, updatedAt: '2026-10-12T10:05:00+00:00' }),
+		})
+		vm.draft.name = 'Changed again'
+		await vm.save()
+		expect(axios.put.mock.calls[1][1].expectedUpdatedAt).toBe(
+			'2026-10-12T10:05:00+00:00',
+		)
 	})
 
 	it('does not take a failed request-token check (412) for someone else saving', async () => {
@@ -1321,6 +1348,14 @@ describe('the API helpers', () => {
 		expect(axios.put).toHaveBeenCalledWith(
 			'/apps/openregister/api/migration-packs/5',
 			{ definition: { id: 'slug' } },
+		)
+		await updatePack(5, { id: 'slug' }, '2026-10-12T10:00:00+00:00')
+		expect(axios.put).toHaveBeenLastCalledWith(
+			'/apps/openregister/api/migration-packs/5',
+			{
+				definition: { id: 'slug' },
+				expectedUpdatedAt: '2026-10-12T10:00:00+00:00',
+			},
 		)
 		expect(exportUrl(5)).toBe('/apps/openregister/api/migration-packs/5/export')
 	})

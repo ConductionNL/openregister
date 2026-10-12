@@ -1206,12 +1206,12 @@ export default {
 		/**
 		 * Save the pack, unless someone else saved it since it was loaded.
 		 *
-		 * The check reads the pack again just before the update and compares
-		 * both its update time and its definition, so two saves within the
-		 * same second are still told apart. It narrows the window, but cannot
-		 * close it: a save by someone else between that read and the update
-		 * is overwritten, until the update route checks a precondition itself.
-		 * A 409 from the server is shown the same way. A 412 is not: on this
+		 * Two checks. The update names the `updatedAt` the editor loaded, and
+		 * the server refuses it with 409 `pack-changed` when the pack was saved
+		 * since. That time has a resolution of one second, so the editor also
+		 * reads the pack again just before the update and compares its
+		 * definition, which tells apart two saves within the same second. Both
+		 * refusals are shown the same way. A 412 is not one of them: on this
 		 * route Nextcloud sends it only for a failed request-token check, so it
 		 * is explained like any other refusal and the edits are not thrown away.
 		 *
@@ -1233,7 +1233,11 @@ export default {
 					this.saveProblem = this.conflictProblem()
 					return
 				}
-				this.pack = await updatePack(this.packId, definition)
+				this.pack = await updatePack(
+					this.packId,
+					definition,
+					this.pack.updatedAt,
+				)
 				this.reset()
 				this.saved = true
 			} catch (error) {
@@ -1241,7 +1245,7 @@ export default {
 				if (status === 404) {
 					// Shown with its own actions; the edits stay in the editor.
 					this.packDeleted = true
-				} else if (status === 409) {
+				} else if (error?.response?.data?.error === 'pack-changed') {
 					this.saveProblem = this.conflictProblem()
 				} else {
 					this.saveProblem = explainError(

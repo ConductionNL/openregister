@@ -121,12 +121,22 @@ changed the TOPdesk mapping" from the Nextcloud log without a new table, as
 long as the log level is Info: at Nextcloud's default, Warning, the lines are
 dropped.
 
-## D-8: last write wins, with a check before saving
+## D-8: a save names the version it was based on
 
-The store has no version column or ETag. Before saving, the editor reads the
-pack again and refuses when `updatedAt` moved since it was opened, offering a
-reload. This narrows the window to the two requests of one save; it is not a
-lock, and a script writing through the API is not stopped by it.
+The store has no version column or ETag; `updatedAt` serves as the version.
+The update envelope may carry `expectedUpdatedAt`, the `updatedAt` the caller
+read, and the server refuses the update with 409 `pack-changed` when the
+stored pack has another one. The editor always sends it and shows the refusal
+with a reload. Because `updatedAt` has a resolution of one second, the editor
+also reads the pack again just before the update and compares the definition,
+which tells apart two saves within the same second.
+
+What is left: the server reads, compares and writes in three steps, not in
+one conditional write, so two updates that reach it at the same moment can
+both pass the comparison; and a save that lands within the same second as
+the version the editor loaded, after that last read, is not told apart. Both
+need two administrators saving the same pack within a second. A script that
+leaves out `expectedUpdatedAt` replaces the pack, as before this change.
 
 ## D-9: what other apps may rely on
 
@@ -162,7 +172,8 @@ The message is a fixed sentence, never `$e->getMessage()`, so no exception
 text, path or SQL reaches a client. The codes are `invalid-pack` (422, the
 validator's findings in `details.errors`, rows numbered from 1),
 `builtin-slug-locked` (422), `pack-slug-exists` (422, a create or rename to
-a slug another pack has), `pack-not-found` (404), `invalid-request` and
+a slug another pack has), `pack-changed` (409, D-8), `pack-not-found` (404),
+`invalid-request` and
 `too-many-rows` (400), `not-authenticated` (401), `admin-required` (403) and
 `migration-pack-error` (500, logged with the exception). The screens map the
 code to their own translated text and list `details.errors`; they never parse

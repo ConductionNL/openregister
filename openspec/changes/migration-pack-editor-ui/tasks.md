@@ -51,6 +51,13 @@ only on promotion pull requests and `workflow_dispatch`.
     - GIVEN an invalid definition WHEN it is created, updated, imported or previewed THEN the answer is 422 `invalid-pack` with the findings in `details.errors`, rows numbered from 1
     - GIVEN an update of a row that does not exist THEN the answer is 404 `pack-not-found`
     - GIVEN an unexpected exception THEN the answer is 500 `migration-pack-error` without its text, and the exception is logged
+- [x] 1.7 An update envelope may name the `updatedAt` it was based on (`expectedUpdatedAt`); the server refuses the update with 409 `pack-changed` when the pack was saved since, and the editor sends it on every save (D-8).
+  - spec_ref: `migration-mapping-packs#requirement-create-and-update-must-accept-a-definition-envelope-and-keep-the-route-id`
+  - files: `lib/Service/MigrationPackService.php`, `lib/Service/MigrationPack/MigrationPackRequestReader.php`, `lib/Service/MigrationPack/MigrationPackErrorResponder.php`, `src/services/migrationPacks.js`, `src/views/migrationPack/MigrationPackDetail.vue`
+  - acceptance_criteria:
+    - GIVEN a stored pack WHEN an update names an `expectedUpdatedAt` the pack no longer has THEN the answer is 409 `pack-changed` and the pack is unchanged (`testUpdateRefusesAPackSavedAfterTheCallerReadIt`, `testUpdateBasedOnAnOutdatedReadAnswersPackChanged`)
+    - GIVEN an `expectedUpdatedAt` that is not a date-time as the API answers `updatedAt` THEN the answer is 400 `invalid-request`
+    - GIVEN the editor WHEN it saves THEN the update names the `updatedAt` it loaded, and a 409 `pack-changed` is shown with a reload
 
 ## 2. Draft model
 

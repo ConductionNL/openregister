@@ -75,18 +75,23 @@ export async function getPack(id) {
  * Save a pack's definition.
  *
  * The definition travels in an envelope: its own `id` is the pack slug, and a
- * bare body would put that slug over the route's row id.
+ * bare body would put that slug over the route's row id. With
+ * `expectedUpdatedAt`, the server refuses the save with 409 `pack-changed`
+ * when the pack was saved by someone else since it was read.
  *
  * @param {number|string} id The pack's row id.
  * @param {object} definition The full definition.
+ * @param {string} [expectedUpdatedAt] The `updatedAt` of the pack as it was read.
  * @return {Promise<object>} The saved pack.
  *
  * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-create-and-update-must-accept-a-definition-envelope-and-keep-the-route-id
  */
-export async function updatePack(id, definition) {
-	const response = await axios.put(packUrl('/' + encodeURIComponent(id)), {
-		definition,
-	})
+export async function updatePack(id, definition, expectedUpdatedAt) {
+	const body = { definition }
+	if (typeof expectedUpdatedAt === 'string' && expectedUpdatedAt !== '') {
+		body.expectedUpdatedAt = expectedUpdatedAt
+	}
+	const response = await axios.put(packUrl('/' + encodeURIComponent(id)), body)
 	return response.data
 }
 

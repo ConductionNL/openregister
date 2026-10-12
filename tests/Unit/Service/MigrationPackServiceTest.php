@@ -29,11 +29,14 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use DateTime;
+use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MigrationPack;
 use OCA\OpenRegister\Db\MigrationPackMapper;
 use OCA\OpenRegister\Exception\BuiltinPackSlugLockedException;
 use OCA\OpenRegister\Exception\InvalidPackDefinitionException;
+use OCA\OpenRegister\Exception\PackChangedException;
 use OCA\OpenRegister\Exception\PackSlugExistsException;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\MigrationPack\PackDefinitionValidator;
@@ -155,6 +158,37 @@ class MigrationPackServiceTest extends TestCase {
 		$this->mapper->expects($this->once())->method('update')->willReturnArgument(0);
 
 		$pack = $this->service->update(1, $this->validDefinition(['name' => 'Renamed Pack']));
+
+		$this->assertSame('Renamed Pack', $pack->getName());
+	}
+
+	public function testUpdateRefusesAPackSavedAfterTheCallerReadIt(): void {
+		$existing = new MigrationPack();
+		$existing->setId(1);
+		$existing->setPackSlug('test-pack');
+		$existing->setUpdatedAt(new DateTime('2026-10-12T10:00:05+00:00'));
+		$this->mapper->method('find')->willReturn($existing);
+		$this->mapper->expects($this->never())->method('update');
+
+		$this->expectException(PackChangedException::class);
+		$this->service->update(1, $this->validDefinition(), new DateTimeImmutable('2026-10-12T10:00:00+00:00'));
+	}
+
+	public function testUpdateSavesWhenThePackIsStillAsTheCallerReadIt(): void {
+		$existing = new MigrationPack();
+		$existing->setId(1);
+		$existing->setPackSlug('test-pack');
+		$existing->setUpdatedAt(new DateTime('2026-10-12T12:00:00+02:00'));
+		$this->mapper->method('find')->willReturn($existing);
+		$this->mapper->method('findByPackSlug')->willThrowException(new DoesNotExistException('not found'));
+		$this->mapper->expects($this->once())->method('update')->willReturnArgument(0);
+
+		// The same instant, written with another offset.
+		$pack = $this->service->update(
+			1,
+			$this->validDefinition(['name' => 'Renamed Pack']),
+			new DateTimeImmutable('2026-10-12T10:00:00+00:00')
+		);
 
 		$this->assertSame('Renamed Pack', $pack->getName());
 	}
