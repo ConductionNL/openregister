@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\ScheduledReport;
 use OCA\OpenRegister\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Export\ExportProfileService;
+use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ScheduledReportService;
 use OCP\Files\Folder;
@@ -89,7 +90,7 @@ class ScheduledReportServiceProfileRunTest extends TestCase {
 		$this->delivered = [];
 	}//end setUp()
 
-	private function service(?ExportProfileService $profiles): ScheduledReportService {
+	private function service(?ExportProfileService $profiles, ?ExportRunRecorder $runs = null): ScheduledReportService {
 		$config = $this->createMock(IConfig::class);
 		$config->method('getSystemValue')->willReturnCallback(
 			static fn ($key, $default = null) => $default
@@ -107,7 +108,8 @@ class ScheduledReportServiceProfileRunTest extends TestCase {
 			new NullLogger(),
 			$this->createMock(IMailer::class),
 			$config,
-			$profiles
+			$profiles,
+			$runs
 		);
 	}//end service()
 
@@ -167,6 +169,49 @@ class ScheduledReportServiceProfileRunTest extends TestCase {
 
 		return $profiles;
 	}//end profileService()
+
+	/**
+	 * A report that runs a profile records its run under the profile's
+	 * retention: 30 days as seconds, or null (kept) when the profile declares none.
+	 *
+	 * @dataProvider profileRetentions
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-an-export-expires-and-the-row-outlives-the-file
+	 */
+	public function testTheRunCopiesTheProfilesRetention(?int $days, ?int $expected): void {
+		$this->mockOwnerFolder();
+
+		$profile = new ExportProfile();
+		$profile->setName('Maandelijkse aanlevering');
+		$profile->setFormat('json');
+		$profile->setRetentionDays($days);
+		$profiles = $this->createMock(ExportProfileService::class);
+		$profiles->method('find')->willReturn($profile);
+		$profiles->method('run')->willReturn(['bytes' => '{}', 'rowCount' => 3, 'metadata' => [], 'filename' => 'x.json']);
+
+		$seen = 'not called';
+		$runs = $this->createMock(ExportRunRecorder::class);
+		$runs->expects(self::once())->method('record')->willReturnCallback(
+			function (...$args) use (&$seen) {
+				// PHPUnit hands the declared parameters positionally;
+				// retentionSeconds is the eleventh.
+				$seen = (array_key_exists(10, $args) === true) ? $args[10] : 'absent';
+
+				return new \OCA\OpenRegister\Db\ExportRun();
+			}
+		);
+
+		$this->service($profiles, $runs)->runOne(report: $this->report());
+
+		self::assertSame($expected, $seen);
+	}//end testTheRunCopiesTheProfilesRetention()
+
+	/**
+	 * @return array<string, array{0: int|null, 1: int|null}>
+	 */
+	public static function profileRetentions(): array {
+		return ['thirty days' => [30, 30 * 86400], 'no retention keeps the file' => [null, null]];
+	}//end profileRetentions()
 
 	public function testAScheduledExportRunsAsItsOwner(): void {
 		$this->mockOwnerFolder();

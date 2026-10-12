@@ -197,6 +197,47 @@ final class ExportProfileServiceTest extends TestCase {
 		self::assertSame(ExportProfile::MODE_STORED, $profile->getValueMode());
 	}//end testACreatedProfileGetsAUuidAnOwnerAndItsFieldOrder()
 
+	/**
+	 * A profile declares its file retention in days; a run copies it as
+	 * seconds. Absent keeps the files, and the value is bounded like the run's.
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-an-export-expires-and-the-row-outlives-the-file
+	 */
+	public function testAProfileDeclaresHowLongItsFilesAreKept(): void {
+		$this->mapper->method('insert')->willReturnCallback(static fn (...$args) => $args[0]);
+		$this->mapper->method('update')->willReturnCallback(static fn (...$args) => $args[0]);
+
+		$kept = $this->service()->create(['name' => 'x', 'registerId' => 7, 'fields' => ['a']], 'eigenaar-1');
+		self::assertNull($kept->getRetentionSeconds(), 'no retention keeps the files');
+
+		$monthly = $this->service()->create(['name' => 'x', 'registerId' => 7, 'fields' => ['a'], 'retentionDays' => 30], 'eigenaar-1');
+		self::assertSame(30 * 86400, $monthly->getRetentionSeconds());
+		self::assertSame(30, $monthly->jsonSerialize()['retentionDays']);
+
+		$this->service()->update($monthly, ['name' => 'renamed']);
+		self::assertSame(30, $monthly->getRetentionDays(), 'an edit that does not name the retention leaves it');
+
+		$this->service()->update($monthly, ['retentionDays' => null]);
+		self::assertNull($monthly->getRetentionDays(), 'an explicit null goes back to keeping the files');
+	}//end testAProfileDeclaresHowLongItsFilesAreKept()
+
+	/**
+	 * @dataProvider badRetentions
+	 */
+	public function testARetentionOutsideOneToNinetyDaysIsRefused(mixed $days): void {
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage('1 to 90 days');
+
+		$this->service()->create(['name' => 'x', 'registerId' => 7, 'fields' => ['a'], 'retentionDays' => $days], 'eigenaar-1');
+	}//end testARetentionOutsideOneToNinetyDaysIsRefused()
+
+	/**
+	 * @return array<string, array{0: mixed}>
+	 */
+	public static function badRetentions(): array {
+		return ['zero' => [0], 'beyond the cap' => [91], 'a string' => ['30']];
+	}//end badRetentions()
+
 	public function testSomebodyElsesProfileIsRefused(): void {
 		$this->expectException(ExportRefusedException::class);
 

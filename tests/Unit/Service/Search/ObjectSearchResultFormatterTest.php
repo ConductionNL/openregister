@@ -361,6 +361,52 @@ class ObjectSearchResultFormatterTest extends TestCase {
 	}//end testFormatPrefersDeepLinkUrl()
 
 	/**
+	 * A deep-link template may name an object property (`{case}`): the
+	 * formatter hands the object's top-level scalar properties to the
+	 * registry, URL-encoded, with the metadata winning on a clash.
+	 *
+	 * @return void
+	 */
+	public function testDeepLinkDataCarriesTheObjectsOwnScalarProperties(): void {
+		$schema = new Schema();
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
+		$this->deepLinkRegistry->method('resolveDisplayName')->willReturn(null);
+		$this->deepLinkRegistry->expects($this->once())
+			->method('resolveUrl')
+			->with(
+				1,
+				2,
+				$this->callback(
+					function (array $data): bool {
+						$this->assertSame('c-42', $data['case'] ?? null);
+						$this->assertSame('a%2Fb%3Fx%3D1', $data['ref'] ?? null, 'a property value is URL-encoded');
+						$this->assertSame('u1', $data['uuid'], 'metadata wins over a property of the same name');
+						$this->assertSame(2, $data['schema']);
+						$this->assertArrayNotHasKey('tags', $data, 'a non-scalar property is not a link value');
+
+						return true;
+					}
+				)
+			)
+			->willReturn('/apps/dossiq/cases/c-42');
+
+		$entry = $this->formatter->format(
+			[
+				'title' => 'Zaak 42',
+				'case' => 'c-42',
+				'ref' => 'a/b?x=1',
+				'uuid' => 'spoofed',
+				'schema' => 'spoofed',
+				'tags' => ['a'],
+				'@self' => ['id' => 'u1', 'register' => 1, 'schema' => 2],
+			],
+			null
+		);
+		$this->assertSame('/apps/dossiq/cases/c-42', $entry->jsonSerialize()['resourceUrl']);
+	}//end testDeepLinkDataCarriesTheObjectsOwnScalarProperties()
+
+	/**
 	 * Test format() title fallback chain: title -> @self.name -> uuid.
 	 *
 	 * @return void
