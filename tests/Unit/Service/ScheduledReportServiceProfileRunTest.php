@@ -268,4 +268,35 @@ class ScheduledReportServiceProfileRunTest extends TestCase {
 		self::assertSame('failed', $report->getLastStatus());
 		self::assertStringContainsString('export profile 42', (string)$report->getLastError());
 	}//end testAProfileTheRunnerCannotLoadFailsLoudly()
+
+	/**
+	 * A profile that read a moment ago but cannot now falls back to the
+	 * default expiry rather than keeping the copy forever.
+	 *
+	 * @return void
+	 */
+	public function testAProfileThatCannotBeReadAgainFallsBackToTheDefaultExpiry(): void {
+		$this->mockOwnerFolder();
+
+		$profile = new ExportProfile();
+		$profile->setName('Maandelijkse aanlevering');
+		$profile->setFormat('json');
+		$profiles = $this->createMock(ExportProfileService::class);
+		$profiles->method('find')->willReturnOnConsecutiveCalls($profile, $this->throwException(new \RuntimeException('gone')));
+		$profiles->method('run')->willReturn(['bytes' => '{}', 'rowCount' => 3, 'metadata' => [], 'filename' => 'x.json']);
+
+		$seen = 'not called';
+		$runs = $this->createMock(ExportRunRecorder::class);
+		$runs->expects(self::once())->method('record')->willReturnCallback(
+			function (...$args) use (&$seen) {
+				$seen = (array_key_exists(10, $args) === true) ? $args[10] : 'absent';
+
+				return new \OCA\OpenRegister\Db\ExportRun();
+			}
+		);
+
+		$this->service($profiles, $runs)->runOne(report: $this->report());
+
+		self::assertSame(ExportRunRecorder::DEFAULT_RETENTION_SECONDS, $seen);
+	}//end testAProfileThatCannotBeReadAgainFallsBackToTheDefaultExpiry()
 }//end class
