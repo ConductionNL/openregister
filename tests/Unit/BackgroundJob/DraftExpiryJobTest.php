@@ -149,13 +149,24 @@ class DraftExpiryJobTest extends TestCase {
 		$schemas->method('find')->willReturnCallback(static fn (string|int $id): Schema => [1 => $schema, 2 => $kept][(int)$id]);
 
 		$deleted = [];
+		$actors = [];
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('searchObjects')->willReturnCallback(
 			static fn (array $query = []): array => $query['@self']['schema'] === '1' ? [$expired, $fresh] : []
 		);
 		$objects->method('deleteObject')->willReturnCallback(
-			static function (string $uuid) use (&$deleted): bool {
+			function (string $uuid) use (&$deleted, &$actors): bool {
 				$deleted[] = $uuid;
+				// What the real delete path does for a draft: ask the removal record to write its entry.
+				$audit = $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class);
+				$audit->method('createAuditTrailEntry')->willReturnCallback(
+					static function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null) use (&$actors): \OCA\OpenRegister\Db\AuditTrail {
+						$actors[] = $actorId;
+
+						return new \OCA\OpenRegister\Db\AuditTrail();
+					}
+				);
+				(new \OCA\OpenRegister\Service\Object\DraftRemovalRecord(auditTrail: $audit, logger: $this->createMock(LoggerInterface::class)))->write(draft: new ObjectEntity(), register: null, schema: null);
 
 				return true;
 			}
@@ -183,6 +194,8 @@ class DraftExpiryJobTest extends TestCase {
 		$this->runJob(job: $job);
 
 				$this->assertSame(['expired'], $deleted);
+		// The removal ran under the job's name, so its audit-trail entry says which job removed the draft (decision 226).
+		$this->assertSame(['job:DraftExpiryJob'], $actors);
 		$this->assertCount(2, $logged);
 		$this->assertStringContainsString('drafts past the lifetime of a schema', $logged[0][0]);
 		$this->assertSame(

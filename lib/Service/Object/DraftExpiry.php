@@ -79,13 +79,6 @@ class DraftExpiry {
 	public const MAX_REMOVALS = 1000;
 
 	/**
-	 * The name the audit-trail entry of a removed draft gives as its actor.
-	 *
-	 * @var string
-	 */
-	public const JOB_NAME = 'DraftExpiryJob';
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ObjectService   $objects   Lists and deletes objects.
@@ -363,21 +356,16 @@ class DraftExpiry {
 	 * @param string   $uuid     The draft.
 	 *
 	 * @return bool True when it was removed.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) DraftRemovalRecord::asJob() is the ambient frame that names the job; there is no instance to inject.
 	 */
 	private function remove(Register $register, Schema $schema, string $uuid): bool {
 		try {
 			// RBAC off: a background job has no session, and the lifetime the
 			// schema declares is the authorisation. Everything else the delete
 			// path guards (append-only, referential integrity, files) stays
-			// on; the path itself makes a draft's delete permanent. Run as a
-			// named job, so the audit-trail entry of the removal says which
-			// job removed the draft (decision 226).
-			return DraftRemovalRecord::asJob(
-				job: self::JOB_NAME,
-				operation: fn (): bool => $this->objects->deleteObject(uuid: $uuid, register: $register, schema: $schema, _rbac: false, _multitenancy: false)
-			);
+			// on; the path itself makes a draft's delete permanent and writes
+			// its audit-trail entry. DraftExpiryJob runs the sweep under its
+			// own name, so that entry says which job removed the draft.
+			return $this->objects->deleteObject(uuid: $uuid, register: $register, schema: $schema, _rbac: false, _multitenancy: false);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
 				message: '[DraftExpiry] An expired draft was not removed',
