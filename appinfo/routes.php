@@ -1193,6 +1193,11 @@ return [
         ['name' => 'objects#geocode', 'url' => '/api/geo/geocode', 'verb' => 'GET'],
 
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
+        // Decision 179 (ADR-117): a form submits into its destination object.
+        ['name' => 'forms#validate', 'url' => '/api/forms/validate', 'verb' => 'POST'],
+        ['name' => 'forms#submit', 'url' => '/api/forms/{formId}/submit', 'verb' => 'POST'],
+        ['name' => 'forms#upload', 'url' => '/api/forms/{formId}/uploads', 'verb' => 'POST'],
+        ['name' => 'forms#draft', 'url' => '/api/forms/{formId}/draft', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
         // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
         // a longer path must be declared first or the generic one swallows it.
@@ -1515,6 +1520,13 @@ return [
         ['name' => 'files#downloadById', 'url' => '/api/files/{fileId}/download', 'verb' => 'GET', 'requirements' => ['fileId' => '\d+']],
 		['name' => 'files#office', 'url' => '/api/objects/{register}/{schema}/{id}/files/{fileId}/office', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
 		['name' => 'files#officePage', 'url' => '/office/{register}/{schema}/{id}/{fileId}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+', 'fileId' => '\d+']],
+		// An object's folder for the files browser, subfolders included, through
+		// the object's rule instead of WebDAV (object-folder-in-files-browser).
+		['name' => 'objectFolder#index',   'url' => '/api/objects/{register}/{schema}/{id}/folder',          'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+		['name' => 'objectFolder#create',  'url' => '/api/objects/{register}/{schema}/{id}/folder',          'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+		['name' => 'objectFolder#upload',  'url' => '/api/objects/{register}/{schema}/{id}/folder/upload',   'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+		['name' => 'objectFolder#rename',  'url' => '/api/objects/{register}/{schema}/{id}/folder/{nodeId}', 'verb' => 'PUT',    'requirements' => ['id' => '[^/]+', 'nodeId' => '\d+']],
+		['name' => 'objectFolder#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/folder/{nodeId}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'nodeId' => '\d+']],
 
         // Tasks: user-scoped listing (all CalDAV VTODOs for current user).
         ['name' => 'tasks#allUserTasks', 'url' => '/api/tasks', 'verb' => 'GET'],

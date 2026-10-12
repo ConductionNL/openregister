@@ -121,23 +121,11 @@ final class ObjectSearchResultFormatter {
 			$selfArray = $selfData;
 		}
 
-		$flatData = array_merge(
-			$selfArray,
-			['uuid' => $uuid, 'register' => $registerId, 'schema' => $schemaId]
+		$objectUrl = $this->resolveObjectUrl(
+			object: $result,
+			selfData: $selfArray,
+			ids: ['uuid' => (string)$uuid, 'register' => $registerId, 'schema' => $schemaId]
 		);
-
-		// Try deep link registry first, fall back to OpenRegister's own route.
-		$objectUrl = $this->deepLinkRegistry->resolveUrl(
-			registerId: $registerId,
-			schemaId: $schemaId,
-			objectData: $flatData
-		);
-		if ($objectUrl === null) {
-			$objectUrl = $this->urlGenerator->linkToRoute(
-				'openregister.objects.show',
-				['register' => $registerId, 'schema' => $schemaId, 'id' => $uuid]
-			);
-		}
 
 		// Resolve the per-app label for this (register, schema) pair.
 		$appLabel = $this->deepLinkRegistry->resolveDisplayName(
@@ -176,6 +164,75 @@ final class ObjectSearchResultFormatter {
 			$rounded
 		);
 	}//end format()
+
+	/**
+	 * The hit's link: the owning app's deep link when one is registered and
+	 * every placeholder in it filled, otherwise OpenRegister's own page.
+	 *
+	 * @param array<string|int,mixed>                       $object   The serialised object.
+	 * @param array<string,mixed>                           $selfData The object's `@self` metadata.
+	 * @param array{uuid:string,register:int,schema:int}    $ids      The resolved uuid, register and schema.
+	 *
+	 * @return string The link.
+	 *
+	 * @spec openspec/changes/search-deep-link-names-object-properties/specs/deep-link-registry/spec.md#requirement-a-search-hits-deep-link-can-name-the-objects-own-properties
+	 */
+	private function resolveObjectUrl(array $object, array $selfData, array $ids): string {
+		// The object's own scalar properties come first, so a template can
+		// name one (`/apps/dossiq/cases/{case}`), and `@self` plus the
+		// resolved uuid, register and schema are merged over them: an own
+		// property named `uuid` or `owner` never hijacks the metadata.
+		$flatData = array_merge($this->ownLinkProperties(object: $object), $selfData, $ids);
+
+		$objectUrl = $this->deepLinkRegistry->resolveUrl(
+			registerId: $ids['register'],
+			schemaId: $ids['schema'],
+			objectData: $flatData
+		);
+
+		// A placeholder the object could not fill (its `case` is empty) would
+		// leave a literal `{case}` in the link. Such a hit opens OpenRegister's
+		// own page instead of a broken one.
+		if ($objectUrl !== null && preg_match('/\{[A-Za-z0-9_]+\}/', $objectUrl) !== 1) {
+			return $objectUrl;
+		}
+
+		return $this->urlGenerator->linkToRoute(
+			'openregister.objects.show',
+			['register' => $ids['register'], 'schema' => $ids['schema'], 'id' => $ids['uuid']]
+		);
+	}//end resolveObjectUrl()
+
+	/**
+	 * The object's own properties a deep-link template may name: declared
+	 * (not `@self`, not an `_`-prefixed key the pipeline attached, the same
+	 * line {@see buildExcerpt()} draws) and scalar. Values are URL-encoded,
+	 * because they land in a path and a value like `../settings` must not
+	 * walk out of it.
+	 *
+	 * @param array<string|int,mixed> $object The serialised object.
+	 *
+	 * @return array<string,string> Property name to encoded value.
+	 *
+	 * @spec openspec/changes/search-deep-link-names-object-properties/specs/deep-link-registry/spec.md#requirement-a-search-hits-deep-link-can-name-the-objects-own-properties
+	 */
+	private function ownLinkProperties(array $object): array {
+		$properties = [];
+		foreach ($object as $key => $value) {
+			$key = (string)$key;
+			if ($key === '@self' || str_starts_with($key, '_') === true) {
+				continue;
+			}
+
+			if (is_scalar($value) === false) {
+				continue;
+			}
+
+			$properties[$key] = rawurlencode((string)$value);
+		}
+
+		return $properties;
+	}//end ownLinkProperties()
 
 	/**
 	 * Icon precedence:

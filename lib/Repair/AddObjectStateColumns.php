@@ -79,7 +79,7 @@ class AddObjectStateColumns implements IRepairStep {
 	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md
 	 */
 	public function getName(): string {
-		return 'Add the archive and freeze columns to existing object tables';
+		return 'Add the archive, freeze and lifecycle status columns to existing object tables';
 	}//end getName()
 
 	/**
@@ -117,7 +117,7 @@ class AddObjectStateColumns implements IRepairStep {
 
 		$output->info(
 			sprintf(
-				'Reconciled %d object table(s) for the archive and freeze columns, %d could not be read.',
+				'Reconciled %d object table(s) for the archive, freeze and lifecycle status columns, %d could not be read.',
 				$reconciled,
 				$failed
 			)

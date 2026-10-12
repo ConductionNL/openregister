@@ -40,6 +40,7 @@ namespace OCA\OpenRegister\Service\Portal;
 use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
@@ -73,6 +74,14 @@ class PortalTaskService {
 	 * @var string
 	 */
 	public const FILE_TAG_PREFIX = 'portal-task:';
+
+	/**
+	 * The task metadata key naming the app action that completes the task:
+	 * `{app, action}`. With it set, only that app completes the task here.
+	 *
+	 * @var string
+	 */
+	public const COMPLETE_VIA = 'completeVia';
 
 	/**
 	 * Constructor.
@@ -190,12 +199,17 @@ class PortalTaskService {
 	 * @param array<int, array<string, mixed>> $files The uploads, each
 	 *                                                {name, type, size, tmp_name|content}.
 	 * @param string $outcome The outcome to record; defaults to `submitted`.
+	 * @param string $viaApp The app completing the task in-process, when it
+	 *                       is the app the task's `completeVia` names; empty
+	 *                       for the portal's own direct completion.
 	 *
 	 * @return Task The completed task.
 	 *
 	 * @throws \OCA\OpenRegister\Exception\TaskAccessDeniedException When the
 	 *         subject is not the matched party (audited before anything is stored).
 	 * @throws \OCA\OpenRegister\Exception\TaskConflictException When the task is terminal.
+	 * @throws TaskCompleteViaAppException When the task names an app action that
+	 *         completes it and the caller is not that app (nothing stored).
 	 * @throws TaskValidationException When an upload constraint is violated (nothing stored).
 	 * @throws DoesNotExistException When no such task exists.
 	 *
@@ -208,11 +222,21 @@ class PortalTaskService {
 		?string $comment = null,
 		array $files = [],
 		string $outcome = self::DEFAULT_OUTCOME,
+		string $viaApp = '',
 	): Task {
 		// 1. Authorize, and audit a denial, BEFORE any other step. A stranger
 		//    who knows the uuid must not get a validation message, let alone a
 		//    file on somebody else's case.
 		$task = $this->tasks->openFor(verb: 'complete', uuid: $uuid, actor: $subject->actor());
+
+		// 1b. A task that names the app action completing it is completed by
+		//     that app alone, so the app's own checks cannot be skipped by
+		//     calling this seam directly. Only the matched party gets here, so
+		//     the refusal tells nobody else that the task exists.
+		$via = $this->completeVia(task: $task);
+		if ($via !== null && $via['app'] !== $viaApp) {
+			throw new TaskCompleteViaAppException(app: $via['app'], action: $via['action']);
+		}
 
 		// 2. Validate against the constraints the node froze on the task.
 		//    Refused means nothing was stored and the task is still open.
@@ -239,6 +263,28 @@ class PortalTaskService {
 			evidence: $evidence
 		);
 	}//end complete()
+
+	/**
+	 * The app action a task names as the one that completes it, or null when
+	 * it names none or names it incompletely (an app without an action, or
+	 * the reverse, is ignored rather than locking the task).
+	 *
+	 * @param Task $task The task.
+	 *
+	 * @return array{app: string, action: string}|null The app and its action.
+	 *
+	 * @spec openspec/changes/a-portal-task-names-the-app-that-completes-it/specs/flow-portal-task/spec.md#requirement-a-task-may-name-the-app-action-that-completes-it
+	 */
+	public function completeVia(Task $task): ?array {
+		// A scalar casts to a list without `app` or `action`, so it reads as none.
+		$via = (array)(($task->getMetadata() ?? [])[self::COMPLETE_VIA] ?? []);
+		$route = ['app' => trim((string)($via['app'] ?? '')), 'action' => trim((string)($via['action'] ?? ''))];
+		if (in_array('', $route, true) === true) {
+			return null;
+		}
+
+		return $route;
+	}//end completeVia()
 
 	/**
 	 * Refuse a completion that violates the task's upload constraints,

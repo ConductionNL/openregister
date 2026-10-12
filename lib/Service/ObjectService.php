@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
@@ -1902,7 +1903,12 @@ class ObjectService implements ObjectServiceInterface
             $this->enforceDeclaredShapes(object: $object);
 
             // Validate if hard validation is enabled.
-            $this->validateObjectIfRequired(object: $object);
+            $updateUuid = $uuid;
+            if ($uuidWasNull === true) {
+                $updateUuid = null;
+            }
+
+            $this->validateObjectIfRequired(object: $object, uuid: $updateUuid);
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('validate');
 
             // Wave-12 Fix 1: enforce JSON-Schema `readOnly: true` on UPDATE.
@@ -2352,15 +2358,22 @@ class ObjectService implements ObjectServiceInterface
     }//end handleCascadingWithContextPreservation()
 
     /**
-     * Validate object if hard validation is enabled.
+     * Validate an object when its schema has hard validation on, or when the write is a draft.
      *
-     * @param array $object Object data to validate
+     * A draft (decision 180) is validated whatever the hard-validation flag:
+     * it may miss required properties, so `required` is excused, but a wrong
+     * type, format or enum value is always refused.
+     *
+     * @param array       $object Object data to validate
+     * @param string|null $uuid   The object's uuid on an update, null on a create
      *
      * @return void
      *
      * @throws ValidationException If validation fails
+     *
+     * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
      */
-    private function validateObjectIfRequired(array $object): void
+    private function validateObjectIfRequired(array $object, ?string $uuid=null): void
     {
         // BUG-OBJ-4: guard against a null schema reaching the
         // ->getHardValidation() dereference (raw TypeError 500). Callers
@@ -2372,26 +2385,63 @@ class ObjectService implements ObjectServiceInterface
             );
         }
 
-        // Validate the object against the current schema only if hard validation is enabled.
-        if ($this->currentSchema->getHardValidation() === true) {
-            // A property recorded as not supplied carries no value and is
-            // excused from the required rule, so the validator sees neither
-            // the record nor the properties it names. The record itself stays
-            // on the body that gets stored, which is how it reads back.
-            $notSupplied = $this->notSupplied()->declared(object: $object);
+        $draftPolicy = new DraftStatusPolicy();
+        $isDraft     = $draftPolicy->isDraftWrite(object: $object, existing: $this->existingForDraftCheck(object: $object, uuid: $uuid));
 
-            $result = $this->validateHandler->validateObject(
-                object: $this->notSupplied()->stripForValidation(object: $object),
-                schema: $this->currentSchema,
-                notSupplied: $notSupplied
-            );
+        if ($this->currentSchema->getHardValidation() !== true && $isDraft === false) {
+            return;
+        }
 
-            if ($result->isValid() === false) {
-                $meaningfulMessage = $this->validateHandler->generateErrorMessage(result: $result);
-                throw new ValidationException(message: $meaningfulMessage, errors: $result->error());
-            }
+        // A property recorded as not supplied carries no value and is
+        // excused from the required rule, so the validator sees neither
+        // the record nor the properties it names. The record itself stays
+        // on the body that gets stored, which is how it reads back.
+        $notSupplied = $this->notSupplied()->declared(object: $object);
+        if ($isDraft === true) {
+            $notSupplied = array_merge($draftPolicy->requiredExcusals(schema: $this->currentSchema), $notSupplied);
+        }
+
+        $result = $this->validateHandler->validateObject(
+            object: $this->notSupplied()->stripForValidation(object: $object),
+            schema: $this->currentSchema,
+            notSupplied: $notSupplied
+        );
+
+        if ($result->isValid() === false) {
+            $meaningfulMessage = $this->validateHandler->generateErrorMessage(result: $result);
+            throw new ValidationException(message: $meaningfulMessage, errors: $result->error());
         }
     }//end validateObjectIfRequired()
+
+    /**
+     * The stored object, for deciding whether an update keeps a draft; null when the payload says.
+     *
+     * Only looked up when the payload names no status and the write is an
+     * update, so an ordinary create costs nothing.
+     *
+     * @param array       $object The payload.
+     * @param string|null $uuid   The uuid on an update.
+     *
+     * @return ObjectEntity|null The stored object, or null.
+     */
+    private function existingForDraftCheck(array $object, ?string $uuid): ?ObjectEntity
+    {
+        if ($uuid === null || is_string($object['@self']['status'] ?? null) === true) {
+            return null;
+        }
+
+        try {
+            return $this->objectMapper->find(
+                $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Throwable) {
+            return null;
+        }
+    }//end existingForDraftCheck()
 
     /**
      * The repeating-group validator, constructed on first use.

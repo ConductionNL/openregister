@@ -12,6 +12,8 @@ use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
 use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Service\Notification\RecipientResolverInterface;
 use OCA\OpenRegister\Service\Party\PartyNotificationService;
+use OCA\OpenRegister\Service\Notification\ReferencedAddressNotifier;
+use OCA\OpenRegister\Service\Notification\EmailSender;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
 use OCP\Http\Client\IClient;
@@ -1095,6 +1097,72 @@ class AnnotationNotificationDispatcherTest extends TestCase {
 		$this->assertSame('Your case changed', $calls[0]['body']);
 		$this->assertSame('service', $calls[0]['category']);
 	}//end testAPartyMailWithoutAMessageKeepsTheSubjectAsItsBody()
+
+	/**
+	 * An `email` rule hands its entries, the rule's subject, message and
+	 * category to the referenced-address notifier; a rule without one never
+	 * resolves it.
+	 *
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
+	 */
+	public function testAnEmailRuleIsSentThroughTheReferencedAddressNotifier(): void {
+		$calls = [];
+		$notifier = $this->createMock(ReferencedAddressNotifier::class);
+		$notifier->method('notify')->willReturnCallback(
+			function (ObjectEntity $object, array $data, array $recipientsSpec, string $subject, string $body, string $category) use (&$calls): array {
+				$calls[] = ['uuid' => $object->getUuid(), 'recipients' => $recipientsSpec, 'subject' => $subject, 'body' => $body, 'category' => $category];
+				return [['field' => 'supplierRef.contactEmail', 'outcome' => EmailSender::OUTCOME_DISPATCHED]];
+			}
+		);
+		$this->serverServices[ReferencedAddressNotifier::class] = $notifier;
+
+		$recipients = [['kind' => 'email', 'field' => 'supplierRef.contactEmail']];
+		$schema = $this->schemaWithNotification(
+			[
+				'tell-the-supplier' => [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['email'],
+					'recipients' => $recipients,
+					'subject' => 'Nieuw bericht',
+					'message' => 'U heeft een nieuw bericht in het portaal.',
+					'messageCategory' => 'case-update',
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->makeDispatcher()->dispatch($this->object($schema), 'updated');
+
+		$this->assertSame(
+			[['uuid' => 'uuid-1', 'recipients' => $recipients, 'subject' => 'Nieuw bericht', 'body' => 'U heeft een nieuw bericht in het portaal.', 'category' => 'case-update']],
+			$calls
+		);
+	}//end testAnEmailRuleIsSentThroughTheReferencedAddressNotifier()
+
+	/**
+	 * An `email` entry on a rule without the email channel is not sent.
+	 *
+	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
+	 */
+	public function testAnEmailEntryWithoutTheEmailChannelIsNotSent(): void {
+		$notifier = $this->createMock(ReferencedAddressNotifier::class);
+		$notifier->expects($this->never())->method('notify');
+		$this->serverServices[ReferencedAddressNotifier::class] = $notifier;
+
+		$schema = $this->schemaWithNotification(
+			[
+				'x' => [
+					'trigger' => ['type' => 'updated'],
+					'channels' => ['nc-notification'],
+					'recipients' => [['kind' => 'email', 'field' => 'supplierRef.contactEmail']],
+					'subject' => 's',
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->makeDispatcher()->dispatch($this->object($schema), 'updated');
+	}//end testAnEmailEntryWithoutTheEmailChannelIsNotSent()
 
 	/**
 	 * @param array<string, mixed> $notifications
