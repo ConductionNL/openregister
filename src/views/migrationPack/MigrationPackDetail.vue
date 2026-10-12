@@ -471,7 +471,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import KeyValueRows from '../../components/migrationPack/KeyValueRows.vue'
 import PackPreviewPanel from '../../components/migrationPack/PackPreviewPanel.vue'
-import TransformDialog from '../../components/migrationPack/TransformDialog.vue'
+import TransformDialog from '../../dialogs/migrationPack/TransformDialog.vue'
 import { getTheme } from '../../services/getTheme.js'
 import {
 	canEditPacks,

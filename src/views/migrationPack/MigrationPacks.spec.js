@@ -16,7 +16,8 @@ import fs from 'fs'
 import path from 'path'
 import KeyValueRows from '../../components/migrationPack/KeyValueRows.vue'
 import PackPreviewPanel from '../../components/migrationPack/PackPreviewPanel.vue'
-import TransformDialog from '../../components/migrationPack/TransformDialog.vue'
+import DeleteMigrationPackDialog from '../../dialogs/migrationPack/DeleteMigrationPackDialog.vue'
+import TransformDialog from '../../dialogs/migrationPack/TransformDialog.vue'
 import MainMenu from '../../navigation/MainMenu.vue'
 import MigrationPackDetail from './MigrationPackDetail.vue'
 import MigrationPacksIndex from './MigrationPacksIndex.vue'
@@ -350,8 +351,32 @@ describe('the list', () => {
 			path.join(__dirname, 'MigrationPacksIndex.vue'),
 			'utf8',
 		)
-		expect(list).toContain('<p v-if="deleting.builtin">')
-		expect(list).toContain('That app installs it again, unedited')
+		expect(list).toContain(':pack="deleting"')
+		expect(list).toContain('@confirm="confirmDelete"')
+		const dialog = fs.readFileSync(
+			path.join(
+				ROOT,
+				'src',
+				'dialogs',
+				'migrationPack',
+				'DeleteMigrationPackDialog.vue',
+			),
+			'utf8',
+		)
+		expect(dialog).toContain('<p v-if="pack.builtin">')
+		expect(dialog).toContain('That app installs it again, unedited')
+	})
+
+	it('closes the delete dialog on its close button or Escape', () => {
+		const $emit = jest.fn()
+		const vm = instance(DeleteMigrationPackDialog, {
+			pack: storedPack(),
+			$emit,
+		})
+		vm.onOpenChange(true)
+		expect($emit).not.toHaveBeenCalled()
+		vm.onOpenChange(false)
+		expect($emit).toHaveBeenCalledWith('close')
 	})
 
 	it('imports a JSON file and shows a refusal readably', async () => {

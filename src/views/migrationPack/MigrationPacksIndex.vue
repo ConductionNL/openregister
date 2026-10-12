@@ -165,41 +165,13 @@
 			</table>
 		</div>
 
-		<NcDialog
+		<DeleteMigrationPackDialog
 			v-if="deleting"
-			:name="t('openregister', 'Delete migration pack')"
-			size="small"
-			@update:open="
-				(open) => {
-					if (!open) deleting = null
-				}
-			">
-			<p>
-				{{
-					t(
-						'openregister',
-						'Delete "{name}"? Imports that use this pack will no longer find it.',
-						{ name: deleting.name || deleting.packSlug },
-					)
-				}}
-			</p>
-			<p v-if="deleting.builtin">
-				{{
-					t(
-						'openregister',
-						'This pack was installed by an app. That app installs it again, unedited, the next time it is installed or updated.',
-					)
-				}}
-			</p>
-			<template #actions>
-				<NcButton :disabled="busy" @click="deleting = null">
-					{{ t('openregister', 'Cancel') }}
-				</NcButton>
-				<NcButton variant="error" :disabled="busy" @click="confirmDelete">
-					{{ t('openregister', 'Delete') }}
-				</NcButton>
-			</template>
-		</NcDialog>
+			:open="deleting !== null"
+			:pack="deleting"
+			:busy="busy"
+			@close="deleting = null"
+			@confirm="confirmDelete" />
 	</NcAppContent>
 </template>
 
@@ -208,7 +180,6 @@ import { translate as t } from '@nextcloud/l10n'
 import {
 	NcAppContent,
 	NcButton,
-	NcDialog,
 	NcEmptyContent,
 	NcLoadingIcon,
 	NcNoteCard,
@@ -218,6 +189,7 @@ import Eye from 'vue-material-design-icons/Eye.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
+import DeleteMigrationPackDialog from '../../dialogs/migrationPack/DeleteMigrationPackDialog.vue'
 import {
 	canEditPacks,
 	deletePack,
@@ -230,11 +202,11 @@ import {
 export default {
 	name: 'MigrationPacksIndex',
 	components: {
+		DeleteMigrationPackDialog,
 		Download,
 		Eye,
 		NcAppContent,
 		NcButton,
-		NcDialog,
 		NcEmptyContent,
 		NcLoadingIcon,
 		NcNoteCard,

@@ -263,7 +263,7 @@ import {
 } from '@nextcloud/vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import KeyValueRows from './KeyValueRows.vue'
+import KeyValueRows from '../../components/migrationPack/KeyValueRows.vue'
 import {
 	newTransform,
 	TRANSFORM_TYPES,
