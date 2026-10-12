@@ -244,8 +244,8 @@ class DraftExpiryTest extends TestCase {
 			$counts
 		);
 		$this->assertSame(['old', 'never-touched'], array_column($this->deletes, 'uuid'));
-		// Each removal ran as the named job, so its audit-trail entry says which job removed the draft (decision 226).
-		$this->assertSame(['job:DraftExpiryJob', 'job:DraftExpiryJob'], $this->actors);
+		// Outside the job nobody is named: the job gives its own name (DraftExpiryJobTest).
+		$this->assertSame([null, null], $this->actors);
 
 		// The ordinary delete, in the draft's own register and schema: no RBAC
 		// (a job has no session) and not the archival sweep's bypass. The sweep

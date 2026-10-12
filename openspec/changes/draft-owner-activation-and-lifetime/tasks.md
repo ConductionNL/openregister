@@ -47,7 +47,7 @@
 - [x] 3.6 Moved to the change `draft-creation-side-effects` (decision 227): OpenRegister's other create-time listeners (flow triggers, webhooks, activity, push, metrics) act on a draft's first save and not on `ObjectActivatedEvent`. This change fixes the notification rules only
 - [x] 3.7 `DraftRemovalRecord`: the permanent delete of a draft writes one audit-trail entry `draft.removed` through `AuditTrailMapper::createAuditTrailEntry()`, naming the user or the job, never the content (decision 226)
   - Spec ref: specs/form-destination/spec.md, "Removing a draft MUST leave one audit-trail entry without its content"
-  - Test: DraftRemovalRecordTest (the real delete handler, with a record that is not a draft as control), DraftRemovalAuditRowTest (the row read back from the migrated audit table), DraftExpiryTest (the job as actor)
+  - Test: DraftRemovalRecordTest (the real delete handler, with a record that is not a draft as control), DraftRemovalAuditRowTest (the row read back from the migrated audit table), DraftExpiryJobTest (the job as actor)
 
 ## 4. Lists
 

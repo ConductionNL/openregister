@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 
 use DateTimeImmutable;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
+use OCA\OpenRegister\Service\Object\DraftRemovalRecord;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -54,6 +55,13 @@ class DraftExpiryJob extends TimedJob {
 	 * @var integer
 	 */
 	public const INTERVAL_SECONDS = 86400;
+
+	/**
+	 * The name the audit-trail entry of a removed draft gives as its actor.
+	 *
+	 * @var string
+	 */
+	public const JOB_NAME = 'DraftExpiryJob';
 
 	/**
 	 * Constructor.
@@ -81,12 +89,18 @@ class DraftExpiryJob extends TimedJob {
 	 * @throws Throwable When the sweep fails, after logging it.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) TimedJob's signature.
+	 * @SuppressWarnings(PHPMD.StaticAccess)          DraftRemovalRecord::asJob() is the ambient frame that names the job; there is no instance to inject.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-one-background-job-must-remove-drafts-past-their-schemas-lifetime
 	 */
 	protected function run(mixed $argument): void {
 		try {
-			$counts = $this->expiry->sweep(now: DateTimeImmutable::createFromMutable($this->time->getDateTime()));
+			// Under the job's own name, so the audit-trail entry of each removed
+			// draft says which job removed it (decision 226).
+			$counts = DraftRemovalRecord::asJob(
+				job: self::JOB_NAME,
+				operation: fn (): array => $this->expiry->sweep(now: DateTimeImmutable::createFromMutable($this->time->getDateTime()))
+			);
 		} catch (Throwable $exception) {
 			$this->logger->error(
 				message: '[DraftExpiryJob] The sweep failed',

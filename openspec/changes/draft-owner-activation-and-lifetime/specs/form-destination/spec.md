@@ -189,7 +189,7 @@ The entries the draft's own saves wrote before the removal are not changed by th
 - **AND** no column of the entry holds the subject, the e-mail address or their property names
 
 #### Scenario: The cleanup removes a draft
-@e2e exclude unit; DraftExpiryTest covers the actor of each removal, DraftRemovalAuditRowTest the stored row
+@e2e exclude unit; DraftExpiryJobTest covers the actor of the removal, DraftRemovalAuditRowTest the stored row
 
 - **GIVEN** a draft past its schema's lifetime
 - **WHEN** the cleanup removes it
