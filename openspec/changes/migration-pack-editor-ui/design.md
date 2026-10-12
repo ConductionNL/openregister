@@ -84,7 +84,9 @@ sample rows, validates the definition with `PackDefinitionValidator` (422
 `invalid-pack` with the errors in `details.errors`) and returns
 `MappingEngine::mapRow` per row. Nothing is stored. A body without a
 `definition` object or with `rows` that are not a list of objects answers 400
-`invalid-request`, more than 20 rows 400 `too-many-rows`, and an unexpected
+`invalid-request`, more than 20 rows 400 `too-many-rows`, a definition and
+rows over 1 MiB of JSON together 400 `invalid-request` (the row count alone
+does not bound the work, since a row can have any number of columns), and an unexpected
 failure 500 `migration-pack-error`, logged with the exception. The editor's test panel
 calls it 400 ms after the last change and drops an answer to an older
 request, so what the panel shows is what an import of that row does. It is

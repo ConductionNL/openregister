@@ -73,7 +73,7 @@ message is translated.
 
 | Status | `error` | Meaning |
 | --- | --- | --- |
-| 400 | `invalid-request` | The body is not what the route takes, for example a preview without a `definition` object, or an `expectedUpdatedAt` that is not a date-time as the API writes `updatedAt` |
+| 400 | `invalid-request` | The body is not what the route takes, for example a preview without a `definition` object, a preview over 1 MiB in all, or an `expectedUpdatedAt` that is not a date-time as the API writes `updatedAt` |
 | 400 | `too-many-rows` | A preview with more than 20 sample rows |
 | 404 | `pack-not-found` | No pack has that row id |
 | 409 | `pack-changed` | The pack was saved after the `expectedUpdatedAt` the update names |

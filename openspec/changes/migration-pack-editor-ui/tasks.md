@@ -30,7 +30,7 @@ only on promotion pull requests and `workflow_dispatch`.
   - files: `appinfo/routes.php`, `lib/Controller/MigrationPacksController.php`, `lib/Service/MigrationPackService.php`
   - acceptance_criteria:
     - GIVEN a valid definition and up to 20 rows WHEN an administrator previews THEN each row comes back with `rowNumber` from 1, `data` and `errors`
-    - 21 rows answer 400 `too-many-rows`; a missing `definition` or `rows` that are not a list of objects answer 400 `invalid-request`; an invalid definition answers 422 `invalid-pack` with `details.errors`; a non-admin gets 403
+    - 21 rows answer 400 `too-many-rows`; a missing `definition`, `rows` that are not a list of objects, or more than 1 MiB of definition and rows together answer 400 `invalid-request`; an invalid definition answers 422 `invalid-pack` with `details.errors`; a non-admin gets 403
 - [x] 1.4 Remove `NoCSRFRequired` from create, update, destroy and import; preview without it (D-6).
   - spec_ref: `migration-mapping-packs#requirement-migration-pack-writes-must-require-a-csrf-token`
   - files: `lib/Controller/MigrationPacksController.php`

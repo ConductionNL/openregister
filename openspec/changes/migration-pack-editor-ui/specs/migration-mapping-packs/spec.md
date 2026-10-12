@@ -256,7 +256,10 @@ rows, map every row with the mapping engine an import uses, and answer HTTP 200
 `{"rows": [{"rowNumber": 1, "data": {...}, "errors": [...]}]}`. It SHALL store
 nothing. A body without a `definition` object, or whose `rows` are not a list
 of objects, SHALL be answered with HTTP 400 and `error` `invalid-request`;
-more than 20 rows with HTTP 400 and `error` `too-many-rows`. An invalid
+more than 20 rows with HTTP 400 and `error` `too-many-rows`; a definition and
+rows that together take more than 1 MiB (1,048,576 bytes) as JSON with HTTP
+400 and `error` `invalid-request`, because one row can carry any number of
+columns. An invalid
 definition SHALL be answered with HTTP 422
 `{"message": "...", "error": "invalid-pack", "details": {"errors": [...]}}`.
 An unexpected failure SHALL be answered with HTTP 500 and `error`
@@ -293,6 +296,12 @@ shows the fields the import would write and the row's errors.
 
 - **GIVEN** an administrator
 - **WHEN** they send a preview without a `definition` object, or with `rows` that are not a list of objects
+- **THEN** the server answers 400 with `error` `invalid-request` and maps nothing
+
+#### Scenario: An oversized preview request is refused
+
+- **GIVEN** an administrator and a valid definition
+- **WHEN** they send a preview with 20 rows that take more than 1 MiB as JSON together
 - **THEN** the server answers 400 with `error` `invalid-request` and maps nothing
 
 #### Scenario: A non-admin cannot run a preview

@@ -760,6 +760,18 @@ test.describe('the sample-row test', () => {
 		}
 	})
 
+	// @e2e migration-mapping-packs::an-oversized-preview-request-is-refused
+	test('an oversized preview request is refused', async () => {
+		// Twenty rows of 60 KiB each: within the row limit, over 1 MiB in all.
+		const wide = 'x'.repeat(60 * 1024)
+		const rows = Array.from({ length: 20 }, () => ({ Naam: wide }))
+		await expectError(
+			await admin.post(`${API}/preview`, { data: { definition: plainPack('oversized'), rows } }),
+			400,
+			'invalid-request',
+		)
+	})
+
 	// @e2e migration-mapping-packs::a-non-admin-cannot-run-a-preview
 	test('a non-admin cannot run a preview', async () => {
 		const response = await other.post(`${API}/preview`, {
