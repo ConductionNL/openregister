@@ -381,7 +381,7 @@ class FormsController extends Controller {
 		$payload = [];
 		foreach ($this->request->getParams() as $name => $value) {
 			$name = (string)$name;
-			if ($name === 'formId' || str_starts_with($name, '_') === true) {
+			if ($name === 'formId' || str_starts_with($name, '_') === true || str_starts_with($name, '@') === true) {
 				continue;
 			}
 

@@ -705,7 +705,7 @@ class FormSubmitService {
 	 * @param string|null                      $status  The lifecycle status to store (`draft`, `active`), or none.
 	 * @param string|null                      $uuid    The object to update (a draft), for a single write.
 	 * @param DraftOwner|null                  $owner   A draft's owner; a scope value is stamped on create, and
-	 *                                                  authorises the update of its own draft (checked before).
+	 *                                                  authorises every write of its own draft.
 	 *
 	 * @return array<int, array{plan: array<string, mixed>, object: ObjectEntity}> The created objects, in order.
 	 *
@@ -713,17 +713,18 @@ class FormSubmitService {
 	 */
 	private function writeAll(array $plans, ?IUser $subject, ?string $status = null, ?string $uuid = null, ?DraftOwner $owner = null): array {
 		// A scope-value owner (decision 195) has no Nextcloud user for RBAC to
-		// judge. Starting its draft is a create under the same RBAC as an
-		// anonymous submit; updating or sending its own draft was authorised by
-		// ownDraft() before this write, so the user RBAC is not asked again.
+		// judge, so the owner assertion is the authorisation on every write of
+		// its draft. Starting it does not ask the destination's public create
+		// rule: the in-process caller vouched for the subject, exactly as it
+		// does when that subject's app creates the object outright. Updating
+		// or sending it was authorised by DraftFinder::own() before this write.
+		// Only saveDraft() and promoteDraft() hand an owner in, so a scoped
+		// write is always a draft or the one promotion of an owned draft; a
+		// fresh submit never reaches this branch and stays under RBAC.
 		$scoped = $owner !== null && $owner->isScoped() === true;
 		$explicitOwner = null;
-		$rbac = true;
-		if ($scoped === true) {
-			$rbac = $uuid === null;
-			if ($uuid === null) {
-				$explicitOwner = $owner->value();
-			}
+		if ($scoped === true && $uuid === null) {
+			$explicitOwner = $owner->value();
 		}
 
 		$created = [];
@@ -745,7 +746,7 @@ class FormSubmitService {
 					register: $plan['register'],
 					schema: $plan['schema'],
 					uuid: $uuid,
-					_rbac: $rbac,
+					_rbac: $scoped === false,
 					_multitenancy: true,
 					uploadedFiles: $files,
 					currentUser: $subject,
