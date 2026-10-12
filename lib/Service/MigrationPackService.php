@@ -25,11 +25,12 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
-use InvalidArgumentException;
 use OCA\OpenRegister\Db\MigrationPack;
 use OCA\OpenRegister\Db\MigrationPackMapper;
 use OCA\OpenRegister\Exception\BuiltinPackSlugLockedException;
+use OCA\OpenRegister\Exception\InvalidPackDefinitionException;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
+use OCA\OpenRegister\Service\MigrationPack\MigrationPackImportResult;
 use OCA\OpenRegister\Service\MigrationPack\PackDefinitionValidator;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -42,6 +43,11 @@ use OCP\IAppConfig;
 class MigrationPackService {
 	/**
 	 * App config key listing the slugs of deleted built-in packs.
+	 *
+	 * A slug is added when a built-in pack is deleted and removed when a
+	 * built-in pack is seeded under it again, so the list holds the slugs
+	 * whose built-in pack is currently gone. Nothing else clears it: after the
+	 * owning app is uninstalled its slugs stay locked.
 	 *
 	 * @var string
 	 */
@@ -108,7 +114,9 @@ class MigrationPackService {
 	 * Create a migration pack from a definition document.
 	 *
 	 * A pack created under the slug of a deleted built-in pack is built-in
-	 * again, so its slug stays locked until the app that owns it seeds it.
+	 * again, so its slug stays locked. Seeding a built-in pack (`$builtin`)
+	 * takes its slug off the deleted list once the row is stored: the pack is
+	 * built-in again by its own flag.
 	 *
 	 * @param array<string, mixed> $definition The pack definition document (the JSON body).
 	 * @param string|null $ownerUid The creating admin's uid, or null for a system/built-in seed.
@@ -118,7 +126,7 @@ class MigrationPackService {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $builtin only distinguishes admin-authored packs from the seeded reference pack.
 	 *
-	 * @throws InvalidArgumentException When the definition is structurally invalid or its slug already exists.
+	 * @throws InvalidPackDefinitionException When the definition is structurally invalid or its slug already exists.
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */
@@ -127,7 +135,7 @@ class MigrationPackService {
 
 		$slug = (string)$definition['id'];
 		if ($this->slugExists(packSlug: $slug) === true) {
-			throw new InvalidArgumentException('A migration pack with id "' . $slug . '" already exists');
+			throw new InvalidPackDefinitionException(errors: ['A migration pack with id "' . $slug . '" already exists']);
 		}
 
 		$pack = new MigrationPack();
@@ -141,7 +149,14 @@ class MigrationPackService {
 		$pack->setCreatedAt(new DateTime());
 		$pack->setUpdatedAt(new DateTime());
 
-		return $this->mapper->insert(entity: $pack);
+		$stored = $this->mapper->insert(entity: $pack);
+
+		// After the insert, so a failed insert leaves the slug locked.
+		if ($builtin === true) {
+			$this->forgetDeletedBuiltinSlug(packSlug: $slug);
+		}
+
+		return $stored;
 	}//end create()
 
 	/**
@@ -158,7 +173,7 @@ class MigrationPackService {
 	 *
 	 * @throws DoesNotExistException When no row matches.
 	 * @throws BuiltinPackSlugLockedException When the definition renames a built-in pack.
-	 * @throws InvalidArgumentException When the definition is structurally invalid, or its slug collides with a different pack.
+	 * @throws InvalidPackDefinitionException When the definition is structurally invalid, or its slug collides with a different pack.
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
 	 */
@@ -175,7 +190,7 @@ class MigrationPackService {
 		}
 
 		if ($slug !== $pack->getPackSlug() && $this->slugExists(packSlug: $slug) === true) {
-			throw new InvalidArgumentException('A migration pack with id "' . $slug . '" already exists');
+			throw new InvalidPackDefinitionException(errors: ['A migration pack with id "' . $slug . '" already exists']);
 		}
 
 		if ($slug !== $pack->getPackSlug() && $this->isDeletedBuiltinSlug(packSlug: $slug) === true) {
@@ -196,7 +211,9 @@ class MigrationPackService {
 	 * Delete a migration pack.
 	 *
 	 * The slug of a deleted built-in pack is remembered, so a pack created
-	 * or imported under it later keeps the slug lock.
+	 * or imported under it later keeps the slug lock. It is remembered before
+	 * the row goes: if remembering fails, the pack is still there and still
+	 * built-in, so the lock never opens.
 	 *
 	 * @param int $id The migration pack id.
 	 *
@@ -208,11 +225,11 @@ class MigrationPackService {
 	 */
 	public function delete(int $id): MigrationPack {
 		$pack = $this->mapper->find(id: $id);
-		$this->mapper->delete(entity: $pack);
-
 		if ($pack->getBuiltin() === true) {
 			$this->rememberDeletedBuiltinSlug(packSlug: $pack->getPackSlug());
 		}
+
+		$this->mapper->delete(entity: $pack);
 
 		return $pack;
 	}//end delete()
@@ -243,7 +260,7 @@ class MigrationPackService {
 	 *
 	 * @return list<array{rowNumber: int, data: array<string, mixed>, errors: list<array<string, mixed>>}>
 	 *
-	 * @throws InvalidArgumentException When the definition is structurally invalid.
+	 * @throws InvalidPackDefinitionException When the definition is structurally invalid.
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-mapping-engine-must-apply-pack-transforms-per-row-and-never-leak-unresolved-references
 	 */
@@ -269,16 +286,18 @@ class MigrationPackService {
 	 * document's own `id`, so re-importing an updated pack (e.g. shared from
 	 * another instance) updates the existing row rather than colliding.
 	 *
+	 * The result says which of the two happened, decided by the write itself.
+	 *
 	 * @param array<string, mixed> $definition The decoded pack definition document.
 	 * @param string|null $ownerUid The importing admin's uid.
 	 *
-	 * @return MigrationPack
+	 * @return MigrationPackImportResult The stored pack, and whether it was created or replaced.
 	 *
-	 * @throws InvalidArgumentException When the definition is structurally invalid.
+	 * @throws InvalidPackDefinitionException When the definition is structurally invalid.
 	 *
-	 * @spec openspec/specs/migration-mapping-packs/spec.md
+	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-pack-changes-must-be-limited-to-administrators-and-logged
 	 */
-	public function importDefinition(array $definition, ?string $ownerUid = null): MigrationPack {
+	public function importDefinition(array $definition, ?string $ownerUid = null): MigrationPackImportResult {
 		$this->validator->assertValid(definition: $definition);
 
 		$slug = (string)$definition['id'];
@@ -286,10 +305,16 @@ class MigrationPackService {
 		try {
 			$existing = $this->mapper->findByPackSlug(packSlug: $slug);
 		} catch (DoesNotExistException $e) {
-			return $this->create(definition: $definition, ownerUid: $ownerUid);
+			return new MigrationPackImportResult(
+				pack: $this->create(definition: $definition, ownerUid: $ownerUid),
+				created: true
+			);
 		}
 
-		return $this->update(id: $existing->getId(), definition: $definition);
+		return new MigrationPackImportResult(
+			pack: $this->update(id: $existing->getId(), definition: $definition),
+			created: false
+		);
 	}//end importDefinition()
 
 	/**
@@ -325,6 +350,25 @@ class MigrationPackService {
 		$slugs[] = $packSlug;
 		$this->appConfig->setValueArray('openregister', self::DELETED_BUILTIN_SLUGS_KEY, array_values($slugs), true);
 	}//end rememberDeletedBuiltinSlug()
+
+	/**
+	 * Take a slug off the deleted built-in list, once its pack is seeded again.
+	 *
+	 * @param string $packSlug The pack document's own `id`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-the-slug-of-a-built-in-pack-must-not-change
+	 */
+	private function forgetDeletedBuiltinSlug(string $packSlug): void {
+		if ($this->isDeletedBuiltinSlug(packSlug: $packSlug) === false) {
+			return;
+		}
+
+		$slugs = $this->appConfig->getValueArray('openregister', self::DELETED_BUILTIN_SLUGS_KEY, [], true);
+		$remaining = array_values(array_diff($slugs, [$packSlug]));
+		$this->appConfig->setValueArray('openregister', self::DELETED_BUILTIN_SLUGS_KEY, $remaining, true);
+	}//end forgetDeletedBuiltinSlug()
 
 	/**
 	 * Whether a pack with the given slug already exists.

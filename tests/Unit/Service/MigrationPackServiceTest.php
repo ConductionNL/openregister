@@ -33,6 +33,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\MigrationPack;
 use OCA\OpenRegister\Db\MigrationPackMapper;
 use OCA\OpenRegister\Exception\BuiltinPackSlugLockedException;
+use OCA\OpenRegister\Exception\InvalidPackDefinitionException;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\MigrationPack\PackDefinitionValidator;
 use OCA\OpenRegister\Service\MigrationPackService;
@@ -40,6 +41,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 class MigrationPackServiceTest extends TestCase {
 	private MigrationPackService $service;
@@ -120,6 +122,13 @@ class MigrationPackServiceTest extends TestCase {
 		$existing->setPackSlug('test-pack');
 		$this->mapper->method('findByPackSlug')->willReturn($existing);
 
+		try {
+			$this->service->create($this->validDefinition());
+			$this->fail('A duplicate slug must be refused');
+		} catch (InvalidPackDefinitionException $e) {
+			$this->assertSame(['A migration pack with id "test-pack" already exists'], $e->getErrors());
+		}
+
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/already exists/');
 		$this->service->create($this->validDefinition());
@@ -174,6 +183,60 @@ class MigrationPackServiceTest extends TestCase {
 		$this->assertSame([], $this->configArrays);
 	}
 
+	public function testDeletingABuiltinPackKeepsTheRowWhenItsSlugCannotBeRemembered(): void {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueArray')->willReturn([]);
+		$appConfig->method('setValueArray')->willThrowException(new RuntimeException('app config unavailable'));
+		$service = new MigrationPackService($this->mapper, new PackDefinitionValidator(), new MappingEngine(), $appConfig);
+		$this->mapper->method('find')->willReturn($this->builtinPack());
+		$this->mapper->expects($this->never())->method('delete');
+
+		$this->expectException(RuntimeException::class);
+		$service->delete(3);
+	}
+
+	public function testSeedingABuiltinPackTakesItsSlugOffTheDeletedList(): void {
+		$this->configArrays['openregister/' . MigrationPackService::DELETED_BUILTIN_SLUGS_KEY] = ['other-pack', 'test-pack'];
+		$this->mapper->method('findByPackSlug')->willThrowException(new DoesNotExistException('not found'));
+		$this->mapper->method('insert')->willReturnCallback(static fn (MigrationPack $pack) => $pack);
+
+		$this->assertTrue($this->service->create($this->validDefinition(), null, true)->getBuiltin());
+		$this->assertSame(
+			['other-pack'],
+			$this->configArrays['openregister/' . MigrationPackService::DELETED_BUILTIN_SLUGS_KEY]
+		);
+	}
+
+	public function testAFailedSeedLeavesTheSlugLocked(): void {
+		$this->configArrays['openregister/' . MigrationPackService::DELETED_BUILTIN_SLUGS_KEY] = ['test-pack'];
+		$this->mapper->method('findByPackSlug')->willThrowException(new DoesNotExistException('not found'));
+		$this->mapper->method('insert')->willThrowException(new RuntimeException('insert failed'));
+
+		try {
+			$this->service->create($this->validDefinition(), null, true);
+			$this->fail('The insert failure must surface');
+		} catch (RuntimeException $e) {
+			$this->assertSame('insert failed', $e->getMessage());
+		}
+
+		$this->assertSame(
+			['test-pack'],
+			$this->configArrays['openregister/' . MigrationPackService::DELETED_BUILTIN_SLUGS_KEY]
+		);
+	}
+
+	public function testAdminCreateUnderADeletedBuiltinSlugKeepsItOnTheList(): void {
+		$this->configArrays['openregister/' . MigrationPackService::DELETED_BUILTIN_SLUGS_KEY] = ['test-pack'];
+		$this->mapper->method('findByPackSlug')->willThrowException(new DoesNotExistException('not found'));
+		$this->mapper->method('insert')->willReturnCallback(static fn (MigrationPack $pack) => $pack);
+
+		$this->assertTrue($this->service->create($this->validDefinition(), 'admin-uid')->getBuiltin());
+		$this->assertSame(
+			['test-pack'],
+			$this->configArrays['openregister/' . MigrationPackService::DELETED_BUILTIN_SLUGS_KEY]
+		);
+	}
+
 	public function testDeletingABuiltinPackRemembersItsSlugOnce(): void {
 		$this->mapper->method('find')->willReturn($this->builtinPack());
 
@@ -209,7 +272,7 @@ class MigrationPackServiceTest extends TestCase {
 		$this->mapper->expects($this->never())->method('update');
 
 		$this->service->delete(3);
-		$imported = $this->service->importDefinition($this->validDefinition(), 'admin-uid');
+		$imported = $this->service->importDefinition($this->validDefinition(), 'admin-uid')->pack;
 
 		$this->assertTrue($imported->getBuiltin());
 		$this->assertSame('admin-uid', $imported->getOwner());
@@ -302,7 +365,7 @@ class MigrationPackServiceTest extends TestCase {
 		$this->mapper->method('find')->willReturn($builtin);
 		$this->mapper->expects($this->once())->method('update')->willReturnArgument(0);
 
-		$pack = $this->service->importDefinition($this->validDefinition(['name' => 'Reimported']));
+		$pack = $this->service->importDefinition($this->validDefinition(['name' => 'Reimported']))->pack;
 
 		$this->assertSame('Reimported', $pack->getName());
 	}
@@ -409,8 +472,9 @@ class MigrationPackServiceTest extends TestCase {
 		$this->mapper->expects($this->once())->method('insert')->willReturnCallback(static fn (MigrationPack $p) => $p);
 		$this->mapper->expects($this->never())->method('update');
 
-		$pack = $this->service->importDefinition($this->validDefinition(), 'admin-uid');
-		$this->assertSame('test-pack', $pack->getPackSlug());
+		$result = $this->service->importDefinition($this->validDefinition(), 'admin-uid');
+		$this->assertSame('test-pack', $result->pack->getPackSlug());
+		$this->assertTrue($result->created);
 	}
 
 	public function testImportDefinitionUpdatesWhenSlugAlreadyExists(): void {
@@ -427,7 +491,8 @@ class MigrationPackServiceTest extends TestCase {
 		$this->mapper->expects($this->once())->method('update')->willReturnArgument(0);
 		$this->mapper->expects($this->never())->method('insert');
 
-		$pack = $this->service->importDefinition($this->validDefinition(['name' => 'Updated Name']));
-		$this->assertSame('Updated Name', $pack->getName());
+		$result = $this->service->importDefinition($this->validDefinition(['name' => 'Updated Name']));
+		$this->assertSame('Updated Name', $result->pack->getName());
+		$this->assertFalse($result->created);
 	}
 }

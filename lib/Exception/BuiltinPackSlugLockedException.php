@@ -25,8 +25,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Exception;
 
-use InvalidArgumentException;
-
 /**
  * An update refused because it renames a built-in migration pack.
  *
@@ -34,9 +32,9 @@ use InvalidArgumentException;
  * make that lookup miss, and the next seed run would create a second copy
  * under the original slug, so the slug of a built-in pack is fixed.
  *
- * Extends InvalidArgumentException so callers that already translate an
- * invalid definition into a 422 keep doing so; the controller catches this
- * class first to return its own error code.
+ * Extends InvalidPackDefinitionException (and so InvalidArgumentException),
+ * so callers that already translate an invalid definition into a 422 keep
+ * doing so; the error responder tells it apart to return its own error code.
  *
  * @category Exception
  * @package  OCA\OpenRegister\Exception
@@ -51,5 +49,15 @@ use InvalidArgumentException;
  *
  * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
  */
-class BuiltinPackSlugLockedException extends InvalidArgumentException {
+class BuiltinPackSlugLockedException extends InvalidPackDefinitionException {
+	/**
+	 * Constructor.
+	 *
+	 * @param string $message Which built-in pack the update tried to rename.
+	 *
+	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-the-slug-of-a-built-in-pack-must-not-change
+	 */
+	public function __construct(string $message) {
+		parent::__construct(errors: [$message]);
+	}//end __construct()
 }//end class

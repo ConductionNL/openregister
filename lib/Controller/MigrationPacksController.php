@@ -9,14 +9,18 @@
  * to resolve a pack for any user with manage-permission on the target
  * register, not just admins. Mutations (`create`/`update`/`destroy`/`import`)
  * and the `preview` dry run are restricted to Nextcloud administrators and
- * require a CSRF token. `#[AuthorizedAdminSetting]` keeps anyone outside the
- * OpenRegister admin section out at the middleware; the body check then
- * narrows that to Nextcloud administrators, because packs drive imports that
- * write without RBAC (for example stackiq's CMDB import).
+ * require a CSRF token. They carry no auth attribute, so Nextcloud's own
+ * middleware already admits administrators only; a user an administrator
+ * delegated the OpenRegister settings section to is not admitted, because
+ * packs drive imports that write without RBAC (for example stackiq's CMDB
+ * import). The body check repeats the admin test as defence in depth.
  *
  * Writes that address a pack by id take that id from the route only. Nextcloud
  * merges a JSON body over the URL parameters, so a body `id` (which in a pack
  * document is the slug) would otherwise replace the route id.
+ *
+ * Every error answers `{"message", "error", "details"?}` (ADR-050), built by
+ * MigrationPackErrorResponder.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -39,22 +43,21 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use InvalidArgumentException;
-use OCA\OpenRegister\Exception\BuiltinPackSlugLockedException;
+use OCA\OpenRegister\Exception\MigrationPackRefusedException;
+use OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponder;
+use OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReader;
 use OCA\OpenRegister\Service\MigrationPackService;
-use OCA\OpenRegister\Settings\OpenRegisterAdmin;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
-use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
-use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * MigrationPacksController handles CRUD + JSON import/export for migration packs.
@@ -67,7 +70,7 @@ class MigrationPacksController extends Controller {
 	 *
 	 * @var int
 	 */
-	public const MAX_PREVIEW_ROWS = 20;
+	public const MAX_PREVIEW_ROWS = MigrationPackRequestReader::MAX_PREVIEW_ROWS;
 
 	/**
 	 * Constructor.
@@ -77,8 +80,11 @@ class MigrationPacksController extends Controller {
 	 * @param MigrationPackService $service Business logic.
 	 * @param IUserSession $userSession Current-user session.
 	 * @param IGroupManager $groupManager Group manager (admin check).
-	 * @param LoggerInterface $logger Logger.
-	 * @param IL10N $l10n Translator for error messages.
+	 * @param LoggerInterface $logger Logger for the audit lines.
+	 * @param MigrationPackRequestReader $requestReader Reads definitions, uploads and preview input.
+	 * @param MigrationPackErrorResponder $errors Builds every error response.
+	 *
+	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-pack-changes-must-be-limited-to-administrators-and-logged
 	 */
 	public function __construct(
 		string $appName,
@@ -87,7 +93,8 @@ class MigrationPacksController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
-		private readonly IL10N $l10n,
+		private readonly MigrationPackRequestReader $requestReader,
+		private readonly MigrationPackErrorResponder $errors,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -107,141 +114,24 @@ class MigrationPacksController extends Controller {
 	}//end resolveUserId()
 
 	/**
-	 * Whether the current user is a Nextcloud administrator.
+	 * The refusal for a caller who may not change packs, or null for an administrator.
 	 *
-	 * @return bool
-	 */
-	private function isCurrentUserAdmin(): bool {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return false;
-		}
-
-		return $this->groupManager->isAdmin($user->getUID());
-	}//end isCurrentUserAdmin()
-
-	/**
-	 * Build a 401 response for anonymous callers.
-	 *
-	 * @return JSONResponse
-	 */
-	private function authRequiredResponse(): JSONResponse {
-		return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
-	}//end authRequiredResponse()
-
-	/**
-	 * Build a 403 response for non-admin callers on an admin-only action.
-	 *
-	 * @return JSONResponse
-	 */
-	private function adminRequiredResponse(): JSONResponse {
-		return new JSONResponse(data: ['error' => 'Administrator privileges required'], statusCode: 403);
-	}//end adminRequiredResponse()
-
-	/**
-	 * The parameters the router extracted from the URL, without the body.
-	 *
-	 * IRequest declares `urlParams` with `@property-read`; the isset() lets a
-	 * request double that does not carry it fall back to no route values.
-	 *
-	 * @return array<string, string>
-	 *
-	 * @psalm-suppress NoInterfaceProperties `urlParams` is a documented read-only property of IRequest.
-	 */
-	private function routeParams(): array {
-		if (isset($this->request->urlParams) === false) {
-			return [];
-		}
-
-		return $this->request->urlParams;
-	}//end routeParams()
-
-	/**
-	 * The pack row id from the route, falling back to the dispatched argument.
-	 *
-	 * The dispatched `$id` is read from the merged parameters, where a body
-	 * `id` wins; a pack slug there is cast to 0. The route value does not
-	 * have that problem.
-	 *
-	 * @param int $id The id the dispatcher passed in.
-	 *
-	 * @return int
-	 */
-	private function resolveRouteId(int $id): int {
-		$routeId = (string)($this->routeParams()['id'] ?? '');
-		if (ctype_digit($routeId) === true) {
-			return (int)$routeId;
-		}
-
-		return $id;
-	}//end resolveRouteId()
-
-	/**
-	 * Read the pack definition from the request body.
-	 *
-	 * Accepts the envelope `{"definition": {...}}`, taken as is, or the pack
-	 * document as the whole body. In the second form, router keys (`_route`
-	 * and other `_`-prefixed keys) are dropped, and so is an `id` that is only
-	 * the route id merged in by Nextcloud rather than a slug from the body.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function definitionFromRequest(): array {
-		$params = $this->request->getParams();
-		if (is_array($params['definition'] ?? null) === true) {
-			return $params['definition'];
-		}
-
-		foreach (array_keys($params) as $key) {
-			if (str_starts_with((string)$key, '_') === true) {
-				unset($params[$key]);
-			}
-		}
-
-		$routeParams = $this->routeParams();
-		if (array_key_exists('id', $routeParams) === true
-			&& array_key_exists('id', $params) === true
-			&& (string)$params['id'] === (string)$routeParams['id']
-		) {
-			unset($params['id']);
-		}
-
-		return $params;
-	}//end definitionFromRequest()
-
-	/**
-	 * Whether a pack with the slug of the given definition is stored.
-	 *
-	 * @param array<string, mixed> $definition The pack definition document.
-	 *
-	 * @return bool
+	 * @return JSONResponse|null 401 when nobody is signed in, 403 for a non-admin.
 	 *
 	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-pack-changes-must-be-limited-to-administrators-and-logged
 	 */
-	private function packSlugIsStored(array $definition): bool {
-		if (is_string($definition['id'] ?? null) === false) {
-			return false;
+	private function refuseNonAdmin(): ?JSONResponse {
+		$userId = $this->resolveUserId();
+		if ($userId === null) {
+			return $this->errors->notAuthenticated();
 		}
 
-		try {
-			$this->service->findByPackSlug(packSlug: $definition['id']);
-			return true;
-		} catch (DoesNotExistException $e) {
-			return false;
+		if ($this->groupManager->isAdmin($userId) === false) {
+			return $this->errors->adminRequired();
 		}
-	}//end packSlugIsStored()
 
-	/**
-	 * Build a 400 response for a malformed preview request.
-	 *
-	 * @param string $message Translated, human-readable reason.
-	 * @param string $error Machine-readable error code.
-	 *
-	 * @return JSONResponse
-	 */
-	private function badRequestResponse(string $message, string $error): JSONResponse {
-		return new JSONResponse(data: ['message' => $message, 'error' => $error], statusCode: 400);
-	}//end badRequestResponse()
+		return null;
+	}//end refuseNonAdmin()
 
 	/**
 	 * List every migration pack. Any authenticated user may browse packs to
@@ -267,9 +157,8 @@ class MigrationPacksController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function index(): JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
+		if ($this->resolveUserId() === null) {
+			return $this->errors->notAuthenticated();
 		}
 
 		$packs = $this->service->findAll();
@@ -302,15 +191,14 @@ class MigrationPacksController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function show(int $id): JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
+		if ($this->resolveUserId() === null) {
+			return $this->errors->notAuthenticated();
 		}
 
 		try {
 			$pack = $this->service->find(id: $id);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Migration pack not found'], statusCode: 404);
+			return $this->errors->notFound();
 		}
 
 		return new JSONResponse(data: $pack->jsonSerialize());
@@ -339,15 +227,14 @@ class MigrationPacksController extends Controller {
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function export(int $id): JSONResponse|DataDownloadResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
+		if ($this->resolveUserId() === null) {
+			return $this->errors->notAuthenticated();
 		}
 
 		try {
 			$pack = $this->service->find(id: $id);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Migration pack not found'], statusCode: 404);
+			return $this->errors->notFound();
 		}
 
 		$json = json_encode($pack->getDefinitionArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
@@ -359,58 +246,39 @@ class MigrationPacksController extends Controller {
 	/**
 	 * Import a migration pack definition from an uploaded JSON file. Admin only.
 	 * Upserts by the document's own `id` — re-importing an updated pack
-	 * updates the existing row. The log line says whether a pack was created
-	 * or replaced.
+	 * updates the existing row. The log line says whether the import created
+	 * or replaced a pack, as reported by the write itself.
 	 *
 	 * @return JSONResponse
 	 *
+	 * @auth admin-only Imports write instance-wide pack definitions that drive RBAC-free imports, so only
+	 *       Nextcloud administrators may call it; the body repeats the check.
+	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#migration-packs-must-be-manageable-via-admin-gated-rest-crud-with-json-file-importexport
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function import(): JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
+		$refusal = $this->refuseNonAdmin();
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		if ($this->isCurrentUserAdmin() === false) {
-			return $this->adminRequiredResponse();
-		}
-
-		$uploadedFile = $this->request->getUploadedFile('file');
-		if (empty($uploadedFile['tmp_name']) === true) {
-			return new JSONResponse(data: ['error' => 'No file uploaded'], statusCode: 400);
-		}
-
-		$raw = file_get_contents($uploadedFile['tmp_name']);
-		$decoded = null;
-		if ($raw !== false) {
-			$decoded = json_decode($raw, true);
-		}
-
-		if (is_array($decoded) === false) {
-			return new JSONResponse(data: ['error' => 'Uploaded file is not a valid JSON object'], statusCode: 400);
-		}
-
-		$replaced = $this->packSlugIsStored(definition: $decoded);
+		$userId = (string)$this->resolveUserId();
 
 		try {
-			$pack = $this->service->importDefinition(definition: $decoded, ownerUid: $userId);
-		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
-		} catch (\Throwable $e) {
-			$this->logger->error(
-				message: '[MigrationPacksController] Error importing migration pack: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'trace' => $e->getTraceAsString()]
-			);
-			return new JSONResponse(data: ['error' => 'Failed to import migration pack'], statusCode: 500);
+			$definition = $this->requestReader->uploadedDefinition(request: $this->request);
+			$result     = $this->service->importDefinition(definition: $definition, ownerUid: $userId);
+		} catch (MigrationPackRefusedException $e) {
+			return $this->errors->refused(exception: $e);
+		} catch (Throwable $e) {
+			return $this->errors->unexpected(action: 'import', exception: $e);
 		}
 
-		$outcome = 'created';
-		if ($replaced === true) {
-			$outcome = 'replaced';
+		$outcome = 'replaced';
+		if ($result->created === true) {
+			$outcome = 'created';
 		}
 
+		$pack = $result->pack;
 		$this->logger->info(
 			message: '[MigrationPacksController] Migration pack "{packSlug}" (id {packId}) imported by {userId}: {outcome}',
 			context: [
@@ -428,35 +296,31 @@ class MigrationPacksController extends Controller {
 	/**
 	 * Create a migration pack. Admin only.
 	 *
-	 * The body is either `{"definition": {...}}` or the pack document itself.
+	 * The body is either `{"definition": {...}}` or the pack document itself;
+	 * see MigrationPackRequestReader::definition() for how the two differ.
 	 *
 	 * @return JSONResponse
 	 *
+	 * @auth admin-only Creates an instance-wide pack definition that drives RBAC-free imports, so only
+	 *       Nextcloud administrators may call it; the body repeats the check.
+	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#migration-packs-must-be-manageable-via-admin-gated-rest-crud-with-json-file-importexport
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function create(): JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
+		$refusal = $this->refuseNonAdmin();
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		if ($this->isCurrentUserAdmin() === false) {
-			return $this->adminRequiredResponse();
-		}
-
-		$definition = $this->definitionFromRequest();
+		$userId = (string)$this->resolveUserId();
 
 		try {
-			$pack = $this->service->create(definition: $definition, ownerUid: $userId);
-		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
-		} catch (\Throwable $e) {
-			$this->logger->error(
-				message: '[MigrationPacksController] Error creating migration pack: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'trace' => $e->getTraceAsString()]
-			);
-			return new JSONResponse(data: ['error' => 'Failed to create migration pack'], statusCode: 500);
+			$definition = $this->requestReader->definition(request: $this->request);
+			$pack       = $this->service->create(definition: $definition, ownerUid: $userId);
+		} catch (MigrationPackRefusedException $e) {
+			return $this->errors->refused(exception: $e);
+		} catch (Throwable $e) {
+			return $this->errors->unexpected(action: 'create', exception: $e);
 		}
 
 		$this->logger->info(
@@ -483,47 +347,33 @@ class MigrationPacksController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
+	 * @auth admin-only Changes an instance-wide pack definition that drives RBAC-free imports, so only
+	 *       Nextcloud administrators may call it; the body repeats the check.
+	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#migration-packs-must-be-manageable-via-admin-gated-rest-crud-with-json-file-importexport
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function update(int $id): JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
+		$refusal = $this->refuseNonAdmin();
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		if ($this->isCurrentUserAdmin() === false) {
-			return $this->adminRequiredResponse();
-		}
-
-		$id = $this->resolveRouteId(id: $id);
-		$definition = $this->definitionFromRequest();
+		$id = $this->requestReader->routeId(request: $this->request, dispatchedId: $id);
 
 		try {
-			$pack = $this->service->update(id: $id, definition: $definition);
+			$definition = $this->requestReader->definition(request: $this->request);
+			$pack       = $this->service->update(id: $id, definition: $definition);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Migration pack not found'], statusCode: 404);
-		} catch (BuiltinPackSlugLockedException $e) {
-			return new JSONResponse(
-				data: [
-					'message' => $this->l10n->t('The id of a built-in migration pack cannot be changed'),
-					'error' => 'builtin-slug-locked',
-				],
-				statusCode: 422
-			);
-		} catch (InvalidArgumentException $e) {
-			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 422);
-		} catch (\Throwable $e) {
-			$this->logger->error(
-				message: '[MigrationPacksController] Error updating migration pack: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id, 'trace' => $e->getTraceAsString()]
-			);
-			return new JSONResponse(data: ['error' => 'Failed to update migration pack'], statusCode: 500);
+			return $this->errors->notFound();
+		} catch (MigrationPackRefusedException $e) {
+			return $this->errors->refused(exception: $e);
+		} catch (Throwable $e) {
+			return $this->errors->unexpected(action: 'update', exception: $e, context: ['id' => $id]);
 		}
 
 		$this->logger->info(
 			message: '[MigrationPacksController] Migration pack "{packSlug}" (id {packId}) updated by {userId}',
-			context: ['packSlug' => $pack->getPackSlug(), 'packId' => $id, 'userId' => $userId]
+			context: ['packSlug' => $pack->getPackSlug(), 'packId' => $id, 'userId' => $this->resolveUserId()]
 		);
 
 		return new JSONResponse(data: $pack->jsonSerialize());
@@ -537,36 +387,30 @@ class MigrationPacksController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
+	 * @auth admin-only Deletes an instance-wide pack definition that drives RBAC-free imports, so only
+	 *       Nextcloud administrators may call it; the body repeats the check.
+	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#migration-packs-must-be-manageable-via-admin-gated-rest-crud-with-json-file-importexport
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function destroy(int $id): JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
+		$refusal = $this->refuseNonAdmin();
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
-		if ($this->isCurrentUserAdmin() === false) {
-			return $this->adminRequiredResponse();
-		}
-
-		$id = $this->resolveRouteId(id: $id);
+		$id = $this->requestReader->routeId(request: $this->request, dispatchedId: $id);
 
 		try {
 			$pack = $this->service->delete(id: $id);
 		} catch (DoesNotExistException $e) {
-			return new JSONResponse(data: ['error' => 'Migration pack not found'], statusCode: 404);
-		} catch (\Throwable $e) {
-			$this->logger->error(
-				message: '[MigrationPacksController] Error deleting migration pack: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'id' => $id, 'trace' => $e->getTraceAsString()]
-			);
-			return new JSONResponse(data: ['error' => 'Failed to delete migration pack'], statusCode: 500);
+			return $this->errors->notFound();
+		} catch (Throwable $e) {
+			return $this->errors->unexpected(action: 'delete', exception: $e, context: ['id' => $id]);
 		}
 
 		$this->logger->info(
 			message: '[MigrationPacksController] Migration pack "{packSlug}" (id {packId}) deleted by {userId}',
-			context: ['packSlug' => $pack->getPackSlug(), 'packId' => $id, 'userId' => $userId]
+			context: ['packSlug' => $pack->getPackSlug(), 'packId' => $id, 'userId' => $this->resolveUserId()]
 		);
 
 		return new JSONResponse(data: null, statusCode: 204);
@@ -576,83 +420,31 @@ class MigrationPacksController extends Controller {
 	 * Map sample rows through an unsaved pack definition. Admin only.
 	 *
 	 * Body: `{"definition": {...}, "rows": [{"<column>": "<value>"}, ...]}`
-	 * with at most MAX_PREVIEW_ROWS rows. Returns
+	 * with at most MAX_PREVIEW_ROWS rows and at most
+	 * MigrationPackRequestReader::MAX_PREVIEW_BYTES in all. Returns
 	 * `{"rows": [{"rowNumber", "data", "errors"}]}` from the same mapping
 	 * engine an import uses. Nothing is stored.
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-mapping-engine-must-apply-pack-transforms-per-row-and-never-leak-unresolved-references
+	 * @auth admin-only Runs the mapping engine over caller-supplied input for the pack editor, which only
+	 *       Nextcloud administrators use; the body repeats the check.
+	 *
+	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-a-pack-must-be-testable-against-sample-rows-without-saving-it
 	 */
-	#[AuthorizedAdminSetting(settings: OpenRegisterAdmin::class)]
 	public function preview(): JSONResponse {
-		$userId = $this->resolveUserId();
-		if ($userId === null) {
-			return $this->authRequiredResponse();
-		}
-
-		if ($this->isCurrentUserAdmin() === false) {
-			return $this->adminRequiredResponse();
-		}
-
-		$definition = $this->request->getParam('definition');
-		if (is_array($definition) === false) {
-			return $this->badRequestResponse(
-				message: $this->l10n->t('The request must contain a pack definition object'),
-				error: 'invalid-request'
-			);
-		}
-
-		$rows = $this->request->getParam('rows', []);
-		if (is_array($rows) === false || array_is_list($rows) === false) {
-			return $this->badRequestResponse(
-				message: $this->l10n->t('Sample rows must be a list of objects'),
-				error: 'invalid-request'
-			);
-		}
-
-		if (count($rows) > self::MAX_PREVIEW_ROWS) {
-			return $this->badRequestResponse(
-				message: $this->l10n->t('A preview takes at most %s sample rows', [self::MAX_PREVIEW_ROWS]),
-				error: 'too-many-rows'
-			);
-		}
-
-		foreach ($rows as $row) {
-			if (is_array($row) === false) {
-				return $this->badRequestResponse(
-					message: $this->l10n->t('Sample rows must be a list of objects'),
-					error: 'invalid-request'
-				);
-			}
-		}
-
-		$errors = $this->service->validateDefinition(definition: $definition);
-		if ($errors !== []) {
-			return new JSONResponse(
-				data: [
-					'message' => $this->l10n->t('The pack definition is invalid'),
-					'error' => 'invalid-pack',
-					'details' => ['errors' => $errors],
-				],
-				statusCode: 422
-			);
+		$refusal = $this->refuseNonAdmin();
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		try {
-			$results = $this->service->previewRows(definition: $definition, rows: $rows);
-		} catch (\Throwable $e) {
-			$this->logger->error(
-				message: '[MigrationPacksController] Error previewing migration pack: ' . $e->getMessage(),
-				context: ['file' => __FILE__, 'line' => __LINE__, 'trace' => $e->getTraceAsString()]
-			);
-			return new JSONResponse(
-				data: [
-					'message' => $this->l10n->t('Failed to preview migration pack'),
-					'error' => 'preview-failed',
-				],
-				statusCode: 500
-			);
+			$input   = $this->requestReader->previewInput(request: $this->request);
+			$results = $this->service->previewRows(definition: $input['definition'], rows: $input['rows']);
+		} catch (MigrationPackRefusedException $e) {
+			return $this->errors->refused(exception: $e);
+		} catch (Throwable $e) {
+			return $this->errors->unexpected(action: 'preview', exception: $e);
 		}
 
 		return new JSONResponse(data: ['rows' => $results]);

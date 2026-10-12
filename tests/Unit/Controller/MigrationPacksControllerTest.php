@@ -5,10 +5,11 @@
  *
  * Unit tests for `MigrationPacksController`: anonymous callers are rejected
  * everywhere; reads (`index`/`show`) succeed for any authenticated user;
- * mutations (`create`/`update`/`destroy`) are admin-gated and CSRF-protected;
+ * mutations (`create`/`update`/`destroy`) are admin-only and CSRF-protected;
  * update/destroy always act on the route id; every successful create, update,
  * import and delete leaves an audit log line; the
- * `preview` dry run maps sample rows through an unsaved definition.
+ * `preview` dry run maps sample rows through an unsaved definition; every
+ * error answers `{message, error, details?}` without exception text.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -33,7 +34,11 @@ use OCA\OpenRegister\Controller\MigrationPacksController;
 use OCA\OpenRegister\Db\MigrationPack;
 use OCA\OpenRegister\Db\MigrationPackMapper;
 use OCA\OpenRegister\Exception\BuiltinPackSlugLockedException;
+use OCA\OpenRegister\Exception\InvalidPackDefinitionException;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
+use OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponder;
+use OCA\OpenRegister\Service\MigrationPack\MigrationPackImportResult;
+use OCA\OpenRegister\Service\MigrationPack\MigrationPackRequestReader;
 use OCA\OpenRegister\Service\MigrationPack\PackDefinitionValidator;
 use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Tests\Unit\Support\MergingRequestFake;
@@ -52,6 +57,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use RuntimeException;
 
 class MigrationPacksControllerTest extends TestCase {
 	private MigrationPacksController $controller;
@@ -124,7 +130,8 @@ class MigrationPacksControllerTest extends TestCase {
 			$this->userSession,
 			$this->groupManager,
 			$this->logger,
-			$this->l10n
+			new MigrationPackRequestReader(new PackDefinitionValidator(), $this->l10n),
+			new MigrationPackErrorResponder($this->l10n, $this->logger)
 		);
 	}
 
@@ -248,12 +255,173 @@ class MigrationPacksControllerTest extends TestCase {
 		$this->assertSame(201, $response->getStatus());
 	}
 
-	public function testCreateReturns422OnInvalidArgument(): void {
+	public function testCreateAnswersARefusedDefinitionWithItsReasons(): void {
 		$this->setupUser('admin', true);
-		$this->service->method('create')->willThrowException(new InvalidArgumentException('bad pack'));
+		$this->service->method('create')->willThrowException(
+			new InvalidPackDefinitionException(['"name" is required', 'Mapping row 2: target is required'])
+		);
 
 		$response = $this->controller->create();
+
 		$this->assertSame(422, $response->getStatus());
+		$this->assertSame(
+			[
+				'message' => 'The pack definition is invalid',
+				'error' => 'invalid-pack',
+				'details' => ['errors' => ['"name" is required', 'Mapping row 2: target is required']],
+			],
+			$response->getData()
+		);
+	}
+
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public static function refusingWrites(): array {
+		return [
+			'create' => ['create'],
+			'update' => ['update'],
+			'import' => ['import'],
+		];
+	}
+
+	#[DataProvider('refusingWrites')]
+	public function testEveryWriteAnswersAnInvalidPackInTheSharedShape(string $method): void {
+		$this->setupUser('admin', true);
+		$refusal = new InvalidPackDefinitionException(['"version" must be a semver string']);
+		$this->service->method('create')->willThrowException($refusal);
+		$this->service->method('update')->willThrowException($refusal);
+		$this->service->method('importDefinition')->willThrowException($refusal);
+
+		$controller = $this->controller;
+		if ($method === 'import') {
+			$controller = $this->importController($this->validDefinition());
+		}
+
+		$response = match ($method) {
+			'update' => $controller->update(1),
+			default => $controller->$method(),
+		};
+
+		$this->assertSame(422, $response->getStatus());
+		$data = $response->getData();
+		$this->assertSame('invalid-pack', $data['error']);
+		$this->assertSame('The pack definition is invalid', $data['message']);
+		$this->assertSame(['"version" must be a semver string'], $data['details']['errors']);
+	}
+
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public static function failingWrites(): array {
+		return [
+			'create' => ['create'],
+			'update' => ['update'],
+			'destroy' => ['destroy'],
+			'import' => ['import'],
+		];
+	}
+
+	#[DataProvider('failingWrites')]
+	public function testAnUnexpectedFailureIsLoggedAndAnsweredWithoutItsText(string $method): void {
+		$this->setupUser('admin', true);
+		$failure = new RuntimeException('SQLSTATE[HY000] secret-table-name');
+		$this->service->method('create')->willThrowException($failure);
+		$this->service->method('update')->willThrowException($failure);
+		$this->service->method('delete')->willThrowException($failure);
+		$this->service->method('importDefinition')->willThrowException($failure);
+		$this->logger->expects($this->once())
+			->method('error')
+			->with($this->anything(), $this->callback(static fn (array $context): bool => $context['exception'] === $failure));
+
+		$controller = $this->controller;
+		if ($method === 'import') {
+			$controller = $this->importController($this->validDefinition());
+		}
+
+		$response = match ($method) {
+			'update', 'destroy' => $controller->$method(1),
+			default => $controller->$method(),
+		};
+
+		$this->assertSame(500, $response->getStatus());
+		$data = $response->getData();
+		$this->assertSame('migration-pack-error', $data['error']);
+		$this->assertStringNotContainsString('secret-table-name', json_encode($data));
+		$this->assertNotEmpty($data['message']);
+	}
+
+	public function testAPlainInvalidArgumentIsNotEchoedBack(): void {
+		// Only a pack refusal carries reasons meant for the caller; any other
+		// InvalidArgumentException is an internal fault.
+		$this->setupUser('admin', true);
+		$this->service->method('create')->willThrowException(new InvalidArgumentException('internal detail'));
+
+		$response = $this->controller->create();
+
+		$this->assertSame(500, $response->getStatus());
+		$this->assertStringNotContainsString('internal detail', json_encode($response->getData()));
+	}
+
+	/**
+	 * @return array<string, array{string, bool, int, string}>
+	 */
+	public static function refusedCallers(): array {
+		return [
+			'anonymous index' => ['index', false, 401, 'not-authenticated'],
+			'anonymous show' => ['show', false, 401, 'not-authenticated'],
+			'anonymous export' => ['export', false, 401, 'not-authenticated'],
+			'anonymous create' => ['create', false, 401, 'not-authenticated'],
+			'anonymous preview' => ['preview', false, 401, 'not-authenticated'],
+			'non-admin create' => ['create', true, 403, 'admin-required'],
+			'non-admin update' => ['update', true, 403, 'admin-required'],
+			'non-admin destroy' => ['destroy', true, 403, 'admin-required'],
+			'non-admin import' => ['import', true, 403, 'admin-required'],
+			'non-admin preview' => ['preview', true, 403, 'admin-required'],
+		];
+	}
+
+	#[DataProvider('refusedCallers')]
+	public function testARefusedCallerGetsAMessageAndACode(string $method, bool $signedIn, int $status, string $error): void {
+		$this->setupUser($signedIn === true ? 'alice' : null, false);
+
+		$response = match ($method) {
+			'show', 'export', 'update', 'destroy' => $this->controller->$method(1),
+			default => $this->controller->$method(),
+		};
+
+		$this->assertSame($status, $response->getStatus());
+		$this->assertSame($error, $response->getData()['error']);
+		$this->assertNotEmpty($response->getData()['message']);
+	}
+
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public static function lookupsByRowId(): array {
+		return [
+			'show' => ['show'],
+			'export' => ['export'],
+			'update' => ['update'],
+			'destroy' => ['destroy'],
+		];
+	}
+
+	#[DataProvider('lookupsByRowId')]
+	public function testAnUnknownRowIdAnswersPackNotFound(string $method): void {
+		$this->setupUser('admin', true);
+		$missing = new DoesNotExistException('not found');
+		$this->service->method('find')->willThrowException($missing);
+		$this->service->method('update')->willThrowException($missing);
+		$this->service->method('delete')->willThrowException($missing);
+
+		$response = $this->controller->$method(999);
+
+		$this->assertSame(404, $response->getStatus());
+		$this->assertSame(
+			['message' => 'Migration pack not found', 'error' => 'pack-not-found'],
+			$response->getData()
+		);
 	}
 
 	public function testUpdateRejectsNonAdmin(): void {
@@ -404,16 +572,47 @@ class MigrationPacksControllerTest extends TestCase {
 		unset($body['id']);
 		$request = new MergingRequestFake(['_route' => 'openregister.migrationPacks.update', 'id' => '5'], $body);
 
-		$this->service->expects($this->once())
-			->method('update')
-			->with(
-				5,
-				$this->callback(static fn (array $definition): bool => array_key_exists('id', $definition) === false)
-			)
-			->willThrowException(new InvalidArgumentException('Invalid migration pack definition: id is required'));
+		$this->service->expects($this->never())->method('update');
 
 		$response = $this->controllerFor($request)->update($request->dispatchedInt('id'));
+
 		$this->assertSame(422, $response->getStatus());
+		$data = $response->getData();
+		$this->assertSame('invalid-pack', $data['error']);
+		$this->assertStringContainsString('"id" is required', $data['details']['errors'][0]);
+	}
+
+	public function testUpdateRawBodyWhoseSlugIsTheRowIdIsRefusedWithAPointerToTheEnvelope(): void {
+		// Slug "5" on row 5: after Nextcloud's merge the body id and the route
+		// id are the same string, so the raw form cannot keep it.
+		$this->setupUser('admin', true);
+		$request = new MergingRequestFake(
+			['_route' => 'openregister.migrationPacks.update', 'id' => '5'],
+			$this->validDefinition(['id' => '5'])
+		);
+
+		$this->service->expects($this->never())->method('update');
+
+		$response = $this->controllerFor($request)->update($request->dispatchedInt('id'));
+
+		$this->assertSame(422, $response->getStatus());
+		$errors = $response->getData()['details']['errors'];
+		$this->assertStringContainsString('{"definition": {...}}', end($errors));
+	}
+
+	public function testUpdateEnvelopeKeepsASlugThatIsTheRowId(): void {
+		$this->setupUser('admin', true);
+		$request = new MergingRequestFake(
+			['_route' => 'openregister.migrationPacks.update', 'id' => '5'],
+			['definition' => $this->validDefinition(['id' => '5'])]
+		);
+
+		$this->service->expects($this->once())
+			->method('update')
+			->with(5, $this->validDefinition(['id' => '5']))
+			->willReturn($this->packEntity('5'));
+
+		$this->assertSame(200, $this->controllerFor($request)->update($request->dispatchedInt('id'))->getStatus());
 	}
 
 	public function testCreateAcceptsTheEnvelope(): void {
@@ -526,11 +725,12 @@ class MigrationPacksControllerTest extends TestCase {
 	public function testImportReplacingAStoredPackLogsTheActorSlugAndOutcome(): void {
 		$this->setupUser('ronald', true);
 		$stored = $this->storedPack('stackiq-topdesk-module', 5, true);
-		$this->service->method('findByPackSlug')->with('stackiq-topdesk-module')->willReturn($stored);
+		// The outcome comes from the write, not from a lookup before it.
+		$this->service->expects($this->never())->method('findByPackSlug');
 		$this->service->expects($this->once())
 			->method('importDefinition')
 			->with($this->validDefinition(), 'ronald')
-			->willReturn($stored);
+			->willReturn(new MigrationPackImportResult($stored, false));
 
 		$this->logger->expects($this->once())
 			->method('info')
@@ -551,8 +751,9 @@ class MigrationPacksControllerTest extends TestCase {
 
 	public function testImportOfANewSlugLogsThatItCreatedAPack(): void {
 		$this->setupUser('ronald', true);
-		$this->service->method('findByPackSlug')->willThrowException(new DoesNotExistException('not found'));
-		$this->service->method('importDefinition')->willReturn($this->storedPack('stackiq-topdesk-module', 8));
+		$this->service->method('importDefinition')->willReturn(
+			new MigrationPackImportResult($this->storedPack('stackiq-topdesk-module', 8), true)
+		);
 
 		$this->logger->expects($this->once())
 			->method('info')
@@ -570,11 +771,34 @@ class MigrationPacksControllerTest extends TestCase {
 
 	public function testImportFailureWritesNoAuditLine(): void {
 		$this->setupUser('ronald', true);
-		$this->service->method('findByPackSlug')->willThrowException(new DoesNotExistException('not found'));
-		$this->service->method('importDefinition')->willThrowException(new InvalidArgumentException('bad pack'));
+		$this->service->method('importDefinition')->willThrowException(new InvalidPackDefinitionException(['bad pack']));
 		$this->logger->expects($this->never())->method('info');
 
 		$this->assertSame(422, $this->importController($this->validDefinition())->import()->getStatus());
+	}
+
+	public function testImportWithoutAFileIsABadRequest(): void {
+		$this->setupUser('ronald', true);
+		$this->service->expects($this->never())->method('importDefinition');
+
+		$response = $this->controller->import();
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame(['message' => 'No file uploaded', 'error' => 'invalid-request'], $response->getData());
+	}
+
+	public function testImportOfAFileThatIsNotAJsonObjectIsABadRequest(): void {
+		$this->setupUser('ronald', true);
+		$file = tempnam(sys_get_temp_dir(), 'pack');
+		file_put_contents($file, '"just a string"');
+		$this->tempFiles[] = $file;
+		$request = $this->createMock(IRequest::class);
+		$request->method('getUploadedFile')->with('file')->willReturn(['tmp_name' => $file]);
+
+		$response = $this->controllerFor($request)->import();
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame('invalid-request', $response->getData()['error']);
 	}
 
 	public function testCreateLogsTheActorAndSlug(): void {
@@ -603,7 +827,7 @@ class MigrationPacksControllerTest extends TestCase {
 
 	public function testCreateFailureWritesNoAuditLine(): void {
 		$this->setupUser('ronald', true);
-		$this->service->method('create')->willThrowException(new InvalidArgumentException('bad pack'));
+		$this->service->method('create')->willThrowException(new InvalidPackDefinitionException(['bad pack']));
 		$this->logger->expects($this->never())->method('info');
 
 		$this->assertSame(422, $this->controller->create()->getStatus());
@@ -638,8 +862,17 @@ class MigrationPacksControllerTest extends TestCase {
 
 	public function testEveryTranslatedMessageHasADutchTranslation(): void {
 		// PHP IL10N reads l10n/<lang>.json; a key missing there reaches a Dutch
-		// administrator in English.
-		$source = file_get_contents(__DIR__ . '/../../../lib/Controller/MigrationPacksController.php');
+		// administrator in English. The controller's messages live in its two
+		// collaborators.
+		$source = '';
+		foreach ([
+			'lib/Controller/MigrationPacksController.php',
+			'lib/Service/MigrationPack/MigrationPackErrorResponder.php',
+			'lib/Service/MigrationPack/MigrationPackRequestReader.php',
+		] as $file) {
+			$source .= file_get_contents(__DIR__ . '/../../../' . $file);
+		}
+
 		preg_match_all("/->t\\(\\s*'((?:[^'\\\\]|\\\\.)*)'/", $source, $matches);
 		$this->assertNotEmpty($matches[1]);
 
@@ -673,12 +906,20 @@ class MigrationPacksControllerTest extends TestCase {
 
 		$this->assertSame([], $reflection->getAttributes(NoCSRFRequired::class), $method . ' must require a CSRF token');
 		$this->assertSame([], $reflection->getAttributes(NoAdminRequired::class), $method . ' must not open to non-admins');
-		$this->assertCount(1, $reflection->getAttributes(AuthorizedAdminSetting::class), $method . ' must be admin-gated');
+		// AuthorizedAdminSetting would also admit users an admin delegated the
+		// OpenRegister section to. With no attribute, Nextcloud's middleware
+		// admits administrators only.
+		$this->assertSame(
+			[],
+			$reflection->getAttributes(AuthorizedAdminSetting::class),
+			$method . ' must not open to delegated admins'
+		);
 
 		// Nextcloud still honours the docblock forms, so they must be gone too.
 		$docComment = (string)$reflection->getDocComment();
 		$this->assertStringNotContainsString('@NoCSRFRequired', $docComment);
 		$this->assertStringNotContainsString('@NoAdminRequired', $docComment);
+		$this->assertMatchesRegularExpression('/^\s*\* @auth admin-only \S/m', $docComment, $method . ' must declare its posture');
 	}
 
 	/**
@@ -793,6 +1034,38 @@ class MigrationPacksControllerTest extends TestCase {
 
 		$this->assertSame(400, $response->getStatus());
 		$this->assertSame('invalid-request', $response->getData()['error']);
+	}
+
+	public function testPreviewRejectsAnOversizedRequest(): void {
+		$this->setupUser('admin', true);
+		$wide = ['Naam' => str_repeat('x', (int)(MigrationPackRequestReader::MAX_PREVIEW_BYTES / 2))];
+		$controller = $this->previewController(['definition' => $this->validDefinition(), 'rows' => [$wide, $wide]]);
+
+		$response = $controller->preview();
+
+		$this->assertSame(400, $response->getStatus());
+		$this->assertSame(
+			['message' => 'The preview request is too large', 'error' => 'invalid-request'],
+			$response->getData()
+		);
+	}
+
+	public function testPreviewFailureAnswersTheSharedErrorCode(): void {
+		$this->setupUser('admin', true);
+		$this->service->method('previewRows')->willThrowException(new RuntimeException('engine exploded'));
+		$request = new MergingRequestFake(
+			['_route' => 'openregister.migrationPacks.preview'],
+			['definition' => $this->validDefinition(), 'rows' => []],
+			'POST'
+		);
+
+		$response = $this->controllerFor($request)->preview();
+
+		$this->assertSame(500, $response->getStatus());
+		$this->assertSame(
+			['message' => 'Failed to preview migration pack', 'error' => 'migration-pack-error'],
+			$response->getData()
+		);
 	}
 
 	public function testPreviewRejectsNonAdmin(): void {
