@@ -51,6 +51,14 @@ The round trip is tested on the five TOPdesk packs stackiq ships and on
 OpenRegister's own template pack: loaded and saved without an edit, each
 comes back equal and in the same key order.
 
+stackiq ships five packs (module, manufacturer, municipality, usage and
+business owner) but stores four of them here: its `SeedCmdbImportPacks`
+repair step seeds the four sheet packs as built-in packs, and keeps the
+municipality pack, which maps the import's own options rather than a sheet
+column, in its shipped file only. A rig with stackiq therefore lists four
+stackiq packs. The fixtures and the round-trip tests cover all five, because
+an administrator can still import the municipality pack by hand.
+
 ## D-3: the definition travels in an envelope; the route id wins
 
 Nextcloud's `Request::decodeContent()` merges the JSON body after the URL
@@ -74,7 +82,10 @@ locks the field and refuses the change in the JSON view before it is sent.
 `POST /api/migration-packs/preview` takes an unsaved definition and up to 20
 sample rows, validates the definition with `PackDefinitionValidator` (422
 `invalid-pack` with the errors in `details.errors`) and returns
-`MappingEngine::mapRow` per row. Nothing is stored. The editor's test panel
+`MappingEngine::mapRow` per row. Nothing is stored. A body without a
+`definition` object or with `rows` that are not a list of objects answers 400
+`invalid-request`, more than 20 rows 400 `too-many-rows`, and an unexpected
+failure 500 `migration-pack-error`, logged with the exception. The editor's test panel
 calls it 400 ms after the last change and drops an answer to an older
 request, so what the panel shows is what an import of that row does. It is
 admin-only because only an administrator edits.
@@ -102,9 +113,13 @@ documentation.
 ## D-7: a log line per change, not an audit trail
 
 A pack is a row in its own table, not a register object, so it has no object
-audit trail. Update and delete write an info line through the app logger
-naming the acting user id, the pack id and the pack slug. That answers "who
-changed the TOPdesk mapping" from the Nextcloud log without a new table.
+audit trail. Create, update, import and delete each write an info line
+through the app logger naming the acting user id, the pack row id and the
+pack slug; the import line also says whether it created a pack or replaced a
+stored one. A refused or failed change writes no such line. That answers "who
+changed the TOPdesk mapping" from the Nextcloud log without a new table, as
+long as the log level is Info: at Nextcloud's default, Warning, the lines are
+dropped.
 
 ## D-8: last write wins, with a check before saving
 
@@ -138,6 +153,40 @@ When the administrator saves from the form without changing the version, the
 patch version goes up (`2.0.0` becomes `2.0.1`) and the footer says so before
 the save. A version the administrator typed is kept. The JSON view saves the
 definition exactly as written.
+
+## D-12: one error shape, codes the screens translate
+
+Every refusal the controller gives follows ADR-050:
+`{"message": <IL10N text>, "error": <kebab-case code>, "details"?: {...}}`.
+The message is a fixed sentence, never `$e->getMessage()`, so no exception
+text, path or SQL reaches a client. The codes are `invalid-pack` (422, the
+validator's findings in `details.errors`, rows numbered from 1),
+`builtin-slug-locked` (422), `pack-not-found` (404), `invalid-request` and
+`too-many-rows` (400), `not-authenticated` (401), `admin-required` (403) and
+`migration-pack-error` (500, logged with the exception). The screens map the
+code to their own translated text and list `details.errors`; they never parse
+an English message. A refusal Nextcloud gives before the controller runs (no
+session, not an administrator, no request token) carries Nextcloud's body,
+so a client reads the status there.
+
+## Verification
+
+- `tests/e2e/ci/migration-pack-pages.spec.ts` names every scenario of the
+  delta spec with an `@e2e` anchor and drives it through the browser or the
+  API of a running instance. CI runs it only on promotion pull requests and
+  `workflow_dispatch`, so on a pull request to `development` it proves
+  nothing until a run against a rig is linked (task 5.1).
+- The log lines (D-7) have no browser test, because a browser cannot read the
+  Nextcloud log. `MigrationPacksControllerTest` proves them: a line per
+  create, update, import (with its outcome) and delete, and none on failure.
+- The route-id fix (D-3) against Nextcloud's own `Request` is proven by
+  `MigrationPacksControllerTest::testUpdateReadsTheRouteIdFromARealNextcloudRequest`.
+  It skips when PHPUnit runs without an installed Nextcloud, as a local run
+  from a worktree does. It runs in the in-container step of
+  `api-test-coverage.yml`
+  (`OPENREGISTER_TEST_NC_ROOT=/var/www/html`), which does not list skipped
+  tests; `--filter RealNextcloudRequest --testdox` in that container shows it
+  ran.
 
 ## Risks
 

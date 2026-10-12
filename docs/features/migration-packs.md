@@ -56,3 +56,28 @@ not install its own version over it.
 Every create, change, import and delete writes a line to the Nextcloud log with the user, the pack
 slug and the pack id. An import also says whether it created a pack or replaced one. These are
 info lines: set the Nextcloud log level to Info (`loglevel` 1 in `config.php`) to keep them.
+
+## For scripts and API clients
+
+The screens use `/apps/openregister/api/migration-packs`. Reading (list, one pack, export) is open
+to any signed-in user; create, update, delete, import and the sample-row test
+(`POST /api/migration-packs/preview`) need an administrator and Nextcloud's request token. A
+script outside a browser sends `OCS-APIRequest: true` or signs in with an app password.
+
+Create and update take `{"definition": {...}}`; on update the row id in the URL decides which pack
+changes. When the server refuses, the answer is `{"message": "...", "error": "<code>"}`, with the
+validator's findings in `details.errors` where there are any. Read the code, not the message: the
+message is translated.
+
+| Status | `error` | Meaning |
+| --- | --- | --- |
+| 400 | `invalid-request` | The body is not what the route takes, for example a preview without a `definition` object |
+| 400 | `too-many-rows` | A preview with more than 20 sample rows |
+| 404 | `pack-not-found` | No pack has that row id |
+| 422 | `invalid-pack` | The definition breaks a rule; `details.errors` lists each finding, rows numbered from 1 |
+| 422 | `builtin-slug-locked` | The update would change the slug of a built-in pack |
+| 500 | `migration-pack-error` | Something unexpected failed; the Nextcloud log has the details |
+
+A request Nextcloud refuses before it reaches OpenRegister has Nextcloud's own answer: 401 when
+nobody is signed in, 403 for a user who is not an administrator, 412 for a browser request
+without the request token.
