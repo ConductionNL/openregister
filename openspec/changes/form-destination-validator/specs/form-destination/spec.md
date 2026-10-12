@@ -132,6 +132,20 @@ A draft's owner SHALL be either a Nextcloud user or a scope value `<scope>:<refe
 - **WHEN** an owner is built from an empty reference, a scope with upper case or a colon, or a value longer than 64 characters
 - **THEN** it is refused before anything is read or written
 
+### Requirement: A draft MUST be able to be discarded by its owner
+
+The owner of a draft SHALL be able to discard it (decisions 180 and 195). The discard SHALL admit only an object in status `draft` whose stored owner is exactly the asserted owner; a sent object, someone else's draft, an unknown id and an unknown destination SHALL all answer "not found" and remove nothing. A discarded draft SHALL be deleted permanently: it holds unsent answers and nothing refers to it. Generic by construction (decision 182): the caller names the destination and the owner, OpenRegister knows no app or procedure.
+
+#### Scenario: The owner discards its draft
+- **GIVEN** a draft owned by `portal:subject-1`
+- **WHEN** a caller asserting `portal:subject-1` discards it
+- **THEN** the object is gone, not soft-deleted
+
+#### Scenario: Anything else is left alone
+- **GIVEN** a draft owned by `portal:subject-2` and an active object owned by `portal:subject-1`
+- **WHEN** a caller asserting `portal:subject-1` discards either
+- **THEN** both answer "not found" and both objects remain
+
 ### Requirement: The form destination check MUST refuse from the first release
 
 Form save, journey save and schema save SHALL refuse on a finding from the first release that ships the validator. There SHALL be no report-only mode (decision 181).

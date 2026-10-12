@@ -26,7 +26,10 @@
 - [x] 2b.4 A draft may be owned by a scope value `<scope>:<reference>` such as `portal:<subjectRef>` (decision 195); only a caller asserting that owner finds, reads, saves or sends it, anyone else gets 404
   - Spec ref: specs/form-destination/spec.md, "A draft MUST be able to be owned by a scope value"
   - Test: DraftOwnerTest, FormSubmitServiceTest (portal owner cases), SaveObjectSystemOwnerTest (explicit owner)
-- [ ] 2b.3 Flagged to Ruben, not built here: staff list default for drafts, draft expiry, anonymous drafts (Q-openregister-F2)
+- [x] 2b.5 The owner may discard its draft; only its own object in `draft` is removed, permanently, anything else is "not found"
+  - Spec ref: specs/form-destination/spec.md, "A draft MUST be able to be discarded by its owner"
+  - Test: DraftDiscardTest
+- [ ] 2b.3 Answered by Ruben (decision 201), not built here: a draft expires after the owning app's retention (30 days by default), enforced by that app on read from `updatedAt`; staff work lists hide drafts by default with a filter to show them (today the read RBAC keeps every draft to its owner); a draft gets its case number only when it leaves draft. Anonymous drafts stay open (Q-openregister-F2)
 
 ## 3. Uploads
 
