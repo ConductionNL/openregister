@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Jā/nē tabula",
         "Yes/no table, values: {count}, {unmapped}": "Jā/nē tabula, vērtības: {count}, {unmapped}",
         "Store false": "Saglabāt nē (false)",
-        "other values are stored as false": "citas vērtības tiek saglabātas kā nē (false)"
+        "other values are stored as false": "citas vērtības tiek saglabātas kā nē (false)",
+        "Choose yes or no": "Izvēlies jā vai nē",
+        "Choose yes or no as the result for \"{key}\".": "Izvēlies jā vai nē kā rezultātu vērtībai \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Izvēlies jā vai nē vērtībām, kuru nav tabulā.",
+        "Leave and lose changes": "Iziet un zaudēt izmaiņas",
+        "Leave without saving?": "Iziet bez saglabāšanas?",
+        "Row moved to position {position} of {total}.": "Rinda pārvietota uz {position}. pozīciju no {total}.",
+        "Row {number} removed.": "Rinda {number} noņemta.",
+        "Save as a new pack": "Saglabāt kā jaunu pakotni",
+        "Show the JSON": "Rādīt JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Kāds izdzēsa šo pakotni, kamēr tu to rediģēji. Tavas izmaiņas nav saglabātas: saglabā tās kā jaunu pakotni vai nokopē tās no JSON.",
+        "Stay on this page": "Palikt šajā lapā",
+        "Switch to the form to test the pack.": "Pārslēdzies uz veidlapu, lai testētu pakotni.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Fails nav migrācijas pakotne. Izvēlies JSON failu, kurā ir viena pakotnes definīcija.",
+        "There are too many sample rows to test at once.": "Parauga rindu ir pārāk daudz, lai tās testētu vienlaikus.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Šajā pakotnē ir nesaglabātas izmaiņas. Ja tagad aiziesi, tās tiks zaudētas.",
+        "Transform of row {number}:": "Rindas {number} pārveidojums:",
+        "You are not signed in. Sign in and try again.": "Tu neesi pieteicies. Piesakies un mēģini vēlreiz.",
+        "{label} of row {number}": "{label} rindā {number}"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);"
 )

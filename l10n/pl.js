@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Tabela tak/nie",
         "Yes/no table, values: {count}, {unmapped}": "Tabela tak/nie, wartości: {count}, {unmapped}",
         "Store false": "Zapisz nie (false)",
-        "other values are stored as false": "inne wartości są zapisywane jako nie (false)"
+        "other values are stored as false": "inne wartości są zapisywane jako nie (false)",
+        "Choose yes or no": "Wybierz tak lub nie",
+        "Choose yes or no as the result for \"{key}\".": "Wybierz tak lub nie jako wynik dla \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Wybierz tak lub nie dla wartości, których nie ma w tabeli.",
+        "Leave and lose changes": "Wyjdź i porzuć zmiany",
+        "Leave without saving?": "Wyjść bez zapisywania?",
+        "Row moved to position {position} of {total}.": "Wiersz przeniesiono na pozycję {position} z {total}.",
+        "Row {number} removed.": "Usunięto wiersz {number}.",
+        "Save as a new pack": "Zapisz jako nowy pakiet",
+        "Show the JSON": "Pokaż JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Ktoś usunął ten pakiet podczas Twojej edycji. Twoje zmiany nie zostały zapisane: zapisz je jako nowy pakiet lub skopiuj je z JSON-a.",
+        "Stay on this page": "Zostań na tej stronie",
+        "Switch to the form to test the pack.": "Przełącz się na formularz, aby przetestować pakiet.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Plik nie jest pakietem migracji. Wybierz plik JSON zawierający jedną definicję pakietu.",
+        "There are too many sample rows to test at once.": "Przykładowych wierszy jest zbyt wiele, aby przetestować je naraz.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Ten pakiet ma niezapisane zmiany. Jeśli teraz wyjdziesz, zostaną utracone.",
+        "Transform of row {number}:": "Przekształcenie wiersza {number}:",
+        "You are not signed in. Sign in and try again.": "Nie zalogowano. Zaloguj się i spróbuj ponownie.",
+        "{label} of row {number}": "{label} wiersza {number}"
     },
     "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);"
 )

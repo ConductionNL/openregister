@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Tabelë po/jo",
         "Yes/no table, values: {count}, {unmapped}": "Tabelë po/jo, vlera: {count}, {unmapped}",
         "Store false": "Ruaj jo (false)",
-        "other values are stored as false": "vlerat e tjera ruhen si jo (false)"
+        "other values are stored as false": "vlerat e tjera ruhen si jo (false)",
+        "Choose yes or no": "Zgjidhni po ose jo",
+        "Choose yes or no as the result for \"{key}\".": "Zgjidhni po ose jo si rezultat për \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Zgjidhni po ose jo për vlerat që nuk janë në tabelë.",
+        "Leave and lose changes": "Largohu dhe humb ndryshimet",
+        "Leave without saving?": "Të largoheni pa ruajtur?",
+        "Row moved to position {position} of {total}.": "Rreshti u zhvendos në pozicionin {position} nga {total}.",
+        "Row {number} removed.": "Rreshti {number} u hoq.",
+        "Save as a new pack": "Ruaje si paketë të re",
+        "Show the JSON": "Shfaq JSON-in",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Dikush e fshiu këtë paketë ndërsa ju po e redaktonit. Ndryshimet tuaja nuk janë ruajtur: ruajini si paketë të re ose kopjojini nga JSON-i.",
+        "Stay on this page": "Qëndro në këtë faqe",
+        "Switch to the form to test the pack.": "Kaloni te formulari për ta testuar paketën.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Skedari nuk është paketë migrimi. Zgjidhni një skedar JSON që përmban një përkufizim pakete.",
+        "There are too many sample rows to test at once.": "Ka shumë rreshta shembull për t'u testuar njëherësh.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Kjo paketë ka ndryshime që nuk janë ruajtur. Nëse largoheni tani, ato do të humbasin.",
+        "Transform of row {number}:": "Transformimi i rreshtit {number}:",
+        "You are not signed in. Sign in and try again.": "Nuk jeni identifikuar. Identifikohuni dhe provoni sërish.",
+        "{label} of row {number}": "{label} për rreshtin {number}"
     },
     "nplurals=2; plural=(n != 1);"
 )

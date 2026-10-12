@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Ja/nej-tabell",
         "Yes/no table, values: {count}, {unmapped}": "Ja/nej-tabell, värden: {count}, {unmapped}",
         "Store false": "Lagra nej (false)",
-        "other values are stored as false": "andra värden lagras som nej (false)"
+        "other values are stored as false": "andra värden lagras som nej (false)",
+        "Choose yes or no": "Välj ja eller nej",
+        "Choose yes or no as the result for \"{key}\".": "Välj ja eller nej som resultat för \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Välj ja eller nej för värden som inte finns i tabellen.",
+        "Leave and lose changes": "Lämna och förlora ändringarna",
+        "Leave without saving?": "Lämna utan att spara?",
+        "Row moved to position {position} of {total}.": "Raden flyttades till position {position} av {total}.",
+        "Row {number} removed.": "Rad {number} togs bort.",
+        "Save as a new pack": "Spara som nytt paket",
+        "Show the JSON": "Visa JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Någon tog bort detta paket medan du redigerade det. Dina ändringar har inte sparats: spara dem som ett nytt paket, eller kopiera dem från JSON.",
+        "Stay on this page": "Stanna på den här sidan",
+        "Switch to the form to test the pack.": "Växla till formuläret för att testa paketet.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Filen är inte ett migreringspaket. Välj en JSON-fil som innehåller en paketdefinition.",
+        "There are too many sample rows to test at once.": "Det finns för många exempelrader för att testa alla på en gång.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Detta paket har ändringar som inte har sparats. Om du lämnar nu går de förlorade.",
+        "Transform of row {number}:": "Transformering för rad {number}:",
+        "You are not signed in. Sign in and try again.": "Du är inte inloggad. Logga in och försök igen.",
+        "{label} of row {number}": "{label} för rad {number}"
     },
     "nplurals=2; plural=(n != 1);"
 )

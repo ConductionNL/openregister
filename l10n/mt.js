@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Tabella iva/le",
         "Yes/no table, values: {count}, {unmapped}": "Tabella iva/le, valuri: {count}, {unmapped}",
         "Store false": "Aħżen le (false)",
-        "other values are stored as false": "valuri oħra jinħażnu bħala le (false)"
+        "other values are stored as false": "valuri oħra jinħażnu bħala le (false)",
+        "Choose yes or no": "Agħżel iva jew le",
+        "Choose yes or no as the result for \"{key}\".": "Agħżel iva jew le bħala r-riżultat għal \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Agħżel iva jew le għall-valuri li mhumiex fit-tabella.",
+        "Leave and lose changes": "Oħroġ u itlef il-bidliet",
+        "Leave without saving?": "Toħroġ mingħajr ma tissejvja?",
+        "Row moved to position {position} of {total}.": "Ir-ringiela tċaqilqet għall-pożizzjoni {position} minn {total}.",
+        "Row {number} removed.": "Ir-ringiela {number} tneħħiet.",
+        "Save as a new pack": "Issejvja bħala pakkett ġdid",
+        "Show the JSON": "Uri l-JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Xi ħadd ħassar dan il-pakkett waqt li kont qed teditjah. Il-bidliet tiegħek mhumiex issejvjati: issejvjahom bħala pakkett ġdid, jew ikkopjahom mill-JSON.",
+        "Stay on this page": "Ibqa' f'din il-paġna",
+        "Switch to the form to test the pack.": "Aqleb għall-formola biex tittestja l-pakkett.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Il-fajl mhuwiex pakkett tal-migrazzjoni. Agħżel fajl JSON li fih definizzjoni waħda ta' pakkett.",
+        "There are too many sample rows to test at once.": "Hemm wisq ringieli ta' eżempju biex jiġu ttestjati f'daqqa.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Dan il-pakkett għandu bidliet li mhumiex issejvjati. Jekk toħroġ issa, jintilfu.",
+        "Transform of row {number}:": "Trasformazzjoni tar-ringiela {number}:",
+        "You are not signed in. Sign in and try again.": "M'intix illoggjat. Illoggja u erġa' pprova.",
+        "{label} of row {number}": "{label} tar-ringiela {number}"
     },
     "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);"
 )

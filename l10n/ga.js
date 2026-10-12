@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Tábla tá/níl",
         "Yes/no table, values: {count}, {unmapped}": "Tábla tá/níl, luachanna: {count}, {unmapped}",
         "Store false": "Stóráil níl (false)",
-        "other values are stored as false": "stóráiltear luachanna eile mar níl (false)"
+        "other values are stored as false": "stóráiltear luachanna eile mar níl (false)",
+        "Choose yes or no": "Roghnaigh tá nó níl",
+        "Choose yes or no as the result for \"{key}\".": "Roghnaigh tá nó níl mar thoradh do \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Roghnaigh tá nó níl do luachanna nach bhfuil sa tábla.",
+        "Leave and lose changes": "Fág agus caill na hathruithe",
+        "Leave without saving?": "Fág gan sábháil?",
+        "Row moved to position {position} of {total}.": "Bogadh an ró go suíomh {position} de {total}.",
+        "Row {number} removed.": "Baineadh ró {number}.",
+        "Save as a new pack": "Sábháil mar phacáiste nua",
+        "Show the JSON": "Taispeáin an JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Scrios duine éigin an pacáiste seo agus tú á chur in eagar. Níor sábháladh d'athruithe: sábháil iad mar phacáiste nua, nó cóipeáil iad ón JSON.",
+        "Stay on this page": "Fan ar an leathanach seo",
+        "Switch to the form to test the pack.": "Athraigh go dtí an fhoirm chun an pacáiste a thástáil.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Ní pacáiste aistrithe é an comhad. Roghnaigh comhad JSON ina bhfuil sainmhíniú pacáiste amháin.",
+        "There are too many sample rows to test at once.": "Tá an iomarca rónna samplacha ann le tástáil d'aon iarraidh.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Tá athruithe gan sábháil sa phacáiste seo. Má fhágann tú anois, caillfear iad.",
+        "Transform of row {number}:": "Claochlú ró {number}:",
+        "You are not signed in. Sign in and try again.": "Níl tú logáilte isteach. Logáil isteach agus bain triail eile as.",
+        "{label} of row {number}": "{label} ró {number}"
     },
     "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);"
 )

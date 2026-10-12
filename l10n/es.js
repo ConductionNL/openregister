@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Tabla de sí/no",
         "Yes/no table, values: {count}, {unmapped}": "Tabla de sí/no, valores: {count}, {unmapped}",
         "Store false": "Guardar no (false)",
-        "other values are stored as false": "los demás valores se guardan como no (false)"
+        "other values are stored as false": "los demás valores se guardan como no (false)",
+        "Choose yes or no": "Elija sí o no",
+        "Choose yes or no as the result for \"{key}\".": "Elija sí o no como resultado para \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Elija sí o no para los valores que no están en la tabla.",
+        "Leave and lose changes": "Salir y perder los cambios",
+        "Leave without saving?": "¿Salir sin guardar?",
+        "Row moved to position {position} of {total}.": "Fila movida a la posición {position} de {total}.",
+        "Row {number} removed.": "Fila {number} eliminada.",
+        "Save as a new pack": "Guardar como paquete nuevo",
+        "Show the JSON": "Mostrar el JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Alguien eliminó este paquete mientras usted lo editaba. Sus cambios no se han guardado: guárdelos como un paquete nuevo o cópielos del JSON.",
+        "Stay on this page": "Permanecer en esta página",
+        "Switch to the form to test the pack.": "Cambie al formulario para probar el paquete.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "El archivo no es un paquete de migración. Elija un archivo JSON que contenga una definición de paquete.",
+        "There are too many sample rows to test at once.": "Hay demasiadas filas de ejemplo para probarlas a la vez.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Este paquete tiene cambios sin guardar. Si sale ahora, se perderán.",
+        "Transform of row {number}:": "Transformación de la fila {number}:",
+        "You are not signed in. Sign in and try again.": "No ha iniciado sesión. Inicie sesión e inténtelo de nuevo.",
+        "{label} of row {number}": "{label} de la fila {number}"
     },
     "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )

@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Табліца так/не",
         "Yes/no table, values: {count}, {unmapped}": "Табліца так/не, значэнняў: {count}, {unmapped}",
         "Store false": "Захаваць не (false)",
-        "other values are stored as false": "іншыя значэнні захоўваюцца як не (false)"
+        "other values are stored as false": "іншыя значэнні захоўваюцца як не (false)",
+        "Choose yes or no": "Выберыце так або не",
+        "Choose yes or no as the result for \"{key}\".": "Выберыце так або не як вынік для \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Выберыце так або не для значэнняў, якіх няма ў табліцы.",
+        "Leave and lose changes": "Пакінуць старонку і страціць змены",
+        "Leave without saving?": "Пакінуць старонку без захавання?",
+        "Row moved to position {position} of {total}.": "Радок перамешчаны на пазіцыю {position} з {total}.",
+        "Row {number} removed.": "Радок {number} выдалены.",
+        "Save as a new pack": "Захаваць як новы пакет",
+        "Show the JSON": "Паказаць JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Нехта выдаліў гэты пакет, пакуль вы яго рэдагавалі. Вашы змены не захаваны: захавайце іх як новы пакет або скапіруйце з JSON.",
+        "Stay on this page": "Застацца на гэтай старонцы",
+        "Switch to the form to test the pack.": "Пераключыцеся на форму, каб праверыць пакет.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Файл не з'яўляецца пакетам міграцыі. Выберыце файл JSON, які змяшчае адно вызначэнне пакета.",
+        "There are too many sample rows to test at once.": "Занадта шмат узорных радкоў, каб праверыць іх за адзін раз.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "У гэтым пакеце ёсць незахаваныя змены. Калі вы пойдзеце зараз, яны будуць страчаны.",
+        "Transform of row {number}:": "Пераўтварэнне радка {number}:",
+        "You are not signed in. Sign in and try again.": "Вы не ўвайшлі ў сістэму. Увайдзіце і паспрабуйце яшчэ раз.",
+        "{label} of row {number}": "{label} радка {number}"
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

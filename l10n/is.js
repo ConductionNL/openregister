@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Já/nei-tafla",
         "Yes/no table, values: {count}, {unmapped}": "Já/nei-tafla, gildi: {count}, {unmapped}",
         "Store false": "Vista nei (false)",
-        "other values are stored as false": "önnur gildi eru vistuð sem nei (false)"
+        "other values are stored as false": "önnur gildi eru vistuð sem nei (false)",
+        "Choose yes or no": "Veldu já eða nei",
+        "Choose yes or no as the result for \"{key}\".": "Veldu já eða nei sem niðurstöðu fyrir \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Veldu já eða nei fyrir gildi sem eru ekki í töflunni.",
+        "Leave and lose changes": "Fara og glata breytingunum",
+        "Leave without saving?": "Fara án þess að vista?",
+        "Row moved to position {position} of {total}.": "Röð færð í sæti {position} af {total}.",
+        "Row {number} removed.": "Röð {number} fjarlægð.",
+        "Save as a new pack": "Vista sem nýjan pakka",
+        "Show the JSON": "Sýna JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Einhver eyddi þessum pakka á meðan þú varst að breyta honum. Breytingarnar þínar eru ekki vistaðar: vistaðu þær sem nýjan pakka eða afritaðu þær úr JSON.",
+        "Stay on this page": "Vera áfram á þessari síðu",
+        "Switch to the form to test the pack.": "Skiptu yfir í eyðublaðið til að prófa pakkann.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Skráin er ekki flutningspakki. Veldu JSON-skrá sem inniheldur eina pakkaskilgreiningu.",
+        "There are too many sample rows to test at once.": "Sýniraðirnar eru of margar til að prófa þær allar í einu.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Þessi pakki er með breytingar sem eru ekki vistaðar. Ef þú ferð núna glatast þær.",
+        "Transform of row {number}:": "Umbreyting raðar {number}:",
+        "You are not signed in. Sign in and try again.": "Þú hefur ekki skráð þig inn. Skráðu þig inn og reyndu aftur.",
+        "{label} of row {number}": "{label} raðar {number}"
     },
     "nplurals=2; plural=(n != 1);"
 )

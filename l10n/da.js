@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Ja/nej-tabel",
         "Yes/no table, values: {count}, {unmapped}": "Ja/nej-tabel, værdier: {count}, {unmapped}",
         "Store false": "Gem nej (false)",
-        "other values are stored as false": "andre værdier gemmes som nej (false)"
+        "other values are stored as false": "andre værdier gemmes som nej (false)",
+        "Choose yes or no": "Vælg ja eller nej",
+        "Choose yes or no as the result for \"{key}\".": "Vælg ja eller nej som resultat for \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Vælg ja eller nej for værdier, der ikke står i tabellen.",
+        "Leave and lose changes": "Forlad siden og mist ændringerne",
+        "Leave without saving?": "Forlad siden uden at gemme?",
+        "Row moved to position {position} of {total}.": "Rækken er flyttet til position {position} af {total}.",
+        "Row {number} removed.": "Række {number} er fjernet.",
+        "Save as a new pack": "Gem som ny pakke",
+        "Show the JSON": "Vis JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Nogen har slettet denne pakke, mens du redigerede den. Dine ændringer er ikke gemt: gem dem som en ny pakke, eller kopiér dem fra JSON.",
+        "Stay on this page": "Bliv på denne side",
+        "Switch to the form to test the pack.": "Skift til formularen for at teste pakken.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Filen er ikke en migreringspakke. Vælg en JSON-fil, der indeholder én pakkedefinition.",
+        "There are too many sample rows to test at once.": "Der er for mange eksempelrækker til at teste dem på én gang.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Denne pakke har ændringer, der ikke er gemt. Hvis du forlader siden nu, går de tabt.",
+        "Transform of row {number}:": "Transformation for række {number}:",
+        "You are not signed in. Sign in and try again.": "Du er ikke logget ind. Log ind, og prøv igen.",
+        "{label} of row {number}": "{label} for række {number}"
     },
     "nplurals=2; plural=(n != 1);"
 )

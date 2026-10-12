@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Tabel da/nu",
         "Yes/no table, values: {count}, {unmapped}": "Tabel da/nu, valori: {count}, {unmapped}",
         "Store false": "Salvare ca nu (false)",
-        "other values are stored as false": "celelalte valori sunt salvate ca nu (false)"
+        "other values are stored as false": "celelalte valori sunt salvate ca nu (false)",
+        "Choose yes or no": "Alegeți da sau nu",
+        "Choose yes or no as the result for \"{key}\".": "Alegeți da sau nu ca rezultat pentru \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Alegeți da sau nu pentru valorile care nu sunt în tabel.",
+        "Leave and lose changes": "Părăsire cu pierderea modificărilor",
+        "Leave without saving?": "Părăsiți pagina fără a salva?",
+        "Row moved to position {position} of {total}.": "Rândul a fost mutat pe poziția {position} din {total}.",
+        "Row {number} removed.": "Rândul {number} a fost eliminat.",
+        "Save as a new pack": "Salvare ca pachet nou",
+        "Show the JSON": "Afișare JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Cineva a șters acest pachet în timp ce îl editați. Modificările dumneavoastră nu sunt salvate: salvați-le ca pachet nou sau copiați-le din JSON.",
+        "Stay on this page": "Rămânere pe această pagină",
+        "Switch to the form to test the pack.": "Treceți la formular pentru a testa pachetul.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Fișierul nu este un pachet de migrare. Alegeți un fișier JSON care conține o singură definiție de pachet.",
+        "There are too many sample rows to test at once.": "Sunt prea multe rânduri exemplu pentru a fi testate deodată.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Acest pachet are modificări care nu sunt salvate. Dacă părăsiți pagina acum, acestea se pierd.",
+        "Transform of row {number}:": "Transformarea rândului {number}:",
+        "You are not signed in. Sign in and try again.": "Nu sunteți autentificat. Autentificați-vă și încercați din nou.",
+        "{label} of row {number}": "{label} pentru rândul {number}"
     },
     "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));"
 )

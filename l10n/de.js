@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Ja/Nein-Tabelle",
         "Yes/no table, values: {count}, {unmapped}": "Ja/Nein-Tabelle, Werte: {count}, {unmapped}",
         "Store false": "Nein (false) speichern",
-        "other values are stored as false": "andere Werte werden als Nein (false) gespeichert"
+        "other values are stored as false": "andere Werte werden als Nein (false) gespeichert",
+        "Choose yes or no": "Ja oder Nein wählen",
+        "Choose yes or no as the result for \"{key}\".": "Wählen Sie Ja oder Nein als Ergebnis für \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Wählen Sie Ja oder Nein für Werte, die nicht in der Tabelle stehen.",
+        "Leave and lose changes": "Verlassen und Änderungen verlieren",
+        "Leave without saving?": "Ohne Speichern verlassen?",
+        "Row moved to position {position} of {total}.": "Zeile auf Position {position} von {total} verschoben.",
+        "Row {number} removed.": "Zeile {number} entfernt.",
+        "Save as a new pack": "Als neues Paket speichern",
+        "Show the JSON": "JSON anzeigen",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Jemand hat dieses Paket gelöscht, während Sie es bearbeitet haben. Ihre Änderungen sind nicht gespeichert: Speichern Sie sie als neues Paket oder kopieren Sie sie aus dem JSON.",
+        "Stay on this page": "Auf dieser Seite bleiben",
+        "Switch to the form to test the pack.": "Wechseln Sie zum Formular, um das Paket zu testen.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Die Datei ist kein Migrationspaket. Wählen Sie eine JSON-Datei, die eine Paketdefinition enthält.",
+        "There are too many sample rows to test at once.": "Es gibt zu viele Beispielzeilen, um sie auf einmal zu testen.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Dieses Paket hat Änderungen, die nicht gespeichert sind. Wenn Sie die Seite jetzt verlassen, gehen sie verloren.",
+        "Transform of row {number}:": "Umwandlung von Zeile {number}:",
+        "You are not signed in. Sign in and try again.": "Sie sind nicht angemeldet. Melden Sie sich an und versuchen Sie es erneut.",
+        "{label} of row {number}": "{label} von Zeile {number}"
     },
     "nplurals=2; plural=(n != 1);"
 )

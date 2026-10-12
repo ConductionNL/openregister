@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Табела да/не",
         "Yes/no table, values: {count}, {unmapped}": "Табела да/не, вредности: {count}, {unmapped}",
         "Store false": "Сачувај „не“ (false)",
-        "other values are stored as false": "остале вредности се чувају као „не“ (false)"
+        "other values are stored as false": "остале вредности се чувају као „не“ (false)",
+        "Choose yes or no": "Изаберите да или не",
+        "Choose yes or no as the result for \"{key}\".": "Изаберите да или не као резултат за \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Изаберите да или не за вредности које нису у табели.",
+        "Leave and lose changes": "Напусти и изгуби измене",
+        "Leave without saving?": "Напустити без чувања?",
+        "Row moved to position {position} of {total}.": "Ред је премештен на позицију {position} од {total}.",
+        "Row {number} removed.": "Ред {number} је уклоњен.",
+        "Save as a new pack": "Сачувај као нови пакет",
+        "Show the JSON": "Прикажи JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Неко је обрисао овај пакет док сте га уређивали. Ваше измене нису сачуване: сачувајте их као нови пакет или их копирајте из JSON-а.",
+        "Stay on this page": "Остани на овој страници",
+        "Switch to the form to test the pack.": "Пређите на образац да бисте тестирали пакет.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Датотека није миграциони пакет. Изаберите JSON датотеку која садржи једну дефиницију пакета.",
+        "There are too many sample rows to test at once.": "Превише је примера редова да би се тестирали одједном.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Овај пакет има измене које нису сачуване. Ако сада напустите страницу, биће изгубљене.",
+        "Transform of row {number}:": "Трансформација реда {number}:",
+        "You are not signed in. Sign in and try again.": "Нисте пријављени. Пријавите се и покушајте поново.",
+        "{label} of row {number}": "{label} реда {number}"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 )

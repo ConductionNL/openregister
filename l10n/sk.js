@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Tabuľka áno/nie",
         "Yes/no table, values: {count}, {unmapped}": "Tabuľka áno/nie, hodnoty: {count}, {unmapped}",
         "Store false": "Uložiť nie (false)",
-        "other values are stored as false": "ostatné hodnoty sa uložia ako nie (false)"
+        "other values are stored as false": "ostatné hodnoty sa uložia ako nie (false)",
+        "Choose yes or no": "Vyberte áno alebo nie",
+        "Choose yes or no as the result for \"{key}\".": "Vyberte áno alebo nie ako výsledok pre \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Vyberte áno alebo nie pre hodnoty, ktoré nie sú v tabuľke.",
+        "Leave and lose changes": "Odísť a stratiť zmeny",
+        "Leave without saving?": "Odísť bez uloženia?",
+        "Row moved to position {position} of {total}.": "Riadok bol presunutý na pozíciu {position} z {total}.",
+        "Row {number} removed.": "Riadok {number} bol odstránený.",
+        "Save as a new pack": "Uložiť ako nový balík",
+        "Show the JSON": "Zobraziť JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Niekto odstránil tento balík, kým ste ho upravovali. Vaše zmeny nie sú uložené: uložte ich ako nový balík alebo ich skopírujte z JSON.",
+        "Stay on this page": "Zostať na tejto stránke",
+        "Switch to the form to test the pack.": "Ak chcete balík otestovať, prepnite na formulár.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Súbor nie je migračný balík. Vyberte súbor JSON, ktorý obsahuje jednu definíciu balíka.",
+        "There are too many sample rows to test at once.": "Vzorových riadkov je príliš veľa na to, aby sa dali otestovať naraz.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Tento balík má neuložené zmeny. Ak teraz odídete, stratia sa.",
+        "Transform of row {number}:": "Prevod riadka {number}:",
+        "You are not signed in. Sign in and try again.": "Nie ste prihlásení. Prihláste sa a skúste to znova.",
+        "{label} of row {number}": "{label} riadka {number}"
     },
     "nplurals=4; plural=(n % 1 == 0 && n == 1 ? 0 : n % 1 == 0 && n >= 2 && n <= 4 ? 1 : n % 1 != 0 ? 2: 3);"
 )

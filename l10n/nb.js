@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Ja/nei-tabell",
         "Yes/no table, values: {count}, {unmapped}": "Ja/nei-tabell, verdier: {count}, {unmapped}",
         "Store false": "Lagre nei (false)",
-        "other values are stored as false": "andre verdier lagres som nei (false)"
+        "other values are stored as false": "andre verdier lagres som nei (false)",
+        "Choose yes or no": "Velg ja eller nei",
+        "Choose yes or no as the result for \"{key}\".": "Velg ja eller nei som resultat for \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Velg ja eller nei for verdier som ikke står i tabellen.",
+        "Leave and lose changes": "Forlat og mist endringene",
+        "Leave without saving?": "Forlate uten å lagre?",
+        "Row moved to position {position} of {total}.": "Raden er flyttet til posisjon {position} av {total}.",
+        "Row {number} removed.": "Rad {number} er fjernet.",
+        "Save as a new pack": "Lagre som ny pakke",
+        "Show the JSON": "Vis JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Noen slettet denne pakken mens du redigerte den. Endringene dine er ikke lagret: lagre dem som en ny pakke, eller kopier dem fra JSON-en.",
+        "Stay on this page": "Bli på denne siden",
+        "Switch to the form to test the pack.": "Bytt til skjemaet for å teste pakken.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Filen er ikke en migreringspakke. Velg en JSON-fil som inneholder én pakkedefinisjon.",
+        "There are too many sample rows to test at once.": "Det er for mange eksempelrader til å teste alle på én gang.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Denne pakken har endringer som ikke er lagret. Hvis du går nå, går de tapt.",
+        "Transform of row {number}:": "Transformasjon for rad {number}:",
+        "You are not signed in. Sign in and try again.": "Du er ikke logget inn. Logg inn og prøv igjen.",
+        "{label} of row {number}": "{label} for rad {number}"
     },
     "nplurals=2; plural=(n != 1);"
 )

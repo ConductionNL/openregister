@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Table oui/non",
         "Yes/no table, values: {count}, {unmapped}": "Table oui/non, valeurs : {count}, {unmapped}",
         "Store false": "Enregistrer non (false)",
-        "other values are stored as false": "les autres valeurs sont enregistrées comme non (false)"
+        "other values are stored as false": "les autres valeurs sont enregistrées comme non (false)",
+        "Choose yes or no": "Choisir oui ou non",
+        "Choose yes or no as the result for \"{key}\".": "Choisissez oui ou non comme résultat pour « {key} ».",
+        "Choose yes or no for values that are not in the table.": "Choisissez oui ou non pour les valeurs absentes de la table.",
+        "Leave and lose changes": "Quitter et perdre les modifications",
+        "Leave without saving?": "Quitter sans enregistrer ?",
+        "Row moved to position {position} of {total}.": "Ligne déplacée en position {position} sur {total}.",
+        "Row {number} removed.": "Ligne {number} supprimée.",
+        "Save as a new pack": "Enregistrer comme nouveau pack",
+        "Show the JSON": "Afficher le JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Quelqu'un a supprimé ce pack pendant que vous le modifiiez. Vos modifications ne sont pas enregistrées : enregistrez-les comme nouveau pack, ou copiez-les depuis le JSON.",
+        "Stay on this page": "Rester sur cette page",
+        "Switch to the form to test the pack.": "Passez au formulaire pour tester le pack.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Le fichier n'est pas un pack de migration. Choisissez un fichier JSON qui contient une seule définition de pack.",
+        "There are too many sample rows to test at once.": "Il y a trop de lignes d'exemple pour les tester en une seule fois.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Ce pack contient des modifications non enregistrées. Si vous quittez maintenant, elles seront perdues.",
+        "Transform of row {number}:": "Transformation de la ligne {number} :",
+        "You are not signed in. Sign in and try again.": "Vous n'êtes pas connecté. Connectez-vous et réessayez.",
+        "{label} of row {number}": "{label} de la ligne {number}"
     },
     "nplurals=3; plural=(n == 0 || n == 1) ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )

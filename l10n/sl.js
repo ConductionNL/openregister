@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Tabela da/ne",
         "Yes/no table, values: {count}, {unmapped}": "Tabela da/ne, vrednosti: {count}, {unmapped}",
         "Store false": "Shrani ne (false)",
-        "other values are stored as false": "druge vrednosti se shranijo kot ne (false)"
+        "other values are stored as false": "druge vrednosti se shranijo kot ne (false)",
+        "Choose yes or no": "Izberite da ali ne",
+        "Choose yes or no as the result for \"{key}\".": "Kot rezultat za \"{key}\" izberite da ali ne.",
+        "Choose yes or no for values that are not in the table.": "Za vrednosti, ki jih ni v tabeli, izberite da ali ne.",
+        "Leave and lose changes": "Zapusti in izgubi spremembe",
+        "Leave without saving?": "Želite oditi brez shranjevanja?",
+        "Row moved to position {position} of {total}.": "Vrstica je premaknjena na mesto {position} od {total}.",
+        "Row {number} removed.": "Vrstica {number} je odstranjena.",
+        "Save as a new pack": "Shrani kot nov paket",
+        "Show the JSON": "Prikaži JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Nekdo je izbrisal ta paket, medtem ko ste ga urejali. Vaše spremembe niso shranjene: shranite jih kot nov paket ali jih kopirajte iz JSON.",
+        "Stay on this page": "Ostani na tej strani",
+        "Switch to the form to test the pack.": "Za preizkus paketa preklopite na obrazec.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Datoteka ni selitveni paket. Izberite datoteko JSON, ki vsebuje eno definicijo paketa.",
+        "There are too many sample rows to test at once.": "Vzorčnih vrstic je preveč, da bi jih preizkusili hkrati.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Ta paket ima neshranjene spremembe. Če zdaj odidete, se izgubijo.",
+        "Transform of row {number}:": "Pretvorba vrstice {number}:",
+        "You are not signed in. Sign in and try again.": "Niste prijavljeni. Prijavite se in poskusite znova.",
+        "{label} of row {number}": "{label} vrstice {number}"
     },
     "nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3);"
 )

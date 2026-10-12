@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Tabulka ano/ne",
         "Yes/no table, values: {count}, {unmapped}": "Tabulka ano/ne, hodnoty: {count}, {unmapped}",
         "Store false": "Uložit ne (false)",
-        "other values are stored as false": "ostatní hodnoty se uloží jako ne (false)"
+        "other values are stored as false": "ostatní hodnoty se uloží jako ne (false)",
+        "Choose yes or no": "Vyberte ano nebo ne",
+        "Choose yes or no as the result for \"{key}\".": "Jako výsledek pro \"{key}\" vyberte ano nebo ne.",
+        "Choose yes or no for values that are not in the table.": "Pro hodnoty, které nejsou v tabulce, vyberte ano nebo ne.",
+        "Leave and lose changes": "Odejít a přijít o změny",
+        "Leave without saving?": "Odejít bez uložení?",
+        "Row moved to position {position} of {total}.": "Řádek přesunut na pozici {position} z {total}.",
+        "Row {number} removed.": "Řádek {number} odebrán.",
+        "Save as a new pack": "Uložit jako nový balíček",
+        "Show the JSON": "Zobrazit JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Někdo tento balíček smazal, zatímco jste jej upravovali. Vaše změny nejsou uloženy: uložte je jako nový balíček, nebo je zkopírujte z JSON.",
+        "Stay on this page": "Zůstat na této stránce",
+        "Switch to the form to test the pack.": "Pro otestování balíčku přejděte na formulář.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Soubor není migrační balíček. Vyberte soubor JSON, který obsahuje jednu definici balíčku.",
+        "There are too many sample rows to test at once.": "Ukázkových řádků je příliš mnoho na to, aby se daly otestovat najednou.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Tento balíček má neuložené změny. Pokud nyní odejdete, přijdete o ně.",
+        "Transform of row {number}:": "Transformace řádku {number}:",
+        "You are not signed in. Sign in and try again.": "Nejste přihlášeni. Přihlaste se a zkuste to znovu.",
+        "{label} of row {number}": "{label} řádku {number}"
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 )

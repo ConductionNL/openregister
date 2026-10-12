@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Πίνακας ναι/όχι",
         "Yes/no table, values: {count}, {unmapped}": "Πίνακας ναι/όχι, τιμές: {count}, {unmapped}",
         "Store false": "Αποθήκευση ως όχι (false)",
-        "other values are stored as false": "οι άλλες τιμές αποθηκεύονται ως όχι (false)"
+        "other values are stored as false": "οι άλλες τιμές αποθηκεύονται ως όχι (false)",
+        "Choose yes or no": "Επιλέξτε ναι ή όχι",
+        "Choose yes or no as the result for \"{key}\".": "Επιλέξτε ναι ή όχι ως αποτέλεσμα για το \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Επιλέξτε ναι ή όχι για τιμές που δεν υπάρχουν στον πίνακα.",
+        "Leave and lose changes": "Αποχώρηση με απώλεια αλλαγών",
+        "Leave without saving?": "Αποχώρηση χωρίς αποθήκευση;",
+        "Row moved to position {position} of {total}.": "Η γραμμή μετακινήθηκε στη θέση {position} από {total}.",
+        "Row {number} removed.": "Η γραμμή {number} αφαιρέθηκε.",
+        "Save as a new pack": "Αποθήκευση ως νέο πακέτο",
+        "Show the JSON": "Εμφάνιση του JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Κάποιος διέγραψε αυτό το πακέτο ενώ το επεξεργαζόσασταν. Οι αλλαγές σας δεν έχουν αποθηκευτεί: αποθηκεύστε τις ως νέο πακέτο ή αντιγράψτε τις από το JSON.",
+        "Stay on this page": "Παραμονή σε αυτή τη σελίδα",
+        "Switch to the form to test the pack.": "Μεταβείτε στη φόρμα για να δοκιμάσετε το πακέτο.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Το αρχείο δεν είναι πακέτο μετεγκατάστασης. Επιλέξτε ένα αρχείο JSON που περιέχει έναν ορισμό πακέτου.",
+        "There are too many sample rows to test at once.": "Υπάρχουν πάρα πολλές γραμμές δείγματος για να δοκιμαστούν ταυτόχρονα.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Αυτό το πακέτο έχει αλλαγές που δεν έχουν αποθηκευτεί. Αν αποχωρήσετε τώρα, θα χαθούν.",
+        "Transform of row {number}:": "Μετασχηματισμός της γραμμής {number}:",
+        "You are not signed in. Sign in and try again.": "Δεν έχετε συνδεθεί. Συνδεθείτε και δοκιμάστε ξανά.",
+        "{label} of row {number}": "{label} της γραμμής {number}"
     },
     "nplurals=2; plural=(n != 1);"
 )

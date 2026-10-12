@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Таблица да/нет",
         "Yes/no table, values: {count}, {unmapped}": "Таблица да/нет, значения: {count}, {unmapped}",
         "Store false": "Сохранить как нет (false)",
-        "other values are stored as false": "остальные значения сохраняются как нет (false)"
+        "other values are stored as false": "остальные значения сохраняются как нет (false)",
+        "Choose yes or no": "Выберите да или нет",
+        "Choose yes or no as the result for \"{key}\".": "Выберите да или нет в качестве результата для \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Выберите да или нет для значений, которых нет в таблице.",
+        "Leave and lose changes": "Уйти и потерять изменения",
+        "Leave without saving?": "Уйти без сохранения?",
+        "Row moved to position {position} of {total}.": "Строка перемещена на позицию {position} из {total}.",
+        "Row {number} removed.": "Строка {number} удалена.",
+        "Save as a new pack": "Сохранить как новый пакет",
+        "Show the JSON": "Показать JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Кто-то удалил этот пакет, пока вы его редактировали. Ваши изменения не сохранены: сохраните их как новый пакет или скопируйте их из JSON.",
+        "Stay on this page": "Остаться на этой странице",
+        "Switch to the form to test the pack.": "Переключитесь на форму, чтобы протестировать пакет.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Файл не является пакетом миграции. Выберите файл JSON, содержащий одно определение пакета.",
+        "There are too many sample rows to test at once.": "Слишком много строк-примеров, чтобы протестировать их за один раз.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "В этом пакете есть несохранённые изменения. Если вы уйдёте сейчас, они будут потеряны.",
+        "Transform of row {number}:": "Преобразование строки {number}:",
+        "You are not signed in. Sign in and try again.": "Вы не вошли в систему. Войдите и попробуйте ещё раз.",
+        "{label} of row {number}": "{label} строки {number}"
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

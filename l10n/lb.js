@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Jo/Nee-Tabell",
         "Yes/no table, values: {count}, {unmapped}": "Jo/Nee-Tabell, Wäerter: {count}, {unmapped}",
         "Store false": "Nee (false) späicheren",
-        "other values are stored as false": "aner Wäerter ginn als nee (false) gespäichert"
+        "other values are stored as false": "aner Wäerter ginn als nee (false) gespäichert",
+        "Choose yes or no": "Wielt jo oder nee",
+        "Choose yes or no as the result for \"{key}\".": "Wielt jo oder nee als Resultat fir \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Wielt jo oder nee fir Wäerter, déi net an der Tabell stinn.",
+        "Leave and lose changes": "Verloossen an d'Ännerunge verléieren",
+        "Leave without saving?": "Verloossen ouni ze späicheren?",
+        "Row moved to position {position} of {total}.": "Rei op d'Positioun {position} vu {total} verréckelt.",
+        "Row {number} removed.": "Rei {number} ewechgeholl.",
+        "Save as a new pack": "Als neie Pak späicheren",
+        "Show the JSON": "De JSON weisen",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Een huet dëse Pak geläscht, während Dir en beaarbecht hutt. Är Ännerunge sinn net gespäichert: späichert se als neie Pak, oder kopéiert se aus dem JSON.",
+        "Stay on this page": "Op dëser Säit bleiwen",
+        "Switch to the form to test the pack.": "Wiesselt op de Formulaire, fir de Pak ze testen.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "D'Datei ass kee Migratiounspak. Wielt eng JSON-Datei, déi eng Pak-Definitioun enthält.",
+        "There are too many sample rows to test at once.": "Et gi ze vill Beispillreien, fir se op eemol ze testen.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Dëse Pak huet Ännerungen, déi net gespäichert sinn. Wann Dir elo fortgitt, ginn se verluer.",
+        "Transform of row {number}:": "Transformatioun vun der Rei {number}:",
+        "You are not signed in. Sign in and try again.": "Dir sidd net ugemellt. Mellt Iech un a probéiert et nach eng Kéier.",
+        "{label} of row {number}": "{label} vun der Rei {number}"
     },
     "nplurals=2; plural=(n != 1);"
 )

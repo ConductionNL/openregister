@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Igen/nem tábla",
         "Yes/no table, values: {count}, {unmapped}": "Igen/nem tábla, értékek: {count}, {unmapped}",
         "Store false": "Nem (false) tárolása",
-        "other values are stored as false": "más értékek nem (false) értékként tárolódnak"
+        "other values are stored as false": "más értékek nem (false) értékként tárolódnak",
+        "Choose yes or no": "Válasszon igent vagy nemet",
+        "Choose yes or no as the result for \"{key}\".": "Válasszon igent vagy nemet a(z) \"{key}\" eredményeként.",
+        "Choose yes or no for values that are not in the table.": "Válasszon igent vagy nemet a táblában nem szereplő értékekhez.",
+        "Leave and lose changes": "Kilépés a módosítások elvetésével",
+        "Leave without saving?": "Kilép mentés nélkül?",
+        "Row moved to position {position} of {total}.": "A sor a(z) {position}. helyre került (összesen {total}).",
+        "Row {number} removed.": "A(z) {number}. sor eltávolítva.",
+        "Save as a new pack": "Mentés új csomagként",
+        "Show the JSON": "JSON megjelenítése",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Valaki törölte ezt a csomagot, miközben Ön szerkesztette. Az Ön módosításai nincsenek mentve: mentse őket új csomagként, vagy másolja ki őket a JSON-ból.",
+        "Stay on this page": "Maradás ezen az oldalon",
+        "Switch to the form to test the pack.": "A csomag teszteléséhez váltson az űrlapra.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "A fájl nem migrációs csomag. Válasszon egy JSON-fájlt, amely egy csomagdefiníciót tartalmaz.",
+        "There are too many sample rows to test at once.": "Túl sok mintasor van ahhoz, hogy egyszerre lehessen tesztelni őket.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Ennek a csomagnak nem mentett módosításai vannak. Ha most kilép, elvesznek.",
+        "Transform of row {number}:": "A(z) {number}. sor átalakítása:",
+        "You are not signed in. Sign in and try again.": "Nincs bejelentkezve. Jelentkezzen be, és próbálja újra.",
+        "{label} of row {number}": "{label} a(z) {number}. sorban"
     },
     "nplurals=2; plural=(n != 1);"
 )

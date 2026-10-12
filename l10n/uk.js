@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Таблиця так/ні",
         "Yes/no table, values: {count}, {unmapped}": "Таблиця так/ні, значення: {count}, {unmapped}",
         "Store false": "Зберегти ні (false)",
-        "other values are stored as false": "інші значення зберігаються як ні (false)"
+        "other values are stored as false": "інші значення зберігаються як ні (false)",
+        "Choose yes or no": "Виберіть так або ні",
+        "Choose yes or no as the result for \"{key}\".": "Виберіть так або ні як результат для \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Виберіть так або ні для значень, яких немає в таблиці.",
+        "Leave and lose changes": "Вийти та втратити зміни",
+        "Leave without saving?": "Вийти без збереження?",
+        "Row moved to position {position} of {total}.": "Рядок переміщено на позицію {position} з {total}.",
+        "Row {number} removed.": "Рядок {number} видалено.",
+        "Save as a new pack": "Зберегти як новий пакет",
+        "Show the JSON": "Показати JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Хтось видалив цей пакет, поки ви його редагували. Ваші зміни не збережено: збережіть їх як новий пакет або скопіюйте їх із JSON.",
+        "Stay on this page": "Залишитися на цій сторінці",
+        "Switch to the form to test the pack.": "Перейдіть до форми, щоб перевірити пакет.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Файл не є пакетом міграції. Виберіть файл JSON, який містить одне визначення пакета.",
+        "There are too many sample rows to test at once.": "Зразкових рядків забагато, щоб перевірити їх за один раз.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Цей пакет має незбережені зміни. Якщо ви зараз вийдете, їх буде втрачено.",
+        "Transform of row {number}:": "Перетворення рядка {number}:",
+        "You are not signed in. Sign in and try again.": "Ви не ввійшли в систему. Увійдіть і спробуйте ще раз.",
+        "{label} of row {number}": "{label} рядка {number}"
     },
     "nplurals=4; plural=(n % 1 == 0 && n % 10 == 1 && n % 100 != 11 ? 0 : n % 1 == 0 && n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 1 : n % 1 == 0 && (n % 10 ==0 || (n % 10 >=5 && n % 10 <=9) || (n % 100 >=11 && n % 100 <=14 )) ? 2: 3);"
 )

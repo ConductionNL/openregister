@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Kyllä/ei-taulukko",
         "Yes/no table, values: {count}, {unmapped}": "Kyllä/ei-taulukko, arvoja: {count}, {unmapped}",
         "Store false": "Tallenna ei (false)",
-        "other values are stored as false": "muut arvot tallennetaan arvona ei (false)"
+        "other values are stored as false": "muut arvot tallennetaan arvona ei (false)",
+        "Choose yes or no": "Valitse kyllä tai ei",
+        "Choose yes or no as the result for \"{key}\".": "Valitse kyllä tai ei tulokseksi arvolle \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Valitse kyllä tai ei arvoille, joita ei ole taulukossa.",
+        "Leave and lose changes": "Poistu ja menetä muutokset",
+        "Leave without saving?": "Poistutaanko tallentamatta?",
+        "Row moved to position {position} of {total}.": "Rivi siirretty sijalle {position}/{total}.",
+        "Row {number} removed.": "Rivi {number} poistettu.",
+        "Save as a new pack": "Tallenna uutena pakettina",
+        "Show the JSON": "Näytä JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Joku poisti tämän paketin, kun muokkasit sitä. Muutoksiasi ei ole tallennettu: tallenna ne uutena pakettina tai kopioi ne JSONista.",
+        "Stay on this page": "Pysy tällä sivulla",
+        "Switch to the form to test the pack.": "Vaihda lomakkeeseen, niin voit testata paketin.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Tiedosto ei ole migraatiopaketti. Valitse JSON-tiedosto, joka sisältää yhden paketin määrityksen.",
+        "There are too many sample rows to test at once.": "Esimerkkirivejä on liikaa testattavaksi kerralla.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Tässä paketissa on tallentamattomia muutoksia. Jos poistut nyt, ne menetetään.",
+        "Transform of row {number}:": "Rivin {number} muunnos:",
+        "You are not signed in. Sign in and try again.": "Et ole kirjautunut sisään. Kirjaudu sisään ja yritä uudelleen.",
+        "{label} of row {number}": "{label}, rivi {number}"
     },
     "nplurals=2; plural=(n != 1);"
 )

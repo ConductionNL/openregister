@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Taip/ne lentelė",
         "Yes/no table, values: {count}, {unmapped}": "Taip/ne lentelė, reikšmės: {count}, {unmapped}",
         "Store false": "Įrašyti ne (false)",
-        "other values are stored as false": "kitos reikšmės įrašomos kaip ne (false)"
+        "other values are stored as false": "kitos reikšmės įrašomos kaip ne (false)",
+        "Choose yes or no": "Pasirinkite taip arba ne",
+        "Choose yes or no as the result for \"{key}\".": "Pasirinkite taip arba ne kaip \"{key}\" rezultatą.",
+        "Choose yes or no for values that are not in the table.": "Pasirinkite taip arba ne reikšmėms, kurių nėra lentelėje.",
+        "Leave and lose changes": "Išeiti ir prarasti pakeitimus",
+        "Leave without saving?": "Išeiti neįrašius?",
+        "Row moved to position {position} of {total}.": "Eilutė perkelta į {position} vietą iš {total}.",
+        "Row {number} removed.": "Eilutė {number} pašalinta.",
+        "Save as a new pack": "Įrašyti kaip naują paketą",
+        "Show the JSON": "Rodyti JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Kažkas ištrynė šį paketą, kol jį redagavote. Jūsų pakeitimai neįrašyti: įrašykite juos kaip naują paketą arba nukopijuokite iš JSON.",
+        "Stay on this page": "Likti šiame puslapyje",
+        "Switch to the form to test the pack.": "Norėdami išbandyti paketą, perjunkite į formą.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Failas nėra migracijos paketas. Pasirinkite JSON failą, kuriame yra viena paketo apibrėžtis.",
+        "There are too many sample rows to test at once.": "Pavyzdinių eilučių per daug, kad jas būtų galima išbandyti vienu metu.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Šiame pakete yra neįrašytų pakeitimų. Jei išeisite dabar, jie bus prarasti.",
+        "Transform of row {number}:": "Eilutės {number} konvertavimas:",
+        "You are not signed in. Sign in and try again.": "Nesate prisijungę. Prisijunkite ir bandykite dar kartą.",
+        "{label} of row {number}": "{label} (eilutė {number})"
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);"
 )

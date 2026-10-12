@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Taula de sí/no",
         "Yes/no table, values: {count}, {unmapped}": "Taula de sí/no, valors: {count}, {unmapped}",
         "Store false": "Desar no (false)",
-        "other values are stored as false": "els altres valors es desen com a no (false)"
+        "other values are stored as false": "els altres valors es desen com a no (false)",
+        "Choose yes or no": "Trieu sí o no",
+        "Choose yes or no as the result for \"{key}\".": "Trieu sí o no com a resultat per a \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Trieu sí o no per als valors que no són a la taula.",
+        "Leave and lose changes": "Sortir i perdre els canvis",
+        "Leave without saving?": "Voleu sortir sense desar?",
+        "Row moved to position {position} of {total}.": "S'ha mogut la fila a la posició {position} de {total}.",
+        "Row {number} removed.": "S'ha eliminat la fila {number}.",
+        "Save as a new pack": "Desar com a paquet nou",
+        "Show the JSON": "Mostrar el JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Algú ha eliminat aquest paquet mentre l'editàveu. Els vostres canvis no s'han desat: deseu-los com a paquet nou o copieu-los del JSON.",
+        "Stay on this page": "Quedar-se en aquesta pàgina",
+        "Switch to the form to test the pack.": "Canvieu al formulari per provar el paquet.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "El fitxer no és un paquet de migració. Trieu un fitxer JSON que contingui una definició de paquet.",
+        "There are too many sample rows to test at once.": "Hi ha massa files d'exemple per provar-les alhora.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Aquest paquet té canvis que no s'han desat. Si sortiu ara, es perdran.",
+        "Transform of row {number}:": "Transformació de la fila {number}:",
+        "You are not signed in. Sign in and try again.": "No heu iniciat la sessió. Inicieu la sessió i torneu-ho a provar.",
+        "{label} of row {number}": "{label} de la fila {number}"
     },
     "nplurals=2; plural=(n != 1);"
 )

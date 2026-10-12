@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Jah/ei-tabel",
         "Yes/no table, values: {count}, {unmapped}": "Jah/ei-tabel, väärtused: {count}, {unmapped}",
         "Store false": "Salvesta ei (false)",
-        "other values are stored as false": "muud väärtused salvestatakse kui ei (false)"
+        "other values are stored as false": "muud väärtused salvestatakse kui ei (false)",
+        "Choose yes or no": "Vali jah või ei",
+        "Choose yes or no as the result for \"{key}\".": "Vali „{key}“ tulemuseks jah või ei.",
+        "Choose yes or no for values that are not in the table.": "Vali jah või ei väärtustele, mida tabelis pole.",
+        "Leave and lose changes": "Lahku ja kaota muudatused",
+        "Leave without saving?": "Kas lahkuda salvestamata?",
+        "Row moved to position {position} of {total}.": "Rida teisaldati kohale {position} (kokku {total}).",
+        "Row {number} removed.": "Rida {number} eemaldati.",
+        "Save as a new pack": "Salvesta uue paketina",
+        "Show the JSON": "Näita JSON-i",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Keegi kustutas selle paketi sel ajal, kui sa seda muutsid. Sinu muudatusi ei salvestatud: salvesta need uue paketina või kopeeri need JSON-ist.",
+        "Stay on this page": "Jää sellele lehele",
+        "Switch to the form to test the pack.": "Paketi testimiseks lülitu vormile.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Fail ei ole migratsioonipakett. Vali JSON-fail, mis sisaldab ühte paketi definitsiooni.",
+        "There are too many sample rows to test at once.": "Näidisridu on liiga palju, et neid korraga testida.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Selles paketis on salvestamata muudatusi. Kui sa praegu lahkud, lähevad need kaotsi.",
+        "Transform of row {number}:": "Rea {number} teisendus:",
+        "You are not signed in. Sign in and try again.": "Sa pole sisse logitud. Logi sisse ja proovi uuesti.",
+        "{label} of row {number}": "{label}, rida {number}"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Tabella sì/no",
         "Yes/no table, values: {count}, {unmapped}": "Tabella sì/no, valori: {count}, {unmapped}",
         "Store false": "Salva no (false)",
-        "other values are stored as false": "gli altri valori vengono salvati come no (false)"
+        "other values are stored as false": "gli altri valori vengono salvati come no (false)",
+        "Choose yes or no": "Scegli sì o no",
+        "Choose yes or no as the result for \"{key}\".": "Scegli sì o no come risultato per \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Scegli sì o no per i valori non presenti nella tabella.",
+        "Leave and lose changes": "Esci e perdi le modifiche",
+        "Leave without saving?": "Uscire senza salvare?",
+        "Row moved to position {position} of {total}.": "Riga spostata in posizione {position} di {total}.",
+        "Row {number} removed.": "Riga {number} rimossa.",
+        "Save as a new pack": "Salva come nuovo pacchetto",
+        "Show the JSON": "Mostra il JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Qualcuno ha eliminato questo pacchetto mentre lo stavi modificando. Le tue modifiche non sono salvate: salvale come nuovo pacchetto o copiale dal JSON.",
+        "Stay on this page": "Resta su questa pagina",
+        "Switch to the form to test the pack.": "Passa al modulo per provare il pacchetto.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Il file non è un pacchetto di migrazione. Scegli un file JSON che contenga una sola definizione di pacchetto.",
+        "There are too many sample rows to test at once.": "Ci sono troppe righe di esempio da provare in una volta sola.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Questo pacchetto ha modifiche non salvate. Se esci ora, andranno perse.",
+        "Transform of row {number}:": "Trasformazione della riga {number}:",
+        "You are not signed in. Sign in and try again.": "Non hai effettuato l'accesso. Accedi e riprova.",
+        "{label} of row {number}": "{label} della riga {number}"
     },
     "nplurals=3; plural=n == 1 ? 0 : n != 0 && n % 1000000 == 0 ? 1 : 2;"
 )

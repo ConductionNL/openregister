@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Evet/hayır tablosu",
         "Yes/no table, values: {count}, {unmapped}": "Evet/hayır tablosu, değerler: {count}, {unmapped}",
         "Store false": "Hayır (false) olarak kaydet",
-        "other values are stored as false": "diğer değerler hayır (false) olarak kaydedilir"
+        "other values are stored as false": "diğer değerler hayır (false) olarak kaydedilir",
+        "Choose yes or no": "Evet veya hayır seçin",
+        "Choose yes or no as the result for \"{key}\".": "\"{key}\" için sonuç olarak evet veya hayır seçin.",
+        "Choose yes or no for values that are not in the table.": "Tabloda olmayan değerler için evet veya hayır seçin.",
+        "Leave and lose changes": "Ayrıl ve değişiklikleri kaybet",
+        "Leave without saving?": "Kaydetmeden ayrılınsın mı?",
+        "Row moved to position {position} of {total}.": "Satır {position}. konuma taşındı (toplam {total}).",
+        "Row {number} removed.": "{number}. satır kaldırıldı.",
+        "Save as a new pack": "Yeni paket olarak kaydet",
+        "Show the JSON": "JSON'u göster",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Siz düzenlerken biri bu paketi sildi. Değişiklikleriniz kaydedilmedi: bunları yeni bir paket olarak kaydedin veya JSON'dan kopyalayın.",
+        "Stay on this page": "Bu sayfada kal",
+        "Switch to the form to test the pack.": "Paketi test etmek için forma geçin.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Dosya bir taşıma paketi değil. Tek bir paket tanımı içeren bir JSON dosyası seçin.",
+        "There are too many sample rows to test at once.": "Aynı anda test edilemeyecek kadar çok örnek satır var.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Bu pakette kaydedilmemiş değişiklikler var. Şimdi ayrılırsanız bu değişiklikler kaybolur.",
+        "Transform of row {number}:": "{number}. satırın dönüşümü:",
+        "You are not signed in. Sign in and try again.": "Giriş yapmadınız. Giriş yapıp yeniden deneyin.",
+        "{label} of row {number}": "{label} ({number}. satır)"
     },
     "nplurals=2; plural=(n != 1);"
 )

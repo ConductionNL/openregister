@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Tabella gea/na",
         "Yes/no table, values: {count}, {unmapped}": "Tabella gea/na, valurs: {count}, {unmapped}",
         "Store false": "Memorisar na (false)",
-        "other values are stored as false": "autras valurs vegnan memorisadas sco na (false)"
+        "other values are stored as false": "autras valurs vegnan memorisadas sco na (false)",
+        "Choose yes or no": "Tschernai gea u na",
+        "Choose yes or no as the result for \"{key}\".": "Tschernai gea u na sco resultat per \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Tschernai gea u na per valurs che n'èn betg en la tabella.",
+        "Leave and lose changes": "Bandunar e perder las midadas",
+        "Leave without saving?": "Bandunar senza memorisar?",
+        "Row moved to position {position} of {total}.": "Lingia spustada a la posiziun {position} da {total}.",
+        "Row {number} removed.": "Lingia {number} allontanada.",
+        "Save as a new pack": "Memorisar sco nov pachet",
+        "Show the JSON": "Mussar il JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Insatgi ha stizzà quest pachet durant che Vus l'avais modifitgà. Vossas midadas n'èn betg memorisadas: memorisai ellas sco nov pachet u copiai ellas dal JSON.",
+        "Stay on this page": "Restar sin questa pagina",
+        "Switch to the form to test the pack.": "Midai al formular per testar il pachet.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "La datoteca n'è betg in pachet da migraziun. Tschernai ina datoteca JSON che cuntegna ina definiziun da pachet.",
+        "There are too many sample rows to test at once.": "I dat memia bleras lingias d'exempel per las testar tuttas ensemen.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Quest pachet ha midadas che n'èn betg memorisadas. Sche Vus bandunais ussa, van ellas a perder.",
+        "Transform of row {number}:": "Transfurmaziun da la lingia {number}:",
+        "You are not signed in. Sign in and try again.": "Vus n'essas betg annunzià. Annunziai Vus ed empruvai anc ina giada.",
+        "{label} of row {number}": "{label} da la lingia {number}"
     },
     "nplurals=2; plural=(n != 1);"
 )

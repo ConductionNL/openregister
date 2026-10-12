@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Tabela sim/não",
         "Yes/no table, values: {count}, {unmapped}": "Tabela sim/não, valores: {count}, {unmapped}",
         "Store false": "Guardar não (false)",
-        "other values are stored as false": "os outros valores são guardados como não (false)"
+        "other values are stored as false": "os outros valores são guardados como não (false)",
+        "Choose yes or no": "Escolha sim ou não",
+        "Choose yes or no as the result for \"{key}\".": "Escolha sim ou não como resultado para \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Escolha sim ou não para os valores que não estão na tabela.",
+        "Leave and lose changes": "Sair e perder as alterações",
+        "Leave without saving?": "Sair sem guardar?",
+        "Row moved to position {position} of {total}.": "Linha movida para a posição {position} de {total}.",
+        "Row {number} removed.": "Linha {number} removida.",
+        "Save as a new pack": "Guardar como novo pacote",
+        "Show the JSON": "Mostrar o JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Alguém eliminou este pacote enquanto o estava a editar. As suas alterações não foram guardadas: guarde-as como um novo pacote ou copie-as do JSON.",
+        "Stay on this page": "Ficar nesta página",
+        "Switch to the form to test the pack.": "Mude para o formulário para testar o pacote.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "O ficheiro não é um pacote de migração. Escolha um ficheiro JSON que contenha uma definição de pacote.",
+        "There are too many sample rows to test at once.": "Há demasiadas linhas de exemplo para testar de uma só vez.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Este pacote tem alterações que não foram guardadas. Se sair agora, perdem-se.",
+        "Transform of row {number}:": "Transformação da linha {number}:",
+        "You are not signed in. Sign in and try again.": "Não tem sessão iniciada. Inicie sessão e tente novamente.",
+        "{label} of row {number}": "{label} da linha {number}"
     },
     "nplurals=2; plural=(n != 1);"
 )

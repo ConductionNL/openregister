@@ -3497,7 +3497,25 @@ OC.L10N.register(
         "Yes/no table": "Таблица да/не",
         "Yes/no table, values: {count}, {unmapped}": "Таблица да/не, стойности: {count}, {unmapped}",
         "Store false": "Запазване на „не“ (false)",
-        "other values are stored as false": "другите стойности се запазват като „не“ (false)"
+        "other values are stored as false": "другите стойности се запазват като „не“ (false)",
+        "Choose yes or no": "Изберете да или не",
+        "Choose yes or no as the result for \"{key}\".": "Изберете да или не като резултат за \"{key}\".",
+        "Choose yes or no for values that are not in the table.": "Изберете да или не за стойностите, които не са в таблицата.",
+        "Leave and lose changes": "Напускане със загуба на промените",
+        "Leave without saving?": "Напускане без запазване?",
+        "Row moved to position {position} of {total}.": "Редът е преместен на позиция {position} от {total}.",
+        "Row {number} removed.": "Ред {number} е премахнат.",
+        "Save as a new pack": "Запазване като нов пакет",
+        "Show the JSON": "Показване на JSON",
+        "Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.": "Някой е изтрил този пакет, докато сте го редактирали. Вашите промени не са запазени: запазете ги като нов пакет или ги копирайте от JSON.",
+        "Stay on this page": "Оставане на тази страница",
+        "Switch to the form to test the pack.": "Превключете към формуляра, за да тествате пакета.",
+        "The file is not a migration pack. Choose a JSON file that holds one pack definition.": "Файлът не е миграционен пакет. Изберете JSON файл, който съдържа една дефиниция на пакет.",
+        "There are too many sample rows to test at once.": "Примерните редове са твърде много, за да бъдат тествани наведнъж.",
+        "This pack has changes that are not saved. If you leave now, they are lost.": "Този пакет има незапазени промени. Ако напуснете сега, те ще бъдат загубени.",
+        "Transform of row {number}:": "Преобразуване на ред {number}:",
+        "You are not signed in. Sign in and try again.": "Не сте влезли. Влезте и опитайте отново.",
+        "{label} of row {number}": "{label} на ред {number}"
     },
     "nplurals=2; plural=(n != 1);"
 )
