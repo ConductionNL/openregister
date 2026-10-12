@@ -346,6 +346,24 @@ test.beforeAll(async () => {
 		probe.status(),
 		`seeded account '${OTHER}' cannot read the packs (${probe.status()}), did playwright-seed-command run?`,
 	).toBe(200)
+
+	// The pages are found by their English names. An account set to another
+	// language fails every browser test with "did not render its heading",
+	// which reads like a broken page; say what it is instead. The probe sends
+	// the browser's language, so an account without a language of its own
+	// resolves the way the page does.
+	for (const [uid, context] of [[ADMIN, admin], [OTHER, other]] as const) {
+		const answer = await context.get('/ocs/v2.php/cloud/user?format=json', {
+			headers: { 'Accept-Language': 'en-US,en;q=0.9' },
+		})
+		expect(answer.status(), `the account '${uid}' could not be read`).toBe(200)
+		const language = (await answer.json()).ocs?.data?.language ?? ''
+		expect(
+			['', 'en'].includes(language) || language.startsWith('en_'),
+			`the account '${uid}' uses language '${language}'; these tests read the English interface.`
+				+ ` Set it to English, for example with \`occ user:setting ${uid} core lang en\`, and run again`,
+		).toBe(true)
+	}
 })
 
 test.afterAll(async () => {
