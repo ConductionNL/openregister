@@ -313,6 +313,26 @@ class DraftActivationTest extends TestCase {
 	}//end testTheOwnerMakesACompleteDraftDefinitive()
 
 	/**
+	 * A signed-in user is their own asserted owner; a controller hands the user in and never an owner.
+	 */
+	public function testActivatingAsAUserAssertsThatUser(): void {
+		$this->store(uuid: 'd1', owner: 'agent', status: 'draft', data: ['subject' => 'A', 'channel' => 'phone']);
+		$this->store(uuid: 'd2', owner: 'agent', status: 'draft', data: ['subject' => 'B', 'channel' => 'phone']);
+
+		$saved = $this->activation->activateAsUser(register: $this->register, schema: $this->schema, draftId: 'd1', user: $this->user(uid: 'agent'), changes: ['channel' => 'email']);
+		$this->assertSame('active', $saved->getStatus());
+		$this->assertSame('email', $this->saves[0]['object']['channel']);
+
+		// Control: another user is refused through the same door.
+		try {
+			$this->activation->activateAsUser(register: $this->register, schema: $this->schema, draftId: 'd2', user: $this->user(uid: 'colleague'));
+			$this->fail('A colleague made somebody else\'s draft definitive.');
+		} catch (DraftActivationRefusedException $refused) {
+			$this->assertSame(403, $refused->getStatus());
+		}
+	}//end testActivatingAsAUserAssertsThatUser()
+
+	/**
 	 * The allowance is used once: after the activation nothing else may leave draft on it.
 	 */
 	public function testTheAllowanceDoesNotOutliveTheActivation(): void {

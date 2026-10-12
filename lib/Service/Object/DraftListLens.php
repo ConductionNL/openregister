@@ -116,21 +116,32 @@ class DraftListLens {
 			return $workList;
 		}
 
-		$raw = $query[self::PARAMETER];
-		if (is_string($raw) === true && strtolower(trim($raw)) === self::ANY) {
-			return self::ANY;
+		return ($this->asked(raw: $query[self::PARAMETER]) ?? $workList);
+	}//end modeFor()
+
+	/**
+	 * The lens a `_drafts` value names, or null when it names none.
+	 *
+	 * @param mixed $raw The parameter's value.
+	 *
+	 * @return string|null ANY, NONE or ONLY; null for false and for anything unrecognised.
+	 */
+	private function asked(mixed $raw): ?string {
+		$word = null;
+		if (is_string($raw) === true) {
+			$word = strtolower(trim($raw));
 		}
 
-		if (is_string($raw) === true && strtolower(trim($raw)) === self::NONE) {
-			return self::NONE;
+		if ($word === self::ANY || $word === self::NONE) {
+			return $word;
 		}
 
 		if (is_scalar($raw) === true && filter_var($raw, FILTER_VALIDATE_BOOLEAN) === true) {
 			return self::ONLY;
 		}
 
-		return $workList;
-	}//end modeFor()
+		return null;
+	}//end asked()
 
 	/**
 	 * Whether the query carries a filter on the stored status.

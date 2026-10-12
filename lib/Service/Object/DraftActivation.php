@@ -52,6 +52,7 @@ use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IL10N;
+use OCP\IUser;
 use Throwable;
 
 /**
@@ -137,6 +138,28 @@ class DraftActivation {
 
 		return $saved;
 	}//end activate()
+
+	/**
+	 * Make a signed-in user's own draft definitive.
+	 *
+	 * The owner is built here, from the user the caller's session holds, so
+	 * no controller ever writes an owner assertion of its own.
+	 *
+	 * @param Register             $register The draft's register.
+	 * @param Schema               $schema   The draft's schema.
+	 * @param string               $draftId  The draft's uuid.
+	 * @param IUser                $user     The acting user.
+	 * @param array<string, mixed> $changes  Last property values, laid over the stored draft before it is judged.
+	 *
+	 * @return ObjectEntity The object, now `active`.
+	 *
+	 * @throws DraftActivationRefusedException 404 unknown, 409 not a draft, 403 not the owner's, 422 not valid in full.
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
+	 */
+	public function activateAsUser(Register $register, Schema $schema, string $draftId, IUser $user, array $changes = []): ObjectEntity {
+		return $this->activate(register: $register, schema: $schema, draftId: $draftId, owner: DraftOwner::ofUser(user: $user), changes: $changes);
+	}//end activateAsUser()
 
 	/**
 	 * The stored draft, when it is a draft and the asserted owner's.

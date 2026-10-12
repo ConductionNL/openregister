@@ -28,7 +28,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Service\Object\DraftActivation;
-use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -49,7 +48,6 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Controller\ObjectDraftController
  * @uses \OCA\OpenRegister\Exception\DraftActivationRefusedException
- * @uses \OCA\OpenRegister\Service\Object\DraftOwner
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
@@ -186,9 +184,9 @@ class ObjectDraftControllerTest extends TestCase {
 	 * Record the activation's arguments and answer with an object, or refuse.
 	 */
 	private function activationAnswers(ObjectEntity|\Throwable $answer): void {
-		$this->activation->method('activate')->willReturnCallback(
-			function (Register $register, Schema $schema, string $draftId, DraftOwner $owner, array $changes = []) use ($answer): ObjectEntity {
-				$this->activations[] = ['register' => $register, 'schema' => $schema, 'draftId' => $draftId, 'owner' => $owner, 'changes' => $changes];
+		$this->activation->method('activateAsUser')->willReturnCallback(
+			function (Register $register, Schema $schema, string $draftId, IUser $user, array $changes = []) use ($answer): ObjectEntity {
+				$this->activations[] = ['register' => $register, 'schema' => $schema, 'draftId' => $draftId, 'user' => $user, 'changes' => $changes];
 				if ($answer instanceof \Throwable) {
 					throw $answer;
 				}
@@ -250,8 +248,7 @@ class ObjectDraftControllerTest extends TestCase {
 		$this->assertSame($this->register, $this->activations[0]['register']);
 		$this->assertSame($this->schema, $this->activations[0]['schema']);
 		$this->assertSame('d1', $this->activations[0]['draftId']);
-		$this->assertSame('agent', $this->activations[0]['owner']->value());
-		$this->assertSame($user, $this->activations[0]['owner']->user());
+		$this->assertSame($user, $this->activations[0]['user']);
 		$this->assertSame(['channel' => 'phone'], $this->activations[0]['changes']);
 
 		// The record was resolved through the RBAC boundary, in its own register and schema.
@@ -262,7 +259,7 @@ class ObjectDraftControllerTest extends TestCase {
 	 * A body without `object`, or with something that is no object, activates the draft as stored.
 	 */
 	public function testWithoutABodyTheStoredDraftIsJudged(): void {
-		$this->signIn(uid: 'agent');
+		$user = $this->signIn(uid: 'agent');
 		$active = $this->readableDraft();
 		$this->request->method('getParam')->willReturnCallback(static fn (string $key) => ['object' => 'not an object', 'owner' => 'somebody-else'][$key] ?? null);
 		$this->activationAnswers(answer: $active);
@@ -272,7 +269,7 @@ class ObjectDraftControllerTest extends TestCase {
 		$this->assertSame(200, $response->getStatus());
 		$this->assertSame([], $this->activations[0]['changes']);
 		// A request cannot name the owner: it is the signed-in user, whatever the body says.
-		$this->assertSame('agent', $this->activations[0]['owner']->value());
+		$this->assertSame($user, $this->activations[0]['user']);
 	}//end testWithoutABodyTheStoredDraftIsJudged()
 
 	/**
@@ -313,7 +310,7 @@ class ObjectDraftControllerTest extends TestCase {
 	 */
 	public function testWhatTheCallerMayNotReadAnswers404(): void {
 		$this->signIn(uid: 'colleague');
-		$this->activation->expects($this->never())->method('activate');
+		$this->activation->expects($this->never())->method('activateAsUser');
 
 		// Not readable: the RBAC read answers null.
 		$unreadable = $this->controller->activate(register: 'service', schema: 'ticket', id: 'd1');
@@ -338,7 +335,7 @@ class ObjectDraftControllerTest extends TestCase {
 		$schemas->method('find')->willReturn($this->schema);
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnArgument(0);
-		$this->activation->expects($this->never())->method('activate');
+		$this->activation->expects($this->never())->method('activateAsUser');
 
 		$controller = new ObjectDraftController(
 			appName: 'openregister',
@@ -360,7 +357,7 @@ class ObjectDraftControllerTest extends TestCase {
 	 */
 	public function testNobodySignedInAnswers401(): void {
 		$this->session->method('getUser')->willReturn(null);
-		$this->activation->expects($this->never())->method('activate');
+		$this->activation->expects($this->never())->method('activateAsUser');
 
 		$response = $this->controller->activate(register: 'service', schema: 'ticket', id: 'd1');
 

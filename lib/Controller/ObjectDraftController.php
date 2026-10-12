@@ -38,7 +38,6 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Service\Object\DraftActivation;
-use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -57,8 +56,6 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A controller that resolves a record through the
  * RBAC boundary, its register and its schema, and answers five statuses, names those types.
- * @SuppressWarnings(PHPMD.StaticAccess) DraftOwner::ofUser() is a named constructor; there is no
- * instance to inject.
  *
  * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
  */
@@ -154,11 +151,11 @@ class ObjectDraftController extends Controller {
 		}
 
 		try {
-			$activated = $this->activation->activate(
+			$activated = $this->activation->activateAsUser(
 				register: $registerEntity,
 				schema: $schemaEntity,
 				draftId: $id,
-				owner: DraftOwner::ofUser(user: $user),
+				user: $user,
 				changes: $changes
 			);
 		} catch (DraftActivationRefusedException $refused) {
