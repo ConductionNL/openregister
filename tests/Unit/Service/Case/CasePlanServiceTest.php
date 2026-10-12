@@ -225,6 +225,7 @@ class CasePlanServiceTest extends TestCase {
 			$this->service()->createPlan(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanDefinitionTest::permitDefinition(), uid: 'alice');
 			$this->fail('one plan per object');
 		} catch (CaseValidationException $refusal) {
+			$this->assertInstanceOf(\OCA\OpenRegister\Exception\CasePlanExistsException::class, $refusal, 'An existing plan is told apart by type.');
 			$this->assertStringContainsString('already has a case plan', $refusal->getMessage());
 		}
 
@@ -551,7 +552,7 @@ class CasePlanServiceTest extends TestCase {
 	 * app, and a malformed app id is refused. The user verbs keep refusing a
 	 * missing identity.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
 	 *
 	 * @return void
 	 */
@@ -590,7 +591,7 @@ class CasePlanServiceTest extends TestCase {
 	 * app and runs no cascade: an imported active stage does not enter its
 	 * children.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 *
 	 * @return void
 	 */
@@ -612,4 +613,36 @@ class CasePlanServiceTest extends TestCase {
 		$this->expectException(CaseValidationException::class);
 		$this->service()->ensureItems(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: CasePlanEnsurerTest::migrated(), history: [], app: 'Not An App');
 	}//end testEnsureItemsBringsAPlanOverAsTheApp()
+	/**
+	 * An enforcing expiry terminates the item through the one transition
+	 * path, with the timer as the cause; an item already terminal, or gone,
+	 * is left alone.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 *
+	 * @return void
+	 */
+	public function testAnExpiredTimerTerminatesItsItem(): void {
+		$this->items->seed(
+			[
+				CaseFixtures::row(id: 1, key: 'intake', type: CaseItem::TYPE_STAGE, state: CaseItem::STATE_ACTIVE),
+				CaseFixtures::row(id: 2, key: 'check', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE, parentId: 1),
+				CaseFixtures::row(id: 3, key: 'done', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_COMPLETED, parentId: 1),
+			]
+		);
+
+		$this->assertTrue($this->service()->onTimerExpired(itemUuid: 'item-2', timerUuid: 'timer-9'));
+		$this->assertSame(CaseItem::STATE_TERMINATED, $this->items->findByUuid(uuid: 'item-2')->getState());
+		$last = $this->audits->findForItem(2)[count($this->audits->findForItem(2)) - 1];
+		$this->assertSame(CaseItemAudit::CAUSE_REALISATION, $last->getCause());
+		$this->assertSame('flow-timer:timer-9', $last->getCauseRef());
+
+		$this->assertFalse($this->service()->onTimerExpired(itemUuid: 'item-3', timerUuid: 'timer-9'), 'A terminal item is left alone.');
+		$this->assertSame(CaseItem::STATE_COMPLETED, $this->items->findByUuid(uuid: 'item-3')->getState());
+		$this->assertFalse($this->service()->onTimerExpired(itemUuid: 'item-404', timerUuid: 'timer-9'), 'A vanished item is not an error.');
+
+		$this->items->seed([CaseFixtures::row(id: 4, key: 'late', type: CaseItem::TYPE_MILESTONE, state: CaseItem::STATE_ENABLED, parentId: 1)]);
+		$this->assertFalse($this->service()->onTimerExpired(itemUuid: 'item-4', timerUuid: 'timer-9'), 'A term that cannot end its item is logged.');
+		$this->assertSame(CaseItem::STATE_ENABLED, $this->items->findByUuid(uuid: 'item-4')->getState());
+	}//end testAnExpiredTimerTerminatesItsItem()
 }//end class
