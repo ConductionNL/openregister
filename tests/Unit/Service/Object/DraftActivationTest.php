@@ -398,6 +398,51 @@ class DraftActivationTest extends TestCase {
 	}//end testAnIncompleteDraftIsRefusedPerField()
 
 	/**
+	 * A stored draft holds null for every property nobody filled in: a table has a column for each.
+	 * Found live (12 October): the answer named `channel` with code `type` and the sentence
+	 * "The data (null) must match the type: string", where the caller needs `required`.
+	 */
+	public function testAStoredNullIsAPropertyNobodyFilledIn(): void {
+		$this->store(
+			uuid: 'd1',
+			owner: 'agent',
+			status: 'draft',
+			data: ['subject' => null, 'channel' => null, 'priority' => null, 'number' => null, 'contactedAt' => '2026-10-12T15:00:00+02:00']
+		);
+
+		$refused = $this->refusalOf(draftId: 'd1', owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')));
+
+		$byProperty = [];
+		foreach ($refused->getFindings() as $finding) {
+			$byProperty[$finding['property']] = $finding['code'];
+		}
+
+		$this->assertSame(['channel' => 'required', 'subject' => 'required'], $this->sorted(map: $byProperty));
+
+		// Control: with the two values sent, the same stored nulls stand in nobody's way.
+		$saved = $this->activation->activate(
+			register: $this->register,
+			schema: $this->schema,
+			draftId: 'd1',
+			owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')),
+			changes: ['subject' => 'Bin not collected', 'channel' => 'phone']
+		);
+		$this->assertSame('active', $saved->getStatus());
+		$this->assertArrayNotHasKey('priority', $this->saves[0]['object']);
+	}//end testAStoredNullIsAPropertyNobodyFilledIn()
+
+	/**
+	 * A map sorted by key, so an assertion reads the same whatever order the validator found things in.
+	 * @param array<string, string> $map The map.
+	 * @return array<string, string> The sorted map.
+	 */
+	private function sorted(array $map): array {
+		ksort($map);
+
+		return $map;
+	}//end sorted()
+
+	/**
 	 * The last changes are laid over the stored draft before it is judged; `@self` and `id` in them are ignored.
 	 */
 	public function testLastChangesCompleteTheDraft(): void {

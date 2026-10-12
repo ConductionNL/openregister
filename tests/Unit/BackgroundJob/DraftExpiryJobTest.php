@@ -45,6 +45,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Db\AuditTrail
  */
 class DraftExpiryJobTest extends TestCase {
 
@@ -57,7 +58,7 @@ class DraftExpiryJobTest extends TestCase {
 	 * @return class-string<TimedJob> The declared class.
 	 */
 	private function declaredJobClass(): string {
-		$info = simplexml_load_file(dirname(__DIR__, 3) . '/appinfo/info.xml');
+		$info = simplexml_load_string((string)file_get_contents(dirname(__DIR__, 3) . '/appinfo/info.xml'));
 		$this->assertNotFalse($info, 'appinfo/info.xml could not be read');
 
 		$found = [];

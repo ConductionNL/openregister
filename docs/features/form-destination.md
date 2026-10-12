@@ -108,6 +108,9 @@ A draft is the destination object itself, saved with `@self.status: draft`
   still refused, whatever the schema's hard-validation flag.
 - A draft is visible to its owner only. Set `draftsVisible: true` in the
   schema configuration to let everyone who may read the schema see drafts.
+- Who cannot read a draft cannot change it. A PATCH, or a create that names
+  the draft's id, answers 403 for anybody but the owner. An administrator
+  may still correct a draft.
 - Submit with `_draft` to leave draft. The submit runs full validation, sets
   `@self.status` to `active`, answers with the moment it left draft as
   `receivedAt`, and dispatches `ObjectActivatedEvent`.

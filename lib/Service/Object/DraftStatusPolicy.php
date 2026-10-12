@@ -278,6 +278,27 @@ class DraftStatusPolicy {
 	}//end draftsVisibleToOthers()
 
 	/**
+	 * Whether a stored draft is kept from a caller: it is a draft, its schema keeps drafts to their owner, and the caller is not that owner.
+	 *
+	 * The read rule (MagicRbacHandler) already hides such a draft. A write
+	 * that looks its target up past that rule asks here, so somebody who
+	 * cannot read a draft cannot change it either.
+	 *
+	 * @param ObjectEntity $object The stored object.
+	 * @param Schema       $schema Its schema.
+	 * @param string|null  $userId The caller, null when nobody is signed in.
+	 *
+	 * @return bool True when the caller may not touch it.
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+	 */
+	public function keptFrom(ObjectEntity $object, Schema $schema, ?string $userId): bool {
+		return $object->isDraft() === true
+			&& $this->draftsVisibleToOthers(schema: $schema) === false
+			&& $object->getOwner() !== $userId;
+	}//end keptFrom()
+
+	/**
 	 * Whether the schema's lists show the caller their own drafts by default.
 	 *
 	 * True unless the schema's configuration sets `draftsListed: false`. A

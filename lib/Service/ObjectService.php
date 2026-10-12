@@ -2278,6 +2278,9 @@ class ObjectService implements ObjectServiceInterface
                 object: $existingObject
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // Not found FOR THIS CALLER: new, or stored and hidden from them.
+            $this->refuseSomebodyElsesDraft(uuid: $uuid, _rbac: $_rbac);
+
             // Object not found, this is a CREATE operation with specific UUID.
             $this->checkPermission(
                 schema: $this->currentSchema,
@@ -2289,6 +2292,58 @@ class ObjectService implements ObjectServiceInterface
             );
         }//end try
     }//end checkSavePermissions()
+
+    /**
+     * Refuse a write to a stored draft the caller cannot read.
+     *
+     * A draft answers to its owner only (decision 180), and that rule lives in
+     * the read query. The lookup above therefore does not find somebody else's
+     * draft, and the write went on as a create under a chosen uuid, judged by
+     * the schema's create rule, and was then stored over the draft. Anybody
+     * who may create in the schema could change somebody else's draft through
+     * PATCH and got its content back in the answer. Found on a live instance,
+     * 12 October 2026.
+     *
+     * So the uuid is looked up once more, past the read rule, and only for
+     * this question. Skipped with RBAC off: an administrator, a job and a
+     * scope-value owner (decision 195) are judged by their caller.
+     *
+     * @param string $uuid  The uuid the caller's own lookup did not find.
+     * @param bool   $_rbac Whether the write is judged for the signed-in caller.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the uuid is a draft kept from the caller.
+     *
+     * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+     */
+    private function refuseSomebodyElsesDraft(string $uuid, bool $_rbac): void
+    {
+        if ($_rbac === false || $this->currentSchema === null) {
+            return;
+        }
+
+        try {
+            $stored = $this->objectMapper->find(
+                identifier: $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\OCP\AppFramework\Db\DoesNotExistException) {
+            return;
+        }
+
+        $kept = (new DraftStatusPolicy())->keptFrom(
+            object: $stored,
+            schema: $this->currentSchema,
+            userId: $this->userSession->getUser()?->getUID()
+        );
+        if ($kept === true) {
+            throw new \OCA\OpenRegister\Exception\NotAuthorizedException(message: 'Only the person who started this draft can change it.');
+        }
+    }//end refuseSomebodyElsesDraft()
 
     /**
      * Build the transient object a create rule's `match` is evaluated against.

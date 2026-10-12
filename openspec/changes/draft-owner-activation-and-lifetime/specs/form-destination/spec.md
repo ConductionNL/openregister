@@ -53,6 +53,14 @@ A refusal SHALL change nothing and SHALL answer `{ message, reason, findings }` 
 - **THEN** the answer is 422 with `reason` `invalid` and a `required` finding for `subject` and one for `channel`
 - **AND** the object is still a draft and no event is dispatched
 
+#### Scenario: A stored empty value is a property nobody filled in
+@e2e exclude unit; DraftActivationTest covers the stored nulls, the Newman collection openregister-draft-activation asserts the `required` finding on a draft read back from its table
+
+- **GIVEN** a stored draft whose table holds null for `channel`, for a property with a default and for a server-set property
+- **WHEN** its owner activates it
+- **THEN** the finding for `channel` has code `required`, not a wrong-type finding about null
+- **AND** the property with a default and the server-set property get no finding
+
 #### Scenario: Somebody else is refused with a real error status
 @e2e exclude unit; DraftActivationTest covers the owner check and ObjectDraftControllerTest the plain Controller, the Newman collection openregister-draft-activation asserts the delivered 403 from a caller's side
 
@@ -75,6 +83,25 @@ A refusal SHALL change nothing and SHALL answer `{ message, reason, findings }` 
 - **WHEN** in-process code activates it asserting `portal:subject-1`
 - **THEN** it becomes `active`
 - **AND** the same call asserting `portal:subject-2` is refused with `not-the-owner`
+
+### Requirement: A draft MUST NOT be changed by somebody who cannot read it
+
+A draft answers to its owner only, unless its schema shows drafts to others (`draftsVisible`). A save under RBAC whose own lookup does not find the object SHALL look the uuid up once more past the read rule, and SHALL refuse the write when it is a draft kept from the caller. So a PATCH, and a create that names the draft's id, cannot write over somebody else's draft or return its content. The refusal is `NotAuthorizedException`, delivered as 403. A save with RBAC off (an administrator, a job, a scope-value owner, decision 195) is judged by its caller, as before. A stored object that is not a draft, and a uuid nobody stored, are judged as before.
+
+#### Scenario: A colleague cannot change a draft through PATCH
+@e2e exclude unit; ObjectServiceDraftWriteTest covers the save with the mapper answering as the read rule does, the Newman collection openregister-draft-activation asserts the delivered refusal and the unchanged draft from a third account
+
+- **GIVEN** a draft owned by one user, on a schema every signed-in user may create and update in
+- **WHEN** another user, not an administrator, sends a PATCH to it, or a POST that names its id
+- **THEN** the write is refused with 403
+- **AND** the draft holds what its owner typed
+
+#### Scenario: The rule is about drafts only
+@e2e exclude unit; ObjectServiceDraftWriteTest covers each control
+
+- **GIVEN** the same save on a uuid nobody stored, on a stored object that is not a draft, with RBAC off, and on a schema with `draftsVisible`
+- **WHEN** it runs
+- **THEN** each is judged as it was before this requirement
 
 ### Requirement: A draft lifetime MUST default to thirty days, and a schema MUST be able to change it or opt out
 

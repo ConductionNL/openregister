@@ -48,6 +48,12 @@
 - [x] 3.7 `DraftRemovalRecord`: the permanent delete of a draft writes one audit-trail entry `draft.removed` through `AuditTrailMapper::createAuditTrailEntry()`, naming the user or the job, never the content (decision 226)
   - Spec ref: specs/form-destination/spec.md, "Removing a draft MUST leave one audit-trail entry without its content"
   - Test: DraftRemovalRecordTest (the real delete handler, with a record that is not a draft as control), DraftRemovalAuditRowTest (the row read back from the migrated audit table), DraftExpiryJobTest (the job as actor)
+- [x] 3.8 `DraftActivation`: a stored null is a property nobody filled in, so a missing required property answers `required` and a server-filled one is excused (found live: the table holds null for every empty column)
+  - Spec ref: specs/form-destination/spec.md, scenario "A stored empty value is a property nobody filled in"
+  - Test: DraftActivationTest::testAStoredNullIsAPropertyNobodyFilledIn
+- [x] 3.9 `ObjectService::saveObject()`: a save under RBAC cannot write over a draft its caller cannot read (found live: PATCH and a POST naming the id changed another user's draft)
+  - Spec ref: specs/form-destination/spec.md, "A draft MUST NOT be changed by somebody who cannot read it"
+  - Test: ObjectServiceDraftWriteTest (each refusal with its controls), DraftStatusPolicyTest::testADraftIsKeptFromEverybodyButItsOwner, the Newman collection's colleague steps
 
 ## 4. Lists
 
