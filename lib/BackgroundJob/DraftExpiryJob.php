@@ -89,7 +89,7 @@ class DraftExpiryJob extends TimedJob {
 	 * @throws Throwable When the sweep fails, after logging it.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) TimedJob's signature.
-	 * @SuppressWarnings(PHPMD.StaticAccess)          DraftRemovalRecord::asJob() is the ambient frame that names the job; there is no instance to inject.
+	 * @SuppressWarnings(PHPMD.StaticAccess)          DraftRemovalRecord::asJob() is the ambient frame that names the job.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-one-background-job-must-remove-drafts-past-their-schemas-lifetime
 	 */
