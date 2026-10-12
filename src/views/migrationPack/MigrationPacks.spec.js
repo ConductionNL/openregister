@@ -2,8 +2,11 @@
  * The migration-pack screens: where they live in the manifest, who sees the
  * menu entry, and what the list, the editor and the sample-row test send.
  *
- * Exercises the options objects against a synthetic `this`, as the other view
- * specs here do (the installed test-utils is the Vue 3 build).
+ * Most cases drive the options objects against a synthetic `this`, as the
+ * other view specs here do. What a template binds (who sees which control,
+ * which dialog opens, which region is live) is checked on the mounted
+ * component, with each @nextcloud/vue component stubbed as a div that renders
+ * its slots, never by reading the template's source text.
  *
  * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
  * @license EUPL-1.2
@@ -131,19 +134,30 @@ jest.mock(
 	() => ({ __esModule: true, default: { name: 'icon', render: () => null } }),
 	{ virtual: true },
 )
-jest.mock(
-	'@nextcloud/vue',
-	() =>
-		new Proxy(
-			{ __esModule: true },
-			{
-				get: (target, prop) =>
-					prop in target
-						? target[prop]
-						: { name: String(prop), render: () => null },
+// Each @nextcloud/vue component is a <div data-nc="Name"> that renders its
+// slots and carries its bindings as attributes, so a mounted screen shows
+// what its own template puts inside NcAppContent, NcDialog or NcNoteCard.
+jest.mock('@nextcloud/vue', () => {
+	const { h } = jest.requireActual('vue')
+	const stubs = {}
+	const stub = (name) => {
+		stubs[name] ??= {
+			name,
+			render() {
+				return h(
+					'div',
+					{ 'data-nc': name },
+					Object.values(this.$slots).map((slot) => slot()),
+				)
 			},
-		),
-)
+		}
+		return stubs[name]
+	}
+	return new Proxy(
+		{ __esModule: true },
+		{ get: (target, prop) => (prop in target ? target[prop] : stub(String(prop))) },
+	)
+})
 
 const ROOT = path.resolve(__dirname, '..', '..', '..')
 function readJson(...parts) {
@@ -211,6 +225,54 @@ function storedPack(overrides = {}) {
  */
 function flush() {
 	return new Promise((resolve) => setTimeout(resolve, 0))
+}
+
+/**
+ * The editor mounted for real on a stored pack.
+ *
+ * @param {object} [pack] The pack the server answers.
+ * @return {Promise<object>} The wrapper.
+ */
+async function mountEditor(pack = storedPack()) {
+	axios.get.mockResolvedValue({ data: pack })
+	const wrapper = mount(MigrationPackDetail, {
+		global: {
+			mocks: { $route: { params: { id: '12' } } },
+			stubs: { 'router-link': true },
+		},
+	})
+	await flush()
+	return wrapper
+}
+
+/**
+ * The list mounted for real.
+ *
+ * @param {Array<object>} packs The packs the server answers.
+ * @param {object} [options] Extra mount options.
+ * @return {Promise<object>} The wrapper.
+ */
+async function mountList(packs, options = {}) {
+	axios.get.mockResolvedValue({ data: { results: packs } })
+	const wrapper = mount(MigrationPacksIndex, {
+		global: { stubs: { 'router-link': true } },
+		...options,
+	})
+	await flush()
+	return wrapper
+}
+
+/**
+ * The rendered NcButton whose text contains the given text.
+ *
+ * @param {object} wrapper The mounted screen.
+ * @param {string} text Part of the button text.
+ * @return {object|undefined} The button's component wrapper.
+ */
+function ncButton(wrapper, text) {
+	return wrapper
+		.findAllComponents({ name: 'NcButton' })
+		.find((button) => button.text().includes(text))
 }
 
 beforeEach(() => {
@@ -296,30 +358,38 @@ describe('who may change packs', () => {
 		expect(canEditPacks()).toBe(false)
 	})
 
-	it('shows a non-admin the editor read-only, without save', () => {
-		mockCurrentUser = { uid: 'bob', isAdmin: false }
-		const vm = instance(MigrationPackDetail, {
-			$route: { params: { id: '12' } },
-		})
-		expect(vm.isAdmin).toBe(false)
-		const source = fs.readFileSync(
-			path.join(__dirname, 'MigrationPackDetail.vue'),
-			'utf8',
-		)
-		expect(source).toContain(
-			'<div v-if="isAdmin" class="migration-pack__footer">',
-		)
-		expect(source).toContain(':readOnly="!isAdmin"')
-		const list = fs.readFileSync(
-			path.join(__dirname, 'MigrationPacksIndex.vue'),
-			'utf8',
-		)
-		expect(list).toContain(
-			'<div v-if="isAdmin" class="migration-packs__toolbar">',
-		)
-		expect(list).toMatch(
-			/v-if="isAdmin"\s+variant="tertiary"\s+:aria-label="\s*t\('openregister', 'Delete/,
-		)
+	it('shows a non-admin the editor and the list read-only, without save, import or delete', async () => {
+		for (const isAdmin of [true, false]) {
+			mockCurrentUser = { uid: isAdmin ? 'admin' : 'bob', isAdmin }
+			const note = 'Only administrators can change migration packs.'
+
+			const editor = await mountEditor()
+			expect(editor.find('.migration-pack__footer').exists()).toBe(isAdmin)
+			expect(ncButton(editor, 'Save') !== undefined).toBe(isAdmin)
+			expect(editor.findComponent(PackPreviewPanel).exists()).toBe(isAdmin)
+			expect(editor.text().includes(note)).toBe(!isAdmin)
+			const source = editor.find('input[aria-label="Source column of row 1"]')
+			expect(source.element.disabled).toBe(!isAdmin)
+			editor.vm.editingRow = 0
+			await editor.vm.$nextTick()
+			expect(editor.findComponent(TransformDialog).props('readOnly')).toBe(
+				!isAdmin,
+			)
+			editor.unmount()
+
+			const list = await mountList([storedPack({ id: 3 })])
+			expect(list.find('.migration-packs__toolbar').exists()).toBe(isAdmin)
+			expect(ncButton(list, 'Import JSON') !== undefined).toBe(isAdmin)
+			expect(
+				list
+					.findAllComponents({ name: 'NcButton' })
+					.some((button) =>
+						String(button.vm.$attrs['aria-label']).startsWith('Delete '),
+					),
+			).toBe(isAdmin)
+			expect(list.text().includes(note)).toBe(!isAdmin)
+			list.unmount()
+		}
 	})
 })
 
@@ -371,25 +441,37 @@ describe('the list', () => {
 		expect(vm.notice.type).toBe('success')
 	})
 
-	it('warns that a built-in pack comes back with the app that installed it', () => {
-		const list = fs.readFileSync(
-			path.join(__dirname, 'MigrationPacksIndex.vue'),
-			'utf8',
+	it('warns that a built-in pack comes back with the app that installed it', async () => {
+		axios.delete.mockResolvedValue({ status: 204 })
+		const list = await mountList([
+			storedPack({ id: 3, name: 'Built in', builtin: true }),
+			storedPack({ id: 4, name: 'Own pack', builtin: false }),
+		])
+		const warning = 'That app installs it again, unedited'
+		const askToDelete = async (name) => {
+			await list
+				.findAllComponents({ name: 'NcButton' })
+				.find((button) => button.vm.$attrs['aria-label'] === `Delete ${name}`)
+				.trigger('click')
+			return list.findComponent(DeleteMigrationPackDialog)
+		}
+
+		let dialog = await askToDelete('Own pack')
+		expect(dialog.props('pack').id).toBe(4)
+		expect(dialog.text()).not.toContain(warning)
+		dialog.vm.$emit('close')
+		await list.vm.$nextTick()
+		expect(list.findComponent(DeleteMigrationPackDialog).exists()).toBe(false)
+
+		dialog = await askToDelete('Built in')
+		expect(dialog.props('pack').id).toBe(3)
+		expect(dialog.text()).toContain(warning)
+		dialog.vm.$emit('confirm')
+		await flush()
+		expect(axios.delete).toHaveBeenCalledWith(
+			'/apps/openregister/api/migration-packs/3',
 		)
-		expect(list).toContain(':pack="deleting"')
-		expect(list).toContain('@confirm="confirmDelete"')
-		const dialog = fs.readFileSync(
-			path.join(
-				ROOT,
-				'src',
-				'dialogs',
-				'migrationPack',
-				'DeleteMigrationPackDialog.vue',
-			),
-			'utf8',
-		)
-		expect(dialog).toContain('<p v-if="pack.builtin">')
-		expect(dialog).toContain('That app installs it again, unedited')
+		list.unmount()
 	})
 
 	it('closes the delete dialog on its close button or Escape', () => {
@@ -456,22 +538,19 @@ describe('the list', () => {
 
 	it('announces its notices and focuses the heading after a delete', async () => {
 		axios.delete.mockResolvedValue({ status: 204 })
-		const heading = document.createElement('h2')
-		heading.tabIndex = -1
-		document.body.appendChild(heading)
-		const vm = instance(MigrationPacksIndex, { $refs: { heading } })
-		vm.packs = [storedPack({ id: 3 })]
-		vm.deleting = vm.packs[0]
-		await vm.confirmDelete()
+		const list = await mountList([storedPack({ id: 3 })], {
+			attachTo: document.body,
+		})
+		const heading = list.find('h2')
+		expect(heading.attributes('tabindex')).toBe('-1')
+		list.vm.deleting = list.vm.packs[0]
+		await list.vm.confirmDelete()
 		await flush()
-		expect(document.activeElement).toBe(heading)
-		heading.remove()
-		const list = fs.readFileSync(
-			path.join(__dirname, 'MigrationPacksIndex.vue'),
-			'utf8',
-		)
-		expect(list).toMatch(/<div aria-live="polite">\s*<NcNoteCard v-if="notice"/)
-		expect(list).toContain('<h2 ref="heading" tabindex="-1">')
+		expect(document.activeElement).toBe(heading.element)
+		const live = list.find('[aria-live="polite"]')
+		expect(live.findComponent({ name: 'NcNoteCard' }).exists()).toBe(true)
+		expect(live.text()).toContain('Deleted')
+		list.unmount()
 	})
 
 	it("shows dates in the user's Nextcloud locale, not the browser's", () => {
@@ -729,12 +808,34 @@ describe('the editor', () => {
 			params: { id: '40' },
 		})
 
-		const source = fs.readFileSync(
-			path.join(__dirname, 'MigrationPackDetail.vue'),
-			'utf8',
+	})
+
+	it('offers a deleted pack only Save as a new pack, not Save', async () => {
+		const wrapper = await mountEditor(storedPack({ builtin: false }))
+		wrapper.vm.draft.name = 'Changed'
+		await wrapper.vm.$nextTick()
+		expect(ncButton(wrapper, 'Save').vm.$attrs.disabled).toBe(false)
+		expect(ncButton(wrapper, 'Save as a new pack')).toBeUndefined()
+
+		wrapper.vm.packDeleted = true
+		await wrapper.vm.$nextTick()
+		const save = wrapper
+			.findAllComponents({ name: 'NcButton' })
+			.find((button) => button.text() === 'Save')
+		expect(save.vm.$attrs.disabled).toBe(true)
+		axios.post.mockResolvedValue({
+			data: storedPack({ id: 40, builtin: false }),
+		})
+		wrapper.vm.$router = { push: jest.fn().mockResolvedValue(undefined) }
+		await ncButton(wrapper, 'Save as a new pack').trigger('click')
+		await flush()
+		expect(axios.post).toHaveBeenCalledWith(
+			'/apps/openregister/api/migration-packs',
+			expect.objectContaining({
+				definition: expect.objectContaining({ name: 'Changed' }),
+			}),
 		)
-		expect(source).toContain(':disabled="saving || !dirty || packDeleted"')
-		expect(source).toContain('@click="saveAsNew"')
+		wrapper.unmount()
 	})
 
 	it('moves, adds and removes rows and applies a transform', async () => {
@@ -877,29 +978,35 @@ describe('the editor', () => {
 		}
 	})
 
-	it('names each transform by its visible summary and links the shared-target hint', () => {
-		const source = fs.readFileSync(
-			path.join(__dirname, 'MigrationPackDetail.vue'),
-			'utf8',
-		)
-		const button = source.slice(
-			source.indexOf('@click="editingRow = index"'),
-			source.indexOf('{{ summary(row) }}') + 20,
-		)
+	it('names each transform by its visible summary and links the shared-target hint', async () => {
+		const wrapper = await mountEditor()
+		const transform = wrapper
+			.findAllComponents({ name: 'NcButton' })
+			.find((button) => button.text().startsWith('Transform of row 1:'))
 		// No aria-label: the accessible name is the hidden prefix plus the summary.
-		expect(source).not.toContain("'Transform of row {number}',")
-		expect(button).toContain('<span class="hidden-visually">')
-		expect(button).toContain("'Transform of row {number}:'")
-		expect(source).toMatch(
-			/:aria-describedby="\s*targetHint\(row\)\s*\?\s*hintId\(row\)\s*:\s*undefined\s*"/,
+		expect(transform.vm.$attrs['aria-label']).toBeUndefined()
+		expect(transform.find('.hidden-visually').text()).toBe('Transform of row 1:')
+		expect(transform.text()).toBe(
+			`Transform of row 1: ${wrapper.vm.summary(wrapper.vm.draft.rows[0])}`,
 		)
-		expect(source).toContain(':id="hintId(row)"')
-		expect(source).toMatch(
-			/<div class="hidden-visually" aria-live="polite">\s*\{\{ announcement \}\}/,
-		)
-		expect(source).toMatch(
-			/<div aria-live="polite">\s*<NcNoteCard v-if="packDeleted"[\s\S]*?<NcNoteCard v-if="view === 'json' && jsonError"/,
-		)
+
+		// Rows 4 and 5 both write shortDescription; row 1 shares nothing.
+		const target = (n) =>
+			wrapper.find(`input[aria-label="Target field of row ${n}"]`)
+		expect(target(1).attributes('aria-describedby')).toBeUndefined()
+		for (const n of [4, 5]) {
+			const hint = wrapper.find(`#${target(n).attributes('aria-describedby')}`)
+			expect(hint.text()).toBe(wrapper.vm.targetHint(wrapper.vm.draft.rows[n - 1]))
+		}
+
+		const [announcer, problems] = wrapper.findAll('[aria-live="polite"]')
+		expect(announcer.classes()).toContain('hidden-visually')
+		wrapper.vm.announcement = 'Row 2 removed.'
+		wrapper.vm.packDeleted = true
+		await wrapper.vm.$nextTick()
+		expect(announcer.text()).toBe('Row 2 removed.')
+		expect(problems.text()).toContain('Someone deleted this pack')
+		wrapper.unmount()
 	})
 
 	it('tests only a draft without problems, over its source columns', async () => {
@@ -975,14 +1082,28 @@ describe('leaving the editor with unsaved changes', () => {
 		expect(unload()).toBe(false)
 	})
 
-	it('confirms in a dialog of its own', () => {
-		const source = fs.readFileSync(
-			path.join(__dirname, 'MigrationPackDetail.vue'),
-			'utf8',
-		)
-		expect(source).toMatch(
-			/<UnsavedChangesDialog\s+v-if="leavePrompt"\s+@leave="resolveLeave\(true\)"\s+@stay="resolveLeave\(false\)" \/>/,
-		)
+	it('confirms in a dialog of its own, whose answer decides', async () => {
+		const wrapper = await mountedEditor()
+		const [leave] = mockRouteGuards.leave
+		const prompt = () => wrapper.findComponent(UnsavedChangesDialog)
+		expect(prompt().exists()).toBe(false)
+		wrapper.vm.draft.name = 'Changed'
+
+		const staying = leave()
+		await wrapper.vm.$nextTick()
+		prompt().vm.$emit('stay')
+		await expect(staying).resolves.toBe(false)
+		await wrapper.vm.$nextTick()
+		expect(prompt().exists()).toBe(false)
+
+		const leaving = leave()
+		await wrapper.vm.$nextTick()
+		prompt().vm.$emit('leave')
+		await expect(leaving).resolves.toBe(true)
+		wrapper.unmount()
+	})
+
+	it('closes its dialog as No', () => {
 		const $emit = jest.fn()
 		const dialog = instance(UnsavedChangesDialog, { $emit })
 		dialog.onOpenChange(true)
@@ -1138,23 +1259,29 @@ describe('the sample-row test', () => {
 		})
 		await running
 		expect(vm.result).toBeNull()
+	})
 
-		const source = fs.readFileSync(
-			path.join(
-				ROOT,
-				'src',
-				'components',
-				'migrationPack',
-				'PackPreviewPanel.vue',
-			),
-			'utf8',
+	it('says why it cannot test: problems in the pack, or the JSON view', async () => {
+		const panel = (props) =>
+			mount(PackPreviewPanel, { props: { definition: null, columns: ['A'], ...props } })
+		const problems = panel({})
+		expect(problems.text()).toContain(
+			'Fix the problems in the pack first; then it can be tested.',
 		)
-		expect(source).toMatch(/blockedText\s*\|\|\s*t\(/)
-		const editor = fs.readFileSync(
-			path.join(__dirname, 'MigrationPackDetail.vue'),
-			'utf8',
+		problems.unmount()
+		const blocked = panel({ blockedText: 'Switch to the form to test the pack.' })
+		expect(blocked.text()).toContain('Switch to the form to test the pack.')
+		expect(blocked.text()).not.toContain('Fix the problems')
+		blocked.unmount()
+
+		const editor = await mountEditor()
+		expect(editor.findComponent(PackPreviewPanel).props('blockedText')).toBe('')
+		editor.vm.view = 'json'
+		await editor.vm.$nextTick()
+		expect(editor.findComponent(PackPreviewPanel).props('blockedText')).toBe(
+			'Switch to the form to test the pack.',
 		)
-		expect(editor).toContain("'Switch to the form to test the pack.'")
+		editor.unmount()
 	})
 
 	it('runs 400 ms after the last change, and not while the pack has problems', () => {
@@ -1249,20 +1376,31 @@ describe('the transform dialog', () => {
 		expect(vm.defaultChoice).toBe('false')
 		expect(transformPayload(vm.draft).default).toBe(false)
 
-		const source = fs.readFileSync(
-			path.join(
-				ROOT,
-				'src',
-				'dialogs',
-				'migrationPack',
-				'TransformDialog.vue',
-			),
-			'utf8',
+	})
+
+	it('shows a yes/no table as yes/no choices, and announces what keeps it from applying', async () => {
+		const dialog = (transform) =>
+			mount(TransformDialog, { props: { transform, rowNumber: 1 } })
+		const lookup = dialog(newTransform('lookup'))
+		expect(lookup.findComponent(KeyValueRows).props('booleanValues')).toBe(false)
+		lookup.unmount()
+
+		// The text "false" for other values: the import would store true.
+		const yesNo = dialog({
+			...newTransform('bool-map'),
+			defaultMode: 'value',
+			defaultCell: { text: 'false', json: false },
+		})
+		expect(yesNo.findComponent(KeyValueRows).props('booleanValues')).toBe(true)
+		const live = yesNo.find('[aria-live="polite"]')
+		expect(live.text()).toBe('')
+		await ncButton(yesNo, 'Apply').trigger('click')
+		expect(yesNo.emitted('apply')).toBeUndefined()
+		expect(live.findComponent({ name: 'NcNoteCard' }).exists()).toBe(true)
+		expect(live.text()).toContain(
+			'Choose yes or no for values that are not in the table.',
 		)
-		expect(source).toContain(':booleanValues="draft.type === \'bool-map\'"')
-		expect(source).toMatch(
-			/<div aria-live="polite">\s*<NcNoteCard v-if="errors.length > 0"/,
-		)
+		yesNo.unmount()
 	})
 
 	it('edits a join and works on a copy of the transform', () => {
@@ -1317,19 +1455,26 @@ describe('the key/value rows', () => {
 	})
 
 	it('labels each input with a translated sentence, not a joined string', () => {
-		const vm = instance(KeyValueRows, { rows: [], keyLabel: 'Target field' })
-		expect(vm.rowLabel('Target field', 2)).toBe('Target field of row 3')
-		const source = fs.readFileSync(
-			path.join(
-				ROOT,
-				'src',
-				'components',
-				'migrationPack',
-				'KeyValueRows.vue',
-			),
-			'utf8',
+		const rows = (booleanValues) =>
+			mount(KeyValueRows, {
+				props: {
+					rows: [{ uid: 'a', key: 'Ja', text: 'true', json: true }],
+					keyLabel: 'Source value',
+					valueLabel: 'Stored value',
+					addLabel: 'Add',
+					booleanValues,
+				},
+			})
+		const text = rows(false)
+		expect(text.find('input').attributes('aria-label')).toBe('Source value of row 1')
+		expect(text.findAll('input')[1].attributes('aria-label')).toBe(
+			'Stored value of row 1',
 		)
-		expect(source).not.toMatch(/:aria-label="`/)
+		text.unmount()
+		const yesNo = rows(true)
+		expect(yesNo.find('select').attributes('aria-label')).toBe('Stored value of row 1')
+		expect(yesNo.find('select').element.value).toBe('true')
+		yesNo.unmount()
 	})
 
 	it('reads a yes/no value as a choice, and anything else as none', () => {
