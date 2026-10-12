@@ -3442,7 +3442,9 @@
         "Sample rows must be a list of objects": "Voorbeeldrijen moeten een lijst van objecten zijn",
         "A preview takes at most %s sample rows": "Een voorvertoning neemt maximaal %s voorbeeldrijen aan",
         "The pack definition is invalid": "De pakketdefinitie is ongeldig",
-        "Failed to preview migration pack": "De voorvertoning van het migratiepakket is mislukt"
+        "Failed to preview migration pack": "De voorvertoning van het migratiepakket is mislukt",
+        "Migration pack": "Migratiepakket",
+        "Migration packs": "Migratiepakketten"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
