@@ -2,13 +2,15 @@
 
 ## Where this change stands
 
-The API half (envelope body, slug lock, preview, CSRF, log lines), the
-screens, the draft model, their PHPUnit and Jest tests, the translations of
-the screens' strings and this change are written on one branch; a box is
-ticked when its tests pass. Two pieces are open: the one error shape of
-D-12 (1.6, 3.7), which is being built, and the proof on a running instance
-(5.1, 5.2). The Playwright file is written but has not run yet: CI runs it
-only on promotion pull requests and `workflow_dispatch`.
+The API half (envelope body, slug lock, preview, CSRF, log lines, the one
+error shape of D-12, the save precondition of D-8), the screens, the draft
+model, their PHPUnit and Jest tests, the translations of the screens' strings
+and this change are written on one branch; a box is ticked when its tests
+pass. What is open is the proof on a running instance (5.1, 5.2). The
+Playwright file has run once, locally, and failed every test: the admin
+account of that instance was set to Dutch and the tests find the pages by
+their English names, which `beforeAll` now reports before any test starts.
+CI runs the file only on promotion pull requests and `workflow_dispatch`.
 
 ## 1. API
 
@@ -44,13 +46,14 @@ only on promotion pull requests and `workflow_dispatch`.
     - GIVEN administrator `ronald` WHEN he creates, updates, imports or deletes a pack THEN the log has an info line naming `ronald`, the slug and the row id
     - GIVEN a stored pack WHEN a file with its slug is imported THEN the line says the import replaced it
     - A browser cannot read the Nextcloud log, so these have PHPUnit tests (`testCreateLogsTheActorAndSlug`, `testUpdateLogsTheActorAndSlug`, `testImportReplacingAStoredPackLogsTheActorSlugAndOutcome`, `testImportOfANewSlugLogsThatItCreatedAPack`, `testDestroyActsOnTheRouteIdAndLogsTheActorAndSlug`, and the `...FailureWritesNoAuditLine` tests) and no e2e scenario
-- [ ] 1.6 One error shape for every refusal of the controller (D-12, ADR-050): `{message, error, details?}`, the message a fixed IL10N sentence and never an exception's text, codes as listed in D-12.
+- [x] 1.6 One error shape for every refusal of the controller (D-12, ADR-050): `{message, error, details?}`, the message a fixed IL10N sentence and never an exception's text, codes as listed in D-12.
   - spec_ref: `migration-mapping-packs#requirement-migration-packs-must-be-manageable-via-admin-gated-rest-crud-with-json-file-importexport`
   - files: `lib/Controller/MigrationPacksController.php`, `lib/Service/MigrationPack/`, `tests/Unit/Controller/MigrationPacksControllerTest.php`
   - acceptance_criteria:
     - GIVEN an invalid definition WHEN it is created, updated, imported or previewed THEN the answer is 422 `invalid-pack` with the findings in `details.errors`, rows numbered from 1
     - GIVEN an update of a row that does not exist THEN the answer is 404 `pack-not-found`
     - GIVEN an unexpected exception THEN the answer is 500 `migration-pack-error` without its text, and the exception is logged
+    - Proven by `testEveryWriteAnswersAnInvalidPackInTheSharedShape`, `testAnUnknownRowIdAnswersPackNotFound`, `testAnUnexpectedFailureIsLoggedAndAnsweredWithoutItsText` and `testARefusedCallerGetsAMessageAndACode`
 - [x] 1.7 An update envelope may name the `updatedAt` it was based on (`expectedUpdatedAt`); the server refuses the update with 409 `pack-changed` when the pack was saved since, and the editor sends it on every save (D-8).
   - spec_ref: `migration-mapping-packs#requirement-create-and-update-must-accept-a-definition-envelope-and-keep-the-route-id`
   - files: `lib/Service/MigrationPackService.php`, `lib/Service/MigrationPack/MigrationPackRequestReader.php`, `lib/Service/MigrationPack/MigrationPackErrorResponder.php`, `src/services/migrationPacks.js`, `src/views/migrationPack/MigrationPackDetail.vue`
@@ -109,11 +112,12 @@ only on promotion pull requests and `workflow_dispatch`.
   - files: `src/views/migrationPack/MigrationPacks.spec.js`
   - acceptance_criteria:
     - `npm test -- src/views/migrationPack` passes
-- [ ] 3.7 The screens read the error code of D-12, show their own translated text for it, list `details.errors` one per line, and never parse an English server message.
+- [x] 3.7 The screens read the error code of D-12, show their own translated text for it, list `details.errors` one per line, and never parse an English server message.
   - spec_ref: `migration-mapping-packs#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui`
   - files: `src/services/migrationPacks.js`, `src/views/migrationPack/`, `src/components/migrationPack/PackPreviewPanel.vue`
   - acceptance_criteria:
     - GIVEN a save answered 422 `invalid-pack` with two findings THEN the editor shows each finding on its own line and keeps the unsaved changes
+    - Proven by the Jest cases "read the slug, never the wording, of an error" and "shows each finding of a refused save with its table row number"
 
 ## 4. Translations and docs
 
@@ -135,7 +139,7 @@ only on promotion pull requests and `workflow_dispatch`.
 
 ## 5. Verification
 
-- [ ] 5.1 Playwright: every scenario of the delta spec, anchored with `@e2e migration-mapping-packs::<scenario>` (`tests/e2e/ci/migration-pack-pages.spec.ts`). Open until a run on an instance with this branch built passes and is linked; the file lists, but has not run.
+- [ ] 5.1 Playwright: every scenario of the delta spec, anchored with `@e2e migration-mapping-packs::<scenario>` (`tests/e2e/ci/migration-pack-pages.spec.ts`). Open until a run on an instance with this branch built passes and is linked; its one run so far failed on an admin account set to Dutch (see above).
   - spec_ref: `migration-mapping-packs#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui`
   - files: `tests/e2e/ci/migration-pack-pages.spec.ts`
   - acceptance_criteria:
