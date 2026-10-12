@@ -109,7 +109,12 @@ class DraftActivation {
 		$uuid = (string)$draft->getUuid();
 
 		unset($changes['@self'], $changes['id']);
-		$object = array_merge(DraftFinder::dataOf(object: $draft), $changes);
+		// A stored draft holds null for every property nobody filled in (a
+		// table has a column for each), so a stored null is "not supplied":
+		// judged as null it reads as a wrong type, also for a property the
+		// server fills. What the caller sends now is judged as sent.
+		$stored = array_filter(DraftFinder::dataOf(object: $draft), static fn (mixed $value): bool => $value !== null);
+		$object = array_merge($stored, $changes);
 		$this->validateInFull(schema: $schema, object: $object);
 
 		$object['@self'] = ['status' => ObjectEntity::STATUS_ACTIVE];
