@@ -29,7 +29,14 @@
 - [x] 2b.5 The owner may discard its draft; only its own object in `draft` is removed, permanently, anything else is "not found"
   - Spec ref: specs/form-destination/spec.md, "A draft MUST be able to be discarded by its owner"
   - Test: DraftDiscardTest
-- [ ] 2b.3 Answered by Ruben (decision 201), not built here: a draft expires after the owning app's retention (30 days by default), enforced by that app on read from `updatedAt`; staff work lists hide drafts by default with a filter to show them (today the read RBAC keeps every draft to its owner); a draft gets its case number only when it leaves draft. Anonymous drafts stay open (Q-openregister-F2)
+- [x] 2b.6 Starting a scope-owned draft is authorised by the owner assertion, not by the destination's public create rule; a fresh submit stays under RBAC; no controller can assert an owner
+  - Spec ref: specs/form-destination/spec.md, "A draft MUST be able to be owned by a scope value" (scenarios "A scope-owned draft starts where the public may not create", "A request cannot name the owner")
+  - Test: FormSubmitServiceTest (scope-owned draft and its control), FormsControllerTest (a request cannot name the owner, no controller asserts one)
+- [x] 2b.7 Lists and searches hide drafts by default, keep the caller's own in view, and show them with `_drafts=true` / `_drafts=any` or a `@self[status]` filter (decision 201)
+  - Spec ref: specs/form-destination/spec.md, "A list MUST hide drafts unless asked"
+  - Test: DraftListLensTest, MagicSearchHandlerDraftLensTest (union path, single-table path, reserved parameter), DraftFinderTest (the finder asks for drafts)
+- [ ] 2b.8 Live: on an instance, a draft is absent from `GET /api/objects/{register}/{schema}` for an administrator, present with `_drafts=any`, and its total and facets agree (live pass, decision 139)
+- [ ] 2b.3 Answered by Ruben (decision 201), the rest not built here: a draft expires after the owning app's retention (30 days by default), enforced by that app on read from `updatedAt`; a draft gets its case number only when it leaves draft. The list half is 2b.7. Anonymous drafts stay open (Q-openregister-F2)
 
 ## 3. Uploads
 
