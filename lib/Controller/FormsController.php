@@ -176,13 +176,75 @@ class FormsController extends Controller {
 				$key = null;
 			}
 
-			$answer = $this->submitForm(form: $form, subject: $subject, key: $key);
+			$draftId = trim((string)$this->request->getParam('_draft', ''));
+			if ($draftId === '') {
+				$draftId = null;
+			}
+
+			$answer = $this->submitForm(form: $form, subject: $subject, key: $key, draftId: $draftId);
 		} catch (FormSubmitRefusedException $refused) {
 			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
 		}
 
 		return new JSONResponse(data: $answer, statusCode: 201);
 	}//end submit()
+
+	/**
+	 * Save the signed-in subject's draft of this form: the destination object in status `draft`.
+	 *
+	 * Decision 180. Body: the answers so far, and `_draft` to update an
+	 * existing draft. A draft may miss required answers and is never
+	 * type-invalid. It leaves draft through submit with the same `_draft`.
+	 *
+	 * @param string $formId The form object's uuid.
+	 *
+	 * @return JSONResponse 200 `{ id, status }`; 401, 404, 422 or 503 with `{ message, findings }`.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	#[UserRateLimit(limit: 120, period: 60)]
+	public function draft(string $formId): JSONResponse {
+		try {
+			$form = $this->resolveForm(formId: $formId);
+			if (count($form['writes']) !== 1) {
+				$message = $this->l10n->t('A draft is one object; a form that writes several cannot be saved as a draft.');
+				throw new FormSubmitRefusedException(message: $message, status: 422);
+			}
+
+			$draftId = trim((string)$this->request->getParam('_draft', ''));
+			if ($draftId === '') {
+				$draftId = null;
+			}
+
+			$write = $form['writes'][0];
+			$destination = ['register' => ($write['register'] ?? null), 'schema' => ($write['schema'] ?? null)];
+			$subject = $this->userSession->getUser();
+			if ($draftId !== null && $this->submitter->isOwnerOfDraft($destination, $draftId, $subject) === false) {
+				// The same 404 an unknown id gets, so a draft id is not an oracle.
+				throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
+			}
+
+			$mapping = null;
+			if (is_array($write['mapping'] ?? null) === true) {
+				$mapping = $write['mapping'];
+			}
+
+			$draft = $this->submitter->saveDraft(
+				$destination,
+				$mapping,
+				$this->payload(),
+				$subject,
+				$draftId,
+				$formId
+			);
+		} catch (FormSubmitRefusedException $refused) {
+			return new JSONResponse(data: $refused->toBody(), statusCode: $refused->getStatus());
+		}
+
+		return new JSONResponse(data: $draft);
+	}//end draft()
 
 	/**
 	 * Hold one file for a later submit of this form, checked against the property's file rules.
@@ -224,14 +286,15 @@ class FormsController extends Controller {
 	 * @param array{id: string, writes: array<int, array<string, mixed>>, audience: string} $form    The form.
 	 * @param IUser|null                                                                         $subject The subject.
 	 * @param string|null                                                                   $key     The Idempotency-Key.
+	 * @param string|null                                                                   $draftId The subject's draft to leave, when sent.
 	 *
 	 * @return array<string, mixed> The answer.
 	 *
 	 * @throws FormSubmitRefusedException On any refusal.
 	 */
-	private function submitForm(array $form, ?IUser $subject, ?string $key): array {
+	private function submitForm(array $form, ?IUser $subject, ?string $key, ?string $draftId = null): array {
 		if (count($form['writes']) !== 1) {
-			return $this->submitter->submitAll($form['writes'], $this->payload(), $subject, $key, $form['id']);
+			return $this->submitter->submitAll($form['writes'], $this->payload(), $subject, $key, $form['id'], $draftId);
 		}
 
 		$write = $form['writes'][0];
@@ -246,7 +309,8 @@ class FormsController extends Controller {
 			$this->payload(),
 			$subject,
 			$key,
-			$form['id']
+			$form['id'],
+			$draftId
 		);
 	}//end submitForm()
 

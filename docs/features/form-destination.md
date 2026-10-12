@@ -96,6 +96,29 @@ size and type rules. Put `{ "uploadToken": "<token>" }` in the submit for
 that property. The token is claimed only when the submit succeeds. An hourly
 job deletes unclaimed tokens after 24 hours and logs how many.
 
+## Drafts
+
+A draft is the destination object itself, saved with `@self.status: draft`
+(decision 180). There is no separate draft store.
+
+- `POST /index.php/apps/openregister/api/forms/{formId}/draft` (signed in)
+  saves the answers so far and returns `{ id, status: "draft" }`. Send `_draft`
+  with that id to update it.
+- A draft may miss required answers. A wrong type, format or enum value is
+  still refused, whatever the schema's hard-validation flag.
+- A draft is visible to its owner only. Set `draftsVisible: true` in the
+  schema configuration to let everyone who may read the schema see drafts.
+- Submit with `_draft` to leave draft. The submit runs full validation, sets
+  `@self.status` to `active`, answers with the moment it left draft as
+  `receivedAt`, and dispatches `ObjectActivatedEvent`.
+- A client may create an object as a draft. It cannot turn a saved object
+  into a draft, and only the submit can leave draft.
+- An object without a stored status keeps the status it has today.
+
+Receipt listeners: treat `ObjectCreatedEvent` for an object that is not a
+draft, and `ObjectActivatedEvent`, as the moment of receipt. Skip an object
+whose `isDraft()` is true.
+
 ## When a schema changes
 
 Saving a schema's properties or required list asks the owning apps for their

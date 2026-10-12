@@ -3432,7 +3432,11 @@
         "Please sign in to send this form.": "Log in om dit formulier te versturen.",
         "This form has no question that takes a file under that name.": "Dit formulier heeft geen vraag die onder die naam een bestand aanneemt.",
         "Your form \"%1$s\" was taken offline": "Uw formulier \"%1$s\" is offline gehaald",
-        "A change to \"%1$s\" left %2$s problems in the form. Fix them and publish the form again.": "Een wijziging aan \"%1$s\" liet %2$s problemen achter in het formulier. Los ze op en publiceer het formulier opnieuw."
+        "A change to \"%1$s\" left %2$s problems in the form. Fix them and publish the form again.": "Een wijziging aan \"%1$s\" liet %2$s problemen achter in het formulier. Los ze op en publiceer het formulier opnieuw.",
+        "Please sign in to save this form and carry on later.": "Log in om dit formulier op te slaan en later verder te gaan.",
+        "A draft is one object; a form that writes several cannot leave draft in one step.": "Een concept is één object; een formulier dat er meerdere schrijft kan niet in één stap uit concept.",
+        "This draft does not exist.": "Dit concept bestaat niet.",
+        "A draft is one object; a form that writes several cannot be saved as a draft.": "Een concept is één object; een formulier dat er meerdere schrijft kan niet als concept worden opgeslagen."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

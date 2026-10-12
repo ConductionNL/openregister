@@ -19,11 +19,11 @@
 
 ## 2b. Lifecycle status `draft` (decision 180)
 
-- [ ] 2b.1 Stored `@self.status` in object metadata (`draft`, `active`); objects without it keep the date-deduced status
+- [x] 2b.1 Stored `@self.status` in object metadata (`draft`, `active`); objects without it keep the date-deduced status
   - Spec ref: specs/form-destination/spec.md, "An object MUST be able to carry the explicit lifecycle status `draft`"
   - Test: unit tests for each scenario, including the legacy read control
-- [ ] 2b.2 Draft validation skips `required` only; the draft-to-active move goes through `FormSubmitService` with full validation and receipt effects
-- [ ] 2b.3 Flagged to Ruben, not built here: staff list default for drafts, draft expiry
+- [x] 2b.2 Draft validation skips `required` only; the draft-to-active move goes through `FormSubmitService` with full validation and receipt effects
+- [ ] 2b.3 Flagged to Ruben, not built here: staff list default for drafts, draft expiry, anonymous drafts (Q-openregister-F2)
 
 ## 3. Uploads
 
