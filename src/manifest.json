@@ -346,7 +346,7 @@
       "title": "Migration packs",
       "component": "MigrationPacksIndex",
       "permission": "admin",
-      "_note": "The column mappings an import runs (migration-pack-editor-ui). A migration pack is an OpenRegister foundation entity served by its own controller (/api/migration-packs), not a register-stored object, so the built-in index renderer (useObjectStore by register+schema slug) cannot resolve it, and no named entity source exists for it. `permission` is documentation only: OpenRegister passes no permissions list to CnAppRoot, so the page itself shows read-only for a non-admin and the menu entry is gated on runtime.user.isAdmin."
+      "_note": "The column mappings an import runs (migration-pack-editor-ui). A migration pack is an OpenRegister foundation entity served by its own controller (/api/migration-packs), not a register-stored object, so the built-in index renderer (useObjectStore by register+schema slug) cannot resolve it. A named entity source (config.entitySource, as the flows page uses) would close that, but in nextcloud-vue 2.72.0 the sources are a fixed registry inside the library (indexSources.js: flows, tasks) that an app cannot add to; a migrationPacks source there is what would let this page become type:index. `permission` is documentation only: OpenRegister passes no permissions list to CnAppRoot, so the page itself shows read-only for a non-admin and the menu entry is gated on runtime.user.isAdmin."
     },
     {
       "id": "migration-pack-detail",
@@ -355,7 +355,7 @@
       "title": "Migration pack",
       "component": "MigrationPackDetail",
       "permission": "admin",
-      "_note": "The editor of one migration pack (migration-pack-editor-ui): an ordered field-mapping table with per-row transform dialogs, an Advanced (JSON) view and a sample-row test over /api/migration-packs/preview. Not a register object, so the built-in detail renderer has nothing to load, and its nested fieldMappings with transforms are not expressible as a schema form."
+      "_note": "The editor of one migration pack (migration-pack-editor-ui): an ordered field-mapping table with per-row transform dialogs, an Advanced (JSON) view and a sample-row test over /api/migration-packs/preview. Not a register object, so the built-in detail renderer (CnDetailPage, which loads one object by register+schema) has nothing to load and has no named-source mode in nextcloud-vue 2.72.0, and its ordered fieldMappings with per-row transforms are not expressible as a schema form."
     },
     {
       "id": "connections",

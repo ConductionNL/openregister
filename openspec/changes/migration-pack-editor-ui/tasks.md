@@ -38,12 +38,12 @@ Playwright scenarios are open.
 
 - [x] 3.1 Migration packs list: name, slug, source format, version, built-in, updated; open, export, delete with confirmation (built-in warning), import JSON.
   - spec_ref: `migration-mapping-packs#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui`
-  - files: `src/views/migrationPack/MigrationPacksIndex.vue`, `src/services/migrationPacks.js`
+  - files: `src/views/migrationPack/MigrationPacksIndex.vue`, `src/dialogs/migrationPack/DeleteMigrationPackDialog.vue`, `src/services/migrationPacks.js`
 - [x] 3.2 Editor: general card (slug read-only when built-in), ordered mapping table with add, remove and move, defaults, rows to skip, Advanced (JSON) view, save with `{definition}`, patch version raised, readable 422, refusal when someone else saved first (D-8, D-11).
   - spec_ref: `migration-mapping-packs#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui`
   - files: `src/views/migrationPack/MigrationPackDetail.vue`, `src/components/migrationPack/KeyValueRows.vue`
 - [x] 3.3 Transform dialog for every validator type, the three-way choice for other values, unknown keys and types named and kept.
-  - files: `src/components/migrationPack/TransformDialog.vue`
+  - files: `src/dialogs/migrationPack/TransformDialog.vue`
 - [x] 3.4 Sample-row test over the preview endpoint, 400 ms after the last change, older answers dropped.
   - spec_ref: `migration-mapping-packs#requirement-a-pack-must-be-testable-against-sample-rows-without-saving-it`
   - files: `src/components/migrationPack/PackPreviewPanel.vue`
@@ -56,7 +56,7 @@ Playwright scenarios are open.
 ## 4. Translations and docs
 
 - [x] 4.1 English and Dutch for every new string.
-  - files: `l10n/en.js`, `l10n/nl.js`
+  - files: `l10n/en.js`, `l10n/nl.js`, `l10n/nl.json` (the manifest titles and menu label, which the manifest l10n gate reads there)
 - [ ] 4.2 The other 35 required locales, so `npm run test:l10n:parity` passes.
 - [x] 4.3 User documentation of the screens.
   - files: `docs/features/migration-packs.md`
