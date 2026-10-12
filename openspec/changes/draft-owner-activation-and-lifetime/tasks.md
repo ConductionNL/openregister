@@ -33,6 +33,10 @@
   - Test: DraftExpiryJobTest (finds the job from `appinfo/info.xml` and runs that class down to the delete; fails without the declaration)
 - [ ] 3.3 Live: on an instance, set `draftLifetimeDays` on a schema, age a draft, run `occ background-job:execute` for the job, and read the audit trail of the removed draft (live pass, decision 139)
 
+- [x] 3.4 `ObjectService::deleteObject()`: a stored draft passes the archival delete gate, and a draft's delete is permanent; nothing else passes
+  - Spec ref: specs/form-destination/spec.md, "A draft MUST be deletable on every schema, and its delete MUST be permanent"
+  - Test: ObjectServiceDraftDeleteTest (each case with its control)
+
 ## 4. Lists
 
 - [x] 4.1 `_drafts=none` leaves out every draft, the caller's own included

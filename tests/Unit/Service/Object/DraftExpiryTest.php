@@ -211,7 +211,9 @@ class DraftExpiryTest extends TestCase {
 		$this->assertSame(['old', 'never-touched'], array_column($this->deletes, 'uuid'));
 
 		// The ordinary delete, in the draft's own register and schema: no RBAC
-		// (a job has no session), not permanent, not the archival sweep's bypass.
+		// (a job has no session) and not the archival sweep's bypass. The sweep
+		// does not ask for a permanent delete: ObjectService::deleteObject()
+		// decides that for every draft (ObjectServiceDraftDeleteTest).
 		$this->assertSame($register, $this->deletes[0]['register']);
 		$this->assertSame($schema, $this->deletes[0]['schema']);
 		$this->assertFalse($this->deletes[0]['rbac']);

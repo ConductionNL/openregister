@@ -156,10 +156,18 @@ days, 1 or more:
 ```
 
 A daily background job (`DraftExpiryJob`) removes every draft of that schema
-that nobody changed for that many days. It uses the ordinary delete, so the
-audit trail records it and the schema's deletion window and file rules apply.
-A schema without the setting keeps its drafts. The setting survives an import
-and an export. Your app needs no cleanup job of its own.
+that nobody changed for that many days. A schema without the setting keeps
+its drafts. The setting survives an import and an export. Your app needs no
+cleanup job of its own.
+
+### Deleting a draft
+
+Delete a draft like any object: `DELETE .../api/objects/{register}/{schema}/{id}`.
+Two things differ from a record. The draft is removed for good, with its
+files, instead of soft-deleted. And a schema with an `x-openregister-archival`
+block, which refuses every other delete, lets a draft go: a draft was never
+received, so it is not a record yet. An object that is not a draft is refused
+there as before.
 
 ### Keep your own drafts out of a work list
 

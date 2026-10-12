@@ -95,7 +95,7 @@ A schema SHALL be able to declare `draftLifetimeDays` in its configuration: a wh
 
 ### Requirement: One background job MUST remove drafts past their schema's lifetime
 
-OpenRegister SHALL run one background job, declared where it declares its jobs (`appinfo/info.xml`), once a day (decision 216). For every schema that sets `draftLifetimeDays`, in every register that carries it, the job SHALL remove each object in status `draft` whose last change (`updated`, else `created`) is older than that many days. It SHALL remove nothing else: an object that is not a draft, a draft of a schema without the setting, and a draft without any date SHALL stay. Removal SHALL go through the ordinary object delete, so the audit trail records it and the schema's deletion window, file rules and delete guards apply; a delete that path refuses SHALL be logged and counted, and the sweep SHALL carry on. The job SHALL log its counts, a zero included, and SHALL surface a failure rather than report success. Generic by construction (decision 182): no app carries a draft cleanup of its own.
+OpenRegister SHALL run one background job, declared where it declares its jobs (`appinfo/info.xml`), once a day (decision 216). For every schema that sets `draftLifetimeDays`, in every register that carries it, the job SHALL remove each object in status `draft` whose last change (`updated`, else `created`) is older than that many days. It SHALL remove nothing else: an object that is not a draft, a draft of a schema without the setting, and a draft without any date SHALL stay. Removal SHALL go through the ordinary object delete (`ObjectService::deleteObject()`), so its guards apply and the draft's files go with it; a delete that path refuses SHALL be logged and counted, and the sweep SHALL carry on. The job SHALL log its counts, a zero included, and SHALL surface a failure rather than report success. Generic by construction (decision 182): no app carries a draft cleanup of its own.
 
 #### Scenario: An abandoned draft is removed
 @e2e exclude unit; DraftExpiryJobTest starts from the job appinfo/info.xml declares and runs it down to the delete, DraftExpiryTest covers the cutoff
@@ -116,3 +116,28 @@ OpenRegister SHALL run one background job, declared where it declares its jobs (
 
 - **WHEN** `appinfo/info.xml` is read
 - **THEN** it declares exactly one background job that runs the draft expiry
+
+### Requirement: A draft MUST be deletable on every schema, and its delete MUST be permanent
+
+A draft is not yet a record (decisions 180 and 216): it holds unsent input, nothing refers to it, and it was never received. The ordinary object delete SHALL therefore admit an object stored in status `draft` on a schema that declares `x-openregister-archival`, where every other user delete is refused. It SHALL admit nothing else: an object in any other status, an object without a stored status, and an object the caller's lookup cannot reach SHALL be refused as before. Every other rule of the delete SHALL still apply (the caller's delete permission, append-only, referential integrity). Deleting a draft SHALL remove it permanently, with its files, on every schema: no tombstone of unsent input is kept. A saved object can never return to `draft`, so no record can be made deletable this way.
+
+#### Scenario: A draft on an archival schema is removed for good
+@e2e exclude unit; ObjectServiceDraftDeleteTest drives the real delete path
+
+- **GIVEN** schema `ticket` with an `x-openregister-archival` block and a stored draft
+- **WHEN** its owner, or the draft cleanup, deletes it
+- **THEN** the delete is not refused and the object is removed permanently
+
+#### Scenario: A record on the same schema is still refused
+@e2e exclude unit; ObjectServiceDraftDeleteTest covers active, no stored status and an unreachable object as controls
+
+- **GIVEN** the same schema and an object in status `active`, or without a stored status
+- **WHEN** a user deletes it
+- **THEN** the delete is refused with `SCHEMA_ARCHIVAL_IMMUTABLE`, as before
+
+#### Scenario: An ordinary delete stays a soft delete
+@e2e exclude unit; ObjectServiceDraftDeleteTest covers the control
+
+- **GIVEN** a schema without an archival block and an object that is not a draft
+- **WHEN** it is deleted
+- **THEN** it is soft-deleted as before

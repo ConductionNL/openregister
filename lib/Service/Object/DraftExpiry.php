@@ -9,10 +9,11 @@
  * every app, so no app carries a cleanup of its own.
  *
  * Removal goes through ObjectService::deleteObject(), the delete every other
- * caller uses: the audit trail records it, the deletion window and the
- * object's files follow the schema's ordinary rules, and a schema that
- * refuses deletes (append-only, archival) keeps its draft and is counted as
- * refused.
+ * caller uses, so its guards and its file cleanup apply. That path removes a
+ * draft for good, with its files, and lets a draft through on a schema with
+ * an archival block: a draft was never received, so it is not yet a record.
+ * A delete the path still refuses (an append-only schema, a referenced
+ * object) keeps the draft and is counted as refused.
  *
  * Nothing here names an app or a procedure (decision 182).
  *
@@ -251,8 +252,8 @@ class DraftExpiry {
 		try {
 			// RBAC off: a background job has no session, and the lifetime the
 			// schema declares is the authorisation. Everything else the delete
-			// path guards (append-only, archival, referential integrity,
-			// audit trail, files) stays on.
+			// path guards (append-only, referential integrity, files) stays
+			// on; the path itself makes a draft's delete permanent.
 			return $this->objects->deleteObject(uuid: $uuid, register: $register, schema: $schema, _rbac: false, _multitenancy: false);
 		} catch (Throwable $exception) {
 			$this->logger->warning(
