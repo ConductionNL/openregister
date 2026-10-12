@@ -25,7 +25,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
-use DateTimeInterface;
 use OCA\OpenRegister\Db\MigrationPack;
 use OCA\OpenRegister\Db\MigrationPackMapper;
 use OCA\OpenRegister\Exception\BuiltinPackSlugLockedException;
@@ -172,11 +171,13 @@ class MigrationPackService {
 	 *
 	 * With `$expectedUpdatedAt`, the update is refused when the stored pack
 	 * was saved at another time, to the second: someone saved it after the
-	 * caller read it. Without it, the update overwrites what is stored.
+	 * caller read it. Without it, the update overwrites what is stored. It is
+	 * a Unix time, so the comparison does not depend on the offset the caller
+	 * wrote the time in.
 	 *
 	 * @param int $id The migration pack id.
 	 * @param array<string, mixed> $definition The replacement pack definition document.
-	 * @param DateTimeInterface|null $expectedUpdatedAt The `updatedAt` the caller read, or null for no check.
+	 * @param int|null $expectedUpdatedAt The `updatedAt` the caller read, as a Unix time, or null for no check.
 	 *
 	 * @return MigrationPack
 	 *
@@ -188,16 +189,16 @@ class MigrationPackService {
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
 	 */
-	public function update(int $id, array $definition, ?DateTimeInterface $expectedUpdatedAt = null): MigrationPack {
+	public function update(int $id, array $definition, ?int $expectedUpdatedAt = null): MigrationPack {
 		$this->validator->assertValid(definition: $definition);
 
 		$pack = $this->mapper->find(id: $id);
 
 		if ($expectedUpdatedAt !== null
-			&& $pack->getUpdatedAt()?->getTimestamp() !== $expectedUpdatedAt->getTimestamp()
+			&& $pack->getUpdatedAt()?->getTimestamp() !== $expectedUpdatedAt
 		) {
 			throw new PackChangedException(
-				message: 'Migration pack ' . $id . ' was saved after ' . $expectedUpdatedAt->format(DATE_ATOM)
+				message: 'Migration pack ' . $id . ' was saved after ' . date(DATE_ATOM, $expectedUpdatedAt)
 			);
 		}
 

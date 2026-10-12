@@ -365,7 +365,11 @@ class MigrationPacksController extends Controller {
 		try {
 			$definition = $this->requestReader->definition(request: $this->request);
 			$expected   = $this->requestReader->expectedUpdatedAt(request: $this->request);
-			$pack       = $this->service->update(id: $id, definition: $definition, expectedUpdatedAt: $expected);
+			$pack       = $this->service->update(
+				id: $id,
+				definition: $definition,
+				expectedUpdatedAt: $expected?->getTimestamp()
+			);
 		} catch (DoesNotExistException $e) {
 			return $this->errors->notFound();
 		} catch (MigrationPackRefusedException $e) {

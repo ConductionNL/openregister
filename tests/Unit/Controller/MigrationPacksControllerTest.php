@@ -563,10 +563,7 @@ class MigrationPacksControllerTest extends TestCase {
 			->with(
 				5,
 				$this->validDefinition(),
-				$this->callback(
-					static fn ($expected): bool => $expected instanceof DateTimeImmutable
-						&& $expected->format(DATE_ATOM) === '2026-10-12T10:00:00+00:00'
-				)
+				(new DateTimeImmutable('2026-10-12T10:00:00+00:00'))->getTimestamp()
 			)
 			->willReturn($this->packEntity('stackiq-topdesk-module'));
 

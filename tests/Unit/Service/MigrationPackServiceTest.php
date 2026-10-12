@@ -171,7 +171,11 @@ class MigrationPackServiceTest extends TestCase {
 		$this->mapper->expects($this->never())->method('update');
 
 		$this->expectException(PackChangedException::class);
-		$this->service->update(1, $this->validDefinition(), new DateTimeImmutable('2026-10-12T10:00:00+00:00'));
+		$this->service->update(
+			1,
+			$this->validDefinition(),
+			(new DateTimeImmutable('2026-10-12T10:00:00+00:00'))->getTimestamp()
+		);
 	}
 
 	public function testUpdateSavesWhenThePackIsStillAsTheCallerReadIt(): void {
@@ -187,7 +191,7 @@ class MigrationPackServiceTest extends TestCase {
 		$pack = $this->service->update(
 			1,
 			$this->validDefinition(['name' => 'Renamed Pack']),
-			new DateTimeImmutable('2026-10-12T10:00:00+00:00')
+			(new DateTimeImmutable('2026-10-12T10:00:00+00:00'))->getTimestamp()
 		);
 
 		$this->assertSame('Renamed Pack', $pack->getName());
