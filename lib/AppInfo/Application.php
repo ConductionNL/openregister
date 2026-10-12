@@ -144,6 +144,7 @@ use OCA\OpenRegister\Listener\ViewAlertCrossedListener;
 use OCA\OpenRegister\Listener\WorkingCalendarChangedListener;
 use OCA\OpenRegister\Listener\WorkingCalendarDeleteGuardListener;
 use OCA\OpenRegister\Listener\WorkingCalendarValidationListener;
+use OCA\OpenRegister\Listener\DecisionTableValidationListener;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\FlowMcpToolProvider;
@@ -3411,6 +3412,8 @@ class Application extends App implements IBootstrap {
 		// accepted on save and surfaced days later on an unrelated timer.
 		$context->registerEventListener(ObjectCreatingEvent::class, WorkingCalendarValidationListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, WorkingCalendarValidationListener::class);
+		$context->registerEventListener(ObjectCreatingEvent::class, DecisionTableValidationListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, DecisionTableValidationListener::class);
 
 		// ... and the other half: a calendar an armed or suspended timer names
 		// cannot be deleted, because the resolver refuses an unknown name
