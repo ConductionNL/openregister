@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Kjo paketë ka ndryshime që nuk janë ruajtur. Nëse largoheni tani, ato do të humbasin.",
         "Transform of row {number}:": "Transformimi i rreshtit {number}:",
         "You are not signed in. Sign in and try again.": "Nuk jeni identifikuar. Identifikohuni dhe provoni sërish.",
-        "{label} of row {number}": "{label} për rreshtin {number}"
+        "{label} of row {number}": "{label} për rreshtin {number}",
+        "Another pack already has this slug. Choose a different slug.": "Një paketë tjetër e ka tashmë këtë emër të shkurtër. Zgjidhni një emër të shkurtër tjetër."
     },
     "nplurals=2; plural=(n != 1);"
 )

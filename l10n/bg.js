@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Този пакет има незапазени промени. Ако напуснете сега, те ще бъдат загубени.",
         "Transform of row {number}:": "Преобразуване на ред {number}:",
         "You are not signed in. Sign in and try again.": "Не сте влезли. Влезте и опитайте отново.",
-        "{label} of row {number}": "{label} на ред {number}"
+        "{label} of row {number}": "{label} на ред {number}",
+        "Another pack already has this slug. Choose a different slug.": "Друг пакет вече има този slug. Изберете друг slug."
     },
     "nplurals=2; plural=(n != 1);"
 )

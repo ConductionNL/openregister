@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Dëse Pak huet Ännerungen, déi net gespäichert sinn. Wann Dir elo fortgitt, ginn se verluer.",
         "Transform of row {number}:": "Transformatioun vun der Rei {number}:",
         "You are not signed in. Sign in and try again.": "Dir sidd net ugemellt. Mellt Iech un a probéiert et nach eng Kéier.",
-        "{label} of row {number}": "{label} vun der Rei {number}"
+        "{label} of row {number}": "{label} vun der Rei {number}",
+        "Another pack already has this slug. Choose a different slug.": "En anere Pak huet dëse Kuerznumm schonn. Wielt en anere Kuerznumm."
     },
     "nplurals=2; plural=(n != 1);"
 )

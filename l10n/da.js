@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Denne pakke har ændringer, der ikke er gemt. Hvis du forlader siden nu, går de tabt.",
         "Transform of row {number}:": "Transformation for række {number}:",
         "You are not signed in. Sign in and try again.": "Du er ikke logget ind. Log ind, og prøv igen.",
-        "{label} of row {number}": "{label} for række {number}"
+        "{label} of row {number}": "{label} for række {number}",
+        "Another pack already has this slug. Choose a different slug.": "En anden pakke har allerede denne slug. Vælg en anden slug."
     },
     "nplurals=2; plural=(n != 1);"
 )

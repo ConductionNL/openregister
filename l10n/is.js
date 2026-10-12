@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Þessi pakki er með breytingar sem eru ekki vistaðar. Ef þú ferð núna glatast þær.",
         "Transform of row {number}:": "Umbreyting raðar {number}:",
         "You are not signed in. Sign in and try again.": "Þú hefur ekki skráð þig inn. Skráðu þig inn og reyndu aftur.",
-        "{label} of row {number}": "{label} raðar {number}"
+        "{label} of row {number}": "{label} raðar {number}",
+        "Another pack already has this slug. Choose a different slug.": "Annar pakki er þegar með þetta auðkenni. Veldu annað auðkenni."
     },
     "nplurals=2; plural=(n != 1);"
 )

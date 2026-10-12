@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Dieses Paket hat Änderungen, die nicht gespeichert sind. Wenn Sie die Seite jetzt verlassen, gehen sie verloren.",
         "Transform of row {number}:": "Umwandlung von Zeile {number}:",
         "You are not signed in. Sign in and try again.": "Sie sind nicht angemeldet. Melden Sie sich an und versuchen Sie es erneut.",
-        "{label} of row {number}": "{label} von Zeile {number}"
+        "{label} of row {number}": "{label} von Zeile {number}",
+        "Another pack already has this slug. Choose a different slug.": "Ein anderes Paket hat bereits diesen Slug. Wählen Sie einen anderen Slug."
     },
     "nplurals=2; plural=(n != 1);"
 )

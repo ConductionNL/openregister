@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Овај пакет има измене које нису сачуване. Ако сада напустите страницу, биће изгубљене.",
         "Transform of row {number}:": "Трансформација реда {number}:",
         "You are not signed in. Sign in and try again.": "Нисте пријављени. Пријавите се и покушајте поново.",
-        "{label} of row {number}": "{label} реда {number}"
+        "{label} of row {number}": "{label} реда {number}",
+        "Another pack already has this slug. Choose a different slug.": "Други пакет већ има овај slug. Изаберите други slug."
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);"
 )

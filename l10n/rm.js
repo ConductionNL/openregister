@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Quest pachet ha midadas che n'èn betg memorisadas. Sche Vus bandunais ussa, van ellas a perder.",
         "Transform of row {number}:": "Transfurmaziun da la lingia {number}:",
         "You are not signed in. Sign in and try again.": "Vus n'essas betg annunzià. Annunziai Vus ed empruvai anc ina giada.",
-        "{label} of row {number}": "{label} da la lingia {number}"
+        "{label} of row {number}": "{label} da la lingia {number}",
+        "Another pack already has this slug. Choose a different slug.": "In auter pachet ha gia quest slug. Tschernai in auter slug."
     },
     "nplurals=2; plural=(n != 1);"
 )

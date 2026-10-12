@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Šajā pakotnē ir nesaglabātas izmaiņas. Ja tagad aiziesi, tās tiks zaudētas.",
         "Transform of row {number}:": "Rindas {number} pārveidojums:",
         "You are not signed in. Sign in and try again.": "Tu neesi pieteicies. Piesakies un mēģini vēlreiz.",
-        "{label} of row {number}": "{label} rindā {number}"
+        "{label} of row {number}": "{label} rindā {number}",
+        "Another pack already has this slug. Choose a different slug.": "Citai pakotnei jau ir šis identifikators. Izvēlies citu identifikatoru."
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);"
 )

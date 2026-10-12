@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Tässä paketissa on tallentamattomia muutoksia. Jos poistut nyt, ne menetetään.",
         "Transform of row {number}:": "Rivin {number} muunnos:",
         "You are not signed in. Sign in and try again.": "Et ole kirjautunut sisään. Kirjaudu sisään ja yritä uudelleen.",
-        "{label} of row {number}": "{label}, rivi {number}"
+        "{label} of row {number}": "{label}, rivi {number}",
+        "Another pack already has this slug. Choose a different slug.": "Toisella paketilla on jo tämä slug. Valitse toinen slug."
     },
     "nplurals=2; plural=(n != 1);"
 )

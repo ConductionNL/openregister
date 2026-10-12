@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Selles paketis on salvestamata muudatusi. Kui sa praegu lahkud, lähevad need kaotsi.",
         "Transform of row {number}:": "Rea {number} teisendus:",
         "You are not signed in. Sign in and try again.": "Sa pole sisse logitud. Logi sisse ja proovi uuesti.",
-        "{label} of row {number}": "{label}, rida {number}"
+        "{label} of row {number}": "{label}, rida {number}",
+        "Another pack already has this slug. Choose a different slug.": "Teisel paketil on juba see identifikaator. Vali teine identifikaator."
     },
     "nplurals=2; plural=(n != 1);"
 )

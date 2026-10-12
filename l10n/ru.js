@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "В этом пакете есть несохранённые изменения. Если вы уйдёте сейчас, они будут потеряны.",
         "Transform of row {number}:": "Преобразование строки {number}:",
         "You are not signed in. Sign in and try again.": "Вы не вошли в систему. Войдите и попробуйте ещё раз.",
-        "{label} of row {number}": "{label} строки {number}"
+        "{label} of row {number}": "{label} строки {number}",
+        "Another pack already has this slug. Choose a different slug.": "Другой пакет уже использует этот slug. Выберите другой slug."
     },
     "nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);"
 )

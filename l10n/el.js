@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Αυτό το πακέτο έχει αλλαγές που δεν έχουν αποθηκευτεί. Αν αποχωρήσετε τώρα, θα χαθούν.",
         "Transform of row {number}:": "Μετασχηματισμός της γραμμής {number}:",
         "You are not signed in. Sign in and try again.": "Δεν έχετε συνδεθεί. Συνδεθείτε και δοκιμάστε ξανά.",
-        "{label} of row {number}": "{label} της γραμμής {number}"
+        "{label} of row {number}": "{label} της γραμμής {number}",
+        "Another pack already has this slug. Choose a different slug.": "Ένα άλλο πακέτο έχει ήδη αυτό το slug. Επιλέξτε διαφορετικό slug."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Acest pachet are modificări care nu sunt salvate. Dacă părăsiți pagina acum, acestea se pierd.",
         "Transform of row {number}:": "Transformarea rândului {number}:",
         "You are not signed in. Sign in and try again.": "Nu sunteți autentificat. Autentificați-vă și încercați din nou.",
-        "{label} of row {number}": "{label} pentru rândul {number}"
+        "{label} of row {number}": "{label} pentru rândul {number}",
+        "Another pack already has this slug. Choose a different slug.": "Un alt pachet are deja acest slug. Alegeți alt slug."
     },
     "nplurals=3; plural=(n==1?0:(((n%100>19)||((n%100==0)&&(n!=0)))?2:1));"
 )

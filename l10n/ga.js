@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Tá athruithe gan sábháil sa phacáiste seo. Má fhágann tú anois, caillfear iad.",
         "Transform of row {number}:": "Claochlú ró {number}:",
         "You are not signed in. Sign in and try again.": "Níl tú logáilte isteach. Logáil isteach agus bain triail eile as.",
-        "{label} of row {number}": "{label} ró {number}"
+        "{label} of row {number}": "{label} ró {number}",
+        "Another pack already has this slug. Choose a different slug.": "Tá an slug seo ag pacáiste eile cheana féin. Roghnaigh slug eile."
     },
     "nplurals=5; plural=(n==1 ? 0 : n==2 ? 1 : n<7 ? 2 : n<11 ? 3 : 4);"
 )

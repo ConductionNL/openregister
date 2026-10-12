@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Tento balíček má neuložené změny. Pokud nyní odejdete, přijdete o ně.",
         "Transform of row {number}:": "Transformace řádku {number}:",
         "You are not signed in. Sign in and try again.": "Nejste přihlášeni. Přihlaste se a zkuste to znovu.",
-        "{label} of row {number}": "{label} řádku {number}"
+        "{label} of row {number}": "{label} řádku {number}",
+        "Another pack already has this slug. Choose a different slug.": "Tento slug už má jiný balíček. Vyberte jiný slug."
     },
     "nplurals=4; plural=(n == 1 && n % 1 == 0) ? 0 : (n >= 2 && n <= 4 && n % 1 == 0) ? 1: (n % 1 != 0 ) ? 2 : 3;"
 )

@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Bu pakette kaydedilmemiş değişiklikler var. Şimdi ayrılırsanız bu değişiklikler kaybolur.",
         "Transform of row {number}:": "{number}. satırın dönüşümü:",
         "You are not signed in. Sign in and try again.": "Giriş yapmadınız. Giriş yapıp yeniden deneyin.",
-        "{label} of row {number}": "{label} ({number}. satır)"
+        "{label} of row {number}": "{label} ({number}. satır)",
+        "Another pack already has this slug. Choose a different slug.": "Başka bir paket zaten bu slug değerine sahip. Farklı bir slug seçin."
     },
     "nplurals=2; plural=(n != 1);"
 )

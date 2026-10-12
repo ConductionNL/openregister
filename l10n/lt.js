@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Šiame pakete yra neįrašytų pakeitimų. Jei išeisite dabar, jie bus prarasti.",
         "Transform of row {number}:": "Eilutės {number} konvertavimas:",
         "You are not signed in. Sign in and try again.": "Nesate prisijungę. Prisijunkite ir bandykite dar kartą.",
-        "{label} of row {number}": "{label} (eilutė {number})"
+        "{label} of row {number}": "{label} (eilutė {number})",
+        "Another pack already has this slug. Choose a different slug.": "Kitas paketas jau turi šį trumpąjį pavadinimą. Pasirinkite kitą trumpąjį pavadinimą."
     },
     "nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);"
 )

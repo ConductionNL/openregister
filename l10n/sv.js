@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Detta paket har ändringar som inte har sparats. Om du lämnar nu går de förlorade.",
         "Transform of row {number}:": "Transformering för rad {number}:",
         "You are not signed in. Sign in and try again.": "Du är inte inloggad. Logga in och försök igen.",
-        "{label} of row {number}": "{label} för rad {number}"
+        "{label} of row {number}": "{label} för rad {number}",
+        "Another pack already has this slug. Choose a different slug.": "Ett annat paket har redan denna slug. Välj en annan slug."
     },
     "nplurals=2; plural=(n != 1);"
 )

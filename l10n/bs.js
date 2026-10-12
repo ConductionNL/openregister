@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Ovaj paket ima izmjene koje nisu spremljene. Ako sada odete, bit će izgubljene.",
         "Transform of row {number}:": "Transformacija reda {number}:",
         "You are not signed in. Sign in and try again.": "Niste prijavljeni. Prijavite se i pokušajte ponovo.",
-        "{label} of row {number}": "{label} reda {number}"
+        "{label} of row {number}": "{label} reda {number}",
+        "Another pack already has this slug. Choose a different slug.": "Drugi paket već ima ovaj slug. Odaberite drugi slug."
     },
     "nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;"
 )

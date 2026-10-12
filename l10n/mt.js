@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Dan il-pakkett għandu bidliet li mhumiex issejvjati. Jekk toħroġ issa, jintilfu.",
         "Transform of row {number}:": "Trasformazzjoni tar-ringiela {number}:",
         "You are not signed in. Sign in and try again.": "M'intix illoggjat. Illoggja u erġa' pprova.",
-        "{label} of row {number}": "{label} tar-ringiela {number}"
+        "{label} of row {number}": "{label} tar-ringiela {number}",
+        "Another pack already has this slug. Choose a different slug.": "Pakkett ieħor diġà għandu dan is-slug. Agħżel slug differenti."
     },
     "nplurals=4; plural=(n==1 ? 0 : n==0 || ( n%100>1 && n%100<11) ? 1 : (n%100>10 && n%100<20 ) ? 2 : 3);"
 )

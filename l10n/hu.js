@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Ennek a csomagnak nem mentett módosításai vannak. Ha most kilép, elvesznek.",
         "Transform of row {number}:": "A(z) {number}. sor átalakítása:",
         "You are not signed in. Sign in and try again.": "Nincs bejelentkezve. Jelentkezzen be, és próbálja újra.",
-        "{label} of row {number}": "{label} a(z) {number}. sorban"
+        "{label} of row {number}": "{label} a(z) {number}. sorban",
+        "Another pack already has this slug. Choose a different slug.": "Egy másik csomag már használja ezt a slugot. Válasszon másik slugot."
     },
     "nplurals=2; plural=(n != 1);"
 )

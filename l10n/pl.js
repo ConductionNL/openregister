@@ -3515,7 +3515,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Ten pakiet ma niezapisane zmiany. Jeśli teraz wyjdziesz, zostaną utracone.",
         "Transform of row {number}:": "Przekształcenie wiersza {number}:",
         "You are not signed in. Sign in and try again.": "Nie zalogowano. Zaloguj się i spróbuj ponownie.",
-        "{label} of row {number}": "{label} wiersza {number}"
+        "{label} of row {number}": "{label} wiersza {number}",
+        "Another pack already has this slug. Choose a different slug.": "Inny pakiet ma już ten slug. Wybierz inny slug."
     },
     "nplurals=4; plural=(n==1 ? 0 : (n%10>=2 && n%10<=4) && (n%100<12 || n%100>14) ? 1 : n!=1 && (n%10>=0 && n%10<=1) || (n%10>=5 && n%10<=9) || (n%100>=12 && n%100<=14) ? 2 : 3);"
 )
