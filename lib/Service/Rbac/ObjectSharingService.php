@@ -136,6 +136,11 @@ class ObjectSharingService {
 	 * @param IManager $shareManager Core share manager.
 	 * @param LoggerInterface $logger Logger.
 	 * @param InheritedGrantLister $inheritedGrants Lists the grants an ancestor's share confers.
+	 * @param GrantManageGuard $grantManage Who may manage a record's grants: the owner, an administrator,
+	 *                                      or a holder of the special right `grant_manage`.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection; each dependency is named in the
+	 *                                                 class docblock, and the guard is the tenth.
 	 */
 	public function __construct(
 		private readonly ObjectAuthorizationWriter $authorizationWriter,
@@ -147,6 +152,7 @@ class ObjectSharingService {
 		private readonly IManager $shareManager,
 		private readonly LoggerInterface $logger,
 		private readonly InheritedGrantLister $inheritedGrants,
+		private readonly GrantManageGuard $grantManage,
 	) {
 	}//end __construct()
 
@@ -210,7 +216,7 @@ class ObjectSharingService {
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md
 	 */
 	public function listGrants(ObjectEntity $object): array {
-		$this->requireOwnerOrAdmin(object: $object);
+		$this->requireMayManageGrants(object: $object);
 
 		$folder = $this->resolveFolder(object: $object);
 		if ($folder === null) {
@@ -294,7 +300,7 @@ class ObjectSharingService {
 		int $permissions = 1,
 		array $verbs = [],
 	): array {
-		$this->requireOwnerOrAdmin(object: $object);
+		$this->requireMayManageGrants(object: $object, grantType: $type, grantee: trim($shareWith));
 
 		if (isset(self::GRANTABLE_TYPES[$type]) === false) {
 			throw new InvalidArgumentException(
@@ -573,7 +579,7 @@ class ObjectSharingService {
 	 * @return void
 	 */
 	public function revoke(ObjectEntity $object, string $shareId): void {
-		$this->requireOwnerOrAdmin(object: $object);
+		$this->requireMayManageGrants(object: $object);
 
 		$folder = $this->resolveFolder(object: $object);
 		if ($folder === null) {
@@ -649,6 +655,61 @@ class ObjectSharingService {
 			);
 		}
 	}//end requireOwnerOrAdmin()
+
+	/**
+	 * Require that the caller may manage the grants on the object.
+	 *
+	 * The owner, the owning group and an administrator, as before. Beside them a
+	 * holder of the organisation's `grant_manage` special right on this record
+	 * ({@see GrantManageGuard}). It is asked for the three grant methods only: the scope, a public
+	 * link and an e-mail invitation stay with the owner and administrators.
+	 *
+	 * A holder admitted by the special right alone may not grant to itself or to
+	 * a group it is in. Without that refusal the right would be a read by one
+	 * extra call.
+	 *
+	 * @param ObjectEntity $object The object.
+	 * @param string|null $grantType The principal type of a grant being added, or null.
+	 * @param string|null $grantee The principal of a grant being added, or null.
+	 *
+	 * @throws NotAuthorizedException When the caller may not.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
+	 */
+	private function requireMayManageGrants(
+		ObjectEntity $object,
+		?string $grantType = null,
+		?string $grantee = null,
+	): void {
+		$uid = $this->callerUid();
+		$groups = [];
+		if ($uid !== null) {
+			$groups = $this->groupManager->getUserGroupIds($this->userSession->getUser());
+		}
+
+		$admittedAs = $this->grantManage->admittedAs(userId: $uid, userGroups: $groups, object: $object);
+		if ($admittedAs === null) {
+			throw new NotAuthorizedException(
+				message: 'Only the owner or an administrator may change sharing on this object'
+			);
+		}
+
+		$principal = [(string)$grantType => $grantee];
+		if ($this->grantManage->letsItselfIn(
+			admittedAs: $admittedAs,
+			userId: $uid,
+			userGroups: $groups,
+			user: ($principal['user'] ?? null),
+			group: ($principal['group'] ?? null)
+		) === true
+		) {
+			throw new NotAuthorizedException(
+				message: 'The right to manage grants does not let its holder grant access to itself'
+			);
+		}
+	}//end requireMayManageGrants()
 
 	/**
 	 * Strip core's re-share bit from a requested permission mask.

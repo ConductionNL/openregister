@@ -119,6 +119,7 @@ In addition to entity-type CRUD, organisations can define special action permiss
 | `agent_use` | Who can execute agents |
 | `dashboard_view` | Who can access the dashboard |
 | `llm_use` | Who can use LLM features |
+| `grant_manage` | Who can manage the grants and the owning group of records they do not own (enforced; see `OrganisationSpecialRights`) |
 
 ### Nextcloud Groups on Organisations
 
