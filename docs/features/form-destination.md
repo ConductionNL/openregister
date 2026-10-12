@@ -112,8 +112,61 @@ A draft is the destination object itself, saved with `@self.status: draft`
   `@self.status` to `active`, answers with the moment it left draft as
   `receivedAt`, and dispatches `ObjectActivatedEvent`.
 - A client may create an object as a draft. It cannot turn a saved object
-  into a draft, and only the submit can leave draft.
+  into a draft. A draft leaves draft through the submit, or through its
+  owner's activate action below. A plain save that sets `@self.status` to
+  `active` is refused.
 - An object without a stored status keeps the status it has today.
+
+### Make your own draft definitive
+
+An entry screen that is not a stored form finishes its draft on the object
+API (decision 216):
+
+`POST /index.php/apps/openregister/api/objects/{register}/{schema}/{id}/activate`
+
+- Only the draft's owner can do it. An administrator is not the owner.
+- Send `{ "object": { ... } }` to lay the last values over the stored draft
+  first. Without a body the draft is judged as stored.
+- The draft must pass the whole schema, whatever its hard-validation flag.
+  Properties with a default, a computation or the `serverSet` marker are
+  filled by the server and not asked of you.
+- The answer is the object under the same id, with `@self.status: active`.
+  `ObjectActivatedEvent` is dispatched, as on a submit.
+
+| Status | Reason | When |
+|---|---|---|
+| 200 | | The draft is now active |
+| 401 | `not-signed-in` | Nobody is signed in |
+| 403 | `not-the-owner` | The draft is somebody else's, or you may not write this schema |
+| 404 | `not-found` | No such object, or you may not read it |
+| 409 | `not-a-draft` | The object is not in status `draft` |
+| 422 | `invalid` | The draft is not complete; `findings` lists `{ property, code, message }` per property |
+
+Every refusal answers `{ message, reason, findings }`. From PHP, call
+`DraftActivation::activate()` with a `DraftOwner`; a portal passes its own
+scope value there (decision 195).
+
+### Let abandoned drafts expire
+
+Set `draftLifetimeDays` in a schema's configuration to a whole number of
+days, 1 or more:
+
+```json
+{ "configuration": { "draftLifetimeDays": 7 } }
+```
+
+A daily background job (`DraftExpiryJob`) removes every draft of that schema
+that nobody changed for that many days. It uses the ordinary delete, so the
+audit trail records it and the schema's deletion window and file rules apply.
+A schema without the setting keeps its drafts. The setting survives an import
+and an export. Your app needs no cleanup job of its own.
+
+### Keep your own drafts out of a work list
+
+A list leaves out other people's drafts and keeps your own (decision 201).
+Send `_drafts=none` to leave out your own too, for a work list whose drafts
+live elsewhere on the screen. `_drafts=true` shows drafts alone and
+`_drafts=any` shows drafts beside the rest.
 
 Receipt listeners: treat `ObjectCreatedEvent` for an object that is not a
 draft, and `ObjectActivatedEvent`, as the moment of receipt. Skip an object

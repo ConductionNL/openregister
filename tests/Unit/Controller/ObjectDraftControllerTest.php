@@ -8,7 +8,7 @@
  * refusal in the body, so this controller must stay a plain `Controller`, and
  * the first test here pins that. The delivered status through the real
  * middleware stack is asserted from a caller's side in the Newman collection
- * `tests/newman/openregister-draft-activation.postman_collection.json`.
+ * `tests/integration/openregister-draft-activation.postman_collection.json`.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
