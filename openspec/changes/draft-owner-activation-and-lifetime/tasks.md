@@ -37,6 +37,11 @@
   - Spec ref: specs/form-destination/spec.md, "A draft MUST be deletable on every schema, and its delete MUST be permanent"
   - Test: ObjectServiceDraftDeleteTest (each case with its control)
 
+- [x] 3.5 `AnnotationNotificationListener`: a draft's saves notify nobody; `ObjectActivatedEvent` fires the `created` rules once (registered in `Application`)
+  - Spec ref: specs/form-destination/spec.md, "A draft MUST NOT notify anybody until it leaves draft"
+  - Test: AnnotationNotificationListenerTest
+- [ ] 3.6 Not built here, for a change of its own: OpenRegister's other create-time listeners (flow triggers, webhooks, activity, push, metrics) still act on a draft's first save and not on `ObjectActivatedEvent`. Decision 180 asks for receipt effects at the moment of leaving draft; only the notification rules follow it so far
+
 ## 4. Lists
 
 - [x] 4.1 `_drafts=none` leaves out every draft, the caller's own included

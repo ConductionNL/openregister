@@ -141,3 +141,21 @@ A draft is not yet a record (decisions 180 and 216): it holds unsent input, noth
 - **GIVEN** a schema without an archival block and an object that is not a draft
 - **WHEN** it is deleted
 - **THEN** it is soft-deleted as before
+
+### Requirement: A draft MUST NOT notify anybody until it leaves draft
+
+The notification rules a schema declares (`x-openregister-notifications`) SHALL NOT fire for an object stored in status `draft`: not its first save, not its later saves (decisions 180 and 216). When a draft leaves draft, through the form submit or the owner's activation, its `created` rules SHALL fire once, as if the object had been created at that moment; the save that left draft SHALL NOT also fire `updated` rules. An object created outright is announced as before.
+
+#### Scenario: A half-typed object notifies nobody
+@e2e exclude unit; AnnotationNotificationListenerTest covers the draft's create and update, with an object created outright as control
+
+- **GIVEN** schema `ticket` with a `created` rule that notifies a group
+- **WHEN** an agent's draft ticket is saved and saved again
+- **THEN** nobody is notified
+
+#### Scenario: Leaving draft announces it once
+@e2e exclude unit; AnnotationNotificationListenerTest covers the activation and the update event that comes with it
+
+- **GIVEN** the same draft
+- **WHEN** its owner makes it definitive
+- **THEN** the `created` rule fires once, with the object as it was sent

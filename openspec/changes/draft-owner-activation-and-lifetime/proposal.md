@@ -26,6 +26,12 @@ A third gap showed while reading for the rework: a list keeps the caller's own d
 - **`_drafts=none`.** A list lens that leaves out every draft, the caller's own included.
 - **One shared excusal set.** The properties the server fills (default, computed, `serverSet`) are excused from `required` by `DraftStatusPolicy::serverFilledExcusals()`, used by the form submit and by the activation, so a draft one accepts the other accepts.
 
+- **A draft notifies nobody.** A schema's `created` notification rules fire when the object leaves draft, once, and not on the draft's first save. Without it every autosaved draft announced a half-typed object, and the finished one was never announced.
+
+## Known gap, not closed here
+
+OpenRegister registers about sixteen listeners on `ObjectCreatedEvent` (flow triggers, webhooks, activity, push, metrics, search). None looks at the status, and none listens to `ObjectActivatedEvent`. So a flow or webhook on "created" still fires on a draft's first save. Only the notification rules are fixed in this change, because pipelinq's ticket declares one. The rest needs its own change.
+
 ## Decisions taken while building, for Ruben to overrule
 
 - **A draft passes the archival delete gate, and its delete is permanent.** Found while building pipelinq's side: `ticket` carries `x-openregister-archival`, and OpenRegister refuses every user delete on such a schema. So an owner could not discard a draft ticket and the cleanup could not remove one; the job would have run green and removed nothing. A draft was never received, so its archival term has not started. `ObjectService::deleteObject()` now lets an object stored in status `draft` through that gate, and nothing else. It removes a draft for good, with its files, because a soft-deleted draft on an archival schema would be a tombstone the purge refuses for ever. This is the same end state `DraftDiscard` already asked for ("deleted permanently: it holds unsent answers and nothing refers to it"). What it costs: the removal of a draft is logged, and leaves no audit-trail row of its own, like every permanent delete.
@@ -34,4 +40,4 @@ A third gap showed while reading for the rework: a list keeps the caller's own d
 
 ## Out of scope
 
-The apps that use it. pipelinq's quick log is reworked on top in its own change (`contact-moment-ticket-drafts`), which sets seven days on its schema.
+The apps that use it. pipelinq's quick log is reworked on top in its change `contact-moments-keep-draft`, which sets seven days on its `ticket` schema.
