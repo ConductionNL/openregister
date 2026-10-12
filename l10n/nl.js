@@ -3575,7 +3575,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "Dit pakket heeft wijzigingen die niet zijn opgeslagen. Als je nu weggaat, raak je ze kwijt.",
         "Transform of row {number}:": "Omzetting van rij {number}:",
         "You are not signed in. Sign in and try again.": "Je bent niet aangemeld. Meld je aan en probeer het opnieuw.",
-        "{label} of row {number}": "{label} van rij {number}"
+        "{label} of row {number}": "{label} van rij {number}",
+        "Another pack already has this slug. Choose a different slug.": "Een ander pakket heeft deze slug al. Kies een andere slug."
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -3513,7 +3513,8 @@ OC.L10N.register(
         "This pack has changes that are not saved. If you leave now, they are lost.": "This pack has changes that are not saved. If you leave now, they are lost.",
         "Transform of row {number}:": "Transform of row {number}:",
         "You are not signed in. Sign in and try again.": "You are not signed in. Sign in and try again.",
-        "{label} of row {number}": "{label} of row {number}"
+        "{label} of row {number}": "{label} of row {number}",
+        "Another pack already has this slug. Choose a different slug.": "Another pack already has this slug. Choose a different slug."
     },
     "nplurals=2; plural=(n != 1);"
 )
