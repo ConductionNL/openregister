@@ -145,21 +145,27 @@ class DraftStatusPolicyTest extends TestCase {
 	}//end testServerFilledPropertiesAreExcusedWhenAbsent()
 
 	/**
-	 * A schema sets a draft lifetime in days; without it, or with anything but a whole number of days, drafts are kept.
+	 * A draft lifetime is 30 days unless the schema sets another number of days or opts out with false (decision 228).
 	 */
 	public function testTheDraftLifetimeIsReadFromTheSchema(): void {
 		$schema = new Schema();
-		$this->assertNull($this->policy->draftLifetimeDays(schema: $schema));
+		$this->assertSame(30, DraftStatusPolicy::DEFAULT_LIFETIME_DAYS);
+		$this->assertSame(30, $this->policy->draftLifetimeDays(schema: $schema));
 
 		$schema->setConfiguration(['draftLifetimeDays' => 7]);
 		$this->assertSame(7, $this->policy->draftLifetimeDays(schema: $schema));
 		$this->assertSame('draftLifetimeDays', DraftStatusPolicy::LIFETIME_KEY);
 
-		// Another draft setting does not set a lifetime.
+		// Another draft setting does not change the lifetime.
 		$schema->setConfiguration(['draftsVisible' => true]);
+		$this->assertSame(30, $this->policy->draftLifetimeDays(schema: $schema));
+
+		// The explicit opt-out: this schema keeps its drafts.
+		$schema->setConfiguration(['draftLifetimeDays' => false]);
 		$this->assertNull($this->policy->draftLifetimeDays(schema: $schema));
 
-		// A value the schema refused (zero would mean "remove every draft now") leaves no lifetime behind.
+		// A value the schema refused is stored as the opt-out, so a typing error keeps drafts
+		// and never reads as "remove every draft now" or "remove after 30 days".
 		$schema->setConfiguration(['draftLifetimeDays' => 0]);
 		$this->assertNull($this->policy->draftLifetimeDays(schema: $schema));
 	}//end testTheDraftLifetimeIsReadFromTheSchema()

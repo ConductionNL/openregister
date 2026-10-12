@@ -16,17 +16,21 @@
 
 ## 2. A schema sets a draft lifetime
 
-- [x] 2.1 Configuration key `draftLifetimeDays` declared in `Schema::validateConfigurationEntry()`; anything but a whole number of days, 1 or more, is dropped and reported
+- [x] 2.1 Configuration key `draftLifetimeDays` declared in `Schema::validateConfigurationEntry()`: a whole number of days, 1 or more, or `false` to keep drafts (decision 228); anything else is stored as `false` and reported
   - Spec ref: specs/form-destination/spec.md, "A schema MUST be able to set a draft lifetime"
   - Test: SchemaFormConfigurationTest
 - [x] 2.2 The key survives an import, an export and a second import
   - Test: DraftLifetimeImportExportTest (real `ImportHandler` and `ExportHandler`; an undeclared key as control)
-- [x] 2.3 `DraftStatusPolicy::draftLifetimeDays()`
+- [x] 2.3 `DraftStatusPolicy::draftLifetimeDays()`: 30 days without the key, null for a schema that keeps its drafts
   - Test: DraftStatusPolicyTest
+- [x] 2.4 `occ openregister:drafts:expired` (`DraftsExpiredCommand`, declared in `appinfo/info.xml`): the count per schema a run would remove, nothing removed
+  - Spec ref: specs/form-destination/spec.md, "An administrator MUST be able to see what the draft cleanup would remove"
+  - Test: DraftsExpiredCommandTest
+- [x] 2.5 Upgrade note in `CHANGELOG.md` and the PR body: the first run removes drafts older than 30 days
 
 ## 3. One cleanup job
 
-- [x] 3.1 `DraftExpiry::sweep()`: per register and schema with a lifetime, list drafts, remove the expired ones through `ObjectService::deleteObject()`
+- [x] 3.1 `DraftExpiry::sweep()`: per register and schema with a lifetime, list drafts, remove the expired ones through `ObjectService::deleteObject()`; at most 1,000 per run, the rest deferred; a count per schema; `preview()` counts and removes nothing
   - Spec ref: specs/form-destination/spec.md, "One background job MUST remove drafts past their schema's lifetime"
   - Test: DraftExpiryTest
 - [x] 3.2 `DraftExpiryJob`, daily, declared in `appinfo/info.xml`; `info.xml` version bumped so the declaration is picked up
@@ -40,7 +44,10 @@
 - [x] 3.5 `AnnotationNotificationListener`: a draft's saves notify nobody; `ObjectActivatedEvent` fires the `created` rules once (registered in `Application`)
   - Spec ref: specs/form-destination/spec.md, "A draft MUST NOT notify anybody until it leaves draft"
   - Test: AnnotationNotificationListenerTest
-- [ ] 3.6 Not built here, for a change of its own: OpenRegister's other create-time listeners (flow triggers, webhooks, activity, push, metrics) still act on a draft's first save and not on `ObjectActivatedEvent`. Decision 180 asks for receipt effects at the moment of leaving draft; only the notification rules follow it so far
+- [x] 3.6 Moved to the change `draft-creation-side-effects` (decision 227): OpenRegister's other create-time listeners (flow triggers, webhooks, activity, push, metrics) act on a draft's first save and not on `ObjectActivatedEvent`. This change fixes the notification rules only
+- [x] 3.7 `DraftRemovalRecord`: the permanent delete of a draft writes one audit-trail entry `draft.removed` through `AuditTrailMapper::createAuditTrailEntry()`, naming the user or the job, never the content (decision 226)
+  - Spec ref: specs/form-destination/spec.md, "Removing a draft MUST leave one audit-trail entry without its content"
+  - Test: DraftRemovalRecordTest (the real delete handler, with a record that is not a draft as control), DraftRemovalAuditRowTest (the row read back from the migrated audit table), DraftExpiryTest (the job as actor)
 
 ## 4. Lists
 

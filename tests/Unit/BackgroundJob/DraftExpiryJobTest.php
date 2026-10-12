@@ -38,7 +38,8 @@ use RuntimeException;
  * Decision 216: declared, daily, counted, and a failure surfaces.
  *
  * @covers \OCA\OpenRegister\BackgroundJob\DraftExpiryJob
- * @uses \OCA\OpenRegister\Service\Object\DraftExpiry
+  * @uses \OCA\OpenRegister\Service\Object\DraftExpiry
+ * @uses \OCA\OpenRegister\Service\Object\DraftRemovalRecord
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Service\Object\DraftListLens
  * @uses \OCA\OpenRegister\Db\ObjectEntity
@@ -160,10 +161,13 @@ class DraftExpiryJobTest extends TestCase {
 			}
 		);
 
+				// One line for the schema that lost a draft, then the totals (decision 228).
+		$logged = [];
 		$logger = $this->createMock(LoggerInterface::class);
-		$logger->expects($this->once())->method('info')->with(
-			$this->stringContains('swept drafts'),
-			$this->equalTo(['schemas' => 1, 'expired' => 1, 'removed' => 1, 'refused' => 0])
+		$logger->method('info')->willReturnCallback(
+			static function (string $message, array $context = []) use (&$logged): void {
+				$logged[] = [$message, $context];
+			}
 		);
 
 		$job = $this->build(
@@ -178,7 +182,16 @@ class DraftExpiryJobTest extends TestCase {
 		$this->assertSame(86400, $job->getInterval());
 		$this->runJob(job: $job);
 
-		$this->assertSame(['expired'], $deleted);
+				$this->assertSame(['expired'], $deleted);
+		$this->assertCount(2, $logged);
+		$this->assertStringContainsString('drafts past the lifetime of a schema', $logged[0][0]);
+		$this->assertSame(
+			['register' => 'service', 'schema' => 'ticket', 'lifetimeDays' => 7, 'expired' => 1, 'removed' => 1, 'refused' => 0, 'deferred' => 0],
+			$logged[0][1]
+		);
+		// The second schema sets nothing, so it gets 30 days: looked at, nothing expired, no line of its own.
+		$this->assertStringContainsString('swept drafts', $logged[1][0]);
+		$this->assertSame(['schemas' => 2, 'expired' => 1, 'removed' => 1, 'refused' => 0, 'deferred' => 0], $logged[1][1]);
 	}//end testTheDeclaredJobRemovesAnExpiredDraft()
 
 	/**
@@ -186,11 +199,11 @@ class DraftExpiryJobTest extends TestCase {
 	 */
 	public function testAZeroIsLogged(): void {
 		$expiry = $this->createMock(DraftExpiry::class);
-		$expiry->expects($this->once())->method('sweep')->willReturn(['schemas' => 0, 'expired' => 0, 'removed' => 0, 'refused' => 0]);
+		$expiry->expects($this->once())->method('sweep')->willReturn(['schemas' => 0, 'expired' => 0, 'removed' => 0, 'refused' => 0, 'deferred' => 0, 'perSchema' => []]);
 		$logger = $this->createMock(LoggerInterface::class);
 		$logger->expects($this->once())->method('info')->with(
 			$this->stringContains('swept drafts'),
-			$this->equalTo(['schemas' => 0, 'expired' => 0, 'removed' => 0, 'refused' => 0])
+			$this->equalTo(['schemas' => 0, 'expired' => 0, 'removed' => 0, 'refused' => 0, 'deferred' => 0])
 		);
 
 		$job = $this->build(

@@ -76,26 +76,44 @@ A refusal SHALL change nothing and SHALL answer `{ message, reason, findings }` 
 - **THEN** it becomes `active`
 - **AND** the same call asserting `portal:subject-2` is refused with `not-the-owner`
 
-### Requirement: A schema MUST be able to set a draft lifetime
+### Requirement: A draft lifetime MUST default to thirty days, and a schema MUST be able to change it or opt out
 
-A schema SHALL be able to declare `draftLifetimeDays` in its configuration: a whole number of days, 1 or more (decision 216). The key SHALL survive a schema save, an import and an export. Any other value (zero, a negative number, a fraction, text) SHALL NOT be stored and SHALL be reported as a dropped key, so a mistyped lifetime never reads as "remove every draft now". A schema without the key has no draft lifetime and its drafts SHALL be kept.
+A draft SHALL have a lifetime of 30 days unless its schema says otherwise (decisions 201 and 228). A schema SHALL be able to declare `draftLifetimeDays` in its configuration: a whole number of days, 1 or more, sets another lifetime; `false` opts out and the schema's drafts SHALL be kept. An absent key or `null` SHALL mean the default. The key SHALL survive a schema save, an import and an export, the value `false` included. Any other value (zero, a negative number, a fraction, `true`, text) SHALL be refused: it SHALL be stored as `false` and reported as a dropped key, so a typing error keeps drafts and never reads as "remove every draft now" or "remove after 30 days". A stored value nobody can read SHALL keep the drafts too.
 
-#### Scenario: The lifetime survives an import and an export
+#### Scenario: No setting means thirty days
+@e2e exclude unit; DraftStatusPolicyTest covers the default, DraftExpiryTest the cutoff to the second
+
+- **GIVEN** schema `case` without `draftLifetimeDays`, a draft last changed 30 days and one second ago and a draft last changed exactly 30 days ago
+- **WHEN** the cleanup runs
+- **THEN** the first draft is removed and the second stays
+
+#### Scenario: A schema opts out
+@e2e exclude unit; SchemaFormConfigurationTest covers the stored value, DraftExpiryTest that the schema is not even listed
+
+- **GIVEN** schema `memo` with `draftLifetimeDays: false` and a draft last changed years ago
+- **WHEN** the cleanup runs
+- **THEN** the draft stays and the schema's drafts are not listed
+
+#### Scenario: The lifetime and the opt-out survive an import and an export
 @e2e exclude unit; DraftLifetimeImportExportTest runs the real import and export handlers, with an undeclared key as its control
 
-- **GIVEN** an app's register file whose schema sets `configuration.draftLifetimeDays` to 7
+- **GIVEN** an app's register file with a schema that sets `configuration.draftLifetimeDays` to 7 and one that sets it to `false`
 - **WHEN** the file is imported, the register is exported and the export is imported again
-- **THEN** the schema's draft lifetime is 7 after each step
+- **THEN** the first schema's draft lifetime is 7 and the second keeps its drafts, after each step
 
-#### Scenario: A value that is no lifetime is refused
+#### Scenario: A value that is no lifetime keeps the drafts
 @e2e exclude unit; SchemaFormConfigurationTest covers every refused value
 
-- **WHEN** a schema is saved with `draftLifetimeDays` 0, -7, 1.5 or "a week"
-- **THEN** the key is not stored, it is reported as dropped, and the rest of the configuration is kept
+- **WHEN** a schema is saved with `draftLifetimeDays` 0, -7, 1.5, `true` or "a week"
+- **THEN** the key is stored as `false`, it is reported as dropped, and the rest of the configuration is kept
 
 ### Requirement: One background job MUST remove drafts past their schema's lifetime
 
-OpenRegister SHALL run one background job, declared where it declares its jobs (`appinfo/info.xml`), once a day (decision 216). For every schema that sets `draftLifetimeDays`, in every register that carries it, the job SHALL remove each object in status `draft` whose last change (`updated`, else `created`) is older than that many days. It SHALL remove nothing else: an object that is not a draft, a draft of a schema without the setting, and a draft without any date SHALL stay. Removal SHALL go through the ordinary object delete (`ObjectService::deleteObject()`), so its guards apply and the draft's files go with it; a delete that path refuses SHALL be logged and counted, and the sweep SHALL carry on. The job SHALL log its counts, a zero included, and SHALL surface a failure rather than report success. Generic by construction (decision 182): no app carries a draft cleanup of its own.
+OpenRegister SHALL run one background job, declared where it declares its jobs (`appinfo/info.xml`), once a day (decision 216). For every schema that stores its own objects and has a draft lifetime, in every register that carries it, the job SHALL remove each object in status `draft` whose last change (`updated`, else `created`) is older than that lifetime. It SHALL remove nothing else: an object that is not a draft, a draft of a schema that opts out, and a draft without any date SHALL stay. A schema served from an object source SHALL NOT be asked for drafts. Removal SHALL go through the ordinary object delete (`ObjectService::deleteObject()`), so its guards apply and the draft's files go with it; a delete that path refuses SHALL be logged and counted, and the sweep SHALL carry on.
+
+The work of one run SHALL be bounded (decision 228): at most 1,000 delete attempts per run, and at most 5,000 drafts read per register and schema. What is left SHALL be counted as deferred and SHALL wait for the next run. The job SHALL log one line per register and schema that held an expired draft (register, schema, lifetime, expired, removed, refused, deferred) and one line with the totals, a zero included, and SHALL surface a failure rather than report success. Generic by construction (decision 182): no app carries a draft cleanup of its own.
+
+Because the default applies to drafts that exist at the upgrade, the first run after it removes drafts that were kept until then. The changelog and the release notes SHALL say so.
 
 #### Scenario: An abandoned draft is removed
 @e2e exclude unit; DraftExpiryJobTest starts from the job appinfo/info.xml declares and runs it down to the delete, DraftExpiryTest covers the cutoff
@@ -103,19 +121,32 @@ OpenRegister SHALL run one background job, declared where it declares its jobs (
 - **GIVEN** schema `ticket` with `draftLifetimeDays` 7, a draft last changed eight days ago and a draft changed yesterday
 - **WHEN** the job runs
 - **THEN** the first draft is deleted through the ordinary delete and the second stays
+- **AND** the log holds a line for `ticket` with its counts
 
-#### Scenario: No setting, no removal
-@e2e exclude unit; DraftExpiryTest covers a schema without the setting
+#### Scenario: One run is bounded
+@e2e exclude unit; DraftExpiryTest covers the limit and the deferred count
 
-- **GIVEN** schema `case` without `draftLifetimeDays` and a draft last changed years ago
+- **GIVEN** 1,002 expired drafts over two schemas
 - **WHEN** the job runs
-- **THEN** the draft stays and the schema's drafts are not even listed
+- **THEN** 1,000 are removed and 2 are counted as deferred
 
 #### Scenario: The job is registered
 @e2e exclude unit; DraftExpiryJobTest fails when appinfo/info.xml does not declare the job
 
 - **WHEN** `appinfo/info.xml` is read
 - **THEN** it declares exactly one background job that runs the draft expiry
+
+### Requirement: An administrator MUST be able to see what the draft cleanup would remove
+
+OpenRegister SHALL offer `occ openregister:drafts:expired` (decision 228). It SHALL list, per register and schema, how many drafts a run of the cleanup at that moment would remove and the lifetime that applies, and SHALL remove nothing. `--json` SHALL print the same counts as JSON. A schema that opts out SHALL NOT be listed. The command SHALL say how a schema keeps its drafts.
+
+#### Scenario: A look before the first run after an upgrade
+@e2e exclude unit; DraftsExpiredCommandTest runs the command over the real sweep and counts the deletes, DraftExpiryTest checks that the sweep removes exactly what the preview counted
+
+- **GIVEN** schema `case` without a setting, holding two drafts older than 30 days and one of three days
+- **WHEN** an administrator runs `occ openregister:drafts:expired`
+- **THEN** the output names `case` with 2 drafts and 30 days
+- **AND** no draft is removed
 
 ### Requirement: A draft MUST be deletable on every schema, and its delete MUST be permanent
 
@@ -134,6 +165,7 @@ A draft is not yet a record (decisions 180 and 216): it holds unsent input, noth
 - **GIVEN** the same schema and an object in status `active`, or without a stored status
 - **WHEN** a user deletes it
 - **THEN** the delete is refused with `SCHEMA_ARCHIVAL_IMMUTABLE`, as before
+- **AND** the delete handler is not reached, so nothing is removed and nothing is recorded as removed
 
 #### Scenario: An ordinary delete stays a soft delete
 @e2e exclude unit; ObjectServiceDraftDeleteTest covers the control
@@ -141,6 +173,34 @@ A draft is not yet a record (decisions 180 and 216): it holds unsent input, noth
 - **GIVEN** a schema without an archival block and an object that is not a draft
 - **WHEN** it is deleted
 - **THEN** it is soft-deleted as before
+
+### Requirement: Removing a draft MUST leave one audit-trail entry without its content
+
+The permanent delete of an object in status `draft` SHALL write exactly one entry on OpenRegister's audit trail (decision 226), through the audit trail's own entry point (`AuditTrailMapper::createAuditTrailEntry()`), so it is hash-chained and shows where other audit entries show. The entry SHALL carry the action `draft.removed`, the actor, the moment, the register, the schema and the object's id and uuid. The actor SHALL be the signed-in user, or `job:<name>` when a job removed the draft (`job:DraftExpiryJob` for the cleanup). Beside its columns the entry SHALL say that the object was a draft (`status: draft`, `permanent: true`), the register's and the schema's slug, the job's name, and the draft's owner. The entry SHALL NOT hold any property value or property name of the draft. A permanent delete of an object that is not a draft SHALL NOT write this entry. When the entry cannot be written, the removal stands and the same facts SHALL be logged as an error, without the content.
+
+The entries the draft's own saves wrote before the removal are not changed by this requirement.
+
+#### Scenario: A user removes a draft
+@e2e exclude unit; DraftRemovalRecordTest drives the real delete handler, DraftRemovalAuditRowTest reads the row back from the migrated audit table
+
+- **GIVEN** a draft on schema `ticket` holding a subject and an e-mail address
+- **WHEN** its owner deletes it
+- **THEN** the audit trail holds one entry `draft.removed` with the owner as actor, register `service`, schema `ticket` and the draft's id
+- **AND** no column of the entry holds the subject, the e-mail address or their property names
+
+#### Scenario: The cleanup removes a draft
+@e2e exclude unit; DraftExpiryTest covers the actor of each removal, DraftRemovalAuditRowTest the stored row
+
+- **GIVEN** a draft past its schema's lifetime
+- **WHEN** the cleanup removes it
+- **THEN** the entry's actor is `job:DraftExpiryJob`
+
+#### Scenario: A record leaves no draft entry
+@e2e exclude unit; DraftRemovalRecordTest covers the control
+
+- **GIVEN** an object in status `active`
+- **WHEN** it is permanently deleted
+- **THEN** no `draft.removed` entry is written
 
 ### Requirement: A draft MUST NOT notify anybody until it leaves draft
 

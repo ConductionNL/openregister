@@ -20,16 +20,20 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
+use OCA\OpenRegister\Service\Object\DraftRemovalRecord;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
- * Decision 216: one sweep for every schema that sets `draftLifetimeDays`.
+  * Decisions 216 and 228: one sweep for every schema, 30 days unless the schema says otherwise.
  *
  * @covers \OCA\OpenRegister\Service\Object\DraftExpiry
+ * @uses \OCA\OpenRegister\Service\Object\DraftRemovalRecord
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Service\Object\DraftListLens
  * @uses \OCA\OpenRegister\Db\ObjectEntity
@@ -58,6 +62,13 @@ class DraftExpiryTest extends TestCase {
 	 * @var array<int, array<string, mixed>>
 	 */
 	private array $deletes = [];
+
+		/**
+	 * The actor each delete would be recorded under on the audit trail.
+	 *
+	 * @var array<int, string|null>
+	 */
+	private array $actors = [];
 
 	/**
 	 * Warnings logged.
@@ -110,6 +121,17 @@ class DraftExpiryTest extends TestCase {
 					'retentionSweep' => $_retentionSweep,
 					'permanent' => $permanent,
 				];
+								// What the real delete path does for a draft: ask the removal record to write its entry.
+				$audit = $this->createMock(AuditTrailMapper::class);
+				$audit->method('createAuditTrailEntry')->willReturnCallback(
+					function (ObjectEntity $object, string $action, array $context = [], ?string $actorId = null): AuditTrail {
+						$this->actors[] = $actorId;
+
+						return new AuditTrail();
+					}
+				);
+				(new DraftRemovalRecord(auditTrail: $audit, logger: $this->createMock(LoggerInterface::class)))->write(draft: new ObjectEntity(), register: null, schema: null);
+
 				if ($uuid === 'frozen') {
 					throw new RuntimeException('This schema refuses deletes.');
 				}
@@ -207,8 +229,23 @@ class DraftExpiryTest extends TestCase {
 
 		$counts = $this->expiry->sweep(now: $this->now);
 
-		$this->assertSame(['schemas' => 1, 'expired' => 2, 'removed' => 2, 'refused' => 0], $counts);
+				$this->assertSame(
+			[
+				'schemas' => 1,
+				'expired' => 2,
+				'removed' => 2,
+				'refused' => 0,
+				'deferred' => 0,
+				// The count per schema the job logs (decision 228).
+				'perSchema' => [
+					['register' => 'service', 'schema' => 'ticket', 'lifetimeDays' => 7, 'expired' => 2, 'removed' => 2, 'refused' => 0, 'deferred' => 0],
+				],
+			],
+			$counts
+		);
 		$this->assertSame(['old', 'never-touched'], array_column($this->deletes, 'uuid'));
+		// Each removal ran as the named job, so its audit-trail entry says which job removed the draft (decision 226).
+		$this->assertSame(['job:DraftExpiryJob', 'job:DraftExpiryJob'], $this->actors);
 
 		// The ordinary delete, in the draft's own register and schema: no RBAC
 		// (a job has no session) and not the archival sweep's bypass. The sweep
@@ -229,21 +266,122 @@ class DraftExpiryTest extends TestCase {
 	}//end testAnExpiredDraftIsRemovedAndAYoungOneStays()
 
 	/**
-	 * Spec scenario: a schema without the setting keeps every draft, and is not even listed.
+	 * The totals of a sweep, without the rows per schema.
+	 *
+	 * @param array<string, mixed> $counts What the sweep answered.
+	 *
+	 * @return array<string, int> The totals.
 	 */
-	public function testASchemaWithoutALifetimeKeepsItsDrafts(): void {
+	private function totals(array $counts): array {
+		unset($counts['perSchema']);
+
+		return $counts;
+	}//end totals()
+
+	/**
+	 * Spec scenario: a schema that says nothing gets 30 days (decision 228).
+	 */
+	public function testASchemaWithoutTheSettingGetsThirtyDays(): void {
 		$this->schema(id: 2, slug: 'case');
-		$this->schema(id: 3, slug: 'note', configuration: ['draftsVisible' => true]);
+		$this->register(id: 10, slug: 'service', schemaIds: [2]);
+		// 2026-09-12T03:00 is exactly 30 days before now: one second older is expired, the moment itself is not.
+		$this->object(where: '10/2', uuid: 'thirty-days-and-a-second', status: 'draft', updated: '2026-09-12T02:59:59+00:00');
+		$this->object(where: '10/2', uuid: 'thirty-days', status: 'draft', updated: '2026-09-12T03:00:00+00:00');
+
+		$counts = $this->expiry->sweep(now: $this->now);
+
+		$this->assertSame(['schemas' => 1, 'expired' => 1, 'removed' => 1, 'refused' => 0, 'deferred' => 0], $this->totals(counts: $counts));
+		$this->assertSame(30, $counts['perSchema'][0]['lifetimeDays']);
+		$this->assertSame(['thirty-days-and-a-second'], array_column($this->deletes, 'uuid'));
+	}//end testASchemaWithoutTheSettingGetsThirtyDays()
+
+	/**
+	 * Spec scenario: a schema that opts out with false keeps every draft, and is not even listed.
+	 */
+	public function testASchemaThatOptsOutKeepsItsDrafts(): void {
+		$this->schema(id: 2, slug: 'case', configuration: ['draftLifetimeDays' => false]);
+		// A value the schema refused is stored as the opt-out.
+		$this->schema(id: 3, slug: 'note', configuration: ['draftLifetimeDays' => 'never', 'draftsVisible' => true]);
 		$this->register(id: 10, slug: 'service', schemaIds: [2, 3]);
 		$this->object(where: '10/2', uuid: 'ancient', status: 'draft', updated: '2020-01-01T00:00:00+00:00');
 		$this->object(where: '10/3', uuid: 'ancient-too', status: 'draft', updated: '2020-01-01T00:00:00+00:00');
 
 		$counts = $this->expiry->sweep(now: $this->now);
 
-		$this->assertSame(['schemas' => 0, 'expired' => 0, 'removed' => 0, 'refused' => 0], $counts);
+		$this->assertSame(['schemas' => 0, 'expired' => 0, 'removed' => 0, 'refused' => 0, 'deferred' => 0, 'perSchema' => []], $counts);
 		$this->assertSame([], $this->searches);
 		$this->assertSame([], $this->deletes);
-	}//end testASchemaWithoutALifetimeKeepsItsDrafts()
+	}//end testASchemaThatOptsOutKeepsItsDrafts()
+
+	/**
+	 * A schema served from an object source holds no drafts of its own; that source is never asked.
+	 */
+	public function testASchemaServedFromAnObjectSourceIsNotListed(): void {
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getObjectSource')->willReturn(['provider' => 'view']);
+		$schema->method('getConfiguration')->willReturn([]);
+		$this->schemas[5] = $schema;
+		$this->register(id: 10, slug: 'service', schemaIds: [5]);
+
+		$counts = $this->expiry->sweep(now: $this->now);
+
+		$this->assertSame(0, $counts['schemas']);
+		$this->assertSame([], $this->searches);
+	}//end testASchemaServedFromAnObjectSourceIsNotListed()
+
+	/**
+	 * One run removes at most MAX_REMOVALS drafts; the rest is counted as deferred and waits (decision 228).
+	 */
+	public function testOneRunIsBounded(): void {
+		$this->schema(id: 1, slug: 'ticket', configuration: ['draftLifetimeDays' => 7]);
+		$this->schema(id: 2, slug: 'case');
+		$this->register(id: 10, slug: 'service', schemaIds: [1, 2]);
+		for ($i = 0; $i < (DraftExpiry::MAX_REMOVALS - 1); $i++) {
+			$this->object(where: '10/1', uuid: 'ticket-' . $i, status: 'draft', updated: '2026-01-01T00:00:00+00:00');
+		}
+
+		for ($i = 0; $i < 3; $i++) {
+			$this->object(where: '10/2', uuid: 'case-' . $i, status: 'draft', updated: '2026-01-01T00:00:00+00:00');
+		}
+
+		$counts = $this->expiry->sweep(now: $this->now);
+
+		$this->assertSame(
+			['schemas' => 2, 'expired' => (DraftExpiry::MAX_REMOVALS + 2), 'removed' => DraftExpiry::MAX_REMOVALS, 'refused' => 0, 'deferred' => 2],
+			$this->totals(counts: $counts)
+		);
+		$this->assertCount(DraftExpiry::MAX_REMOVALS, $this->deletes);
+		$this->assertSame(['expired' => 3, 'removed' => 1, 'deferred' => 2], array_intersect_key($counts['perSchema'][1], ['expired' => 0, 'removed' => 0, 'deferred' => 0]));
+	}//end testOneRunIsBounded()
+
+	/**
+	 * The preview counts what a sweep would remove, per schema, and removes nothing (decision 228).
+	 */
+	public function testThePreviewCountsAndRemovesNothing(): void {
+		$this->schema(id: 1, slug: 'ticket', configuration: ['draftLifetimeDays' => 7]);
+		$this->schema(id: 2, slug: 'case');
+		$this->schema(id: 3, slug: 'memo', configuration: ['draftLifetimeDays' => false]);
+		$this->register(id: 10, slug: 'service', schemaIds: [1, 2, 3]);
+		$this->object(where: '10/1', uuid: 'ticket-old', status: 'draft', updated: '2026-10-01T00:00:00+00:00');
+		$this->object(where: '10/2', uuid: 'case-old', status: 'draft', updated: '2026-08-01T00:00:00+00:00');
+		$this->object(where: '10/2', uuid: 'case-older', status: 'draft', updated: '2026-07-01T00:00:00+00:00');
+		$this->object(where: '10/2', uuid: 'case-young', status: 'draft', updated: '2026-10-01T00:00:00+00:00');
+		$this->object(where: '10/3', uuid: 'memo-ancient', status: 'draft', updated: '2020-01-01T00:00:00+00:00');
+
+		$counts = $this->expiry->preview(now: $this->now);
+
+		$this->assertSame([], $this->deletes);
+		$this->assertSame(['schemas' => 2, 'expired' => 3, 'removed' => 0, 'refused' => 0, 'deferred' => 3], $this->totals(counts: $counts));
+		$this->assertSame(
+			[['service', 'ticket', 7, 1], ['service', 'case', 30, 2]],
+			array_map(static fn (array $row): array => [$row['register'], $row['schema'], $row['lifetimeDays'], $row['expired']], $counts['perSchema'])
+		);
+
+		// Control: the sweep at the same moment removes exactly what the preview counted.
+		$swept = $this->expiry->sweep(now: $this->now);
+		$this->assertSame(3, $swept['removed']);
+		$this->assertSame(['ticket-old', 'case-old', 'case-older'], array_column($this->deletes, 'uuid'));
+	}//end testThePreviewCountsAndRemovesNothing()
 
 	/**
 	 * Each schema follows its own lifetime, in every register that carries it.
@@ -261,7 +399,8 @@ class DraftExpiryTest extends TestCase {
 
 		$counts = $this->expiry->sweep(now: $this->now);
 
-		$this->assertSame(['schemas' => 2, 'expired' => 3, 'removed' => 3, 'refused' => 0], $counts);
+				// Three pairs of register and schema: the ticket schema sits in two registers.
+		$this->assertSame(['schemas' => 3, 'expired' => 3, 'removed' => 3, 'refused' => 0, 'deferred' => 0], $this->totals(counts: $counts));
 		$this->assertSame(['ticket-10', 'request-old', 'ticket-11'], array_column($this->deletes, 'uuid'));
 	}//end testEachSchemaFollowsItsOwnLifetime()
 
@@ -281,7 +420,7 @@ class DraftExpiryTest extends TestCase {
 
 		$counts = $this->expiry->sweep(now: $this->now);
 
-		$this->assertSame(['schemas' => 1, 'expired' => 0, 'removed' => 0, 'refused' => 0], $counts);
+				$this->assertSame(['schemas' => 1, 'expired' => 0, 'removed' => 0, 'refused' => 0, 'deferred' => 0, 'perSchema' => []], $counts);
 		$this->assertSame([], $this->deletes);
 	}//end testOnlyADraftIsEverRemoved()
 
@@ -297,7 +436,7 @@ class DraftExpiryTest extends TestCase {
 
 		$counts = $this->expiry->sweep(now: $this->now);
 
-		$this->assertSame(['schemas' => 1, 'expired' => 3, 'removed' => 1, 'refused' => 2], $counts);
+				$this->assertSame(['schemas' => 1, 'expired' => 3, 'removed' => 1, 'refused' => 2, 'deferred' => 0], $this->totals(counts: $counts));
 		$this->assertSame(['frozen', 'kept-by-the-handler', 'fine'], array_column($this->deletes, 'uuid'));
 		$this->assertSame(['[DraftExpiry] An expired draft was not removed'], $this->warnings);
 	}//end testARefusedDeleteIsCountedAndTheSweepCarriesOn()
@@ -334,7 +473,7 @@ class DraftExpiryTest extends TestCase {
 
 		$counts = $this->expiry->sweep(now: $this->now);
 
-		$this->assertSame(['schemas' => 2, 'expired' => 1, 'removed' => 1, 'refused' => 0], $counts);
+				$this->assertSame(['schemas' => 2, 'expired' => 1, 'removed' => 1, 'refused' => 0, 'deferred' => 0], $this->totals(counts: $counts));
 		$this->assertSame(['old'], array_column($this->deletes, 'uuid'));
 		$this->assertSame(
 			['[DraftExpiry] A schema could not be loaded, its drafts are left alone', '[DraftExpiry] The drafts of a schema could not be listed'],

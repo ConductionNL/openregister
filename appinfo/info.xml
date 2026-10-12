@@ -190,9 +190,10 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledReportJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\GroupReconcilerJob</job>
 		<!--
-			Removes the drafts that outlived the draft lifetime their schema
-			sets (configuration key draftLifetimeDays, decision 216). Without
-			this line the setting is stored and never acted on.
+			Removes the drafts that outlived their schema's draft lifetime:
+			30 days, or what the configuration key draftLifetimeDays says
+			(decisions 216 and 228). Without this line the lifetime is
+			stored and never acted on.
 		-->
 		<job>OCA\OpenRegister\BackgroundJob\DraftExpiryJob</job>
 	</background-jobs>
@@ -518,6 +519,9 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\DedupeConfigurationsCommand</command>
 		<command>OCA\OpenRegister\Command\ResolverListCommand</command>
 		<command>OCA\OpenRegister\Command\TimeReconcileCommand</command>
+		<!-- Read-only: how many drafts the daily draft cleanup would remove per
+		     schema. For a look before the first run after an upgrade (decision 228). -->
+		<command>OCA\OpenRegister\Command\DraftsExpiredCommand</command>
 		<!-- Web Push VAPID keypair generation (openregister-web-push-engine). Light DI graph (IAppConfig only). -->
 		<command>OCA\OpenRegister\Command\GenerateVapidKeys</command>
 		<!-- Reconcile the `tables` virtual register with the Nextcloud Tables app. -->

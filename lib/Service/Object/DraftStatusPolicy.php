@@ -55,6 +55,13 @@ class DraftStatusPolicy {
 	public const LIFETIME_KEY = 'draftLifetimeDays';
 
 	/**
+	 * How many days a draft may go unchanged when its schema does not say (decisions 201 and 228).
+	 *
+	 * @var integer
+	 */
+	public const DEFAULT_LIFETIME_DAYS = 30;
+
+	/**
 	 * Object uuids the submit has validated in full and may promote, once.
 	 *
 	 * @var array<string, true>
@@ -231,14 +238,25 @@ class DraftStatusPolicy {
 	/**
 	 * How many days a draft of this schema may go unchanged before the cleanup removes it.
 	 *
+	 * Thirty days unless the schema says otherwise (decision 228). The
+	 * schema's configuration sets another whole number of days, or `false`
+	 * to keep its drafts. A stored value that is neither (left by hand in
+	 * the database, or by an older version) keeps the drafts too: nothing is
+	 * removed on a value nobody can read.
+	 *
 	 * @param Schema $schema The schema.
 	 *
-	 * @return int|null The days, or null when the schema sets no lifetime and drafts are kept.
+	 * @return int|null The days, or null when the schema keeps its drafts.
 	 *
-	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-schema-must-be-able-to-set-a-draft-lifetime
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-lifetime-must-default-to-thirty-days-and-a-schema-must-be-able-to-change-it-or-opt-out
 	 */
 	public function draftLifetimeDays(Schema $schema): ?int {
-		$days = (($schema->getConfiguration() ?? [])[self::LIFETIME_KEY] ?? null);
+		$configuration = ($schema->getConfiguration() ?? []);
+		if (array_key_exists(self::LIFETIME_KEY, $configuration) === false || $configuration[self::LIFETIME_KEY] === null) {
+			return self::DEFAULT_LIFETIME_DAYS;
+		}
+
+		$days = $configuration[self::LIFETIME_KEY];
 		if (is_int($days) === false || $days < 1) {
 			return null;
 		}

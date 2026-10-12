@@ -13,7 +13,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
- * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-schema-must-be-able-to-set-a-draft-lifetime
+ * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-lifetime-must-default-to-thirty-days-and-a-schema-must-be-able-to-change-it-or-opt-out
  */
 
 declare(strict_types=1);
@@ -168,9 +168,16 @@ class DraftLifetimeImportExportTest extends TestCase {
 						'version' => '1.0.0',
 						'properties' => ['text' => ['type' => 'string']],
 					],
+					'memo' => [
+						'slug' => 'memo',
+						'title' => 'Memo',
+						'version' => '1.0.0',
+						'properties' => ['text' => ['type' => 'string']],
+						'configuration' => ['draftLifetimeDays' => false],
+					],
 				],
 				'registers' => [
-					'service' => ['slug' => 'service', 'version' => '1.0.0', 'schemas' => ['ticket', 'note']],
+					'service' => ['slug' => 'service', 'version' => '1.0.0', 'schemas' => ['ticket', 'note', 'memo']],
 				],
 			],
 		];
@@ -205,21 +212,27 @@ class DraftLifetimeImportExportTest extends TestCase {
 		$this->assertFalse($policy->ownDraftsListed(schema: $imported['ticket']), 'The import dropped draftsListed.');
 		$this->assertTrue($policy->ownDraftsListed(schema: $imported['note']));
 		$this->assertSame(7, $policy->draftLifetimeDays(schema: $imported['ticket']), 'The cleanup would not see the imported lifetime.');
-		// Control: a schema that sets none has none after the import.
-		$this->assertNull($policy->draftLifetimeDays(schema: $imported['note']));
+		// Control: a schema that sets none gets the default of 30 days (decision 228).
+		$this->assertSame(30, $policy->draftLifetimeDays(schema: $imported['note']));
+		// The opt-out survives the import: this schema keeps its drafts.
+		$this->assertFalse($imported['memo']->getConfiguration()['draftLifetimeDays'] ?? null, 'The import dropped the opt-out.');
+		$this->assertNull($policy->draftLifetimeDays(schema: $imported['memo']));
 
 		// 2. Export the register those schemas belong to.
 		$register = new Register();
 		$register->hydrate(['slug' => 'service', 'title' => 'Service', 'version' => '1.0.0']);
 		$register->setId(1);
 		$this->registerMapper->method('getSchemasByRegisterId')->willReturn(array_values($imported));
-		$this->schemaMapper->method('getIdToSlugMap')->willReturn([$imported['ticket']->getId() => 'ticket', $imported['note']->getId() => 'note']);
+		$this->schemaMapper->method('getIdToSlugMap')->willReturn(
+			[$imported['ticket']->getId() => 'ticket', $imported['note']->getId() => 'note', $imported['memo']->getId() => 'memo']
+		);
 		$this->registerMapper->method('getIdToSlugMap')->willReturn([1 => 'service']);
 
 		$export = $this->exporter->exportConfig($register);
 
 		$this->assertSame(7, $export['components']['schemas']['ticket']['configuration']['draftLifetimeDays'] ?? null, 'The export left the draft lifetime out.');
 		$this->assertArrayNotHasKey('draftLifetimeDays', ($export['components']['schemas']['note']['configuration'] ?? []));
+		$this->assertFalse($export['components']['schemas']['memo']['configuration']['draftLifetimeDays'] ?? null, 'The export left the opt-out out, so the next import would remove drafts after 30 days.');
 
 		// 3. Import what was exported, as another instance would.
 		$reimported = $this->import(
@@ -228,13 +241,14 @@ class DraftLifetimeImportExportTest extends TestCase {
 				'version' => '1.0.0',
 				'components' => [
 					'schemas' => $export['components']['schemas'],
-					'registers' => ['service' => ['slug' => 'service', 'version' => '1.0.0', 'schemas' => ['ticket', 'note']]],
+					'registers' => ['service' => ['slug' => 'service', 'version' => '1.0.0', 'schemas' => ['ticket', 'note', 'memo']]],
 				],
 			]
 		);
 		$this->assertSame(7, $policy->draftLifetimeDays(schema: $reimported['ticket']), 'The lifetime did not survive the export and a second import.');
 		$this->assertFalse($policy->ownDraftsListed(schema: $reimported['ticket']), 'draftsListed did not survive the export and a second import.');
-		$this->assertNull($policy->draftLifetimeDays(schema: $reimported['note']));
+		$this->assertSame(30, $policy->draftLifetimeDays(schema: $reimported['note']));
+		$this->assertNull($policy->draftLifetimeDays(schema: $reimported['memo']), 'The opt-out did not survive the export and a second import.');
 	}//end testTheLifetimeSurvivesImportExportAndReimport()
 
 	/**

@@ -56,7 +56,7 @@ class SchemaFormConfigurationTest extends TestCase {
 	}//end testTheDraftLifetimeIsKept()
 
 	/**
-	 * A lifetime that is not a whole number of days, one or more, is refused and reported; the rest is kept.
+	 * A lifetime that is neither a whole number of days, one or more, nor false is refused and reported; the rest is kept.
 	 *
 	 * @dataProvider refusedLifetimes
 	 */
@@ -64,8 +64,9 @@ class SchemaFormConfigurationTest extends TestCase {
 		$schema = new Schema();
 		$schema->setConfiguration(['draftLifetimeDays' => $value, 'staging' => true]);
 
-		// Never stored: zero or a negative number must not read as "remove every draft now".
-		$this->assertSame(['staging' => true], $schema->getConfiguration());
+		// Never stored as written: zero or a negative number must not read as "remove every draft now".
+		// Stored as the opt-out instead, because dropping the key would mean "remove after 30 days".
+		$this->assertSame(['draftLifetimeDays' => false, 'staging' => true], $schema->getConfiguration());
 		// Reported, so SchemaMapper logs it instead of dropping it without a word.
 		$this->assertSame(['draftLifetimeDays'], $schema->consumeDroppedAnnotationKeys());
 	}//end testAnUnusableDraftLifetimeIsDroppedAndReported()
@@ -89,7 +90,23 @@ class SchemaFormConfigurationTest extends TestCase {
 	}//end refusedLifetimes()
 
 	/**
-	 * Null means "no lifetime": nothing is stored and nothing is reported.
+	 * False is the opt-out (decision 228): it is stored as false, reported by nobody, and survives serialisation.
+	 */
+	public function testFalseKeepsTheDraftsOfASchema(): void {
+		$schema = new Schema();
+		$schema->setConfiguration(['draftLifetimeDays' => false, 'staging' => true]);
+
+		$this->assertSame(['draftLifetimeDays' => false, 'staging' => true], $schema->getConfiguration());
+		$this->assertSame([], $schema->consumeDroppedAnnotationKeys());
+		$this->assertFalse($schema->jsonSerialize()['configuration']['draftLifetimeDays'] ?? null);
+
+		// Control: the text "false" is not the opt-out, it is a refused value (kept, and reported).
+		$schema->setConfiguration(['draftLifetimeDays' => 'false']);
+		$this->assertSame(['draftLifetimeDays'], $schema->consumeDroppedAnnotationKeys());
+	}//end testFalseKeepsTheDraftsOfASchema()
+
+	/**
+	 * Null means "not set": nothing is stored, nothing is reported, and the default of 30 days applies.
 	 */
 	public function testANullDraftLifetimeSetsNone(): void {
 		$schema = new Schema();

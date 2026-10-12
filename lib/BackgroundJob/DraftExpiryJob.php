@@ -1,12 +1,15 @@
 <?php
 
 /**
- * Once a day, removes the drafts that outlived their schema's draft lifetime (decision 216).
+ * Once a day, removes the drafts that outlived their schema's draft lifetime (decisions 216 and 228).
  *
- * A lifetime no job reads is a label, not a rule. This job is what makes
- * `draftLifetimeDays` on a schema mean that an abandoned draft stops
- * existing. It is declared in `appinfo/info.xml`; without that line the
- * setting would be stored, exported, imported and never acted on.
+ * A lifetime no job reads is a label, not a rule. This job is what makes a
+ * draft lifetime (30 days, or what `draftLifetimeDays` on the schema says)
+ * mean that an abandoned draft stops existing. It is declared in
+ * `appinfo/info.xml`; without that line the setting would be stored,
+ * exported, imported and never acted on.
+ *
+ * `occ openregister:drafts:expired` lists what the next run would remove.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -92,6 +95,17 @@ class DraftExpiryJob extends TimedJob {
 			throw $exception;
 		}
 
+		// One line per schema that held an expired draft, so an administrator
+		// reads from the log which schema lost how many (decision 228), and
+		// one line with the totals, a zero included.
+		foreach ($counts['perSchema'] as $row) {
+			$this->logger->info(
+				message: '[DraftExpiryJob] drafts past the lifetime of a schema',
+				context: $row
+			);
+		}
+
+		unset($counts['perSchema']);
 		$this->logger->info(
 			message: '[DraftExpiryJob] swept drafts past their schema\'s lifetime',
 			context: $counts
