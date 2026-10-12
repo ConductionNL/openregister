@@ -182,6 +182,30 @@ class DraftStatusPolicyTest extends TestCase {
 	}//end testDraftsAreOwnerOnlyUnlessTheSchemaSaysOtherwise()
 
 	/**
+	 * A draft is kept from everybody but its owner, on a schema that keeps drafts to their owner; nothing else is.
+	 */
+	public function testADraftIsKeptFromEverybodyButItsOwner(): void {
+		$schema = new Schema();
+		$draft = new ObjectEntity();
+		$draft->setOwner('agent');
+		$draft->setStatus('draft');
+
+		$this->assertTrue($this->policy->keptFrom(object: $draft, schema: $schema, userId: 'colleague'));
+		$this->assertTrue($this->policy->keptFrom(object: $draft, schema: $schema, userId: null));
+		$this->assertFalse($this->policy->keptFrom(object: $draft, schema: $schema, userId: 'agent'));
+
+		// Control: an object that is no draft is nobody's to keep.
+		$record = new ObjectEntity();
+		$record->setOwner('agent');
+		$record->setStatus('active');
+		$this->assertFalse($this->policy->keptFrom(object: $record, schema: $schema, userId: 'colleague'));
+
+		// Control: a schema that shows its drafts to others keeps none.
+		$schema->setConfiguration(['draftsVisible' => true]);
+		$this->assertFalse($this->policy->keptFrom(object: $draft, schema: $schema, userId: 'colleague'));
+	}//end testADraftIsKeptFromEverybodyButItsOwner()
+
+	/**
 	 * A schema's lists show the caller their own drafts unless it says `draftsListed: false`.
 	 */
 	public function testOwnDraftsAreListedUnlessTheSchemaSaysOtherwise(): void {
