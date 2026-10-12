@@ -5,7 +5,9 @@
   Works on a copy; Apply hands the new transform draft back, Cancel drops it.
   A lookup's "other values" choice is three-way on purpose, because the
   engine treats each differently: no default errors the row, an empty default
-  leaves the field empty, a value fills it.
+  leaves the field empty, a value fills it. A yes/no table offers only yes or
+  no for its values and its default, because the engine casts them to a
+  boolean and the text "false" would become true.
 
   @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
   @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-the-pack-editor-must-save-a-definition-without-losing-what-it-does-not-show
@@ -59,16 +61,14 @@
 				<NcTextField
 					:modelValue="draft.sourceFormat"
 					:label="t('openregister', 'Source date format')"
-					:disabled="readOnly"
-					@update:modelValue="patch({ sourceFormat: $event })" />
-				<p class="transform-dialog__help">
-					{{
+					:helperText="
 						t(
 							'openregister',
 							'A PHP date format such as d-m-Y. Start it with ! so parts the format does not name are not taken from today. Leave it empty to read any common date.',
 						)
-					}}
-				</p>
+					"
+					:disabled="readOnly"
+					@update:modelValue="patch({ sourceFormat: $event })" />
 				<NcTextField
 					:modelValue="draft.targetFormat"
 					:label="t('openregister', 'Stored date format')"
@@ -87,6 +87,7 @@
 					:valueLabel="t('openregister', 'Stored value')"
 					:addLabel="t('openregister', 'Add value')"
 					:newRowJson="draft.type === 'bool-map'"
+					:booleanValues="draft.type === 'bool-map'"
 					:disabled="readOnly"
 					@update:rows="patch({ mapRows: $event })" />
 				<fieldset class="transform-dialog__fieldset">
@@ -105,7 +106,32 @@
 						{{ mode.label }}
 					</NcCheckboxRadioSwitch>
 					<div
-						v-if="draft.defaultMode === 'value'"
+						v-if="
+							draft.defaultMode === 'value'
+							&& draft.type === 'bool-map'
+						"
+						class="transform-dialog__cell">
+						<label :for="`${typeInputId}-default-value`">
+							{{ t('openregister', 'Value for other values') }}
+						</label>
+						<select
+							:id="`${typeInputId}-default-value`"
+							:value="defaultChoice"
+							:disabled="readOnly"
+							@change="setDefaultChoice($event.target.value)">
+							<option v-if="defaultChoice === ''" value="" disabled>
+								{{ t('openregister', 'Choose yes or no') }}
+							</option>
+							<option value="true">
+								{{ t('openregister', 'Yes') }}
+							</option>
+							<option value="false">
+								{{ t('openregister', 'No') }}
+							</option>
+						</select>
+					</div>
+					<div
+						v-else-if="draft.defaultMode === 'value'"
 						class="transform-dialog__cell">
 						<NcTextField
 							:modelValue="draft.defaultCell.text"
@@ -228,13 +254,15 @@
 				}}
 			</NcNoteCard>
 
-			<NcNoteCard v-if="errors.length > 0" type="error">
-				<ul>
-					<li v-for="message in errors" :key="message">
-						{{ message }}
-					</li>
-				</ul>
-			</NcNoteCard>
+			<div aria-live="polite">
+				<NcNoteCard v-if="errors.length > 0" type="error">
+					<ul>
+						<li v-for="message in errors" :key="message">
+							{{ message }}
+						</li>
+					</ul>
+				</NcNoteCard>
+			</div>
 		</div>
 
 		<template #actions>
@@ -253,7 +281,6 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -264,11 +291,14 @@ import {
 import Plus from 'vue-material-design-icons/Plus.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import KeyValueRows from '../../components/migrationPack/KeyValueRows.vue'
+import { t } from '../../views/migrationPack/l10n.js'
 import {
+	isBooleanCell,
 	newTransform,
 	TRANSFORM_TYPES,
 	unknownTransformKeys,
 	validateTransform,
+	valueFromCell,
 	withTransformType,
 } from '../../views/migrationPack/packDraft.js'
 
@@ -389,6 +419,20 @@ export default {
 		},
 
 		/**
+		 * The yes/no choice for values that are not in a yes/no table.
+		 *
+		 * @return {string} 'true', 'false', or '' while none is chosen.
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+		 */
+		defaultChoice() {
+			if (!this.draft || !isBooleanCell(this.draft.defaultCell)) {
+				return ''
+			}
+			return valueFromCell(this.draft.defaultCell) ? 'true' : 'false'
+		},
+
+		/**
 		 * Settings of the stored transform the editor does not show.
 		 *
 		 * @return {Array<string>} The keys.
@@ -429,6 +473,17 @@ export default {
 		 */
 		patch(changes) {
 			this.draft = { ...this.draft, ...changes }
+		},
+
+		/**
+		 * Store yes or no for values that are not in a yes/no table.
+		 *
+		 * @param {string} choice 'true' or 'false'.
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+		 */
+		setDefaultChoice(choice) {
+			this.patch({ defaultCell: { text: choice, json: true } })
 		},
 
 		/**

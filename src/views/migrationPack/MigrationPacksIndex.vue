@@ -15,7 +15,9 @@
 	<NcAppContent>
 		<div class="migration-packs">
 			<div class="migration-packs__header">
-				<h2>{{ t('openregister', 'Migration packs') }}</h2>
+				<h2 ref="heading" tabindex="-1">
+					{{ t('openregister', 'Migration packs') }}
+				</h2>
 				<div v-if="isAdmin" class="migration-packs__toolbar">
 					<input
 						ref="importInput"
@@ -51,14 +53,16 @@
 					)
 				}}
 			</NcNoteCard>
-			<NcNoteCard v-if="notice" :type="notice.type">
-				<p>{{ notice.message }}</p>
-				<ul v-if="notice.details && notice.details.length > 0">
-					<li v-for="detail in notice.details" :key="detail">
-						{{ detail }}
-					</li>
-				</ul>
-			</NcNoteCard>
+			<div aria-live="polite">
+				<NcNoteCard v-if="notice" :type="notice.type">
+					<p>{{ notice.message }}</p>
+					<ul v-if="notice.details && notice.details.length > 0">
+						<li v-for="detail in notice.details" :key="detail">
+							{{ detail }}
+						</li>
+					</ul>
+				</NcNoteCard>
+			</div>
 
 			<NcLoadingIcon v-if="loading" />
 			<NcNoteCard v-else-if="error" type="error">
@@ -176,7 +180,7 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
+import { getCanonicalLocale } from '@nextcloud/l10n'
 import {
 	NcAppContent,
 	NcButton,
@@ -198,6 +202,7 @@ import {
 	importPack,
 	listPacks,
 } from '../../services/migrationPacks.js'
+import { t } from './l10n.js'
 
 export default {
 	name: 'MigrationPacksIndex',
@@ -285,7 +290,7 @@ export default {
 		},
 
 		/**
-		 * A stored timestamp in the user's locale.
+		 * A stored timestamp in the user's Nextcloud locale, not the browser's.
 		 *
 		 * @param {string|null} value An ISO timestamp.
 		 * @return {string} The date and time, or a dash.
@@ -297,11 +302,13 @@ export default {
 				return '-'
 			}
 			const date = new Date(value)
-			return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
+			return Number.isNaN(date.getTime())
+				? value
+				: date.toLocaleString(getCanonicalLocale())
 		},
 
 		/**
-		 * Delete the pack the dialog asks about.
+		 * Delete the pack the dialog asks about, then focus the page heading.
 		 *
 		 * @return {Promise<void>}
 		 *
@@ -330,6 +337,10 @@ export default {
 			} finally {
 				this.busy = false
 				this.deleting = null
+				// The focused delete button is gone with its row or dialog.
+				this.$nextTick(() => {
+					this.$refs.heading?.focus()
+				})
 			}
 		},
 
@@ -363,6 +374,12 @@ export default {
 					...explainError(
 						error,
 						t('openregister', 'Could not import the file.'),
+						{
+							'invalid-request': t(
+								'openregister',
+								'The file is not a migration pack. Choose a JSON file that holds one pack definition.',
+							),
+						},
 					),
 				}
 			} finally {

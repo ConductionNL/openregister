@@ -16,6 +16,7 @@ import {
 	cellFromValue,
 	draftFromStored,
 	duplicateTargets,
+	isBooleanCell,
 	moveRow,
 	newRow,
 	newTransform,
@@ -430,6 +431,61 @@ describe('checking a draft before it is saved', () => {
 		expect(validateTransform(newTransform('trim'))).toEqual([])
 	})
 
+	it('accepts only yes or no in a yes/no table, its default included', () => {
+		const table = newTransform('bool-map')
+		table.mapRows = [
+			{ uid: 'a', key: 'Ja', text: 'true', json: true },
+			{ uid: 'b', key: 'Nee', text: 'false', json: false },
+		]
+		table.defaultMode = 'value'
+		table.defaultCell = { text: 'false', json: false }
+		const messages = validateTransform(table)
+		// The text "false" is cast to true by the engine.
+		expect(messages).toEqual([
+			'Choose yes or no as the result for "Nee".',
+			'Choose yes or no for values that are not in the table.',
+		])
+		table.mapRows[1] = { uid: 'b', key: 'Nee', text: 'false', json: true }
+		table.defaultCell = { text: 'false', json: true }
+		expect(validateTransform(table)).toEqual([])
+		expect(transformPayload(table)).toEqual({
+			type: 'bool-map',
+			map: { Ja: true, Nee: false },
+			default: false,
+		})
+		expect(isBooleanCell({ text: 'nee', json: false })).toBe(false)
+		expect(isBooleanCell({ text: '[', json: true })).toBe(false)
+		// A lookup stores any value, text included.
+		expect(
+			validateTransform({
+				...table,
+				type: 'lookup',
+				defaultCell: { text: 'x', json: false },
+			}),
+		).toEqual([])
+	})
+
+	it('shows quotes and ampersands in a message as typed, not as HTML entities', () => {
+		const draft = draftFromStored(
+			fixture('stackiq', 'topdesk-business-owner.json'),
+		)
+		const lookup = newTransform('lookup')
+		lookup.mapRows = [
+			{ uid: 'a', key: 'R&D "x"', text: 'a', json: false },
+			{ uid: 'b', key: 'R&D "x"', text: 'b', json: false },
+		]
+		draft.rows[0].transform = lookup
+		expect(validateDraft(draft)).toContain(
+			'Row 1: The value "R&D "x"" is in the table twice.',
+		)
+		expect(
+			transformSummary({
+				...newTransform('const'),
+				valueCell: { text: '["SaaS"]', json: true },
+			}),
+		).toBe('Fixed value ["SaaS"]')
+	})
+
 	it('refuses a default set twice', () => {
 		const draft = draftFromStored(
 			fixture('stackiq', 'topdesk-manufacturer.json'),
@@ -513,6 +569,23 @@ describe('helpers', () => {
 				'Flat /col': 'z',
 			}),
 		).toEqual({ zaak: { id: '7', 'a/b': 'x' }, 'm~n': 'y', 'Flat /col': 'z' })
+	})
+
+	it('keeps a column named __proto__ or constructor as a plain key', () => {
+		const nested = sampleRowFrom(
+			['/__proto__/polluted', '/constructor/prototype/x'],
+			{ '/__proto__/polluted': 'yes', '/constructor/prototype/x': 'z' },
+		)
+		const flat = sampleRowFrom(['__proto__'], { ['__proto__']: 'flat' })
+		expect({}.polluted).toBeUndefined()
+		expect(Object.prototype.x).toBeUndefined()
+		expect(Object.getPrototypeOf(nested)).toBe(Object.prototype)
+		expect(Object.getPrototypeOf(flat)).toBe(Object.prototype)
+		// The engine reads these as ordinary keys, so they are sent as such.
+		expect(JSON.stringify(nested)).toBe(
+			'{"__proto__":{"polluted":"yes"},"constructor":{"prototype":{"x":"z"}}}',
+		)
+		expect(JSON.stringify(flat)).toBe('{"__proto__":"flat"}')
 	})
 
 	it('leaves a cleared date format out, so the engine default applies', () => {

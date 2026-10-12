@@ -28,7 +28,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  */
 
-import { translate as t } from '@nextcloud/l10n'
+import { t } from './l10n.js'
 
 /** Source formats PackDefinitionValidator accepts. */
 export const SOURCE_FORMATS = ['csv', 'json', 'excel']
@@ -206,6 +206,25 @@ function cellIsValid(cell) {
 	try {
 		valueFromCell(cell)
 		return true
+	} catch {
+		return false
+	}
+}
+
+/**
+ * Whether a cell holds true or false.
+ *
+ * A yes/no table casts what it stores to a boolean on import, so the text
+ * `false` (or `nee`) would become true. Only real booleans are accepted.
+ *
+ * @param {{text: string, json: boolean}} cell The cell.
+ * @return {boolean} True for a JSON cell holding true or false.
+ *
+ * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+ */
+export function isBooleanCell(cell) {
+	try {
+		return typeof valueFromCell(cell) === 'boolean'
 	} catch {
 		return false
 	}
@@ -671,7 +690,7 @@ export function sampleRowFrom(columns, sample) {
 	for (const column of columns) {
 		const value = sample[column] ?? ''
 		if (!column.startsWith('/')) {
-			row[column] = value
+			setOwn(row, column, value)
 			continue
 		}
 		const segments = column
@@ -680,15 +699,38 @@ export function sampleRowFrom(columns, sample) {
 			.map((segment) => segment.replace(/~1/g, '/').replace(/~0/g, '~'))
 		let cursor = row
 		segments.slice(0, -1).forEach((segment) => {
-			const next = cursor[segment]
+			const next = Object.hasOwn(cursor, segment) ? cursor[segment] : null
 			if (next === null || typeof next !== 'object') {
-				cursor[segment] = {}
+				setOwn(cursor, segment, {})
 			}
 			cursor = cursor[segment]
 		})
-		cursor[segments[segments.length - 1]] = value
+		setOwn(cursor, segments[segments.length - 1], value)
 	}
 	return row
+}
+
+/**
+ * Set a key as the object's own property, whatever its name.
+ *
+ * A column name comes from the pack, which an imported file supplies. Plain
+ * assignment of `__proto__` would replace the object's prototype, and reading
+ * `constructor` would walk into Object; an own property is just a key, which
+ * is also how the server reads it.
+ *
+ * @param {object} target The object.
+ * @param {string} key The key.
+ * @param {unknown} value The value.
+ *
+ * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-a-pack-must-be-testable-against-sample-rows-without-saving-it
+ */
+function setOwn(target, key, value) {
+	Object.defineProperty(target, key, {
+		value,
+		enumerable: true,
+		writable: true,
+		configurable: true,
+	})
 }
 
 /**
@@ -721,11 +763,32 @@ export function validateTransform(draft) {
 						key: row.key,
 					}),
 				)
+			} else if (draft.type === 'bool-map' && !isBooleanCell(row)) {
+				errors.push(
+					t(
+						'openregister',
+						'Choose yes or no as the result for "{key}".',
+						{
+							key: row.key,
+						},
+					),
+				)
 			}
 		}
 		if (draft.defaultMode === 'value' && !cellIsValid(draft.defaultCell)) {
 			errors.push(
 				t('openregister', 'The value for other values is not valid JSON.'),
+			)
+		} else if (
+			draft.type === 'bool-map'
+			&& draft.defaultMode === 'value'
+			&& !isBooleanCell(draft.defaultCell)
+		) {
+			errors.push(
+				t(
+					'openregister',
+					'Choose yes or no for values that are not in the table.',
+				),
 			)
 		}
 	}

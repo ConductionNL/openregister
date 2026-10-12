@@ -13,8 +13,8 @@
  */
 import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
-import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
+import { t } from '../views/migrationPack/l10n.js'
 
 /** The largest number of sample rows the preview endpoint takes. */
 export const PREVIEW_ROW_LIMIT = 20
@@ -91,6 +91,19 @@ export async function updatePack(id, definition) {
 }
 
 /**
+ * Create a pack from a definition.
+ *
+ * @param {object} definition The full definition.
+ * @return {Promise<object>} The created pack.
+ *
+ * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-create-and-update-must-accept-a-definition-envelope-and-keep-the-route-id
+ */
+export async function createPack(definition) {
+	const response = await axios.post(packUrl(), { definition })
+	return response.data
+}
+
+/**
  * Delete a pack.
  *
  * @param {number|string} id The pack's row id.
@@ -147,39 +160,80 @@ export async function previewPack(definition, rows) {
 }
 
 /**
+ * The text this page shows for each error slug of the migration-pack API.
+ *
+ * The API answers every error as `{message, error, details?}` (ADR-050), with
+ * `error` a kebab-case slug. The screens show their own translation of the
+ * slug; they never read meaning out of the English wording of `message`.
+ * `migration-pack-error` (an unexpected failure) is left out on purpose: the
+ * caller's own fallback says what could not be done.
+ *
+ * @return {object} Slug to text.
+ *
+ * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+ */
+function slugTexts() {
+	return {
+		'invalid-pack': t('openregister', 'The pack is not valid.'),
+		'builtin-slug-locked': t(
+			'openregister',
+			'The slug of a built-in pack cannot change: the app that installed it finds the pack by this slug.',
+		),
+		'pack-not-found': t('openregister', 'This migration pack does not exist.'),
+		'not-authenticated': t(
+			'openregister',
+			'You are not signed in. Sign in and try again.',
+		),
+		'admin-required': t(
+			'openregister',
+			'Only administrators can change migration packs.',
+		),
+		'too-many-rows': t(
+			'openregister',
+			'There are too many sample rows to test at once.',
+		),
+	}
+}
+
+/** The shape of an API error slug: lowercase words joined by hyphens. */
+const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
+
+/**
  * A readable explanation of a failed request.
  *
- * The API answers `{message, error, details}`; older responses carry only
- * `error`. A validator refusal joins its findings with "; ", which reads badly
- * as one sentence, so it is split into a list.
+ * Reads the slug and `details.errors` of the API's error body. A known slug
+ * gets this page's own text; an unknown one gets the server's message, which
+ * the API localises; anything else gets the caller's fallback. A 403 always
+ * means the user is not an administrator.
  *
  * @param {unknown} error The rejected axios error.
- * @param {string} fallback The message when the server gave none.
+ * @param {string} fallback The message when the slug is not one this page knows.
+ * @param {object} [texts] Slug to text, for the caller's own wording of a slug.
  * @return {{message: string, details: Array<string>, code: string, status: number}} The explanation.
  *
  * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
  */
-export function explainError(error, fallback) {
+export function explainError(error, fallback, texts = {}) {
 	const status = error?.response?.status || 0
 	const body = error?.response?.data || {}
-	const code = typeof body.error === 'string' ? body.error : ''
-	let message = typeof body.message === 'string' ? body.message : code
-	let details = Array.isArray(body.details?.errors)
+	const code =
+		typeof body.error === 'string' && SLUG_PATTERN.test(body.error)
+			? body.error
+			: ''
+	const details = Array.isArray(body.details?.errors)
 		? body.details.errors.map(String)
 		: []
-	const prefix = 'Invalid migration pack definition: '
-	if (details.length === 0 && message.startsWith(prefix)) {
-		details = message.slice(prefix.length).split('; ')
-		message = t('openregister', 'The pack is not valid.')
-	}
+	const known = { ...slugTexts(), ...texts }
+	let message = fallback
 	if (status === 403) {
-		message = t(
-			'openregister',
-			'Only administrators can change migration packs.',
-		)
-	}
-	if (!message) {
-		message = fallback
+		message = known['admin-required']
+	} else if (Object.hasOwn(known, code)) {
+		message = known[code]
+	} else if (code !== '' && code !== 'migration-pack-error') {
+		message =
+			typeof body.message === 'string' && body.message !== ''
+				? body.message
+				: fallback
 	}
 	return { message, details, code, status }
 }

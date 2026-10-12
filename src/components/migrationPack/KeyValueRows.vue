@@ -3,7 +3,8 @@
 
   A value is text, or JSON when the stored value was not a string (a list, a
   number, true/false, null). The "JSON" switch per row keeps that type on
-  save, so `"Saas": ["SaaS"]` stays a list.
+  save, so `"Saas": ["SaaS"]` stays a list. With `booleanValues` (a yes/no
+  table) every value is a yes/no choice instead, stored as true or false.
 
   @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
   SPDX-License-Identifier: EUPL-1.2
@@ -20,7 +21,7 @@
 					<th scope="col">
 						{{ valueLabel }}
 					</th>
-					<th scope="col">
+					<th v-if="!booleanValues" scope="col">
 						{{ t('openregister', 'As JSON') }}
 					</th>
 					<th v-if="!disabled" scope="col">
@@ -37,19 +38,44 @@
 							:value="row.key"
 							type="text"
 							:disabled="disabled"
-							:aria-label="`${keyLabel} ${index + 1}`"
+							:aria-label="rowLabel(keyLabel, index)"
 							@input="update(index, { key: $event.target.value })" />
 					</td>
-					<td>
+					<td v-if="booleanValues">
+						<select
+							:value="booleanChoice(row)"
+							:disabled="disabled"
+							:aria-label="rowLabel(valueLabel, index)"
+							@change="
+								update(index, {
+									text: $event.target.value,
+									json: true,
+								})
+							">
+							<option
+								v-if="booleanChoice(row) === ''"
+								value=""
+								disabled>
+								{{ t('openregister', 'Choose yes or no') }}
+							</option>
+							<option value="true">
+								{{ t('openregister', 'Yes') }}
+							</option>
+							<option value="false">
+								{{ t('openregister', 'No') }}
+							</option>
+						</select>
+					</td>
+					<td v-else>
 						<input
 							:value="row.text"
 							type="text"
 							:class="{ 'key-value-rows__json': row.json }"
 							:disabled="disabled"
-							:aria-label="`${valueLabel} ${index + 1}`"
+							:aria-label="rowLabel(valueLabel, index)"
 							@input="update(index, { text: $event.target.value })" />
 					</td>
-					<td>
+					<td v-if="!booleanValues">
 						<input
 							:checked="row.json"
 							type="checkbox"
@@ -93,11 +119,15 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import { NcButton } from '@nextcloud/vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import { newEntryRow } from '../../views/migrationPack/packDraft.js'
+import { t } from '../../views/migrationPack/l10n.js'
+import {
+	isBooleanCell,
+	newEntryRow,
+	valueFromCell,
+} from '../../views/migrationPack/packDraft.js'
 
 export default {
 	name: 'KeyValueRows',
@@ -109,6 +139,8 @@ export default {
 		addLabel: { type: String, required: true },
 		emptyText: { type: String, default: '' },
 		newRowJson: { type: Boolean, default: false },
+		/** Every value is true or false: a yes/no table. */
+		booleanValues: { type: Boolean, default: false },
 		disabled: { type: Boolean, default: false },
 	},
 
@@ -116,6 +148,37 @@ export default {
 
 	methods: {
 		t,
+		/**
+		 * The accessible name of one row's key or value input.
+		 *
+		 * @param {string} label The column label.
+		 * @param {number} index The row.
+		 * @return {string} The label, with the row number.
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+		 */
+		rowLabel(label, index) {
+			return t('openregister', '{label} of row {number}', {
+				label,
+				number: index + 1,
+			})
+		},
+
+		/**
+		 * The yes/no choice a row holds.
+		 *
+		 * @param {{text: string, json: boolean}} row The row.
+		 * @return {string} 'true', 'false', or '' when the row holds something else.
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+		 */
+		booleanChoice(row) {
+			if (!isBooleanCell(row)) {
+				return ''
+			}
+			return valueFromCell(row) ? 'true' : 'false'
+		},
+
 		/**
 		 * Change one row.
 		 *

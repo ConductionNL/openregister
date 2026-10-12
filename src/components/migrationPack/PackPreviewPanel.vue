@@ -71,7 +71,8 @@
 
 		<NcNoteCard v-if="!definition" type="warning">
 			{{
-				t(
+				blockedText
+				|| t(
 					'openregister',
 					'Fix the problems in the pack first; then it can be tested.',
 				)
@@ -152,9 +153,9 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import { explainError, previewPack } from '../../services/migrationPacks.js'
+import { t } from '../../views/migrationPack/l10n.js'
 import { sampleRowFrom } from '../../views/migrationPack/packDraft.js'
 
 /** Milliseconds between the last change and the automatic test run. */
@@ -170,6 +171,8 @@ export default {
 		definition: { type: Object, default: null },
 		/** The source columns to ask a value for. */
 		columns: { type: Array, default: () => [] },
+		/** Why there is no definition to test, when it is not a problem in the pack. */
+		blockedText: { type: String, default: '' },
 	},
 
 	data() {
@@ -205,9 +208,18 @@ export default {
 		/**
 		 * Test again shortly after the pack changes in the editor.
 		 *
+		 * Without a definition, the last result belonged to an older pack: it
+		 * is cleared, and an answer still on its way is dropped.
+		 *
+		 * @param {object|null} definition The new definition.
+		 *
 		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-a-pack-must-be-testable-against-sample-rows-without-saving-it
 		 */
-		definition() {
+		definition(definition) {
+			if (definition === null) {
+				this.clear()
+				return
+			}
 			this.schedule()
 		},
 	},
@@ -218,6 +230,19 @@ export default {
 
 	methods: {
 		t,
+		/**
+		 * Forget the last result and drop any request still on its way.
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-a-pack-must-be-testable-against-sample-rows-without-saving-it
+		 */
+		clear() {
+			clearTimeout(this.timer)
+			this.runSequence += 1
+			this.result = null
+			this.runError = null
+			this.running = false
+		},
+
 		/**
 		 * Set one sample value and test again shortly.
 		 *

@@ -44,8 +44,8 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import { NcButton, NcDialog } from '@nextcloud/vue'
+import { t } from '../../views/migrationPack/l10n.js'
 
 export default {
 	name: 'DeleteMigrationPackDialog',

@@ -8,6 +8,9 @@
   wins for the same target. Saving an unedited pack sends the stored
   definition back unchanged, including keys this editor does not show.
 
+  Leaving with unsaved changes asks first: a route change through the router
+  guards, closing or reloading the tab through the browser's own prompt.
+
   @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
   @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-pack-changes-must-be-limited-to-administrators-and-logged
   @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-the-slug-of-a-built-in-pack-must-not-change
@@ -225,9 +228,15 @@
 													'Target field of row {number}',
 													{ number: index + 1 },
 												)
+											"
+											:aria-describedby="
+												targetHint(row)
+													? hintId(row)
+													: undefined
 											" />
 										<p
 											v-if="targetHint(row)"
+											:id="hintId(row)"
 											class="migration-pack__hint">
 											{{ targetHint(row) }}
 										</p>
@@ -248,14 +257,14 @@
 									<td>
 										<NcButton
 											variant="tertiary"
-											:aria-label="
+											@click="editingRow = index">
+											<span class="hidden-visually">{{
 												t(
 													'openregister',
-													'Transform of row {number}',
+													'Transform of row {number}:',
 													{ number: index + 1 },
 												)
-											"
-											@click="editingRow = index">
+											}}</span>
 											{{ summary(row) }}
 										</NcButton>
 									</td>
@@ -264,6 +273,7 @@
 										class="migration-pack__row-actions">
 										<NcButton
 											variant="tertiary"
+											:data-row-control="`${row.uid}-up`"
 											:disabled="index === 0"
 											:aria-label="
 												t(
@@ -279,6 +289,7 @@
 										</NcButton>
 										<NcButton
 											variant="tertiary"
+											:data-row-control="`${row.uid}-down`"
 											:disabled="
 												index === draft.rows.length - 1
 											"
@@ -296,6 +307,7 @@
 										</NcButton>
 										<NcButton
 											variant="tertiary"
+											:data-row-control="`${row.uid}-remove`"
 											:aria-label="
 												t(
 													'openregister',
@@ -312,7 +324,13 @@
 								</tr>
 							</tbody>
 						</table>
-						<NcButton v-if="isAdmin" @click="addRow">
+						<div class="hidden-visually" aria-live="polite">
+							{{ announcement }}
+						</div>
+						<NcButton
+							v-if="isAdmin"
+							data-row-control="add-row"
+							@click="addRow">
 							<template #icon>
 								<Plus :size="20" />
 							</template>
@@ -380,12 +398,30 @@
 							:lang="jsonLang"
 							:linter="jsonLinter" />
 					</div>
-					<NcNoteCard v-if="jsonError" type="error">
-						{{ jsonError }}
-					</NcNoteCard>
 				</section>
 
 				<div aria-live="polite">
+					<NcNoteCard v-if="packDeleted" type="error">
+						<p>
+							{{
+								t(
+									'openregister',
+									'Someone deleted this pack while you were editing it. Your changes are not saved: save them as a new pack, or copy them from the JSON.',
+								)
+							}}
+						</p>
+						<div v-if="isAdmin" class="migration-pack__problem-actions">
+							<NcButton :disabled="saving" @click="saveAsNew">
+								{{ t('openregister', 'Save as a new pack') }}
+							</NcButton>
+							<NcButton v-if="view !== 'json'" @click="showJson">
+								{{ t('openregister', 'Show the JSON') }}
+							</NcButton>
+						</div>
+					</NcNoteCard>
+					<NcNoteCard v-if="view === 'json' && jsonError" type="error">
+						{{ jsonError }}
+					</NcNoteCard>
 					<NcNoteCard v-if="saveProblem" type="error">
 						<p>{{ saveProblem.message }}</p>
 						<ul v-if="saveProblem.details.length > 0">
@@ -421,7 +457,7 @@
 					</NcButton>
 					<NcButton
 						variant="primary"
-						:disabled="saving || !dirty"
+						:disabled="saving || !dirty || packDeleted"
 						@click="save">
 						<template #icon>
 							<NcLoadingIcon v-if="saving" :size="20" />
@@ -435,7 +471,15 @@
 					v-if="isAdmin"
 					class="migration-pack__card"
 					:definition="previewDefinition"
-					:columns="previewColumns" />
+					:columns="previewColumns"
+					:blockedText="
+						view === 'json'
+							? t(
+									'openregister',
+									'Switch to the form to test the pack.',
+								)
+							: ''
+					" />
 			</template>
 		</div>
 
@@ -448,12 +492,16 @@
 			:readOnly="!isAdmin"
 			@apply="applyTransform"
 			@close="editingRow = null" />
+
+		<UnsavedChangesDialog
+			v-if="leavePrompt"
+			@leave="resolveLeave(true)"
+			@stay="resolveLeave(false)" />
 	</NcAppContent>
 </template>
 
 <script>
 import { json, jsonParseLinter } from '@codemirror/lang-json'
-import { translate as t } from '@nextcloud/l10n'
 import {
 	NcAppContent,
 	NcButton,
@@ -462,7 +510,9 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
+import { getCurrentInstance } from 'vue'
 import CodeMirror from 'vue-codemirror6'
+import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import ArrowDown from 'vue-material-design-icons/ArrowDown.vue'
 import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import ArrowUp from 'vue-material-design-icons/ArrowUp.vue'
@@ -472,13 +522,16 @@ import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import KeyValueRows from '../../components/migrationPack/KeyValueRows.vue'
 import PackPreviewPanel from '../../components/migrationPack/PackPreviewPanel.vue'
 import TransformDialog from '../../dialogs/migrationPack/TransformDialog.vue'
+import UnsavedChangesDialog from '../../dialogs/migrationPack/UnsavedChangesDialog.vue'
 import { getTheme } from '../../services/getTheme.js'
 import {
 	canEditPacks,
+	createPack,
 	explainError,
 	getPack,
 	updatePack,
 } from '../../services/migrationPacks.js'
+import { t } from './l10n.js'
 import {
 	draftFromStored,
 	duplicateTargets,
@@ -512,6 +565,24 @@ export default {
 		Plus,
 		TransformDialog,
 		TrashCanOutline,
+		UnsavedChangesDialog,
+	},
+
+	/**
+	 * Ask before the router leaves the pack, or moves to another pack, while
+	 * the editor holds unsaved changes.
+	 *
+	 * The page is rendered by CnPageRenderer inside the router view, so the
+	 * options-API `beforeRouteLeave` hook (route components only) would never
+	 * run; the composition guards work for any component under the view.
+	 *
+	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+	 */
+	setup() {
+		const component = getCurrentInstance()
+		const guard = () => component.proxy.confirmLeave()
+		onBeforeRouteLeave(guard)
+		onBeforeRouteUpdate(guard)
 	},
 
 	data() {
@@ -527,6 +598,9 @@ export default {
 			saving: false,
 			saveProblem: null,
 			saved: false,
+			packDeleted: false,
+			leavePrompt: null,
+			announcement: '',
 			isAdmin: canEditPacks(),
 			theme: getTheme(),
 			jsonLang: json(),
@@ -599,7 +673,11 @@ export default {
 				return false
 			}
 			if (this.view === 'json') {
-				return this.jsonText !== this.storedJson
+				// By content: a layout-only change saves nothing new.
+				return (
+					this.jsonDefinition === null
+					|| !sameDefinition(this.jsonDefinition, this.pack.definition)
+				)
 			}
 			return (
 				this.currentDefinition === null
@@ -719,12 +797,34 @@ export default {
 		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
 		 */
 		packId() {
+			// Save as a new pack moves to the pack it already holds.
+			if (this.pack && String(this.pack.id) === this.packId) {
+				return
+			}
 			this.load()
 		},
 	},
 
+	/**
+	 * Warn before the browser unloads unsaved changes, then load the pack.
+	 *
+	 * @return {Promise<void>}
+	 *
+	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+	 */
 	async mounted() {
+		window.addEventListener('beforeunload', this.onBeforeUnload)
 		await this.load()
+	},
+
+	/**
+	 * Stop the unload warning and settle a pending leave prompt.
+	 *
+	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+	 */
+	beforeUnmount() {
+		window.removeEventListener('beforeunload', this.onBeforeUnload)
+		this.resolveLeave(false)
 	},
 
 	methods: {
@@ -741,6 +841,7 @@ export default {
 			this.loadError = ''
 			this.saveProblem = null
 			this.saved = false
+			this.packDeleted = false
 			try {
 				this.pack = await getPack(this.packId)
 				this.reset()
@@ -777,6 +878,101 @@ export default {
 			this.jsonText = this.storedJson
 			this.jsonError = ''
 			this.saveProblem = null
+		},
+
+		/**
+		 * Whether the page may be left: at once without unsaved changes,
+		 * otherwise after the user confirms in a dialog.
+		 *
+		 * @return {boolean|Promise<boolean>} True to leave.
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+		 */
+		confirmLeave() {
+			if (!this.isAdmin || !this.dirty) {
+				return true
+			}
+			// A newer navigation replaces one that is still asking.
+			this.resolveLeave(false)
+			return new Promise((resolve) => {
+				this.leavePrompt = { resolve }
+			})
+		},
+
+		/**
+		 * Answer the open leave question, if any.
+		 *
+		 * @param {boolean} leave True to leave, false to stay.
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+		 */
+		resolveLeave(leave) {
+			const prompt = this.leavePrompt
+			this.leavePrompt = null
+			if (prompt) {
+				prompt.resolve(leave)
+			}
+		},
+
+		/**
+		 * Let the browser ask before the tab closes or reloads with unsaved changes.
+		 *
+		 * @param {BeforeUnloadEvent} event The event.
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+		 */
+		onBeforeUnload(event) {
+			if (!this.isAdmin || !this.dirty) {
+				return
+			}
+			event.preventDefault()
+			// Older browsers only ask when returnValue is set.
+			event.returnValue = ''
+		},
+
+		/**
+		 * The id of the hint under a row's target field.
+		 *
+		 * @param {object} row The row.
+		 * @return {string} The id.
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-the-pack-editor-must-save-a-definition-without-losing-what-it-does-not-show
+		 */
+		hintId(row) {
+			return `migration-pack-target-hint-${row.uid}`
+		},
+
+		/**
+		 * Move keyboard focus to a control of the mapping table once it renders.
+		 *
+		 * @param {string} name The control's `data-row-control` value.
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+		 */
+		focusControl(name) {
+			this.$nextTick(() => {
+				const element = this.$el?.querySelector?.(
+					`[data-row-control="${name}"]`,
+				)
+				if (element) {
+					element.focus()
+				}
+			})
+		},
+
+		/**
+		 * Tell a screen reader what a row action did, through the polite live region.
+		 *
+		 * @param {string} text The message.
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+		 */
+		announce(text) {
+			// Cleared first, so the same message twice is read twice.
+			this.announcement = ''
+			this.$nextTick(() => {
+				this.announcement = text
+			})
 		},
 
 		/**
@@ -830,7 +1026,14 @@ export default {
 		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
 		 */
 		removeRow(index) {
-			this.draft.rows = this.draft.rows.filter((_, i) => i !== index)
+			const rows = this.draft.rows.filter((_, i) => i !== index)
+			this.draft.rows = rows
+			// The focused button is gone: go to the row that took its place.
+			const next = rows[index] ?? rows[index - 1]
+			this.focusControl(next ? `${next.uid}-remove` : 'add-row')
+			this.announce(
+				t('openregister', 'Row {number} removed.', { number: index + 1 }),
+			)
 		},
 
 		/**
@@ -842,7 +1045,23 @@ export default {
 		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
 		 */
 		move(index, delta) {
+			const to = index + delta
+			if (to < 0 || to >= this.draft.rows.length) {
+				return
+			}
+			const row = this.draft.rows[index]
 			this.draft.rows = moveRow(this.draft.rows, index, delta)
+			// Keep focus on the moved row. At the top or bottom the pressed
+			// button is disabled, so its other move button takes focus.
+			const atEdge = to === 0 || to === this.draft.rows.length - 1
+			const up = delta < 0
+			this.focusControl(`${row.uid}-${up !== atEdge ? 'up' : 'down'}`)
+			this.announce(
+				t('openregister', 'Row moved to position {position} of {total}.', {
+					position: to + 1,
+					total: this.draft.rows.length,
+				}),
+			)
 		},
 
 		/**
@@ -987,6 +1206,13 @@ export default {
 		/**
 		 * Save the pack, unless someone else saved it since it was loaded.
 		 *
+		 * The check reads the pack again just before the update and compares
+		 * both its update time and its definition, so two saves within the
+		 * same second are still told apart. It narrows the window, but cannot
+		 * close it: a save by someone else between that read and the update
+		 * is overwritten, until the update route checks a precondition itself.
+		 * A 409 or 412 from the server is shown the same way.
+		 *
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-create-and-update-must-accept-a-definition-envelope-and-keep-the-route-id
@@ -1001,21 +1227,88 @@ export default {
 			this.saving = true
 			try {
 				const current = await getPack(this.packId)
-				if (current.updatedAt !== this.pack.updatedAt) {
-					this.saveProblem = {
-						message: t(
-							'openregister',
-							'Someone else saved this pack after you opened it. Reload it to see their changes; your changes are not saved.',
-						),
-
-						details: [],
-						conflict: true,
-					}
+				if (this.changedElsewhere(current)) {
+					this.saveProblem = this.conflictProblem()
 					return
 				}
 				this.pack = await updatePack(this.packId, definition)
 				this.reset()
 				this.saved = true
+			} catch (error) {
+				const status = error?.response?.status
+				if (status === 404) {
+					// Shown with its own actions; the edits stay in the editor.
+					this.packDeleted = true
+				} else if (status === 409 || status === 412) {
+					this.saveProblem = this.conflictProblem()
+				} else {
+					this.saveProblem = explainError(
+						error,
+						t('openregister', 'Could not save the migration pack.'),
+					)
+				}
+			} finally {
+				this.saving = false
+			}
+		},
+
+		/**
+		 * Whether the pack on the server is no longer the one the editor loaded.
+		 *
+		 * @param {object} current The pack as the server has it now.
+		 * @return {boolean} True when someone else saved it.
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+		 */
+		changedElsewhere(current) {
+			return (
+				current.updatedAt !== this.pack.updatedAt
+				|| !sameDefinition(current.definition, this.pack.definition)
+			)
+		},
+
+		/**
+		 * The problem shown when someone else saved the pack first.
+		 *
+		 * @return {object} The problem, with the reload action.
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
+		 */
+		conflictProblem() {
+			return {
+				message: t(
+					'openregister',
+					'Someone else saved this pack after you opened it. Reload it to see their changes; your changes are not saved.',
+				),
+
+				details: [],
+				conflict: true,
+			}
+		},
+
+		/**
+		 * Save the edited definition as a new pack, after this one was deleted.
+		 *
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-create-and-update-must-accept-a-definition-envelope-and-keep-the-route-id
+		 */
+		async saveAsNew() {
+			this.saveProblem = null
+			const definition = this.definitionToSave()
+			if (definition === null) {
+				return
+			}
+			this.saving = true
+			try {
+				this.pack = await createPack(definition)
+				this.packDeleted = false
+				this.reset()
+				this.saved = true
+				await this.$router.push({
+					name: 'migration-pack-detail',
+					params: { id: String(this.pack.id) },
+				})
 			} catch (error) {
 				this.saveProblem = explainError(
 					error,
@@ -1114,6 +1407,12 @@ export default {
 
 .migration-pack__code {
 	border: 1px dotted var(--color-border-dark);
+}
+
+.migration-pack__problem-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
 }
 
 .migration-pack__footer {

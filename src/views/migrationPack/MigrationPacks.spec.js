@@ -12,12 +12,14 @@
 
 import { passesContextPredicates } from '@conduction/nextcloud-vue/src/utils/visibleIfContext.js'
 import axios from '@nextcloud/axios'
+import { mount } from '@vue/test-utils'
 import fs from 'fs'
 import path from 'path'
 import KeyValueRows from '../../components/migrationPack/KeyValueRows.vue'
 import PackPreviewPanel from '../../components/migrationPack/PackPreviewPanel.vue'
 import DeleteMigrationPackDialog from '../../dialogs/migrationPack/DeleteMigrationPackDialog.vue'
 import TransformDialog from '../../dialogs/migrationPack/TransformDialog.vue'
+import UnsavedChangesDialog from '../../dialogs/migrationPack/UnsavedChangesDialog.vue'
 import MainMenu from '../../navigation/MainMenu.vue'
 import MigrationPackDetail from './MigrationPackDetail.vue'
 import MigrationPacksIndex from './MigrationPacksIndex.vue'
@@ -27,9 +29,17 @@ import {
 	exportUrl,
 	updatePack,
 } from '../../services/migrationPacks.js'
-import { draftFromStored, newTransform } from './packDraft.js'
+import { draftFromStored, newTransform, transformPayload } from './packDraft.js'
 
 let mockCurrentUser = { uid: 'admin', isAdmin: true }
+// The route guards the editor registers, as vue-router would hold them.
+const mockRouteGuards = { leave: [], update: [] }
+
+jest.mock('vue-router', () => ({
+	__esModule: true,
+	onBeforeRouteLeave: (guard) => mockRouteGuards.leave.push(guard),
+	onBeforeRouteUpdate: (guard) => mockRouteGuards.update.push(guard),
+}))
 
 jest.mock('@nextcloud/axios', () => ({
 	__esModule: true,
@@ -157,7 +167,11 @@ const MODULE_PACK = readJson(
  * @return {object} The instance.
  */
 function instance(component, extra = {}) {
-	const vm = { ...extra }
+	const vm = {
+		$nextTick: (fn) => Promise.resolve().then(fn),
+		$refs: {},
+		...extra,
+	}
 	Object.assign(vm, component.data ? component.data.call(vm) : {})
 	for (const [name, method] of Object.entries(component.methods || {})) {
 		vm[name] = method.bind(vm)
@@ -190,9 +204,20 @@ function storedPack(overrides = {}) {
 	}
 }
 
+/**
+ * Let queued promise callbacks ($nextTick, resolved requests) run.
+ *
+ * @return {Promise<void>}
+ */
+function flush() {
+	return new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 beforeEach(() => {
 	jest.clearAllMocks()
 	mockCurrentUser = { uid: 'admin', isAdmin: true }
+	mockRouteGuards.leave = []
+	mockRouteGuards.update = []
 })
 
 describe('the migration pack pages in the manifest', () => {
@@ -399,16 +424,72 @@ describe('the list', () => {
 			response: {
 				status: 422,
 				data: {
-					error: 'Invalid migration pack definition: "name" is required; "version" must be a semver string',
+					message: 'De packdefinitie is ongeldig',
+					error: 'invalid-pack',
+					details: {
+						errors: [
+							'"name" is required',
+							'"version" must be a semver string',
+						],
+					},
 				},
 			},
 		})
 		await vm.onImportFile({ target: { files: [file], value: '' } })
-		expect(vm.notice.type).toBe('error')
-		expect(vm.notice.details).toEqual([
-			'"name" is required',
-			'"version" must be a semver string',
-		])
+		expect(vm.notice).toMatchObject({
+			type: 'error',
+			message: 'The pack is not valid.',
+			details: ['"name" is required', '"version" must be a semver string'],
+		})
+
+		axios.post.mockRejectedValueOnce({
+			response: {
+				status: 400,
+				data: { message: 'x', error: 'invalid-request' },
+			},
+		})
+		await vm.onImportFile({ target: { files: [file], value: '' } })
+		expect(vm.notice.message).toBe(
+			'The file is not a migration pack. Choose a JSON file that holds one pack definition.',
+		)
+	})
+
+	it('announces its notices and focuses the heading after a delete', async () => {
+		axios.delete.mockResolvedValue({ status: 204 })
+		const heading = document.createElement('h2')
+		heading.tabIndex = -1
+		document.body.appendChild(heading)
+		const vm = instance(MigrationPacksIndex, { $refs: { heading } })
+		vm.packs = [storedPack({ id: 3 })]
+		vm.deleting = vm.packs[0]
+		await vm.confirmDelete()
+		await flush()
+		expect(document.activeElement).toBe(heading)
+		heading.remove()
+		const list = fs.readFileSync(
+			path.join(__dirname, 'MigrationPacksIndex.vue'),
+			'utf8',
+		)
+		expect(list).toMatch(/<div aria-live="polite">\s*<NcNoteCard v-if="notice"/)
+		expect(list).toContain('<h2 ref="heading" tabindex="-1">')
+	})
+
+	it("shows dates in the user's Nextcloud locale, not the browser's", () => {
+		const vm = instance(MigrationPacksIndex)
+		const previous = globalThis._nc_l10n_locale
+		try {
+			globalThis._nc_l10n_locale = 'nl_NL'
+			const value = '2026-10-12T10:00:00+00:00'
+			expect(vm.formatDate(value)).toBe(
+				new Date(value).toLocaleString('nl-NL'),
+			)
+			globalThis._nc_l10n_locale = 'en_US'
+			expect(vm.formatDate(value)).toBe(
+				new Date(value).toLocaleString('en-US'),
+			)
+		} finally {
+			globalThis._nc_l10n_locale = previous
+		}
 	})
 })
 
@@ -516,9 +597,98 @@ describe('the editor', () => {
 		})
 		await vm.save()
 		expect(vm.saveProblem).toMatchObject({
-			message: 'The id of a built-in migration pack cannot be changed',
+			message:
+				'The slug of a built-in pack cannot change: the app that installed it finds the pack by this slug.',
 			code: 'builtin-slug-locked',
 		})
+	})
+
+	it('shows each finding of a refused save with its table row number', async () => {
+		const vm = await loadedEditor(storedPack({ builtin: false }))
+		vm.draft.name = 'Changed'
+		axios.put.mockRejectedValue({
+			response: {
+				status: 422,
+				data: {
+					message: 'The pack definition is invalid',
+					error: 'invalid-pack',
+					details: {
+						errors: ['Row 4: transform.map is required for lookup'],
+					},
+				},
+			},
+		})
+		await vm.save()
+		expect(vm.saveProblem).toMatchObject({
+			message: 'The pack is not valid.',
+			details: ['Row 4: transform.map is required for lookup'],
+		})
+		expect(vm.dirty).toBe(true)
+	})
+
+	it('refuses to save when someone else saved within the same second', async () => {
+		const vm = await loadedEditor()
+		vm.draft.name = 'Changed'
+		const theirs = storedPack()
+		theirs.definition.name = 'Their change'
+		axios.get.mockResolvedValue({ data: theirs })
+		await vm.save()
+		expect(axios.put).not.toHaveBeenCalled()
+		expect(vm.saveProblem.conflict).toBe(true)
+	})
+
+	it('shows a conflict the server reports as one', async () => {
+		const vm = await loadedEditor()
+		vm.draft.name = 'Changed'
+		axios.put.mockRejectedValue({
+			response: { status: 409, data: { error: 'pack-conflict' } },
+		})
+		await vm.save()
+		expect(vm.saveProblem.conflict).toBe(true)
+	})
+
+	it('keeps the edits of a pack someone deleted, and saves them as a new pack', async () => {
+		const vm = await loadedEditor(storedPack({ builtin: false }))
+		vm.$router = { push: jest.fn().mockResolvedValue(undefined) }
+		vm.draft.name = 'Changed'
+		axios.get.mockRejectedValue({
+			response: { status: 404, data: { error: 'pack-not-found' } },
+		})
+		await vm.save()
+		expect(axios.put).not.toHaveBeenCalled()
+		expect(vm.packDeleted).toBe(true)
+		expect(vm.saveProblem).toBeNull()
+		expect(vm.dirty).toBe(true)
+		expect(vm.draft.name).toBe('Changed')
+
+		axios.post.mockImplementation((url, body) =>
+			Promise.resolve({
+				data: storedPack({
+					id: 40,
+					builtin: false,
+					name: body.definition.name,
+					version: body.definition.version,
+					definition: body.definition,
+				}),
+			}),
+		)
+		await vm.saveAsNew()
+		const [url, body] = axios.post.mock.calls[0]
+		expect(url).toBe('/apps/openregister/api/migration-packs')
+		expect(body.definition.name).toBe('Changed')
+		expect(vm.packDeleted).toBe(false)
+		expect(vm.dirty).toBe(false)
+		expect(vm.$router.push).toHaveBeenCalledWith({
+			name: 'migration-pack-detail',
+			params: { id: '40' },
+		})
+
+		const source = fs.readFileSync(
+			path.join(__dirname, 'MigrationPackDetail.vue'),
+			'utf8',
+		)
+		expect(source).toContain(':disabled="saving || !dirty || packDeleted"')
+		expect(source).toContain('@click="saveAsNew"')
 	})
 
 	it('moves, adds and removes rows and applies a transform', async () => {
@@ -580,8 +750,9 @@ describe('the editor', () => {
 	it('raises the patch version of a JSON view edit that left the version', async () => {
 		const vm = await loadedEditor()
 		vm.showJson()
+		// Only the layout changed: nothing to save.
 		vm.jsonText = JSON.stringify(MODULE_PACK)
-		expect(vm.dirty).toBe(true)
+		expect(vm.dirty).toBe(false)
 		expect(vm.versionWillBump).toBe(false)
 
 		vm.jsonText = JSON.stringify({ ...MODULE_PACK, name: 'From JSON' })
@@ -595,12 +766,183 @@ describe('the editor', () => {
 		})
 	})
 
+	it('shows a JSON parse error as the browser wrote it, quotes included', async () => {
+		const vm = await loadedEditor()
+		vm.showJson()
+		vm.jsonText = "{'a': 1}"
+		expect(vm.applyJson()).toBe(false)
+		expect(vm.jsonError).toMatch(/^This is not valid JSON: /)
+		expect(vm.jsonError).not.toMatch(/&#39;|&quot;|&amp;/)
+	})
+
+	it('keeps focus on a moved row and announces where it went', async () => {
+		const vm = await loadedEditor()
+		const container = document.createElement('div')
+		for (const row of vm.draft.rows) {
+			for (const control of ['up', 'down', 'remove']) {
+				const button = document.createElement('button')
+				button.dataset.rowControl = `${row.uid}-${control}`
+				container.appendChild(button)
+			}
+		}
+		const add = document.createElement('button')
+		add.dataset.rowControl = 'add-row'
+		container.appendChild(add)
+		document.body.appendChild(container)
+		vm.$el = container
+		const focused = () => document.activeElement.dataset.rowControl
+		try {
+			const second = vm.draft.rows[1]
+			vm.move(1, -1)
+			await flush()
+			// Now first: its Move up is disabled, so Move down holds focus.
+			expect(vm.draft.rows[0]).toBe(second)
+			expect(focused()).toBe(`${second.uid}-down`)
+			expect(vm.announcement).toBe(
+				`Row moved to position 1 of ${vm.draft.rows.length}.`,
+			)
+
+			vm.move(0, 1)
+			await flush()
+			expect(focused()).toBe(`${second.uid}-down`)
+
+			const last = vm.draft.rows.length - 1
+			const lastRow = vm.draft.rows[last - 1]
+			vm.move(last - 1, 1)
+			await flush()
+			expect(focused()).toBe(`${lastRow.uid}-up`)
+
+			vm.move(0, -1)
+			await flush()
+			expect(focused()).toBe(`${lastRow.uid}-up`)
+
+			const third = vm.draft.rows[3]
+			vm.removeRow(2)
+			await flush()
+			expect(focused()).toBe(`${third.uid}-remove`)
+			expect(vm.announcement).toBe('Row 3 removed.')
+
+			vm.draft.rows = vm.draft.rows.slice(0, 1)
+			vm.removeRow(0)
+			await flush()
+			expect(focused()).toBe('add-row')
+		} finally {
+			container.remove()
+		}
+	})
+
+	it('names each transform by its visible summary and links the shared-target hint', () => {
+		const source = fs.readFileSync(
+			path.join(__dirname, 'MigrationPackDetail.vue'),
+			'utf8',
+		)
+		const button = source.slice(
+			source.indexOf('@click="editingRow = index"'),
+			source.indexOf('{{ summary(row) }}') + 20,
+		)
+		// No aria-label: the accessible name is the hidden prefix plus the summary.
+		expect(source).not.toContain("'Transform of row {number}',")
+		expect(button).toContain('<span class="hidden-visually">')
+		expect(button).toContain("'Transform of row {number}:'")
+		expect(source).toMatch(
+			/:aria-describedby="\s*targetHint\(row\)\s*\?\s*hintId\(row\)\s*:\s*undefined\s*"/,
+		)
+		expect(source).toContain(':id="hintId(row)"')
+		expect(source).toMatch(
+			/<div class="hidden-visually" aria-live="polite">\s*\{\{ announcement \}\}/,
+		)
+		expect(source).toMatch(
+			/<div aria-live="polite">\s*<NcNoteCard v-if="packDeleted"[\s\S]*?<NcNoteCard v-if="view === 'json' && jsonError"/,
+		)
+	})
+
 	it('tests only a draft without problems, over its source columns', async () => {
 		const vm = await loadedEditor()
 		expect(vm.previewDefinition).toEqual(MODULE_PACK)
 		expect(vm.previewColumns).toContain('Applicatiesoort')
 		vm.draft.rows[0].source = ''
 		expect(vm.previewDefinition).toBeNull()
+	})
+})
+
+describe('leaving the editor with unsaved changes', () => {
+	/**
+	 * The editor mounted for real, so its setup registers the route guards.
+	 *
+	 * @return {Promise<object>} The wrapper.
+	 */
+	async function mountedEditor() {
+		axios.get.mockResolvedValue({ data: storedPack() })
+		const wrapper = mount(MigrationPackDetail, {
+			global: {
+				mocks: { $route: { params: { id: '12' } } },
+				stubs: { 'router-link': true },
+			},
+		})
+		await flush()
+		return wrapper
+	}
+
+	it('asks before the router leaves, or moves to another pack, and stays on No', async () => {
+		const wrapper = await mountedEditor()
+		const vm = wrapper.vm
+		expect(mockRouteGuards.leave).toHaveLength(1)
+		expect(mockRouteGuards.update).toHaveLength(1)
+		const [leave] = mockRouteGuards.leave
+		const [update] = mockRouteGuards.update
+
+		expect(leave()).toBe(true)
+
+		vm.draft.name = 'Changed'
+		const asked = leave()
+		expect(asked).toBeInstanceOf(Promise)
+		expect(vm.leavePrompt).not.toBeNull()
+		vm.resolveLeave(false)
+		await expect(asked).resolves.toBe(false)
+		expect(vm.leavePrompt).toBeNull()
+
+		const moving = update()
+		vm.resolveLeave(true)
+		await expect(moving).resolves.toBe(true)
+		wrapper.unmount()
+	})
+
+	it('does not ask a reader, who cannot change anything', async () => {
+		mockCurrentUser = { uid: 'bob', isAdmin: false }
+		const wrapper = await mountedEditor()
+		wrapper.vm.draft.name = 'Changed'
+		expect(mockRouteGuards.leave[0]()).toBe(true)
+		wrapper.unmount()
+	})
+
+	it('lets the browser ask before the tab closes, until the editor is gone', async () => {
+		const wrapper = await mountedEditor()
+		const unload = () => {
+			const event = new Event('beforeunload', { cancelable: true })
+			window.dispatchEvent(event)
+			return event.defaultPrevented
+		}
+		expect(unload()).toBe(false)
+		wrapper.vm.draft.name = 'Changed'
+		expect(unload()).toBe(true)
+		wrapper.unmount()
+		expect(unload()).toBe(false)
+	})
+
+	it('confirms in a dialog of its own', () => {
+		const source = fs.readFileSync(
+			path.join(__dirname, 'MigrationPackDetail.vue'),
+			'utf8',
+		)
+		expect(source).toMatch(
+			/<UnsavedChangesDialog\s+v-if="leavePrompt"\s+@leave="resolveLeave\(true\)"\s+@stay="resolveLeave\(false\)" \/>/,
+		)
+		const $emit = jest.fn()
+		const dialog = instance(UnsavedChangesDialog, { $emit })
+		dialog.onOpenChange(true)
+		expect($emit).not.toHaveBeenCalled()
+		dialog.onOpenChange(false)
+		expect($emit).toHaveBeenCalledWith('stay')
 	})
 })
 
@@ -696,7 +1038,7 @@ describe('the sample-row test', () => {
 		await vm.run()
 		expect(vm.result).toBeNull()
 		expect(vm.runError).toMatchObject({
-			message: 'The pack definition is invalid',
+			message: 'The pack is not valid.',
 			details: ['"name" is required'],
 		})
 	})
@@ -726,6 +1068,47 @@ describe('the sample-row test', () => {
 		})
 		await first
 		expect(vm.result.data).toEqual({ name: 'new' })
+	})
+
+	it('drops the last result, and an answer on its way, once the pack has problems', async () => {
+		let resolveRun
+		axios.post.mockImplementationOnce(
+			() =>
+				new Promise((resolve) => {
+					resolveRun = resolve
+				}),
+		)
+		const vm = instance(PackPreviewPanel, {
+			definition: MODULE_PACK,
+			columns: ['A'],
+		})
+		vm.result = { data: { name: 'old' }, errors: [] }
+		const running = vm.run()
+		PackPreviewPanel.watch.definition.call(vm, null)
+		expect(vm.result).toBeNull()
+		expect(vm.running).toBe(false)
+		resolveRun({
+			data: { rows: [{ rowNumber: 1, data: { name: 'late' }, errors: [] }] },
+		})
+		await running
+		expect(vm.result).toBeNull()
+
+		const source = fs.readFileSync(
+			path.join(
+				ROOT,
+				'src',
+				'components',
+				'migrationPack',
+				'PackPreviewPanel.vue',
+			),
+			'utf8',
+		)
+		expect(source).toMatch(/blockedText\s*\|\|\s*t\(/)
+		const editor = fs.readFileSync(
+			path.join(__dirname, 'MigrationPackDetail.vue'),
+			'utf8',
+		)
+		expect(editor).toContain("'Switch to the form to test the pack.'")
 	})
 
 	it('runs 400 ms after the last change, and not while the pack has problems', () => {
@@ -811,6 +1194,31 @@ describe('the transform dialog', () => {
 		expect($emit).toHaveBeenLastCalledWith('apply', null)
 	})
 
+	it('offers only yes or no for a yes/no table, its default included', () => {
+		const vm = instance(TransformDialog, { transform: null, rowNumber: 1 })
+		vm.setType('bool-map')
+		vm.patch({ defaultMode: 'value' })
+		expect(vm.defaultChoice).toBe('')
+		vm.setDefaultChoice('false')
+		expect(vm.defaultChoice).toBe('false')
+		expect(transformPayload(vm.draft).default).toBe(false)
+
+		const source = fs.readFileSync(
+			path.join(
+				ROOT,
+				'src',
+				'dialogs',
+				'migrationPack',
+				'TransformDialog.vue',
+			),
+			'utf8',
+		)
+		expect(source).toContain(':booleanValues="draft.type === \'bool-map\'"')
+		expect(source).toMatch(
+			/<div aria-live="polite">\s*<NcNoteCard v-if="errors.length > 0"/,
+		)
+	})
+
 	it('edits a join and works on a copy of the transform', () => {
 		const transform = draftFromStored(
 			readJson(
@@ -861,6 +1269,30 @@ describe('the key/value rows', () => {
 		vm.remove(0)
 		expect($emit).toHaveBeenLastCalledWith('update:rows', [])
 	})
+
+	it('labels each input with a translated sentence, not a joined string', () => {
+		const vm = instance(KeyValueRows, { rows: [], keyLabel: 'Target field' })
+		expect(vm.rowLabel('Target field', 2)).toBe('Target field of row 3')
+		const source = fs.readFileSync(
+			path.join(
+				ROOT,
+				'src',
+				'components',
+				'migrationPack',
+				'KeyValueRows.vue',
+			),
+			'utf8',
+		)
+		expect(source).not.toMatch(/:aria-label="`/)
+	})
+
+	it('reads a yes/no value as a choice, and anything else as none', () => {
+		const vm = instance(KeyValueRows, { rows: [] })
+		expect(vm.booleanChoice({ text: 'true', json: true })).toBe('true')
+		expect(vm.booleanChoice({ text: 'false', json: true })).toBe('false')
+		expect(vm.booleanChoice({ text: 'false', json: false })).toBe('')
+		expect(vm.booleanChoice({ text: '1', json: true })).toBe('')
+	})
 })
 
 describe('the API helpers', () => {
@@ -906,10 +1338,46 @@ describe('the API helpers', () => {
 				'x',
 			),
 		).toEqual({
-			message: 'Bad',
+			message: 'The pack is not valid.',
 			details: ['a', 'b'],
 			code: 'invalid-pack',
 			status: 422,
 		})
+	})
+
+	it('read the slug, never the wording, of an error', () => {
+		const explain = (status, data, texts) =>
+			explainError({ response: { status, data } }, 'Fallback', texts)
+		expect(explain(404, { message: 'x', error: 'pack-not-found' }).message).toBe(
+			'This migration pack does not exist.',
+		)
+		expect(
+			explain(401, { message: 'x', error: 'not-authenticated' }).message,
+		).toBe('You are not signed in. Sign in and try again.')
+		expect(explain(400, { message: 'x', error: 'too-many-rows' }).message).toBe(
+			'There are too many sample rows to test at once.',
+		)
+		// An unexpected failure: the caller says what could not be done.
+		expect(
+			explain(500, {
+				message: 'Interner Fehler',
+				error: 'migration-pack-error',
+			}).message,
+		).toBe('Fallback')
+		// A slug this page does not know: the server's localised message.
+		expect(
+			explain(400, { message: 'Ongeldig verzoek', error: 'invalid-request' })
+				.message,
+		).toBe('Ongeldig verzoek')
+		expect(
+			explain(400, { error: 'invalid-request' }, { 'invalid-request': 'Own' })
+				.message,
+		).toBe('Own')
+		// An English sentence in `error` is not a slug, and is never parsed.
+		expect(
+			explain(422, {
+				error: 'Invalid migration pack definition: "name" is required; "x"',
+			}),
+		).toEqual({ message: 'Fallback', details: [], code: '', status: 422 })
 	})
 })
