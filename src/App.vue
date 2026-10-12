@@ -58,8 +58,12 @@
 			<UserSettings
 				:manifest="manifest"
 				:walkthrough="walkthroughSettings()"
-				@continueWalkthrough="appRoot() && appRoot().continueWalkthroughFromSettings()"
-				@restartWalkthrough="appRoot() && appRoot().restartWalkthroughFromSettings()" />
+				@continueWalkthrough="
+					appRoot() && appRoot().continueWalkthroughFromSettings()
+				"
+				@restartWalkthrough="
+					appRoot() && appRoot().restartWalkthroughFromSettings()
+				" />
 		</template>
 		<!-- Global modal and dialog hosts, mounted below the router-view. -->
 		<template #footer>

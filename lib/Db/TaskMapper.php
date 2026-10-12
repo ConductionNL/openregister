@@ -567,7 +567,45 @@ class TaskMapper extends QBMapper {
 		$this->applyVisibility(qb: $qb, criteria: $criteria);
 		$this->applyFilters(qb: $qb, criteria: $criteria);
 		$this->applyExternalExclusion(qb: $qb, criteria: $criteria);
+		$this->applyBlockedExclusion(qb: $qb, criteria: $criteria);
 	}//end applyInboxPredicates()
+
+	/**
+	 * A task whose blocker is still open is in nobody's inbox and in nobody's total.
+	 *
+	 * Derived in the datastore from the blocker's terminality, never from a
+	 * stored flag, so a blocker closed by any path (a verb, run termination,
+	 * the timer sweep) releases its dependants on the next read. The subquery
+	 * is uncorrelated; `uuid IS NOT NULL` keeps `NOT IN` from turning every
+	 * row unknown. A read anchored to an object or a run skips it, for the
+	 * reason {@see applyExternalExclusion()} gives: that is the case looking at
+	 * its own work, and it must show what waits and on what.
+	 *
+	 * @param IQueryBuilder $qb The query under construction.
+	 * @param TaskInboxCriteria $criteria Carries the anchors and `includeBlocked`.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 */
+	private function applyBlockedExclusion(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
+		if ($criteria->includeBlocked === true || $criteria->objectUuid !== null || $criteria->runUuid !== null) {
+			return;
+		}
+
+		$open = $this->db->getQueryBuilder();
+		$open->select('blocker.uuid')
+			->from($this->getTableName(), 'blocker')
+			->where($open->expr()->eq('blocker.is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)))
+			->andWhere($open->expr()->isNotNull('blocker.uuid'));
+
+		$qb->andWhere(
+			$qb->expr()->orX(
+				$qb->expr()->isNull('blocked_by'),
+				$qb->expr()->notIn('blocked_by', $qb->createFunction($open->getSQL()))
+			)
+		);
+	}//end applyBlockedExclusion()
 
 	/**
 	 * An EXTERNAL task is in nobody's Nextcloud inbox and in nobody's total.

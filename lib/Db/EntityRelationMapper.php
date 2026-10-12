@@ -940,4 +940,24 @@ class EntityRelationMapper extends QBMapper {
 
 		$this->auditTrailMapper->insert($auditTrail);
 	}//end emitDecisionMetadataAuditEntry()
+
+	/**
+	 * Link a relation to its current decision object.
+	 *
+	 * The decision itself (who, when, verdict, note) is its own object in
+	 * `openregister_decisions` (decision 197); the relation only points at it.
+	 * The audit trail of the verdict stays with `updateDecisionMetadata()`.
+	 *
+	 * @param EntityRelation $relation     The relation.
+	 * @param string         $decisionUuid The decision's uuid.
+	 *
+	 * @return EntityRelation The stored relation.
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-a-decision-is-its-own-object-req-dec-001
+	 */
+	public function linkDecision(EntityRelation $relation, string $decisionUuid): EntityRelation {
+		$relation->setDecisionUuid($decisionUuid);
+
+		return $this->update(entity: $relation);
+	}//end linkDecision()
 }//end class

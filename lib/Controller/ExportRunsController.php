@@ -31,11 +31,13 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use DateTime;
+use Exception;
+use OCA\OpenRegister\Service\Export\ExportRightService;
 use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 
@@ -51,14 +53,14 @@ class ExportRunsController extends Controller {
 	 * @param IRequest          $request      The request.
 	 * @param ExportRunRecorder $runs         The export runs.
 	 * @param IUserSession      $userSession  Resolves the caller.
-	 * @param IGroupManager     $groupManager Decides whether the caller is an administrator.
+	 * @param ExportRightService $rights      Decides whether the caller sees every run.
 	 */
 	public function __construct(
 		string $appName,
 		IRequest $request,
 		private readonly ExportRunRecorder $runs,
 		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		private readonly ExportRightService $rights,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -66,8 +68,12 @@ class ExportRunsController extends Controller {
 	/**
 	 * GET /api/exports - the runs this caller made.
 	 *
-	 * Filters on register, schema, profile, source and status. An unknown
-	 * filter key is dropped rather than widening the result.
+	 * Filters on register, schema, profile, source, status and actor, and on
+	 * the period `from` / `until` (ISO 8601, inclusive) over when the export
+	 * was produced. An unknown filter key is dropped rather than widening the
+	 * result; a date that does not parse is refused with 400, because
+	 * dropping it would widen the result too. Whether the caller sees every
+	 * run or only their own is answered by ExportRightService.
 	 *
 	 * @return JSONResponse The runs, or 401 when anonymous.
 	 *
@@ -88,17 +94,36 @@ class ExportRunsController extends Controller {
 		$offset = (int)($this->request->getParam(key: 'offset') ?? 0);
 
 		$filters = [];
-		foreach (['register', 'schema', 'profile', 'source', 'status'] as $key) {
+		foreach (['register', 'schema', 'profile', 'source', 'status', 'actor'] as $key) {
 			$value = $this->request->getParam(key: $key);
 			if ($value !== null && $value !== '') {
 				$filters[$key] = (string)$value;
 			}
 		}
 
+		$period = [];
+		foreach (['from', 'until'] as $key) {
+			$value = $this->request->getParam(key: $key);
+			if ($value === null || $value === '') {
+				continue;
+			}
+
+			try {
+				$period[$key] = new DateTime((string)$value);
+			} catch (Exception) {
+				return new JSONResponse(
+					data: ['error' => sprintf('The %s date "%s" is not a date.', $key, (string)$value)],
+					statusCode: Http::STATUS_BAD_REQUEST
+				);
+			}
+
+			$filters[$key] = (string)$value;
+		}
+
 		$results = $this->runs->listFor(
 			actor: $user->getUID(),
-			isAdmin: $this->groupManager->isAdmin($user->getUID()),
-			filters: $filters,
+			isAdmin: $this->rights->seesEveryExportRun(userId: $user->getUID()),
+			filters: array_merge($filters, $period),
 			limit: max(1, min($limit, 200)),
 			offset: max(0, $offset)
 		);

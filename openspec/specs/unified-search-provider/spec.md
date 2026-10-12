@@ -191,6 +191,29 @@ second declaration mechanism.
 - WHEN the entry is built
 - THEN its URL is the `openregister.objects.show` route for that register, schema, and UUID
 
+### Requirement: A deep-link template may name an object property
+
+The data handed to `DeepLinkRegistryService::resolveUrl()` SHALL carry the
+object's own top-level scalar properties beside the `@self` metadata, so a
+template such as `/apps/dossiq/cases/{case}` is filled. Each property value
+SHALL be URL-encoded, because it is record data and must not change which page
+the link opens. On a name clash the metadata (`uuid`, `register`, `schema` and
+the `@self` keys) SHALL win. A property whose value is not scalar SHALL NOT be
+offered as a link value.
+
+#### Scenario: A template names a property of the object
+- @e2e exclude formatter data assembly, covered by PHPUnit (ObjectSearchResultFormatterTest)
+- GIVEN dossiq registered `urlTemplate: '/apps/dossiq/cases/{case}'`
+- AND a matched object carries `case: "c-42"`
+- WHEN the entry is built
+- THEN its URL is `/apps/dossiq/cases/c-42`
+
+#### Scenario: A property cannot override the metadata
+- @e2e exclude formatter data assembly, covered by PHPUnit (ObjectSearchResultFormatterTest)
+- GIVEN a matched object carries a property named `uuid` with another value
+- WHEN the entry is built
+- THEN `{uuid}` is filled from the object's `@self.id`
+
 ### Requirement: Result sublines MUST contain an excerpt of the matched content
 
 When the search was term-driven, the subline MUST end with an excerpt:

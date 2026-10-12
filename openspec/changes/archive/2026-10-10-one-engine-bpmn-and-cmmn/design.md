@@ -77,34 +77,50 @@ children.
 
 ### 3.2 Flow nodes (gap 2)
 
-- `openregister.case-open`: config `{definition}` (the same shape
-  `createPlan` takes). Creates the plan on the run's subject through
-  `createPlan`, acting as the run's attributed identity. An object that
-  already has a plan is not an error for the node: it reports
-  `{opened: false, reason: "exists"}` on its output, so a re-run is safe.
-- `openregister.case-advance`: config `{item, to, reason?}` where `item` is
-  the plan-item key. Resolves the item on the run's subject and calls
-  `transition`. Refusals (illegal edge, authorization) fail the step with the
+Both act on the object the step receives (its `uuid`, or a configured
+`uuid` template), with the register and schema its `@self` block names, as
+the run's acting identity (`runAs`, else the signed-in user; neither is a
+refusal), inside `FlowRunAsScope` so the case layer's reads are checked
+against that identity. Shared resolution lives in the abstract
+`CaseNodeBase`.
+
+- `openregister.case-open`: config `{definition, uuid?}` (the same shape
+  `createPlan` takes). Calls `createPlan`. An object that already has a plan
+  is reported on the item (`case: {opened: false, reason: "exists"}`) via a
+  new `CasePlanExistsException` (a `CaseValidationException`, so the API's
+  400 is unchanged), so a re-run is safe.
+- `openregister.case-advance`: config `{item, to, reason?, uuid?}` where
+  `item` is the plan-item key. Reads the plan with `getPlan`, finds the key,
+  calls `transition`; the item carries `case: {item, state}`. Refusals
+  (illegal edge, authorization, no plan, unknown key) fail the step with the
   engine's message; they are never swallowed.
 
 Both register through `FlowNodeRegistry` like every other node.
 
 ### 3.3 Plan-item timers (gap 3)
 
-`FlowTimer::SUBJECT_TYPES` gains `case-item`. `CasePlanItemTimers` (new):
+`FlowTimer::SUBJECT_TYPES` gains `case-item`. `CasePlanItemTimers` (new),
+driven by `CaseItemTimerListener` on `CaseItemTransitionedEvent` (after
+commit) and `FlowTimerFiredEvent`:
 
-- on an item entering `active` with `dueAt` set, arm a `due` timer anchored
-  on now with `fireAt` at `dueAt` (advisory, `legalEffect: none`);
-- with `expiresAt` set, arm an `expiry` timer; legal effect
-  `servicenorm` unless the plan settings mark the item `wettelijk`, in which
-  case `onExpiry: terminate` is allowed by the core's own rule;
-- on an item reaching a terminal state, `cancelForSubject('case-item', uuid)`;
-- a `FlowTimerFiredEvent` of kind expiry for a `case-item` subject with an
-  enforcing outcome terminates the item with cause `realisation` and the
-  timer uuid as cause reference.
+- an item entering `active` with `dueAt` arms a `due` timer (advisory,
+  `legalEffect: none`). The core measures whole hours (calendar days past
+  its 10,000-hour bound) from an anchor, so the anchor is set back from the
+  deadline by the rounded budget: anchor + budget lands on `dueAt` exactly;
+- with `expiresAt` it arms an `expiry` timer, legal effect `servicenorm`
+  (advisory) unless the plan settings list the item key under `statutory`,
+  in which case it is `wettelijk` with `onExpiry: transition:terminate`, the
+  core's own rule for an enforcing outcome;
+- an item reaching a terminal state: `cancelForSubject('case-item', uuid)`;
+- a fired enforcing expiry on a `case-item` subject:
+  `CasePlanService::onTimerExpired()` terminates the item through the state
+  machine, cause `realisation`, cause ref `flow-timer:<uuid>`, then
+  evaluates the plan. An item already terminal is left alone.
 
-The core decides when; the case layer only decides what an expiry means for
-an item. Arming failures are logged and never block the transition.
+A deadline already past at activation arms nothing (logged). Arming and
+cancelling failures are logged and never block the transition. Items
+brought over by `ensureItems` emit no transition event and so get no timers;
+their source engine had none.
 
 ### 3.4 One state list (gap 4)
 

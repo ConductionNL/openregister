@@ -346,4 +346,22 @@ class FileSettingsHandlerTest extends TestCase {
 		$this->assertSame(777, $decoded['chunkSize']);
 		$this->assertArrayHasKey('enabledFileTypes', $decoded);
 	}
+
+	/**
+	 * The instance review default is kept, normalised, and an unsound one is refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 */
+	public function testTheReviewDefaultIsKeptAndChecked(): void {
+		$result = $this->handler->updateFileSettingsOnly(['anonymisationReview' => ['ownership' => 'decider', 'supervisors' => ['woo-coordinator']]]);
+		$this->assertSame(['ownership' => 'decider', 'supervisors' => ['woo-coordinator'], 'hideOthers' => false], $result['anonymisationReview']);
+
+		$this->assertNull($this->handler->updateFileSettingsOnly([])['anonymisationReview']);
+
+		$this->expectException(\RuntimeException::class);
+		$this->expectExceptionMessage('decidr');
+		$this->handler->updateFileSettingsOnly(['anonymisationReview' => ['ownership' => 'decidr']]);
+	}
 }

@@ -144,6 +144,7 @@ use OCA\OpenRegister\Listener\ViewAlertCrossedListener;
 use OCA\OpenRegister\Listener\WorkingCalendarChangedListener;
 use OCA\OpenRegister\Listener\WorkingCalendarDeleteGuardListener;
 use OCA\OpenRegister\Listener\WorkingCalendarValidationListener;
+use OCA\OpenRegister\Listener\DecisionTableValidationListener;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\FlowMcpToolProvider;
@@ -3246,6 +3247,15 @@ class Application extends App implements IBootstrap {
 			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
 			\OCA\OpenRegister\Listener\CaseTaskTerminalListener::class
 		);
+
+		// A closed task releases the tasks that waited on it
+		// (a-task-may-wait-on-another-task D-4): a `released` audit entry and a
+		// fresh announcement per open dependant. Post-event work on the
+		// committed dispatch; the blocked flag itself is derived on read.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\TaskTerminalEvent::class,
+			\OCA\OpenRegister\Listener\TaskBlockerReleaseListener::class
+		);
 		$context->registerEventListener(
 			\OCA\OpenRegister\Event\FlowRunTerminalEvent::class,
 			\OCA\OpenRegister\Listener\CaseRunTerminalListener::class
@@ -3261,6 +3271,17 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(
 			\OCA\OpenRegister\Event\CaseItemTransitionedEvent::class,
 			\OCA\OpenRegister\Listener\FlowTriggerListener::class
+		);
+		// Plan items on the shared clock (one-engine-bpmn-and-cmmn): entering
+		// active arms an item's timers, a terminal state cancels them, and an
+		// enforcing expiry terminates the item. The case layer keeps no clock.
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\CaseItemTransitionedEvent::class,
+			\OCA\OpenRegister\Listener\CaseItemTimerListener::class
+		);
+		$context->registerEventListener(
+			\OCA\OpenRegister\Event\FlowTimerFiredEvent::class,
+			\OCA\OpenRegister\Listener\CaseItemTimerListener::class
 		);
 
 		// Business-timer cancellation propagation (flow-business-timers, design
@@ -3391,6 +3412,8 @@ class Application extends App implements IBootstrap {
 		// accepted on save and surfaced days later on an unrelated timer.
 		$context->registerEventListener(ObjectCreatingEvent::class, WorkingCalendarValidationListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, WorkingCalendarValidationListener::class);
+		$context->registerEventListener(ObjectCreatingEvent::class, DecisionTableValidationListener::class);
+		$context->registerEventListener(ObjectUpdatingEvent::class, DecisionTableValidationListener::class);
 
 		// ... and the other half: a calendar an armed or suspended timer names
 		// cannot be deleted, because the resolver refuses an unknown name

@@ -28,6 +28,7 @@ use OCA\OpenRegister\Service\Form\FormIdempotencyStore;
 use OCA\OpenRegister\Service\Form\FormPayloadFindings;
 use OCA\OpenRegister\Service\Form\FormSubmitService;
 use OCA\OpenRegister\Service\Form\FormUploadStore;
+use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryAppData;
@@ -61,6 +62,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Exception\CustomValidationException
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  * @uses \OCA\OpenRegister\Event\ObjectActivatedEvent
+ * @uses \OCA\OpenRegister\Service\Object\DraftFinder
+ * @uses \OCA\OpenRegister\Service\Object\DraftOwner
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  */
 class FormSubmitServiceTest extends TestCase {
@@ -107,9 +110,23 @@ class FormSubmitServiceTest extends TestCase {
 	private array $refuseSave = [];
 
 	/**
+	 * Whether the destination refuses an anonymous create under RBAC.
+	 *
+	 * @var bool
+	 */
+	private bool $publicCreateRefused = false;
+
+	/**
 	 * @var array<int, string>
 	 */
 	private array $temporary = [];
+
+	/**
+	 * Searches the service ran, with their RBAC flags.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private array $searches = [];
 
 	/**
 	 * Events the service dispatched.
@@ -171,6 +188,14 @@ class FormSubmitServiceTest extends TestCase {
 		$this->objects = $this->createMock(ObjectService::class);
 		$this->objects->method('saveObject')->willReturnCallback($this->fakeSave(...));
 		$this->objects->method('find')->willReturnCallback(fn (string|int $id): ?ObjectEntity => ($this->stored[(string)$id] ?? null));
+		$this->objects->method('searchObjects')->willReturnCallback(
+			function (array $query = [], bool $_rbac = true, bool $_multitenancy = true): array {
+				$this->searches[] = ['query' => $query, 'rbac' => $_rbac, 'multitenancy' => $_multitenancy];
+				$owner = ($query['@self']['owner'] ?? null);
+
+				return array_values(array_filter($this->stored, static fn (ObjectEntity $entity): bool => $entity->getOwner() === $owner));
+			}
+		);
 		$this->objects->method('deleteObject')->willReturnCallback(
 			function (string $uuid): bool {
 				$this->deleted[] = $uuid;
@@ -299,11 +324,19 @@ class FormSubmitServiceTest extends TestCase {
 		?IUser $currentUser = null,
 		bool $failIfExists = false,
 		bool $_unowned = false,
+		bool $_dedupOverride = false,
+		?string $_owner = null,
 	): ObjectEntity {
 		$this->assertInstanceOf(Schema::class, $schema);
-		$this->saves[] = ['object' => $object, 'schema' => $schema->getSlug(), 'rbac' => $_rbac, 'user' => $currentUser, 'unowned' => $_unowned, 'files' => $uploadedFiles, 'uuid' => $uuid];
+		$this->saves[] = ['object' => $object, 'schema' => $schema->getSlug(), 'rbac' => $_rbac, 'user' => $currentUser, 'unowned' => $_unowned, 'files' => $uploadedFiles, 'uuid' => $uuid, 'owner' => $_owner];
 		if (isset($this->refuseSave[$schema->getSlug()]) === true) {
 			throw $this->refuseSave[$schema->getSlug()];
+		}
+
+		// A destination whose schema does not let the public create: the save
+		// refuses an anonymous create under RBAC, as SaveObject does.
+		if ($this->publicCreateRefused === true && $_rbac === true && $currentUser === null && $uuid === null) {
+			throw new NotAuthorizedException(message: 'The public may not create this object.');
 		}
 
 		$data = (array)$object;
@@ -315,7 +348,8 @@ class FormSubmitServiceTest extends TestCase {
 			$entity->setUuid($uuid ?? ('uuid-draft-' . count($this->saves)));
 			$entity->setObject($data);
 			$entity->setStatus('draft');
-			$entity->setOwner($currentUser?->getUID());
+			// An update keeps the stored owner, as SaveObject's update path does.
+			$entity->setOwner(($this->stored[(string)$uuid] ?? null)?->getOwner() ?? $_owner ?? $currentUser?->getUID());
 			$entity->setCreated(new DateTime('2026-10-10T14:03:11+02:00'));
 			$this->stored[$entity->getUuid()] = $entity;
 
@@ -333,6 +367,7 @@ class FormSubmitServiceTest extends TestCase {
 		$entity->setUuid($uuid ?? ('uuid-' . $schema->getSlug() . '-' . count($this->saves)));
 		$entity->setObject($data);
 		$entity->setStatus($status);
+		$entity->setOwner(($this->stored[(string)$uuid] ?? null)?->getOwner() ?? $_owner ?? $currentUser?->getUID());
 		$entity->setCreated(new DateTime('2026-10-10T14:03:11+02:00'));
 		$this->stored[$entity->getUuid()] = $entity;
 
@@ -635,7 +670,7 @@ class FormSubmitServiceTest extends TestCase {
 	 */
 	public function testATypeInvalidDraftIsRefused(): void {
 		try {
-			$this->service->saveDraft(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => ['not', 'a', 'string']], subject: $this->createMock(IUser::class));
+			$this->service->saveDraft(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => ['not', 'a', 'string']], subject: $this->user(uid: 'alice'));
 			$this->fail('A type-invalid draft was saved.');
 		} catch (FormSubmitRefusedException $refused) {
 			$this->assertSame(422, $refused->getStatus());
@@ -706,11 +741,160 @@ class FormSubmitServiceTest extends TestCase {
 
 		foreach (['uuid-case-1', 'nope'] as $id) {
 			try {
-				$this->service->submit(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'a', 'caseType' => 'b'], subject: $this->createMock(IUser::class), draftId: $id);
+				$this->service->submit(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'a', 'caseType' => 'b'], subject: $this->user(uid: 'alice'), draftId: $id);
 				$this->fail('Draft ' . $id . ' was accepted.');
 			} catch (FormSubmitRefusedException $refused) {
 				$this->assertSame(404, $refused->getStatus());
 			}
 		}
 	}//end testAnUnknownDraftIsA404()
+
+	/**
+	 * Spec scenario: a portal subject saves, reads, finds and sends its own draft (decision 195).
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	public function testAPortalSubjectSavesReadsFindsAndSendsItsOwnDraft(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$owner = DraftOwner::portalSubject(subjectRef: 'subject-1');
+
+		$draft = $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Half af'], subject: null, owner: $owner);
+
+		$this->assertSame('draft', $draft['status']);
+		$this->assertSame('portal:subject-1', $this->saves[0]['owner']);
+		$this->assertNull($this->saves[0]['user']);
+		$this->assertFalse($this->saves[0]['unowned']);
+		$this->assertFalse($this->saves[0]['rbac'], 'Starting a scoped draft is authorised by the owner assertion, not by the public create rule.');
+		$this->assertSame('portal:subject-1', $this->stored[$draft['id']]->getOwner());
+
+		$read = $this->service->readDraft(destination: $destination, draftId: $draft['id'], subject: null, owner: $owner);
+		$this->assertSame(['id' => $draft['id'], 'status' => 'draft', 'data' => ['title' => 'Half af'], 'updatedAt' => '2026-10-10T14:03:11+02:00'], $read);
+
+		$found = $this->service->findDraft(destination: $destination, subject: null, owner: $owner, match: ['title' => 'Half af']);
+		$this->assertSame($draft['id'], $found['id'] ?? null);
+		$this->assertSame('portal:subject-1', $this->searches[0]['query']['@self']['owner']);
+		$this->assertNull($this->service->findDraft(destination: $destination, subject: null, owner: $owner, match: ['title' => 'Anders']));
+
+		$this->service->saveDraft(destination: $destination, mapping: null, payload: ['description' => 'Meer'], subject: null, draftId: $draft['id'], owner: $owner);
+		$this->assertFalse($this->saves[1]['rbac'], 'Updating an own scoped draft is authorised by the owner check, not by a user RBAC no subject has.');
+		$this->assertSame(['title' => 'Half af', 'description' => 'Meer'], $this->service->readDraft(destination: $destination, draftId: $draft['id'], subject: null, owner: $owner)['data']);
+
+		$answer = $this->service->submit(destination: $destination, mapping: null, payload: ['caseType' => 'ct-1'], subject: null, draftId: $draft['id'], owner: $owner);
+		$this->assertSame('active', $this->saves[2]['object']['@self']['status']);
+		$this->assertSame($draft['id'], $this->saves[2]['uuid']);
+		$this->assertSame('2026-0412', $answer['reference']);
+		$this->assertFalse($this->stored[$draft['id']]->isDraft());
+	}//end testAPortalSubjectSavesReadsFindsAndSendsItsOwnDraft()
+
+	/**
+	 * Spec scenario: a scope-owned draft starts where the public may not create.
+	 *
+	 * The owner assertion authorises the draft, as it authorises its update and
+	 * its send; the destination schema does not have to allow public create.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	public function testAScopeOwnedDraftStartsWhereThePublicMayNotCreate(): void {
+		$this->publicCreateRefused = true;
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$owner = DraftOwner::portalSubject(subjectRef: 'subject-1');
+
+		$draft = $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Half af'], subject: null, owner: $owner);
+
+		$this->assertSame('draft', $draft['status']);
+		$this->assertSame('portal:subject-1', $this->stored[$draft['id']]->getOwner());
+		$this->assertFalse($this->saves[0]['rbac']);
+		$this->assertSame('draft', $this->saves[0]['object']['@self']['status'], 'The owner assertion authorises a draft, never an object that skips draft.');
+
+		$answer = $this->service->submit(destination: $destination, mapping: null, payload: ['caseType' => 'ct-1'], subject: null, draftId: $draft['id'], owner: $owner);
+		$this->assertSame($draft['id'], $answer['id']);
+		$this->assertFalse($this->stored[$draft['id']]->isDraft());
+	}//end testAScopeOwnedDraftStartsWhereThePublicMayNotCreate()
+
+	/**
+	 * The control: without an owner assertion the same destination still refuses.
+	 *
+	 * A fresh anonymous submit stays under the public create rule (403), an
+	 * owner asserted on a fresh submit changes nothing (it names a draft's
+	 * owner, and there is no draft), and nobody at all saves no draft (401).
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	public function testWithoutAnOwnedDraftThePublicCreateRuleStillDecides(): void {
+		$this->publicCreateRefused = true;
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$calls = [
+			'anonymous submit' => [403, fn () => $this->service->submit(destination: $destination, mapping: null, payload: ['title' => 'a', 'caseType' => 'b'])],
+			'fresh submit naming an owner' => [403, fn () => $this->service->submit(destination: $destination, mapping: null, payload: ['title' => 'a', 'caseType' => 'b'], owner: DraftOwner::portalSubject(subjectRef: 'subject-1'))],
+			'draft of nobody' => [401, fn () => $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'a'], subject: null)],
+		];
+
+		foreach ($calls as $what => [$status, $call]) {
+			try {
+				$call();
+				$this->fail($what . ' was accepted.');
+			} catch (FormSubmitRefusedException $refused) {
+				$this->assertSame($status, $refused->getStatus(), $what);
+			}
+		}
+
+		$this->assertSame([], $this->stored);
+		foreach ($this->saves as $save) {
+			$this->assertTrue($save['rbac'], 'Every create without an owned draft asks the RBAC.');
+			$this->assertNull($save['owner']);
+		}
+	}//end testWithoutAnOwnedDraftThePublicCreateRuleStillDecides()
+
+	/**
+	 * Spec scenario: anyone else gets 404, whether another portal subject or a signed-in user.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	public function testAnyoneElseGets404OnAPortalDraft(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$draft = $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Van subject 1'], subject: null, owner: DraftOwner::portalSubject(subjectRef: 'subject-1'));
+		$others = [
+			'another subject' => [null, DraftOwner::portalSubject(subjectRef: 'subject-2')],
+			'a signed-in user' => [$this->user(uid: 'alice'), null],
+			'a user named like the subject' => [$this->user(uid: 'subject-1'), null],
+			'nobody' => [null, null],
+		];
+
+		foreach ($others as $who => [$subject, $owner]) {
+			$this->assertFalse($this->service->isOwnerOfDraft(destination: $destination, draftId: $draft['id'], subject: $subject, owner: $owner), $who);
+			$this->assertNull($this->service->findDraft(destination: $destination, subject: $subject, owner: $owner), $who);
+			$calls = [
+				'read' => fn () => $this->service->readDraft(destination: $destination, draftId: $draft['id'], subject: $subject, owner: $owner),
+				'save' => fn () => $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Overschreven'], subject: $subject, draftId: $draft['id'], owner: $owner),
+				'send' => fn () => $this->service->submit(destination: $destination, mapping: null, payload: ['caseType' => 'x'], subject: $subject, draftId: $draft['id'], owner: $owner),
+			];
+			foreach ($calls as $action => $call) {
+				try {
+					$call();
+					$this->fail($who . ' could ' . $action . ' the draft.');
+				} catch (FormSubmitRefusedException $refused) {
+					// Nobody at all may not save a draft (401); everyone else meets the same 404 an unknown id gets.
+					$expected = ($subject === null && $owner === null && $action === 'save') ? 401 : 404;
+					$this->assertSame($expected, $refused->getStatus(), $who . ' ' . $action);
+				}
+			}
+		}
+
+		$this->assertCount(1, $this->saves);
+		$this->assertSame('Van subject 1', $this->stored[$draft['id']]->getObject()['title']);
+		$this->assertTrue($this->stored[$draft['id']]->isDraft());
+	}//end testAnyoneElseGets404OnAPortalDraft()
+
+	/**
+	 * A user's own draft reads back through readDraft as before; the owner defaults to the subject.
+	 */
+	public function testAUsersDraftReadsBackThroughTheSubject(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$alice = $this->user(uid: 'alice');
+		$draft = $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Van Alice'], subject: $alice);
+
+		$this->assertNull($this->saves[0]['owner'], 'A user draft is owned through the session user, as before.');
+		$this->assertSame('Van Alice', $this->service->readDraft(destination: $destination, draftId: $draft['id'], subject: $alice)['data']['title']);
+		$this->assertSame($draft['id'], $this->service->findDraft(destination: $destination, subject: $alice)['id'] ?? null);
+	}//end testAUsersDraftReadsBackThroughTheSubject()
 }//end class

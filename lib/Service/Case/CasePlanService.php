@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\CaseItemAudit;
 use OCA\OpenRegister\Db\CaseItemAuditMapper;
 use OCA\OpenRegister\Db\CaseItemMapper;
 use OCA\OpenRegister\Exception\CaseAccessDeniedException;
+use OCA\OpenRegister\Exception\CasePlanExistsException;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IDBConnection;
@@ -182,7 +183,9 @@ class CasePlanService {
 	 *
 	 * @throws CaseValidationException When the app id or the definition is refused, or a plan exists.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 * @orphaned-write-capability exclude cross-app entry point; caller is dossiq's CasePlanProjectionService (retire-cmmn-caseplanstate)
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
 	 */
 	public function createPlanAsSystem(string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, string $app): array {
 		$actor = $this->systemActor(app: $app);
@@ -210,7 +213,7 @@ class CasePlanService {
 	 * @throws CaseValidationException When the app id is refused.
 	 * @throws DoesNotExistException When the object has no plan.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
 	 */
 	public function getPlanAsSystem(string $objectUuid, string $app): array {
 		$this->systemActor(app: $app);
@@ -237,7 +240,9 @@ class CasePlanService {
 	 *
 	 * @throws CaseValidationException On the first refused value, before anything is written.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
+	 * @orphan-auth exclude cross-app entry point, not an access check; caller is dossiq's retire-cmmn-caseplanstate drain
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
 	 */
 	public function ensureItems(string $objectUuid, ?int $registerId, ?int $schemaId, array $definition, array $history, string $app): array {
 		$actor = $this->systemActor(app: $app);
@@ -586,6 +591,54 @@ class CasePlanService {
 	}//end onRealisationTerminal()
 
 	/**
+	 * An enforcing expiry reached its deadline: terminate the item through
+	 * the one transition path, cause `realisation`, the timer as reference,
+	 * then evaluate the plan. An item that is already terminal or gone is
+	 * left alone; a failure is logged, never rethrown into the sweep.
+	 *
+	 * @param string $itemUuid The item.
+	 * @param string $timerUuid The timer that fired.
+	 *
+	 * @return boolean True when the item was terminated.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 */
+	public function onTimerExpired(string $itemUuid, string $timerUuid): bool {
+		try {
+			$item = $this->items->findByUuid(uuid: $itemUuid);
+		} catch (DoesNotExistException) {
+			return false;
+		}
+
+		if ($item->isInTerminalState() === true) {
+			return false;
+		}
+
+		try {
+			$this->machine->transition(
+				item: $item,
+				to: CaseItem::STATE_TERMINATED,
+				cause: CaseItemAudit::CAUSE_REALISATION,
+				causeRef: 'flow-timer:' . $timerUuid,
+				actor: null,
+				reason: 'Its statutory term expired.',
+				tree: $this->treeFor(item: $item)
+			);
+		} catch (Throwable $failure) {
+			$this->logger->error(
+				'[CasePlanService] An expired term could not terminate its plan item: ' . $failure->getMessage(),
+				['item' => $itemUuid, 'timer' => $timerUuid, 'exception' => $failure]
+			);
+
+			return false;
+		}
+
+		$this->evaluateQuietly(objectUuid: (string)$item->getObjectUuid(), event: null, payload: []);
+
+		return true;
+	}//end onTimerExpired()
+
+	/**
 	 * An object changed: evaluate its plan, if it has a live one, with the
 	 * event in hand so object on-parts can fire.
 	 *
@@ -669,13 +722,13 @@ class CasePlanService {
 	 *
 	 * @return void
 	 *
-	 * @throws CaseValidationException When the object already has a plan.
+	 * @throws CasePlanExistsException When the object already has a plan.
 	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-state-is-stored-as-rows-never-as-an-encoded-blob
 	 */
 	private function insertPlan(string $objectUuid, ?int $registerId, ?int $schemaId, array $normalised, ?string $actor, array $provenance): void {
 		if ($this->items->findByObject(objectUuid: $objectUuid) !== []) {
-			throw new CaseValidationException(message: sprintf('Object %s already has a case plan; delete it before creating another.', $objectUuid));
+			throw new CasePlanExistsException(message: sprintf('Object %s already has a case plan; delete it before creating another.', $objectUuid));
 		}
 
 		$this->transactional(
@@ -707,7 +760,7 @@ class CasePlanService {
 	 *
 	 * @throws CaseValidationException When the app id is not one.
 	 *
-	 * @spec openspec/changes/one-engine-bpmn-and-cmmn/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
 	 */
 	private function systemActor(string $app): string {
 		if (preg_match('/^[a-z][a-z0-9_]{0,63}$/', $app) !== 1) {

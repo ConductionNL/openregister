@@ -17,18 +17,18 @@ Small PRs, in this order. PR 1 is what dossiq's drain waits on.
 
 ## 3. Plan-item timers on the shared clock (PR 3)
 
-- [ ] 3.1 `FlowTimer::SUBJECT_TYPES` gains `case-item`.
-- [ ] 3.2 `CasePlanItemTimers` (new, own unit test): arm on entering active with `dueAt` / `expiresAt`; cancel on terminal; arming failure logged, never thrown.
-- [ ] 3.3 Wire it into `CasePlanStateMachine` transitions; listener for `FlowTimerFiredEvent` (expiry, subject `case-item`) terminates the item; unit tests.
+- [x] 3.1 `FlowTimer::SUBJECT_TYPES` gains `case-item`. (CasePlanItemTimersTest::testCaseItemIsATimerSubject)
+- [x] 3.2 `CasePlanItemTimers` (new, own unit test): arm on entering active with `dueAt` / `expiresAt`; cancel on terminal; arming failure logged, never thrown. (lib/Service/Case/CasePlanItemTimers.php, CasePlanItemTimersTest)
+- [x] 3.3 Wire it through `CaseItemTimerListener` on `CaseItemTransitionedEvent` (no change to the state machine) and `FlowTimerFiredEvent` (expiry, subject `case-item`) -> `CasePlanService::onTimerExpired()` terminates the item; unit tests. (CaseItemTimerListenerTest, CasePlanServiceTest::testAnExpiredTimerTerminatesItsItem)
 
 ## 4. Flow nodes that open and advance a case (PR 4)
 
-- [ ] 4.1 `CaseOpenNode` (`openregister.case-open`), own unit test: creates on the run's subject as the run's identity; existing plan reported on output.
-- [ ] 4.2 `CaseAdvanceNode` (`openregister.case-advance`), own unit test: transitions by key; refusal fails the step with the engine's message.
-- [ ] 4.3 Register both in `FlowNodeRegistry`; node catalogue labels in every shipped locale.
+- [x] 4.1 `CaseOpenNode` (`openregister.case-open`), own unit test: creates on the run's subject as the run's identity; existing plan reported on output (`CasePlanExistsException`). (lib/Service/Case/Nodes/CaseOpenNode.php, CaseNodeBase.php, CaseFlowNodesTest)
+- [x] 4.2 `CaseAdvanceNode` (`openregister.case-advance`), own unit test: transitions by key; refusal fails the step with the engine's message. (lib/Service/Case/Nodes/CaseAdvanceNode.php, CaseFlowNodesTest)
+- [x] 4.3 Register both through `FlowNodeRegistrationListener` (FlowNodeRegistrationListenerTest: 29 built-ins) and the declared taxonomy table (FlowNodeDeclaredTaxonomyTest). Palette strings follow every other node: through IL10N, not in the backend catalogue (no built-in node's strings are in `l10n/en.json`; adding them would oblige all required locales at once).
 
 ## 5. Close
 
-- [ ] 5.1 Engine docs: one page on the shared core and the two model types (docs/).
-- [ ] 5.2 Sibling ask for dossiq: move `CasePlanProjectionService` / `CasePlanRollbackService` to `createPlanAsSystem` / `getPlanAsSystem`, and the drain to `ensureItems`.
-- [ ] 5.3 opsx-verify, then archive into `openspec/specs/flow-cases/spec.md`.
+- [x] 5.1 Engine docs: one page on the shared core and the two model types (docs/features/processes-and-cases.md).
+- [x] 5.2 Sibling ask for dossiq (filed in for-ruben/dossiq-sibling-asks.md, 10 Oct): move `CasePlanProjectionService` / `CasePlanRollbackService` to `createPlanAsSystem` / `getPlanAsSystem`, and the drain to `ensureItems`.
+- [x] 5.3 opsx-verify (every scenario maps to a unit test named above; all scenarios are `@e2e exclude` with reasons), then archive into `openspec/specs/flow-cases/spec.md`.

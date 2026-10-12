@@ -50,6 +50,8 @@ use OCA\OpenRegister\Event\ObjectActivatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Object\DraftFinder;
+use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
@@ -99,6 +101,13 @@ class FormSubmitService {
 	private const MODE_DRAFT = 'draft';
 
 	/**
+	 * Finds an owner's drafts.
+	 *
+	 * @var DraftFinder
+	 */
+	private readonly DraftFinder $drafts;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param RegisterMapper       $registers Resolves a destination's register.
@@ -129,6 +138,7 @@ class FormSubmitService {
 		private readonly IEventDispatcher $events,
 		private readonly ITimeFactory $time,
 	) {
+		$this->drafts = new DraftFinder(objects: $objects);
 
 	}//end __construct()
 
@@ -142,6 +152,7 @@ class FormSubmitService {
 	 * @param string|null                             $idempotencyKey The Idempotency-Key, when the caller sent one.
 	 * @param string                                  $scope          The form id the key and upload tokens belong to.
 	 * @param string|null                             $draftId        The subject's draft of this destination, to leave draft.
+	 * @param DraftOwner|null                         $owner          The draft's asserted owner; null takes the subject (decision 195).
 	 *
 	 * @return array<string, mixed> The answer: reference, id, receivedAt, confirmation, objects.
 	 *
@@ -157,6 +168,7 @@ class FormSubmitService {
 		?string $idempotencyKey = null,
 		string $scope = '',
 		?string $draftId = null,
+		?DraftOwner $owner = null,
 	): array {
 		return $this->submitAll(
 			writes: [array_merge($destination, ['mapping' => $mapping])],
@@ -164,7 +176,8 @@ class FormSubmitService {
 			subject: $subject,
 			idempotencyKey: $idempotencyKey,
 			scope: $scope,
-			draftId: $draftId
+			draftId: $draftId,
+			owner: $owner
 		);
 	}//end submit()
 
@@ -175,6 +188,9 @@ class FormSubmitService {
 	 * holds, so a wrong type, format or enum value is refused. A draft is the
 	 * signed-in subject's own; an anonymous visitor gets 401 (resuming an
 	 * anonymous draft needs a resume token, question Q-openregister-F2).
+	 * A caller may assert a scope-value owner instead, such as
+	 * `portal:<subjectRef>` for a portal resident without an account
+	 * (decision 195); only that owner then reads, saves or sends it.
 	 *
 	 * @param array{register?: mixed, schema?: mixed} $destination The resolved destination pair.
 	 * @param array<string, mixed>|null               $mapping     The form's mapping.
@@ -182,6 +198,7 @@ class FormSubmitService {
 	 * @param IUser|null                              $subject     The signed-in subject.
 	 * @param string|null                             $draftId     The draft to update; null starts one.
 	 * @param string                                  $scope       The form id.
+	 * @param DraftOwner|null                         $owner       The asserted owner; null takes the subject (decision 195).
 	 *
 	 * @return array{id: string, status: string} The draft.
 	 *
@@ -196,18 +213,20 @@ class FormSubmitService {
 		?IUser $subject,
 		?string $draftId = null,
 		string $scope = '',
+		?DraftOwner $owner = null,
 	): array {
-		if ($subject === null) {
+		$owner = $this->ownerOf(subject: $subject, owner: $owner);
+		if ($owner === null) {
 			throw new FormSubmitRefusedException(message: $this->l10n->t('Please sign in to save this form and carry on later.'), status: 401);
 		}
 
 		$plans = $this->plan(writes: [array_merge($destination, ['mapping' => $mapping])], payload: $payload, scope: $scope);
 		if ($draftId !== null) {
-			$plans[0]['object'] = array_merge($this->draftData(plan: $plans[0], draftId: $draftId, subject: $subject), $plans[0]['object']);
+			$plans[0]['object'] = array_merge($this->draftData(plan: $plans[0], draftId: $draftId, owner: $owner), $plans[0]['object']);
 		}
 
 		$this->validateAll(plans: $plans, mode: self::MODE_DRAFT);
-		$created = $this->writeAll(plans: $plans, subject: $subject, status: ObjectEntity::STATUS_DRAFT, uuid: $draftId);
+		$created = $this->writeAll(plans: $plans, subject: $owner->user(), status: ObjectEntity::STATUS_DRAFT, uuid: $draftId, owner: $owner);
 
 		return ['id' => (string)$created[0]['object']->getUuid(), 'status' => ObjectEntity::STATUS_DRAFT];
 	}//end saveDraft()
@@ -226,6 +245,7 @@ class FormSubmitService {
 	 * @param string|null                      $idempotencyKey The Idempotency-Key, when sent.
 	 * @param string                           $scope          The form id the key and tokens belong to.
 	 * @param string|null                      $draftId        The subject's draft to leave draft (one write only).
+	 * @param DraftOwner|null                  $owner          The draft's asserted owner; null takes the subject (decision 195).
 	 *
 	 * @return array<string, mixed> The answer: reference, id, receivedAt, confirmation, objects.
 	 *
@@ -240,6 +260,7 @@ class FormSubmitService {
 		?string $idempotencyKey = null,
 		string $scope = '',
 		?string $draftId = null,
+		?DraftOwner $owner = null,
 	): array {
 		$key = trim((string)$idempotencyKey);
 		$keyScope = $this->keyScope(scope: $scope, writes: $writes);
@@ -254,7 +275,7 @@ class FormSubmitService {
 		}
 
 		$plans = $this->plan(writes: $writes, payload: $payload, scope: $scope);
-		[$created, $receivedAt] = $this->writeOrPromote(plans: $plans, subject: $subject, draftId: $draftId);
+		[$created, $receivedAt] = $this->writeOrPromote(plans: $plans, subject: $subject, draftId: $draftId, owner: $owner);
 
 		$this->uploads->claim(tokens: array_merge(...array_map(static fn (array $plan): array => $plan['tokens'], $plans)));
 		$answer = $this->answer(created: $created, receivedAt: $receivedAt);
@@ -271,14 +292,15 @@ class FormSubmitService {
 	 * @param array<int, array<string, mixed>> $plans   The plans.
 	 * @param IUser|null                       $subject The subject.
 	 * @param string|null                      $draftId The draft to leave, or null.
+	 * @param DraftOwner|null                  $owner   The draft's asserted owner, or null for the subject.
 	 *
 	 * @return array{0: array<int, array{plan: array<string, mixed>, object: ObjectEntity}>, 1: DateTimeImmutable|null} Writes, receipt.
 	 *
 	 * @throws FormSubmitRefusedException 422, 403, 404 or 503.
 	 */
-	private function writeOrPromote(array $plans, ?IUser $subject, ?string $draftId): array {
+	private function writeOrPromote(array $plans, ?IUser $subject, ?string $draftId, ?DraftOwner $owner = null): array {
 		if ($draftId !== null) {
-			return $this->promoteDraft(plans: $plans, subject: $subject, draftId: $draftId);
+			return $this->promoteDraft(plans: $plans, owner: $this->ownerOf(subject: $subject, owner: $owner), draftId: $draftId);
 		}
 
 		$this->validateAll(plans: $plans);
@@ -290,25 +312,25 @@ class FormSubmitService {
 	 * Leave draft: full validation of the draft plus the payload, then one allowed promotion, then receipt.
 	 *
 	 * @param array<int, array<string, mixed>> $plans   The plans (exactly one).
-	 * @param IUser|null                       $subject The subject.
+	 * @param DraftOwner|null                  $owner   The draft's owner; null finds no draft.
 	 * @param string                           $draftId The draft.
 	 *
 	 * @return array{0: array<int, array{plan: array<string, mixed>, object: ObjectEntity}>, 1: DateTimeImmutable} The write and the moment of receipt.
 	 *
 	 * @throws FormSubmitRefusedException 404 unknown draft, 422 incomplete or several writes, 403, 503.
 	 */
-	private function promoteDraft(array $plans, ?IUser $subject, string $draftId): array {
+	private function promoteDraft(array $plans, ?DraftOwner $owner, string $draftId): array {
 		if (count($plans) !== 1) {
 			$message = $this->l10n->t('A draft is one object; a form that writes several cannot leave draft in one step.');
 			throw new FormSubmitRefusedException(message: $message, status: 422);
 		}
 
-		$plans[0]['object'] = array_merge($this->draftData(plan: $plans[0], draftId: $draftId, subject: $subject), $plans[0]['object']);
+		$plans[0]['object'] = array_merge($this->draftData(plan: $plans[0], draftId: $draftId, owner: $owner), $plans[0]['object']);
 		$this->validateAll(plans: $plans);
 
 		DraftStatusPolicy::allowPromotion(uuid: $draftId);
 		try {
-			$created = $this->writeAll(plans: $plans, subject: $subject, status: ObjectEntity::STATUS_ACTIVE, uuid: $draftId);
+			$created = $this->writeAll(plans: $plans, subject: $owner?->user(), status: ObjectEntity::STATUS_ACTIVE, uuid: $draftId, owner: $owner);
 		} finally {
 			DraftStatusPolicy::resetPromotions();
 		}
@@ -329,12 +351,13 @@ class FormSubmitService {
 	 * @param array{register?: mixed, schema?: mixed} $destination The destination pair.
 	 * @param string                                  $draftId     The draft's uuid.
 	 * @param IUser|null                              $subject     The subject.
+	 * @param DraftOwner|null                         $owner       The asserted owner; null takes the subject (decision 195).
 	 *
 	 * @return bool True when it is the subject's own draft.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
 	 */
-	public function isOwnerOfDraft(array $destination, string $draftId, ?IUser $subject): bool {
+	public function isOwnerOfDraft(array $destination, string $draftId, ?IUser $subject, ?DraftOwner $owner = null): bool {
 		try {
 			$register = $this->register(reference: $destination['register'] ?? null);
 			$schema = $this->schema(reference: $destination['schema'] ?? null);
@@ -342,36 +365,10 @@ class FormSubmitService {
 			return false;
 		}
 
-		return $this->ownDraft(register: $register, schema: $schema, draftId: $draftId, subject: $subject) !== null;
+		$owner = $this->ownerOf(subject: $subject, owner: $owner);
+
+		return $this->drafts->own(register: $register, schema: $schema, draftId: $draftId, owner: $owner) !== null;
 	}//end isOwnerOfDraft()
-
-	/**
-	 * The subject's own draft, or null.
-	 *
-	 * @param Register   $register The register.
-	 * @param Schema     $schema   The schema.
-	 * @param string     $draftId  The draft's uuid.
-	 * @param IUser|null $subject  The subject.
-	 *
-	 * @return ObjectEntity|null The draft, when it is a draft and the subject owns it.
-	 */
-	private function ownDraft(Register $register, Schema $schema, string $draftId, ?IUser $subject): ?ObjectEntity {
-		if ($subject === null) {
-			return null;
-		}
-
-		try {
-			$draft = $this->objects->find(id: $draftId, register: $register, schema: $schema, _rbac: false, _multitenancy: false, _audit: false);
-		} catch (Throwable) {
-			return null;
-		}
-
-		if ($draft === null || $draft->isDraft() === false || $draft->getOwner() !== $subject->getUID()) {
-			return null;
-		}
-
-		return $draft;
-	}//end ownDraft()
 
 	/**
 	 * The stored data of the subject's draft, or 404 when it is not theirs or not a draft.
@@ -381,27 +378,106 @@ class FormSubmitService {
 	 *
 	 * @param array<string, mixed> $plan    The write.
 	 * @param string               $draftId The draft's uuid.
-	 * @param IUser|null           $subject The subject; only their own draft is found.
+	 * @param DraftOwner|null      $owner   The owner; only their own draft is found.
 	 *
 	 * @return array<string, mixed> The draft's data, without its metadata.
 	 *
 	 * @throws FormSubmitRefusedException 404.
 	 */
-	private function draftData(array $plan, string $draftId, ?IUser $subject): array {
-		$draft = $this->ownDraft(register: $plan['register'], schema: $plan['schema'], draftId: $draftId, subject: $subject);
+	private function draftData(array $plan, string $draftId, ?DraftOwner $owner): array {
+		$draft = $this->drafts->own(register: $plan['register'], schema: $plan['schema'], draftId: $draftId, owner: $owner);
 		if ($draft === null) {
 			throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
 		}
 
-		$data = [];
-		foreach ($draft->getObject() as $property => $value) {
-			if ($property !== 'id' && $property !== '@self') {
-				$data[(string)$property] = $value;
-			}
+		return DraftFinder::dataOf(object: $draft);
+	}//end draftData()
+
+	/**
+	 * The draft's owner: the asserted one, else the signed-in subject, else nobody.
+	 *
+	 * @param IUser|null      $subject The signed-in subject.
+	 * @param DraftOwner|null $owner   The asserted owner.
+	 *
+	 * @return DraftOwner|null The owner, or null when there is none.
+	 */
+	private function ownerOf(?IUser $subject, ?DraftOwner $owner): ?DraftOwner {
+		if ($owner !== null) {
+			return $owner;
 		}
 
-		return $data;
-	}//end draftData()
+		if ($subject !== null) {
+			return DraftOwner::ofUser(user: $subject);
+		}
+
+		return null;
+	}//end ownerOf()
+
+	/**
+	 * Read the owner's draft by id: its data, for resuming a form.
+	 *
+	 * Anything but the owner's own draft answers the same 404 an unknown id
+	 * gets (decisions 180 and 195), so a draft id is not an oracle.
+	 *
+	 * @param array{register?: mixed, schema?: mixed} $destination The destination pair.
+	 * @param string                                  $draftId     The draft's uuid.
+	 * @param IUser|null                              $subject     The signed-in subject.
+	 * @param DraftOwner|null                         $owner       The asserted owner; null takes the subject.
+	 *
+	 * @return array{id: string, status: string, data: array<string, mixed>, updatedAt: string} The draft.
+	 *
+	 * @throws FormSubmitRefusedException 404 unknown or not the owner's draft, 404 unknown destination.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	public function readDraft(array $destination, string $draftId, ?IUser $subject, ?DraftOwner $owner = null): array {
+		$register = $this->register(reference: $destination['register'] ?? null);
+		$schema = $this->schema(reference: $destination['schema'] ?? null);
+		$owner = $this->ownerOf(subject: $subject, owner: $owner);
+		$draft = $this->drafts->own(register: $register, schema: $schema, draftId: $draftId, owner: $owner);
+		if ($draft === null) {
+			throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
+		}
+
+		return DraftFinder::answer(draft: $draft);
+	}//end readDraft()
+
+	/**
+	 * Find the owner's newest draft in a destination, optionally one whose data holds given values.
+	 *
+	 * For resuming by account: the caller knows who and which form, not the
+	 * draft id. `$match` narrows to drafts whose data holds each given value
+	 * exactly, such as the fixed values a form writes (a case type).
+	 *
+	 * @param array{register?: mixed, schema?: mixed} $destination The destination pair.
+	 * @param IUser|null                              $subject     The signed-in subject.
+	 * @param DraftOwner|null                         $owner       The asserted owner; null takes the subject.
+	 * @param array<string, mixed>                    $match       Values the draft's data must hold.
+	 *
+	 * @return array{id: string, status: string, data: array<string, mixed>, updatedAt: string}|null The draft, or null.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	public function findDraft(array $destination, ?IUser $subject, ?DraftOwner $owner = null, array $match = []): ?array {
+		$owner = $this->ownerOf(subject: $subject, owner: $owner);
+		if ($owner === null) {
+			return null;
+		}
+
+		try {
+			$register = $this->register(reference: $destination['register'] ?? null);
+			$schema = $this->schema(reference: $destination['schema'] ?? null);
+		} catch (FormSubmitRefusedException) {
+			return null;
+		}
+
+		$newest = $this->drafts->newest(register: $register, schema: $schema, owner: $owner, match: $match);
+		if ($newest === null) {
+			return null;
+		}
+
+		return DraftFinder::answer(draft: $newest);
+	}//end findDraft()
 
 	/**
 	 * Resolve each write's destination and map the payload onto it.
@@ -628,12 +704,29 @@ class FormSubmitService {
 	 * @param IUser|null                       $subject The subject.
 	 * @param string|null                      $status  The lifecycle status to store (`draft`, `active`), or none.
 	 * @param string|null                      $uuid    The object to update (a draft), for a single write.
+	 * @param DraftOwner|null                  $owner   A draft's owner; a scope value is stamped on create, and
+	 *                                                  authorises every write of its own draft.
 	 *
 	 * @return array<int, array{plan: array<string, mixed>, object: ObjectEntity}> The created objects, in order.
 	 *
 	 * @throws FormSubmitRefusedException 422, 403 or 503 after compensation.
 	 */
-	private function writeAll(array $plans, ?IUser $subject, ?string $status = null, ?string $uuid = null): array {
+	private function writeAll(array $plans, ?IUser $subject, ?string $status = null, ?string $uuid = null, ?DraftOwner $owner = null): array {
+		// A scope-value owner (decision 195) has no Nextcloud user for RBAC to
+		// judge, so the owner assertion is the authorisation on every write of
+		// its draft. Starting it does not ask the destination's public create
+		// rule: the in-process caller vouched for the subject, exactly as it
+		// does when that subject's app creates the object outright. Updating
+		// or sending it was authorised by DraftFinder::own() before this write.
+		// Only saveDraft() and promoteDraft() hand an owner in, so a scoped
+		// write is always a draft or the one promotion of an owned draft; a
+		// fresh submit never reaches this branch and stays under RBAC.
+		$scoped = $owner !== null && $owner->isScoped() === true;
+		$explicitOwner = null;
+		if ($scoped === true && $uuid === null) {
+			$explicitOwner = $owner->value();
+		}
+
 		$created = [];
 		$ids = [];
 		foreach ($plans as $plan) {
@@ -653,11 +746,12 @@ class FormSubmitService {
 					register: $plan['register'],
 					schema: $plan['schema'],
 					uuid: $uuid,
-					_rbac: true,
+					_rbac: $scoped === false,
 					_multitenancy: true,
 					uploadedFiles: $files,
 					currentUser: $subject,
-					_unowned: $subject === null
+					_unowned: $subject === null && $scoped === false,
+					_owner: $explicitOwner
 				);
 			} catch (Throwable $exception) {
 				$this->compensate(created: $created, failedAt: $plan['as'], reason: $exception);

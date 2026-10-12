@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCA\OpenRegister\Service\Hinge\ListPresentationResolver;
 use OCA\OpenRegister\Service\BulkJob\ReversibilityDeclarationException;
+use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Relation\RelationDeclarationException;
 use OCA\OpenRegister\Service\Rules\DependentValueDeclarationException;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
@@ -948,6 +949,13 @@ class SchemasController extends Controller {
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
 			);
+		} catch (ReviewDeclarationException $e) {
+			// A review declaration that cannot be honoured is refused with its
+			// reasons, above the generic catch so it does not become a 500.
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
 		} catch (RelationDeclarationException $e) {
 			// A relation declaration is the caller's input and a person is waiting
 			// on the answer, so the refusal names the property rather than being
@@ -1362,6 +1370,13 @@ class SchemasController extends Controller {
 			// button in front of an operator that cannot work, and they would
 			// find out on the day they needed it. The refusal names the action
 			// rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
+		} catch (ReviewDeclarationException $e) {
+			// A review declaration that cannot be honoured is refused with its
+			// reasons, above the generic catch so it does not become a 500.
 			return new JSONResponse(
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
@@ -2033,6 +2048,13 @@ class SchemasController extends Controller {
 			// button in front of an operator that cannot work, and they would
 			// find out on the day they needed it. The refusal names the action
 			// rather than being logged and swallowed (ADR-005).
+			return new JSONResponse(
+				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
+				statusCode: 422
+			);
+		} catch (ReviewDeclarationException $e) {
+			// A review declaration that cannot be honoured is refused with its
+			// reasons, above the generic catch so it does not become a 500.
 			return new JSONResponse(
 				data: ['error' => $e->getMessage(), 'errors' => $e->getErrors()],
 				statusCode: 422
