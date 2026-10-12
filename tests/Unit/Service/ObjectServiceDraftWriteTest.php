@@ -91,6 +91,14 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
+ * @uses \OCA\OpenRegister\Db\View
+ * @uses \OCA\OpenRegister\Service\RegisterScopedSchemaResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander
+ * @uses \OCA\OpenRegister\Service\WritePhaseProbe
+ * @uses \OCA\OpenRegister\Service\Object\NotSuppliedHandler
+ * @uses \OCA\OpenRegister\Service\Object\RepeatingGroupValidator
+ * @uses \OCA\OpenRegister\Service\Geo\GeoJsonGeometryValidator
+ * @uses \OCA\OpenRegister\Service\Hinge\LensResolver
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
