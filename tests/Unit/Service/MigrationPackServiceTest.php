@@ -7,8 +7,9 @@
  * uniqueness on create/update, and the import-a-pack-document upsert
  * (create when the slug is absent, update when it already exists) — the
  * round-trip a shared pack JSON file goes through when re-imported.
- * Also: the slug of a built-in pack cannot change, and previewRows() maps
- * sample rows through an unsaved definition.
+ * Also: the slug of a built-in pack cannot change, not even after the pack
+ * is deleted and created again, and previewRows() maps sample rows through an
+ * unsaved definition.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -36,17 +37,41 @@ use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\MigrationPack\PackDefinitionValidator;
 use OCA\OpenRegister\Service\MigrationPackService;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class MigrationPackServiceTest extends TestCase {
 	private MigrationPackService $service;
 	private MigrationPackMapper&MockObject $mapper;
+	private IAppConfig&MockObject $appConfig;
+
+	/**
+	 * The array values the app config mock holds, by key.
+	 *
+	 * @var array<string, array<mixed>>
+	 */
+	private array $configArrays = [];
 
 	protected function setUp(): void {
 		parent::setUp();
 		$this->mapper = $this->createMock(MigrationPackMapper::class);
-		$this->service = new MigrationPackService($this->mapper, new PackDefinitionValidator(), new MappingEngine());
+		$this->appConfig = $this->createMock(IAppConfig::class);
+		$this->appConfig->method('getValueArray')->willReturnCallback(
+			fn (string $app, string $key, array $default = []): array => $this->configArrays[$app . '/' . $key] ?? $default
+		);
+		$this->appConfig->method('setValueArray')->willReturnCallback(
+			function (string $app, string $key, array $value): bool {
+				$this->configArrays[$app . '/' . $key] = $value;
+				return true;
+			}
+		);
+		$this->service = new MigrationPackService(
+			$this->mapper,
+			new PackDefinitionValidator(),
+			new MappingEngine(),
+			$this->appConfig
+		);
 	}
 
 	/**
@@ -146,6 +171,75 @@ class MigrationPackServiceTest extends TestCase {
 		$this->mapper->expects($this->once())->method('delete')->with($existing);
 
 		$this->assertSame($existing, $this->service->delete(1));
+		$this->assertSame([], $this->configArrays);
+	}
+
+	public function testDeletingABuiltinPackRemembersItsSlugOnce(): void {
+		$this->mapper->method('find')->willReturn($this->builtinPack());
+
+		$this->service->delete(3);
+		$this->service->delete(3);
+
+		$this->assertSame(
+			['test-pack'],
+			$this->configArrays['openregister/' . MigrationPackService::DELETED_BUILTIN_SLUGS_KEY]
+		);
+	}
+
+	public function testImportUnderTheSlugOfADeletedBuiltinPackKeepsTheLock(): void {
+		// Delete the built-in pack, import it again as row 4, then try to rename it.
+		$builtin = $this->builtinPack();
+		$imported = null;
+		$this->mapper->method('find')->willReturnCallback(
+			static function (int $id) use ($builtin, &$imported): MigrationPack {
+				if ($id === 3) {
+					return $builtin;
+				}
+
+				return $imported;
+			}
+		);
+		$this->mapper->method('findByPackSlug')->willThrowException(new DoesNotExistException('not found'));
+		$this->mapper->method('insert')->willReturnCallback(
+			static function (MigrationPack $pack): MigrationPack {
+				$pack->setId(4);
+				return $pack;
+			}
+		);
+		$this->mapper->expects($this->never())->method('update');
+
+		$this->service->delete(3);
+		$imported = $this->service->importDefinition($this->validDefinition(), 'admin-uid');
+
+		$this->assertTrue($imported->getBuiltin());
+		$this->assertSame('admin-uid', $imported->getOwner());
+
+		$this->expectException(BuiltinPackSlugLockedException::class);
+		$this->service->update(4, $this->validDefinition(['id' => 'renamed-pack']));
+	}
+
+	public function testCreateUnderAnUnrelatedSlugStaysNonBuiltin(): void {
+		$this->configArrays['openregister/' . MigrationPackService::DELETED_BUILTIN_SLUGS_KEY] = ['other-pack'];
+		$this->mapper->method('findByPackSlug')->willThrowException(new DoesNotExistException('not found'));
+		$this->mapper->method('insert')->willReturnCallback(static fn (MigrationPack $pack) => $pack);
+
+		$this->assertFalse($this->service->create($this->validDefinition(), 'admin-uid')->getBuiltin());
+	}
+
+	public function testRenamingAPackToTheSlugOfADeletedBuiltinPackMakesItBuiltin(): void {
+		$this->configArrays['openregister/' . MigrationPackService::DELETED_BUILTIN_SLUGS_KEY] = ['test-pack'];
+		$existing = new MigrationPack();
+		$existing->setId(1);
+		$existing->setPackSlug('my-pack');
+		$existing->setBuiltin(false);
+		$this->mapper->method('find')->willReturn($existing);
+		$this->mapper->method('findByPackSlug')->willThrowException(new DoesNotExistException('not found'));
+		$this->mapper->method('update')->willReturnArgument(0);
+
+		$pack = $this->service->update(1, $this->validDefinition());
+
+		$this->assertSame('test-pack', $pack->getPackSlug());
+		$this->assertTrue($pack->getBuiltin());
 	}
 
 	/**
@@ -277,6 +371,32 @@ class MigrationPackServiceTest extends TestCase {
 		$this->assertCount(1, $rows[0]['errors']);
 		$this->assertSame(1, $rows[0]['errors'][0]['row']);
 		$this->assertSame('title', $rows[0]['errors'][0]['target']);
+	}
+
+	public function testPreviewRowsReadsJsonPointerSourcesFromANestedRow(): void {
+		// The shape the editor's sample-row test sends for a JSON pack.
+		$definition = $this->validDefinition(
+			[
+				'sourceFormat' => 'json',
+				'fieldMappings' => [
+					['source' => '/identificatie', 'target' => 'caseNumber', 'required' => true],
+					['source' => '/zaak/a~1b', 'target' => 'nested'],
+				],
+			]
+		);
+
+		$rows = $this->service->previewRows(
+			$definition,
+			[['identificatie' => 'Z-1', 'zaak' => ['a/b' => 'x']]]
+		);
+
+		$this->assertSame(['caseNumber' => 'Z-1', 'nested' => 'x'], $rows[0]['data']);
+		$this->assertSame([], $rows[0]['errors']);
+
+		// A flat key named like the pointer is not found.
+		$flat = $this->service->previewRows($definition, [['/identificatie' => 'Z-1']]);
+		$this->assertSame([], $flat[0]['data']);
+		$this->assertSame('caseNumber', $flat[0]['errors'][0]['target']);
 	}
 
 	public function testPreviewRowsRejectsAnInvalidDefinition(): void {

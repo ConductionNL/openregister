@@ -210,6 +210,28 @@ class MigrationPacksController extends Controller {
 	}//end definitionFromRequest()
 
 	/**
+	 * Whether a pack with the slug of the given definition is stored.
+	 *
+	 * @param array<string, mixed> $definition The pack definition document.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-pack-changes-must-be-limited-to-administrators-and-logged
+	 */
+	private function packSlugIsStored(array $definition): bool {
+		if (is_string($definition['id'] ?? null) === false) {
+			return false;
+		}
+
+		try {
+			$this->service->findByPackSlug(packSlug: $definition['id']);
+			return true;
+		} catch (DoesNotExistException $e) {
+			return false;
+		}
+	}//end packSlugIsStored()
+
+	/**
 	 * Build a 400 response for a malformed preview request.
 	 *
 	 * @param string $message Translated, human-readable reason.
@@ -337,7 +359,8 @@ class MigrationPacksController extends Controller {
 	/**
 	 * Import a migration pack definition from an uploaded JSON file. Admin only.
 	 * Upserts by the document's own `id` — re-importing an updated pack
-	 * updates the existing row.
+	 * updates the existing row. The log line says whether a pack was created
+	 * or replaced.
 	 *
 	 * @return JSONResponse
 	 *
@@ -369,6 +392,8 @@ class MigrationPacksController extends Controller {
 			return new JSONResponse(data: ['error' => 'Uploaded file is not a valid JSON object'], statusCode: 400);
 		}
 
+		$replaced = $this->packSlugIsStored(definition: $decoded);
+
 		try {
 			$pack = $this->service->importDefinition(definition: $decoded, ownerUid: $userId);
 		} catch (InvalidArgumentException $e) {
@@ -380,6 +405,22 @@ class MigrationPacksController extends Controller {
 			);
 			return new JSONResponse(data: ['error' => 'Failed to import migration pack'], statusCode: 500);
 		}
+
+		$outcome = 'created';
+		if ($replaced === true) {
+			$outcome = 'replaced';
+		}
+
+		$this->logger->info(
+			message: '[MigrationPacksController] Migration pack "{packSlug}" (id {packId}) imported by {userId}: {outcome}',
+			context: [
+				'packSlug' => $pack->getPackSlug(),
+				'packId' => $pack->getId(),
+				'userId' => $userId,
+				'outcome' => $outcome,
+				'builtin' => $pack->getBuiltin(),
+			]
+		);
 
 		return new JSONResponse(data: $pack->jsonSerialize(), statusCode: 201);
 	}//end import()
@@ -417,6 +458,16 @@ class MigrationPacksController extends Controller {
 			);
 			return new JSONResponse(data: ['error' => 'Failed to create migration pack'], statusCode: 500);
 		}
+
+		$this->logger->info(
+			message: '[MigrationPacksController] Migration pack "{packSlug}" (id {packId}) created by {userId}',
+			context: [
+				'packSlug' => $pack->getPackSlug(),
+				'packId' => $pack->getId(),
+				'userId' => $userId,
+				'builtin' => $pack->getBuiltin(),
+			]
+		);
 
 		return new JSONResponse(data: $pack->jsonSerialize(), statusCode: 201);
 	}//end create()

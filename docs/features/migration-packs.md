@@ -33,7 +33,8 @@ and, until it is archived, in the
    | Fixed value | Stores the same value for every row, also when the column is empty |
 
    For a lookup or yes/no table, choose what happens to a value that is not in the table:
-   report an error for the row, leave the field empty, or store a value you give.
+   report an error for the row, leave the field empty, or store a value you give. A yes/no table
+   stores false instead of leaving the field empty.
 4. Use **Test with a sample row** to see which fields an import of that row would write, before
    you save.
 5. Choose **Save**. When you did not change the version, it goes up by one patch number.
@@ -46,4 +47,12 @@ from the form.
 A pack marked **Built-in** was installed by an app. Its slug cannot change, because the app finds
 the pack by it. The app may also apply rules of its own on top of the pack; check that app's
 documentation before you change one. When you delete a built-in pack, the app installs it again,
-unedited, on its next install or update.
+unedited, on its next install or update. If you import or create a pack with the same slug before
+that, your pack takes its place: it is marked **Built-in**, its slug stays locked, and the app does
+not install its own version over it.
+
+## Who changed a pack
+
+Every create, change, import and delete writes a line to the Nextcloud log with the user, the pack
+slug and the pack id. An import also says whether it created a pack or replaced one. These are
+info lines: set the Nextcloud log level to Info (`loglevel` 1 in `config.php`) to keep them.

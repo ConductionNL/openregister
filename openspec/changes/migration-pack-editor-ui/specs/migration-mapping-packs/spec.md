@@ -71,7 +71,10 @@ SHALL keep the field mappings as an ordered list: two rows with the same
 source and two rows with the same target SHALL both be saved, in their order.
 A lookup or yes/no table SHALL keep the three ways a value that is not in the
 table is treated, as distinct stored forms: no `default` key (the row reports
-an error), `default: null` (the field stays empty), and a `default` value.
+an error), `default: null` (the field stays empty; a yes/no table stores
+false, and the editor says so), and a `default` value.
+A date format cleared in the editor SHALL be left out of the transform, so
+the mapping engine's default applies, rather than stored as an empty string.
 A value that is not a string in the stored definition SHALL be saved with its
 JSON type.
 
@@ -107,9 +110,13 @@ Creating, updating, deleting, importing and previewing a pack SHALL require a
 Nextcloud administrator; the server SHALL answer 403 to any other signed-in
 user, whatever the screen offered. The Migration packs menu entry SHALL only
 be shown to an administrator. For any other signed-in user the pages SHALL be
-read-only: no import, delete or save, and no sample-row test. Every update and
-delete SHALL write an info line to the Nextcloud log with the acting user id
-and the pack slug.
+read-only: no import, delete or save, and no sample-row test. Every create,
+update, import and delete SHALL write an info line to the Nextcloud log with
+the acting user id, the pack slug and the pack row id; the line of an import
+SHALL also say whether it created a pack or replaced a stored one. A failed
+change SHALL write no such line. The lines are info lines, so Nextcloud keeps
+them only when its log level is Info or lower; at the default level, Warning,
+they are dropped.
 
 #### Scenario: A non-admin does not see the menu entry
 
@@ -135,6 +142,12 @@ and the pack slug.
 - **GIVEN** administrator `ronald`
 - **WHEN** he updates the pack `stackiq-topdesk-module`
 - **THEN** the Nextcloud log has an info line naming `ronald` and `stackiq-topdesk-module`
+
+#### Scenario: An import that replaces a stored pack is logged
+
+- **GIVEN** administrator `ronald` and the stored built-in pack `stackiq-topdesk-module`
+- **WHEN** he imports a JSON file whose `id` is `stackiq-topdesk-module`
+- **THEN** the Nextcloud log has an info line naming `ronald`, `stackiq-topdesk-module` and that the import replaced the stored pack
 
 ### Requirement: Create and update MUST accept a definition envelope and keep the route id
 
@@ -165,6 +178,10 @@ stored slug SHALL be refused with HTTP 422 and the body
 `{"message": "...", "error": "builtin-slug-locked"}`, and the pack SHALL stay
 unchanged. The editor SHALL show the slug of a built-in pack read-only and
 SHALL refuse a changed `id` in the Advanced (JSON) view before sending it.
+The lock SHALL outlive a delete: when a built-in pack is deleted, a pack that
+is later created, imported or renamed under its slug SHALL be built-in, so its
+slug stays locked. Because that pack is then stored under the slug, the app
+that installed the pack does not install the shipped one again.
 
 #### Scenario: Renaming a built-in pack through the API is refused
 
@@ -179,6 +196,13 @@ SHALL refuse a changed `id` in the Advanced (JSON) view before sending it.
 - **WHEN** they change `id` and try to go back to the form or save
 - **THEN** the editor says the slug of a built-in pack cannot change and names the stored slug
 - **AND** nothing is sent
+
+#### Scenario: A deleted built-in pack imported again keeps its lock
+
+- **GIVEN** the built-in pack `stackiq-topdesk-module`, deleted by an administrator
+- **WHEN** an administrator imports a JSON file whose `id` is `stackiq-topdesk-module`
+- **THEN** the stored pack is built-in
+- **AND** an update whose definition has `"id": "my-module"` is refused with `error` `builtin-slug-locked`
 
 ### Requirement: A pack MUST be testable against sample rows without saving it
 

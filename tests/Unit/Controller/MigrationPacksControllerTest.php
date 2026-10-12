@@ -6,7 +6,8 @@
  * Unit tests for `MigrationPacksController`: anonymous callers are rejected
  * everywhere; reads (`index`/`show`) succeed for any authenticated user;
  * mutations (`create`/`update`/`destroy`) are admin-gated and CSRF-protected;
- * update/destroy always act on the route id and leave an audit log line; the
+ * update/destroy always act on the route id; every successful create, update,
+ * import and delete leaves an audit log line; the
  * `preview` dry run maps sample rows through an unsaved definition.
  *
  * SPDX-License-Identifier: EUPL-1.2
@@ -40,6 +41,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IRequest;
@@ -66,6 +68,13 @@ class MigrationPacksControllerTest extends TestCase {
 	/** @var bool */
 	private bool $currentUserIsAdmin = false;
 
+	/**
+	 * Uploaded pack files written by a test, removed afterwards.
+	 *
+	 * @var string[]
+	 */
+	private array $tempFiles = [];
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -89,6 +98,14 @@ class MigrationPacksControllerTest extends TestCase {
 		);
 
 		$this->controller = $this->controllerFor($this->request);
+	}
+
+	protected function tearDown(): void {
+		foreach ($this->tempFiles as $file) {
+			unlink($file);
+		}
+
+		parent::tearDown();
 	}
 
 	/**
@@ -287,6 +304,66 @@ class MigrationPacksControllerTest extends TestCase {
 		$this->assertSame(0, $request->dispatchedInt('id'));
 	}
 
+	/**
+	 * @return array<string, array{array<string, mixed>}>
+	 */
+	public static function updateBodies(): array {
+		return [
+			'raw body' => [[]],
+			'envelope' => [['envelope' => true]],
+		];
+	}
+
+	/**
+	 * The route-id fix against Nextcloud's own Request, not the fake.
+	 *
+	 * MergingRequestFake copies today's merge order; this test reads it from
+	 * the real class, so a change there shows up here. It only runs when the
+	 * bootstrap loaded Nextcloud's Request rather than the empty stub.
+	 *
+	 * @param array<string, mixed> $options `envelope` => true wraps the definition.
+	 */
+	#[DataProvider('updateBodies')]
+	public function testUpdateReadsTheRouteIdFromARealNextcloudRequest(array $options): void {
+		if (method_exists(\OC\AppFramework\Http\Request::class, 'setUrlParameters') === false) {
+			$this->markTestSkipped('Needs Nextcloud\'s own Request class; this run loaded the stub.');
+		}
+
+		$this->setupUser('admin', true);
+		$body = $this->validDefinition();
+		if (($options['envelope'] ?? false) === true) {
+			$body = ['definition' => $body];
+		}
+
+		$stream = tempnam(sys_get_temp_dir(), 'body');
+		file_put_contents($stream, json_encode($body));
+		$this->tempFiles[] = $stream;
+
+		$request = new \OC\AppFramework\Http\Request(
+			[
+				'method' => 'PUT',
+				'server' => ['CONTENT_TYPE' => 'application/json'],
+			],
+			$this->createMock(\OCP\IRequestId::class),
+			$this->createMock(\OCP\IConfig::class),
+			null,
+			$stream
+		);
+		$request->setUrlParameters(['_route' => 'openregister.migrationPacks.update', 'id' => '5']);
+
+		// What the Dispatcher hands to update(int $id).
+		$dispatchedId = $request->getParam('id');
+		settype($dispatchedId, 'integer');
+
+		$this->service->expects($this->once())
+			->method('update')
+			->with(5, $this->validDefinition())
+			->willReturn($this->packEntity('stackiq-topdesk-module'));
+
+		$response = $this->controllerFor($request)->update($dispatchedId);
+		$this->assertSame(200, $response->getStatus());
+	}
+
 	public function testUpdateEnvelopeKeepsRouteIdAndBodySlug(): void {
 		$this->setupUser('admin', true);
 		$request = new MergingRequestFake(
@@ -412,6 +489,126 @@ class MigrationPacksControllerTest extends TestCase {
 		$this->assertSame(404, $this->controller->update(1)->getStatus());
 	}
 
+	/**
+	 * A controller whose request carries an uploaded pack file.
+	 *
+	 * @param array<string, mixed> $definition The pack document in the file.
+	 *
+	 * @return MigrationPacksController
+	 */
+	private function importController(array $definition): MigrationPacksController {
+		$file = tempnam(sys_get_temp_dir(), 'pack');
+		file_put_contents($file, json_encode($definition));
+		$this->tempFiles[] = $file;
+		$request = $this->createMock(IRequest::class);
+		$request->method('getUploadedFile')->with('file')->willReturn(['tmp_name' => $file]);
+
+		return $this->controllerFor($request);
+	}
+
+	/**
+	 * A stored pack entity with a row id.
+	 *
+	 * @param string $slug The pack slug.
+	 * @param int $id The row id.
+	 * @param bool $builtin Whether the pack is built-in.
+	 *
+	 * @return MigrationPack
+	 */
+	private function storedPack(string $slug, int $id, bool $builtin = false): MigrationPack {
+		$pack = $this->packEntity($slug);
+		$pack->setId($id);
+		$pack->setBuiltin($builtin);
+
+		return $pack;
+	}
+
+	public function testImportReplacingAStoredPackLogsTheActorSlugAndOutcome(): void {
+		$this->setupUser('ronald', true);
+		$stored = $this->storedPack('stackiq-topdesk-module', 5, true);
+		$this->service->method('findByPackSlug')->with('stackiq-topdesk-module')->willReturn($stored);
+		$this->service->expects($this->once())
+			->method('importDefinition')
+			->with($this->validDefinition(), 'ronald')
+			->willReturn($stored);
+
+		$this->logger->expects($this->once())
+			->method('info')
+			->with(
+				$this->stringContains('imported by {userId}'),
+				$this->callback(
+					static fn (array $context): bool => $context['userId'] === 'ronald'
+						&& $context['packSlug'] === 'stackiq-topdesk-module'
+						&& $context['packId'] === 5
+						&& $context['outcome'] === 'replaced'
+						&& $context['builtin'] === true
+				)
+			);
+
+		$response = $this->importController($this->validDefinition())->import();
+		$this->assertSame(201, $response->getStatus());
+	}
+
+	public function testImportOfANewSlugLogsThatItCreatedAPack(): void {
+		$this->setupUser('ronald', true);
+		$this->service->method('findByPackSlug')->willThrowException(new DoesNotExistException('not found'));
+		$this->service->method('importDefinition')->willReturn($this->storedPack('stackiq-topdesk-module', 8));
+
+		$this->logger->expects($this->once())
+			->method('info')
+			->with(
+				$this->stringContains('imported by {userId}'),
+				$this->callback(
+					static fn (array $context): bool => $context['outcome'] === 'created'
+						&& $context['packId'] === 8
+						&& $context['userId'] === 'ronald'
+				)
+			);
+
+		$this->assertSame(201, $this->importController($this->validDefinition())->import()->getStatus());
+	}
+
+	public function testImportFailureWritesNoAuditLine(): void {
+		$this->setupUser('ronald', true);
+		$this->service->method('findByPackSlug')->willThrowException(new DoesNotExistException('not found'));
+		$this->service->method('importDefinition')->willThrowException(new InvalidArgumentException('bad pack'));
+		$this->logger->expects($this->never())->method('info');
+
+		$this->assertSame(422, $this->importController($this->validDefinition())->import()->getStatus());
+	}
+
+	public function testCreateLogsTheActorAndSlug(): void {
+		$this->setupUser('ronald', true);
+		$request = new MergingRequestFake(
+			['_route' => 'openregister.migrationPacks.create'],
+			['definition' => $this->validDefinition()],
+			'POST'
+		);
+		$this->service->method('create')->willReturn($this->storedPack('stackiq-topdesk-module', 6, true));
+
+		$this->logger->expects($this->once())
+			->method('info')
+			->with(
+				$this->stringContains('created by {userId}'),
+				$this->callback(
+					static fn (array $context): bool => $context['userId'] === 'ronald'
+						&& $context['packSlug'] === 'stackiq-topdesk-module'
+						&& $context['packId'] === 6
+						&& $context['builtin'] === true
+				)
+			);
+
+		$this->assertSame(201, $this->controllerFor($request)->create()->getStatus());
+	}
+
+	public function testCreateFailureWritesNoAuditLine(): void {
+		$this->setupUser('ronald', true);
+		$this->service->method('create')->willThrowException(new InvalidArgumentException('bad pack'));
+		$this->logger->expects($this->never())->method('info');
+
+		$this->assertSame(422, $this->controller->create()->getStatus());
+	}
+
 	public function testDestroyActsOnTheRouteIdAndLogsTheActorAndSlug(): void {
 		$this->setupUser('admin', true);
 		$request = new MergingRequestFake(
@@ -437,6 +634,24 @@ class MigrationPacksControllerTest extends TestCase {
 
 		$response = $this->controllerFor($request)->destroy($request->dispatchedInt('id'));
 		$this->assertSame(204, $response->getStatus());
+	}
+
+	public function testEveryTranslatedMessageHasADutchTranslation(): void {
+		// PHP IL10N reads l10n/<lang>.json; a key missing there reaches a Dutch
+		// administrator in English.
+		$source = file_get_contents(__DIR__ . '/../../../lib/Controller/MigrationPacksController.php');
+		preg_match_all("/->t\\(\\s*'((?:[^'\\\\]|\\\\.)*)'/", $source, $matches);
+		$this->assertNotEmpty($matches[1]);
+
+		$catalogue = json_decode(
+			file_get_contents(__DIR__ . '/../../../l10n/nl.json'),
+			true
+		)['translations'];
+		foreach ($matches[1] as $message) {
+			$message = stripslashes($message);
+			$this->assertArrayHasKey($message, $catalogue, 'l10n/nl.json has no "' . $message . '"');
+			$this->assertNotSame('', trim($catalogue[$message]));
+		}
 	}
 
 	/**
@@ -477,7 +692,8 @@ class MigrationPacksControllerTest extends TestCase {
 		$service = new MigrationPackService(
 			$this->createMock(MigrationPackMapper::class),
 			new PackDefinitionValidator(),
-			new MappingEngine()
+			new MappingEngine(),
+			$this->createMock(IAppConfig::class)
 		);
 		$request = new MergingRequestFake(['_route' => 'openregister.migrationPacks.preview'], $body, 'POST');
 

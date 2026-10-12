@@ -3436,7 +3436,13 @@
         "Please sign in to save this form and carry on later.": "Log in om dit formulier op te slaan en later verder te gaan.",
         "A draft is one object; a form that writes several cannot leave draft in one step.": "Een concept is één object; een formulier dat er meerdere schrijft kan niet in één stap uit concept.",
         "This draft does not exist.": "Dit concept bestaat niet.",
-        "A draft is one object; a form that writes several cannot be saved as a draft.": "Een concept is één object; een formulier dat er meerdere schrijft kan niet als concept worden opgeslagen."
+        "A draft is one object; a form that writes several cannot be saved as a draft.": "Een concept is één object; een formulier dat er meerdere schrijft kan niet als concept worden opgeslagen.",
+        "The id of a built-in migration pack cannot be changed": "Het id van een ingebouwd migratiepakket kan niet worden gewijzigd",
+        "The request must contain a pack definition object": "Het verzoek moet een object met een pakketdefinitie bevatten",
+        "Sample rows must be a list of objects": "Voorbeeldrijen moeten een lijst van objecten zijn",
+        "A preview takes at most %s sample rows": "Een voorvertoning neemt maximaal %s voorbeeldrijen aan",
+        "The pack definition is invalid": "De pakketdefinitie is ongeldig",
+        "Failed to preview migration pack": "De voorvertoning van het migratiepakket is mislukt"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {
