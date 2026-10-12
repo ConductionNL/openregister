@@ -1,0 +1,45 @@
+{
+  "id": "stackiq-topdesk-usage",
+  "name": "TOPdesk CMDB export to stackiq usage",
+  "description": "The usage that links the application to the municipality. The internal note records whether maintenance is arranged (the sheet the row came from), the cluster and the owner's department. An unknown status or TIME value drops the field with a warning.",
+  "sourceFormat": "excel",
+  "version": "2.0.0",
+  "fieldMappings": [
+    {
+      "source": "Applicatie Status",
+      "target": "status",
+      "transform": {
+        "type": "lookup",
+        "map": {
+          "In productie": "In production",
+          "In voorraad": "Planned",
+          "In ontwikkeling": "Acquisition",
+          "Uit te faseren": "To be phased out",
+          "Uitgefaseerd": "Phased out",
+          "Moet verwijderd worden": "To be phased out",
+          "Verwijderd": "Phased out",
+          "Besteld": "Acquisition",
+          "Wordt getest": "Acquisition",
+          "Stand-by voor continuïteit": "In production"
+        }
+      }
+    },
+    {
+      "source": "Classificatie",
+      "target": "timeClassification",
+      "transform": {
+        "type": "lookup",
+        "map": {
+          "Tolerate": "Tolerate", "Tolereren": "Tolerate",
+          "Invest": "Invest", "Investeren": "Invest",
+          "Migrate": "Migrate", "Migreren": "Migrate",
+          "Eliminate": "Eliminate", "Elimineren": "Eliminate",
+          "1. Tolereren (wordt ingelezen)": "Tolerate"
+        }
+      }
+    },
+    { "source": "End-of-Life Functioneel", "target": "startDateOutPhased", "transform": { "type": "date", "sourceFormat": "!Y-m-d", "targetFormat": "Y-m-d" } },
+    { "source": "Beheer", "target": "interneAnnotation", "transform": { "type": "concat", "fields": ["Cluster", "Applicatie Eigenaar (Afdeling)"], "separator": " / " } }
+  ],
+  "idStrategy": { "type": "generate" }
+}

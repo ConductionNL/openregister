@@ -1,0 +1,12 @@
+{
+  "id": "stackiq-topdesk-business-owner",
+  "name": "TOPdesk CMDB export to business owner identity",
+  "description": "The application owner (Applicatie Eigenaar (Persoon)); the value may be a function instead of a name and is used as the display name either way. The import resolves it in Nextcloud Contacts by exact display name and links a contactPerson of the municipality as usage.businessOwner, with the owner's function as its role. No other person column is read.",
+  "sourceFormat": "excel",
+  "version": "2.0.0",
+  "fieldMappings": [
+    { "source": "Applicatie Eigenaar (Persoon)", "target": "name", "required": true, "transform": { "type": "trim" } },
+    { "source": "Applicatie Eigenaar (Functie)", "target": "role", "transform": { "type": "trim" } }
+  ],
+  "idStrategy": { "type": "generate" }
+}

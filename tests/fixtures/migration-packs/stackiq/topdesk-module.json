@@ -1,0 +1,47 @@
+{
+  "id": "stackiq-topdesk-module",
+  "name": "TOPdesk CMDB export to stackiq module",
+  "description": "One application row of a CMDB sheet becomes a stackiq module. A mapping marked required that fails skips the row; any other failing mapping drops that field with a warning. Nickname and Roepnaam both feed shortDescription; Roepnaam wins when both are filled. Applicatiesoort is kept as is in applicationType; only its SaaS/PaaS/IaaS/on-premises values also set the hosting model, every other kind leaves that empty without a warning.",
+  "sourceFormat": "excel",
+  "version": "2.0.0",
+  "fieldMappings": [
+    { "source": "Applicatie Naam", "target": "name", "required": true, "transform": { "type": "trim" } },
+    { "source": "APPID", "target": "externalNumber", "required": true, "transform": { "type": "trim" } },
+    { "source": "Applicatie Code", "target": "externalId", "transform": { "type": "trim" } },
+    { "source": "Nickname", "target": "shortDescription", "transform": { "type": "trim" } },
+    { "source": "Roepnaam", "target": "shortDescription", "transform": { "type": "trim" } },
+    { "source": "Functionele Omschrijving", "target": "longDescription", "transform": { "type": "trim" } },
+    { "source": "Applicatiesoort", "target": "applicationType", "transform": { "type": "trim" } },
+    {
+      "source": "Applicatiesoort",
+      "target": "cloudDienstverleningsmodel",
+      "transform": {
+        "type": "lookup",
+        "map": {
+          "Saas": ["SaaS"], "SaaS": ["SaaS"], "SAAS": ["SaaS"], "saas": ["SaaS"],
+          "Paas": ["PaaS"], "PaaS": ["PaaS"], "PAAS": ["PaaS"],
+          "Iaas": ["IaaS"], "IaaS": ["IaaS"], "IAAS": ["IaaS"],
+          "On-premise": ["On-premises (self-managed)"], "On-premises": ["On-premises (self-managed)"], "On premise": ["On-premises (self-managed)"]
+        },
+        "default": null
+      }
+    },
+    {
+      "source": "BNN Classificatie",
+      "target": "bbnLevel",
+      "transform": {
+        "type": "lookup",
+        "map": {
+          "BBN1": "BBN1", "BBN 1": "BBN1", "bbn1": "BBN1", "bbn 1": "BBN1", "BNN1": "BBN1", "BNN 1": "BBN1",
+          "BBN2": "BBN2", "BBN 2": "BBN2", "bbn2": "BBN2", "bbn 2": "BBN2", "BNN2": "BBN2", "BNN 2": "BBN2",
+          "BBN3": "BBN3", "BBN 3": "BBN3", "bbn3": "BBN3", "bbn 3": "BBN3", "BNN3": "BBN3", "BNN 3": "BBN3",
+          "1": "BBN1", "2": "BBN2", "2+": "BBN2+", "3": "BBN3",
+          "BBN2+": "BBN2+", "BBN 2+": "BBN2+", "BNN2+": "BBN2+", "BNN 2+": "BBN2+"
+        }
+      }
+    },
+    { "source": "Datum", "target": "externalCreatedAt", "transform": { "type": "date", "sourceFormat": "!Y-m-d", "targetFormat": "Y-m-d" } },
+    { "source": "Referentie datum wijziging", "target": "externalModifiedAt", "transform": { "type": "date", "sourceFormat": "!Y-m-d", "targetFormat": "Y-m-d" } }
+  ],
+  "idStrategy": { "type": "generate" }
+}

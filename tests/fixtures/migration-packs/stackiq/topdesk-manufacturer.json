@@ -1,0 +1,12 @@
+{
+  "id": "stackiq-topdesk-manufacturer",
+  "name": "TOPdesk CMDB export to stackiq supplier organisation",
+  "description": "The Vendor column (the maker of the software) becomes one organisation of type Supplier per distinct name, registered as a Supplier so the public catalogue can show it as the module's provider. An empty Vendor means the row has no provider. Leverancier and Hostingpartij are not read.",
+  "sourceFormat": "excel",
+  "version": "2.1.0",
+  "fieldMappings": [
+    { "source": "Vendor", "target": "name", "required": true, "transform": { "type": "trim" } }
+  ],
+  "defaults": { "type": "Supplier", "status": "Active", "registeredBy": "Supplier" },
+  "idStrategy": { "type": "generate" }
+}
