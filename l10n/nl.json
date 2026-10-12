@@ -3454,7 +3454,8 @@
         "Failed to import migration pack": "Het importeren van het migratiepakket is mislukt",
         "Failed to create migration pack": "Het aanmaken van het migratiepakket is mislukt",
         "Failed to update migration pack": "Het bijwerken van het migratiepakket is mislukt",
-        "Failed to delete migration pack": "Het verwijderen van het migratiepakket is mislukt"
+        "Failed to delete migration pack": "Het verwijderen van het migratiepakket is mislukt",
+        "A migration pack with this id already exists": "Er bestaat al een migratiepakket met dit id"
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

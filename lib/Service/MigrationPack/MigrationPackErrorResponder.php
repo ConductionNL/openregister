@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\MigrationPack;
 use OCA\OpenRegister\Exception\BuiltinPackSlugLockedException;
 use OCA\OpenRegister\Exception\MigrationPackRefusedException;
 use OCA\OpenRegister\Exception\MigrationPackRequestException;
+use OCA\OpenRegister\Exception\PackSlugExistsException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use Psr\Log\LoggerInterface;
@@ -138,8 +139,10 @@ class MigrationPackErrorResponder {
 	/**
 	 * 422: the pack definition is refused.
 	 *
-	 * A renamed built-in pack answers `builtin-slug-locked`. Any other refusal
-	 * answers `invalid-pack` with every reason in `details.errors`.
+	 * A renamed built-in pack answers `builtin-slug-locked`, and a slug another
+	 * pack already has answers `pack-slug-exists`; neither carries details, so
+	 * a client shows its own text for the code. Any other refusal answers
+	 * `invalid-pack` with every reason in `details.errors`.
 	 *
 	 * @param MigrationPackRefusedException $exception The refusal, with its reasons.
 	 *
@@ -153,6 +156,14 @@ class MigrationPackErrorResponder {
 				status: 422,
 				error: 'builtin-slug-locked',
 				message: $this->l10n->t('The id of a built-in migration pack cannot be changed')
+			);
+		}
+
+		if ($exception instanceof PackSlugExistsException) {
+			return $this->error(
+				status: 422,
+				error: 'pack-slug-exists',
+				message: $this->l10n->t('A migration pack with this id already exists')
 			);
 		}
 

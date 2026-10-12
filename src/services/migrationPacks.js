@@ -179,6 +179,10 @@ function slugTexts() {
 			'openregister',
 			'The slug of a built-in pack cannot change: the app that installed it finds the pack by this slug.',
 		),
+		'pack-slug-exists': t(
+			'openregister',
+			'Another pack already has this slug. Choose a different slug.',
+		),
 		'pack-not-found': t('openregister', 'This migration pack does not exist.'),
 		'not-authenticated': t(
 			'openregister',

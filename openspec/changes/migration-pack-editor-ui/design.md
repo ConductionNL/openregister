@@ -161,11 +161,15 @@ Every refusal the controller gives follows ADR-050:
 The message is a fixed sentence, never `$e->getMessage()`, so no exception
 text, path or SQL reaches a client. The codes are `invalid-pack` (422, the
 validator's findings in `details.errors`, rows numbered from 1),
-`builtin-slug-locked` (422), `pack-not-found` (404), `invalid-request` and
+`builtin-slug-locked` (422), `pack-slug-exists` (422, a create or rename to
+a slug another pack has), `pack-not-found` (404), `invalid-request` and
 `too-many-rows` (400), `not-authenticated` (401), `admin-required` (403) and
 `migration-pack-error` (500, logged with the exception). The screens map the
 code to their own translated text and list `details.errors`; they never parse
-an English message. A refusal Nextcloud gives before the controller runs (no
+an English message. A taken slug is a 422 and not a 409, because the main
+spec's scenario "Duplicate pack slug is rejected" fixes that status for API
+clients; it has its own code, so a screen can say it in the user's language
+instead of showing the validator's English sentence. A refusal Nextcloud gives before the controller runs (no
 session, not an administrator, no request token) carries Nextcloud's body,
 so a client reads the status there.
 

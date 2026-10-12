@@ -71,7 +71,8 @@ Building the screen surfaced four defects the API had without one:
 - Every refusal the controller gives has one shape (ADR-050):
   `{"message": <localised text>, "error": <kebab-case code>, "details"?: {...}}`,
   with codes `invalid-pack` (422, findings in `details.errors`),
-  `builtin-slug-locked` (422), `pack-not-found` (404), `invalid-request` and
+  `builtin-slug-locked` (422), `pack-slug-exists` (422), `pack-not-found`
+  (404), `invalid-request` and
   `too-many-rows` (400), `not-authenticated` (401), `admin-required` (403) and
   `migration-pack-error` (500, logged). The message never carries an
   exception's text; the screens map the code to their own translated text.

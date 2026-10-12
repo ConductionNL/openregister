@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\MigrationPack;
 use OCA\OpenRegister\Db\MigrationPackMapper;
 use OCA\OpenRegister\Exception\BuiltinPackSlugLockedException;
 use OCA\OpenRegister\Exception\InvalidPackDefinitionException;
+use OCA\OpenRegister\Exception\PackSlugExistsException;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackImportResult;
 use OCA\OpenRegister\Service\MigrationPack\PackDefinitionValidator;
@@ -126,7 +127,8 @@ class MigrationPackService {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $builtin only distinguishes admin-authored packs from the seeded reference pack.
 	 *
-	 * @throws InvalidPackDefinitionException When the definition is structurally invalid or its slug already exists.
+	 * @throws InvalidPackDefinitionException When the definition is structurally invalid.
+	 * @throws PackSlugExistsException When its slug already exists.
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md
 	 */
@@ -135,7 +137,7 @@ class MigrationPackService {
 
 		$slug = (string)$definition['id'];
 		if ($this->slugExists(packSlug: $slug) === true) {
-			throw new InvalidPackDefinitionException(errors: ['A migration pack with id "' . $slug . '" already exists']);
+			throw new PackSlugExistsException(packSlug: $slug);
 		}
 
 		$pack = new MigrationPack();
@@ -173,7 +175,8 @@ class MigrationPackService {
 	 *
 	 * @throws DoesNotExistException When no row matches.
 	 * @throws BuiltinPackSlugLockedException When the definition renames a built-in pack.
-	 * @throws InvalidPackDefinitionException When the definition is structurally invalid, or its slug collides with a different pack.
+	 * @throws InvalidPackDefinitionException When the definition is structurally invalid.
+	 * @throws PackSlugExistsException When its slug collides with a different pack.
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
 	 */
@@ -190,7 +193,7 @@ class MigrationPackService {
 		}
 
 		if ($slug !== $pack->getPackSlug() && $this->slugExists(packSlug: $slug) === true) {
-			throw new InvalidPackDefinitionException(errors: ['A migration pack with id "' . $slug . '" already exists']);
+			throw new PackSlugExistsException(packSlug: $slug);
 		}
 
 		if ($slug !== $pack->getPackSlug() && $this->isDeletedBuiltinSlug(packSlug: $slug) === true) {

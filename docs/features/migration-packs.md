@@ -76,6 +76,7 @@ message is translated.
 | 404 | `pack-not-found` | No pack has that row id |
 | 422 | `invalid-pack` | The definition breaks a rule; `details.errors` lists each finding, rows numbered from 1 |
 | 422 | `builtin-slug-locked` | The update would change the slug of a built-in pack |
+| 422 | `pack-slug-exists` | Another pack already has the slug (the definition's `id`) |
 | 500 | `migration-pack-error` | Something unexpected failed; the Nextcloud log has the details |
 
 A request Nextcloud refuses before it reaches OpenRegister has Nextcloud's own answer: 401 when

@@ -1357,6 +1357,17 @@ describe('the API helpers', () => {
 		expect(explain(400, { message: 'x', error: 'too-many-rows' }).message).toBe(
 			'There are too many sample rows to test at once.',
 		)
+		expect(
+			explain(422, {
+				message: 'A migration pack with this id already exists',
+				error: 'pack-slug-exists',
+			}),
+		).toEqual({
+			message: 'Another pack already has this slug. Choose a different slug.',
+			details: [],
+			code: 'pack-slug-exists',
+			status: 422,
+		})
 		// An unexpected failure: the caller says what could not be done.
 		expect(
 			explain(500, {

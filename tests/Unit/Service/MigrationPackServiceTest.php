@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\MigrationPack;
 use OCA\OpenRegister\Db\MigrationPackMapper;
 use OCA\OpenRegister\Exception\BuiltinPackSlugLockedException;
 use OCA\OpenRegister\Exception\InvalidPackDefinitionException;
+use OCA\OpenRegister\Exception\PackSlugExistsException;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\MigrationPack\PackDefinitionValidator;
 use OCA\OpenRegister\Service\MigrationPackService;
@@ -126,6 +127,7 @@ class MigrationPackServiceTest extends TestCase {
 			$this->service->create($this->validDefinition());
 			$this->fail('A duplicate slug must be refused');
 		} catch (InvalidPackDefinitionException $e) {
+			$this->assertInstanceOf(PackSlugExistsException::class, $e);
 			$this->assertSame(['A migration pack with id "test-pack" already exists'], $e->getErrors());
 		}
 
@@ -168,7 +170,7 @@ class MigrationPackServiceTest extends TestCase {
 		$other->setPackSlug('other-pack');
 		$this->mapper->method('findByPackSlug')->willReturn($other);
 
-		$this->expectException(InvalidArgumentException::class);
+		$this->expectException(PackSlugExistsException::class);
 		$this->service->update(1, $this->validDefinition(['id' => 'other-pack']));
 	}
 

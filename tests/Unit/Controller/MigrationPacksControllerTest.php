@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\MigrationPack;
 use OCA\OpenRegister\Db\MigrationPackMapper;
 use OCA\OpenRegister\Exception\BuiltinPackSlugLockedException;
 use OCA\OpenRegister\Exception\InvalidPackDefinitionException;
+use OCA\OpenRegister\Exception\PackSlugExistsException;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackErrorResponder;
 use OCA\OpenRegister\Service\MigrationPack\MigrationPackImportResult;
@@ -660,6 +661,31 @@ class MigrationPacksControllerTest extends TestCase {
 		$data = $response->getData();
 		$this->assertSame('builtin-slug-locked', $data['error']);
 		$this->assertNotEmpty($data['message']);
+	}
+
+	/**
+	 * @return array<string, array{string}>
+	 */
+	public static function slugWrites(): array {
+		return [
+			'create' => ['create'],
+			'update' => ['update'],
+		];
+	}
+
+	#[DataProvider('slugWrites')]
+	public function testATakenSlugAnswersItsOwnCodeWithoutEnglishDetails(string $method): void {
+		$this->setupUser('admin', true);
+		$this->service->method($method)
+			->willThrowException(new PackSlugExistsException('stackiq-topdesk-module'));
+
+		$response = $method === 'create' ? $this->controller->create() : $this->controller->update(1);
+
+		$this->assertSame(422, $response->getStatus());
+		$this->assertSame(
+			['message' => 'A migration pack with this id already exists', 'error' => 'pack-slug-exists'],
+			$response->getData()
+		);
 	}
 
 	public function testUpdateLogsTheActorAndSlug(): void {
