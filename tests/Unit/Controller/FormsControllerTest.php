@@ -22,6 +22,7 @@ use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 use OCA\OpenRegister\Service\Form\FormSubmitService;
 use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Service\Hardening\ThrottledSurfaces;
+use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\BruteForceProtection;
@@ -340,6 +341,84 @@ class FormsControllerTest extends TestCase {
 
 		$this->assertSame(201, $this->controller->submit(formId: 'form-1')->getStatus());
 	}//end testADraftIsSavedAndSubmittedByItsId()
+
+	/**
+	 * A request cannot name a draft's owner: only an in-process caller may (decision 195).
+	 *
+	 * The controller hands the service the session user and nothing else, so
+	 * `_owner`, `owner` and `@self.owner` in a request never become the owner
+	 * assertion that authorises a draft without the public create rule.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	public function testARequestCannotNameADraftsOwner(): void {
+		$user = $this->createMock(IUser::class);
+		$this->session->method('getUser')->willReturn($user);
+		$this->resolver->method('resolve')->willReturn($this->form());
+		$this->params = ['formId' => 'form-1', 'onderwerp' => 'Half af', '_owner' => 'portal:subject-1', '_draft' => 'd-1', '@self' => ['owner' => 'portal:subject-1']];
+		$calls = [];
+		$record = static function (string $method, array $answer) use (&$calls): callable {
+			return static function (mixed ...$arguments) use (&$calls, $method, $answer): array {
+				$calls[$method] = $arguments;
+
+				return $answer;
+			};
+		};
+		$this->submitter->method('isOwnerOfDraft')->willReturnCallback(
+			static function (mixed ...$arguments) use (&$calls): bool {
+				$calls['isOwnerOfDraft'] = $arguments;
+
+				return true;
+			}
+		);
+		$this->submitter->method('saveDraft')->willReturnCallback($record('saveDraft', ['id' => 'd-1', 'status' => 'draft']));
+		$this->submitter->method('submit')->willReturnCallback(
+			$record('submit', ['reference' => 'r', 'id' => 'd-1', 'receivedAt' => 'now', 'confirmation' => [], 'objects' => []])
+		);
+
+		$this->assertSame(200, $this->controller->draft(formId: 'form-1')->getStatus());
+		$this->assertSame(201, $this->controller->submit(formId: 'form-1')->getStatus());
+
+		$this->assertSame(['isOwnerOfDraft', 'saveDraft', 'submit'], array_keys($calls));
+		foreach ($calls as $method => $arguments) {
+			foreach ($arguments as $argument) {
+				$this->assertNotInstanceOf(DraftOwner::class, $argument, $method . ' was handed an owner assertion from a request.');
+			}
+
+			$this->assertNotContains('portal:subject-1', $arguments, $method);
+		}
+
+		$this->assertSame(['onderwerp' => 'Half af'], $calls['saveDraft'][2], 'Metadata and control keys stay out of the payload.');
+	}//end testARequestCannotNameADraftsOwner()
+
+	/**
+	 * No controller builds an owner assertion or forwards an explicit owner to a save.
+	 *
+	 * `DraftOwner` and the save's `_owner` argument are service-level: an app
+	 * that knows its subject in process asserts the owner. A controller that
+	 * did would let a request authorise its own draft.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	public function testNoControllerAssertsADraftOwner(): void {
+		$root = dirname(__DIR__, 3) . '/lib/Controller';
+		$files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
+		$read = 0;
+		$offenders = [];
+		foreach ($files as $file) {
+			if ($file->getExtension() !== 'php') {
+				continue;
+			}
+
+			$read++;
+			if (preg_match('/\bDraftOwner\b|\b_owner\s*:/', (string)file_get_contents($file->getPathname())) === 1) {
+				$offenders[] = substr($file->getPathname(), (strlen($root) + 1));
+			}
+		}
+
+		$this->assertGreaterThan(50, $read, 'The sweep read the controllers; an empty sweep proves nothing.');
+		$this->assertSame([], $offenders);
+	}//end testNoControllerAssertsADraftOwner()
 
 	/**
 	 * Another person's draft id answers 404 and nothing is saved.

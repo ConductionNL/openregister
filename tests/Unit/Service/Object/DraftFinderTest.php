@@ -133,6 +133,7 @@ class DraftFinderTest extends TestCase {
 		$this->assertSame('new', $newest?->getUuid());
 		$this->assertSame(['register' => '10', 'schema' => '1', 'owner' => 'portal:subject-1'], $this->searches[0]['query']['@self']);
 		$this->assertSame(DraftFinder::SEARCH_LIMIT, $this->searches[0]['query']['_limit']);
+		$this->assertSame('true', $this->searches[0]['query']['_drafts'], 'A list hides drafts unless asked (decision 201); the finder asks for drafts alone.');
 		$this->assertFalse($this->searches[0]['rbac']);
 		$this->assertFalse($this->searches[0]['multitenancy']);
 		$this->assertSame('other-type', $this->finder->newest(register: $this->register, schema: $this->schema, owner: $owner)?->getUuid());

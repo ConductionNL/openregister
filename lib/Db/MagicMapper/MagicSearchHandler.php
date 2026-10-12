@@ -54,6 +54,7 @@ use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Search\SearchTermNode;
@@ -508,7 +509,8 @@ class MagicSearchHandler {
 		$this->applyBasicFilters(
 			qb: $queryBuilder,
 			includeDeleted: $includeDeleted,
-			archivedMode: $this->resolveArchivedMode(query: $query)
+			archivedMode: $this->resolveArchivedMode(query: $query),
+			query: $query
 		);
 
 		// Apply multi-tenancy and RBAC access control filters.
@@ -905,6 +907,20 @@ class MagicSearchHandler {
 
 		if ($archivedMode === self::ARCHIVED_ONLY) {
 			$conditions[] = '_archived IS NOT NULL';
+		}
+
+		// Decision 201: drafts stay out of a list unless asked for, on this
+		// path as on applyBasicFilters(), with the caller's own kept in view.
+		$userId = $this->rbacHandler->getCurrentUserId();
+		$owner = null;
+		if ($userId !== null && $userId !== '') {
+			$owner = (string)$this->db->getQueryBuilder()->getConnection()->quote($userId);
+		}
+
+		$lens = new DraftListLens();
+		$drafts = $lens->sql(mode: $lens->modeFor(query: $query), columnPrefix: '', owner: $owner);
+		if ($drafts !== null) {
+			$conditions[] = $drafts;
 		}
 
 		return $conditions;
@@ -2154,6 +2170,7 @@ class MagicSearchHandler {
 			'_count',
 			'_includeDeleted',
 			'_archived',
+			DraftListLens::PARAMETER,
 			'_relations_contains',
 			'_multitenancy_explicit',
 			'_fuzzy',
@@ -2173,10 +2190,13 @@ class MagicSearchHandler {
 	 * @param IQueryBuilder $qb Query builder to modify
 	 * @param bool $includeDeleted Whether to include deleted objects
 	 * @param string $archivedMode Which archive lens to apply, one of the ARCHIVED_* constants
+	 * @param array<string, mixed> $query The search query, for the draft lens (`_drafts`, decision 201)
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
 	 */
-	private function applyBasicFilters(IQueryBuilder $qb, bool $includeDeleted, string $archivedMode = self::ARCHIVED_EXCLUDE): void {
+	private function applyBasicFilters(IQueryBuilder $qb, bool $includeDeleted, string $archivedMode = self::ARCHIVED_EXCLUDE, array $query = []): void {
 		// Handle deleted filter.
 		if ($includeDeleted === false) {
 			$qb->andWhere($qb->expr()->isNull('t._deleted'));
@@ -2192,6 +2212,24 @@ class MagicSearchHandler {
 
 		if ($archivedMode === self::ARCHIVED_ONLY) {
 			$qb->andWhere($qb->expr()->isNotNull('t._archived'));
+		}
+
+		// Decision 201: drafts stay out of a list unless asked for, whoever
+		// asks. The read RBAC keeps a draft to its owner, but an administrator
+		// and an app's service listing with RBAC off pass that by, and their
+		// work lists are the ones the decision is about. The caller's own
+		// drafts stay in view. Raw SQL through createFunction(), spelled once
+		// in DraftListLens for this path and lifecycleConditionsSql().
+		$userId = $this->rbacHandler->getCurrentUserId();
+		$owner = null;
+		if ($userId !== null && $userId !== '') {
+			$owner = (string)$qb->createNamedParameter($userId);
+		}
+
+		$lens = new DraftListLens();
+		$drafts = $lens->sql(mode: $lens->modeFor(query: $query), columnPrefix: 't.', owner: $owner);
+		if ($drafts !== null) {
+			$qb->andWhere($qb->createFunction($drafts));
 		}
 
 	}//end applyBasicFilters()

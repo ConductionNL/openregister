@@ -108,6 +108,9 @@ class DraftFinder {
 				query: [
 					'@self' => ['register' => (string)$register->getId(), 'schema' => (string)$schema->getId(), 'owner' => $owner->value()],
 					'_limit' => self::SEARCH_LIMIT,
+					// A list hides drafts unless asked (decision 201), and this
+					// owner has no session for the lens to recognise as "own".
+					DraftListLens::PARAMETER => 'true',
 				],
 				_rbac: false,
 				_multitenancy: false

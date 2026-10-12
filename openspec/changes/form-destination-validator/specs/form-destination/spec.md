@@ -116,7 +116,7 @@ Object metadata SHALL carry a stored `@self.status` with at least the values `dr
 
 ### Requirement: A draft MUST be able to be owned by a scope value
 
-A draft's owner SHALL be either a Nextcloud user or a scope value `<scope>:<reference>`, such as `portal:<subjectRef>` for a resident signed in at a portal who has no Nextcloud account (decision 195). A scope is lower case letters, digits and hyphens; the whole value SHALL fit the owner column (64 characters). A Nextcloud user id cannot hold a colon, so a scope value never names a user. A draft owned by a scope value SHALL be found, read, saved and sent only by a caller asserting that same owner; every other caller, a signed-in user included, SHALL get the same 404 an unknown draft id gets. The draft clause in the read RBAC keeps such a draft out of every list, as it keeps any draft to its owner. Generic by construction (decision 182): the owner value carries no app or procedure logic.
+A draft's owner SHALL be either a Nextcloud user or a scope value `<scope>:<reference>`, such as `portal:<subjectRef>` for a resident signed in at a portal who has no Nextcloud account (decision 195). A scope is lower case letters, digits and hyphens; the whole value SHALL fit the owner column (64 characters). A Nextcloud user id cannot hold a colon, so a scope value never names a user. A draft owned by a scope value SHALL be found, read, saved and sent only by a caller asserting that same owner; every other caller, a signed-in user included, SHALL get the same 404 an unknown draft id gets. The owner assertion SHALL be the authorisation for every write of that draft, its start included: starting it SHALL NOT need the destination schema to allow public create, because the in-process caller vouches for its subject, as it does when it creates the object outright. Only a draft is authorised this way; a fresh submit without a draft SHALL stay under the destination's RBAC. An owner assertion SHALL be reachable in process only: no controller builds one or forwards an explicit owner to a save, so a request cannot authorise its own draft. The draft clause in the read RBAC and the draft lens on lists keep such a draft out of every list, as they keep any draft to its owner. Generic by construction (decision 182): the owner value carries no app or procedure logic.
 
 #### Scenario: A portal subject saves, reads and sends its own draft
 - **GIVEN** a caller asserting owner `portal:subject-1`
@@ -127,6 +127,16 @@ A draft's owner SHALL be either a Nextcloud user or a scope value `<scope>:<refe
 - **GIVEN** a draft owned by `portal:subject-1`
 - **WHEN** a caller asserting `portal:subject-2`, or a signed-in user, reads, saves or sends it by id
 - **THEN** each answers 404 and the draft is unchanged
+
+#### Scenario: A scope-owned draft starts where the public may not create
+- **GIVEN** a destination schema that does not let the public create
+- **WHEN** an in-process caller asserting owner `portal:subject-1` saves a first draft, and later sends it
+- **THEN** the draft is stored with that owner and the send moves it to `active`
+- **AND** an anonymous submit without a draft into the same destination still answers 403
+
+#### Scenario: A request cannot name the owner
+- **WHEN** a draft save or a submit arrives over HTTP with `_owner` or `@self.owner` in its body
+- **THEN** the service is handed the session user only, and neither key reaches the payload
 
 #### Scenario: A malformed scope value is refused
 - **WHEN** an owner is built from an empty reference, a scope with upper case or a colon, or a value longer than 64 characters
@@ -145,6 +155,28 @@ The owner of a draft SHALL be able to discard it (decisions 180 and 195). The di
 - **GIVEN** a draft owned by `portal:subject-2` and an active object owned by `portal:subject-1`
 - **WHEN** a caller asserting `portal:subject-1` discards either
 - **THEN** both answer "not found" and both objects remain
+
+### Requirement: A list MUST hide drafts unless asked
+
+An object list or search SHALL leave out objects in status `draft` by default (decision 201), whoever asks and by whichever path: an administrator and an app's service listing with RBAC off get the same work list. The caller's own drafts SHALL stay in the list. The query parameter `_drafts` SHALL widen it, following `_archived`: absent or false is the work list, `_drafts=true` is drafts alone, `_drafts=any` is drafts beside the rest, and an unrecognised value SHALL read as the work list. A query that filters on the stored status (`@self[status]`) without the parameter has named its statuses, so that filter SHALL decide. Counts and facets SHALL follow the same lens as the rows. The lens is a default on what a list shows and SHALL NOT widen what a caller may read: asking for drafts shows the drafts the read RBAC already lets that caller reach. Reading one object by id is not a list and is unchanged. Generic by construction (decision 182).
+
+#### Scenario: A work list leaves drafts out
+- **GIVEN** schema `case` with one active object and one draft owned by somebody else
+- **WHEN** an app's service lists `case` with RBAC off, or an administrator lists it
+- **THEN** the list, its total and its facets hold the active object only
+
+#### Scenario: The owner still sees their own drafts
+- **GIVEN** a draft owned by the signed-in caller
+- **WHEN** the caller lists the schema without `_drafts`
+- **THEN** their draft is in the list beside the objects that are not drafts
+
+#### Scenario: The filter shows them
+- **WHEN** the list is asked with `_drafts=true`, with `_drafts=any`, or with `@self[status]=draft`
+- **THEN** it answers drafts alone, drafts beside the rest, and the drafts the status filter names, each within what the caller may read
+
+#### Scenario: A typo does not widen the list
+- **WHEN** the list is asked with `_drafts=al`
+- **THEN** it answers the work list without drafts
 
 ### Requirement: The form destination check MUST refuse from the first release
 
