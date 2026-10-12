@@ -142,7 +142,7 @@ class DraftsExpiredCommandTest extends TestCase {
 	 * The command is declared in appinfo/info.xml; without the line occ does not know it.
 	 */
 	public function testTheCommandIsDeclared(): void {
-		$info = simplexml_load_file(dirname(__DIR__, 3) . '/appinfo/info.xml');
+		$info = simplexml_load_string((string)file_get_contents(dirname(__DIR__, 3) . '/appinfo/info.xml'));
 		$this->assertNotFalse($info);
 		$declared = array_map(static fn ($command): string => trim((string)$command), iterator_to_array($info->commands->command, false));
 
