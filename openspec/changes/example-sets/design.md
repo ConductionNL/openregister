@@ -124,25 +124,53 @@ same path in every app and only checks that `cast` appears in OpenRegister's.
   but were not checked against the postcode table; an address is never a join
   key, so a coincidence with a real postcode links to nothing.
 
-## Sanne de Vries: adopt or move
+## Sanne de Vries: she moves onto the cast (decided 13 Oct 2026)
 
-portaliq's `example-resident:install zuiddrecht` already creates
-`sanne.devries`. Two paths:
+portaliq's `example-resident:install zuiddrecht` used to create
+`sanne.devries`. Ruben chose to move portaliq onto the cast rather than have
+the cast adopt portaliq's account: portaliq ships
+`lib/Settings/example-sets/zuiddrecht.json` with `after: ["dossiq"]`, uses
+`{{cast:sanne.uid}}` where it used `{{subject}}`, writes the portal account as
+an object and the sign-in mode as a change on the portal (decision 8). Her five
+cases, the question and the four messages stay exactly as they were, because
+the Woo journey depends on them. That is a separate portaliq PR.
 
-- **A. The cast adopts portaliq's account.** Works today with
-  `--adopt sanne.devries`. Two installers then claim one account, and
-  removing either leaves the other's record pointing at a person whose BRP row
-  or account may be gone.
-- **B. portaliq's resident moves onto the cast (recommended).** portaliq ships
-  `lib/Settings/example-sets/zuiddrecht.json` with `after: ["dossiq"]`; its
-  objects use `{{cast:sanne.uid}}` instead of `{{subject}}`, and the portal
-  account and sign-in mode become objects in that fragment. The cast creates the
-  account once. `portaliq:example-resident:install` stays for a portal-only
-  instance until the fragment exists, then is retired.
+`--adopt` stays in the loader for an account somebody made by hand.
 
-Until B lands, `--adopt sanne.devries` is the interim.
+## Decisions of 13 Oct 2026
+
+7. **Required registers.** The cast file names OpenRegister registers in
+   `requires` (zuiddrecht: `brp`, `kvk`). They are mock registers (ADR-111
+   rule 3), so a fresh instance lacks them. The loader imports a missing one
+   from OpenRegister's own descriptor before the check, through
+   `RegisterDescriptorService::reimport()`, and records the import job ids the
+   import created (the difference in `AppImportJobRecorder` before and after).
+   Remove soft-deletes exactly those jobs' objects with
+   `ImportService::softDeleteByImportJobId()`, last, and forgets the jobs. A
+   register that was already there is never imported or removed. The register
+   and schema definitions stay; only the objects of the import go.
+8. **Changes to objects the set did not create.** A sign-in mode lives on the
+   portal row that the site install made, so it cannot be a new object. A
+   fragment's `changes` find one object by business key and `set` or `append`
+   values at dot paths. Only what differs is written; the record keeps each old
+   value, each appended value and any map made on the way, and remove restores
+   exactly those. A change already fully present is not recorded, so remove
+   leaves it.
+9. **No administrators.** A cast or fragment group with gid `admin` refuses the
+   set. Noor Yilmaz (functioneel beheer, CISO) gets app admin groups from the
+   app fragments, never Nextcloud's.
+10. **JSON text fields.** `jsonFields` on an object sends those fields as JSON
+    text (portaliq's case `statusHistory`); the proof decodes them.
+11. **Cast.** Marleen Postma is teamleider Vergunningen, in the Vergunningen
+    group with Esra Demir. OpenRegister owns no team-lead group; app lead
+    groups come from fragments. The cast file's `apps` lists the 18 apps that
+    take part; learniq, larpinq and zaakafhandelapp do not.
 
 ## Risks / Trade-offs
+
+- `--check` imports a missing required register. That is the one write a
+  check makes, chosen because a check against schemas that are not there
+  checks nothing; the import is recorded and remove takes its objects away.
 
 - A lookup to a register that filters poorly falls back to reading the whole
   schema (as portaliq does), bounded by a page cap. Fine for demo sizes.

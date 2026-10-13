@@ -125,6 +125,21 @@ class FakeExampleSetStore extends ExampleSetStore {
 		return ['id' => $this->seed(register: $register, schema: $schema, data: $data), 'error' => ''];
 	}
 
+	/** @var int Number of updates. */
+	public int $updates = 0;
+
+	public function update(string $register, string $schema, string $id, array $data): string {
+		if (isset($this->rows[$register.' '.$schema][$id]) === false) {
+			return 'no such row';
+		}
+
+		$this->updates++;
+		unset($data['@self'], $data['id']);
+		$this->rows[$register.' '.$schema][$id] = (['id' => $id] + $data);
+
+		return '';
+	}
+
 	public function delete(string $register, string $schema, string $id): bool {
 		if (in_array($id, $this->undeletable, true) === true) {
 			return false;

@@ -10,10 +10,16 @@
 - [x] 1.8 `ExampleSetRemover`: reverse-order exact removal, adopted accounts and pre-existing groups untouched (REQ-EXS-007)
 - [x] 1.9 Commands `openregister:example-set:install|remove|list`, registered in `appinfo/info.xml`, exit codes 0/1/2
 
+- [x] 1.10 `ExampleSetRegisters`: import a required OpenRegister register before the check, record its import jobs, remove exactly those (REQ-EXS-009)
+- [x] 1.11 Refuse a cast or fragment group `admin` (REQ-EXS-010)
+- [x] 1.12 `ExampleSetChanges`: set and append on an object found by business key, recorded and reverted exactly (REQ-EXS-011)
+- [x] 1.13 `jsonFields` sent as JSON text and decoded by the proof (REQ-EXS-012)
+
 ## 2. Data
 
 - [x] 2.1 `lib/Settings/example-sets/zuiddrecht.json`: cast (residents, businesses, employees, department groups) and openregister's own BRP and KVK rows
 - [x] 2.2 Test BSNs pass the eleven test and are unused in the fleet's registers; KVK numbers fictitious
+- [x] 2.3 `requires: ["brp", "kvk"]`, the 18 apps that take part, Marleen Postma in Vergunningen
 
 ## 3. Tests
 
@@ -22,6 +28,7 @@
 - [x] 3.3 Idempotent second install, exact removal, foreign account refusal and adoption
 - [x] 3.4 Command exit codes 0, 1 and 2, asserted through the command (the caller)
 - [x] 3.5 The shipped zuiddrecht file parses, its cast BSNs pass the eleven test, and every `{{cast:}}` it uses resolves
+- [x] 3.6 Required registers imported once and removed only when imported; admin refused; changes made, proved and reverted exactly; JSON text fields
 
 ## 4. Verification
 

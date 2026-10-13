@@ -50,6 +50,14 @@ class ExampleSetCatalogue {
 	private const SET_ID = '/^[a-z0-9][a-z0-9-]{0,62}$/';
 
 	/**
+	 * What each kind of entry needs, for the message that refuses one.
+	 */
+	private const NEEDS = [
+		'object' => 'a key, a register, a schema and data',
+		'change' => 'a key, a register, a schema, a where, and a set or an append',
+	];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IAppManager   $appManager Names the enabled apps and where they live.
@@ -106,8 +114,9 @@ class ExampleSetCatalogue {
 	 * @param string $set The set id.
 	 *
 	 * @return array<string, mixed> `set`, `title`, `timezone`, `cast` (people, organisations and groups by key,
-	 *                              plus `entries`, all three merged), `fragments` (each with `app`, `file`,
-	 *                              `objects` and `groups`) and `skipped` (named apps that are not enabled).
+	 *                              plus `entries`, all three merged), `requires` (OpenRegister register slugs),
+	 *                              `fragments` (each with `app`, `file`, `objects`, `changes` and `groups`) and
+	 *                              `skipped` (named apps that are not enabled).
 	 *
 	 * @throws ExampleSetException When the set cannot be gathered; the message names why and where.
 	 *
@@ -150,6 +159,7 @@ class ExampleSetCatalogue {
 			'title'     => (string) ($castFile['title'] ?? $set),
 			'timezone'  => (string) ($castFile['timezone'] ?? 'UTC'),
 			'cast'      => $this->cast(cast: $castFile['cast'], file: $castFile['@file']),
+			'requires'  => array_values(array_unique(array_map('strval', (array) ($castFile['requires'] ?? [])))),
 			'fragments' => [],
 			'skipped'   => $ordered['skipped'],
 		];
@@ -222,35 +232,75 @@ class ExampleSetCatalogue {
 	 * @param string               $app      The app id.
 	 * @param array<string, mixed> $fragment The parsed file.
 	 *
-	 * @return array{app: string, file: string, objects: array<int, array<string, mixed>>, groups: array<int, array<string, mixed>>}
+	 * @return array{app: string, file: string, objects: array<int, array<string, mixed>>, changes: array<int, array<string, mixed>>,
+	 *               groups: array<int, array<string, mixed>>}
 	 *
-	 * @throws ExampleSetException When an object lacks a key, register or schema, or a key is used twice.
+	 * @throws ExampleSetException When an object or change lacks a key, register or schema, or a key is used twice.
 	 */
 	private function fragment(string $app, array $fragment): array {
-		$file    = (string) $fragment['@file'];
-		$objects = [];
-		$seen    = [];
-		foreach ((array) ($fragment['objects'] ?? []) as $index => $object) {
-			$key = $this->keyOf(entry: $object);
-			if ($key === '' || ($object['register'] ?? '') === '' || ($object['schema'] ?? '') === '' || is_array($object['data'] ?? null) === false) {
-				throw new ExampleSetException($file.': object '.$index.' needs a key, a register, a schema and data.');
-			}
-
-			if (isset($seen[$key]) === true) {
-				throw new ExampleSetException($file.': the object key "'.$key.'" is used twice.');
-			}
-
-			$seen[$key] = true;
-			$objects[]  = $object;
-		}
+		$file = (string) $fragment['@file'];
+		$seen = [];
 
 		return [
 			'app'     => $app,
 			'file'    => $file,
-			'objects' => $objects,
+			'objects' => $this->entries(file: $file, declared: (array) ($fragment['objects'] ?? []), kind: 'object', seen: $seen),
+			'changes' => $this->entries(file: $file, declared: (array) ($fragment['changes'] ?? []), kind: 'change', seen: $seen),
 			'groups'  => array_values(array_filter((array) ($fragment['groups'] ?? []), 'is_array')),
 		];
 	}//end fragment()
+
+	/**
+	 * The objects or changes of a fragment, each checked for its parts and a key of its own.
+	 *
+	 * @param string               $file     The fragment file, for messages.
+	 * @param array<int, mixed>    $declared The declared entries.
+	 * @param string               $kind     `object` or `change`.
+	 * @param array<string, bool>  $seen     Keys used so far in this fragment.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @throws ExampleSetException When an entry lacks a part, or a key is used twice.
+	 */
+	private function entries(string $file, array $declared, string $kind, array &$seen): array {
+		$entries = [];
+		foreach ($declared as $index => $entry) {
+			$key = $this->keyOf(entry: $entry);
+			if ($key === '' || $this->complete(entry: (array) $entry, kind: $kind) === false) {
+				throw new ExampleSetException($file.': '.$kind.' '.$index.' needs '.self::NEEDS[$kind].'.');
+			}
+
+			if (isset($seen[$key]) === true) {
+				throw new ExampleSetException($file.': the key "'.$key.'" is used twice.');
+			}
+
+			$seen[$key] = true;
+			$entries[]  = (array) $entry;
+		}
+
+		return $entries;
+	}//end entries()
+
+	/**
+	 * Whether an object or change has every part it needs.
+	 *
+	 * @param array<string, mixed> $entry The entry.
+	 * @param string               $kind  `object` or `change`.
+	 *
+	 * @return bool
+	 */
+	private function complete(array $entry, string $kind): bool {
+		if (($entry['register'] ?? '') === '' || ($entry['schema'] ?? '') === '') {
+			return false;
+		}
+
+		if ($kind === 'object') {
+			return is_array($entry['data'] ?? null);
+		}
+
+		return is_array($entry['where'] ?? null) === true
+			&& (is_array($entry['set'] ?? null) === true || is_array($entry['append'] ?? null) === true);
+	}//end complete()
 
 	/**
 	 * The `key` of a declared entry, or '' when it has none.

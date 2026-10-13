@@ -6,10 +6,11 @@
  * `occ openregister:example-set:install <set> [--check] [--adopt=uid ...] [--password-from-env]`
  *
  * Installs a story example set across every enabled app, or with `--check`
- * only validates it. Exit codes: 0 everything declared is on the instance (or
- * the check passed), 1 nothing was written (unknown set, a refusal of the
- * check, an account that belongs to somebody else), 2 something did not
- * arrive, each named.
+ * only validates it. Both first import the OpenRegister registers the set
+ * requires and the instance lacks. Exit codes: 0 everything declared is on
+ * the instance (or the check passed), 1 none of the set's accounts, groups or
+ * objects was written (unknown set, a refusal of the check, an account that
+ * belongs to somebody else), 2 something did not arrive, each named.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -139,7 +140,7 @@ class ExampleSetInstallCommand extends Command {
 		$report = $this->installer->install(plan: $plan, adopt: $adopt, password: $password);
 		if ($report['refusals'] !== []) {
 			$this->printRefusals(refusals: $report['refusals'], output: $output);
-			$output->writeln('<error>The set was refused, so nothing was written.</error>');
+			$output->writeln('<error>The set was refused, so none of its accounts, groups or objects was written.</error>');
 			return self::FAILURE;
 		}
 
@@ -165,17 +166,21 @@ class ExampleSetInstallCommand extends Command {
 	 */
 	private function check(array $plan, array $adopt, OutputInterface $output): int {
 		$result = $this->installer->check(plan: $plan, adopt: $adopt);
+		foreach ($result['registers'] as $slug => $outcome) {
+			$output->writeln('Register '.$slug.': '.self::word(outcome: $outcome));
+		}
+
 		foreach ($result['checked'] as $type => $count) {
 			$output->writeln($type.': '.$count.' checked');
 		}
 
 		if ($result['refusals'] !== []) {
 			$this->printRefusals(refusals: $result['refusals'], output: $output);
-			$output->writeln('<error>'.count($result['refusals']).' refusal(s). Nothing was written.</error>');
+			$output->writeln('<error>'.count($result['refusals']).' refusal(s). No account, group or object of the set was written.</error>');
 			return self::FAILURE;
 		}
 
-		$output->writeln('<info>Every object passes its schema. Nothing was written.</info>');
+		$output->writeln('<info>Every object passes its schema. No account, group or object of the set was written.</info>');
 
 		return self::SUCCESS;
 	}//end check()
@@ -203,7 +208,8 @@ class ExampleSetInstallCommand extends Command {
 	 * @return void
 	 */
 	private function printReport(array $report, OutputInterface $output): void {
-		foreach (['groups' => 'Group', 'users' => 'Account', 'memberships' => 'Membership'] as $part => $word) {
+		$parts = ['registers' => 'Register', 'groups' => 'Group', 'users' => 'Account', 'memberships' => 'Membership', 'changes' => 'Change'];
+		foreach ($parts as $part => $word) {
 			foreach ($report[$part] as $name => $outcome) {
 				$output->writeln($word.' '.$name.': '.self::word(outcome: $outcome));
 			}

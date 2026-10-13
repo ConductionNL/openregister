@@ -44,13 +44,20 @@ use Throwable;
  */
 class ExampleSetInstaller {
 	/**
+	 * Nextcloud's administrators group, which no example set may add anyone to.
+	 */
+	private const ADMIN_GROUP = 'admin';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ExampleSetStore    $store    Register access.
 	 * @param ExampleSetAccounts $accounts Accounts and groups.
 	 * @param ExampleSetValues   $values   Fills placeholders.
 	 * @param ExampleSetRecord   $record   What an install made.
-	 * @param ExampleSetProof    $proof    Compares sent with stored.
+	 * @param ExampleSetProof     $proof     Compares sent with stored.
+	 * @param ExampleSetRegisters $registers Imports the registers a set requires.
+	 * @param ExampleSetChanges   $changes   Changes objects the set did not create.
 	 *
 	 * @return void
 	 */
@@ -60,27 +67,35 @@ class ExampleSetInstaller {
 		private readonly ExampleSetValues $values,
 		private readonly ExampleSetRecord $record,
 		private readonly ExampleSetProof $proof,
+		private readonly ExampleSetRegisters $registers,
+		private readonly ExampleSetChanges $changes,
 	) {
 	}//end __construct()
 
 	/**
-	 * Check a set without writing anything.
+	 * Check a set without writing any of its accounts, groups or objects.
+	 *
+	 * A register the set requires that is not on the instance is imported
+	 * first, because its schemas are what the objects are checked against;
+	 * the import is recorded, and remove takes it away again.
 	 *
 	 * @param array<string, mixed>   $plan  A plan from ExampleSetCatalogue::gather().
 	 * @param array<int, string>     $adopt Account ids the administrator lets the set use although it did not create them.
 	 * @param DateTimeImmutable|null $today The install day; now in the set's time zone when null.
 	 *
-	 * @return array{refusals: array<int, string>, checked: array<string, int>} Every refusal, and the number of objects
-	 *                                                                           checked per register and schema.
+	 * @return array{refusals: array<int, string>, checked: array<string, int>, registers: array<string, string>}
+	 *         Every refusal, the number of objects and changes checked per register and schema, and per required
+	 *         register `imported` or `kept`.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function check(array $plan, array $adopt=[], ?DateTimeImmutable $today=null): array {
-		$today    = ($today ?? $this->today(timezone: (string) $plan['timezone']));
-		$record   = $this->record->read(set: (string) $plan['set']);
-		$refusals = $this->castRefusals(plan: $plan, record: $record, adopt: $adopt);
-		$checked  = [];
-		$planned  = [];
+		$today     = ($today ?? $this->today(timezone: (string) $plan['timezone']));
+		$record    = $this->record->read(set: (string) $plan['set']);
+		$registers = $this->ensureRegisters(plan: $plan, record: $record);
+		$refusals  = array_merge($registers['refusals'], $this->castRefusals(plan: $plan, record: $record, adopt: $adopt));
+		$checked   = [];
+		$planned   = [];
 		foreach ($plan['fragments'] as $fragment) {
 			$objects = [];
 			foreach ($fragment['objects'] as $object) {
@@ -98,7 +113,7 @@ class ExampleSetInstaller {
 					continue;
 				}
 
-				foreach ($this->store->validate(register: $object['register'], schema: $object['schema'], data: $resolved['data']) as $message) {
+				foreach ($this->store->validate(register: $object['register'], schema: $object['schema'], data: $resolved['sent']) as $message) {
 					$refusals[] = $where.': '.$message;
 				}
 
@@ -107,9 +122,12 @@ class ExampleSetInstaller {
 				$kept      = $this->kept(record: $record, app: $fragment['app'], key: $object['key']);
 				$objects[$object['key']] = ($kept ?? $standIn);
 			}//end foreach
+
+			$context  = ['cast' => $plan['cast']['entries'], 'objects' => $objects, 'today' => $today];
+			$refusals = array_merge($refusals, $this->checkChanges(fragment: $fragment, context: $context, checked: $checked));
 		}//end foreach
 
-		return ['refusals' => $refusals, 'checked' => $checked];
+		return ['refusals' => $refusals, 'checked' => $checked, 'registers' => $registers['outcome']];
 	}//end check()
 
 	/**
@@ -120,9 +138,10 @@ class ExampleSetInstaller {
 	 * @param string                 $password One password for every new account; '' makes one per account.
 	 * @param DateTimeImmutable|null $today    The install day; now in the set's time zone when null.
 	 *
-	 * @return array<string, mixed> `refusals` (non-empty: nothing was written), `users`, `groups` and `memberships`
-	 *                              (each name to `created`, `adopted` or `kept`), `passwords` (uid to a password
-	 *                              this run made), `types`, `dropped`, `missing`, `lost` and `ok`.
+	 * @return array<string, mixed> `refusals` (non-empty: none of the set's accounts or objects was written),
+	 *                              `registers`, `users`, `groups`, `memberships` and `changes` (each name to
+	 *                              `imported`, `created`, `adopted` or `kept`), `passwords` (uid to a password this
+	 *                              run made), `types`, `dropped`, `missing`, `lost` and `ok`.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
@@ -130,9 +149,11 @@ class ExampleSetInstaller {
 		$today  = ($today ?? $this->today(timezone: (string) $plan['timezone']));
 		$report = [
 			'refusals'    => [],
+			'registers'   => [],
 			'users'       => [],
 			'groups'      => [],
 			'memberships' => [],
+			'changes'     => [],
 			'passwords'   => [],
 			'types'       => [],
 			'dropped'     => [],
@@ -141,7 +162,9 @@ class ExampleSetInstaller {
 			'ok'          => false,
 		];
 
-		$report['refusals'] = $this->check(plan: $plan, adopt: $adopt, today: $today)['refusals'];
+		$checked             = $this->check(plan: $plan, adopt: $adopt, today: $today);
+		$report['refusals']  = $checked['refusals'];
+		$report['registers'] = $checked['registers'];
 		if ($report['refusals'] !== []) {
 			return $report;
 		}
@@ -157,6 +180,76 @@ class ExampleSetInstaller {
 
 		return $this->proven(report: $report, record: $record, written: $written);
 	}//end install()
+
+	/**
+	 * Import every required register that is not on the instance, and record the import.
+	 *
+	 * @param array<string, mixed> $plan   The plan.
+	 * @param array<string, mixed> $record The record; gains the imports.
+	 *
+	 * @return array{refusals: array<int, string>, outcome: array<string, string>}
+	 */
+	private function ensureRegisters(array $plan, array &$record): array {
+		$result = ['refusals' => [], 'outcome' => []];
+		foreach ((array) ($plan['requires'] ?? []) as $slug) {
+			$result['outcome'][$slug] = 'kept';
+			if ($this->registers->exists(slug: $slug) === true) {
+				continue;
+			}
+
+			$import = $this->registers->import(slug: $slug);
+			if ($import['jobs'] !== []) {
+				$record['registers'][$slug] = array_merge(($record['registers'][$slug] ?? []), $import['jobs']);
+				$this->record->write(set: (string) $plan['set'], record: $record);
+			}
+
+			$why = $import['error'];
+			if ($why === '' && $this->registers->exists(slug: $slug) === false) {
+				$why = 'it is still not on this instance';
+			}
+
+			if ($why !== '') {
+				$result['refusals'][]     = 'register "'.$slug.'" is required and could not be imported from OpenRegister\'s descriptor: '.$why;
+				$result['outcome'][$slug] = 'failed';
+				continue;
+			}
+
+			$result['outcome'][$slug] = 'imported';
+		}//end foreach
+
+		return $result;
+	}//end ensureRegisters()
+
+	/**
+	 * Check the changes of one fragment: each resolves, finds its object, and leaves it valid.
+	 *
+	 * @param array<string, mixed> $fragment The fragment.
+	 * @param array<string, mixed> $context  `cast`, `objects` and `today`.
+	 * @param array<string, int>   $checked  Counts per register and schema; changes are added.
+	 *
+	 * @return array<int, string> Refusals.
+	 */
+	private function checkChanges(array $fragment, array $context, array &$checked): array {
+		$refusals = [];
+		foreach ($fragment['changes'] as $change) {
+			$type           = $change['register'].' '.$change['schema'];
+			$checked[$type] = (($checked[$type] ?? 0) + 1);
+			$where          = $fragment['file'].': change "'.$change['key'].'" ('.$type.')';
+			$resolved       = $this->changes->resolve(change: $change, context: $context);
+			if ($resolved['refusal'] !== '') {
+				$refusals[] = $where.': '.$resolved['refusal'];
+				continue;
+			}
+
+			$merged = $resolved['merged'];
+			unset($merged['@self'], $merged['id']);
+			foreach ($this->store->validate(register: $change['register'], schema: $change['schema'], data: $merged) as $message) {
+				$refusals[] = $where.': '.$message;
+			}
+		}
+
+		return $refusals;
+	}//end checkChanges()
 
 	/**
 	 * Groups, accounts and memberships, each written when the record does not hold it.
@@ -268,7 +361,7 @@ class ExampleSetInstaller {
 	}//end installUser()
 
 	/**
-	 * Write the objects of one fragment that the record does not hold.
+	 * Write the objects and changes of one fragment that the record does not hold.
 	 *
 	 * @param array<string, mixed>                $plan     The plan.
 	 * @param array<string, mixed>                $fragment The fragment.
@@ -304,7 +397,7 @@ class ExampleSetInstaller {
 				continue;
 			}
 
-			$made = $this->store->create(register: $object['register'], schema: $object['schema'], data: $resolved['data']);
+			$made = $this->store->create(register: $object['register'], schema: $object['schema'], data: $resolved['sent']);
 			if ($made['id'] === '') {
 				$report['dropped'][] = $fragment['file'].': object "'.$object['key'].'": '.$made['error'];
 				continue;
@@ -320,24 +413,72 @@ class ExampleSetInstaller {
 			$objects[$object['key']] = ($this->store->get(register: $object['register'], schema: $object['schema'], id: $made['id']) ?? ['id' => $made['id']]);
 		}//end foreach
 
-		return $report;
+		$context = ['cast' => $plan['cast']['entries'], 'objects' => $objects, 'today' => $today];
+
+		return $this->installChanges(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 	}//end installFragment()
 
 	/**
+	 * Make the changes of one fragment that the record does not hold.
+	 *
+	 * @param array<string, mixed> $plan     The plan.
+	 * @param array<string, mixed> $fragment The fragment.
+	 * @param array<string, mixed> $context  `cast`, `objects` and `today`.
+	 * @param array<string, mixed> $report   The report so far.
+	 * @param array<string, mixed> $record   The record; updated and kept after every change.
+	 *
+	 * @return array<string, mixed> The report.
+	 */
+	private function installChanges(array $plan, array $fragment, array $context, array $report, array &$record): array {
+		foreach ($fragment['changes'] as $change) {
+			$name = $fragment['app'].'/'.$change['key'];
+			$report['changes'][$name] = 'kept';
+			if (isset($record['changes'][$name]) === true) {
+				continue;
+			}
+
+			$resolved = $this->changes->resolve(change: $change, context: $context);
+			$made     = ['error' => $resolved['refusal'], 'entry' => null];
+			if ($resolved['refusal'] === '') {
+				$made = $this->changes->apply(change: $change, resolved: $resolved);
+			}
+
+			if ($made['error'] !== '') {
+				$report['dropped'][]      = $fragment['file'].': change "'.$change['key'].'": '.$made['error'];
+				$report['changes'][$name] = 'failed';
+				continue;
+			}
+
+			if ($made['entry'] !== null) {
+				$record['changes'][$name] = $made['entry'];
+				$report['changes'][$name] = 'created';
+				$this->record->write(set: (string) $plan['set'], record: $record);
+			}
+		}//end foreach
+
+		return $report;
+	}//end installChanges()
+
+	/**
 	 * Resolve an object's lookups and fill its data.
+	 *
+	 * A field named in `jsonFields` is sent as JSON text, for a schema that
+	 * keeps it as text; `data` keeps the list, which is what a read hands back.
 	 *
 	 * @param array<string, mixed>             $object  The declared object.
 	 * @param array<string, mixed>             $context `cast`, `objects` and `today`.
 	 * @param array<int, array<string, mixed>> $planned Objects a check pass declared earlier, for lookups.
 	 *
-	 * @return array{data: array<string, mixed>, refusal: string} The filled data, or why it cannot be filled.
+	 * @return array{data: array<string, mixed>, sent: array<string, mixed>, refusal: string} The filled data, what
+	 *                                                                                        to send, or why it
+	 *                                                                                        cannot be filled.
 	 */
 	private function resolve(array $object, array $context, array $planned): array {
 		$context['lookups'] = [];
 		foreach ((array) ($object['lookups'] ?? []) as $name => $lookup) {
 			$found = $this->lookedUp(register: (string) $object['register'], lookup: (array) $lookup, context: $context, planned: $planned);
 			if ($found['id'] === '') {
-				return ['data' => [], 'refusal' => 'lookup "'.$name.'" found '.$found['reason']];
+				return ['data' => [], 'sent' => [], 'refusal' => 'lookup "'.$name.'" found '.$found['reason']];
 			}
 
 			$context['lookups'][(string) $name] = $found['id'];
@@ -346,10 +487,17 @@ class ExampleSetInstaller {
 		$gaps = [];
 		$data = (array) $this->values->fill(value: $object['data'], context: $context, gaps: $gaps);
 		if ($gaps !== []) {
-			return ['data' => [], 'refusal' => 'cannot resolve '.implode(', ', array_unique($gaps))];
+			return ['data' => [], 'sent' => [], 'refusal' => 'cannot resolve '.implode(', ', array_unique($gaps))];
 		}
 
-		return ['data' => $data, 'refusal' => ''];
+		$sent = $data;
+		foreach ((array) ($object['jsonFields'] ?? []) as $field) {
+			if (is_array($sent[$field] ?? null) === true) {
+				$sent[$field] = (string) json_encode($sent[$field]);
+			}
+		}
+
+		return ['data' => $data, 'sent' => $sent, 'refusal' => ''];
 	}//end resolve()
 
 	/**
@@ -507,6 +655,13 @@ class ExampleSetInstaller {
 			);
 		}
 
+		foreach (array_keys($this->declaredGroups(plan: $plan)) as $gid) {
+			if (strtolower($gid) === self::ADMIN_GROUP) {
+				$refusals[] = 'group "'.$gid.'": an example set never adds anyone to Nextcloud\'s administrators.'
+					.' Give the person an app admin group in a fragment instead.';
+			}
+		}
+
 		return array_merge($refusals, $this->memberRefusals(plan: $plan));
 	}//end castRefusals()
 
@@ -660,6 +815,12 @@ class ExampleSetInstaller {
 
 			foreach ($this->proof->lostPaths(declared: ($written[$name] ?? []), stored: $stored) as $path) {
 				$report['lost'][] = $type.' '.$name.': '.$path;
+			}
+		}
+
+		foreach ($record['changes'] as $name => $entry) {
+			foreach ($this->changes->lost(entry: $entry) as $path) {
+				$report['lost'][] = 'change '.$name.': '.$path;
 			}
 		}
 

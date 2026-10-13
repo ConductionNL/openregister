@@ -79,7 +79,7 @@ class ExampleSetCommandsTest extends ExampleSetTestCase {
 		$tester = $this->install();
 
 		$this->assertSame(1, $tester->execute(['set' => 'demo']));
-		$this->assertStringContainsString('nothing was written', $tester->getDisplay());
+		$this->assertStringContainsString('none of its accounts, groups or objects was written', $tester->getDisplay());
 		$this->assertSame(0, $this->store->creates);
 
 		$this->assertSame(0, $tester->execute(['set' => 'demo', '--adopt' => ['sanne.devries']]));

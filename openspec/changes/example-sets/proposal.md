@@ -47,7 +47,15 @@ key and to other apps' objects only by lookup on a business key.
   nothing and makes `remove` exact.
 - After an install the loader reads every created object back. Exit codes:
   0 complete, 1 nothing written, 2 something missing (each named).
-- The cast file for set `zuiddrecht`.
+- `requires` in the cast file: OpenRegister registers the set needs are
+  imported from OpenRegister's own descriptors before the check when the
+  instance lacks them, recorded, and removed by `remove` only when this set
+  imported them.
+- `changes` in a fragment: set or append values on an object the set did not
+  create (found by business key), recorded so remove restores exactly that.
+- A cast or fragment group `admin` refuses the set.
+- `jsonFields`: fields a schema keeps as JSON text are sent as text.
+- The cast file for set `zuiddrecht`, requiring `brp` and `kvk`.
 
 ## Capabilities
 

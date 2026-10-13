@@ -180,7 +180,10 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$report = $this->remover->remove(set: 'demo');
 
 		$this->assertSame([], $report['failed']);
-		$this->assertSame(['objects' => 3, 'memberships' => 2, 'groups' => 1, 'accounts' => 2], $report['removed']);
+		$this->assertSame(
+			['objects' => 3, 'changes' => 0, 'memberships' => 2, 'groups' => 1, 'accounts' => 2, 'register imports' => 0],
+			$report['removed']
+		);
 		$this->assertSame([$foreign], $this->store->ids(register: 'cases', schema: 'case'));
 		$this->assertSame([], $this->store->ids(register: 'brp', schema: 'person'));
 		$this->assertSame(['someone'], $this->accounts->groups['cases-handlers'], 'a group that existed before stays, with its own members');

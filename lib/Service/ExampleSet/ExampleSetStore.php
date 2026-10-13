@@ -222,6 +222,34 @@ class ExampleSetStore {
 	}//end create()
 
 	/**
+	 * Save an existing row with new data; '' when saved, otherwise why not.
+	 *
+	 * @param string               $register The register slug.
+	 * @param string               $schema   The schema slug.
+	 * @param string               $id       The row's id.
+	 * @param array<string, mixed> $data     The whole row as it should be stored.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+	 */
+	public function update(string $register, string $schema, string $id, array $data): string {
+		$service = $this->objectService();
+		if ($service === null) {
+			return 'OpenRegister\'s object service is not available';
+		}
+
+		unset($data['@self'], $data['id']);
+		try {
+			$service->saveObject(object: $data, register: $register, schema: $schema, uuid: $id, _rbac: false, _multitenancy: false);
+		} catch (Throwable $e) {
+			return $e->getMessage();
+		}
+
+		return '';
+	}//end update()
+
+	/**
 	 * Delete one row; true when it is gone.
 	 *
 	 * @param string $register The register slug.

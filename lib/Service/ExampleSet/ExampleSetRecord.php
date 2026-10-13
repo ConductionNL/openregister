@@ -52,6 +52,8 @@ class ExampleSetRecord {
 		'groups'      => [],
 		'memberships' => [],
 		'objects'     => [],
+		'changes'     => [],
+		'registers'   => [],
 	];
 
 	/**
@@ -72,8 +74,10 @@ class ExampleSetRecord {
 	 * @param string $set The set id.
 	 *
 	 * @return array{users: array<string, string>, groups: array<int, string>, memberships: array<int, array{0: string, 1: string}>,
-	 *               objects: array<string, array{register: string, schema: string, id: string}>}
-	 *               `users` maps a uid to `created` or `adopted`; `objects` is keyed `<app>/<key>` in write order.
+	 *               objects: array<string, array{register: string, schema: string, id: string}>,
+	 *               changes: array<string, array<string, mixed>>, registers: array<string, array<int, array{appId: string, jobId: string}>>}
+	 *               `users` maps a uid to `created` or `adopted`; `objects` and `changes` are keyed `<app>/<key>` in
+	 *               write order; `registers` maps a register slug this set imported to the import jobs it created.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
@@ -93,6 +97,8 @@ class ExampleSetRecord {
 		$record['groups']      = array_values(array_filter((array) ($decoded['groups'] ?? []), 'is_string'));
 		$record['memberships'] = $this->memberships(decoded: (array) ($decoded['memberships'] ?? []));
 		$record['objects']     = $this->objects(decoded: (array) ($decoded['objects'] ?? []));
+		$record['changes']     = array_filter((array) ($decoded['changes'] ?? []), 'is_array');
+		$record['registers']   = array_filter((array) ($decoded['registers'] ?? []), 'is_array');
 
 		return $record;
 	}//end read()
@@ -147,7 +153,13 @@ class ExampleSetRecord {
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
 	public function isEmpty(array $record): bool {
-		return $record['users'] === [] && $record['groups'] === [] && $record['memberships'] === [] && $record['objects'] === [];
+		foreach (array_keys(self::BLANK) as $part) {
+			if (($record[$part] ?? []) !== []) {
+				return false;
+			}
+		}
+
+		return true;
 	}//end isEmpty()
 
 	/**

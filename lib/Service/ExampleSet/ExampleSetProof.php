@@ -57,7 +57,8 @@ class ExampleSetProof {
 			return [$path];
 		}
 
-		$lost = [];
+		$stored = $this->structured(stored: $stored);
+		$lost   = [];
 		foreach ($declared as $key => $value) {
 			$here = ltrim($path.'.'.$key, '.');
 			if (is_array($stored) === true && array_key_exists($key, $stored) === true) {
@@ -72,6 +73,26 @@ class ExampleSetProof {
 
 		return $lost;
 	}//end lostPaths()
+
+	/**
+	 * A stored value, decoded when a schema keeps a structure as JSON text.
+	 *
+	 * @param mixed $stored What was read back.
+	 *
+	 * @return mixed
+	 */
+	private function structured(mixed $stored): mixed {
+		if (is_string($stored) === false) {
+			return $stored;
+		}
+
+		$decoded = json_decode($stored, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return $stored;
+	}//end structured()
 
 	/**
 	 * Whether two leaf values are the same value.

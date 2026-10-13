@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 use DateTimeImmutable;
 use DateTimeZone;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetProof;
@@ -33,6 +34,7 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeExampleSetAccounts;
+use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeExampleSetRegisters;
 use OCA\OpenRegister\Tests\Unit\Service\ExampleSet\Fake\FakeExampleSetStore;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -55,6 +57,8 @@ abstract class ExampleSetTestCase extends TestCase {
 
 	protected FakeExampleSetAccounts $accounts;
 
+	protected FakeExampleSetRegisters $registers;
+
 	protected ExampleSetRecord $record;
 
 	protected ExampleSetCatalogue $catalogue;
@@ -69,7 +73,9 @@ abstract class ExampleSetTestCase extends TestCase {
 		mkdir($this->appsRoot);
 
 		$this->store    = new FakeExampleSetStore();
-		$this->accounts = new FakeExampleSetAccounts();
+		$this->accounts  = new FakeExampleSetAccounts();
+		$this->registers = new FakeExampleSetRegisters();
+		$changes         = new ExampleSetChanges(store: $this->store, values: new ExampleSetValues());
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturnCallback(fn (string $app, string $key, string $default = ''): string => ($this->config[$key] ?? $default));
@@ -92,9 +98,17 @@ abstract class ExampleSetTestCase extends TestCase {
 			accounts: $this->accounts,
 			values: new ExampleSetValues(),
 			record: $this->record,
-			proof: new ExampleSetProof()
+			proof: new ExampleSetProof(),
+			registers: $this->registers,
+			changes: $changes
 		);
-		$this->remover   = new ExampleSetRemover(store: $this->store, accounts: $this->accounts, record: $this->record);
+		$this->remover   = new ExampleSetRemover(
+			store: $this->store,
+			accounts: $this->accounts,
+			record: $this->record,
+			changes: $changes,
+			registers: $this->registers
+		);
 	}
 
 	protected function tearDown(): void {

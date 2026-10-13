@@ -68,7 +68,7 @@ The loader SHALL create a Nextcloud account for every cast person with a `uid`, 
 
 ### Requirement: Check validates every object against its real schema without writing (REQ-EXS-004)
 
-`--check` SHALL resolve every placeholder and lookup, verify each target register and schema exists on the instance, check every cast `bsn` against the eleven test, and validate every object with OpenRegister's own object validator against its target schema, whether or not that schema has hard validation on. It SHALL write nothing. It SHALL exit non-zero when anything is refused and name each refusal. An install SHALL run the same pass first and write nothing when it refuses. A reference to an object of the set that is not written yet SHALL be validated with a stand-in of the right shape, and a lookup SHALL also match an object declared earlier in the set.
+`--check` SHALL resolve every placeholder and lookup, verify each target register and schema exists on the instance, check every cast `bsn` against the eleven test, and validate every object with OpenRegister's own object validator against its target schema, whether or not that schema has hard validation on. It SHALL write none of the set's accounts, groups, objects or changes; the only thing it may write is the import of a register the set requires (REQ-EXS-009), because those schemas are what it checks against. It SHALL exit non-zero when anything is refused and name each refusal. An install SHALL run the same pass first and write none of the set's accounts, groups, objects or changes when it refuses. A reference to an object of the set that is not written yet SHALL be validated with a stand-in of the right shape, and a lookup SHALL also match an object declared earlier in the set.
 
 #### Scenario: A value the schema refuses fails the check
 - **GIVEN** an object whose `status` is not in its schema's enum
@@ -115,3 +115,50 @@ After writing, the loader SHALL read every object it created in this run back fr
 - **GIVEN** openregister and portaliq both ship `zuiddrecht.json`
 - **WHEN** the list runs
 - **THEN** it SHALL show `zuiddrecht` with `openregister, portaliq` and its install state
+
+### Requirement: A set imports the OpenRegister registers it requires (REQ-EXS-009)
+
+The cast file MAY name OpenRegister registers in `requires` (for example `["brp", "kvk"]`). Before the check, the loader SHALL import every required register that is not on the instance from OpenRegister's own register descriptor, the way the descriptor import endpoint does, and SHALL record the import jobs that import created. A required register that is already on the instance SHALL be used as it is and SHALL NOT be recorded. A second run SHALL import nothing. Remove SHALL soft-delete exactly the objects of the recorded import jobs, after the set's own objects, and SHALL NOT touch an import it did not make. A required register that cannot be imported SHALL refuse the set.
+
+#### Scenario: A missing register is imported once and removed again
+- **GIVEN** a set that requires `brp` and an instance without it
+- **WHEN** the set is installed twice and then removed
+- **THEN** `brp` SHALL be imported by the first run only, reported as `imported` then `kept`, and remove SHALL delete the objects of that import
+
+#### Scenario: A register that was there stays there
+- **GIVEN** a set that requires `brp` and an instance that already has it
+- **WHEN** the set is installed and removed
+- **THEN** nothing SHALL be imported and remove SHALL leave every import of `brp` alone
+
+#### Scenario: A register that cannot be imported refuses the set
+- **GIVEN** a set that requires a register OpenRegister ships no descriptor for
+- **WHEN** the set is installed
+- **THEN** the command SHALL exit 1 naming the register, and SHALL write none of the set's accounts, groups or objects
+
+### Requirement: A set never adds anyone to Nextcloud's administrators (REQ-EXS-010)
+
+A cast group or fragment group whose gid is `admin` (in any letter case) SHALL refuse the set before anything is written. An administrator role in an app is given through that app's own admin group in its fragment.
+
+#### Scenario: An admin group refuses the set
+- **GIVEN** a fragment that puts a cast person in group `admin`
+- **WHEN** the set is checked or installed
+- **THEN** it SHALL be refused naming the group, and no account or group SHALL be written
+
+### Requirement: A set may change an object it did not create and undo exactly that (REQ-EXS-011)
+
+A fragment MAY declare `changes`: each with a `key`, a `register`, a `schema`, a `where` that finds exactly one existing object by business key, and `set` (dot path to value) and/or `append` (dot path to one value added to the list there). The check SHALL refuse a change whose object is not found or whose result its schema refuses. Install SHALL write only what differs, SHALL record the previous value of every path it set, the values it appended, and any map it created on the way to a path. A change already fully present SHALL NOT be recorded. Remove SHALL put back exactly the recorded values and leave every other part of the object as it is then.
+
+#### Scenario: A sign-in mode added to a portal is taken off again
+- **GIVEN** a portal row with sign-in modes `["password"]` that the set did not create
+- **WHEN** a set appends `nextcloud` to `authentication.modes` and sets a card in `authentication.modeLabels`, somebody renames the portal, and the set is removed
+- **THEN** the portal SHALL have modes `["password"]`, no `modeLabels`, and its new name
+
+### Requirement: A field a schema keeps as JSON text is sent as text (REQ-EXS-012)
+
+An object MAY name fields in `jsonFields`. Those fields SHALL be sent to the register as JSON text and validated in that form, and the read-back proof SHALL compare the decoded text with the declared structure.
+
+#### Scenario: A history list is stored as text and proved as a list
+- **GIVEN** an object with `jsonFields: ["history"]` and a list in `history`
+- **WHEN** the set is installed
+- **THEN** the register SHALL receive the list as JSON text and the proof SHALL report nothing lost
+

@@ -41,7 +41,9 @@ class ExampleSetRemover {
 	 *
 	 * @param ExampleSetStore    $store    Register access.
 	 * @param ExampleSetAccounts $accounts Accounts and groups.
-	 * @param ExampleSetRecord   $record   What the install made.
+	 * @param ExampleSetRecord    $record    What the install made.
+	 * @param ExampleSetChanges   $changes   Reverts changes to objects the set did not create.
+	 * @param ExampleSetRegisters $registers Removes the register imports the set made.
 	 *
 	 * @return void
 	 */
@@ -49,6 +51,8 @@ class ExampleSetRemover {
 		private readonly ExampleSetStore $store,
 		private readonly ExampleSetAccounts $accounts,
 		private readonly ExampleSetRecord $record,
+		private readonly ExampleSetChanges $changes,
+		private readonly ExampleSetRegisters $registers,
 	) {
 	}//end __construct()
 
@@ -67,7 +71,7 @@ class ExampleSetRemover {
 		$record = $this->record->read(set: $set);
 		$report = [
 			'installed' => ($this->record->isEmpty(record: $record) === false),
-			'removed'   => ['objects' => 0, 'memberships' => 0, 'groups' => 0, 'accounts' => 0],
+			'removed'   => ['objects' => 0, 'changes' => 0, 'memberships' => 0, 'groups' => 0, 'accounts' => 0, 'register imports' => 0],
 			'left'      => [],
 			'failed'    => [],
 		];
@@ -82,6 +86,8 @@ class ExampleSetRemover {
 			$report['removed']['objects']++;
 			$this->record->write(set: $set, record: $record);
 		}
+
+		$record = $this->revertChanges(set: $set, record: $record, report: $report);
 
 		foreach ($record['memberships'] as $index => [$gid, $uid]) {
 			if ($this->accounts->removeFromGroup(gid: $gid, uid: $uid) === false) {
@@ -99,8 +105,66 @@ class ExampleSetRemover {
 		$record = $this->removeGroupsAndAccounts(set: $set, record: $record, report: $report);
 		$this->record->write(set: $set, record: $record);
 
+		// Last: the set's own objects may point into a register it imported.
+		$this->removeImports(set: $set, record: $record, report: $report);
+
 		return $report;
 	}//end remove()
+
+	/**
+	 * Revert the recorded changes, newest first.
+	 *
+	 * @param string               $set    The set id.
+	 * @param array<string, mixed> $record The record.
+	 * @param array<string, mixed> $report The report; counts and failures are added.
+	 *
+	 * @return array<string, mixed> The record without the reverted changes.
+	 */
+	private function revertChanges(string $set, array $record, array &$report): array {
+		foreach (array_reverse($record['changes'], true) as $name => $entry) {
+			if ($this->changes->revert(entry: $entry) === false) {
+				$report['failed'][] = 'change '.$name.' on '.$entry['register'].' '.$entry['schema'].' ('.$entry['id'].')';
+				continue;
+			}
+
+			unset($record['changes'][$name]);
+			$report['removed']['changes']++;
+			$this->record->write(set: $set, record: $record);
+		}
+
+		return $record;
+	}//end revertChanges()
+
+	/**
+	 * Remove the register imports this set made.
+	 *
+	 * @param string               $set    The set id.
+	 * @param array<string, mixed> $record The record.
+	 * @param array<string, mixed> $report The report; counts and failures are added.
+	 *
+	 * @return void
+	 */
+	private function removeImports(string $set, array $record, array &$report): void {
+		foreach ($record['registers'] as $slug => $jobs) {
+			$left = [];
+			foreach ($jobs as $job) {
+				if ($this->registers->removeImport(appId: (string) $job['appId'], jobId: (string) $job['jobId']) === false) {
+					$report['failed'][] = 'register '.$slug.' import job '.$job['jobId'];
+					$left[]             = $job;
+					continue;
+				}
+
+				$report['removed']['register imports']++;
+			}
+
+			$record['registers'][$slug] = $left;
+			if ($left === []) {
+				unset($record['registers'][$slug]);
+			}
+
+			$this->record->write(set: $set, record: $record);
+		}//end foreach
+	}//end removeImports()
 
 	/**
 	 * Delete created groups and created accounts; forget adopted accounts.
