@@ -443,7 +443,9 @@ describe('checking a draft before it is saved', () => {
 					name: 'Yes/no',
 					sourceFormat: 'csv',
 					version: '1.0.0',
-					fieldMappings: [{ source: 'Actief', target: 'active', transform: stored }],
+					fieldMappings: [
+						{ source: 'Actief', target: 'active', transform: stored },
+					],
 				}),
 			),
 		).toEqual([])

@@ -155,7 +155,10 @@ jest.mock('@nextcloud/vue', () => {
 	}
 	return new Proxy(
 		{ __esModule: true },
-		{ get: (target, prop) => (prop in target ? target[prop] : stub(String(prop))) },
+		{
+			get: (target, prop) =>
+				prop in target ? target[prop] : stub(String(prop)),
+		},
 	)
 })
 
@@ -451,7 +454,9 @@ describe('the list', () => {
 		const askToDelete = async (name) => {
 			await list
 				.findAllComponents({ name: 'NcButton' })
-				.find((button) => button.vm.$attrs['aria-label'] === `Delete ${name}`)
+				.find(
+					(button) => button.vm.$attrs['aria-label'] === `Delete ${name}`,
+				)
 				.trigger('click')
 			return list.findComponent(DeleteMigrationPackDialog)
 		}
@@ -723,7 +728,8 @@ describe('the editor', () => {
 			response: {
 				status: 409,
 				data: {
-					message: 'The migration pack was saved by someone else after it was read',
+					message:
+						'The migration pack was saved by someone else after it was read',
 					error: 'pack-changed',
 				},
 			},
@@ -740,11 +746,17 @@ describe('the editor', () => {
 		const vm = await loadedEditor(storedPack({ builtin: false }))
 		vm.draft.name = 'Changed'
 		axios.put.mockResolvedValue({
-			data: storedPack({ builtin: false, updatedAt: '2026-10-12T10:05:00+00:00' }),
+			data: storedPack({
+				builtin: false,
+				updatedAt: '2026-10-12T10:05:00+00:00',
+			}),
 		})
 		await vm.save()
 		axios.get.mockResolvedValue({
-			data: storedPack({ builtin: false, updatedAt: '2026-10-12T10:05:00+00:00' }),
+			data: storedPack({
+				builtin: false,
+				updatedAt: '2026-10-12T10:05:00+00:00',
+			}),
 		})
 		vm.draft.name = 'Changed again'
 		await vm.save()
@@ -807,7 +819,6 @@ describe('the editor', () => {
 			name: 'migration-pack-detail',
 			params: { id: '40' },
 		})
-
 	})
 
 	it('offers a deleted pack only Save as a new pack, not Save', async () => {
@@ -996,7 +1007,9 @@ describe('the editor', () => {
 		expect(target(1).attributes('aria-describedby')).toBeUndefined()
 		for (const n of [4, 5]) {
 			const hint = wrapper.find(`#${target(n).attributes('aria-describedby')}`)
-			expect(hint.text()).toBe(wrapper.vm.targetHint(wrapper.vm.draft.rows[n - 1]))
+			expect(hint.text()).toBe(
+				wrapper.vm.targetHint(wrapper.vm.draft.rows[n - 1]),
+			)
 		}
 
 		const [announcer, problems] = wrapper.findAll('[aria-live="polite"]')
@@ -1263,13 +1276,17 @@ describe('the sample-row test', () => {
 
 	it('says why it cannot test: problems in the pack, or the JSON view', async () => {
 		const panel = (props) =>
-			mount(PackPreviewPanel, { props: { definition: null, columns: ['A'], ...props } })
+			mount(PackPreviewPanel, {
+				props: { definition: null, columns: ['A'], ...props },
+			})
 		const problems = panel({})
 		expect(problems.text()).toContain(
 			'Fix the problems in the pack first; then it can be tested.',
 		)
 		problems.unmount()
-		const blocked = panel({ blockedText: 'Switch to the form to test the pack.' })
+		const blocked = panel({
+			blockedText: 'Switch to the form to test the pack.',
+		})
 		expect(blocked.text()).toContain('Switch to the form to test the pack.')
 		expect(blocked.text()).not.toContain('Fix the problems')
 		blocked.unmount()
@@ -1375,7 +1392,6 @@ describe('the transform dialog', () => {
 		vm.setDefaultChoice('false')
 		expect(vm.defaultChoice).toBe('false')
 		expect(transformPayload(vm.draft).default).toBe(false)
-
 	})
 
 	it('shows a yes/no table as yes/no choices, and announces what keeps it from applying', async () => {
@@ -1466,13 +1482,17 @@ describe('the key/value rows', () => {
 				},
 			})
 		const text = rows(false)
-		expect(text.find('input').attributes('aria-label')).toBe('Source value of row 1')
+		expect(text.find('input').attributes('aria-label')).toBe(
+			'Source value of row 1',
+		)
 		expect(text.findAll('input')[1].attributes('aria-label')).toBe(
 			'Stored value of row 1',
 		)
 		text.unmount()
 		const yesNo = rows(true)
-		expect(yesNo.find('select').attributes('aria-label')).toBe('Stored value of row 1')
+		expect(yesNo.find('select').attributes('aria-label')).toBe(
+			'Stored value of row 1',
+		)
 		expect(yesNo.find('select').element.value).toBe('true')
 		yesNo.unmount()
 	})

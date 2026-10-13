@@ -62,7 +62,10 @@ const OTHER_PASS = 'E2e-Share-Pass-123'
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
 
 /** The stackiq TOPdesk packs the editor's Jest round-trip tests also load. */
-const STACKIQ_FIXTURES = path.resolve(__dirname, '../../fixtures/migration-packs/stackiq')
+const STACKIQ_FIXTURES = path.resolve(
+	__dirname,
+	'../../fixtures/migration-packs/stackiq',
+)
 
 /** OpenRegister's own built-in pack, seeded on install. */
 const BUILTIN_SLUG = 'zgw-zaken-json'
@@ -191,9 +194,13 @@ const created = new Set<number>()
  */
 async function createPack(definition: Definition): Promise<StoredPack> {
 	const response = await admin.post(API, { data: { definition } })
-	expect(response.status(), `pack create failed: ${await response.text()}`).toBe(201)
+	expect(response.status(), `pack create failed: ${await response.text()}`).toBe(
+		201,
+	)
 	const pack = (await response.json()) as StoredPack
-	expect(String(pack.id), 'no row id came back from the pack create').toMatch(/^\d+$/)
+	expect(String(pack.id), 'no row id came back from the pack create').toMatch(
+		/^\d+$/,
+	)
 	created.add(pack.id)
 	return pack
 }
@@ -224,7 +231,9 @@ async function expectError(
 	error: string,
 ): Promise<any> {
 	const text = await response.text()
-	expect(response.status(), `expected HTTP ${status} ${error}, got: ${text}`).toBe(status)
+	expect(response.status(), `expected HTTP ${status} ${error}, got: ${text}`).toBe(
+		status,
+	)
 	const body = JSON.parse(text)
 	expect(body.error).toBe(error)
 	expect(typeof body.message, 'the answer carries no message').toBe('string')
@@ -270,7 +279,11 @@ async function openList(page: Page, uid: string): Promise<void> {
 		waitUntil: 'domcontentloaded',
 	})
 	await expect(
-		page.getByRole('heading', { level: 2, name: 'Migration packs', exact: true }),
+		page.getByRole('heading', {
+			level: 2,
+			name: 'Migration packs',
+			exact: true,
+		}),
 		'MigrationPacksIndex did not render its heading',
 	).toBeVisible({ timeout: 30_000 })
 	await expectSignedInAs(page, uid)
@@ -306,7 +319,10 @@ function saveButton(page: Page) {
 function recordUpdates(page: Page, id: number): Request[] {
 	const seen: Request[] = []
 	page.on('request', (sent) => {
-		if (sent.method() === 'PUT' && sent.url().endsWith(`/api/migration-packs/${id}`)) {
+		if (
+			sent.method() === 'PUT'
+			&& sent.url().endsWith(`/api/migration-packs/${id}`)
+		) {
 			seen.push(sent)
 		}
 	})
@@ -318,22 +334,34 @@ function recordUpdates(page: Page, id: number): Request[] {
  *
  * @return The update request the editor sent.
  */
-async function saveInEditor(page: Page, pack: StoredPack, version: string): Promise<Request> {
+async function saveInEditor(
+	page: Page,
+	pack: StoredPack,
+	version: string,
+): Promise<Request> {
 	const answer = page.waitForResponse(
-		(response) => response.request().method() === 'PUT'
+		(response) =>
+			response.request().method() === 'PUT'
 			&& response.url().endsWith(`/api/migration-packs/${pack.id}`),
 	)
 	await saveButton(page).click()
 	const response = await answer
-	expect(response.status(), `the save was refused: ${await response.text()}`).toBe(200)
-	await expect(page.getByText(`Saved as version ${version}.`, { exact: true })).toBeVisible()
+	expect(response.status(), `the save was refused: ${await response.text()}`).toBe(
+		200,
+	)
+	await expect(
+		page.getByText(`Saved as version ${version}.`, { exact: true }),
+	).toBeVisible()
 	return response.request()
 }
 
 /** The sample-row test panel of the editor. */
 function previewPanel(page: Page) {
 	return page.locator('section').filter({
-		has: page.getByRole('heading', { name: 'Test with a sample row', exact: true }),
+		has: page.getByRole('heading', {
+			name: 'Test with a sample row',
+			exact: true,
+		}),
 	})
 }
 
@@ -352,7 +380,10 @@ test.beforeAll(async () => {
 	// which reads like a broken page; say what it is instead. The probe sends
 	// the browser's language, so an account without a language of its own
 	// resolves the way the page does.
-	for (const [uid, context] of [[ADMIN, admin], [OTHER, other]] as const) {
+	for (const [uid, context] of [
+		[ADMIN, admin],
+		[OTHER, other],
+	] as const) {
 		const answer = await context.get('/ocs/v2.php/cloud/user?format=json', {
 			headers: { 'Accept-Language': 'en-US,en;q=0.9' },
 		})
@@ -420,7 +451,9 @@ test.describe('migration packs as an administrator', () => {
 		for (const [index, mapping] of MAPPINGS.entries()) {
 			const number = index + 1
 			await expect(
-				page.getByRole('textbox', { name: `Source column of row ${number}` }),
+				page.getByRole('textbox', {
+					name: `Source column of row ${number}`,
+				}),
 			).toHaveValue(mapping.source)
 			await expect(
 				page.getByRole('textbox', { name: `Target field of row ${number}` }),
@@ -445,7 +478,9 @@ test.describe('migration packs as an administrator', () => {
 		await page.getByRole('button', { name: 'Transform of row 1' }).click()
 		const dialog = page.getByRole('dialog', { name: 'Transform for row 1' })
 		await expect(dialog).toBeVisible()
-		const sources = dialog.getByRole('textbox', { name: /^Value in the source \d+$/ })
+		const sources = dialog.getByRole('textbox', {
+			name: /^Value in the source \d+$/,
+		})
 		const count = await sources.count()
 		let number = 0
 		for (let index = 0; index < count; index++) {
@@ -453,7 +488,10 @@ test.describe('migration packs as an administrator', () => {
 				number = index + 1
 			}
 		}
-		expect(number, 'the Applicatie Status lookup has no row for In voorraad').toBeGreaterThan(0)
+		expect(
+			number,
+			'the Applicatie Status lookup has no row for In voorraad',
+		).toBeGreaterThan(0)
 		await dialog
 			.getByRole('textbox', { name: `Stored value ${number}`, exact: true })
 			.fill('Acquisition')
@@ -478,8 +516,12 @@ test.describe('migration packs as an administrator', () => {
 		const pack = await createPack(stackiqCopy('topdesk-module.json'))
 		await openEditor(page, pack, ADMIN)
 
-		await expect(page.getByRole('textbox', { name: 'Source column of row 4' })).toHaveValue('Nickname')
-		await expect(page.getByRole('textbox', { name: 'Source column of row 5' })).toHaveValue('Roepnaam')
+		await expect(
+			page.getByRole('textbox', { name: 'Source column of row 4' }),
+		).toHaveValue('Nickname')
+		await expect(
+			page.getByRole('textbox', { name: 'Source column of row 5' }),
+		).toHaveValue('Roepnaam')
 		for (const row of [3, 4]) {
 			await expect(
 				mappingRows(page).nth(row),
@@ -488,7 +530,9 @@ test.describe('migration packs as an administrator', () => {
 		}
 
 		await page.getByRole('button', { name: 'Move row 5 up' }).click()
-		await expect(page.getByRole('textbox', { name: 'Source column of row 4' })).toHaveValue('Roepnaam')
+		await expect(
+			page.getByRole('textbox', { name: 'Source column of row 4' }),
+		).toHaveValue('Roepnaam')
 		await saveInEditor(page, pack, '2.0.1')
 
 		const stored = (await readPack(pack.id)).definition.fieldMappings
@@ -519,7 +563,10 @@ test.describe('migration packs as an administrator', () => {
 			})
 		})
 
-		const description = page.getByRole('textbox', { name: 'Description', exact: true })
+		const description = page.getByRole('textbox', {
+			name: 'Description',
+			exact: true,
+		})
 		await description.fill('An unsaved description')
 		await saveButton(page).click()
 
@@ -529,9 +576,16 @@ test.describe('migration packs as an administrator', () => {
 				`the finding ${finding} is not on its own line`,
 			).toHaveCount(1)
 		}
-		await expect(description, 'the unsaved change was dropped').toHaveValue('An unsaved description')
-		await expect(saveButton(page), 'the editor no longer holds the change').toBeEnabled()
-		expect((await readPack(pack.id)).definition.description).toBe(pack.definition.description)
+		await expect(description, 'the unsaved change was dropped').toHaveValue(
+			'An unsaved description',
+		)
+		await expect(
+			saveButton(page),
+			'the editor no longer holds the change',
+		).toBeEnabled()
+		expect((await readPack(pack.id)).definition.description).toBe(
+			pack.definition.description,
+		)
 	})
 
 	// @e2e migration-mapping-packs::a-save-over-someone-elses-save-is-refused
@@ -543,27 +597,45 @@ test.describe('migration packs as an administrator', () => {
 		// updatedAt has a resolution of one second; let it move.
 		await page.waitForTimeout(1_100)
 		const theirs = await admin.put(`${API}/${pack.id}`, {
-			data: { definition: { ...pack.definition, description: 'Saved by someone else' } },
+			data: {
+				definition: {
+					...pack.definition,
+					description: 'Saved by someone else',
+				},
+			},
 		})
 		expect(theirs.status(), await theirs.text()).toBe(200)
 
-		await page.getByRole('textbox', { name: 'Description', exact: true }).fill('Mine')
+		await page
+			.getByRole('textbox', { name: 'Description', exact: true })
+			.fill('Mine')
 		await saveButton(page).click()
 
-		await expect(page.getByText(/Someone else saved this pack after you opened it/)).toBeVisible()
-		await expect(page.getByRole('button', { name: 'Reload the pack', exact: true })).toBeVisible()
+		await expect(
+			page.getByText(/Someone else saved this pack after you opened it/),
+		).toBeVisible()
+		await expect(
+			page.getByRole('button', { name: 'Reload the pack', exact: true }),
+		).toBeVisible()
 		expect(updates, 'the editor sent its save anyway').toHaveLength(0)
-		expect((await readPack(pack.id)).definition.description).toBe('Saved by someone else')
+		expect((await readPack(pack.id)).definition.description).toBe(
+			'Saved by someone else',
+		)
 	})
 
 	// @e2e migration-mapping-packs::deleting-a-built-in-pack-warns-that-it-comes-back
 	test('deleting a built-in pack warns that it comes back', async ({ page }) => {
 		const builtin = await packBySlug(BUILTIN_SLUG)
-		expect(builtin, `the built-in pack ${BUILTIN_SLUG} is not installed`).toBeDefined()
+		expect(
+			builtin,
+			`the built-in pack ${BUILTIN_SLUG} is not installed`,
+		).toBeDefined()
 		expect(builtin!.builtin).toBe(true)
 		await openList(page, ADMIN)
 
-		await page.getByRole('button', { name: `Delete ${builtin!.name}`, exact: true }).click()
+		await page
+			.getByRole('button', { name: `Delete ${builtin!.name}`, exact: true })
+			.click()
 		const dialog = page.getByRole('dialog', { name: 'Delete migration pack' })
 		await expect(dialog).toBeVisible()
 		await expect(dialog).toContainText(builtin!.name)
@@ -579,13 +651,20 @@ test.describe('migration packs as an administrator', () => {
 		const pack = await createPack(plainPack('delete'))
 		await openList(page, ADMIN)
 
-		await page.getByRole('button', { name: `Delete ${pack.name}`, exact: true }).click()
+		await page
+			.getByRole('button', { name: `Delete ${pack.name}`, exact: true })
+			.click()
 		const dialog = page.getByRole('dialog', { name: 'Delete migration pack' })
 		await expect(dialog).toContainText(pack.name)
-		await expect(dialog, 'a pack no app installed does not come back').not.toContainText('installs it again')
+		await expect(
+			dialog,
+			'a pack no app installed does not come back',
+		).not.toContainText('installs it again')
 		await dialog.getByRole('button', { name: 'Delete', exact: true }).click()
 
-		await expect(page.getByRole('link', { name: pack.name, exact: true })).toHaveCount(0)
+		await expect(
+			page.getByRole('link', { name: pack.name, exact: true }),
+		).toHaveCount(0)
 		expect((await admin.get(`${API}/${pack.id}`)).status()).toBe(404)
 	})
 
@@ -594,10 +673,16 @@ test.describe('migration packs as an administrator', () => {
 		const definition = plainPack('import')
 		await openList(page, ADMIN)
 
-		await page.locator('.migration-packs__toolbar input[type="file"]').setInputFiles(jsonFile(definition))
+		await page
+			.locator('.migration-packs__toolbar input[type="file"]')
+			.setInputFiles(jsonFile(definition))
 
-		await expect(page.getByText(`Imported "${definition.name}".`, { exact: true })).toBeVisible()
-		await expect(page.getByRole('link', { name: definition.name, exact: true })).toBeVisible()
+		await expect(
+			page.getByText(`Imported "${definition.name}".`, { exact: true }),
+		).toBeVisible()
+		await expect(
+			page.getByRole('link', { name: definition.name, exact: true }),
+		).toBeVisible()
 		const stored = await packBySlug(definition.id)
 		expect(stored, 'the imported pack is not stored').toBeDefined()
 		created.add(stored!.id)
@@ -609,7 +694,10 @@ test.describe('the editor saves what it does not show', () => {
 	// @e2e migration-mapping-packs::the-shipped-topdesk-packs-survive-an-unedited-save
 	test('the shipped TOPdesk packs survive an unedited save', async ({ page }) => {
 		test.setTimeout(180_000)
-		const files = fs.readdirSync(STACKIQ_FIXTURES).filter((file) => file.endsWith('.json')).sort()
+		const files = fs
+			.readdirSync(STACKIQ_FIXTURES)
+			.filter((file) => file.endsWith('.json'))
+			.sort()
 		expect(files, 'stackiq ships five TOPdesk packs').toHaveLength(5)
 
 		for (const file of files) {
@@ -617,8 +705,13 @@ test.describe('the editor saves what it does not show', () => {
 			const before = (await readPack(pack.id)).definition
 			await openEditor(page, pack, ADMIN)
 
-			await expect(saveButton(page), `${file}: an unedited pack shows unsaved changes`).toBeDisabled()
-			await expect(page.getByRole('button', { name: 'Undo changes', exact: true })).toBeDisabled()
+			await expect(
+				saveButton(page),
+				`${file}: an unedited pack shows unsaved changes`,
+			).toBeDisabled()
+			await expect(
+				page.getByRole('button', { name: 'Undo changes', exact: true }),
+			).toBeDisabled()
 
 			const name = `${pack.name} renamed`
 			await page.getByRole('textbox', { name: 'Name', exact: true }).fill(name)
@@ -627,21 +720,27 @@ test.describe('the editor saves what it does not show', () => {
 
 			// Key for key and in the same order: compare the serialised text.
 			const after = (await readPack(pack.id)).definition
-			expect(JSON.stringify(after), `${file} changed beyond its name and version`).toBe(
-				JSON.stringify({ ...before, name, version }),
-			)
+			expect(
+				JSON.stringify(after),
+				`${file} changed beyond its name and version`,
+			).toBe(JSON.stringify({ ...before, name, version }))
 		}
 	})
 
 	// @e2e migration-mapping-packs::an-empty-default-stays-null
 	// @e2e migration-mapping-packs::one-column-feeding-two-targets-keeps-both-rows
-	test('the module pack keeps its null default and both Applicatiesoort rows', async ({ page }) => {
+	test('the module pack keeps its null default and both Applicatiesoort rows', async ({
+		page,
+	}) => {
 		const pack = await createPack(stackiqCopy('topdesk-module.json'))
 		await openEditor(page, pack, ADMIN)
-		await page.getByRole('textbox', { name: 'Description', exact: true }).fill('Saved from the editor')
+		await page
+			.getByRole('textbox', { name: 'Description', exact: true })
+			.fill('Saved from the editor')
 		await saveInEditor(page, pack, '2.0.1')
 
-		const rows = (await readPack(pack.id)).definition.fieldMappings as Definition[]
+		const rows = (await readPack(pack.id)).definition
+			.fieldMappings as Definition[]
 		const fromSoort = rows
 			.map((row, index) => ({ ...row, index }))
 			.filter((row) => row.source === 'Applicatiesoort')
@@ -650,7 +749,9 @@ test.describe('the editor saves what it does not show', () => {
 			'cloudDienstverleningsmodel',
 		])
 		const lookup = fromSoort[1].transform
-		expect(Object.hasOwn(lookup, 'default'), 'the default key was dropped').toBe(true)
+		expect(Object.hasOwn(lookup, 'default'), 'the default key was dropped').toBe(
+			true,
+		)
 		expect(lookup.default).toBeNull()
 	})
 
@@ -659,7 +760,11 @@ test.describe('the editor saves what it does not show', () => {
 		const definition = plainPack('unknown keys')
 		definition['x-stackiq'] = { shippedVersion: '2.0.0', shippedHash: 'abc' }
 		definition.fieldMappings = [
-			{ source: 'Naam', target: 'name', transform: { type: 'trim', futureOption: true } },
+			{
+				source: 'Naam',
+				target: 'name',
+				transform: { type: 'trim', futureOption: true },
+			},
 		]
 		const pack = await createPack(definition)
 		await openEditor(page, pack, ADMIN)
@@ -671,52 +776,93 @@ test.describe('the editor saves what it does not show', () => {
 		await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
 		await expect(dialog).toBeHidden()
 
-		await page.getByRole('textbox', { name: 'Name', exact: true }).fill(`${pack.name} renamed`)
+		await page
+			.getByRole('textbox', { name: 'Name', exact: true })
+			.fill(`${pack.name} renamed`)
 		await saveInEditor(page, pack, '1.0.1')
 
 		const stored = (await readPack(pack.id)).definition
-		expect(stored['x-stackiq']).toEqual({ shippedVersion: '2.0.0', shippedHash: 'abc' })
-		expect(stored.fieldMappings[0].transform).toEqual({ type: 'trim', futureOption: true })
+		expect(stored['x-stackiq']).toEqual({
+			shippedVersion: '2.0.0',
+			shippedHash: 'abc',
+		})
+		expect(stored.fieldMappings[0].transform).toEqual({
+			type: 'trim',
+			futureOption: true,
+		})
 	})
 })
 
 test.describe('the sample-row test', () => {
 	// @e2e migration-mapping-packs::a-sample-row-shows-what-the-import-would-write
-	test('a sample row shows what the import would write, from the unsaved pack', async ({ page }) => {
+	test('a sample row shows what the import would write, from the unsaved pack', async ({
+		page,
+	}) => {
 		const pack = await createPack(stackiqCopy('topdesk-module.json'))
 		await openEditor(page, pack, ADMIN)
-		await page.getByRole('textbox', { name: 'Target field of row 1' }).fill('title')
+		await page
+			.getByRole('textbox', { name: 'Target field of row 1' })
+			.fill('title')
 
 		const panel = previewPanel(page)
-		await panel.getByRole('textbox', { name: 'Sample value for Applicatie Naam' }).fill(' Zaaksysteem ')
-		await panel.getByRole('textbox', { name: 'Sample value for APPID' }).fill('A-1')
-		await panel.getByRole('textbox', { name: 'Sample value for Applicatiesoort' }).fill('Cloud')
+		await panel
+			.getByRole('textbox', { name: 'Sample value for Applicatie Naam' })
+			.fill(' Zaaksysteem ')
+		await panel
+			.getByRole('textbox', { name: 'Sample value for APPID' })
+			.fill('A-1')
+		await panel
+			.getByRole('textbox', { name: 'Sample value for Applicatiesoort' })
+			.fill('Cloud')
 		await panel.getByRole('button', { name: 'Test', exact: true }).click()
 
-		const field = (name: string) => panel
-			.getByRole('row')
-			.filter({ has: page.getByRole('cell', { name, exact: true }) })
+		const field = (name: string) =>
+			panel
+				.getByRole('row')
+				.filter({ has: page.getByRole('cell', { name, exact: true }) })
 		await expect(field('title')).toContainText('"Zaaksysteem"')
 		await expect(field('cloudDienstverleningsmodel')).toContainText('null')
-		await expect(field('name'), 'the preview ran on the stored pack, not the edited one').toHaveCount(0)
-		expect((await readPack(pack.id)).definition.fieldMappings[0].target, 'the test saved the pack').toBe('name')
+		await expect(
+			field('name'),
+			'the preview ran on the stored pack, not the edited one',
+		).toHaveCount(0)
+		expect(
+			(await readPack(pack.id)).definition.fieldMappings[0].target,
+			'the test saved the pack',
+		).toBe('name')
 	})
 
 	// @e2e migration-mapping-packs::a-sample-row-with-a-missing-required-column-shows-the-error
-	test('a sample row with a missing required column shows the error', async ({ page }) => {
+	test('a sample row with a missing required column shows the error', async ({
+		page,
+	}) => {
 		const pack = await createPack(stackiqCopy('topdesk-module.json'))
 		await openEditor(page, pack, ADMIN)
 
 		const panel = previewPanel(page)
-		await panel.getByRole('textbox', { name: 'Sample value for Applicatie Naam' }).fill('Zaaksysteem')
+		await panel
+			.getByRole('textbox', { name: 'Sample value for Applicatie Naam' })
+			.fill('Zaaksysteem')
 		await panel.getByRole('button', { name: 'Test', exact: true }).click()
 
-		await expect(panel.getByRole('heading', { name: 'Problems in this row', exact: true })).toBeVisible()
+		await expect(
+			panel.getByRole('heading', {
+				name: 'Problems in this row',
+				exact: true,
+			}),
+		).toBeVisible()
 		await expect(
 			panel
 				.getByRole('row')
-				.filter({ has: page.getByRole('cell', { name: 'APPID', exact: true }) })
-				.filter({ has: page.getByRole('cell', { name: 'externalNumber', exact: true }) }),
+				.filter({
+					has: page.getByRole('cell', { name: 'APPID', exact: true }),
+				})
+				.filter({
+					has: page.getByRole('cell', {
+						name: 'externalNumber',
+						exact: true,
+					}),
+				}),
 		).toHaveCount(1)
 	})
 
@@ -725,18 +871,26 @@ test.describe('the sample-row test', () => {
 		const definition = plainPack('preview invalid')
 		delete definition.name
 		const body = await expectError(
-			await admin.post(`${API}/preview`, { data: { definition, rows: [{ Naam: 'x' }] } }),
+			await admin.post(`${API}/preview`, {
+				data: { definition, rows: [{ Naam: 'x' }] },
+			}),
 			422,
 			'invalid-pack',
 		)
-		expect(body.details.errors.some((finding: string) => finding.includes('name'))).toBe(true)
+		expect(
+			body.details.errors.some((finding: string) => finding.includes('name')),
+		).toBe(true)
 	})
 
 	// @e2e migration-mapping-packs::too-many-sample-rows-are-refused
 	test('too many sample rows are refused', async () => {
-		const rows = Array.from({ length: 21 }, (_, index) => ({ Naam: `row ${index + 1}` }))
+		const rows = Array.from({ length: 21 }, (_, index) => ({
+			Naam: `row ${index + 1}`,
+		}))
 		await expectError(
-			await admin.post(`${API}/preview`, { data: { definition: plainPack('preview rows'), rows } }),
+			await admin.post(`${API}/preview`, {
+				data: { definition: plainPack('preview rows'), rows },
+			}),
 			400,
 			'too-many-rows',
 		)
@@ -756,7 +910,11 @@ test.describe('the sample-row test', () => {
 			{ definition, rows: 'not a list' },
 			{ definition, rows: [1, 2] },
 		]) {
-			await expectError(await admin.post(`${API}/preview`, { data }), 400, 'invalid-request')
+			await expectError(
+				await admin.post(`${API}/preview`, { data }),
+				400,
+				'invalid-request',
+			)
 		}
 	})
 
@@ -766,7 +924,9 @@ test.describe('the sample-row test', () => {
 		const wide = 'x'.repeat(60 * 1024)
 		const rows = Array.from({ length: 20 }, () => ({ Naam: wide }))
 		await expectError(
-			await admin.post(`${API}/preview`, { data: { definition: plainPack('oversized'), rows } }),
+			await admin.post(`${API}/preview`, {
+				data: { definition: plainPack('oversized'), rows },
+			}),
 			400,
 			'invalid-request',
 		)
@@ -775,7 +935,10 @@ test.describe('the sample-row test', () => {
 	// @e2e migration-mapping-packs::a-non-admin-cannot-run-a-preview
 	test('a non-admin cannot run a preview', async () => {
 		const response = await other.post(`${API}/preview`, {
-			data: { definition: plainPack('preview non-admin'), rows: [{ Naam: 'x' }] },
+			data: {
+				definition: plainPack('preview non-admin'),
+				rows: [{ Naam: 'x' }],
+			},
 		})
 		expect(response.status()).toBe(403)
 		expect((await response.json()).rows).toBeUndefined()
@@ -787,7 +950,12 @@ test.describe('the API contract', () => {
 	test('an envelope update keeps the route id and the slug', async () => {
 		const pack = await createPack(plainPack('envelope'))
 		const response = await admin.put(`${API}/${pack.id}`, {
-			data: { definition: { ...pack.definition, description: 'Updated through the envelope' } },
+			data: {
+				definition: {
+					...pack.definition,
+					description: 'Updated through the envelope',
+				},
+			},
 		})
 		expect(response.status(), await response.text()).toBe(200)
 		const stored = await readPack(pack.id)
@@ -811,15 +979,26 @@ test.describe('the API contract', () => {
 	test('a definition the validator refuses is answered with its findings', async () => {
 		const definition = plainPack('invalid create')
 		delete definition.name
-		const body = await expectError(await admin.post(API, { data: { definition } }), 422, 'invalid-pack')
-		expect(body.details.errors.some((finding: string) => finding.includes('name'))).toBe(true)
-		expect(await packBySlug(definition.id), 'a refused create stored a pack').toBeUndefined()
+		const body = await expectError(
+			await admin.post(API, { data: { definition } }),
+			422,
+			'invalid-pack',
+		)
+		expect(
+			body.details.errors.some((finding: string) => finding.includes('name')),
+		).toBe(true)
+		expect(
+			await packBySlug(definition.id),
+			'a refused create stored a pack',
+		).toBeUndefined()
 	})
 
 	// @e2e migration-mapping-packs::an-update-of-a-pack-that-does-not-exist-is-answered-404
 	test('an update of a pack that does not exist is answered 404', async () => {
 		await expectError(
-			await admin.put(`${API}/999999999`, { data: { definition: plainPack('missing') } }),
+			await admin.put(`${API}/999999999`, {
+				data: { definition: plainPack('missing') },
+			}),
 			404,
 			'pack-not-found',
 		)
@@ -831,7 +1010,10 @@ test.describe('the API contract', () => {
 		await expectError(
 			await admin.put(`${API}/${pack.id}`, {
 				data: {
-					definition: { ...pack.definition, description: 'Based on an older read' },
+					definition: {
+						...pack.definition,
+						description: 'Based on an older read',
+					},
 					expectedUpdatedAt: '2000-01-01T00:00:00+00:00',
 				},
 			}),
@@ -844,18 +1026,26 @@ test.describe('the API contract', () => {
 
 		const current = await admin.put(`${API}/${pack.id}`, {
 			data: {
-				definition: { ...pack.definition, description: 'Based on the current read' },
+				definition: {
+					...pack.definition,
+					description: 'Based on the current read',
+				},
 				expectedUpdatedAt: pack.updatedAt,
 			},
 		})
 		expect(current.status(), await current.text()).toBe(200)
-		expect((await readPack(pack.id)).definition.description).toBe('Based on the current read')
+		expect((await readPack(pack.id)).definition.description).toBe(
+			'Based on the current read',
+		)
 	})
 
 	// @e2e migration-mapping-packs::renaming-a-built-in-pack-through-the-api-is-refused
 	test('renaming a built-in pack through the API is refused', async () => {
 		const builtin = await packBySlug(BUILTIN_SLUG)
-		expect(builtin, `the built-in pack ${BUILTIN_SLUG} is not installed`).toBeDefined()
+		expect(
+			builtin,
+			`the built-in pack ${BUILTIN_SLUG} is not installed`,
+		).toBeDefined()
 		await expectError(
 			await admin.put(`${API}/${builtin!.id}`, {
 				data: { definition: { ...builtin!.definition, id: 'my-zgw' } },
@@ -877,12 +1067,22 @@ test.describe('the API contract', () => {
 		expect(document.id).toBe(pack.packSlug)
 
 		const response = await admin.post(`${API}/import`, {
-			multipart: { file: jsonFile({ ...document, description: 'Imported again' }) },
+			multipart: {
+				file: jsonFile({ ...document, description: 'Imported again' }),
+			},
 		})
 		expect(response.status(), await response.text()).toBe(201)
-		expect((await response.json()).id, 'the import created a second row').toBe(pack.id)
-		expect((await readPack(pack.id)).definition.description).toBe('Imported again')
-		expect((await listPacks()).filter((stored) => stored.packSlug === pack.packSlug)).toHaveLength(1)
+		expect((await response.json()).id, 'the import created a second row').toBe(
+			pack.id,
+		)
+		expect((await readPack(pack.id)).definition.description).toBe(
+			'Imported again',
+		)
+		expect(
+			(await listPacks()).filter(
+				(stored) => stored.packSlug === pack.packSlug,
+			),
+		).toHaveLength(1)
 	})
 
 	// @e2e migration-mapping-packs::anonymous-callers-are-rejected-everywhere
@@ -899,13 +1099,29 @@ test.describe('the API contract', () => {
 				['show', anonymous.get(`${API}/${pack.id}`)],
 				['export', anonymous.get(`${API}/${pack.id}/export`)],
 				['create', anonymous.post(API, { data: { definition } })],
-				['update', anonymous.put(`${API}/${pack.id}`, { data: { definition } })],
+				[
+					'update',
+					anonymous.put(`${API}/${pack.id}`, { data: { definition } }),
+				],
 				['destroy', anonymous.delete(`${API}/${pack.id}`)],
-				['import', anonymous.post(`${API}/import`, { multipart: { file: jsonFile(definition) } })],
-				['preview', anonymous.post(`${API}/preview`, { data: { definition, rows: [] } })],
+				[
+					'import',
+					anonymous.post(`${API}/import`, {
+						multipart: { file: jsonFile(definition) },
+					}),
+				],
+				[
+					'preview',
+					anonymous.post(`${API}/preview`, {
+						data: { definition, rows: [] },
+					}),
+				],
 			]
 			for (const [route, call] of calls) {
-				expect((await call).status(), `${route} answered an anonymous caller`).toBe(401)
+				expect(
+					(await call).status(),
+					`${route} answered an anonymous caller`,
+				).toBe(401)
 			}
 		} finally {
 			await anonymous.dispose()
@@ -943,17 +1159,28 @@ test.describe('migration packs as an ordinary user', () => {
 			page.getByRole('textbox', { name: 'Source column of row 1' }),
 		).toHaveValue(MAPPINGS[0].source)
 		await expect(
-			page.locator('.migration-pack').locator('input:enabled, select:enabled, textarea:enabled'),
+			page
+				.locator('.migration-pack')
+				.locator('input:enabled, select:enabled, textarea:enabled'),
 			'a field a non-admin can change',
 		).toHaveCount(0)
-		for (const name of ['Save', 'Delete', 'Import JSON', 'Add field mapping', 'Test']) {
+		for (const name of [
+			'Save',
+			'Delete',
+			'Import JSON',
+			'Add field mapping',
+			'Test',
+		]) {
 			await expect(
 				page.getByRole('button', { name, exact: true }),
 				`a non-admin must not be offered ${name}`,
 			).toHaveCount(0)
 		}
 		await expect(
-			page.getByRole('heading', { name: 'Test with a sample row', exact: true }),
+			page.getByRole('heading', {
+				name: 'Test with a sample row',
+				exact: true,
+			}),
 			'a non-admin must not get the sample-row test',
 		).toHaveCount(0)
 
@@ -961,24 +1188,40 @@ test.describe('migration packs as an ordinary user', () => {
 		await page.getByRole('button', { name: 'Transform of row 3' }).click()
 		const dialog = page.getByRole('dialog', { name: 'Transform for row 3' })
 		await expect(dialog).toBeVisible()
-		await expect(dialog.getByRole('button', { name: 'Apply', exact: true })).toHaveCount(0)
+		await expect(
+			dialog.getByRole('button', { name: 'Apply', exact: true }),
+		).toHaveCount(0)
 	})
 
 	// @e2e migration-mapping-packs::a-non-admin-who-opens-the-list-can-only-read
-	test('the list reads the packs and offers no import or delete', async ({ page }) => {
+	test('the list reads the packs and offers no import or delete', async ({
+		page,
+	}) => {
 		const pack = await createPack(plainPack('list read only'))
 		await openList(page, OTHER)
 
-		await expect(page.getByText('Only administrators can change migration packs.', { exact: true })).toBeVisible()
-		await expect(page.getByRole('link', { name: pack.name, exact: true })).toBeVisible()
-		await expect(page.getByRole('button', { name: 'Import JSON', exact: true })).toHaveCount(0)
+		await expect(
+			page.getByText('Only administrators can change migration packs.', {
+				exact: true,
+			}),
+		).toBeVisible()
+		await expect(
+			page.getByRole('link', { name: pack.name, exact: true }),
+		).toBeVisible()
+		await expect(
+			page.getByRole('button', { name: 'Import JSON', exact: true }),
+		).toHaveCount(0)
 		await expect(page.getByRole('button', { name: /^Delete / })).toHaveCount(0)
 		await expect(page.locator('.migration-packs__toolbar')).toHaveCount(0)
 	})
 
 	// @e2e migration-mapping-packs::a-non-admin-does-not-see-the-menu-entry
-	test('the navigation has no Migration packs entry for a non-admin', async ({ page }) => {
-		await page.goto('/index.php/apps/openregister/', { waitUntil: 'domcontentloaded' })
+	test('the navigation has no Migration packs entry for a non-admin', async ({
+		page,
+	}) => {
+		await page.goto('/index.php/apps/openregister/', {
+			waitUntil: 'domcontentloaded',
+		})
 		const nav = page.locator('.app-navigation').first()
 		await expect(nav).toBeVisible({ timeout: 30_000 })
 		await expectSignedInAs(page, OTHER)
@@ -990,14 +1233,21 @@ test.describe('migration packs as an ordinary user', () => {
 			await nav.getByText('Integration', { exact: true }).first().click()
 		}
 		await expect(sibling, 'the Integration group did not open').toBeVisible()
-		await expect(nav.getByRole('link', { name: 'Migration packs', exact: true })).toHaveCount(0)
+		await expect(
+			nav.getByRole('link', { name: 'Migration packs', exact: true }),
+		).toHaveCount(0)
 	})
 
 	// @e2e migration-mapping-packs::a-non-admins-write-is-refused-by-the-server
 	test("a non-admin's write is refused by the server", async () => {
 		const pack = await createPack(plainPack('non-admin put'))
 		const response = await other.put(`${API}/${pack.id}`, {
-			data: { definition: { ...pack.definition, description: 'Changed by a non-admin' } },
+			data: {
+				definition: {
+					...pack.definition,
+					description: 'Changed by a non-admin',
+				},
+			},
 		})
 		expect(response.status()).toBe(403)
 		expect((await readPack(pack.id)).definition).toEqual(pack.definition)
@@ -1009,16 +1259,34 @@ test.describe('migration packs as an ordinary user', () => {
 		const definition = plainPack('non-admin create')
 		const calls: Array<[string, Promise<APIResponse>]> = [
 			['create', other.post(API, { data: { definition } })],
-			['update', other.put(`${API}/${pack.id}`, { data: { definition: { ...pack.definition, name: 'x' } } })],
+			[
+				'update',
+				other.put(`${API}/${pack.id}`, {
+					data: { definition: { ...pack.definition, name: 'x' } },
+				}),
+			],
 			['destroy', other.delete(`${API}/${pack.id}`)],
-			['import', other.post(`${API}/import`, { multipart: { file: jsonFile(definition) } })],
-			['preview', other.post(`${API}/preview`, { data: { definition, rows: [] } })],
+			[
+				'import',
+				other.post(`${API}/import`, {
+					multipart: { file: jsonFile(definition) },
+				}),
+			],
+			[
+				'preview',
+				other.post(`${API}/preview`, { data: { definition, rows: [] } }),
+			],
 		]
 		for (const [route, call] of calls) {
-			expect((await call).status(), `${route} let a non-admin through`).toBe(403)
+			expect((await call).status(), `${route} let a non-admin through`).toBe(
+				403,
+			)
 		}
 		expect((await readPack(pack.id)).definition).toEqual(pack.definition)
-		expect(await packBySlug(definition.id), 'a non-admin created a pack').toBeUndefined()
+		expect(
+			await packBySlug(definition.id),
+			'a non-admin created a pack',
+		).toBeUndefined()
 	})
 
 	// @e2e migration-mapping-packs::any-authenticated-user-can-browse-and-export-packs
@@ -1026,7 +1294,9 @@ test.describe('migration packs as an ordinary user', () => {
 		const pack = await createPack(plainPack('non-admin export'))
 		const list = await other.get(API)
 		expect(list.status()).toBe(200)
-		expect(((await list.json()).results as StoredPack[]).map((stored) => stored.id)).toContain(pack.id)
+		expect(
+			((await list.json()).results as StoredPack[]).map((stored) => stored.id),
+		).toContain(pack.id)
 
 		const exported = await other.get(`${API}/${pack.id}/export`)
 		expect(exported.status()).toBe(200)
@@ -1036,8 +1306,12 @@ test.describe('migration packs as an ordinary user', () => {
 
 test.describe('the admin menu entry', () => {
 	// @e2e migration-mapping-packs::a-non-admin-does-not-see-the-menu-entry
-	test('the navigation has a Migration packs entry for an administrator', async ({ page }) => {
-		await page.goto('/index.php/apps/openregister/', { waitUntil: 'domcontentloaded' })
+	test('the navigation has a Migration packs entry for an administrator', async ({
+		page,
+	}) => {
+		await page.goto('/index.php/apps/openregister/', {
+			waitUntil: 'domcontentloaded',
+		})
 		const nav = page.locator('.app-navigation').first()
 		await expect(nav).toBeVisible({ timeout: 30_000 })
 		await expectSignedInAs(page, ADMIN)
@@ -1050,16 +1324,25 @@ test.describe('the admin menu entry', () => {
 		await expect(entry).toBeVisible()
 		await entry.click()
 		await expect(
-			page.getByRole('heading', { level: 2, name: 'Migration packs', exact: true }),
+			page.getByRole('heading', {
+				level: 2,
+				name: 'Migration packs',
+				exact: true,
+			}),
 		).toBeVisible({ timeout: 30_000 })
 	})
 })
 
 test.describe('the built-in slug lock in the editor', () => {
 	// @e2e migration-mapping-packs::renaming-a-built-in-pack-in-the-json-view-is-stopped-in-the-editor
-	test('renaming a built-in pack in the JSON view is stopped in the editor', async ({ page }) => {
+	test('renaming a built-in pack in the JSON view is stopped in the editor', async ({
+		page,
+	}) => {
 		const builtin = await packBySlug(BUILTIN_SLUG)
-		expect(builtin, `the built-in pack ${BUILTIN_SLUG} is not installed`).toBeDefined()
+		expect(
+			builtin,
+			`the built-in pack ${BUILTIN_SLUG} is not installed`,
+		).toBeDefined()
 		await openEditor(page, builtin!, ADMIN)
 		await expect(
 			page.getByRole('textbox', { name: 'Slug', exact: true }),
@@ -1067,18 +1350,27 @@ test.describe('the built-in slug lock in the editor', () => {
 		).toBeDisabled()
 		const updates = recordUpdates(page, builtin!.id)
 
-		await page.getByRole('button', { name: 'Advanced (JSON)', exact: true }).click()
+		await page
+			.getByRole('button', { name: 'Advanced (JSON)', exact: true })
+			.click()
 		await page.locator('.cm-content').click()
 		await page.keyboard.press('ControlOrMeta+a')
-		await page.keyboard.insertText(JSON.stringify({ ...builtin!.definition, id: 'my-zgw' }, null, 2))
+		await page.keyboard.insertText(
+			JSON.stringify({ ...builtin!.definition, id: 'my-zgw' }, null, 2),
+		)
 
 		const refusal = page.getByText(
 			`The slug of a built-in pack cannot change. Keep "id" as ${BUILTIN_SLUG}.`,
 			{ exact: true },
 		)
 		await page.getByRole('button', { name: 'Form', exact: true }).click()
-		await expect(refusal, 'going back to the form took the new slug').toBeVisible()
-		await expect(page.getByRole('heading', { name: 'Advanced (JSON)', level: 3 })).toBeVisible()
+		await expect(
+			refusal,
+			'going back to the form took the new slug',
+		).toBeVisible()
+		await expect(
+			page.getByRole('heading', { name: 'Advanced (JSON)', level: 3 }),
+		).toBeVisible()
 
 		await saveButton(page).click()
 		await expect(refusal).toBeVisible()
@@ -1098,28 +1390,48 @@ test.describe('with a browser session instead of Basic auth', () => {
 	test('a write without the request token is refused', async ({ page }) => {
 		const pack = await createPack(plainPack('csrf'))
 
-		const read = await page.request.get(`${API}/${pack.id}`, { headers: { Accept: 'application/json' } })
-		expect(read.status(), 'the stored session does not authenticate; the refusal below would prove nothing').toBe(200)
+		const read = await page.request.get(`${API}/${pack.id}`, {
+			headers: { Accept: 'application/json' },
+		})
+		expect(
+			read.status(),
+			'the stored session does not authenticate; the refusal below would prove nothing',
+		).toBe(200)
 
 		const write = await page.request.delete(`${API}/${pack.id}`, {
 			headers: { Accept: 'application/json' },
 			maxRedirects: 0,
 		})
-		expect(write.status(), 'Nextcloud accepted a write without the request token').toBe(412)
+		expect(
+			write.status(),
+			'Nextcloud accepted a write without the request token',
+		).toBe(412)
 		expect((await readPack(pack.id)).packSlug).toBe(pack.packSlug)
 	})
 
 	// @e2e migration-mapping-packs::the-editors-own-writes-pass
-	test("the editor's own writes carry the request token and pass", async ({ page }) => {
+	test("the editor's own writes carry the request token and pass", async ({
+		page,
+	}) => {
 		const pack = await createPack(plainPack('csrf editor'))
 		await openEditor(page, pack, ADMIN)
 
-		await page.getByRole('textbox', { name: 'Description', exact: true }).fill('Saved in a browser session')
+		await page
+			.getByRole('textbox', { name: 'Description', exact: true })
+			.fill('Saved in a browser session')
 		const sent = await saveInEditor(page, pack, '1.0.1')
 		const headers = await sent.allHeaders()
-		expect(headers.requesttoken, 'the editor sent its save without the request token').toBeTruthy()
-		expect(headers.authorization, 'this test must run on the cookie session').toBeUndefined()
-		expect((await readPack(pack.id)).definition.description).toBe('Saved in a browser session')
+		expect(
+			headers.requesttoken,
+			'the editor sent its save without the request token',
+		).toBeTruthy()
+		expect(
+			headers.authorization,
+			'this test must run on the cookie session',
+		).toBeUndefined()
+		expect((await readPack(pack.id)).definition.description).toBe(
+			'Saved in a browser session',
+		)
 	})
 })
 
@@ -1127,22 +1439,35 @@ test.describe('the slug lock outlives a delete', () => {
 	// @e2e migration-mapping-packs::a-deleted-built-in-pack-imported-again-keeps-its-lock
 	test('a deleted built-in pack imported again keeps its lock', async () => {
 		const builtin = await packBySlug(BUILTIN_SLUG)
-		expect(builtin, `the built-in pack ${BUILTIN_SLUG} is not installed`).toBeDefined()
+		expect(
+			builtin,
+			`the built-in pack ${BUILTIN_SLUG} is not installed`,
+		).toBeDefined()
 		const definition = builtin!.definition
 
 		try {
 			const deleted = await admin.delete(`${API}/${builtin!.id}`)
-			expect(deleted.ok(), `the built-in pack could not be deleted: ${await deleted.text()}`).toBe(true)
+			expect(
+				deleted.ok(),
+				`the built-in pack could not be deleted: ${await deleted.text()}`,
+			).toBe(true)
 			expect(await packBySlug(BUILTIN_SLUG)).toBeUndefined()
 
-			const imported = await admin.post(`${API}/import`, { multipart: { file: jsonFile(definition) } })
+			const imported = await admin.post(`${API}/import`, {
+				multipart: { file: jsonFile(definition) },
+			})
 			expect(imported.status(), await imported.text()).toBe(201)
 			const restored = (await imported.json()) as StoredPack
 			expect(restored.packSlug).toBe(BUILTIN_SLUG)
-			expect(restored.builtin, 'a pack imported under a deleted built-in slug must be built-in').toBe(true)
+			expect(
+				restored.builtin,
+				'a pack imported under a deleted built-in slug must be built-in',
+			).toBe(true)
 
 			await expectError(
-				await admin.put(`${API}/${restored.id}`, { data: { definition: { ...definition, id: 'my-zgw' } } }),
+				await admin.put(`${API}/${restored.id}`, {
+					data: { definition: { ...definition, id: 'my-zgw' } },
+				}),
 				422,
 				'builtin-slug-locked',
 			)
@@ -1150,8 +1475,13 @@ test.describe('the slug lock outlives a delete', () => {
 		} finally {
 			// Put OpenRegister's own pack back whatever failed above.
 			if ((await packBySlug(BUILTIN_SLUG)) === undefined) {
-				const again = await admin.post(`${API}/import`, { multipart: { file: jsonFile(definition) } })
-				expect(again.status(), `could not restore ${BUILTIN_SLUG}: ${await again.text()}`).toBe(201)
+				const again = await admin.post(`${API}/import`, {
+					multipart: { file: jsonFile(definition) },
+				})
+				expect(
+					again.status(),
+					`could not restore ${BUILTIN_SLUG}: ${await again.text()}`,
+				).toBe(201)
 			}
 		}
 	})
