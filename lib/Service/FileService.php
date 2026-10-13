@@ -86,7 +86,6 @@ use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
-use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -114,13 +113,6 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  */
 class FileService {
-
-	/**
-	 * Configuration service
-	 *
-	 * @var IConfig
-	 */
-	private IConfig $config;
 
 	/**
 	 * File mapper
@@ -376,7 +368,6 @@ class FileService {
 	/**
 	 * Constructor
 	 *
-	 * @param IConfig $config Configuration service
 	 * @param FileMapper $fileMapper File mapper
 	 * @param IGroupManager $groupManager Group manager
 	 * @param LoggerInterface $logger Logger
@@ -408,7 +399,6 @@ class FileService {
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 */
 	public function __construct(
-		IConfig $config,
 		FileMapper $fileMapper,
 		IGroupManager $groupManager,
 		LoggerInterface $logger,
@@ -442,7 +432,6 @@ class FileService {
 			message: '[FileService] FileService constructor started.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
-		$this->config = $config;
 		$this->fileMapper = $fileMapper;
 		$this->groupManager = $groupManager;
 		// REMOVED: registerMapper assignment (unused, caused circular dependency).
