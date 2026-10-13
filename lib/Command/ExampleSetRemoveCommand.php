@@ -89,8 +89,13 @@ class ExampleSetRemoveCommand extends Command {
 			$output->writeln('Removed '.$kind.': '.$count);
 		}
 
-		foreach ($report['left'] as $uid) {
-			$output->writeln('Left in place: account '.$uid.', which the set adopted and did not create.');
+		foreach ($report['left'] as $left) {
+			if (str_starts_with($left, 'app config ') === true) {
+				$output->writeln('Left in place: '.$left.'.');
+				continue;
+			}
+
+			$output->writeln('Left in place: account '.$left.', which the set adopted and did not create.');
 		}
 
 		foreach ($report['failed'] as $line) {

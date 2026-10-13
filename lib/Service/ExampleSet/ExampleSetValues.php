@@ -7,7 +7,14 @@
  * - `{{cast:key.path}}` a field of a cast person, organisation or group;
  * - `{{date:n}}` and `{{datetime:n HH:MM}}` a day n days from the install day;
  * - `{{object:key.path}}` a field of an object declared earlier in the same fragment;
- * - `{{lookup:name}}` the id a lookup by business key found.
+ * - `{{lookup:name}}` the id a lookup by business key found;
+ * - `{{account:key.field}}` a field of a service account a fragment declares;
+ * - `{{organisation:slug-or-name}}` the uuid of an OpenRegister organisation;
+ * - `{{instance:baseUrl}}` the address of this instance (`overwrite.cli.url`).
+ *
+ * A day may be pinned to a weekday: `{{date:+7@thu}}` is the first Thursday
+ * on or after the day seven days from the install day; `{{datetime:+7@tue 19:30}}`
+ * likewise with a time.
  *
  * A value that is exactly one placeholder takes the type of what it stands
  * for, so a house number stays a number. A placeholder inside a longer string
@@ -35,6 +42,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use DateInterval;
 use DateTimeImmutable;
 
 /**
@@ -65,7 +73,9 @@ class ExampleSetValues {
 	 *
 	 * @param mixed                $value   The declared value.
 	 * @param array<string, mixed> $context `cast` (entries by key), `objects` (rows by key, this fragment only),
-	 *                                      `lookups` (id by name) and `today` (DateTimeImmutable).
+	 *                                      `lookups` (id by name), `today` (DateTimeImmutable), `accounts` (service
+	 *                                      accounts by key), `organisations` (uuid by slug and by name) and
+	 *                                      `instance` (`baseUrl`).
 	 * @param array<int, string>   $gaps    Collects every placeholder that could not be filled.
 	 *
 	 * @return mixed The filled value; an unfilled placeholder stays as written and is named in `$gaps`.
@@ -147,6 +157,9 @@ class ExampleSetValues {
 			'cast'   => $this->pathIn(entries: (array) ($context['cast'] ?? []), reference: $rest),
 			'object' => $this->objectField(objects: (array) ($context['objects'] ?? []), reference: $rest),
 			'lookup' => $this->present(value: ($context['lookups'][$rest] ?? null)),
+			'account' => $this->pathIn(entries: (array) ($context['accounts'] ?? []), reference: $rest),
+			'organisation' => $this->present(value: ($context['organisations'][$rest] ?? null)),
+			'instance' => $this->present(value: ($context['instance'][$rest] ?? null)),
 			'date', 'datetime' => $this->moment(kind: $kind, rest: $rest, today: ($context['today'] ?? null)),
 			default  => null,
 		};
@@ -216,6 +229,21 @@ class ExampleSetValues {
 	}//end present()
 
 	/**
+	 * The first given weekday on or after a day.
+	 *
+	 * @param DateTimeImmutable $day     The day.
+	 * @param string            $weekday `mon` to `sun`.
+	 *
+	 * @return DateTimeImmutable
+	 */
+	private function onOrAfter(DateTimeImmutable $day, string $weekday): DateTimeImmutable {
+		$wanted = (int) array_search($weekday, ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], true) + 1;
+		$days   = ((($wanted - (int) $day->format('N')) + 7) % 7);
+
+		return $day->add(new DateInterval('P'.$days.'D'));
+	}//end onOrAfter()
+
+	/**
 	 * A day, or a moment on a day, counted from the install day.
 	 *
 	 * @param string $kind  `date` or `datetime`.
@@ -225,9 +253,9 @@ class ExampleSetValues {
 	 * @return string|null `2026-10-05` or `2026-10-05T09:12:00+02:00`; null when malformed.
 	 */
 	private function moment(string $kind, string $rest, mixed $today): ?string {
-		$pattern = '/^([+-]?\d{1,4})$/';
+		$pattern = '/^([+-]?\d{1,4})(?:@(mon|tue|wed|thu|fri|sat|sun))?$/';
 		if ($kind === 'datetime') {
-			$pattern = '/^([+-]?\d{1,4}) ([01]\d|2[0-3]):([0-5]\d)$/';
+			$pattern = '/^([+-]?\d{1,4})(?:@(mon|tue|wed|thu|fri|sat|sun))? ([01]\d|2[0-3]):([0-5]\d)$/';
 		}
 
 		if (($today instanceof DateTimeImmutable) === false || preg_match($pattern, $rest, $parts) !== 1) {
@@ -235,10 +263,14 @@ class ExampleSetValues {
 		}
 
 		$day = $today->modify(sprintf('%+d days', (int) $parts[1]));
+		if (($parts[2] ?? '') !== '') {
+			$day = $this->onOrAfter(day: $day, weekday: $parts[2]);
+		}
+
 		if ($kind === 'date') {
 			return $day->format('Y-m-d');
 		}
 
-		return $day->setTime((int) $parts[2], (int) $parts[3])->format('c');
+		return $day->setTime((int) $parts[3], (int) $parts[4])->format('c');
 	}//end moment()
 }//end class

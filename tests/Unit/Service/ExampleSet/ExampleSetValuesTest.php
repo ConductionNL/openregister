@@ -42,6 +42,9 @@ class ExampleSetValuesTest extends TestCase {
 			'objects' => ['case-1' => ['id' => 'abc', 'identifier' => 'Z-1']],
 			'lookups' => ['caseType' => 'type-uuid'],
 			'today'   => new DateTimeImmutable('2026-10-13 12:00', new DateTimeZone('Europe/Amsterdam')),
+			'accounts'      => ['background' => ['uid' => 'demo_background']],
+			'organisations' => ['zuiddrecht' => 'org-uuid'],
+			'instance'      => ['baseUrl' => 'https://cloud.example.test'],
 		];
 	}
 
@@ -61,6 +64,12 @@ class ExampleSetValuesTest extends TestCase {
 			'lookup'                    => ['{{lookup:caseType}}', 'type-uuid'],
 			'nested arrays'             => [['a' => ['{{cast:sanne.bsn}}']], ['a' => ['999994001']]],
 			'plain values pass'         => [true, true],
+			'next thursday'             => ['{{date:+7@thu}}', '2026-10-22'],
+			'today is a tuesday'        => ['{{date:0@tue}}', '2026-10-13'],
+			'a weekday with a time'     => ['{{datetime:+7@tue 19:30}}', '2026-10-20T19:30:00+02:00'],
+			'service account'           => ['{{account:background.uid}}', 'demo_background'],
+			'organisation'              => ['{{organisation:zuiddrecht}}', 'org-uuid'],
+			'instance'                  => ['{{instance:baseUrl}}/x', 'https://cloud.example.test/x'],
 		];
 	}
 
@@ -86,6 +95,9 @@ class ExampleSetValuesTest extends TestCase {
 			'malformed date'      => ['{{date:yesterday}}'],
 			'malformed datetime'  => ['{{datetime:-1 25:00}}'],
 			'unknown kind'        => ['{{subject}}'],
+			'unknown weekday'     => ['{{date:+7@thursday}}'],
+			'unknown organisation' => ['{{organisation:nergens}}'],
+			'unknown account'     => ['{{account:nobody.uid}}'],
 		];
 	}
 

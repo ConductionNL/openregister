@@ -169,6 +169,46 @@ the Woo journey depends on them. That is a separate portaliq PR.
     groups come from fragments. The cast file's `apps` lists the 18 apps that
     take part; learniq, larpinq and zaakafhandelapp do not.
 
+## Decisions of round 3 (13 Oct 2026, from the fragment lanes)
+
+12. **Files.** `files` on an object; paths are relative to the shipping app's
+    `lib/Settings/example-sets/` folder and are checked twice: by shape when
+    the set is gathered (no absolute path, `..`, backslash or NUL) and by
+    `realpath` containment and readability in the check, so a symlink out of
+    the folder is refused as well. Files are added with
+    `FileService::addFile()` after the object is written (`share` passed on),
+    recorded per object, and deleted before the object on remove. FileService
+    has no field for a title or description, so those stay in the fragment.
+13. **Service accounts.** Nextcloud has no account without a password and no
+    per-account switch that blocks password sign-in while keeping the account
+    enabled, and dossiq needs the account enabled. So a service account gets a
+    long random password that is never shown, logged or recorded: nobody can
+    sign in with it. It follows the cast's account rules (refuse a foreign
+    account, `--adopt`).
+14. **App config, own app only.** A fragment sets config of the app that
+    ships it. No consumer needs more: dossiq and pipelinq set their own keys.
+    A key stored as sensitive is refused unless `generate: true`, which writes
+    a random value as sensitive and records no value. Remove restores the old
+    value only while the key still holds the set's value.
+15. **Organisations.** `{{organisation:slug-or-name}}` reads OpenRegister's
+    organisation entities. The cast declares `openregisterOrganisations`;
+    zuiddrecht declares the municipality (slug `zuiddrecht`) so opencatalogi's
+    catalog and publications can name it. Created before the check like a
+    required register, removed last and only when the set created it.
+16. **contactsUid: a stable stand-in, no vCards.** Every cast person and
+    organisation gets `example-set-<set>-<key>` unless it declares one;
+    pipelinq's fragment already uses exactly these values. The loader does not
+    write Contacts cards. Writing them needs `OCA\DAV\CardDAV\CardDavBackend`
+    (dav's internal class, not OCP) and an address book owner; occ has no user,
+    and `OCP\Contacts\IManager` only sees address books of a session.
+    Recommendation: leave it to a follow-up in pipelinq, which owns the link
+    to Contacts: a `pipelinq:contacts:sync` that writes a card per client with
+    that uid into a shared address book. Until then a uid links to no card,
+    which pipelinq tolerates (it only requires the field).
+17. **Changes on objects of the same run** (`object: <key>`), and
+    **weekday-pinned dates** (`@thu`), and **`{{instance:baseUrl}}`** from
+    `overwrite.cli.url`, refused when the instance sets none.
+
 ## Risks / Trade-offs
 
 - `--check` imports a missing required register. That is the one write a

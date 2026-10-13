@@ -14,12 +14,19 @@
 - [x] 1.11 Refuse a cast or fragment group `admin` (REQ-EXS-010)
 - [x] 1.12 `ExampleSetChanges`: set and append on an object found by business key, recorded and reverted exactly (REQ-EXS-011)
 - [x] 1.13 `jsonFields` sent as JSON text and decoded by the proof (REQ-EXS-012)
+- [x] 1.14 `ExampleSetFiles`: files on an object from the fragment's folder, shared, recorded, removed (REQ-EXS-013)
+- [x] 1.15 Service accounts with a password nobody sees, in their groups (REQ-EXS-014)
+- [x] 1.16 `ExampleSetAppConfig`: own-app config, sensitive keys refused unless generated, exact restore (REQ-EXS-015)
+- [x] 1.17 `ExampleSetInstance`: `{{organisation:}}`, cast organisations created and removed; `{{instance:baseUrl}}` (REQ-EXS-016, REQ-EXS-017)
+- [x] 1.18 A change on an object written earlier in the run (REQ-EXS-018)
+- [x] 1.19 Weekday-pinned dates (REQ-EXS-019) and a stable `contactsUid` per cast member (REQ-EXS-020)
 
 ## 2. Data
 
 - [x] 2.1 `lib/Settings/example-sets/zuiddrecht.json`: cast (residents, businesses, employees, department groups) and openregister's own BRP and KVK rows
 - [x] 2.2 Test BSNs pass the eleven test and are unused in the fleet's registers; KVK numbers fictitious
 - [x] 2.3 `requires: ["brp", "kvk"]`, the 18 apps that take part, Marleen Postma in Vergunningen
+- [x] 2.4 The municipality as OpenRegister organisation `zuiddrecht`
 
 ## 3. Tests
 
@@ -28,6 +35,7 @@
 - [x] 3.3 Idempotent second install, exact removal, foreign account refusal and adoption
 - [x] 3.4 Command exit codes 0, 1 and 2, asserted through the command (the caller)
 - [x] 3.5 The shipped zuiddrecht file parses, its cast BSNs pass the eleven test, and every `{{cast:}}` it uses resolves
+- [x] 3.7 Files, service accounts, app config, organisations, instance address, changes on earlier objects, weekday dates, contactsUid (`ExampleSetFragmentPartsTest`, `ExampleSetValuesTest`)
 - [x] 3.6 Required registers imported once and removed only when imported; admin refused; changes made, proved and reverted exactly; JSON text fields
 
 ## 4. Verification

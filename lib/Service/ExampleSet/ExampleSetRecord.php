@@ -54,6 +54,9 @@ class ExampleSetRecord {
 		'objects'     => [],
 		'changes'     => [],
 		'registers'   => [],
+		'files'       => [],
+		'appConfig'   => [],
+		'organisations' => [],
 	];
 
 	/**
@@ -77,7 +80,10 @@ class ExampleSetRecord {
 	 *               objects: array<string, array{register: string, schema: string, id: string}>,
 	 *               changes: array<string, array<string, mixed>>, registers: array<string, array<int, array{appId: string, jobId: string}>>}
 	 *               `users` maps a uid to `created` or `adopted`; `objects` and `changes` are keyed `<app>/<key>` in
-	 *               write order; `registers` maps a register slug this set imported to the import jobs it created.
+	 *               write order; `registers` maps a register slug this set imported to the import jobs it created;
+	 *               `files` maps `<app>/<key>` to the files attached to that object; `appConfig` maps `<app>/<key>` to
+	 *               what was written and what it replaced (never a sensitive value); `organisations` lists the uuids
+	 *               of the OpenRegister organisations the set created.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
@@ -99,6 +105,9 @@ class ExampleSetRecord {
 		$record['objects']     = $this->objects(decoded: (array) ($decoded['objects'] ?? []));
 		$record['changes']     = array_filter((array) ($decoded['changes'] ?? []), 'is_array');
 		$record['registers']   = array_filter((array) ($decoded['registers'] ?? []), 'is_array');
+		$record['files']       = array_filter((array) ($decoded['files'] ?? []), 'is_array');
+		$record['appConfig']   = array_filter((array) ($decoded['appConfig'] ?? []), 'is_array');
+		$record['organisations'] = array_values(array_filter((array) ($decoded['organisations'] ?? []), 'is_string'));
 
 		return $record;
 	}//end read()

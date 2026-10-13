@@ -44,12 +44,14 @@ class ExampleSetChanges {
 	 *
 	 * @param ExampleSetStore  $store  Register access.
 	 * @param ExampleSetValues $values Fills placeholders.
+	 * @param ExampleSetPaths  $paths  Reads and writes values at dot paths.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ExampleSetStore $store,
 		private readonly ExampleSetValues $values,
+		private readonly ExampleSetPaths $paths=new ExampleSetPaths(),
 	) {
 	}//end __construct()
 
@@ -69,7 +71,7 @@ class ExampleSetChanges {
 		$none = ['refusal' => '', 'row' => [], 'merged' => [], 'set' => [], 'append' => []];
 		$gaps = [];
 		$fill = (array) $this->values->fill(
-			value: ['where' => $change['where'], 'set' => ($change['set'] ?? []), 'append' => ($change['append'] ?? [])],
+			value: ['where' => ($change['where'] ?? []), 'set' => ($change['set'] ?? []), 'append' => ($change['append'] ?? [])],
 			context: $context,
 			gaps: $gaps
 		);
@@ -77,7 +79,11 @@ class ExampleSetChanges {
 			return array_merge($none, ['refusal' => 'cannot resolve '.implode(', ', array_unique($gaps))]);
 		}
 
-		$row = $this->target(register: (string) $change['register'], schema: (string) $change['schema'], where: (array) $fill['where']);
+		$row = $this->target(change: $change, where: (array) $fill['where'], objects: (array) ($context['objects'] ?? []));
+		if ($row === null && is_string($change['object'] ?? null) === true) {
+			return array_merge($none, ['refusal' => 'object "'.$change['object'].'" is not written earlier in this fragment']);
+		}
+
 		if ($row === null) {
 			return array_merge(
 				$none,
@@ -87,16 +93,16 @@ class ExampleSetChanges {
 
 		$merged = $row;
 		foreach ((array) $fill['set'] as $path => $value) {
-			$merged = self::withPath(row: $merged, path: (string) $path, value: $value);
+			$merged = $this->paths->withPath(row: $merged, path: (string) $path, value: $value);
 		}
 
 		foreach ((array) $fill['append'] as $path => $value) {
-			$list = (array) (self::atPath(row: $merged, path: (string) $path)['value'] ?? []);
+			$list = (array) ($this->paths->atPath(row: $merged, path: (string) $path)['value'] ?? []);
 			if (in_array($value, $list, true) === false) {
 				$list[] = $value;
 			}
 
-			$merged = self::withPath(row: $merged, path: (string) $path, value: array_values($list));
+			$merged = $this->paths->withPath(row: $merged, path: (string) $path, value: array_values($list));
 		}
 
 		return ['refusal' => '', 'row' => $row, 'merged' => $merged, 'set' => (array) $fill['set'], 'append' => (array) $fill['append']];
@@ -117,7 +123,7 @@ class ExampleSetChanges {
 		$row   = $resolved['row'];
 		$entry = ['register' => $change['register'], 'schema' => $change['schema'], 'id' => $this->store->idOf(row: $row), 'set' => [], 'append' => []];
 		foreach ($resolved['set'] as $path => $value) {
-			$held = self::atPath(row: $row, path: (string) $path);
+			$held = $this->paths->atPath(row: $row, path: (string) $path);
 			if ($held['found'] === true && $held['value'] === $value) {
 				continue;
 			}
@@ -127,12 +133,12 @@ class ExampleSetChanges {
 				'had'  => $held['found'],
 				'old'  => $held['value'],
 				'new'  => $value,
-				'from' => self::firstMissing(row: $row, path: (string) $path),
+				'from' => $this->paths->firstMissing(row: $row, path: (string) $path),
 			];
 		}
 
 		foreach ($resolved['append'] as $path => $value) {
-			if (in_array($value, (array) (self::atPath(row: $row, path: (string) $path)['value'] ?? []), true) === false) {
+			if (in_array($value, (array) ($this->paths->atPath(row: $row, path: (string) $path)['value'] ?? []), true) === false) {
 				$entry['append'][] = ['path' => (string) $path, 'value' => $value];
 			}
 		}
@@ -171,14 +177,14 @@ class ExampleSetChanges {
 
 		$lost = [];
 		foreach ($entry['set'] as $set) {
-			$held = self::atPath(row: $row, path: $set['path']);
+			$held = $this->paths->atPath(row: $row, path: $set['path']);
 			if ($held['found'] === false || $held['value'] !== $set['new']) {
 				$lost[] = $set['path'];
 			}
 		}
 
 		foreach ($entry['append'] as $append) {
-			if (in_array($append['value'], (array) (self::atPath(row: $row, path: $append['path'])['value'] ?? []), true) === false) {
+			if (in_array($append['value'], (array) ($this->paths->atPath(row: $row, path: $append['path'])['value'] ?? []), true) === false) {
 				$lost[] = $append['path'];
 			}
 		}
@@ -202,38 +208,45 @@ class ExampleSetChanges {
 		}
 
 		foreach (array_reverse((array) $entry['set']) as $set) {
-			$row = self::withoutPath(row: $row, path: $set['path']);
+			$row = $this->paths->withoutPath(row: $row, path: $set['path']);
 			if ($set['had'] === true) {
-				$row = self::withPath(row: $row, path: $set['path'], value: $set['old']);
+				$row = $this->paths->withPath(row: $row, path: $set['path'], value: $set['old']);
 				continue;
 			}
 
 			// A map the change made on the way to its path goes again when nothing else filled it since.
 			$from = (string) ($set['from'] ?? $set['path']);
-			if ($from !== $set['path'] && self::atPath(row: $row, path: $from)['value'] === []) {
-				$row = self::withoutPath(row: $row, path: $from);
+			if ($from !== $set['path'] && $this->paths->atPath(row: $row, path: $from)['value'] === []) {
+				$row = $this->paths->withoutPath(row: $row, path: $from);
 			}
 		}
 
 		foreach ((array) $entry['append'] as $append) {
-			$list = (array) (self::atPath(row: $row, path: $append['path'])['value'] ?? []);
+			$list = (array) ($this->paths->atPath(row: $row, path: $append['path'])['value'] ?? []);
 			$kept = array_values(array_filter($list, static fn ($item): bool => $item !== $append['value']));
-			$row  = self::withPath(row: $row, path: $append['path'], value: $kept);
+			$row  = $this->paths->withPath(row: $row, path: $append['path'], value: $kept);
 		}
 
 		return $this->store->update(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id'], data: $row) === '';
 	}//end revert()
 
 	/**
-	 * The one object a change's `where` describes, or null.
+	 * The one object a change describes: an object written earlier in the same
+	 * fragment by its key, or the object its `where` finds; null otherwise.
 	 *
-	 * @param string               $register The register slug.
-	 * @param string               $schema   The schema slug.
-	 * @param array<string, mixed> $where    The asked values.
+	 * @param array<string, mixed>                $change  The declared change.
+	 * @param array<string, mixed>                $where   The filled `where`.
+	 * @param array<string, array<string, mixed>> $objects The fragment's objects so far, by key.
 	 *
 	 * @return array<string, mixed>|null
 	 */
-	private function target(string $register, string $schema, array $where): ?array {
+	private function target(array $change, array $where, array $objects): ?array {
+		if (is_string($change['object'] ?? null) === true) {
+			return ($objects[$change['object']] ?? null);
+		}
+
+		$register = (string) $change['register'];
+		$schema   = (string) $change['schema'];
 		if ($where === []) {
 			return null;
 		}
@@ -253,90 +266,4 @@ class ExampleSetChanges {
 
 		return null;
 	}//end target()
-
-	/**
-	 * The shortest part of a dot path that the object does not hold yet.
-	 *
-	 * @param array<string, mixed> $row  The object.
-	 * @param string               $path The dot path.
-	 *
-	 * @return string The path itself when only its last step is missing (or nothing is).
-	 */
-	private static function firstMissing(array $row, string $path): string {
-		$parts = explode('.', $path);
-		$steps = count($parts);
-		for ($length = 1; $length < $steps; $length++) {
-			$prefix = implode('.', array_slice($parts, 0, $length));
-			if (self::atPath(row: $row, path: $prefix)['found'] === false) {
-				return $prefix;
-			}
-		}
-
-		return $path;
-	}//end firstMissing()
-
-	/**
-	 * The value at a dot path, and whether there is one.
-	 *
-	 * @param array<string, mixed> $row  The object.
-	 * @param string               $path The dot path.
-	 *
-	 * @return array{found: bool, value: mixed}
-	 */
-	private static function atPath(array $row, string $path): array {
-		$here = $row;
-		foreach (explode('.', $path) as $part) {
-			if (is_array($here) === false || array_key_exists($part, $here) === false) {
-				return ['found' => false, 'value' => null];
-			}
-
-			$here = $here[$part];
-		}
-
-		return ['found' => true, 'value' => $here];
-	}//end atPath()
-
-	/**
-	 * The object with a value at a dot path, making the maps on the way.
-	 *
-	 * @param array<string, mixed> $row   The object.
-	 * @param string               $path  The dot path.
-	 * @param mixed                $value The value.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private static function withPath(array $row, string $path, mixed $value): array {
-		[$head, $rest] = array_pad(explode('.', $path, 2), 2, null);
-		if ($rest === null) {
-			$row[$head] = $value;
-			return $row;
-		}
-
-		$child      = $row[$head] ?? [];
-		$row[$head] = self::withPath(row: (array) $child, path: $rest, value: $value);
-
-		return $row;
-	}//end withPath()
-
-	/**
-	 * The object without the value at a dot path.
-	 *
-	 * @param array<string, mixed> $row  The object.
-	 * @param string               $path The dot path.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private static function withoutPath(array $row, string $path): array {
-		[$head, $rest] = array_pad(explode('.', $path, 2), 2, null);
-		if ($rest === null) {
-			unset($row[$head]);
-			return $row;
-		}
-
-		if (is_array($row[$head] ?? null) === true) {
-			$row[$head] = self::withoutPath(row: $row[$head], path: $rest);
-		}
-
-		return $row;
-	}//end withoutPath()
 }//end class

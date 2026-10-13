@@ -44,6 +44,9 @@ class ExampleSetRemover {
 	 * @param ExampleSetRecord    $record    What the install made.
 	 * @param ExampleSetChanges   $changes   Reverts changes to objects the set did not create.
 	 * @param ExampleSetRegisters $registers Removes the register imports the set made.
+	 * @param ExampleSetFiles     $files     Deletes the files the set attached.
+	 * @param ExampleSetAppConfig $appConfig Restores the app config the set wrote.
+	 * @param ExampleSetInstance  $instance  Deletes the OpenRegister organisations the set created.
 	 *
 	 * @return void
 	 */
@@ -53,6 +56,9 @@ class ExampleSetRemover {
 		private readonly ExampleSetRecord $record,
 		private readonly ExampleSetChanges $changes,
 		private readonly ExampleSetRegisters $registers,
+		private readonly ExampleSetFiles $files,
+		private readonly ExampleSetAppConfig $appConfig,
+		private readonly ExampleSetInstance $instance,
 	) {
 	}//end __construct()
 
@@ -71,12 +77,26 @@ class ExampleSetRemover {
 		$record = $this->record->read(set: $set);
 		$report = [
 			'installed' => ($this->record->isEmpty(record: $record) === false),
-			'removed'   => ['objects' => 0, 'changes' => 0, 'memberships' => 0, 'groups' => 0, 'accounts' => 0, 'register imports' => 0],
+			'removed'   => [
+				'files'             => 0,
+				'objects'           => 0,
+				'changes'           => 0,
+				'app config'        => 0,
+				'memberships'       => 0,
+				'groups'            => 0,
+				'accounts'          => 0,
+				'register imports'  => 0,
+				'organisations'     => 0,
+			],
 			'left'      => [],
 			'failed'    => [],
 		];
 
 		foreach (array_reverse($record['objects'], true) as $name => $held) {
+			if ($this->deleteFiles(set: $set, name: $name, record: $record, report: $report) === false) {
+				continue;
+			}
+
 			if ($this->store->delete(register: $held['register'], schema: $held['schema'], id: $held['id']) === false) {
 				$report['failed'][] = $held['register'].' '.$held['schema'].' '.$name.' ('.$held['id'].')';
 				continue;
@@ -88,6 +108,7 @@ class ExampleSetRemover {
 		}
 
 		$record = $this->revertChanges(set: $set, record: $record, report: $report);
+		$record = $this->restoreAppConfig(set: $set, record: $record, report: $report);
 
 		foreach ($record['memberships'] as $index => [$gid, $uid]) {
 			if ($this->accounts->removeFromGroup(gid: $gid, uid: $uid) === false) {
@@ -105,8 +126,10 @@ class ExampleSetRemover {
 		$record = $this->removeGroupsAndAccounts(set: $set, record: $record, report: $report);
 		$this->record->write(set: $set, record: $record);
 
-		// Last: the set's own objects may point into a register it imported.
-		$this->removeImports(set: $set, record: $record, report: $report);
+		// Last: the set's own objects may point into a register it imported,
+		// and may belong to an organisation it created.
+		$record = $this->removeImports(set: $set, record: $record, report: $report);
+		$this->removeOrganisations(set: $set, record: $record, report: $report);
 
 		return $report;
 	}//end remove()
@@ -142,9 +165,9 @@ class ExampleSetRemover {
 	 * @param array<string, mixed> $record The record.
 	 * @param array<string, mixed> $report The report; counts and failures are added.
 	 *
-	 * @return void
+	 * @return array<string, mixed> The record without the removed imports.
 	 */
-	private function removeImports(string $set, array $record, array &$report): void {
+	private function removeImports(string $set, array $record, array &$report): array {
 		foreach ($record['registers'] as $slug => $jobs) {
 			$left = [];
 			foreach ($jobs as $job) {
@@ -164,7 +187,95 @@ class ExampleSetRemover {
 
 			$this->record->write(set: $set, record: $record);
 		}//end foreach
+
+		return $record;
 	}//end removeImports()
+
+	/**
+	 * Delete the files the set attached to one object; false when one stays.
+	 *
+	 * @param string               $set    The set id.
+	 * @param string               $name   The object's record key.
+	 * @param array<string, mixed> $record The record; loses the deleted files.
+	 * @param array<string, mixed> $report The report; counts and failures are added.
+	 *
+	 * @return bool
+	 */
+	private function deleteFiles(string $set, string $name, array &$record, array &$report): bool {
+		$left = [];
+		foreach (($record['files'][$name] ?? []) as $file) {
+			if ($this->files->delete(fileId: (string) $file['id']) === false) {
+				$report['failed'][] = 'file '.$file['name'].' on '.$name;
+				$left[]             = $file;
+				continue;
+			}
+
+			$report['removed']['files']++;
+		}
+
+		unset($record['files'][$name]);
+		if ($left !== []) {
+			$record['files'][$name] = $left;
+		}
+
+		$this->record->write(set: $set, record: $record);
+
+		return $left === [];
+	}//end deleteFiles()
+
+	/**
+	 * Restore the app config the set wrote, newest first, while it still holds what the set wrote.
+	 *
+	 * @param string               $set    The set id.
+	 * @param array<string, mixed> $record The record.
+	 * @param array<string, mixed> $report The report; counts, keys left as somebody changed them, and failures.
+	 *
+	 * @return array<string, mixed> The record without the restored entries.
+	 */
+	private function restoreAppConfig(string $set, array $record, array &$report): array {
+		foreach (array_reverse($record['appConfig'], true) as $name => $entry) {
+			$outcome = $this->appConfig->revert(entry: $entry);
+			if ($outcome === 'failed') {
+				$report['failed'][] = 'app config '.$entry['app'].' '.$entry['key'];
+				continue;
+			}
+
+			if ($outcome === 'left') {
+				$report['left'][] = 'app config '.$entry['app'].' '.$entry['key'].', which somebody changed after the install';
+			}
+
+			unset($record['appConfig'][$name]);
+			$report['removed']['app config']++;
+			$this->record->write(set: $set, record: $record);
+		}
+
+		return $record;
+	}//end restoreAppConfig()
+
+	/**
+	 * Delete the OpenRegister organisations the set created.
+	 *
+	 * @param string               $set    The set id.
+	 * @param array<string, mixed> $record The record.
+	 * @param array<string, mixed> $report The report; counts and failures are added.
+	 *
+	 * @return void
+	 */
+	private function removeOrganisations(string $set, array $record, array &$report): void {
+		$left = [];
+		foreach ($record['organisations'] as $uuid) {
+			if ($this->instance->delete(uuid: $uuid) === false) {
+				$report['failed'][] = 'OpenRegister organisation '.$uuid;
+				$left[]             = $uuid;
+				continue;
+			}
+
+			$report['removed']['organisations']++;
+		}
+
+		$record['organisations'] = $left;
+		$this->record->write(set: $set, record: $record);
+	}//end removeOrganisations()
 
 	/**
 	 * Delete created groups and created accounts; forget adopted accounts.

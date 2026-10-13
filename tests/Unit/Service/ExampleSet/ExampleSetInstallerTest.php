@@ -181,7 +181,17 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 
 		$this->assertSame([], $report['failed']);
 		$this->assertSame(
-			['objects' => 3, 'changes' => 0, 'memberships' => 2, 'groups' => 1, 'accounts' => 2, 'register imports' => 0],
+			[
+				'files'            => 0,
+				'objects'          => 3,
+				'changes'          => 0,
+				'app config'       => 0,
+				'memberships'      => 2,
+				'groups'           => 1,
+				'accounts'         => 2,
+				'register imports' => 0,
+				'organisations'    => 0,
+			],
 			$report['removed']
 		);
 		$this->assertSame([$foreign], $this->store->ids(register: 'cases', schema: 'case'));

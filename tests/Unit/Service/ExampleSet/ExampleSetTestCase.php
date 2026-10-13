@@ -25,10 +25,23 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance;
+use OCA\OpenRegister\Service\FileService;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\Files\File;
+use OCP\IConfig;
+use OCP\Security\ISecureRandom;
+use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetProof;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover;
@@ -59,6 +72,21 @@ abstract class ExampleSetTestCase extends TestCase {
 
 	protected FakeExampleSetRegisters $registers;
 
+	/** @var array<string, array<string, string>> App config of the apps a fragment configures: app, key, value. */
+	protected array $appValues = [];
+
+	/** @var array<string, array<string, bool>> Which of those keys are kept as sensitive. */
+	protected array $sensitive = [];
+
+	/** @var array<string, Organisation> OpenRegister organisations by uuid. */
+	protected array $organisations = [];
+
+	/** @var array<string, array<string, array{name: string, shared: bool, content: string}>> Files by object id, then file id. */
+	protected array $files = [];
+
+	/** @var string The instance's overwrite.cli.url. */
+	protected string $baseUrl = 'https://cloud.example.test/';
+
 	protected ExampleSetRecord $record;
 
 	protected ExampleSetCatalogue $catalogue;
@@ -76,6 +104,16 @@ abstract class ExampleSetTestCase extends TestCase {
 		$this->accounts  = new FakeExampleSetAccounts();
 		$this->registers = new FakeExampleSetRegisters();
 		$changes         = new ExampleSetChanges(store: $this->store, values: new ExampleSetValues());
+		$container       = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(fn (string $id): object => match ($id) {
+			FileService::class        => $this->fileService(),
+			OrganisationMapper::class => $this->organisationMapper(),
+		});
+		$files     = new ExampleSetFiles(container: $container);
+		$setConfig = new ExampleSetAppConfig(appConfig: $this->appConfigOfApps(), random: $this->random());
+		$system    = $this->createMock(IConfig::class);
+		$system->method('getSystemValueString')->willReturnCallback(fn (string $key, string $default = ''): string => ($key === 'overwrite.cli.url' ? $this->baseUrl : $default));
+		$instance = new ExampleSetInstance(container: $container, config: $system);
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturnCallback(fn (string $app, string $key, string $default = ''): string => ($this->config[$key] ?? $default));
@@ -93,21 +131,27 @@ abstract class ExampleSetTestCase extends TestCase {
 		$appManager->method('getAppPath')->willReturnCallback(fn (string $app): string => $this->apps[$app]);
 
 		$this->catalogue = new ExampleSetCatalogue(appManager: $appManager, order: new ExampleSetOrder());
+		$people          = new ExampleSetPeople(accounts: $this->accounts, record: $this->record);
 		$this->installer = new ExampleSetInstaller(
 			store: $this->store,
-			accounts: $this->accounts,
+			people: $people,
 			values: new ExampleSetValues(),
 			record: $this->record,
 			proof: new ExampleSetProof(),
-			registers: $this->registers,
-			changes: $changes
+			prerequisites: new ExampleSetPrerequisites(registers: $this->registers, instance: $instance, record: $this->record, people: $people),
+			changes: $changes,
+			files: $files,
+			appConfig: $setConfig
 		);
 		$this->remover   = new ExampleSetRemover(
 			store: $this->store,
 			accounts: $this->accounts,
 			record: $this->record,
 			changes: $changes,
-			registers: $this->registers
+			registers: $this->registers,
+			files: $files,
+			appConfig: $setConfig,
+			instance: $instance
 		);
 	}
 
@@ -166,6 +210,107 @@ abstract class ExampleSetTestCase extends TestCase {
 	 */
 	protected function today(): DateTimeImmutable {
 		return new DateTimeImmutable('2026-10-13 12:00', new DateTimeZone('Europe/Amsterdam'));
+	}
+
+	/**
+	 * An app config over $appValues and $sensitive.
+	 *
+	 * @return IAppConfig
+	 */
+	private function appConfigOfApps(): IAppConfig {
+		$config = $this->createMock(IAppConfig::class);
+		$config->method('hasKey')->willReturnCallback(fn (string $app, string $key): bool => isset($this->appValues[$app][$key]));
+		$config->method('isSensitive')->willReturnCallback(fn (string $app, string $key): bool => ($this->sensitive[$app][$key] ?? false));
+		$config->method('getValueString')->willReturnCallback(fn (string $app, string $key, string $default = ''): string => ($this->appValues[$app][$key] ?? $default));
+		$config->method('setValueString')->willReturnCallback(
+			function (string $app, string $key, string $value, bool $lazy = false, bool $sensitive = false): bool {
+				$this->appValues[$app][$key] = $value;
+				$this->sensitive[$app][$key] = $sensitive;
+				return true;
+			}
+		);
+		$config->method('deleteKey')->willReturnCallback(function (string $app, string $key): void {
+			unset($this->appValues[$app][$key], $this->sensitive[$app][$key]);
+		});
+
+		return $config;
+	}
+
+	/**
+	 * A random source that gives a fixed text.
+	 *
+	 * @return ISecureRandom
+	 */
+	private function random(): ISecureRandom {
+		$random = $this->createMock(ISecureRandom::class);
+		$random->method('generate')->willReturnCallback(static fn (int $length): string => str_repeat('r', $length));
+
+		return $random;
+	}
+
+	/**
+	 * OpenRegister's FileService over $files.
+	 *
+	 * @return FileService
+	 */
+	private function fileService(): FileService {
+		$service = $this->createMock(FileService::class);
+		$service->method('addFile')->willReturnCallback(
+			function (string $objectEntity, string $fileName, mixed $content, bool $share = false): File {
+				$id = (string) (count($this->files, COUNT_RECURSIVE) + 100);
+				$this->files[$objectEntity][$id] = ['name' => $fileName, 'shared' => $share, 'content' => (string) $content];
+				$file = $this->createMock(File::class);
+				$file->method('getId')->willReturn((int) $id);
+				return $file;
+			}
+		);
+		$service->method('getFiles')->willReturnCallback(function (string $object): array {
+			$nodes = [];
+			foreach (($this->files[$object] ?? []) as $file) {
+				$node = $this->createMock(File::class);
+				$node->method('getName')->willReturn($file['name']);
+				$nodes[] = $node;
+			}
+			return $nodes;
+		});
+		$service->method('deleteFile')->willReturnCallback(function (int $file): bool {
+			foreach ($this->files as $object => $files) {
+				unset($this->files[$object][(string) $file]);
+			}
+			return true;
+		});
+
+		return $service;
+	}
+
+	/**
+	 * OpenRegister's organisation mapper over $organisations.
+	 *
+	 * @return OrganisationMapper
+	 */
+	private function organisationMapper(): OrganisationMapper {
+		$mapper = $this->createMock(OrganisationMapper::class);
+		$mapper->method('findAll')->willReturnCallback(fn (): array => array_values($this->organisations));
+		$mapper->method('findBySlug')->willReturnCallback(function (string $slug): Organisation {
+			foreach ($this->organisations as $organisation) {
+				if ($organisation->getSlug() === $slug) {
+					return $organisation;
+				}
+			}
+			throw new DoesNotExistException('no such organisation');
+		});
+		$mapper->method('findByUuid')->willReturnCallback(fn (string $uuid): Organisation => ($this->organisations[$uuid] ?? throw new DoesNotExistException('gone')));
+		$mapper->method('insert')->willReturnCallback(function (Organisation $organisation): Organisation {
+			$organisation->setUuid('org-'.(count($this->organisations) + 1));
+			$this->organisations[(string) $organisation->getUuid()] = $organisation;
+			return $organisation;
+		});
+		$mapper->method('delete')->willReturnCallback(function (Organisation $organisation): Organisation {
+			unset($this->organisations[(string) $organisation->getUuid()]);
+			return $organisation;
+		});
+
+		return $mapper;
 	}
 
 	/**

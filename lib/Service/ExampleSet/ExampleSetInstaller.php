@@ -39,36 +39,36 @@ use Throwable;
  * Checks, installs and proves an example set.
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One install flow: check, accounts, objects, proof.
+ * @SuppressWarnings(PHPMD.TooManyMethods)            Each part of a fragment has its own check and write step.
  *
  * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
  */
 class ExampleSetInstaller {
 	/**
-	 * Nextcloud's administrators group, which no example set may add anyone to.
-	 */
-	private const ADMIN_GROUP = 'admin';
-
-	/**
 	 * Constructor.
 	 *
-	 * @param ExampleSetStore    $store    Register access.
-	 * @param ExampleSetAccounts $accounts Accounts and groups.
-	 * @param ExampleSetValues   $values   Fills placeholders.
-	 * @param ExampleSetRecord   $record   What an install made.
-	 * @param ExampleSetProof     $proof     Compares sent with stored.
-	 * @param ExampleSetRegisters $registers Imports the registers a set requires.
-	 * @param ExampleSetChanges   $changes   Changes objects the set did not create.
+	 * @param ExampleSetStore         $store         Register access.
+	 * @param ExampleSetPeople        $people        The cast's and the service accounts' accounts and groups.
+	 * @param ExampleSetValues        $values        Fills placeholders.
+	 * @param ExampleSetRecord        $record        What an install made.
+	 * @param ExampleSetProof         $proof         Compares sent with stored.
+	 * @param ExampleSetPrerequisites $prerequisites Registers and organisations before the check, and the base context.
+	 * @param ExampleSetChanges       $changes       Changes objects the set did not create.
+	 * @param ExampleSetFiles         $files         Attaches files to objects.
+	 * @param ExampleSetAppConfig     $appConfig     Writes a fragment's own app config.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ExampleSetStore $store,
-		private readonly ExampleSetAccounts $accounts,
+		private readonly ExampleSetPeople $people,
 		private readonly ExampleSetValues $values,
 		private readonly ExampleSetRecord $record,
 		private readonly ExampleSetProof $proof,
-		private readonly ExampleSetRegisters $registers,
+		private readonly ExampleSetPrerequisites $prerequisites,
 		private readonly ExampleSetChanges $changes,
+		private readonly ExampleSetFiles $files,
+		private readonly ExampleSetAppConfig $appConfig,
 	) {
 	}//end __construct()
 
@@ -92,8 +92,9 @@ class ExampleSetInstaller {
 	public function check(array $plan, array $adopt=[], ?DateTimeImmutable $today=null): array {
 		$today     = ($today ?? $this->today(timezone: (string) $plan['timezone']));
 		$record    = $this->record->read(set: (string) $plan['set']);
-		$registers = $this->ensureRegisters(plan: $plan, record: $record);
-		$refusals  = array_merge($registers['refusals'], $this->castRefusals(plan: $plan, record: $record, adopt: $adopt));
+		$ready     = $this->prerequisites->ensure(plan: $plan, record: $record);
+		$base      = $this->prerequisites->context(plan: $plan, today: $today);
+		$refusals  = array_merge($ready['refusals'], $this->people->refusals(plan: $plan, record: $record, adopt: $adopt));
 		$checked   = [];
 		$planned   = [];
 		foreach ($plan['fragments'] as $fragment) {
@@ -104,7 +105,7 @@ class ExampleSetInstaller {
 				$where          = $fragment['file'].': object "'.$object['key'].'" ('.$type.')';
 				$resolved       = $this->resolve(
 					object: $object,
-					context: ['cast' => $plan['cast']['entries'], 'objects' => $objects, 'today' => $today],
+					context: (['objects' => $objects] + $base),
 					planned: $planned
 				);
 				if ($resolved['refusal'] !== '') {
@@ -113,7 +114,11 @@ class ExampleSetInstaller {
 					continue;
 				}
 
-				foreach ($this->store->validate(register: $object['register'], schema: $object['schema'], data: $resolved['sent']) as $message) {
+				$messages = array_merge(
+					$this->store->validate(register: $object['register'], schema: $object['schema'], data: $resolved['sent']),
+					$this->files->refusals(dir: (string) $fragment['dir'], object: $object)
+				);
+				foreach ($messages as $message) {
 					$refusals[] = $where.': '.$message;
 				}
 
@@ -123,11 +128,15 @@ class ExampleSetInstaller {
 				$objects[$object['key']] = ($kept ?? $standIn);
 			}//end foreach
 
-			$context  = ['cast' => $plan['cast']['entries'], 'objects' => $objects, 'today' => $today];
-			$refusals = array_merge($refusals, $this->checkChanges(fragment: $fragment, context: $context, checked: $checked));
+			$context  = (['objects' => $objects] + $base);
+			$refusals = array_merge(
+				$refusals,
+				$this->checkChanges(fragment: $fragment, context: $context, checked: $checked),
+				$this->checkAppConfig(fragment: $fragment, context: $context)
+			);
 		}//end foreach
 
-		return ['refusals' => $refusals, 'checked' => $checked, 'registers' => $registers['outcome']];
+		return ['refusals' => $refusals, 'checked' => $checked, 'registers' => $ready['registers']];
 	}//end check()
 
 	/**
@@ -154,6 +163,8 @@ class ExampleSetInstaller {
 			'groups'      => [],
 			'memberships' => [],
 			'changes'     => [],
+			'appConfig'   => [],
+			'files'       => 0,
 			'passwords'   => [],
 			'types'       => [],
 			'dropped'     => [],
@@ -171,54 +182,16 @@ class ExampleSetInstaller {
 
 		$set    = (string) $plan['set'];
 		$record = $this->record->read(set: $set);
-		$report = $this->installAccounts(plan: $plan, adopt: $adopt, password: $password, report: $report, record: $record);
+		$report = $this->people->install(plan: $plan, adopt: $adopt, password: $password, report: $report, record: $record);
 
+		$base    = $this->prerequisites->context(plan: $plan, today: $today);
 		$written = [];
 		foreach ($plan['fragments'] as $fragment) {
-			$report = $this->installFragment(plan: $plan, fragment: $fragment, today: $today, report: $report, record: $record, written: $written);
+			$report = $this->installFragment(plan: $plan, fragment: $fragment, base: $base, report: $report, record: $record, written: $written);
 		}
 
 		return $this->proven(report: $report, record: $record, written: $written);
 	}//end install()
-
-	/**
-	 * Import every required register that is not on the instance, and record the import.
-	 *
-	 * @param array<string, mixed> $plan   The plan.
-	 * @param array<string, mixed> $record The record; gains the imports.
-	 *
-	 * @return array{refusals: array<int, string>, outcome: array<string, string>}
-	 */
-	private function ensureRegisters(array $plan, array &$record): array {
-		$result = ['refusals' => [], 'outcome' => []];
-		foreach ((array) ($plan['requires'] ?? []) as $slug) {
-			$result['outcome'][$slug] = 'kept';
-			if ($this->registers->exists(slug: $slug) === true) {
-				continue;
-			}
-
-			$import = $this->registers->import(slug: $slug);
-			if ($import['jobs'] !== []) {
-				$record['registers'][$slug] = array_merge(($record['registers'][$slug] ?? []), $import['jobs']);
-				$this->record->write(set: (string) $plan['set'], record: $record);
-			}
-
-			$why = $import['error'];
-			if ($why === '' && $this->registers->exists(slug: $slug) === false) {
-				$why = 'it is still not on this instance';
-			}
-
-			if ($why !== '') {
-				$result['refusals'][]     = 'register "'.$slug.'" is required and could not be imported from OpenRegister\'s descriptor: '.$why;
-				$result['outcome'][$slug] = 'failed';
-				continue;
-			}
-
-			$result['outcome'][$slug] = 'imported';
-		}//end foreach
-
-		return $result;
-	}//end ensureRegisters()
 
 	/**
 	 * Check the changes of one fragment: each resolves, finds its object, and leaves it valid.
@@ -252,127 +225,18 @@ class ExampleSetInstaller {
 	}//end checkChanges()
 
 	/**
-	 * Groups, accounts and memberships, each written when the record does not hold it.
-	 *
-	 * @param array<string, mixed> $plan     The plan.
-	 * @param array<int, string>   $adopt    Adoptable account ids.
-	 * @param string               $password The administrator's password, or ''.
-	 * @param array<string, mixed> $report   The report so far.
-	 * @param array<string, mixed> $record   The record; updated and kept after every step.
-	 *
-	 * @return array<string, mixed> The report.
-	 */
-	private function installAccounts(array $plan, array $adopt, string $password, array $report, array &$record): array {
-		$set = (string) $plan['set'];
-		foreach ($this->declaredGroups(plan: $plan) as $gid => $displayName) {
-			$report['groups'][$gid] = 'kept';
-			if ($this->accounts->groupExists(gid: $gid) === false) {
-				if ($this->accounts->createGroup(gid: $gid, displayName: $displayName) === false) {
-					$report['dropped'][] = 'group '.$gid.': Nextcloud did not create it';
-					continue;
-				}
-
-				$report['groups'][$gid] = 'created';
-				$record['groups'][]     = $gid;
-				$this->record->write(set: $set, record: $record);
-			}
-		}
-
-		foreach ($plan['cast']['people'] as $person) {
-			$uid = (string) ($person['uid'] ?? '');
-			if ($uid === '') {
-				continue;
-			}
-
-			$report = $this->installUser(set: $set, person: $person, adopt: $adopt, password: $password, report: $report, record: $record);
-		}
-
-		foreach ($this->declaredMemberships(plan: $plan) as [$gid, $uid]) {
-			$name = $gid.' / '.$uid;
-			$report['memberships'][$name] = 'kept';
-			if ($this->accounts->inGroup(gid: $gid, uid: $uid) === true) {
-				continue;
-			}
-
-			if ($this->accounts->addToGroup(gid: $gid, uid: $uid) === false) {
-				$report['dropped'][] = 'membership '.$name.': the group or the account is not there';
-				continue;
-			}
-
-			$report['memberships'][$name] = 'created';
-			$record['memberships'][]      = [$gid, $uid];
-			$this->record->write(set: $set, record: $record);
-		}//end foreach
-
-		return $report;
-	}//end installAccounts()
-
-	/**
-	 * One cast account: kept, adopted or created.
-	 *
-	 * @param string               $set      The set id.
-	 * @param array<string, mixed> $person   The cast person.
-	 * @param array<int, string>   $adopt    Adoptable account ids.
-	 * @param string               $password The administrator's password, or ''.
-	 * @param array<string, mixed> $report   The report so far.
-	 * @param array<string, mixed> $record   The record.
-	 *
-	 * @return array<string, mixed> The report.
-	 */
-	private function installUser(string $set, array $person, array $adopt, string $password, array $report, array &$record): array {
-		$uid = (string) $person['uid'];
-		if ($this->accounts->userExists(uid: $uid) === true) {
-			$report['users'][$uid] = 'kept';
-			if (isset($record['users'][$uid]) === false && in_array($uid, $adopt, true) === true) {
-				$record['users'][$uid] = 'adopted';
-				$report['users'][$uid] = 'adopted';
-				$this->record->write(set: $set, record: $record);
-			}
-
-			return $report;
-		}
-
-		$generated = '';
-		if ($password === '') {
-			$generated = $this->accounts->newPassword();
-			$password  = $generated;
-		}
-
-		$error = $this->accounts->createUser(
-			uid: $uid,
-			displayName: (string) ($person['displayName'] ?? $uid),
-			email: (string) ($person['email'] ?? ''),
-			password: $password
-		);
-		if ($error !== '') {
-			$report['dropped'][] = 'account '.$uid.': '.$error;
-			return $report;
-		}
-
-		$report['users'][$uid] = 'created';
-		if ($generated !== '') {
-			$report['passwords'][$uid] = $generated;
-		}
-
-		$record['users'][$uid] = 'created';
-		$this->record->write(set: $set, record: $record);
-
-		return $report;
-	}//end installUser()
-
-	/**
 	 * Write the objects and changes of one fragment that the record does not hold.
 	 *
 	 * @param array<string, mixed>                $plan     The plan.
 	 * @param array<string, mixed>                $fragment The fragment.
-	 * @param DateTimeImmutable                   $today    The install day.
+	 * @param array<string, mixed>                $base     The context every placeholder may draw on.
 	 * @param array<string, mixed>                $report   The report so far.
 	 * @param array<string, mixed>                $record   The record; updated and kept after every write.
 	 * @param array<string, array<string, mixed>> $written  Collects what this run sent, by record key.
 	 *
 	 * @return array<string, mixed> The report.
 	 */
-	private function installFragment(array $plan, array $fragment, DateTimeImmutable $today, array $report, array &$record, array &$written): array {
+	private function installFragment(array $plan, array $fragment, array $base, array $report, array &$record, array &$written): array {
 		$objects = [];
 		foreach ($fragment['objects'] as $object) {
 			$type = $object['register'].' '.$object['schema'];
@@ -389,7 +253,7 @@ class ExampleSetInstaller {
 
 			$resolved = $this->resolve(
 				object: $object,
-				context: ['cast' => $plan['cast']['entries'], 'objects' => $objects, 'today' => $today],
+				context: (['objects' => $objects] + $base),
 				planned: []
 			);
 			if ($resolved['refusal'] !== '') {
@@ -407,15 +271,17 @@ class ExampleSetInstaller {
 			$record['objects'][$name] = ['register' => $object['register'], 'schema' => $object['schema'], 'id' => $made['id']];
 			$this->record->write(set: (string) $plan['set'], record: $record);
 			$written[$name] = $resolved['data'];
+			$report         = $this->attachFiles(plan: $plan, fragment: $fragment, object: $object, objectId: $made['id'], report: $report, record: $record);
 
 			// The row as stored, because a later object may quote a field the
 			// register made itself, such as a case number.
 			$objects[$object['key']] = ($this->store->get(register: $object['register'], schema: $object['schema'], id: $made['id']) ?? ['id' => $made['id']]);
 		}//end foreach
 
-		$context = ['cast' => $plan['cast']['entries'], 'objects' => $objects, 'today' => $today];
+		$context = (['objects' => $objects] + $base);
+		$report  = $this->installChanges(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 
-		return $this->installChanges(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
+		return $this->installAppConfig(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 	}//end installFragment()
 
 	/**
@@ -635,160 +501,6 @@ class ExampleSetInstaller {
 	}//end standIn()
 
 	/**
-	 * What the cast refuses: a BSN that fails the eleven test, a group or member
-	 * that is not in the cast, an account that belongs to somebody else.
-	 *
-	 * @param array<string, mixed> $plan   The plan.
-	 * @param array<string, mixed> $record The record.
-	 * @param array<int, string>   $adopt  Adoptable account ids.
-	 *
-	 * @return array<int, string>
-	 */
-	private function castRefusals(array $plan, array $record, array $adopt): array {
-		$refusals = [];
-		$castFile = 'openregister/'.ExampleSetCatalogue::FOLDER.'/'.$plan['set'].'.json';
-		foreach ($plan['cast']['people'] as $key => $person) {
-			$refusals = array_merge(
-				$refusals,
-				$this->personRefusals(key: (string) $key, person: $person, plan: $plan, castFile: $castFile),
-				$this->accountRefusals(uid: (string) ($person['uid'] ?? ''), record: $record, adopt: $adopt)
-			);
-		}
-
-		foreach (array_keys($this->declaredGroups(plan: $plan)) as $gid) {
-			if (strtolower($gid) === self::ADMIN_GROUP) {
-				$refusals[] = 'group "'.$gid.'": an example set never adds anyone to Nextcloud\'s administrators.'
-					.' Give the person an app admin group in a fragment instead.';
-			}
-		}
-
-		return array_merge($refusals, $this->memberRefusals(plan: $plan));
-	}//end castRefusals()
-
-	/**
-	 * What one cast person refuses: a BSN that fails the eleven test, a group that is not in the cast.
-	 *
-	 * @param string               $key      The cast key.
-	 * @param array<string, mixed> $person   The cast person.
-	 * @param array<string, mixed> $plan     The plan.
-	 * @param string               $castFile The cast file, for messages.
-	 *
-	 * @return array<int, string>
-	 */
-	private function personRefusals(string $key, array $person, array $plan, string $castFile): array {
-		$refusals = [];
-		$bsn      = (string) ($person['bsn'] ?? '');
-		if ($bsn !== '' && self::passesElevenTest(bsn: $bsn) === false) {
-			$refusals[] = $castFile.': cast "'.$key.'": BSN '.$bsn.' fails the eleven test';
-		}
-
-		foreach ((array) ($person['groups'] ?? []) as $groupKey) {
-			if (isset($plan['cast']['groups'][$groupKey]) === false) {
-				$refusals[] = $castFile.': cast "'.$key.'": group "'.$groupKey.'" is not a cast group';
-			}
-		}
-
-		return $refusals;
-	}//end personRefusals()
-
-	/**
-	 * Why an account id cannot be used: it exists, and neither the record nor the administrator vouches for it.
-	 *
-	 * @param string               $uid    The account id, or '' for a person without an account.
-	 * @param array<string, mixed> $record The record.
-	 * @param array<int, string>   $adopt  Adoptable account ids.
-	 *
-	 * @return array<int, string>
-	 */
-	private function accountRefusals(string $uid, array $record, array $adopt): array {
-		if ($uid === '' || isset($record['users'][$uid]) === true || in_array($uid, $adopt, true) === true
-			|| $this->accounts->userExists(uid: $uid) === false
-		) {
-			return [];
-		}
-
-		return [
-			'account "'.$uid.'" exists and this set did not create it, so it is left alone.'
-			.' Pass --adopt='.$uid.' to let the set use it; remove will then leave it in place.',
-		];
-	}//end accountRefusals()
-
-	/**
-	 * Fragment group members that are not cast people with an account.
-	 *
-	 * @param array<string, mixed> $plan The plan.
-	 *
-	 * @return array<int, string>
-	 */
-	private function memberRefusals(array $plan): array {
-		$refusals = [];
-		foreach ($plan['fragments'] as $fragment) {
-			foreach ($fragment['groups'] as $group) {
-				foreach ((array) ($group['members'] ?? []) as $member) {
-					if (($plan['cast']['people'][$member]['uid'] ?? '') === '') {
-						$refusals[] = $fragment['file'].': group "'.($group['group'] ?? '').'": "'.$member.'" is not a cast person with an account';
-					}
-				}
-			}
-		}
-
-		return $refusals;
-	}//end memberRefusals()
-
-	/**
-	 * Every group the set declares: cast groups and fragment groups, gid to display name.
-	 *
-	 * @param array<string, mixed> $plan The plan.
-	 *
-	 * @return array<string, string>
-	 */
-	private function declaredGroups(array $plan): array {
-		$groups = [];
-		foreach ($plan['cast']['groups'] as $key => $group) {
-			$groups[(string) ($group['gid'] ?? $key)] = (string) ($group['displayName'] ?? '');
-		}
-
-		foreach ($plan['fragments'] as $fragment) {
-			foreach ($fragment['groups'] as $group) {
-				$gid = (string) ($group['group'] ?? '');
-				if ($gid !== '' && isset($groups[$gid]) === false) {
-					$groups[$gid] = (string) ($group['displayName'] ?? '');
-				}
-			}
-		}
-
-		return $groups;
-	}//end declaredGroups()
-
-	/**
-	 * Every membership the set declares, as gid and uid pairs.
-	 *
-	 * @param array<string, mixed> $plan The plan.
-	 *
-	 * @return array<int, array{0: string, 1: string}>
-	 */
-	private function declaredMemberships(array $plan): array {
-		$pairs = [];
-		foreach ($plan['cast']['people'] as $person) {
-			$uid = (string) ($person['uid'] ?? '');
-			foreach ((array) ($person['groups'] ?? []) as $groupKey) {
-				$group = $plan['cast']['groups'][$groupKey];
-				$pairs[] = [(string) ($group['gid'] ?? $groupKey), $uid];
-			}
-		}
-
-		foreach ($plan['fragments'] as $fragment) {
-			foreach ($fragment['groups'] as $group) {
-				foreach ((array) ($group['members'] ?? []) as $member) {
-					$pairs[] = [(string) $group['group'], (string) $plan['cast']['people'][$member]['uid']];
-				}
-			}
-		}
-
-		return array_values(array_unique($pairs, SORT_REGULAR));
-	}//end declaredMemberships()
-
-	/**
 	 * Read the instance back and fill in what is missing and what was not kept.
 	 *
 	 * An object from an earlier run is counted, not compared: somebody may have
@@ -818,71 +530,143 @@ class ExampleSetInstaller {
 			}
 		}
 
-		foreach ($record['changes'] as $name => $entry) {
-			foreach ($this->changes->lost(entry: $entry) as $path) {
-				$report['lost'][] = 'change '.$name.': '.$path;
-			}
-		}
-
-		$report['missing'] = array_merge($report['missing'], $this->missingAccounts(record: $record));
+		$report            = $this->provenParts(report: $report, record: $record);
+		$report['missing'] = array_merge($report['missing'], $this->people->missing(record: $record));
 		$report['ok']      = ($report['dropped'] === [] && $report['missing'] === [] && $report['lost'] === []);
 
 		return $report;
 	}//end proven()
 
 	/**
-	 * The recorded accounts, groups and memberships that are not on the instance.
+	 * Read back the changes, files and app config the record holds.
 	 *
+	 * @param array<string, mixed> $report The report so far.
 	 * @param array<string, mixed> $record The record as written.
 	 *
-	 * @return array<int, string>
+	 * @return array<string, mixed> The report with what is missing or not kept.
 	 */
-	private function missingAccounts(array $record): array {
-		$missing = [];
-		foreach (array_keys($record['users']) as $uid) {
-			if ($this->accounts->userExists(uid: $uid) === false) {
-				$missing[] = 'account '.$uid;
+	private function provenParts(array $report, array $record): array {
+		foreach ($record['changes'] as $name => $entry) {
+			foreach ($this->changes->lost(entry: $entry) as $path) {
+				$report['lost'][] = 'change '.$name.': '.$path;
 			}
 		}
 
-		foreach ($record['groups'] as $gid) {
-			if ($this->accounts->groupExists(gid: $gid) === false) {
-				$missing[] = 'group '.$gid;
+		foreach ($record['files'] as $name => $files) {
+			$present = $this->files->names(objectId: (string) ($record['objects'][$name]['id'] ?? ''));
+			foreach ($files as $file) {
+				if (in_array($file['name'], $present, true) === false) {
+					$report['missing'][] = 'file '.$file['name'].' on '.$name;
+				}
 			}
 		}
 
-		foreach ($record['memberships'] as [$gid, $uid]) {
-			if ($this->accounts->inGroup(gid: $gid, uid: $uid) === false) {
-				$missing[] = 'membership '.$gid.' / '.$uid;
+		foreach ($record['appConfig'] as $name => $entry) {
+			if ($this->appConfig->lost(entry: $entry) === true) {
+				$report['lost'][] = 'app config '.$entry['app'].' '.$entry['key'].' ('.$name.')';
 			}
 		}
 
-		return $missing;
-	}//end missingAccounts()
+		return $report;
+	}//end provenParts()
 
 	/**
-	 * Whether a BSN passes the eleven test.
+	 * Check the app config of one fragment: each key may be written and each value resolves.
 	 *
-	 * @param string $bsn Nine digits.
+	 * @param array<string, mixed> $fragment The fragment.
+	 * @param array<string, mixed> $context  The context placeholders draw on.
 	 *
-	 * @return bool
-	 *
-	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 * @return array<int, string> Refusals; never a value.
 	 */
-	public static function passesElevenTest(string $bsn): bool {
-		if (preg_match('/^\d{9}$/', $bsn) !== 1) {
-			return false;
+	private function checkAppConfig(array $fragment, array $context): array {
+		$refusals = [];
+		foreach (($fragment['appConfig'] ?? []) as $entry) {
+			$where   = $fragment['file'].': app config "'.$entry['key'].'"';
+			$refusal = $this->appConfig->refusal(app: $fragment['app'], key: $entry['key'], generate: $entry['generate']);
+			if ($refusal !== '') {
+				$refusals[] = $where.': '.$refusal;
+				continue;
+			}
+
+			$gaps = [];
+			$this->values->fill(value: (string) $entry['value'], context: $context, gaps: $gaps);
+			if ($entry['generate'] === false && $gaps !== []) {
+				$refusals[] = $where.': cannot resolve '.implode(', ', array_unique($gaps));
+			}
 		}
 
-		$sum = 0;
-		for ($i = 0; $i < 8; $i++) {
-			$sum += ((int) $bsn[$i] * (9 - $i));
+		return $refusals;
+	}//end checkAppConfig()
+
+	/**
+	 * Write the app config of one fragment that the record does not hold.
+	 *
+	 * @param array<string, mixed> $plan     The plan.
+	 * @param array<string, mixed> $fragment The fragment.
+	 * @param array<string, mixed> $context  The context placeholders draw on.
+	 * @param array<string, mixed> $report   The report so far; names keys, never values.
+	 * @param array<string, mixed> $record   The record; updated after every write.
+	 *
+	 * @return array<string, mixed> The report.
+	 */
+	private function installAppConfig(array $plan, array $fragment, array $context, array $report, array &$record): array {
+		foreach (($fragment['appConfig'] ?? []) as $entry) {
+			$name = $fragment['app'].'/'.$entry['key'];
+			$report['appConfig'][$name] = 'kept';
+			if (isset($record['appConfig'][$name]) === true) {
+				continue;
+			}
+
+			$gaps  = [];
+			$value = (string) $this->values->fill(value: (string) $entry['value'], context: $context, gaps: $gaps);
+			$made  = $this->appConfig->apply(app: $fragment['app'], key: $entry['key'], value: $value, generate: $entry['generate']);
+			if ($made['error'] !== '') {
+				$report['dropped'][]        = $fragment['file'].': app config "'.$entry['key'].'": '.$made['error'];
+				$report['appConfig'][$name] = 'failed';
+				continue;
+			}
+
+			if ($made['entry'] !== null) {
+				$record['appConfig'][$name] = $made['entry'];
+				$report['appConfig'][$name] = 'created';
+				$this->record->write(set: (string) $plan['set'], record: $record);
+			}
+		}//end foreach
+
+		return $report;
+	}//end installAppConfig()
+
+	/**
+	 * Attach the files of a just-written object and record them.
+	 *
+	 * @param array<string, mixed> $plan     The plan.
+	 * @param array<string, mixed> $fragment The fragment.
+	 * @param array<string, mixed> $object   The declared object.
+	 * @param string               $objectId The written object's id.
+	 * @param array<string, mixed> $report   The report so far.
+	 * @param array<string, mixed> $record   The record; gains the files.
+	 *
+	 * @return array<string, mixed> The report.
+	 */
+	private function attachFiles(array $plan, array $fragment, array $object, string $objectId, array $report, array &$record): array {
+		if (($object['files'] ?? []) === []) {
+			return $report;
 		}
 
-		$sum -= (int) $bsn[8];
+		$name     = $fragment['app'].'/'.$object['key'];
+		$attached = $this->files->attach(dir: (string) $fragment['dir'], object: $object, objectId: $objectId);
+		if ($attached['files'] !== []) {
+			$record['files'][$name] = $attached['files'];
+			$this->record->write(set: (string) $plan['set'], record: $record);
+		}
 
-		return $sum % 11 === 0;
-	}//end passesElevenTest()
+		$report['files'] += count($attached['files']);
+		foreach ($attached['errors'] as $error) {
+			$report['dropped'][] = $fragment['file'].': object "'.$object['key'].'": '.$error;
+		}
+
+		return $report;
+	}//end attachFiles()
 
 	/**
 	 * This moment in the set's time zone, so "09:12" is a quarter past nine where the set takes place.

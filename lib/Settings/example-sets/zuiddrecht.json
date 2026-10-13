@@ -427,6 +427,14 @@
 				"registeredOn": "2001-02-15",
 				"employees": 9
 			}
+		],
+		"openregisterOrganisations": [
+			{
+				"key": "gemeente",
+				"name": "Gemeente Zuiddrecht",
+				"slug": "zuiddrecht",
+				"description": "De voorbeeldgemeente van de Zuiddrecht demo. Alles van deze organisatie is demo-inhoud."
+			}
 		]
 	},
 	"objects": [

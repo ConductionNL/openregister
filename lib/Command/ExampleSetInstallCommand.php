@@ -208,7 +208,14 @@ class ExampleSetInstallCommand extends Command {
 	 * @return void
 	 */
 	private function printReport(array $report, OutputInterface $output): void {
-		$parts = ['registers' => 'Register', 'groups' => 'Group', 'users' => 'Account', 'memberships' => 'Membership', 'changes' => 'Change'];
+		$parts = [
+			'registers'   => 'Register',
+			'groups'      => 'Group',
+			'users'       => 'Account',
+			'memberships' => 'Membership',
+			'changes'     => 'Change',
+			'appConfig'   => 'App config',
+		];
 		foreach ($parts as $part => $word) {
 			foreach ($report[$part] as $name => $outcome) {
 				$output->writeln($word.' '.$name.': '.self::word(outcome: $outcome));
@@ -226,6 +233,10 @@ class ExampleSetInstallCommand extends Command {
 					$counts['arrived']
 				)
 			);
+		}
+
+		if ($report['files'] > 0) {
+			$output->writeln('Files attached: '.$report['files']);
 		}
 
 		$problems = ['Not written: ' => $report['dropped'], 'Not on the instance: ' => $report['missing'], 'Written but not kept: ' => $report['lost']];

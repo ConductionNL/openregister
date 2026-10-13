@@ -55,8 +55,8 @@ class ExampleSetCatalogue {
 	 * What each kind of entry needs, for the message that refuses one.
 	 */
 	private const NEEDS = [
-		'object' => 'a key, a register, a schema and data',
-		'change' => 'a key, a register, a schema, a where, and a set or an append',
+		'object' => 'a key, a register, a schema, data, and files with a relative path inside the fragment\'s folder',
+		'change' => 'a key, a register, a schema, a where or an object, and a set or an append',
 	];
 
 	/**
@@ -160,8 +160,9 @@ class ExampleSetCatalogue {
 			'set'       => $set,
 			'title'     => (string) ($castFile['title'] ?? $set),
 			'timezone'  => (string) ($castFile['timezone'] ?? 'UTC'),
-			'cast'      => $this->cast(cast: $castFile['cast'], file: $castFile['@file']),
+			'cast'      => $this->cast(cast: $castFile['cast'], file: $castFile['@file'], set: $set),
 			'requires'  => array_values(array_unique(array_map('strval', (array) ($castFile['requires'] ?? [])))),
+			'organisations' => $this->organisationEntities(declared: (array) ($castFile['cast']['openregisterOrganisations'] ?? []), file: $castFile['@file']),
 			'fragments' => [],
 			'skipped'   => $ordered['skipped'],
 		];
@@ -169,8 +170,32 @@ class ExampleSetCatalogue {
 			$plan['fragments'][] = $this->fragment(app: $app, fragment: $fragments[$app]);
 		}
 
+		$this->refuseSharedAccountKeys(plan: $plan);
+
 		return $plan;
 	}//end gather()
+
+	/**
+	 * Refuse a service account key used twice in the set, or also used by the cast.
+	 *
+	 * @param array<string, mixed> $plan The plan.
+	 *
+	 * @return void
+	 *
+	 * @throws ExampleSetException When a key is used twice.
+	 */
+	private function refuseSharedAccountKeys(array $plan): void {
+		$accounts = [];
+		foreach ($plan['fragments'] as $fragment) {
+			foreach ($fragment['serviceAccounts'] as $account) {
+				if (isset($accounts[$account['key']]) === true || isset($plan['cast']['entries'][$account['key']]) === true) {
+					throw new ExampleSetException($fragment['file'].': the service account key "'.$account['key'].'" is used twice in this set.');
+				}
+
+				$accounts[$account['key']] = true;
+			}
+		}
+	}//end refuseSharedAccountKeys()
 
 	/**
 	 * Read and parse one fragment file.
@@ -196,6 +221,7 @@ class ExampleSetCatalogue {
 		}
 
 		$decoded['@file'] = $named;
+		$decoded['@dir']  = dirname($file);
 
 		return $decoded;
 	}//end read()
@@ -203,21 +229,30 @@ class ExampleSetCatalogue {
 	/**
 	 * The cast, keyed, with every key checked to be unique across people, organisations and groups.
 	 *
+	 * Every person and organisation gets a `contactsUid` when it declares none:
+	 * `example-set-<set>-<key>`, stable across installs, so an app that keeps a
+	 * Contacts uid can quote `{{cast:key.contactsUid}}`.
+	 *
 	 * @param array<string, mixed> $cast The declared cast.
 	 * @param string               $file The cast file, for messages.
+	 * @param string               $set  The set id.
 	 *
 	 * @return array{people: array<string, array<string, mixed>>, organisations: array<string, array<string, mixed>>,
 	 *               groups: array<string, array<string, mixed>>, entries: array<string, array<string, mixed>>}
 	 *
 	 * @throws ExampleSetException When a key is missing or used twice.
 	 */
-	private function cast(array $cast, string $file): array {
+	private function cast(array $cast, string $file, string $set): array {
 		$keyed = ['people' => [], 'organisations' => [], 'groups' => [], 'entries' => []];
 		foreach (['people', 'organisations', 'groups'] as $part) {
 			foreach ((array) ($cast[$part] ?? []) as $entry) {
 				$key = $this->keyOf(entry: $entry);
 				if ($key === '' || isset($keyed['entries'][$key]) === true) {
 					throw new ExampleSetException($file.': every cast entry needs a key of its own; "'.$key.'" in '.$part.' is missing or used twice.');
+				}
+
+				if ($part !== 'groups' && is_string($entry['contactsUid'] ?? null) === false) {
+					$entry['contactsUid'] = 'example-set-'.$set.'-'.$key;
 				}
 
 				$keyed[$part][$key]    = $entry;
@@ -234,8 +269,10 @@ class ExampleSetCatalogue {
 	 * @param string               $app      The app id.
 	 * @param array<string, mixed> $fragment The parsed file.
 	 *
-	 * @return array{app: string, file: string, objects: array<int, array<string, mixed>>, changes: array<int, array<string, mixed>>,
-	 *               groups: array<int, array<string, mixed>>}
+	 * @return array{app: string, file: string, dir: string, objects: array<int, array<string, mixed>>,
+	 *               changes: array<int, array<string, mixed>>, groups: array<int, array<string, mixed>>,
+	 *               serviceAccounts: array<int, array{key: string, uid: string, displayName: string, groups: array<int, string>}>,
+	 *               appConfig: array<int, array{key: string, value: mixed, generate: bool}>}
 	 *
 	 * @throws ExampleSetException When an object or change lacks a key, register or schema, or a key is used twice.
 	 */
@@ -244,13 +281,106 @@ class ExampleSetCatalogue {
 		$seen = [];
 
 		return [
-			'app'     => $app,
-			'file'    => $file,
-			'objects' => $this->entries(file: $file, declared: (array) ($fragment['objects'] ?? []), kind: 'object', seen: $seen),
-			'changes' => $this->entries(file: $file, declared: (array) ($fragment['changes'] ?? []), kind: 'change', seen: $seen),
-			'groups'  => array_values(array_filter((array) ($fragment['groups'] ?? []), 'is_array')),
+			'app'             => $app,
+			'file'            => $file,
+			'dir'             => (string) ($fragment['@dir'] ?? ''),
+			'objects'         => $this->entries(file: $file, declared: (array) ($fragment['objects'] ?? []), kind: 'object', seen: $seen),
+			'changes'         => $this->entries(file: $file, declared: (array) ($fragment['changes'] ?? []), kind: 'change', seen: $seen),
+			'groups'          => array_values(array_filter((array) ($fragment['groups'] ?? []), 'is_array')),
+			'serviceAccounts' => $this->serviceAccounts(file: $file, declared: (array) ($fragment['serviceAccounts'] ?? [])),
+			'appConfig'       => $this->appConfig(app: $app, file: $file, declared: (array) ($fragment['appConfig'] ?? [])),
 		];
 	}//end fragment()
+
+	/**
+	 * The service accounts of a fragment: a key and an account id each.
+	 *
+	 * @param string            $file     The fragment file, for messages.
+	 * @param array<int, mixed> $declared The declared accounts.
+	 *
+	 * @return array<int, array{key: string, uid: string, displayName: string, groups: array<int, string>}>
+	 *
+	 * @throws ExampleSetException When an account lacks a key or a valid account id.
+	 */
+	private function serviceAccounts(string $file, array $declared): array {
+		$accounts = [];
+		foreach ($declared as $index => $account) {
+			$uid = (string) (((array) $account)['uid'] ?? '');
+			if ($this->keyOf(entry: $account) === '' || preg_match('/^[a-z0-9._-]{1,64}$/', $uid) !== 1) {
+				throw new ExampleSetException(
+					$file.': service account '.$index.' needs a key and an account id of lower-case letters, digits, dots, dashes or underscores.'
+				);
+			}
+
+			$accounts[] = [
+				'key'         => $this->keyOf(entry: $account),
+				'uid'         => $uid,
+				'displayName' => (string) ($account['displayName'] ?? $uid),
+				'groups'      => array_values(array_map('strval', (array) ($account['groups'] ?? []))),
+			];
+		}
+
+		return $accounts;
+	}//end serviceAccounts()
+
+	/**
+	 * The app config entries of a fragment, each for the fragment's own app.
+	 *
+	 * @param string            $app      The app that ships the fragment.
+	 * @param string            $file     The fragment file, for messages.
+	 * @param array<int, mixed> $declared The declared entries.
+	 *
+	 * @return array<int, array{key: string, value: mixed, generate: bool}>
+	 *
+	 * @throws ExampleSetException When an entry names another app, lacks a key, or has no value to write.
+	 */
+	private function appConfig(string $app, string $file, array $declared): array {
+		$entries = [];
+		foreach ($declared as $index => $entry) {
+			$entry = (array) $entry;
+			if ((string) ($entry['app'] ?? $app) !== $app) {
+				throw new ExampleSetException($file.': app config '.$index.' is for "'.$entry['app'].'"; a fragment sets only its own app\'s config.');
+			}
+
+			$generate = (($entry['generate'] ?? false) === true);
+			if (is_string($entry['key'] ?? null) === false || $entry['key'] === '' || ($generate === false && is_scalar($entry['value'] ?? null) === false)) {
+				throw new ExampleSetException($file.': app config '.$index.' needs a key and a value, or generate: true.');
+			}
+
+			$entries[] = ['key' => $entry['key'], 'value' => ($entry['value'] ?? ''), 'generate' => $generate];
+		}
+
+		return $entries;
+	}//end appConfig()
+
+	/**
+	 * The OpenRegister organisations the cast needs, each with a key, a name and a slug.
+	 *
+	 * @param array<int, mixed> $declared The declared organisations.
+	 * @param string            $file     The cast file, for messages.
+	 *
+	 * @return array<int, array{key: string, name: string, slug: string, description: string}>
+	 *
+	 * @throws ExampleSetException When one lacks a key, a name or a slug.
+	 */
+	private function organisationEntities(array $declared, string $file): array {
+		$organisations = [];
+		foreach ($declared as $index => $organisation) {
+			$organisation = (array) $organisation;
+			if ($this->keyOf(entry: $organisation) === '' || (string) ($organisation['name'] ?? '') === '' || (string) ($organisation['slug'] ?? '') === '') {
+				throw new ExampleSetException($file.': OpenRegister organisation '.$index.' needs a key, a name and a slug.');
+			}
+
+			$organisations[] = [
+				'key'         => $this->keyOf(entry: $organisation),
+				'name'        => (string) $organisation['name'],
+				'slug'        => (string) $organisation['slug'],
+				'description' => (string) ($organisation['description'] ?? ''),
+			];
+		}
+
+		return $organisations;
+	}//end organisationEntities()
 
 	/**
 	 * The objects or changes of a fragment, each checked for its parts and a key of its own.
@@ -284,6 +414,30 @@ class ExampleSetCatalogue {
 	}//end entries()
 
 	/**
+	 * Whether every file of an object names a path inside its fragment's folder:
+	 * relative, without `..`, a backslash or a NUL.
+	 *
+	 * @param array<int, mixed> $files The declared files.
+	 *
+	 * @return bool
+	 */
+	private function safeFiles(array $files): bool {
+		foreach ($files as $file) {
+			$path = '';
+			if (is_array($file) === true) {
+				$path = (string) ($file['path'] ?? '');
+			}
+
+			$outside = (str_starts_with($path, '/') === true || preg_match('#(^|/)\.\.(/|$)#', $path) === 1);
+			if ($path === '' || $outside === true || str_contains($path, '\\') === true || str_contains($path, "\0") === true) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end safeFiles()
+
+	/**
 	 * Whether an object or change has every part it needs.
 	 *
 	 * @param array<string, mixed> $entry The entry.
@@ -297,10 +451,10 @@ class ExampleSetCatalogue {
 		}
 
 		if ($kind === 'object') {
-			return is_array($entry['data'] ?? null);
+			return is_array($entry['data'] ?? null) === true && $this->safeFiles(files: (array) ($entry['files'] ?? [])) === true;
 		}
 
-		return is_array($entry['where'] ?? null) === true
+		return (is_array($entry['where'] ?? null) === true || is_string($entry['object'] ?? null) === true)
 			&& (is_array($entry['set'] ?? null) === true || is_array($entry['append'] ?? null) === true);
 	}//end complete()
 

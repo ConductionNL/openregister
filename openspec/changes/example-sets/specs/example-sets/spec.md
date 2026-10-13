@@ -162,3 +162,84 @@ An object MAY name fields in `jsonFields`. Those fields SHALL be sent to the reg
 - **WHEN** the set is installed
 - **THEN** the register SHALL receive the list as JSON text and the proof SHALL report nothing lost
 
+### Requirement: An object of a set may carry files from its fragment (REQ-EXS-013)
+
+An object MAY list `files`, each with a `path` relative to the `lib/Settings/example-sets/` folder of the app that ships the fragment, and optionally `title`, `description` and `share`. A path that is absolute, holds a `..` segment, a backslash or a NUL, or resolves outside that folder SHALL refuse the set. The check SHALL refuse a file that is not a readable file there. After the object is written the loader SHALL add each file with OpenRegister's FileService, share it when `share` is true, and record it under the object. Remove SHALL delete the recorded files before the object. The proof SHALL name a recorded file the object no longer has. `title` and `description` are kept in the fragment for the reader; FileService stores the file under its file name.
+
+#### Scenario: A shared document arrives with its publication and leaves with it
+- **GIVEN** a publication with `files: [{"path": "zuiddrecht/pub-1/01-besluit.pdf", "share": true}]`
+- **WHEN** the set is installed and then removed
+- **THEN** the publication SHALL have the shared file `01-besluit.pdf`, and after remove neither the file nor the publication SHALL exist
+
+#### Scenario: A path out of the folder is refused
+- **GIVEN** a file path `../openregister/secret.pdf`
+- **WHEN** the set is gathered
+- **THEN** it SHALL be refused naming the fragment file
+
+### Requirement: A fragment may declare service accounts (REQ-EXS-014)
+
+A fragment MAY declare `serviceAccounts`, each with a `key`, a `uid`, a `displayName` and `groups`. The loader SHALL create each as an enabled Nextcloud account with a long random password that is never shown, logged or recorded, and SHALL add it to its groups, creating a group that is not there. A service account SHALL follow the account rules of REQ-EXS-003: an existing account the set did not create refuses the set unless adopted. A uid that is also a cast member's SHALL refuse the set. `{{account:<key>.uid}}` SHALL fill its uid anywhere in the set.
+
+#### Scenario: A background account is made and joins its group
+- **GIVEN** a service account `background` with uid `dossiq_background` in group `dossiq-background-service`
+- **WHEN** the set is installed
+- **THEN** the account SHALL exist, be in that group, and no password SHALL appear in the output or the record
+
+### Requirement: A fragment may set its own app's config and undo exactly that (REQ-EXS-015)
+
+A fragment MAY declare `appConfig`, each entry a `key` and a `value` (placeholders allowed) or `generate: true`. An entry SHALL only set config of the app that ships the fragment; naming another app SHALL refuse the set. A key the app keeps as sensitive SHALL be refused unless the set generates the value; a generated value SHALL be stored as sensitive and SHALL never be printed or recorded. Install SHALL write only a value that differs and SHALL record the old value. Remove SHALL put the old value back, or delete the key when there was none, but SHALL leave a key whose value changed after the install, naming it. Output SHALL name keys, never values.
+
+#### Scenario: The background account is configured and the old value comes back
+- **GIVEN** dossiq's `woo_publication_catalog_slug` holds `publication`
+- **WHEN** the set writes `zuiddrecht` there and is then removed
+- **THEN** the key SHALL hold `publication` again
+
+#### Scenario: A sensitive key is not written from a file
+- **GIVEN** a key the app keeps as sensitive
+- **WHEN** a fragment gives it a value
+- **THEN** the check SHALL refuse it, and nothing SHALL be written
+
+### Requirement: A set finds OpenRegister organisations and creates the ones its cast needs (REQ-EXS-016)
+
+`{{organisation:<slug or name>}}` SHALL fill the uuid of an OpenRegister organisation (the tenant entity, not an object), a slug winning over a name. The cast MAY declare `openregisterOrganisations` (key, name, slug, description). Before the check the loader SHALL create each one whose slug is not on the instance and record it; remove SHALL delete only the organisations the set created, last.
+
+#### Scenario: The municipality becomes an organisation once
+- **GIVEN** the cast declares organisation `zuiddrecht` and the instance has none with that slug
+- **WHEN** the set is installed twice and removed
+- **THEN** it SHALL be created once, fill `{{organisation:zuiddrecht}}`, and be gone after remove
+
+### Requirement: The instance's address fills a placeholder (REQ-EXS-017)
+
+`{{instance:baseUrl}}` SHALL fill Nextcloud's `overwrite.cli.url` without a trailing slash. When the instance sets no address the placeholder SHALL be refused, never filled with nothing.
+
+#### Scenario: A publication link points at this instance
+- **GIVEN** `overwrite.cli.url` is `https://cloud.example.test/`
+- **WHEN** a value is `{{instance:baseUrl}}/apps/x`
+- **THEN** it SHALL be written as `https://cloud.example.test/apps/x`
+
+### Requirement: A change may set a link on an object written earlier in the run (REQ-EXS-018)
+
+A change MAY name `object: <key>` of an object declared earlier in the same fragment instead of a `where`, so a later step can set a link once its target exists, such as a case's `result`. It SHALL be recorded like any change (REQ-EXS-011), and remove SHALL stay exact. A key that names no earlier object SHALL refuse the set.
+
+#### Scenario: A case gets its result
+- **GIVEN** a case and then a result for it in one fragment, and a change on the case setting `result` to `{{object:result-1.id}}`
+- **WHEN** the set is installed
+- **THEN** the case SHALL point at the result, and remove SHALL leave neither
+
+### Requirement: A date may be pinned to a weekday (REQ-EXS-019)
+
+`{{date:<n>@<mon..sun>}}` and `{{datetime:<n>@<mon..sun> HH:MM}}` SHALL fill the first given weekday on or after the day n days from the install day, so a council meeting stays on a Thursday.
+
+#### Scenario: Next week's council meeting
+- **GIVEN** an install on Tuesday 2026-10-13
+- **WHEN** a value is `{{date:+7@thu}}`
+- **THEN** it SHALL be `2026-10-22`
+
+### Requirement: Every cast member has a stable contactsUid (REQ-EXS-020)
+
+Every cast person and organisation that declares no `contactsUid` SHALL get `example-set-<set>-<key>`, the same on every install, so an app that keeps a Contacts uid can quote `{{cast:<key>.contactsUid}}`. The loader SHALL NOT create Contacts cards.
+
+#### Scenario: Henk's uid
+- **WHEN** set `zuiddrecht` is gathered
+- **THEN** `{{cast:henk.contactsUid}}` SHALL be `example-set-zuiddrecht-henk`
+

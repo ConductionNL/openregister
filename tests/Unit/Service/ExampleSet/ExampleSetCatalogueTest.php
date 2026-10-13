@@ -22,7 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
-use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
 
 /**
@@ -107,7 +107,7 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		foreach ($plan['cast']['people'] as $key => $person) {
 			$this->assertStringEndsWith('@zuiddrecht.example', $person['email'], $key);
 			if (isset($person['bsn']) === true) {
-				$this->assertTrue(ExampleSetInstaller::passesElevenTest(bsn: $person['bsn']), $key.' '.$person['bsn']);
+				$this->assertTrue(ExampleSetPeople::passesElevenTest(bsn: $person['bsn']), $key.' '.$person['bsn']);
 				$this->assertStringStartsWith('99999', $person['bsn'], $key);
 			}
 		}
