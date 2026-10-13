@@ -3,7 +3,7 @@
   "name": "TOPdesk CMDB export to stackiq module",
   "description": "One application row of a CMDB sheet becomes a stackiq module. A mapping marked required that fails skips the row; any other failing mapping drops that field with a warning. Nickname and Roepnaam both feed shortDescription; Roepnaam wins when both are filled. Applicatiesoort is kept as is in applicationType; only its SaaS/PaaS/IaaS/on-premises values also set the hosting model, every other kind leaves that empty without a warning.",
   "sourceFormat": "excel",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "fieldMappings": [
     { "source": "Applicatie Naam", "target": "name", "required": true, "transform": { "type": "trim" } },
     { "source": "APPID", "target": "externalNumber", "required": true, "transform": { "type": "trim" } },

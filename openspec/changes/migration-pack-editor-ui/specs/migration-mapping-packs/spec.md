@@ -33,10 +33,10 @@ someone else after the editor loaded it.
 
 #### Scenario: An administrator changes a lookup value and saves
 
-- **GIVEN** an administrator and a stored copy of the usage pack stackiq ships, at version `2.0.0`
+- **GIVEN** an administrator and a stored copy of the usage pack stackiq ships, at version `1.0.0`
 - **WHEN** they open it, change the stored value for `In voorraad` in the `Applicatie Status` lookup to `Acquisition`, and save
-- **THEN** the stored pack has `Acquisition` for `In voorraad`, version `2.0.1`, and every other part as it was
-- **AND** the editor shows that the pack was saved as version `2.0.1`
+- **THEN** the stored pack has `Acquisition` for `In voorraad`, version `1.0.1`, and every other part as it was
+- **AND** the editor shows that the pack was saved as version `1.0.1`
 
 #### Scenario: A row is moved and saved in the new order
 

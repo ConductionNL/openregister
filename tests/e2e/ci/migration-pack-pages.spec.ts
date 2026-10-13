@@ -146,7 +146,7 @@ function stackiqCopy(file: string): Definition {
 }
 
 /**
- * The patch version after this one: `2.0.0` becomes `2.0.1`.
+ * The patch version after this one: `1.0.0` becomes `1.0.1`.
  *
  * @param version A semver string.
  * @return The next patch version.
@@ -475,7 +475,7 @@ test.describe('migration packs as an administrator', () => {
 	test('an administrator changes a lookup value and saves', async ({ page }) => {
 		const pack = await createPack(stackiqCopy('topdesk-usage.json'))
 		const before = (await readPack(pack.id)).definition
-		expect(before.version).toBe('2.0.0')
+		expect(before.version).toBe('1.0.0')
 		await openEditor(page, pack, ADMIN)
 
 		await page.getByRole('button', { name: 'Transform of row 1' }).click()
@@ -505,15 +505,15 @@ test.describe('migration packs as an administrator', () => {
 		await expect(dialog).toBeHidden()
 
 		await expect(
-			page.getByText('Saving raises the version to 2.0.1.', { exact: true }),
+			page.getByText('Saving raises the version to 1.0.1.', { exact: true }),
 			'the editor must say the version goes up before it saves',
 		).toBeVisible()
-		const sent = await saveInEditor(page, pack, '2.0.1')
-		expect(sent.postDataJSON().definition.version).toBe('2.0.1')
+		const sent = await saveInEditor(page, pack, '1.0.1')
+		expect(sent.postDataJSON().definition.version).toBe('1.0.1')
 
 		const expected = structuredClone(before)
 		expected.fieldMappings[0].transform.map['In voorraad'] = 'Acquisition'
-		expected.version = '2.0.1'
+		expected.version = '1.0.1'
 		expect((await readPack(pack.id)).definition).toEqual(expected)
 	})
 
@@ -539,7 +539,7 @@ test.describe('migration packs as an administrator', () => {
 		await expect(
 			page.getByRole('textbox', { name: 'Source column of row 4' }),
 		).toHaveValue('Roepnaam')
-		await saveInEditor(page, pack, '2.0.1')
+		await saveInEditor(page, pack, '1.0.1')
 
 		const stored = (await readPack(pack.id)).definition.fieldMappings
 		expect(stored[3].source).toBe('Roepnaam')
@@ -743,7 +743,7 @@ test.describe('the editor saves what it does not show', () => {
 		await page
 			.getByRole('textbox', { name: 'Description', exact: true })
 			.fill('Saved from the editor')
-		await saveInEditor(page, pack, '2.0.1')
+		await saveInEditor(page, pack, '1.0.1')
 
 		const rows = (await readPack(pack.id)).definition
 			.fieldMappings as Definition[]
@@ -764,7 +764,7 @@ test.describe('the editor saves what it does not show', () => {
 	// @e2e migration-mapping-packs::a-key-the-editor-does-not-know-is-kept
 	test('a key the editor does not know is kept', async ({ page }) => {
 		const definition = plainPack('unknown keys')
-		definition['x-stackiq'] = { shippedVersion: '2.0.0', shippedHash: 'abc' }
+		definition['x-stackiq'] = { shippedVersion: '1.0.0', shippedHash: 'abc' }
 		definition.fieldMappings = [
 			{
 				source: 'Naam',
@@ -789,7 +789,7 @@ test.describe('the editor saves what it does not show', () => {
 
 		const stored = (await readPack(pack.id)).definition
 		expect(stored['x-stackiq']).toEqual({
-			shippedVersion: '2.0.0',
+			shippedVersion: '1.0.0',
 			shippedHash: 'abc',
 		})
 		expect(stored.fieldMappings[0].transform).toEqual({

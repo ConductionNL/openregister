@@ -162,7 +162,7 @@ grows the custom-page count by two (hydra gate-69's ratchet), knowingly.
 ## D-11: version on save
 
 When the administrator saves from the form without changing the version, the
-patch version goes up (`2.0.0` becomes `2.0.1`) and the footer says so before
+patch version goes up (`1.0.0` becomes `1.0.1`) and the footer says so before
 the save. A version the administrator typed is kept. The JSON view saves the
 definition exactly as written.
 

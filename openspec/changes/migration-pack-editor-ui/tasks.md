@@ -88,7 +88,7 @@ language. CI runs the file only on promotion pull requests and
   - spec_ref: `migration-mapping-packs#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui`
   - files: `src/views/migrationPack/MigrationPackDetail.vue`, `src/components/migrationPack/KeyValueRows.vue`
   - acceptance_criteria:
-    - GIVEN the usage pack at `2.0.0` WHEN a lookup value is changed and saved THEN the editor says first that the version goes to `2.0.1`, then that it saved `2.0.1`
+    - GIVEN the usage pack at `1.0.0` WHEN a lookup value is changed and saved THEN the editor says first that the version goes to `1.0.1`, then that it saved `1.0.1`
     - GIVEN a pack someone else saved after it was opened WHEN the administrator saves THEN nothing is sent and a reload is offered
 - [x] 3.3 Transform dialog for every validator type, the three-way choice for other values, unknown keys and types named and kept.
   - spec_ref: `migration-mapping-packs#requirement-the-pack-editor-must-save-a-definition-without-losing-what-it-does-not-show`

@@ -3,7 +3,7 @@
   "name": "TOPdesk CMDB export to stackiq usage",
   "description": "The usage that links the application to the municipality. The internal note records whether maintenance is arranged (the sheet the row came from), the cluster and the owner's department. An unknown status or TIME value drops the field with a warning.",
   "sourceFormat": "excel",
-  "version": "2.0.0",
+  "version": "1.0.0",
   "fieldMappings": [
     {
       "source": "Applicatie Status",
