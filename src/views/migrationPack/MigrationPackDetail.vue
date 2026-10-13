@@ -177,6 +177,16 @@
 							}}
 						</p>
 						<table class="migration-pack__table">
+							<colgroup>
+								<col class="migration-pack__col-number" />
+								<col class="migration-pack__col-field" />
+								<col class="migration-pack__col-field" />
+								<col class="migration-pack__col-required" />
+								<col />
+								<col
+									v-if="isAdmin"
+									class="migration-pack__col-actions" />
+							</colgroup>
 							<thead>
 								<tr>
 									<th scope="col">#</th>
@@ -256,6 +266,7 @@
 									</td>
 									<td>
 										<NcButton
+											class="migration-pack__transform"
 											variant="tertiary"
 											@click="editingRow = index">
 											<span class="hidden-visually">{{
@@ -268,58 +279,58 @@
 											{{ summary(row) }}
 										</NcButton>
 									</td>
-									<td
-										v-if="isAdmin"
-										class="migration-pack__row-actions">
-										<NcButton
-											variant="tertiary"
-											:data-row-control="`${row.uid}-up`"
-											:disabled="index === 0"
-											:aria-label="
-												t(
-													'openregister',
-													'Move row {number} up',
-													{ number: index + 1 },
-												)
-											"
-											@click="move(index, -1)">
-											<template #icon>
-												<ArrowUp :size="20" />
-											</template>
-										</NcButton>
-										<NcButton
-											variant="tertiary"
-											:data-row-control="`${row.uid}-down`"
-											:disabled="
-												index === draft.rows.length - 1
-											"
-											:aria-label="
-												t(
-													'openregister',
-													'Move row {number} down',
-													{ number: index + 1 },
-												)
-											"
-											@click="move(index, 1)">
-											<template #icon>
-												<ArrowDown :size="20" />
-											</template>
-										</NcButton>
-										<NcButton
-											variant="tertiary"
-											:data-row-control="`${row.uid}-remove`"
-											:aria-label="
-												t(
-													'openregister',
-													'Remove row {number}',
-													{ number: index + 1 },
-												)
-											"
-											@click="removeRow(index)">
-											<template #icon>
-												<TrashCanOutline :size="20" />
-											</template>
-										</NcButton>
+									<td v-if="isAdmin">
+										<div class="migration-pack__row-actions">
+											<NcButton
+												variant="tertiary"
+												:data-row-control="`${row.uid}-up`"
+												:disabled="index === 0"
+												:aria-label="
+													t(
+														'openregister',
+														'Move row {number} up',
+														{ number: index + 1 },
+													)
+												"
+												@click="move(index, -1)">
+												<template #icon>
+													<ArrowUp :size="20" />
+												</template>
+											</NcButton>
+											<NcButton
+												variant="tertiary"
+												:data-row-control="`${row.uid}-down`"
+												:disabled="
+													index === draft.rows.length - 1
+												"
+												:aria-label="
+													t(
+														'openregister',
+														'Move row {number} down',
+														{ number: index + 1 },
+													)
+												"
+												@click="move(index, 1)">
+												<template #icon>
+													<ArrowDown :size="20" />
+												</template>
+											</NcButton>
+											<NcButton
+												variant="tertiary"
+												:data-row-control="`${row.uid}-remove`"
+												:aria-label="
+													t(
+														'openregister',
+														'Remove row {number}',
+														{ number: index + 1 },
+													)
+												"
+												@click="removeRow(index)">
+												<template #icon>
+													<TrashCanOutline :size="20" />
+												</template>
+											</NcButton>
+										</div>
 									</td>
 								</tr>
 							</tbody>
@@ -1391,6 +1402,46 @@ export default {
 .migration-pack__table {
 	width: 100%;
 	border-collapse: collapse;
+	/* Fixed columns: a long hint or transform summary wraps inside its own
+	   cell instead of squeezing the source and target columns. */
+	table-layout: fixed;
+}
+
+.migration-pack__col-number {
+	width: 3em;
+}
+
+.migration-pack__col-field {
+	width: 24%;
+}
+
+.migration-pack__col-required {
+	width: 5.5em;
+}
+
+.migration-pack__col-actions {
+	width: 132px;
+}
+
+.migration-pack__table .migration-pack__hint {
+	white-space: normal;
+	overflow-wrap: anywhere;
+	font-size: 0.9em;
+}
+
+.migration-pack__transform {
+	max-width: 100%;
+	height: auto;
+	min-height: var(--default-clickable-area);
+	text-align: start;
+}
+
+.migration-pack__transform :deep(.button-vue__wrapper),
+.migration-pack__transform :deep(.button-vue__text) {
+	white-space: normal;
+	overflow-wrap: anywhere;
+	text-align: start;
+	justify-content: flex-start;
 }
 
 .migration-pack__table th,
