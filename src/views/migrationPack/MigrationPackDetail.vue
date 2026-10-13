@@ -176,165 +176,173 @@
 								)
 							}}
 						</p>
-						<table class="migration-pack__table">
-							<colgroup>
-								<col class="migration-pack__col-number" />
-								<col class="migration-pack__col-field" />
-								<col class="migration-pack__col-field" />
-								<col class="migration-pack__col-required" />
-								<col />
-								<col
-									v-if="isAdmin"
-									class="migration-pack__col-actions" />
-							</colgroup>
-							<thead>
-								<tr>
-									<th scope="col">#</th>
-									<th scope="col">
-										{{ t('openregister', 'Source column') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Target field') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Required') }}
-									</th>
-									<th scope="col">
-										{{ t('openregister', 'Transform') }}
-									</th>
-									<th v-if="isAdmin" scope="col">
-										<span class="hidden-visually">{{
-											t('openregister', 'Actions')
-										}}</span>
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr
-									v-for="(row, index) in draft.rows"
-									:key="row.uid">
-									<td>{{ index + 1 }}</td>
-									<td>
-										<input
-											v-model="row.source"
-											type="text"
-											:disabled="!isAdmin"
-											:aria-label="
-												t(
-													'openregister',
-													'Source column of row {number}',
-													{ number: index + 1 },
-												)
-											" />
-									</td>
-									<td>
-										<input
-											v-model="row.target"
-											type="text"
-											:disabled="!isAdmin"
-											:aria-label="
-												t(
-													'openregister',
-													'Target field of row {number}',
-													{ number: index + 1 },
-												)
-											"
-											:aria-describedby="
-												targetHint(row)
-													? hintId(row)
-													: undefined
-											" />
-										<p
-											v-if="targetHint(row)"
-											:id="hintId(row)"
-											class="migration-pack__hint">
-											{{ targetHint(row) }}
-										</p>
-									</td>
-									<td>
-										<input
-											v-model="row.required"
-											type="checkbox"
-											:disabled="!isAdmin"
-											:aria-label="
-												t(
-													'openregister',
-													'Row {number} is required',
-													{ number: index + 1 },
-												)
-											" />
-									</td>
-									<td>
-										<NcButton
-											class="migration-pack__transform"
-											variant="tertiary"
-											@click="editingRow = index">
+						<div
+							class="migration-pack__table-scroll"
+							role="region"
+							aria-labelledby="migration-pack-mappings"
+							tabindex="0">
+							<table class="migration-pack__table">
+								<colgroup>
+									<col class="migration-pack__col-number" />
+									<col class="migration-pack__col-field" />
+									<col class="migration-pack__col-field" />
+									<col class="migration-pack__col-required" />
+									<col />
+									<col
+										v-if="isAdmin"
+										class="migration-pack__col-actions" />
+								</colgroup>
+								<thead>
+									<tr>
+										<th scope="col">#</th>
+										<th scope="col">
+											{{ t('openregister', 'Source column') }}
+										</th>
+										<th scope="col">
+											{{ t('openregister', 'Target field') }}
+										</th>
+										<th scope="col">
+											{{ t('openregister', 'Required') }}
+										</th>
+										<th scope="col">
+											{{ t('openregister', 'Transform') }}
+										</th>
+										<th v-if="isAdmin" scope="col">
 											<span class="hidden-visually">{{
-												t(
-													'openregister',
-													'Transform of row {number}:',
-													{ number: index + 1 },
-												)
+												t('openregister', 'Actions')
 											}}</span>
-											{{ summary(row) }}
-										</NcButton>
-									</td>
-									<td v-if="isAdmin">
-										<div class="migration-pack__row-actions">
-											<NcButton
-												variant="tertiary"
-												:data-row-control="`${row.uid}-up`"
-												:disabled="index === 0"
+										</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr
+										v-for="(row, index) in draft.rows"
+										:key="row.uid">
+										<td>{{ index + 1 }}</td>
+										<td>
+											<input
+												v-model="row.source"
+												type="text"
+												:disabled="!isAdmin"
 												:aria-label="
 													t(
 														'openregister',
-														'Move row {number} up',
+														'Source column of row {number}',
 														{ number: index + 1 },
 													)
-												"
-												@click="move(index, -1)">
-												<template #icon>
-													<ArrowUp :size="20" />
-												</template>
-											</NcButton>
-											<NcButton
-												variant="tertiary"
-												:data-row-control="`${row.uid}-down`"
-												:disabled="
-													index === draft.rows.length - 1
-												"
+												" />
+										</td>
+										<td>
+											<input
+												v-model="row.target"
+												type="text"
+												:disabled="!isAdmin"
 												:aria-label="
 													t(
 														'openregister',
-														'Move row {number} down',
+														'Target field of row {number}',
 														{ number: index + 1 },
 													)
 												"
-												@click="move(index, 1)">
-												<template #icon>
-													<ArrowDown :size="20" />
-												</template>
-											</NcButton>
-											<NcButton
-												variant="tertiary"
-												:data-row-control="`${row.uid}-remove`"
+												:aria-describedby="
+													targetHint(row)
+														? hintId(row)
+														: undefined
+												" />
+											<p
+												v-if="targetHint(row)"
+												:id="hintId(row)"
+												class="migration-pack__hint">
+												{{ targetHint(row) }}
+											</p>
+										</td>
+										<td>
+											<input
+												v-model="row.required"
+												type="checkbox"
+												:disabled="!isAdmin"
 												:aria-label="
 													t(
 														'openregister',
-														'Remove row {number}',
+														'Row {number} is required',
 														{ number: index + 1 },
 													)
-												"
-												@click="removeRow(index)">
-												<template #icon>
-													<TrashCanOutline :size="20" />
-												</template>
+												" />
+										</td>
+										<td>
+											<NcButton
+												class="migration-pack__transform"
+												variant="tertiary"
+												@click="editingRow = index">
+												<span class="hidden-visually">{{
+													t(
+														'openregister',
+														'Transform of row {number}:',
+														{ number: index + 1 },
+													)
+												}}</span>
+												{{ summary(row) }}
 											</NcButton>
-										</div>
-									</td>
-								</tr>
-							</tbody>
-						</table>
+										</td>
+										<td v-if="isAdmin">
+											<div class="migration-pack__row-actions">
+												<NcButton
+													variant="tertiary"
+													:data-row-control="`${row.uid}-up`"
+													:disabled="index === 0"
+													:aria-label="
+														t(
+															'openregister',
+															'Move row {number} up',
+															{ number: index + 1 },
+														)
+													"
+													@click="move(index, -1)">
+													<template #icon>
+														<ArrowUp :size="20" />
+													</template>
+												</NcButton>
+												<NcButton
+													variant="tertiary"
+													:data-row-control="`${row.uid}-down`"
+													:disabled="
+														index
+														=== draft.rows.length - 1
+													"
+													:aria-label="
+														t(
+															'openregister',
+															'Move row {number} down',
+															{ number: index + 1 },
+														)
+													"
+													@click="move(index, 1)">
+													<template #icon>
+														<ArrowDown :size="20" />
+													</template>
+												</NcButton>
+												<NcButton
+													variant="tertiary"
+													:data-row-control="`${row.uid}-remove`"
+													:aria-label="
+														t(
+															'openregister',
+															'Remove row {number}',
+															{ number: index + 1 },
+														)
+													"
+													@click="removeRow(index)">
+													<template #icon>
+														<TrashCanOutline
+															:size="20" />
+													</template>
+												</NcButton>
+											</div>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
 						<div class="hidden-visually" aria-live="polite">
 							{{ announcement }}
 						</div>
@@ -1399,8 +1407,15 @@ export default {
 	margin: 0;
 }
 
+.migration-pack__table-scroll {
+	overflow-x: auto;
+}
+
 .migration-pack__table {
 	width: 100%;
+	/* Below this the fixed columns would crush the text inputs; the wrapper
+	   scrolls sideways instead of the page. */
+	min-width: 720px;
 	border-collapse: collapse;
 	/* Fixed columns: a long hint or transform summary wraps inside its own
 	   cell instead of squeezing the source and target columns. */

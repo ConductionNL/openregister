@@ -126,9 +126,9 @@ function plainPack(label: string): Definition {
 }
 
 /**
- * A copy of one of the TOPdesk packs stackiq ships, under its own slug and name.
+ * A copy of one of the TOPdesk packs stackiq#1288 ships (1.0.x, taken at stackiq commit e2081bb), under its own slug and name.
  *
- * Only `id` and `name` change, in place, so the key order is the shipped one.
+ * Only `id` and `name` change, in place, so the key order is the copied one.
  *
  * @param file The fixture file name, e.g. `topdesk-module.json`.
  * @return The definition.
@@ -704,7 +704,7 @@ test.describe('the editor saves what it does not show', () => {
 			.readdirSync(STACKIQ_FIXTURES)
 			.filter((file) => file.endsWith('.json'))
 			.sort()
-		expect(files, 'stackiq ships five TOPdesk packs').toHaveLength(5)
+		expect(files, 'the fixtures hold five TOPdesk packs (copies of stackiq#1288)').toHaveLength(5)
 
 		for (const file of files) {
 			const pack = await createPack(stackiqCopy(file))
