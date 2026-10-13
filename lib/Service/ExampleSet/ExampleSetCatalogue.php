@@ -36,6 +36,8 @@ use Throwable;
 /**
  * Gathers an example set from the enabled apps.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One gathering: discovery, the cast rule and every entry's shape.
+ *
  * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-is-gathered-from-every-enabled-app-in-a-declared-order-req-exs-001
  */
 class ExampleSetCatalogue {
