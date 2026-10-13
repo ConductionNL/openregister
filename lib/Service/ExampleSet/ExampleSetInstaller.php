@@ -97,7 +97,7 @@ class ExampleSetInstaller {
 		$today     = ($today ?? $this->today(timezone: (string) $plan['timezone']));
 		$record    = $this->record->read(set: (string) $plan['set']);
 		$ready     = $this->prerequisites->ensure(plan: $plan, record: $record);
-		$base      = $this->prerequisites->context(plan: $plan, today: $today);
+		$base      = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $today));
 		$refusals  = array_merge($ready['refusals'], $this->people->refusals(plan: $plan, record: $record, adopt: $adopt));
 		$checked   = [];
 		$planned   = [];
@@ -189,7 +189,7 @@ class ExampleSetInstaller {
 		$record = $this->record->read(set: $set);
 		$report = $this->people->install(plan: $plan, adopt: $adopt, password: $password, report: $report, record: $record);
 
-		$base    = $this->prerequisites->context(plan: $plan, today: $today);
+		$base    = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $today));
 		$written = [];
 		foreach ($plan['fragments'] as $fragment) {
 			$report = $this->installFragment(plan: $plan, fragment: $fragment, base: $base, report: $report, record: $record, written: $written);
@@ -197,6 +197,37 @@ class ExampleSetInstaller {
 
 		return $this->proven(report: $report, record: $record, written: $written);
 	}//end install()
+
+	/**
+	 * The context with the database id of every register and schema the set names by slug.
+	 *
+	 * Asked after the required registers are imported, so their ids are there
+	 * in a check too. A slug the instance does not have gets no id, and its
+	 * placeholder refuses the set.
+	 *
+	 * @param array<string, mixed> $plan The plan.
+	 * @param array<string, mixed> $base The context so far.
+	 *
+	 * @return array<string, mixed> The context with `registers` (id by slug) and `schemas` (id by `register/schema`).
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
+	 */
+	private function withIds(array $plan, array $base): array {
+		$text              = (string) json_encode($plan['fragments'], (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+		$base['registers'] = [];
+		$base['schemas']   = [];
+		preg_match_all('/\{\{\s*register:\s*([^{}\s]+)\s*\}\}/', $text, $registers);
+		foreach (array_unique($registers[1]) as $slug) {
+			$base['registers'][$slug] = $this->store->registerId(register: $slug);
+		}
+
+		preg_match_all('/\{\{\s*schema:\s*([^{}\s\/]+)\/([^{}\s]+)\s*\}\}/', $text, $schemas, PREG_SET_ORDER);
+		foreach ($schemas as $match) {
+			$base['schemas'][$match[1].'/'.$match[2]] = $this->store->schemaId(register: $match[1], schema: $match[2]);
+		}
+
+		return $base;
+	}//end withIds()
 
 	/**
 	 * Check the changes of one fragment: each resolves, finds its object, and leaves it valid.

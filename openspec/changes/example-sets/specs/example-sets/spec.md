@@ -265,3 +265,20 @@ Every cast person and organisation that declares no `contactsUid` SHALL get `exa
 - **WHEN** set `zuiddrecht` is gathered
 - **THEN** `{{cast:henk.contactsUid}}` SHALL be `example-set-zuiddrecht-henk`
 
+### Requirement: A register or schema is named by slug and written as its id (REQ-EXS-021)
+
+`{{register:<slug>}}` SHALL fill the numeric database id of the register with that slug, and `{{schema:<register-slug>/<schema-slug>}}` the numeric id of the schema with that slug inside that register, never one from another register. As a whole value either SHALL keep its integer type; inside a longer text it SHALL be written as digits. A slug the instance does not have SHALL refuse the set, naming the placeholder. The ids SHALL be looked up after the registers the set requires are imported (REQ-EXS-009), so a check finds them too. A fragment SHALL use these placeholders wherever the register stores an id, so the read-back proof compares an id with an id.
+
+#### Scenario: A catalog lists its register and schema by id
+- **GIVEN** register `publication` with id 31 holding schema `publication` with id 1113, and a catalog with `registers: ["{{register:publication}}"]` and `schemas: ["{{schema:publication/publication}}"]`
+- **WHEN** the set is installed
+- **THEN** the catalog SHALL be written with `registers: [31]` and `schemas: [1113]`, and the proof SHALL report nothing lost
+
+#### Scenario: An unknown register refuses the set
+- **WHEN** a value is `{{register:nope}}` and the instance has no register `nope`
+- **THEN** the check SHALL refuse the object, naming `{{register:nope}}`, and SHALL write nothing
+
+#### Scenario: A register the set imports has its id in the check
+- **GIVEN** a set that requires register `brp`, which is not on the instance, and a value `{{register:brp}}`
+- **WHEN** the check runs
+- **THEN** it SHALL import `brp` and fill its id, and refuse nothing

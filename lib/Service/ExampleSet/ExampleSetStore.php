@@ -310,14 +310,42 @@ class ExampleSetStore {
 	}//end idOf()
 
 	/**
+	 * The database id of a register, or null when the instance has none with that slug.
+	 *
+	 * @param string $register The register slug.
+	 *
+	 * @return int|null
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
+	 */
+	public function registerId(string $register): ?int {
+		$service = $this->objectService();
+		if ($service === null) {
+			return null;
+		}
+
+		try {
+			$service->setRegister(register: $register);
+
+			return $service->getRegister();
+		} catch (Throwable) {
+			return null;
+		}
+	}//end registerId()
+
+	/**
 	 * The database id of a schema inside a register, or null.
+	 *
+	 * The schema is looked for inside that register only, never across the instance.
 	 *
 	 * @param string $register The register slug.
 	 * @param string $schema   The schema slug.
 	 *
 	 * @return int|null
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
 	 */
-	private function schemaId(string $register, string $schema): ?int {
+	public function schemaId(string $register, string $schema): ?int {
 		$service = $this->objectService();
 		if ($service === null) {
 			return null;

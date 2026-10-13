@@ -61,4 +61,30 @@ class ExampleSetStoreTest extends TestCase {
 
 		$this->assertSame([], $store->validate(register: 'crm', schema: 'ticket', data: ['assignee' => 'daan.verbeek'], plannedUsers: ['daan.verbeek']));
 	}
+
+	/**
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
+	 */
+	public function testARegisterAndASchemaAreFoundByTheirSlugsAndAMissOrAFailureIsNull(): void {
+		$objects = $this->createMock(ObjectService::class);
+		$objects->method('setRegister')->willReturnCallback(function (mixed $register) use ($objects): ObjectService {
+			if ($register !== 'publication') {
+				throw new \RuntimeException('no such register');
+			}
+
+			return $objects;
+		});
+		$objects->method('setSchema')->willReturnSelf();
+		$objects->method('getRegister')->willReturn(31);
+		$objects->method('getSchema')->willReturn(1113);
+
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($objects);
+		$store = new ExampleSetStore(container: $container, logger: $this->createMock(LoggerInterface::class));
+
+		$this->assertSame(31, $store->registerId(register: 'publication'));
+		$this->assertSame(1113, $store->schemaId(register: 'publication', schema: 'publication'));
+		$this->assertNull($store->registerId(register: 'nope'));
+		$this->assertNull($store->schemaId(register: 'nope', schema: 'publication'));
+	}
 }

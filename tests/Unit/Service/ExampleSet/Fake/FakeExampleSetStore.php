@@ -47,6 +47,15 @@ class FakeExampleSetStore extends ExampleSetStore {
 	/** @var (\Closure(string): bool)|null Whether an account exists, for the `user` format; null: none does. */
 	public ?\Closure $userExists = null;
 
+	/** @var array<string, int> Register ids by slug. */
+	public array $registerIds = [];
+
+	/** @var array<string, int> Schema ids by "register/schema". */
+	public array $schemaIds = [];
+
+	/** @var (\Closure(string): bool)|null Whether a register is on the instance; null: every one with an id is. */
+	public ?\Closure $registerExists = null;
+
 	/** @var array<int, string> Ids whose delete fails. */
 	public array $undeletable = [];
 
@@ -91,6 +100,22 @@ class FakeExampleSetStore extends ExampleSetStore {
 		$this->rows[$register.' '.$schema][$id] = (['id' => $id] + $data);
 
 		return $id;
+	}
+
+	public function registerId(string $register): ?int {
+		if ($this->registerExists !== null && ($this->registerExists)($register) === false) {
+			return null;
+		}
+
+		return ($this->registerIds[$register] ?? null);
+	}
+
+	public function schemaId(string $register, string $schema): ?int {
+		if ($this->registerId(register: $register) === null) {
+			return null;
+		}
+
+		return ($this->schemaIds[$register.'/'.$schema] ?? null);
 	}
 
 	public function offers(string $register, string $schema): bool {
