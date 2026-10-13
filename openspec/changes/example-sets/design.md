@@ -145,8 +145,11 @@ the Woo journey depends on them. That is a separate portaliq PR.
    from OpenRegister's own descriptor before the check, through
    `RegisterDescriptorService::reimport()`, and records the import job ids the
    import created (the difference in `AppImportJobRecorder` before and after).
-   Remove soft-deletes exactly those jobs' objects with
-   `ImportService::softDeleteByImportJobId()`, last, and forgets the jobs. A
+   Remove soft-deletes exactly those jobs' objects (their uuids from the audit
+   trail, `AuditTrailMapper::objectUuidsByImportJobId()`), last, without access
+   rules like every other delete of the loader, and forgets the jobs. It does
+   not elevate through `SystemOperationContext`: the caller is `occ`, and the
+   elevation call-site set stays pinned (ADR-099 rule 9). A
    register that was already there is never imported or removed. The register
    and schema definitions stay; only the objects of the import go.
 8. **Changes to objects the set did not create.** A sign-in mode lives on the

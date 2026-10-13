@@ -31,11 +31,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\Configuration\AppImportJobRecorder;
-use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
-use OCA\OpenRegister\Service\SystemOperationContext;
+use OCA\OpenRegister\Service\ObjectService;
 use Psr\Container\ContainerInterface;
 use Throwable;
 
@@ -126,30 +126,39 @@ class ExampleSetRegisters {
 	/**
 	 * Soft-delete the objects one import job created, and forget the job when that went cleanly.
 	 *
+	 * Deleted without access rules, like every other delete of the loader: the
+	 * caller is `occ`, so there is no user whose rights could be asked, and no
+	 * elevation to a system principal is needed for that.
+	 *
 	 * @param string $appId The configuration id the import ran under.
 	 * @param string $jobId The import job id.
 	 *
 	 * @return bool True when nothing of the job is left.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the scoped elevation the import itself ran under.
-	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function removeImport(string $appId, string $jobId): bool {
 		try {
-			$report = SystemOperationContext::run(
-				fn (): array => $this->container->get(ImportService::class)->softDeleteByImportJobId(importJobId: $jobId)
-			);
-			if ($report['errors'] !== []) {
-				return false;
-			}
-
-			$this->container->get(AppImportJobRecorder::class)->forget(appId: $appId, importJobId: $jobId);
+			$uuids   = $this->container->get(AuditTrailMapper::class)->objectUuidsByImportJobId(importJobId: $jobId);
+			$objects = $this->container->get(ObjectService::class);
 		} catch (Throwable) {
 			return false;
 		}
 
-		return true;
+		$clean = true;
+		foreach ($uuids as $uuid) {
+			try {
+				$objects->deleteObject(uuid: $uuid, _rbac: false, _multitenancy: false);
+			} catch (Throwable) {
+				$clean = false;
+			}
+		}
+
+		if ($clean === true) {
+			$this->container->get(AppImportJobRecorder::class)->forget(appId: $appId, importJobId: $jobId);
+		}
+
+		return $clean;
 	}//end removeImport()
 
 	/**
