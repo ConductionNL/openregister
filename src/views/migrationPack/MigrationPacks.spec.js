@@ -618,7 +618,7 @@ describe('the editor', () => {
 		const vm = await loadedEditor()
 		vm.draft.rows[0].target = 'title'
 		expect(vm.dirty).toBe(true)
-		expect(vm.bumpedVersion).toBe('2.0.1')
+		expect(vm.bumpedVersion).toBe('1.0.1')
 		axios.put.mockImplementation((url, body) =>
 			Promise.resolve({
 				data: storedPack({
@@ -633,7 +633,7 @@ describe('the editor', () => {
 		expect(url).toBe('/apps/openregister/api/migration-packs/12')
 		expect(Object.keys(body)).toEqual(['definition', 'expectedUpdatedAt'])
 		expect(body.definition.id).toBe('stackiq-topdesk-module')
-		expect(body.definition.version).toBe('2.0.1')
+		expect(body.definition.version).toBe('1.0.1')
 		expect(body.definition.fieldMappings[0].target).toBe('title')
 		expect(body.definition.fieldMappings[7].transform.default).toBeNull()
 		expect(vm.saved).toBe(true)
@@ -920,7 +920,7 @@ describe('the editor', () => {
 		expect(axios.put.mock.calls[0][1].definition).toEqual({
 			...MODULE_PACK,
 			name: 'From JSON',
-			version: '2.0.1',
+			version: '1.0.1',
 		})
 	})
 
