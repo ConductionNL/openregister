@@ -354,7 +354,7 @@
 						</p>
 						<KeyValueRows
 							:rows="draft.defaults"
-							:keyLabel="t('openregister', 'Target field')"
+							:keyLabel="t('openregister', 'Field')"
 							:valueLabel="t('openregister', 'Default value')"
 							:addLabel="t('openregister', 'Add default')"
 							:emptyText="t('openregister', 'No defaults.')"
