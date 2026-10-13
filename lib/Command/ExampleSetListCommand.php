@@ -74,6 +74,8 @@ class ExampleSetListCommand extends Command {
 	 *
 	 * @return int Always 0.
 	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) Symfony's signature; the command takes no input.
+	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-administrator-can-list-the-sets-req-exs-008
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
