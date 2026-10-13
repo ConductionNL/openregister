@@ -103,6 +103,7 @@ abstract class ExampleSetTestCase extends TestCase {
 		$this->store    = new FakeExampleSetStore();
 		$this->accounts  = new FakeExampleSetAccounts();
 		$this->registers = new FakeExampleSetRegisters();
+		$this->store->userExists = fn (string $uid): bool => $this->accounts->userExists(uid: $uid);
 		$changes         = new ExampleSetChanges(store: $this->store, values: new ExampleSetValues());
 		$container       = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturnCallback(fn (string $id): object => match ($id) {

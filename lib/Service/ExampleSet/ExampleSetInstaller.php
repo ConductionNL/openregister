@@ -79,6 +79,10 @@ class ExampleSetInstaller {
 	 * first, because its schemas are what the objects are checked against;
 	 * the import is recorded, and remove takes it away again.
 	 *
+	 * An account id the set creates (a cast member's or a service account's)
+	 * counts as existing for a `user` format here: the accounts are written
+	 * first in a real install, and no other id is let through.
+	 *
 	 * @param array<string, mixed>   $plan  A plan from ExampleSetCatalogue::gather().
 	 * @param array<int, string>     $adopt Account ids the administrator lets the set use although it did not create them.
 	 * @param DateTimeImmutable|null $today The install day; now in the set's time zone when null.
@@ -93,10 +97,11 @@ class ExampleSetInstaller {
 		$today     = ($today ?? $this->today(timezone: (string) $plan['timezone']));
 		$record    = $this->record->read(set: (string) $plan['set']);
 		$ready     = $this->prerequisites->ensure(plan: $plan, record: $record);
-		$base      = $this->prerequisites->context(plan: $plan, today: $today);
+		$base      = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $today));
 		$refusals  = array_merge($ready['refusals'], $this->people->refusals(plan: $plan, record: $record, adopt: $adopt));
 		$checked   = [];
 		$planned   = [];
+		$users     = $this->people->declaredUids(plan: $plan);
 		foreach ($plan['fragments'] as $fragment) {
 			$objects = [];
 			foreach ($fragment['objects'] as $object) {
@@ -115,7 +120,7 @@ class ExampleSetInstaller {
 				}
 
 				$messages = array_merge(
-					$this->store->validate(register: $object['register'], schema: $object['schema'], data: $resolved['sent']),
+					$this->store->validate(register: $object['register'], schema: $object['schema'], data: $resolved['sent'], plannedUsers: $users),
 					$this->files->refusals(dir: (string) $fragment['dir'], object: $object)
 				);
 				foreach ($messages as $message) {
@@ -131,7 +136,7 @@ class ExampleSetInstaller {
 			$context  = (['objects' => $objects] + $base);
 			$refusals = array_merge(
 				$refusals,
-				$this->checkChanges(fragment: $fragment, context: $context, checked: $checked),
+				$this->checkChanges(fragment: $fragment, context: $context, checked: $checked, plannedUsers: $users),
 				$this->checkAppConfig(fragment: $fragment, context: $context)
 			);
 		}//end foreach
@@ -184,7 +189,7 @@ class ExampleSetInstaller {
 		$record = $this->record->read(set: $set);
 		$report = $this->people->install(plan: $plan, adopt: $adopt, password: $password, report: $report, record: $record);
 
-		$base    = $this->prerequisites->context(plan: $plan, today: $today);
+		$base    = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $today));
 		$written = [];
 		foreach ($plan['fragments'] as $fragment) {
 			$report = $this->installFragment(plan: $plan, fragment: $fragment, base: $base, report: $report, record: $record, written: $written);
@@ -194,17 +199,56 @@ class ExampleSetInstaller {
 	}//end install()
 
 	/**
+	 * The context with the database id of every register and schema the set names by slug.
+	 *
+	 * Asked after the required registers are imported, so their ids are there
+	 * in a check too. A slug the instance does not have gets no id, and its
+	 * placeholder refuses the set.
+	 *
+	 * @param array<string, mixed> $plan The plan.
+	 * @param array<string, mixed> $base The context so far.
+	 *
+	 * @return array<string, mixed> The context with `registers` (id by slug) and `schemas` (id by `register/schema`).
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
+	 */
+	private function withIds(array $plan, array $base): array {
+		$text              = (string) json_encode($plan['fragments'], (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+		$base['registers'] = [];
+		$base['schemas']   = [];
+		preg_match_all('/\{\{\s*register:\s*([^{}\s]+)\s*\}\}/', $text, $registers);
+		foreach (array_unique($registers[1]) as $slug) {
+			$base['registers'][$slug] = $this->store->registerId(register: $slug);
+		}
+
+		preg_match_all('/\{\{\s*schema:\s*([^{}\s\/]+)\/([^{}\s]+)\s*\}\}/', $text, $schemas, PREG_SET_ORDER);
+		foreach ($schemas as $match) {
+			$base['schemas'][$match[1].'/'.$match[2]] = $this->store->schemaId(register: $match[1], schema: $match[2]);
+		}
+
+		return $base;
+	}//end withIds()
+
+	/**
 	 * Check the changes of one fragment: each resolves, finds its object, and leaves it valid.
 	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  `cast`, `objects` and `today`.
-	 * @param array<string, int>   $checked  Counts per register and schema; changes are added.
+	 * The changed object is validated as it would be written, so a field kept
+	 * as JSON text is validated as text, as when the object was created.
+	 *
+	 * @param array<string, mixed> $fragment     The fragment.
+	 * @param array<string, mixed> $context      `cast`, `objects` and `today`.
+	 * @param array<string, int>   $checked      Counts per register and schema; changes are added.
+	 * @param array<int, string>   $plannedUsers Account ids the set creates, valid for a `user` format.
 	 *
 	 * @return array<int, string> Refusals.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
-	private function checkChanges(array $fragment, array $context, array &$checked): array {
+	private function checkChanges(array $fragment, array $context, array &$checked, array $plannedUsers): array {
 		$refusals = [];
 		foreach ($fragment['changes'] as $change) {
+			$change         = $this->withObjectJsonFields(change: $change, fragment: $fragment);
 			$type           = $change['register'].' '.$change['schema'];
 			$checked[$type] = (($checked[$type] ?? 0) + 1);
 			$where          = $fragment['file'].': change "'.$change['key'].'" ('.$type.')';
@@ -216,7 +260,8 @@ class ExampleSetInstaller {
 
 			$merged = $resolved['merged'];
 			unset($merged['@self'], $merged['id']);
-			foreach ($this->store->validate(register: $change['register'], schema: $change['schema'], data: $merged) as $message) {
+			$messages = $this->store->validate(register: $change['register'], schema: $change['schema'], data: $merged, plannedUsers: $plannedUsers);
+			foreach ($messages as $message) {
 				$refusals[] = $where.': '.$message;
 			}
 		}
@@ -294,10 +339,13 @@ class ExampleSetInstaller {
 	 * @param array<string, mixed> $record   The record; updated and kept after every change.
 	 *
 	 * @return array<string, mixed> The report.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	private function installChanges(array $plan, array $fragment, array $context, array $report, array &$record): array {
 		foreach ($fragment['changes'] as $change) {
-			$name = $fragment['app'].'/'.$change['key'];
+			$change = $this->withObjectJsonFields(change: $change, fragment: $fragment);
+			$name   = $fragment['app'].'/'.$change['key'];
 			$report['changes'][$name] = 'kept';
 			if (isset($record['changes'][$name]) === true) {
 				continue;
@@ -324,6 +372,36 @@ class ExampleSetInstaller {
 
 		return $report;
 	}//end installChanges()
+
+	/**
+	 * A change on an object of the same fragment, with that object's `jsonFields` added to its own.
+	 *
+	 * The object was sent with those fields as JSON text, so the change reads,
+	 * validates and writes them the same way.
+	 *
+	 * @param array<string, mixed> $change   The declared change.
+	 * @param array<string, mixed> $fragment The fragment.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 */
+	private function withObjectJsonFields(array $change, array $fragment): array {
+		if (is_string($change['object'] ?? null) === false) {
+			return $change;
+		}
+
+		foreach ($fragment['objects'] as $object) {
+			if (($object['key'] ?? null) === $change['object']) {
+				$change['jsonFields'] = array_values(
+					array_unique(array_merge((array) ($change['jsonFields'] ?? []), (array) ($object['jsonFields'] ?? [])))
+				);
+				break;
+			}
+		}
+
+		return $change;
+	}//end withObjectJsonFields()
 
 	/**
 	 * Resolve an object's lookups and fill its data.
@@ -356,12 +434,7 @@ class ExampleSetInstaller {
 			return ['data' => [], 'sent' => [], 'refusal' => 'cannot resolve '.implode(', ', array_unique($gaps))];
 		}
 
-		$sent = $data;
-		foreach ((array) ($object['jsonFields'] ?? []) as $field) {
-			if (is_array($sent[$field] ?? null) === true) {
-				$sent[$field] = (string) json_encode($sent[$field]);
-			}
-		}
+		$sent = $this->changes->asSent(row: $data, fields: (array) ($object['jsonFields'] ?? []));
 
 		return ['data' => $data, 'sent' => $sent, 'refusal' => ''];
 	}//end resolve()

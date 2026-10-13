@@ -126,4 +126,54 @@ class ExampleSetPaths {
 
 		return $row;
 	}//end withoutPath()
+
+	/**
+	 * The object with each named field that holds a structure sent as JSON text.
+	 *
+	 * This is the one encoding for `jsonFields`: an object is created with it,
+	 * and a change writes and validates the object with it again.
+	 *
+	 * @param array<string, mixed> $row    The object.
+	 * @param array<int, mixed>    $fields The field names kept as JSON text.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 */
+	public function withJsonText(array $row, array $fields): array {
+		foreach ($fields as $field) {
+			if (is_string($field) === true && is_array($row[$field] ?? null) === true) {
+				$row[$field] = (string) json_encode($row[$field]);
+			}
+		}
+
+		return $row;
+	}//end withJsonText()
+
+	/**
+	 * The object with each named field that holds JSON text decoded to its structure.
+	 *
+	 * A field whose text is not a JSON list or map stays as it is.
+	 *
+	 * @param array<string, mixed> $row    The object.
+	 * @param array<int, mixed>    $fields The field names kept as JSON text.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 */
+	public function withJsonDecoded(array $row, array $fields): array {
+		foreach ($fields as $field) {
+			if (is_string($field) === false || is_string($row[$field] ?? null) === false) {
+				continue;
+			}
+
+			$decoded = json_decode($row[$field], true);
+			if (is_array($decoded) === true) {
+				$row[$field] = $decoded;
+			}
+		}
+
+		return $row;
+	}//end withJsonDecoded()
 }//end class

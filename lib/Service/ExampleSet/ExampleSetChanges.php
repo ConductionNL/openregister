@@ -66,6 +66,7 @@ class ExampleSetChanges {
 	 *               `set` and `append`; or why the change cannot be made.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function resolve(array $change, array $context): array {
 		$none = ['refusal' => '', 'row' => [], 'merged' => [], 'set' => [], 'append' => []];
@@ -91,6 +92,9 @@ class ExampleSetChanges {
 			);
 		}
 
+		// A field the schema keeps as JSON text is changed as its structure and written as text again.
+		$fields = $this->jsonFields(change: $change);
+		$row    = $this->paths->withJsonDecoded(row: $row, fields: $fields);
 		$merged = $row;
 		foreach ((array) $fill['set'] as $path => $value) {
 			$merged = $this->paths->withPath(row: $merged, path: (string) $path, value: $value);
@@ -105,7 +109,13 @@ class ExampleSetChanges {
 			$merged = $this->paths->withPath(row: $merged, path: (string) $path, value: array_values($list));
 		}
 
-		return ['refusal' => '', 'row' => $row, 'merged' => $merged, 'set' => (array) $fill['set'], 'append' => (array) $fill['append']];
+		return [
+			'refusal' => '',
+			'row'     => $row,
+			'merged'  => $this->paths->withJsonText(row: $merged, fields: $fields),
+			'set'     => (array) $fill['set'],
+			'append'  => (array) $fill['append'],
+		];
 	}//end resolve()
 
 	/**
@@ -118,10 +128,14 @@ class ExampleSetChanges {
 	 *                                                                 or why the write failed.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-may-change-an-object-it-did-not-create-and-undo-exactly-that-req-exs-011
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function apply(array $change, array $resolved): array {
 		$row   = $resolved['row'];
 		$entry = ['register' => $change['register'], 'schema' => $change['schema'], 'id' => $this->store->idOf(row: $row), 'set' => [], 'append' => []];
+		// The fields kept as JSON text, so the proof and remove read them the same way; none: no key.
+		$entry += array_filter(['jsonFields' => $this->jsonFields(change: $change)]);
+
 		foreach ($resolved['set'] as $path => $value) {
 			$held = $this->paths->atPath(row: $row, path: (string) $path);
 			if ($held['found'] === true && $held['value'] === $value) {
@@ -168,6 +182,7 @@ class ExampleSetChanges {
 	 * @return array<int, string> Empty when the change is on the instance; `(gone)` when the object is.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function lost(array $entry): array {
 		$row = $this->store->get(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']);
@@ -175,6 +190,7 @@ class ExampleSetChanges {
 			return ['(gone)'];
 		}
 
+		$row  = $this->paths->withJsonDecoded(row: $row, fields: $this->jsonFields(change: $entry));
 		$lost = [];
 		foreach ($entry['set'] as $set) {
 			$held = $this->paths->atPath(row: $row, path: $set['path']);
@@ -200,6 +216,7 @@ class ExampleSetChanges {
 	 * @return bool True when the object no longer carries the change, or is gone.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function revert(array $entry): bool {
 		$row = $this->store->get(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']);
@@ -207,6 +224,8 @@ class ExampleSetChanges {
 			return true;
 		}
 
+		$fields = $this->jsonFields(change: $entry);
+		$row    = $this->paths->withJsonDecoded(row: $row, fields: $fields);
 		foreach (array_reverse((array) $entry['set']) as $set) {
 			$row = $this->paths->withoutPath(row: $row, path: $set['path']);
 			if ($set['had'] === true) {
@@ -227,8 +246,37 @@ class ExampleSetChanges {
 			$row  = $this->paths->withPath(row: $row, path: $append['path'], value: $kept);
 		}
 
+		$row = $this->paths->withJsonText(row: $row, fields: $fields);
+
 		return $this->store->update(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id'], data: $row) === '';
 	}//end revert()
+
+	/**
+	 * An object as it is sent, with each field it keeps as JSON text encoded.
+	 *
+	 * The one encoding for `jsonFields`, for the objects a set creates as well as the ones it changes.
+	 *
+	 * @param array<string, mixed> $row    The object.
+	 * @param array<int, mixed>    $fields The field names kept as JSON text.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
+	 */
+	public function asSent(array $row, array $fields): array {
+		return $this->paths->withJsonText(row: $row, fields: $fields);
+	}//end asSent()
+
+	/**
+	 * The fields a change or a record entry keeps as JSON text.
+	 *
+	 * @param array<string, mixed> $change The change, or a record entry from apply().
+	 *
+	 * @return array<int, string>
+	 */
+	private function jsonFields(array $change): array {
+		return array_values(array_unique(array_filter((array) ($change['jsonFields'] ?? []), 'is_string')));
+	}//end jsonFields()
 
 	/**
 	 * The one object a change describes: an object written earlier in the same

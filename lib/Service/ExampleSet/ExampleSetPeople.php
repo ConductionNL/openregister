@@ -478,6 +478,31 @@ class ExampleSetPeople {
 	}//end serviceAccounts()
 
 	/**
+	 * Every account id the set declares: its cast members' and its service accounts'.
+	 *
+	 * These are the accounts an install writes before any object, so an object
+	 * may name one in a property of format `user` before it exists.
+	 *
+	 * @param array<string, mixed> $plan The plan.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 */
+	public function declaredUids(array $plan): array {
+		$uids = [];
+		foreach ($plan['cast']['people'] as $person) {
+			$uids[] = (string) ($person['uid'] ?? '');
+		}
+
+		foreach ($this->serviceAccounts(plan: $plan) as $account) {
+			$uids[] = (string) ($account['uid'] ?? '');
+		}
+
+		return array_values(array_unique(array_filter($uids, static fn (string $uid): bool => $uid !== '')));
+	}//end declaredUids()
+
+	/**
 	 * Whether a BSN passes the eleven test.
 	 *
 	 * @param string $bsn Nine digits.

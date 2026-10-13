@@ -21,6 +21,10 @@
 - [x] 1.18 A change on an object written earlier in the run (REQ-EXS-018)
 - [x] 1.19 Weekday-pinned dates (REQ-EXS-019) and a stable `contactsUid` per cast member (REQ-EXS-020)
 
+- [x] 1.20 A change carries the `jsonFields` of the object it changes, reads them as structure and writes, validates, proves and reverts them as JSON text (REQ-EXS-012, found by the first live check)
+- [x] 1.21 The check lets a `user` format accept the set's own cast and service account uids (scoped to the set's validation), and still refuses any other unknown uid (REQ-EXS-004, found by the first live check)
+- [x] 1.22 `{{register:<slug>}}` and `{{schema:<register>/<schema>}}` fill numeric ids, looked up after required registers are imported (REQ-EXS-021, found by the first live install)
+
 ## 2. Data
 
 - [x] 2.1 `lib/Settings/example-sets/zuiddrecht.json`: cast (residents, businesses, employees, department groups) and openregister's own BRP and KVK rows
@@ -36,6 +40,8 @@
 - [x] 3.4 Command exit codes 0, 1 and 2, asserted through the command (the caller)
 - [x] 3.5 The shipped zuiddrecht file parses, its cast BSNs pass the eleven test, and every `{{cast:}}` it uses resolves
 - [x] 3.7 Files, service accounts, app config, organisations, instance address, changes on earlier objects, weekday dates, contactsUid (`ExampleSetFragmentPartsTest`, `ExampleSetValuesTest`)
+- [x] 3.8 Live-check regressions through the installer (`ExampleSetLiveCheckTest`), the store's hand-over to the validator (`ExampleSetStoreTest`) and the real validator (`ValidateObjectPlannedUsersTest`)
+- [x] 3.9 Register and schema ids (`ExampleSetRegisterIdsTest`, `ExampleSetStoreTest`)
 - [x] 3.6 Required registers imported once and removed only when imported; admin refused; changes made, proved and reverted exactly; JSON text fields
 
 ## 4. Verification

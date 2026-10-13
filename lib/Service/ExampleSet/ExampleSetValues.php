@@ -74,8 +74,9 @@ class ExampleSetValues {
 	 * @param mixed                $value   The declared value.
 	 * @param array<string, mixed> $context `cast` (entries by key), `objects` (rows by key, this fragment only),
 	 *                                      `lookups` (id by name), `today` (DateTimeImmutable), `accounts` (service
-	 *                                      accounts by key), `organisations` (uuid by slug and by name) and
-	 *                                      `instance` (`baseUrl`).
+	 *                                      accounts by key), `organisations` (uuid by slug and by name),
+	 *                                      `instance` (`baseUrl`), `registers` (id by slug) and `schemas`
+	 *                                      (id by `register/schema`).
 	 * @param array<int, string>   $gaps    Collects every placeholder that could not be filled.
 	 *
 	 * @return mixed The filled value; an unfilled placeholder stays as written and is named in `$gaps`.
@@ -148,6 +149,8 @@ class ExampleSetValues {
 	 * @param array<string, mixed> $context     See fill().
 	 *
 	 * @return mixed
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-register-or-schema-is-named-by-slug-and-written-as-its-id-req-exs-021
 	 */
 	private function valueOf(string $placeholder, array $context): mixed {
 		[$kind, $rest] = array_pad(explode(':', $placeholder, 2), 2, '');
@@ -160,6 +163,8 @@ class ExampleSetValues {
 			'account' => $this->pathIn(entries: (array) ($context['accounts'] ?? []), reference: $rest),
 			'organisation' => $this->present(value: ($context['organisations'][$rest] ?? null)),
 			'instance' => $this->present(value: ($context['instance'][$rest] ?? null)),
+			'register' => $this->present(value: ($context['registers'][$rest] ?? null)),
+			'schema' => $this->present(value: ($context['schemas'][$rest] ?? null)),
 			'date', 'datetime' => $this->moment(kind: $kind, rest: $rest, today: ($context['today'] ?? null)),
 			default  => null,
 		};

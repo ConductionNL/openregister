@@ -38,6 +38,24 @@ class FakeExampleSetStore extends ExampleSetStore {
 	/** @var array<string, array<int, string>> Field names a schema silently drops, by "register schema". */
 	public array $droppedFields = [];
 
+	/** @var array<string, array<int, string>> Fields a schema keeps as text (`string or null`), by "register schema". */
+	public array $textFields = [];
+
+	/** @var array<string, array<int, string>> Fields of format `user`, by "register schema". */
+	public array $userFields = [];
+
+	/** @var (\Closure(string): bool)|null Whether an account exists, for the `user` format; null: none does. */
+	public ?\Closure $userExists = null;
+
+	/** @var array<string, int> Register ids by slug. */
+	public array $registerIds = [];
+
+	/** @var array<string, int> Schema ids by "register/schema". */
+	public array $schemaIds = [];
+
+	/** @var (\Closure(string): bool)|null Whether a register is on the instance; null: every one with an id is. */
+	public ?\Closure $registerExists = null;
+
 	/** @var array<int, string> Ids whose delete fails. */
 	public array $undeletable = [];
 
@@ -84,11 +102,31 @@ class FakeExampleSetStore extends ExampleSetStore {
 		return $id;
 	}
 
+	public function registerId(string $register): ?int {
+		if ($this->registerExists !== null && ($this->registerExists)($register) === false) {
+			return null;
+		}
+
+		return ($this->registerIds[$register] ?? null);
+	}
+
+	public function schemaId(string $register, string $schema): ?int {
+		if ($this->registerId(register: $register) === null) {
+			return null;
+		}
+
+		return ($this->schemaIds[$register.'/'.$schema] ?? null);
+	}
+
 	public function offers(string $register, string $schema): bool {
 		return isset($this->offered[$register.' '.$schema]);
 	}
 
-	public function validate(string $register, string $schema, array $data): array {
+	/**
+	 * Refuses what the real validator refuses for the fields named above,
+	 * with OpenRegister's own wording.
+	 */
+	public function validate(string $register, string $schema, array $data, array $plannedUsers = []): array {
 		$this->validations++;
 		if ($this->offers(register: $register, schema: $schema) === false) {
 			return ['this instance has no schema "'.$schema.'" in a register "'.$register.'"'];
@@ -98,6 +136,38 @@ class FakeExampleSetStore extends ExampleSetStore {
 		foreach (($this->refusedFields[$register.' '.$schema] ?? []) as $field) {
 			if (array_key_exists($field, $data) === true) {
 				$refusals[] = 'The property '.$field.' is not allowed';
+			}
+		}
+
+		return array_merge($refusals, $this->typeRefusals(type: $register.' '.$schema, data: $data, plannedUsers: $plannedUsers));
+	}
+
+	/**
+	 * Text fields that hold something else, and user fields naming nobody.
+	 *
+	 * @param string               $type         "register schema".
+	 * @param array<string, mixed> $data         The object.
+	 * @param array<int, string>   $plannedUsers Account ids accepted although they do not exist.
+	 *
+	 * @return array<int, string>
+	 */
+	private function typeRefusals(string $type, array $data, array $plannedUsers): array {
+		$refusals = [];
+		foreach (($this->textFields[$type] ?? []) as $field) {
+			if (array_key_exists($field, $data) === true && is_string($data[$field]) === false && $data[$field] !== null) {
+				$refusals[] = "Property '".$field."' should be type 'string or null' but is '".gettype($data[$field])."'.";
+			}
+		}
+
+		foreach (($this->userFields[$type] ?? []) as $field) {
+			$uid = ($data[$field] ?? null);
+			if ($uid === null) {
+				continue;
+			}
+
+			$exists = ($this->userExists !== null && is_string($uid) === true && ($this->userExists)($uid) === true);
+			if ($exists === false && in_array($uid, $plannedUsers, true) === false) {
+				$refusals[] = "Property '".$field."' should match format 'user' but '".(is_string($uid) ? $uid : json_encode($uid))."' does not.";
 			}
 		}
 
@@ -117,6 +187,12 @@ class FakeExampleSetStore extends ExampleSetStore {
 			return ['id' => '', 'error' => 'no such schema'];
 		}
 
+		// A save validates too, as a schema with hard validation does: no planned accounts there.
+		$refused = $this->typeRefusals(type: $register.' '.$schema, data: $data, plannedUsers: []);
+		if ($refused !== []) {
+			return ['id' => '', 'error' => implode(' ', $refused)];
+		}
+
 		$this->creates++;
 		foreach (($this->droppedFields[$register.' '.$schema] ?? []) as $field) {
 			unset($data[$field]);
@@ -131,6 +207,11 @@ class FakeExampleSetStore extends ExampleSetStore {
 	public function update(string $register, string $schema, string $id, array $data): string {
 		if (isset($this->rows[$register.' '.$schema][$id]) === false) {
 			return 'no such row';
+		}
+
+		$refused = $this->typeRefusals(type: $register.' '.$schema, data: $data, plannedUsers: []);
+		if ($refused !== []) {
+			return implode(' ', $refused);
 		}
 
 		$this->updates++;
