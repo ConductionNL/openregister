@@ -283,7 +283,7 @@ class ExampleSetChanges {
 	 *
 	 * @return array{found: bool, value: mixed}
 	 */
-	public static function atPath(array $row, string $path): array {
+	private static function atPath(array $row, string $path): array {
 		$here = $row;
 		foreach (explode('.', $path) as $part) {
 			if (is_array($here) === false || array_key_exists($part, $here) === false) {
@@ -305,7 +305,7 @@ class ExampleSetChanges {
 	 *
 	 * @return array<string, mixed>
 	 */
-	public static function withPath(array $row, string $path, mixed $value): array {
+	private static function withPath(array $row, string $path, mixed $value): array {
 		[$head, $rest] = array_pad(explode('.', $path, 2), 2, null);
 		if ($rest === null) {
 			$row[$head] = $value;
@@ -326,7 +326,7 @@ class ExampleSetChanges {
 	 *
 	 * @return array<string, mixed>
 	 */
-	public static function withoutPath(array $row, string $path): array {
+	private static function withoutPath(array $row, string $path): array {
 		[$head, $rest] = array_pad(explode('.', $path, 2), 2, null);
 		if ($rest === null) {
 			unset($row[$head]);
