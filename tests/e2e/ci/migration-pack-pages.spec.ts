@@ -456,7 +456,10 @@ test.describe('migration packs as an administrator', () => {
 				}),
 			).toHaveValue(mapping.source)
 			await expect(
-				page.getByRole('textbox', { name: `Target field of row ${number}` }),
+				page.getByRole('textbox', {
+					name: `Target field of row ${number}`,
+					exact: true,
+				}),
 			).toHaveValue(mapping.target)
 		}
 		await expect(
@@ -479,7 +482,7 @@ test.describe('migration packs as an administrator', () => {
 		const dialog = page.getByRole('dialog', { name: 'Transform for row 1' })
 		await expect(dialog).toBeVisible()
 		const sources = dialog.getByRole('textbox', {
-			name: /^Value in the source \d+$/,
+			name: /^Value in the source of row \d+$/,
 		})
 		const count = await sources.count()
 		let number = 0
@@ -493,7 +496,10 @@ test.describe('migration packs as an administrator', () => {
 			'the Applicatie Status lookup has no row for In voorraad',
 		).toBeGreaterThan(0)
 		await dialog
-			.getByRole('textbox', { name: `Stored value ${number}`, exact: true })
+			.getByRole('textbox', {
+				name: `Stored value of row ${number}`,
+				exact: true,
+			})
 			.fill('Acquisition')
 		await dialog.getByRole('button', { name: 'Apply', exact: true }).click()
 		await expect(dialog).toBeHidden()
@@ -801,7 +807,7 @@ test.describe('the sample-row test', () => {
 		const pack = await createPack(stackiqCopy('topdesk-module.json'))
 		await openEditor(page, pack, ADMIN)
 		await page
-			.getByRole('textbox', { name: 'Target field of row 1' })
+			.getByRole('textbox', { name: 'Target field of row 1', exact: true })
 			.fill('title')
 
 		const panel = previewPanel(page)
