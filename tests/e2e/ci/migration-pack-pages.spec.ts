@@ -704,7 +704,10 @@ test.describe('the editor saves what it does not show', () => {
 			.readdirSync(STACKIQ_FIXTURES)
 			.filter((file) => file.endsWith('.json'))
 			.sort()
-		expect(files, 'the fixtures hold five TOPdesk packs (copies of stackiq#1288)').toHaveLength(5)
+		expect(
+			files,
+			'the fixtures hold five TOPdesk packs (copies of stackiq#1288)',
+		).toHaveLength(5)
 
 		for (const file of files) {
 			const pack = await createPack(stackiqCopy(file))
