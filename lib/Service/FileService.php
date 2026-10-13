@@ -74,6 +74,7 @@ use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
+use OCA\OpenRegister\Service\File\ShareUrlBuilder;
 use OCA\OpenRegister\Service\File\TaggingHandler;
 use OCA\OpenRegister\Service\File\UpdateFileHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -87,7 +88,6 @@ use OCP\Files\NotFoundException;
 use OCP\Files\NotPermittedException;
 use OCP\IConfig;
 use OCP\IGroupManager;
-use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -179,11 +179,11 @@ class FileService {
 	private ISystemTagObjectMapper $systemTagMapper;
 
 	/**
-	 * URL generator
+	 * Builds share links for the host the visitor used
 	 *
-	 * @var IURLGenerator
+	 * @var ShareUrlBuilder
 	 */
-	private IURLGenerator $urlGenerator;
+	private ShareUrlBuilder $shareUrls;
 
 	/**
 	 * User manager
@@ -384,7 +384,7 @@ class FileService {
 	 * @param IManager $shareManager Share manager
 	 * @param ISystemTagManager $systemTagManager System tag manager
 	 * @param ISystemTagObjectMapper $systemTagMapper System tag mapper
-	 * @param IURLGenerator $urlGenerator URL generator
+	 * @param ShareUrlBuilder $shareUrls Share link builder
 	 * @param IUserManager $userManager User manager
 	 * @param IUserSession $userSession User session
 	 * @param FileValidationHandler $fileValidHandler File validation handler
@@ -416,7 +416,7 @@ class FileService {
 		IManager $shareManager,
 		ISystemTagManager $systemTagManager,
 		ISystemTagObjectMapper $systemTagMapper,
-		IURLGenerator $urlGenerator,
+		ShareUrlBuilder $shareUrls,
 		IUserManager $userManager,
 		IUserSession $userSession,
 		FileValidationHandler $fileValidHandler,
@@ -450,7 +450,7 @@ class FileService {
 		$this->shareManager = $shareManager;
 		$this->systemTagManager = $systemTagManager;
 		$this->systemTagMapper = $systemTagMapper;
-		$this->urlGenerator = $urlGenerator;
+		$this->shareUrls = $shareUrls;
 		$this->userManager = $userManager;
 		$this->userSession = $userSession;
 		$this->fileValidationHandler = $fileValidHandler;
@@ -970,26 +970,12 @@ class FileService {
 	 * @param IShare $share An IShare object we are getting the share link for
 	 *
 	 * @return string The share link needed to get the file or folder for the given IShare object
+	 *
+	 * @spec openspec/changes/share-links-use-the-request-host/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	public function getShareLink(IShare $share): string {
-		return $this->getCurrentDomain() . '/index.php/s/' . $share->getToken();
+		return $this->shareUrls->shareLink(token: $share->getToken());
 	}//end getShareLink()
-
-	/**
-	 * Gets and returns the current host/domain with correct protocol.
-	 *
-	 * @return string The current http/https domain URL
-	 */
-	private function getCurrentDomain(): string {
-		$baseUrl = $this->urlGenerator->getBaseUrl();
-		$trustedDomains = $this->config->getSystemValue('trusted_domains');
-
-		if (($trustedDomains[1] ?? null) !== null) {
-			$baseUrl = str_replace(search: 'localhost', replace: $trustedDomains[1], subject: $baseUrl);
-		}
-
-		return $baseUrl;
-	}//end getCurrentDomain()
 
 	/**
 	 * Gets or creates the OpenRegister user for file operations.
