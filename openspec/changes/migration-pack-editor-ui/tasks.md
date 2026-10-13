@@ -6,11 +6,11 @@ The API half (envelope body, slug lock, preview, CSRF, log lines, the one
 error shape of D-12, the save precondition of D-8), the screens, the draft
 model, their PHPUnit and Jest tests, the translations of the screens' strings
 and this change are written on one branch; a box is ticked when its tests
-pass. What is open is the proof on a running instance (5.1, 5.2). The
-Playwright file has run once, locally, and failed every test: the admin
-account of that instance was set to Dutch and the tests find the pages by
-their English names, which `beforeAll` now reports before any test starts.
-CI runs the file only on promotion pull requests and `workflow_dispatch`.
+pass. The Playwright file passes on a running instance (5.1); what is open
+is 5.2. The tests find the pages by their English names, so `beforeAll`
+stops with the `occ` command to run when a test account is set to another
+language. CI runs the file only on promotion pull requests and
+`workflow_dispatch`.
 
 ## 1. API
 
@@ -139,7 +139,7 @@ CI runs the file only on promotion pull requests and `workflow_dispatch`.
 
 ## 5. Verification
 
-- [ ] 5.1 Playwright: every scenario of the delta spec, anchored with `@e2e migration-mapping-packs::<scenario>` (`tests/e2e/ci/migration-pack-pages.spec.ts`). Open until a run on an instance with this branch built passes and is linked; its one run so far failed on an admin account set to Dutch (see above).
+- [x] 5.1 Playwright: every scenario of the delta spec, anchored with `@e2e migration-mapping-packs::<scenario>` (`tests/e2e/ci/migration-pack-pages.spec.ts`). 38 of 38 tests passed on 2026-10-13 against Nextcloud 35.0.1 with this branch (8ef92f0c27) built and installed.
   - spec_ref: `migration-mapping-packs#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui`
   - files: `tests/e2e/ci/migration-pack-pages.spec.ts`
   - acceptance_criteria:
