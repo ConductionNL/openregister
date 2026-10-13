@@ -30,6 +30,7 @@
 
 namespace OCA\OpenRegister\Formats;
 
+use Closure;
 use OCP\IUserManager;
 use Opis\JsonSchema\Format;
 
@@ -40,10 +41,15 @@ class UserFormat implements Format {
 	/**
 	 * Constructor.
 	 *
-	 * @param IUserManager $userManager The backend consulted for existence.
+	 * @param IUserManager                $userManager The backend consulted for existence.
+	 * @param (Closure(string): bool)|null $planned     Says whether a caller declared that an account with
+	 *                                                 this id is written before the object; null: none is.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function __construct(
 		private readonly IUserManager $userManager,
+		private readonly ?Closure $planned=null,
 	) {
 	}//end __construct()
 
@@ -54,9 +60,10 @@ class UserFormat implements Format {
 	 *
 	 * @inheritDoc
 	 *
-	 * @return bool True when the user exists.
+	 * @return bool True when the user exists, or when the caller declared it is written first.
 	 *
 	 * @spec openspec/specs/data-import-export/spec.md
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function validate(mixed $data): bool {
 		if (is_string($data) === false) {
@@ -70,6 +77,12 @@ class UserFormat implements Format {
 
 		// Existence is the cheaper question and the only one being asked —
 		// userExists() rather than get(), since nothing here needs the object.
-		return $this->userManager->userExists($uid);
+		if ($this->userManager->userExists($uid) === true) {
+			return true;
+		}
+
+		// An account the caller is about to write, such as an example set's
+		// cast member during its check; never any other id.
+		return $this->planned !== null && ($this->planned)($uid) === true;
 	}//end validate()
 }//end class

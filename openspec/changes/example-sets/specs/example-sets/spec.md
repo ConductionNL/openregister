@@ -68,7 +68,7 @@ The loader SHALL create a Nextcloud account for every cast person with a `uid`, 
 
 ### Requirement: Check validates every object against its real schema without writing (REQ-EXS-004)
 
-`--check` SHALL resolve every placeholder and lookup, verify each target register and schema exists on the instance, check every cast `bsn` against the eleven test, and validate every object with OpenRegister's own object validator against its target schema, whether or not that schema has hard validation on. It SHALL write none of the set's accounts, groups, objects or changes; the only thing it may write is the import of a register the set requires (REQ-EXS-009), because those schemas are what it checks against. It SHALL exit non-zero when anything is refused and name each refusal. An install SHALL run the same pass first and write none of the set's accounts, groups, objects or changes when it refuses. A reference to an object of the set that is not written yet SHALL be validated with a stand-in of the right shape, and a lookup SHALL also match an object declared earlier in the set.
+`--check` SHALL resolve every placeholder and lookup, verify each target register and schema exists on the instance, check every cast `bsn` against the eleven test, and validate every object with OpenRegister's own object validator against its target schema, whether or not that schema has hard validation on. It SHALL write none of the set's accounts, groups, objects or changes; the only thing it may write is the import of a register the set requires (REQ-EXS-009), because those schemas are what it checks against. It SHALL exit non-zero when anything is refused and name each refusal. An install SHALL run the same pass first and write none of the set's accounts, groups, objects or changes when it refuses. A reference to an object of the set that is not written yet SHALL be validated with a stand-in of the right shape, and a lookup SHALL also match an object declared earlier in the set. An account id the set creates (a cast member's `uid` or a service account's `uid`) SHALL pass a property of format `user` in the check although the account does not exist yet, because an install writes every account before any object; any other id that names no existing account SHALL still be refused, in an object and in a change. The validator SHALL accept those ids for the set's own validation only.
 
 #### Scenario: A value the schema refuses fails the check
 - **GIVEN** an object whose `status` is not in its schema's enum
@@ -79,6 +79,18 @@ The loader SHALL create a Nextcloud account for every cast person with a `uid`, 
 - **GIVEN** a set whose objects all satisfy their schemas
 - **WHEN** the check runs
 - **THEN** it SHALL exit 0 and report the number of objects checked per register and schema
+
+#### Scenario: An account the set creates passes a user format before it exists
+- **GIVEN** a ticket whose `assignee` (format `user`) is `{{cast:daan.uid}}`, and no account `daan.verbeek` on the instance
+- **WHEN** the check runs
+- **THEN** it SHALL NOT refuse the ticket, and SHALL write no account
+- **AND WHEN** the set is installed
+- **THEN** the account SHALL be written before the ticket
+
+#### Scenario: An account id the set does not declare is still refused
+- **GIVEN** a ticket whose `assignee` is `nobody.here`, which is neither on the instance nor a uid of the set
+- **WHEN** the check runs
+- **THEN** it SHALL refuse the ticket with the schema's format message
 
 ### Requirement: A second install writes nothing (REQ-EXS-005)
 
@@ -155,12 +167,22 @@ A fragment MAY declare `changes`: each with a `key`, a `register`, a `schema`, a
 
 ### Requirement: A field a schema keeps as JSON text is sent as text (REQ-EXS-012)
 
-An object MAY name fields in `jsonFields`. Those fields SHALL be sent to the register as JSON text and validated in that form, and the read-back proof SHALL compare the decoded text with the declared structure.
+An object MAY name fields in `jsonFields`. Those fields SHALL be sent to the register as JSON text and validated in that form, and the read-back proof SHALL compare the decoded text with the declared structure. A change on such an object (REQ-EXS-018) SHALL carry the object's `jsonFields`, and a change found by `where` MAY name its own `jsonFields`: the change SHALL read those fields as their structure, apply `set` and `append` to it, and validate and write them as JSON text again, the same encoding the object was created with. Its proof and its remove SHALL decode the same fields.
 
 #### Scenario: A history list is stored as text and proved as a list
 - **GIVEN** an object with `jsonFields: ["history"]` and a list in `history`
 - **WHEN** the set is installed
 - **THEN** the register SHALL receive the list as JSON text and the proof SHALL report nothing lost
+
+#### Scenario: A change on a case with a JSON text history is checked as it is written
+- **GIVEN** a case with `jsonFields: ["statusHistory"]`, a result for it, and a change with `object: <the case>` that sets `result`
+- **WHEN** the check runs and the set is installed
+- **THEN** the check SHALL NOT refuse the change for `statusHistory`, and the stored case SHALL hold its `statusHistory` as JSON text and point at the result
+
+#### Scenario: An append inside JSON text is proved and taken out as a list
+- **GIVEN** an existing row whose `history` is the text `[{"at":"a"}]`, and a change with `jsonFields: ["history"]` that appends `{"at":"b"}` to `history`
+- **WHEN** the set is installed and then removed
+- **THEN** the row SHALL hold `[{"at":"a"},{"at":"b"}]` as text, the proof SHALL report nothing lost, and after remove it SHALL hold `[{"at":"a"}]` again
 
 ### Requirement: An object of a set may carry files from its fragment (REQ-EXS-013)
 

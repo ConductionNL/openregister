@@ -85,15 +85,20 @@ class ExampleSetStore {
 	 * The validator runs whether or not the schema has hard validation on,
 	 * because a save only validates when it has.
 	 *
-	 * @param string               $register The register slug.
-	 * @param string               $schema   The schema slug.
-	 * @param array<string, mixed> $data     The object.
+	 * An account id in $plannedUsers passes a property of format `user`
+	 * although the account does not exist yet; every other id is still
+	 * asked of Nextcloud's user manager.
+	 *
+	 * @param string               $register     The register slug.
+	 * @param string               $schema       The schema slug.
+	 * @param array<string, mixed> $data         The object.
+	 * @param array<int, string>   $plannedUsers Account ids the set creates before it writes objects.
 	 *
 	 * @return array<int, string> The refusals; empty when the schema accepts the object.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
-	public function validate(string $register, string $schema, array $data): array {
+	public function validate(string $register, string $schema, array $data, array $plannedUsers=[]): array {
 		$schemaId = $this->schemaId(register: $register, schema: $schema);
 		if ($schemaId === null) {
 			return ['this instance has no schema "'.$schema.'" in a register "'.$register.'"'];
@@ -101,7 +106,7 @@ class ExampleSetStore {
 
 		try {
 			$validator = $this->container->get(ValidateObject::class);
-			$result    = $validator->validateObject(object: $data, schema: $schemaId);
+			$result    = $validator->validateObjectWithPlannedUsers(object: $data, schema: $schemaId, plannedUsers: $plannedUsers);
 			if ($result->isValid() === true) {
 				return [];
 			}
