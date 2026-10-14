@@ -212,7 +212,7 @@ class GuardedDescriptorMerge {
 	 *
 	 * The conflict itself is reported once, on the block root, by merge().
 	 *
-	 * @param array<string, array>                     $acc     The accumulator.
+	 * @param array<string, mixed>                     $acc     The running result, mutated in place.
 	 * @param string                                   $path    The key.
 	 * @param array{state: string, decided: bool, localMoved: bool} $block The block's settlement.
 	 * @param array<string, array<string|int, mixed>>  $sources The flattened definitions.

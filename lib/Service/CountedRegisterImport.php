@@ -138,7 +138,8 @@ class CountedRegisterImport {
 		if ($schemaIds !== []) {
 			$found = $this->schemaMapper->findMultiple(ids: array_values($schemaIds), _rbac: false, _multitenancy: false);
 			foreach ($found as $schema) {
-				$schemas[(string)$schema->getId()] = $this->schemaFingerprint(schema: $schema);
+				// Keyed by a string, never a bare id PHP would turn into an int key.
+				$schemas['schema:' . (string)$schema->getId()] = $this->schemaFingerprint(schema: $schema);
 			}
 		}
 
