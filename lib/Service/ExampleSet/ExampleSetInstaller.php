@@ -40,6 +40,8 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One install flow: check, accounts, objects, proof.
  * @SuppressWarnings(PHPMD.TooManyMethods)            Each part of a fragment has its own check and write step.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)    One collaborator per part of a fragment, each small and separately tested.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)    The constructor takes one collaborator per part of a fragment.
  *
  * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
  */
@@ -739,10 +741,8 @@ class ExampleSetInstaller {
 			}
 		}
 
-		foreach ($record['userPreferences'] as $name => $entry) {
-			if ($this->userPreferences->lost(entry: $entry) === true) {
-				$report['lost'][] = 'user preference '.$name;
-			}
+		foreach (array_keys(array_filter($record['userPreferences'], fn (array $entry): bool => $this->userPreferences->lost(entry: $entry))) as $name) {
+			$report['lost'][] = 'user preference '.$name;
 		}
 
 		return $report;
@@ -832,8 +832,12 @@ class ExampleSetInstaller {
 			$gaps  = [];
 			$uid   = $this->values->fill(value: $entry['user'], context: $context, gaps: $gaps);
 			$this->values->fill(value: $entry['value'], context: $context, gaps: $gaps);
-			if ($gaps !== [] || is_string($uid) === false) {
-				$refusals[] = $where.': cannot resolve '.implode(', ', array_unique(($gaps === [] ? [(string) $entry['user']] : $gaps)));
+			if (is_string($uid) === false) {
+				$gaps[] = (string) $entry['user'];
+			}
+
+			if ($gaps !== []) {
+				$refusals[] = $where.': cannot resolve '.implode(', ', array_unique($gaps));
 				continue;
 			}
 
@@ -872,13 +876,17 @@ class ExampleSetInstaller {
 
 			// Checked again against the record: only an account this set created or adopted.
 			$why = $this->userPreferences->refusal(app: $fragment['app'], uid: $uid, key: $entry['key'], users: array_keys($record['users']));
+			if ($why === '' && $gaps !== []) {
+				$why = 'cannot resolve '.implode(', ', $gaps);
+			}
+
 			$made = ['error' => $why, 'entry' => null];
-			if ($why === '' && $gaps === []) {
+			if ($why === '') {
 				$made = $this->userPreferences->apply(uid: $uid, app: $fragment['app'], key: $entry['key'], value: $value);
 			}
 
-			if ($made['error'] !== '' || $gaps !== []) {
-				$report['dropped'][] = $fragment['file'].': user preference "'.$entry['key'].'" for '.$uid.': '.($made['error'] !== '' ? $made['error'] : 'cannot resolve '.implode(', ', $gaps));
+			if ($made['error'] !== '') {
+				$report['dropped'][] = $fragment['file'].': user preference "'.$entry['key'].'" for '.$uid.': '.$made['error'];
 				$report['userPreferences'][$name] = 'failed';
 				continue;
 			}
