@@ -130,8 +130,13 @@ class ObjectDraftController extends Controller {
 		$schemaEntity = null;
 		$readable = null;
 		try {
-			$registerEntity = $this->registers->find($register);
-			$schemaEntity = $this->schemas->find($schema);
+			// The register and the schema are looked up as the object API
+			// looks them up (ObjectService::setRegister()): past the
+			// organisation filter. A draft in a register an administrator made
+			// in another organisation is still its owner's; the read of the
+			// draft below is the authorisation.
+			$registerEntity = $this->registers->find(id: $register, _rbac: false, _multitenancy: false);
+			$schemaEntity = $this->schemas->find(id: $schema, _rbac: false, _multitenancy: false);
 			$readable = $this->objects->find(id: $id, register: $registerEntity, schema: $schemaEntity, _render: false, _audit: false);
 		} catch (Throwable) {
 			$readable = null;

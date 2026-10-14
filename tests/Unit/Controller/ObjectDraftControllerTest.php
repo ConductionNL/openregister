@@ -323,6 +323,67 @@ class ObjectDraftControllerTest extends TestCase {
 	}//end testWhatTheCallerMayNotReadAnswers404()
 
 	/**
+	 * The register and the schema are found whatever organisation they were made in; the draft's own read decides.
+	 *
+	 * Found on an instance with multitenancy on (14 October): an administrator
+	 * made the register and the schema in their organisation, a user in
+	 * another organisation made a draft in it and could read it, and their
+	 * activation answered 404. The controller looked the register up through
+	 * the organisation filter, which the object API's own lookup does not.
+	 */
+	public function testTheRegisterOfAnotherOrganisationIsFound(): void {
+		$owner = $this->signIn(uid: 'agent');
+		$this->readableDraft();
+		$activated = new ObjectEntity();
+		$activated->setUuid('d1');
+		$activated->setStatus('active');
+		$this->activationAnswers(answer: $activated);
+
+		// Mappers that answer as the real ones do for a register and a schema of another organisation.
+		$registers = $this->createMock(RegisterMapper::class);
+		$registers->method('find')->willReturnCallback(
+			function (string|int $id, bool $_rbac = true, bool $_multitenancy = true): Register {
+				if ($_multitenancy === true) {
+					throw new DoesNotExistException('another organisation');
+				}
+
+				return $this->register;
+			}
+		);
+		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas->method('find')->willReturnCallback(
+			function (string|int $id, ?array $_extend = [], bool $_rbac = true, bool $_multitenancy = true): Schema {
+				if ($_multitenancy === true) {
+					throw new DoesNotExistException('another organisation');
+				}
+
+				return $this->schema;
+			}
+		);
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnArgument(0);
+		$controller = new ObjectDraftController(
+			appName: 'openregister',
+			request: $this->request,
+			objects: $this->objects,
+			registers: $registers,
+			schemas: $schemas,
+			activation: $this->activation,
+			session: $this->session,
+			l10n: $l10n,
+			logger: $this->logger
+		);
+
+		$response = $controller->activate(register: '27', schema: '43', id: 'd1');
+
+		$this->assertSame(200, $response->getStatus(), (string)json_encode($response->getData()));
+		$this->assertSame($owner, $this->activations[0]['user']);
+		// Control: the draft itself is still read under RBAC and the organisation filter.
+		$this->assertTrue($this->reads[0]['rbac']);
+		$this->assertTrue($this->reads[0]['multitenancy']);
+	}//end testTheRegisterOfAnotherOrganisationIsFound()
+
+	/**
 	 * A read that throws (RBAC refusing) answers the same 404.
 	 */
 	public function testAReadThatThrowsAnswers404(): void {
