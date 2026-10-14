@@ -56,6 +56,7 @@ class ExampleSetInstaller {
 	 * @param ExampleSetChanges       $changes       Changes objects the set did not create.
 	 * @param ExampleSetFiles         $files         Attaches files to objects.
 	 * @param ExampleSetAppConfig     $appConfig     Writes a fragment's own app config.
+	 * @param ExampleSetUserPreferences $userPreferences Writes a fragment's own app's preferences of the set's accounts.
 	 *
 	 * @return void
 	 */
@@ -69,6 +70,7 @@ class ExampleSetInstaller {
 		private readonly ExampleSetChanges $changes,
 		private readonly ExampleSetFiles $files,
 		private readonly ExampleSetAppConfig $appConfig,
+		private readonly ExampleSetUserPreferences $userPreferences,
 	) {
 	}//end __construct()
 
@@ -137,7 +139,8 @@ class ExampleSetInstaller {
 			$refusals = array_merge(
 				$refusals,
 				$this->checkChanges(fragment: $fragment, context: $context, checked: $checked, plannedUsers: $users),
-				$this->checkAppConfig(fragment: $fragment, context: $context)
+				$this->checkAppConfig(fragment: $fragment, context: $context),
+				$this->checkUserPreferences(fragment: $fragment, context: $context, users: $users)
 			);
 		}//end foreach
 
@@ -169,6 +172,7 @@ class ExampleSetInstaller {
 			'memberships' => [],
 			'changes'     => [],
 			'appConfig'   => [],
+			'userPreferences' => [],
 			'files'       => 0,
 			'passwords'   => [],
 			'types'       => [],
@@ -334,7 +338,9 @@ class ExampleSetInstaller {
 		$context = (['objects' => $objects] + $base);
 		$report  = $this->installChanges(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 
-		return $this->installAppConfig(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
+		$report = $this->installAppConfig(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
+
+		return $this->installUserPreferences(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 	}//end installFragment()
 
 	/**
@@ -733,6 +739,12 @@ class ExampleSetInstaller {
 			}
 		}
 
+		foreach ($record['userPreferences'] as $name => $entry) {
+			if ($this->userPreferences->lost(entry: $entry) === true) {
+				$report['lost'][] = 'user preference '.$name;
+			}
+		}
+
 		return $report;
 	}//end provenParts()
 
@@ -801,6 +813,85 @@ class ExampleSetInstaller {
 
 		return $report;
 	}//end installAppConfig()
+
+	/**
+	 * Check the user preferences of one fragment: each account fills and is the set's own, and each key may be written.
+	 *
+	 * @param array<string, mixed> $fragment The fragment.
+	 * @param array<string, mixed> $context  The context placeholders draw on.
+	 * @param array<int, string>   $users    The account ids the set creates or adopts.
+	 *
+	 * @return array<int, string> Refusals.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 */
+	private function checkUserPreferences(array $fragment, array $context, array $users): array {
+		$refusals = [];
+		foreach (($fragment['userPreferences'] ?? []) as $entry) {
+			$where = $fragment['file'].': user preference "'.$entry['key'].'"';
+			$gaps  = [];
+			$uid   = $this->values->fill(value: $entry['user'], context: $context, gaps: $gaps);
+			$this->values->fill(value: $entry['value'], context: $context, gaps: $gaps);
+			if ($gaps !== [] || is_string($uid) === false) {
+				$refusals[] = $where.': cannot resolve '.implode(', ', array_unique(($gaps === [] ? [(string) $entry['user']] : $gaps)));
+				continue;
+			}
+
+			$refusal = $this->userPreferences->refusal(app: $fragment['app'], uid: $uid, key: $entry['key'], users: $users);
+			if ($refusal !== '') {
+				$refusals[] = $where.': '.$refusal;
+			}
+		}
+
+		return $refusals;
+	}//end checkUserPreferences()
+
+	/**
+	 * Write the user preferences of one fragment that the record does not hold, for the set's own accounts only.
+	 *
+	 * @param array<string, mixed> $plan     The plan.
+	 * @param array<string, mixed> $fragment The fragment.
+	 * @param array<string, mixed> $context  The context placeholders draw on.
+	 * @param array<string, mixed> $report   The report so far.
+	 * @param array<string, mixed> $record   The record; updated after every write.
+	 *
+	 * @return array<string, mixed> The report.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 */
+	private function installUserPreferences(array $plan, array $fragment, array $context, array $report, array &$record): array {
+		foreach (($fragment['userPreferences'] ?? []) as $entry) {
+			$gaps  = [];
+			$uid   = (string) $this->values->fill(value: $entry['user'], context: $context, gaps: $gaps);
+			$value = (string) $this->values->fill(value: $entry['value'], context: $context, gaps: $gaps);
+			$name  = $fragment['app'].'/'.$uid.'/'.$entry['key'];
+			$report['userPreferences'][$name] = 'kept';
+			if (isset($record['userPreferences'][$name]) === true) {
+				continue;
+			}
+
+			// Checked again against the record: only an account this set created or adopted.
+			$why = $this->userPreferences->refusal(app: $fragment['app'], uid: $uid, key: $entry['key'], users: array_keys($record['users']));
+			$made = ['error' => $why, 'entry' => null];
+			if ($why === '' && $gaps === []) {
+				$made = $this->userPreferences->apply(uid: $uid, app: $fragment['app'], key: $entry['key'], value: $value);
+			}
+
+			if ($made['error'] !== '' || $gaps !== []) {
+				$report['dropped'][] = $fragment['file'].': user preference "'.$entry['key'].'" for '.$uid.': '.($made['error'] !== '' ? $made['error'] : 'cannot resolve '.implode(', ', $gaps));
+				$report['userPreferences'][$name] = 'failed';
+				continue;
+			}
+
+			if ($made['entry'] !== null) {
+				$record['userPreferences'][$name] = $made['entry'];
+				$report['userPreferences'][$name] = 'created';
+				$this->record->write(set: (string) $plan['set'], record: $record);
+			}
+		}//end foreach
+
+		return $report;
+	}//end installUserPreferences()
 
 	/**
 	 * Attach the files of a just-written object and record them.

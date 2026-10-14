@@ -90,7 +90,7 @@ class ExampleSetRemoveCommand extends Command {
 		}
 
 		foreach ($report['left'] as $left) {
-			if (str_starts_with($left, 'app config ') === true) {
+			if (str_starts_with($left, 'app config ') === true || str_starts_with($left, 'user preference ') === true) {
 				$output->writeln('Left in place: '.$left.'.');
 				continue;
 			}

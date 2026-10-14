@@ -186,6 +186,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 				'objects'          => 3,
 				'changes'          => 0,
 				'app config'       => 0,
+				'user preferences' => 0,
 				'memberships'      => 2,
 				'groups'           => 1,
 				'accounts'         => 2,

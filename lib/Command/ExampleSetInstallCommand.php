@@ -215,6 +215,7 @@ class ExampleSetInstallCommand extends Command {
 			'memberships' => 'Membership',
 			'changes'     => 'Change',
 			'appConfig'   => 'App config',
+			'userPreferences' => 'User preference',
 		];
 		foreach ($parts as $part => $word) {
 			foreach ($report[$part] as $name => $outcome) {

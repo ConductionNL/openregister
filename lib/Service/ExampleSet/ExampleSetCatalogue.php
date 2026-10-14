@@ -272,7 +272,8 @@ class ExampleSetCatalogue {
 	 * @return array{app: string, file: string, dir: string, objects: array<int, array<string, mixed>>,
 	 *               changes: array<int, array<string, mixed>>, groups: array<int, array<string, mixed>>,
 	 *               serviceAccounts: array<int, array{key: string, uid: string, displayName: string, groups: array<int, string>}>,
-	 *               appConfig: array<int, array{key: string, value: mixed, generate: bool}>}
+	 *               appConfig: array<int, array{key: string, value: mixed, generate: bool}>,
+	 *               userPreferences: array<int, array{user: string, key: string, value: string}>}
 	 *
 	 * @throws ExampleSetException When an object or change lacks a key, register or schema, or a key is used twice.
 	 */
@@ -289,6 +290,7 @@ class ExampleSetCatalogue {
 			'groups'          => array_values(array_filter((array) ($fragment['groups'] ?? []), 'is_array')),
 			'serviceAccounts' => $this->serviceAccounts(file: $file, declared: (array) ($fragment['serviceAccounts'] ?? [])),
 			'appConfig'       => $this->appConfig(app: $app, file: $file, declared: (array) ($fragment['appConfig'] ?? [])),
+			'userPreferences' => $this->userPreferences(app: $app, file: $file, declared: (array) ($fragment['userPreferences'] ?? [])),
 		];
 	}//end fragment()
 
@@ -352,6 +354,39 @@ class ExampleSetCatalogue {
 
 		return $entries;
 	}//end appConfig()
+
+	/**
+	 * The per-user preferences of a fragment, each for the fragment's own app.
+	 *
+	 * @param string            $app      The app that ships the fragment.
+	 * @param string            $file     The fragment file, for messages.
+	 * @param array<int, mixed> $declared The declared entries.
+	 *
+	 * @return array<int, array{user: string, key: string, value: string}>
+	 *
+	 * @throws ExampleSetException When an entry names another app, or lacks a user, a key or a value.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 */
+	private function userPreferences(string $app, string $file, array $declared): array {
+		$entries = [];
+		foreach ($declared as $index => $entry) {
+			$entry = (array) $entry;
+			if ((string) ($entry['app'] ?? $app) !== $app) {
+				throw new ExampleSetException($file.': user preference '.$index.' is for "'.$entry['app'].'"; a fragment sets only its own app\'s preferences.');
+			}
+
+			$user = ($entry['user'] ?? null);
+			$key  = ($entry['key'] ?? null);
+			if (is_string($user) === false || $user === '' || is_string($key) === false || $key === '' || is_scalar($entry['value'] ?? null) === false) {
+				throw new ExampleSetException($file.': user preference '.$index.' needs a user, a key and a value.');
+			}
+
+			$entries[] = ['user' => $user, 'key' => $key, 'value' => (string) $entry['value']];
+		}
+
+		return $entries;
+	}//end userPreferences()
 
 	/**
 	 * The OpenRegister organisations the cast needs, each with a key, a name and a slug.
