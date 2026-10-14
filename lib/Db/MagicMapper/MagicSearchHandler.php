@@ -789,9 +789,7 @@ class MagicSearchHandler {
 		$conditions = array_merge(
 			$conditions,
 			$this->lifecycleConditionsSql(
-				query: $query,
-				includeDeleted: $includeDeleted,
-				schema: $schema,
+				query: $query, includeDeleted: $includeDeleted, schema: $schema,
 				missingColumns: $this->missingMetadataColumns(tableName: $tableName)
 			),
 			$this->boundaryConditionsSql(
