@@ -91,7 +91,7 @@ class ReadableAuditTrailLister {
 	 *
 	 * @var string[]
 	 */
-	private const WITHHELD_FIELDS = ['session', 'request', 'ipAddress'];
+	public const WITHHELD_FIELDS = ['session', 'request', 'ipAddress'];
 
 	/**
 	 * Schemas already resolved in this run, by id.

@@ -103,6 +103,14 @@ class ValidateObject {
 	private ?Validator $validator = null;
 
 	/**
+	 * Account ids a caller declared it writes before the object, accepted by
+	 * the `user` format for the length of one validateObjectWithPlannedUsers() call.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $plannedUsers = [];
+
+	/**
 	 * Request-scoped cache of fully prepared validation schemas.
 	 *
 	 * Keyed by `{schemaId}:{schemaVersion}` (mirroring SchemaMapper's
@@ -1711,6 +1719,36 @@ class ValidateObject {
 	}//end findSchemaBySlug()
 
 	/**
+	 * Validates an object against a schema, letting a `user` format accept the given account ids.
+	 *
+	 * For a caller that writes those accounts before the object, such as an
+	 * example set's check. Every other account id is still asked of the user
+	 * manager, and the ids are accepted for this one call only.
+	 *
+	 * @param array                     $object       The object to validate.
+	 * @param Schema|int|null           $schema       The schema or schema ID to validate against.
+	 * @param object                    $schemaObject A custom schema object for validation.
+	 * @param array<int, string>        $plannedUsers Account ids to accept although they do not exist yet.
+	 *
+	 * @return ValidationResult The result of the validation.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
+	 */
+	public function validateObjectWithPlannedUsers(
+		array $object,
+		Schema|int|null $schema = null,
+		object $schemaObject = new stdClass(),
+		array $plannedUsers = [],
+	): ValidationResult {
+		$this->plannedUsers = array_values(array_filter($plannedUsers, 'is_string'));
+		try {
+			return $this->validateObject(object: $object, schema: $schema, schemaObject: $schemaObject);
+		} finally {
+			$this->plannedUsers = [];
+		}
+	}//end validateObjectWithPlannedUsers()
+
+	/**
 	 * Validates an object against a schema.
 	 *
 	 * @param array $object The object to validate.
@@ -2182,7 +2220,10 @@ class ValidateObject {
 			validator: $validator,
 			type: 'string',
 			format: 'user',
-			resolver: new UserFormat(userManager: $this->userManager)
+			resolver: new UserFormat(
+				userManager: $this->userManager,
+				planned: fn (string $uid): bool => in_array($uid, $this->plannedUsers, true)
+			)
 		);
 
 		// Accept ISO 8601 date-time input (optional seconds/timezone), overriding the
