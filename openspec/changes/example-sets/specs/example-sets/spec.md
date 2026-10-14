@@ -282,3 +282,28 @@ Every cast person and organisation that declares no `contactsUid` SHALL get `exa
 - **GIVEN** a set that requires register `brp`, which is not on the instance, and a value `{{register:brp}}`
 - **WHEN** the check runs
 - **THEN** it SHALL import `brp` and fill its id, and refuse nothing
+
+### Requirement: Remove deletes what the set wrote even in an archival schema and says why anything stays (REQ-EXS-022)
+
+Removing an example set is an administrative act on data the set itself wrote, not a user-driven delete. The remover SHALL delete an object listed in the set's install record through OpenRegister's system delete path, the one the retention sweep uses, so a schema that declares `x-openregister-archival` does not refuse it. It SHALL use that path only for objects in the install record. As on the retention sweep, an object under an active legal hold SHALL NOT be deleted. A file the set attached SHALL be found by its id in OpenRegister's own account and deleted as that file, so remove works from `occ` without a session. Every object and file that stays SHALL be named in the output with the reason OpenRegister gave, and SHALL stay in the record so a later remove tries again. An object whose file stays SHALL stay too.
+
+#### Scenario: An archival case the set wrote is removed
+- **GIVEN** a set that wrote a dossiq `case`, whose schema declares `x-openregister-archival`
+- **WHEN** the set is removed
+- **THEN** the case SHALL be deleted, and a user's delete of a case SHALL still be refused with `SCHEMA_ARCHIVAL_IMMUTABLE`
+
+#### Scenario: A held object stays and says so
+- **GIVEN** an object of the set under an active legal hold
+- **WHEN** the set is removed
+- **THEN** the object SHALL stay, the output SHALL name it with `it is under an active legal hold`, and it SHALL stay in the record
+
+#### Scenario: Attached files are removed from occ
+- **GIVEN** a publication of the set with an attached file
+- **WHEN** `occ openregister:example-set:remove` runs
+- **THEN** the file and then the publication SHALL be deleted
+
+#### Scenario: A file that stays is named with its reason
+- **GIVEN** an attached file that OpenRegister refuses to delete
+- **WHEN** the set is removed
+- **THEN** the output SHALL name the file, its object and the reason, the object SHALL stay because of it, and both SHALL stay in the record for the next remove
+

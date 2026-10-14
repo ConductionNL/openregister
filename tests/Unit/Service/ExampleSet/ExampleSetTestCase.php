@@ -84,6 +84,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<string, array<string, array{name: string, shared: bool, content: string}>> Files by object id, then file id. */
 	protected array $files = [];
 
+	/** @var array<int, int> File ids whose delete throws. */
+	protected array $undeletableFiles = [];
+
 	/** @var string The instance's overwrite.cli.url. */
 	protected string $baseUrl = 'https://cloud.example.test/';
 
@@ -274,9 +277,28 @@ abstract class ExampleSetTestCase extends TestCase {
 			}
 			return $nodes;
 		});
-		$service->method('deleteFile')->willReturnCallback(function (int $file): bool {
+		// As the real FileService: an id handed over without its object is
+		// resolved against getObjectFolder(null), which throws; only a node
+		// found by id (in OpenRegister's own account) can be deleted.
+		$service->method('getFileById')->willReturnCallback(function (int $fileId): ?File {
+			foreach ($this->files as $files) {
+				if (isset($files[(string) $fileId]) === true) {
+					$node = $this->createMock(File::class);
+					$node->method('getId')->willReturn($fileId);
+					return $node;
+				}
+			}
+			return null;
+		});
+		$service->method('deleteFile')->willReturnCallback(function (mixed $file): bool {
+			if ($file instanceof File === false) {
+				throw new \TypeError('FolderManagementHandler::getObjectFolder(): Argument #1 ($objectEntity) must be of type ObjectEntity|string, null given');
+			}
+			if (in_array($file->getId(), $this->undeletableFiles, true) === true) {
+				throw new \RuntimeException('File is not deletable by the current session');
+			}
 			foreach ($this->files as $object => $files) {
-				unset($this->files[$object][(string) $file]);
+				unset($this->files[$object][(string) $file->getId()]);
 			}
 			return true;
 		});

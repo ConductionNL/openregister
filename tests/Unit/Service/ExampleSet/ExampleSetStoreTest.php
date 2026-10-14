@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetStore;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
@@ -86,5 +87,70 @@ class ExampleSetStoreTest extends TestCase {
 		$this->assertSame(1113, $store->schemaId(register: 'publication', schema: 'publication'));
 		$this->assertNull($store->registerId(register: 'nope'));
 		$this->assertNull($store->schemaId(register: 'nope', schema: 'publication'));
+	}
+
+	/**
+	 * A store over an ObjectService whose find hands back $row.
+	 *
+	 * @param ObjectService $objects The object service.
+	 *
+	 * @return ExampleSetStore
+	 */
+	private function storeOver(ObjectService $objects): ExampleSetStore {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($objects);
+
+		return new ExampleSetStore(container: $container, logger: $this->createMock(LoggerInterface::class));
+	}
+
+	/**
+	 * A row of the set is deleted through the system path, which an archival schema lets through.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 */
+	public function testARecordedRowIsDeletedThroughTheSystemPath(): void {
+		$row = $this->createMock(ObjectEntity::class);
+		$row->method('hasActiveLegalHold')->willReturn(false);
+		$objects = $this->createMock(ObjectService::class);
+		$objects->method('find')->willReturn($row);
+		$objects->expects($this->once())
+			->method('deleteObject')
+			->with('case-1', 'dossiq', 'case', false, false, true)
+			->willReturn(true);
+
+		$this->assertSame('', $this->storeOver(objects: $objects)->deleteRecorded(register: 'dossiq', schema: 'case', id: 'case-1'));
+	}
+
+	/**
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 */
+	public function testAHeldRowIsNeverDeleted(): void {
+		$row = $this->createMock(ObjectEntity::class);
+		$row->method('hasActiveLegalHold')->willReturn(true);
+		$objects = $this->createMock(ObjectService::class);
+		$objects->method('find')->willReturn($row);
+		$objects->expects($this->never())->method('deleteObject');
+
+		$this->assertSame('it is under an active legal hold', $this->storeOver(objects: $objects)->deleteRecorded(register: 'dossiq', schema: 'case', id: 'case-1'));
+	}
+
+	/**
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
+	 */
+	public function testARefusalIsReturnedAsTheReasonAndAGoneRowIsGone(): void {
+		$row = $this->createMock(ObjectEntity::class);
+		$objects = $this->createMock(ObjectService::class);
+		$objects->method('find')->willReturnCallback(static function (mixed $id) use ($row): ObjectEntity {
+			if ($id === 'gone') {
+				throw new \RuntimeException('not found');
+			}
+
+			return $row;
+		});
+		$objects->method('deleteObject')->willThrowException(new \RuntimeException('a relation still points here'));
+		$store = $this->storeOver(objects: $objects);
+
+		$this->assertSame('a relation still points here', $store->deleteRecorded(register: 'pipelinq', schema: 'ticket', id: 'ticket-1'));
+		$this->assertSame('', $store->deleteRecorded(register: 'pipelinq', schema: 'ticket', id: 'gone'));
 	}
 }

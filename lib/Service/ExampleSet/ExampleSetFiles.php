@@ -140,22 +140,43 @@ class ExampleSetFiles {
 	}//end names()
 
 	/**
-	 * Delete one file by its id; true when it is gone.
+	 * Delete one file the set attached; '' when it is gone, otherwise why not.
 	 *
-	 * @param string $fileId The file id.
+	 * The file is found by its id in OpenRegister's own account, where an
+	 * object's files live, and that node is deleted. Asking FileService to
+	 * delete an id without the object resolves it against an object folder
+	 * that cannot be found without the object, which never worked from occ.
+	 * A file that cannot be found counts as gone only when the object no
+	 * longer has a file of that name.
 	 *
-	 * @return bool
+	 * @param string $fileId   The file id, as the install record holds it.
+	 * @param string $name     The file name, as the install record holds it.
+	 * @param string $objectId The id of the object the file was attached to.
+	 *
+	 * @return string '' when the file is gone; otherwise the reason it stays.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
-	public function delete(string $fileId): bool {
+	public function delete(string $fileId, string $name, string $objectId): string {
 		try {
-			$this->fileService()->deleteFile(file: (int) $fileId);
-		} catch (Throwable) {
-			return false;
+			$file = $this->fileService()->getFileById(fileId: (int) $fileId);
+			if ($file === null) {
+				if (in_array($name, $this->names(objectId: $objectId), true) === true) {
+					return 'OpenRegister cannot find file id '.$fileId.' although the object still has '.$name;
+				}
+
+				return '';
+			}
+
+			if ($this->fileService()->deleteFile(file: $file) === false) {
+				return 'OpenRegister did not delete it (see the Nextcloud log)';
+			}
+		} catch (Throwable $e) {
+			return $e->getMessage();
 		}
 
-		return true;
+		return '';
 	}//end delete()
 
 	/**
