@@ -91,6 +91,8 @@ class DeferredObjectEventJob extends QueuedJob {
 	 * @param mixed $argument `{uuid, registerId, schemaId, action}`.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
 	 */
 	protected function run($argument): void {
 		$uuid = (string)(((array)$argument)['uuid'] ?? '');
