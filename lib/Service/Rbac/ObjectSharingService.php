@@ -292,6 +292,8 @@ class ObjectSharingService {
 	 * @throws InvalidArgumentException On an unsupported type or unresolvable folder.
 	 *
 	 * @return array<string, mixed> The created grant.
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	public function grant(
 		ObjectEntity $object,
@@ -577,6 +579,8 @@ class ObjectSharingService {
 	 * @throws InvalidArgumentException When the share is not on this object.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	public function revoke(ObjectEntity $object, string $shareId): void {
 		$this->requireMayManageGrants(object: $object);
