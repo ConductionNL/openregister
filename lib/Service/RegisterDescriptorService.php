@@ -43,10 +43,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
-use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
@@ -107,7 +104,7 @@ class RegisterDescriptorService {
 	 * @param RegisterMapper       $registerMapper       Reads the registers that actually exist.
 	 * @param ConfigurationService    $configurationService Performs the mock import.
 	 * @param LoggerInterface         $logger               Records unreadable descriptors.
-	 * @param SchemaMapper            $schemaMapper         Reads the schemas a re-import touched.
+	 * @param CountedRegisterImport   $counted              Runs a re-import under the decision and counts what changed.
 	 * @param AppRegisterImportRunner $importRunner         Runs the app's real, forced import.
 	 *
 	 * @return void
@@ -117,7 +114,7 @@ class RegisterDescriptorService {
 		private readonly RegisterMapper $registerMapper,
 		private readonly ConfigurationService $configurationService,
 		private readonly LoggerInterface $logger,
-		private readonly SchemaMapper $schemaMapper,
+		private readonly CountedRegisterImport $counted,
 		private readonly AppRegisterImportRunner $importRunner,
 	) {
 	}//end __construct()
@@ -238,7 +235,7 @@ class RegisterDescriptorService {
 		}
 
 		if (in_array(strtolower($slug), $declared, true) === true) {
-			return $this->countedImport(
+			return $this->counted->run(
 				slug: $slug,
 				slugs: $declared,
 				version: $document['version'],
@@ -267,7 +264,7 @@ class RegisterDescriptorService {
 
 		$version = (string)($descriptor['data']['info']['version'] ?? '0.0.1');
 
-		return $this->countedImport(
+		return $this->counted->run(
 			slug: $slug,
 			slugs: $this->declaredSlugs(document: $descriptor['data']),
 			version: $version,
@@ -276,60 +273,6 @@ class RegisterDescriptorService {
 			import: fn (): array => $this->importDescriptorFile(appId: $appId, descriptor: $descriptor, version: $version)
 		);
 	}//end reimport()
-
-	/**
-	 * Run an import under the administrator's decision, and count what it changed.
-	 *
-	 * @param string             $slug      The register slug the caller named.
-	 * @param array<int, string> $slugs     Every register slug the imported document declares.
-	 * @param string             $version   The version of the imported document.
-	 * @param int                $fragments How many register.d fragments it carries.
-	 * @param string             $via       Who asked, for the audit trail.
-	 * @param callable           $import    Runs the import; returns success, path, via, message.
-	 *
-	 * @return array<string, mixed> The reimport() result.
-	 */
-	private function countedImport(
-		string $slug,
-		array $slugs,
-		string $version,
-		int $fragments,
-		string $via,
-		callable $import
-	): array {
-		$before = $this->snapshot(slugs: $slugs);
-		$run    = ShippedAuthorizationDecision::run(via: $via, operation: $import);
-		$replaced = ShippedAuthorizationDecision::replaced();
-		$after    = $this->snapshot(slugs: $slugs);
-
-		$result = [
-			'outcome'   => 'imported',
-			'reason'    => null,
-			'path'      => $run['path'],
-			'via'       => $run['via'],
-			'version'   => $version,
-			'fragments' => $fragments,
-			'counts'    => [
-				'registers'             => $this->compare(before: $before['registers'], after: $after['registers']),
-				'schemas'               => $this->compare(before: $before['schemas'], after: $after['schemas']),
-				'authorizationReplaced' => count($replaced),
-			],
-			'replaced'  => $replaced,
-		];
-
-		if ($run['success'] === false) {
-			$result['outcome'] = 'failed';
-			$result['reason']  = sprintf('The import through %s failed: %s', $run['via'], $run['message']);
-			return $result;
-		}
-
-		if (array_key_exists(strtolower($slug), $after['registers']) === false) {
-			$result['outcome'] = 'failed';
-			$result['reason']  = sprintf('The import reported no error but register "%s" still does not exist.', $slug);
-		}
-
-		return $result;
-	}//end countedImport()
 
 	/**
 	 * Import one non-mock descriptor file, forced, under the app's own configuration id.
@@ -377,109 +320,6 @@ class RegisterDescriptorService {
 
 		return array_keys($slugs);
 	}//end declaredSlugs()
-
-	/**
-	 * A fingerprint of every register with one of the slugs, and of their schemas.
-	 *
-	 * @param array<int, string> $slugs Lowercased register slugs.
-	 *
-	 * @return array{registers: array<string, string>, schemas: array<string, string>} Key to fingerprint.
-	 */
-	private function snapshot(array $slugs): array {
-		$registers = [];
-		$schemaIds = [];
-		foreach ($this->registerMapper->findAll(_rbac: false, _multitenancy: false) as $register) {
-			$slug = strtolower((string)$register->getSlug());
-			if (in_array($slug, $slugs, true) === false) {
-				continue;
-			}
-
-			$registers[$slug] = $this->registerFingerprint(register: $register);
-			foreach ($register->getSchemas() as $schemaId) {
-				if (is_scalar($schemaId) === true) {
-					$schemaIds[(string)$schemaId] = $schemaId;
-				}
-			}
-		}
-
-		$schemas = [];
-		if ($schemaIds !== []) {
-			$found = $this->schemaMapper->findMultiple(ids: array_values($schemaIds), _rbac: false, _multitenancy: false);
-			foreach ($found as $schema) {
-				$schemas[(string)$schema->getId()] = $this->schemaFingerprint(schema: $schema);
-			}
-		}
-
-		return ['registers' => $registers, 'schemas' => $schemas];
-	}//end snapshot()
-
-	/**
-	 * What of a register an import writes.
-	 *
-	 * @param Register $register The register.
-	 *
-	 * @return string The fingerprint.
-	 */
-	private function registerFingerprint(Register $register): string {
-		$schemas = array_map('strval', array_filter($register->getSchemas(), 'is_scalar'));
-		sort($schemas);
-
-		return md5(
-			(string)json_encode(
-				[$register->getVersion(), $register->getTitle(), $register->getDescription(), $schemas]
-			)
-		);
-	}//end registerFingerprint()
-
-	/**
-	 * What of a schema an import writes.
-	 *
-	 * @param Schema $schema The schema.
-	 *
-	 * @return string The fingerprint.
-	 */
-	private function schemaFingerprint(Schema $schema): string {
-		return md5(
-			(string)json_encode(
-				[
-					$schema->getVersion(),
-					$schema->getTitle(),
-					$schema->getDescription(),
-					$schema->getProperties(),
-					$schema->getRequired(),
-					$schema->getAuthorization(),
-					$schema->getConfiguration(),
-				]
-			)
-		);
-	}//end schemaFingerprint()
-
-	/**
-	 * How many entries were created, updated and left unchanged.
-	 *
-	 * @param array<string, string> $before Key to fingerprint, before.
-	 * @param array<string, string> $after  Key to fingerprint, after.
-	 *
-	 * @return array{created: int, updated: int, unchanged: int}
-	 */
-	private function compare(array $before, array $after): array {
-		$counts = ['created' => 0, 'updated' => 0, 'unchanged' => 0];
-		foreach ($after as $key => $fingerprint) {
-			if (array_key_exists($key, $before) === false) {
-				$counts['created']++;
-				continue;
-			}
-
-			if ($before[$key] === $fingerprint) {
-				$counts['unchanged']++;
-				continue;
-			}
-
-			$counts['updated']++;
-		}
-
-		return $counts;
-	}//end compare()
 
 	/**
 	 * Import the SAMPLE (mock) descriptor an app ships for one register slug.

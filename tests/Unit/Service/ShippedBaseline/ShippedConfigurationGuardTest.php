@@ -58,11 +58,12 @@ class ShippedConfigurationGuardTest extends TestCase {
 	 * A guard over an in-memory baseline store.
 	 *
 	 * @param array<string, mixed>|null $baseline The stored baseline definition, or null for none.
-	 * @param IUserSession|null         $session  The session.
+	 * @param IUserSession|null                 $session  The session.
+	 * @param ShippedAuthorizationDecision|null $decision The administrator's decision, when one is in effect.
 	 *
 	 * @return ShippedConfigurationGuard The guard.
 	 */
-	private function guard(?array $baseline, ?IUserSession $session = null): ShippedConfigurationGuard {
+	private function guard(?array $baseline, ?IUserSession $session = null, ?ShippedAuthorizationDecision $decision = null): ShippedConfigurationGuard {
 		$store = $this->createMock(ShippedBaselineStore::class);
 		$store->method('schemaSubject')->willReturnCallback(
 			static fn (string $slug): string => ('schema:' . $slug)
@@ -103,7 +104,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 
 		return new ShippedConfigurationGuard(
 			baselines: $store,
-			merge: new GuardedDescriptorMerge(parts: $parts, comparator: $comparator),
+			merge: new GuardedDescriptorMerge(parts: $parts, comparator: $comparator, decision: $decision),
 			comparator: $comparator,
 			audit: $audit,
 			session: $session,
@@ -558,8 +559,9 @@ class ShippedConfigurationGuardTest extends TestCase {
 		$this->assertEquals($live['authorization'], $unattended['definition']['authorization']);
 		$this->assertSame([], $this->actions);
 
-		$guard = $this->guard(baseline: $baseline);
-		$decided = ShippedAuthorizationDecision::run(
+		$decision = new ShippedAuthorizationDecision();
+		$guard    = $this->guard(baseline: $baseline, decision: $decision);
+		$decided  = $decision->run(
 			via: 'occ openregister:descriptors:list --import',
 			operation: static fn (): array => $guard->guardSchemaUpdate(
 				slug: 'portalAccount',
@@ -573,7 +575,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 		$this->assertEquals($incoming['authorization'], $decided['definition']['authorization']);
 		$this->assertSame([], $decided['conflicts']);
 		$this->assertSame([ShippedConfigurationGuard::ACTION_DECIDED], $this->actions);
-		$this->assertSame([['schema' => 'portalAccount', 'path' => 'authorization']], ShippedAuthorizationDecision::replaced());
-		$this->assertNull(ShippedAuthorizationDecision::via(), 'the decision ends with the operation');
+		$this->assertSame([['schema' => 'portalAccount', 'path' => 'authorization']], $decision->replaced());
+		$this->assertNull($decision->via(), 'the decision ends with the operation');
 	}//end testAnAdministratorsReimportTakesTheShippedAuthorization()
 }//end class

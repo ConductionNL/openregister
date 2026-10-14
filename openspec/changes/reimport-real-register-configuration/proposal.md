@@ -34,7 +34,9 @@ Not in scope: making an unattended upgrade replace a locally changed authorizati
 
 - `lib/Service/RegisterDescriptorService.php`: `reimport()` imports the real configuration. `reimportMock()` keeps the sample import.
 - New `lib/Service/AppRegisterImportRunner.php`: finds and runs the app's forced entry point, or imports the files itself.
-- New `lib/Service/ShippedBaseline/ShippedAuthorizationDecision.php`: carries the administrator's decision to the guard for the length of one import.
+- New `lib/Service/ShippedBaseline/ShippedAuthorizationDecision.php`: carries the administrator's decision to the guard for the length of one import. It is one shared service per request, registered in `Application`.
+- New `lib/Service/CountedRegisterImport.php`: runs a re-import under the decision and counts registers and schemas before and after.
+- New `lib/Service/ShippedBaseline/AuthorizationBlocks.php`: finds, settles and reports the authorization blocks for `GuardedDescriptorMerge`.
 - `lib/Service/ShippedBaseline/GuardedDescriptorMerge.php`, `ShippedConfigurationGuard.php`: the block rule and the decision.
 - `lib/Command/DescriptorListCommand.php`: `--mock`, the help text, the counts.
 - `lib/Controller/RegisterDescriptorController.php`, `lib/Service/ExampleSet/ExampleSetRegisters.php`: pass who asked.

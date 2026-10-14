@@ -48,7 +48,7 @@ The flattener is unchanged, so the reset of one key (`authorization.read`, spec 
 
 REQ-LCA-003 says a part changed on both sides is not applied without an explicit decision, recorded with its actor. That is a documented reason to merge rather than to make the file authoritative everywhere. So:
 
-- An administrator's re-import (occ, the admin panel, an example-set install) runs under `ShippedAuthorizationDecision`. The guard adds every authorization block root to the decisions. Each block replaced over a local change goes to the audit trail as `configuration.conflict.decided`, with `via` naming who asked.
+- An administrator's re-import (occ, the admin panel, an example-set install) runs under `ShippedAuthorizationDecision`, a shared service injected into `GuardedDescriptorMerge`. While a decision is in effect, the merge adds every authorization block root to the decisions. Each block replaced over a local change goes to the audit trail as `configuration.conflict.decided`, with `via` naming who asked.
 - An unattended `occ upgrade` keeps the instance's block and reports the conflict, as REQ-LCA-003 requires.
 
 The decision travels as a scope, not a parameter, because the app's SettingsService calls `importFromApp()` with a signature OpenRegister does not own.

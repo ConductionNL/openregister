@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\AppRegisterImportRunner;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
+use OCA\OpenRegister\Service\CountedRegisterImport;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use Psr\Container\ContainerInterface;
 use OCP\App\IAppManager;
@@ -52,6 +53,13 @@ class RegisterDescriptorServiceTest extends TestCase {
 	private $containers;
 
 	/**
+	 * The decision the re-import opens, shared with the guard.
+	 *
+	 * @var ShippedAuthorizationDecision
+	 */
+	private ShippedAuthorizationDecision $decision;
+
+	/**
 	 * Temporary app root holding the descriptor fixtures.
 	 *
 	 * @var string
@@ -67,13 +75,18 @@ class RegisterDescriptorServiceTest extends TestCase {
 		$this->configurationService = $this->createMock(ConfigurationService::class);
 		$this->schemaMapper         = $this->createMock(SchemaMapper::class);
 		$this->containers           = $this->createMock(AppContainerLocator::class);
+		$this->decision             = new ShippedAuthorizationDecision();
 
 		$this->service = new RegisterDescriptorService(
 			$this->appManager,
 			$this->registerMapper,
 			$this->configurationService,
 			$this->createMock(LoggerInterface::class),
-			$this->schemaMapper,
+			new CountedRegisterImport(
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper,
+				decision: $this->decision
+			),
 			new AppRegisterImportRunner(
 				appManager: $this->appManager,
 				containers: $this->containers,
@@ -625,8 +638,12 @@ class RegisterDescriptorServiceTest extends TestCase {
 		$this->appManager->method('getAppInfo')->willReturn(['namespace' => 'FixtureApp']);
 		$this->registerMapper->method('findAll')->willReturn([$this->register('flows', '1.3.0')]);
 
-		$settings = new class {
+		$decision = $this->decision;
+		$settings = new class($decision) {
 			public array $calls = [];
+
+			public function __construct(private ShippedAuthorizationDecision $decision) {
+			}
 
 			public function loadConfiguration(): array {
 				$this->calls[] = 'unforced';
@@ -634,8 +651,8 @@ class RegisterDescriptorServiceTest extends TestCase {
 			}
 
 			public function loadSettings(bool $force = false): array {
-				$this->calls[] = ['force' => $force, 'decision' => ShippedAuthorizationDecision::via()];
-				ShippedAuthorizationDecision::noteReplaced(slug: 'portalAccount', root: 'authorization');
+				$this->calls[] = ['force' => $force, 'decision' => $this->decision->via()];
+				$this->decision->noteReplaced(slug: 'portalAccount', roots: ['authorization']);
 				return ['success' => true];
 			}
 		};
@@ -658,7 +675,7 @@ class RegisterDescriptorServiceTest extends TestCase {
 			'the forced method ran once, under the decision; the unforced one never ran'
 		);
 		$this->assertSame(1, $result['counts']['authorizationReplaced']);
-		$this->assertNull(ShippedAuthorizationDecision::via());
+		$this->assertNull($this->decision->via());
 	}
 
 	/**

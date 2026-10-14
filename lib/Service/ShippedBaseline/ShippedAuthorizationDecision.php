@@ -39,31 +39,27 @@ namespace OCA\OpenRegister\Service\ShippedBaseline;
 /**
  * Holds, for the length of one operation, the decision to take shipped authorization.
  *
+ * One instance per request, registered shared in Application, so the
+ * re-import that opens the decision and the guard deep in the import stack
+ * that reads it hold the same one.
+ *
  * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
  */
-final class ShippedAuthorizationDecision {
+class ShippedAuthorizationDecision {
 
 	/**
 	 * Where the decision came from, while one is in effect; null otherwise.
 	 *
 	 * @var string|null
 	 */
-	private static ?string $via = null;
+	private ?string $via = null;
 
 	/**
 	 * The authorization blocks the decision replaced during the last run.
 	 *
 	 * @var array<int, array{schema: string, path: string}>
 	 */
-	private static array $replaced = [];
-
-	/**
-	 * Static holder only.
-	 *
-	 * @return void
-	 */
-	private function __construct() {
-	}//end __construct()
+	private array $replaced = [];
 
 	/**
 	 * Run an operation under the decision to take shipped authorization.
@@ -75,15 +71,15 @@ final class ShippedAuthorizationDecision {
 	 *
 	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
-	public static function run(string $via, callable $operation): mixed {
-		$previous       = self::$via;
-		self::$via      = $via;
-		self::$replaced = [];
+	public function run(string $via, callable $operation): mixed {
+		$previous       = $this->via;
+		$this->via      = $via;
+		$this->replaced = [];
 
 		try {
 			return $operation();
 		} finally {
-			self::$via = $previous;
+			$this->via = $previous;
 		}
 	}//end run()
 
@@ -94,22 +90,24 @@ final class ShippedAuthorizationDecision {
 	 *
 	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
-	public static function via(): ?string {
-		return self::$via;
+	public function via(): ?string {
+		return $this->via;
 	}//end via()
 
 	/**
-	 * Note that the decision replaced a block the instance had changed.
+	 * Note that the decision replaced blocks the instance had changed.
 	 *
-	 * @param string $slug The schema slug.
-	 * @param string $root The authorization block root path.
+	 * @param string             $slug  The schema slug.
+	 * @param array<int, string> $roots The authorization block root paths.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
-	public static function noteReplaced(string $slug, string $root): void {
-		self::$replaced[] = ['schema' => $slug, 'path' => $root];
+	public function noteReplaced(string $slug, array $roots): void {
+		foreach ($roots as $root) {
+			$this->replaced[] = ['schema' => $slug, 'path' => (string)$root];
+		}
 	}//end noteReplaced()
 
 	/**
@@ -119,7 +117,7 @@ final class ShippedAuthorizationDecision {
 	 *
 	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
-	public static function replaced(): array {
-		return self::$replaced;
+	public function replaced(): array {
+		return $this->replaced;
 	}//end replaced()
 }//end class

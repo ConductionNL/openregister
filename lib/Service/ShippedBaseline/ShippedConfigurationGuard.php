@@ -154,31 +154,15 @@ class ShippedConfigurationGuard {
 				];
 			}
 
-			// An administrator's re-import is the explicit decision REQ-LCA-003
-			// waits for, for every authorization block this schema carries.
-			$explicit = $decisions;
-			$via = ShippedAuthorizationDecision::via();
-			if ($via !== null) {
-				$decisions = array_values(
-					array_unique(
-						array_merge($decisions, GuardedDescriptorMerge::authorizationRoots($live, $incoming))
-					)
-				);
-			}
-
+			// While an administrator's re-import is in effect, the merge takes
+			// every authorization block from the file (REQ-LCA-003).
 			$result = $this->merge->merge(
 				baseline: $baseline['definition'],
 				live: $live,
 				incoming: $incoming,
 				decisions: $decisions
 			);
-
-			foreach (($result['replacedLocal'] ?? []) as $root) {
-				$this->recordDecision(slug: $slug, path: (string)$root, app: $app, via: (string)$via);
-				ShippedAuthorizationDecision::noteReplaced(slug: $slug, root: (string)$root);
-			}
-
-			$decisions = $explicit;
+			$this->recordReplaced(slug: $slug, app: $app, roots: $result['replacedLocal']);
 
 			if ($record === true) {
 				$this->baselines->record(
@@ -509,6 +493,27 @@ class ShippedConfigurationGuard {
 			]
 		);
 	}//end recordReset()
+
+	/**
+	 * Record each authorization block an administrator's re-import replaced
+	 * over a local change: on the audit trail, and on the decision for the report.
+	 *
+	 * @param string             $slug  The schema slug.
+	 * @param string             $app   The app that ships it.
+	 * @param array<int, string> $roots The replaced block roots.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	private function recordReplaced(string $slug, string $app, array $roots): void {
+		$via = (string)$this->merge->decidedVia();
+		foreach ($roots as $root) {
+			$this->recordDecision(slug: $slug, path: (string)$root, app: $app, via: $via);
+		}
+
+		$this->merge->noteReplaced(slug: $slug, roots: $roots);
+	}//end recordReplaced()
 
 	/**
 	 * Record that a conflicting part was taken from upstream.
