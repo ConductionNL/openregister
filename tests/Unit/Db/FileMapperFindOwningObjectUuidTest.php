@@ -23,9 +23,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Db;
 
 use OCA\OpenRegister\Db\FileMapper;
+use OCA\OpenRegister\Service\File\ShareUrlBuilder;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IURLGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -41,7 +43,7 @@ class FileMapperFindOwningObjectUuidTest extends TestCase {
 
 		$this->db = $this->createMock(IDBConnection::class);
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
-		$this->mapper = new FileMapper($this->db, $this->urlGenerator);
+		$this->mapper = new FileMapper($this->db, new ShareUrlBuilder(urlGenerator: $this->urlGenerator, config: $this->createMock(IConfig::class)));
 	}//end setUp()
 
 	private function mockQueryBuilder(): IQueryBuilder&MockObject {

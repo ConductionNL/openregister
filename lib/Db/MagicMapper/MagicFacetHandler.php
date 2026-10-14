@@ -670,7 +670,8 @@ class MagicFacetHandler {
 				$whereConditions = $this->searchHandler->buildWhereConditionsSql(
 					query: $baseQuery,
 					schema: $tcSchema,
-					registerId: ($tc['register'] ?? null)?->getId()
+					registerId: ($tc['register'] ?? null)?->getId(),
+					tableName: $tableName
 				);
 				foreach ($whereConditions as $condition) {
 					// Skip '1=0' conditions - they mean filter column doesn't exist on this schema.
@@ -919,7 +920,8 @@ class MagicFacetHandler {
 				$whereConditions = $this->searchHandler->buildWhereConditionsSql(
 					query: $baseQuery,
 					schema: $tcSchema,
-					registerId: ($tc['register'] ?? null)?->getId()
+					registerId: ($tc['register'] ?? null)?->getId(),
+					tableName: $tableName
 				);
 				foreach ($whereConditions as $condition) {
 					if ($condition === '1=0') {

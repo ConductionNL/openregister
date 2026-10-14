@@ -884,7 +884,7 @@ class RenderObject {
 	 *
 	 * @var array<string, string> configuration key => `@self` field
 	 */
-	private const METADATA_COPIES = [
+	public const METADATA_COPIES = [
 		'objectNameField'        => 'name',
 		'objectDescriptionField' => 'description',
 		'objectSummaryField'     => 'summary',

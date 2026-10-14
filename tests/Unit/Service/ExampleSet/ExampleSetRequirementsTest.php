@@ -1,0 +1,218 @@
+<?php
+
+/**
+ * Tests for what the second round added to the example-set loader: required
+ * registers, the refusal to touch Nextcloud's administrators, changes to
+ * objects the set did not create, and fields kept as JSON text.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category Test
+ * @package  OCA\OpenRegister\Tests\Unit\Service\ExampleSet
+ *
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://www.OpenRegister.nl
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
+
+/**
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
+ */
+class ExampleSetRequirementsTest extends ExampleSetTestCase {
+	/**
+	 * A cast file that requires the `brp` register and writes one person into it.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function castRequiringBrp(): array {
+		$file             = $this->castFile(objects: [['key' => 'brp-sanne', 'register' => 'brp', 'schema' => 'person', 'data' => ['bsn' => '{{cast:sanne.bsn}}']]]);
+		$file['requires'] = ['brp'];
+
+		return $file;
+	}
+
+	public function testAMissingRequiredRegisterIsImportedBeforeTheCheckAndRemovedAfterwards(): void {
+		$this->store->offer(register: 'brp', schema: 'person');
+		$this->registers->importable['brp'] = true;
+		$this->app(app: 'openregister', fragment: $this->castRequiringBrp());
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$check = $this->installer->check(plan: $plan, today: $this->today());
+		$this->assertSame(['brp' => 'imported'], $check['registers']);
+		$this->assertSame([], $check['refusals']);
+		$this->assertSame(0, $this->store->creates, 'the check writes none of the set\'s objects');
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertTrue($report['ok']);
+		$this->assertSame(['brp' => 'kept'], $report['registers'], 'imported once, then already there');
+		$this->assertSame(1, $this->registers->imports);
+
+		$removed = $this->remover->remove(set: 'demo');
+		$this->assertSame(1, $removed['removed']['register imports']);
+		$this->assertSame([], $this->registers->jobs);
+		$this->assertSame([], $this->config);
+	}
+
+	public function testARegisterThatWasAlreadyThereIsNeitherImportedNorRemoved(): void {
+		$this->store->offer(register: 'brp', schema: 'person');
+		$this->registers->present['brp'] = true;
+		$this->registers->jobs['someone-elses'] = 'brp';
+		$this->app(app: 'openregister', fragment: $this->castRequiringBrp());
+
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$removed = $this->remover->remove(set: 'demo');
+
+		$this->assertSame(0, $this->registers->imports);
+		$this->assertSame(0, $removed['removed']['register imports']);
+		$this->assertSame(['someone-elses' => 'brp'], $this->registers->jobs);
+	}
+
+	public function testARequiredRegisterThatCannotBeImportedRefusesTheSet(): void {
+		$this->app(app: 'openregister', fragment: $this->castRequiringBrp());
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertStringContainsString('register "brp" is required and could not be imported', $report['refusals'][0]);
+		$this->assertSame(0, $this->store->creates);
+		$this->assertSame(0, $this->accounts->userCreates);
+	}
+
+	/**
+	 * @return array<string, array{0: string}>
+	 */
+	public static function adminGroups(): array {
+		return [
+			'cast group'     => ['cast'],
+			'fragment group' => ['fragment'],
+		];
+	}
+
+	/**
+	 * @dataProvider adminGroups
+	 */
+	public function testNobodyIsAddedToNextcloudsAdministrators(string $where): void {
+		$file = $this->castFile();
+		if ($where === 'cast') {
+			$file['cast']['groups'][0]['gid'] = 'admin';
+		}
+
+		$this->app(app: 'openregister', fragment: $file);
+		if ($where === 'fragment') {
+			$this->app(app: 'alpha', fragment: ['groups' => [['group' => 'Admin', 'members' => ['esra']]]]);
+		}
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertStringContainsString('never adds anyone to Nextcloud\'s administrators', implode("\n", $report['refusals']));
+		$this->assertSame([], $this->accounts->groups);
+		$this->assertSame(0, $this->accounts->userCreates);
+	}
+
+	/**
+	 * A fragment that adds a sign-in mode and its card to a portal it did not create.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function signInChange(): array {
+		return [
+			'changes' => [[
+				'key'      => 'sign-in',
+				'register' => 'site',
+				'schema'   => 'portal',
+				'where'    => ['slug' => 'demo'],
+				'append'   => ['authentication.modes' => 'nextcloud'],
+				'set'      => ['authentication.modeLabels.nextcloud' => ['title' => 'Voorbeeldinwoner', 'who' => '{{cast:sanne.uid}}']],
+			]],
+		];
+	}
+
+	public function testAChangeIsMadeOnceProvedAndRevertedExactly(): void {
+		$this->store->offer(register: 'site', schema: 'portal');
+		$portal = $this->store->seed(register: 'site', schema: 'portal', data: ['slug' => 'demo', 'title' => 'Demo', 'authentication' => ['modes' => ['password']]]);
+		$this->app(app: 'openregister', fragment: $this->castFile());
+		$this->app(app: 'site', fragment: $this->signInChange());
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertTrue($report['ok'], json_encode($report));
+		$this->assertSame(['site/sign-in' => 'created'], $report['changes']);
+		$row = $this->store->get(register: 'site', schema: 'portal', id: $portal);
+		$this->assertSame(['password', 'nextcloud'], $row['authentication']['modes']);
+		$this->assertSame('sanne.devries', $row['authentication']['modeLabels']['nextcloud']['who']);
+
+		$updates = $this->store->updates;
+		$again   = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame(['site/sign-in' => 'kept'], $again['changes']);
+		$this->assertSame($updates, $this->store->updates, 'a second install changes nothing');
+
+		// Somebody renames the portal in the meantime; remove must keep that.
+		$this->store->rows['site portal'][$portal]['title'] = 'Renamed';
+		$removed = $this->remover->remove(set: 'demo');
+
+		$this->assertSame(1, $removed['removed']['changes']);
+		$this->assertSame(
+			['id' => $portal, 'slug' => 'demo', 'title' => 'Renamed', 'authentication' => ['modes' => ['password']]],
+			$this->store->get(register: 'site', schema: 'portal', id: $portal)
+		);
+	}
+
+	public function testAChangeThatIsAlreadyThereIsNotRecordedAndSurvivesRemove(): void {
+		$this->store->offer(register: 'site', schema: 'portal');
+		$portal = $this->store->seed(
+			register: 'site',
+			schema: 'portal',
+			data: ['slug' => 'demo', 'authentication' => ['modes' => ['nextcloud'], 'modeLabels' => ['nextcloud' => ['title' => 'Voorbeeldinwoner', 'who' => 'sanne.devries']]]]
+		);
+		$this->app(app: 'openregister', fragment: $this->castFile());
+		$this->app(app: 'site', fragment: $this->signInChange());
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->remover->remove(set: 'demo');
+
+		$this->assertSame(['site/sign-in' => 'kept'], $report['changes']);
+		$this->assertSame(['nextcloud'], $this->store->get(register: 'site', schema: 'portal', id: $portal)['authentication']['modes']);
+	}
+
+	public function testAChangeWithoutItsObjectRefusesTheCheck(): void {
+		$this->store->offer(register: 'site', schema: 'portal');
+		$this->app(app: 'openregister', fragment: $this->castFile());
+		$this->app(app: 'site', fragment: $this->signInChange());
+
+		$result = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertSame(
+			['site/lib/Settings/example-sets/demo.json: change "sign-in" (site portal): no site portal with {"slug":"demo"} to change'],
+			$result['refusals']
+		);
+	}
+
+	public function testAJsonFieldIsSentAsTextAndProvedAsAList(): void {
+		$this->store->offer(register: 'cases', schema: 'case');
+		$this->app(app: 'openregister', fragment: $this->castFile());
+		$this->app(
+			app: 'cases',
+			fragment: ['objects' => [[
+				'key'        => 'case-1',
+				'register'   => 'cases',
+				'schema'     => 'case',
+				'jsonFields' => ['history'],
+				'data'       => ['history' => [['at' => '{{date:-1}}']]],
+			]]]
+		);
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertTrue($report['ok'], json_encode($report));
+		$this->assertSame('[{"at":"2026-10-12"}]', $this->store->find(register: 'cases', schema: 'case', filters: [])[0]['history']);
+	}
+}
