@@ -244,6 +244,7 @@ class OrganisationSpecialRights {
 		do {
 			$page = $this->organisations->findAll(limit: self::PAGE, offset: $offset);
 			$offset += self::PAGE;
+			$read = count($page);
 			foreach ($page as $organisation) {
 				$answer['organisations']++;
 				if ($this->give(
@@ -258,7 +259,7 @@ class OrganisationSpecialRights {
 				}
 			}
 
-		} while (count($page) === self::PAGE);
+		} while ($read === self::PAGE);
 
 		return $answer;
 	}//end giveInEveryOrganisation()
