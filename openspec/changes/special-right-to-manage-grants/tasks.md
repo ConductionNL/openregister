@@ -4,7 +4,7 @@
 - [x] 1.1 `OrganisationSpecialRights::holdsOn()` reads a special right from the record's organisation, fail closed
 - [x] 1.2 An entry is a group id, or a group narrowed to a register and schemas
 - [x] 1.3 `Organisation::getDefaultAuthorization()` declares `grant_manage` with nobody holding it
-- [x] 1.4 `OrganisationSpecialRights::give()` for code shipped with an app
+- [x] 1.4 `OrganisationSpecialRights::give()` and `giveInEveryOrganisation()` for code shipped with an app
 
 ## 2. Where it is checked
 - [x] 2.1 `ObjectSharingService::listGrants()`, `grant()`, `revoke()`

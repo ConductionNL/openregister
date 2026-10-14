@@ -222,6 +222,27 @@ class OrganisationSpecialRightsTest extends TestCase {
 		$this->assertFalse($this->rights->give('org-1', self::RIGHT, 'svc', 'dossiq', ['reviewBatch']));
 	}//end testGivingWhatIsAlreadyHeldWritesNothing()
 
+	public function testGiveInEveryOrganisationWritesOnlyWhereTheEntryIsMissing(): void {
+		$has = new Organisation();
+		$has->setUuid('org-has');
+		$has->setAuthorization([self::RIGHT => [['group' => 'svc', 'register' => 'dossiq', 'schemas' => ['reviewBatch']]]]);
+		$lacks = new Organisation();
+		$lacks->setUuid('org-lacks');
+		$this->organisations->method('findAll')->willReturn([$has, $lacks]);
+		$this->organisations->method('findByUuid')->willReturnCallback(
+			static fn (string $uuid): Organisation => ['org-has' => $has, 'org-lacks' => $lacks][$uuid]
+		);
+		$this->organisations->expects($this->once())->method('update')->with($lacks)->willReturnArgument(0);
+
+		$answer = $this->rights->giveInEveryOrganisation(self::RIGHT, 'svc', 'dossiq', ['reviewBatch']);
+
+		$this->assertSame(['organisations' => 2, 'changed' => 1], $answer);
+		$this->assertSame(
+			[['group' => 'svc', 'register' => 'dossiq', 'schemas' => ['reviewBatch']]],
+			$lacks->getAuthorization()[self::RIGHT]
+		);
+	}//end testGiveInEveryOrganisationWritesOnlyWhereTheEntryIsMissing()
+
 	public function testANewOrganisationDeclaresTheRightWithNobodyHoldingIt(): void {
 		$this->assertSame([], (new Organisation())->getAuthorization()[self::RIGHT]);
 	}//end testANewOrganisationDeclaresTheRightWithNobodyHoldingIt()

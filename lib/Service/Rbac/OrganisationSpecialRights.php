@@ -82,6 +82,13 @@ class OrganisationSpecialRights {
 	public const GRANT_MANAGE = 'grant_manage';
 
 	/**
+	 * Organisations read per page when giving a right in all of them.
+	 *
+	 * @var int
+	 */
+	private const PAGE = 200;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param OrganisationMapper $organisations Loads the organisation a record belongs to.
@@ -208,6 +215,53 @@ class OrganisationSpecialRights {
 
 		return true;
 	}//end give()
+
+	/**
+	 * Give a group a special right in every organisation of the instance.
+	 *
+	 * The right is read from the organisation a record belongs to, so an app
+	 * whose service identity works on records of every organisation names it in
+	 * each. Run again on every upgrade: an organisation made since is covered
+	 * then, and one that already has the entry is not written.
+	 *
+	 * @param string $right The special right's key.
+	 * @param string $group The group that holds it.
+	 * @param string|null $register The register it is narrowed to, or null for all.
+	 * @param string[]|null $schemas The schemas it is narrowed to, or null for all.
+	 *
+	 * @return array{organisations: int, changed: int} How many organisations were seen and written.
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
+	 */
+	public function giveInEveryOrganisation(
+		string $right,
+		string $group,
+		?string $register = null,
+		?array $schemas = null,
+	): array {
+		$answer = ['organisations' => 0, 'changed' => 0];
+		$offset = 0;
+		do {
+			$page = $this->organisations->findAll(limit: self::PAGE, offset: $offset);
+			$offset += self::PAGE;
+			foreach ($page as $organisation) {
+				$answer['organisations']++;
+				if ($this->give(
+					organisationUuid: (string)$organisation->getUuid(),
+					right: $right,
+					group: $group,
+					register: $register,
+					schemas: $schemas
+				) === true
+				) {
+					$answer['changed']++;
+				}
+			}
+
+		} while (count($page) === self::PAGE);
+
+		return $answer;
+	}//end giveInEveryOrganisation()
 
 	/**
 	 * The organisation a record belongs to, or null when it cannot be found.
