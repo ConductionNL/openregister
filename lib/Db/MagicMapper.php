@@ -65,6 +65,7 @@ use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
+use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Support\QueryLimit;
@@ -8455,7 +8456,7 @@ class MagicMapper extends AbstractObjectMapper {
 		$suppress = $this->suppressLifecycleEvents();
 		foreach ($completed as $item) {
 			if ($suppress === false) {
-				(new \OCA\OpenRegister\Service\Object\ObjectEventGate(events: $this->eventDispatcher))->updated(new: $item['entity'], old: $item['old']);
+				(new ObjectEventGate(events: $this->eventDispatcher))->updated(new: $item['entity'], old: $item['old']);
 			}
 
 			$result[] = $item['entity'];
@@ -10286,7 +10287,7 @@ class MagicMapper extends AbstractObjectMapper {
 			&& ($insertedEntity->isDraft() === true
 			|| $this->dispatchCreatedDeferred(entity: $insertedEntity, register: $register, schema: $schema) === false)
 		) {
-			(new \OCA\OpenRegister\Service\Object\ObjectEventGate(events: $this->eventDispatcher))->created(object: $insertedEntity);
+			(new ObjectEventGate(events: $this->eventDispatcher))->created(object: $insertedEntity);
 		}
 
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:EVENT-DISPATCH');
@@ -10443,7 +10444,7 @@ class MagicMapper extends AbstractObjectMapper {
 			]
 		);
 		if ($this->suppressLifecycleEvents() === false) {
-			(new \OCA\OpenRegister\Service\Object\ObjectEventGate(events: $this->eventDispatcher))->updated(new: $updatedEntity, old: $oldEntity);
+			(new ObjectEventGate(events: $this->eventDispatcher))->updated(new: $updatedEntity, old: $oldEntity);
 		}
 
 		return $updatedEntity;
@@ -10521,7 +10522,7 @@ class MagicMapper extends AbstractObjectMapper {
 			hardDelete: true
 		);
 
-		(new \OCA\OpenRegister\Service\Object\ObjectEventGate(events: $this->eventDispatcher))->deleted(object: $deletedEntity);
+		(new ObjectEventGate(events: $this->eventDispatcher))->deleted(object: $deletedEntity);
 
 		return $deletedEntity;
 	}//end delete()

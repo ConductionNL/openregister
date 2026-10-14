@@ -42,6 +42,7 @@ namespace OCA\OpenRegister\BackgroundJob;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -148,7 +149,7 @@ class DeferredObjectEventJob extends QueuedJob {
 				_multitenancy: false
 			);
 
-			(new \OCA\OpenRegister\Service\Object\ObjectEventGate(events: $this->eventDispatcher))->created(object: $object);
+			(new ObjectEventGate(events: $this->eventDispatcher))->created(object: $object);
 		} catch (Throwable $e) {
 			// The object may legitimately be gone by now — a create followed by
 			// a delete before the queue drained — so this is not an error. It is

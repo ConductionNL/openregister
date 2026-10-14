@@ -52,6 +52,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\DraftFinder;
 use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
+use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -336,7 +337,7 @@ class FormSubmitService {
 
 		$receivedAt = DateTimeImmutable::createFromMutable($this->time->getDateTime());
 		// Creation side effects run now, once (decision 227): the created event, then the receipt.
-		(new \OCA\OpenRegister\Service\Object\ObjectEventGate(events: $this->events))->leftDraft(object: $created[0]['object'], receivedAt: $receivedAt);
+		(new ObjectEventGate(events: $this->events))->leftDraft(object: $created[0]['object'], receivedAt: $receivedAt);
 
 		return [$created, $receivedAt];
 	}//end promoteDraft()

@@ -2029,7 +2029,7 @@ class SaveObjects {
 		// Created objects → ObjectCreatedEvent.
 		foreach ($createdEntities as $entity) {
 			try {
-				(new \OCA\OpenRegister\Service\Object\ObjectEventGate(events: $this->eventDispatcher))->created(object: $entity);
+				(new ObjectEventGate(events: $this->eventDispatcher))->created(object: $entity);
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					message: '[SaveObjects] Failed to dispatch ObjectCreatedEvent for bulk object',
@@ -2043,7 +2043,7 @@ class SaveObjects {
 		foreach ($updatedEntities as $pair) {
 			$entity = $pair['new'];
 			try {
-				(new \OCA\OpenRegister\Service\Object\ObjectEventGate(events: $this->eventDispatcher))->updated(new: $entity, old: ($pair['old'] ?? $entity));
+				(new ObjectEventGate(events: $this->eventDispatcher))->updated(new: $entity, old: ($pair['old'] ?? $entity));
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					message: '[SaveObjects] Failed to dispatch ObjectUpdatedEvent for bulk object',
