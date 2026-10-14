@@ -35,6 +35,8 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\BackgroundJob\AuditTrailExportJob;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Audit\AuditTrailPageService;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCA\OpenRegister\Service\LogService;
@@ -72,6 +74,11 @@ class AuditTrailController extends Controller {
 	 * @param \OCP\IGroupManager $groupManager Group manager for admin / role checks.
 	 * @param ReadableAuditTrailLister $readableLister Lists the trail within one caller's read scope.
 	 * @param AuditTrailPageService $auditPage The audit page's keyset list and export.
+	 * @param ObjectHistoryForReaders $historyForReaders One object's history for a non-admin reader of it.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Ten: the two framework arguments plus one
+	 *     service per audit surface this controller routes (log, mapper, hash chain, session,
+	 *     groups, scoped list, audit page, object history). Each is already a delegate.
 	 */
 	public function __construct(
 		string $appName,
@@ -83,6 +90,7 @@ class AuditTrailController extends Controller {
 		private readonly \OCP\IGroupManager $groupManager,
 		private readonly ReadableAuditTrailLister $readableLister,
 		private readonly AuditTrailPageService $auditPage,
+		private readonly ObjectHistoryForReaders $historyForReaders,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -550,11 +558,16 @@ class AuditTrailController extends Controller {
 	/**
 	 * Get logs for an object
 	 *
-	 * Admin-only at the framework level (no @NoAdminRequired): a per-object
-	 * audit trail records actor UID, IP address and per-field diffs. Returning
-	 * it for an arbitrary object id leaks cross-tenant PII (wave-3 C7), so it
-	 * stays admin-only like index()/show()/export(). Body `requireAdmin()` is
-	 * defence-in-depth.
+	 * The history of an object is readable by whoever may read that object
+	 * (decision 14 Oct 2026), and by nobody else. An administrator reads it as
+	 * before. Any other caller goes through ObjectHistoryForReaders, which asks
+	 * the object read path itself whether this caller may read the object
+	 * (RBAC, multitenancy, drafts, deleted objects), answers 404 when the object
+	 * GET would, runs the same doelbinding guard, withholds `session`, `request`
+	 * and `ipAddress`, and removes from each entry's `changed` the properties
+	 * the caller may not see on the object. That per-object read check is what
+	 * closes the wave-3 C7 IDOR now, instead of the admin gate: an arbitrary
+	 * object id answers 404 unless its object is readable to the caller.
 	 *
 	 * @param string $register The register identifier
 	 * @param string $schema The schema identifier
@@ -562,20 +575,33 @@ class AuditTrailController extends Controller {
 	 *
 	 * @return JSONResponse JSON response containing audit trails for specific object
 	 *
+	 * @NoAdminRequired
 	 * @NoCSRFRequired
+	 * @no-admin-idor-exempt Guarded in-body: a non-admin is answered only through
+	 *     ObjectHistoryForReaders::page(), which resolves the object with ObjectReadAccess::readable()
+	 *     (ObjectService::find with _rbac and _multitenancy on, as the object GET) for the SESSION's
+	 *     user and returns null, answered 404, when that read is refused.
 	 *
-	 * @psalm-return JSONResponse<200|400|404,
+	 * @psalm-return JSONResponse<200|400|401|403|404,
 	 *     array{error?: string,
-	 *     results?: array<\OCA\OpenRegister\Db\AuditTrail>,
+	 *     results?: array<array|\OCA\OpenRegister\Db\AuditTrail>,
 	 *     total?: int<0, max>, page?: int|null, pages?: float, limit?: int,
 	 *     offset?: int|null}, array<never, never>>
 	 *
 	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
 	 */
 	public function objects(string $register, string $schema, string $id): JSONResponse {
-		$denial = $this->requireAdmin();
-		if ($denial !== null) {
-			return $denial;
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(
+				data: ['error' => 'Authentication required'],
+				statusCode: 401
+			);
+		}
+
+		if ($this->groupManager->isAdmin($user->getUID()) === false) {
+			return $this->objectsForReader(register: $register, schema: $schema, id: $id);
 		}
 
 		// Extract common parameters.
@@ -617,6 +643,39 @@ class AuditTrailController extends Controller {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		}//end try
 	}//end objects()
+
+	/**
+	 * One object's history for a non-admin, when they may read the object.
+	 *
+	 * @param string $register The register identifier
+	 * @param string $schema The schema identifier
+	 * @param string $id The object ID
+	 *
+	 * @return JSONResponse 200 with the filtered page, 404 when the object is not readable
+	 *     to this caller, or the doelbinding refusal.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
+	 */
+	private function objectsForReader(string $register, string $schema, string $id): JSONResponse {
+		try {
+			$page = $this->historyForReaders->page(
+				register: $register,
+				schema: $schema,
+				id: $id,
+				params: $this->extractRequestParameters()
+			);
+		} catch (PurposeRefusedException $refusal) {
+			return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
+		}
+
+		if ($page === null) {
+			// The answer the object GET gives a caller who may not read the
+			// object, so this route does not confirm that it exists.
+			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		}
+
+		return new JSONResponse(data: $page);
+	}//end objectsForReader()
 
 	/**
 	 * Export audit trail logs in specified format
