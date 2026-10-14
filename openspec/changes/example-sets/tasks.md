@@ -25,6 +25,8 @@
 - [x] 1.21 The check lets a `user` format accept the set's own cast and service account uids (scoped to the set's validation), and still refuses any other unknown uid (REQ-EXS-004, found by the first live check)
 - [x] 1.22 `{{register:<slug>}}` and `{{schema:<register>/<schema>}}` fill numeric ids, looked up after required registers are imported (REQ-EXS-021, found by the first live install)
 - [x] 1.23 Remove deletes the set's own archival objects through the system path (never a held one), deletes attached files by their node, and names the reason for everything that stays (REQ-EXS-022, found by the first live remove)
+- [x] 1.24 A kept object resolves its `{{object:}}` and `{{lookup:}}` fields again and writes only what differs, recorded as the change `<app>/<key>#references` (REQ-EXS-023, found after a partial remove on :8080)
+- [x] 1.25 `userPreferences`: own app only, only for accounts the set created or adopted, never an administrator or a secret, old value recorded and restored while it is still the set's (REQ-EXS-024, asked by dossiq #3896 for the demo staff's tour state)
 
 ## 2. Data
 
@@ -44,6 +46,8 @@
 - [x] 3.8 Live-check regressions through the installer (`ExampleSetLiveCheckTest`), the store's hand-over to the validator (`ExampleSetStoreTest`) and the real validator (`ValidateObjectPlannedUsersTest`)
 - [x] 3.9 Register and schema ids (`ExampleSetRegisterIdsTest`, `ExampleSetStoreTest`)
 - [x] 3.10 Remove from occ: files by node, archival and held objects, reasons in the output (`ExampleSetRemoveLiveTest`, `ExampleSetStoreTest`)
+- [x] 3.11 Partial remove then reinstall: kept publications follow the theme written again, a further install writes nothing, remove is whole (`ExampleSetReferencesTest`)
+- [x] 3.12 User preferences written, kept, restored, left when changed, and refused for a foreign account, an administrator and a secret (`ExampleSetUserPreferencesTest`)
 - [x] 3.6 Required registers imported once and removed only when imported; admin refused; changes made, proved and reverted exactly; JSON text fields
 
 ## 4. Verification
