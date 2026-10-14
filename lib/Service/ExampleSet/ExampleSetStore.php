@@ -38,6 +38,9 @@ use Throwable;
 /**
  * Register access for the example-set loader.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The one adapter between the loader and ObjectService/ValidateObject:
+ *                                                   every OpenRegister failure becomes a refusal or a reason here.
+ *
  * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
  */
 class ExampleSetStore {
@@ -255,35 +258,65 @@ class ExampleSetStore {
 	}//end update()
 
 	/**
-	 * Delete one row; true when it is gone.
+	 * Delete one row the set's install record lists; '' when it is gone, otherwise why not.
+	 *
+	 * Removing an example set is an administrative act on data the set itself
+	 * wrote, not a user deleting a record. So a row of a schema that declares
+	 * `x-openregister-archival` is deleted through the system path the
+	 * retention sweep uses (`_retentionSweep: true`), and, as on that path, a
+	 * row under an active legal hold is never deleted. The remover is the only
+	 * caller, and only with ids from the install record.
 	 *
 	 * @param string $register The register slug.
 	 * @param string $schema   The schema slug.
-	 * @param string $id       The row's id.
+	 * @param string $id       The row's id, as the install record holds it.
 	 *
-	 * @return bool
+	 * @return string '' when the row is gone; otherwise the reason it stays.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
-	public function delete(string $register, string $schema, string $id): bool {
+	public function deleteRecorded(string $register, string $schema, string $id): string {
 		$service = $this->objectService();
-		if ($service === null || $id === '') {
-			return false;
+		if ($service === null) {
+			return 'OpenRegister\'s object service is not available';
 		}
 
-		if ($this->get(register: $register, schema: $schema, id: $id) === null) {
-			return true;
+		// A row that cannot be found is gone, as the record's other steps read it.
+		try {
+			$row = $service->find(id: $id, register: $register, schema: $schema, _rbac: false, _multitenancy: false);
+		} catch (Throwable) {
+			$row = null;
+		}
+
+		if ($row?->hasActiveLegalHold() === true) {
+			return 'it is under an active legal hold';
+		}
+
+		if ($row === null) {
+			return '';
 		}
 
 		try {
-			$deleted = $service->deleteObject(uuid: $id, register: $register, schema: $schema, _rbac: false, _multitenancy: false);
+			$deleted = $service->deleteObject(
+				uuid: $id,
+				register: $register,
+				schema: $schema,
+				_rbac: false,
+				_multitenancy: false,
+				_retentionSweep: true
+			);
 		} catch (Throwable $e) {
-			$this->logger->warning('OpenRegister: example set delete failed', ['schema' => $schema, 'reason' => $e->getMessage()]);
-			return false;
+			$this->logger->warning('OpenRegister: example set delete failed', ['schema' => $schema, 'id' => $id, 'reason' => $e->getMessage()]);
+			return $e->getMessage();
 		}
 
-		return $deleted !== false;
-	}//end delete()
+		if ($deleted === false) {
+			return 'OpenRegister did not delete it';
+		}
+
+		return '';
+	}//end deleteRecorded()
 
 	/**
 	 * The id OpenRegister gave a row, wherever it put it.

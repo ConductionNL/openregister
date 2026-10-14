@@ -221,14 +221,25 @@ class FakeExampleSetStore extends ExampleSetStore {
 		return '';
 	}
 
-	public function delete(string $register, string $schema, string $id): bool {
+	/** @var array<int, string> Ids under an active legal hold. */
+	public array $held = [];
+
+	/**
+	 * As the real store: '' when gone, otherwise why not; a held row stays.
+	 * The archival system path itself is tested on the real store.
+	 */
+	public function deleteRecorded(string $register, string $schema, string $id): string {
 		if (in_array($id, $this->undeletable, true) === true) {
-			return false;
+			return 'the register refused it';
+		}
+
+		if (in_array($id, $this->held, true) === true) {
+			return 'it is under an active legal hold';
 		}
 
 		unset($this->rows[$register.' '.$schema][$id]);
 
-		return true;
+		return '';
 	}
 
 	/**

@@ -72,6 +72,7 @@ class ExampleSetRemover {
 	 *         not be removed (still in the record).
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
 	public function remove(string $set): array {
 		$record = $this->record->read(set: $set);
@@ -93,12 +94,14 @@ class ExampleSetRemover {
 		];
 
 		foreach (array_reverse($record['objects'], true) as $name => $held) {
-			if ($this->deleteFiles(set: $set, name: $name, record: $record, report: $report) === false) {
+			if ($this->deleteFiles(set: $set, name: $name, objectId: (string) $held['id'], record: $record, report: $report) === false) {
+				$report['failed'][] = $held['register'].' '.$held['schema'].' '.$name.' ('.$held['id'].'): a file of it stays';
 				continue;
 			}
 
-			if ($this->store->delete(register: $held['register'], schema: $held['schema'], id: $held['id']) === false) {
-				$report['failed'][] = $held['register'].' '.$held['schema'].' '.$name.' ('.$held['id'].')';
+			$why = $this->store->deleteRecorded(register: $held['register'], schema: $held['schema'], id: $held['id']);
+			if ($why !== '') {
+				$report['failed'][] = $held['register'].' '.$held['schema'].' '.$name.' ('.$held['id'].'): '.$why;
 				continue;
 			}
 
@@ -194,18 +197,24 @@ class ExampleSetRemover {
 	/**
 	 * Delete the files the set attached to one object; false when one stays.
 	 *
-	 * @param string               $set    The set id.
-	 * @param string               $name   The object's record key.
-	 * @param array<string, mixed> $record The record; loses the deleted files.
-	 * @param array<string, mixed> $report The report; counts and failures are added.
+	 * Every file that stays is named in the report with the reason.
+	 *
+	 * @param string               $set      The set id.
+	 * @param string               $name     The object's record key.
+	 * @param string               $objectId The object's id.
+	 * @param array<string, mixed> $record   The record; loses the deleted files.
+	 * @param array<string, mixed> $report   The report; counts and failures are added.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-what-the-set-wrote-even-in-an-archival-schema-and-says-why-anything-stays-req-exs-022
 	 */
-	private function deleteFiles(string $set, string $name, array &$record, array &$report): bool {
+	private function deleteFiles(string $set, string $name, string $objectId, array &$record, array &$report): bool {
 		$left = [];
 		foreach (($record['files'][$name] ?? []) as $file) {
-			if ($this->files->delete(fileId: (string) $file['id']) === false) {
-				$report['failed'][] = 'file '.$file['name'].' on '.$name;
+			$why = $this->files->delete(fileId: (string) $file['id'], name: (string) $file['name'], objectId: $objectId);
+			if ($why !== '') {
+				$report['failed'][] = 'file '.$file['name'].' on '.$name.': '.$why;
 				$left[]             = $file;
 				continue;
 			}

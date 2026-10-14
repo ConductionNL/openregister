@@ -209,7 +209,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 
 		$report = $this->remover->remove(set: 'demo');
 
-		$this->assertSame(['brp person openregister/brp-sanne ('.$stuck.')'], $report['failed']);
+		$this->assertSame(['brp person openregister/brp-sanne ('.$stuck.'): the register refused it'], $report['failed']);
 		$this->assertSame(['openregister/brp-sanne'], array_keys($this->record->read(set: 'demo')['objects']));
 	}
 }
