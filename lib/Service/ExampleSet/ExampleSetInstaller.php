@@ -292,7 +292,15 @@ class ExampleSetInstaller {
 			$kept = $this->kept(record: $record, app: $fragment['app'], key: $object['key']);
 			if ($kept !== null) {
 				$report['types'][$type]['kept']++;
-				$objects[$object['key']] = $kept;
+				$objects[$object['key']] = $this->refreshReferences(
+					plan: $plan,
+					fragment: $fragment,
+					object: $object,
+					row: $kept,
+					context: (['objects' => $objects] + $base),
+					report: $report,
+					record: $record
+				);
 				continue;
 			}
 
@@ -328,6 +336,91 @@ class ExampleSetInstaller {
 
 		return $this->installAppConfig(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 	}//end installFragment()
+
+	/**
+	 * Point a kept object at the objects its declaration references now.
+	 *
+	 * An object from an earlier run is kept, but an object it references may
+	 * have been removed and written again with a new id since (a partial
+	 * remove). Every top-level field whose declared value holds an
+	 * `{{object:}}` or `{{lookup:}}` placeholder is resolved again; a field
+	 * that differs from what is stored is written, recorded as the change
+	 * `<app>/<key>#references`, so the proof checks it and remove stays exact.
+	 * The first recorded old value of a field is kept over later refreshes.
+	 *
+	 * @param array<string, mixed> $plan     The plan.
+	 * @param array<string, mixed> $fragment The fragment.
+	 * @param array<string, mixed> $object   The declared object.
+	 * @param array<string, mixed> $row      The object as stored.
+	 * @param array<string, mixed> $context  The context its placeholders draw on.
+	 * @param array<string, mixed> $report   The report; gains the outcome under `changes`.
+	 * @param array<string, mixed> $record   The record; gains the refresh.
+	 *
+	 * @return array<string, mixed> The object as stored after the refresh.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 */
+	private function refreshReferences(array $plan, array $fragment, array $object, array $row, array $context, array &$report, array &$record): array {
+		$fields = $this->referenceFields(object: $object);
+		if ($fields === []) {
+			return $row;
+		}
+
+		$name     = $fragment['app'].'/'.$object['key'].'#references';
+		$resolved = $this->resolve(object: $object, context: $context, planned: []);
+		if ($resolved['refusal'] !== '') {
+			$report['dropped'][]      = $fragment['file'].': object "'.$object['key'].'": its references cannot be refreshed: '.$resolved['refusal'];
+			$report['changes'][$name] = 'failed';
+			return $row;
+		}
+
+		$made = $this->changes->refresh(object: $object, row: $row, values: array_intersect_key($resolved['data'], array_flip($fields)));
+		if ($made['error'] !== '') {
+			$report['dropped'][]      = $fragment['file'].': object "'.$object['key'].'": its references cannot be refreshed: '.$made['error'];
+			$report['changes'][$name] = 'failed';
+			return $row;
+		}
+
+		if ($made['entry'] === null) {
+			return $row;
+		}
+
+		$entry = $made['entry'];
+		foreach ((array) ($record['changes'][$name]['set'] ?? []) as $earlier) {
+			foreach ($entry['set'] as $index => $set) {
+				if ($set['path'] === $earlier['path']) {
+					$entry['set'][$index] = array_merge($set, ['had' => $earlier['had'], 'old' => $earlier['old'], 'from' => $earlier['from']]);
+				}
+			}
+		}
+
+		$record['changes'][$name] = $entry;
+		$report['changes'][$name] = 'refreshed';
+		$this->record->write(set: (string) $plan['set'], record: $record);
+
+		return ($this->store->get(register: $object['register'], schema: $object['schema'], id: (string) $entry['id']) ?? $row);
+	}//end refreshReferences()
+
+	/**
+	 * The top-level fields of an object whose declared value references another object.
+	 *
+	 * @param array<string, mixed> $object The declared object.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 */
+	private function referenceFields(array $object): array {
+		$fields = [];
+		foreach ((array) ($object['data'] ?? []) as $field => $value) {
+			$text = (string) json_encode($value, (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+			if (str_contains((string) $field, '.') === false && preg_match('/\{\{\s*(object|lookup):/', $text) === 1) {
+				$fields[] = (string) $field;
+			}
+		}
+
+		return $fields;
+	}//end referenceFields()
 
 	/**
 	 * Make the changes of one fragment that the record does not hold.

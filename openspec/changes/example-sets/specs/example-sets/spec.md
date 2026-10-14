@@ -307,3 +307,17 @@ Removing an example set is an administrative act on data the set itself wrote, n
 - **WHEN** the set is removed
 - **THEN** the output SHALL name the file, its object and the reason, the object SHALL stay because of it, and both SHALL stay in the record for the next remove
 
+
+### Requirement: A kept object follows the objects it references (REQ-EXS-023)
+
+When an install keeps an object an earlier run wrote, it SHALL resolve again every top-level field whose declared value holds an `{{object:}}` or `{{lookup:}}` placeholder and SHALL write only a field whose stored value differs, so a reinstall after a partial remove does not leave a kept object pointing at an object that was deleted and written again. The write SHALL be recorded as the change `<app>/<key>#references` with the value it replaced (the first replaced value is kept over later refreshes), the install SHALL prove it like any change (REQ-EXS-011), and remove SHALL stay exact. A kept object whose references already hold their values SHALL not be written.
+
+#### Scenario: A kept publication follows its theme
+- **GIVEN** a set whose publication references a theme by `{{object:theme-1.id}}` and another by a lookup, and a remove that deleted the theme but could not delete the publications
+- **WHEN** the set is installed again
+- **THEN** the theme SHALL be written with a new id, the publications SHALL be kept and point at the new theme, and the refresh SHALL be recorded with the old id
+
+#### Scenario: A refreshed set installs again without writes
+- **GIVEN** a set whose references were refreshed
+- **WHEN** it is installed again and then removed
+- **THEN** the second install SHALL write nothing, and remove SHALL leave none of the set's objects and no record

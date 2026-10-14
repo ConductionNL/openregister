@@ -175,6 +175,36 @@ class ExampleSetChanges {
 	}//end apply()
 
 	/**
+	 * Bring top-level fields of an object the set wrote earlier to the values its declaration resolves to now.
+	 *
+	 * Made like a change, so only a field that differs is written, its old
+	 * value is recorded, the install proves it and remove can put it back.
+	 *
+	 * @param array<string, mixed> $object The declared object (`register`, `schema`, `jsonFields`).
+	 * @param array<string, mixed> $row    The object as stored.
+	 * @param array<string, mixed> $values The resolved values, by top-level field.
+	 *
+	 * @return array{error: string, entry: array<string, mixed>|null} The record entry (null when every field
+	 *                                                                 already holds its value), or why the write failed.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 */
+	public function refresh(array $object, array $row, array $values): array {
+		$change = ['register' => (string) $object['register'], 'schema' => (string) $object['schema'], 'jsonFields' => $this->jsonFields(change: $object)];
+		$row    = $this->paths->withJsonDecoded(row: $row, fields: $change['jsonFields']);
+
+		return $this->apply(
+			change: $change,
+			resolved: [
+				'row'    => $row,
+				'merged' => $this->paths->withJsonText(row: array_merge($row, $values), fields: $change['jsonFields']),
+				'set'    => $values,
+				'append' => [],
+			]
+		);
+	}//end refresh()
+
+	/**
 	 * The paths of a made change that the stored object does not hold.
 	 *
 	 * @param array<string, mixed> $entry A record entry from apply().
