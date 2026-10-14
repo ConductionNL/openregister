@@ -76,6 +76,15 @@ A refusal SHALL change nothing and SHALL answer `{ message, reason, findings }` 
 - **WHEN** the caller activates either
 - **THEN** both answer 404 with `reason` `not-found`
 
+#### Scenario: The register of another organisation does not hide the owner's draft
+@e2e exclude unit; ObjectDraftControllerTest covers the lookup with mappers that answer as the real ones do, the Newman collection openregister-draft-activation runs after openregister-crud has switched multitenancy on
+
+- **GIVEN** multitenancy is on, and an administrator made the register and the schema in their organisation
+- **AND** a user of another organisation made a draft in them, which they can read
+- **WHEN** that user activates it
+- **THEN** the register and the schema are found as the object API finds them, and the draft's own read decides
+- **AND** the answer is not 404
+
 #### Scenario: A scope-value owner activates its own draft
 @e2e exclude unit; DraftActivationTest covers the scope-value owner and its control
 

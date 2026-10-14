@@ -54,6 +54,9 @@
 - [x] 3.9 `ObjectService::saveObject()`: a save under RBAC cannot write over a draft its caller cannot read (found live: PATCH and a POST naming the id changed another user's draft)
   - Spec ref: specs/form-destination/spec.md, "A draft MUST NOT be changed by somebody who cannot read it"
   - Test: ObjectServiceDraftWriteTest (each refusal with its controls), DraftStatusPolicyTest::testADraftIsKeptFromEverybodyButItsOwner, the Newman collection's colleague steps
+- [x] 3.10 `ObjectDraftController`: the register and the schema are looked up past the organisation filter, as `ObjectService::setRegister()` does (found in CI: the owner's activation answered 404 once openregister-crud had switched multitenancy on)
+  - Spec ref: specs/form-destination/spec.md, scenario "The register of another organisation does not hide the owner's draft"
+  - Test: ObjectDraftControllerTest::testTheRegisterOfAnotherOrganisationIsFound
 
 ## 4. Lists
 
