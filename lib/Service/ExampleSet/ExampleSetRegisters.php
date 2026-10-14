@@ -102,7 +102,11 @@ class ExampleSetRegisters {
 	public function import(string $slug): array {
 		try {
 			$before = $this->jobIds();
-			$result = $this->container->get(RegisterDescriptorService::class)->reimport(appId: self::APP, slug: $slug);
+			$result = $this->container->get(RegisterDescriptorService::class)->reimport(
+				appId: self::APP,
+				slug: $slug,
+				via: 'example set install'
+			);
 			$after  = $this->jobIds();
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'jobs' => []];

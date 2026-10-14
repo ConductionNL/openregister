@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
 use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
 use OCP\IUser;
@@ -57,11 +58,12 @@ class ShippedConfigurationGuardTest extends TestCase {
 	 * A guard over an in-memory baseline store.
 	 *
 	 * @param array<string, mixed>|null $baseline The stored baseline definition, or null for none.
-	 * @param IUserSession|null         $session  The session.
+	 * @param IUserSession|null                 $session  The session.
+	 * @param ShippedAuthorizationDecision|null $decision The administrator's decision, when one is in effect.
 	 *
 	 * @return ShippedConfigurationGuard The guard.
 	 */
-	private function guard(?array $baseline, ?IUserSession $session = null): ShippedConfigurationGuard {
+	private function guard(?array $baseline, ?IUserSession $session = null, ?ShippedAuthorizationDecision $decision = null): ShippedConfigurationGuard {
 		$store = $this->createMock(ShippedBaselineStore::class);
 		$store->method('schemaSubject')->willReturnCallback(
 			static fn (string $slug): string => ('schema:' . $slug)
@@ -102,7 +104,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 
 		return new ShippedConfigurationGuard(
 			baselines: $store,
-			merge: new GuardedDescriptorMerge(parts: $parts, comparator: $comparator),
+			merge: new GuardedDescriptorMerge(parts: $parts, comparator: $comparator, decision: $decision),
 			comparator: $comparator,
 			audit: $audit,
 			session: $session,
@@ -529,4 +531,51 @@ class ShippedConfigurationGuardTest extends TestCase {
 
 		$this->assertSame([['subject' => 'schema:zaak', 'definition' => $incoming]], $this->recorded);
 	}//end testByDefaultTheBaselineIsStillRecorded()
+
+	/**
+	 * 🔴 `occ ... --import` IS THE DECISION REQ-LCA-003 WAITS FOR.
+	 *
+	 * Under the administrator's re-import the file's authorization block is
+	 * written whole over the one the instance changed, and the replacement is
+	 * on the audit trail with what decided it. Outside it, the same import
+	 * keeps the instance's block and reports the conflict.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testAnAdministratorsReimportTakesTheShippedAuthorization(): void {
+		$baseline = ['authorization' => ['read' => ['authenticated']]];
+		$live = ['authorization' => ['read' => ['authenticated'], 'export' => ['authenticated']]];
+		$incoming = ['authorization' => ['read' => ['portaliq-medewerkers'], 'export' => ['portaliq-medewerkers']]];
+
+		$unattended = $this->guard(baseline: $baseline)->guardSchemaUpdate(
+			slug: 'portalAccount',
+			live: $live,
+			incoming: $incoming,
+			app: 'portaliq',
+			appVersion: '0.97.0'
+		);
+		$this->assertEquals($live['authorization'], $unattended['definition']['authorization']);
+		$this->assertSame([], $this->actions);
+
+		$decision = new ShippedAuthorizationDecision();
+		$guard    = $this->guard(baseline: $baseline, decision: $decision);
+		$decided  = $decision->run(
+			via: 'occ openregister:descriptors:list --import',
+			operation: static fn (): array => $guard->guardSchemaUpdate(
+				slug: 'portalAccount',
+				live: $live,
+				incoming: $incoming,
+				app: 'portaliq',
+				appVersion: '0.97.0'
+			)
+		);
+
+		$this->assertEquals($incoming['authorization'], $decided['definition']['authorization']);
+		$this->assertSame([], $decided['conflicts']);
+		$this->assertSame([ShippedConfigurationGuard::ACTION_DECIDED], $this->actions);
+		$this->assertSame([['schema' => 'portalAccount', 'path' => 'authorization']], $decision->replaced());
+		$this->assertNull($decision->via(), 'the decision ends with the operation');
+	}//end testAnAdministratorsReimportTakesTheShippedAuthorization()
 }//end class
