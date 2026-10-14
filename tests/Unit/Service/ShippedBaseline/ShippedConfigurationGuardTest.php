@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
 use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
 use OCP\IUser;
@@ -529,4 +530,50 @@ class ShippedConfigurationGuardTest extends TestCase {
 
 		$this->assertSame([['subject' => 'schema:zaak', 'definition' => $incoming]], $this->recorded);
 	}//end testByDefaultTheBaselineIsStillRecorded()
+
+	/**
+	 * 🔴 `occ ... --import` IS THE DECISION REQ-LCA-003 WAITS FOR.
+	 *
+	 * Under the administrator's re-import the file's authorization block is
+	 * written whole over the one the instance changed, and the replacement is
+	 * on the audit trail with what decided it. Outside it, the same import
+	 * keeps the instance's block and reports the conflict.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testAnAdministratorsReimportTakesTheShippedAuthorization(): void {
+		$baseline = ['authorization' => ['read' => ['authenticated']]];
+		$live = ['authorization' => ['read' => ['authenticated'], 'export' => ['authenticated']]];
+		$incoming = ['authorization' => ['read' => ['portaliq-medewerkers'], 'export' => ['portaliq-medewerkers']]];
+
+		$unattended = $this->guard(baseline: $baseline)->guardSchemaUpdate(
+			slug: 'portalAccount',
+			live: $live,
+			incoming: $incoming,
+			app: 'portaliq',
+			appVersion: '0.97.0'
+		);
+		$this->assertEquals($live['authorization'], $unattended['definition']['authorization']);
+		$this->assertSame([], $this->actions);
+
+		$guard = $this->guard(baseline: $baseline);
+		$decided = ShippedAuthorizationDecision::run(
+			via: 'occ openregister:descriptors:list --import',
+			operation: static fn (): array => $guard->guardSchemaUpdate(
+				slug: 'portalAccount',
+				live: $live,
+				incoming: $incoming,
+				app: 'portaliq',
+				appVersion: '0.97.0'
+			)
+		);
+
+		$this->assertEquals($incoming['authorization'], $decided['definition']['authorization']);
+		$this->assertSame([], $decided['conflicts']);
+		$this->assertSame([ShippedConfigurationGuard::ACTION_DECIDED], $this->actions);
+		$this->assertSame([['schema' => 'portalAccount', 'path' => 'authorization']], ShippedAuthorizationDecision::replaced());
+		$this->assertNull(ShippedAuthorizationDecision::via(), 'the decision ends with the operation');
+	}//end testAnAdministratorsReimportTakesTheShippedAuthorization()
 }//end class

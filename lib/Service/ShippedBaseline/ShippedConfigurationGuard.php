@@ -154,12 +154,31 @@ class ShippedConfigurationGuard {
 				];
 			}
 
+			// An administrator's re-import is the explicit decision REQ-LCA-003
+			// waits for, for every authorization block this schema carries.
+			$explicit = $decisions;
+			$via = ShippedAuthorizationDecision::via();
+			if ($via !== null) {
+				$decisions = array_values(
+					array_unique(
+						array_merge($decisions, GuardedDescriptorMerge::authorizationRoots($live, $incoming))
+					)
+				);
+			}
+
 			$result = $this->merge->merge(
 				baseline: $baseline['definition'],
 				live: $live,
 				incoming: $incoming,
 				decisions: $decisions
 			);
+
+			foreach (($result['replacedLocal'] ?? []) as $root) {
+				$this->recordDecision(slug: $slug, path: (string)$root, app: $app, via: (string)$via);
+				ShippedAuthorizationDecision::noteReplaced(slug: $slug, root: (string)$root);
+			}
+
+			$decisions = $explicit;
 
 			if ($record === true) {
 				$this->baselines->record(
@@ -497,19 +516,22 @@ class ShippedConfigurationGuard {
 	 * @param string $slug The schema slug.
 	 * @param string $path The part.
 	 * @param string $app  The app.
+	 * @param string $via  What decided it, when not the acting user alone (an occ re-import).
 	 *
 	 * @return void
 	 */
-	private function recordDecision(string $slug, string $path, string $app): void {
-		$this->record(
-			action: self::ACTION_DECIDED,
-			changed: [
-				'schema' => $slug,
-				'path' => $path,
-				'app' => $app,
-				'decision' => 'accept-shipped',
-			]
-		);
+	private function recordDecision(string $slug, string $path, string $app, string $via = ''): void {
+		$changed = [
+			'schema' => $slug,
+			'path' => $path,
+			'app' => $app,
+			'decision' => 'accept-shipped',
+		];
+		if ($via !== '') {
+			$changed['via'] = $via;
+		}
+
+		$this->record(action: self::ACTION_DECIDED, changed: $changed);
 	}//end recordDecision()
 
 	/**

@@ -65,6 +65,17 @@ class GuardedDescriptorMerge {
 	/**
 	 * What to write, what was applied, what was preserved and what conflicts.
 	 *
+	 * 🔴 AN AUTHORIZATION BLOCK SETTLES AS ONE PART. The schema-level
+	 * `authorization` and each property's `authorization` are access policies,
+	 * and a policy is only meaningful whole. Merged per action key, the portaliq
+	 * 0.97.0 upgrade took `read: [portaliq-medewerkers]` from the app and kept
+	 * `export: [authenticated]` from the instance: a policy NEITHER side wrote,
+	 * under which an account that may not read a record may still export it.
+	 * So every key under one block takes the same side: the app's whole block
+	 * when only the app moved it, the instance's whole block when only the
+	 * instance did, and one conflict on the block's root path when both did or
+	 * when they moved different keys. A decision names that root path.
+	 *
 	 * @param array<string, mixed> $baseline  The definition the app shipped.
 	 * @param array<string, mixed> $live      The definition the instance runs.
 	 * @param array<string, mixed> $incoming  The definition the app now ships.
@@ -75,10 +86,13 @@ class GuardedDescriptorMerge {
 	 *     applied: array<int, string>,
 	 *     preserved: array<int, string>,
 	 *     conflicts: array<int, array{path: string, shipped: mixed, live: mixed}>,
-	 *     baseline: array<string, mixed>
-	 * } The result.
+	 *     baseline: array<string, mixed>,
+	 *     replacedLocal: array<int, string>
+	 * } The result. `replacedLocal` names the authorization blocks a decision
+	 *   took from upstream over a value the instance had changed.
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
 	public function merge(array $baseline, array $live, array $incoming, array $decisions = []): array {
 		$states = $this->comparator->states(baseline: $baseline, live: $live, incoming: $incoming);
@@ -99,17 +113,27 @@ class GuardedDescriptorMerge {
 
 		$missing = $this->missingProperties(sources: $sources);
 
-		foreach ($states as $path => $state) {
-			$decided = in_array($path, $decisions, true);
-
-			// A shipped property the instance does not hold AT ALL never reached
-			// it (an earlier import whose write did not land it); it was not
-			// deleted here. Read as a local deletion it was kept absent, and
-			// reported as a conflict wherever the app also changed it, on every
-			// upgrade (learniq D11). It is taken from upstream.
+		// A shipped property the instance does not hold AT ALL never reached
+		// it (an earlier import whose write did not land it); it was not
+		// deleted here. Read as a local deletion it was kept absent, and
+		// reported as a conflict wherever the app also changed it, on every
+		// upgrade (learniq D11). It is taken from upstream.
+		foreach (array_keys($states) as $path) {
 			if (in_array($this->propertyOf(path: (string)$path), $missing, true) === true) {
-				$state = DivergenceComparator::UPSTREAM;
+				$states[$path] = DivergenceComparator::UPSTREAM;
 			}
+		}
+
+		$blocks = $this->settleAuthorizationBlocks(states: $states, decisions: $decisions);
+
+		foreach ($states as $path => $state) {
+			$root = self::authorizationRootOf(path: (string)$path);
+			if ($root !== null && isset($blocks[$root]) === true) {
+				$this->foldBlockMember(acc: $acc, path: (string)$path, block: $blocks[$root], sources: $sources);
+				continue;
+			}
+
+			$decided = in_array($path, $decisions, true);
 
 			// A decided conflict is taken from upstream, and is the only way a
 			// conflicting part moves. The decision is the caller's; recording
@@ -129,14 +153,206 @@ class GuardedDescriptorMerge {
 			);
 		}//end foreach
 
+		$replacedLocal = [];
+		foreach ($blocks as $root => $block) {
+			if ($block['decided'] === true) {
+				$acc['applied'][] = $root;
+				if ($block['localMoved'] === true) {
+					$replacedLocal[] = $root;
+				}
+			}
+
+			if ($block['state'] === DivergenceComparator::BOTH) {
+				$acc['conflicts'][] = [
+					'path' => $root,
+					'shipped' => $this->subtree(parts: $sources['incoming'], root: $root),
+					'live' => $this->subtree(parts: $sources['live'], root: $root),
+					'shippedPresent' => ($this->subtree(parts: $sources['incoming'], root: $root) !== null),
+					'livePresent' => ($this->subtree(parts: $sources['live'], root: $root) !== null),
+				];
+			}
+		}
+
 		return [
 			'merged' => $this->parts->unflatten(parts: $acc['mergedParts']),
 			'applied' => $acc['applied'],
 			'preserved' => $acc['preserved'],
 			'conflicts' => $acc['conflicts'],
 			'baseline' => $this->parts->unflatten(parts: $acc['nextBaseline']),
+			'replacedLocal' => $replacedLocal,
 		];
 	}//end merge()
+
+	/**
+	 * The authorization block a flattened path belongs to, or null.
+	 *
+	 * Two kinds of block: the schema's own `authorization`, and the
+	 * `authorization` of one property (`properties.<name>.authorization`).
+	 *
+	 * @param string $path A flattened path.
+	 *
+	 * @return string|null The block's root path, or null when the path is in no block.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public static function authorizationRootOf(string $path): ?string {
+		$segments = explode(DescriptorParts::SEPARATOR, $path);
+		if ($segments[0] === 'authorization') {
+			return 'authorization';
+		}
+
+		if ($segments[0] === 'properties' && isset($segments[2]) === true && $segments[2] === 'authorization') {
+			return 'properties' . DescriptorParts::SEPARATOR . $segments[1] . DescriptorParts::SEPARATOR . 'authorization';
+		}
+
+		return null;
+	}//end authorizationRootOf()
+
+	/**
+	 * Every authorization block root any of the given definitions carries.
+	 *
+	 * @param array<string, mixed> ...$definitions Schema definitions (properties, required, authorization).
+	 *
+	 * @return array<int, string> The block roots, unique.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public static function authorizationRoots(array ...$definitions): array {
+		$roots = [];
+		foreach ($definitions as $definition) {
+			if (array_key_exists('authorization', $definition) === true) {
+				$roots['authorization'] = true;
+			}
+
+			$properties = ($definition['properties'] ?? []);
+			if (is_array($properties) === false) {
+				continue;
+			}
+
+			foreach ($properties as $name => $property) {
+				if (is_array($property) === true && array_key_exists('authorization', $property) === true) {
+					$roots['properties' . DescriptorParts::SEPARATOR . $name . DescriptorParts::SEPARATOR . 'authorization'] = true;
+				}
+			}
+		}
+
+		return array_keys($roots);
+	}//end authorizationRoots()
+
+	/**
+	 * Settle each authorization block to ONE state for all of its keys.
+	 *
+	 * @param array<string, string> $states    Path to state, after the missing-property rule.
+	 * @param array<int, string>    $decisions Paths an administrator decided to take from upstream.
+	 *
+	 * @return array<string, array{state: string, decided: bool, localMoved: bool}> Block root to its settlement;
+	 *         a block in which nothing moved is left out, so its keys fold as before.
+	 */
+	private function settleAuthorizationBlocks(array $states, array $decisions): array {
+		$members = [];
+		foreach ($states as $path => $state) {
+			$root = self::authorizationRootOf(path: (string)$path);
+			if ($root !== null) {
+				$members[$root][] = $state;
+			}
+		}
+
+		$blocks = [];
+		foreach ($members as $root => $memberStates) {
+			$both = in_array(DivergenceComparator::BOTH, $memberStates, true);
+			$local = ($both === true || in_array(DivergenceComparator::LOCAL, $memberStates, true) === true);
+			$upstream = ($both === true || in_array(DivergenceComparator::UPSTREAM, $memberStates, true) === true);
+
+			if ($local === false && $upstream === false) {
+				continue;
+			}
+
+			// Default-then-override, the shape phpcs and phpmd both accept.
+			$state = DivergenceComparator::UPSTREAM;
+			if ($local === true) {
+				$state = DivergenceComparator::LOCAL;
+			}
+
+			if ($local === true && $upstream === true) {
+				$state = DivergenceComparator::BOTH;
+			}
+
+			$decided = in_array($root, $decisions, true);
+			if ($decided === true) {
+				$state = DivergenceComparator::UPSTREAM;
+			}
+
+			$blocks[$root] = ['state' => $state, 'decided' => $decided, 'localMoved' => $local];
+		}//end foreach
+
+		return $blocks;
+	}//end settleAuthorizationBlocks()
+
+	/**
+	 * Fold one key of a settled authorization block.
+	 *
+	 * The conflict itself is reported once, on the block root, by merge().
+	 *
+	 * @param array<string, array>                     $acc     The accumulator.
+	 * @param string                                   $path    The key.
+	 * @param array{state: string, decided: bool, localMoved: bool} $block The block's settlement.
+	 * @param array<string, array<string|int, mixed>>  $sources The flattened definitions.
+	 *
+	 * @return void
+	 */
+	private function foldBlockMember(array &$acc, string $path, array $block, array $sources): void {
+		if ($block['state'] === DivergenceComparator::UPSTREAM) {
+			$this->foldUpstream(acc: $acc, path: $path, decided: true, sources: $sources);
+			if ($block['decided'] === false) {
+				$acc['applied'][] = $path;
+			}
+
+			return;
+		}
+
+		if ($block['state'] === DivergenceComparator::LOCAL) {
+			$this->foldLocal(acc: $acc, path: $path, sources: $sources);
+			return;
+		}
+
+		// BOTH: the instance's block stands whole, the baseline stays where it
+		// was so the conflict is found again on the next import.
+		if (array_key_exists($path, $sources['live']) === true) {
+			$acc['mergedParts'][$path] = $sources['live'][$path];
+		}
+
+		if (array_key_exists($path, $sources['baseline']) === true) {
+			$acc['nextBaseline'][$path] = $sources['baseline'][$path];
+		}
+	}//end foldBlockMember()
+
+	/**
+	 * One block, re-assembled from flattened parts.
+	 *
+	 * @param array<string|int, mixed> $parts The flattened definition.
+	 * @param string                   $root  The block root path.
+	 *
+	 * @return mixed The block, or null when the definition does not carry it.
+	 */
+	private function subtree(array $parts, string $root): mixed {
+		$picked = [];
+		foreach ($parts as $path => $value) {
+			if ((string)$path === $root || str_starts_with((string)$path, $root . DescriptorParts::SEPARATOR) === true) {
+				$picked[$path] = $value;
+			}
+		}
+
+		if ($picked === []) {
+			return null;
+		}
+
+		$tree = $this->parts->unflatten(parts: $picked);
+		foreach (explode(DescriptorParts::SEPARATOR, $root) as $segment) {
+			$tree = ($tree[$segment] ?? null);
+		}
+
+		return $tree;
+	}//end subtree()
 
 	/**
 	 * The shipped properties the instance holds no part of.

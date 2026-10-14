@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
+use OCA\OpenRegister\Service\AppRegisterImportRunner;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -78,13 +79,23 @@ class DescriptorListCommand extends Command {
 				name: 'import',
 				shortcut: null,
 				mode: InputOption::VALUE_REQUIRED,
-				description: 'Re-import one register by slug (forced), instead of listing. Requires --app.'
+				description: 'Re-import the app\'s REAL register configuration (lib/Settings/<app>_register.json plus register.d), forced, '
+					.'the same import an install or upgrade runs. The slug must be a register that configuration declares. '
+					.'Each schema\'s authorization becomes the file\'s, also where it was changed on this instance; '
+					.'every such replacement is counted and recorded on the audit trail. Requires --app.'
+			)
+			->addOption(
+				name: 'mock',
+				shortcut: null,
+				mode: InputOption::VALUE_NONE,
+				description: 'With --import: import the app\'s SAMPLE descriptor (x-openregister.type: mock, demo objects) instead of its real configuration. '
+					.'A mock declares the real register\'s slug, so the register takes the mock\'s version.'
 			)
 			->addOption(
 				name: 'app',
 				shortcut: null,
 				mode: InputOption::VALUE_REQUIRED,
-				description: 'The app that ships the descriptor named by --import.'
+				description: 'The app whose configuration --import re-imports.'
 			);
 	}//end configure()
 
@@ -146,22 +157,111 @@ class DescriptorListCommand extends Command {
 	}//end execute()
 
 	/**
-	 * Force a re-import of one register and report what happened.
+	 * Force a re-import and report what happened.
 	 *
 	 * @param InputInterface  $input  Console input.
 	 * @param OutputInterface $output Console output.
-	 * @param string          $slug   The register slug to re-import.
+	 * @param string          $slug   The register slug named by --import.
 	 *
 	 * @return int 0 when imported, 1 when it failed.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
 	private function runImport(InputInterface $input, OutputInterface $output, string $slug): int {
 		$appId = $input->getOption('app');
 		if ($appId === null) {
-			$output->writeln('<error>--import requires --app naming the app that ships the descriptor.</error>');
+			$output->writeln('<error>--import requires --app naming the app whose configuration to re-import.</error>');
 			return 1;
 		}
 
+		if ($input->getOption('mock') === true) {
+			return $this->runMockImport(output: $output, appId: (string)$appId, slug: $slug);
+		}
+
 		$result = $this->descriptors->reimport(appId: (string)$appId, slug: $slug);
+		if (isset($result['counts']) === true) {
+			$this->writeRealCounts(output: $output, appId: (string)$appId, result: $result);
+		}
+
+		if ($result['outcome'] === 'failed') {
+			$output->writeln('<error>' . $result['reason'] . '</error>');
+			return 1;
+		}
+
+		return 0;
+	}//end runImport()
+
+	/**
+	 * Report what the real re-import changed.
+	 *
+	 * 🔴 THE COUNTS, ALWAYS, AND OF WHAT CHANGED. The first version of this
+	 * command printed "164 of 186 demo object(s) imported" for what an
+	 * operator had asked to be a register re-import. A register re-import is
+	 * reported in registers and schemas, created, updated and unchanged.
+	 *
+	 * @param OutputInterface      $output Console output.
+	 * @param string               $appId  The app.
+	 * @param array<string, mixed> $result What reimport() returned.
+	 *
+	 * @return void
+	 */
+	private function writeRealCounts(OutputInterface $output, string $appId, array $result): void {
+		$counts = $result['counts'];
+		$output->writeln(
+			sprintf(
+				'<info>%s: register configuration v%s re-imported through %s.</info>',
+				$appId,
+				$result['version'],
+				$result['via']
+			)
+		);
+
+		foreach (['registers', 'schemas'] as $kind) {
+			$output->writeln(
+				sprintf(
+					'  %s: %d updated, %d created, %d unchanged',
+					$kind,
+					$counts[$kind]['updated'],
+					$counts[$kind]['created'],
+					$counts[$kind]['unchanged']
+				)
+			);
+		}
+
+		$output->writeln(
+			sprintf(
+				'  authorization taken from the file over a change made on this instance: %d block(s)',
+				$counts['authorizationReplaced']
+			)
+		);
+		foreach ($result['replaced'] as $replaced) {
+			$output->writeln(sprintf('    %s: %s', $replaced['schema'], $replaced['path']));
+		}
+
+		if ($result['path'] === AppRegisterImportRunner::PATH_OPENREGISTER) {
+			$output->writeln(
+				sprintf(
+					'<comment>  %s has no forced import entry point in its SettingsService, '
+					.'so OpenRegister imported the file and %d register.d fragment(s) itself. '
+					.'The app\'s own post-import steps did not run.</comment>',
+					$appId,
+					$result['fragments']
+				)
+			);
+		}
+	}//end writeRealCounts()
+
+	/**
+	 * Import an app's sample (mock) descriptor and report the demo objects.
+	 *
+	 * @param OutputInterface $output Console output.
+	 * @param string          $appId  The app.
+	 * @param string          $slug   The register slug the mock declares.
+	 *
+	 * @return int 0 when imported, 1 when it failed.
+	 */
+	private function runMockImport(OutputInterface $output, string $appId, string $slug): int {
+		$result = $this->descriptors->reimportMock(appId: $appId, slug: $slug);
 		if ($result['outcome'] === 'failed') {
 			$output->writeln('<error>' . $result['reason'] . '</error>');
 			return 1;
@@ -175,10 +275,9 @@ class DescriptorListCommand extends Command {
 		if (is_array($counts) === true && $counts['declared'] > 0) {
 			$output->writeln(
 				sprintf(
-					'<info>%s: register "%s" %s — %d of %d demo object(s) imported, %d skipped.</info>',
+					'<info>%s: sample data for register "%s" imported: %d of %d demo object(s), %d skipped.</info>',
 					$appId,
 					$slug,
-					$result['outcome'],
 					$counts['imported'],
 					$counts['declared'],
 					$counts['skipped']
@@ -188,10 +287,10 @@ class DescriptorListCommand extends Command {
 			return 0;
 		}
 
-		$output->writeln(sprintf('<info>%s: register "%s" %s.</info>', $appId, $slug, $result['outcome']));
+		$output->writeln(sprintf('<info>%s: sample descriptor for register "%s" %s.</info>', $appId, $slug, $result['outcome']));
 
 		return 0;
-	}//end runImport()
+	}//end runMockImport()
 
 	/**
 	 * Format one inventory row.
