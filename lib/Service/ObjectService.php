@@ -92,6 +92,7 @@ use OCA\OpenRegister\Service\Object\RepeatingGroupValidator;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ReadOnlyTypeException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
@@ -2341,7 +2342,7 @@ class ObjectService implements ObjectServiceInterface
             userId: $this->userSession->getUser()?->getUID()
         );
         if ($kept === true) {
-            throw new \OCA\OpenRegister\Exception\NotAuthorizedException(message: 'Only the person who started this draft can change it.');
+            throw new NotAuthorizedException(message: 'Only the person who started this draft can change it.');
         }
     }//end refuseSomebodyElsesDraft()
 
