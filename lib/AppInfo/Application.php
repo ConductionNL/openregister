@@ -295,6 +295,7 @@ use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
 use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCA\OpenRegister\Service\TalkLinkService;
@@ -1498,6 +1499,18 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		// The administrator's decision to take shipped authorization MUST be
+		// shared: the re-import opens it (CountedRegisterImport) and the guard
+		// deep in the import stack reads it, also when the import runs through
+		// another app's SettingsService. Two instances would let the re-import
+		// report a decision the guard never saw.
+		$context->registerService(
+			ShippedAuthorizationDecision::class,
+			static function () {
+				return new ShippedAuthorizationDecision();
+			}
+		);
+
 		$context->registerService(
 			ShippedConfigurationGuard::class,
 			function (ContainerInterface $container) {
@@ -1508,7 +1521,8 @@ class Application extends App implements IBootstrap {
 					baselines: $container->get(ShippedBaselineStore::class),
 					merge: new GuardedDescriptorMerge(
 						parts: $parts,
-						comparator: $comparator
+						comparator: $comparator,
+						decision: $container->get(ShippedAuthorizationDecision::class)
 					),
 					comparator: $comparator,
 					audit: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
