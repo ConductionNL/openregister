@@ -21,6 +21,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Portal;
 
 use OCA\OpenRegister\Exception\PortalSubjectException;
 use OCA\OpenRegister\Service\Portal\PortalSubjectAssertion;
+use OCP\IAppConfig;
 use OCP\IConfig;
 use OCP\IRequest;
 use PHPUnit\Framework\TestCase;
@@ -50,9 +51,9 @@ class PortalSubjectAssertionTest extends TestCase {
 	 * @return PortalSubjectAssertion The verifier.
 	 */
 	private function verifier(string $own = '', string $portaliq = self::SECRET): PortalSubjectAssertion {
-		$config = $this->createMock(IConfig::class);
-		$config->method('getAppValue')->willReturnCallback(
-			static function (string $app, string $key, string $default = '') use ($own, $portaliq): string {
+		$config = $this->createMock(IAppConfig::class);
+		$config->method('getValueString')->willReturnCallback(
+			static function (string $app, string $key, string $default = '', bool $lazy = false) use ($own, $portaliq): string {
 				if ($app === 'openregister' && $key === 'portal_assertion_secret') {
 					return $own;
 				}
@@ -118,6 +119,28 @@ class PortalSubjectAssertionTest extends TestCase {
 		$this->assertSame('sess-1', $subject->jti);
 		$this->assertSame('party:sub-1', $subject->partyReference());
 	}//end testAValidAssertionResolvesTheSubject()
+
+	/**
+	 * REGRESSION (13-14 Oct 2026, 401 on every portal action): portaliq stores
+	 * its secret SENSITIVE, so the legacy `IConfig::getAppValue()` returns the
+	 * encrypted value and only `IAppConfig::getValueString()` returns the real
+	 * secret. The mock answers both ways, so a legacy read fails here.
+	 *
+	 * @return void
+	 */
+	public function testPortaliqsSensitiveSecretIsReadDecrypted(): void {
+		$ciphertext = '$AppConfigEncryption$' . str_repeat('a1b2c3d4e5f6', 22);
+		$config = $this->createMockForIntersectionOfInterfaces([IConfig::class, IAppConfig::class]);
+		$config->method('getAppValue')->willReturnCallback(
+			static fn (string $app, string $key, string $default = ''): string => ($app === 'portaliq') ? $ciphertext : $default
+		);
+		$config->method('getValueString')->willReturnCallback(
+			static fn (string $app, string $key, string $default = '', bool $lazy = false): string => ($app === 'portaliq' && $key === 'jwt_signing_secret') ? self::SECRET : $default
+		);
+
+		$subject = (new PortalSubjectAssertion(config: $config))->resolve(request: $this->request($this->token()));
+		$this->assertSame('sub-1', $subject->subjectRef);
+	}//end testPortaliqsSensitiveSecretIsReadDecrypted()
 
 	/**
 	 * OpenRegister's own secret wins over portaliq's when both are set.
