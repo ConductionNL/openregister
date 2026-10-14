@@ -73,6 +73,8 @@ class ReconcileMagicTablesCommand extends Command {
 	 * Configure the command name, description and options.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:tables:reconcile')
