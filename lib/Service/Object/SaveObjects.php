@@ -813,6 +813,28 @@ class SaveObjects {
 				continue;
 			}
 
+			// Step 2b: a draft is kept to its owner. The existing row was found
+			// past the read RBAC, so without this a user who cannot read another
+			// user's draft could overwrite it by sending its uuid. The answer is
+			// the one a refused permission gives, so the draft's existence stays
+			// unannounced (same rule as ObjectService::refuseSomebodyElsesDraft).
+			if ($effectiveRbac === true && $existingEntity !== null) {
+				$draftKept = (new DraftStatusPolicy())->keptFrom(
+					object: $existingEntity,
+					schema: $rowSchema,
+					userId: $currentUser?->getUID()
+				);
+				if ($draftKept === true) {
+					$this->recordSafeguardRejection(
+						object: $sanitised,
+						reason: 'Permission denied for action ' . $action . ' on schema ' . $rowSchema->getSlug(),
+						result: $result,
+						index: $rowIndex
+					);
+					continue;
+				}
+			}
+
 			// Step 3: PermissionHandler check (per row).
 			if ($effectiveRbac === true) {
 				$hasPermission = $this->permissionHandler->hasPermission(

@@ -326,6 +326,70 @@ class Wave12BulkSafeguardsTest extends TestCase {
 		$this->assertStringContainsString('appendOnly', $result['invalid'][0]['error']);
 	}//end testBulkUpdateRowAgainstAppendOnlySchemaIsRejected()
 
+	// === draft ownership ===
+
+	/**
+	 * Bulk save of the uuid of somebody else's draft (schema without draftsVisible) is rejected as a denied permission.
+	 */
+	public function testBulkSaveOverSomebodyElsesDraftIsRejected(): void {
+		$this->mockUser('bob', isAdmin: false);
+		$schema = $this->newSchema(1);
+		$register = $this->newRegister(10);
+		// The permission handler would allow it: the hole is that it has no draft rule.
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(1);
+		$passed = $this->callApplyBulkSafeguards(
+			objects: [['@self' => ['uuid' => '22222222-2222-2222-2222-222222222222'], 'title' => 'overwritten']],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertSame([], $passed);
+		$this->assertSame(1, $result['statistics']['invalid']);
+		$this->assertStringContainsString('Permission denied', $result['invalid'][0]['error']);
+	}//end testBulkSaveOverSomebodyElsesDraftIsRejected()
+
+	/**
+	 * The owner's own bulk save of their draft still goes through.
+	 */
+	public function testBulkSaveOverYourOwnDraftPasses(): void {
+		$this->mockUser('alice', isAdmin: false);
+		$schema = $this->newSchema(1);
+		$register = $this->newRegister(10);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(1);
+		$passed = $this->callApplyBulkSafeguards(
+			objects: [['@self' => ['uuid' => '22222222-2222-2222-2222-222222222222'], 'title' => 'mine']],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertCount(1, $passed);
+		$this->assertSame(0, $result['statistics']['invalid']);
+	}//end testBulkSaveOverYourOwnDraftPasses()
+
+	/**
+	 * Store a draft of the given owner as the existing row of uuid 2222….
+	 */
+	private function storeDraft(string $owner): void {
+		$draft = new \OCA\OpenRegister\Db\ObjectEntity();
+		$draft->setUuid('22222222-2222-2222-2222-222222222222');
+		$draft->setStatus('draft');
+		$draft->setOwner($owner);
+		$this->objectMapper->method('find')->willReturn($draft);
+		$this->objectMapper->method('findObjectsByUuidsInRegisterSchema')->willReturn(['22222222-2222-2222-2222-222222222222' => $draft]);
+	}//end storeDraft()
+
 	public function testBulkCreateAgainstAppendOnlySchemaIsAllowed(): void {
 		// appendOnly blocks UPDATE only; INSERT must still succeed.
 		$this->mockUser('alice', isAdmin: false);
