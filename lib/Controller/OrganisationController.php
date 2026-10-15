@@ -714,13 +714,15 @@ class OrganisationController extends Controller {
 			$data = $this->extractRequestData();
 
 			// A member may edit the organisation; only its owner or an administrator
-			// may decide who manages the grants on its records.
-			if ($this->changesGrantManage(organisation: $organisation, data: $data) === true
+			// may change who holds one of its special rights (decisions 238, 239).
+			$changedRights = $this->changedSpecialRights(organisation: $organisation, data: $data);
+			if ($changedRights !== []
 				&& $this->organisationService->isOrganisationAdmin($uuid) === false
 			) {
 				return new JSONResponse(
 					data: [
-						'error' => 'Only an administrator or the owner of this organisation may change the special right grant_manage',
+						'error' => 'Only an administrator or the owner of this organisation may change its special rights',
+						'rights' => $changedRights,
 					],
 					statusCode: Http::STATUS_FORBIDDEN
 				);
@@ -1078,29 +1080,43 @@ class OrganisationController extends Controller {
 	}//end applySimpleFieldUpdates()
 
 	/**
-	 * Whether a request would change who holds the special right `grant_manage`.
+	 * The special rights a request would change who holds.
 	 *
 	 * The stored block is replaced as a whole, so a request that carries an
-	 * authorization block without the key takes the right away, and that counts.
+	 * authorization block without a key changes that right too: it falls back
+	 * to the right's default, `*` for the rights that are open by default and
+	 * nobody for `grant_manage`. Both sides are read with that default, so a
+	 * block that leaves out a key the organisation never set is no change.
 	 *
-	 * @param object $organisation Organisation entity.
+	 * @param Organisation $organisation Organisation entity.
 	 * @param array<string, mixed> $data Request data.
 	 *
-	 * @return bool True when the request names a different list than the stored one.
+	 * @return string[] The keys of the rights whose list would differ, empty when none.
 	 *
-	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
+	 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
 	 */
-	private function changesGrantManage(object $organisation, array $data): bool {
+	private function changedSpecialRights(Organisation $organisation, array $data): array {
 		if (is_array($data['authorization'] ?? null) === false) {
-			return false;
+			return [];
 		}
 
-		$key = OrganisationSpecialRights::GRANT_MANAGE;
-		$stored = ($organisation->getAuthorization()[$key] ?? []);
-		$wanted = ($data['authorization'][$key] ?? []);
+		$stored = $organisation->getAuthorization();
+		$changed = [];
+		foreach (OrganisationSpecialRights::ALL as $key) {
+			$default = [];
+			if (in_array(needle: $key, haystack: OrganisationSpecialRights::OPEN_BY_DEFAULT, strict: true) === true) {
+				$default = [OrganisationSpecialRights::EVERYONE];
+			}
 
-		return $wanted !== $stored;
-	}//end changesGrantManage()
+			$before = ($stored[$key] ?? $default);
+			$after = ($data['authorization'][$key] ?? $default);
+			if ($after !== $before) {
+				$changed[] = $key;
+			}
+		}
+
+		return $changed;
+	}//end changedSpecialRights()
 
 	/**
 	 * Apply array field updates

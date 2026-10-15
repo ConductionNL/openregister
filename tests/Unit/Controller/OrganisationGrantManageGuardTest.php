@@ -105,7 +105,7 @@ class OrganisationGrantManageGuardTest extends TestCase {
 		return [
 			'adding their own group' => [['grant_manage' => ['records-service', 'my-team']]],
 			'taking it away' => [['grant_manage' => []]],
-			'leaving the key out, which would drop it' => [['object_publish' => ['editors']]],
+			'leaving the key out, which would drop it' => [['object_publish' => []]],
 			'widening a narrowed entry' => [['grant_manage' => [['group' => 'records-service']]]],
 		];
 	}//end changes()
@@ -113,13 +113,17 @@ class OrganisationGrantManageGuardTest extends TestCase {
 	public function testAMemberStillEditsTheRestOfTheBlock(): void {
 		$this->organisationService->method('isOrganisationAdmin')->willReturn(false);
 		$this->request->method('getParams')->willReturn(
-			['authorization' => ['grant_manage' => ['records-service'], 'object_publish' => ['editors']]]
+			['authorization' => [
+				'grant_manage' => ['records-service'],
+				'object_publish' => [],
+				'object' => ['read' => ['editors']],
+			]]
 		);
 
 		$response = $this->controller->update('org-1');
 
 		$this->assertNotSame(403, $response->getStatus());
-		$this->assertSame(['editors'], $this->organisation->getAuthorization()['object_publish']);
+		$this->assertSame(['read' => ['editors']], $this->organisation->getAuthorization()['object']);
 	}//end testAMemberStillEditsTheRestOfTheBlock()
 
 	public function testTheOwnerOrAnAdministratorChangesWhoHoldsTheRight(): void {

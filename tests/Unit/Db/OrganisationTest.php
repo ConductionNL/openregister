@@ -426,11 +426,12 @@ class OrganisationTest extends TestCase {
 			$this->assertSame([], $auth[$entity]['delete']);
 		}
 
-		// Special permissions
-		$this->assertSame([], $auth['object_publish']);
-		$this->assertSame([], $auth['agent_use']);
-		$this->assertSame([], $auth['dashboard_view']);
-		$this->assertSame([], $auth['llm_use']);
+		// Special rights: open to every signed-in user until narrowed, except grant_manage (decision 239).
+		$this->assertSame(['*'], $auth['object_publish']);
+		$this->assertSame(['*'], $auth['agent_use']);
+		$this->assertSame(['*'], $auth['dashboard_view']);
+		$this->assertSame(['*'], $auth['llm_use']);
+		$this->assertSame([], $auth['grant_manage']);
 	}
 
 	public function testSetAuthorizationArray(): void {

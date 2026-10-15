@@ -1,4 +1,5 @@
 <script setup>
+import { getCurrentUser as getNextcloudUser } from '@nextcloud/auth'
 import { translatePlural as n, translate as t } from '@nextcloud/l10n'
 import { navigationStore, organisationStore } from '../../store/store.js'
 </script>
@@ -417,6 +418,16 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 													)
 												}}
 											</p>
+											<p
+												v-if="!canEditSpecialRights"
+												class="rbac-description special-rights-locked">
+												{{
+													t(
+														'openregister',
+														'Only an administrator or the owner of this organisation can change its special rights.',
+													)
+												}}
+											</p>
 
 											<table
 												class="rbac-table special-rights-table">
@@ -471,10 +482,13 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 																"
 																inputLabel="Selected Special Rights Object Publish"
 																:options="
-																	filteredAvailableGroups
+																	specialRightOptions
 																"
 																label="name"
 																trackBy="id"
+																:disabled="
+																	!canEditSpecialRights
+																"
 																:multiple="true"
 																:placeholder="
 																	t(
@@ -512,10 +526,13 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 																"
 																inputLabel="Selected Special Rights Agent Use"
 																:options="
-																	filteredAvailableGroups
+																	specialRightOptions
 																"
 																label="name"
 																trackBy="id"
+																:disabled="
+																	!canEditSpecialRights
+																"
 																:multiple="true"
 																:placeholder="
 																	t(
@@ -553,10 +570,13 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 																"
 																inputLabel="Selected Special Rights Dashboard View"
 																:options="
-																	filteredAvailableGroups
+																	specialRightOptions
 																"
 																label="name"
 																trackBy="id"
+																:disabled="
+																	!canEditSpecialRights
+																"
 																:multiple="true"
 																:placeholder="
 																	t(
@@ -594,10 +614,13 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 																"
 																inputLabel="Selected Special Rights Llm Use"
 																:options="
-																	filteredAvailableGroups
+																	specialRightOptions
 																"
 																label="name"
 																trackBy="id"
+																:disabled="
+																	!canEditSpecialRights
+																"
 																:multiple="true"
 																:placeholder="
 																	t(
@@ -773,6 +796,37 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Whether the signed-in user may change this organisation's special rights.
+		 *
+		 * An administrator or the organisation's owner may; so may whoever creates
+		 * a new organisation, who becomes its owner. The server refuses anybody
+		 * else with a 403, so this only spares them a save that cannot succeed.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+		 */
+		canEditSpecialRights() {
+			if (!this.organisationItem.uuid) {
+				return true
+			}
+			const user = getNextcloudUser()
+			if (!user) {
+				return false
+			}
+			return user.isAdmin === true || user.uid === this.organisationItem.owner
+		},
+
+		/**
+		 * The choices under a special right: every signed-in user, then the groups.
+		 *
+		 * @return {Array}
+		 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+		 */
+		specialRightOptions() {
+			return [this.everyoneOption(), ...this.filteredAvailableGroups]
+		},
+
 		/**
 		 * @spec exclude Computed byte-to-MB conversion of the storage quota for display; UI presentation helper.
 		 */
@@ -1396,6 +1450,16 @@ export default {
 		},
 
 		/**
+		 * The entry `*`, which gives a special right to every signed-in user.
+		 *
+		 * @return {{id: string, name: string}}
+		 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+		 */
+		everyoneOption() {
+			return { id: '*', name: t('openregister', 'Everyone') }
+		},
+
+		/**
 		 * Update special right
 		 *
 		 * @param {string} right - The special right (object_publish, agent_use, dashboard_view, llm_use)
@@ -1439,6 +1503,9 @@ export default {
 					// Map group IDs to group objects
 					this.selectedSpecialRights[right] = auth[right]
 						.map((groupId) => {
+							if (groupId === '*') {
+								return this.everyoneOption()
+							}
 							const group = this.availableGroups.find(
 								(g) => g.id === groupId,
 							)

@@ -372,32 +372,52 @@ Each entity type has four standard CRUD permissions:
 
 ### Special Rights
 
-Beyond CRUD operations, special rights grant additional capabilities:
+Beyond CRUD operations, special rights grant additional capabilities. Each is a
+list of Nextcloud group ids. `*` gives the right to every signed-in user (not
+accepted under `grant_manage`). An administrator always holds every right. Only
+an administrator or the organisation's owner may change who holds one: the API
+answers anybody else with 403, and the editor's Special Rights tab is read-only
+for them.
 
-| Right | Description | Common Groups |
-|-------|-------------|---------------|
-| **object_publish** | Publish objects to make them publicly available | 'publisher', 'editor', 'admin' |
-| **agent_use** | Use AI agents for processing and analysis | 'ai-user', 'developer', 'admin' |
-| **dashboard_view** | Access organisation dashboard and analytics | 'manager', 'admin', 'analyst' |
-| **llm_use** | Use Large Language Model features | 'ai-user', 'researcher', 'admin' |
-| **grant_manage** | List, add and remove the grants on records the holder does not own, and name their owning group. Enforced. An entry can be narrowed to a register and schemas. Only an administrator or the organisation's owner assigns it. | a service account's group |
+| Right | What it guards | Read from | Default |
+|-------|----------------|-----------|---------|
+| **agent_use** | Running an agent: a chat message in a conversation with an agent (`POST /api/chat/send`, `POST /api/chat/stream`), and an MCP session that declares an agent (`initialize`, `tools/list`, `tools/call`). Enforced. | The agent's organisation | `["*"]` |
+| **llm_use** | Having a language model called on your behalf: every chat message (`POST /api/chat/send`, `POST /api/chat/stream`), including the title and summary calls it makes. Enforced. | The conversation's organisation | `["*"]` |
+| **object_publish** | Not enforced yet. Objects no longer have a publish action (publication moved to RBAC rules with `$now`), so it is an open question what this right should guard. | | `["*"]` |
+| **dashboard_view** | Not enforced yet. The dashboard API (`/api/dashboard/*`) is administrator only, so this right cannot widen or narrow it today. | | `["*"]` |
+| **grant_manage** | List, add and remove the grants on records the holder does not own, and name their owning group. Enforced. An entry can be narrowed to a register and schemas. | The record's organisation | `[]` |
+
+When the organisation an agent or conversation belongs to is not set, the
+instance's default organisation is read. When there is no default organisation
+either, nothing could have narrowed the right and it holds. A key the
+organisation does not carry at all holds for everybody, except `grant_manage`.
+
+**Upgrade.** Before this was enforced, every signed-in user could run agents and
+use the language model, whatever the lists said (new organisations got `[]`,
+most others `["admin"]`). On upgrade the repair step
+`OpenSpecialRightsToEveryone` adds `*` to the four open-by-default lists in
+every organisation, once, so nobody is refused. To narrow a right, take `*` out
+of its list in the Special Rights tab. A narrowed right is not reopened by a
+later upgrade.
 
 ### Permission Check Example
 
+A special right is read through `OrganisationSpecialRights`
+(`lib/Service/Rbac/OrganisationSpecialRights.php`):
+
 ```php
-// Quick authorization check using singular entity names
-$canCreateRegister = $organisationService->hasPermission(
-    $organisation,
-    'register',  // Entity type (singular)
-    'create',    // Action
-    $userId
+// May this user use something guarded by agent_use or llm_use?
+$mayChat = $specialRights->mayUse(
+    right: OrganisationSpecialRights::LLM_USE,
+    userId: $userId,
+    organisationUuid: $conversation->getOrganisation()
 );
 
-// Check special right
-$canPublish = $organisationService->hasSpecialRight(
-    $organisation,
-    'object_publish',
-    $userId
+// Does this user hold grant_manage on this record?
+$mayManageGrants = $specialRights->holdsOn(
+    right: OrganisationSpecialRights::GRANT_MANAGE,
+    userGroups: $userGroups,
+    object: $record
 );
 ```
 
