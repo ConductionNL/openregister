@@ -43,7 +43,7 @@ with an `error` frame of code `forbidden` naming the right.
 
 ### Requirement: How a right a caller uses is read (REQ-OSR-003)
 
-For `object_publish`, `agent_use`, `dashboard_view` and `llm_use`:
+For `agent_use` and `llm_use`:
 
 - A Nextcloud administrator MUST always hold the right.
 - The right MUST be read from the organisation the used thing belongs to. When
@@ -56,8 +56,8 @@ For `object_publish`, `agent_use`, `dashboard_view` and `llm_use`:
   administrators. A value that is not a list MUST refuse.
 - `*` MUST NOT be honoured under `grant_manage`, and `grant_manage` MUST NOT
   be answered by this rule.
-- A new organisation MUST start with `["*"]` under the four, and `[]` under
-  `grant_manage`.
+- A new organisation MUST start with `["*"]` under `agent_use` and `llm_use`,
+  and `[]` under `grant_manage`.
 
 #### Scenario: An administrator is never refused
 - **GIVEN** `llm_use` is `[]` in the conversation's organisation
@@ -71,9 +71,9 @@ For `object_publish`, `agent_use`, `dashboard_view` and `llm_use`:
 
 ### Requirement: The upgrade that starts enforcing refuses nobody (REQ-OSR-004)
 
-On upgrade, a repair step MUST add `*` to `object_publish`, `agent_use`,
-`dashboard_view` and `llm_use` in every organisation, keeping the groups
-already listed, and MUST NOT change `grant_manage`. It MUST run once, so a `*`
+On upgrade, a repair step MUST add `*` to `agent_use` and `llm_use` in every
+organisation, keeping the groups already listed, and MUST NOT change
+`grant_manage` or a retired right. It MUST run once, so a `*`
 an administrator removes afterwards stays removed. A failure MUST NOT abort the
 upgrade and MUST leave the step to run again on the next upgrade.
 
@@ -89,11 +89,34 @@ upgrade and MUST leave the step to run again on the next upgrade.
 - **WHEN** a later upgrade runs
 - **THEN** `llm_use` stays `["ai-users"]`
 
+### Requirement: object_publish and dashboard_view are retired (REQ-OSR-006)
+
+`object_publish` and `dashboard_view` MUST NOT be special rights. They MUST NOT
+be in a new organisation's authorization block, in the organisation editor or
+in what the upgrade writes, and no code path MUST read them. An organisation
+whose stored block still carries them MUST load and be served unchanged.
+
+#### Scenario: An organisation saved before the retirement still loads
+- **GIVEN** an organisation whose stored block holds `object_publish: ["*"]` and `dashboard_view: ["*"]`
+- **WHEN** it is loaded, and a member saves it with those keys left out
+- **THEN** it loads, the save is not refused, and `llm_use` is answered as before
+
+### Requirement: Search does not need llm_use (REQ-OSR-007)
+
+A semantic or hybrid search, which embeds the caller's query with an embedding
+model, MUST NOT require `llm_use` (decision 249). `llm_use` guards calls to a
+language model on the caller's behalf, which happen only in chat.
+
+#### Scenario: A user without llm_use searches
+- **GIVEN** `llm_use` lists `ai-users` and a user in group `staff` only
+- **WHEN** that user runs a semantic search
+- **THEN** the search answers as it did before this change
+
 ### Requirement: Only an administrator or the owner changes special rights (REQ-OSR-005)
 
 `PUT` and `PATCH /api/organisations/{uuid}` MUST refuse, with status 403 and
 the keys it would change, a request that would change who holds
-`object_publish`, `agent_use`, `dashboard_view`, `llm_use` or `grant_manage`,
+`agent_use`, `llm_use` or `grant_manage`,
 unless the caller is an administrator or the organisation's owner. A key left
 out of the request MUST count as its default. A member MUST still be able to
 edit the rest of the organisation. The organisation editor MUST show the

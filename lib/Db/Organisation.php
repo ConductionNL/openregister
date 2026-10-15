@@ -247,17 +247,17 @@ class Organisation extends Entity implements JsonSerializable {
 	 *   "object": {"create": [], "read": [], "update": [], "delete": []},
 	 *   "view": {"create": [], "read": [], "update": [], "delete": []},
 	 *   "agent": {"create": [], "read": [], "update": [], "delete": []},
-	 *   "object_publish": ["*"],
 	 *   "agent_use": ["*"],
-	 *   "dashboard_view": ["*"],
 	 *   "llm_use": ["*"],
 	 *   "grant_manage": []
 	 * }
 	 *
 	 * The special rights are lists of group ids. `*` gives a right to every
 	 * signed-in user; it is not accepted under `grant_manage`. Only an
-	 * administrator or the organisation's owner may change them. Which are
-	 * enforced, and where: see Service\Rbac\OrganisationSpecialRights.
+	 * administrator or the organisation's owner may change them. See
+	 * Service\Rbac\OrganisationSpecialRights. An older block may still carry
+	 * the retired `object_publish` and `dashboard_view`; they are kept as stored
+	 * and read by nothing.
 	 *
 	 * @var array|null Authorization rules as JSON structure
 	 */
@@ -863,9 +863,7 @@ class Organisation extends Entity implements JsonSerializable {
 	 *         update: array<never, never>,
 	 *         delete: array<never, never>
 	 *     },
-	 *     object_publish: list<string>,
 	 *     agent_use: list<string>,
-	 *     dashboard_view: list<string>,
 	 *     llm_use: list<string>,
 	 *     grant_manage: array<never, never>
 	 * }
@@ -917,9 +915,7 @@ class Organisation extends Entity implements JsonSerializable {
 			// Every signed-in user, until an administrator or the owner narrows
 			// it: a new organisation behaves as an upgraded one does after
 			// Repair\OpenSpecialRightsToEveryone. See Service\Rbac\OrganisationSpecialRights.
-			'object_publish' => ['*'],
 			'agent_use' => ['*'],
-			'dashboard_view' => ['*'],
 			'llm_use' => ['*'],
 			// Nobody: a right that decides who reads a record is not open by default.
 			'grant_manage' => [],

@@ -54,12 +54,13 @@ at `lib/Service/ChatService.php:253` and `lib/Controller/ChatStreamController.ph
 Not counted: `LlmSettingsController::testChat()` is an administrator's settings
 probe, and administrators pass. Embeddings for vector search
 (`lib/Service/Vectorization/Handlers/EmbeddingGeneratorHandler.php`) call an
-embedding model, not a language model on a user's behalf; see Q3.
+embedding model, not a language model on a user's behalf, and do not need
+`llm_use` (decision 249).
 
 Read from: the conversation's organisation (`Conversation::getOrganisation()`,
 set from the user's active organisation when the conversation is created).
 
-### `object_publish`: NOT FOUND, question Q1
+### `object_publish`: no action found; retired (decision 247)
 
 Objects no longer have a publish action. Migration
 `lib/Migration/Version1Date20260313130000.php` dropped `published` and
@@ -75,9 +76,9 @@ actions are other things:
 - making an object readable without an account, by a public access link or a
   `public` read grant, which is the sharing and RBAC surface.
 
-Not enforced. Choosing either would be inventing what the right means.
+Not enforced; Ruben retired the right (decision 247).
 
-### `dashboard_view`: question Q2
+### `dashboard_view`: nothing to guard; retired (decision 248)
 
 The dashboard is `DashboardController` (`lib/Controller/DashboardController.php`):
 `GET /api/dashboard` (`index()`, 322) and the chart and statistics endpoints
@@ -90,18 +91,29 @@ refuse the whole app. The Nextcloud dashboard widget
 (`lib/Dashboard/IntegrationDashboardWidget.php`) lists integrations, not
 organisation analytics.
 
-Not enforced.
+Not enforced; Ruben retired the right (decision 248).
+
+### Retired rights
+
+`object_publish` and `dashboard_view` are removed from
+`Organisation::getDefaultAuthorization()`, from `OrganisationSpecialRights::ALL`
+and `OPEN_BY_DEFAULT`, from the admin-group backfill in `OrganisationService`,
+from the editor's Special Rights tab and the frontend entity, and from the docs.
+A block that still holds them is stored and served unchanged: `getAuthorization()`
+returns it as is, `mayUse()` answers false for a key it does not know, and no
+code path reads them. Nothing writes them any more; a block that carries them
+is not stripped either.
 
 ## Semantics of a right a caller uses
 
 `OrganisationSpecialRights::mayUse(right, userId, organisationUuid)`
-(`lib/Service/Rbac/OrganisationSpecialRights.php:253`):
+(`lib/Service/Rbac/OrganisationSpecialRights.php:238`):
 
 | Situation | Answer |
 |-----------|--------|
 | Caller is a Nextcloud administrator | allowed |
 | No caller (empty user id) | refused |
-| Right is not one of the four (e.g. `grant_manage`) | refused |
+| Right is not `agent_use` or `llm_use` (e.g. `grant_manage`, or a retired right) | refused |
 | Organisation not named on the agent or conversation | the default organisation is read |
 | Not named and no default organisation | allowed: nothing could have narrowed it |
 | Named organisation cannot be loaded | refused (fail closed) |
@@ -120,8 +132,8 @@ membership.
 
 Repair step `OCA\OpenRegister\Repair\OpenSpecialRightsToEveryone`
 (`lib/Repair/OpenSpecialRightsToEveryone.php`), listed under post-migration in
-`appinfo/info.xml`. It adds `*` to `object_publish`, `agent_use`,
-`dashboard_view` and `llm_use` in every organisation, keeping any groups
+`appinfo/info.xml`. It adds `*` to `agent_use` and `llm_use` in every
+organisation, keeping any groups
 listed, and never touches `grant_manage`. It runs once: app config
 `openregister/special_rights_opened_to_everyone` records it, so a `*` an
 administrator removes stays removed. If it fails part-way it does not set the
@@ -129,36 +141,25 @@ flag; the next upgrade finishes it and skips organisations that already hold
 `*`. It never throws.
 
 A fresh install needs no step: `Organisation::getDefaultAuthorization()`
-(`lib/Db/Organisation.php`) gives a new organisation `["*"]` under the four.
-
-All four are opened, not only the two enforced now, so enforcing
-`object_publish` or `dashboard_view` later needs no second repair step.
+(`lib/Db/Organisation.php`) gives a new organisation `["*"]` under `agent_use`
+and `llm_use`.
 
 ## Who changes special rights
 
 `OrganisationController::update()` (`lib/Controller/OrganisationController.php:718`)
-compares each of the five lists in the request with the stored one, through
+compares each of the three lists (`agent_use`, `llm_use`, `grant_manage`) in the request with the stored one, through
 `changedSpecialRights()` (1098). A key missing on either side counts as its
-default (`["*"]` for the four, `[]` for `grant_manage`), because the stored
+default (`["*"]` for `agent_use` and `llm_use`, `[]` for `grant_manage`), because the stored
 block is replaced as a whole. Any difference from a caller for whom
 `OrganisationService::isOrganisationAdmin()` is false (not an administrator,
 not the owner) is a 403 naming the rights. `PATCH` goes through `update()`.
 
-`EditOrganisation.vue` disables the four selects and says why when the signed-in
+`EditOrganisation.vue` disables the two selects and says why when the signed-in
 user is neither an administrator (`getCurrentUser().isAdmin`) nor the owner;
 creating a new organisation makes you its owner, so it stays editable.
 
-## Questions for Ruben
+## Decisions on the questions this change raised
 
-- **Q1 `object_publish`.** Objects have no publish action since migration
-  Version1Date20260313130000. Should this right guard (a) publishing and
-  depublishing an object's files (`files/batch` action `publish`/`depublish`),
-  (b) making an object public (a public access link, or a `public` read grant
-  on the object), (c) both, or (d) be retired?
-- **Q2 `dashboard_view`.** The dashboard API is administrator only because its
-  figures are instance-wide. Should this right (a) let a holder see the
-  dashboard, which then needs the figures scoped to the holder's organisation
-  first, (b) guard some other dashboard (a leaf app's), or (c) be retired?
-- **Q3 `llm_use` and embeddings.** Should a semantic or hybrid search, which
-  embeds the user's query with an embedding model, also need `llm_use`? Today
-  it does not.
+- **247 `object_publish`**: retired.
+- **248 `dashboard_view`**: retired.
+- **249 semantic search and `llm_use`**: not needed; search stays as it is.

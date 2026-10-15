@@ -463,50 +463,6 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 													<tr>
 														<td class="right-name">
 															<span class="right-badge"
-																>object_publish</span
-															>
-														</td>
-														<td
-															class="right-description">
-															{{
-																t(
-																	'openregister',
-																	'Publish objects to make them publicly available',
-																)
-															}}
-														</td>
-														<td class="right-groups">
-															<NcSelect
-																v-model="
-																	selectedSpecialRights.object_publish
-																"
-																inputLabel="Selected Special Rights Object Publish"
-																:options="
-																	specialRightOptions
-																"
-																label="name"
-																trackBy="id"
-																:disabled="
-																	!canEditSpecialRights
-																"
-																:multiple="true"
-																:placeholder="
-																	t(
-																		'openregister',
-																		'Select groups...',
-																	)
-																"
-																@update:modelValue="
-																	updateSpecialRight(
-																		'object_publish',
-																		$event,
-																	)
-																" />
-														</td>
-													</tr>
-													<tr>
-														<td class="right-name">
-															<span class="right-badge"
 																>agent_use</span
 															>
 														</td>
@@ -543,50 +499,6 @@ import { navigationStore, organisationStore } from '../../store/store.js'
 																@update:modelValue="
 																	updateSpecialRight(
 																		'agent_use',
-																		$event,
-																	)
-																" />
-														</td>
-													</tr>
-													<tr>
-														<td class="right-name">
-															<span class="right-badge"
-																>dashboard_view</span
-															>
-														</td>
-														<td
-															class="right-description">
-															{{
-																t(
-																	'openregister',
-																	'Access organisation dashboard and analytics',
-																)
-															}}
-														</td>
-														<td class="right-groups">
-															<NcSelect
-																v-model="
-																	selectedSpecialRights.dashboard_view
-																"
-																inputLabel="Selected Special Rights Dashboard View"
-																:options="
-																	specialRightOptions
-																"
-																label="name"
-																trackBy="id"
-																:disabled="
-																	!canEditSpecialRights
-																"
-																:multiple="true"
-																:placeholder="
-																	t(
-																		'openregister',
-																		'Select groups...',
-																	)
-																"
-																@update:modelValue="
-																	updateSpecialRight(
-																		'dashboard_view',
 																		$event,
 																	)
 																" />
@@ -775,9 +687,7 @@ export default {
 			loadingGroups: false,
 			groupSearchDebounce: null,
 			selectedSpecialRights: {
-				object_publish: [],
 				agent_use: [],
-				dashboard_view: [],
 				llm_use: [],
 			},
 
@@ -1462,7 +1372,7 @@ export default {
 		/**
 		 * Update special right
 		 *
-		 * @param {string} right - The special right (object_publish, agent_use, dashboard_view, llm_use)
+		 * @param {string} right - The special right (agent_use, llm_use)
 		 * @param {Array} groups - Array of group objects with {id, name}
 		 * @return {void}
 		 * @spec exclude Reactive setter writing a special-right's group IDs to the local authorization model; UI form plumbing.
@@ -1491,12 +1401,7 @@ export default {
 		 */
 		initializeSpecialRights() {
 			const auth = this.organisationItem.authorization || {}
-			const specialRightKeys = [
-				'object_publish',
-				'agent_use',
-				'dashboard_view',
-				'llm_use',
-			]
+			const specialRightKeys = ['agent_use', 'llm_use']
 
 			specialRightKeys.forEach((right) => {
 				if (auth[right] && Array.isArray(auth[right])) {

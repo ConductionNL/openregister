@@ -4,19 +4,18 @@
  * Reads an organisation's special rights, and answers whether a caller holds one.
  *
  * WHAT A SPECIAL RIGHT IS. An organisation's `authorization` block carries the
- * create, read, update and delete lists per entity type, and beside them a few
- * rights that are not one of those four: `object_publish`, `agent_use`,
- * `dashboard_view` and `llm_use` ({@see \OCA\OpenRegister\Db\Organisation}). The
- * organisation editor shows them in its "Special Rights" tab. Each is a list of
- * the groups that hold it.
+ * create, read, update and delete lists per entity type, and beside them three
+ * rights that are not one of those four: `agent_use`, `llm_use` and
+ * `grant_manage` ({@see \OCA\OpenRegister\Db\Organisation}). The organisation
+ * editor shows them in its "Special Rights" tab. Each is a list of entries.
  *
- * WHY THIS CLASS EXISTS. The four rights above were declared, stored and
- * assignable, and nothing read them. This is the one read. It was written for
- * `grant_manage` (a right over one record, {@see holdsOn()}) and answers since
- * decision 239 for the rights a caller USES, `agent_use` and `llm_use`
- * ({@see mayUse()}). `object_publish` and `dashboard_view` are read by nothing
- * yet: no action in this app matches them (see the change
- * enforce-organisation-special-rights).
+ * `object_publish` and `dashboard_view` are retired (decisions 247, 248). They
+ * were never enforced. An organisation that still stores them loads as before;
+ * nothing reads or writes them.
+ *
+ * WHY THIS CLASS EXISTS. It is the one read of every special right: a right
+ * over one record, `grant_manage` ({@see holdsOn()}), and the rights a caller
+ * USES, `agent_use` and `llm_use` ({@see mayUse()}).
  *
  * A RIGHT A CALLER USES. Read from the organisation the thing being used
  * belongs to: an agent's organisation for `agent_use`, a conversation's for
@@ -36,7 +35,7 @@
  * groups, so the right cannot be turned into a read.
  *
  * AN ENTRY. Either a group id, which holds the right on every record of the
- * organisation, as the four existing rights are written. Or an object naming a
+ * organisation, as `agent_use` and `llm_use` are written. Or an object naming a
  * group and narrowing it:
  *
  *   {"group": "dossiq-background-service", "register": "dossiq", "schemas": ["reviewBatch"]}
@@ -101,25 +100,11 @@ class OrganisationSpecialRights {
 	public const GRANT_MANAGE = 'grant_manage';
 
 	/**
-	 * The special right to publish and depublish objects. Read by nothing: see the class comment.
-	 *
-	 * @var string
-	 */
-	public const OBJECT_PUBLISH = 'object_publish';
-
-	/**
 	 * The special right to run an agent.
 	 *
 	 * @var string
 	 */
 	public const AGENT_USE = 'agent_use';
-
-	/**
-	 * The special right to view the dashboard. Read by nothing: see the class comment.
-	 *
-	 * @var string
-	 */
-	public const DASHBOARD_VIEW = 'dashboard_view';
 
 	/**
 	 * The special right to have a language model called on one's behalf.
@@ -134,9 +119,7 @@ class OrganisationSpecialRights {
 	 * @var string[]
 	 */
 	public const ALL = [
-		self::OBJECT_PUBLISH,
 		self::AGENT_USE,
-		self::DASHBOARD_VIEW,
 		self::LLM_USE,
 		self::GRANT_MANAGE,
 	];
@@ -150,9 +133,7 @@ class OrganisationSpecialRights {
 	 * @var string[]
 	 */
 	public const OPEN_BY_DEFAULT = [
-		self::OBJECT_PUBLISH,
 		self::AGENT_USE,
-		self::DASHBOARD_VIEW,
 		self::LLM_USE,
 	];
 

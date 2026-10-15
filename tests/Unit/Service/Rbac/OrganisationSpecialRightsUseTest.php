@@ -195,7 +195,15 @@ class OrganisationSpecialRightsUseTest extends TestCase {
 		$this->assertFalse($this->rights->mayUse(OrganisationSpecialRights::GRANT_MANAGE, 'admin', 'org-1'));
 	}//end testGrantManageIsNeverAnsweredAsARightInUse()
 
-	public function testANewOrganisationOpensTheFourRightsAndNotGrantManage(): void {
+	public function testARetiredRightStillStoredLoadsAndIsNotAnswered(): void {
+		$this->organisationWith(['object_publish' => ['*'], 'dashboard_view' => ['*'], OrganisationSpecialRights::LLM_USE => ['ai-users']]);
+
+		$this->assertTrue($this->rights->mayUse(OrganisationSpecialRights::LLM_USE, 'alice', 'org-1'));
+		$this->assertFalse($this->rights->mayUse('object_publish', 'alice', 'org-1'));
+		$this->assertFalse($this->rights->mayUse('dashboard_view', 'alice', 'org-1'));
+	}//end testARetiredRightStillStoredLoadsAndIsNotAnswered()
+
+	public function testANewOrganisationOpensTheRightsInUseAndNotGrantManage(): void {
 		$organisation = new Organisation();
 		$organisation->setUuid('org-1');
 		$this->organisations->method('findByUuid')->willReturn($organisation);
@@ -203,7 +211,9 @@ class OrganisationSpecialRightsUseTest extends TestCase {
 		$this->assertTrue($this->rights->mayUse(OrganisationSpecialRights::AGENT_USE, 'carol', 'org-1'));
 		$this->assertTrue($this->rights->mayUse(OrganisationSpecialRights::LLM_USE, 'carol', 'org-1'));
 		$this->assertSame([], $organisation->getAuthorization()[OrganisationSpecialRights::GRANT_MANAGE]);
-	}//end testANewOrganisationOpensTheFourRightsAndNotGrantManage()
+		$this->assertArrayNotHasKey('object_publish', $organisation->getAuthorization());
+		$this->assertArrayNotHasKey('dashboard_view', $organisation->getAuthorization());
+	}//end testANewOrganisationOpensTheRightsInUseAndNotGrantManage()
 
 	public function testOpeningToEveryoneAddsTheWildcardAndKeepsTheGroups(): void {
 		$narrowed = new Organisation();

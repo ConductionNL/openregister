@@ -3,13 +3,14 @@
 ## 1. Find where each right applies
 - [x] 1.1 `agent_use`: chat with an agent, MCP session as an agent (design.md)
 - [x] 1.2 `llm_use`: every chat message (design.md)
-- [x] 1.3 `object_publish`: no object publish action exists; asked as a question
-- [x] 1.4 `dashboard_view`: the dashboard API is administrator only; asked as a question
+- [x] 1.3 `object_publish`: no object publish action exists; retired (decision 247)
+- [x] 1.4 `dashboard_view`: the dashboard API is administrator only; retired (decision 248)
 
 ## 2. The reader
 - [x] 2.1 `OrganisationSpecialRights::mayUse()`: administrators pass, `*`, missing key, no organisation, load failure
 - [x] 2.2 `OrganisationSpecialRights::openToEveryoneInEveryOrganisation()`, refusing `grant_manage`
-- [x] 2.3 `Organisation::getDefaultAuthorization()` opens the four rights, not `grant_manage`
+- [x] 2.3 `Organisation::getDefaultAuthorization()` opens `agent_use` and `llm_use`, not `grant_manage`
+- [x] 2.4 Retire `object_publish` and `dashboard_view`: defaults, editor, frontend entity, repair step, admin backfill, docs; a stored block that still holds them loads unchanged
 
 ## 3. Enforcement
 - [x] 3.1 `ChatService::processMessage()` checks `llm_use` and `agent_use` before storing or calling a model
@@ -17,7 +18,7 @@
 - [x] 3.3 `McpAgentScope::loadAgent()` checks `agent_use` on initialize and every later call
 
 ## 4. Who changes special rights
-- [x] 4.1 `OrganisationController::update()` refuses a change to any of the five from a non-owner, non-administrator (403)
+- [x] 4.1 `OrganisationController::update()` refuses a change to `agent_use`, `llm_use` or `grant_manage` from a non-owner, non-administrator (403)
 - [x] 4.2 The Special Rights tab is read-only for them, and offers "Everyone"
 
 ## 5. Upgrade
@@ -33,6 +34,7 @@
 - [x] 7.3 A member is refused with 403 for each special right; owner and administrator are not
 
 ## 8. Open
-- [ ] 8.1 Ruben: what `object_publish` should guard (design.md Q1)
-- [ ] 8.2 Ruben: what `dashboard_view` should guard (design.md Q2)
+- [x] 8.1 `object_publish`: retired (decision 247)
+- [x] 8.2 `dashboard_view`: retired (decision 248)
+- [x] 8.4 Semantic search does not need `llm_use` (decision 249)
 - [ ] 8.3 Live check on a running instance: a narrowed `llm_use` refuses a chat from the widget

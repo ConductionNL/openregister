@@ -409,10 +409,11 @@ class OrganisationTest extends TestCase {
 		$this->assertArrayHasKey('agent', $auth);
 		$this->assertArrayHasKey('configuration', $auth);
 		$this->assertArrayHasKey('application', $auth);
-		$this->assertArrayHasKey('object_publish', $auth);
 		$this->assertArrayHasKey('agent_use', $auth);
-		$this->assertArrayHasKey('dashboard_view', $auth);
 		$this->assertArrayHasKey('llm_use', $auth);
+		// Retired, never enforced (decisions 247, 248): not written into a new block.
+		$this->assertArrayNotHasKey('object_publish', $auth);
+		$this->assertArrayNotHasKey('dashboard_view', $auth);
 
 		// Each entity type should have CRUD
 		foreach (['register', 'schema', 'object', 'view', 'agent', 'configuration', 'application'] as $entity) {
@@ -427,9 +428,7 @@ class OrganisationTest extends TestCase {
 		}
 
 		// Special rights: open to every signed-in user until narrowed, except grant_manage (decision 239).
-		$this->assertSame(['*'], $auth['object_publish']);
 		$this->assertSame(['*'], $auth['agent_use']);
-		$this->assertSame(['*'], $auth['dashboard_view']);
 		$this->assertSame(['*'], $auth['llm_use']);
 		$this->assertSame([], $auth['grant_manage']);
 	}

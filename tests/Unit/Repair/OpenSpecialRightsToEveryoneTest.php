@@ -148,8 +148,10 @@ class OpenSpecialRightsToEveryoneTest extends TestCase {
 		}
 
 		$this->assertSame(['ai-users', '*'], $this->stored['narrowed']->getAuthorization()['llm_use'], 'groups are kept');
-		$this->assertSame(['*'], $this->stored['narrowed']->getAuthorization()['object_publish']);
-		$this->assertSame(['*'], $this->stored['new']->getAuthorization()['dashboard_view']);
+		// The retired rights (decisions 247, 248) are left exactly as stored, and not added where absent.
+		$this->assertSame([], $this->stored['new']->getAuthorization()['object_publish']);
+		$this->assertSame(['admin'], $this->stored['backfilled']->getAuthorization()['dashboard_view']);
+		$this->assertArrayNotHasKey('object_publish', $this->stored['narrowed']->getAuthorization());
 		$this->assertSame(['records-service'], $this->stored['narrowed']->getAuthorization()['grant_manage'], 'grant_manage is never opened');
 		$this->assertSame([], $this->stored['new']->getAuthorization()['grant_manage']);
 		$this->assertTrue($this->config[OpenSpecialRightsToEveryone::DONE_KEY]);

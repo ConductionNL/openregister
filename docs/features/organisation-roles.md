@@ -115,13 +115,11 @@ In addition to entity-type CRUD, organisations can define special action permiss
 
 | Key | Controls |
 |-----|---------|
-| `object_publish` | Not enforced: objects have no publish action any more, so what it guards is an open question |
 | `agent_use` | Who can run an agent, in a chat or as an MCP session (enforced; read from the agent's organisation) |
-| `dashboard_view` | Not enforced: the dashboard API is administrator only |
 | `llm_use` | Who can have the language model called on their behalf in a chat (enforced; read from the conversation's organisation) |
 | `grant_manage` | Who can manage the grants and the owning group of records they do not own (enforced; see `OrganisationSpecialRights`) |
 
-`*` gives a right to every signed-in user (not under `grant_manage`); new organisations start with `*` under the first four. Only an administrator or the organisation's owner may change special rights. See [Organisations](../Features/organisations.md#special-rights) for the upgrade behaviour.
+`*` gives a right to every signed-in user (not under `grant_manage`); new organisations start with `*` under `agent_use` and `llm_use`. `object_publish` and `dashboard_view` are retired: they were never enforced, and a block that still holds them is read as before and ignored. Only an administrator or the organisation's owner may change special rights. See [Organisations](../Features/organisations.md#special-rights) for the upgrade behaviour.
 
 ### Nextcloud Groups on Organisations
 

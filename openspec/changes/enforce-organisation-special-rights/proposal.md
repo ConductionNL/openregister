@@ -6,17 +6,16 @@ kind: code
 
 ## Summary
 
-Decision 239 (Ruben, 14 Oct): OpenRegister's four special rights,
-`object_publish`, `agent_use`, `dashboard_view` and `llm_use`, were stored and
-editable by any member and checked nowhere. Enforce each where it applies, and
-let only an administrator or the organisation's owner change who holds a
-special right.
+Decision 239 (Ruben, 14 Oct): OpenRegister's special rights `object_publish`,
+`agent_use`, `dashboard_view` and `llm_use` were stored and editable by any
+member and checked nowhere. Enforce each where it applies, and let only an
+administrator or the organisation's owner change who holds a special right.
 
-This change enforces the two that name an action this app performs,
-`agent_use` and `llm_use`, and restricts editing of all five special rights
-(the four plus `grant_manage` from #4601). `object_publish` and
-`dashboard_view` name no action in the code today; they are left unenforced and
-asked as questions in `design.md` rather than given an invented meaning.
+`agent_use` and `llm_use` name actions this app performs, and are enforced.
+`object_publish` and `dashboard_view` name none (objects have no publish
+action; the dashboard API is administrator only). Ruben retired both
+(decisions 247 and 248). Editing is restricted for the three special rights
+that remain: `agent_use`, `llm_use` and `grant_manage` (#4601).
 
 ## What changes
 
@@ -29,11 +28,17 @@ asked as questions in `design.md` rather than given an invented meaning.
   agent's organisation.
 - `llm_use` is checked on every chat message, before the message is stored or
   a model is called. It is read from the conversation's organisation.
-- `*` in one of the four lists means every signed-in user. It is not accepted
-  under `grant_manage`.
-- A new organisation starts with `["*"]` under the four rights.
-- On upgrade, the repair step `OpenSpecialRightsToEveryone` adds `*` to the
-  four lists in every organisation, once.
+- `*` under `agent_use` or `llm_use` means every signed-in user. It is not
+  accepted under `grant_manage`.
+- A new organisation starts with `["*"]` under `agent_use` and `llm_use`.
+- `object_publish` and `dashboard_view` are retired: removed from the
+  organisation's defaults, the editor's Special Rights tab, the repair step and
+  the docs. An organisation that still stores them loads as before; nothing
+  reads them and nothing writes them.
+- Semantic and hybrid search, which embed the query with an embedding model,
+  do not need `llm_use` (decision 249).
+- On upgrade, the repair step `OpenSpecialRightsToEveryone` adds `*` to
+  `agent_use` and `llm_use` in every organisation, once.
 - `PUT`/`PATCH /api/organisations/{uuid}` refuses a change to any special right
   from anybody but an administrator or the organisation's owner (403, naming
   the rights). The editor's Special Rights tab is read-only for them, and
@@ -60,13 +65,16 @@ Special Rights tab (administrator or owner). From then on:
 - a later upgrade does not reopen a narrowed right (the step runs once, guarded
   by app config key `special_rights_opened_to_everyone`).
 
-Members who are not the owner can no longer change special rights at all,
-including `object_publish` and `dashboard_view`, which they could before.
+Members who are not the owner can no longer change `agent_use`, `llm_use` or
+`grant_manage`.
+
+`object_publish` and `dashboard_view` were never enforced, so retiring them
+refuses nobody and grants nobody anything. They disappear from the editor;
+values already stored stay in the organisation's JSON and are ignored.
 
 ## What does not change
 
-- `object_publish` and `dashboard_view` are not enforced (see the questions in
-  `design.md`).
+- Semantic search: it embeds the query and does not need `llm_use`.
 - `grant_manage` keeps the rules from #4601: no wildcard, nobody by default.
 - The create, read, update and delete lists in the organisation's block, and
   who may edit them.

@@ -801,7 +801,7 @@
   },
   "src/modals/organisation/EditOrganisation.vue": {
     "@nextcloud/l10n-enforce-ellipsis": {
-      "count": 8
+      "count": 6
     },
     "@nextcloud/no-deprecated-library-props": {
       "count": 1

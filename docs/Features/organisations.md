@@ -68,7 +68,7 @@ graph TB
 
 ### Authorization & RBAC (Role-Based Access Control)
 - **Hierarchical Permissions**: Define CRUD permissions per entity type (register, schema, object, view, agent)
-- **Special Rights**: Grant special permissions like object_publish, agent_use, dashboard_view, llm_use
+- **Special Rights**: Grant special permissions: agent_use, llm_use and grant_manage
 - **Group-Based**: Assign permissions to Nextcloud groups
 - **Quick Authorization Checks**: Use singular entity names for efficient permission checking
 
@@ -301,9 +301,7 @@ The authorization field contains the complete RBAC configuration:
       'update': ['admin'],
       'delete': ['admin']
     },
-    'object_publish': ['admin', 'publisher'],
     'agent_use': ['admin', 'ai-user'],
-    'dashboard_view': ['admin', 'manager'],
     'llm_use': ['admin', 'ai-user']
   }
 }
@@ -350,9 +348,7 @@ The authorization system uses **singular entity names** for easier permission ch
       'update': ['admin', 'ai-specialist'],
       'delete': ['admin']
     },
-    'object_publish': ['admin', 'publisher'],
     'agent_use': ['admin', 'ai-user', 'developer'],
-    'dashboard_view': ['admin', 'manager', 'viewer'],
     'llm_use': ['admin', 'ai-user']
   }
 }
@@ -383,8 +379,6 @@ for them.
 |-------|----------------|-----------|---------|
 | **agent_use** | Running an agent: a chat message in a conversation with an agent (`POST /api/chat/send`, `POST /api/chat/stream`), and an MCP session that declares an agent (`initialize`, `tools/list`, `tools/call`). Enforced. | The agent's organisation | `["*"]` |
 | **llm_use** | Having a language model called on your behalf: every chat message (`POST /api/chat/send`, `POST /api/chat/stream`), including the title and summary calls it makes. Enforced. | The conversation's organisation | `["*"]` |
-| **object_publish** | Not enforced yet. Objects no longer have a publish action (publication moved to RBAC rules with `$now`), so it is an open question what this right should guard. | | `["*"]` |
-| **dashboard_view** | Not enforced yet. The dashboard API (`/api/dashboard/*`) is administrator only, so this right cannot widen or narrow it today. | | `["*"]` |
 | **grant_manage** | List, add and remove the grants on records the holder does not own, and name their owning group. Enforced. An entry can be narrowed to a register and schemas. | The record's organisation | `[]` |
 
 When the organisation an agent or conversation belongs to is not set, the
@@ -395,10 +389,19 @@ organisation does not carry at all holds for everybody, except `grant_manage`.
 **Upgrade.** Before this was enforced, every signed-in user could run agents and
 use the language model, whatever the lists said (new organisations got `[]`,
 most others `["admin"]`). On upgrade the repair step
-`OpenSpecialRightsToEveryone` adds `*` to the four open-by-default lists in
-every organisation, once, so nobody is refused. To narrow a right, take `*` out
-of its list in the Special Rights tab. A narrowed right is not reopened by a
+`OpenSpecialRightsToEveryone` adds `*` to `agent_use` and `llm_use` in every
+organisation, once, so nobody is refused. To narrow a right, take `*` out of
+its list in the Special Rights tab. A narrowed right is not reopened by a
 later upgrade.
+
+**Retired rights.** `object_publish` and `dashboard_view` are retired. They
+were stored and shown in the editor but never enforced: objects have no publish
+action, and the dashboard API is administrator only. An organisation that still
+has them in its authorization block loads as before; nothing reads them, and
+new organisations, the editor and the upgrade no longer write them.
+
+Semantic and hybrid search embed the query with an embedding model; that does
+not need `llm_use`.
 
 ### Permission Check Example
 
@@ -697,9 +700,7 @@ $organisation->setAuthorization([
         'update' => ['lab-managers'],
         'delete' => ['lab-managers'],
     ],
-    'object_publish' => ['lab-managers'],
     'agent_use'      => ['researchers', 'lab-managers'],
-    'dashboard_view' => ['lab-managers'],
     'llm_use'        => ['researchers', 'lab-managers'],
 ]);
 

@@ -60,7 +60,9 @@ class OrganisationSpecialRightsEditTest extends TestCase {
 	private OrganisationController $controller;
 
 	/**
-	 * The stored block every test starts from.
+	 * The stored block every test starts from, with the retired `object_publish`
+	 * and `dashboard_view` still in it, as an organisation saved before
+	 * decisions 247 and 248 has.
 	 *
 	 * @var array<string, mixed>
 	 */
@@ -125,9 +127,7 @@ class OrganisationSpecialRightsEditTest extends TestCase {
 		unset($withoutLlm['llm_use']);
 
 		return [
-			'adding a group to object_publish' => [self::storedWith('object_publish', ['*', 'editors']), 'object_publish'],
 			'narrowing agent_use' => [self::storedWith('agent_use', ['admin']), 'agent_use'],
-			'narrowing dashboard_view' => [self::storedWith('dashboard_view', []), 'dashboard_view'],
 			'opening llm_use to everyone' => [self::storedWith('llm_use', ['ai-users', '*']), 'llm_use'],
 			'leaving llm_use out, which reopens it' => [$withoutLlm, 'llm_use'],
 			'giving grant_manage' => [self::storedWith('grant_manage', ['my-team']), 'grant_manage'],
@@ -178,6 +178,17 @@ class OrganisationSpecialRightsEditTest extends TestCase {
 		$this->assertSame(['staff'], $this->organisation->getAuthorization()['object']['create']);
 		$this->assertSame('Gemeente Zuid', $this->organisation->getName());
 	}//end testAMemberStillEditsTheCrudListsAndTheName()
+
+	public function testTheRetiredRightsAreNotSpecialRightsAnyMore(): void {
+		$this->organisationService->method('isOrganisationAdmin')->willReturn(false);
+		$block = self::STORED;
+		unset($block['object_publish'], $block['dashboard_view']);
+		$this->request->method('getParams')->willReturn(['authorization' => $block]);
+
+		$response = $this->controller->update('org-1');
+
+		$this->assertSame(200, $response->getStatus());
+	}//end testTheRetiredRightsAreNotSpecialRightsAnyMore()
 
 	public function testLeavingOutAKeyTheOrganisationNeverSetIsNoChange(): void {
 		$this->organisation->setAuthorization(['object' => ['read' => ['staff']]]);
