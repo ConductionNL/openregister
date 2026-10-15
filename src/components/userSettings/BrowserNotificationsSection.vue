@@ -10,14 +10,12 @@
  per Chrome's permission-abuse rules. Shows the current permission state and an
  unsupported-browser notice when the Push API is unavailable.
 
- TODO mount: this repo registers NO PHP Personal settings class (only
- lib/Settings/OpenRegisterAdmin + IntegrationsAdminSettings, both admin). To
- surface this toggle to end users, add an OCP\Settings\ISettings personal
- settings class + a `<settings><personal>…</personal></settings>` entry in
- appinfo/info.xml and a personal-settings Vue entry point (mirroring
- src/settings.js → #settings) that mounts this component. Until that personal
- mount point exists the component is unmounted; it is fully functional and only
- needs the host shell. See openspec/changes/openregister-web-push-engine.
+ TODO mount: this component is not mounted yet. The per-person settings live in
+ the user settings dialog (src/views/settings/UserSettings.vue, opened from the
+ app navigation and at #user-settings); OpenRegister registers no Nextcloud
+ personal settings page. To surface this toggle to end users, add it as a
+ section of that dialog. It is fully functional and only needs that host.
+ See openspec/changes/openregister-web-push-engine.
 
  @spec openspec/changes/archive/2026-10-05-openregister-web-push-engine/tasks.md#task-5.2
 -->

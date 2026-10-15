@@ -1605,7 +1605,7 @@
         "Real-time push notifications are active. Connected clients receive instant updates when objects are created, updated, or deleted.": "Real-time push notifications are active. Connected clients receive instant updates when objects are created, updated, or deleted.",
         "Browser Web Push (VAPID)": "Browser Web Push (VAPID)",
         "Browser web push is configured": "Browser web push is configured",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.",
         "VAPID public key": "VAPID public key",
         "Browser web push is not configured": "Browser web push is not configured",
         "No VAPID keypair is configured yet. Generate one with the following occ command to enable browser notifications:": "No VAPID keypair is configured yet. Generate one with the following occ command to enable browser notifications:",

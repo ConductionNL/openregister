@@ -60,7 +60,7 @@
         ", {failed} failed": ", {failed} mislukt",
         "0 = unlimited": "0 = onbeperkt",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Een flow voert een reeks stappen uit wanneer er iets gebeurt — een object wijzigt, een planning wordt geactiveerd, of je voert hem zelf uit. Deze lijst toont de flows van elke app.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "Er is een VAPID-sleutelpaar geconfigureerd. Gebruikers kunnen zich via hun persoonlijke instellingen aanmelden voor browsermeldingen, die ook worden bezorgd wanneer het browsertabblad gesloten is.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "Er is een VAPID-sleutelpaar geconfigureerd. Gebruikers kunnen zich via hun gebruikersinstellingen aanmelden voor browsermeldingen, die ook worden bezorgd wanneer het browsertabblad gesloten is.",
         "A deactivation request is pending.": "Er is een deactiveringsverzoek in behandeling.",
         "ADDRESS": "ADRES",
         "AI Assistant": "AI-assistent",
