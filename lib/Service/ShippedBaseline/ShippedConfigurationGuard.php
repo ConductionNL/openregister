@@ -163,6 +163,7 @@ class ShippedConfigurationGuard {
 				decisions: $decisions
 			);
 			$this->recordReplaced(slug: $slug, app: $app, roots: $result['replacedLocal']);
+			$this->recordAppliedAuthorization(slug: $slug, app: $app, applied: $result['applied'], recorded: array_merge($result['replacedLocal'], $decisions));
 
 			if ($record === true) {
 				$this->baselines->record(
@@ -199,15 +200,17 @@ class ShippedConfigurationGuard {
 				'conflicts' => $result['conflicts'],
 			];
 		} catch (Throwable $e) {
-			// An upgrade must finish. A guard that cannot run means the import
-			// behaves as it did before the guard existed, which is a known
-			// state, not a broken one.
+			// An upgrade must finish, so the import still goes ahead. But a
+			// guard that cannot run must not hand the app's authorization over
+			// what an administrator set here: that is the one thing the guard
+			// exists to prevent, and failing towards the shipped policy is
+			// failing open. The instance's own authorization blocks are kept.
 			$this->logger->error(
-				sprintf('[ShippedConfigurationGuard] %s: guard skipped, importing unguarded: %s', $slug, $e->getMessage())
+				sprintf('[ShippedConfigurationGuard] %s: guard skipped, importing unguarded but keeping the instance authorization: %s', $slug, $e->getMessage())
 			);
 
 			return [
-				'definition' => $incoming,
+				'definition' => $this->keepingLiveAuthorization(live: $live, incoming: $incoming),
 				'baseline' => null,
 				'guarded' => false,
 				'applied' => [],
@@ -216,6 +219,79 @@ class ShippedConfigurationGuard {
 			];
 		}//end try
 	}//end guardSchemaUpdate()
+
+	/**
+	 * The incoming definition with the instance's own authorization blocks put back.
+	 *
+	 * For an import the guard could not judge: the schema's `authorization` and
+	 * each existing property's `authorization` stay as the instance has them
+	 * (a block the instance does not have is not added); a property the
+	 * instance does not hold yet brings its shipped block.
+	 *
+	 * @param array<string, mixed> $live     What the instance runs.
+	 * @param array<string, mixed> $incoming What the app now ships.
+	 *
+	 * @return array<string, mixed> The definition to write.
+	 */
+	private function keepingLiveAuthorization(array $live, array $incoming): array {
+		$definition = $incoming;
+		if (array_key_exists('authorization', $live) === true) {
+			$definition['authorization'] = $live['authorization'];
+		} else {
+			unset($definition['authorization']);
+		}
+
+		$liveProperties = ($live['properties'] ?? null);
+		if (is_array($liveProperties) === false || is_array($definition['properties'] ?? null) === false) {
+			return $definition;
+		}
+
+		foreach ($definition['properties'] as $name => $property) {
+			if (is_array($property) === false || is_array($liveProperties[$name] ?? null) === false) {
+				continue;
+			}
+
+			if (array_key_exists('authorization', $liveProperties[$name]) === true) {
+				$definition['properties'][$name]['authorization'] = $liveProperties[$name]['authorization'];
+			} else {
+				unset($definition['properties'][$name]['authorization']);
+			}
+		}
+
+		return $definition;
+	}//end keepingLiveAuthorization()
+
+	/**
+	 * Record, on the audit trail, the authorization blocks an upgrade took from the app because only the app changed them.
+	 *
+	 * An explicit decision is recorded by recordReplaced(); this is the other
+	 * way a block changes under an instance, and who widened access is what
+	 * the trail has to be able to answer.
+	 *
+	 * @param string             $slug     The schema slug.
+	 * @param string             $app      The app that ships it.
+	 * @param array<int, string> $applied  The paths the merge took from upstream.
+	 * @param array<int, string> $recorded Roots already on the trail.
+	 *
+	 * @return void
+	 */
+	private function recordAppliedAuthorization(string $slug, string $app, array $applied, array $recorded): void {
+		$roots = [];
+		foreach ($applied as $path) {
+			$path = (string)$path;
+			$sep = preg_quote(DescriptorParts::SEPARATOR, '/');
+			$pattern = '/^(authorization|properties' . $sep . '[^' . $sep . ']+' . $sep . 'authorization)(?:' . $sep . '|$)/';
+			if (preg_match($pattern, $path, $matches) === 1) {
+				$roots[$matches[1]] = true;
+			}
+		}
+
+		foreach (array_keys($roots) as $root) {
+			if (in_array($root, $recorded, true) === false) {
+				$this->recordDecision(slug: $slug, path: $root, app: $app, decision: 'applied-shipped');
+			}
+		}
+	}//end recordAppliedAuthorization()
 
 	/**
 	 * Record what an app shipped for a schema it has just created.
@@ -522,15 +598,16 @@ class ShippedConfigurationGuard {
 	 * @param string $path The part.
 	 * @param string $app  The app.
 	 * @param string $via  What decided it, when not the acting user alone (an occ re-import).
+	 * @param string $decision `accept-shipped` for a conflict an administrator took, `applied-shipped` for a block only the app changed.
 	 *
 	 * @return void
 	 */
-	private function recordDecision(string $slug, string $path, string $app, string $via = ''): void {
+	private function recordDecision(string $slug, string $path, string $app, string $via = '', string $decision = 'accept-shipped'): void {
 		$changed = [
 			'schema' => $slug,
 			'path' => $path,
 			'app' => $app,
-			'decision' => 'accept-shipped',
+			'decision' => $decision,
 		];
 		if ($via !== '') {
 			$changed['via'] = $via;
