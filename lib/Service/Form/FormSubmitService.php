@@ -648,6 +648,12 @@ class FormSubmitService {
 				$excused = array_merge($policy->requiredExcusals(schema: $plan['schema']), $excused);
 			}
 
+			// An upload token moved its file out of the object (mapPayload), so the
+			// property is absent from the validated object although it was supplied.
+			foreach (array_keys($plan['files']) as $uploaded) {
+				$excused[(string)$uploaded] = 'uploaded';
+			}
+
 			try {
 				$result = $this->validator->validateObject(
 					object: $object,

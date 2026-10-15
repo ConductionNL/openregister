@@ -590,6 +590,36 @@ class FormSubmitServiceTest extends TestCase {
 	}//end testAnUploadTokenIsClaimedOnlyOnSuccess()
 
 	/**
+	 * A required file property is satisfied by its upload token, and still `required` without one.
+	 */
+	public function testARequiredFilePropertyIsSatisfiedByAnUploadToken(): void {
+		$case = $this->schemaBySlug['case'];
+		$case->setRequired(['title', 'caseType', 'identifier', 'bijlage']);
+		$path = (string)tempnam(sys_get_temp_dir(), 'or-submit-upload');
+		file_put_contents($path, '%PDF-1.7');
+		$this->temporary[] = $path;
+		$token = $this->uploads->issue(
+			formId: 'form-1',
+			property: 'bijlage',
+			rule: $case->getProperties()['bijlage'],
+			file: ['name' => 'a.pdf', 'type' => 'application/pdf', 'tmp_name' => $path, 'error' => UPLOAD_ERR_OK, 'size' => 8]
+		)['token'];
+		$mapping = ['fields' => [['field' => 'onderwerp', 'property' => 'title'], ['field' => 'bewijs', 'property' => 'bijlage']], 'fixed' => ['caseType' => 'ct']];
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+
+		try {
+			$this->service->submit(destination: $destination, mapping: $mapping, payload: ['onderwerp' => 'a'], scope: 'form-1');
+			$this->fail('A required file property without an upload was accepted.');
+		} catch (FormSubmitRefusedException $refused) {
+			$this->assertSame(422, $refused->getStatus());
+			$this->assertContains('bijlage', array_map(static fn (array $finding): string => (string)($finding['property'] ?? ''), $refused->getFindings()));
+		}
+
+		$this->service->submit(destination: $destination, mapping: $mapping, payload: ['onderwerp' => 'a', 'bewijs' => ['uploadToken' => $token]], scope: 'form-1');
+		$this->assertSame('a.pdf', $this->saves[0]['files']['bijlage']['name']);
+	}//end testARequiredFilePropertyIsSatisfiedByAnUploadToken()
+
+	/**
 	 * A token issued for another property is refused, not attached elsewhere.
 	 */
 	public function testATokenForAnotherPropertyIsRefused(): void {
