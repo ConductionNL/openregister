@@ -283,6 +283,7 @@ import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TableEye from 'vue-material-design-icons/TableEye.vue'
 import { getTheme } from '@/services/getTheme.js'
+import { findRegisterByIdentifier } from '@/services/matchRegister.js'
 
 export default {
 	name: 'RegisterDetail',
@@ -382,10 +383,14 @@ export default {
 			if (!registerId) {
 				return undefined
 			}
-			// Route params are strings, the API returns numeric ids — compare as strings.
-			return dashboardStore.registers.find(
-				(r) => String(r.id) === String(registerId),
-			)
+			// BY SLUG AND UUID AS WELL AS BY ID, which is what the backend has
+			// always done. `RegisterMapper::find()` matches all three; this lookup
+			// matched the id alone, so `/registers/dossiq` found no register,
+			// `loadSchemas()` read `this.register?.schemas` as undefined, and the
+			// page rendered an empty schema list with no error at all — which reads
+			// as "this register has no schemas". The slug is the only spelling an
+			// author outside this app can write: the numeric id is per instance.
+			return findRegisterByIdentifier(dashboardStore.registers, registerId)
 		},
 
 		/**
@@ -580,6 +585,20 @@ export default {
 				console.error('Failed to fetch register details:', error)
 			}
 		}
+		// PROMOTE THE SEED TO THE REAL REGISTER once one resolves. The seed above
+		// holds whatever the route said, and a cross-app link says the SLUG,
+		// because the numeric id differs per instance. Everything below this line
+		// reads `getRegisterItem.id` and hands it on: `getRegisterStats()` to the
+		// stats endpoint, `viewObjects()` into `/tables?register=`. Leaving the
+		// slug in the store makes each of those a separate question about whether
+		// that particular consumer resolves one, and `/tables` does not.
+		if (
+			this.register?.id
+			&& String(registerStore.getRegisterItem?.id) !== String(this.register.id)
+		) {
+			registerStore.setRegisterItem(this.register)
+		}
+
 		this.hydrating = false
 
 		// Load register stats if register is available
