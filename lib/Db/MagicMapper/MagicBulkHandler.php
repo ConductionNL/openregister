@@ -139,10 +139,13 @@ class MagicBulkHandler {
 	 * @psalm-return list<non-empty-array<string, false|int|mixed|null|string>>
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Bulk preparation requires handling multiple data type scenarios
+	 *
+	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function prepareObjectsForDynamicTable(array $objects, Register $register, Schema $schema): array {
 		$prepared = [];
 		$now = new DateTime();
+		$schemaProperties = ($schema->getProperties() ?? []);
 
 		foreach ($objects as $object) {
 			$preparedObject = [];
@@ -211,8 +214,11 @@ class MagicBulkHandler {
 			// Properties can be at top level OR in 'object' key (structured format).
 			$propertySource = $object['object'] ?? $object;
 			foreach ($propertySource as $propertyName => $value) {
-				// Skip metadata (already handled) and @self.
-				if ($propertyName === '@self' || str_starts_with($propertyName, '_') === true) {
+				// Skip metadata (already handled) and @self; a schema property
+				// whose name starts with an underscore is written.
+				if ($propertyName === '@self'
+					|| (str_starts_with($propertyName, '_') === true && isset($schemaProperties[$propertyName]) === false)
+				) {
 					continue;
 				}
 

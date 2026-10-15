@@ -47,6 +47,7 @@ use Exception;
 use RuntimeException;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
@@ -9646,6 +9647,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param array $row The database row
 	 *
 	 * @return ObjectEntity|null The ObjectEntity or null if conversion fails
+	 *
+	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function rowToObjectEntity(array $row): ?ObjectEntity {
 		// Check if we have the minimum required fields.
@@ -9689,9 +9692,11 @@ class MagicMapper extends AbstractObjectMapper {
 					// path produces (buildTableColumnsFromSchema), keyed by
 					// property name, so collision-resolved columns round-trip
 					// back to their original property instead of being lost.
+					$schemaProperties = ($schema->getProperties() ?? []);
 					foreach ($this->buildTableColumnsFromSchema(schema: $schema) as $propertyName => $columnDef) {
-						// Skip metadata columns (handled separately above).
-						if (str_starts_with($propertyName, '_') === true) {
+						// Skip metadata columns (handled separately above); a schema
+						// property whose name starts with an underscore stays.
+						if (str_starts_with($propertyName, '_') === true && isset($schemaProperties[$propertyName]) === false) {
 							continue;
 						}
 
@@ -9718,8 +9723,8 @@ class MagicMapper extends AbstractObjectMapper {
 		// Build the object data from non-metadata columns.
 		$objectData = [];
 		foreach ($row as $column => $value) {
-			// Skip metadata columns (those starting with _).
-			if (str_starts_with($column, '_') === true) {
+			// Skip metadata columns; a property column with the prefix is read.
+			if (MagicMetadataColumn::field(column: $column, columnToPropertyMap: $columnToPropertyMap) !== null) {
 				continue;
 			}
 
