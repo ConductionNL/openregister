@@ -62,6 +62,11 @@ class FormDependentsCheckTest extends TestCase {
 
 	private FormDependentsCheck $check;
 
+	/**
+	 * Whether the owning app also registers a form without an unpublish closure.
+	 */
+	private bool $withClosureless = false;
+
 	protected function setUp(): void {
 		$l10n = $this->createMock(IL10N::class);
 		$l10n->method('t')->willReturnCallback(
@@ -97,6 +102,17 @@ class FormDependentsCheckTest extends TestCase {
 						}
 					)
 				);
+				if ($this->withClosureless === true) {
+					$event->addForm(
+						new FormDependent(
+							id: 'form-c',
+							app: 'pipelinq',
+							title: 'Zonder sluiter',
+							author: 'carol',
+							mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title']]]
+						)
+					);
+				}
 			}
 		);
 
@@ -190,6 +206,21 @@ class FormDependentsCheckTest extends TestCase {
 		$this->assertSame('form_unpublished', $this->sent[0]['subject']);
 		$this->assertSame('Contact opnemen', $this->sent[0]['parameters']['formTitle']);
 	}//end testANewRequiredPropertyUnpublishesTheFormThatLacksIt()
+
+	/**
+	 * A form its owning app registered without an unpublish closure is not reported unpublished, and its author is not told so.
+	 */
+	public function testAFormWithoutAnUnpublishClosureIsNotReportedUnpublished(): void {
+		$this->withClosureless = true;
+		$assessment = $this->check->assess(schema: $this->ticketWithRequiredPriority());
+
+		$applied = $this->check->apply(assessment: $assessment);
+
+		$outcomes = array_column($applied, 'outcome', 'id');
+		$this->assertSame('unpublish-unavailable', $outcomes['form-c']);
+		$this->assertSame('unpublished', $outcomes['form-a']);
+		$this->assertSame(['alice'], array_column($this->sent, 'user'), 'only the author of a form that was unpublished is told');
+	}//end testAFormWithoutAnUnpublishClosureIsNotReportedUnpublished()
 
 	/**
 	 * An owning app set to refuse blocks the schema save, and nothing is unpublished.

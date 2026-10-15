@@ -151,13 +151,22 @@ class FormDependentsCheck {
 	 * @param string                           $schema   The schema slug.
 	 * @param array<int, array<string, mixed>> $findings Why.
 	 *
-	 * @return string `unpublished`, or `unpublish-failed` when the owning app could not.
+	 * @return string `unpublished`, `unpublish-failed` when the owning app could not, or
+	 *                `unpublish-unavailable` when it registered the form without a way to unpublish it.
 	 */
 	private function unpublish(FormDependent $form, string $schema, array $findings): string {
+		if ($form->unpublish === null) {
+			// Nothing was unpublished: say so, and do not tell the author it was.
+			$this->logger->warning(
+				message: '[FormDependentsCheck] A form broken by a schema change has no way to be unpublished; it stays published',
+				context: ['form' => $form->id, 'app' => $form->app, 'schema' => $schema]
+			);
+
+			return 'unpublish-unavailable';
+		}
+
 		try {
-			if ($form->unpublish !== null) {
-				($form->unpublish)();
-			}
+			($form->unpublish)();
 		} catch (Throwable $exception) {
 			$this->logger->error(
 				message: '[FormDependentsCheck] An owning app could not unpublish a form broken by a schema change',
