@@ -163,6 +163,27 @@ class CasePlanItemTimersTest extends TestCase {
 	}//end testEdgesNeverBlockTheTransition()
 
 	/**
+	 * A refused timer of a statutory expiry is raised, not logged away; a service-norm or advisory one stays a warning.
+	 *
+	 * @return void
+	 */
+	public function testARefusedStatutoryTimerIsRaised(): void {
+		$now = new DateTimeImmutable('2026-10-10T10:00:00+00:00');
+		$statutory = CaseFixtures::row(id: 9, key: 'stat', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
+		$statutory->setExpiresAt(new DateTime('2026-10-20T10:00:00+00:00'));
+		$statutory->setPlanSettings(['statutory' => ['stat']]);
+		$norm = CaseFixtures::row(id: 10, key: 'norm', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
+		$norm->setExpiresAt(new DateTime('2026-10-20T10:00:00+00:00'));
+		$this->timers->method('arm')->willThrowException(new RuntimeException('calendar unknown'));
+
+		$this->assertSame(0, $this->service()->onEntered(item: $norm, actor: null, now: $now), 'a service norm stays a warning');
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('calendar unknown');
+		$this->service()->onEntered(item: $statutory, actor: null, now: $now);
+	}//end testARefusedStatutoryTimerIsRaised()
+
+	/**
 	 * Reaching a terminal state cancels the item's open timers; a failure to
 	 * cancel is logged, never thrown.
 	 *
