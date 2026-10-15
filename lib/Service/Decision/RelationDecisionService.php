@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Decision;
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\DecisionConflictException;
 use OCP\IDBConnection;
 use OCP\IUser;
 use Throwable;
@@ -91,7 +92,7 @@ class RelationDecisionService {
 	 *
 	 * @return array{relation: EntityRelation, decision: Decision|null} The relation and its current decision.
 	 *
-	 * @throws DecisionOwnedException When the decision belongs to someone else.
+	 * @throws DecisionOwnedException When the decision belongs to someone else, its record is missing, or another reviewer decided first.
 	 * @throws CustomValidationException When the body is malformed.
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
@@ -102,10 +103,21 @@ class RelationDecisionService {
 		unset($body[self::NOTE_FIELD]);
 
 		$actorId = $actor->getUID();
-		$current = $this->decisions->find(uuid: $relation->getDecisionUuid());
-		if ($current !== null) {
+		$linkedUuid = $relation->getDecisionUuid();
+		$current = $this->decisions->find(uuid: $linkedUuid);
+		$owned = $current;
+		if ($owned === null && $linkedUuid !== null && $linkedUuid !== '') {
+			// The relation names a decision whose record cannot be found.
+			// DecisionVisibility hides that state; here it belongs to nobody
+			// but a supervisor, so a reviewer cannot take it over by the gap.
+			$owned = new Decision();
+			$owned->setUuid($linkedUuid);
+			$owned->setDecidedBy('');
+		}
+
+		if ($owned !== null) {
 			$resolved = $this->policies->forRelation(relation: $relation);
-			$refusal = $this->ownership->refusal(decision: $current, actorId: $actorId, policy: $resolved['policy'], subject: $resolved['subject']);
+			$refusal = $this->ownership->refusal(decision: $owned, actorId: $actorId, policy: $resolved['policy'], subject: $resolved['subject']);
 			if ($refusal !== null) {
 				throw new DecisionOwnedException(refusal: $refusal);
 			}
@@ -140,8 +152,19 @@ class RelationDecisionService {
 				note: $note,
 				supersedes: $current?->getUuid()
 			);
-			$updated = $this->relationMapper->linkDecision(relation: $updated, decisionUuid: (string)$decision->getUuid());
+			// Compare-and-swap on the link read above: two reviewers taking a
+			// first decision at once cannot both link theirs (the second finds
+			// the link taken and is refused).
+			$updated = $this->relationMapper->linkDecision(
+				relation: $updated,
+				decisionUuid: (string)$decision->getUuid(),
+				expectedUuid: $linkedUuid,
+				guarded: true
+			);
 			$this->db->commit();
+		} catch (DecisionConflictException) {
+			$this->db->rollBack();
+			throw new DecisionOwnedException(refusal: ['error' => 'decision-owned', 'decision' => null]);
 		} catch (Throwable $error) {
 			$this->db->rollBack();
 			throw $error;

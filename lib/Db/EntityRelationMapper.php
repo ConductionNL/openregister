@@ -23,6 +23,7 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use OCA\OpenRegister\Event\EntityRelationDecisionUpdatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\DecisionConflictException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -948,14 +949,38 @@ class EntityRelationMapper extends QBMapper {
 	 * `openregister_decisions` (decision 197); the relation only points at it.
 	 * The audit trail of the verdict stays with `updateDecisionMetadata()`.
 	 *
+	 * With `$guarded`, the link is a compare-and-swap: it is written only while
+	 * the stored link is still `$expectedUuid` (null: none), so two reviewers
+	 * taking a first decision at once cannot both link theirs.
+	 *
 	 * @param EntityRelation $relation     The relation.
 	 * @param string         $decisionUuid The decision's uuid.
+	 * @param string|null    $expectedUuid The link the caller read before deciding; only read when guarded.
+	 * @param bool           $guarded      Whether to write only while the stored link is still `$expectedUuid`.
 	 *
 	 * @return EntityRelation The stored relation.
 	 *
+	 * @throws DecisionConflictException When guarded and the stored link changed in the meantime.
+	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-a-decision-is-its-own-object-req-dec-001
 	 */
-	public function linkDecision(EntityRelation $relation, string $decisionUuid): EntityRelation {
+	public function linkDecision(EntityRelation $relation, string $decisionUuid, ?string $expectedUuid = null, bool $guarded = false): EntityRelation {
+		if ($guarded === true) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->update($this->getTableName())
+				->set('decision_uuid', $qb->createNamedParameter($decisionUuid))
+				->where($qb->expr()->eq('id', $qb->createNamedParameter($relation->getId(), IQueryBuilder::PARAM_INT)));
+			if ($expectedUuid === null || $expectedUuid === '') {
+				$qb->andWhere($qb->expr()->orX($qb->expr()->isNull('decision_uuid'), $qb->expr()->eq('decision_uuid', $qb->createNamedParameter(''))));
+			} else {
+				$qb->andWhere($qb->expr()->eq('decision_uuid', $qb->createNamedParameter($expectedUuid)));
+			}
+
+			if ($qb->executeStatement() === 0) {
+				throw new DecisionConflictException(message: 'The relation was decided by somebody else in the meantime.');
+			}
+		}
+
 		$relation->setDecisionUuid($decisionUuid);
 
 		return $this->update(entity: $relation);
