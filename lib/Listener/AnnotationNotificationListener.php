@@ -39,7 +39,6 @@ namespace OCA\OpenRegister\Listener;
 use OCA\OpenRegister\BackgroundJob\AnnotationNotificationDispatchJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Event\ObjectActivatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
@@ -96,56 +95,24 @@ class AnnotationNotificationListener implements IEventListener {
 			return;
 		}
 
-		// A DRAFT IS NOT RECEIVED YET (decisions 180 and 216). Its first save
-		// and its autosaves notify nobody: a "created" rule would otherwise
-		// announce a half-typed object to its recipients, and say nothing
-		// when it is finally sent. The moment it leaves draft is its
-		// creation for every `created` rule.
-		if ($event instanceof ObjectActivatedEvent) {
-			$this->announceCreated(object: $event->getObject());
-			return;
-		}
-
 		if ($event instanceof ObjectCreatedEvent) {
 			$object = $this->extractObject(event: $event);
-			if ($object !== null && $object->isDraft() === false) {
-				$this->announceCreated(object: $object);
+			if ($object !== null && $this->schemaDeclaresNotifications(object: $object) === true) {
+				if ($this->deferral->isDeferralEnabled() === false) {
+					$this->dispatcher->dispatch(object: $object, trigger: 'created');
+					return;
+				}
+
+				$this->deferEntry(object: $object, extra: ['trigger' => 'created']);
 			}
 
 			return;
 		}
 
 		if ($event instanceof ObjectUpdatedEvent) {
-			// Still a draft, or the save that left draft (announced above as created).
-			if ($event->getNewObject()->isDraft() === true || $event->getOldObject()?->isDraft() === true) {
-				return;
-			}
-
 			$this->handleUpdated(event: $event);
 		}
 	}//end handle()
-
-	/**
-	 * Fire the `created` rules of an object that now exists for its readers.
-	 *
-	 * @param ObjectEntity $object The object, created outright or just out of draft.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-notify-anybody-until-it-leaves-draft
-	 */
-	private function announceCreated(ObjectEntity $object): void {
-		if ($this->schemaDeclaresNotifications(object: $object) === false) {
-			return;
-		}
-
-		if ($this->deferral->isDeferralEnabled() === false) {
-			$this->dispatcher->dispatch(object: $object, trigger: 'created');
-			return;
-		}
-
-		$this->deferEntry(object: $object, extra: ['trigger' => 'created']);
-	}//end announceCreated()
 
 	/**
 	 * Transition events: defer with the event-only context (action/from/to).

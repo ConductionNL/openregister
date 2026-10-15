@@ -56,7 +56,6 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\MagicMapper\RecentLensOrder;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
-use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
@@ -66,6 +65,7 @@ use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
+use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Support\QueryLimit;
@@ -8456,9 +8456,7 @@ class MagicMapper extends AbstractObjectMapper {
 		$suppress = $this->suppressLifecycleEvents();
 		foreach ($completed as $item) {
 			if ($suppress === false) {
-				$this->eventDispatcher->dispatchTyped(
-					new ObjectUpdatedEvent(newObject: $item['entity'], oldObject: $item['old'])
-				);
+				(new ObjectEventGate(events: $this->eventDispatcher))->updated(new: $item['entity'], old: $item['old']);
 			}
 
 			$result[] = $item['entity'];
@@ -10282,10 +10280,14 @@ class MagicMapper extends AbstractObjectMapper {
 				'entityUuid' => $insertedEntity->getUuid(),
 			]
 		);
+		// Which event that is, is decided in ObjectEventGate (decision 227). A
+		// draft is never deferred: only the listeners that keep the stored
+		// draft right receive its event, and they need it now.
 		if ($this->suppressLifecycleEvents() === false
-			&& $this->dispatchCreatedDeferred(entity: $insertedEntity, register: $register, schema: $schema) === false
+			&& ($insertedEntity->isDraft() === true
+			|| $this->dispatchCreatedDeferred(entity: $insertedEntity, register: $register, schema: $schema) === false)
 		) {
-			$this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $insertedEntity));
+			(new ObjectEventGate(events: $this->eventDispatcher))->created(object: $insertedEntity);
 		}
 
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:EVENT-DISPATCH');
@@ -10442,9 +10444,7 @@ class MagicMapper extends AbstractObjectMapper {
 			]
 		);
 		if ($this->suppressLifecycleEvents() === false) {
-			$this->eventDispatcher->dispatchTyped(
-				new ObjectUpdatedEvent(newObject: $updatedEntity, oldObject: $oldEntity)
-			);
+			(new ObjectEventGate(events: $this->eventDispatcher))->updated(new: $updatedEntity, old: $oldEntity);
 		}
 
 		return $updatedEntity;
@@ -10522,7 +10522,7 @@ class MagicMapper extends AbstractObjectMapper {
 			hardDelete: true
 		);
 
-		$this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent(object: $deletedEntity));
+		(new ObjectEventGate(events: $this->eventDispatcher))->deleted(object: $deletedEntity);
 
 		return $deletedEntity;
 	}//end delete()
