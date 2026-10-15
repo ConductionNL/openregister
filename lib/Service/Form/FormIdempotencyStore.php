@@ -129,6 +129,8 @@ class FormIdempotencyStore {
 	 * @param string $key   The Idempotency-Key.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
 	public function release(string $scope, string $key): void {
 		try {
