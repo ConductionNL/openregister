@@ -64,6 +64,12 @@ export default {
 	SchemasIndex: page(() => import('./views/schema/SchemasIndex.vue')),
 	SchemaDetails: page(() => import('./views/schema/SchemaDetails.vue')),
 	SourcesIndex: page(() => import('./views/source/SourcesIndex.vue')),
+	MigrationPacksIndex: page(
+		() => import('./views/migrationPack/MigrationPacksIndex.vue'),
+	),
+	MigrationPackDetail: page(
+		() => import('./views/migrationPack/MigrationPackDetail.vue'),
+	),
 	OrganisationsIndex: page(
 		() => import('./views/organisation/OrganisationsIndex.vue'),
 	),
