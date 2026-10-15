@@ -17,7 +17,7 @@ Zuiddrecht live test, 14 October 2026: one cron run that swept hundreds of dossi
 ## What changes
 
 - `ListenerDeferralService::flushBuffer()` splits the buffer into consecutive chunks whose JSON argument stays within the running server's job argument limit (`ListenerDeferralService::getArgumentLimit()`: `JobList::MAX_ARGUMENT_JSON_LENGTH` where Nextcloud defines it, 32,000 from 34, else the 4,000 of Nextcloud 32 and 33), measured the way Nextcloud's job list measures it, and enqueues each.
-- An entry larger than the limit is enqueued without its `oldData` (the update notification is still sent) and the reduction is logged at warning level.
+- An entry larger than the limit is enqueued without its `oldData` (the entry is kept; conditioned `updated` rules and `calculatedChange` rules, which fail closed without the previous data, are skipped for that object) and the reduction is logged at warning level.
 - An entry still too large after that is logged at error level with its job class and uuid, and the rest of its chunk still goes.
 
 ## Screens

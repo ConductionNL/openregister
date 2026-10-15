@@ -308,9 +308,11 @@ class ListenerDeferralService {
 	 * entry in it was dropped with one log line (zuiddrecht live test, 14
 	 * October 2026: 11 chunks of 25 in one cron run). Now the entries are
 	 * spread over as many jobs as the running server's limit needs. An entry
-	 * that alone exceeds it goes without its `oldData` (the notification is
-	 * still sent, and the log names the reduction); only an entry that is
-	 * still too large after that is dropped, and it is named in the log.
+	 * that alone exceeds it goes without its `oldData`, which keeps the entry
+	 * but means the conditioned `updated` rules and the `calculatedChange`
+	 * rules, which fail closed without the previous data, are skipped for that
+	 * object (the log names it); only an entry that is still too large after
+	 * that is dropped, and it is named in the log.
 	 *
 	 * @param string $jobClass FQCN of the job to enqueue.
 	 *
@@ -353,15 +355,15 @@ class ListenerDeferralService {
 		foreach ($entries as $entry) {
 			$length = (strlen((string)json_encode($entry)) + 1);
 			if ($length > $budget && array_key_exists('oldData', $entry) === true) {
-				// The previous data is the bulk of a large update. Without it the
-				// 'updated' notification is still sent; only the comparison of old
-				// against new is skipped.
+				// The previous data is the bulk of a large update. Losing it beats
+				// losing the entry, but it is not free: rules that compare old
+				// against new fail closed without it and are skipped.
 				$reduced = $entry;
 				unset($reduced['oldData']);
 				$reducedLength = (strlen((string)json_encode($reduced)) + 1);
 				if ($reducedLength <= $budget) {
 					$this->logger->warning(
-						message: '[ListenerDeferralService] A deferred listener entry was too large for a background job; it was enqueued without its previous data',
+						message: '[ListenerDeferralService] A deferred listener entry was too large for a background job; it was enqueued without its previous data; conditioned updated rules and calculatedChange rules are skipped for this object',
 						context: [
 							'file' => __FILE__,
 							'line' => __LINE__,

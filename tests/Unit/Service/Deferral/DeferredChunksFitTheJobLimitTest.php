@@ -257,7 +257,7 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 	 *
 	 * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
 	 */
-	public function testAnOversizedUpdateLosesItsOldDataNotItsNotification(): void {
+	public function testAnOversizedUpdateIsKeptWithoutItsOldData(): void {
 		$deferral = $this->deferral(limit: ListenerDeferralService::ARGUMENT_LENGTH_NC32);
 		$listener = $this->listener(deferral: $deferral);
 		$listener->handle(new ObjectUpdatedEvent($this->caseOf(uuid: 'small-1', length: 100), $this->caseOf(uuid: 'small-1', length: 100)));
@@ -270,12 +270,13 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 		self::assertSame(['small-1', 'big', 'small-2'], $this->enqueuedUuids());
 		self::assertCount(1, $this->warnings);
 		self::assertSame('big', $this->warnings[0][1]['uuid']);
+		self::assertStringContainsString('calculatedChange rules are skipped', $this->warnings[0][0]);
 		foreach ($this->enqueued as $argument) {
 			foreach ($argument['entries'] as $entry) {
 				self::assertSame($entry['uuid'] !== 'big', array_key_exists('oldData', $entry) && $entry['oldData'] !== null);
 			}
 		}
-	}//end testAnOversizedUpdateLosesItsOldDataNotItsNotification()
+	}//end testAnOversizedUpdateIsKeptWithoutItsOldData()
 
 	/**
 	 * One entry too large for any job, whatever it carries, is named in the
