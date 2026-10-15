@@ -3217,8 +3217,13 @@ class ObjectService implements ObjectServiceInterface
             // read lookup above let through. Answered as not found, like the
             // save path (refuseSomebodyElsesDraft), so it is not announced.
             if ($_rbac === true && $objectToDelete !== null && $this->currentSchema !== null) {
-                $deleter = ($actingUserId ?? $this->userSession->getUser()?->getUID());
-                if ((new DraftStatusPolicy())->keptFrom(object: $objectToDelete, schema: $this->currentSchema, userId: $deleter) === true) {
+                $deleterUser = ($currentUser ?? $this->userSession->getUser());
+                $deleterIsAdmin = ($deleterUser !== null
+                    && in_array('admin', $this->groupManager->getUserGroupIds($deleterUser), true) === true);
+                // An administrator reads every draft, so is not kept from one.
+                if ($deleterIsAdmin === false
+                    && (new DraftStatusPolicy())->keptFrom(object: $objectToDelete, schema: $this->currentSchema, userId: $deleterUser?->getUID()) === true
+                ) {
                     throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found');
                 }
             }

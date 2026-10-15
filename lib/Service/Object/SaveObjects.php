@@ -809,7 +809,8 @@ class SaveObjects {
 			// user's draft could overwrite it by sending its uuid. The answer is
 			// the one a refused permission gives, so the draft's existence stays
 			// unannounced (same rule as ObjectService::refuseSomebodyElsesDraft).
-			if ($effectiveRbac === true && $existingEntity !== null) {
+			// An administrator reads every draft, so is not kept from one.
+			if ($effectiveRbac === true && $isAdmin === false && $existingEntity !== null) {
 				$draftKept = (new DraftStatusPolicy())->keptFrom(
 					object: $existingEntity,
 					schema: $rowSchema,

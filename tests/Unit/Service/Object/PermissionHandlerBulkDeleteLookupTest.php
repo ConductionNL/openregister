@@ -174,6 +174,27 @@ class PermissionHandlerBulkDeleteLookupTest extends TestCase {
 	 * @return void
 	 */
 	public function testSomebodyElsesDraftIsFilteredOutOfABulkDelete(): void {
+		$this->assertSame(['draft-bob', 'record'], $this->bulkDeleteFilterAs(uid: 'bob', groups: ['staff']), "alice's draft is left out; bob's own draft and an ordinary record stay");
+	}//end testSomebodyElsesDraftIsFilteredOutOfABulkDelete()
+
+	/**
+	 * An administrator is not kept from another user's draft in a bulk delete, as on the read path.
+	 *
+	 * @return void
+	 */
+	public function testAnAdministratorKeepsEveryDraftInABulkDelete(): void {
+		$this->assertSame(['draft-bob', 'draft-alice', 'record'], $this->bulkDeleteFilterAs(uid: 'root', groups: ['admin']));
+	}//end testAnAdministratorKeepsEveryDraftInABulkDelete()
+
+	/**
+	 * Run the bulk-delete filter over bob's draft, alice's draft and a record, as a user in the given groups.
+	 *
+	 * @param string        $uid    The caller.
+	 * @param array<string> $groups The caller's groups.
+	 *
+	 * @return array<int, string> The uuids that survive.
+	 */
+	private function bulkDeleteFilterAs(string $uid, array $groups): array {
 		$bobsDraft = $this->entity('draft-bob');
 		$bobsDraft->setStatus('draft');
 		$bobsDraft->setOwner('bob');
@@ -192,15 +213,17 @@ class PermissionHandlerBulkDeleteLookupTest extends TestCase {
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
 		$user = $this->createMock(\OCP\IUser::class);
-		$user->method('getUID')->willReturn('bob');
+		$user->method('getUID')->willReturn($uid);
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('getUserGroupIds')->willReturn($groups);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willThrowException(new \RuntimeException('no organisation service'));
 		$handler = new PermissionHandler(
 			userSession: $session,
 			userManager: $this->createMock(IUserManager::class),
-			groupManager: $this->createMock(IGroupManager::class),
+			groupManager: $groupManager,
 			schemaMapper: $schemas,
 			objectEntityMapper: $mapper,
 			conditionMatcher: $this->createMock(ConditionMatcher::class),
@@ -211,10 +234,8 @@ class PermissionHandlerBulkDeleteLookupTest extends TestCase {
 
 		// The schema's own delete rule is not what this asks (it would need a real user and groups);
 		// run inside the system context so hasPermission() says yes and only the draft rule decides.
-		$filtered = \OCA\OpenRegister\Service\SystemOperationContext::run(
+		return \OCA\OpenRegister\Service\SystemOperationContext::run(
 			static fn (): array => $handler->filterUuidsForPermissions(uuids: ['draft-bob', 'draft-alice', 'record'], _rbac: true, _multitenancy: false)
 		);
-
-		$this->assertSame(['draft-bob', 'record'], $filtered, "alice's draft is left out; bob's own draft and an ordinary record stay");
-	}//end testSomebodyElsesDraftIsFilteredOutOfABulkDelete()
+	}//end bulkDeleteFilterAs()
 }//end class

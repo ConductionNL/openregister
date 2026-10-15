@@ -1829,6 +1829,11 @@ class PermissionHandler {
 
 		$activeOrganisation = $this->getActiveOrganisationForContext();
 
+		// An administrator reads every draft, so is not kept from one here
+		// (the same check hasPermission() and the read predicate make).
+		$callerIsAdmin = ($currentUser !== null
+			&& in_array('admin', $this->groupManager->getUserGroupIds($currentUser), true) === true);
+
 		// Get objects for permission checking.
 		//
 		// This must be the CROSS-TABLE lookup. `MagicMapper::findAll()` needs a
@@ -1865,7 +1870,7 @@ class PermissionHandler {
 						// Another user's draft is kept from this caller as on every
 						// other path: it is left out like an object that does not
 						// exist, so the delete does not announce it.
-						if ((new DraftStatusPolicy())->keptFrom(object: $object, schema: $schema, userId: $userId) === true) {
+						if ($callerIsAdmin === false && (new DraftStatusPolicy())->keptFrom(object: $object, schema: $schema, userId: $userId) === true) {
 							continue;
 						}
 

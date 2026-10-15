@@ -355,6 +355,30 @@ class Wave12BulkSafeguardsTest extends TestCase {
 	}//end testBulkSaveOverSomebodyElsesDraftIsRejected()
 
 	/**
+	 * An administrator is not kept from another user's draft by the bulk save, as on the read path.
+	 */
+	public function testAnAdministratorMayBulkSaveOverSomebodyElsesDraft(): void {
+		$this->mockUser('root', isAdmin: true);
+		$schema = $this->newSchema(1);
+		$register = $this->newRegister(10);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(1);
+		$passed = $this->callApplyBulkSafeguards(
+			objects: [['@self' => ['uuid' => '22222222-2222-2222-2222-222222222222'], 'title' => 'admin edit']],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertCount(1, $passed);
+		$this->assertSame(0, $result['statistics']['invalid']);
+	}//end testAnAdministratorMayBulkSaveOverSomebodyElsesDraft()
+
+	/**
 	 * On an appendOnly schema the draft rule answers first: a non-owner is not told by the appendOnly message that the uuid exists.
 	 */
 	public function testAppendOnlyDoesNotRevealSomebodyElsesDraft(): void {
