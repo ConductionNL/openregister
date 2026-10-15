@@ -2640,7 +2640,7 @@ class AggregationRunner {
 		// restriction (an admin); internal callers that already decided who
 		// may see the figure pass `rowRbac: false`.
 		if ($rowRbac === true) {
-			$rowPredicate = $this->magicMapper->rbacRowPredicateSql(schema: $schema, action: 'read');
+			$rowPredicate = $this->magicMapper->rbacRowPredicateSql(schema: $schema, action: 'read', register: $register);
 			if ($rowPredicate !== null) {
 				$whereParts[] = $rowPredicate;
 			}

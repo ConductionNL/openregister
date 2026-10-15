@@ -554,6 +554,16 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @return void
 	 */
 	private function initializeHandlers(): void {
+		// Built first: the RBAC handler asks it which metadata columns a
+		// degraded table still lacks, so the read predicate does not name a
+		// `_status` column the table could not be given.
+		$this->metadataColumnHealer = new MagicMetadataColumnHealer(
+			db: $this->db,
+			logger: $this->logger,
+			magicMapper: $this,
+			cache: $this->createMetadataColumnCache()
+		);
+
 		$this->rbacHandler = new MagicRbacHandler(
 			userSession: $this->userSession,
 			groupManager: $this->groupManager,
@@ -561,7 +571,8 @@ class MagicMapper extends AbstractObjectMapper {
 			appConfig: $this->appConfig,
 			conditionMatcher: $this->container->get(\OCA\OpenRegister\Service\ConditionMatcher::class),
 			container: $this->container,
-			logger: $this->logger
+			logger: $this->logger,
+			metadataColumns: $this->metadataColumnHealer
 		);
 
 		$this->organizationHandler = new MagicOrganizationHandler(
@@ -579,13 +590,6 @@ class MagicMapper extends AbstractObjectMapper {
 		// Built before the table handler, which asks it on every first use
 		// of a table, and before the search handler, which asks it which
 		// metadata columns a degraded table still lacks.
-		$this->metadataColumnHealer = new MagicMetadataColumnHealer(
-			db: $this->db,
-			logger: $this->logger,
-			magicMapper: $this,
-			cache: $this->createMetadataColumnCache()
-		);
-
 		$this->tableHandler = new MagicTableHandler(
 			db: $this->db,
 			appConfig: $this->appConfig,
@@ -6437,7 +6441,8 @@ class MagicMapper extends AbstractObjectMapper {
 				schema: $schema,
 				_rbac: $_rbac,
 				_multitenancy: $_multitenancy,
-				registerId: $register->getId()
+				registerId: $register->getId(),
+				tableName: $tableName
 			);
 		}
 
@@ -6794,7 +6799,8 @@ class MagicMapper extends AbstractObjectMapper {
 					schema: $schema,
 					_rbac: $_rbac,
 					_multitenancy: $_multitenancy,
-					registerId: $register?->getId()
+					registerId: $register?->getId(),
+					tableName: $tableName
 				);
 
 				$accessResult = $accessQb->executeQuery();
@@ -7670,7 +7676,8 @@ class MagicMapper extends AbstractObjectMapper {
 			schema: $schema,
 			_rbac: $_rbac,
 			_multitenancy: $_multitenancy,
-			registerId: $table['registerId']
+			registerId: $table['registerId'],
+			tableName: self::TABLE_PREFIX . $table['registerId'] . '_' . $table['schemaId']
 		);
 
 		return true;
@@ -7925,16 +7932,23 @@ class MagicMapper extends AbstractObjectMapper {
 	 * the list and the raw query cannot drift apart. Columns are unqualified:
 	 * the query must read the magic table without an alias.
 	 *
-	 * @param Schema $schema The schema of the table being read.
-	 * @param string $action The action the rows are filtered for (default: 'read').
+	 * @param Schema        $schema   The schema of the table being read.
+	 * @param string        $action   The action the rows are filtered for (default: 'read').
+	 * @param Register|null $register The register of the table, so a metadata column the table could not
+	 *                                be given is left out of the predicate. Null keeps every predicate.
 	 *
 	 * @return string|null Null when no row restriction applies (an admin); otherwise
 	 *                     a predicate safe to AND into a WHERE, `1 = 0` for deny-all.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function rbacRowPredicateSql(Schema $schema, string $action = 'read'): ?string {
-		return $this->rbacHandler->buildRbacRowPredicateSql(schema: $schema, action: $action);
+	public function rbacRowPredicateSql(Schema $schema, string $action = 'read', ?Register $register = null): ?string {
+		$tableName = null;
+		if ($register !== null) {
+			$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		}
+
+		return $this->rbacHandler->buildRbacRowPredicateSql(schema: $schema, action: $action, tableName: $tableName);
 	}//end rbacRowPredicateSql()
 
 	/**
@@ -10154,7 +10168,8 @@ class MagicMapper extends AbstractObjectMapper {
 					schema: $schema,
 					_rbac: true,
 					_multitenancy: true,
-					registerId: $registerId
+					registerId: $registerId,
+					tableName: $tableName
 				);
 
 				$result = $qb->executeQuery();
