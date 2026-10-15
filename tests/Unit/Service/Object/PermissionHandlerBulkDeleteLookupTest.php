@@ -167,4 +167,54 @@ class PermissionHandlerBulkDeleteLookupTest extends TestCase {
 
 		$this->assertSame(['uuid-alpha'], $filtered);
 	}//end testUnresolvableUuidIsDropped()
+
+	/**
+	 * A bulk delete leaves somebody else's draft out, like an object that does not exist, and keeps the caller's own.
+	 *
+	 * @return void
+	 */
+	public function testSomebodyElsesDraftIsFilteredOutOfABulkDelete(): void {
+		$bobsDraft = $this->entity('draft-bob');
+		$bobsDraft->setStatus('draft');
+		$bobsDraft->setOwner('bob');
+		$bobsDraft->setSchema('5');
+		$alicesDraft = $this->entity('draft-alice');
+		$alicesDraft->setStatus('draft');
+		$alicesDraft->setOwner('alice');
+		$alicesDraft->setSchema('5');
+		$record = $this->entity('record');
+		$record->setStatus('active');
+		$record->setOwner('alice');
+		$record->setSchema('5');
+
+		$mapper = $this->createMock(MagicMapper::class);
+		$mapper->method('findMultipleAcrossAllMagicTables')->willReturn([$bobsDraft, $alicesDraft, $record]);
+		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas->method('find')->willReturn(new \OCA\OpenRegister\Db\Schema());
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('bob');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new \RuntimeException('no organisation service'));
+		$handler = new PermissionHandler(
+			userSession: $session,
+			userManager: $this->createMock(IUserManager::class),
+			groupManager: $this->createMock(IGroupManager::class),
+			schemaMapper: $schemas,
+			objectEntityMapper: $mapper,
+			conditionMatcher: $this->createMock(ConditionMatcher::class),
+			appConfig: $this->createMock(IAppConfig::class),
+			logger: $this->createMock(LoggerInterface::class),
+			container: $container,
+		);
+
+		// The schema's own delete rule is not what this asks (it would need a real user and groups);
+		// run inside the system context so hasPermission() says yes and only the draft rule decides.
+		$filtered = \OCA\OpenRegister\Service\SystemOperationContext::run(
+			static fn (): array => $handler->filterUuidsForPermissions(uuids: ['draft-bob', 'draft-alice', 'record'], _rbac: true, _multitenancy: false)
+		);
+
+		$this->assertSame(['draft-bob', 'record'], $filtered, "alice's draft is left out; bob's own draft and an ordinary record stay");
+	}//end testSomebodyElsesDraftIsFilteredOutOfABulkDelete()
 }//end class

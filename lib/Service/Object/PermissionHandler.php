@@ -1862,6 +1862,13 @@ class PermissionHandler {
 					try {
 						$schema = $this->schemaMapper->find($objectSchema);
 
+						// Another user's draft is kept from this caller as on every
+						// other path: it is left out like an object that does not
+						// exist, so the delete does not announce it.
+						if ((new DraftStatusPolicy())->keptFrom(object: $object, schema: $schema, userId: $userId) === true) {
+							continue;
+						}
+
 						// Property-level RBAC (per-property authorization + writeOnly
 						// stripping) lives in PropertyRbacHandler on the read path; this
 						// loop only decides object-level visibility.

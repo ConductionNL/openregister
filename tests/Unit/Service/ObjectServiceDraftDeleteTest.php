@@ -338,6 +338,26 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 	}//end testADraftIsDeletedForGoodOnAnySchema()
 
 	/**
+	 * Somebody else's draft is not deleted through the single-object path, and the handler is never asked.
+	 *
+	 * @return void
+	 */
+	public function testSomebodyElsesDraftIsNotDeleted(): void {
+		[$register, $schema] = $this->scope(archival: false);
+		$this->stored(status: 'draft');
+		$asked = [];
+		$this->recordHandler(asked: $asked);
+
+		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+		try {
+			// The stored draft belongs to 'agent'; the caller (no session user) is not that owner.
+			$this->service->deleteObject(uuid: 'draft-1', register: $register, schema: $schema, _rbac: true, _multitenancy: false);
+		} finally {
+			$this->assertSame([], $asked);
+		}
+	}//end testSomebodyElsesDraftIsNotDeleted()
+
+	/**
 	 * Control: an ordinary object's delete stays the soft delete it was.
 	 *
 	 * @return void

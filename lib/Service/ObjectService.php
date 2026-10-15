@@ -3151,6 +3151,7 @@ class ObjectService implements ObjectServiceInterface
                 $scopedSchema   = $this->currentSchema;
             }
 
+            $objectToDelete = null;
             try {
                 // With the caller's flags. The delete handler honours them, so a
                 // lookup that ignored them applied the session's RBAC and tenant
@@ -3211,6 +3212,16 @@ class ObjectService implements ObjectServiceInterface
                     );
                 }
             }//end try
+
+            // Somebody else's draft is not the caller's to delete, whatever the
+            // read lookup above let through. Answered as not found, like the
+            // save path (refuseSomebodyElsesDraft), so it is not announced.
+            if ($_rbac === true && $objectToDelete !== null && $this->currentSchema !== null) {
+                $deleter = ($actingUserId ?? $this->userSession->getUser()?->getUID());
+                if ((new DraftStatusPolicy())->keptFrom(object: $objectToDelete, schema: $this->currentSchema, userId: $deleter) === true) {
+                    throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found');
+                }
+            }
 
             return $this->deleteHandler->deleteObject(
                 register: $this->currentRegister,
