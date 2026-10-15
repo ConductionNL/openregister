@@ -50,6 +50,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
@@ -2554,6 +2555,34 @@ class AggregationRunner {
 			$whereParts[] = "(_archived IS NULL OR _archived = 'null'::jsonb)";
 		} else {
 			$whereParts[] = "(_archived IS NULL OR _archived = 'null' OR _archived = '')";
+		}
+
+		// Draft lens. A list hides drafts by default (and, for a schema with
+		// `draftsListed: false`, the caller's own as well); a count over the
+		// same rows has to agree with it, or a tile reads higher than the page
+		// under it. The clause is DraftListLens's own, for the mode a list with
+		// no query would use, and is left out of a table that could not be
+		// given its `_status` column (REQ-MTH-002).
+		$draftLens = new DraftListLens();
+		$statusMissing = in_array('_status', $this->magicMapper->getMetadataColumnHealer()->missingFor(tableName: $tableName), true);
+		if ($statusMissing === false) {
+			$draftOwner = $this->userSession->getUser()?->getUID();
+			$ownerBinding = null;
+			if ($draftOwner !== null && $draftOwner !== '') {
+				$ownerBinding = '?';
+			}
+
+			$draftPredicate = $draftLens->sql(
+				mode: $draftLens->modeFor(query: [], schema: $schema),
+				columnPrefix: '',
+				owner: $ownerBinding
+			);
+			if ($draftPredicate !== null) {
+				$whereParts[] = $draftPredicate;
+				if ($ownerBinding !== null && str_contains($draftPredicate, '?') === true) {
+					$bindings[] = $draftOwner;
+				}
+			}
 		}
 
 		// SECURITY: the organisation boundary. This fast path bypasses
