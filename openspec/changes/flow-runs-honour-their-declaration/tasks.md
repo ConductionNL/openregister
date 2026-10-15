@@ -36,4 +36,4 @@
       `object-level-sharing-and-private-scope` is keyed by object uuid and a
       flow is not an object, so this wants either a flow-shares table or the
       primitive widened. Named rather than approximated further.
-- [ ] 5.2 An e2e over the refusal, which needs two accounts on an instance.
+- [ ] 5.2 An e2e over the refusal, which needs two accounts on an instance. (live pass, decision 139)

@@ -19,7 +19,7 @@
 
 ## 4. Tests and docs
 
-- [ ] 4.1 Add `tests/e2e/ci/flow-node-rights.spec.ts`: as a non-administrator, see the e-mail step locked, fail to save a flow with it (403 naming the right), have an administrator grant `flow.node.send-email` to the user's group on the settings screen, then save successfully.
+- [ ] 4.1 Add `tests/e2e/ci/flow-node-rights.spec.ts`: as a non-administrator, see the e-mail step locked, fail to save a flow with it (403 naming the right), have an administrator grant `flow.node.send-email` to the user's group on the settings screen, then save successfully. (live pass, decision 139)
 - [ ] 4.2 Document node rights, the settings screen and the upgrade effect in `docs/`, with a screenshot of the settings section.
 
 Acceptance:

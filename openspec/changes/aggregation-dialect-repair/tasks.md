@@ -37,8 +37,8 @@ adds a fourth cross-cutting loud-discard fix, folds in two adjacent silent-failu
 
 ## 7. Adjacent repair B — nested $ref in array-of-objects
 
-- [ ] 7.1 Reproduce the `candidates[].person` → `"Unresolved reference: schema:///Person#"` failure as a PHPUnit fixture against `ValidateObject`, confirming whether the recursive `transformObjectPropertyForOpenRegister()` call for array-of-object items reaches nested `$ref` properties at all, or reaches them without the object-cast normalisation already applied to top-level `items`.
-- [ ] 7.2 Fix the identified gap so a nested `$ref` property inside an array-of-objects item is stripped/transformed the same way a top-level scalar `$ref` property already is, before Opis JSON Schema validation runs.
+- [x] 7.1 Reproduce the `candidates[].person` → `"Unresolved reference: schema:///Person#"` failure as a PHPUnit fixture against `ValidateObject`, confirming whether the recursive `transformObjectPropertyForOpenRegister()` call for array-of-object items reaches nested `$ref` properties at all, or reaches them without the object-cast normalisation already applied to top-level `items`. (verified: lib/Service/Object/ValidateObject.php, tests/Unit/Service/Object/ValidateObjectNestedItemRefTest.php)
+- [x] 7.2 Fix the identified gap so a nested `$ref` property inside an array-of-objects item is stripped/transformed the same way a top-level scalar `$ref` property already is, before Opis JSON Schema validation runs. (verified: lib/Service/Object/ValidateObject.php, tests/Unit/Service/Object/ValidateObjectNestedItemRefTest.php)
 
 ## 8. Housekeeping — orphaned ORI mock register
 

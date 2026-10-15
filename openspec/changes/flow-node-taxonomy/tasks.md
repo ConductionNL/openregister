@@ -18,7 +18,7 @@
 ## 3. Catalog and palette
 
 - [x] 3.1 The registry applies the defaults; the catalog serves both fields.
-- [ ] 3.2 The palette groups by category in a fixed order, never registration order.
+- [x] 3.2 The palette groups by category in a fixed order, never registration order. (verified: lib/Service/Flow/FlowNodeTaxonomyResolver.php, tests/Unit/Service/Flow/FlowNodeTaxonomyTest.php)
 - [ ] 3.3 nc-vue: grouped palette, jest spec seen RED first, en/nl for the category labels with the `writing` skill loaded first.
 
 ## 4. The gate
