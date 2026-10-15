@@ -275,7 +275,9 @@ object, and the admin-only index remains the only surface that carries them.
 
 ### Requirement: The history of one object is readable by whoever may read that object
 
-The per-object history, `GET /api/objects/{register}/{schema}/{id}/audit-trails`,
+The per-object history, `GET /api/objects/{register}/{schema}/{id}/audit-trails`
+and its older sibling `GET /api/objects/{register}/{schema}/{id}/logs` (the same
+answer, for the same caller, through the same redaction),
 SHALL be readable by a non-admin caller if and only if that caller may read the
 object itself (decision 14 Oct 2026). Readability SHALL be decided by the read
 path of the object GET, `ObjectService::find()` with RBAC and multitenancy on,
