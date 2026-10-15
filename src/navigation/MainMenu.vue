@@ -1,5 +1,5 @@
 <template>
-	<CnAppNav :manifest="manifest" :translate="translate" :isAdmin="isAdmin">
+	<CnAppNav :manifest="navManifest" :translate="translate" :isAdmin="isAdmin">
 		<!-- Primary action: the active-organisation switcher button. Rendered
 		     in CnAppNav's #primary-action slot because its label is live store
 		     state (organisationStore.activeOrganisation) — the manifest's
@@ -66,6 +66,33 @@ export default {
 				return getCurrentUser()?.isAdmin === true
 			} catch {
 				return false
+			}
+		},
+
+		/**
+		 * The manifest with the signed-in user's admin flag in `runtime.user`.
+		 *
+		 * A menu entry's `permission` does nothing here: OpenRegister passes no
+		 * permissions list to CnAppNav, and with none every entry renders. An
+		 * admin-only entry is therefore gated with `visibleIf` on
+		 * `user.isAdmin`, which CnAppNav resolves against this runtime block,
+		 * and hides when the block is absent.
+		 *
+		 * Visibility only. The routes behind such an entry refuse a non-admin
+		 * server-side.
+		 *
+		 * @return {object} The manifest CnAppNav renders.
+		 *
+		 * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-pack-changes-must-be-limited-to-administrators-and-logged
+		 */
+		navManifest() {
+			const runtime = this.manifest.runtime || {}
+			return {
+				...this.manifest,
+				runtime: {
+					...runtime,
+					user: { ...(runtime.user || {}), isAdmin: this.isAdmin },
+				},
 			}
 		},
 

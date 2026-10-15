@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\MigrationPack;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Exception\InvalidPackDefinitionException;
 use OCA\OpenRegister\Service\MigrationPack\PackDefinitionValidator;
 use PHPUnit\Framework\TestCase;
 
@@ -131,13 +132,13 @@ class PackDefinitionValidatorTest extends TestCase {
 	public function testFieldMappingWithoutSourceIsRejected(): void {
 		$errors = $this->validator->validate($this->validPack(['fieldMappings' => [['target' => 'title']]]));
 		$this->assertNotEmpty($errors);
-		$this->assertStringContainsString('.source', implode(' ', $errors));
+		$this->assertContains('Mapping row 1: source is required and must be a non-empty string', $errors);
 	}
 
 	public function testFieldMappingWithoutTargetIsRejected(): void {
 		$errors = $this->validator->validate($this->validPack(['fieldMappings' => [['source' => 'Name']]]));
 		$this->assertNotEmpty($errors);
-		$this->assertStringContainsString('.target', implode(' ', $errors));
+		$this->assertContains('Mapping row 1: target is required and must be a non-empty string', $errors);
 	}
 
 	public function testUnknownTransformTypeIsRejected(): void {
@@ -151,7 +152,30 @@ class PackDefinitionValidatorTest extends TestCase {
 			)
 		);
 		$this->assertNotEmpty($errors);
-		$this->assertStringContainsString('.transform.type', implode(' ', $errors));
+		$this->assertStringContainsString('Mapping row 1: transform.type', implode(' ', $errors));
+	}
+
+	public function testMappingRowsAreCountedFromOneAsTheEditorTableShowsThem(): void {
+		$errors = $this->validator->validate(
+			$this->validPack(
+				[
+					'fieldMappings' => [
+						['source' => 'Name', 'target' => 'title'],
+						['source' => 'Code', 'target' => 'code'],
+						'not an object',
+						['source' => 'Status', 'target' => 'status', 'transform' => ['type' => 'lookup']],
+					],
+				]
+			)
+		);
+
+		$this->assertSame(
+			[
+				'Mapping row 3 must be an object',
+				'Mapping row 4: transform.map is required and must be a non-empty object for a lookup transform',
+			],
+			$errors
+		);
 	}
 
 	/**
@@ -240,6 +264,18 @@ class PackDefinitionValidatorTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->expectExceptionMessageMatches('/Invalid migration pack definition/');
 		$this->validator->assertValid(['id' => '']);
+	}
+
+	public function testAssertValidCarriesEveryErrorSeparately(): void {
+		$definition = $this->validPack(['name' => '', 'version' => '1.0']);
+
+		try {
+			$this->validator->assertValid($definition);
+			$this->fail('An invalid pack must be refused');
+		} catch (InvalidPackDefinitionException $e) {
+			$this->assertSame($this->validator->validate($definition), $e->getErrors());
+			$this->assertCount(2, $e->getErrors());
+		}
 	}
 
 	public function testAssertValidDoesNotThrowForAValidPack(): void {
