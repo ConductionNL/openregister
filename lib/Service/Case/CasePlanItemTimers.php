@@ -85,8 +85,6 @@ class CasePlanItemTimers {
 	 *
 	 * @return int How many timers were armed.
 	 *
-	 * @throws Throwable When the timer of a statutory (wettelijk) expiry could not be armed; any other refusal is logged.
-	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
 	public function onEntered(CaseItem $item, ?string $actor, ?DateTimeInterface $now = null): int {
@@ -173,8 +171,6 @@ class CasePlanItemTimers {
 	 *
 	 * @return boolean True when armed.
 	 *
-	 * @throws Throwable When the timer of a statutory (wettelijk) deadline could not be armed.
-	 *
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
 	private function arm(CaseItem $item, string $purpose, DateTimeInterface $deadline, ?string $actor, DateTimeImmutable $now): bool {
@@ -220,16 +216,23 @@ class CasePlanItemTimers {
 			return true;
 		} catch (Throwable $failure) {
 			if ($config['legalEffect'] === FlowTimer::LEGAL_WETTELIJK) {
-				// A statutory expiry that is not armed is a term that never
-				// runs: the item would stay active past a legal deadline with
-				// nothing to end it. That is not a warning to log and move on
-				// from; it is raised to the caller of the transition.
+				// The transition is already committed and the caller swallows an
+				// exception raised from here (CasePlanStateMachine::flushEvents()),
+				// so this cannot fail it. It can only say loudly that the item is
+				// active without the timer that enforces its statutory expiry.
 				$this->logger->error(
-					'[CasePlanItemTimers] The timer of a statutory plan-item deadline could not be armed: ' . $failure->getMessage(),
-					['item' => $item->getUuid(), 'purpose' => $purpose, 'exception' => $failure]
+					sprintf(
+						'[CasePlanItemTimers] Plan item %s of case object %s is active WITHOUT its statutory (%s) %s timer: the term will not run and nothing will end the item. %s',
+						(string)$item->getItemKey(),
+						(string)$item->getObjectUuid(),
+						FlowTimer::LEGAL_WETTELIJK,
+						$purpose,
+						$failure->getMessage()
+					),
+					['item' => $item->getUuid(), 'case' => $item->getObjectUuid(), 'legalEffect' => FlowTimer::LEGAL_WETTELIJK, 'purpose' => $purpose, 'exception' => $failure]
 				);
 
-				throw $failure;
+				return false;
 			}
 
 			$this->logger->warning(

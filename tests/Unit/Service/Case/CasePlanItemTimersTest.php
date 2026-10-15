@@ -163,25 +163,32 @@ class CasePlanItemTimersTest extends TestCase {
 	}//end testEdgesNeverBlockTheTransition()
 
 	/**
-	 * A refused timer of a statutory expiry is raised, not logged away; a service-norm or advisory one stays a warning.
+	 * A refused timer of a statutory expiry is logged at error level naming case, item and legal effect; the transition stands.
 	 *
 	 * @return void
 	 */
-	public function testARefusedStatutoryTimerIsRaised(): void {
+	public function testARefusedStatutoryTimerIsLoggedLoudly(): void {
 		$now = new DateTimeImmutable('2026-10-10T10:00:00+00:00');
 		$statutory = CaseFixtures::row(id: 9, key: 'stat', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
 		$statutory->setExpiresAt(new DateTime('2026-10-20T10:00:00+00:00'));
 		$statutory->setPlanSettings(['statutory' => ['stat']]);
-		$norm = CaseFixtures::row(id: 10, key: 'norm', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
-		$norm->setExpiresAt(new DateTime('2026-10-20T10:00:00+00:00'));
 		$this->timers->method('arm')->willThrowException(new RuntimeException('calendar unknown'));
+		$errors = [];
+		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+		$logger->method('error')->willReturnCallback(
+			static function (string $message, array $context = []) use (&$errors): void {
+				$errors[] = [$message, $context];
+			}
+		);
+		$service = new CasePlanItemTimers(timers: $this->timers, logger: $logger);
 
-		$this->assertSame(0, $this->service()->onEntered(item: $norm, actor: null, now: $now), 'a service norm stays a warning');
+		$this->assertSame(0, $service->onEntered(item: $statutory, actor: null, now: $now));
 
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('calendar unknown');
-		$this->service()->onEntered(item: $statutory, actor: null, now: $now);
-	}//end testARefusedStatutoryTimerIsRaised()
+		$this->assertCount(1, $errors);
+		$this->assertStringContainsString('WITHOUT its statutory', $errors[0][0]);
+		$this->assertStringContainsString('stat', $errors[0][0]);
+		$this->assertSame('wettelijk', $errors[0][1]['legalEffect']);
+	}//end testARefusedStatutoryTimerIsLoggedLoudly()
 
 	/**
 	 * Reaching a terminal state cancels the item's open timers; a failure to
