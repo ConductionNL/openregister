@@ -32,6 +32,7 @@ use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryAppData;
+use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryLockingProvider;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
@@ -137,6 +138,18 @@ class FormSubmitServiceTest extends TestCase {
 	 */
 	private array $dispatched = [];
 
+	/**
+	 * The locks the idempotency store holds.
+	 */
+	private MemoryLockingProvider $locks;
+
+	/**
+	 * Run inside the next save, to simulate a parallel request.
+	 *
+	 * @var callable|null
+	 */
+	private $duringSave = null;
+
 	protected function setUp(): void {
 		$this->schemaBySlug = [
 			'case' => $this->schema(
@@ -231,6 +244,7 @@ class FormSubmitServiceTest extends TestCase {
 		);
 
 		$appData = new MemoryAppData();
+		$this->locks = new MemoryLockingProvider();
 		$this->uploads = new FormUploadStore(appData: $appData, time: $time, temp: $temp, rules: new FilePropertyRules(), l10n: $l10n);
 
 		$this->service = new FormSubmitService(
@@ -239,7 +253,7 @@ class FormSubmitServiceTest extends TestCase {
 			validator: $validateObject,
 			objects: $this->objects,
 			findings: new FormPayloadFindings(),
-			keys: new FormIdempotencyStore(appData: $appData, time: $time),
+			keys: new FormIdempotencyStore(appData: $appData, time: $time, locks: $this->locks, l10n: $l10n),
 			uploads: $this->uploads,
 			l10n: $l10n,
 			logger: $this->createMock(LoggerInterface::class),
@@ -330,6 +344,12 @@ class FormSubmitServiceTest extends TestCase {
 		?string $_owner = null,
 	): ObjectEntity {
 		$this->assertInstanceOf(Schema::class, $schema);
+		if ($this->duringSave !== null) {
+			$hook = $this->duringSave;
+			$this->duringSave = null;
+			$hook();
+		}
+
 		$this->saves[] = ['object' => $object, 'schema' => $schema->getSlug(), 'rbac' => $_rbac, 'user' => $currentUser, 'unowned' => $_unowned, 'files' => $uploadedFiles, 'uuid' => $uuid, 'owner' => $_owner];
 		if (isset($this->refuseSave[$schema->getSlug()]) === true) {
 			throw $this->refuseSave[$schema->getSlug()];
@@ -456,6 +476,73 @@ class FormSubmitServiceTest extends TestCase {
 		$this->service->submit(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'a', 'caseType' => 'b'], idempotencyKey: 'k2', scope: 'form-1');
 		$this->assertCount(2, $this->saves);
 	}//end testARepeatedIdempotencyKeyRepeatsTheAnswer()
+
+	/**
+	 * The key is client-chosen: another user, or another payload, with the same key never gets the first answer.
+	 */
+	public function testAnIdempotencyKeyDoesNotHandTheAnswerToSomebodyElse(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$alice = $this->createMock(IUser::class);
+		$alice->method('getUID')->willReturn('alice');
+		$bob = $this->createMock(IUser::class);
+		$bob->method('getUID')->willReturn('bob');
+		$payload = ['title' => 'a', 'caseType' => 'b'];
+
+		$first = $this->service->submit(destination: $destination, mapping: null, payload: $payload, subject: $alice, idempotencyKey: 'k1', scope: 'form-1');
+
+		foreach ([[$bob, $payload], [null, $payload], [$alice, ['title' => 'other', 'caseType' => 'b']]] as [$subject, $body]) {
+			try {
+				$this->service->submit(destination: $destination, mapping: null, payload: $body, subject: $subject, idempotencyKey: 'k1', scope: 'form-1');
+				$this->fail('The key handed over the first answer.');
+			} catch (FormSubmitRefusedException $refused) {
+				$this->assertSame(409, $refused->getStatus());
+				$this->assertStringNotContainsString((string)$first['reference'], $refused->getMessage());
+			}
+		}
+
+		$this->assertCount(1, $this->saves);
+		$this->assertSame($first, $this->service->submit(destination: $destination, mapping: null, payload: $payload, subject: $alice, idempotencyKey: 'k1', scope: 'form-1'));
+	}//end testAnIdempotencyKeyDoesNotHandTheAnswerToSomebodyElse()
+
+	/**
+	 * Two submits in flight with one key create one object; the key is free again afterwards.
+	 */
+	public function testTwoConcurrentSubmitsWithOneKeyCreateOneObject(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$payload = ['title' => 'a', 'caseType' => 'b'];
+		$status = null;
+		// While the first submit is writing, the same request arrives again.
+		$this->duringSave = function () use ($destination, $payload, &$status): void {
+			try {
+				$this->service->submit(destination: $destination, mapping: null, payload: $payload, idempotencyKey: 'k1', scope: 'form-1');
+			} catch (FormSubmitRefusedException $refused) {
+				$status = $refused->getStatus();
+			}
+		};
+
+		$first = $this->service->submit(destination: $destination, mapping: null, payload: $payload, idempotencyKey: 'k1', scope: 'form-1');
+
+		$this->assertSame(409, $status);
+		$this->assertCount(1, $this->saves);
+		$this->assertSame([], $this->locks->held);
+		$this->assertSame($first, $this->service->submit(destination: $destination, mapping: null, payload: $payload, idempotencyKey: 'k1', scope: 'form-1'));
+	}//end testTwoConcurrentSubmitsWithOneKeyCreateOneObject()
+
+	/**
+	 * A refused submit releases its key, so the corrected retry is not locked out.
+	 */
+	public function testARefusedSubmitReleasesItsKey(): void {
+		try {
+			$this->service->submit(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'a'], idempotencyKey: 'k1', scope: 'form-1');
+			$this->fail('An incomplete submit was accepted.');
+		} catch (FormSubmitRefusedException $refused) {
+			$this->assertSame(422, $refused->getStatus());
+		}
+
+		$this->assertSame([], $this->locks->held);
+		$this->service->submit(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'a', 'caseType' => 'b'], idempotencyKey: 'k1', scope: 'form-1');
+		$this->assertCount(1, $this->saves);
+	}//end testARefusedSubmitReleasesItsKey()
 
 	/**
 	 * Every write is validated before the first: an invalid second write means no write at all.

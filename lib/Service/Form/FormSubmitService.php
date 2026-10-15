@@ -156,7 +156,7 @@ class FormSubmitService {
 	 *
 	 * @return array<string, mixed> The answer: reference, id, receivedAt, confirmation, objects.
 	 *
-	 * @throws FormSubmitRefusedException 422 refused payload, 403 not allowed, 404 no destination, 503 try again later.
+	 * @throws FormSubmitRefusedException 422 refused payload, 403 not allowed, 404 no destination, 409 key taken or in use, 503 try again later.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
@@ -249,7 +249,7 @@ class FormSubmitService {
 	 *
 	 * @return array<string, mixed> The answer: reference, id, receivedAt, confirmation, objects.
 	 *
-	 * @throws FormSubmitRefusedException 422 refused payload, 403 not allowed, 404 no destination, 503 try again later.
+	 * @throws FormSubmitRefusedException 422 refused payload, 403 not allowed, 404 no destination, 409 key taken or in use, 503 try again later.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-writing-several-objects-must-commit-all-or-none
 	 */
@@ -263,28 +263,76 @@ class FormSubmitService {
 		?DraftOwner $owner = null,
 	): array {
 		$key = trim((string)$idempotencyKey);
+		if ($key === '') {
+			return $this->submitOnce(writes: $writes, payload: $payload, subject: $subject, scope: $scope, draftId: $draftId, owner: $owner);
+		}
+
 		$keyScope = $this->keyScope(scope: $scope, writes: $writes);
-		if ($key !== '') {
-			$remembered = $this->keys->find(scope: $keyScope, key: $key);
+		$binding = $this->keys->bindingFor(subject: $this->submitterOf(subject: $subject, owner: $owner), payload: $payload);
+
+		// Reserve the key for the length of the submit: a parallel retry with
+		// the same key is refused (409) instead of writing a second object.
+		$this->keys->reserve(scope: $keyScope, key: $key);
+		try {
+			$remembered = $this->keys->find(scope: $keyScope, key: $key, binding: $binding);
 			if ($remembered !== null) {
 				/*
 				 * @var array<string, mixed> $remembered
 				 */
 				return $remembered;
 			}
-		}
 
-		$plans = $this->plan(writes: $writes, payload: $payload, scope: $scope);
-		[$created, $receivedAt] = $this->writeOrPromote(plans: $plans, subject: $subject, draftId: $draftId, owner: $owner);
-
-		$this->uploads->claim(tokens: array_merge(...array_map(static fn (array $plan): array => $plan['tokens'], $plans)));
-		$answer = $this->answer(created: $created, receivedAt: $receivedAt);
-		if ($key !== '') {
-			$this->keys->remember(scope: $keyScope, key: $key, response: $answer);
+			$answer = $this->submitOnce(writes: $writes, payload: $payload, subject: $subject, scope: $scope, draftId: $draftId, owner: $owner);
+			$this->keys->remember(scope: $keyScope, key: $key, response: $answer, binding: $binding);
+		} finally {
+			$this->keys->release(scope: $keyScope, key: $key);
 		}
 
 		return $answer;
 	}//end submitAll()
+
+	/**
+	 * Write one submit and answer it, without any idempotency handling.
+	 *
+	 * @param array<int, array<string, mixed>> $writes  The writes, in order.
+	 * @param array<string, mixed>             $payload What the submitter filled in.
+	 * @param IUser|null                       $subject The signed-in subject; null for anonymous.
+	 * @param string                           $scope   The form id the tokens belong to.
+	 * @param string|null                      $draftId The subject's draft to leave (one write only).
+	 * @param DraftOwner|null                  $owner   The draft's asserted owner.
+	 *
+	 * @return array<string, mixed> The answer.
+	 *
+	 * @throws FormSubmitRefusedException 422, 403, 404 or 503.
+	 */
+	private function submitOnce(array $writes, array $payload, ?IUser $subject, string $scope, ?string $draftId, ?DraftOwner $owner): array {
+		$plans = $this->plan(writes: $writes, payload: $payload, scope: $scope);
+		[$created, $receivedAt] = $this->writeOrPromote(plans: $plans, subject: $subject, draftId: $draftId, owner: $owner);
+
+		$this->uploads->claim(tokens: array_merge(...array_map(static fn (array $plan): array => $plan['tokens'], $plans)));
+
+		return $this->answer(created: $created, receivedAt: $receivedAt);
+	}//end submitOnce()
+
+	/**
+	 * Who the submit is by, as the idempotency binding reads it.
+	 *
+	 * @param IUser|null      $subject The signed-in subject.
+	 * @param DraftOwner|null $owner   The asserted draft owner.
+	 *
+	 * @return string The user id, a scope value, or the anonymous marker.
+	 */
+	private function submitterOf(?IUser $subject, ?DraftOwner $owner): string {
+		if ($subject !== null) {
+			return 'user:' . $subject->getUID();
+		}
+
+		if ($owner !== null && $owner->isScoped() === true) {
+			return 'scope:' . $owner->value();
+		}
+
+		return 'anonymous';
+	}//end submitterOf()
 
 	/**
 	 * Validate and write a fresh submit, or promote a draft.
