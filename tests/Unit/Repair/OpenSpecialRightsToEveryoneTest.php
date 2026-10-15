@@ -107,7 +107,9 @@ class OpenSpecialRightsToEveryoneTest extends TestCase {
 	 * @return IRepairStep The step.
 	 */
 	private function registeredStep(): IRepairStep {
-		$info = simplexml_load_file(__DIR__ . '/../../../appinfo/info.xml');
+		// Read the file with PHP, not libxml: under Nextcloud the libxml external
+		// entity loader refuses file paths, and simplexml_load_file() answers false.
+		$info = simplexml_load_string((string)file_get_contents(dirname(__DIR__, 3) . '/appinfo/info.xml'));
 		$this->assertNotFalse($info);
 
 		$registered = array_map('strval', $info->xpath('//repair-steps/post-migration/step'));
