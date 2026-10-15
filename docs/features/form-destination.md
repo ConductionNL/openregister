@@ -87,7 +87,10 @@ OpenRegister object (`status: published`, `destination` or `writes`,
 
 A retried `Idempotency-Key` returns the first answer for 24 hours, to the same
 person with the same payload only; the key is reserved while its submit runs, so
-a parallel retry answers 409 instead of creating a second object. When one
+a parallel retry answers 409 instead of creating a second object. That
+parallel-retry protection relies on Nextcloud's file locking (`filelocking.enabled`,
+on by default); with file locking switched off the key is not reserved and only the
+sequential repeat is answered from the stored answer. When one
 of several writes is refused, the earlier writes of that submit are deleted
 before the answer, and the deletion is logged.
 

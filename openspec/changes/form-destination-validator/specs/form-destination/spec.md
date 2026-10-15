@@ -47,8 +47,20 @@
 #### Scenario: A repeated idempotency key repeats the answer
 
 - **GIVEN** a submit with key `k1` that created object 7
-- **WHEN** the same key is submitted again within 24 hours
+- **WHEN** the same key is submitted again within 24 hours by the same subject with the same payload
 - **THEN** the response repeats object 7's reference and no object is created
+
+#### Scenario: A repeated key from somebody else, or with another payload, is refused
+
+- **GIVEN** a submit with key `k1` that created object 7
+- **WHEN** another subject, or the same subject with another payload, submits key `k1` within 24 hours
+- **THEN** the response is 409, carries nothing of object 7's answer, and no object is created
+
+#### Scenario: A parallel retry with the same key is refused
+
+- **GIVEN** a submit with key `k1` that is still being written
+- **WHEN** the same key arrives again before it finishes
+- **THEN** the second request is answered 409 and only one object is created
 
 ### Requirement: A submit writing several objects MUST commit all or none
 
