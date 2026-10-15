@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\DraftListLens;
 use PHPUnit\Framework\TestCase;
 
@@ -21,6 +22,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\OpenRegister\Service\Object\DraftListLens
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class DraftListLensTest extends TestCase {
 
@@ -57,6 +59,8 @@ class DraftListLensTest extends TestCase {
 			'the digit' => ['1', DraftListLens::ONLY],
 			'any' => ['any', DraftListLens::ANY],
 			'ANY' => [' ANY ', DraftListLens::ANY],
+			'none' => ['none', DraftListLens::NONE],
+			'none, any case' => [' None ', DraftListLens::NONE],
 			'explicit false' => ['false', DraftListLens::EXCLUDE],
 			'a typo' => ['al', DraftListLens::EXCLUDE],
 			'the empty string' => ['', DraftListLens::EXCLUDE],
@@ -105,6 +109,50 @@ class DraftListLensTest extends TestCase {
 			'The owner is whatever the emitter quoted or bound; the lens never quotes.'
 		);
 	}//end testTheOwnerKeepsTheirOwnDrafts()
+
+	/**
+	 * A schema with `draftsListed: false` keeps the caller's own drafts out of its work list; asking still shows them.
+	 */
+	public function testASchemaCanKeepOwnDraftsOutOfItsLists(): void {
+		$lens = new DraftListLens();
+		$quiet = new Schema();
+		$quiet->setConfiguration(['draftsListed' => false]);
+		$ordinary = new Schema();
+		$explicit = new Schema();
+		$explicit->setConfiguration(['draftsListed' => true]);
+
+		// The default, and everything that reads as the default.
+		$this->assertSame(DraftListLens::NONE, $lens->modeFor(query: [], schema: $quiet));
+		$this->assertSame(DraftListLens::NONE, $lens->modeFor(query: ['_drafts' => 'false'], schema: $quiet));
+		$this->assertSame(DraftListLens::NONE, $lens->modeFor(query: ['_drafts' => 'al'], schema: $quiet), 'A typo must not widen the list.');
+
+		// Unless the caller asks for drafts.
+		$this->assertSame(DraftListLens::ONLY, $lens->modeFor(query: ['_drafts' => 'true'], schema: $quiet));
+		$this->assertSame(DraftListLens::ANY, $lens->modeFor(query: ['_drafts' => 'any'], schema: $quiet));
+		$this->assertSame(DraftListLens::ANY, $lens->modeFor(query: ['@self' => ['status' => 'draft']], schema: $quiet));
+
+		// Control: a schema that does not say so keeps today's work list.
+		$this->assertSame(DraftListLens::EXCLUDE, $lens->modeFor(query: [], schema: $ordinary));
+		$this->assertSame(DraftListLens::EXCLUDE, $lens->modeFor(query: [], schema: $explicit));
+		$this->assertSame(DraftListLens::EXCLUDE, $lens->modeFor(query: []));
+	}//end testASchemaCanKeepOwnDraftsOutOfItsLists()
+
+	/**
+	 * `_drafts=none` leaves out every draft, the caller's own included (decision 216).
+	 *
+	 * The control is the test above: the same caller on the default lens
+	 * keeps their own drafts, so this clause differs only by the owner admit.
+	 */
+	public function testNoneLeavesOutTheCallersOwnDraftsToo(): void {
+		$lens = new DraftListLens();
+
+		$this->assertSame(
+			"(t._status IS NULL OR t._status <> 'draft')",
+			$lens->sql(mode: DraftListLens::NONE, columnPrefix: 't.', owner: ':dcValue1')
+		);
+		$this->assertSame("(_status IS NULL OR _status <> 'draft')", $lens->sql(mode: DraftListLens::NONE, columnPrefix: '', owner: "'alice'"));
+		$this->assertSame(DraftListLens::NONE, $lens->modeFor(query: ['_drafts' => 'none', '@self' => ['status' => 'draft']]), 'The parameter, when sent, wins.');
+	}//end testNoneLeavesOutTheCallersOwnDraftsToo()
 
 	/**
 	 * Drafts alone, and no clause at all when both were asked for.

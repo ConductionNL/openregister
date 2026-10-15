@@ -92,6 +92,7 @@ use OCA\OpenRegister\Service\Object\RepeatingGroupValidator;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ReadOnlyTypeException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
@@ -2278,6 +2279,9 @@ class ObjectService implements ObjectServiceInterface
                 object: $existingObject
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // Not found FOR THIS CALLER: new, or stored and hidden from them.
+            $this->refuseSomebodyElsesDraft(uuid: $uuid, _rbac: $_rbac);
+
             // Object not found, this is a CREATE operation with specific UUID.
             $this->checkPermission(
                 schema: $this->currentSchema,
@@ -2289,6 +2293,58 @@ class ObjectService implements ObjectServiceInterface
             );
         }//end try
     }//end checkSavePermissions()
+
+    /**
+     * Refuse a write to a stored draft the caller cannot read.
+     *
+     * A draft answers to its owner only (decision 180), and that rule lives in
+     * the read query. The lookup above therefore does not find somebody else's
+     * draft, and the write went on as a create under a chosen uuid, judged by
+     * the schema's create rule, and was then stored over the draft. Anybody
+     * who may create in the schema could change somebody else's draft through
+     * PATCH and got its content back in the answer. Found on a live instance,
+     * 12 October 2026.
+     *
+     * So the uuid is looked up once more, past the read rule, and only for
+     * this question. Skipped with RBAC off: an administrator, a job and a
+     * scope-value owner (decision 195) are judged by their caller.
+     *
+     * @param string $uuid  The uuid the caller's own lookup did not find.
+     * @param bool   $_rbac Whether the write is judged for the signed-in caller.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the uuid is a draft kept from the caller.
+     *
+     * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+     */
+    private function refuseSomebodyElsesDraft(string $uuid, bool $_rbac): void
+    {
+        if ($_rbac === false || $this->currentSchema === null) {
+            return;
+        }
+
+        try {
+            $stored = $this->objectMapper->find(
+                identifier: $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\OCP\AppFramework\Db\DoesNotExistException) {
+            return;
+        }
+
+        $kept = (new DraftStatusPolicy())->keptFrom(
+            object: $stored,
+            schema: $this->currentSchema,
+            userId: $this->userSession->getUser()?->getUID()
+        );
+        if ($kept === true) {
+            throw new NotAuthorizedException(message: 'Only the person who started this draft can change it.');
+        }
+    }//end refuseSomebodyElsesDraft()
 
     /**
      * Build the transient object a create rule's `match` is evaluated against.
@@ -3055,7 +3111,18 @@ class ObjectService implements ObjectServiceInterface
             // Reject DELETE operations on archival-annotated schemas unless this
             // call originates from the retention sweep cron (which alone sets
             // $_retentionSweep true). User-driven deletes get a structured 403.
-            if ($this->currentSchema !== null) {
+            //
+            // A DRAFT IS NOT YET A RECORD (decisions 180 and 216). It holds
+            // unsent input, nothing refers to it, and it was never received,
+            // so the archival term of its schema has not started. Without
+            // this an archival schema kept every abandoned draft for ever: its
+            // owner could not discard it and the draft cleanup could not
+            // remove it. Only a STORED draft passes, and a saved object can
+            // never go back to draft (DraftStatusPolicy), so no record can be
+            // turned into one to get past this gate.
+            if ($this->currentSchema !== null
+                && $this->isDeletableDraft(uuid: $uuid, retentionSweep: $_retentionSweep, _rbac: $_rbac, _multitenancy: $_multitenancy) === false
+            ) {
                 $this->rejectIfArchivalImmutable(
                     schema: $this->currentSchema,
                     retentionSweep: $_retentionSweep
@@ -3116,6 +3183,13 @@ class ObjectService implements ObjectServiceInterface
                 );
 
                 \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.permitted');
+
+                // A draft is removed for good, with its files: a tombstone of
+                // unsent input serves nobody, and on an archival schema the
+                // purge would refuse it for ever (decisions 180 and 216).
+                if ($objectToDelete->isDraft() === true) {
+                    $permanent = true;
+                }
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Scoped lookup is authoritative: if the caller asked for a
                 // specific (register, schema) and the UUID is not in that scope,
@@ -3223,6 +3297,48 @@ class ObjectService implements ObjectServiceInterface
     {
         return $schema->hasArchivalAnnotation();
     }//end schemaHasArchivalAnnotation()
+
+    /**
+     * Whether the delete targets a stored draft on a schema whose archival gate would refuse it.
+     *
+     * Only asked when the gate would otherwise refuse (an archival schema, not
+     * the retention sweep), so a delete on any other schema costs no lookup.
+     * Looked up with the caller's flags and in the register and schema in
+     * context, like the transferred-object guard: an object the caller cannot
+     * reach is not their draft, and the gate refuses as before.
+     *
+     * @param string $uuid           The object being deleted.
+     * @param bool   $retentionSweep True for the archival retention sweep, which the gate lets through anyway.
+     * @param bool   $_rbac          Apply RBAC to the lookup.
+     * @param bool   $_multitenancy  Apply the tenant scope to the lookup.
+     *
+     * @return bool True when the object is stored in status `draft`.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors deleteObject()'s own flags.
+     *
+     * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-be-deletable-on-every-schema-and-its-delete-must-be-permanent
+     */
+    private function isDeletableDraft(string $uuid, bool $retentionSweep, bool $_rbac, bool $_multitenancy): bool
+    {
+        if ($retentionSweep === true || $this->currentSchema === null
+            || $this->schemaHasArchivalAnnotation(schema: $this->currentSchema) === false
+        ) {
+            return false;
+        }
+
+        try {
+            return $this->objectMapper->find(
+                identifier: $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                includeDeleted: true,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            )->isDraft();
+        } catch (\Throwable) {
+            return false;
+        }
+    }//end isDeletableDraft()
 
     /**
      * Refuse a delete on an archival-annotated schema.

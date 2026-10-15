@@ -115,6 +115,31 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 	}//end testTheUnionPathKeepsTheCallersOwnDrafts()
 
 	/**
+	 * Decision 216: a schema with `draftsListed: false` keeps the caller's own drafts out, on both paths.
+	 */
+	public function testASchemaKeepsOwnDraftsOutOnBothPaths(): void {
+		$quiet = new Schema();
+		$quiet->setConfiguration(['draftsListed' => false]);
+
+		// The union path: no owner admit, although alice is signed in.
+		$conditions = $this->handler(userId: 'alice')->buildWhereConditionsSql(query: [], schema: $quiet);
+		$this->assertContains("(_status IS NULL OR _status <> 'draft')", $conditions);
+		$this->assertNotContains("((_status IS NULL OR _status <> 'draft') OR _owner = 'alice')", $conditions);
+
+		// Asking still shows them.
+		$this->assertContains("_status = 'draft'", $this->handler(userId: 'alice')->buildWhereConditionsSql(query: ['_drafts' => 'true'], schema: $quiet));
+
+		// The single-table path.
+		$apply = (new ReflectionClass(MagicSearchHandler::class))->getMethod('applyBasicFilters');
+		$apply->setAccessible(true);
+		$this->functions = [];
+		$handler = $this->handler(userId: 'alice');
+		$queryBuilder = (new ReflectionClass(MagicSearchHandler::class))->getProperty('db')->getValue($handler)->getQueryBuilder();
+		$apply->invoke($handler, $queryBuilder, false, MagicSearchHandler::ARCHIVED_EXCLUDE, [], $quiet);
+		$this->assertSame(["(t._status IS NULL OR t._status <> 'draft')"], $this->functions);
+	}//end testASchemaKeepsOwnDraftsOutOnBothPaths()
+
+	/**
 	 * Spec scenario: the filter shows them; `_drafts=true` alone, `_drafts=any` beside the rest.
 	 */
 	public function testTheUnionPathShowsDraftsWhenAsked(): void {

@@ -3518,6 +3518,8 @@ class Application extends App implements IBootstrap {
 		// Notifications annotation listener — fires INotificationManager
 		// notifications declared on the schema's x-openregister-notifications.
 		$context->registerEventListener(ObjectCreatedEvent::class, AnnotationNotificationListener::class);
+		// A draft notifies nobody; leaving draft is its `created` moment (decision 216).
+		$context->registerEventListener(\OCA\OpenRegister\Event\ObjectActivatedEvent::class, AnnotationNotificationListener::class);
 		$context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
 		$context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
 

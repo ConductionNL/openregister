@@ -515,6 +515,7 @@ class MagicSearchHandler {
 			includeDeleted: $includeDeleted,
 			archivedMode: $this->resolveArchivedMode(query: $query),
 			query: $query,
+			schema: $schema,
 			missingColumns: $this->missingMetadataColumns(tableName: $tableName)
 		);
 
@@ -788,8 +789,7 @@ class MagicSearchHandler {
 		$conditions = array_merge(
 			$conditions,
 			$this->lifecycleConditionsSql(
-				query: $query,
-				includeDeleted: $includeDeleted,
+				query: $query, includeDeleted: $includeDeleted, schema: $schema,
 				missingColumns: $this->missingMetadataColumns(tableName: $tableName)
 			),
 			$this->boundaryConditionsSql(
@@ -900,16 +900,17 @@ class MagicSearchHandler {
 	 * rows is the dangerous direction, and an archived record surfacing in a
 	 * working list is that failure with a record attached.
 	 *
-	 * @param array      $query          The query parameters.
-	 * @param boolean    $includeDeleted Whether deleted rows were asked for.
-	 * @param string[]   $missingColumns Metadata columns this table could not be given.
+	 * @param array       $query          The query parameters.
+	 * @param boolean     $includeDeleted Whether deleted rows were asked for.
+	 * @param Schema|null $schema         The schema being listed, for its draft list default (`draftsListed`).
+	 * @param string[]    $missingColumns Metadata columns this table could not be given.
 	 *
 	 * @return string[] The conditions, without leading AND.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
 	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
-	private function lifecycleConditionsSql(array $query, bool $includeDeleted, array $missingColumns = []): array {
+	private function lifecycleConditionsSql(array $query, bool $includeDeleted, ?Schema $schema = null, array $missingColumns = []): array {
 		$conditions = [];
 
 		if ($includeDeleted === false) {
@@ -930,7 +931,7 @@ class MagicSearchHandler {
 			$owner = (string)$this->db->getQueryBuilder()->getConnection()->quote($userId);
 		}
 
-		$drafts = $this->draftConditionSql(query: $query, columnPrefix: '', owner: $owner, missingColumns: $missingColumns);
+		$drafts = $this->draftConditionSql(query: $query, columnPrefix: '', owner: $owner, missingColumns: $missingColumns, schema: $schema);
 		if ($drafts !== null) {
 			$conditions[] = $drafts;
 		}
@@ -1003,14 +1004,16 @@ class MagicSearchHandler {
 	 * @param string      $columnPrefix   The table alias with its dot, or empty.
 	 * @param string|null $owner          The caller, already quoted or bound; null for nobody.
 	 * @param string[]    $missingColumns Metadata columns this table lacks.
+	 * @param Schema|null $schema         The schema being listed, for its draft list default (`draftsListed`).
 	 *
 	 * @return string|null The predicate, without a leading AND.
 	 *
 	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-schema-must-be-able-to-keep-the-callers-own-drafts-out-of-its-lists
 	 */
-	private function draftConditionSql(array $query, string $columnPrefix, ?string $owner, array $missingColumns): ?string {
+	private function draftConditionSql(array $query, string $columnPrefix, ?string $owner, array $missingColumns, ?Schema $schema = null): ?string {
 		$lens = new DraftListLens();
-		$mode = $lens->modeFor(query: $query);
+		$mode = $lens->modeFor(query: $query, schema: $schema);
 
 		if (in_array('_status', $missingColumns, true) === true) {
 			if ($mode === DraftListLens::ONLY) {
@@ -2288,6 +2291,7 @@ class MagicSearchHandler {
 	 * @param bool $includeDeleted Whether to include deleted objects
 	 * @param string $archivedMode Which archive lens to apply, one of the ARCHIVED_* constants
 	 * @param array<string, mixed> $query The search query, for the draft lens (`_drafts`, decision 201)
+	 * @param Schema|null $schema The schema being listed, for its draft list default (`draftsListed`)
 	 * @param string[] $missingColumns Metadata columns this table could not be given
 	 *
 	 * @return void
@@ -2300,6 +2304,7 @@ class MagicSearchHandler {
 		bool $includeDeleted,
 		string $archivedMode = self::ARCHIVED_EXCLUDE,
 		array $query = [],
+		?Schema $schema = null,
 		array $missingColumns = [],
 	): void {
 		// Handle deleted filter.
@@ -2337,7 +2342,7 @@ class MagicSearchHandler {
 			$owner = (string)$qb->createNamedParameter($userId);
 		}
 
-		$drafts = $this->draftConditionSql(query: $query, columnPrefix: 't.', owner: $owner, missingColumns: $missingColumns);
+		$drafts = $this->draftConditionSql(query: $query, columnPrefix: 't.', owner: $owner, missingColumns: $missingColumns, schema: $schema);
 		if ($drafts !== null) {
 			$qb->andWhere($qb->createFunction($drafts));
 		}

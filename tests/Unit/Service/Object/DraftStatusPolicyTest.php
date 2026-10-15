@@ -26,6 +26,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Exception\ValidationException
+ * @uses \OCA\OpenRegister\Service\Form\FormDestinationValidator
  */
 class DraftStatusPolicyTest extends TestCase {
 
@@ -121,6 +122,55 @@ class DraftStatusPolicyTest extends TestCase {
 	}//end testADraftIsExcusedFromRequiredOnly()
 
 	/**
+	 * What the server fills is not the caller's to supply: a default, a computation, the serverSet marker.
+	 */
+	public function testServerFilledPropertiesAreExcusedWhenAbsent(): void {
+		$schema = new Schema();
+		$schema->setProperties(
+			[
+				'title' => ['type' => 'string'],
+				'priority' => ['type' => 'string', 'default' => 'normal'],
+				'total' => ['type' => 'number', 'computed' => ['expression' => 'a + b']],
+				'number' => ['type' => 'string', 'x-openregister' => ['serverSet' => true]],
+				'reference' => ['type' => 'string', 'x-openregister' => ['serverSet' => false]],
+			]
+		);
+
+		$this->assertSame(
+			['priority' => 'server-set', 'total' => 'server-set', 'number' => 'server-set'],
+			$this->policy->serverFilledExcusals(schema: $schema, object: ['title' => 'x'])
+		);
+		// A value the caller did supply is judged like any other.
+		$this->assertSame(['total' => 'server-set'], $this->policy->serverFilledExcusals(schema: $schema, object: ['priority' => 'high', 'number' => 'T-1']));
+	}//end testServerFilledPropertiesAreExcusedWhenAbsent()
+
+	/**
+	 * A draft lifetime is 30 days unless the schema sets another number of days or opts out with false (decision 228).
+	 */
+	public function testTheDraftLifetimeIsReadFromTheSchema(): void {
+		$schema = new Schema();
+		$this->assertSame(30, DraftStatusPolicy::DEFAULT_LIFETIME_DAYS);
+		$this->assertSame(30, $this->policy->draftLifetimeDays(schema: $schema));
+
+		$schema->setConfiguration(['draftLifetimeDays' => 7]);
+		$this->assertSame(7, $this->policy->draftLifetimeDays(schema: $schema));
+		$this->assertSame('draftLifetimeDays', DraftStatusPolicy::LIFETIME_KEY);
+
+		// Another draft setting does not change the lifetime.
+		$schema->setConfiguration(['draftsVisible' => true]);
+		$this->assertSame(30, $this->policy->draftLifetimeDays(schema: $schema));
+
+		// The explicit opt-out: this schema keeps its drafts.
+		$schema->setConfiguration(['draftLifetimeDays' => false]);
+		$this->assertNull($this->policy->draftLifetimeDays(schema: $schema));
+
+		// A value the schema refused is stored as the opt-out, so a typing error keeps drafts
+		// and never reads as "remove every draft now" or "remove after 30 days".
+		$schema->setConfiguration(['draftLifetimeDays' => 0]);
+		$this->assertNull($this->policy->draftLifetimeDays(schema: $schema));
+	}//end testTheDraftLifetimeIsReadFromTheSchema()
+
+	/**
 	 * Drafts are owner-only unless the schema says otherwise.
 	 */
 	public function testDraftsAreOwnerOnlyUnlessTheSchemaSaysOtherwise(): void {
@@ -130,6 +180,44 @@ class DraftStatusPolicyTest extends TestCase {
 		$schema->setConfiguration(['draftsVisible' => true]);
 		$this->assertTrue($this->policy->draftsVisibleToOthers(schema: $schema));
 	}//end testDraftsAreOwnerOnlyUnlessTheSchemaSaysOtherwise()
+
+	/**
+	 * A draft is kept from everybody but its owner, on a schema that keeps drafts to their owner; nothing else is.
+	 */
+	public function testADraftIsKeptFromEverybodyButItsOwner(): void {
+		$schema = new Schema();
+		$draft = new ObjectEntity();
+		$draft->setOwner('agent');
+		$draft->setStatus('draft');
+
+		$this->assertTrue($this->policy->keptFrom(object: $draft, schema: $schema, userId: 'colleague'));
+		$this->assertTrue($this->policy->keptFrom(object: $draft, schema: $schema, userId: null));
+		$this->assertFalse($this->policy->keptFrom(object: $draft, schema: $schema, userId: 'agent'));
+
+		// Control: an object that is no draft is nobody's to keep.
+		$record = new ObjectEntity();
+		$record->setOwner('agent');
+		$record->setStatus('active');
+		$this->assertFalse($this->policy->keptFrom(object: $record, schema: $schema, userId: 'colleague'));
+
+		// Control: a schema that shows its drafts to others keeps none.
+		$schema->setConfiguration(['draftsVisible' => true]);
+		$this->assertFalse($this->policy->keptFrom(object: $draft, schema: $schema, userId: 'colleague'));
+	}//end testADraftIsKeptFromEverybodyButItsOwner()
+
+	/**
+	 * A schema's lists show the caller their own drafts unless it says `draftsListed: false`.
+	 */
+	public function testOwnDraftsAreListedUnlessTheSchemaSaysOtherwise(): void {
+		$schema = new Schema();
+		$this->assertTrue($this->policy->ownDraftsListed(schema: $schema));
+
+		$schema->setConfiguration(['draftsListed' => true]);
+		$this->assertTrue($this->policy->ownDraftsListed(schema: $schema));
+
+		$schema->setConfiguration(['draftsListed' => false]);
+		$this->assertFalse($this->policy->ownDraftsListed(schema: $schema));
+	}//end testOwnDraftsAreListedUnlessTheSchemaSaysOtherwise()
 
 	/**
 	 * The SQL clause that hides other people's drafts, for both emitters.
