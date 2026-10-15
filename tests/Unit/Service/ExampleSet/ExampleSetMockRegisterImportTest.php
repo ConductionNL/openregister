@@ -131,7 +131,8 @@ class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
 
 		$this->assertSame(['brp', 'kvk'], array_keys($plan['requires']));
 		foreach ($plan['requires'] as $slug => $required) {
-			$import = $registers->import(slug: $slug, mock: $required['mock']);
+			$this->assertTrue($required['mock'], $slug.' is required as a mock');
+			$import = $registers->importMock(slug: $slug);
 
 			$this->assertSame('', $import['error'], $slug.' imports from what the set declares');
 			$this->assertSame([['appId' => 'openregister.mock', 'jobId' => 'job-'.count($this->importedAs)]], $import['jobs']);

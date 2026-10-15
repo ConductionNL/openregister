@@ -121,7 +121,10 @@ class ExampleSetPrerequisites {
 				continue;
 			}
 
-			$import = $this->registers->import(slug: $slug, mock: (($required['mock'] ?? false) === true));
+			$import = match (($required['mock'] ?? false) === true) {
+				true  => $this->registers->importMock(slug: $slug),
+				false => $this->registers->import(slug: $slug),
+			};
 			if ($import['jobs'] !== []) {
 				$record['registers'][$slug] = array_merge(($record['registers'][$slug] ?? []), $import['jobs']);
 				$this->record->write(set: (string) $plan['set'], record: $record);

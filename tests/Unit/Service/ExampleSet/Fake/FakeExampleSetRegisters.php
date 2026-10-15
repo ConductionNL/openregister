@@ -54,13 +54,20 @@ class FakeExampleSetRegisters extends ExampleSetRegisters {
 		return isset($this->present[$slug]);
 	}
 
-	public function import(string $slug, bool $mock=false): array {
-		$this->imports++;
-		if ($mock === true && isset($this->mockImportable[$slug]) === false) {
+	public function importMock(string $slug): array {
+		if (isset($this->mockImportable[$slug]) === false) {
+			$this->imports++;
 			return ['error' => 'openregister ships no mock descriptor declaring register "'.$slug.'".', 'jobs' => []];
 		}
 
-		if ($mock === false && isset($this->importable[$slug]) === false) {
+		$this->importable[$slug] = true;
+
+		return $this->import(slug: $slug);
+	}
+
+	public function import(string $slug): array {
+		$this->imports++;
+		if (isset($this->importable[$slug]) === false) {
 			return ['error' => 'openregister ships no descriptor declaring register "'.$slug.'".', 'jobs' => []];
 		}
 
