@@ -255,7 +255,9 @@ class FileSettingsHandler {
 				'entityRecognitionMethod' => $fileData['entityRecognitionMethod'] ?? 'auto',
 				// Auto (unconfigured marker), regex, presidio, openanonymiser, llm, hybrid.
 				// Who owns a redaction decision on a file that belongs to no
-				// schema (reviewer-owns-their-decisions); null is open.
+				// schema (reviewer-owns-their-decisions); null is open. A save
+				// that does not carry the key keeps the stored declaration (the
+				// admin form never sends it); an explicit null clears it.
 				ReviewPolicy::SETTINGS_KEY => $this->reviewDefault(fileData: $fileData),
 			];
 
@@ -278,16 +280,27 @@ class FileSettingsHandler {
 	/**
 	 * The instance review default from a settings save, refused when unsound.
 	 *
+	 * A save without the key keeps the stored declaration; an explicit null clears it.
+	 *
 	 * @param array<string, mixed> $fileData The settings being saved.
 	 *
-	 * @return array<string, mixed>|null The declaration, or null when none is given.
+	 * @return array<string, mixed>|null The declaration to store, or null when there is none.
 	 *
 	 * @throws InvalidArgumentException When the declaration names an ownership nobody can honour.
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
 	 */
 	private function reviewDefault(array $fileData): ?array {
-		$declaration = ($fileData[ReviewPolicy::SETTINGS_KEY] ?? null);
+		if (array_key_exists(ReviewPolicy::SETTINGS_KEY, $fileData) === false) {
+			$stored = ($this->getFileSettingsOnly()[ReviewPolicy::SETTINGS_KEY] ?? null);
+			if (is_array($stored) === true) {
+				return $stored;
+			}
+
+			return null;
+		}
+
+		$declaration = $fileData[ReviewPolicy::SETTINGS_KEY];
 		if ($declaration === null) {
 			return null;
 		}
