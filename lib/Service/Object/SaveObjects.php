@@ -802,18 +802,9 @@ class SaveObjects {
 				existingByUuid: $existingByUuid
 			);
 
-			// Step 4: appendOnly UPDATE → reject.
-			if ($action === 'update' && $rowSchema->isAppendOnly() === true) {
-				$this->recordSafeguardRejection(
-					object: $sanitised,
-					reason: 'Schema is appendOnly; UPDATE rejected for row UUID ' . ((string)($uuid ?? '?')),
-					result: $result,
-					index: $rowIndex
-				);
-				continue;
-			}
-
-			// Step 2b: a draft is kept to its owner. The existing row was found
+			// Step 2b: a draft is kept to its owner. Asked before the appendOnly
+			// gate, whose message would otherwise tell a non-owner that the uuid
+			// names an existing row. The existing row was found
 			// past the read RBAC, so without this a user who cannot read another
 			// user's draft could overwrite it by sending its uuid. The answer is
 			// the one a refused permission gives, so the draft's existence stays
@@ -833,6 +824,17 @@ class SaveObjects {
 					);
 					continue;
 				}
+			}
+
+			// Step 4: appendOnly UPDATE → reject.
+			if ($action === 'update' && $rowSchema->isAppendOnly() === true) {
+				$this->recordSafeguardRejection(
+					object: $sanitised,
+					reason: 'Schema is appendOnly; UPDATE rejected for row UUID ' . ((string)($uuid ?? '?')),
+					result: $result,
+					index: $rowIndex
+				);
+				continue;
 			}
 
 			// Step 3: PermissionHandler check (per row).

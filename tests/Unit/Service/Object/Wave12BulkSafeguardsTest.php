@@ -355,6 +355,30 @@ class Wave12BulkSafeguardsTest extends TestCase {
 	}//end testBulkSaveOverSomebodyElsesDraftIsRejected()
 
 	/**
+	 * On an appendOnly schema the draft rule answers first: a non-owner is not told by the appendOnly message that the uuid exists.
+	 */
+	public function testAppendOnlyDoesNotRevealSomebodyElsesDraft(): void {
+		$this->mockUser('bob', isAdmin: false);
+		$schema = $this->newSchema(1, null, appendOnly: true);
+		$register = $this->newRegister(10);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(1);
+		$this->callApplyBulkSafeguards(
+			objects: [['@self' => ['uuid' => '22222222-2222-2222-2222-222222222222'], 'title' => 'probe']],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertStringContainsString('Permission denied', $result['invalid'][0]['error']);
+		$this->assertStringNotContainsString('appendOnly', $result['invalid'][0]['error']);
+	}//end testAppendOnlyDoesNotRevealSomebodyElsesDraft()
+
+	/**
 	 * The owner's own bulk save of their draft still goes through.
 	 */
 	public function testBulkSaveOverYourOwnDraftPasses(): void {
