@@ -881,6 +881,9 @@ class FlowRunService {
 	 * the seam exists to close, silently: the wrong person's answer arrives
 	 * correctly formatted.
 	 *
+	 * Signals that arrive before the run wakes are merged, not replaced: a later
+	 * signal adds its keys to the waiting one and wins only a key both carry.
+	 *
 	 * @param FlowRun $run The suspended run to wake.
 	 * @param array $payload What the signaller wants the run to know.
 	 *
@@ -896,7 +899,18 @@ class FlowRunService {
 			return null;
 		}
 
+		// Two listeners on one event may each signal the same suspended run.
+		// The signal still waiting is kept and the new payload is merged over
+		// it (a key both set takes the later value), so the answer does not
+		// depend on which listener ran last; a consumed signal is removed by
+		// persistResult(), so nothing left over from an earlier question can
+		// reach here.
 		$context = ($run->getContext() ?? []);
+		$waiting = ($context[self::SIGNAL_CONTEXT_KEY] ?? null);
+		if (is_array($waiting) === true) {
+			$payload = array_merge($waiting, $payload);
+		}
+
 		$context[self::SIGNAL_CONTEXT_KEY] = $payload;
 
 		$run->setContext($context);
