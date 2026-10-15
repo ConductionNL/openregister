@@ -4894,7 +4894,10 @@ class ObjectsController extends Controller {
 	 */
 	private function logsForReader(string $register, string $schema, string $id): JSONResponse {
 		$config = $this->getConfig(_register: $register, _schema: $schema);
-		$search = $config['_search'];
+		$search = null;
+		if ($config['_search'] !== null) {
+			$search = (string)$config['_search'];
+		}
 
 		try {
 			$page = $this->container->get(ObjectHistoryForReaders::class)->page(
@@ -4907,7 +4910,7 @@ class ObjectsController extends Controller {
 					'page' => $config['page'],
 					'filters' => [],
 					'sort' => [],
-					'search' => ($search === null ? null : (string)$search),
+					'search' => $search,
 				]
 			);
 		} catch (PurposeRefusedException $refusal) {
