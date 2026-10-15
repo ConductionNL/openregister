@@ -36,6 +36,7 @@ use OCP\Files\Events\Node\BeforeNodeCreatedEvent;
 use OCP\Files\Events\Node\BeforeNodeDeletedEvent;
 use OCP\Files\Events\Node\BeforeNodeRenamedEvent;
 use OCP\Files\Events\Node\BeforeNodeWrittenEvent;
+use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use OCP\HintException;
 use Psr\Log\LoggerInterface;
@@ -50,9 +51,14 @@ use Throwable;
  * and those never pass the controller. This listener is that door.
  *
  * How a node finds its object: object folders live in the `openregister`
- * account's home and are named by the object's UUID. A node outside that
- * home is ignored at once (one string compare, so the rest of the instance
- * pays nothing). Inside it, the nearest ancestor named like a UUID is the
+ * account's home and are named by the object's UUID. A node in that home is
+ * checked by its path. A node reached through a share (the way a person gets
+ * at an object's files) has the path of the sharee's own tree, so it is
+ * resolved by file id instead: a node whose owner is not the `openregister`
+ * account is ignored at once (one owner compare, so the rest of the instance
+ * pays nothing); one that is owned by it is looked up by id in the account's
+ * home, and a node that does not exist yet stands for its nearest existing
+ * ancestor. In the home, the nearest ancestor named like a UUID is the
  * candidate owner, and it counts only when that object's own `folder` is
  * that ancestor's id, the same proof `FolderManagementHandler::getObjectForFile()`
  * asks for.
@@ -89,14 +95,16 @@ class FrozenNodeWriteListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param FileWriteGuard  $guard   Decides whether the owning object refuses file writes.
-	 * @param MagicMapper     $objects Resolves the owning object by its UUID.
-	 * @param LoggerInterface $logger  Records a refusal on an unresolvable owner.
+	 * @param FileWriteGuard  $guard      Decides whether the owning object refuses file writes.
+	 * @param MagicMapper     $objects    Resolves the owning object by its UUID.
+	 * @param LoggerInterface $logger     Records a refusal on an unresolvable owner.
+	 * @param IRootFolder     $rootFolder Finds a shared node's twin in the `openregister` home by file id.
 	 */
 	public function __construct(
 		private readonly FileWriteGuard $guard,
 		private readonly MagicMapper $objects,
 		private readonly LoggerInterface $logger,
+		private readonly IRootFolder $rootFolder,
 	) {
 	}//end __construct()
 
@@ -169,11 +177,31 @@ class FrozenNodeWriteListener implements IEventListener {
 		}
 
 		$home = '/' . FileOwnershipHandler::APP_USER . '/files/';
+		$anchor = $node;
+		$includeSelf = false;
 		if (str_starts_with($path, $home) === false) {
-			return null;
+			try {
+				$resolved = $this->homeNodeOf(node: $node, home: $home);
+			} catch (Throwable $e) {
+				$this->logger->warning(
+					'[FrozenNodeWriteListener] A file write was refused: node {node} is owned by the app account but could not be placed in its home.',
+					['node' => $this->nodeId(node: $node), 'path' => $path, 'exception' => $e]
+				);
+				return new ObjectStateWriteException(
+					message: 'Cannot write to this file: the object that owns it could not be checked. Try again later.',
+					previous: $e
+				);
+			}
+
+			if ($resolved === null) {
+				return null;
+			}
+
+			$anchor = $resolved['node'];
+			$includeSelf = ($resolved['exact'] === false);
 		}
 
-		$candidate = $this->candidateOwnerFolder(node: $node);
+		$candidate = $this->candidateOwnerFolder(node: $anchor, includeSelf: $includeSelf);
 		if ($candidate === null) {
 			return null;
 		}
@@ -210,17 +238,74 @@ class FrozenNodeWriteListener implements IEventListener {
 	}//end refusalFor()
 
 	/**
+	 * The node in the `openregister` home that a node outside it stands for, found by file id.
+	 *
+	 * A node reached through a share has the path of the acting user's tree,
+	 * but is the same file as the one in the home. Only a node owned by the
+	 * `openregister` account can be one, so everything else answers null
+	 * without a lookup. A node that does not exist yet (a write or a rename
+	 * target) has no id: its nearest existing ancestor stands for it, and
+	 * `exact` says that it is not the node itself.
+	 *
+	 * @param Node   $node The node about to change.
+	 * @param string $home The `openregister` home prefix, with trailing slash.
+	 *
+	 * @return array{node: Node, exact: bool}|null The twin in the home, or null when this node is not one of the app's files.
+	 *
+	 * @throws Throwable When the home cannot be searched (the caller refuses).
+	 */
+	private function homeNodeOf(Node $node, string $home): ?array {
+		$current = $node;
+		$exact = true;
+		for ($depth = 0; $depth < self::MAX_DEPTH; $depth++) {
+			try {
+				$owner = $current->getOwner();
+				$identifier = $current->getId();
+			} catch (Throwable $e) {
+				// Not stored yet: the nearest existing ancestor decides.
+				try {
+					$current = $current->getParent();
+				} catch (Throwable $parentError) {
+					return null;
+				}
+
+				$exact = false;
+				continue;
+			}
+
+			if ($owner === null || $owner->getUID() !== FileOwnershipHandler::APP_USER) {
+				return null;
+			}
+
+			$twins = $this->rootFolder->getUserFolder(FileOwnershipHandler::APP_USER)->getById($identifier);
+			foreach ($twins as $twin) {
+				if (str_starts_with($twin->getPath(), $home) === true) {
+					return ['node' => $twin, 'exact' => $exact];
+				}
+			}
+
+			return null;
+		}
+
+		return null;
+	}//end homeNodeOf()
+
+	/**
 	 * The nearest ancestor of a node named like a UUID, with its folder id.
 	 *
-	 * @param Node $node The node.
+	 * @param Node $node        The node.
+	 * @param bool $includeSelf Whether the node itself may be the owner folder (a node standing for a not-yet-existing child).
 	 *
 	 * @return array{uuid: string, folderId: int|string}|null The candidate, or null when no ancestor qualifies.
 	 */
-	private function candidateOwnerFolder(Node $node): ?array {
+	private function candidateOwnerFolder(Node $node, bool $includeSelf = false): ?array {
 		$current = $node;
 		for ($depth = 0; $depth < self::MAX_DEPTH; $depth++) {
 			try {
-				$current = $current->getParent();
+				if ($depth > 0 || $includeSelf === false) {
+					$current = $current->getParent();
+				}
+
 				$name = $current->getName();
 			} catch (Throwable $e) {
 				return null;

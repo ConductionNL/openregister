@@ -35,8 +35,11 @@ use OCP\Files\Events\Node\BeforeNodeRenamedEvent;
 use OCP\Files\Events\Node\BeforeNodeWrittenEvent;
 use OCP\Files\File;
 use OCP\Files\Folder;
+use OCP\Files\IRootFolder;
 use OCP\Files\Node;
+use OCP\Files\NotFoundException;
 use OCP\HintException;
+use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -54,15 +57,49 @@ class FrozenNodeWriteListenerTest extends TestCase {
 
 	private LoggerInterface&MockObject $logger;
 
+	private IRootFolder&MockObject $rootFolder;
+
 	protected function setUp(): void {
 		parent::setUp();
 		$this->objects = $this->createMock(MagicMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->rootFolder = $this->createMock(IRootFolder::class);
 	}//end setUp()
 
 	private function listener(): FrozenNodeWriteListener {
-		return new FrozenNodeWriteListener(guard: new FileWriteGuard(), objects: $this->objects, logger: $this->logger);
+		return new FrozenNodeWriteListener(guard: new FileWriteGuard(), objects: $this->objects, logger: $this->logger, rootFolder: $this->rootFolder);
 	}//end listener()
+
+	/**
+	 * The app account's home answers `getById` with the given twins.
+	 *
+	 * @param array<int, Node> $twins The nodes in the home that carry the id.
+	 */
+	private function homeHolds(array $twins): void {
+		$home = $this->createMock(Folder::class);
+		$home->method('getById')->willReturn($twins);
+		$this->rootFolder->method('getUserFolder')->with('openregister')->willReturn($home);
+	}//end homeHolds()
+
+	private function owner(string $uid): IUser&MockObject {
+		$owner = $this->createMock(IUser::class);
+		$owner->method('getUID')->willReturn($uid);
+
+		return $owner;
+	}//end owner()
+
+	/**
+	 * The file as the sharee alice sees it: `/alice/files/<share>/levering-manifest.pdf`, owned by the app account.
+	 */
+	private function fileThroughAShare(string $ownerUid = 'openregister'): File&MockObject {
+		$file = $this->createMock(File::class);
+		$file->method('getName')->willReturn('levering-manifest.pdf');
+		$file->method('getId')->willReturn(9001);
+		$file->method('getPath')->willReturn('/alice/files/Dossier/levering-manifest.pdf');
+		$file->method('getOwner')->willReturn($this->owner($ownerUid));
+
+		return $file;
+	}//end fileThroughAShare()
 
 	/**
 	 * A folder node with a name, an id and a parent.
@@ -141,6 +178,69 @@ class FrozenNodeWriteListenerTest extends TestCase {
 		$this->expectException(AbortedEventException::class);
 		$this->listener()->handle(new BeforeNodeRenamedEvent($this->fileInObjectFolder(), $outside));
 	}//end testADeleteAndARenameAreAbortedThroughAbortOperation()
+
+	public function testAWriteThroughAShareeMountIsAborted(): void {
+		$this->objects->method('findAcrossAllSources')->willReturn(['object' => $this->frozenObject()]);
+		$this->homeHolds([$this->fileInObjectFolder()]);
+
+		try {
+			$this->listener()->handle(new BeforeNodeWrittenEvent($this->fileThroughAShare()));
+			$this->fail('A write through a share into a frozen object went through');
+		} catch (HintException $e) {
+			$this->assertStringContainsString('frozen by dossiq', $e->getMessage());
+		}
+
+		try {
+			$this->listener()->handle(new BeforeNodeDeletedEvent($this->fileThroughAShare()));
+			$this->fail('A delete through a share of a frozen object went through');
+		} catch (AbortedEventException $e) {
+			$this->assertStringContainsString('frozen by dossiq', $e->getMessage());
+		}
+
+		// A rename of the shared file to somewhere in alice's own tree: the source is the shared file.
+		$own = $this->createMock(File::class);
+		$own->method('getPath')->willReturn('/alice/files/mine.pdf');
+		$own->method('getOwner')->willReturn($this->owner('alice'));
+
+		$this->expectException(AbortedEventException::class);
+		$this->listener()->handle(new BeforeNodeRenamedEvent($this->fileThroughAShare(), $own));
+	}//end testAWriteThroughAShareeMountIsAborted()
+
+	public function testACreateThroughAShareeMountResolvesItsNearestExistingAncestor(): void {
+		$this->objects->method('findAcrossAllSources')->willReturn(['object' => $this->frozenObject()]);
+		// The shared folder, as the home holds it: `/openregister/files/Woo Register/<uuid>`.
+		$files = $this->folder('files', 2, '/openregister/files', null);
+		$register = $this->folder('Woo Register', 3, '/openregister/files/Woo Register', $files);
+		$objectFolder = $this->folder(self::UUID, self::FOLDER_ID, '/openregister/files/Woo Register/' . self::UUID, $register);
+		$this->homeHolds([$objectFolder]);
+
+		$shared = $this->createMock(Folder::class);
+		$shared->method('getId')->willReturn(self::FOLDER_ID);
+		$shared->method('getOwner')->willReturn($this->owner('openregister'));
+		$new = $this->createMock(File::class);
+		$new->method('getPath')->willReturn('/alice/files/Dossier/new.pdf');
+		$new->method('getOwner')->willThrowException(new NotFoundException('not stored yet'));
+		$new->method('getParent')->willReturn($shared);
+
+		$this->expectException(HintException::class);
+		$this->listener()->handle(new BeforeNodeCreatedEvent($new));
+	}//end testACreateThroughAShareeMountResolvesItsNearestExistingAncestor()
+
+	public function testASharedNodeOfAnotherOwnerIsIgnoredWithoutALookup(): void {
+		$this->objects->expects($this->never())->method('findAcrossAllSources');
+		$this->rootFolder->expects($this->never())->method('getUserFolder');
+
+		$this->listener()->handle(new BeforeNodeWrittenEvent($this->fileThroughAShare(ownerUid: 'bob')));
+		$this->addToAssertionCount(1);
+	}//end testASharedNodeOfAnotherOwnerIsIgnoredWithoutALookup()
+
+	public function testAShareeNodeThatCannotBePlacedInTheHomeIsRefused(): void {
+		$this->rootFolder->method('getUserFolder')->willThrowException(new \RuntimeException('home unavailable'));
+		$this->logger->expects($this->once())->method('warning')->with($this->stringContains('could not be placed'), $this->anything());
+
+		$this->expectException(HintException::class);
+		$this->listener()->handle(new BeforeNodeWrittenEvent($this->fileThroughAShare()));
+	}//end testAShareeNodeThatCannotBePlacedInTheHomeIsRefused()
 
 	public function testAnUnfrozenObjectFolderAcceptsTheWrite(): void {
 		$object = $this->frozenObject();
