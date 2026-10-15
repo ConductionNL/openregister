@@ -32,6 +32,9 @@ class FakeExampleSetRegisters extends ExampleSetRegisters {
 	/** @var array<string, bool> Register slugs OpenRegister ships a descriptor for. */
 	public array $importable = [];
 
+	/** @var array<string, bool> Register slugs OpenRegister ships a mock descriptor for. */
+	public array $mockImportable = [];
+
 	/** @var array<string, string> Live import job ids, mapped to their register. */
 	public array $jobs = [];
 
@@ -51,9 +54,13 @@ class FakeExampleSetRegisters extends ExampleSetRegisters {
 		return isset($this->present[$slug]);
 	}
 
-	public function import(string $slug): array {
+	public function import(string $slug, bool $mock=false): array {
 		$this->imports++;
-		if (isset($this->importable[$slug]) === false) {
+		if ($mock === true && isset($this->mockImportable[$slug]) === false) {
+			return ['error' => 'openregister ships no mock descriptor declaring register "'.$slug.'".', 'jobs' => []];
+		}
+
+		if ($mock === false && isset($this->importable[$slug]) === false) {
 			return ['error' => 'openregister ships no descriptor declaring register "'.$slug.'".', 'jobs' => []];
 		}
 

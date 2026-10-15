@@ -114,13 +114,14 @@ class ExampleSetPrerequisites {
 	 */
 	private function ensureRegisters(array $plan, array &$record): array {
 		$result = ['refusals' => [], 'outcome' => []];
-		foreach ((array) ($plan['requires'] ?? []) as $slug) {
+		foreach ((array) ($plan['requires'] ?? []) as $slug => $required) {
+			$slug = (string) $slug;
 			$result['outcome'][$slug] = 'kept';
 			if ($this->registers->exists(slug: $slug) === true) {
 				continue;
 			}
 
-			$import = $this->registers->import(slug: $slug);
+			$import = $this->registers->import(slug: $slug, mock: (($required['mock'] ?? false) === true));
 			if ($import['jobs'] !== []) {
 				$record['registers'][$slug] = array_merge(($record['registers'][$slug] ?? []), $import['jobs']);
 				$this->record->write(set: (string) $plan['set'], record: $record);

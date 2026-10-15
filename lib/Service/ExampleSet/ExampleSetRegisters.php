@@ -6,7 +6,8 @@
  * The OpenRegister registers an example set needs, named in the cast file's
  * `requires` list. A required register that is not on the instance is
  * imported from OpenRegister's own descriptor, the same way
- * `POST /api/register-descriptors/openregister/{slug}/import` does. The
+ * `POST /api/register-descriptors/openregister/{slug}/import` does, or from
+ * its mock descriptor when the set requires the mock. The
  * import jobs that import created are returned, so the set can remove exactly
  * those objects again and leave an import somebody else ran alone.
  *
@@ -90,24 +91,27 @@ class ExampleSetRegisters {
 	}//end exists()
 
 	/**
-	 * Import a register from OpenRegister's own descriptor.
+	 * Import a register from OpenRegister's own descriptor, or from its mock (sample) descriptor.
 	 *
 	 * @param string $slug The register slug.
+	 * @param bool   $mock Import the mock descriptor that declares the slug instead of the real one.
 	 *
 	 * @return array{error: string, jobs: array<int, array{appId: string, jobId: string}>} Why it failed, or ''; and
 	 *                                                                                     the import jobs it created.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
-	public function import(string $slug): array {
+	public function import(string $slug, bool $mock=false): array {
 		try {
-			$before = $this->jobIds();
-			$result = $this->container->get(RegisterDescriptorService::class)->reimport(
-				appId: self::APP,
-				slug: $slug,
-				via: 'example set install'
-			);
-			$after  = $this->jobIds();
+			$before      = $this->jobIds();
+			$descriptors = $this->container->get(RegisterDescriptorService::class);
+			if ($mock === true) {
+				$result = $descriptors->reimportMock(appId: self::APP, slug: $slug);
+			} else {
+				$result = $descriptors->reimport(appId: self::APP, slug: $slug, via: 'example set install');
+			}
+
+			$after = $this->jobIds();
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'jobs' => []];
 		}

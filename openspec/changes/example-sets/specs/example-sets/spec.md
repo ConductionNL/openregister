@@ -130,7 +130,7 @@ After writing, the loader SHALL read every object it created in this run back fr
 
 ### Requirement: A set imports the OpenRegister registers it requires (REQ-EXS-009)
 
-The cast file MAY name OpenRegister registers in `requires` (for example `["brp", "kvk"]`). Before the check, the loader SHALL import every required register that is not on the instance from OpenRegister's own register descriptor, the way the descriptor import endpoint does, and SHALL record the import jobs that import created. A required register that is already on the instance SHALL be used as it is and SHALL NOT be recorded. A second run SHALL import nothing. Remove SHALL soft-delete exactly the objects of the recorded import jobs, after the set's own objects, and SHALL NOT touch an import it did not make. A required register that cannot be imported SHALL refuse the set.
+The cast file MAY name OpenRegister registers in `requires`. An entry SHALL be either a register slug (for example `"publication"`), imported from OpenRegister's real register descriptor, or `{"register": "<slug>", "mock": true}`, imported from OpenRegister's mock (sample) descriptor that declares the slug, the way `occ openregister:descriptors:list --app=openregister --import=<slug> --mock` does. An example set is sample data, so it MAY require a register OpenRegister ships only as a mock (zuiddrecht requires `brp` and `kvk` that way). An entry that names no register slug SHALL refuse the set when it is gathered. Before the check, the loader SHALL import every required register that is not on the instance from the descriptor its entry names, and SHALL record the import jobs that import created. A required register that is already on the instance SHALL be used as it is and SHALL NOT be recorded. A second run SHALL import nothing. Remove SHALL soft-delete exactly the objects of the recorded import jobs, after the set's own objects, and SHALL NOT touch an import it did not make. A required register that cannot be imported SHALL refuse the set.
 
 #### Scenario: A missing register is imported once and removed again
 - **GIVEN** a set that requires `brp` and an instance without it
@@ -141,6 +141,16 @@ The cast file MAY name OpenRegister registers in `requires` (for example `["brp"
 - **GIVEN** a set that requires `brp` and an instance that already has it
 - **WHEN** the set is installed and removed
 - **THEN** nothing SHALL be imported and remove SHALL leave every import of `brp` alone
+
+#### Scenario: A register shipped only as a mock is imported from the mock
+- **GIVEN** a set whose `requires` holds `{"register": "brp", "mock": true}` and a fresh instance without `brp`
+- **WHEN** `occ openregister:example-set:install <set> --check` runs
+- **THEN** `brp` SHALL be imported from OpenRegister's mock `brp` descriptor under the `openregister.mock` configuration id, reported as `imported`, and recorded so remove deletes its objects
+
+#### Scenario: A plain slug never falls back to a mock
+- **GIVEN** a set whose `requires` holds `"brp"` and OpenRegister ships `brp` only as a mock
+- **WHEN** the set is checked
+- **THEN** it SHALL be refused naming `brp`, and SHALL NOT import the mock
 
 #### Scenario: A register that cannot be imported refuses the set
 - **GIVEN** a set that requires a register OpenRegister ships no descriptor for
