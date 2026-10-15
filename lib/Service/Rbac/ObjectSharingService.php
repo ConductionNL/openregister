@@ -706,7 +706,8 @@ class ObjectSharingService {
 			userId: $uid,
 			userGroups: $groups,
 			user: ($principal['user'] ?? null),
-			group: ($principal['group'] ?? null)
+			group: ($principal['group'] ?? null),
+			remote: ($principal['remote'] ?? $principal['remote_group'] ?? null)
 		) === true
 		) {
 			throw new NotAuthorizedException(

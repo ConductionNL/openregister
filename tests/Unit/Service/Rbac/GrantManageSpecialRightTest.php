@@ -314,6 +314,8 @@ class GrantManageSpecialRightTest extends TestCase {
 			'its own account, padded' => ['user', ' service-account '],
 			'the group that holds the right' => ['group', self::SERVICE_GROUP],
 			'another group it is in' => ['group', 'jobs'],
+			'a federated cloud id' => ['remote', 'service-account@other.example'],
+			'a remote group' => ['remote_group', 'staff@other.example'],
 		];
 	}//end selfGrants()
 
