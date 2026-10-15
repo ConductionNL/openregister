@@ -161,9 +161,12 @@ class GuardedDescriptorMerge {
 		}
 
 		// An administrator's re-import is the explicit decision REQ-LCA-003
-		// waits for, for every authorization block either side carries.
+		// waits for, for every authorization block the shipped definition
+		// carries. A block only the instance holds is not decided: the app
+		// shipped nothing to take, so the local policy stays (and is
+		// reported) instead of the schema turning default-open.
 		if ($this->decidedVia() !== null) {
-			$decisions = array_values(array_unique(array_merge($decisions, $this->blocks->roots($live, $incoming))));
+			$decisions = array_values(array_unique(array_merge($decisions, $this->blocks->roots($incoming))));
 		}
 
 		$blocks = $this->blocks->settle(states: $states, decisions: $decisions);
