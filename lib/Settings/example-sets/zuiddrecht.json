@@ -4,8 +4,14 @@
 	"$comment": "The cast of the Zuiddrecht example set, and OpenRegister's own fragment: a BRP row per cast person with a BSN and a KVK row and branch per business. Installed with `occ openregister:example-set:install zuiddrecht`; every other app adds its part in its own lib/Settings/example-sets/zuiddrecht.json and refers to cast members with {{cast:key.field}} and to other apps' objects only through a lookup on a business key (BSN, KVK number). Zuiddrecht is fictitious. BSNs are 11-proof numbers from the BRP test block 999990000-999999999 and appear nowhere else in the fleet's registers; KVK numbers are fictitious; municipality code 9999 belongs to no municipality.",
 	"timezone": "Europe/Amsterdam",
 	"requires": [
-		"brp",
-		"kvk"
+		{
+			"register": "brp",
+			"mock": true
+		},
+		{
+			"register": "kvk",
+			"mock": true
+		}
 	],
 	"apps": [
 		"openregister",

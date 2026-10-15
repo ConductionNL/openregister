@@ -152,6 +152,14 @@ the Woo journey depends on them. That is a separate portaliq PR.
    elevation call-site set stays pinned (ADR-099 rule 9). A
    register that was already there is never imported or removed. The register
    and schema definitions stay; only the objects of the import go.
+   Amended 15 Oct: `brp` and `kvk` are mock-only descriptors, and the
+   real-configuration re-import (#4618) correctly refuses a mock, so a fresh
+   instance refused the set. A `requires` entry now says which descriptor it
+   wants: a slug for the real one, `{"register": "<slug>", "mock": true}` for
+   the mock, imported through `RegisterDescriptorService::reimportMock()`
+   under `openregister.mock`. The choice is the set's, not a command flag, so
+   the nightly reset runs the same command as a hand install and a plain slug
+   never quietly falls back to sample data.
 8. **Changes to objects the set did not create.** A sign-in mode lives on the
    portal row that the site install made, so it cannot be a new object. A
    fragment's `changes` find one object by business key and `set` or `append`

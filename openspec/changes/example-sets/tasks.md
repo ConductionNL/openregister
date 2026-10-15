@@ -48,6 +48,7 @@
 - [x] 3.10 Remove from occ: files by node, archival and held objects, reasons in the output (`ExampleSetRemoveLiveTest`, `ExampleSetStoreTest`)
 - [x] 3.11 Partial remove then reinstall: kept publications follow the theme written again, a further install writes nothing, remove is whole (`ExampleSetReferencesTest`)
 - [x] 3.12 User preferences written, kept, restored, left when changed, and refused for a foreign account, an administrator and a secret (`ExampleSetUserPreferencesTest`)
+- [x] 3.13 A required register shipped only as a mock is declared `{"register": "<slug>", "mock": true}` and imported from the mock; a plain slug never falls back to it; the shipped zuiddrecht requirements import on a fresh instance (`ExampleSetMockRegisterImportTest`)
 - [x] 3.6 Required registers imported once and removed only when imported; admin refused; changes made, proved and reverted exactly; JSON text fields
 
 ## 4. Verification
