@@ -40,10 +40,11 @@ class ReviewPolicyResolverTest extends TestCase {
 	 *
 	 * @param array<string, mixed>|null $schemaConfiguration The schema's configuration, or null when it cannot be read.
 	 * @param array<string, mixed>      $fileSettings        The stored file settings.
+	 * @param bool                      $lookupFails         Whether the file-to-object lookup throws.
 	 *
 	 * @return ReviewPolicyResolver The resolver.
 	 */
-	private function resolver(?array $schemaConfiguration, array $fileSettings=[]): ReviewPolicyResolver {
+	private function resolver(?array $schemaConfiguration, array $fileSettings=[], bool $lookupFails=false): ReviewPolicyResolver {
 		$schemas = $this->createMock(SchemaMapper::class);
 		if ($schemaConfiguration === null) {
 			$schemas->method('find')->willThrowException(new RuntimeException('gone'));
@@ -65,7 +66,11 @@ class ReviewPolicyResolverTest extends TestCase {
 
 		$file = $this->createMock(File::class);
 		$root = $this->createMock(IRootFolder::class);
-		$root->method('getFirstNodeById')->willReturnCallback(static fn (int $id) => ($id === 99 ? $file : null));
+		if ($lookupFails === true) {
+			$root->method('getFirstNodeById')->willThrowException(new RuntimeException('lookup failed'));
+		} else {
+			$root->method('getFirstNodeById')->willReturnCallback(static fn (int $id) => ($id === 99 ? $file : null));
+		}
 
 		$object = new ObjectEntity();
 		$object->setRegister('3');
@@ -137,5 +142,24 @@ class ReviewPolicyResolverTest extends TestCase {
 
 		self::assertTrue($policy->isDeciderOwned());
 		self::assertSame([], $policy->getSupervisors());
+		self::assertTrue($policy->hidesOthers());
 	}//end testAnUnreadableSchemaFailsClosed()
+
+	/**
+	 * A file whose object cannot be looked up is decider-owned and hidden, not the open instance default.
+	 *
+	 * @return void
+	 */
+	public function testAFailedFileLookupFailsClosed(): void {
+		$relation = new EntityRelation();
+		$relation->setId(7);
+		$relation->setFileId(99);
+
+		$resolved = $this->resolver(schemaConfiguration: [], lookupFails: true)->forRelation(relation: $relation);
+
+		self::assertTrue($resolved['policy']->isDeciderOwned());
+		self::assertTrue($resolved['policy']->hidesOthers());
+		self::assertSame([], $resolved['policy']->getSupervisors());
+		self::assertArrayNotHasKey('lookupFailed', $resolved['subject']);
+	}//end testAFailedFileLookupFailsClosed()
 }//end class

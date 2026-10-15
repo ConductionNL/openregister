@@ -79,7 +79,16 @@ class ReviewPolicyResolver {
 	 */
 	public function forRelation(EntityRelation $relation): array {
 		$subject = $this->subjectOf(relation: $relation);
+		$lookupFailed = (($subject['lookupFailed'] ?? false) === true);
+		unset($subject['lookupFailed']);
 		$schema = (string)($subject['schema'] ?? '');
+
+		if ($lookupFailed === true) {
+			// Fail closed: the file's object could not be found, so the schema
+			// that may hide or restrict the decision is unknown. Never fall
+			// to the instance default, which is open when unset.
+			return ['policy' => $this->closedPolicy(), 'subject' => $subject];
+		}
 
 		if ($schema === '') {
 			return ['policy' => $this->instanceDefault(), 'subject' => $subject];
@@ -89,15 +98,13 @@ class ReviewPolicyResolver {
 			$configuration = ($this->schemaMapper->find(id: $schema, _rbac: false, _multitenancy: false)->getConfiguration() ?? []);
 		} catch (Throwable $error) {
 			// Fail closed: a policy that cannot be read is decider-owned with
-			// no supervisors, so only the decider and an administrator may.
+			// no supervisors and hides the decision from other reviewers, so
+			// only the decider and an administrator may see or change it.
 			$this->logger->warning(
 				message: '[ReviewPolicyResolver] The schema could not be read; the decision stays with its decider.',
 				context: ['schema' => $schema, 'error' => $error->getMessage()]
 			);
-			return [
-				'policy' => ReviewPolicy::fromDeclaration(declaration: ['ownership' => ReviewPolicy::OWNERSHIP_DECIDER]),
-				'subject' => $subject,
-			];
+			return ['policy' => $this->closedPolicy(), 'subject' => $subject];
 		}
 
 		if (array_key_exists(ReviewPolicy::ANNOTATION, $configuration) === false) {
@@ -113,7 +120,8 @@ class ReviewPolicyResolver {
 	 * @param EntityRelation $relation The relation.
 	 *
 	 * @return array<string, mixed> subjectType, subjectId, fileId, objectId,
-	 *                              register, schema and objectUuid.
+	 *                              register, schema and objectUuid; `lookupFailed`
+	 *                              (true) when the file-to-object lookup threw.
 	 */
 	private function subjectOf(EntityRelation $relation): array {
 		$subject = [
@@ -139,9 +147,10 @@ class ReviewPolicyResolver {
 			}
 		} catch (Throwable $error) {
 			$this->logger->info(
-				message: '[ReviewPolicyResolver] The file\'s object could not be found; the instance default applies.',
+				message: '[ReviewPolicyResolver] The file\'s object could not be found; the decision stays with its decider.',
 				context: ['fileId' => $fileId, 'error' => $error->getMessage()]
 			);
+			$subject['lookupFailed'] = true;
 			return $subject;
 		}
 
@@ -153,6 +162,17 @@ class ReviewPolicyResolver {
 
 		return $subject;
 	}//end subjectOf()
+
+	/**
+	 * The policy for a declaration that cannot be read: decider-owned, no supervisors, others hidden.
+	 *
+	 * @return ReviewPolicy The policy.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ReviewPolicy::fromDeclaration is its named constructor.
+	 */
+	private function closedPolicy(): ReviewPolicy {
+		return ReviewPolicy::fromDeclaration(declaration: ['ownership' => ReviewPolicy::OWNERSHIP_DECIDER, 'hideOthers' => true]);
+	}//end closedPolicy()
 
 	/**
 	 * The instance default, for files that belong to no schema. Unset is open.
