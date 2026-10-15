@@ -552,5 +552,5 @@ of `/search/code`. The per-file read stays covered by the existing
 - **WHEN** a brokered call requests `POST`, `PUT` or `DELETE` on `/search/code`,
   or `GET /search/commits`, `GET /search/users`, `GET /search/code/extra` or
   `GET /search/codes`
-- **THEN** the broker refuses it with `no allow-rule matches` and makes no
-  outbound call
+- **THEN** the broker refuses it with the static 403 (`Request not permitted`;
+  the reason is logged, never returned) and makes no outbound call
