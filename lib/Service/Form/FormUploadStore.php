@@ -61,6 +61,17 @@ class FormUploadStore {
 	public const TTL = 86400;
 
 	/**
+	 * The size cap, in bytes, of a file property that declares none (20 MiB).
+	 *
+	 * The upload endpoint is a public page, so "no `maxSize`" must not mean
+	 * "no limit": it would store whatever PHP lets through for anyone. A
+	 * property that declares a limit, larger or smaller, keeps it.
+	 *
+	 * @var int
+	 */
+	public const DEFAULT_MAX_BYTES = 20971520;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IAppData          $appData The app's data store.
@@ -106,7 +117,11 @@ class FormUploadStore {
 
 		$size = (int)($file['size'] ?? filesize($path));
 		$limit = $this->rules->maxSizeBytes(fileConfig: $fileConfig);
-		if ($limit > 0 && $size > $limit) {
+		if ($limit <= 0) {
+			$limit = self::DEFAULT_MAX_BYTES;
+		}
+
+		if ($size > $limit) {
 			$this->refuse(
 				property: $property,
 				code: 'file-too-large',

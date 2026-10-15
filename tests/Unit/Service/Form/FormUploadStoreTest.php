@@ -112,6 +112,21 @@ class FormUploadStoreTest extends TestCase {
 	}//end testAnOversizedFileIsRefused()
 
 	/**
+	 * A property without a size rule still has a cap: the endpoint is public.
+	 */
+	public function testAPropertyWithoutAMaxSizeHasADefaultCap(): void {
+		try {
+			$this->store->issue(formId: 'form-1', property: 'bijlage', rule: ['type' => 'file'], file: $this->upload('x', size: FormUploadStore::DEFAULT_MAX_BYTES + 1));
+			$this->fail('A file over the default cap was given a token.');
+		} catch (FormSubmitRefusedException $refused) {
+			$this->assertSame('file-too-large', $refused->getFindings()[0]['code']);
+		}
+
+		$issued = $this->store->issue(formId: 'form-1', property: 'bijlage', rule: ['type' => 'file'], file: $this->upload('x', size: 1024));
+		$this->assertNotSame('', $issued['token']);
+	}//end testAPropertyWithoutAMaxSizeHasADefaultCap()
+
+	/**
 	 * A type the property does not allow is refused; an items rule of an array property counts.
 	 */
 	public function testADisallowedTypeIsRefused(): void {
