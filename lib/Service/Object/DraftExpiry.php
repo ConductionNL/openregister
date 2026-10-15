@@ -173,12 +173,19 @@ class DraftExpiry {
 				}
 
 				$counts['schemas']++;
-				$expired = $this->expiredIn(register: $register, schema: $schema, cutoff: $now->modify('-' . $days . ' days'));
+				$cutoff = $now->modify('-' . $days . ' days');
+				$expired = $this->expiredIn(register: $register, schema: $schema, cutoff: $cutoff);
 				if ($expired === []) {
 					continue;
 				}
 
-				$row = $this->removeWithin(register: $register, schema: $schema, expired: $expired, budget: ($budget - $counts['removed'] - $counts['refused']));
+				$row = $this->removeWithin(
+					register: $register,
+					schema: $schema,
+					expired: $expired,
+					budget: ($budget - $counts['removed'] - $counts['refused']),
+					cutoff: $cutoff
+				);
 				$row['lifetimeDays'] = $days;
 				$counts['perSchema'][] = $row;
 				foreach (['expired', 'removed', 'refused', 'deferred'] as $key) {
@@ -211,11 +218,12 @@ class DraftExpiry {
 	 * @param Schema             $schema   The schema.
 	 * @param array<int, string> $expired  The uuids of its expired drafts.
 	 * @param int                $budget   How many delete attempts are left in this run.
+	 * @param DateTimeImmutable  $cutoff   The cutoff the list was made with, asked again just before each delete.
 	 *
 	 * @return array{register: string, schema: string, lifetimeDays: int, expired: int, removed: int, refused: int, deferred: int}
 	 *         The counts of this pair; the caller fills in the lifetime.
 	 */
-	private function removeWithin(Register $register, Schema $schema, array $expired, int $budget): array {
+	private function removeWithin(Register $register, Schema $schema, array $expired, int $budget, DateTimeImmutable $cutoff): array {
 		$row = [
 			'register' => (string)($register->getSlug() ?? $register->getId()),
 			'schema' => (string)($schema->getSlug() ?? $schema->getId()),
@@ -232,7 +240,7 @@ class DraftExpiry {
 				continue;
 			}
 
-			if ($this->remove(register: $register, schema: $schema, uuid: $uuid) === true) {
+			if ($this->remove(register: $register, schema: $schema, uuid: $uuid, cutoff: $cutoff) === true) {
 				$row['removed']++;
 				continue;
 			}
@@ -351,14 +359,39 @@ class DraftExpiry {
 	/**
 	 * Delete one expired draft through the ordinary delete path.
 	 *
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param string   $uuid     The draft.
+	 * The list was read before the first delete, and a sweep can take a
+	 * while: the owner may have sent the draft since. The object is read
+	 * again here and deleted only while it is still a draft last changed
+	 * before the cutoff, so a submission that just got its receipt is never
+	 * removed. An object that cannot be read again is left alone.
+	 *
+	 * @param Register          $register The register.
+	 * @param Schema            $schema   The schema.
+	 * @param string            $uuid     The draft.
+	 * @param DateTimeImmutable $cutoff   Drafts last changed before this moment are expired.
 	 *
 	 * @return bool True when it was removed.
 	 */
-	private function remove(Register $register, Schema $schema, string $uuid): bool {
+	private function remove(Register $register, Schema $schema, string $uuid, DateTimeImmutable $cutoff): bool {
 		try {
+			$current = $this->objects->find(
+				id: $uuid,
+				register: $register,
+				schema: $schema,
+				_rbac: false,
+				_multitenancy: false,
+				_render: false,
+				_audit: false
+			);
+			if ($this->isExpired(candidate: $current, cutoff: $cutoff) === false) {
+				$this->logger->info(
+					message: '[DraftExpiry] A draft was not removed: it is no longer an expired draft',
+					context: ['register' => $register->getSlug(), 'schema' => $schema->getSlug(), 'uuid' => $uuid]
+				);
+
+				return false;
+			}
+
 			// RBAC off: a background job has no session, and the lifetime the
 			// schema declares is the authorisation. Everything else the delete
 			// path guards (append-only, referential integrity, files) stays

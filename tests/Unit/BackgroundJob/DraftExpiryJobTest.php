@@ -155,6 +155,10 @@ class DraftExpiryJobTest extends TestCase {
 		$objects->method('searchObjects')->willReturnCallback(
 			static fn (array $query = []): array => $query['@self']['schema'] === '1' ? [$expired, $fresh] : []
 		);
+		// The sweep reads each object again just before deleting it.
+		$objects->method('find')->willReturnCallback(
+			static fn (string|int $id): ?ObjectEntity => (array_values(array_filter([$expired, $fresh], static fn (ObjectEntity $entity): bool => $entity->getUuid() === (string)$id))[0] ?? null)
+		);
 		$objects->method('deleteObject')->willReturnCallback(
 			function (string $uuid) use (&$deleted, &$actors): bool {
 				$deleted[] = $uuid;

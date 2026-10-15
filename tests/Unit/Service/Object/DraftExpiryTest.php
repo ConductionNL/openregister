@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
 use OCA\OpenRegister\Service\Object\DraftRemovalRecord;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -86,6 +87,20 @@ class DraftExpiryTest extends TestCase {
 	private array $schemas = [];
 
 	/**
+	 * Uuids read again just before their delete.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $finds = [];
+
+	/**
+	 * What the second read answers for a uuid, instead of the listed object (a draft sent in between).
+	 *
+	 * @var array<string, ObjectEntity>
+	 */
+	private array $replaced = [];
+
+	/**
 	 * Registers the mapper lists.
 	 *
 	 * @var array<int, mixed>
@@ -109,6 +124,24 @@ class DraftExpiryTest extends TestCase {
 				}
 
 				return array_slice(($this->stored[$key] ?? []), (int)$query['_offset'], (int)$query['_limit']);
+			}
+		);
+		$objects->method('find')->willReturnCallback(
+			function (string|int $id, ...$arguments): ?ObjectEntity {
+				$this->finds[] = (string)$id;
+				if (isset($this->replaced[(string)$id]) === true) {
+					return $this->replaced[(string)$id];
+				}
+
+				foreach ($this->stored as $list) {
+					foreach ($list as $entity) {
+						if ($entity instanceof ObjectEntity && $entity->getUuid() === (string)$id) {
+							return $entity;
+						}
+					}
+				}
+
+				throw new DoesNotExistException('gone');
 			}
 		);
 		$objects->method('deleteObject')->willReturnCallback(
@@ -441,6 +474,34 @@ class DraftExpiryTest extends TestCase {
 		$this->assertSame(['frozen', 'kept-by-the-handler', 'fine'], array_column($this->deletes, 'uuid'));
 		$this->assertSame(['[DraftExpiry] An expired draft was not removed'], $this->warnings);
 	}//end testARefusedDeleteIsCountedAndTheSweepCarriesOn()
+
+	/**
+	 * A draft the owner sent between the list and the delete is not deleted; a draft touched since is not either.
+	 */
+	public function testADraftSentAfterTheListIsNotDeleted(): void {
+		$this->schema(id: 1, slug: 'ticket', configuration: ['draftLifetimeDays' => 7]);
+		$this->register(id: 10, slug: 'service', schemaIds: [1]);
+		$this->object(where: '10/1', uuid: 'sent', status: 'draft', updated: '2026-09-01T00:00:00+00:00');
+		$this->object(where: '10/1', uuid: 'touched', status: 'draft', updated: '2026-09-01T00:00:00+00:00');
+		$this->object(where: '10/1', uuid: 'stale', status: 'draft', updated: '2026-09-01T00:00:00+00:00');
+
+		$sent = new ObjectEntity();
+		$sent->setUuid('sent');
+		$sent->setStatus('active');
+		$sent->setUpdated(new DateTime('2026-10-12T02:59:00+00:00'));
+		$this->replaced['sent'] = $sent;
+		$touched = new ObjectEntity();
+		$touched->setUuid('touched');
+		$touched->setStatus('draft');
+		$touched->setUpdated(new DateTime('2026-10-12T02:59:00+00:00'));
+		$this->replaced['touched'] = $touched;
+
+		$counts = $this->expiry->sweep(now: $this->now);
+
+		$this->assertSame(['sent', 'touched', 'stale'], $this->finds);
+		$this->assertSame(['stale'], array_column($this->deletes, 'uuid'));
+		$this->assertSame(['schemas' => 1, 'expired' => 3, 'removed' => 1, 'refused' => 2, 'deferred' => 0], $this->totals(counts: $counts));
+	}//end testADraftSentAfterTheListIsNotDeleted()
 
 	/**
 	 * Every page is read before the first delete, so no draft is skipped by a shifting page.
