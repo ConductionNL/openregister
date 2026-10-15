@@ -38,6 +38,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
 
 /**
  * Which drafts a list shows, and the SQL clause that says so.
@@ -75,6 +76,16 @@ class DraftListLens {
 	public const ANY = 'any';
 
 	/**
+	 * No drafts at all, the caller's own included. The literal is the value callers send (`_drafts=none`).
+	 *
+	 * For a work list whose drafts live somewhere else on the screen, such as
+	 * a quick entry that keeps its own half-typed draft (decision 216).
+	 *
+	 * @var string
+	 */
+	public const NONE = 'none';
+
+	/**
 	 * The lens a query asks for.
 	 *
 	 * An unrecognised value reads as the work list, because a typo must never
@@ -82,32 +93,55 @@ class DraftListLens {
 	 * status (`@self[status]=draft`) is the caller saying which statuses it
 	 * wants, so the default steps aside and that filter decides.
 	 *
-	 * @param array<string, mixed> $query The search query.
+	 * @param array<string, mixed> $query  The search query.
+	 * @param Schema|null          $schema The schema being listed; it may keep the caller's own drafts out by default.
 	 *
-	 * @return string One of EXCLUDE, ONLY and ANY.
+	 * @return string One of EXCLUDE, ONLY, ANY and NONE.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
 	 */
-	public function modeFor(array $query): string {
+	public function modeFor(array $query, ?Schema $schema = null): string {
+		// The work list of this schema: without the caller's own drafts when
+		// the schema says so (`draftsListed: false`), with them otherwise.
+		$workList = self::EXCLUDE;
+		if ($schema !== null && (new DraftStatusPolicy())->ownDraftsListed(schema: $schema) === false) {
+			$workList = self::NONE;
+		}
+
 		if (array_key_exists(self::PARAMETER, $query) === false) {
 			if ($this->filtersOnStatus(query: $query) === true) {
 				return self::ANY;
 			}
 
-			return self::EXCLUDE;
+			return $workList;
 		}
 
-		$raw = $query[self::PARAMETER];
-		if (is_string($raw) === true && strtolower(trim($raw)) === self::ANY) {
-			return self::ANY;
+		return ($this->asked(raw: $query[self::PARAMETER]) ?? $workList);
+	}//end modeFor()
+
+	/**
+	 * The lens a `_drafts` value names, or null when it names none.
+	 *
+	 * @param mixed $raw The parameter's value.
+	 *
+	 * @return string|null ANY, NONE or ONLY; null for false and for anything unrecognised.
+	 */
+	private function asked(mixed $raw): ?string {
+		$word = null;
+		if (is_string($raw) === true) {
+			$word = strtolower(trim($raw));
+		}
+
+		if ($word === self::ANY || $word === self::NONE) {
+			return $word;
 		}
 
 		if (is_scalar($raw) === true && filter_var($raw, FILTER_VALIDATE_BOOLEAN) === true) {
 			return self::ONLY;
 		}
 
-		return self::EXCLUDE;
-	}//end modeFor()
+		return null;
+	}//end asked()
 
 	/**
 	 * Whether the query carries a filter on the stored status.
@@ -130,7 +164,7 @@ class DraftListLens {
 	/**
 	 * The clause for a lens, or null when it puts no condition on the list.
 	 *
-	 * @param string      $mode         One of EXCLUDE, ONLY and ANY.
+	 * @param string      $mode         One of EXCLUDE, ONLY, ANY and NONE.
 	 * @param string      $columnPrefix The table alias with its dot, or empty for an unaliased UNION member.
 	 * @param string|null $owner        The caller, already quoted or bound by the emitter; null for nobody.
 	 *
@@ -148,7 +182,7 @@ class DraftListLens {
 		}
 
 		$notADraft = (new DraftStatusPolicy())->notADraftSql(columnPrefix: $columnPrefix);
-		if ($owner === null || $owner === '') {
+		if ($mode === self::NONE || $owner === null || $owner === '') {
 			return $notADraft;
 		}
 

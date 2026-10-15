@@ -250,7 +250,8 @@ class Organisation extends Entity implements JsonSerializable {
 	 *   "object_publish": [],
 	 *   "agent_use": [],
 	 *   "dashboard_view": [],
-	 *   "llm_use": []
+	 *   "llm_use": [],
+	 *   "grant_manage": []
 	 * }
 	 *
 	 * @var array|null Authorization rules as JSON structure
@@ -860,7 +861,8 @@ class Organisation extends Entity implements JsonSerializable {
 	 *     object_publish: array<never, never>,
 	 *     agent_use: array<never, never>,
 	 *     dashboard_view: array<never, never>,
-	 *     llm_use: array<never, never>
+	 *     llm_use: array<never, never>,
+	 *     grant_manage: array<never, never>
 	 * }
 	 */
 	private function getDefaultAuthorization(): array {
@@ -911,6 +913,8 @@ class Organisation extends Entity implements JsonSerializable {
 			'agent_use' => [],
 			'dashboard_view' => [],
 			'llm_use' => [],
+			// Enforced, unlike the four above: see Service\Rbac\OrganisationSpecialRights.
+			'grant_manage' => [],
 		];
 	}//end getDefaultAuthorization()
 

@@ -125,6 +125,12 @@ return [
         ['name' => 'objectOwnership#setOwnerGroup', 'url' => '/api/objects/{register}/{schema}/{id}/ownership/group', 'verb' => 'PUT',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#reassign',      'url' => '/api/ownership/reassign',                               'verb' => 'POST'],
 
+        // A draft's owner makes it definitive (decision 216). An explicit action:
+        // a PUT or PATCH that sets `@self.status` to `active` stays refused, so
+        // nothing leaves draft by accident. A plain Controller, so a refusal
+        // keeps its status (OCSMiddleware would turn a 403 into a 200).
+        ['name' => 'objectDraft#activate', 'url' => '/api/objects/{register}/{schema}/{id}/activate', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+
         // Who holds which right on one object, and how that set changed. The
         // other direction of `/api/scopes`: that one answers a caller about
         // themselves, these answer an auditor about everybody. Reading the

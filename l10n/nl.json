@@ -3457,7 +3457,13 @@
         "Failed to delete migration pack": "Het verwijderen van het migratiepakket is mislukt",
         "A migration pack with this id already exists": "Er bestaat al een migratiepakket met dit id",
         "The migration pack was saved by someone else after it was read": "Iemand anders heeft het migratiepakket opgeslagen nadat het werd gelezen",
-        "The expected update time must be the updatedAt of the pack as it was read": "De verwachte bijwerktijd moet de updatedAt van het pakket zijn zoals het werd gelezen"
+        "The expected update time must be the updatedAt of the pack as it was read": "De verwachte bijwerktijd moet de updatedAt van het pakket zijn zoals het werd gelezen",
+        "This is not a draft, so there is nothing to make definitive.": "Dit is geen concept, dus er valt niets definitief te maken.",
+        "Only the person who started this draft can make it definitive.": "Alleen wie dit concept is begonnen kan het definitief maken.",
+        "You may not save this object.": "U mag dit object niet opslaan.",
+        "This draft is not complete yet. Check the fields marked below.": "Dit concept is nog niet compleet. Controleer de gemarkeerde velden.",
+        "Please sign in to make this draft definitive.": "Log in om dit concept definitief te maken.",
+        "The draft could not be made definitive right now. Nothing was changed; try again later.": "Het concept kon nu niet definitief worden gemaakt. Er is niets gewijzigd; probeer het later opnieuw."
     },
     "pluralForm": "nplurals=2; plural=(n != 1);",
     "plurals": {

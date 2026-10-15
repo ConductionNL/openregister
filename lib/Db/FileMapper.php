@@ -23,11 +23,11 @@ namespace OCA\OpenRegister\Db;
 
 use DateTime;
 use Exception;
+use OCA\OpenRegister\Service\File\ShareUrlBuilder;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
-use OCP\IURLGenerator;
 
 /**
  * Class FileMapper
@@ -85,24 +85,24 @@ use OCP\IURLGenerator;
 class FileMapper extends QBMapper {
 
 	/**
-	 * The URL generator for creating share links
+	 * Builds share and file links for the host the visitor used
 	 *
-	 * @var IURLGenerator
+	 * @var ShareUrlBuilder
 	 */
-	private readonly IURLGenerator $urlGenerator;
+	private readonly ShareUrlBuilder $shareUrls;
 
 	/**
 	 * Constructor
 	 *
 	 * @param IDBConnection $db Database connection
-	 * @param IURLGenerator $urlGenerator URL generator
+	 * @param ShareUrlBuilder $shareUrls Share and file link builder
 	 */
 	public function __construct(
 		IDBConnection $db,
-		IURLGenerator $urlGenerator,
+		ShareUrlBuilder $shareUrls,
 	) {
 		parent::__construct(db: $db, tableName: 'openregister_files', entityClass: File::class);
-		$this->urlGenerator = $urlGenerator;
+		$this->shareUrls = $shareUrls;
 	}//end __construct()
 
 	/**
@@ -775,10 +775,11 @@ class FileMapper extends QBMapper {
 	 * @return string
 	 *
 	 * @phpstan-return string
+	 *
+	 * @spec openspec/changes/share-links-use-the-request-host/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	private function generateShareUrl(string $token): string {
-		$baseUrl = $this->urlGenerator->getBaseUrl();
-		return $baseUrl . '/index.php/s/' . $token;
+		return $this->shareUrls->shareLink(token: $token);
 	}//end generateShareUrl()
 
 	/**
@@ -794,10 +795,11 @@ class FileMapper extends QBMapper {
 	 * @return string
 	 *
 	 * @phpstan-return string
+	 *
+	 * @spec openspec/changes/share-links-use-the-request-host/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	private function generateAuthenticatedAccessUrl(int $fileId): string {
-		$baseUrl = $this->urlGenerator->getBaseUrl();
-		return $baseUrl . '/index.php/core/preview?fileId=' . $fileId . '&x=1920&y=1080&a=1';
+		return $this->shareUrls->absolute(path: '/index.php/core/preview?fileId=' . $fileId . '&x=1920&y=1080&a=1');
 	}//end generateAuthenticatedAccessUrl()
 
 	/**
@@ -813,10 +815,11 @@ class FileMapper extends QBMapper {
 	 * @return string
 	 *
 	 * @phpstan-return string
+	 *
+	 * @spec openspec/changes/share-links-use-the-request-host/specs/file-actions/spec.md#requirement-a-file-link-points-at-the-host-the-visitor-used
 	 */
 	private function generateAuthenticatedDownloadUrl(int $fileId): string {
-		$baseUrl = $this->urlGenerator->getBaseUrl();
-		return $baseUrl . '/index.php/apps/openregister/api/files/' . $fileId . '/download';
+		return $this->shareUrls->absolute(path: '/index.php/apps/openregister/api/files/' . $fileId . '/download');
 	}//end generateAuthenticatedDownloadUrl()
 
 	/**

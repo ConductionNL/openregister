@@ -295,6 +295,7 @@ use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
 use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
 use OCA\OpenRegister\Service\Sync\SourceFetcherRegistry;
 use OCA\OpenRegister\Service\TalkLinkService;
@@ -1498,6 +1499,18 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		// The administrator's decision to take shipped authorization MUST be
+		// shared: the re-import opens it (CountedRegisterImport) and the guard
+		// deep in the import stack reads it, also when the import runs through
+		// another app's SettingsService. Two instances would let the re-import
+		// report a decision the guard never saw.
+		$context->registerService(
+			ShippedAuthorizationDecision::class,
+			static function () {
+				return new ShippedAuthorizationDecision();
+			}
+		);
+
 		$context->registerService(
 			ShippedConfigurationGuard::class,
 			function (ContainerInterface $container) {
@@ -1508,7 +1521,8 @@ class Application extends App implements IBootstrap {
 					baselines: $container->get(ShippedBaselineStore::class),
 					merge: new GuardedDescriptorMerge(
 						parts: $parts,
-						comparator: $comparator
+						comparator: $comparator,
+						decision: $container->get(ShippedAuthorizationDecision::class)
 					),
 					comparator: $comparator,
 					audit: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
@@ -3734,7 +3748,50 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(SchemaCreatedEvent::class, $activityListener);
 		$context->registerEventListener(SchemaUpdatedEvent::class, $activityListener);
 		$context->registerEventListener(SchemaDeletedEvent::class, $activityListener);
+
+		$this->registerDraftListeners(context: $context);
 	}//end registerEventListeners()
+
+	/**
+	 * Register the listeners that must see a draft (decision 227).
+	 *
+	 * A draft's saves and its delete dispatch DraftCreatedEvent,
+	 * DraftUpdatedEvent and DraftDeletedEvent instead of the object events
+	 * (ObjectEventGate), so nothing that reacts to a new object sees a
+	 * half-typed one. The listeners here are the exception, and each is here
+	 * because it keeps the stored draft itself right: what its owner's lists
+	 * and counts show, the sidecar of its own values, and what must go when
+	 * it goes. None of them tells anybody anything.
+	 *
+	 * 🔴 THIS IS THE ONLY PLACE A LISTENER MAY BE REGISTERED ON A DRAFT EVENT,
+	 * and the list is closed: ObjectEventRuleTest compares it with the list
+	 * in the spec and fails on any other. A new listener on object creation
+	 * belongs on ObjectCreatedEvent, where it never sees a draft.
+	 *
+	 * @param IRegistrationContext $context The registration context.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-a-draft-must-have-events-of-its-own-on-a-separate-path
+	 */
+	private function registerDraftListeners(IRegistrationContext $context): void {
+		$saved = [\OCA\OpenRegister\Event\DraftCreatedEvent::class, \OCA\OpenRegister\Event\DraftUpdatedEvent::class];
+		$removed = \OCA\OpenRegister\Event\DraftDeletedEvent::class;
+
+		// The owner sees their own draft in lists, counts and facets, so those caches follow it.
+		// The translation sidecar holds the draft's own values per language.
+		foreach ([...$saved, $removed] as $event) {
+			$context->registerEventListener($event, AggregationCacheInvalidationListener::class);
+			$context->registerEventListener($event, FacetCacheInvalidationListener::class);
+			$context->registerEventListener($event, TranslationProjectionListener::class);
+		}
+
+		// What hangs on a draft goes with it: notes, tasks and links, watchers, read state, notification keys.
+		$context->registerEventListener($removed, ObjectCleanupListener::class);
+		$context->registerEventListener($removed, WatcherPruneListener::class);
+		$context->registerEventListener($removed, ReadStatePruneListener::class);
+		$context->registerEventListener($removed, NotificationDedupePruneListener::class);
+	}//end registerDraftListeners()
 
 	/**
 	 * Register the AppHost declarative observability engine (ADR-040).

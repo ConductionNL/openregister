@@ -47,6 +47,7 @@ use Exception;
 use RuntimeException;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
@@ -55,7 +56,6 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\MagicMapper\RecentLensOrder;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
-use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectDeletingEvent;
 use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
@@ -65,6 +65,7 @@ use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
+use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Support\QueryLimit;
@@ -75,6 +76,7 @@ use OCP\DB\Exception as DbException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
+use OCP\ICacheFactory;
 use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
@@ -417,6 +419,15 @@ class MagicMapper extends AbstractObjectMapper {
 	private ?MagicTableHandler $tableHandler = null;
 
 	/**
+	 * Finds and adds the metadata columns a magic table lacks.
+	 *
+	 * Shared by the request path, the reconcile command and the repair step.
+	 *
+	 * @var MagicMetadataColumnHealer|null
+	 */
+	private ?MagicMetadataColumnHealer $metadataColumnHealer = null;
+
+	/**
 	 * Statistics handler for aggregations and chart data
 	 *
 	 * @var MagicStatisticsHandler|null
@@ -565,11 +576,22 @@ class MagicMapper extends AbstractObjectMapper {
 		// related-row applier needs it, and the search handler needs the
 		// applier. It depends on nothing built later, so the move is safe; the
 		// facet handler still comes after the search handler it consumes.
+		// Built before the table handler, which asks it on every first use
+		// of a table, and before the search handler, which asks it which
+		// metadata columns a degraded table still lacks.
+		$this->metadataColumnHealer = new MagicMetadataColumnHealer(
+			db: $this->db,
+			logger: $this->logger,
+			magicMapper: $this,
+			cache: $this->createMetadataColumnCache()
+		);
+
 		$this->tableHandler = new MagicTableHandler(
 			db: $this->db,
 			appConfig: $this->appConfig,
 			logger: $this->logger,
-			magicMapper: $this
+			magicMapper: $this,
+			metadataColumns: $this->metadataColumnHealer
 		);
 
 		// Assembled by hand rather than resolved from the container, for the
@@ -593,7 +615,8 @@ class MagicMapper extends AbstractObjectMapper {
 			relatedRows: $relatedRowApplier,
 			// The request's language state, so a translatable property sorts by
 			// the value the response shows (order-filters-and-notification-links).
-			languageService: $this->container->get(\OCA\OpenRegister\Service\LanguageService::class)
+			languageService: $this->container->get(\OCA\OpenRegister\Service\LanguageService::class),
+			metadataColumns: $this->metadataColumnHealer
 		);
 
 		$this->bulkHandler = new MagicBulkHandler(
@@ -636,6 +659,145 @@ class MagicMapper extends AbstractObjectMapper {
 			}
 		);
 	}//end initializeHandlers()
+
+	/**
+	 * The distributed cache the metadata-column healer shares across requests.
+	 *
+	 * Resolved from the container rather than injected, like the facet cache,
+	 * so the constructor signature every caller and test uses stays the same.
+	 *
+	 * @return \OCP\ICache|null The cache, or null when none can be made.
+	 */
+	private function createMetadataColumnCache(): ?\OCP\ICache {
+		try {
+			$factory = $this->container->get(ICacheFactory::class);
+			if ($factory instanceof ICacheFactory === false) {
+				return null;
+			}
+
+			return $factory->createDistributed('openregister_magic_metadata');
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end createMetadataColumnCache()
+
+	/**
+	 * The metadata column definitions every magic table carries.
+	 *
+	 * @return array<string, array> Column definitions keyed by column name.
+	 *
+	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+	 */
+	public function getMetadataColumnDefinitions(): array {
+		return $this->getMetadataColumns();
+	}//end getMetadataColumnDefinitions()
+
+	/**
+	 * Render the statement that adds one column to an existing magic table.
+	 *
+	 * The column is added nullable unless it has a default, because the table
+	 * may already hold rows (see addMissingColumns()). On PostgreSQL it carries
+	 * IF NOT EXISTS, so two requests adding the same column both succeed.
+	 *
+	 * @param string $tableName  Bare magic table name.
+	 * @param array  $definition Column definition as getMetadataColumns() declares it.
+	 *
+	 * @return string The ALTER TABLE statement.
+	 *
+	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+	 */
+	public function buildAddColumnSql(string $tableName, array $definition): string {
+		$platform = $this->db->getDatabasePlatform();
+		$isPostgres = ($platform instanceof PostgreSQLPlatform);
+
+		$table = $this->quoteIdentifier(name: $this->getFullTableName(tableName: $tableName), isPostgres: $isPostgres);
+		$column = $this->quoteIdentifier(name: (string)$definition['name'], isPostgres: $isPostgres);
+		$type = $this->mapColumnTypeToSQL(type: (string)$definition['type'], column: $definition);
+
+		$ifNotExists = '';
+		if ($isPostgres === true) {
+			$ifNotExists = 'IF NOT EXISTS ';
+		}
+
+		$sql = 'ALTER TABLE '.$table.' ADD COLUMN '.$ifNotExists.$column.' '.$type;
+		if (isset($definition['default']) === true) {
+			$sql .= ' DEFAULT '.$this->formatDefaultValueForSQL(default: $definition['default']);
+			if (($definition['nullable'] ?? true) === false) {
+				$sql .= ' NOT NULL';
+			}
+		}
+
+		return $sql;
+	}//end buildAddColumnSql()
+
+	/**
+	 * Every physical magic table, as bare names, whether or not a register still lists its schema.
+	 *
+	 * The reconcile command and the repair step walk this rather than the
+	 * register to schema links, because a table whose schema a register no
+	 * longer lists can still be queried and still lack a column.
+	 *
+	 * @return list<string> Bare table names (`openregister_table_<register>_<schema>`).
+	 *
+	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+	 */
+	public function listMagicTableNames(): array {
+		$prefix = $this->getTablePrefix();
+		$names = [];
+		foreach (array_keys($this->discoverMagicTables()) as $fullTableName) {
+			$names[] = substr((string)$fullTableName, strlen($prefix));
+		}
+
+		sort($names);
+
+		return array_values(array_unique($names));
+	}//end listMagicTableNames()
+
+	/**
+	 * The metadata columns a magic table lacks, read fresh.
+	 *
+	 * @param string $tableName Bare magic table name.
+	 *
+	 * @return array<string, array> Missing column definitions keyed by column name.
+	 *
+	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+	 */
+	public function inspectMetadataColumns(string $tableName): array {
+		return $this->getMetadataColumnHealer()->inspect(tableName: $tableName);
+	}//end inspectMetadataColumns()
+
+	/**
+	 * Add the metadata columns a magic table lacks.
+	 *
+	 * @param string $tableName Bare magic table name.
+	 *
+	 * @return array{added: list<string>, failed: array<string, string>} What was added, and what failed with why.
+	 *
+	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-reconcile-reports-and-repairs-missing-metadata-columns-req-mth-003
+	 */
+	public function healMetadataColumns(string $tableName): array {
+		return $this->getMetadataColumnHealer()->heal(tableName: $tableName);
+	}//end healMetadataColumns()
+
+	/**
+	 * The shared metadata-column healer.
+	 *
+	 * @return MagicMetadataColumnHealer The healer.
+	 *
+	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-magic-table-missing-metadata-columns-heals-itself-on-first-use-req-mth-001
+	 */
+	public function getMetadataColumnHealer(): MagicMetadataColumnHealer {
+		if ($this->metadataColumnHealer === null) {
+			$this->metadataColumnHealer = new MagicMetadataColumnHealer(
+				db: $this->db,
+				logger: $this->logger,
+				magicMapper: $this,
+				cache: $this->createMetadataColumnCache()
+			);
+		}
+
+		return $this->metadataColumnHealer;
+	}//end getMetadataColumnHealer()
 
 	/**
 	 * Get a value from the table exists cache.
@@ -730,6 +892,7 @@ class MagicMapper extends AbstractObjectMapper {
 		self::$tableStructureCache = [];
 		self::$calcVersionCache = [];
 		self::$tableColumnsVerifiedCache = [];
+		MagicMetadataColumnHealer::reset();
 	}//end clearAllStaticCaches()
 
 	/**
@@ -1468,7 +1631,8 @@ class MagicMapper extends AbstractObjectMapper {
 				query: $armQuery,
 				schema: $schema,
 				existingColumns: $existingColumns,
-				registerId: $register->getId()
+				registerId: $register->getId(),
+				tableName: $tableName
 			);
 
 			$arm = 'SELECT COUNT(*) AS cnt FROM '.$this->getFullTableName(tableName: $tableName);
@@ -2178,7 +2342,8 @@ class MagicMapper extends AbstractObjectMapper {
 			query: $armQuery,
 			schema: $schema,
 			existingColumns: $existingColumns,
-			registerId: $register->getId()
+			registerId: $register->getId(),
+			tableName: $tableName
 		);
 
 		if (empty($whereClauses) === false) {
@@ -6075,6 +6240,9 @@ class MagicMapper extends AbstractObjectMapper {
 			$quotedTable = $connection->getDatabasePlatform()->quoteIdentifier($fullTableName);
 			$connection->executeStatement('DROP TABLE IF EXISTS ' . $quotedTable);
 
+			// A table recreated under this name must be inspected afresh.
+			$this->getMetadataColumnHealer()->forget(tableName: $tableName);
+
 			// Clear from cache - need to clear by table name pattern.
 			foreach (array_keys(self::$tableExistsCache) as $cacheKey) {
 				if ((self::$regSchemaTableCache[$cacheKey] ?? null) !== null
@@ -8288,9 +8456,7 @@ class MagicMapper extends AbstractObjectMapper {
 		$suppress = $this->suppressLifecycleEvents();
 		foreach ($completed as $item) {
 			if ($suppress === false) {
-				$this->eventDispatcher->dispatchTyped(
-					new ObjectUpdatedEvent(newObject: $item['entity'], oldObject: $item['old'])
-				);
+				(new ObjectEventGate(events: $this->eventDispatcher))->updated(new: $item['entity'], old: $item['old']);
 			}
 
 			$result[] = $item['entity'];
@@ -10114,10 +10280,14 @@ class MagicMapper extends AbstractObjectMapper {
 				'entityUuid' => $insertedEntity->getUuid(),
 			]
 		);
+		// Which event that is, is decided in ObjectEventGate (decision 227). A
+		// draft is never deferred: only the listeners that keep the stored
+		// draft right receive its event, and they need it now.
 		if ($this->suppressLifecycleEvents() === false
-			&& $this->dispatchCreatedDeferred(entity: $insertedEntity, register: $register, schema: $schema) === false
+			&& ($insertedEntity->isDraft() === true
+			|| $this->dispatchCreatedDeferred(entity: $insertedEntity, register: $register, schema: $schema) === false)
 		) {
-			$this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $insertedEntity));
+			(new ObjectEventGate(events: $this->eventDispatcher))->created(object: $insertedEntity);
 		}
 
 		\OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:EVENT-DISPATCH');
@@ -10274,9 +10444,7 @@ class MagicMapper extends AbstractObjectMapper {
 			]
 		);
 		if ($this->suppressLifecycleEvents() === false) {
-			$this->eventDispatcher->dispatchTyped(
-				new ObjectUpdatedEvent(newObject: $updatedEntity, oldObject: $oldEntity)
-			);
+			(new ObjectEventGate(events: $this->eventDispatcher))->updated(new: $updatedEntity, old: $oldEntity);
 		}
 
 		return $updatedEntity;
@@ -10354,7 +10522,7 @@ class MagicMapper extends AbstractObjectMapper {
 			hardDelete: true
 		);
 
-		$this->eventDispatcher->dispatchTyped(new ObjectDeletedEvent(object: $deletedEntity));
+		(new ObjectEventGate(events: $this->eventDispatcher))->deleted(object: $deletedEntity);
 
 		return $deletedEntity;
 	}//end delete()

@@ -4430,8 +4430,15 @@ class SaveObject {
 
 		// A save is a patch. Bumped here rather than after the write so the
 		// value the audit trail copies onto its own `version` column is the
-		// version this save produced, not the one it replaced.
-		$this->versionHandler->bumpVersion(entity: $existingObject);
+		// version this save produced, not the one it replaced. A higher
+		// version the save carries (a re-imported seed object) is taken
+		// instead, so the next import sees the seed as current.
+		$carriedVersion = null;
+		if (is_scalar($selfData['version'] ?? null) === true) {
+			$carriedVersion = (string)$selfData['version'];
+		}
+
+		$this->versionHandler->advanceVersion(entity: $existingObject, carried: $carriedVersion);
 
 		// Set folder ID if provided.
 		if ($folderId !== null) {

@@ -154,12 +154,15 @@ class ShippedConfigurationGuard {
 				];
 			}
 
+			// While an administrator's re-import is in effect, the merge takes
+			// every authorization block from the file (REQ-LCA-003).
 			$result = $this->merge->merge(
 				baseline: $baseline['definition'],
 				live: $live,
 				incoming: $incoming,
 				decisions: $decisions
 			);
+			$this->recordReplaced(slug: $slug, app: $app, roots: $result['replacedLocal']);
 
 			if ($record === true) {
 				$this->baselines->record(
@@ -492,24 +495,48 @@ class ShippedConfigurationGuard {
 	}//end recordReset()
 
 	/**
+	 * Record each authorization block an administrator's re-import replaced
+	 * over a local change: on the audit trail, and on the decision for the report.
+	 *
+	 * @param string             $slug  The schema slug.
+	 * @param string             $app   The app that ships it.
+	 * @param array<int, string> $roots The replaced block roots.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	private function recordReplaced(string $slug, string $app, array $roots): void {
+		$via = (string)$this->merge->decidedVia();
+		foreach ($roots as $root) {
+			$this->recordDecision(slug: $slug, path: (string)$root, app: $app, via: $via);
+		}
+
+		$this->merge->noteReplaced(slug: $slug, roots: $roots);
+	}//end recordReplaced()
+
+	/**
 	 * Record that a conflicting part was taken from upstream.
 	 *
 	 * @param string $slug The schema slug.
 	 * @param string $path The part.
 	 * @param string $app  The app.
+	 * @param string $via  What decided it, when not the acting user alone (an occ re-import).
 	 *
 	 * @return void
 	 */
-	private function recordDecision(string $slug, string $path, string $app): void {
-		$this->record(
-			action: self::ACTION_DECIDED,
-			changed: [
-				'schema' => $slug,
-				'path' => $path,
-				'app' => $app,
-				'decision' => 'accept-shipped',
-			]
-		);
+	private function recordDecision(string $slug, string $path, string $app, string $via = ''): void {
+		$changed = [
+			'schema' => $slug,
+			'path' => $path,
+			'app' => $app,
+			'decision' => 'accept-shipped',
+		];
+		if ($via !== '') {
+			$changed['via'] = $via;
+		}
+
+		$this->record(action: self::ACTION_DECIDED, changed: $changed);
 	}//end recordDecision()
 
 	/**
