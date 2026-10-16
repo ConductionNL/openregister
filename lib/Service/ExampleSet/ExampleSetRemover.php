@@ -148,15 +148,21 @@ class ExampleSetRemover {
 	 *
 	 * @param string               $set    The set id.
 	 * @param array<string, mixed> $record The record.
-	 * @param array<string, mixed> $report The report; counts and failures are added.
+	 * @param array<string, mixed> $report The report; counts, paths left as somebody changed them, and failures.
 	 *
 	 * @return array<string, mixed> The record without the reverted changes.
 	 */
 	private function revertChanges(string $set, array $record, array &$report): array {
 		foreach (array_reverse($record['changes'], true) as $name => $entry) {
-			if ($this->changes->revert(entry: $entry) === false) {
+			$reverted = $this->changes->revert(entry: $entry);
+			if ($reverted['ok'] === false) {
 				$report['failed'][] = 'change '.$name.' on '.$entry['register'].' '.$entry['schema'].' ('.$entry['id'].')';
 				continue;
+			}
+
+			foreach ($reverted['left'] as $path) {
+				$report['left'][] = 'change '.$name.' on '.$entry['register'].' '.$entry['schema'].' ('.$entry['id'].'), path '.$path
+					.', which somebody changed after the install';
 			}
 
 			unset($record['changes'][$name]);

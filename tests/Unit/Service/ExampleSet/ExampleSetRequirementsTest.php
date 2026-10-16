@@ -166,6 +166,28 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		);
 	}
 
+	public function testAPathSomebodyEditedAfterTheInstallIsLeftAndNamedOnRemove(): void {
+		$this->store->offer(register: 'site', schema: 'portal');
+		$portal = $this->store->seed(register: 'site', schema: 'portal', data: ['slug' => 'demo', 'title' => 'Demo', 'authentication' => ['modes' => ['password']]]);
+		$this->app(app: 'openregister', fragment: $this->castFile());
+		$this->app(app: 'site', fragment: $this->signInChange());
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		// A user rewrites the card the set wrote; the appended mode is still the set's.
+		$this->store->rows['site portal'][$portal]['authentication']['modeLabels']['nextcloud'] = ['title' => 'Mijn eigen kaart'];
+		$removed = $this->remover->remove(set: 'demo');
+
+		$this->assertSame([], $removed['failed']);
+		$this->assertSame(1, $removed['removed']['changes']);
+		$this->assertSame(
+			['change site/sign-in on site portal ('.$portal.'), path authentication.modeLabels.nextcloud, which somebody changed after the install'],
+			$removed['left']
+		);
+		$row = $this->store->get(register: 'site', schema: 'portal', id: $portal);
+		$this->assertSame(['title' => 'Mijn eigen kaart'], $row['authentication']['modeLabels']['nextcloud'], 'the user\'s value stays');
+		$this->assertSame(['password'], $row['authentication']['modes'], 'what the set appended is still taken out');
+	}
+
 	public function testAChangeThatIsAlreadyThereIsNotRecordedAndSurvivesRemove(): void {
 		$this->store->offer(register: 'site', schema: 'portal');
 		$portal = $this->store->seed(

@@ -239,24 +239,37 @@ class ExampleSetChanges {
 	}//end lost()
 
 	/**
-	 * Put back what a change replaced and take out what it appended.
+	 * Put back what a change replaced and take out what it appended, while the object still holds what the change wrote.
+	 *
+	 * A path whose value is no longer the one the change wrote was edited
+	 * since: it is left as it is now and named, as app config and user
+	 * preferences are. A value the change appended is taken out of its list
+	 * wherever the list is now, because that undoes exactly the change.
 	 *
 	 * @param array<string, mixed> $entry A record entry from apply().
 	 *
-	 * @return bool True when the object no longer carries the change, or is gone.
+	 * @return array{ok: bool, left: array<int, string>} Whether the object no longer carries the change (or is gone),
+	 *                                                    and the paths left because somebody changed them.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
-	public function revert(array $entry): bool {
+	public function revert(array $entry): array {
 		$row = $this->store->get(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']);
 		if ($row === null) {
-			return true;
+			return ['ok' => true, 'left' => []];
 		}
 
 		$fields = $this->jsonFields(change: $entry);
 		$row    = $this->paths->withJsonDecoded(row: $row, fields: $fields);
+		$left   = [];
 		foreach (array_reverse((array) $entry['set']) as $set) {
+			$held = $this->paths->atPath(row: $row, path: $set['path']);
+			if ($held['found'] === false || $held['value'] !== $set['new']) {
+				$left[] = (string) $set['path'];
+				continue;
+			}
+
 			$row = $this->paths->withoutPath(row: $row, path: $set['path']);
 			if ($set['had'] === true) {
 				$row = $this->paths->withPath(row: $row, path: $set['path'], value: $set['old']);
@@ -277,8 +290,10 @@ class ExampleSetChanges {
 		}
 
 		$row = $this->paths->withJsonText(row: $row, fields: $fields);
+		$why = $this->store->update(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id'], data: $row);
+		$ok  = ($why === '');
 
-		return $this->store->update(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id'], data: $row) === '';
+		return ['ok' => $ok, 'left' => $left];
 	}//end revert()
 
 	/**
