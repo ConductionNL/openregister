@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Stĺpec s id",
         "Import JSON": "Importovať JSON",
         "Imported \"{name}\".": "\"{name}\" bol importovaný.",
+        "Replaced \"{name}\".": "\"{name}\" bol nahradený.",
         "Imports find the pack by this slug.": "Importy nájdu balík podľa tohto slugu.",
         "Join columns": "Spojiť stĺpce",
         "Joined with {fields}, separated by \"{separator}\"": "Spojené s {fields}, oddelené \"{separator}\"",

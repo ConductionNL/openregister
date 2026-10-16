@@ -78,7 +78,7 @@ The system SHALL expose `/api/migration-packs` REST routes: `index`/`show`/`expo
 #### Scenario: Pack JSON export/import round-trips between instances
 - **GIVEN** a pack exported as `zgw-zaken-json.json` from one instance
 - **WHEN** an admin uploads that file to `POST /api/migration-packs/import` on another instance
-- **THEN** an identical pack is created there; re-importing an updated file with the same `id` updates the existing row instead of erroring
+- **THEN** an identical pack is created there (HTTP 201); re-importing an updated file with the same `id` updates the existing row instead of erroring and answers HTTP 200, so the page can say the stored pack was replaced instead of reporting it as newly imported
 
 #### Scenario: Anonymous callers are rejected everywhere
 - **WHEN** an unauthenticated request hits any `/api/migration-packs` route

@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "ID kolonna",
         "Import JSON": "Importēt JSON",
         "Imported \"{name}\".": "Pakotne \"{name}\" ir importēta.",
+        "Replaced \"{name}\".": "Pakotne \"{name}\" ir aizstāta.",
         "Imports find the pack by this slug.": "Importi atrod pakotni pēc šī identifikatora.",
         "Join columns": "Apvienot kolonnas",
         "Joined with {fields}, separated by \"{separator}\"": "Apvienots ar {fields}, atdalīts ar \"{separator}\"",

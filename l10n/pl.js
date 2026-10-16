@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Kolumna identyfikatora",
         "Import JSON": "Importuj JSON",
         "Imported \"{name}\".": "Zaimportowano \"{name}\".",
+        "Replaced \"{name}\".": "Zastąpiono \"{name}\".",
         "Imports find the pack by this slug.": "Importy znajdują pakiet po tym slugu.",
         "Join columns": "Połącz kolumny",
         "Joined with {fields}, separated by \"{separator}\"": "Połączone z {fields}, rozdzielone \"{separator}\"",

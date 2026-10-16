@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Tunnussarake",
         "Import JSON": "Tuo JSON",
         "Imported \"{name}\".": "\"{name}\" tuotiin.",
+        "Replaced \"{name}\".": "\"{name}\" korvattiin.",
         "Imports find the pack by this slug.": "Tuonnit löytävät paketin tämän slugin avulla.",
         "Join columns": "Yhdistä sarakkeita",
         "Joined with {fields}, separated by \"{separator}\"": "Yhdistetty sarakkeisiin {fields}, erottimena \"{separator}\"",

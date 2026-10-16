@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Колона с идентификатор",
         "Import JSON": "Импортиране на JSON",
         "Imported \"{name}\".": "\"{name}\" е импортиран.",
+        "Replaced \"{name}\".": "\"{name}\" е заменен.",
         "Imports find the pack by this slug.": "Импортиранията намират пакета по този slug.",
         "Join columns": "Обединяване на колони",
         "Joined with {fields}, separated by \"{separator}\"": "Обединено с {fields}, разделено с \"{separator}\"",

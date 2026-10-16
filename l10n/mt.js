@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Kolonna tal-ID",
         "Import JSON": "Importa JSON",
         "Imported \"{name}\".": "\"{name}\" ġie importat.",
+        "Replaced \"{name}\".": "\"{name}\" ġie sostitwit.",
         "Imports find the pack by this slug.": "L-importazzjonijiet isibu l-pakkett b'dan is-slug.",
         "Join columns": "Għaqqad il-kolonni",
         "Joined with {fields}, separated by \"{separator}\"": "Magħqud ma' {fields}, separat b'\"{separator}\"",

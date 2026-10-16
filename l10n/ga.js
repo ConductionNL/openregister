@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Colún id",
         "Import JSON": "Iompórtáil JSON",
         "Imported \"{name}\".": "Iompórtáladh \"{name}\".",
+        "Replaced \"{name}\".": "Athsholáthraíodh \"{name}\".",
         "Imports find the pack by this slug.": "Aimsíonn iompórtálacha an pacáiste tríd an slug seo.",
         "Join columns": "Cumaisc colúin",
         "Joined with {fields}, separated by \"{separator}\"": "Cumascthe le {fields}, scartha le \"{separator}\"",

@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Auðkennisdálkur",
         "Import JSON": "Flytja inn JSON",
         "Imported \"{name}\".": "\"{name}\" var flutt inn.",
+        "Replaced \"{name}\".": "\"{name}\" var skipt út.",
         "Imports find the pack by this slug.": "Innflutningar finna pakkann eftir þessu auðkenni.",
         "Join columns": "Sameina dálka",
         "Joined with {fields}, separated by \"{separator}\"": "Sameinað með {fields}, aðskilið með \"{separator}\"",

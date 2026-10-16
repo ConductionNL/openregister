@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Στήλη id",
         "Import JSON": "Εισαγωγή JSON",
         "Imported \"{name}\".": "Το \"{name}\" εισήχθη.",
+        "Replaced \"{name}\".": "Το \"{name}\" αντικαταστάθηκε.",
         "Imports find the pack by this slug.": "Οι εισαγωγές βρίσκουν το πακέτο μέσω αυτού του slug.",
         "Join columns": "Συνένωση στηλών",
         "Joined with {fields}, separated by \"{separator}\"": "Συνενωμένο με {fields}, με διαχωριστικό \"{separator}\"",

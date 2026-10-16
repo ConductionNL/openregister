@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Столбец id",
         "Import JSON": "Импортировать JSON",
         "Imported \"{name}\".": "\"{name}\" импортирован.",
+        "Replaced \"{name}\".": "\"{name}\" заменён.",
         "Imports find the pack by this slug.": "Импорты находят пакет по этому slug.",
         "Join columns": "Объединить столбцы",
         "Joined with {fields}, separated by \"{separator}\"": "Объединено с {fields}, разделитель \"{separator}\"",

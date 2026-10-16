@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Stolpec z ID",
         "Import JSON": "Uvozi JSON",
         "Imported \"{name}\".": "Paket \"{name}\" je uvožen.",
+        "Replaced \"{name}\".": "Paket \"{name}\" je zamenjan.",
         "Imports find the pack by this slug.": "Uvozi najdejo paket po tej oznaki.",
         "Join columns": "Združi stolpce",
         "Joined with {fields}, separated by \"{separator}\"": "Združeno s {fields}, ločeno z \"{separator}\"",

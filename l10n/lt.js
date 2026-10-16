@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Id stulpelis",
         "Import JSON": "Importuoti JSON",
         "Imported \"{name}\".": "\"{name}\" importuotas.",
+        "Replaced \"{name}\".": "\"{name}\" pakeistas.",
         "Imports find the pack by this slug.": "Importai randa paketą pagal šį trumpąjį pavadinimą.",
         "Join columns": "Sujungti stulpelius",
         "Joined with {fields}, separated by \"{separator}\"": "Sujungta su {fields}, atskirta \"{separator}\"",

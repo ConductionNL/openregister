@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Azonosító oszlop",
         "Import JSON": "JSON importálása",
         "Imported \"{name}\".": "\"{name}\" importálva.",
+        "Replaced \"{name}\".": "\"{name}\" lecserélve.",
         "Imports find the pack by this slug.": "Az importálások ezen a slugon keresztül találják meg a csomagot.",
         "Join columns": "Oszlopok egyesítése",
         "Joined with {fields}, separated by \"{separator}\"": "Egyesítve ezekkel: {fields}, elválasztó: \"{separator}\"",

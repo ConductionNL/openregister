@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Слупок ідэнтыфікатара",
         "Import JSON": "Імпартаваць JSON",
         "Imported \"{name}\".": "\"{name}\" імпартаваны.",
+        "Replaced \"{name}\".": "\"{name}\" заменены.",
         "Imports find the pack by this slug.": "Імпарты знаходзяць пакет па гэтым слагу.",
         "Join columns": "Аб'яднаць слупкі",
         "Joined with {fields}, separated by \"{separator}\"": "Аб'яднана з {fields}, раздзяляльнік \"{separator}\"",

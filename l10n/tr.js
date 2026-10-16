@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Kimlik sütunu",
         "Import JSON": "JSON içe aktar",
         "Imported \"{name}\".": "\"{name}\" içe aktarıldı.",
+        "Replaced \"{name}\".": "\"{name}\" değiştirildi.",
         "Imports find the pack by this slug.": "İçe aktarımlar paketi bu slug ile bulur.",
         "Join columns": "Sütunları birleştir",
         "Joined with {fields}, separated by \"{separator}\"": "{fields} ile birleştirildi, \"{separator}\" ile ayrıldı",

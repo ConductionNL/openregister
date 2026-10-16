@@ -3467,6 +3467,7 @@ OC.L10N.register(
         "Id column": "Id-kolom",
         "Import JSON": "JSON importeren",
         "Imported \"{name}\".": "\"{name}\" is geïmporteerd.",
+        "Replaced \"{name}\".": "\"{name}\" is vervangen.",
         "Imports find the pack by this slug.": "Imports vinden het pakket via deze slug.",
         "Join columns": "Kolommen samenvoegen",
         "Joined with {fields}, separated by \"{separator}\"": "Samengevoegd met {fields}, gescheiden door \"{separator}\"",

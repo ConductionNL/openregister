@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "ID-veerg",
         "Import JSON": "Impordi JSON",
         "Imported \"{name}\".": "„{name}“ on imporditud.",
+        "Replaced \"{name}\".": "„{name}“ on asendatud.",
         "Imports find the pack by this slug.": "Impordid leiavad paketi selle identifikaatori järgi.",
         "Join columns": "Ühenda veerud",
         "Joined with {fields}, separated by \"{separator}\"": "Ühendatud väljadega {fields}, eraldajaks „{separator}“",

@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Colonna da l'id",
         "Import JSON": "Importar JSON",
         "Imported \"{name}\".": "\"{name}\" è vegnì importà.",
+        "Replaced \"{name}\".": "\"{name}\" è vegnì remplazzà.",
         "Imports find the pack by this slug.": "Imports chattan il pachet tenor quest slug.",
         "Join columns": "Cumbinar colonnas",
         "Joined with {fields}, separated by \"{separator}\"": "Cumbinà cun {fields}, separà cun \"{separator}\"",

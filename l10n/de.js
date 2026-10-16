@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "ID-Spalte",
         "Import JSON": "JSON importieren",
         "Imported \"{name}\".": "\"{name}\" importiert.",
+        "Replaced \"{name}\".": "\"{name}\" ersetzt.",
         "Imports find the pack by this slug.": "Importe finden das Paket über diesen Slug.",
         "Join columns": "Spalten verbinden",
         "Joined with {fields}, separated by \"{separator}\"": "Verbunden mit {fields}, getrennt durch \"{separator}\"",

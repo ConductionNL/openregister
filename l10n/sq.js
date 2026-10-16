@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Kolona e identifikuesit",
         "Import JSON": "Importo JSON",
         "Imported \"{name}\".": "\"{name}\" u importua.",
+        "Replaced \"{name}\".": "\"{name}\" u zëvendësua.",
         "Imports find the pack by this slug.": "Importet e gjejnë paketën sipas këtij emri të shkurtër.",
         "Join columns": "Bashko kolonat",
         "Joined with {fields}, separated by \"{separator}\"": "Bashkuar me {fields}, të ndara me \"{separator}\"",

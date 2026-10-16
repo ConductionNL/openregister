@@ -857,7 +857,7 @@ class MigrationPacksControllerTest extends TestCase {
 			);
 
 		$response = $this->importController($this->validDefinition())->import();
-		$this->assertSame(201, $response->getStatus());
+		$this->assertSame(200, $response->getStatus(), 'a replaced pack is not answered as Created');
 	}
 
 	public function testImportOfANewSlugLogsThatItCreatedAPack(): void {

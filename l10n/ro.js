@@ -3407,6 +3407,7 @@ OC.L10N.register(
         "Id column": "Coloană ID",
         "Import JSON": "Importare JSON",
         "Imported \"{name}\".": "\"{name}\" a fost importat.",
+        "Replaced \"{name}\".": "\"{name}\" a fost înlocuit.",
         "Imports find the pack by this slug.": "Importurile găsesc pachetul după acest slug.",
         "Join columns": "Concatenare coloane",
         "Joined with {fields}, separated by \"{separator}\"": "Concatenat cu {fields}, separat prin \"{separator}\"",
