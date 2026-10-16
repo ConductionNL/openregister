@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Search;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Dto\DeepLinkRegistration;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Service\ObjectService;
@@ -520,4 +521,42 @@ class ObjectSearchResultFormatterTest extends TestCase {
 
 		$this->assertSame('/objects/u1', $entry->jsonSerialize()['resourceUrl']);
 	}//end testAnUnfilledPlaceholderFallsBackToTheOpenRegisterRoute()
+
+	/**
+	 * An own property that is empty (or blank, or a boolean) must leave its
+	 * placeholder unfilled: the registry would otherwise fill `{case}` with
+	 * nothing and return `/apps/dossiq/cases/`, a broken link with no brace
+	 * left to catch it. The registry's real substitution runs here.
+	 *
+	 * @dataProvider emptyOwnValues
+	 *
+	 * @param mixed $value The own property's value.
+	 *
+	 * @return void
+	 */
+	public function testAnEmptyOwnPropertyFallsBackToTheOpenRegisterRoute(mixed $value): void {
+		$registration = new DeepLinkRegistration(appId: 'dossiq', registerSlug: 'r', schemaSlug: 's', urlTemplate: '/apps/dossiq/cases/{case}');
+		$this->schemaMapper->method('find')->willReturn(new Schema());
+		$this->deepLinkRegistry->method('resolveIcon')->willReturn(null);
+		$this->deepLinkRegistry->method('resolveDisplayName')->willReturn('Dossiq');
+		$this->deepLinkRegistry->method('resolveUrl')->willReturnCallback(
+			static fn (int $registerId, int $schemaId, array $objectData): string => $registration->resolveUrl(objectData: $objectData)
+		);
+
+		$entry = $this->formatter->format(['title' => 'Losse notitie', 'case' => $value, '@self' => ['id' => 'u1', 'register' => 1, 'schema' => 2]], null);
+
+		$this->assertSame('/objects/u1', $entry->jsonSerialize()['resourceUrl']);
+	}//end testAnEmptyOwnPropertyFallsBackToTheOpenRegisterRoute()
+
+	/**
+	 * @return array<string, array{0: mixed}>
+	 */
+	public static function emptyOwnValues(): array {
+		return [
+			'empty string' => [''],
+			'blank string' => ['   '],
+			'false' => [false],
+			'true' => [true],
+		];
+	}//end emptyOwnValues()
 }//end class
