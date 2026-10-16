@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Service\Object\DraftActivation;
+use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -70,6 +71,7 @@ class ObjectDraftController extends Controller {
 	 * @param RegisterMapper  $registers  Resolves the register.
 	 * @param SchemaMapper    $schemas    Resolves the schema.
 	 * @param DraftActivation $activation Makes the draft definitive.
+	 * @param RenderObject    $render     Takes the write-only and unreadable properties out of the answer.
 	 * @param IUserSession    $session    The acting user, who is the asserted owner.
 	 * @param IL10N           $l10n       Translations.
 	 * @param LoggerInterface $logger     Logger.
@@ -81,6 +83,7 @@ class ObjectDraftController extends Controller {
 		private readonly RegisterMapper $registers,
 		private readonly SchemaMapper $schemas,
 		private readonly DraftActivation $activation,
+		private readonly RenderObject $render,
 		private readonly IUserSession $session,
 		private readonly IL10N $l10n,
 		private readonly LoggerInterface $logger,
@@ -179,7 +182,17 @@ class ObjectDraftController extends Controller {
 			);
 		}//end try
 
-		return new JSONResponse(data: $activated->jsonSerialize());
+		// The saved entity goes through the render boundary the object API reads
+		// through: a `writeOnly` property is "may be sent, never returned", a
+		// property the caller's groups may not read is not theirs, and an
+		// encrypted one comes back decrypted for who may read it. The save
+		// renders its result already, but an automatic transition the save
+		// applied hands back an entity of its own, so it is asked here once
+		// more: the redaction is idempotent.
+		$rows = [$activated];
+		$this->render->redactWriteOnlyFromRows(rows: $rows, _rbac: true);
+
+		return new JSONResponse(data: $rows[0]->jsonSerialize());
 	}//end activate()
 
 	/**

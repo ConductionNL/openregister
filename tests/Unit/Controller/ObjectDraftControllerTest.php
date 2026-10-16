@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Service\Object\DraftActivation;
+use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -59,6 +60,8 @@ class ObjectDraftControllerTest extends TestCase {
 	private ObjectService&MockObject $objects;
 
 	private DraftActivation&MockObject $activation;
+
+	private RenderObject&MockObject $render;
 
 	private IUserSession&MockObject $session;
 
@@ -137,6 +140,17 @@ class ObjectDraftControllerTest extends TestCase {
 		);
 
 		$this->activation = $this->createMock(DraftActivation::class);
+		// The render boundary: takes the `writeOnly` property `secret` out of every row, as the real one does for the schema that declares it.
+		$this->render = $this->createMock(RenderObject::class);
+		$this->render->method('redactWriteOnlyFromRows')->willReturnCallback(
+			static function (array &$rows, bool $_rbac = true): void {
+				foreach ($rows as $row) {
+					$object = ($row->getObject() ?? []);
+					unset($object['secret']);
+					$row->setObject($object);
+				}
+			}
+		);
 		$this->session = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$l10n = $this->createMock(IL10N::class);
@@ -149,6 +163,7 @@ class ObjectDraftControllerTest extends TestCase {
 			registers: $registers,
 			schemas: $schemas,
 			activation: $this->activation,
+			render: $this->render,
 			session: $this->session,
 			l10n: $l10n,
 			logger: $this->logger
@@ -254,6 +269,28 @@ class ObjectDraftControllerTest extends TestCase {
 		// The record was resolved through the RBAC boundary, in its own register and schema.
 		$this->assertSame(['id' => 'd1', 'register' => $this->register, 'schema' => $this->schema, 'rbac' => true, 'multitenancy' => true], $this->reads[0]);
 	}//end testTheOwnerGetsTheActivatedObject()
+
+	/**
+	 * The answer goes through the render boundary: a `writeOnly` property is never in the 200 body.
+	 *
+	 * Goes red without the redaction: the entity the save handed back carries the secret.
+	 */
+	public function testAWriteOnlyPropertyIsNotInTheActivatedObject(): void {
+		$this->signIn(uid: 'agent');
+		$this->readableDraft();
+
+		$active = new ObjectEntity();
+		$active->setUuid('d1');
+		$active->setStatus('active');
+		$active->setObject(['subject' => 'A', 'secret' => 'hunter2']);
+		$this->activationAnswers(answer: $active);
+
+		$response = $this->controller->activate(register: 'service', schema: 'ticket', id: 'd1');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertStringNotContainsString('hunter2', (string)json_encode($response->getData()));
+		$this->assertSame('A', $response->getData()['subject'] ?? null);
+	}//end testAWriteOnlyPropertyIsNotInTheActivatedObject()
 
 	/**
 	 * A body without `object`, or with something that is no object, activates the draft as stored.
@@ -369,6 +406,7 @@ class ObjectDraftControllerTest extends TestCase {
 			registers: $registers,
 			schemas: $schemas,
 			activation: $this->activation,
+			render: $this->render,
 			session: $this->session,
 			l10n: $l10n,
 			logger: $this->logger
@@ -405,6 +443,7 @@ class ObjectDraftControllerTest extends TestCase {
 			registers: $registers,
 			schemas: $schemas,
 			activation: $this->activation,
+			render: $this->render,
 			session: $this->session,
 			l10n: $l10n,
 			logger: $this->logger
