@@ -81,7 +81,15 @@ class TaskBlockerGuard {
 	/**
 	 * Refuse a blocker that is the task itself, does not exist, or closes a loop.
 	 *
-	 * @param Task $task The task about to be created, uuid already set.
+	 * With `$mayRead`, the caller's own read rule: a blocker the caller may not
+	 * read is refused in the words of one that does not exist. Without that, a
+	 * person who knows a task uuid could tell from the answer (and later from
+	 * the `blocked` flag of their own task) that a task of somebody else's
+	 * exists and whether it is still open. Trusted callers (flows, migrations)
+	 * pass none: they declare blockers of their own making.
+	 *
+	 * @param Task          $task    The task about to be created, uuid already set.
+	 * @param callable|null $mayRead Answers whether the caller may read a given Task; null for a trusted caller.
 	 *
 	 * @return void
 	 *
@@ -89,7 +97,7 @@ class TaskBlockerGuard {
 	 *
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
-	public function assertDeclarable(Task $task): void {
+	public function assertDeclarable(Task $task, ?callable $mayRead = null): void {
 		$blockedBy = (string)$task->getBlockedBy();
 		if ($blockedBy === '') {
 			return;
@@ -111,6 +119,12 @@ class TaskBlockerGuard {
 
 				// A removed task further up the chain blocks nothing.
 				return;
+			}
+
+			// Only the task the caller NAMES is held to their read rule: the
+			// chain behind it is walked for loops and never reported back.
+			if ($next === $blockedBy && $mayRead !== null && $mayRead($blocker) !== true) {
+				throw new TaskValidationException(message: sprintf("blockedBy names task '%s', and no task has that uuid.", $blockedBy));
 			}
 
 			$next = (string)$blocker->getBlockedBy();
