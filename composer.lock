@@ -3358,16 +3358,16 @@
         },
         {
             "name": "smalot/pdfparser",
-            "version": "v2.13.0",
+            "version": "v2.13.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/smalot/pdfparser.git",
-                "reference": "4e964c7336b6c6b7f5a1de7e4fedbf2477265f5a"
+                "reference": "a71c6dd38e60a995fdb4d36e4433b8b3557c65dc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/smalot/pdfparser/zipball/4e964c7336b6c6b7f5a1de7e4fedbf2477265f5a",
-                "reference": "4e964c7336b6c6b7f5a1de7e4fedbf2477265f5a",
+                "url": "https://api.github.com/repos/smalot/pdfparser/zipball/a71c6dd38e60a995fdb4d36e4433b8b3557c65dc",
+                "reference": "a71c6dd38e60a995fdb4d36e4433b8b3557c65dc",
                 "shasum": ""
             },
             "require": {
@@ -3403,9 +3403,9 @@
             ],
             "support": {
                 "issues": "https://github.com/smalot/pdfparser/issues",
-                "source": "https://github.com/smalot/pdfparser/tree/v2.13.0"
+                "source": "https://github.com/smalot/pdfparser/tree/v2.13.1"
             },
-            "time": "2026-09-25T08:09:43+00:00"
+            "time": "2026-10-13T08:49:45+00:00"
         },
         {
             "name": "spomky-labs/base64url",
@@ -4774,16 +4774,16 @@
         },
         {
             "name": "theodo-group/llphant",
-            "version": "1.0.6",
+            "version": "1.0.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/LLPhant/LLPhant.git",
-                "reference": "d8701f2a3fb8697b67a2d18c96869046d10b5e3c"
+                "reference": "5e0f3f39620ee9fcc0826f3385ecaf829c9a371c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/LLPhant/LLPhant/zipball/d8701f2a3fb8697b67a2d18c96869046d10b5e3c",
-                "reference": "d8701f2a3fb8697b67a2d18c96869046d10b5e3c",
+                "url": "https://api.github.com/repos/LLPhant/LLPhant/zipball/5e0f3f39620ee9fcc0826f3385ecaf829c9a371c",
+                "reference": "5e0f3f39620ee9fcc0826f3385ecaf829c9a371c",
                 "shasum": ""
             },
             "require": {
@@ -4907,10 +4907,10 @@
                 "vectorstore"
             ],
             "support": {
-                "source": "https://github.com/LLPhant/LLPhant/tree/1.0.6",
+                "source": "https://github.com/LLPhant/LLPhant/tree/1.0.7",
                 "issues": "https://github.com/LLPhant/LLPhant/issues"
             },
-            "time": "2026-10-01T12:39:21+00:00"
+            "time": "2026-10-06T20:25:54+00:00"
         },
         {
             "name": "twig/twig",
