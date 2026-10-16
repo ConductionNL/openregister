@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
+use OCA\OpenRegister\Service\Case\UnarmedTimerMarkers;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -180,7 +181,18 @@ class CasePlanItemTimersTest extends TestCase {
 				$errors[] = [$message, $context];
 			}
 		);
-		$service = new CasePlanItemTimers(timers: $this->timers, logger: $logger);
+		$stored = '';
+		$appConfig = $this->createMock(\OCP\IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(static function () use (&$stored): string {
+			return $stored;
+		});
+		$appConfig->method('setValueString')->willReturnCallback(static function (string $app, string $key, string $value) use (&$stored): bool {
+			$stored = $value;
+
+			return true;
+		});
+		$markers = new UnarmedTimerMarkers(appConfig: $appConfig);
+		$service = new CasePlanItemTimers(timers: $this->timers, logger: $logger, markers: $markers);
 
 		$this->assertSame(0, $service->onEntered(item: $statutory, actor: null, now: $now));
 
@@ -188,6 +200,13 @@ class CasePlanItemTimersTest extends TestCase {
 		$this->assertStringContainsString('WITHOUT its statutory', $errors[0][0]);
 		$this->assertStringContainsString('stat', $errors[0][0]);
 		$this->assertSame('wettelijk', $errors[0][1]['legalEffect']);
+		$this->assertSame(['item-9'], array_keys($markers->all()), 'a statutory item that lacks its timer is marked for the re-arm pass');
+
+		// A service-norm expiry that is refused stays a warning: no marker.
+		$norm = CaseFixtures::row(id: 10, key: 'norm', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
+		$norm->setExpiresAt(new DateTime('2026-10-20T10:00:00+00:00'));
+		$service->onEntered(item: $norm, actor: null, now: $now);
+		$this->assertSame(['item-9'], array_keys($markers->all()));
 	}//end testARefusedStatutoryTimerIsLoggedLoudly()
 
 	/**

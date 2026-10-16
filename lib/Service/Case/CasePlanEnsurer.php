@@ -56,6 +56,8 @@ class CasePlanEnsurer {
 	 * @param CasePlanDefinition $definitions The one definition validator.
 	 * @param CasePlanTransitions $transitions The one lifecycle table.
 	 * @param IDBConnection $db Holds the transaction.
+	 * @param CasePlanItemTimers|null $timers Arms the due and expiry timers of an item ensured as active: no transition
+	 *                                        event is dispatched for it, so the listener that arms them never hears of it.
 	 */
 	public function __construct(
 		private readonly CaseItemMapper $items,
@@ -63,6 +65,7 @@ class CasePlanEnsurer {
 		private readonly CasePlanDefinition $definitions,
 		private readonly CasePlanTransitions $transitions,
 		private readonly IDBConnection $db,
+		private readonly ?CasePlanItemTimers $timers = null,
 	) {
 
 	}//end __construct()
@@ -135,12 +138,46 @@ class CasePlanEnsurer {
 			throw $failure;
 		}
 
+		$rows = $this->items->findByObject(objectUuid: $objectUuid);
+		$this->armTimers(rows: $rows, created: $created, actor: $actor);
+
 		return [
 			'created' => $created,
 			'existing' => $kept,
-			'items' => array_map(static fn (CaseItem $row): array => $row->jsonSerialize(), $this->items->findByObject(objectUuid: $objectUuid)),
+			'items' => array_map(static fn (CaseItem $row): array => $row->jsonSerialize(), $rows),
 		];
 	}//end ensure()
+
+	/**
+	 * Arm the deadlines of the items this call created as active.
+	 *
+	 * An item inserted in a state it carries goes through no state machine, so
+	 * no `CaseItemTransitionedEvent` reaches the timer listener, and an
+	 * item that is active with a `dueAt` or `expiresAt` (a statutory one
+	 * above all) would never get its timer. Done after the commit, like the
+	 * listener: a refused arm is logged and, for a statutory expiry, marked
+	 * for the re-arm pass, and never undoes the ensure. An item that already
+	 * existed is not touched: its timers were armed when it became active.
+	 *
+	 * @param array<int, CaseItem> $rows Every row of the object, after the commit.
+	 * @param array<int, string> $created The keys this call created.
+	 * @param string $actor The ensuring identity.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 */
+	private function armTimers(array $rows, array $created, string $actor): void {
+		if ($this->timers === null) {
+			return;
+		}
+
+		foreach ($rows as $row) {
+			if ($row->getState() === CaseItem::STATE_ACTIVE && in_array((string)$row->getItemKey(), $created, true) === true) {
+				$this->timers->onEntered(item: $row, actor: $actor);
+			}
+		}
+	}//end armTimers()
 
 	/**
 	 * Every node's state must be one its type can reach from `available`.

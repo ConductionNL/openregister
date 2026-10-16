@@ -540,13 +540,33 @@ timer service, subject type `case-item`, when it becomes active, and every
 open timer of an item SHALL be cancelled when the item reaches a terminal
 state. An enforcing expiry SHALL terminate the item. The case layer SHALL NOT
 keep a clock of its own. A failure to arm SHALL be logged and SHALL NOT
-block the transition.
+block the transition. The arm of a statutory (`wettelijk`) expiry that fails
+SHALL additionally leave a durable marker on the item (kept in app config, so
+no table changes), and a background pass SHALL arm that item again, or, when
+the term has passed meanwhile, terminate it as a fired statutory timer
+would; an item that is gone, no longer active, or already has a running expiry
+timer SHALL only lose its marker. An item ensured as `active` SHALL have its
+due and expiry timers armed like one that became active by a transition,
+because an ensure dispatches no transition event.
 
 #### Scenario: An active item with a due date gets a timer
 
 - **GIVEN** a human item with `dueAt` set
 - **WHEN** it becomes active
 - **THEN** a `due` timer with subject type `case-item` and the item's uuid MUST be armed
+
+#### Scenario: A statutory expiry that could not be armed is armed again
+
+- **GIVEN** an active item listed under `statutory` with an `expiresAt` whose expiry timer was refused when it became active
+- **WHEN** the re-arm pass runs
+- **THEN** the item's enforcing `expiry` timer with outcome `transition:terminate` MUST be armed and the marker removed
+- **AND** when `expiresAt` has passed meanwhile the item MUST be terminated instead
+
+#### Scenario: An item ensured as active arms its statutory expiry
+
+- **GIVEN** an ensure call creating an `active` item with a future `expiresAt` listed under `statutory`
+- **WHEN** the call runs
+- **THEN** one `expiry` timer with outcome `transition:terminate` MUST be armed, and none for an item that already existed
 
 #### Scenario: Completing an item cancels its timers
 
