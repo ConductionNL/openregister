@@ -146,6 +146,7 @@ class MagicBulkHandler {
 		$prepared = [];
 		$now = new DateTime();
 		$columnRoles = new MagicMetadataColumn();
+		$shadowReported = false;
 
 		foreach ($objects as $object) {
 			$preparedObject = [];
@@ -214,7 +215,23 @@ class MagicBulkHandler {
 			// Properties can be at top level OR in 'object' key (structured format).
 			$propertySource = $object['object'] ?? $object;
 			foreach ($propertySource as $propertyName => $value) {
-				if ($columnRoles->skippedOnWrite(key: $propertyName, schemaProperties: ($schema->getProperties() ?? [])) === true) {
+				if ($columnRoles->skippedOnWrite(key: (string)$propertyName, schemaProperties: ($schema->getProperties() ?? [])) === true) {
+					// A declared property that would write a metadata column is
+					// dropped, not written over the value stamped above. Said once
+					// per call, not once per object.
+					if ($shadowReported === false && $columnRoles->shadowsMetadata(key: (string)$propertyName) === true) {
+						$shadowReported = true;
+						$this->logger->warning(
+							message: '[MagicBulkHandler] A schema property is named like a metadata column; its value is not written',
+							context: [
+								'file' => __FILE__,
+								'line' => __LINE__,
+								'propertyName' => (string)$propertyName,
+								'schema' => $schema->getId(),
+							]
+						);
+					}
+
 					continue;
 				}
 

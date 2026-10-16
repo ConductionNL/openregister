@@ -4690,7 +4690,25 @@ class MagicMapper extends AbstractObjectMapper {
 		$schemaProperties = $schema->getProperties();
 
 		if (is_array($schemaProperties) === true) {
+			$columnRoles = new MagicMetadataColumn();
 			foreach (array_keys($schemaProperties) as $propertyName) {
+				// A property whose column is a metadata column (`_owner`, `_authorization`,
+				// `_status`, ...) never writes it: the loop above stamped that column from
+				// server-side values, and the client's value must not replace them. The
+				// read side already treats such a column as metadata.
+				if (is_string($propertyName) === true && $columnRoles->shadowsMetadata(key: $propertyName) === true) {
+					$this->logger->warning(
+						message: '[MagicMapper] A schema property is named like a metadata column; its value is not written',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'propertyName' => $propertyName,
+							'schema' => $schema->getId(),
+						]
+					);
+					continue;
+				}
+
 				// Use array_key_exists to distinguish between:.
 				// - Property exists with null value → include in prepared data (update DB to null).
 				// - Property doesn't exist at all → skip (don't change DB value).
