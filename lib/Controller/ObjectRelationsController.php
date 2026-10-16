@@ -59,6 +59,8 @@ use OCP\IRequest;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A REST surface over the
  * relation row store, the graph walk and the object read it authorises against.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One action per route of the relation
+ * surface (rows, derive, graph, tree, export), each a short method that refuses first.
  *
  * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
  */
@@ -76,6 +78,8 @@ class ObjectRelationsController extends Controller {
 	 * @param ObjectTreeService $trees The bounded walk along a schema's parent property.
 	 * @param PurposeGuard $purposeGuard The doelbinding guard the object read runs, asked before a tree or a graph is answered.
 	 * @param RegisterMapper $registerMapper Resolves an object's register for that guard.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection; each dependency is named above.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */

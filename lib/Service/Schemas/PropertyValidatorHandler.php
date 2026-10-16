@@ -981,7 +981,7 @@ class PropertyValidatorHandler {
 			// delete by uuid and would act on the wrong value. An empty
 			// referenceKey or the literal `uuid` is a plain uuid reference,
 			// read the way the delete reads it.
-			$referenceKey = (new ReferenceKey())->of(property: $property);
+			$referenceKey = (new ReferenceKey())->keyOf(property: $property);
 			if ($referenceKey !== null && strtoupper((string)$property['onDelete']) !== 'RESTRICT') {
 				throw new Exception("'referenceKey' at '$path' is only valid with onDelete RESTRICT");
 			}

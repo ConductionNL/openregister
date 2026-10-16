@@ -146,7 +146,6 @@ class MagicBulkHandler {
 		$prepared = [];
 		$now = new DateTime();
 		$columnRoles = new MagicMetadataColumn();
-		$shadowReported = false;
 
 		foreach ($objects as $object) {
 			$preparedObject = [];
@@ -215,23 +214,10 @@ class MagicBulkHandler {
 			// Properties can be at top level OR in 'object' key (structured format).
 			$propertySource = $object['object'] ?? $object;
 			foreach ($propertySource as $propertyName => $value) {
+				// A declared property that would write a metadata column is skipped
+				// with the undeclared `_` keys and `@self`: the metadata columns were
+				// stamped above and a client value must not replace them.
 				if ($columnRoles->skippedOnWrite(key: (string)$propertyName, schemaProperties: ($schema->getProperties() ?? [])) === true) {
-					// A declared property that would write a metadata column is
-					// dropped, not written over the value stamped above. Said once
-					// per call, not once per object.
-					if ($shadowReported === false && $columnRoles->shadowsMetadata(key: (string)$propertyName) === true) {
-						$shadowReported = true;
-						$this->logger->warning(
-							message: '[MagicBulkHandler] A schema property is named like a metadata column; its value is not written',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'propertyName' => (string)$propertyName,
-								'schema' => $schema->getId(),
-							]
-						);
-					}
-
 					continue;
 				}
 
@@ -242,15 +228,10 @@ class MagicBulkHandler {
 				// 1. PostgreSQL rejects empty strings for JSON columns
 				// 2. Column types might differ from schema (e.g., table created with old schema)
 				// 3. Empty strings are semantically equivalent to NULL for most use cases.
-				if ($value === '') {
-					$value = null;
-				}
+				$value = match ($value) { '' => null, default => $value };
 
 				// Convert complex values for database storage.
-				$preparedObject[$columnName] = $value;
-				if (is_array($value) === true || is_object($value) === true) {
-					$preparedObject[$columnName] = json_encode($value);
-				}
+				$preparedObject[$columnName] = match (true) { is_array($value), is_object($value) => json_encode($value), default => $value };
 			}//end foreach
 
 			$prepared[] = $preparedObject;

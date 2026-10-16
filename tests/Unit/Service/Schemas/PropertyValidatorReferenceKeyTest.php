@@ -112,11 +112,11 @@ class PropertyValidatorReferenceKeyTest extends TestCase {
 	public function testTheReaderAnswersTheKeyOrNullForAUuidReference(): void {
 		$reader = new ReferenceKey();
 
-		self::assertSame('code', $reader->of(property: ['referenceKey' => ' code ']));
-		self::assertSame('code', $reader->of(property: ['items' => ['referenceKey' => 'code']]));
-		self::assertNull($reader->of(property: ['referenceKey' => 'uuid']));
-		self::assertNull($reader->of(property: ['referenceKey' => '']));
-		self::assertNull($reader->of(property: ['referenceKey' => 7]));
-		self::assertNull($reader->of(property: []));
+		self::assertSame('code', $reader->keyOf(property: ['referenceKey' => ' code ']));
+		self::assertSame('code', $reader->keyOf(property: ['items' => ['referenceKey' => 'code']]));
+		self::assertNull($reader->keyOf(property: ['referenceKey' => 'uuid']));
+		self::assertNull($reader->keyOf(property: ['referenceKey' => '']));
+		self::assertNull($reader->keyOf(property: ['referenceKey' => 7]));
+		self::assertNull($reader->keyOf(property: []));
 	}//end testTheReaderAnswersTheKeyOrNullForAUuidReference()
 }//end class

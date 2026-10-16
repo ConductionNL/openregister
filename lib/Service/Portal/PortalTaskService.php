@@ -43,6 +43,7 @@ use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Task\TaskBlockerGuard;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
@@ -169,7 +170,7 @@ class PortalTaskService {
 		$task = $this->tasks->get(uuid: $uuid);
 		if ((string)$task->getPerformerType() !== Task::PERFORMER_EXTERNAL
 			|| hash_equals($subject->partyReference(), (string)$task->getAssignee()) === false
-			|| $this->isHeldBack(task: $task) === true
+			|| (new TaskBlockerGuard(tasks: $this->mapper))->isHeldBack(task: $task) === true
 		) {
 			throw new DoesNotExistException('No such portal task.');
 		}
@@ -177,32 +178,6 @@ class PortalTaskService {
 		return $task;
 	}//end show()
 
-	/**
-	 * Whether the task waits on a blocker that is still open.
-	 *
-	 * The portal list leaves such a task out, so the party has no way to reach
-	 * it: the task the case meant to hold back cannot be read or completed by
-	 * its uuid either. A blocker that no longer exists blocks nothing, as in
-	 * the list predicate.
-	 *
-	 * @param Task $task The task.
-	 *
-	 * @return bool True when its blocker is open.
-	 *
-	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
-	 */
-	private function isHeldBack(Task $task): bool {
-		$blockedBy = (string)$task->getBlockedBy();
-		if ($blockedBy === '') {
-			return false;
-		}
-
-		try {
-			return $this->mapper->findByUuid(uuid: $blockedBy)->getIsTerminal() !== true;
-		} catch (DoesNotExistException) {
-			return false;
-		}
-	}//end isHeldBack()
 
 	/**
 	 * The row shape of one task for the portal, with delivery state and
@@ -267,9 +242,7 @@ class PortalTaskService {
 		//     party's list, so it is not theirs to complete either. Asked after
 		//     the authorization, so only the matched party can tell it from a
 		//     task that does not exist, and before anything is stored.
-		if ($this->isHeldBack(task: $task) === true) {
-			throw new DoesNotExistException('No such portal task.');
-		}
+		(new TaskBlockerGuard(tasks: $this->mapper))->assertNotHeldBack(task: $task);
 
 		// 1b. A task that names the app action completing it is completed by
 		//     that app alone, so the app's own checks cannot be skipped by

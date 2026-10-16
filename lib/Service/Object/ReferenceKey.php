@@ -45,12 +45,12 @@ final class ReferenceKey {
 	 *
 	 * @return string|null The target's key property, or null for a uuid reference.
 	 */
-	public function of(array $property): ?string {
+	public function keyOf(array $property): ?string {
 		$key = ($property['referenceKey'] ?? ($property['items']['referenceKey'] ?? null));
 		if (is_string($key) === false || trim($key) === '' || trim($key) === 'uuid') {
 			return null;
 		}
 
 		return trim($key);
-	}//end of()
+	}//end keyOf()
 }//end class

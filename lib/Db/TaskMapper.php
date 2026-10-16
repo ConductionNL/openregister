@@ -581,36 +581,22 @@ class TaskMapper extends QBMapper {
 	 * reason {@see applyExternalExclusion()} gives: that is the case looking at
 	 * its own work, and it must show what waits and on what.
 	 *
+	 * The portal seam calls it without criteria: a resident's task list is the
+	 * only inbox an external task has, so a task the case holds back waits out
+	 * of sight there too, always.
+	 *
 	 * @param IQueryBuilder $qb The query under construction.
-	 * @param TaskInboxCriteria $criteria Carries the anchors and `includeBlocked`.
+	 * @param TaskInboxCriteria|null $criteria Carries the anchors and `includeBlocked`; null for the portal seam.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
-	private function applyBlockedExclusion(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
-		if ($criteria->includeBlocked === true || $criteria->objectUuid !== null || $criteria->runUuid !== null) {
+	private function applyBlockedExclusion(IQueryBuilder $qb, ?TaskInboxCriteria $criteria = null): void {
+		if ($criteria !== null && ($criteria->includeBlocked === true || $criteria->objectUuid !== null || $criteria->runUuid !== null)) {
 			return;
 		}
 
-		$this->excludeBlocked(qb: $qb);
-	}//end applyBlockedExclusion()
-
-	/**
-	 * Leave out every task whose blocker is still open.
-	 *
-	 * The one predicate behind "a blocked task is in nobody's list and in
-	 * nobody's total", shared by the inbox and by the portal seam: a resident's
-	 * task list is the only inbox an external task has, so a task the case holds
-	 * back must wait out of sight there too.
-	 *
-	 * @param IQueryBuilder $qb The query under construction.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
-	 */
-	private function excludeBlocked(IQueryBuilder $qb): void {
 		$open = $this->db->getQueryBuilder();
 		$open->select('blocker.uuid')
 			->from($this->getTableName(), 'blocker')
@@ -623,7 +609,7 @@ class TaskMapper extends QBMapper {
 				$qb->expr()->notIn('blocked_by', $qb->createFunction($open->getSQL()))
 			)
 		);
-	}//end excludeBlocked()
+	}//end applyBlockedExclusion()
 
 	/**
 	 * An EXTERNAL task is in nobody's Nextcloud inbox and in nobody's total.
@@ -726,7 +712,7 @@ class TaskMapper extends QBMapper {
 		$qb->andWhere($qb->expr()->eq('assignee', $qb->createNamedParameter($partyReference)));
 		$qb->andWhere($qb->expr()->eq('performer_type', $qb->createNamedParameter(Task::PERFORMER_EXTERNAL)));
 		$qb->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
-		$this->excludeBlocked(qb: $qb);
+		$this->applyBlockedExclusion(qb: $qb);
 	}//end applyPartyPredicates()
 
 	/**

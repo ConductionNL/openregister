@@ -827,7 +827,7 @@ class ReferentialIntegrityService {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	private function extractReferenceKey(array $property): ?string {
-		return (new ReferenceKey())->of(property: $property);
+		return (new ReferenceKey())->keyOf(property: $property);
 	}//end extractReferenceKey()
 
 	/**

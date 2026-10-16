@@ -54,6 +54,10 @@ use RuntimeException;
  * classifies the failure mode when something goes wrong. Per-provider
  * specifics (URL paths, payload shapes) live in the provider
  * implementations themselves. The router only provides the safe transport.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The transport meets the app
+ * manager, the container, the object service, the source entity, the fleet id
+ * resolver and the connector's call signature; each is one side of the join.
  */
 class ExternalIntegrationRouter {
 	use ConnectorRequestTrait;
@@ -728,7 +732,7 @@ class ExternalIntegrationRouter {
 		unset($options['withholdBodies']);
 
 		$callService = $this->container->get($this->callServiceClass());
-		if ($withholdBodies === true && $this->canWithholdBodies(callService: $callService) === false) {
+		if ($withholdBodies === true && (new CallSignature())->accepts(service: $callService, method: 'call', name: 'withholdBodies') === false) {
 			$this->logger->info(
 				'[ExternalIntegrationRouter] The connector CallService cannot withhold bodies; the call is not made.'
 			);
@@ -762,31 +766,6 @@ class ExternalIntegrationRouter {
 			'The connector CallService does not expose a known call/request method.'
 		);
 	}//end dispatch()
-
-	/**
-	 * Whether the connector's `CallService::call` takes the `withholdBodies` option.
-	 *
-	 * Older connectors (integriq on beta/main) have no such parameter. Asked of
-	 * the method's signature, so the answer is the same for every call and no
-	 * call is made to find out.
-	 *
-	 * @param object $callService The connector's CallService.
-	 *
-	 * @return bool True when `call` names the parameter or collects named arguments.
-	 */
-	private function canWithholdBodies(object $callService): bool {
-		if (method_exists($callService, 'call') === false) {
-			return false;
-		}
-
-		foreach ((new \ReflectionMethod($callService, 'call'))->getParameters() as $parameter) {
-			if ($parameter->getName() === 'withholdBodies' || $parameter->isVariadic() === true) {
-				return true;
-			}
-		}
-
-		return false;
-	}//end canWithholdBodies()
 
 	/**
 	 * Extract transport metadata from a CallService response (OpenConnector

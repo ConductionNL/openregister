@@ -50,6 +50,9 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The walk reads the declaration,
  * the table, the access filter and the instance cap; each is its own class.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Two directions, three bounds and a
+ * fail-closed answer for each unreadable level or ancestor; each is a short method, and
+ * splitting them would scatter one walk's bounds over several classes.
  *
  * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
  */

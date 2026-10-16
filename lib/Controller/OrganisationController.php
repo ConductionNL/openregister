@@ -137,6 +137,8 @@ class OrganisationController extends Controller {
 	 * @param IGroupManager $groupManager Group manager for admin checks
 	 * @param GrantChangeAuditor|null $grantAuditor Records a change of who holds the special right `grant_manage`. Null only in legacy fixtures.
 	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection; each dependency is named above.
+	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
 	public function __construct(

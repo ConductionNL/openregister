@@ -121,9 +121,7 @@ class TaskBlockerGuard {
 				return;
 			}
 
-			// Only the task the caller NAMES is held to their read rule: the
-			// chain behind it is walked for loops and never reported back.
-			if ($next === $blockedBy && $mayRead !== null && $mayRead($blocker) !== true) {
+			if ($this->isHiddenFromCaller(blocker: $blocker, named: ($next === $blockedBy), mayRead: $mayRead) === true) {
 				throw new TaskValidationException(message: sprintf("blockedBy names task '%s', and no task has that uuid.", $blockedBy));
 			}
 
@@ -135,4 +133,64 @@ class TaskBlockerGuard {
 			}
 		}
 	}//end assertDeclarable()
+
+	/**
+	 * Whether the caller may not read the blocker they named.
+	 *
+	 * Only the task the caller NAMES is held to their read rule: the chain
+	 * behind it is walked for loops and never reported back.
+	 *
+	 * @param Task          $blocker The blocker found.
+	 * @param bool          $named   Whether it is the one the caller named, not one further up its chain.
+	 * @param callable|null $mayRead The caller's read rule; null for a trusted caller.
+	 *
+	 * @return bool True when it must be refused as if it did not exist.
+	 */
+	private function isHiddenFromCaller(Task $blocker, bool $named, ?callable $mayRead): bool {
+		return $named === true && $mayRead !== null && $mayRead($blocker) !== true;
+	}//end isHiddenFromCaller()
+
+	/**
+	 * Refuse a task that waits on an open blocker as one that does not exist.
+	 *
+	 * For a seam that never lists a held-back task (the portal): reading or
+	 * completing one by its uuid must not be a way around the list.
+	 *
+	 * @param Task $task The task.
+	 *
+	 * @return void
+	 *
+	 * @throws DoesNotExistException When the task waits on a blocker that is still open.
+	 *
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 */
+	public function assertNotHeldBack(Task $task): void {
+		if ($this->isHeldBack(task: $task) === true) {
+			throw new DoesNotExistException('No such task.');
+		}
+	}//end assertNotHeldBack()
+
+	/**
+	 * Whether the task waits on a blocker that is still open.
+	 *
+	 * A blocker that no longer exists blocks nothing.
+	 *
+	 * @param Task $task The task.
+	 *
+	 * @return bool True when its blocker exists and is not terminal.
+	 *
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 */
+	public function isHeldBack(Task $task): bool {
+		$blockedBy = (string)$task->getBlockedBy();
+		if ($blockedBy === '') {
+			return false;
+		}
+
+		try {
+			return $this->tasks->findByUuid(uuid: $blockedBy)->getIsTerminal() !== true;
+		} catch (DoesNotExistException) {
+			return false;
+		}
+	}//end isHeldBack()
 }//end class
