@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Case\CasePlanService;
 use OCA\OpenRegister\Service\Case\CaseRealisationService;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Task\TaskService;
@@ -182,6 +183,32 @@ class CaseRealisationServiceTest extends TestCase {
 		$this->assertSame(CaseItem::REALISATION_NONE, $plain->getRealisationKind());
 		$this->assertNull($plain->getRealisationUuid());
 	}//end testAFlowBoundStageQueuesARunAndOthersRealiseNothing()
+
+	/**
+	 * A plan created by an app's in-process code acts as `system:<app>`, which names no account: a flow-bound
+	 * stage or process task queues its run without a caller, so the run is not `runAs` that label and the flow's own
+	 * attribution decides. A real caller is still passed through.
+	 *
+	 * @return void
+	 */
+	public function testARunForASystemCreatedPlanIsQueuedWithoutTheSystemLabelAsItsUser(): void {
+		$task = CaseFixtures::row(id: 3, key: 'verwerk', type: CaseItem::TYPE_PROCESS_TASK, state: CaseItem::STATE_AVAILABLE);
+		$task->setPlanSettings(['flows' => ['verwerk' => 'flow-9']]);
+		$run = new FlowRun();
+		$run->setUuid('run-9');
+		$this->runs->expects($this->once())->method('queue')->with(
+			'flow-9',
+			$this->anything(),
+			CaseRealisationService::RUN_TRIGGER,
+			['caseItem' => 'item-3'],
+			null
+		)->willReturn($run);
+
+		$this->service()->realise(item: $task, actor: CasePlanService::SYSTEM_ACTOR_PREFIX . 'dossiq');
+
+		$this->assertSame(CaseItem::REALISATION_RUN, $task->getRealisationKind());
+		$this->assertSame('run-9', $task->getRealisationUuid());
+	}//end testARunForASystemCreatedPlanIsQueuedWithoutTheSystemLabelAsItsUser()
 
 	/**
 	 * Terminal outcomes: task completed/terminated, run completed/stopped,

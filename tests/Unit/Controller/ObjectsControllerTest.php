@@ -993,6 +993,8 @@ class ObjectsControllerTest extends TestCase {
 	// --- logs() tests ---
 
 	public function testLogsReturns404WhenObjectNotFound(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 		$this->request->method('getRequestUri')->willReturn('/api/objects/1/2/uuid-123/logs');
 
@@ -1009,6 +1011,8 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	public function testLogsThrowsWhenFindFails(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 
 		$this->objectService->method('setSchema')->willReturnSelf();
@@ -2092,6 +2096,8 @@ class ObjectsControllerTest extends TestCase {
 	 * Test logs() returns 404 when register does not match (with message key check).
 	 */
 	public function testLogsReturns404WhenRegisterDoesNotMatchWithMessage(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
 		$objectEntity->setRegister('99'); // different register
@@ -2118,6 +2124,8 @@ class ObjectsControllerTest extends TestCase {
 	 * Test logs() returns 404 when schema does not match (with message content).
 	 */
 	public function testLogsReturns404WhenSchemaDoesNotMatchWithMessage(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
 		$objectEntity->setRegister('1');
@@ -2444,6 +2452,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsReturnsPaginatedLogsOnSuccess(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
 		$objectEntity->setRegister('1');
@@ -3461,6 +3471,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsThrowsWhenRegisterNotFound(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 
 		$this->objectService->method('setRegister')
@@ -3471,6 +3483,8 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	public function testLogsThrowsWhenSchemaNotFound(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 
 		$this->objectService->method('setRegister')->willReturnSelf();
@@ -4627,6 +4641,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsMatchesSchemaBySlug(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
 		// Use a mock to return an array from getSchema (real entity is typed ?string)
 		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
@@ -4666,6 +4682,8 @@ class ObjectsControllerTest extends TestCase {
 	 * @return void
 	 */
 	public function testLogsReturns200WhenSchemaMatchesAsString(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
 		$objectEntity->setRegister('1');
@@ -4688,6 +4706,8 @@ class ObjectsControllerTest extends TestCase {
 	}//end testLogsReturns200WhenSchemaMatchesAsString()
 
 	public function testLogsReturns404WhenSchemaDoesNotMatch(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
 		$objectEntity->setRegister('1');
@@ -4711,6 +4731,8 @@ class ObjectsControllerTest extends TestCase {
 	}
 
 	public function testLogsReturns404WhenRegisterDoesNotMatch(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
 		$objectEntity->setRegister('99'); // different register
@@ -4736,6 +4758,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsMatchesSchemaAsObject(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
 		$schemaObj = new \stdClass();
 		$schemaObj->id = '2';
@@ -4771,6 +4795,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsMatchesSchemaAsObjectById(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
 		$schemaObj = new \stdClass();
 		$schemaObj->id = '2';
@@ -4805,6 +4831,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsMatchesSchemaAsArrayById(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->markTestSkipped(self::SCHEMA_SHAPE_SKIP);
 		// Use a mock to return an array from getSchema (real entity is typed ?string)
 		$objectEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\ObjectEntity::class)
@@ -4836,6 +4864,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsWithPaginationParams(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
 		$objectEntity->setRegister('1');
@@ -5378,6 +5408,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsReturns404OnDbException(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$this->request->method('getParams')->willReturn([]);
 
 		$this->objectService->method('setSchema')->willReturnSelf();
@@ -5397,6 +5429,8 @@ class ObjectsControllerTest extends TestCase {
 	// =========================================================================
 
 	public function testLogsWithLegacyParams(): void {
+		// The stored history is the administrator's; a reader gets the redacted one (ObjectsControllerLogsRedactionTest).
+		$this->setupAdminUser();
 		$objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
 		$objectEntity->setUuid('uuid-123');
 		$objectEntity->setRegister('1');

@@ -101,8 +101,21 @@ class ExampleSetAppConfig {
 
 		try {
 			if ($generate === true) {
-				$this->appConfig->setValueString($app, $key, $this->random->generate(self::GENERATED_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC), false, true);
-				return ['error' => '', 'entry' => ['app' => $app, 'key' => $key, 'had' => $had, 'old' => '', 'new' => '', 'generated' => true]];
+				$generated = $this->random->generate(self::GENERATED_LENGTH, ISecureRandom::CHAR_ALPHANUMERIC);
+				$this->appConfig->setValueString($app, $key, $generated, false, true);
+				// A one-way fingerprint, never the value: remove can tell the generated value from one an administrator put there.
+				return [
+					'error' => '',
+					'entry' => [
+						'app' => $app,
+						'key' => $key,
+						'had' => $had,
+						'old' => '',
+						'new' => '',
+						'generated' => true,
+						'fingerprint' => hash('sha256', $generated),
+					],
+				];
 			}
 
 			$this->appConfig->setValueString($app, $key, $value);
@@ -133,6 +146,13 @@ class ExampleSetAppConfig {
 	/**
 	 * Put back what an entry replaced, while the key still holds what the set wrote.
 	 *
+	 * A generated value is recognised by its fingerprint (the record never
+	 * holds the value): one that no longer has it was replaced by somebody,
+	 * and stays. A key that held an empty value before the set generated one
+	 * gets that value back; a key that was not there is deleted. An entry
+	 * from before fingerprints was recorded has none to compare and is
+	 * restored as it always was.
+	 *
 	 * @param array<string, mixed> $entry A record entry from apply().
 	 *
 	 * @return string `restored`, `left` (somebody changed it since) or `failed`.
@@ -142,13 +162,13 @@ class ExampleSetAppConfig {
 	public function revert(array $entry): string {
 		$app = (string) $entry['app'];
 		$key = (string) $entry['key'];
-		$changed = ($this->has(app: $app, key: $key) === true && $this->read(app: $app, key: $key) !== (string) $entry['new']);
-		if (($entry['generated'] ?? false) === false && $changed === true) {
+		$generated = (($entry['generated'] ?? false) === true);
+		if ($this->changedSince(entry: $entry) === true) {
 			return 'left';
 		}
 
 		try {
-			if ($entry['had'] === true && ($entry['generated'] ?? false) === false) {
+			if ($entry['had'] === true && ($generated === false || isset($entry['fingerprint']) === true)) {
 				$this->appConfig->setValueString($app, $key, (string) $entry['old']);
 				return 'restored';
 			}
@@ -160,6 +180,31 @@ class ExampleSetAppConfig {
 
 		return 'restored';
 	}//end revert()
+
+	/**
+	 * Whether the key no longer holds what the set wrote: a written value that differs, or a generated one that lost its fingerprint.
+	 *
+	 * @param array<string, mixed> $entry A record entry from apply().
+	 *
+	 * @return bool
+	 */
+	private function changedSince(array $entry): bool {
+		$app = (string) $entry['app'];
+		$key = (string) $entry['key'];
+		if ($this->has(app: $app, key: $key) === false) {
+			return false;
+		}
+
+		if (($entry['generated'] ?? false) === true) {
+			if (isset($entry['fingerprint']) === false) {
+				return false;
+			}
+
+			return hash_equals((string) $entry['fingerprint'], hash('sha256', $this->read(app: $app, key: $key))) === false;
+		}
+
+		return $this->read(app: $app, key: $key) !== (string) $entry['new'];
+	}//end changedSince()
 
 	/**
 	 * Whether a key exists.

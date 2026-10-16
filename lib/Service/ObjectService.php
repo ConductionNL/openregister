@@ -3151,6 +3151,7 @@ class ObjectService implements ObjectServiceInterface
                 $scopedSchema   = $this->currentSchema;
             }
 
+            $objectToDelete = null;
             try {
                 // With the caller's flags. The delete handler honours them, so a
                 // lookup that ignored them applied the session's RBAC and tenant
@@ -3211,6 +3212,16 @@ class ObjectService implements ObjectServiceInterface
                     );
                 }
             }//end try
+
+            // Somebody else's draft is not the caller's to delete, whatever the
+            // read lookup above let through. Answered as not found, like the
+            // save path (refuseSomebodyElsesDraft), so it is not announced.
+            $deleter = ($currentUser ?? $this->userSession->getUser());
+            if ($_rbac === true && $objectToDelete !== null && $this->currentSchema !== null
+                && $this->draftKeptFromCaller(object: $objectToDelete, schema: $this->currentSchema, user: $deleter) === true
+            ) {
+                throw new OcpDoesNotExistException('Object not found');
+            }
 
             return $this->deleteHandler->deleteObject(
                 register: $this->currentRegister,
@@ -3339,6 +3350,30 @@ class ObjectService implements ObjectServiceInterface
             return false;
         }
     }//end isDeletableDraft()
+
+    /**
+     * Whether a stored draft is kept from the caller, as on the read path.
+     *
+     * One answer for the single delete and the bulk delete: another user's
+     * draft is not theirs to remove. An administrator reads every draft, so
+     * is not kept from one.
+     *
+     * @param ObjectEntity $object The stored object.
+     * @param Schema       $schema Its schema.
+     * @param IUser|null   $user   The caller.
+     *
+     * @return bool True when the object is a draft the caller may not touch.
+     *
+     * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+     */
+    private function draftKeptFromCaller(ObjectEntity $object, Schema $schema, ?IUser $user): bool
+    {
+        if ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true) {
+            return false;
+        }
+
+        return (new DraftStatusPolicy())->keptFrom(object: $object, schema: $schema, userId: $user?->getUID());
+    }//end draftKeptFromCaller()
 
     /**
      * Refuse a delete on an archival-annotated schema.
@@ -5557,10 +5592,12 @@ class ObjectService implements ObjectServiceInterface
                 // object still yields its scope.
                 $deletedRegisterId = null;
                 $deletedSchemaId   = null;
+                $rowEntity         = null;
                 $preResolved       = ($preResolvedObjects[$uuid] ?? null);
                 if ($preResolved !== null) {
                     $deletedRegisterId = $preResolved->getRegister();
                     $deletedSchemaId   = $preResolved->getSchema();
+                    $rowEntity         = $preResolved;
                 }
 
                 if ($preResolved === null) {
@@ -5575,6 +5612,7 @@ class ObjectService implements ObjectServiceInterface
                         );
                         $deletedRegisterId = $preDeleteObject->getRegister();
                         $deletedSchemaId   = $preDeleteObject->getSchema();
+                        $rowEntity         = $preDeleteObject;
                     } catch (\Throwable $resolveError) {
                         // BUG-OBJ-14: scope resolution failed (object already gone or
                         // not visible) — log and fall back to a broad invalidation.
@@ -5635,12 +5673,33 @@ class ObjectService implements ObjectServiceInterface
                     continue;
                 }
 
-                try {
-                    $this->rejectIfArchivalImmutable(schema: $gateSchema, retentionSweep: false);
-                } catch (ArchivalImmutableException $archivalRefusal) {
+                // THE DRAFT RULES, ON THE THIRD DOOR TOO (decisions 180 and 216).
+                // The permission filter above already leaves another user's draft
+                // out; this asks again per row, with the row's own schema, so the
+                // loop does not lean on that one gate. A draft is then removed for
+                // good, with its files and its one `draft.removed` audit entry, and
+                // it is not an archival record, so the archival gate does not
+                // apply to it: both exactly as deleteObject() has them.
+                $rowIsDraft = ($rowEntity !== null && $rowEntity->isDraft() === true);
+                if ($rowIsDraft === true && $_rbac === true
+                    && $this->draftKeptFromCaller(object: $rowEntity, schema: $gateSchema, user: $this->userSession->getUser()) === true
+                ) {
                     $skippedUuids[]        = $uuid;
-                    $skippedReasons[$uuid] = $archivalRefusal->toResponseBody();
+                    $skippedReasons[$uuid] = [
+                        'error'   => 'OBJECT_NOT_PERMITTED',
+                        'message' => 'Object is not visible to this user, or does not exist.',
+                    ];
                     continue;
+                }
+
+                if ($rowIsDraft === false) {
+                    try {
+                        $this->rejectIfArchivalImmutable(schema: $gateSchema, retentionSweep: false);
+                    } catch (ArchivalImmutableException $archivalRefusal) {
+                        $skippedUuids[]        = $uuid;
+                        $skippedReasons[$uuid] = $archivalRefusal->toResponseBody();
+                        continue;
+                    }
                 }
 
                 $result = $this->deleteHandler->deleteObject(
@@ -5650,7 +5709,8 @@ class ObjectService implements ObjectServiceInterface
                     originalObjectId: null,
                     _rbac: $_rbac,
                     _multitenancy: $_multitenancy,
-                    preResolved: $handlerPreResolved
+                    preResolved: $handlerPreResolved,
+                    permanent: $rowIsDraft
                 );
                 if ($result === true) {
                     $deletedObjectIds[] = $uuid;

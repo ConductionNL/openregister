@@ -33,6 +33,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCA\OpenRegister\Service\Dmn\DecisionTableValidator;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Throwable;
@@ -102,7 +103,17 @@ class DecisionTableValidationListener implements IEventListener {
 	 * @return void
 	 */
 	private function validate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
-		if ($this->isDecisionTable(object: $object) === false) {
+		$isTable = $this->isDecisionTable(object: $object);
+		if ($isTable === false) {
+			return;
+		}
+
+		if ($isTable === null) {
+			$this->refuse(
+				event: $event,
+				message: 'The object could not be checked against the decision-table rules, so it was not saved: its schema or register could not be read.'
+			);
+
 			return;
 		}
 
@@ -112,32 +123,47 @@ class DecisionTableValidationListener implements IEventListener {
 		}
 
 		$problems = $this->validator->validate(table: $data);
-		$clash    = $this->keyTakenBy(key: trim((string)($data['key'] ?? '')), uuid: (string)$object->getUuid());
-		if ($clash !== null) {
-			$problems[] = sprintf('the key "%s" is already used by decision table %s', (string)$data['key'], $clash);
+		$key      = trim((string)($data['key'] ?? ''));
+		$clash    = $this->keyTakenBy(key: $key, uuid: (string)$object->getUuid());
+		if ($clash === null) {
+			$problems[] = sprintf('the key "%s" could not be checked against the tables already stored', $key);
+		} elseif ($clash !== '') {
+			$problems[] = sprintf('the key "%s" is already used by decision table %s', $key, $clash);
 		}
 
 		if ($problems === []) {
 			return;
 		}
 
-		$event->setErrors(
-			[
-				'code' => self::ERROR_CODE,
-				'message' => 'The decision table cannot be saved: ' . implode('; ', $problems) . '.',
-			]
-		);
-		$event->stopPropagation();
+		$this->refuse(event: $event, message: 'The decision table cannot be saved: ' . implode('; ', $problems) . '.');
 	}//end validate()
+
+	/**
+	 * Refuse the save.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event   The save event.
+	 * @param string                                  $message Why.
+	 *
+	 * @return void
+	 */
+	private function refuse(ObjectCreatingEvent|ObjectUpdatingEvent $event, string $message): void {
+		$event->setErrors(['code' => self::ERROR_CODE, 'message' => $message]);
+		$event->stopPropagation();
+	}//end refuse()
 
 	/**
 	 * Whether the object is a row of the decision-table schema.
 	 *
+	 * A schema or register that does not exist means the object is not a
+	 * decision table. One that could not be read (a database error) means it
+	 * cannot be told, and that answer is null: the guard must not wave a table
+	 * through because it could not look.
+	 *
 	 * @param ObjectEntity $object The object being saved.
 	 *
-	 * @return bool True for a decision table.
+	 * @return bool|null True for a decision table, false for any other object, null when it cannot be told.
 	 */
-	private function isDecisionTable(ObjectEntity $object): bool {
+	private function isDecisionTable(ObjectEntity $object): ?bool {
 		$reference = $object->getSchema();
 		if ($reference === null || $reference === '') {
 			return false;
@@ -145,8 +171,10 @@ class DecisionTableValidationListener implements IEventListener {
 
 		try {
 			$schema = $this->schemas->find($reference, _rbac: false, _multitenancy: false);
-		} catch (Throwable $unresolved) {
+		} catch (DoesNotExistException $unresolved) {
 			return false;
+		} catch (Throwable $unreadable) {
+			return null;
 		}
 
 		if ($schema->getSlug() !== DecisionTableStore::SCHEMA) {
@@ -164,9 +192,9 @@ class DecisionTableValidationListener implements IEventListener {
 	 *
 	 * @param ObjectEntity $object The object being saved.
 	 *
-	 * @return bool True when its register is `decision-tables`.
+	 * @return bool|null True when its register is `decision-tables`, null when the register could not be read.
 	 */
-	private function inDecisionTableRegister(ObjectEntity $object): bool {
+	private function inDecisionTableRegister(ObjectEntity $object): ?bool {
 		$reference = $object->getRegister();
 		if ($reference === null || $reference === '') {
 			return false;
@@ -174,8 +202,10 @@ class DecisionTableValidationListener implements IEventListener {
 
 		try {
 			$register = $this->registers->find($reference, _rbac: false, _multitenancy: false);
-		} catch (Throwable $unresolved) {
+		} catch (DoesNotExistException $unresolved) {
 			return false;
+		} catch (Throwable $unreadable) {
+			return null;
 		}
 
 		return $register->getSlug() === DecisionTableStore::REGISTER;
@@ -187,11 +217,11 @@ class DecisionTableValidationListener implements IEventListener {
 	 * @param string $key  The key being saved.
 	 * @param string $uuid The uuid of the row being saved.
 	 *
-	 * @return string|null The other table's uuid, or null when the key is free.
+	 * @return string|null The other table's uuid, '' when the key is free, null when the search could not run.
 	 */
 	private function keyTakenBy(string $key, string $uuid): ?string {
 		if ($key === '') {
-			return null;
+			return '';
 		}
 
 		try {
@@ -214,6 +244,6 @@ class DecisionTableValidationListener implements IEventListener {
 			}
 		}
 
-		return null;
+		return '';
 	}//end keyTakenBy()
 }//end class

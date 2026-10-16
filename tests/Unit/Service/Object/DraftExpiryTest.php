@@ -25,6 +25,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\Object\DraftExpiry;
 use OCA\OpenRegister\Service\Object\DraftRemovalRecord;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -58,6 +59,13 @@ class DraftExpiryTest extends TestCase {
 	private array $searches = [];
 
 	/**
+	 * Counts asked for what lies beyond the read cap: the query.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private array $counts = [];
+
+	/**
 	 * Deletes run: uuid, scope and flags.
 	 *
 	 * @var array<int, array<string, mixed>>
@@ -86,6 +94,20 @@ class DraftExpiryTest extends TestCase {
 	private array $schemas = [];
 
 	/**
+	 * Uuids read again just before their delete.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $finds = [];
+
+	/**
+	 * What the second read answers for a uuid, instead of the listed object (a draft sent in between).
+	 *
+	 * @var array<string, ObjectEntity>
+	 */
+	private array $replaced = [];
+
+	/**
 	 * Registers the mapper lists.
 	 *
 	 * @var array<int, mixed>
@@ -108,7 +130,32 @@ class DraftExpiryTest extends TestCase {
 					throw new RuntimeException('table missing');
 				}
 
-				return array_slice(($this->stored[$key] ?? []), (int)$query['_offset'], (int)$query['_limit']);
+				return array_slice($this->matching(query: $query), (int)$query['_offset'], (int)$query['_limit']);
+			}
+		);
+		$objects->method('countSearchObjects')->willReturnCallback(
+			function (array $query = [], bool $_rbac = true, bool $_multitenancy = true): int {
+				$this->counts[] = $query;
+
+				return count($this->matching(query: $query));
+			}
+		);
+		$objects->method('find')->willReturnCallback(
+			function (string|int $id, ...$arguments): ?ObjectEntity {
+				$this->finds[] = (string)$id;
+				if (isset($this->replaced[(string)$id]) === true) {
+					return $this->replaced[(string)$id];
+				}
+
+				foreach ($this->stored as $list) {
+					foreach ($list as $entity) {
+						if ($entity instanceof ObjectEntity && $entity->getUuid() === (string)$id) {
+							return $entity;
+						}
+					}
+				}
+
+				throw new DoesNotExistException('gone');
 			}
 		);
 		$objects->method('deleteObject')->willReturnCallback(
@@ -164,6 +211,45 @@ class DraftExpiryTest extends TestCase {
 
 		$this->expiry = new DraftExpiry(objects: $objects, registers: $registerMapper, schemas: $schemaMapper, logger: $logger);
 	}//end setUp()
+
+	/**
+	 * What the store answers for a list query: the stored objects the `@self` date filters let through, in list order.
+	 *
+	 * Only the two filters the sweep sends are understood: `updated` before a moment, and
+	 * `updated` null with `created` before a moment. Whatever else is stored (a non-object)
+	 * comes back as it is, for the sweep's own check to turn down.
+	 *
+	 * @param array<string, mixed> $query The list query.
+	 *
+	 * @return array<int, mixed> The matching objects.
+	 */
+	private function matching(array $query): array {
+		$self = $query['@self'];
+		$list = ($this->stored[$self['register'] . '/' . $self['schema']] ?? []);
+
+		return array_values(
+			array_filter(
+				$list,
+				static function (mixed $entity) use ($self): bool {
+					if (($entity instanceof ObjectEntity) === false) {
+						return true;
+					}
+
+					$before = static fn (?\DateTime $moment, string $limit): bool => $moment !== null
+						&& $moment->getTimestamp() < (new DateTimeImmutable($limit, new \DateTimeZone('UTC')))->getTimestamp();
+					if (is_array($self['updated'] ?? null) === true) {
+						return $before($entity->getUpdated(), $self['updated']['lt']);
+					}
+
+					if (($self['updated'] ?? null) === 'IS NULL') {
+						return $entity->getUpdated() === null && $before($entity->getCreated(), $self['created']['lt']);
+					}
+
+					return true;
+				}
+			)
+		);
+	}//end matching()
 
 	/**
 	 * A schema, with or without a draft lifetime.
@@ -260,7 +346,12 @@ class DraftExpiryTest extends TestCase {
 		$this->assertFalse($this->deletes[0]['retentionSweep']);
 
 		// The list asked for drafts alone, of everybody, in that register and schema.
-		$this->assertSame(['register' => '10', 'schema' => '1'], $this->searches[0]['query']['@self']);
+		$this->assertSame('10', $this->searches[0]['query']['@self']['register']);
+		$this->assertSame('1', $this->searches[0]['query']['@self']['schema']);
+		// ... and only the expired ones: last changed before the cutoff (seven days before the sweep, in UTC), then the never-changed ones.
+		$this->assertSame(['lt' => '2026-10-05 03:00:00'], $this->searches[0]['query']['@self']['updated']);
+		$this->assertSame('IS NULL', $this->searches[1]['query']['@self']['updated']);
+		$this->assertSame(['lt' => '2026-10-05 03:00:00'], $this->searches[1]['query']['@self']['created']);
 		$this->assertSame('true', $this->searches[0]['query']['_drafts']);
 		$this->assertFalse($this->searches[0]['rbac']);
 		$this->assertFalse($this->searches[0]['multitenancy']);
@@ -443,6 +534,34 @@ class DraftExpiryTest extends TestCase {
 	}//end testARefusedDeleteIsCountedAndTheSweepCarriesOn()
 
 	/**
+	 * A draft the owner sent between the list and the delete is not deleted; a draft touched since is not either.
+	 */
+	public function testADraftSentAfterTheListIsNotDeleted(): void {
+		$this->schema(id: 1, slug: 'ticket', configuration: ['draftLifetimeDays' => 7]);
+		$this->register(id: 10, slug: 'service', schemaIds: [1]);
+		$this->object(where: '10/1', uuid: 'sent', status: 'draft', updated: '2026-09-01T00:00:00+00:00');
+		$this->object(where: '10/1', uuid: 'touched', status: 'draft', updated: '2026-09-01T00:00:00+00:00');
+		$this->object(where: '10/1', uuid: 'stale', status: 'draft', updated: '2026-09-01T00:00:00+00:00');
+
+		$sent = new ObjectEntity();
+		$sent->setUuid('sent');
+		$sent->setStatus('active');
+		$sent->setUpdated(new DateTime('2026-10-12T02:59:00+00:00'));
+		$this->replaced['sent'] = $sent;
+		$touched = new ObjectEntity();
+		$touched->setUuid('touched');
+		$touched->setStatus('draft');
+		$touched->setUpdated(new DateTime('2026-10-12T02:59:00+00:00'));
+		$this->replaced['touched'] = $touched;
+
+		$counts = $this->expiry->sweep(now: $this->now);
+
+		$this->assertSame(['sent', 'touched', 'stale'], $this->finds);
+		$this->assertSame(['stale'], array_column($this->deletes, 'uuid'));
+		$this->assertSame(['schemas' => 1, 'expired' => 3, 'removed' => 1, 'refused' => 2, 'deferred' => 0], $this->totals(counts: $counts));
+	}//end testADraftSentAfterTheListIsNotDeleted()
+
+	/**
 	 * Every page is read before the first delete, so no draft is skipped by a shifting page.
 	 */
 	public function testEveryPageIsReadBeforeTheFirstDelete(): void {
@@ -455,10 +574,12 @@ class DraftExpiryTest extends TestCase {
 		$counts = $this->expiry->sweep(now: $this->now);
 
 		$this->assertSame(DraftExpiry::PAGE_SIZE + 5, $counts['removed']);
-		$this->assertCount(2, $this->searches);
+		// Two pages of expired drafts, then the one read for drafts that were never changed.
+		$this->assertCount(3, $this->searches);
 		$this->assertSame(0, $this->searches[0]['query']['_offset']);
 		$this->assertSame(DraftExpiry::PAGE_SIZE, $this->searches[1]['query']['_offset']);
 		$this->assertSame(DraftExpiry::PAGE_SIZE, $this->searches[1]['query']['_limit']);
+		$this->assertSame([], $this->counts, 'Nothing lies beyond the cap, so nothing is counted.');
 	}//end testEveryPageIsReadBeforeTheFirstDelete()
 
 	/**
@@ -481,4 +602,65 @@ class DraftExpiryTest extends TestCase {
 			$this->warnings
 		);
 	}//end testAnUnreadableSchemaOrListIsSkipped()
+
+	/**
+	 * Young drafts never hide an expired one: the store is asked for expired drafts alone, so the read cap holds expired rows only.
+	 *
+	 * Goes red without the date filter in the query: the first MAX_PAGES x PAGE_SIZE
+	 * rows are then the young drafts and the expired ones behind them are never read.
+	 */
+	public function testYoungDraftsDoNotFillTheReadWindow(): void {
+		$this->schema(id: 1, slug: 'ticket', configuration: ['draftLifetimeDays' => 7]);
+		$this->register(id: 10, slug: 'service', schemaIds: [1]);
+		for ($i = 0; $i < (DraftExpiry::MAX_PAGES * DraftExpiry::PAGE_SIZE); $i++) {
+			$this->object(where: '10/1', uuid: 'young-' . $i, status: 'draft', updated: '2026-10-11T00:00:00+00:00');
+		}
+
+		$this->object(where: '10/1', uuid: 'old-1', status: 'draft', updated: '2026-09-01T00:00:00+00:00');
+		$this->object(where: '10/1', uuid: 'old-2', status: 'draft', updated: '2026-09-02T00:00:00+00:00');
+
+		$counts = $this->expiry->sweep(now: $this->now);
+
+		$this->assertSame(['old-1', 'old-2'], array_column($this->deletes, 'uuid'));
+		$this->assertSame(['schemas' => 1, 'expired' => 2, 'removed' => 2, 'refused' => 0, 'deferred' => 0], $this->totals(counts: $counts));
+	}//end testYoungDraftsDoNotFillTheReadWindow()
+
+	/**
+	 * Expired drafts beyond the read cap are counted as deferred, not missing from the counts (decision 228).
+	 *
+	 * The cap is MAX_PAGES full pages per register and schema. A preview (nothing removed) shows
+	 * the whole picture: what was read, and what lies beyond it.
+	 */
+	public function testExpiredDraftsBeyondTheReadCapAreCountedAsDeferred(): void {
+		$this->schema(id: 1, slug: 'ticket', configuration: ['draftLifetimeDays' => 7]);
+		$this->register(id: 10, slug: 'service', schemaIds: [1]);
+		$cap = (DraftExpiry::MAX_PAGES * DraftExpiry::PAGE_SIZE);
+		for ($i = 0; $i < ($cap + 20); $i++) {
+			$this->object(where: '10/1', uuid: 'old-' . $i, status: 'draft', updated: '2026-09-01T00:00:00+00:00');
+		}
+
+		$counts = $this->expiry->preview(now: $this->now);
+
+		$this->assertSame(['schemas' => 1, 'expired' => ($cap + 20), 'removed' => 0, 'refused' => 0, 'deferred' => ($cap + 20)], $this->totals(counts: $counts));
+		$this->assertCount(DraftExpiry::MAX_PAGES, $this->searches, 'The read stops at the cap; the second list is not read, its rows are counted.');
+		$this->assertCount(2, $this->counts, 'The remainder of both lists is counted.');
+	}//end testExpiredDraftsBeyondTheReadCapAreCountedAsDeferred()
+
+	/**
+	 * A sweep removes what it read and counts what is left beyond the cap as deferred.
+	 */
+	public function testASweepCountsWhatIsLeftBeyondTheCapAsDeferred(): void {
+		$this->schema(id: 1, slug: 'ticket', configuration: ['draftLifetimeDays' => 7]);
+		$this->register(id: 10, slug: 'service', schemaIds: [1]);
+		$cap = (DraftExpiry::MAX_PAGES * DraftExpiry::PAGE_SIZE);
+		for ($i = 0; $i < ($cap + 20); $i++) {
+			$this->object(where: '10/1', uuid: 'old-' . $i, status: 'draft', updated: '2026-09-01T00:00:00+00:00');
+		}
+
+		$counts = $this->expiry->sweep(now: $this->now);
+
+		$this->assertSame(DraftExpiry::MAX_REMOVALS, $counts['removed']);
+		$this->assertSame($cap + 20, $counts['expired']);
+		$this->assertSame(($cap + 20) - DraftExpiry::MAX_REMOVALS, $counts['deferred'], 'Nothing is missing from the counts: expired = removed + refused + deferred.');
+	}//end testASweepCountsWhatIsLeftBeyondTheCapAsDeferred()
 }//end class

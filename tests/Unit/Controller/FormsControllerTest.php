@@ -285,6 +285,24 @@ class FormsControllerTest extends TestCase {
 	}//end testAnUploadAnswersAToken()
 
 	/**
+	 * An anonymous visitor of a sign-in-only form gets a 401 and no token; a signed-in one gets through.
+	 */
+	public function testAnAnonymousUploadToASignInOnlyFormIs401(): void {
+		$this->params = ['property' => 'bijlage'];
+		$this->request->method('getUploadedFile')->willReturn(['name' => 'a.pdf', 'tmp_name' => '/tmp/x', 'error' => 0, 'size' => 5]);
+		$this->resolver->method('resolve')->willReturn($this->form(audience: 'authenticated'));
+		$schema = new Schema();
+		$schema->setProperties(['bijlage' => ['type' => 'file']]);
+		$this->schemas->method('find')->willReturn($schema);
+		$this->uploads->expects($this->once())->method('issue')->willReturn(['token' => 'abc', 'expiresAt' => 1]);
+
+		$this->assertSame(401, $this->controller->upload(formId: 'form-1')->getStatus());
+
+		$this->session->method('getUser')->willReturn($this->createMock(IUser::class));
+		$this->assertSame(201, $this->controller->upload(formId: 'form-1')->getStatus());
+	}//end testAnAnonymousUploadToASignInOnlyFormIs401()
+
+	/**
 	 * An upload for a property no destination of the form has is a 422, and no token.
 	 */
 	public function testAnUploadForAnUnknownPropertyIs422(): void {

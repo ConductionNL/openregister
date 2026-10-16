@@ -581,6 +581,7 @@ class AnnotationNotificationDispatcher {
 			$partiesReached += $this->dispatchToAddresses(
 				recipientsSpec: (array)($spec['recipients'] ?? []),
 				object: $object,
+				schema: $schema,
 				data: $data,
 				channels: $channels,
 				ruleId: (string)$name,
@@ -3341,6 +3342,7 @@ class AnnotationNotificationDispatcher {
 	 *
 	 * @param array<int, mixed>    $recipientsSpec The rule's `recipients` declaration.
 	 * @param ObjectEntity         $object         The triggering object.
+	 * @param Schema               $schema         The triggering object's schema.
 	 * @param array<string, mixed> $data           Its data.
 	 * @param array<int, string>   $channels       The rule's channels.
 	 * @param string               $ruleId         The rule, for the history row.
@@ -3355,6 +3357,7 @@ class AnnotationNotificationDispatcher {
 	private function dispatchToAddresses(
 		array $recipientsSpec,
 		ObjectEntity $object,
+		Schema $schema,
 		array $data,
 		array $channels,
 		string $ruleId,
@@ -3384,7 +3387,8 @@ class AnnotationNotificationDispatcher {
 			recipientsSpec: $recipientsSpec,
 			subject: $subject,
 			body: $body,
-			category: $category
+			category: $category,
+			schema: $schema
 		);
 
 		$reached = 0;

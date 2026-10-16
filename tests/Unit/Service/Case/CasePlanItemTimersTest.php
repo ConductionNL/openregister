@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\CaseItem;
 use OCA\OpenRegister\Db\FlowTimer;
 use OCA\OpenRegister\Event\FlowTimerFiredEvent;
 use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
+use OCA\OpenRegister\Service\Case\UnarmedTimerMarkers;
 use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -161,6 +162,52 @@ class CasePlanItemTimersTest extends TestCase {
 		$this->timers->method('arm')->willThrowException(new RuntimeException('calendar unknown'));
 		$this->assertSame(0, $this->service()->onEntered(item: $far, actor: null, now: $now));
 	}//end testEdgesNeverBlockTheTransition()
+
+	/**
+	 * A refused timer of a statutory expiry is logged at error level naming case, item and legal effect; the transition stands.
+	 *
+	 * @return void
+	 */
+	public function testARefusedStatutoryTimerIsLoggedLoudly(): void {
+		$now = new DateTimeImmutable('2026-10-10T10:00:00+00:00');
+		$statutory = CaseFixtures::row(id: 9, key: 'stat', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
+		$statutory->setExpiresAt(new DateTime('2026-10-20T10:00:00+00:00'));
+		$statutory->setPlanSettings(['statutory' => ['stat']]);
+		$this->timers->method('arm')->willThrowException(new RuntimeException('calendar unknown'));
+		$errors = [];
+		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+		$logger->method('error')->willReturnCallback(
+			static function (string $message, array $context = []) use (&$errors): void {
+				$errors[] = [$message, $context];
+			}
+		);
+		$stored = '';
+		$appConfig = $this->createMock(\OCP\IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(static function () use (&$stored): string {
+			return $stored;
+		});
+		$appConfig->method('setValueString')->willReturnCallback(static function (string $app, string $key, string $value) use (&$stored): bool {
+			$stored = $value;
+
+			return true;
+		});
+		$markers = new UnarmedTimerMarkers(appConfig: $appConfig);
+		$service = new CasePlanItemTimers(timers: $this->timers, logger: $logger, markers: $markers);
+
+		$this->assertSame(0, $service->onEntered(item: $statutory, actor: null, now: $now));
+
+		$this->assertCount(1, $errors);
+		$this->assertStringContainsString('WITHOUT its statutory', $errors[0][0]);
+		$this->assertStringContainsString('stat', $errors[0][0]);
+		$this->assertSame('wettelijk', $errors[0][1]['legalEffect']);
+		$this->assertSame(['item-9'], array_keys($markers->all()), 'a statutory item that lacks its timer is marked for the re-arm pass');
+
+		// A service-norm expiry that is refused stays a warning: no marker.
+		$norm = CaseFixtures::row(id: 10, key: 'norm', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
+		$norm->setExpiresAt(new DateTime('2026-10-20T10:00:00+00:00'));
+		$service->onEntered(item: $norm, actor: null, now: $now);
+		$this->assertSame(['item-9'], array_keys($markers->all()));
+	}//end testARefusedStatutoryTimerIsLoggedLoudly()
 
 	/**
 	 * Reaching a terminal state cancels the item's open timers; a failure to

@@ -55,8 +55,12 @@ class DecisionVisibility {
 	 * `bases` is the ground; `skipAnonymization` is the release-or-redact
 	 * verdict itself, so leaving it would tell the second reviewer what the
 	 * first one decided. `decisionRecord` is the embedded decision.
+	 * `anonymized` and `anonymizedValue` are what an anonymise pass wrote from
+	 * that verdict: a released occurrence stays `anonymized: false` while a
+	 * redacted one reads `true` with its placeholder, so left in they would
+	 * give the verdict away in a blind second review that follows a pass.
 	 */
-	public const MASKED_FIELDS = ['bases', 'skipAnonymization', 'decisionRecord'];
+	public const MASKED_FIELDS = ['bases', 'skipAnonymization', 'decisionRecord', 'anonymized', 'anonymizedValue'];
 
 	/**
 	 * Constructor.

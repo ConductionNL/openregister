@@ -110,6 +110,10 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 	/** @var MockObject&DateTimeNormalizer */
 	private MockObject $dateTimeNormalizer;
 
+	private IUserSession&\PHPUnit\Framework\MockObject\MockObject $userSession;
+
+	private IGroupManager&\PHPUnit\Framework\MockObject\MockObject $groupManager;
+
 	/**
 	 * Set up fresh service + mocks before each test.
 	 *
@@ -118,6 +122,8 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 
+		$this->userSession = $this->createMock(IUserSession::class);
+		$this->groupManager = $this->createMock(IGroupManager::class);
 		$this->saveHandler = $this->createMock(SaveObject::class);
 		$this->renderHandler = $this->createMock(RenderObject::class);
 		$this->deleteHandler = $this->createMock(DeleteObject::class);
@@ -179,9 +185,9 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 			$this->createMock(ViewMapper::class),
 			$this->objectMapper,
 			$this->createMock(FileService::class),
-			$this->createMock(IUserSession::class),
+			$this->userSession,
 			$this->createMock(SearchTrailService::class),
-			$this->createMock(IGroupManager::class),
+			$this->groupManager,
 			$this->createMock(IUserManager::class),
 			$this->createMock(OrganisationService::class),
 			$this->createMock(LoggerInterface::class),
@@ -336,6 +342,94 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 		$this->assertTrue($this->service->deleteObject(uuid: 'draft-1', register: $register, schema: $schema, _rbac: false, _multitenancy: false));
 		$this->assertSame([true], $asked);
 	}//end testADraftIsDeletedForGoodOnAnySchema()
+
+	/**
+	 * Somebody else's draft is not deleted through the single-object path, and the handler is never asked.
+	 *
+	 * @return void
+	 */
+	public function testSomebodyElsesDraftIsNotDeleted(): void {
+		[$register, $schema] = $this->scope(archival: false);
+		$this->stored(status: 'draft');
+		$asked = [];
+		$this->recordHandler(asked: $asked);
+
+		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+		try {
+			// The stored draft belongs to 'agent'; the caller (no session user) is not that owner.
+			$this->service->deleteObject(uuid: 'draft-1', register: $register, schema: $schema, _rbac: true, _multitenancy: false);
+		} finally {
+			$this->assertSame([], $asked);
+		}
+	}//end testSomebodyElsesDraftIsNotDeleted()
+
+	/**
+	 * Sign in as a user in the given groups.
+	 *
+	 * @param string        $uid    The user id.
+	 * @param array<string> $groups The user's groups.
+	 *
+	 * @return void
+	 */
+	private function signIn(string $uid, array $groups): void {
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('getUserGroupIds')->willReturn($groups);
+	}//end signIn()
+
+	/**
+	 * The owner deletes their own draft, for good.
+	 *
+	 * @return void
+	 */
+	public function testTheOwnerMayDeleteTheirOwnDraft(): void {
+		[$register, $schema] = $this->scope(archival: false);
+		$this->stored(status: 'draft');
+		$asked = [];
+		$this->recordHandler(asked: $asked);
+
+		// The stored draft belongs to 'agent'.
+		$this->signIn(uid: 'agent', groups: ['staff']);
+		$this->assertTrue($this->service->deleteObject(uuid: 'draft-1', register: $register, schema: $schema, _rbac: true, _multitenancy: false));
+		$this->assertSame([true], $asked, "the owner's own draft is deleted for good");
+	}//end testTheOwnerMayDeleteTheirOwnDraft()
+
+	/**
+	 * An administrator is not kept from another user's draft, as on the read path.
+	 *
+	 * @return void
+	 */
+	public function testAnAdministratorMayDeleteSomebodyElsesDraft(): void {
+		[$register, $schema] = $this->scope(archival: false);
+		$this->stored(status: 'draft');
+		$asked = [];
+		$this->recordHandler(asked: $asked);
+
+		$this->signIn(uid: 'root', groups: ['admin']);
+		$this->assertTrue($this->service->deleteObject(uuid: 'draft-1', register: $register, schema: $schema, _rbac: true, _multitenancy: false));
+		$this->assertSame([true], $asked);
+	}//end testAnAdministratorMayDeleteSomebodyElsesDraft()
+
+	/**
+	 * A non-owner who is not an administrator is still kept from the draft.
+	 *
+	 * @return void
+	 */
+	public function testANonOwnerNonAdministratorIsStillKept(): void {
+		[$register, $schema] = $this->scope(archival: false);
+		$this->stored(status: 'draft');
+		$asked = [];
+		$this->recordHandler(asked: $asked);
+
+		$this->signIn(uid: 'mallory', groups: ['staff']);
+		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
+		try {
+			$this->service->deleteObject(uuid: 'draft-1', register: $register, schema: $schema, _rbac: true, _multitenancy: false);
+		} finally {
+			$this->assertSame([], $asked);
+		}
+	}//end testANonOwnerNonAdministratorIsStillKept()
 
 	/**
 	 * Control: an ordinary object's delete stays the soft delete it was.

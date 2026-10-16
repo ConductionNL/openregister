@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\File\FilePropertyRules;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
+use OCP\Files\SimpleFS\ISimpleFile;
 use OCP\Files\SimpleFS\ISimpleFolder;
 use OCP\IL10N;
 use OCP\ITempManager;
@@ -59,6 +60,17 @@ class FormUploadStore {
 	 * @var int
 	 */
 	public const TTL = 86400;
+
+	/**
+	 * The size cap, in bytes, of a file property that declares none (20 MiB).
+	 *
+	 * The upload endpoint is a public page, so "no `maxSize`" must not mean
+	 * "no limit": it would store whatever PHP lets through for anyone. A
+	 * property that declares a limit, larger or smaller, keeps it.
+	 *
+	 * @var int
+	 */
+	public const DEFAULT_MAX_BYTES = 20971520;
 
 	/**
 	 * Constructor.
@@ -106,7 +118,11 @@ class FormUploadStore {
 
 		$size = (int)($file['size'] ?? filesize($path));
 		$limit = $this->rules->maxSizeBytes(fileConfig: $fileConfig);
-		if ($limit > 0 && $size > $limit) {
+		if ($limit <= 0) {
+			$limit = self::DEFAULT_MAX_BYTES;
+		}
+
+		if ($size > $limit) {
 			$this->refuse(
 				property: $property,
 				code: 'file-too-large',
@@ -201,7 +217,7 @@ class FormUploadStore {
 	}//end claim()
 
 	/**
-	 * Delete every expired, unclaimed token.
+	 * Delete every expired, unclaimed token, and the bytes of an upload whose record was never written.
 	 *
 	 * @return int How many tokens were deleted, so a zero is a counted zero.
 	 *
@@ -215,24 +231,57 @@ class FormUploadStore {
 
 		$now = $this->time->getTime();
 		$deleted = 0;
+		$gone = [];
 		foreach ($folder->getDirectoryListing() as $file) {
 			$name = $file->getName();
-			if (str_ends_with($name, '.json') === false) {
+			if (str_ends_with($name, '.json') === true) {
+				$token = substr($name, 0, -5);
+				$meta = $this->meta(token: $token);
+				if ($meta !== null && $meta['expiresAt'] > $now) {
+					continue;
+				}
+
+				$this->deleteToken(folder: $folder, token: $token);
+				$gone[$token] = true;
+				$deleted++;
 				continue;
 			}
 
-			$token = substr($name, 0, -5);
-			$meta = $this->meta(token: $token);
-			if ($meta !== null && $meta['expiresAt'] > $now) {
-				continue;
+			if ($this->isOrphanedBytes(folder: $folder, file: $file, gone: $gone, now: $now) === true) {
+				$file->delete();
+				$deleted++;
 			}
-
-			$this->deleteToken(folder: $folder, token: $token);
-			$deleted++;
 		}
 
 		return $deleted;
 	}//end purge()
+
+	/**
+	 * Whether a file is the bytes of an upload whose record was never written, and old enough not to be in flight.
+	 * The bytes are written first, so a failed second write leaves a `.bin`
+	 * issue() writes the bytes first, so a failed second write leaves a `.bin`
+	 * nothing else lists. One younger than a token's lifetime may still be an
+	 * upload in flight, and is left alone.
+	 *
+	 * @param ISimpleFolder       $folder The store folder.
+	 * @param ISimpleFile         $file   A file of the folder.
+	 * @param array<string, true> $gone   Tokens this purge already deleted.
+	 * @param int                 $now    The moment of the purge.
+	 *
+	 * @return bool True when the purge deletes it.
+	 */
+	private function isOrphanedBytes(ISimpleFolder $folder, ISimpleFile $file, array $gone, int $now): bool {
+		$name = $file->getName();
+		if (str_ends_with($name, '.bin') === false) {
+			return false;
+		}
+
+		$token = substr($name, 0, -4);
+
+		return isset($gone[$token]) === false
+			&& $folder->fileExists($token . '.json') === false
+			&& ($file->getMTime() + self::TTL) <= $now;
+	}//end isOrphanedBytes()
 
 	/**
 	 * A token's record, or null when absent or unreadable.

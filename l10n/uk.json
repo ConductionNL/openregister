@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} неудачно",
         "0 = unlimited": "0 = неограниченно",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Потік запускає серію кроків, коли щось відбувається — об'єкт змінюється, спрацьовує розклад або ви запускаєте його самі. Цей список показує потоки всіх застосунків.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "Пару ключів VAPID налаштовано. Користувачі можуть увімкнути сповіщення браузера в налаштуваннях користувача; їх доставляють, навіть коли вкладка браузера закрита.",
         "A deactivation request is pending.": "Запит на деактивацію ожидает обробки.",
         "AI Assistant": "ИИ-помощник",
         "AI Chat": "ИИ-чат",

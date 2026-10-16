@@ -52,6 +52,13 @@ class DecisionChangeRequestedEvent extends Event {
 	private ?string $reason = null;
 
 	/**
+	 * Whether a listener has refused: a refusal is sticky.
+	 *
+	 * @var bool
+	 */
+	private bool $refused = false;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Decision             $decision The decision someone wants to change.
@@ -120,13 +127,20 @@ class DecisionChangeRequestedEvent extends Event {
 	}//end getSubject()
 
 	/**
-	 * Let the change through.
+	 * Let the change through, unless a listener has already refused it.
+	 *
+	 * A refusal is a veto and stays: with two apps listening, the order they
+	 * are registered in must not turn one app's refusal into the other's allow.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-answer-who-supervises-req-dec-002
 	 */
 	public function allow(): void {
+		if ($this->refused === true) {
+			return;
+		}
+
 		$this->allowed = true;
 		$this->reason = null;
 	}//end allow()
@@ -141,6 +155,7 @@ class DecisionChangeRequestedEvent extends Event {
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-the-app-that-owns-the-subject-may-answer-who-supervises-req-dec-002
 	 */
 	public function refuse(string $reason): void {
+		$this->refused = true;
 		$this->allowed = false;
 		$this->reason = $reason;
 	}//end refuse()

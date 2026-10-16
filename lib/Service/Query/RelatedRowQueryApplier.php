@@ -99,10 +99,11 @@ class RelatedRowQueryApplier {
 		foreach (array_values($filters) as $position => $filter) {
 			$alias   = sprintf('rel%d', $position);
 			$schema  = $this->resolveSchema(name: $filter->schema);
+			$relatedTable = $this->tableHandler->getTableNameForRegisterSchema(register: $register, schema: $schema);
 			$rendered = $clause->render(
 				filter: $filter,
 				engine: $engine,
-				table: $this->tableHandler->getTableNameForRegisterSchema(register: $register, schema: $schema),
+				table: $relatedTable,
 				outerAlias: $outerAlias,
 				innerAlias: $alias,
 				// 🔴 THE ACCESS PREDICATE FOR THE RELATED SCHEMA, NOT THE OUTER
@@ -112,7 +113,8 @@ class RelatedRowQueryApplier {
 				accessPredicate: $this->rbacHandler->buildRbacPredicateForAlias(
 					schema: $schema,
 					alias: $alias,
-					action: 'read'
+					action: 'read',
+					tableName: $relatedTable
 				),
 				parameterPrefix: $alias,
 				storage: RelatedRowExistsClause::STORAGE_COLUMNS

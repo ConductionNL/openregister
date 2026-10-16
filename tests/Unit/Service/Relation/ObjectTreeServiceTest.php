@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Party\PartyAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\HierarchyAnnotationValidator;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
@@ -59,6 +60,27 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\Register
  */
 class ObjectTreeServiceTest extends TestCase {
+
+	/**
+	 * The `limit` every `childrenOf` call of the last built service was given.
+	 *
+	 * @var array<int, int|null>
+	 */
+	private array $askedLimits = [];
+
+	/**
+	 * Whether the access check of the last built service fails instead of answering.
+	 *
+	 * @var boolean
+	 */
+	private bool $accessFails = false;
+
+	/**
+	 * The redaction the service is given, or null for one that changes nothing.
+	 *
+	 * @var RenderObject|null
+	 */
+	private ?RenderObject $renderer = null;
 
 	/**
 	 * An organisation schema fragment, as a register file declares it.
@@ -136,9 +158,10 @@ class ObjectTreeServiceTest extends TestCase {
 			->onlyMethods(['childrenOf'])
 			->getMock();
 		$descender->method('childrenOf')->willReturnCallback(
-			function (string $table, string $parentColumn, array $parentUuids) use ($parentOf): array {
+			function (string $table, string $parentColumn, array $parentUuids, ?int $limit = null) use ($parentOf): array {
 				$this->assertSame('openregister_table_1_2', $table);
 				$this->assertSame('parent_organisation', $parentColumn);
+				$this->askedLimits[] = $limit;
 				$children = [];
 				foreach ($parentOf as $child => $parent) {
 					if ($parent !== null && $child !== $parent && in_array($parent, $parentUuids, true) === true) {
@@ -146,13 +169,13 @@ class ObjectTreeServiceTest extends TestCase {
 					}
 				}
 
-				return $children;
+				return ($limit === null ? $children : array_slice($children, 0, $limit, true));
 			}
 		);
 
 		$objectMapper = $this->createMock(MagicMapper::class);
-		$objectMapper->method('filterReadableUuids')->willReturnCallback(
-			static fn (int $registerId, int $schemaId, array $uuids): array => array_values(
+		$objectMapper->method('readableUuidsOrNull')->willReturnCallback(
+			fn (int $registerId, int $schemaId, array $uuids): ?array => ($this->accessFails === true) ? null : array_values(
 				array_filter($uuids, static fn (string $uuid): bool => $readable === null || in_array($uuid, $readable, true))
 			)
 		);
@@ -197,6 +220,7 @@ class ObjectTreeServiceTest extends TestCase {
 			registerMapper: $registerMapper,
 			schemaMapper: $schemaMapper,
 			graphs: $graphs,
+			renderer: ($this->renderer ?? $this->createMock(RenderObject::class)),
 			logger: $logger
 		);
 	}//end service()
@@ -204,18 +228,24 @@ class ObjectTreeServiceTest extends TestCase {
 	/**
 	 * One organisation object.
 	 *
-	 * @param string      $uuid   The uuid.
-	 * @param string|null $parent The parent uuid.
+	 * @param string               $uuid   The uuid.
+	 * @param string|null          $parent The parent uuid.
+	 * @param array<string, mixed> $extra  Further properties.
 	 *
 	 * @return ObjectEntity The object.
 	 */
-	private function organisation(string $uuid, ?string $parent): ObjectEntity {
+	private function organisation(string $uuid, ?string $parent, array $extra = []): ObjectEntity {
 		$entity = new ObjectEntity();
 		$entity->setUuid($uuid);
 		$entity->setName('Org '.$uuid);
 		$entity->setRegister('1');
 		$entity->setSchema('2');
-		$entity->setObject(['tradeName' => 'Org '.$uuid, 'kvkNumber' => '1000000'.strlen($uuid), 'parentOrganisation' => $parent]);
+		$entity->setObject(
+			array_merge(
+				['tradeName' => 'Org '.$uuid, 'kvkNumber' => '1000000'.strlen($uuid), 'parentOrganisation' => $parent],
+				$extra
+			)
+		);
 
 		return $entity;
 	}//end organisation()
@@ -402,4 +432,148 @@ class ObjectTreeServiceTest extends TestCase {
 		$this->assertSame(1, $tree['maxDepth']);
 		$this->assertSame(['holding' => 0, 'sub-a' => 1, 'sub-b' => 1], self::levels(tree: $tree));
 	}//end testTheHierarchyDeclarationIsReadToo()
+
+	/**
+	 * The `fields` of a node never carry a write-only, a property-restricted or an encrypted value.
+	 *
+	 * The service hands every entity it reads to the same redaction every other
+	 * read of an object goes through, and reads the properties from what comes
+	 * back; the objects the mapper loaded are left as they were.
+	 *
+	 * @return void
+	 */
+	public function testFieldsNeverReturnWhatTheCallerMayNotRead(): void {
+		$redactions = 0;
+		$renderer = $this->createMock(RenderObject::class);
+		$renderer->method('redactWriteOnlyFromRows')->willReturnCallback(
+			function (array &$rows, bool $_rbac = true) use (&$redactions): void {
+				foreach ($rows as $row) {
+					$redactions++;
+					$data = $row->getObject();
+					unset($data['secret'], $data['restricted']);
+					$row->setObject($data);
+				}
+			}
+		);
+		$this->renderer = $renderer;
+
+		$root = $this->organisation(uuid: 'sub-a', parent: 'holding', extra: ['secret' => 's3cret', 'restricted' => 'no', 'open' => 'yes']);
+		$tree = $this->service(parentOf: self::group())->tree(
+			root: $root,
+			direction: ObjectTreeService::DIRECTION_BOTH,
+			fields: ['secret', 'restricted', 'open']
+		);
+
+		$this->assertGreaterThanOrEqual(3, $redactions);
+		$this->assertCount(3, $tree['nodes']);
+		foreach ($tree['nodes'] as $node) {
+			$this->assertNull($node['properties']['secret'], 'node '.$node['uuid']);
+			$this->assertNull($node['properties']['restricted'], 'node '.$node['uuid']);
+		}
+
+		$this->assertSame('yes', $tree['nodes'][1]['properties']['open']);
+		$this->assertSame('s3cret', $root->getObject()['secret'], 'The entity the caller passed in is not changed.');
+	}//end testFieldsNeverReturnWhatTheCallerMayNotRead()
+
+	/**
+	 * A request that names no field redacts nothing: there is nothing to carry.
+	 *
+	 * @return void
+	 */
+	public function testWithoutFieldsNothingIsRedacted(): void {
+		$renderer = $this->createMock(RenderObject::class);
+		$renderer->expects($this->never())->method('redactWriteOnlyFromRows');
+		$this->renderer = $renderer;
+
+		$tree = $this->service(parentOf: self::group())->tree(root: $this->organisation(uuid: 'holding', parent: null));
+
+		$this->assertCount(4, $tree['nodes']);
+	}//end testWithoutFieldsNothingIsRedacted()
+
+	/**
+	 * A failing access check is an incomplete answer, not a complete one without those nodes.
+	 *
+	 * @return void
+	 */
+	public function testAFailingAccessCheckReadsAsUnreadableNotAsComplete(): void {
+		$this->accessFails = true;
+		$service = $this->service(parentOf: self::group());
+
+		$down = $service->tree(root: $this->organisation(uuid: 'holding', parent: null));
+		$this->assertSame(['holding' => 0], self::levels(tree: $down));
+		$this->assertTrue($down['truncated']);
+		$this->assertSame(ObjectTreeService::TRUNCATED_UNREADABLE, $down['truncatedBy']);
+
+		$up = $service->tree(root: $this->organisation(uuid: 'sub-a', parent: 'holding'), direction: ObjectTreeService::DIRECTION_ANCESTORS);
+		$this->assertSame(['sub-a' => 0], self::levels(tree: $up));
+		$this->assertTrue($up['truncated']);
+		$this->assertSame(ObjectTreeService::TRUNCATED_UNREADABLE, $up['truncatedBy']);
+	}//end testAFailingAccessCheckReadsAsUnreadableNotAsComplete()
+
+	/**
+	 * The node cap bounds the read of a level, not only the answer.
+	 *
+	 * @return void
+	 */
+	public function testTheCapBoundsTheRowsAskedFor(): void {
+		$wide = ['holding' => null];
+		for ($i = 1; $i <= 50; $i++) {
+			$wide['child-'.$i] = 'holding';
+		}
+
+		$tree = $this->service(parentOf: $wide, cap: 10)->tree(root: $this->organisation(uuid: 'holding', parent: null));
+
+		$this->assertSame(ObjectTreeService::TRUNCATED_CAP, $tree['truncatedBy']);
+		$this->assertSame(['holding' => 0], self::levels(tree: $tree));
+		$this->assertNotEmpty($this->askedLimits);
+		foreach ($this->askedLimits as $limit) {
+			$this->assertNotNull($limit);
+			$this->assertLessThanOrEqual(11, $limit);
+		}
+	}//end testTheCapBoundsTheRowsAskedFor()
+
+	/**
+	 * A level exactly as wide as the cap allows is answered whole.
+	 *
+	 * @return void
+	 */
+	public function testALevelThatFitsTheCapIsNotTruncated(): void {
+		$tree = $this->service(parentOf: self::group(), cap: 4)->tree(root: $this->organisation(uuid: 'holding', parent: null));
+
+		$this->assertSame(['holding' => 0, 'sub-a' => 1, 'sub-b' => 1, 'sub-a1' => 2], self::levels(tree: $tree));
+		$this->assertFalse($tree['truncated']);
+	}//end testALevelThatFitsTheCapIsNotTruncated()
+
+	/**
+	 * The topmost ancestor does not name a parent the caller may not read.
+	 *
+	 * @return void
+	 */
+	public function testTheTopmostAncestorDoesNotNameAHiddenParent(): void {
+		$tree = $this->service(parentOf: self::group(), readable: ['sub-a1', 'sub-a'])->tree(
+			root: $this->organisation(uuid: 'sub-a1', parent: 'sub-a'),
+			direction: ObjectTreeService::DIRECTION_ANCESTORS
+		);
+
+		$this->assertSame(['sub-a' => -1, 'sub-a1' => 0], self::levels(tree: $tree));
+		$this->assertNull($tree['nodes'][0]['parent']);
+		$this->assertFalse($tree['truncated']);
+	}//end testTheTopmostAncestorDoesNotNameAHiddenParent()
+
+	/**
+	 * At the depth bound the topmost node names the readable parent just above it.
+	 *
+	 * @return void
+	 */
+	public function testTheAncestorAtTheDepthBoundNamesItsReadableParent(): void {
+		$tree = $this->service(parentOf: self::group())->tree(
+			root: $this->organisation(uuid: 'sub-a1', parent: 'sub-a'),
+			direction: ObjectTreeService::DIRECTION_ANCESTORS,
+			depth: 1
+		);
+
+		$this->assertSame(['sub-a' => -1, 'sub-a1' => 0], self::levels(tree: $tree));
+		$this->assertSame('holding', $tree['nodes'][0]['parent']);
+		$this->assertSame(ObjectTreeService::TRUNCATED_DEPTH, $tree['truncatedBy']);
+	}//end testTheAncestorAtTheDepthBoundNamesItsReadableParent()
 }//end class

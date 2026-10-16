@@ -405,7 +405,7 @@ class MergeHandler {
 					$fileName = $file->getName();
 
 					// Create new file in target object folder.
-					$this->fileService->addFile(
+					$copy = $this->fileService->addFile(
 						objectEntity: $targetObject,
 						fileName: $fileName,
 						content: $fileContent,
@@ -413,8 +413,14 @@ class MergeHandler {
 						tags: []
 					);
 
-					// Delete original file from source.
-					$this->fileService->deleteFile(file: $file, object: $sourceObject);
+					// Delete original file from source. A source file that is still
+					// there afterwards (a frozen or archived source: the delete was
+					// aborted and Nextcloud does not say so) is not a transfer: the
+					// copy is taken back instead of reporting the file as moved.
+					if ($this->fileService->deleteFile(file: $file, object: $sourceObject) === false) {
+						$this->fileService->deleteFile(file: $copy, object: $targetObject);
+						throw new Exception('The file could not be removed from the source object');
+					}
 
 					$result['files'][] = [
 						'name' => $fileName,
@@ -472,8 +478,10 @@ class MergeHandler {
 
 					$fileName = $file->getName();
 
-					// Delete the file using FileService.
-					$this->fileService->deleteFile(file: $file, object: $sourceObject);
+					// Delete the file using FileService; false means it is still there.
+					if ($this->fileService->deleteFile(file: $file, object: $sourceObject) === false) {
+						throw new Exception('The file could not be deleted');
+					}
 
 					$result['files'][] = [
 						'name' => $fileName,

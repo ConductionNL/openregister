@@ -91,7 +91,7 @@ class ExampleSetRecord {
 	 */
 	public function read(string $set): array {
 		$record  = self::BLANK;
-		$decoded = json_decode($this->appConfig->getValueString(Application::APP_ID, self::PREFIX.$set, ''), true);
+		$decoded = json_decode($this->stored(set: $set), true);
 		if (is_array($decoded) === false) {
 			return $record;
 		}
@@ -138,7 +138,7 @@ class ExampleSetRecord {
 	 *
 	 * @param array<int|string, mixed> $decoded The stored objects.
 	 *
-	 * @return array<string, array{register: string, schema: string, id: string}>
+	 * @return array<string, array{register: string, schema: string, id: string, refs?: array<string, mixed>}>
 	 */
 	private function objects(array $decoded): array {
 		$objects = [];
@@ -149,6 +149,10 @@ class ExampleSetRecord {
 					'schema'   => (string) ($object['schema'] ?? ''),
 					'id'       => $object['id'],
 				];
+				// What the install wrote into the object's reference fields, so a later install can tell its own value from an edit.
+				if (is_array($object['refs'] ?? null) === true && $object['refs'] !== []) {
+					$objects[(string) $key]['refs'] = $object['refs'];
+				}
 			}
 		}
 
@@ -166,7 +170,13 @@ class ExampleSetRecord {
 	 */
 	public function isEmpty(array $record): bool {
 		foreach (array_keys(self::BLANK) as $part) {
-			if (($record[$part] ?? []) !== []) {
+			$held = ($record[$part] ?? []);
+			if ($part === 'registers') {
+				// A slug with no job left only remembers that its import was removed; it is not something installed.
+				$held = array_filter((array) $held, static fn ($jobs): bool => $jobs !== []);
+			}
+
+			if ($held !== []) {
 				return false;
 			}
 		}
@@ -177,6 +187,9 @@ class ExampleSetRecord {
 	/**
 	 * Keep the record, or drop the key when nothing is left in it.
 	 *
+	 * What stays when nothing is installed is the slug of each register the
+	 * set imported whose import jobs were all removed again (an empty job list).
+	 *
 	 * @param string               $set    The set id.
 	 * @param array<string, mixed> $record The record.
 	 *
@@ -186,10 +199,51 @@ class ExampleSetRecord {
 	 */
 	public function write(string $set, array $record): void {
 		if ($this->isEmpty(record: $record) === true) {
+			// A register this set imported and removed again is remembered, so the next install imports its data again.
+			if (($record['registers'] ?? []) !== []) {
+				$this->store(set: $set, json: (string) json_encode(['registers' => $record['registers']]));
+				return;
+			}
+
 			$this->appConfig->deleteKey(Application::APP_ID, self::PREFIX.$set);
 			return;
 		}
 
-		$this->appConfig->setValueString(Application::APP_ID, self::PREFIX.$set, (string) json_encode($record));
+		$this->store(set: $set, json: (string) json_encode($record));
 	}//end write()
+
+	/**
+	 * The stored record as JSON text, '' when there is none.
+	 *
+	 * A record is kept as a lazy app-config value: Nextcloud loads every
+	 * non-lazy value of every app on every request, and a demo instance's
+	 * record (each object id, change, file, config entry and preference) is
+	 * large and rewritten after every object an install creates. A record an
+	 * earlier version stored as a non-lazy value is still found, and moves to
+	 * the lazy store the next time it is written.
+	 *
+	 * @param string $set The set id.
+	 *
+	 * @return string
+	 */
+	private function stored(string $set): string {
+		$json = $this->appConfig->getValueString(Application::APP_ID, self::PREFIX.$set, '', true);
+		if ($json === '') {
+			$json = $this->appConfig->getValueString(Application::APP_ID, self::PREFIX.$set, '', false);
+		}
+
+		return $json;
+	}//end stored()
+
+	/**
+	 * Store the record's JSON text as a lazy value.
+	 *
+	 * @param string $set  The set id.
+	 * @param string $json The record as JSON text.
+	 *
+	 * @return void
+	 */
+	private function store(string $set, string $json): void {
+		$this->appConfig->setValueString(Application::APP_ID, self::PREFIX.$set, $json, true);
+	}//end store()
 }//end class

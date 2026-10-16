@@ -115,14 +115,19 @@ class GrantManageGuard {
 	 * @param string[] $userGroups The caller's group ids.
 	 * @param string|null $user The user being let in, or null.
 	 * @param string|null $group The group being let in, or null.
+	 * @param string|null $remote The remote user or remote group being let in, or null.
 	 *
 	 * @return bool True when the request must be refused.
 	 *
 	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	public function letsItselfIn(?string $admittedAs, ?string $userId, array $userGroups, ?string $user, ?string $group): bool {
+	public function letsItselfIn(?string $admittedAs, ?string $userId, array $userGroups, ?string $user, ?string $group, ?string $remote = null): bool {
 		if ($admittedAs !== self::AS_HOLDER) {
 			return false;
+		}
+
+		if ($remote !== null) {
+			return true;
 		}
 
 		if ($user !== null && $user === $userId) {

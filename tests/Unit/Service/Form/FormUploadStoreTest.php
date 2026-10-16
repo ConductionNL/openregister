@@ -112,6 +112,21 @@ class FormUploadStoreTest extends TestCase {
 	}//end testAnOversizedFileIsRefused()
 
 	/**
+	 * A property without a size rule still has a cap: the endpoint is public.
+	 */
+	public function testAPropertyWithoutAMaxSizeHasADefaultCap(): void {
+		try {
+			$this->store->issue(formId: 'form-1', property: 'bijlage', rule: ['type' => 'file'], file: $this->upload('x', size: FormUploadStore::DEFAULT_MAX_BYTES + 1));
+			$this->fail('A file over the default cap was given a token.');
+		} catch (FormSubmitRefusedException $refused) {
+			$this->assertSame('file-too-large', $refused->getFindings()[0]['code']);
+		}
+
+		$issued = $this->store->issue(formId: 'form-1', property: 'bijlage', rule: ['type' => 'file'], file: $this->upload('x', size: 1024));
+		$this->assertNotSame('', $issued['token']);
+	}//end testAPropertyWithoutAMaxSizeHasADefaultCap()
+
+	/**
 	 * A type the property does not allow is refused; an items rule of an array property counts.
 	 */
 	public function testADisallowedTypeIsRefused(): void {
@@ -193,4 +208,24 @@ class FormUploadStoreTest extends TestCase {
 		$this->assertSame('b', file_get_contents($this->store->materialise(formId: 'f', token: $kept)['tmp_name']));
 		$this->assertSame(0, $this->store->purge());
 	}//end testThePurgeCountsExpiredTokens()
+
+	/**
+	 * The purge deletes the bytes of an upload whose record was never written, once a token's lifetime has passed.
+	 *
+	 * issue() writes the bytes first, so a failed second write leaves a `.bin` no record points
+	 * at. A young one may still be an upload in flight and stays. Goes red without the `.bin` pass.
+	 */
+	public function testThePurgeDeletesAnOrphanedBytesFile(): void {
+		$this->store->issue(formId: 'f', property: 'bijlage', rule: ['type' => 'file'], file: $this->upload('a'));
+		$folder = $this->appData->folders[FormUploadStore::FOLDER];
+		$folder->newFile('0123456789abcdef0123456789abcdef.bin', 'orphan');
+		$folder->newFile('fedcba9876543210fedcba9876543210.bin', 'in flight');
+		$folder->getFile('0123456789abcdef0123456789abcdef.bin')->mtime = ($this->now - FormUploadStore::TTL);
+		$folder->getFile('fedcba9876543210fedcba9876543210.bin')->mtime = ($this->now - 60);
+
+		$this->assertSame(1, $this->store->purge());
+		$this->assertFalse($folder->fileExists('0123456789abcdef0123456789abcdef.bin'), 'The orphan is gone.');
+		$this->assertTrue($folder->fileExists('fedcba9876543210fedcba9876543210.bin'), 'A young bytes file may still be in flight.');
+		$this->assertCount(3, $folder->files, 'The live token (bytes and record) and the young file stay.');
+	}//end testThePurgeDeletesAnOrphanedBytesFile()
 }//end class

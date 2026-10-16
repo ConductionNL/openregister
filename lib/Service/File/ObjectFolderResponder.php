@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\File;
 use InvalidArgumentException;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
 use OCA\OpenRegister\Exception\ObjectFolderConflictException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Files\NotFoundException;
 use OCP\IL10N;
@@ -38,7 +39,9 @@ use Throwable;
  * gives, so a refusal never confirms the object exists; a reader who may not
  * change it gets 403. A path that could leave the folder or a name that cannot
  * be used is 400, a path or node not in the folder is 404, a taken name or a
- * locked file is 409. Anything else is a 500 that names nothing internal.
+ * locked file is 409, and so is a change to the files of a frozen or archived
+ * object, which answers with the state, who, when and why. Anything else is a
+ * 500 that names nothing internal.
  *
  * @spec openspec/changes/object-folder-in-files-browser/specs/file-actions/spec.md#requirement-changing-an-objects-folder-and-its-subfolders-follows-the-objects-update-rule
  */
@@ -85,6 +88,10 @@ class ObjectFolderResponder {
 
 		if ($e instanceof NotFoundException === true) {
 			return new JSONResponse(data: ['error' => $this->l10n->t('Not found')], statusCode: 404);
+		}
+
+		if ($e instanceof ObjectStateWriteException === true) {
+			return new JSONResponse(data: $e->toResponseBody(), statusCode: ObjectStateWriteException::HTTP_STATUS);
 		}
 
 		if ($e instanceof ObjectFolderConflictException === true) {

@@ -80,7 +80,18 @@ class ExampleSetChanges {
 			return array_merge($none, ['refusal' => 'cannot resolve '.implode(', ', array_unique($gaps))]);
 		}
 
-		$row = $this->target(change: $change, where: (array) $fill['where'], objects: (array) ($context['objects'] ?? []));
+		$found = $this->target(change: $change, where: (array) $fill['where'], objects: (array) ($context['objects'] ?? []));
+		$row   = $found[0] ?? null;
+		if (count($found) > 1) {
+			return array_merge(
+				$none,
+				[
+					'refusal' => count($found).' '.$change['register'].' '.$change['schema'].' rows match '
+						.json_encode($fill['where'], JSON_UNESCAPED_UNICODE).'; a change needs exactly one to change',
+				]
+			);
+		}
+
 		if ($row === null && is_string($change['object'] ?? null) === true) {
 			return array_merge($none, ['refusal' => 'object "'.$change['object'].'" is not written earlier in this fragment']);
 		}
@@ -179,29 +190,54 @@ class ExampleSetChanges {
 	 *
 	 * Made like a change, so only a field that differs is written, its old
 	 * value is recorded, the install proves it and remove can put it back.
+	 * A field is refreshed only while it still holds what the set wrote
+	 * (`$written`): a different value is somebody's edit and is left as it
+	 * is, and named.
 	 *
-	 * @param array<string, mixed> $object The declared object (`register`, `schema`, `jsonFields`).
-	 * @param array<string, mixed> $row    The object as stored.
-	 * @param array<string, mixed> $values The resolved values, by top-level field.
+	 * @param array<string, mixed> $object  The declared object (`register`, `schema`, `jsonFields`).
+	 * @param array<string, mixed> $row     The object as stored.
+	 * @param array<string, mixed> $values  The resolved values, by top-level field.
+	 * @param array<string, mixed> $written What the set last wrote into those fields, by field.
 	 *
-	 * @return array{error: string, entry: array<string, mixed>|null} The record entry (null when every field
-	 *                                                                 already holds its value), or why the write failed.
+	 * @return array{error: string, entry: array<string, mixed>|null, left: array<int, string>} The record entry (null
+	 *         when no field had to be written), or why the write failed, and the fields left because somebody changed them.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
-	public function refresh(array $object, array $row, array $values): array {
+	public function refresh(array $object, array $row, array $values, array $written=[]): array {
 		$change = ['register' => (string) $object['register'], 'schema' => (string) $object['schema'], 'jsonFields' => $this->jsonFields(change: $object)];
 		$row    = $this->paths->withJsonDecoded(row: $row, fields: $change['jsonFields']);
 
-		return $this->apply(
+		$same = static fn (mixed $first, mixed $second): bool => json_encode($first) === json_encode($second);
+		$todo = [];
+		$left = [];
+		foreach ($values as $field => $value) {
+			$held = $this->paths->atPath(row: $row, path: (string) $field);
+			if ($held['found'] === true && $same($held['value'], $value) === true) {
+				continue;
+			}
+
+			$wrote = array_key_exists($field, $written);
+			if ($held['found'] === true && $wrote === true && $same($held['value'], $written[$field]) === true) {
+				$todo[$field] = $value;
+				continue;
+			}
+
+			$left[] = (string) $field;
+		}
+
+		// Nothing to write (every field already holds its value, or was edited) makes apply() answer no entry.
+		$made = $this->apply(
 			change: $change,
 			resolved: [
 				'row'    => $row,
-				'merged' => $this->paths->withJsonText(row: array_merge($row, $values), fields: $change['jsonFields']),
-				'set'    => $values,
+				'merged' => $this->paths->withJsonText(row: array_merge($row, $todo), fields: $change['jsonFields']),
+				'set'    => $todo,
 				'append' => [],
 			]
 		);
+
+		return ($made + ['left' => $left]);
 	}//end refresh()
 
 	/**
@@ -239,24 +275,37 @@ class ExampleSetChanges {
 	}//end lost()
 
 	/**
-	 * Put back what a change replaced and take out what it appended.
+	 * Put back what a change replaced and take out what it appended, while the object still holds what the change wrote.
+	 *
+	 * A path whose value is no longer the one the change wrote was edited
+	 * since: it is left as it is now and named, as app config and user
+	 * preferences are. A value the change appended is taken out of its list
+	 * wherever the list is now, because that undoes exactly the change.
 	 *
 	 * @param array<string, mixed> $entry A record entry from apply().
 	 *
-	 * @return bool True when the object no longer carries the change, or is gone.
+	 * @return array{ok: bool, left: array<int, string>} Whether the object no longer carries the change (or is gone),
+	 *                                                    and the paths left because somebody changed them.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
-	public function revert(array $entry): bool {
+	public function revert(array $entry): array {
 		$row = $this->store->get(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']);
 		if ($row === null) {
-			return true;
+			return ['ok' => true, 'left' => []];
 		}
 
 		$fields = $this->jsonFields(change: $entry);
 		$row    = $this->paths->withJsonDecoded(row: $row, fields: $fields);
+		$left   = [];
 		foreach (array_reverse((array) $entry['set']) as $set) {
+			$held = $this->paths->atPath(row: $row, path: $set['path']);
+			if ($held['found'] === false || $held['value'] !== $set['new']) {
+				$left[] = (string) $set['path'];
+				continue;
+			}
+
 			$row = $this->paths->withoutPath(row: $row, path: $set['path']);
 			if ($set['had'] === true) {
 				$row = $this->paths->withPath(row: $row, path: $set['path'], value: $set['old']);
@@ -277,8 +326,9 @@ class ExampleSetChanges {
 		}
 
 		$row = $this->paths->withJsonText(row: $row, fields: $fields);
+		$why = $this->store->update(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id'], data: $row);
 
-		return $this->store->update(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id'], data: $row) === '';
+		return ['ok' => ($why === ''), 'left' => $left];
 	}//end revert()
 
 	/**
@@ -309,39 +359,29 @@ class ExampleSetChanges {
 	}//end jsonFields()
 
 	/**
-	 * The one object a change describes: an object written earlier in the same
-	 * fragment by its key, or the object its `where` finds; null otherwise.
+	 * The objects a change describes: the object written earlier in the same
+	 * fragment by its key, or every object its `where` finds.
 	 *
 	 * @param array<string, mixed>                $change  The declared change.
 	 * @param array<string, mixed>                $where   The filled `where`.
 	 * @param array<string, array<string, mixed>> $objects The fragment's objects so far, by key.
 	 *
-	 * @return array<string, mixed>|null
+	 * @return array<int, array<string, mixed>> None, one, or every match; a change is made only on exactly one.
 	 */
-	private function target(array $change, array $where, array $objects): ?array {
+	private function target(array $change, array $where, array $objects): array {
 		if (is_string($change['object'] ?? null) === true) {
-			return ($objects[$change['object']] ?? null);
-		}
-
-		$register = (string) $change['register'];
-		$schema   = (string) $change['schema'];
-		if ($where === []) {
-			return null;
-		}
-
-		foreach ([$where, []] as $filters) {
-			foreach ($this->store->find(register: $register, schema: $schema, filters: $filters) as $row) {
-				$match = true;
-				foreach ($where as $field => $value) {
-					$match = ($match === true && ($row[$field] ?? null) === $value);
-				}
-
-				if ($match === true) {
-					return $row;
-				}
+			$earlier = ($objects[$change['object']] ?? null);
+			if ($earlier === null) {
+				return [];
 			}
+
+			return [$earlier];
 		}
 
-		return null;
+		if ($where === []) {
+			return [];
+		}
+
+		return $this->store->matching(register: (string) $change['register'], schema: (string) $change['schema'], where: $where);
 	}//end target()
 }//end class

@@ -190,9 +190,10 @@ final class ObjectSearchResultFormatter {
 			objectData: $flatData
 		);
 
-		// A placeholder the object could not fill (its `case` is empty) would
-		// leave a literal `{case}` in the link. Such a hit opens OpenRegister's
-		// own page instead of a broken one.
+		// A placeholder the object could not fill (its `case` is absent or empty:
+		// ownLinkProperties() passes neither) would leave a literal `{case}` in
+		// the link. Such a hit opens OpenRegister's own page instead of a broken
+		// one.
 		if ($objectUrl !== null && preg_match('/\{[A-Za-z0-9_]+\}/', $objectUrl) !== 1) {
 			return $objectUrl;
 		}
@@ -206,7 +207,11 @@ final class ObjectSearchResultFormatter {
 	/**
 	 * The object's own properties a deep-link template may name: declared
 	 * (not `@self`, not an `_`-prefixed key the pipeline attached, the same
-	 * line {@see buildExcerpt()} draws) and scalar. Values are URL-encoded,
+	 * line {@see buildExcerpt()} draws) and scalar, and holding a value. An
+	 * empty or blank string and a boolean are left out, so the placeholder
+	 * stays unfilled and the hit falls back to OpenRegister's own page: filled
+	 * with nothing, `/apps/dossiq/cases/{case}` would become `/apps/dossiq/cases/`
+	 * and no brace would be left to notice it by. Values are URL-encoded,
 	 * because they land in a path and a value like `../settings` must not
 	 * walk out of it.
 	 *
@@ -224,7 +229,7 @@ final class ObjectSearchResultFormatter {
 				continue;
 			}
 
-			if (is_scalar($value) === false) {
+			if (is_scalar($value) === false || is_bool($value) === true || trim((string)$value) === '') {
 				continue;
 			}
 

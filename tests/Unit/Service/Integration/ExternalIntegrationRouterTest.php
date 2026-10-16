@@ -41,6 +41,7 @@ use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
@@ -362,10 +363,11 @@ class ExternalIntegrationRouterTest extends TestCase {
 	 *
 	 * @param ObjectService $objectService Answers the source lookup.
 	 * @param object|null $callService The connector CallService stand-in.
+	 * @param LoggerInterface|null $logger The logger to assert on; a null logger when none.
 	 *
 	 * @return ExternalIntegrationRouter
 	 */
-	private function routerOn(ObjectService $objectService, ?object $callService = null): ExternalIntegrationRouter {
+	private function routerOn(ObjectService $objectService, ?object $callService = null, ?LoggerInterface $logger = null): ExternalIntegrationRouter {
 		$appManager = $this->createMock(IAppManager::class);
 		$appManager->method('isInstalled')->willReturn(true);
 		$appManager->method('isEnabledForUser')->willReturn(true);
@@ -385,7 +387,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 			}
 		);
 
-		return new ExternalIntegrationRouter($appManager, $container, new NullLogger());
+		return new ExternalIntegrationRouter($appManager, $container, ($logger ?? new NullLogger()));
 	}//end routerOn()
 
 	/**
@@ -1014,13 +1016,15 @@ class ExternalIntegrationRouterTest extends TestCase {
 		$callService = new FakeCallService(
 			$this->integriqCallLog(['statusCode' => 200, 'response' => ['statusCode' => 200, 'body' => '{}', 'encoding' => 'UTF-8']])
 		);
-		$router = $this->routerOn($this->objectService(['integriq/brp-haalcentraal' => $source]), $callService);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->never())->method('error');
+		$router = $this->routerOn($this->objectService(['integriq/brp-haalcentraal' => $source]), $callService, $logger);
 
 		try {
 			$router->callWithMeta(new FakeExternalProvider(source: 'brp-haalcentraal'), 'POST', 'personen', ['withholdBodies' => true]);
 			$this->fail('Expected ProviderUnavailableException');
 		} catch (ProviderUnavailableException $e) {
-			$this->assertSame(ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN, $e->getCause());
+			$this->assertSame(ProviderUnavailableException::CAUSE_CONNECTOR_CANNOT_WITHHOLD_BODIES, $e->getCause());
 		}
 
 		$this->assertNull($callService->receivedSource);

@@ -20,6 +20,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Tests\Unit\Service\MigrationPack\PassThroughL10nTrait;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -36,6 +37,8 @@ use ReflectionClass;
  * Tests import logic, data transformation, and caching.
  */
 class ImportServiceTest extends TestCase {
+	use PassThroughL10nTrait;
+
 	/** @var MagicMapper&MockObject */
 	private MagicMapper $objectMapper;
 
@@ -75,7 +78,7 @@ class ImportServiceTest extends TestCase {
 			$this->groupManager,
 			$translationCsvCodec,
 			$this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
-			new \OCA\OpenRegister\Service\MigrationPack\MappingEngine(),
+			new \OCA\OpenRegister\Service\MigrationPack\MappingEngine($this->passThroughL10n()),
 			$this->createMock(\OCA\OpenRegister\Service\Object\ValidateObject::class),
 			$this->createMock(\Psr\Container\ContainerInterface::class)
 		);

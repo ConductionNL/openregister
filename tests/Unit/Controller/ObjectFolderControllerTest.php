@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\File\ObjectFolderBrowser;
 use OCA\OpenRegister\Service\File\ObjectFolderResponder;
 use OCA\OpenRegister\Service\File\ObjectFolderUploads;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
@@ -287,7 +288,8 @@ class ObjectFolderControllerTest extends TestCase {
 			),
 			$browser,
 			new ObjectFolderUploads(browser: $browser),
-			new ObjectFolderResponder(l10n: $l10n, logger: $logger)
+			new ObjectFolderResponder(l10n: $l10n, logger: $logger),
+			new FileWriteGuard()
 		);
 	}//end controllerAs()
 
@@ -598,4 +600,84 @@ class ObjectFolderControllerTest extends TestCase {
 
 		$this->assertSame(400, $response->getStatus());
 	}//end testAnUploadWithNoFileIs400()
+
+	/**
+	 * Every change to the folder of a frozen or archived object is a 409 naming the state, and nothing is touched.
+	 *
+	 * @param string               $state  `frozen` or `archived`.
+	 * @param array<string, mixed> $marker The marker the object carries.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider markedObjects
+	 */
+	public function testEveryChangeOnAFrozenOrArchivedObjectIs409(string $state, array $marker): void {
+		if ($state === 'frozen') {
+			$this->object->setFrozen($marker);
+		} else {
+			$this->object->setArchived($marker);
+		}
+
+		$this->fileService->expects($this->never())->method('getObjectFolder');
+		$this->fileService->expects($this->never())->method('addFile');
+		$this->uploading(name: 'nota.txt', content: 'x');
+
+		$controller = $this->controllerAs('henk', ['behandelaars']);
+		$responses = [
+			$controller->create(register: '20', schema: '35', id: self::OBJECT_UUID, name: 'Stukken'),
+			$controller->upload(register: '20', schema: '35', id: self::OBJECT_UUID, path: 'Bijlagen'),
+			$controller->rename(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 201, name: 'nieuw.txt'),
+			$controller->destroy(register: '20', schema: '35', id: self::OBJECT_UUID, nodeId: 201),
+		];
+
+		foreach ($responses as $response) {
+			$this->assertSame(409, $response->getStatus());
+			$this->assertSame($state, $response->getData()['state']);
+			$this->assertSame('alice', $response->getData()['by']);
+			$this->assertSame('2026-10-01T09:00:00+00:00', $response->getData()['at']);
+			$this->assertSame('case closed', $response->getData()['reason']);
+		}
+	}//end testEveryChangeOnAFrozenOrArchivedObjectIs409()
+
+	/**
+	 * The markers a frozen and an archived object carry.
+	 *
+	 * @return array<string, array{string, array<string, mixed>}>
+	 */
+	public static function markedObjects(): array {
+		$marker = ['by' => 'alice', 'at' => '2026-10-01T09:00:00+00:00', 'reason' => 'case closed'];
+
+		return [
+			'frozen' => ['frozen', $marker],
+			'archived' => ['archived', $marker],
+		];
+	}//end markedObjects()
+
+	/**
+	 * Reading the folder of a frozen object is not a write and still works.
+	 *
+	 * @return void
+	 */
+	public function testAFrozenObjectsFolderCanStillBeListed(): void {
+		$this->object->setFrozen(['by' => 'alice', 'at' => '2026-10-01T09:00:00+00:00']);
+
+		$response = $this->controllerAs('henk', ['behandelaars'])
+			->index(register: '20', schema: '35', id: self::OBJECT_UUID);
+
+		$this->assertSame(200, $response->getStatus());
+	}//end testAFrozenObjectsFolderCanStillBeListed()
+
+	/**
+	 * A caller without update learns nothing of the state: 403, not 409.
+	 *
+	 * @return void
+	 */
+	public function testAReaderOfAFrozenObjectStillGets403(): void {
+		$this->object->setFrozen(['by' => 'alice']);
+
+		$response = $this->controllerAs('bea', ['vergunningen'])
+			->create(register: '20', schema: '35', id: self::OBJECT_UUID, name: 'Stukken');
+
+		$this->assertSame(403, $response->getStatus());
+	}//end testAReaderOfAFrozenObjectStillGets403()
 }//end class

@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ShippedBaseline;
 use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
 use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -513,4 +514,31 @@ class GuardedDescriptorMergeTest extends TestCase {
 		$this->assertSame(['properties.bsn.authorization'], array_column($result['conflicts'], 'path'));
 		$this->assertSame('string', $result['merged']['properties']['bsn']['type']);
 	}//end testAPropertyAuthorizationIsItsOwnBlock()
+
+	/**
+	 * Under an administrator's decision, a local block the shipped definition does not declare is kept, not dropped.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testADecisionKeepsALocalBlockTheShippedDefinitionLacks(): void {
+		$parts = new DescriptorParts();
+		$decision = new ShippedAuthorizationDecision();
+		$merge = new GuardedDescriptorMerge(parts: $parts, comparator: new DivergenceComparator(parts: $parts), decision: $decision);
+		$local = ['read' => ['staff'], 'update' => ['staff']];
+
+		$result = $decision->run(
+			via: 'import',
+			operation: static fn (): array => $merge->merge(
+				baseline: ['title' => 'T'],
+				live: ['title' => 'T', 'authorization' => $local],
+				incoming: ['title' => 'T2']
+			)
+		);
+
+		$this->assertSame('T2', $result['merged']['title']);
+		$this->assertEquals($local, $result['merged']['authorization']);
+		$this->assertSame([], $result['replacedLocal']);
+	}//end testADecisionKeepsALocalBlockTheShippedDefinitionLacks()
 }//end class

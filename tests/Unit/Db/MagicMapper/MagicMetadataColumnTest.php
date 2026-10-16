@@ -79,4 +79,23 @@ class MagicMetadataColumnTest extends TestCase {
 		$this->assertSame('id', (new MagicMetadataColumn())->attribute(field: 'id'));
 		$this->assertNull((new MagicMetadataColumn())->attribute(field: 'meta'));
 	}//end testAttributeNamesFollowObjectEntity()
+
+	/**
+	 * A declared property whose column is a metadata column is never written.
+	 *
+	 * The spellings that sanitise to the same column are refused too.
+	 *
+	 * @return void
+	 */
+	public function testAPropertyThatWouldWriteAMetadataColumnIsSkipped(): void {
+		$roles = new MagicMetadataColumn();
+
+		foreach (['_owner', '_organisation', '_authorization', '_status', '_deleted', '_uuid', '_register', '_schema', '_locked', '_frozen', '_archived', '_expires', '_Owner', '__owner', '_owner_', '_schemaVersion'] as $key) {
+			$this->assertTrue($roles->skippedOnWrite(key: $key, schemaProperties: [$key => ['type' => 'string']]), $key);
+			$this->assertTrue($roles->shadowsMetadata(key: $key), $key);
+		}
+
+		$this->assertFalse($roles->shadowsMetadata(key: '_meta'));
+		$this->assertFalse($roles->shadowsMetadata(key: 'owner'));
+	}//end testAPropertyThatWouldWriteAMetadataColumnIsSkipped()
 }//end class

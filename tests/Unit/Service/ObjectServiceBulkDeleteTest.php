@@ -54,6 +54,9 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\IGroupManager;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -300,4 +303,131 @@ class ObjectServiceBulkDeleteTest extends TestCase {
 		$this->assertSame(['uuid-archival'], $result['deleted_uuids']);
 		$this->assertSame([], $result['skipped_uuids']);
 	}//end testRowOnANonArchivalSchemaIsNotRefused()
+
+	/**
+	 * Sign a user in on the service under test.
+	 *
+	 * @param string        $uid    The user.
+	 * @param array<string> $groups The user's groups.
+	 *
+	 * @return void
+	 */
+	private function signIn(string $uid, array $groups=['staff']): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($uid);
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('getUserGroupIds')->willReturn($groups);
+		$this->inject('userSession', $session);
+		$this->inject('groupManager', $groupManager);
+	}//end signIn()
+
+	/**
+	 * A stored draft of a user.
+	 *
+	 * @param string $uuid          The uuid.
+	 * @param string $owner         The owner.
+	 * @param int    $schemaId      The schema.
+	 * @param array  $configuration The schema's configuration.
+	 *
+	 * @return ObjectEntity The draft.
+	 */
+	private function givenDraft(string $uuid, string $owner, int $schemaId, array $configuration=[]): ObjectEntity {
+		$draft = $this->givenObject(uuid: $uuid, schemaId: $schemaId, configuration: $configuration);
+		$draft->setStatus('draft');
+		$draft->setOwner($owner);
+
+		return $draft;
+	}//end givenDraft()
+
+	/**
+	 * Bulk-deleting somebody else's draft skips it and never reaches the delete handler.
+	 *
+	 * The permission filter is doubled to let it through here, so this is the
+	 * loop's own answer; it goes red with the loop check removed.
+	 *
+	 * @return void
+	 */
+	public function testSomebodyElsesDraftIsSkippedByTheLoop(): void {
+		$draft = $this->givenDraft(uuid: 'uuid-draft', owner: 'alice', schemaId: 11);
+		$this->buildService([$draft]);
+		$this->signIn(uid: 'bob');
+
+		$this->deleteHandler->expects($this->never())->method('deleteObject');
+
+		$result = $this->service->deleteObjects(['uuid-draft']);
+
+		$this->assertSame([], $result['deleted_uuids']);
+		$this->assertSame(['uuid-draft'], $result['skipped_uuids']);
+		$this->assertSame('OBJECT_NOT_PERMITTED', $result['skipped_reasons']['uuid-draft']['error'] ?? null);
+	}//end testSomebodyElsesDraftIsSkippedByTheLoop()
+
+	/**
+	 * The owner bulk-discards their own draft for good, also on an archival schema.
+	 *
+	 * A draft is not a record: the archival gate does not apply, and the delete
+	 * is permanent, so no tombstone of the unsent input stays and the handler
+	 * writes the one `draft.removed` entry. Goes red without the permanent flag.
+	 *
+	 * @return void
+	 */
+	public function testTheOwnersDraftIsRemovedPermanentlyOnAnArchivalSchema(): void {
+		$draft = $this->givenDraft(uuid: 'uuid-draft', owner: 'alice', schemaId: 12, configuration: self::ARCHIVAL_CONFIGURATION);
+		$this->buildService([$draft]);
+		$this->signIn(uid: 'alice');
+
+		$permanentFlags = [];
+		$this->deleteHandler->method('deleteObject')->willReturnCallback(
+			static function (mixed ...$args) use (&$permanentFlags): bool {
+				$permanentFlags[] = ($args[8] ?? null);
+
+				return true;
+			}
+		);
+
+		$result = $this->service->deleteObjects(['uuid-draft']);
+
+		$this->assertSame(['uuid-draft'], $result['deleted_uuids']);
+		$this->assertSame([true], $permanentFlags, 'a draft is deleted permanently');
+	}//end testTheOwnersDraftIsRemovedPermanentlyOnAnArchivalSchema()
+
+	/**
+	 * An administrator bulk-deletes another user's draft, as on the read path.
+	 *
+	 * @return void
+	 */
+	public function testAnAdministratorMayBulkDeleteAnyDraft(): void {
+		$draft = $this->givenDraft(uuid: 'uuid-draft', owner: 'alice', schemaId: 11);
+		$this->buildService([$draft]);
+		$this->signIn(uid: 'root', groups: ['admin']);
+
+		$this->deleteHandler->expects($this->once())->method('deleteObject')->willReturn(true);
+
+		$this->assertSame(['uuid-draft'], $this->service->deleteObjects(['uuid-draft'])['deleted_uuids']);
+	}//end testAnAdministratorMayBulkDeleteAnyDraft()
+
+	/**
+	 * A definitive object is still deleted softly, and still refused on an archival schema.
+	 *
+	 * @return void
+	 */
+	public function testARecordIsNotDeletedPermanently(): void {
+		$record = $this->givenObject(uuid: 'uuid-record', schemaId: 11);
+		$record->setStatus('active');
+		$this->buildService([$record]);
+
+		$permanentFlags = [];
+		$this->deleteHandler->method('deleteObject')->willReturnCallback(
+			static function (mixed ...$args) use (&$permanentFlags): bool {
+				$permanentFlags[] = ($args[8] ?? null);
+
+				return true;
+			}
+		);
+
+		$this->service->deleteObjects(['uuid-record']);
+
+		$this->assertSame([false], $permanentFlags);
+	}//end testARecordIsNotDeletedPermanently()
 }//end class

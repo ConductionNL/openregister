@@ -145,7 +145,9 @@ abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNode
 
 	/**
 	 * The distinct objects the step acts on, with the register and schema
-	 * each names in its `@self` block, when numeric.
+	 * the received item names in its `@self` block, when numeric and when the
+	 * target is that item's own object (a configured `uuid` naming another
+	 * object carries none).
 	 *
 	 * @param array $items The incoming items.
 	 * @param array $config The step configuration.
@@ -168,7 +170,8 @@ abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNode
 				$json = [];
 			}
 
-			$uuid = trim((string)($json['uuid'] ?? ($json['id'] ?? '')));
+			$own = trim((string)($json['uuid'] ?? ($json['id'] ?? '')));
+			$uuid = $own;
 			if (is_string($configured) === true && trim($configured) !== '') {
 				$uuid = trim((string)FlowValueTemplate::render($configured, $json));
 			}
@@ -182,15 +185,38 @@ abstract class CaseNodeBase implements IFlowNode, IFlowNodeConfigKeys, IFlowNode
 				$self = [];
 			}
 
+			// The register and schema in `@self` belong to the RECEIVED item. A configured `uuid` may name another
+			// object (a parent, a related record); anchoring that object's plan to the item's register and schema
+			// would make a later ensure refuse the anchor and every read that filters on them miss the rows, so
+			// such a plan is anchored to neither.
+			$ownObject = ($uuid === $own);
 			$targets[$uuid] = [
 				'uuid' => $uuid,
-				'register' => $this->intOrNull(value: ($self['register'] ?? null)),
-				'schema' => $this->intOrNull(value: ($self['schema'] ?? null)),
+				'register' => $this->anchorId(value: ($self['register'] ?? null), ownObject: $ownObject),
+				'schema' => $this->anchorId(value: ($self['schema'] ?? null), ownObject: $ownObject),
 			];
 		}//end foreach
 
 		return $targets;
 	}//end targets()
+
+	/**
+	 * The register or schema id to anchor a plan to: the item's own, only for the item's own object.
+	 *
+	 * @param mixed $value The `@self` value.
+	 * @param bool $ownObject Whether the target is the object the item is.
+	 *
+	 * @return int|null The id, or null when it is not numeric or the target is another object.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 */
+	private function anchorId(mixed $value, bool $ownObject): ?int {
+		if ($ownObject === false) {
+			return null;
+		}
+
+		return $this->intOrNull(value: $value);
+	}//end anchorId()
 
 	/**
 	 * A numeric id, or null.

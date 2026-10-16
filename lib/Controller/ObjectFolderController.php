@@ -25,10 +25,12 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Exception\ObjectFileAccessDeniedException;
+use OCA\OpenRegister\Exception\ObjectStateWriteException;
 use OCA\OpenRegister\Service\File\ObjectFileAccess;
 use OCA\OpenRegister\Service\File\ObjectFolderBrowser;
 use OCA\OpenRegister\Service\File\ObjectFolderResponder;
 use OCA\OpenRegister\Service\File\ObjectFolderUploads;
+use OCA\OpenRegister\Service\Object\FileWriteGuard;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -43,7 +45,8 @@ use Throwable;
  * person's Files app, so a reader has no WebDAV path to them. These endpoints
  * are that path: every call checks the object first, as the signed-in person,
  * exactly as the object file endpoints do. A listing needs read on the object
- * and answers 404 without it; a change needs update and answers 403 to a reader.
+ * and answers 404 without it; a change needs update and answers 403 to a reader,
+ * and 409 when the object is frozen or archived (REQ-OAS-007).
  * No Nextcloud share is created, because a share on an object folder is an
  * object grant that would outlive the rule that admitted the reader.
  *
@@ -62,6 +65,7 @@ class ObjectFolderController extends Controller {
 	 * @param ObjectFolderBrowser   $browser          The folder tree of one object.
 	 * @param ObjectFolderUploads   $uploads          Stores a batch of uploads.
 	 * @param ObjectFolderResponder $responder        Turns outcomes and failures into responses.
+	 * @param FileWriteGuard        $fileWriteGuard   Refuses a change to the files of a frozen or archived object.
 	 */
 	public function __construct(
 		string $appName,
@@ -70,6 +74,7 @@ class ObjectFolderController extends Controller {
 		private readonly ObjectFolderBrowser $browser,
 		private readonly ObjectFolderUploads $uploads,
 		private readonly ObjectFolderResponder $responder,
+		private readonly FileWriteGuard $fileWriteGuard,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -246,9 +251,19 @@ class ObjectFolderController extends Controller {
 	 * @return ObjectEntity The object.
 	 *
 	 * @throws ObjectFileAccessDeniedException With 404 without read, 403 with read but without update.
+	 * @throws ObjectStateWriteException        When the object is frozen or archived (answered 409, REQ-OAS-007).
+	 *
+	 * @spec openspec/changes/object-archive-state/specs/object-lifecycle/spec.md#requirement-file-writes-honour-the-frozen-and-archived-marker-req-oas-007
 	 */
 	private function ensureChangeable(string $register, string $schema, string $id): ObjectEntity {
-		return $this->objectFileAccess->changeable(register: $register, schema: $schema, id: $id);
+		$object = $this->objectFileAccess->changeable(register: $register, schema: $schema, id: $id);
+
+		// Asked after the access rule, so a caller without access still gets
+		// 404 or 403 and learns nothing of the state; the same order the files
+		// API uses (FilesController::ensureObjectAccess()).
+		$this->fileWriteGuard->assertWritable(object: $object);
+
+		return $object;
 	}//end ensureChangeable()
 
 	/**

@@ -47,6 +47,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\DraftFinder;
@@ -71,6 +72,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The complexity is the submit contract:
  * map, validate all, write in order, compensate, answer. Split, the all-or-none rule would
  * live in two files that must agree on what a plan is.
+ * @SuppressWarnings(PHPMD.TooManyMethods) One private method per step of the submit (map, validate,
+ * write, compensate, answer, idempotency, uploads); the steps are the contract, not incidental helpers.
  * @SuppressWarnings(PHPMD.StaticAccess) FormDestinationValidator::marker() and
  * markedProperties() are pure reads of a schema property's `x-openregister` block;
  * DraftStatusPolicy's promotion allowance is request-scoped state shared with the save path.
@@ -156,7 +159,7 @@ class FormSubmitService {
 	 *
 	 * @return array<string, mixed> The answer: reference, id, receivedAt, confirmation, objects.
 	 *
-	 * @throws FormSubmitRefusedException 422 refused payload, 403 not allowed, 404 no destination, 503 try again later.
+	 * @throws FormSubmitRefusedException 422 refused payload, 403 not allowed, 404 no destination, 409 key taken or in use, 503 try again later.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
@@ -215,7 +218,7 @@ class FormSubmitService {
 		string $scope = '',
 		?DraftOwner $owner = null,
 	): array {
-		$owner = $this->ownerOf(subject: $subject, owner: $owner);
+		$owner = DraftOwner::resolve(subject: $subject, owner: $owner);
 		if ($owner === null) {
 			throw new FormSubmitRefusedException(message: $this->l10n->t('Please sign in to save this form and carry on later.'), status: 401);
 		}
@@ -227,6 +230,10 @@ class FormSubmitService {
 
 		$this->validateAll(plans: $plans, mode: self::MODE_DRAFT);
 		$created = $this->writeAll(plans: $plans, subject: $owner->user(), status: ObjectEntity::STATUS_DRAFT, uuid: $draftId, owner: $owner);
+
+		// The files now sit on the draft: the tokens are spent, as after a submit,
+		// so they cannot be redeemed again for another object or a later save.
+		$this->uploads->claim(tokens: array_merge(...array_map(static fn (array $plan): array => $plan['tokens'], $plans)));
 
 		return ['id' => (string)$created[0]['object']->getUuid(), 'status' => ObjectEntity::STATUS_DRAFT];
 	}//end saveDraft()
@@ -249,7 +256,7 @@ class FormSubmitService {
 	 *
 	 * @return array<string, mixed> The answer: reference, id, receivedAt, confirmation, objects.
 	 *
-	 * @throws FormSubmitRefusedException 422 refused payload, 403 not allowed, 404 no destination, 503 try again later.
+	 * @throws FormSubmitRefusedException 422 refused payload, 403 not allowed, 404 no destination, 409 key taken or in use, 503 try again later.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-writing-several-objects-must-commit-all-or-none
 	 */
@@ -263,28 +270,76 @@ class FormSubmitService {
 		?DraftOwner $owner = null,
 	): array {
 		$key = trim((string)$idempotencyKey);
+		if ($key === '') {
+			return $this->submitOnce(writes: $writes, payload: $payload, subject: $subject, scope: $scope, draftId: $draftId, owner: $owner);
+		}
+
 		$keyScope = $this->keyScope(scope: $scope, writes: $writes);
-		if ($key !== '') {
-			$remembered = $this->keys->find(scope: $keyScope, key: $key);
+		$binding = $this->keys->bindingFor(subject: $this->submitterOf(subject: $subject, owner: $owner), payload: $payload);
+
+		// Reserve the key for the length of the submit: a parallel retry with
+		// the same key is refused (409) instead of writing a second object.
+		$this->keys->reserve(scope: $keyScope, key: $key);
+		try {
+			$remembered = $this->keys->find(scope: $keyScope, key: $key, binding: $binding);
 			if ($remembered !== null) {
 				/*
 				 * @var array<string, mixed> $remembered
 				 */
 				return $remembered;
 			}
-		}
 
-		$plans = $this->plan(writes: $writes, payload: $payload, scope: $scope);
-		[$created, $receivedAt] = $this->writeOrPromote(plans: $plans, subject: $subject, draftId: $draftId, owner: $owner);
-
-		$this->uploads->claim(tokens: array_merge(...array_map(static fn (array $plan): array => $plan['tokens'], $plans)));
-		$answer = $this->answer(created: $created, receivedAt: $receivedAt);
-		if ($key !== '') {
-			$this->keys->remember(scope: $keyScope, key: $key, response: $answer);
+			$answer = $this->submitOnce(writes: $writes, payload: $payload, subject: $subject, scope: $scope, draftId: $draftId, owner: $owner);
+			$this->keys->remember(scope: $keyScope, key: $key, response: $answer, binding: $binding);
+		} finally {
+			$this->keys->release(scope: $keyScope, key: $key);
 		}
 
 		return $answer;
 	}//end submitAll()
+
+	/**
+	 * Write one submit and answer it, without any idempotency handling.
+	 *
+	 * @param array<int, array<string, mixed>> $writes  The writes, in order.
+	 * @param array<string, mixed>             $payload What the submitter filled in.
+	 * @param IUser|null                       $subject The signed-in subject; null for anonymous.
+	 * @param string                           $scope   The form id the tokens belong to.
+	 * @param string|null                      $draftId The subject's draft to leave (one write only).
+	 * @param DraftOwner|null                  $owner   The draft's asserted owner.
+	 *
+	 * @return array<string, mixed> The answer.
+	 *
+	 * @throws FormSubmitRefusedException 422, 403, 404 or 503.
+	 */
+	private function submitOnce(array $writes, array $payload, ?IUser $subject, string $scope, ?string $draftId, ?DraftOwner $owner): array {
+		$plans = $this->plan(writes: $writes, payload: $payload, scope: $scope);
+		[$created, $receivedAt] = $this->writeOrPromote(plans: $plans, subject: $subject, draftId: $draftId, owner: $owner);
+
+		$this->uploads->claim(tokens: array_merge(...array_map(static fn (array $plan): array => $plan['tokens'], $plans)));
+
+		return $this->answer(created: $created, receivedAt: $receivedAt);
+	}//end submitOnce()
+
+	/**
+	 * Who the submit is by, as the idempotency binding reads it.
+	 *
+	 * @param IUser|null      $subject The signed-in subject.
+	 * @param DraftOwner|null $owner   The asserted draft owner.
+	 *
+	 * @return string The user id, a scope value, or the anonymous marker.
+	 */
+	private function submitterOf(?IUser $subject, ?DraftOwner $owner): string {
+		if ($subject !== null) {
+			return 'user:' . $subject->getUID();
+		}
+
+		if ($owner !== null && $owner->isScoped() === true) {
+			return 'scope:' . $owner->value();
+		}
+
+		return 'anonymous';
+	}//end submitterOf()
 
 	/**
 	 * Validate and write a fresh submit, or promote a draft.
@@ -300,7 +355,7 @@ class FormSubmitService {
 	 */
 	private function writeOrPromote(array $plans, ?IUser $subject, ?string $draftId, ?DraftOwner $owner = null): array {
 		if ($draftId !== null) {
-			return $this->promoteDraft(plans: $plans, owner: $this->ownerOf(subject: $subject, owner: $owner), draftId: $draftId);
+			return $this->promoteDraft(plans: $plans, owner: DraftOwner::resolve(subject: $subject, owner: $owner), draftId: $draftId);
 		}
 
 		$this->validateAll(plans: $plans);
@@ -331,6 +386,12 @@ class FormSubmitService {
 		DraftStatusPolicy::allowPromotion(uuid: $draftId);
 		try {
 			$created = $this->writeAll(plans: $plans, subject: $owner?->user(), status: ObjectEntity::STATUS_ACTIVE, uuid: $draftId, owner: $owner);
+			// Two requests on one draft can both pass the "still a draft" read.
+			// The save that did not use the allowance found it already sent: it
+			// answers as for a draft that is gone and announces nothing.
+			if (DraftStatusPolicy::promotionWasUsed(uuid: $draftId) === false) {
+				throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
+			}
 		} finally {
 			DraftStatusPolicy::resetPromotions();
 		}
@@ -366,7 +427,7 @@ class FormSubmitService {
 			return false;
 		}
 
-		$owner = $this->ownerOf(subject: $subject, owner: $owner);
+		$owner = DraftOwner::resolve(subject: $subject, owner: $owner);
 
 		return $this->drafts->own(register: $register, schema: $schema, draftId: $draftId, owner: $owner) !== null;
 	}//end isOwnerOfDraft()
@@ -395,26 +456,6 @@ class FormSubmitService {
 	}//end draftData()
 
 	/**
-	 * The draft's owner: the asserted one, else the signed-in subject, else nobody.
-	 *
-	 * @param IUser|null      $subject The signed-in subject.
-	 * @param DraftOwner|null $owner   The asserted owner.
-	 *
-	 * @return DraftOwner|null The owner, or null when there is none.
-	 */
-	private function ownerOf(?IUser $subject, ?DraftOwner $owner): ?DraftOwner {
-		if ($owner !== null) {
-			return $owner;
-		}
-
-		if ($subject !== null) {
-			return DraftOwner::ofUser(user: $subject);
-		}
-
-		return null;
-	}//end ownerOf()
-
-	/**
 	 * Read the owner's draft by id: its data, for resuming a form.
 	 *
 	 * Anything but the owner's own draft answers the same 404 an unknown id
@@ -434,7 +475,7 @@ class FormSubmitService {
 	public function readDraft(array $destination, string $draftId, ?IUser $subject, ?DraftOwner $owner = null): array {
 		$register = $this->register(reference: $destination['register'] ?? null);
 		$schema = $this->schema(reference: $destination['schema'] ?? null);
-		$owner = $this->ownerOf(subject: $subject, owner: $owner);
+		$owner = DraftOwner::resolve(subject: $subject, owner: $owner);
 		$draft = $this->drafts->own(register: $register, schema: $schema, draftId: $draftId, owner: $owner);
 		if ($draft === null) {
 			throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
@@ -460,7 +501,7 @@ class FormSubmitService {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
 	 */
 	public function findDraft(array $destination, ?IUser $subject, ?DraftOwner $owner = null, array $match = []): ?array {
-		$owner = $this->ownerOf(subject: $subject, owner: $owner);
+		$owner = DraftOwner::resolve(subject: $subject, owner: $owner);
 		if ($owner === null) {
 			return null;
 		}
@@ -530,7 +571,8 @@ class FormSubmitService {
 	 *
 	 * Only mapped fields reach the object: the submitter does not choose which
 	 * properties a form writes. Without a mapping the payload is the object,
-	 * minus `_` control keys and `@` metadata, as the objects endpoint does.
+	 * minus `_` control keys, `@` metadata and the `id` / `uuid` that would
+	 * name an existing object, as the objects endpoint does.
 	 *
 	 * @param array<string, mixed>|null $mapping The mapping.
 	 * @param array<string, mixed>      $payload The payload.
@@ -573,11 +615,21 @@ class FormSubmitService {
 			}
 		}
 
+		// A submit never chooses the uuid of the object it writes. The save
+		// takes `id` (or `@self.id`) as the uuid of an existing object and
+		// updates it, so a submitter who names one would write over it, with
+		// RBAC off when the owner is a scope value. The only way to name an
+		// existing object is the draft id, which DraftFinder::own() checked.
+		unset($object['id']);
+		if (is_array($object['@self'] ?? null) === true) {
+			unset($object['@self']['id']);
+		}
+
 		return [$object, $files, $tokens];
 	}//end mapPayload()
 
 	/**
-	 * Property => value: the mapped fields, or without a mapping the payload minus control and metadata keys.
+	 * Property => value: the mapped fields, or without a mapping the payload minus control keys, metadata and the object's `id` / `uuid`.
 	 *
 	 * @param array<string, mixed>|null $mapping The mapping.
 	 * @param array<string, mixed>      $payload The payload.
@@ -588,9 +640,8 @@ class FormSubmitService {
 		$pairs = [];
 		if ($mapping === null) {
 			foreach ($payload as $name => $value) {
-				$name = (string)$name;
-				if (str_starts_with($name, '_') === false && str_starts_with($name, '@') === false) {
-					$pairs[$name] = $value;
+				if ($this->isPropertyKey(name: (string)$name) === true) {
+					$pairs[(string)$name] = $value;
 				}
 			}
 
@@ -607,6 +658,17 @@ class FormSubmitService {
 
 		return $pairs;
 	}//end pairsOf()
+
+	/**
+	 * Whether a payload key can be a property of the object: not a control key, metadata, or the `id` / `uuid` that name an object.
+	 *
+	 * @param string $name The payload key.
+	 *
+	 * @return bool True when it may reach the object.
+	 */
+	private function isPropertyKey(string $name): bool {
+		return str_starts_with($name, '_') === false && str_starts_with($name, '@') === false && in_array($name, ['id', 'uuid'], true) === false;
+	}//end isPropertyKey()
 
 	/**
 	 * The upload token a payload value carries, or null.
@@ -646,6 +708,12 @@ class FormSubmitService {
 			$excused = $policy->serverFilledExcusals(schema: $plan['schema'], object: $object);
 			if ($mode === self::MODE_DRAFT) {
 				$excused = array_merge($policy->requiredExcusals(schema: $plan['schema']), $excused);
+			}
+
+			// An upload token moved its file out of the object (mapPayload), so the
+			// property is absent from the validated object although it was supplied.
+			foreach (array_keys($plan['files']) as $uploaded) {
+				$excused[(string)$uploaded] = 'uploaded';
 			}
 
 			try {
@@ -824,6 +892,10 @@ class FormSubmitService {
 	private function refusalFor(Throwable $exception, array $plan): FormSubmitRefusedException {
 		if ($exception instanceof FormSubmitRefusedException) {
 			return $exception;
+		}
+
+		if ($exception instanceof DraftAlreadyLeftException) {
+			return new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
 		}
 
 		$write = null;

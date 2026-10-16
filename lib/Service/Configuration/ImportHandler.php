@@ -301,6 +301,13 @@ class ImportHandler {
 	private ?SelectionListSeeder $selectionListSeeder = null;
 
 	/**
+	 * The shipped version of each seed object, built on first use from the app config.
+	 *
+	 * @var SeedVersionLedger|null
+	 */
+	private ?SeedVersionLedger $seedVersions = null;
+
+	/**
 	 * Collector for declared RBAC group ids. Dependency-free value object,
 	 * created lazily via {@see self::rbacGroupCollector()}.
 	 *
@@ -3609,7 +3616,21 @@ class ImportHandler {
 
 			$importedVersion = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
 			$existingVersion = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
-			if (version_compare($importedVersion, $existingVersion, '>') > 0) {
+
+			// Compared with the version this seed was last SHIPPED at when the
+			// import remembers one, not with the object's own version: every
+			// later save of the object bumps its patch, and a stored `1.4.8`
+			// (shipped 1.4.7, edited once) would otherwise make a shipped
+			// `1.4.8` look current and keep it from ever arriving.
+			$seedKey = null;
+			$shipped = null;
+			if ($appId !== null && $appId !== '') {
+				$seedKey = (int)$registerId . '/' . (int)$schemaId . '/' . $slug;
+				$shipped = $this->seedVersions()->shipped(appId: $appId, seed: $seedKey);
+			}
+
+			$baseline = ($shipped ?? $existingVersion);
+			if (version_compare($importedVersion, $baseline, '>') > 0) {
 				$uuid = $existingObjectData['@self']['id'] ?? $existingObjectData['id'] ?? null;
 				// CRITICAL: Pass Register and Schema OBJECTS, not IDs.
 				// This avoids organisation filter issues in find().
@@ -3628,15 +3649,22 @@ class ImportHandler {
 					currentUser: $actingUser
 				);
 				$result['objects'][] = $object;
+				$this->rememberShippedVersion(appId: $appId, seedKey: $seedKey, version: (string)$importedVersion);
 			}
 
-			if (version_compare($importedVersion, $existingVersion, '>') <= 0) {
+			if (version_compare($importedVersion, $baseline, '>') <= 0) {
 				// COUNTED, not just logged. Skipping an unchanged
 				// object is the DESIGNED behaviour of a re-import,
 				// but a debug line is invisible to the caller, and
 				// the caller is the one that has to tell an operator
 				// whether the import worked.
 				$result['unchanged']['objects']++;
+				if ($shipped === null) {
+					// A seed stored before the import remembered its shipped version: what the file ships now is
+					// what the instance holds (the object cannot be told apart from an edited one otherwise).
+					$this->rememberShippedVersion(appId: $appId, seedKey: $seedKey, version: (string)$importedVersion);
+				}
+
 				$this->logger->debug(
 					message: '[ImportHandler] Skipped object update: imported version not higher',
 					context: [
@@ -3647,6 +3675,7 @@ class ImportHandler {
 						'schema' => $schemaId,
 						'importedVersion' => $importedVersion,
 						'existingVersion' => $existingVersion,
+						'shippedVersion' => $shipped,
 					]
 				);
 				return;
@@ -3671,8 +3700,45 @@ class ImportHandler {
 				currentUser: $actingUser
 			);
 			$result['objects'][] = $object;
+			if ($appId !== null && $appId !== '') {
+				$this->rememberShippedVersion(
+					appId: $appId,
+					seedKey: (int)$registerId . '/' . (int)$schemaId . '/' . $slug,
+					version: (string)($objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0')
+				);
+			}
 		}//end if
 	}//end importListedObject()
+
+	/**
+	 * The ledger of the versions the seed objects were last shipped at.
+	 *
+	 * @return SeedVersionLedger
+	 */
+	private function seedVersions(): SeedVersionLedger {
+		if ($this->seedVersions === null) {
+			$this->seedVersions = new SeedVersionLedger(appConfig: $this->appConfig);
+		}
+
+		return $this->seedVersions;
+	}//end seedVersions()
+
+	/**
+	 * Remember the version a seed object was shipped at, when the import knows its app.
+	 *
+	 * @param string|null $appId   The importing app.
+	 * @param string|null $seedKey The seed's identity; null when there is no app to remember it under.
+	 * @param string      $version The shipped version.
+	 *
+	 * @return void
+	 */
+	private function rememberShippedVersion(?string $appId, ?string $seedKey, string $version): void {
+		if ($appId === null || $appId === '' || $seedKey === null) {
+			return;
+		}
+
+		$this->seedVersions()->record(appId: $appId, seed: $seedKey, version: $version);
+	}//end rememberShippedVersion()
 
 	/**
 	 * Record a listed object that failed twice: counted, named and logged.

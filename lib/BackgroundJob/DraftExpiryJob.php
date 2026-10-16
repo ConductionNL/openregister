@@ -112,17 +112,35 @@ class DraftExpiryJob extends TimedJob {
 		// One line per schema that held an expired draft, so an administrator
 		// reads from the log which schema lost how many (decision 228), and
 		// one line with the totals, a zero included.
+		//
+		// A sweep that removed or refused a draft is logged at WARNING: the
+		// default loglevel (2 = warning) would hide an INFO line, and the first
+		// run after the upgrade removes drafts that were kept until then, so an
+		// administrator would have no record of how many. A sweep that changed
+		// nothing keeps its counted zero at info.
 		foreach ($counts['perSchema'] as $row) {
-			$this->logger->info(
-				message: '[DraftExpiryJob] drafts past the lifetime of a schema',
-				context: $row
-			);
+			$this->report(message: '[DraftExpiryJob] drafts past the lifetime of a schema', counts: $row);
 		}
 
 		unset($counts['perSchema']);
-		$this->logger->info(
-			message: '[DraftExpiryJob] swept drafts past their schema\'s lifetime',
-			context: $counts
-		);
+		$this->report(message: '[DraftExpiryJob] swept drafts past their schema\'s lifetime', counts: $counts);
 	}//end run()
+
+	/**
+	 * Log one line of counts: at warning when drafts were removed or refused, at info for a counted zero.
+	 *
+	 * @param string               $message The line.
+	 * @param array<string, mixed> $counts  The counts of one schema or of the whole sweep.
+	 *
+	 * @return void
+	 */
+	private function report(string $message, array $counts): void {
+		if (((int)($counts['removed'] ?? 0) + (int)($counts['refused'] ?? 0)) > 0) {
+			$this->logger->warning(message: $message, context: $counts);
+
+			return;
+		}
+
+		$this->logger->info(message: $message, context: $counts);
+	}//end report()
 }//end class

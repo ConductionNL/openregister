@@ -179,7 +179,14 @@ class ObjectDraftController extends Controller {
 			);
 		}//end try
 
-		return new JSONResponse(data: $activated->jsonSerialize());
+		// The saved entity goes through the render boundary the object API reads
+		// through: a `writeOnly` property is "may be sent, never returned", a
+		// property the caller's groups may not read is not theirs, and an
+		// encrypted one comes back decrypted for who may read it. The save
+		// renders its result already, but an automatic transition the save
+		// applied hands back an entity of its own, so it is rendered here once
+		// more: rendering is idempotent.
+		return new JSONResponse(data: $this->objects->renderEntity(entity: $activated, _rbac: true));
 	}//end activate()
 
 	/**

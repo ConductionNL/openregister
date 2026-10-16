@@ -247,7 +247,10 @@ class MigrationPacksController extends Controller {
 	 * Import a migration pack definition from an uploaded JSON file. Admin only.
 	 * Upserts by the document's own `id` — re-importing an updated pack
 	 * updates the existing row. The log line says whether the import created
-	 * or replaced a pack, as reported by the write itself.
+	 * or replaced a pack, as reported by the write itself, and so does the
+	 * status: 201 for a pack created, 200 for one replaced, so the caller can
+	 * tell an administrator that a stored pack (possibly edited on this
+	 * instance) was overwritten.
 	 *
 	 * @return JSONResponse
 	 *
@@ -274,8 +277,10 @@ class MigrationPacksController extends Controller {
 		}
 
 		$outcome = 'replaced';
+		$status  = 200;
 		if ($result->created === true) {
 			$outcome = 'created';
+			$status  = 201;
 		}
 
 		$pack = $result->pack;
@@ -290,7 +295,7 @@ class MigrationPacksController extends Controller {
 			]
 		);
 
-		return new JSONResponse(data: $pack->jsonSerialize(), statusCode: 201);
+		return new JSONResponse(data: $pack->jsonSerialize(), statusCode: $status);
 	}//end import()
 
 	/**

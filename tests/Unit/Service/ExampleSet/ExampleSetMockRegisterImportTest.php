@@ -89,9 +89,11 @@ class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
 					$this->instance[strtolower((string) $slug)] = $version;
 				}
 
-				$this->recorded[$appId][] = ['jobId' => 'job-'.count($this->importedAs), 'version' => $version, 'created' => 1, 'importedAt' => ''];
+				$jobId = 'job-'.count($this->importedAs);
+				$this->recorded[$appId][] = ['jobId' => $jobId, 'version' => $version, 'created' => 1, 'importedAt' => ''];
 
-				return ['objects' => array_keys((array) ($data['components']['objects'] ?? [])), 'skipped' => []];
+				// As ImportHandler does: the result names the job the import ran under.
+				return ['objects' => array_keys((array) ($data['components']['objects'] ?? [])), 'skipped' => [], 'importJobId' => $jobId];
 			}
 		);
 

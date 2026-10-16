@@ -83,7 +83,8 @@ class ExampleSetInstallCommand extends Command {
 				name: 'check',
 				shortcut: null,
 				mode: InputOption::VALUE_NONE,
-				description: 'Validate every object against its schema and write nothing'
+				description: 'Validate every object against its schema; writes no account, group or object '
+					.'(a missing required register is still imported, and a missing cast organisation created)'
 			)
 			->addOption(
 				name: 'adopt',
@@ -185,6 +186,9 @@ class ExampleSetInstallCommand extends Command {
 		}
 
 		$output->writeln('<info>Every object passes its schema. No account, group or object of the set was written.</info>');
+		$output->writeln(
+			'A required register the instance lacked was imported, and a cast organisation it lacked was created, because the check needs them.'
+		);
 
 		return self::SUCCESS;
 	}//end check()
@@ -227,7 +231,32 @@ class ExampleSetInstallCommand extends Command {
 			}
 		}
 
-		foreach ($report['types'] as $type => $counts) {
+		$this->printTypes(types: $report['types'], output: $output);
+
+		if ($report['files'] > 0) {
+			$output->writeln('Files attached: '.$report['files']);
+		}
+
+		$this->printOutstanding(report: $report, output: $output);
+
+		if ($report['passwords'] !== []) {
+			$output->writeln('New passwords, shown once and stored nowhere:');
+			foreach ($report['passwords'] as $uid => $password) {
+				$output->writeln('  '.$uid.': '.$password);
+			}
+		}
+	}//end printReport()
+
+	/**
+	 * Print the counts per register and schema.
+	 *
+	 * @param array<string, array<string, int>> $types  Counts by `<register> <schema>`.
+	 * @param OutputInterface                   $output The command output.
+	 *
+	 * @return void
+	 */
+	private function printTypes(array $types, OutputInterface $output): void {
+		foreach ($types as $type => $counts) {
 			$output->writeln(
 				sprintf(
 					'%s: %d declared, %d created, %d already there, %d found afterwards',
@@ -239,9 +268,19 @@ class ExampleSetInstallCommand extends Command {
 				)
 			);
 		}
+	}//end printTypes()
 
-		if ($report['files'] > 0) {
-			$output->writeln('Files attached: '.$report['files']);
+	/**
+	 * Print what was left as it is, and what is not written, not there or not kept.
+	 *
+	 * @param array<string, mixed> $report The installer's report.
+	 * @param OutputInterface      $output The command output.
+	 *
+	 * @return void
+	 */
+	private function printOutstanding(array $report, OutputInterface $output): void {
+		foreach ($report['left'] as $line) {
+			$output->writeln('Left as it is: '.$line);
 		}
 
 		$problems = ['Not written: ' => $report['dropped'], 'Not on the instance: ' => $report['missing'], 'Written but not kept: ' => $report['lost']];
@@ -250,14 +289,7 @@ class ExampleSetInstallCommand extends Command {
 				$output->writeln('<error>'.$words.$line.'</error>');
 			}
 		}
-
-		if ($report['passwords'] !== []) {
-			$output->writeln('New passwords, shown once and stored nowhere:');
-			foreach ($report['passwords'] as $uid => $password) {
-				$output->writeln('  '.$uid.': '.$password);
-			}
-		}
-	}//end printReport()
+	}//end printOutstanding()
 
 	/**
 	 * The words for an outcome.

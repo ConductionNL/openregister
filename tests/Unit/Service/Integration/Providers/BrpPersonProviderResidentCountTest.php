@@ -207,4 +207,16 @@ class BrpPersonProviderResidentCountTest extends TestCase {
 		$this->assertCount(1, $this->logged);
 		$this->assertStringNotContainsString(self::ADDRESS, implode("\n", $this->logged));
 	}//end testAnUnexpectedFailureIsLoggedWithoutTheAddress()
+
+	public function testAConnectorThatCannotWithholdBodiesAnswersItsOwnCause(): void {
+		$this->router->method('sourceConfiguration')->willReturn(['residentCount' => true]);
+		$this->router->method('callWithMeta')->willThrowException(
+			new ProviderUnavailableException(message: 'old connector', cause: ProviderUnavailableException::CAUSE_CONNECTOR_CANNOT_WITHHOLD_BODIES)
+		);
+
+		$this->assertSame(
+			['unavailable' => true, 'cause' => 'connector-cannot-withhold-bodies'],
+			$this->provider->countResidentsAtAddressObject(self::ADDRESS)
+		);
+	}//end testAConnectorThatCannotWithholdBodiesAnswersItsOwnCause()
 }//end class

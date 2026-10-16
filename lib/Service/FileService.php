@@ -2337,8 +2337,22 @@ class FileService {
 		// Copy first.
 		$newFile = $this->copyFile(sourceObject: $sourceObject, fileId: $fileId, targetObject: $targetObject);
 
-		// Delete source.
-		$this->deleteFile(file: $fileId, object: $sourceObject);
+		// Delete source. A source that is still there afterwards (the
+		// frozen-object guard aborted the delete, which Nextcloud does not
+		// report) makes this a copy, not a move: the copy is taken back and the
+		// caller told, instead of leaving the file in two objects.
+		if ($this->deleteFile(file: $fileId, object: $sourceObject) === false) {
+			try {
+				$this->deleteFile(file: $newFile, object: $targetObject);
+			} catch (Exception $e) {
+				$this->logger->warning(
+					message: "[FileService] Could not take back the copy of file {$fileId} after the source could not be deleted: " . $e->getMessage(),
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+			}
+
+			throw new Exception('The file could not be moved: it could not be removed from the source object');
+		}
 
 		$sourceUuid = $sourceObject->getUuid();
 		$targetUuid = $targetObject->getUuid();

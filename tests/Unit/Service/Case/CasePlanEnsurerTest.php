@@ -28,6 +28,11 @@ use OCA\OpenRegister\Db\CaseItemAudit;
 use OCA\OpenRegister\Exception\CaseValidationException;
 use OCA\OpenRegister\Service\Case\CasePlanDefinition;
 use OCA\OpenRegister\Service\Case\CasePlanEnsurer;
+use OCA\OpenRegister\Service\Case\CasePlanItemTimers;
+use OCA\OpenRegister\Service\Case\UnarmedTimerMarkers;
+use OCA\OpenRegister\Db\FlowTimer;
+use OCA\OpenRegister\Service\Flow\Timer\FlowTimerService;
+use Psr\Log\NullLogger;
 use OCA\OpenRegister\Service\Case\CasePlanTransitions;
 use OCA\OpenRegister\Service\Case\CaseSentryEvaluator;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
@@ -56,9 +61,11 @@ class CasePlanEnsurerTest extends TestCase {
 	/**
 	 * The ensurer under test.
 	 *
+	 * @param CasePlanItemTimers|null $timers The deadline arming, when the test is about it.
+	 *
 	 * @return CasePlanEnsurer The ensurer.
 	 */
-	private function ensurer(): CasePlanEnsurer {
+	private function ensurer(?CasePlanItemTimers $timers = null): CasePlanEnsurer {
 		$db = $this->createMock(IDBConnection::class);
 
 		return new CasePlanEnsurer(
@@ -66,7 +73,8 @@ class CasePlanEnsurerTest extends TestCase {
 			audits: $this->audits,
 			definitions: new CasePlanDefinition(sentries: new CaseSentryEvaluator(catalog: new EventCatalogService())),
 			transitions: new CasePlanTransitions(),
-			db: $db
+			db: $db,
+			timers: $timers
 		);
 	}//end ensurer()
 
@@ -268,4 +276,89 @@ class CasePlanEnsurerTest extends TestCase {
 		$this->expectExceptionMessage("'case.item.started'");
 		$this->ensurer()->ensure(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 1, definition: $bad, history: [], actor: 'system:dossiq');
 	}//end testDefinitionValidationStillApplies()
-}//end class
+
+	/**
+	 * An item ensured as active under `statutory` with an `expiresAt` gets its
+	 * enforcing expiry timer (and a `dueAt` its advisory one): no transition
+	 * event is dispatched for an inserted state, so the ensurer arms them. A
+	 * second run, which creates nothing, arms nothing again.
+	 *
+	 * @return void
+	 */
+	public function testAnItemEnsuredAsActiveArmsItsStatutoryExpiryAndDueTimers(): void {
+		$configs = [];
+		$core = $this->createMock(FlowTimerService::class);
+		$core->method('arm')->willReturnCallback(
+			static function (array $config) use (&$configs): FlowTimer {
+				$configs[] = $config;
+
+				return new FlowTimer();
+			}
+		);
+		$timers = new CasePlanItemTimers(timers: $core, logger: new NullLogger());
+		$definition = [
+			'settings' => ['authorization' => ['demo-behandelaars'], 'statutory' => ['beoordeling']],
+			'items' => [
+				[
+					'key' => 'beoordeling',
+					'type' => CaseItem::TYPE_HUMAN_TASK,
+					'name' => 'Beoordeling',
+					'state' => CaseItem::STATE_ACTIVE,
+					'dueAt' => (new \DateTime('+5 days'))->format('c'),
+					'expiresAt' => (new \DateTime('+10 days'))->format('c'),
+				],
+				['key' => 'wacht', 'type' => CaseItem::TYPE_HUMAN_TASK, 'name' => 'Wacht', 'state' => CaseItem::STATE_ENABLED, 'expiresAt' => (new \DateTime('+10 days'))->format('c')],
+			],
+		];
+
+		$this->ensurer($timers)->ensure(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2, definition: $definition, history: [], actor: 'system:dossiq');
+
+		$this->assertCount(2, $configs, 'an expiry and a due timer for the active item, none for the enabled one');
+		$byPurpose = [];
+		foreach ($configs as $config) {
+			$byPurpose[$config['purpose']] = $config;
+		}
+
+		$this->assertSame('wettelijk', $byPurpose['expiry']['legalEffect']);
+		$this->assertSame('transition:terminate', $byPurpose['expiry']['onExpiry']);
+		$this->assertSame('case-item', $byPurpose['expiry']['subjectType']);
+		$this->assertSame('none', $byPurpose['due']['legalEffect']);
+
+		$this->ensurer($timers)->ensure(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2, definition: $definition, history: [], actor: 'system:dossiq');
+		$this->assertCount(2, $configs, 'a second run creates nothing and arms nothing');
+	}//end testAnItemEnsuredAsActiveArmsItsStatutoryExpiryAndDueTimers()
+
+	/**
+	 * A refused statutory arm during an ensure never undoes it: the items are
+	 * written, and the item is marked for the re-arm pass.
+	 *
+	 * @return void
+	 */
+	public function testARefusedStatutoryArmDuringEnsureIsMarkedAndTheEnsureStands(): void {
+		$core = $this->createMock(FlowTimerService::class);
+		$core->method('arm')->willThrowException(new \RuntimeException('calendar unknown'));
+		$stored = '';
+		$appConfig = $this->createMock(\OCP\IAppConfig::class);
+		$appConfig->method('getValueString')->willReturnCallback(static function () use (&$stored): string {
+			return $stored;
+		});
+		$appConfig->method('setValueString')->willReturnCallback(static function (string $app, string $key, string $value) use (&$stored): bool {
+			$stored = $value;
+
+			return true;
+		});
+		$timers = new CasePlanItemTimers(timers: $core, logger: new NullLogger(), markers: new UnarmedTimerMarkers(appConfig: $appConfig));
+		$definition = [
+			'settings' => ['authorization' => ['demo-behandelaars'], 'statutory' => ['beoordeling']],
+			'items' => [
+				['key' => 'beoordeling', 'type' => CaseItem::TYPE_HUMAN_TASK, 'name' => 'B', 'state' => CaseItem::STATE_ACTIVE, 'expiresAt' => (new \DateTime('+10 days'))->format('c')],
+			],
+		];
+
+		$result = $this->ensurer($timers)->ensure(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2, definition: $definition, history: [], actor: 'system:dossiq');
+
+		$this->assertSame(['beoordeling'], $result['created']);
+		$row = $this->items->findByObject(objectUuid: CaseFixtures::OBJECT)[0];
+		$this->assertSame([(string)$row->getUuid()], array_keys((array)json_decode($stored, true)), 'the item is marked');
+	}//end testARefusedStatutoryArmDuringEnsureIsMarkedAndTheEnsureStands()
+}

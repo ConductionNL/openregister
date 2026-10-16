@@ -29,6 +29,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Notification;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
 
@@ -39,7 +42,12 @@ use Psr\Log\LoggerInterface;
  * fired the rule: a melder may not be allowed to read the supplier, and the
  * rule still has to reach it. The read is bounded to the triggering object's
  * own organisation instead, so a reference can never pull an address out of
- * another tenant.
+ * another tenant. It must also be an object of the schema the reference
+ * property points at (`$ref`): the value is data the person saving the
+ * triggering object controls, so without that check it could be aimed at any
+ * same-organisation object that happens to carry the named field. A reference
+ * property that declares no `$ref` names no schema to check against and is
+ * refused.
  *
  * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
  */
@@ -88,16 +96,20 @@ class ReferencedAddressNotifier {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectService   $objects The object layer, for the referenced object.
-	 * @param EmailSender     $email   The email channel.
-	 * @param OptOutAuthority $optOut  Asks integriq whether an address may be mailed.
-	 * @param LoggerInterface $logger  Logger.
+	 * @param ObjectService          $objects The object layer, for the referenced object.
+	 * @param EmailSender            $email   The email channel.
+	 * @param OptOutAuthority        $optOut  Asks integriq whether an address may be mailed.
+	 * @param LoggerInterface        $logger  Logger.
+	 * @param SchemaMapper           $schemas The schemas, for the properties of a referenced object.
+	 * @param RelationCascadeHandler $refs    Resolves a property's `$ref` to a schema id.
 	 */
 	public function __construct(
 		private readonly ObjectService $objects,
 		private readonly EmailSender $email,
 		private readonly OptOutAuthority $optOut,
 		private readonly LoggerInterface $logger,
+		private readonly SchemaMapper $schemas,
+		private readonly RelationCascadeHandler $refs,
 	) {
 	}//end __construct()
 
@@ -114,6 +126,7 @@ class ReferencedAddressNotifier {
 	 * @param string               $subject        The rule's subject.
 	 * @param string               $body           The rule's message.
 	 * @param string               $category       The rule's message category.
+	 * @param Schema|null          $schema         The triggering object's schema, which declares what each reference may point at.
 	 *
 	 * @return array<int, array{field: string, outcome: string}> One outcome per `email` entry.
 	 *
@@ -126,6 +139,7 @@ class ReferencedAddressNotifier {
 		string $subject,
 		string $body,
 		string $category,
+		?Schema $schema = null,
 	): array {
 		$entries = [];
 		foreach ($recipientsSpec as $recipient) {
@@ -134,7 +148,7 @@ class ReferencedAddressNotifier {
 			}
 
 			$path = trim((string)($recipient['field'] ?? ''));
-			$entries[] = ['field' => $path] + $this->resolveAddress(object: $object, data: $data, path: $path);
+			$entries[] = ['field' => $path] + $this->resolveAddress(object: $object, data: $data, path: $path, schema: $schema);
 		}
 
 		if ($entries === []) {
@@ -172,24 +186,27 @@ class ReferencedAddressNotifier {
 	 * Each segment but the last is read from the current data; when its value
 	 * is a reference (a uuid string, or an object carrying `id` or `uuid`) the
 	 * referenced object's data becomes the current data. The last segment is
-	 * the address.
+	 * the address. A referenced object must be of the schema the reference
+	 * property's `$ref` names; without a schema to read that from, no
+	 * reference is followed.
 	 *
 	 * @param ObjectEntity         $object The triggering object.
 	 * @param array<string, mixed> $data   Its data.
 	 * @param string               $path   The dotted path, e.g. `supplierRef.contactEmail`.
+	 * @param Schema|null          $schema The triggering object's schema.
 	 *
 	 * @return array{address: string|null, reason: string|null}
 	 *
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
 	 */
-	public function resolveAddress(ObjectEntity $object, array $data, string $path): array {
+	public function resolveAddress(ObjectEntity $object, array $data, string $path, ?Schema $schema = null): array {
 		$segments = array_values(array_filter(explode('.', $path), static fn (string $segment): bool => $segment !== ''));
 		if ($segments === [] || count($segments) > (self::MAX_HOPS + 1)) {
 			return ['address' => null, 'reason' => self::REASON_NO_REFERENCE];
 		}
 
 		$last = array_pop($segments);
-		$followed = $this->follow(object: $object, data: $data, segments: $segments);
+		$followed = $this->follow(object: $object, data: $data, segments: $segments, schema: $schema);
 		if ($followed['reason'] !== null) {
 			return ['address' => null, 'reason' => $followed['reason']];
 		}
@@ -213,11 +230,13 @@ class ReferencedAddressNotifier {
 	 * @param ObjectEntity         $object   The triggering object.
 	 * @param array<string, mixed> $data     Its data.
 	 * @param array<int, string>   $segments The reference segments, in order.
+	 * @param Schema|null          $schema   The triggering object's schema.
 	 *
 	 * @return array{data: array<string, mixed>, reason: string|null} The data reached, or why it was not.
 	 */
-	private function follow(ObjectEntity $object, array $data, array $segments): array {
+	private function follow(ObjectEntity $object, array $data, array $segments, ?Schema $schema): array {
 		$current = $data;
+		$currentSchema = $schema;
 		foreach ($segments as $segment) {
 			$reference = $this->referenceOf(value: ($current[$segment] ?? null));
 			if ($reference === null) {
@@ -233,7 +252,12 @@ class ReferencedAddressNotifier {
 				return ['data' => [], 'reason' => self::REASON_OTHER_TENANT];
 			}
 
+			if ($this->isOfDeclaredSchema(schema: $currentSchema, property: $segment, related: $related) === false) {
+				return ['data' => [], 'reason' => self::REASON_REFERENCE_NOT_FOUND];
+			}
+
 			$current = $related->getObject();
+			$currentSchema = $this->schemaOf(object: $related);
 		}
 
 		return ['data' => $current, 'reason' => null];
@@ -313,6 +337,68 @@ class ReferencedAddressNotifier {
 			return null;
 		}
 	}//end findReferenced()
+
+	/**
+	 * Whether a referenced object is of the schema its reference property points at.
+	 *
+	 * The property's `$ref` is the only declaration of what the reference may
+	 * name, so a property without one, or one that does not resolve to a schema,
+	 * accepts nothing: the value is data the person saving the object controls.
+	 *
+	 * @param Schema|null  $schema   The schema that declares the property.
+	 * @param string       $property The reference property.
+	 * @param ObjectEntity $related  The referenced object.
+	 *
+	 * @return bool
+	 */
+	private function isOfDeclaredSchema(?Schema $schema, string $property, ObjectEntity $related): bool {
+		$declared = (($schema?->getProperties() ?? [])[$property] ?? null);
+		$ref = null;
+		if (is_array($declared) === true) {
+			$ref = ($declared['$ref'] ?? null);
+		}
+
+		if (is_string($ref) === false || trim($ref) === '') {
+			$this->logger->debug(
+				sprintf('[ReferencedAddressNotifier] property "%s" declares no $ref, so its reference is not followed', $property)
+			);
+			return false;
+		}
+
+		$expected = $this->refs->resolveSchemaReference(reference: trim($ref));
+		$actual = (string)($related->getSchema() ?? '');
+		if ($expected === null || $actual === '' || $expected !== $actual) {
+			$this->logger->debug(
+				sprintf('[ReferencedAddressNotifier] reference "%s" is not an object of the schema "%s" declares', $property, $ref)
+			);
+			return false;
+		}
+
+		return true;
+	}//end isOfDeclaredSchema()
+
+	/**
+	 * The schema of a referenced object, for the next hop; null when it cannot be read.
+	 *
+	 * @param ObjectEntity $object The referenced object.
+	 *
+	 * @return Schema|null
+	 */
+	private function schemaOf(ObjectEntity $object): ?Schema {
+		$id = (string)($object->getSchema() ?? '');
+		if ($id === '') {
+			return null;
+		}
+
+		try {
+			return $this->schemas->find(id: $id, _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			$this->logger->debug(
+				sprintf('[ReferencedAddressNotifier] schema "%s" could not be read: %s', $id, $e->getMessage())
+			);
+			return null;
+		}
+	}//end schemaOf()
 
 	/**
 	 * Whether the referenced object may be read for the triggering one.

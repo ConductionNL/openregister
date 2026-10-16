@@ -10,7 +10,11 @@
  * core's own rule for an enforcing outcome. Reaching a terminal state
  * cancels the item's open timers. The core decides WHEN; this class only
  * decides what a deadline means for an item. Nothing here ever blocks a
- * transition: a refused arm or cancel is logged.
+ * transition: a refused arm or cancel is logged. A refused arm of a statutory
+ * (`wettelijk`) expiry is also marked ({@see UnarmedTimerMarkers}), because an
+ * item that is active past a legal term with nothing to end it is not a log
+ * line to move on from: {@see CasePlanTimerRearm} arms it again, or enforces
+ * the expiry when the term has passed meanwhile.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -64,14 +68,27 @@ class CasePlanItemTimers {
 	private const ACTOR = 'case-plan';
 
 	/**
+	 * What {@see rearmStatutoryExpiry()} did.
+	 */
+	public const REARM_ARMED = 'armed';
+
+	public const REARM_OVERDUE = 'overdue';
+
+	public const REARM_NONE = 'none';
+
+	public const REARM_FAILED = 'failed';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param FlowTimerService $timers The one clock.
 	 * @param LoggerInterface $logger Failure reporting.
+	 * @param UnarmedTimerMarkers|null $markers Where an item whose statutory expiry could not be armed is remembered.
 	 */
 	public function __construct(
 		private readonly FlowTimerService $timers,
 		private readonly LoggerInterface $logger,
+		private readonly ?UnarmedTimerMarkers $markers = null,
 	) {
 
 	}//end __construct()
@@ -103,6 +120,40 @@ class CasePlanItemTimers {
 
 		return $armed;
 	}//end onEntered()
+
+	/**
+	 * Arm the statutory expiry of an item that is active without one, again.
+	 *
+	 * Called by {@see CasePlanTimerRearm} for an item the first arm failed
+	 * for. Nothing is armed for an item that has no statutory expiry, and
+	 * nothing for one whose term has already passed: that one is reported as
+	 * overdue for the caller to enforce.
+	 *
+	 * @param CaseItem $item The item.
+	 * @param DateTimeInterface $now The clock.
+	 * @param string|null $actor The arming identity.
+	 *
+	 * @return string One of the REARM_* constants.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 */
+	public function rearmStatutoryExpiry(CaseItem $item, DateTimeInterface $now, ?string $actor = null): string {
+		$expires = $item->getExpiresAt();
+		if ($expires === null || $this->legalEffect(item: $item, purpose: FlowTimer::PURPOSE_EXPIRY) !== FlowTimer::LEGAL_WETTELIJK) {
+			return self::REARM_NONE;
+		}
+
+		$moment = DateTimeImmutable::createFromInterface($now);
+		if ($expires->getTimestamp() <= $moment->getTimestamp()) {
+			return self::REARM_OVERDUE;
+		}
+
+		if ($this->arm(item: $item, purpose: FlowTimer::PURPOSE_EXPIRY, deadline: $expires, actor: $actor, now: $moment) === true) {
+			return self::REARM_ARMED;
+		}
+
+		return self::REARM_FAILED;
+	}//end rearmStatutoryExpiry()
 
 	/**
 	 * Cancel the open timers of an item that reached a terminal state.
@@ -215,6 +266,35 @@ class CasePlanItemTimers {
 
 			return true;
 		} catch (Throwable $failure) {
+			if ($config['legalEffect'] === FlowTimer::LEGAL_WETTELIJK) {
+				// The transition is already committed and the caller swallows an
+				// exception raised from here (CasePlanStateMachine::flushEvents()),
+				// so this cannot fail it. What it can do is say loudly that the item
+				// is active without the timer that enforces its statutory expiry, and
+				// leave a durable marker the re-arm job acts on.
+				$this->mark(item: $item);
+				$this->logger->error(
+					sprintf(
+						'[CasePlanItemTimers] Plan item %s of case object %s is active WITHOUT its statutory (%s) %s timer: '
+						. 'the term will not run until the re-arm pass arms it. %s',
+						(string)$item->getItemKey(),
+						(string)$item->getObjectUuid(),
+						FlowTimer::LEGAL_WETTELIJK,
+						$purpose,
+						$failure->getMessage()
+					),
+					[
+						'item' => $item->getUuid(),
+						'case' => $item->getObjectUuid(),
+						'legalEffect' => FlowTimer::LEGAL_WETTELIJK,
+						'purpose' => $purpose,
+						'exception' => $failure,
+					]
+				);
+
+				return false;
+			}
+
 			$this->logger->warning(
 				'[CasePlanItemTimers] A plan-item timer was refused; the transition stands: ' . $failure->getMessage(),
 				['item' => $item->getUuid(), 'purpose' => $purpose, 'exception' => $failure]
@@ -223,6 +303,24 @@ class CasePlanItemTimers {
 			return false;
 		}
 	}//end arm()
+
+	/**
+	 * Remember that an item lacks its statutory expiry timer.
+	 *
+	 * @param CaseItem $item The item.
+	 *
+	 * @return void
+	 */
+	private function mark(CaseItem $item): void {
+		if ($this->markers === null || $this->markers->add(itemUuid: (string)$item->getUuid()) === true) {
+			return;
+		}
+
+		$this->logger->error(
+			'[CasePlanItemTimers] The marker of an item without its statutory timer could not be stored; nothing will arm it again.',
+			['item' => $item->getUuid(), 'case' => $item->getObjectUuid()]
+		);
+	}//end mark()
 
 	/**
 	 * A due date advises; an expiry enforces only on a statutory item and

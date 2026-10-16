@@ -167,8 +167,8 @@ class FormsController extends Controller {
 		try {
 			$form = $this->resolveForm(formId: $formId);
 			$subject = $this->userSession->getUser();
-			if ($subject === null && $form['audience'] !== 'public') {
-				return new JSONResponse(data: ['message' => $this->l10n->t('Please sign in to send this form.'), 'findings' => []], statusCode: 401);
+			if ($this->audienceRefuses(form: $form, subject: $subject) === true) {
+				return $this->signInRequired();
 			}
 
 			$key = trim($this->request->getHeader('Idempotency-Key'));
@@ -253,7 +253,8 @@ class FormsController extends Controller {
 	 *
 	 * @param string $formId The form object's uuid.
 	 *
-	 * @return JSONResponse 201 `{ token, expiresAt }`; 404 or 422 with `{ message, findings }`.
+	 * @return JSONResponse 201 `{ token, expiresAt }`; 401 for an anonymous visitor of a sign-in-only form;
+	 *                      404 or 422 with `{ message, findings }`.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
@@ -271,6 +272,12 @@ class FormsController extends Controller {
 
 		try {
 			$form = $this->resolveForm(formId: $formId);
+			// The token is only redeemable by submit(), which asks the audience;
+			// asking it here too keeps a closed form from storing bytes for anyone.
+			if ($this->audienceRefuses(form: $form, subject: $this->userSession->getUser()) === true) {
+				return $this->signInRequired();
+			}
+
 			$rule = $this->ruleFor(writes: $form['writes'], property: $property);
 			$issued = $this->uploads->issue(formId: $formId, property: $property, rule: $rule, file: $file);
 		} catch (FormSubmitRefusedException $refused) {
@@ -279,6 +286,27 @@ class FormsController extends Controller {
 
 		return new JSONResponse(data: $issued, statusCode: 201);
 	}//end upload()
+
+	/**
+	 * Whether the form's audience turns this visitor away: anonymous, and the form is not public.
+	 *
+	 * @param array{id: string, writes: array<int, array<string, mixed>>, audience: string} $form    The form.
+	 * @param IUser|null                                                                    $subject The signed-in subject, null when anonymous.
+	 *
+	 * @return bool True when the visitor must sign in first.
+	 */
+	private function audienceRefuses(array $form, ?IUser $subject): bool {
+		return $subject === null && $form['audience'] !== 'public';
+	}//end audienceRefuses()
+
+	/**
+	 * The 401 an anonymous visitor of a sign-in-only form gets.
+	 *
+	 * @return JSONResponse The refusal.
+	 */
+	private function signInRequired(): JSONResponse {
+		return new JSONResponse(data: ['message' => $this->l10n->t('Please sign in to send this form.'), 'findings' => []], statusCode: 401);
+	}//end signInRequired()
 
 	/**
 	 * One destination through FormSubmitService::submit(), a journey's writes through submitAll().

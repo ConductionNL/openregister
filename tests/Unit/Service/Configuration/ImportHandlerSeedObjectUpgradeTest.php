@@ -83,8 +83,11 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 		$this->appConfig = $this->createMock(IAppConfig::class);
 		$this->objectService = $this->createMock(ObjectService::class);
 
-		// Nothing stored yet: no version, no hash, so the import runs.
-		$this->appConfig->method('getValueString')->willReturn('');
+		// Nothing stored yet: no version, no hash, so the import runs. What the import writes reads back, so a
+		// second import sees the shipped versions the first one remembered.
+		$this->appConfig->method('getValueString')->willReturnCallback(
+			fn (string $app, string $key, string $default = ''): string => ($this->configWrites[$key] ?? '')
+		);
 		$this->appConfig->method('setValueString')->willReturnCallback(
 			function (string $app, string $key, string $value): bool {
 				$this->configWrites[$key] = $value;
@@ -291,6 +294,64 @@ class ImportHandlerSeedObjectUpgradeTest extends TestCase {
 		$this->assertFalse($result['failed']['objects'][0]['refusedByListener']);
 		$this->assertNotSame('', ($this->configWrites['imported_config_dossiq_hash'] ?? ''));
 	}//end testAValidationFailureKeepsTheHash()
+
+	/**
+	 * 🔴 A seed the instance edited once still receives the next shipped version.
+	 *
+	 * Imported at 1.4.7, the stored object's own version moves with every later
+	 * save: one edit reads 1.4.8. The file then ships 1.4.8, which compares equal
+	 * against the object's own version and would never arrive. The import
+	 * compares against the version it last SHIPPED (1.4.7), so it does.
+	 *
+	 * @return void
+	 */
+	public function testASeedEditedOnTheInstanceStillReceivesTheNextShippedVersion(): void {
+		$this->instanceHoldsCaseType(storedVersion: '1.4.8');
+		$this->configWrites['imported_seed_versions_dossiq'] = (string)json_encode(['23/165/woo-verzoek' => '1.4.7']);
+		$this->saves(static fn (int $attempt): ?\Throwable => null);
+
+		$result = $this->importDossiq(shippedVersion: '1.4.8');
+
+		$this->assertSame(0, $result['unchanged']['objects']);
+		$this->assertSame(
+			[['slug' => 'woo-verzoek', 'uuid' => self::CASE_TYPE_UUID, 'written' => true], ['slug' => 'woo-verzoek-flow', 'uuid' => self::FLOW_UUID, 'written' => true]],
+			$this->saves,
+			'the shipped values arrive although the stored object reads the same version'
+		);
+		$this->assertSame('1.4.8', json_decode($this->configWrites['imported_seed_versions_dossiq'], true)['23/165/woo-verzoek'], 'and the new shipped version is remembered');
+	}//end testASeedEditedOnTheInstanceStillReceivesTheNextShippedVersion()
+
+	/**
+	 * A seed stored before the import remembered anything is read as it was: the stored version is the baseline,
+	 * and the version the file ships is remembered from then on.
+	 *
+	 * @return void
+	 */
+	public function testASeedStoredBeforeTheLedgerExistedIsRememberedAtTheShippedVersion(): void {
+		$this->instanceHoldsCaseType(storedVersion: '1.4.7');
+		$this->saves(static fn (int $attempt): ?\Throwable => null);
+
+		$result = $this->importDossiq(shippedVersion: '1.4.7');
+
+		$this->assertSame(1, $result['unchanged']['objects']);
+		$this->assertSame('1.4.7', json_decode($this->configWrites['imported_seed_versions_dossiq'], true)['23/165/woo-verzoek']);
+	}//end testASeedStoredBeforeTheLedgerExistedIsRememberedAtTheShippedVersion()
+
+	/**
+	 * A seed at the shipped version is left alone even when edited: the shipped version has not moved.
+	 *
+	 * @return void
+	 */
+	public function testAnEditedSeedIsLeftAloneWhileTheShippedVersionHasNotMoved(): void {
+		$this->instanceHoldsCaseType(storedVersion: '1.4.9');
+		$this->configWrites['imported_seed_versions_dossiq'] = (string)json_encode(['23/165/woo-verzoek' => '1.4.7']);
+		$this->saves(static fn (int $attempt): ?\Throwable => null);
+
+		$result = $this->importDossiq(shippedVersion: '1.4.7');
+
+		$this->assertSame(1, $result['unchanged']['objects']);
+		$this->assertSame([['slug' => 'woo-verzoek-flow', 'uuid' => self::FLOW_UUID, 'written' => true]], $this->saves);
+	}//end testAnEditedSeedIsLeftAloneWhileTheShippedVersionHasNotMoved()
 
 	/**
 	 * A stored seed at the shipped version is left alone: the instance's own data is not rewritten.

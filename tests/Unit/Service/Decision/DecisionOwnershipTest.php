@@ -200,19 +200,27 @@ class DecisionOwnershipTest extends TestCase {
 	}//end testAFailingListenerRefuses()
 
 	/**
-	 * An allow after a refusal clears the reason.
+	 * A refusal is sticky: a later allow() cannot undo it, so listener order decides nothing.
 	 *
 	 * @return void
 	 */
-	public function testAnAllowClearsTheReason(): void {
+	public function testARefusalIsStickyWhateverTheListenerOrder(): void {
 		$event = new DecisionChangeRequestedEvent(decision: $this->decision(), actorId: 'x', policy: $this->decider(), subject: [], allowed: false);
-		$event->refuse(reason: 'first');
+		$event->refuse(reason: 'case closed');
 		$event->allow();
 
-		self::assertTrue($event->isAllowed());
-		self::assertNull($event->getReason());
+		self::assertFalse($event->isAllowed());
+		self::assertSame('case closed', $event->getReason());
+
+		// Allow first, then refuse: the same answer.
+		$other = new DecisionChangeRequestedEvent(decision: $this->decision(), actorId: 'x', policy: $this->decider(), subject: [], allowed: false);
+		$other->allow();
+		self::assertTrue($other->isAllowed());
+		$other->refuse(reason: 'case closed');
+		self::assertFalse($other->isAllowed());
+
 		self::assertSame('x', $event->getActorId());
 		self::assertSame('d-1', $event->getDecision()->getUuid());
 		self::assertTrue($event->getPolicy()->isDeciderOwned());
-	}//end testAnAllowClearsTheReason()
+	}//end testARefusalIsStickyWhateverTheListenerOrder()
 }//end class

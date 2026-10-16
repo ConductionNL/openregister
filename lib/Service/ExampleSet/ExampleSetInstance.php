@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IConfig;
 use Psr\Container\ContainerInterface;
 use Throwable;
@@ -46,6 +47,15 @@ class ExampleSetInstance {
 	 * The most organisations one lookup reads.
 	 */
 	private const LIMIT = 1000;
+
+	/**
+	 * What delete() reports.
+	 */
+	public const DELETED = 'deleted';
+
+	public const LEFT = 'left';
+
+	public const FAILED = 'failed';
 
 	/**
 	 * Constructor.
@@ -126,8 +136,11 @@ class ExampleSetInstance {
 		try {
 			$found = $this->mapper()->findBySlug(slug: $declared['slug']);
 			return ['uuid' => (string) $found->getUuid(), 'created' => false, 'error' => ''];
-		} catch (Throwable) {
+		} catch (DoesNotExistException) {
 			// Not there: created below.
+		} catch (Throwable $e) {
+			// A lookup that failed says nothing about the organisation; creating one now could duplicate the slug.
+			return ['uuid' => '', 'created' => false, 'error' => $e->getMessage()];
 		}
 
 		try {
@@ -144,28 +157,44 @@ class ExampleSetInstance {
 	}//end ensure()
 
 	/**
-	 * Delete an organisation by uuid; true when it is gone.
+	 * Delete an organisation by uuid unless somebody else belongs to it.
 	 *
-	 * @param string $uuid The organisation's uuid.
+	 * Only a lookup that says the organisation does not exist reads as gone;
+	 * any other error leaves it in the record to be tried again. An
+	 * organisation with a member that is neither an account the set made or
+	 * adopted nor a leftover of an account that no longer exists is a tenant
+	 * now, and deleting it would change what its objects mean and who sees
+	 * them, so it stays.
 	 *
-	 * @return bool
+	 * @param string                    $uuid       The organisation's uuid.
+	 * @param (callable(string): bool)|null $ignorable Whether a member does not keep the organisation; null: none does.
+	 *
+	 * @return string `deleted` (also when it was already gone), `left` (it has other members) or `failed`.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 */
-	public function delete(string $uuid): bool {
+	public function delete(string $uuid, ?callable $ignorable = null): string {
 		try {
 			$organisation = $this->mapper()->findByUuid(uuid: $uuid);
+		} catch (DoesNotExistException) {
+			return self::DELETED;
 		} catch (Throwable) {
-			return true;
+			return self::FAILED;
+		}
+
+		foreach (($organisation->getUsers() ?? []) as $member) {
+			if ($ignorable === null || $ignorable((string) $member) === false) {
+				return self::LEFT;
+			}
 		}
 
 		try {
 			$this->mapper()->delete(entity: $organisation);
 		} catch (Throwable) {
-			return false;
+			return self::FAILED;
 		}
 
-		return true;
+		return self::DELETED;
 	}//end delete()
 
 	/**

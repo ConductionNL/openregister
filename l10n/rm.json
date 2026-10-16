@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} falharam",
         "0 = unlimited": "0 = ilimitado",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "In flux exequescha ina retscha da pass, cur ch'insatge capita — in object sa mida, in urari vegn activà u l'utilisader al exequescha sez. Questa glista mussa ils fluxs da mintga applicaziun.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "In pèr da clavs VAPID è configurà. Ils utilisaders pon s'annunziar per las communicaziuns dal navigatur en lur parameters persunals, che vegnan furnidas era cur ch'il tab dal navigatur è serrà.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "In pèr da clavs VAPID è configurà. Ils utilisaders pon s'annunziar per las communicaziuns dal navigatur en lur parameters d'utilisader, che vegnan furnidas era cur ch'il tab dal navigatur è serrà.",
         "A deactivation request is pending.": "Existe um pedido de desativação pendente.",
         "AI Assistant": "Assistent IA",
         "AI Chat": "Chat IA",

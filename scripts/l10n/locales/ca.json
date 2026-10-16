@@ -167,7 +167,7 @@
 		"OpenAI Chat Settings": "TERM-SETTINGS",
 		"Could not change browser notification settings.": "TERM-SETTINGS",
 		"Notification permission: denied. Re-enable notifications for this site in your browser settings.": "TERM-SETTINGS",
-		"A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "TERM-SETTINGS",
+		"A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "TERM-SETTINGS",
 		"Manage your account settings, security, and personal data.": "TERM-SETTINGS",
 		"Any favorites and sharing settings for this view": "TERM-SETTINGS",
 		"They will be retained according to their schema's configured retention period and automatically permanently deleted when the retention period expires. The retention period is configurable per schema and can be found in the schema's settings.": "TERM-SETTINGS",

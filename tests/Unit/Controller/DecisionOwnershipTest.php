@@ -96,6 +96,13 @@ class DecisionOwnershipTest extends TestCase {
 	private array $groups = ['coord' => ['woo-coordinator'], 'root' => ['admin']];
 
 	/**
+	 * Whether the guarded link finds the link already taken, as a concurrent first decision would.
+	 *
+	 * @var bool
+	 */
+	private bool $linkConflict = false;
+
+	/**
 	 * Set up a relation every reviewer may write.
 	 *
 	 * @return void
@@ -141,7 +148,11 @@ class DecisionOwnershipTest extends TestCase {
 			}
 		);
 		$relations->method('linkDecision')->willReturnCallback(
-			static function (EntityRelation $relation, string $decisionUuid): EntityRelation {
+			function (EntityRelation $relation, string $decisionUuid, ?string $expectedUuid = null, bool $guarded = false): EntityRelation {
+				if ($guarded === true && $this->linkConflict === true) {
+					throw new \OCA\OpenRegister\Exception\DecisionConflictException('taken');
+				}
+
 				$relation->setDecisionUuid($decisionUuid);
 				return $relation;
 			}
@@ -162,7 +173,7 @@ class DecisionOwnershipTest extends TestCase {
 		$groups->method('isInGroup')->willReturnCallback(fn (string $id, string $gid): bool => in_array($gid, ($this->groups[$id] ?? []), true));
 
 		$decisionMapper = $this->createMock(DecisionMapper::class);
-		$decisionMapper->method('findByUuid')->willReturnCallback(fn (string $uuid): Decision => $this->decisions[$uuid]);
+		$decisionMapper->method('findByUuid')->willReturnCallback(fn (string $uuid): Decision => ($this->decisions[$uuid] ?? throw new \OCP\AppFramework\Db\DoesNotExistException('gone')));
 		$decisionMapper->method('insert')->willReturnCallback(
 			function (Decision $decision): Decision {
 				$decision->setUuid('d-'.(count($this->decisions) + 1));
@@ -304,6 +315,34 @@ class DecisionOwnershipTest extends TestCase {
 	 *
 	 * @return void
 	 */
+	public function testADanglingDecisionLinkIsRefusedForAReviewer(): void {
+		$this->schemaConfiguration = ['x-openregister-review' => ['ownership' => 'decider', 'supervisors' => ['woo-coordinator']]];
+		// The relation names a decision whose record is gone.
+		$this->relation->setDecisionUuid('d-gone');
+
+		$response = $this->controllerAs('alice', ['bases' => ['A']])->update(7);
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame('decision-owned', $response->getData()['error']);
+		$this->assertEmpty($this->decisions);
+
+		// A supervisor may take it over.
+		$this->assertSame(200, $this->controllerAs('coord', ['bases' => ['A']])->update(7)->getStatus());
+	}//end testADanglingDecisionLinkIsRefusedForAReviewer()
+
+	/**
+	 * The link is guarded: when somebody else linked a decision first, the second is refused and nothing is recorded as linked.
+	 */
+	public function testASecondConcurrentFirstDecisionIsRefused(): void {
+		$this->schemaConfiguration = ['x-openregister-review' => ['ownership' => 'decider']];
+		$this->linkConflict = true;
+
+		$response = $this->controllerAs('alice', ['bases' => ['A']])->update(7);
+
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame('decision-owned', $response->getData()['error']);
+		$this->assertNull($this->relation->getDecisionUuid());
+	}//end testASecondConcurrentFirstDecisionIsRefused()
+
 	public function testAnUndecidedRelationIsOpen(): void {
 		$response = $this->controllerAs(uid: 'p.bakker', body: ['skipAnonymization' => false])->update(7);
 

@@ -66,6 +66,17 @@ use Throwable;
  * @package  OCA\OpenRegister\Mcp
  */
 final class AttributeToolScanner {
+
+	/**
+	 * The keys the MCP specification reserves for tool hints in a descriptor's
+	 * `annotations` object. A client may auto-approve on them, so a free-form
+	 * mark must not carry one: OpenRegister's own hint and grant checks decide
+	 * what a tool is, and a mark is only a claim.
+	 *
+	 * @var list<string>
+	 */
+	public const RESERVED_ANNOTATION_KEYS = ['readOnlyHint', 'destructiveHint', 'idempotentHint', 'openWorldHint', 'title'];
+
 	/**
 	 * Scan every declared scannable class for one app and return every
 	 * attributed-method descriptor found across all of them.
@@ -372,7 +383,11 @@ final class AttributeToolScanner {
 
 		$badAnnotation = $this->malformedAnnotation(annotations: $attribute->annotations);
 		if ($badAnnotation !== null) {
-			return ['key' => 'annotations', 'value' => $badAnnotation, 'allowed' => ['non-empty string key => scalar value']];
+			return [
+				'key' => 'annotations',
+				'value' => $badAnnotation,
+				'allowed' => ['non-empty string key => scalar value, other than the MCP hint keys ' . implode(', ', self::RESERVED_ANNOTATION_KEYS)],
+			];
 		}
 
 		return null;
@@ -380,12 +395,18 @@ final class AttributeToolScanner {
 
 	/**
 	 * The first entry of a declared annotations map that is not a non-empty
-	 * string key holding a scalar, or null when the whole map is well formed.
+	 * string key holding a scalar, or that uses one of the MCP specification's
+	 * reserved hint keys, or null when the whole map is well formed.
 	 *
 	 * The map is free-form on purpose (OpenRegister reads none of it), but
 	 * not shapeless: a nested array or an integer key would reach a consumer
 	 * as something it cannot compare against a mark, and the tool would
-	 * silently never qualify. Refusing it at scan time names the mistake.
+	 * silently never qualify. Refusing it at scan time names the mistake. The
+	 * map is forwarded to external MCP clients under `annotations`, the key the
+	 * specification uses for tool hints, so a hint key in it (`readOnlyHint` on
+	 * a write tool) would be trusted by a client that auto-approves read-only
+	 * tools while OpenRegister's own checks say otherwise; those keys are
+	 * refused too, compared case-insensitively.
 	 *
 	 * @param array<mixed> $annotations The declared map.
 	 *
@@ -396,13 +417,27 @@ final class AttributeToolScanner {
 	 */
 	private function malformedAnnotation(array $annotations): ?string {
 		foreach ($annotations as $key => $value) {
-			if (is_string($key) === false || trim($key) === '' || is_scalar($value) === false) {
+			if (is_string($key) === false || trim($key) === '' || is_scalar($value) === false || $this->isReservedAnnotationKey(key: $key) === true) {
 				return (string) $key;
 			}
 		}
 
 		return null;
 	}//end malformedAnnotation()
+
+	/**
+	 * Whether a key is one the MCP specification reserves for tool hints.
+	 *
+	 * @param string $key The annotation key.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/specs/ai-mcp/spec.md
+	 *   (Requirement: REQ-ATTR-007 — A curated attribute tool forwards free-form annotations)
+	 */
+	private function isReservedAnnotationKey(string $key): bool {
+		return in_array(strtolower(trim($key)), array_map('strtolower', self::RESERVED_ANNOTATION_KEYS), true);
+	}//end isReservedAnnotationKey()
 
 	/**
 	 * Infer the `inputSchema` from the method's parameter type hints and

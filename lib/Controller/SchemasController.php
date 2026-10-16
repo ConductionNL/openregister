@@ -1109,8 +1109,12 @@ class SchemasController extends Controller {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
 	 */
 	private function assessDependentForms(Schema $existing, array $data): ?array {
+		if (isset($data['properties']) === false && isset($data['required']) === false) {
+			return null;
+		}
+
 		$check = $this->formDependentsCheck();
-		if ($check === null || (isset($data['properties']) === false && isset($data['required']) === false)) {
+		if ($check === null) {
 			return null;
 		}
 
@@ -1129,18 +1133,32 @@ class SchemasController extends Controller {
 	/**
 	 * The dependent-form check, resolved lazily like the audit service.
 	 *
+	 * A check that cannot be built is logged at warning level: the save then
+	 * goes ahead without judging the published forms, and that must leave a trace
+	 * (an owning app's `refuse` setting is skipped with it).
+	 *
 	 * @return FormDependentsCheck|null The check, or null when it cannot be built.
 	 */
 	private function formDependentsCheck(): ?FormDependentsCheck {
 		try {
 			$check = $this->container->get(FormDependentsCheck::class);
-		} catch (\Throwable) {
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				message: '[SchemasController] The dependent-form check could not be built; the schema save did not re-check the published forms',
+				context: ['error' => $e->getMessage()]
+			);
+
 			return null;
 		}
 
 		if ($check instanceof FormDependentsCheck) {
 			return $check;
 		}
+
+		$this->logger->warning(
+			message: '[SchemasController] The dependent-form check could not be built; the schema save did not re-check the published forms',
+			context: ['error' => 'the container did not return a FormDependentsCheck']
+		);
 
 		return null;
 	}//end formDependentsCheck()
@@ -1279,6 +1297,13 @@ class SchemasController extends Controller {
 		// set to `refuse` blocks the save; otherwise the broken forms are
 		// unpublished after the save, and the response lists them.
 		$formAssessment = $this->assessDependentForms(existing: $existingSchema, data: $data);
+		if ($formAssessment !== null) {
+			// This request judges the forms itself (refusing or unpublishing
+			// after the write): the listener that covers every other schema
+			// writer must not do it a second time.
+			$this->formDependentsCheck()?->claim(schemaId: $id);
+		}
+
 		if ($formAssessment !== null && $formAssessment['refused'] === true) {
 			return new JSONResponse(
 				data: [

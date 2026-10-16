@@ -26,7 +26,7 @@ rules.
 ## Choose which GitHub credential the store uses
 
 The store never assumes your only GitHub key is the one you meant to use. In the
-app's **Configuration store** settings pane (personal settings), pick which of
+app's **Configuration store** settings pane (user settings), pick which of
 your GitHub credentials the store should publish and browse with. The choice is
 saved as a per-user preference; the credential itself is custodied by the broker.
 

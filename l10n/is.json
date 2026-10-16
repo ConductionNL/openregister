@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} mishepnuð",
         "0 = unlimited": "0 = ótakmarkað",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Flæði keyrir röð skrefa þegar eitthvað gerist — hlutur breytist, tímaáætlun fer í gang eða þú keyrir það sjálft. Þessi listi sýnir flæði allra forrita.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "VAPID-lyklapar er stillt. Notendur geta virkjað tilkynningar í vafra í persónulegum stillingum sínum og þær berast jafnvel þegar flipinn í vafranum er lokaður.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "VAPID-lyklapar er stillt. Notendur geta virkjað tilkynningar í vafra í notandastillingum sínum og þær berast jafnvel þegar flipinn í vafranum er lokaður.",
         "A deactivation request is pending.": "Beiðni um óvirkjun er í bið.",
         "AI Assistant": "AI aðstoðarmaður",
         "AI Chat": "AI spjall",
