@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} neizdevās",
         "0 = unlimited": "0 = neierobežots",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Plūsma izpilda darbību virkni, kad kaut kas notiek — mainās objekts, nostrādā grafiks vai jūs to palaižat paši. Šis saraksts rāda visu lietotņu plūsmas.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "VAPID atslēgu pāris ir konfigurēts. Lietotāji savos personīgajos iestatījumos var ieslēgt pārlūka paziņojumus, kas tiek piegādāti arī tad, kad pārlūka cilne ir aizvērta.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "VAPID atslēgu pāris ir konfigurēts. Lietotāji savos lietotāja iestatījumos var ieslēgt pārlūka paziņojumus, kas tiek piegādāti arī tad, kad pārlūka cilne ir aizvērta.",
         "A deactivation request is pending.": "Deaktivizācijas pieprasījums gaida apstrādi.",
         "AI Assistant": "MI asistents",
         "AI Chat": "MI tērzēšana",

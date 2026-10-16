@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} sikertelen",
         "0 = unlimited": "0 = korlátlan",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Egy folyamat lépések sorozatát futtatja, amikor történik valami — egy objektum megváltozik, egy ütemezés elindul, vagy Ön maga futtatja. Ez a lista minden alkalmazás folyamatait mutatja.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "A VAPID-kulcspár be van állítva. A felhasználók a felhasználói beállításaikban kapcsolhatják be a böngészőértesítéseket, amelyek akkor is kézbesítésre kerülnek, ha a böngészőfül be van zárva.",
         "A deactivation request is pending.": "Egy deaktiválási kérelem függőben van.",
         "AI Assistant": "AI asszisztens",
         "AI Chat": "AI csevegés",

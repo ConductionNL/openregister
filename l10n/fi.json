@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} epäonnistui",
         "0 = unlimited": "0 = rajoittamaton",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Vuo suorittaa sarjan vaiheita, kun jotain tapahtuu — objekti muuttuu, aikataulu laukeaa tai suoritat sen itse. Tämä luettelo näyttää jokaisen sovelluksen vuot.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "VAPID-avainpari on määritetty. Käyttäjät voivat ottaa selainilmoitukset käyttöön käyttäjäasetuksissaan, ja ne toimitetaan, vaikka selaimen välilehti olisi suljettu.",
         "A deactivation request is pending.": "Deaktivointipyyntö on odottamassa.",
         "AI Assistant": "Tekoälyavustaja",
         "AI Chat": "Tekoälykeskustelu",
