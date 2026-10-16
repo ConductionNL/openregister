@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
+use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Form\FormPayloadFindings;
 use OCA\OpenRegister\Service\ObjectService;
@@ -131,6 +132,12 @@ class DraftActivation {
 				_multitenancy: true,
 				currentUser: $owner->user()
 			);
+			// Two requests on one draft can both pass the "still a draft" read.
+			// The save that did not use the allowance found it already sent:
+			// it announces nothing, and answers as for an object that is no draft.
+			if (DraftStatusPolicy::promotionWasUsed(uuid: $uuid) === false) {
+				throw $this->alreadyLeft();
+			}
 		} catch (Throwable $exception) {
 			throw $this->refusalFor(exception: $exception);
 		} finally {
@@ -257,6 +264,10 @@ class DraftActivation {
 	 * @throws Throwable When the save failed for a reason that is not the caller's to fix.
 	 */
 	private function refusalFor(Throwable $exception): DraftActivationRefusedException {
+		if ($exception instanceof DraftAlreadyLeftException) {
+			return $this->alreadyLeft();
+		}
+
 		if ($this->findings->isPayloadRefusal(exception: $exception) === true) {
 			return $this->invalid(findings: $this->findings->fromThrowable(exception: $exception));
 		}
@@ -270,6 +281,18 @@ class DraftActivation {
 
 		throw $exception;
 	}//end refusalFor()
+
+	/**
+	 * The 409 refusal for a draft a parallel request already made definitive.
+	 *
+	 * @return DraftActivationRefusedException The refusal.
+	 */
+	private function alreadyLeft(): DraftActivationRefusedException {
+		return new DraftActivationRefusedException(
+			message: $this->l10n->t('This is not a draft, so there is nothing to make definitive.'),
+			reason: DraftActivationRefusedException::NOT_A_DRAFT
+		);
+	}//end alreadyLeft()
 
 	/**
 	 * The 422 refusal.

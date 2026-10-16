@@ -52,6 +52,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Exception\DraftActivationRefusedException
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  * @uses \OCA\OpenRegister\Exception\ValidationException
+ * @uses \OCA\OpenRegister\Exception\DraftAlreadyLeftException
  * @uses \OCA\OpenRegister\Event\ObjectActivatedEvent
  * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
  * @uses \OCA\OpenRegister\Service\Object\ObjectEventGate
@@ -95,6 +96,20 @@ class DraftActivationTest extends TestCase {
 	 * @var \Throwable|null
 	 */
 	private ?\Throwable $refuseSave = null;
+
+	/**
+	 * Run inside the next save before the status policy judges it, as a parallel request would.
+	 *
+	 * @var callable|null
+	 */
+	private $beforeGate = null;
+
+	/**
+	 * Whether the save skips the status policy, as one that never reached it would.
+	 *
+	 * @var bool
+	 */
+	private bool $saveSkipsGate = false;
 
 	private DraftActivation $activation;
 
@@ -232,8 +247,17 @@ class DraftActivationTest extends TestCase {
 		unset($data['@self']);
 
 		$entity = $this->stored[(string)$uuid];
+		if ($this->beforeGate !== null) {
+			$hook = $this->beforeGate;
+			$this->beforeGate = null;
+			$hook();
+		}
+
 		// The real gate: throws unless exactly this object was allowed one promotion.
-		$entity->setStatus((new DraftStatusPolicy())->resolveStatus(entity: $entity, selfData: $self));
+		if ($this->saveSkipsGate === false) {
+			$entity->setStatus((new DraftStatusPolicy())->resolveStatus(entity: $entity, selfData: $self));
+		}
+
 		$entity->setObject($data + ['number' => 'T-2026-0001']);
 
 		return $entity;
@@ -574,4 +598,47 @@ class DraftActivationTest extends TestCase {
 
 		$this->assertSame(['id' => 'd1', 'rbac' => false, 'register' => $this->register, 'schema' => $this->schema], $this->finds[0]);
 	}//end testTheDraftIsReadInItsOwnRegisterAndSchema()
+
+	/**
+	 * Two activations of one draft: the one that finds it already sent announces nothing.
+	 *
+	 * A parallel request makes the draft definitive between this one's read and
+	 * its save. The real policy refuses the save (an allowance for an object
+	 * that is no longer a draft): 409, nothing written, no second creation event.
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
+	 */
+	public function testALostRaceToActivateAnnouncesNothing(): void {
+		$this->store(uuid: 'd1', owner: 'agent', status: 'draft', data: ['subject' => 'A', 'channel' => 'phone']);
+		$this->beforeGate = function (): void {
+			$this->stored['d1']->setStatus('active');
+		};
+
+		$refused = $this->refusalOf(draftId: 'd1', owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')));
+
+		$this->assertSame(409, $refused->getStatus());
+		$this->assertSame(DraftActivationRefusedException::NOT_A_DRAFT, $refused->getReason());
+		$this->assertSame([], $this->dispatched);
+	}//end testALostRaceToActivateAnnouncesNothing()
+
+	/**
+	 * A save that did not use the promotion allowance does not announce the creation either.
+	 *
+	 * The save returns an object that was already `active` without the policy
+	 * consuming the allowance; goes red without the check after the write.
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
+	 */
+	public function testASaveThatDidNotUseThePromotionAnnouncesNothing(): void {
+		$this->store(uuid: 'd1', owner: 'agent', status: 'draft', data: ['subject' => 'A', 'channel' => 'phone']);
+		$this->saveSkipsGate = true;
+		$this->beforeGate = function (): void {
+			$this->stored['d1']->setStatus('active');
+		};
+
+		$refused = $this->refusalOf(draftId: 'd1', owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')));
+
+		$this->assertSame(DraftActivationRefusedException::NOT_A_DRAFT, $refused->getReason());
+		$this->assertSame([], $this->dispatched);
+	}//end testASaveThatDidNotUseThePromotionAnnouncesNothing()
 }//end class

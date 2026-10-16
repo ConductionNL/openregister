@@ -29,6 +29,7 @@ use OCA\OpenRegister\Service\Form\FormPayloadFindings;
 use OCA\OpenRegister\Service\Form\FormSubmitService;
 use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Service\Object\DraftOwner;
+use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryAppData;
@@ -68,6 +69,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\DraftFinder
  * @uses \OCA\OpenRegister\Service\Object\DraftOwner
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Exception\DraftAlreadyLeftException
  */
 class FormSubmitServiceTest extends TestCase {
 
@@ -150,7 +152,15 @@ class FormSubmitServiceTest extends TestCase {
 	 */
 	private $duringSave = null;
 
+	/**
+	 * Whether the fake save skips the real status policy, as a save that never reached it would.
+	 *
+	 * @var bool
+	 */
+	private bool $saveSkipsStatusPolicy = false;
+
 	protected function setUp(): void {
+		DraftStatusPolicy::resetPromotions();
 		$this->schemaBySlug = [
 			'case' => $this->schema(
 				id: 1,
@@ -364,6 +374,16 @@ class FormSubmitServiceTest extends TestCase {
 		$data = (array)$object;
 		$status = ($data['@self']['status'] ?? null);
 		unset($data['@self']);
+
+		// The real status policy judges a save of a stored object, as SaveObject
+		// does: a promotion out of draft is allowed once, and an allowance for an
+		// object that is no longer a draft is refused.
+		$storedBefore = ($this->stored[(string)$uuid] ?? null);
+		if ($storedBefore !== null && $status !== null && $this->saveSkipsStatusPolicy === false) {
+			$storedBefore->setId(1);
+			(new DraftStatusPolicy())->resolveStatus(entity: $storedBefore, selfData: ['status' => $status]);
+		}
+
 		if ($status === 'draft') {
 			// The fake listener stamps receipt fields only on a received object.
 			$entity = new ObjectEntity();
@@ -1080,4 +1100,57 @@ class FormSubmitServiceTest extends TestCase {
 		$this->assertCount(2, $this->saves);
 		$this->assertNotSame('uuid-existing', $this->saves[0]['uuid']);
 	}//end testAPayloadIdNeverPicksTheUuidOfASubmit()
+
+	/**
+	 * Two requests on one draft: the one that finds it already sent is refused and announces nothing.
+	 *
+	 * The first request's save leaves draft between the second one's "is it
+	 * still a draft" read and its save. The status policy refuses the second
+	 * write (an allowance for an object that is no longer a draft), so no
+	 * second `ObjectCreatedEvent` goes out.
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
+	 */
+	public function testALostRaceToLeaveDraftAnnouncesNothing(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$alice = $this->user(uid: 'alice');
+		$draft = $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Kapvergunning'], subject: $alice);
+		$this->duringSave = function () use ($draft): void {
+			$this->stored[$draft['id']]->setStatus('active');
+		};
+
+		try {
+			$this->service->submit(destination: $destination, mapping: null, payload: ['caseType' => 'ct-1'], subject: $alice, draftId: $draft['id']);
+			$this->fail('The second send of one draft was accepted.');
+		} catch (FormSubmitRefusedException $refused) {
+			$this->assertSame(404, $refused->getStatus());
+		}
+
+		$this->assertSame([], $this->dispatched, 'Nothing is announced a second time.');
+	}//end testALostRaceToLeaveDraftAnnouncesNothing()
+
+	/**
+	 * A save that did not use the promotion allowance does not announce the creation either.
+	 *
+	 * The save is doubled as one that never reached the status policy and
+	 * returned an object that was already `active`; goes red without the
+	 * check on the allowance after the write.
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
+	 */
+	public function testASaveThatDidNotUseThePromotionAnnouncesNothing(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$alice = $this->user(uid: 'alice');
+		$draft = $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Kapvergunning'], subject: $alice);
+		$this->saveSkipsStatusPolicy = true;
+
+		try {
+			$this->service->submit(destination: $destination, mapping: null, payload: ['caseType' => 'ct-1'], subject: $alice, draftId: $draft['id']);
+			$this->fail('A save that did not leave draft was announced.');
+		} catch (FormSubmitRefusedException $refused) {
+			$this->assertSame(404, $refused->getStatus());
+		}
+
+		$this->assertSame([], $this->dispatched);
+	}//end testASaveThatDidNotUseThePromotionAnnouncesNothing()
 }//end class

@@ -37,6 +37,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 
@@ -82,6 +83,23 @@ class DraftStatusPolicy {
 	}//end allowPromotion()
 
 	/**
+	 * Whether the save that followed allowPromotion() used the allowance for an object.
+	 *
+	 * A save that leaves draft consumes the allowance. One that did not (the
+	 * stored object had already left draft, because a parallel request won)
+	 * leaves it standing, and the caller must not announce a creation again.
+	 *
+	 * @param string $uuid The object.
+	 *
+	 * @return bool True when no allowance for the object remains.
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
+	 */
+	public static function promotionWasUsed(string $uuid): bool {
+		return isset(self::$promotions[$uuid]) === false;
+	}//end promotionWasUsed()
+
+	/**
 	 * Forget every allowance (tests, and a submit that was refused after allowing).
 	 *
 	 * @return void
@@ -100,12 +118,23 @@ class DraftStatusPolicy {
 	 *
 	 * @return string|null The status to store; null keeps the date-deduced status.
 	 *
-	 * @throws ValidationException When the move is not allowed.
+	 * @throws ValidationException When the move is not allowed, or the draft this save was to promote has already left draft (DraftAlreadyLeftException).
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
 	 */
 	public function resolveStatus(ObjectEntity $entity, array $selfData): ?string {
 		$current = $entity->getStatus();
+
+		// An allowance for an object that is no longer a draft means a parallel
+		// request sent it first. This save would be an ordinary update that
+		// announces the creation a second time, so it is refused.
+		if ($entity->getId() !== null
+			&& $current !== ObjectEntity::STATUS_DRAFT
+			&& isset(self::$promotions[(string)$entity->getUuid()]) === true
+		) {
+			throw new DraftAlreadyLeftException(message: 'This draft has already left draft.');
+		}
+
 		if (array_key_exists('status', $selfData) === false || $selfData['status'] === null || $selfData['status'] === '') {
 			return $current;
 		}

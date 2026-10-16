@@ -47,6 +47,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\DraftFinder;
@@ -381,6 +382,12 @@ class FormSubmitService {
 		DraftStatusPolicy::allowPromotion(uuid: $draftId);
 		try {
 			$created = $this->writeAll(plans: $plans, subject: $owner?->user(), status: ObjectEntity::STATUS_ACTIVE, uuid: $draftId, owner: $owner);
+			// Two requests on one draft can both pass the "still a draft" read.
+			// The save that did not use the allowance found it already sent: it
+			// answers as for a draft that is gone and announces nothing.
+			if (DraftStatusPolicy::promotionWasUsed(uuid: $draftId) === false) {
+				throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
+			}
 		} finally {
 			DraftStatusPolicy::resetPromotions();
 		}
@@ -892,6 +899,10 @@ class FormSubmitService {
 	private function refusalFor(Throwable $exception, array $plan): FormSubmitRefusedException {
 		if ($exception instanceof FormSubmitRefusedException) {
 			return $exception;
+		}
+
+		if ($exception instanceof DraftAlreadyLeftException) {
+			return new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
 		}
 
 		$write = null;
