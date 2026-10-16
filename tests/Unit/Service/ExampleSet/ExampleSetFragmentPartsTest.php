@@ -276,6 +276,29 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$this->assertSame(['org-existing'], array_keys($this->organisations));
 	}
 
+	public function testAnOrganisationWithAMemberTheSetDidNotAddSurvivesRemoveAndIsNamed(): void {
+		$file = $this->castFile();
+		$file['cast']['openregisterOrganisations'] = [['key' => 'gemeente', 'name' => 'Gemeente Demo', 'slug' => 'demo']];
+		$this->app(app: 'openregister', fragment: $file);
+		$this->alpha(['objects' => [['key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['organization' => '{{organisation:demo}}']]]]);
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->accounts->users['real.person'] = ['displayName' => 'Real Person', 'email' => '', 'password' => 'x'];
+		$this->organisations['org-1']->setUsers(['sanne.devries', 'real.person']);
+
+		$removed = $this->remover->remove(set: 'demo');
+
+		$this->assertSame(0, $removed['removed']['organisations']);
+		$this->assertCount(1, $this->organisations, 'a tenant somebody joined is not deleted');
+		$this->assertSame(['OpenRegister organisation org-1, which has members the set did not add'], $removed['left']);
+		$this->assertSame([], $removed['failed']);
+		$this->assertSame(['org-1'], $this->record->read(set: 'demo')['organisations'], 'it stays in the record');
+
+		unset($this->accounts->users['real.person']);
+		$again = $this->remover->remove(set: 'demo');
+		$this->assertSame(1, $again['removed']['organisations'], 'once only its own accounts and leftovers of deleted ones are members it goes');
+		$this->assertSame([], $this->organisations);
+	}
+
 	public function testEveryCastMemberHasAStableContactsUid(): void {
 		$plan = $this->catalogue->gather(set: 'demo');
 

@@ -131,13 +131,14 @@ class ExampleSetRemover {
 		$record['memberships'] = array_values($record['memberships']);
 		$this->record->write(set: $set, record: $record);
 
+		$accounts = array_map('strval', array_keys($record['users']));
 		$record = $this->removeGroupsAndAccounts(set: $set, record: $record, report: $report);
 		$this->record->write(set: $set, record: $record);
 
 		// Last: the set's own objects may point into a register it imported,
 		// and may belong to an organisation it created.
 		$record = $this->removeImports(set: $set, record: $record, report: $report);
-		$this->removeOrganisations(set: $set, record: $record, report: $report);
+		$this->removeOrganisations(set: $set, record: $record, report: $report, accounts: $accounts);
 
 		return $report;
 	}//end remove()
@@ -302,16 +303,30 @@ class ExampleSetRemover {
 	 *
 	 * @param string               $set    The set id.
 	 * @param array<string, mixed> $record The record.
-	 * @param array<string, mixed> $report The report; counts and failures are added.
+	 * @param array<string, mixed> $report The report; counts, organisations kept and failures are added.
+	 * @param array<int, string>   $accounts The accounts the record held before remove deleted them; they, and any
+	 *                                       member that is no account any more, do not keep an organisation.
 	 *
 	 * @return void
 	 */
-	private function removeOrganisations(string $set, array $record, array &$report): void {
+	private function removeOrganisations(string $set, array $record, array &$report, array $accounts): void {
 		$left = [];
 		foreach ($record['organisations'] as $uuid) {
-			if ($this->instance->delete(uuid: $uuid) === false) {
+			$outcome = $this->instance->delete(
+				uuid: $uuid,
+				ignorable: fn (string $member): bool => (
+					in_array($member, $accounts, true) === true || $this->accounts->userExists(uid: $member) === false
+				)
+			);
+			if ($outcome === ExampleSetInstance::FAILED) {
 				$report['failed'][] = 'OpenRegister organisation '.$uuid;
 				$left[]             = $uuid;
+				continue;
+			}
+
+			if ($outcome === ExampleSetInstance::LEFT) {
+				$report['left'][] = 'OpenRegister organisation '.$uuid.', which has members the set did not add';
+				$left[]           = $uuid;
 				continue;
 			}
 

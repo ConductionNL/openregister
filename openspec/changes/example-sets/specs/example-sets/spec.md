@@ -223,12 +223,17 @@ A fragment MAY declare `appConfig`, each entry a `key` and a `value` (placeholde
 
 ### Requirement: A set finds OpenRegister organisations and creates the ones its cast needs (REQ-EXS-016)
 
-`{{organisation:<slug or name>}}` SHALL fill the uuid of an OpenRegister organisation (the tenant entity, not an object), a slug winning over a name. The cast MAY declare `openregisterOrganisations` (key, name, slug, description). Before the check the loader SHALL create each one whose slug is not on the instance and record it; remove SHALL delete only the organisations the set created, last.
+`{{organisation:<slug or name>}}` SHALL fill the uuid of an OpenRegister organisation (the tenant entity, not an object), a slug winning over a name. The cast MAY declare `openregisterOrganisations` (key, name, slug, description). Before the check the loader SHALL create each one whose slug is not on the instance and record it; remove SHALL delete only the organisations the set created, last. Only a lookup that says the organisation does not exist SHALL read as absent (an install creates it) or as already gone (remove forgets it); any other error SHALL refuse the install (nothing is created) or leave the organisation in the record to be tried again. Remove SHALL NOT delete an organisation that has a member other than the accounts the set made or adopted (a leftover membership of an account that no longer exists does not count): it SHALL stay, stay in the record, and be named as left in place.
 
 #### Scenario: The municipality becomes an organisation once
 - **GIVEN** the cast declares organisation `zuiddrecht` and the instance has none with that slug
 - **WHEN** the set is installed twice and removed
 - **THEN** it SHALL be created once, fill `{{organisation:zuiddrecht}}`, and be gone after remove
+
+#### Scenario: An organisation somebody joined stays
+- **GIVEN** an organisation the set created, to which an administrator added a real account
+- **WHEN** the set is removed
+- **THEN** the organisation SHALL stay and stay in the record, and the output SHALL name it as left in place
 
 ### Requirement: The instance's address fills a placeholder (REQ-EXS-017)
 

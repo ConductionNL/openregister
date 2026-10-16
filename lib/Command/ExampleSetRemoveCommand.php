@@ -42,6 +42,13 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class ExampleSetRemoveCommand extends Command {
 	/**
+	 * How a `left` line that is a sentence of its own begins; any other line is an adopted account.
+	 *
+	 * @var array<int, string>
+	 */
+	private const NOTES = ['app config ', 'user preference ', 'OpenRegister organisation ', 'change '];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ExampleSetRemover $remover Deletes what the record holds.
@@ -90,7 +97,7 @@ class ExampleSetRemoveCommand extends Command {
 		}
 
 		foreach ($report['left'] as $left) {
-			if (str_starts_with($left, 'app config ') === true || str_starts_with($left, 'user preference ') === true) {
+			if ($this->isNote(left: $left) === true) {
 				$output->writeln('Left in place: '.$left.'.');
 				continue;
 			}
@@ -109,4 +116,21 @@ class ExampleSetRemoveCommand extends Command {
 
 		return self::SUCCESS;
 	}//end execute()
+
+	/**
+	 * Whether a `left` line is a sentence of its own and not an adopted account's id.
+	 *
+	 * @param string $left The line.
+	 *
+	 * @return bool
+	 */
+	private function isNote(string $left): bool {
+		foreach (self::NOTES as $prefix) {
+			if (str_starts_with($left, $prefix) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isNote()
 }//end class
