@@ -205,6 +205,13 @@ class MagicSearchHandler {
 	private SearchTermSqlCompiler $termCompiler;
 
 	/**
+	 * Tells metadata columns from underscore-named property columns.
+	 *
+	 * @var MagicMetadataColumn
+	 */
+	private MagicMetadataColumn $columnRoles;
+
+	/**
 	 * Constructor for MagicSearchHandler
 	 *
 	 * @param IDBConnection $db Database connection for queries
@@ -234,6 +241,7 @@ class MagicSearchHandler {
 	) {
 		$this->termParser = new SearchTermParser();
 		$this->termCompiler = new SearchTermSqlCompiler();
+		$this->columnRoles  = new MagicMetadataColumn();
 	}//end __construct()
 
 	/**
@@ -4065,6 +4073,8 @@ class MagicSearchHandler {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Row to entity conversion requires many field mappings
+	 *
+	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function convertRowToObjectEntity(
 		array $row,
@@ -4090,9 +4100,8 @@ class MagicSearchHandler {
 			$columnToPropertyMap = $schemaMaps['columns'];
 
 			foreach ($row as $column => $value) {
-				if (str_starts_with($column, '_') === true) {
-					// Metadata column - remove prefix and map to ObjectEntity.
-					$metadataField = substr($column, 1);
+				$metadataField = $this->columnRoles->field(column: $column, columnToPropertyMap: $columnToPropertyMap);
+				if ($metadataField !== null) {
 					$metadataData[$metadataField] = $value;
 					continue;
 				}

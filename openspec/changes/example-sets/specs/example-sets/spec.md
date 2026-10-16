@@ -79,6 +79,13 @@ The loader SHALL create a Nextcloud account for every cast person with a `uid`, 
 - **GIVEN** a set whose objects all satisfy their schemas
 - **WHEN** the check runs
 - **THEN** it SHALL exit 0 and report the number of objects checked per register and schema
+- **AND** that number SHALL equal the number the install reports as declared for the same register and schema; changes SHALL be counted and reported apart
+
+#### Scenario: A change does not raise the object count
+- **GIVEN** a fragment with ten `dossiq case` objects and two changes on `dossiq case`
+- **WHEN** the set is checked and then installed
+- **THEN** the check SHALL report `dossiq case: 10 checked` and `dossiq case: 2 change(s) checked`, and the install `dossiq case: 10 declared`
+- @e2e exclude {console output; covered by ExampleSetLiveCheckTest}
 
 #### Scenario: An account the set creates passes a user format before it exists
 - **GIVEN** a ticket whose `assignee` (format `user`) is `{{cast:daan.uid}}`, and no account `daan.verbeek` on the instance

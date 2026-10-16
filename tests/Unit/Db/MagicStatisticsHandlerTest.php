@@ -218,4 +218,56 @@ class MagicStatisticsHandlerTest extends TestCase {
 			'forgetMagicTableList() MUST drop the memo so the next call re-reads the catalog'
 		);
 	}//end testForgetMagicTableListClearsTheMemo()
+
+	/**
+	 * A schema property whose name starts with an underscore (shillinq's
+	 * `_meta`) has a `_meta` column. It is read as the property, not handed to
+	 * ObjectEntity as a `meta` attribute, which failed the whole row.
+	 */
+	public function testAnUnderscorePropertyIsReadAsAPropertyAndTheRowConverts(): void {
+		$schema = $this->makeSchema(
+			properties: ['code' => ['type' => 'string'], '_meta' => ['type' => 'object']]
+		);
+		$row = [
+			'_uuid' => 'test-uuid-meta',
+			'_id' => 7,
+			'_register' => 1,
+			'_schema' => 1,
+			'code' => 'R-1',
+			'_meta' => '{"source":"seeded"}',
+		];
+
+		$this->logger->expects($this->never())->method('error');
+		$entity = $this->handler->convertRowToObjectEntity($row, $this->makeRegister(), $schema);
+
+		$this->assertNotNull($entity);
+		$this->assertSame('test-uuid-meta', $entity->getUuid());
+		$this->assertSame(['source' => 'seeded'], $entity->getObject()['_meta']);
+		$this->assertSame('R-1', $entity->getObject()['code']);
+	}//end testAnUnderscorePropertyIsReadAsAPropertyAndTheRowConverts()
+
+	/**
+	 * Control: a prefixed column that is neither a property nor an attribute
+	 * of ObjectEntity is skipped and noted once, and the row still converts.
+	 */
+	public function testAnUnknownMetadataColumnIsSkippedAndTheRowConverts(): void {
+		$schema = $this->makeSchema(properties: ['code' => ['type' => 'string']]);
+		$row    = [
+			'_uuid' => 'test-uuid-unknown',
+			'_id' => 8,
+			'_register' => 1,
+			'_schema' => 1,
+			'_meta' => '{"source":"seeded"}',
+			'_schema_version' => '1.2.0',
+			'code' => 'R-2',
+		];
+
+		$this->logger->expects($this->never())->method('error');
+		$entity = $this->handler->convertRowToObjectEntity($row, $this->makeRegister(), $schema);
+
+		$this->assertNotNull($entity);
+		$this->assertSame('test-uuid-unknown', $entity->getUuid());
+		$this->assertSame('1.2.0', $entity->getSchemaVersion(), 'a snake_case metadata column reaches its camelCase attribute');
+		$this->assertArrayNotHasKey('_meta', $entity->getObject());
+	}//end testAnUnknownMetadataColumnIsSkippedAndTheRowConverts()
 }//end class
