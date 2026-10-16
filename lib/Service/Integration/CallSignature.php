@@ -44,6 +44,8 @@ final class CallSignature {
 	 * @param string $name The parameter name.
 	 *
 	 * @return bool True when the method takes it.
+	 *
+	 * @spec openspec/specs/integration-person-lookup/spec.md#requirement-a-call-may-be-recorded-without-its-bodies
 	 */
 	public function accepts(object $service, string $method, string $name): bool {
 		if (method_exists($service, $method) === false) {

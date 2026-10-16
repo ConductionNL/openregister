@@ -44,6 +44,8 @@ final class ReferenceKey {
 	 * @param array<string, mixed> $property The property configuration array.
 	 *
 	 * @return string|null The target's key property, or null for a uuid reference.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	public function keyOf(array $property): ?string {
 		$key = ($property['referenceKey'] ?? ($property['items']['referenceKey'] ?? null));
