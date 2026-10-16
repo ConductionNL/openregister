@@ -99,14 +99,6 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 	private const REQUIRED_APP = 'integriq';
 
 	/**
-	 * Default field set requested from HaalCentraal. The BRP API requires an
-	 * explicit `fields` list on every query. Mirrors the field set pipelinq's
-	 * `HaalCentraalClient` requests so the consuming app's normaliser receives
-	 * the subtrees it expects.
-	 *
-	 * @var array<int,string>
-	 */
-	/**
 	 * The source configuration flag that allows the residents count.
 	 */
 	public const RESIDENT_COUNT_SETTING = 'residentCount';
@@ -121,6 +113,14 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 	 */
 	public const CAUSE_INVALID_IDENTIFIER = 'invalid-identifier';
 
+	/**
+	 * Default field set requested from HaalCentraal. The BRP API requires an
+	 * explicit `fields` list on every query. Mirrors the field set pipelinq's
+	 * `HaalCentraalClient` requests so the consuming app's normaliser receives
+	 * the subtrees it expects.
+	 *
+	 * @var array<int,string>
+	 */
 	private const DEFAULT_FIELDS = [
 		'burgerservicenummer',
 		'naam.voornamen',
