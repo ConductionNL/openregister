@@ -44,6 +44,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
@@ -223,7 +224,8 @@ class RegisterDescriptorService {
 	 * @param string $slug  A register slug the configuration declares.
 	 * @param string $via   Who asked, recorded with every authorization block the decision replaces.
 	 *
-	 * @return array<string, mixed> outcome, reason, path, via, version, counts{registers, schemas, authorizationReplaced}, replaced.
+	 * @return array<string, mixed> outcome, reason, path, via, version, counts{registers, schemas, authorizationReplaced}, replaced,
+	 *                              and, when the import recorded a job, importJobId and importAppId (the configuration id it ran under).
 	 *
 	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
@@ -275,29 +277,58 @@ class RegisterDescriptorService {
 	}//end reimport()
 
 	/**
-	 * Import one non-mock descriptor file, forced, under the app's own configuration id.
+	 * Import one non-mock descriptor file, forced, under the configuration id its install-time import uses.
+	 *
+	 * 🔴 THE CONFIGURATION ID IS THE ONE THE REPAIR STEP USES, not always the
+	 * app's. OpenRegister imports eight of its own descriptors under an id of
+	 * their own (see {@see DescriptorConfigIds}): importing one under the
+	 * shared `openregister` id would set that configuration's version to the
+	 * descriptor's, lowering or raising the gate the force:false repair steps
+	 * of flows, surveys, credential-broker, flow-timers and intake-sources
+	 * compare against, and would append the register to a second configuration
+	 * besides its own.
 	 *
 	 * @param string                                                                          $appId      The app.
 	 * @param array{file: string, data: array<string, mixed>, registers: array<string, mixed>} $descriptor The descriptor.
 	 * @param string                                                                          $version    Its version.
 	 *
-	 * @return array{success: bool, path: string, via: string, message: string}
+	 * @return array{success: bool, path: string, via: string, message: string, importJobId: string|null, importAppId: string}
 	 */
 	private function importDescriptorFile(string $appId, array $descriptor, string $version): array {
-		$via = sprintf('OpenRegister (lib/Settings/%s)', $descriptor['file']);
+		$via      = sprintf('OpenRegister (lib/Settings/%s)', $descriptor['file']);
+		$configId = DescriptorConfigIds::forFile(appId: $appId, file: $descriptor['file']);
 		try {
-			$this->configurationService->importFromApp(
-				appId: $appId,
+			$imported = $this->configurationService->importFromApp(
+				appId: $configId,
 				data: $descriptor['data'],
 				version: $version,
 				force: true
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('[RegisterDescriptorService] re-import failed: ' . $e->getMessage());
-			return ['success' => false, 'path' => self::PATH_DESCRIPTOR, 'via' => $via, 'message' => $e->getMessage()];
+			return [
+				'success'     => false,
+				'path'        => self::PATH_DESCRIPTOR,
+				'via'         => $via,
+				'message'     => $e->getMessage(),
+				'importJobId' => null,
+				'importAppId' => $configId,
+			];
 		}
 
-		return ['success' => true, 'path' => self::PATH_DESCRIPTOR, 'via' => $via, 'message' => ''];
+		$jobId = ($imported['importJobId'] ?? null);
+		if (is_string($jobId) === false || $jobId === '') {
+			$jobId = null;
+		}
+
+		return [
+			'success'     => true,
+			'path'        => self::PATH_DESCRIPTOR,
+			'via'         => $via,
+			'message'     => '',
+			'importJobId' => $jobId,
+			'importAppId' => $configId,
+		];
 	}//end importDescriptorFile()
 
 	/**

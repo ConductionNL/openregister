@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Repair;
 
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCP\App\IAppManager;
 use OCP\Migration\IOutput;
@@ -75,7 +76,7 @@ class ImportDismissedPairRegister implements IRepairStep {
 	 *
 	 * @var string
 	 */
-	private const CONFIG_APP_ID = 'openregister.dismissed-pair';
+	private const CONFIG_APP_ID = DescriptorConfigIds::DISMISSED_PAIR;
 
 	/**
 	 * Constructor.

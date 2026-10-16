@@ -51,12 +51,6 @@ class ExampleSetRegisters {
 	private const APP = 'openregister';
 
 	/**
-	 * The configuration ids OpenRegister's descriptor imports run under: its
-	 * own registers, and its mock registers, which import under their own id.
-	 */
-	private const IMPORT_IDS = ['openregister', 'openregister.mock'];
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container Hands out the descriptor, import and register services on first use.
@@ -92,31 +86,33 @@ class ExampleSetRegisters {
 	/**
 	 * Import a register from OpenRegister's own descriptor.
 	 *
+	 * The import job is the one the import itself reports. It is not worked out
+	 * from the jobs the instance holds before and after: a job another process
+	 * records in that window (a repair step during an upgrade, an
+	 * administrator's re-import) would be taken for the set's, and remove would
+	 * soft-delete its objects.
+	 *
 	 * @param string $slug The register slug.
 	 *
 	 * @return array{error: string, jobs: array<int, array{appId: string, jobId: string}>} Why it failed, or ''; and
-	 *                                                                                     the import jobs it created.
+	 *                                                                                     the import job it ran under.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function import(string $slug): array {
 		try {
-			$before = $this->jobIds();
 			$result = $this->container->get(RegisterDescriptorService::class)->reimport(
 				appId: self::APP,
 				slug: $slug,
 				via: 'example set install'
 			);
-			$after  = $this->jobIds();
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'jobs' => []];
 		}
 
 		$jobs = [];
-		foreach ($after as $key => $job) {
-			if (isset($before[$key]) === false) {
-				$jobs[] = $job;
-			}
+		if (is_string($result['importJobId'] ?? null) === true && $result['importJobId'] !== '') {
+			$jobs[] = ['appId' => (string) ($result['importAppId'] ?? self::APP), 'jobId' => $result['importJobId']];
 		}
 
 		$error = '';
@@ -164,21 +160,4 @@ class ExampleSetRegisters {
 
 		return $clean;
 	}//end removeImport()
-
-	/**
-	 * Every recorded import job of OpenRegister's own descriptors.
-	 *
-	 * @return array<string, array{appId: string, jobId: string}> Keyed by `appId/jobId`.
-	 */
-	private function jobIds(): array {
-		$recorder = $this->container->get(AppImportJobRecorder::class);
-		$jobs     = [];
-		foreach (self::IMPORT_IDS as $appId) {
-			foreach ($recorder->jobs(appId: $appId) as $job) {
-				$jobs[$appId.'/'.$job['jobId']] = ['appId' => $appId, 'jobId' => (string) $job['jobId']];
-			}
-		}
-
-		return $jobs;
-	}//end jobIds()
 }//end class

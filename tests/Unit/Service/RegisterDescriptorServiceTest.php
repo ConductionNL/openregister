@@ -28,6 +28,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\AppRegisterImportRunner;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\RegisterDescriptorService;
+use OCA\OpenRegister\Service\Configuration\DescriptorConfigIds;
 use OCA\OpenRegister\Service\CountedRegisterImport;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use Psr\Container\ContainerInterface;
@@ -753,5 +754,43 @@ class RegisterDescriptorServiceTest extends TestCase {
 		$this->assertSame('imported', $result['outcome']);
 		$this->assertSame(RegisterDescriptorService::PATH_DESCRIPTOR, $result['path']);
 		$this->assertStringContainsString('flow_register.json', $result['via']);
+	}
+
+	/**
+	 * A core descriptor is re-imported under the configuration id its repair
+	 * step imports it under, never the shared `openregister` id: that would set
+	 * the version the force:false repair steps of other descriptors compare
+	 * against.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testACoreDescriptorIsReimportedUnderItsInstallTimeConfigurationId(): void {
+		$this->writeDescriptor(file: 'merge_operation_register.json', slug: 'merge-operation', version: '1.4.0');
+		$this->expectApp('openregister');
+		$this->registerMapper->method('findAll')->willReturn([$this->register('merge-operation', '1.4.0')]);
+
+		$this->configurationService->expects($this->once())
+			->method('importFromApp')
+			->with($this->equalTo('openregister.merge-operation'), $this->anything(), $this->equalTo('1.4.0'), $this->isTrue())
+			->willReturn(['registers' => ['merge-operation'], 'importJobId' => 'job-7']);
+
+		$result = $this->service->reimport(appId: 'openregister', slug: 'merge-operation');
+
+		$this->assertSame('imported', $result['outcome']);
+		$this->assertSame('job-7', $result['importJobId'], 'the job the import ran under is reported');
+		$this->assertSame('openregister.merge-operation', $result['importAppId']);
+	}
+
+	/**
+	 * A descriptor whose repair step imports under the shared id keeps it, and
+	 * another app's file never takes a core descriptor's id.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testADescriptorWithoutADedicatedIdAndAnotherAppsFileKeepTheirOwnId(): void {
+		$this->assertSame('openregister', DescriptorConfigIds::forFile(appId: 'openregister', file: 'flow_register.json'));
+		$this->assertSame('openregister', DescriptorConfigIds::forFile(appId: 'openregister', file: 'brp_register.json'));
+		$this->assertSame('fixtureapp', DescriptorConfigIds::forFile(appId: 'fixtureapp', file: 'merge_operation_register.json'));
+		$this->assertSame('openregister.dsar-policy-packs', DescriptorConfigIds::forFile(appId: 'openregister', file: 'dsar_policy_pack_register.json'));
 	}
 }
