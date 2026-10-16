@@ -14,12 +14,26 @@ not list SHALL NOT be read or written.
 The update SHALL store the shipped version on the object, so the next import
 reads the seed as current. Any other update SHALL bump the patch version.
 
+The import SHALL compare the shipped version with the version it LAST SHIPPED
+for that seed, which it remembers apart from the object (per app id, never on
+the object), not with the object's own version: every later save of the object
+bumps its patch, so an edited seed would otherwise read as already current and
+a changed shipped seed would never arrive. A seed stored before the import
+remembered anything is compared with its stored version once, and remembered
+at the version the file then ships.
+
 #### Scenario: An upgraded instance receives the shipped case type
 
 - **GIVEN** an instance holding the seed `woo-verzoek` at version `1`, without a handling team
 - **WHEN** the app's configuration ships it at `1.4.7` with `handling.defaultGroup: behandelaars`
 - **THEN** the stored object is updated to the shipped values
 - **AND** its `@self.version` is `1.4.7`
+
+#### Scenario: A seed edited on the instance still receives the next shipped version
+
+- **GIVEN** a seed shipped at `1.4.7`, then saved once on the instance (its own version is now `1.4.8`)
+- **WHEN** the configuration ships it at `1.4.8`
+- **THEN** the stored object is updated to the shipped values, and `1.4.8` is remembered as the shipped version
 
 #### Scenario: A seed at the shipped version is left alone
 
