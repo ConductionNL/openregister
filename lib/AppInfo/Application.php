@@ -3372,6 +3372,11 @@ class Application extends App implements IBootstrap {
 
 		$context->registerEventListener(SchemaCreatedEvent::class, ApprovalChainAnnotationInstaller::class);
 		$context->registerEventListener(SchemaUpdatedEvent::class, ApprovalChainAnnotationInstaller::class);
+
+		// A schema written by anything but the schema API (the configuration
+		// importer, the import endpoint, the AI and MCP tools) re-checks the
+		// published forms that submit into it, as the API does itself.
+		$context->registerEventListener(SchemaUpdatedEvent::class, \OCA\OpenRegister\Listener\FormDestinationSchemaListener::class);
 		$context->registerEventListener(ObjectUpdatingEvent::class, ApprovalChainGateListener::class);
 		$context->registerEventListener(
 			\OCA\OpenRegister\Event\TaskSequenceCompletedEvent::class,
