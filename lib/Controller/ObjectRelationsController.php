@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
+use OCA\OpenRegister\Service\Relation\ObjectTreeService;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use OCP\AppFramework\Controller;
@@ -67,6 +68,7 @@ class ObjectRelationsController extends Controller {
 	 * @param ObjectService $objectService Reads and writes objects, with RBAC.
 	 * @param ExportGate $exportGate The export verb, checked before the graph leaves.
 	 * @param ObjectReadAccess $access Resolves an object under the caller's own RBAC.
+	 * @param ObjectTreeService $trees The bounded walk along a schema's parent property.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
@@ -78,6 +80,7 @@ class ObjectRelationsController extends Controller {
 		private readonly ObjectService $objectService,
 		private readonly ExportGate $exportGate,
 		private readonly ObjectReadAccess $access,
+		private readonly ObjectTreeService $trees,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -482,6 +485,64 @@ class ObjectRelationsController extends Controller {
 			)
 		);
 	}//end graph()
+
+	/**
+	 * The ancestors and descendants of an object along its schema's parent property.
+	 *
+	 * Query: `direction` (descendants, ancestors or both; default descendants),
+	 * `depth` (default the schema's declared bound) and `fields` (comma-separated
+	 * properties copied onto each node). Every node passes the caller's RBAC.
+	 *
+	 * @param string $register The register slug or id.
+	 * @param string $schema The schema slug or id.
+	 * @param string $id The object's uuid.
+	 *
+	 * @return JSONResponse The tree.
+	 *
+	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function tree(string $register, string $schema, string $id): JSONResponse {
+		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
+		if ($object === null) {
+			return $this->access->notReadable();
+		}
+
+		$direction = (string)$this->request->getParam('direction', ObjectTreeService::DIRECTION_DESCENDANTS);
+		$directions = [
+			ObjectTreeService::DIRECTION_DESCENDANTS,
+			ObjectTreeService::DIRECTION_ANCESTORS,
+			ObjectTreeService::DIRECTION_BOTH,
+		];
+		if (in_array($direction, $directions, true) === false) {
+			return new JSONResponse(
+				data: ['error' => 'direction must be one of: '.implode(', ', $directions)],
+				statusCode: 400
+			);
+		}
+
+		$depth = null;
+		if ($this->stringParam(name: 'depth') !== null) {
+			$depth = $this->depth();
+		}
+
+		$fields = array_values(
+			array_filter(
+				array_map('trim', explode(',', (string)$this->stringParam(name: 'fields'))),
+				static fn (string $field): bool => $field !== ''
+			)
+		);
+
+		return new JSONResponse(
+			data: $this->trees->tree(
+				root: $object,
+				direction: $direction,
+				depth: $depth,
+				fields: $fields
+			)
+		);
+	}//end tree()
 
 	/**
 	 * The same graph, as rows a spreadsheet opens.

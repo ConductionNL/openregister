@@ -91,9 +91,9 @@ class ExampleSetInstaller {
 	 * @param array<int, string>     $adopt Account ids the administrator lets the set use although it did not create them.
 	 * @param DateTimeImmutable|null $today The install day; now in the set's time zone when null.
 	 *
-	 * @return array{refusals: array<int, string>, checked: array<string, int>, registers: array<string, string>}
-	 *         Every refusal, the number of objects and changes checked per register and schema, and per required
-	 *         register `imported` or `kept`.
+	 * @return array{refusals: array<int, string>, checked: array<string, int>, checkedChanges: array<string, int>, registers: array<string, string>}
+	 *         Every refusal, the number of objects (`checked`) and of changes (`checkedChanges`) checked per register
+	 *         and schema, counted apart as an install reports them, and per required register `imported` or `kept`.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
@@ -104,6 +104,7 @@ class ExampleSetInstaller {
 		$base      = $this->withIds(plan: $plan, base: $this->prerequisites->context(plan: $plan, today: $today));
 		$refusals  = array_merge($ready['refusals'], $this->people->refusals(plan: $plan, record: $record, adopt: $adopt));
 		$checked   = [];
+		$changes   = [];
 		$planned   = [];
 		$users     = $this->people->declaredUids(plan: $plan);
 		foreach ($plan['fragments'] as $fragment) {
@@ -140,13 +141,13 @@ class ExampleSetInstaller {
 			$context  = (['objects' => $objects] + $base);
 			$refusals = array_merge(
 				$refusals,
-				$this->checkChanges(fragment: $fragment, context: $context, checked: $checked, plannedUsers: $users),
+				$this->checkChanges(fragment: $fragment, context: $context, checked: $changes, plannedUsers: $users),
 				$this->checkAppConfig(fragment: $fragment, context: $context),
 				$this->checkUserPreferences(fragment: $fragment, context: $context, users: $users)
 			);
 		}//end foreach
 
-		return ['refusals' => $refusals, 'checked' => $checked, 'registers' => $ready['registers']];
+		return ['refusals' => $refusals, 'checked' => $checked, 'checkedChanges' => $changes, 'registers' => $ready['registers']];
 	}//end check()
 
 	/**
@@ -243,7 +244,7 @@ class ExampleSetInstaller {
 	 *
 	 * @param array<string, mixed> $fragment     The fragment.
 	 * @param array<string, mixed> $context      `cast`, `objects` and `today`.
-	 * @param array<string, int>   $checked      Counts per register and schema; changes are added.
+	 * @param array<string, int>   $checked      Counts of changes per register and schema; this fragment's are added.
 	 * @param array<int, string>   $plannedUsers Account ids the set creates, valid for a `user` format.
 	 *
 	 * @return array<int, string> Refusals.

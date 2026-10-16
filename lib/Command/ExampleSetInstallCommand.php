@@ -174,6 +174,10 @@ class ExampleSetInstallCommand extends Command {
 			$output->writeln($type.': '.$count.' checked');
 		}
 
+		foreach ($result['checkedChanges'] as $type => $count) {
+			$output->writeln($type.': '.$count.' change(s) checked');
+		}
+
 		if ($result['refusals'] !== []) {
 			$this->printRefusals(refusals: $result['refusals'], output: $output);
 			$output->writeln('<error>'.count($result['refusals']).' refusal(s). No account, group or object of the set was written.</error>');
