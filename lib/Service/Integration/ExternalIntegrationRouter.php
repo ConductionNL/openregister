@@ -706,8 +706,10 @@ class ExternalIntegrationRouter {
 	 *
 	 * With the `withholdBodies` option the connector records the call without
 	 * its request and response bodies. A connector whose `call` has no such
-	 * parameter is not called at all: PHP refuses an unknown named argument
-	 * before the method runs, and the caller reports that as upstream-down.
+	 * parameter is not called at all, and the call is refused with its own
+	 * cause (`connector-cannot-withhold-bodies`) before PHP gets the chance to
+	 * refuse the unknown named argument: that would read as an outage and be
+	 * logged at error level on every call of an older connector.
 	 *
 	 * @param mixed $source Resolved source entity.
 	 * @param string $method HTTP method.
@@ -717,6 +719,7 @@ class ExternalIntegrationRouter {
 	 * @return mixed The raw CallService response.
 	 *
 	 * @throws \RuntimeException When CallService is unreachable.
+	 * @throws ProviderUnavailableException When bodies are to be withheld and the connector cannot.
 	 *
 	 * @spec openspec/specs/integration-person-lookup/spec.md#requirement-a-call-may-be-recorded-without-its-bodies
 	 */
@@ -725,6 +728,16 @@ class ExternalIntegrationRouter {
 		unset($options['withholdBodies']);
 
 		$callService = $this->container->get($this->callServiceClass());
+		if ($withholdBodies === true && $this->canWithholdBodies(callService: $callService) === false) {
+			$this->logger->info(
+				'[ExternalIntegrationRouter] The connector CallService cannot withhold bodies; the call is not made.'
+			);
+			throw new ProviderUnavailableException(
+				message: 'The connector cannot record a call without its bodies, so the call is not made.',
+				cause: ProviderUnavailableException::CAUSE_CONNECTOR_CANNOT_WITHHOLD_BODIES
+			);
+		}
+
 		$options = $this->connectorOptions(options: $options);
 		$path = $this->connectorEndpoint(source: $source, path: $path);
 
@@ -749,6 +762,31 @@ class ExternalIntegrationRouter {
 			'The connector CallService does not expose a known call/request method.'
 		);
 	}//end dispatch()
+
+	/**
+	 * Whether the connector's `CallService::call` takes the `withholdBodies` option.
+	 *
+	 * Older connectors (integriq on beta/main) have no such parameter. Asked of
+	 * the method's signature, so the answer is the same for every call and no
+	 * call is made to find out.
+	 *
+	 * @param object $callService The connector's CallService.
+	 *
+	 * @return bool True when `call` names the parameter or collects named arguments.
+	 */
+	private function canWithholdBodies(object $callService): bool {
+		if (method_exists($callService, 'call') === false) {
+			return false;
+		}
+
+		foreach ((new \ReflectionMethod($callService, 'call'))->getParameters() as $parameter) {
+			if ($parameter->getName() === 'withholdBodies' || $parameter->isVariadic() === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end canWithholdBodies()
 
 	/**
 	 * Extract transport metadata from a CallService response (OpenConnector

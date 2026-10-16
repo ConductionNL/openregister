@@ -164,7 +164,7 @@ that both transports are configured on the OpenConnector source.
 
 The provider SHALL ask only when the `brp-haalcentraal` source carries `configuration.residentCount` set to the boolean `true`. Otherwise it SHALL answer `{ unavailable: true, cause: 'resident-count-not-enabled' }` without calling the registry.
 
-The call SHALL reach the connector with `withholdBodies`, so the call log keeps no request or response body. A connector that cannot withhold bodies SHALL NOT be called, and the answer is `{ unavailable: true, cause: 'upstream-service-down' }`.
+The call SHALL reach the connector with `withholdBodies`, so the call log keeps no request or response body. A connector that cannot withhold bodies SHALL NOT be called, and the answer is `{ unavailable: true, cause: 'connector-cannot-withhold-bodies' }`.
 
 The answer SHALL never hold a name, a BSN, a person object or the address object id, and the provider SHALL never log the address object id. A malformed id SHALL answer `{ unavailable: true, cause: 'invalid-identifier' }` without a call. A missing or unreachable source SHALL degrade to `{ unavailable: true, cause }` as `lookupByBsn` does.
 
@@ -194,7 +194,7 @@ The answer SHALL never hold a name, a BSN, a person object or the address object
 
 ### Requirement: a call may be recorded without its bodies
 
-`ExternalIntegrationRouter` SHALL honour a `withholdBodies: true` call option by passing `withholdBodies: true` to the connector's `CallService::call`, and SHALL never pass that option on as a request option. When the connector's `call` has no `withholdBodies` parameter, the router SHALL NOT call it and SHALL fail with cause `upstream-service-down`. `sourceConfiguration(provider)` SHALL answer the provider's source `configuration` array and fail like `call()` when the connector or the source is missing.
+`ExternalIntegrationRouter` SHALL honour a `withholdBodies: true` call option by passing `withholdBodies: true` to the connector's `CallService::call`, and SHALL never pass that option on as a request option. When the connector's `call` has no `withholdBodies` parameter, the router SHALL NOT call it and SHALL fail with cause `connector-cannot-withhold-bodies`, logged below error level (an older connector is a version gap, not an outage). `sourceConfiguration(provider)` SHALL answer the provider's source `configuration` array and fail like `call()` when the connector or the source is missing.
 
 #### Scenario: the connector records the call without bodies
 
@@ -207,5 +207,5 @@ The answer SHALL never hold a name, a BSN, a person object or the address object
 
 - GIVEN a CallService whose `call` has no `withholdBodies` parameter
 - WHEN a provider calls with `withholdBodies: true`
-- THEN the CallService is not called and the router fails with `upstream-service-down`
+- THEN the CallService is not called and the router fails with `connector-cannot-withhold-bodies`, without an error log line
 - @e2e exclude Backend refusal path, verified by PHPUnit.
