@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetStore;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use Opis\JsonSchema\ValidationResult;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -142,7 +143,7 @@ class ExampleSetStoreTest extends TestCase {
 		$objects = $this->createMock(ObjectService::class);
 		$objects->method('find')->willReturnCallback(static function (mixed $id) use ($row): ObjectEntity {
 			if ($id === 'gone') {
-				throw new \RuntimeException('not found');
+				throw new DoesNotExistException('Object gone not found');
 			}
 
 			return $row;
@@ -152,5 +153,43 @@ class ExampleSetStoreTest extends TestCase {
 
 		$this->assertSame('a relation still points here', $store->deleteRecorded(register: 'pipelinq', schema: 'ticket', id: 'ticket-1'));
 		$this->assertSame('', $store->deleteRecorded(register: 'pipelinq', schema: 'ticket', id: 'gone'));
+	}
+
+	/**
+	 * A read that fails says nothing about the row: remove must not drop it from the record as gone.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
+	 */
+	public function testAReadThatFailsLeavesTheRowInTheRecordAndNamesWhy(): void {
+		$objects = $this->createMock(ObjectService::class);
+		$objects->method('find')->willThrowException(new \RuntimeException('db down'));
+		$objects->expects($this->never())->method('deleteObject');
+
+		$why = $this->storeOver(objects: $objects)->deleteRecorded(register: 'pipelinq', schema: 'ticket', id: 'ticket-1');
+
+		$this->assertNotSame('', $why);
+		$this->assertStringContainsString('db down', $why);
+	}
+
+	/**
+	 * A row that is not there reads as absent without an error; one that cannot be read comes back with its error.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
+	 */
+	public function testReadTellsAbsentFromFailed(): void {
+		$objects = $this->createMock(ObjectService::class);
+		$objects->method('find')->willReturnCallback(static function (mixed $id): ?ObjectEntity {
+			return match ($id) {
+				'absent' => throw new DoesNotExistException('not found'),
+				'null' => null,
+				default => throw new \RuntimeException('db down'),
+			};
+		});
+		$store = $this->storeOver(objects: $objects);
+
+		$this->assertSame(['row' => null, 'error' => ''], $store->read(register: 'r', schema: 's', id: 'absent'));
+		$this->assertSame(['row' => null, 'error' => ''], $store->read(register: 'r', schema: 's', id: 'null'));
+		$this->assertSame(['row' => null, 'error' => 'db down'], $store->read(register: 'r', schema: 's', id: 'broken'));
+		$this->assertNull($store->get(register: 'r', schema: 's', id: 'broken'));
 	}
 }

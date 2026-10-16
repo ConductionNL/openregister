@@ -214,11 +214,8 @@ class CaseAdvanceNode extends CaseNodeBase {
 	 */
 	private function advance(string $objectUuid, string $key, string $to, string $uid, ?string $reason): array {
 		$plan = $this->plans->getPlan(objectUuid: $objectUuid, uid: $uid);
-		foreach (($plan['items'] ?? []) as $row) {
-			if (($row['key'] ?? null) !== $key) {
-				continue;
-			}
-
+		$row = $this->liveRealisation(items: (array)($plan['items'] ?? []), key: $key);
+		if ($row !== null) {
 			$moved = $this->plans->transition(itemUuid: (string)$row['uuid'], to: $to, uid: $uid, reason: $reason);
 
 			return ['item' => $key, 'state' => (string)$moved->getState()];
@@ -228,4 +225,52 @@ class CaseAdvanceNode extends CaseNodeBase {
 			$this->l10n->t('The case plan on object %1$s has no item "%2$s".', [$objectUuid, $key])
 		);
 	}//end advance()
+
+	/**
+	 * The row of a key that can still move: a repeating item has one row per
+	 * realisation (same key, `realisationCount` + 1), and the first row in plan
+	 * order is the oldest, which is already completed or terminated. A row
+	 * that is not terminal wins (the newest of them, should several be open);
+	 * when every realisation is terminal the newest is returned, so the step
+	 * fails on the realisation that is actually current.
+	 *
+	 * @param array<int, array<string, mixed>> $items The plan's rows.
+	 * @param string $key The plan-item key.
+	 *
+	 * @return array<string, mixed>|null The row, or null when the plan has no such key.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-a-flow-step-opens-or-advances-a-case
+	 */
+	private function liveRealisation(array $items, string $key): ?array {
+		$chosen = null;
+		foreach ($items as $row) {
+			if (($row['key'] ?? null) !== $key) {
+				continue;
+			}
+
+			if ($chosen === null || $this->outranks(candidate: $row, current: $chosen) === true) {
+				$chosen = $row;
+			}
+		}
+
+		return $chosen;
+	}//end liveRealisation()
+
+	/**
+	 * Whether a row of the same key is a better one to advance than the one held.
+	 *
+	 * @param array<string, mixed> $candidate The row under consideration.
+	 * @param array<string, mixed> $current The row held so far.
+	 *
+	 * @return bool True when the candidate is open and the held row is not, or both are alike and the candidate is a later realisation.
+	 */
+	private function outranks(array $candidate, array $current): bool {
+		$candidateOpen = (($candidate['isTerminal'] ?? false) === false);
+		$currentOpen = (($current['isTerminal'] ?? false) === false);
+		if ($candidateOpen !== $currentOpen) {
+			return $candidateOpen;
+		}
+
+		return (int)($candidate['realisationCount'] ?? 1) > (int)($current['realisationCount'] ?? 1);
+	}//end outranks()
 }//end class

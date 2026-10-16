@@ -82,7 +82,7 @@ class DecisionTableStore {
 	 *
 	 * @return array<string, mixed> The table: key, name, hitPolicy, inputs, outputs, rules.
 	 *
-	 * @throws UnexpectedValueException When no table carries the reference, or the stored table cannot be executed.
+	 * @throws UnexpectedValueException When no table carries the reference, more than one does, or the stored table cannot be executed.
 	 *
 	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
 	 */
@@ -147,6 +147,8 @@ class DecisionTableStore {
 	 * @param string $reference The table's key or uuid.
 	 *
 	 * @return array<string, mixed>|null The table, or null when none carries the reference.
+	 *
+	 * @throws UnexpectedValueException When the register cannot be read, or more than one table carries the key.
 	 */
 	private function lookup(string $reference): ?array {
 		try {
@@ -165,6 +167,7 @@ class DecisionTableStore {
 			);
 		}
 
+		$byKey  = [];
 		$byUuid = null;
 		foreach ((array)$rows as $entity) {
 			$data = $entity->getObject();
@@ -173,12 +176,26 @@ class DecisionTableStore {
 			}
 
 			if (trim((string)($data['key'] ?? '')) === $reference) {
-				return $data;
+				$byKey[(string)$entity->getUuid()] = $data;
+				continue;
 			}
 
 			if ($byUuid === null && (string)$entity->getUuid() === $reference) {
 				$byUuid = $data;
 			}
+		}
+
+		// Two rows with one key (a save that went around the guard, an import) are two tables, and the register
+		// returns them in no fixed order: answering with the first would decide by a table nobody chose, and
+		// which one could change between requests.
+		if (count($byKey) > 1) {
+			throw new UnexpectedValueException(
+				sprintf('More than one decision table has the key "%s" (%s); the key must name exactly one.', $reference, implode(', ', array_keys($byKey)))
+			);
+		}
+
+		if ($byKey !== []) {
+			return array_values($byKey)[0];
 		}
 
 		return $byUuid;

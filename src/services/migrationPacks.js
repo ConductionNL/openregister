@@ -123,8 +123,10 @@ export async function deletePack(id) {
 /**
  * Import a pack from a JSON file. A pack with the same slug is updated.
  *
+ * The server answers 201 for a pack it created and 200 for one it replaced.
+ *
  * @param {File} file The uploaded file.
- * @return {Promise<object>} The created or updated pack.
+ * @return {Promise<{pack: object, replaced: boolean}>} The created or updated pack, and whether it replaced a stored one.
  *
  * @spec openspec/changes/migration-pack-editor-ui/specs/migration-mapping-packs/spec.md#requirement-administrators-must-be-able-to-list-and-edit-migration-packs-in-the-openregister-ui
  */
@@ -132,7 +134,7 @@ export async function importPack(file) {
 	const form = new FormData()
 	form.append('file', file)
 	const response = await axios.post(packUrl('/import'), form)
-	return response.data
+	return { pack: response.data, replaced: response.status === 200 }
 }
 
 /**

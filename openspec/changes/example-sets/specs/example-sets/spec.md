@@ -26,7 +26,7 @@ The loader SHALL read `lib/Settings/example-sets/<set>.json` from every app that
 
 ### Requirement: Every placeholder resolves or the set is refused (REQ-EXS-002)
 
-Declared values SHALL support `{{cast:<key>.<field>}}` (a dot path into a cast person, organisation or group), `{{date:<n>}}` and `{{datetime:<n> HH:MM}}` (n days from the install day in the set's time zone), `{{object:<key>.<field>}}` (a field of an object declared earlier in the SAME fragment) and `{{lookup:<name>}}` (the id of the one row a lookup by business key finds, in any register). A value that is exactly one placeholder SHALL take the type of what it stands for; a placeholder inside a longer string SHALL be interpolated as text. A placeholder that cannot be resolved SHALL be an error naming the file, the object key and the placeholder; it SHALL NEVER become an empty string.
+Declared values SHALL support `{{cast:<key>.<field>}}` (a dot path into a cast person, organisation or group), `{{date:<n>}}` and `{{datetime:<n> HH:MM}}` (n days from the install day in the set's time zone), `{{object:<key>.<field>}}` (a field of an object declared earlier in the SAME fragment) and `{{lookup:<name>}}` (the id of the one row a lookup by business key finds, in any register; a lookup that more than one row answers, which two organisations holding the same key do, SHALL be refused naming the count, never resolved to whichever row comes first). A value that is exactly one placeholder SHALL take the type of what it stands for; a placeholder inside a longer string SHALL be interpolated as text. A placeholder that cannot be resolved SHALL be an error naming the file, the object key and the placeholder; it SHALL NEVER become an empty string.
 
 #### Scenario: A cast field fills a value
 - **GIVEN** a cast person `sanne` with `bsn` `999994001`
@@ -68,7 +68,7 @@ The loader SHALL create a Nextcloud account for every cast person with a `uid`, 
 
 ### Requirement: Check validates every object against its real schema without writing (REQ-EXS-004)
 
-`--check` SHALL resolve every placeholder and lookup, verify each target register and schema exists on the instance, check every cast `bsn` against the eleven test, and validate every object with OpenRegister's own object validator against its target schema, whether or not that schema has hard validation on. It SHALL write none of the set's accounts, groups, objects or changes; the only thing it may write is the import of a register the set requires (REQ-EXS-009), because those schemas are what it checks against. It SHALL exit non-zero when anything is refused and name each refusal. An install SHALL run the same pass first and write none of the set's accounts, groups, objects or changes when it refuses. A reference to an object of the set that is not written yet SHALL be validated with a stand-in of the right shape, and a lookup SHALL also match an object declared earlier in the set. An account id the set creates (a cast member's `uid` or a service account's `uid`) SHALL pass a property of format `user` in the check although the account does not exist yet, because an install writes every account before any object; any other id that names no existing account SHALL still be refused, in an object and in a change. The validator SHALL accept those ids for the set's own validation only.
+`--check` SHALL resolve every placeholder and lookup, verify each target register and schema exists on the instance, check every cast `bsn` against the eleven test, and validate every object with OpenRegister's own object validator against its target schema, whether or not that schema has hard validation on. It SHALL write none of the set's accounts, groups, objects or changes; the only things it may write are the import of a register the set requires (REQ-EXS-009), because those schemas are what it checks against, and the OpenRegister organisations the cast declares and the instance lacks (REQ-EXS-016), because `{{organisation:...}}` placeholders resolve to them; both are recorded, and remove takes them away again. The command SHALL say so in its `--check` option text and in its closing output. It SHALL exit non-zero when anything is refused and name each refusal. An install SHALL run the same pass first and write none of the set's accounts, groups, objects or changes when it refuses. A reference to an object of the set that is not written yet SHALL be validated with a stand-in of the right shape, and a lookup SHALL also match an object declared earlier in the set. An account id the set creates (a cast member's `uid` or a service account's `uid`) SHALL pass a property of format `user` in the check although the account does not exist yet, because an install writes every account before any object; any other id that names no existing account SHALL still be refused, in an object and in a change. The validator SHALL accept those ids for the set's own validation only.
 
 #### Scenario: A value the schema refuses fails the check
 - **GIVEN** an object whose `status` is not in its schema's enum
@@ -101,7 +101,7 @@ The loader SHALL create a Nextcloud account for every cast person with a `uid`, 
 
 ### Requirement: A second install writes nothing (REQ-EXS-005)
 
-The loader SHALL keep an install record per set in OpenRegister's app config, listing the accounts it created or adopted, the groups it created, the memberships it added and the id of every object it wrote under `<app>/<key>`. A second install SHALL write nothing that the record holds and still finds on the instance, and SHALL report each as already there. An object the record holds but the instance lost SHALL be written again.
+The loader SHALL keep an install record per set in OpenRegister's app config, listing the accounts it created or adopted, the groups it created, the memberships it added and the id of every object it wrote under `<app>/<key>`. A second install SHALL write nothing that the record holds and still finds on the instance, and SHALL report each as already there. An object the record holds but the instance lost SHALL be written again; only a read that says the object does not exist counts as lost, and an object whose read FAILED (a database or magic-table error, a schema that cannot be resolved) SHALL NOT be written again: the install writes nothing for it, keeps the recorded id, reports it as not written, and the next install tries the read again.
 
 #### Scenario: A repeated install is a no-op
 - **GIVEN** a complete install of set `demo`
@@ -119,7 +119,7 @@ After writing, the loader SHALL read every object it created in this run back fr
 
 ### Requirement: Remove deletes exactly what the install made (REQ-EXS-007)
 
-`openregister:example-set:remove <set>` SHALL delete, in reverse order of writing, every object the record holds, then the memberships it added, then the groups it created, then the accounts it created. It SHALL NOT touch an adopted account, a pre-existing group, or any object it did not write. What it cannot delete SHALL stay in the record and be named, with exit 2.
+`openregister:example-set:remove <set>` SHALL delete, in reverse order of writing, every object the record holds, then the memberships it added, then the groups it created, then the accounts it created. It SHALL NOT touch an adopted account, a pre-existing group, or any object it did not write. What it cannot delete SHALL stay in the record and be named, with exit 2; an object whose read before the delete failed (anything but "it does not exist") cannot be told gone, so it stays and is named with the reason.
 
 #### Scenario: Remove leaves foreign data alone
 - **GIVEN** an object in the same schema that the set did not write
@@ -137,12 +137,17 @@ After writing, the loader SHALL read every object it created in this run back fr
 
 ### Requirement: A set imports the OpenRegister registers it requires (REQ-EXS-009)
 
-The cast file MAY name OpenRegister registers in `requires`. An entry SHALL be either a register slug (for example `"publication"`), imported from OpenRegister's real register descriptor, or `{"register": "<slug>", "mock": true}`, imported from OpenRegister's mock (sample) descriptor that declares the slug, the way `occ openregister:descriptors:list --app=openregister --import=<slug> --mock` does. An example set is sample data, so it MAY require a register OpenRegister ships only as a mock (zuiddrecht requires `brp` and `kvk` that way). An entry that names no register slug SHALL refuse the set when it is gathered. Before the check, the loader SHALL import every required register that is not on the instance from the descriptor its entry names, and SHALL record the import jobs that import created. A required register that is already on the instance SHALL be used as it is and SHALL NOT be recorded. A second run SHALL import nothing. Remove SHALL soft-delete exactly the objects of the recorded import jobs, after the set's own objects, and SHALL NOT touch an import it did not make. A required register that cannot be imported SHALL refuse the set.
+The cast file MAY name OpenRegister registers in `requires`. An entry SHALL be either a register slug (for example `"publication"`), imported from OpenRegister's real register descriptor, or `{"register": "<slug>", "mock": true}`, imported from OpenRegister's mock (sample) descriptor that declares the slug, the way `occ openregister:descriptors:list --app=openregister --import=<slug> --mock` does. An example set is sample data, so it MAY require a register OpenRegister ships only as a mock (zuiddrecht requires `brp` and `kvk` that way). An entry that names no register slug SHALL refuse the set when it is gathered. Before the check, the loader SHALL import every required register that is not on the instance from the descriptor its entry names, and SHALL record the import job that import reports it ran under (with the configuration id it ran under), never a job found by comparing the jobs the instance holds before and after, which would claim an import another process recorded meanwhile. A required register that is already on the instance SHALL be used as it is and SHALL NOT be recorded. A second run SHALL import nothing. Remove SHALL soft-delete exactly the objects of the recorded import jobs, after the set's own objects, and SHALL NOT touch an import it did not make. The register and its schemas stay on the instance, as they may hold other people's data; so that a later install does not find a register without its data, the record keeps the slug of a register whose import was removed (without jobs, and not counted as an install), and the next install imports that register's data again although the register exists. A required register that cannot be imported SHALL refuse the set.
 
 #### Scenario: A missing register is imported once and removed again
 - **GIVEN** a set that requires `brp` and an instance without it
 - **WHEN** the set is installed twice and then removed
 - **THEN** `brp` SHALL be imported by the first run only, reported as `imported` then `kept`, and remove SHALL delete the objects of that import
+
+#### Scenario: A register whose data was removed is imported again
+- **GIVEN** a set that requires `brp`, installed on an instance without it and then removed
+- **WHEN** the set is installed again
+- **THEN** `brp` SHALL be imported again (its data was removed although the register stayed), reported as `imported`, and remove SHALL delete the objects of that second import
 
 #### Scenario: A register that was there stays there
 - **GIVEN** a set that requires `brp` and an instance that already has it
@@ -175,7 +180,7 @@ A cast group or fragment group whose gid is `admin` (in any letter case) SHALL r
 
 ### Requirement: A set may change an object it did not create and undo exactly that (REQ-EXS-011)
 
-A fragment MAY declare `changes`: each with a `key`, a `register`, a `schema`, a `where` that finds exactly one existing object by business key, and `set` (dot path to value) and/or `append` (dot path to one value added to the list there). The check SHALL refuse a change whose object is not found or whose result its schema refuses. Install SHALL write only what differs, SHALL record the previous value of every path it set, the values it appended, and any map it created on the way to a path. A change already fully present SHALL NOT be recorded. Remove SHALL put back exactly the recorded values and leave every other part of the object as it is then.
+A fragment MAY declare `changes`: each with a `key`, a `register`, a `schema`, a `where` that finds exactly one existing object by business key, and `set` (dot path to value) and/or `append` (dot path to one value added to the list there). The check SHALL refuse a change whose `where` finds no object or more than one (naming the count; two organisations may hold the same business key) or whose result its schema refuses. Install SHALL write only what differs, SHALL record the previous value of every path it set, the values it appended, and any map it created on the way to a path. A change already fully present SHALL NOT be recorded. Remove SHALL put back exactly the recorded values and leave every other part of the object as it is then. A path whose value is no longer the one the change wrote (somebody edited it after the install) SHALL be left as it is and named in the output as left in place, as for app config and user preferences.
 
 #### Scenario: A sign-in mode added to a portal is taken off again
 - **GIVEN** a portal row with sign-in modes `["password"]` that the set did not create
@@ -226,7 +231,7 @@ A fragment MAY declare `serviceAccounts`, each with a `key`, a `uid`, a `display
 
 ### Requirement: A fragment may set its own app's config and undo exactly that (REQ-EXS-015)
 
-A fragment MAY declare `appConfig`, each entry a `key` and a `value` (placeholders allowed) or `generate: true`. An entry SHALL only set config of the app that ships the fragment; naming another app SHALL refuse the set. A key the app keeps as sensitive SHALL be refused unless the set generates the value; a generated value SHALL be stored as sensitive and SHALL never be printed or recorded. Install SHALL write only a value that differs and SHALL record the old value. Remove SHALL put the old value back, or delete the key when there was none, but SHALL leave a key whose value changed after the install, naming it. Output SHALL name keys, never values.
+A fragment MAY declare `appConfig`, each entry a `key` and a `value` (placeholders allowed) or `generate: true`. An entry SHALL only set config of the app that ships the fragment; naming another app SHALL refuse the set. A key the app keeps as sensitive SHALL be refused unless the set generates the value; a generated value SHALL be stored as sensitive and SHALL never be printed or recorded; the record holds only a one-way fingerprint of it, so that remove can tell the generated value from one somebody put there. Install SHALL write only a value that differs and SHALL record the old value. Remove SHALL put the old value back, or delete the key when there was none, but SHALL leave a key whose value changed after the install (a generated key whose value no longer has the recorded fingerprint included), naming it; a generated key that existed with an empty value gets that value back. Output SHALL name keys, never values.
 
 #### Scenario: The background account is configured and the old value comes back
 - **GIVEN** dossiq's `woo_publication_catalog_slug` holds `publication`
@@ -240,12 +245,17 @@ A fragment MAY declare `appConfig`, each entry a `key` and a `value` (placeholde
 
 ### Requirement: A set finds OpenRegister organisations and creates the ones its cast needs (REQ-EXS-016)
 
-`{{organisation:<slug or name>}}` SHALL fill the uuid of an OpenRegister organisation (the tenant entity, not an object), a slug winning over a name. The cast MAY declare `openregisterOrganisations` (key, name, slug, description). Before the check the loader SHALL create each one whose slug is not on the instance and record it; remove SHALL delete only the organisations the set created, last.
+`{{organisation:<slug or name>}}` SHALL fill the uuid of an OpenRegister organisation (the tenant entity, not an object), a slug winning over a name. The cast MAY declare `openregisterOrganisations` (key, name, slug, description). Before the check the loader SHALL create each one whose slug is not on the instance and record it; remove SHALL delete only the organisations the set created, last. Only a lookup that says the organisation does not exist SHALL read as absent (an install creates it) or as already gone (remove forgets it); any other error SHALL refuse the install (nothing is created) or leave the organisation in the record to be tried again. Remove SHALL NOT delete an organisation that has a member other than the accounts the set made or adopted (a leftover membership of an account that no longer exists does not count): it SHALL stay, stay in the record, and be named as left in place.
 
 #### Scenario: The municipality becomes an organisation once
 - **GIVEN** the cast declares organisation `zuiddrecht` and the instance has none with that slug
 - **WHEN** the set is installed twice and removed
 - **THEN** it SHALL be created once, fill `{{organisation:zuiddrecht}}`, and be gone after remove
+
+#### Scenario: An organisation somebody joined stays
+- **GIVEN** an organisation the set created, to which an administrator added a real account
+- **WHEN** the set is removed
+- **THEN** the organisation SHALL stay and stay in the record, and the output SHALL name it as left in place
 
 ### Requirement: The instance's address fills a placeholder (REQ-EXS-017)
 
@@ -327,12 +337,17 @@ Removing an example set is an administrative act on data the set itself wrote, n
 
 ### Requirement: A kept object follows the objects it references (REQ-EXS-023)
 
-When an install keeps an object an earlier run wrote, it SHALL resolve again every top-level field whose declared value holds an `{{object:}}` or `{{lookup:}}` placeholder and SHALL write only a field whose stored value differs, so a reinstall after a partial remove does not leave a kept object pointing at an object that was deleted and written again. The write SHALL be recorded as the change `<app>/<key>#references` with the value it replaced (the first replaced value is kept over later refreshes), the install SHALL prove it like any change (REQ-EXS-011), and remove SHALL stay exact. A kept object whose references already hold their values SHALL not be written.
+When an install keeps an object an earlier run wrote, it SHALL resolve again every top-level field whose declared value holds an `{{object:}}` or `{{lookup:}}` placeholder and SHALL write only a field whose stored value differs AND is still the value the install wrote there (the record keeps what each object was created with in its reference fields, and a refresh keeps its newest value), so a reinstall after a partial remove does not leave a kept object pointing at an object that was deleted and written again. A field that holds any other value, or that the record holds no written value for, is somebody's edit: it SHALL be left as it is and named in the output (`Left as it is`), and it SHALL NOT make the install fail. The write SHALL be recorded as the change `<app>/<key>#references` with the value it replaced (the first replaced value is kept over later refreshes), the install SHALL prove it like any change (REQ-EXS-011), and remove SHALL stay exact. A kept object whose references already hold their values SHALL not be written.
 
 #### Scenario: A kept publication follows its theme
 - **GIVEN** a set whose publication references a theme by `{{object:theme-1.id}}` and another by a lookup, and a remove that deleted the theme but could not delete the publications
 - **WHEN** the set is installed again
 - **THEN** the theme SHALL be written with a new id, the publications SHALL be kept and point at the new theme, and the refresh SHALL be recorded with the old id
+
+#### Scenario: A user's edit of a reference is left
+- **GIVEN** a kept publication whose theme reference a user pointed at an unrelated id after the install
+- **WHEN** the set is installed again
+- **THEN** the reference SHALL keep the user's value, no `#references` change SHALL be recorded, and the output SHALL name the field as left as it is
 
 #### Scenario: A refreshed set installs again without writes
 - **GIVEN** a set whose references were refreshed

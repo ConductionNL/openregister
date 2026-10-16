@@ -62,7 +62,8 @@ class CountedRegisterImport {
 	 * @param string             $version   The version of the imported document.
 	 * @param int                $fragments How many register.d fragments it carries.
 	 * @param string             $via       Who asked, for the audit trail.
-	 * @param callable           $import    Runs the import; returns success, path, via, message.
+	 * @param callable           $import    Runs the import; returns success, path, via, message, and importJobId and
+	 *                                      importAppId when it recorded an import job.
 	 *
 	 * @return array<string, mixed> The reimport() result.
 	 *
@@ -95,6 +96,13 @@ class CountedRegisterImport {
 			],
 			'replaced'  => $replaced,
 		];
+
+		// The job the import ran under, so a caller that must undo exactly this import (the example-set loader) is
+		// told which one it was and does not have to guess it from a before/after diff of every job on the instance.
+		if (is_string($run['importJobId'] ?? null) === true) {
+			$result['importJobId'] = $run['importJobId'];
+			$result['importAppId'] = (string) ($run['importAppId'] ?? '');
+		}
 
 		if ($run['success'] === false) {
 			$result['outcome'] = 'failed';

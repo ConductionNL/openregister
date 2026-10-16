@@ -100,6 +100,14 @@ class CaseRealisationService {
 		$flow = trim((string)($item->getPlanSettings()['flows'][(string)$item->getItemKey()] ?? ''));
 		$runnable = in_array($item->getPlanItemType(), [CaseItem::TYPE_STAGE, CaseItem::TYPE_PROCESS_TASK], true);
 		if ($runnable === true && $flow !== '') {
+			// An in-process caller's `system:<app>` is a label for the audit, not an account. As the run's user it
+			// would become the run's `runAs`, and every scoped step would be refused ("not a user account"), so the
+			// run is queued without a caller and the flow's own attribution (or its declared runAs) decides.
+			$user = $actor;
+			if (str_starts_with($actor, CasePlanService::SYSTEM_ACTOR_PREFIX) === true) {
+				$user = null;
+			}
+
 			$run = $this->runs->queue(
 				flowId: $flow,
 				subject: [
@@ -109,7 +117,7 @@ class CaseRealisationService {
 				],
 				trigger: self::RUN_TRIGGER,
 				context: ['caseItem' => (string)$item->getUuid()],
-				user: $actor
+				user: $user
 			);
 			$item->setRealisationKind(CaseItem::REALISATION_RUN);
 			$item->setRealisationUuid($run->getUuid());

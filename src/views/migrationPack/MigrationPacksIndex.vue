@@ -360,12 +360,15 @@ export default {
 			}
 			this.importing = true
 			try {
-				const pack = await importPack(file)
+				const { pack, replaced } = await importPack(file)
+				const name = pack?.name || pack?.packSlug || file.name
+				// A pack with the file's id was already stored (and may have been edited
+				// on this instance): say it was overwritten, not that a new one arrived.
 				this.notice = {
 					type: 'success',
-					message: t('openregister', 'Imported "{name}".', {
-						name: pack?.name || pack?.packSlug || file.name,
-					}),
+					message: replaced
+						? t('openregister', 'Replaced "{name}".', { name })
+						: t('openregister', 'Imported "{name}".', { name }),
 				}
 				await this.load()
 			} catch (error) {

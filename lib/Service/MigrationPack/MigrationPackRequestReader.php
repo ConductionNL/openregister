@@ -139,8 +139,9 @@ class MigrationPackRequestReader {
 
 		unset($definition['id']);
 		$errors   = $this->validator->validate(definition: $definition);
-		$errors[] = 'An "id" in the request body that equals the row id in the URL cannot be told apart from it.'
-			. ' Send the pack as {"definition": {...}} to keep that id.';
+		$errors[] = $this->l10n->t('An "id" in the request body that equals the row id in the URL cannot be told apart from it.')
+			. ' '
+			. $this->l10n->t('Send the pack as {"definition": {...}} to keep that id.');
 
 		throw new InvalidPackDefinitionException(errors: $errors);
 	}//end definition()

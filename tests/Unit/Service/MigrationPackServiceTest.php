@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Service;
 
+use OCA\OpenRegister\Tests\Unit\Service\MigrationPack\PassThroughL10nTrait;
 use DateTime;
 use DateTimeImmutable;
 use InvalidArgumentException;
@@ -48,6 +49,8 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 class MigrationPackServiceTest extends TestCase {
+	use PassThroughL10nTrait;
+
 	private MigrationPackService $service;
 	private MigrationPackMapper&MockObject $mapper;
 	private IAppConfig&MockObject $appConfig;
@@ -74,8 +77,8 @@ class MigrationPackServiceTest extends TestCase {
 		);
 		$this->service = new MigrationPackService(
 			$this->mapper,
-			new PackDefinitionValidator(),
-			new MappingEngine(),
+			new PackDefinitionValidator($this->passThroughL10n()),
+			new MappingEngine($this->passThroughL10n()),
 			$this->appConfig
 		);
 	}
@@ -227,7 +230,7 @@ class MigrationPackServiceTest extends TestCase {
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueArray')->willReturn([]);
 		$appConfig->method('setValueArray')->willThrowException(new RuntimeException('app config unavailable'));
-		$service = new MigrationPackService($this->mapper, new PackDefinitionValidator(), new MappingEngine(), $appConfig);
+		$service = new MigrationPackService($this->mapper, new PackDefinitionValidator($this->passThroughL10n()), new MappingEngine($this->passThroughL10n()), $appConfig);
 		$this->mapper->method('find')->willReturn($this->builtinPack());
 		$this->mapper->expects($this->never())->method('delete');
 

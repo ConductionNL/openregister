@@ -107,7 +107,7 @@
 								<NcButton
 									:disabled="busy === rowKey(row)"
 									variant="secondary"
-									@click="reimport(row)">
+									@click="askToReimport(row)">
 									<template #icon>
 										<NcLoadingIcon
 											v-if="busy === rowKey(row)"
@@ -127,19 +127,60 @@
 
 				<!-- The outcome is shown, never only logged. A button that
 				     reports nothing is indistinguishable from one that did
-				     nothing, which is the failure being repaired here. -->
-				<p
+				     nothing, which is the failure being repaired here. A
+				     re-import that took authorization from the file over a
+				     local change is a warning that names each block, not a
+				     success: it can widen access on a schema an administrator
+				     had tightened. -->
+				<div
 					v-if="outcome"
-					class="descriptors__hint"
-					:class="
-						outcome.ok
-							? 'descriptors__hint--good'
-							: 'descriptors__hint--bad'
-					"
+					class="descriptors__outcome"
+					:class="outcomeClass"
 					role="status">
-					{{ outcome.message }}
-				</p>
+					<p>{{ outcome.message }}</p>
+					<ul
+						v-if="outcome.replaced.length > 0"
+						class="descriptors__replaced">
+						<li
+							v-for="item in outcome.replaced"
+							:key="item.schema + '/' + item.path">
+							{{ item.schema }}: {{ item.path }}
+						</li>
+					</ul>
+				</div>
 			</template>
+
+			<!-- Re-importing takes the file's authorization over a local
+			     change, and re-imports the whole app's configuration where it
+			     has a base document: say so before it runs, not after. -->
+			<NcDialog
+				v-if="confirming"
+				:open="true"
+				:name="
+					t('openregister', 'Re-import {register}?', {
+						register: confirming.title,
+					})
+				"
+				size="small"
+				@update:open="onConfirmOpenChange">
+				<p>
+					{{
+						t(
+							'openregister',
+							'Re-importing {app} takes the authorization of its schemas from the file, replacing any change made on this instance, and may re-import every register of the app, not only {register}.',
+							{ app: confirming.appId, register: confirming.title },
+						)
+					}}
+				</p>
+				<template #actions>
+					<NcButton @click="cancelReimport">
+						{{ t('openregister', 'Cancel') }}
+					</NcButton>
+					<NcButton variant="primary" @click="confirmReimport">
+						{{ t('openregister', 'Re-import') }}
+					</NcButton>
+				</template>
+			</NcDialog>
 		</div>
 	</SettingsSection>
 </template>
@@ -147,7 +188,7 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
+import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 
@@ -179,6 +220,7 @@ export default {
 	components: {
 		Download,
 		NcButton,
+		NcDialog,
 		NcLoadingIcon,
 		SettingsSection,
 	},
@@ -193,7 +235,27 @@ export default {
 			error: '',
 			busy: '',
 			outcome: null,
+			confirming: null,
 		}
+	},
+
+	computed: {
+		/**
+		 * The colour class of the outcome note: a re-import that replaced
+		 * authorization is a warning even though it succeeded.
+		 *
+		 * @return {string} The modifier class.
+		 *
+		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+		 */
+		outcomeClass() {
+			if (!this.outcome?.ok) {
+				return 'descriptors__outcome--bad'
+			}
+			return this.outcome.replaced.length > 0
+				? 'descriptors__outcome--warning'
+				: 'descriptors__outcome--good'
+		},
 	},
 
 	mounted() {
@@ -297,34 +359,98 @@ export default {
 		},
 
 		/**
+		 * Ask before a re-import runs: it takes the file's authorization over
+		 * a local change, and may re-import the app's other registers too.
+		 *
+		 * @param {object} row The row whose descriptor to re-import.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+		 */
+		askToReimport(row) {
+			this.confirming = row
+		},
+
+		/**
+		 * Close the confirmation without importing.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+		 */
+		cancelReimport() {
+			this.confirming = null
+		},
+
+		/**
+		 * The dialog's own close button or Escape.
+		 *
+		 * @param {boolean} open Whether the dialog stays open.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+		 */
+		onConfirmOpenChange(open) {
+			if (!open) {
+				this.cancelReimport()
+			}
+		},
+
+		/**
+		 * The administrator confirmed: run the re-import of the asked row.
+		 *
+		 * @return {Promise<void>} Resolves once the outcome is rendered.
+		 *
+		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+		 */
+		async confirmReimport() {
+			const row = this.confirming
+			this.confirming = null
+			if (row) {
+				await this.reimport(row)
+			}
+		},
+
+		/**
 		 * Force a re-import and SHOW the outcome — a button that reports nothing
-		 * is indistinguishable from one that did nothing.
+		 * is indistinguishable from one that did nothing. The authorization
+		 * blocks the import took from the file over a local change are listed,
+		 * schema and path, and make the outcome a warning.
 		 *
 		 * @param {object} row The row whose descriptor to re-import.
 		 * @return {Promise<void>} Resolves once the outcome is rendered.
 		 *
-		 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
+		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 		 */
 		async reimport(row) {
 			this.busy = this.rowKey(row)
 			this.outcome = null
 			try {
-				await axios.post(
+				const response = await axios.post(
 					generateUrl(
 						`/apps/openregister/api/register-descriptors/${row.appId}/${row.slug}/import`,
 					),
 				)
-				this.outcome = {
-					ok: true,
-					message: this.t(
+				const replaced = Array.isArray(response?.data?.replaced)
+					? response.data.replaced
+					: []
+				const count = response?.data?.counts?.authorizationReplaced ?? replaced.length
+				let message = this.t(
+					'openregister',
+					'{register} was imported from {app}.',
+					{
+						register: row.title,
+						app: row.appId,
+					},
+				)
+				if (count > 0 || replaced.length > 0) {
+					message += ' ' + this.t(
 						'openregister',
-						'{register} was imported from {app}.',
-						{
-							register: row.title,
-							app: row.appId,
-						},
-					),
+						'Authorization taken from the file over a local change: {count}.',
+						{ count: Math.max(count, replaced.length) },
+					)
 				}
+				this.outcome = { ok: true, message, replaced }
 				// Re-read rather than patch the row locally: the inventory is
 				// the authority on what is now present, and a locally-optimistic
 				// row would report success the import may not have achieved.
@@ -338,6 +464,7 @@ export default {
 							?? e?.response?.data?.error
 							?? e.message,
 					}),
+					replaced: [],
 				}
 			} finally {
 				this.busy = ''
@@ -420,8 +547,25 @@ export default {
 	color: var(--color-error);
 }
 
-.descriptors__hint--good {
+.descriptors__outcome {
+	margin-top: 0.75rem;
+}
+
+.descriptors__outcome--good {
 	color: var(--color-success);
+}
+
+.descriptors__outcome--warning {
+	color: var(--color-warning-text, var(--color-warning));
+}
+
+.descriptors__outcome--bad {
+	color: var(--color-error);
+}
+
+.descriptors__replaced {
+	margin: 0.25rem 0 0 1.25rem;
+	list-style: disc;
 }
 
 .descriptors__sr {

@@ -134,7 +134,7 @@ class ExampleSetInstaller {
 
 				$standIn   = $this->standIn(app: $fragment['app'], object: $object, data: $resolved['data']);
 				$planned[] = ['register' => $object['register'], 'schema' => $object['schema'], 'row' => $standIn];
-				$kept      = $this->kept(record: $record, app: $fragment['app'], key: $object['key']);
+				$kept      = $this->kept(record: $record, app: $fragment['app'], key: $object['key'])['row'];
 				$objects[$object['key']] = ($kept ?? $standIn);
 			}//end foreach
 
@@ -180,6 +180,7 @@ class ExampleSetInstaller {
 			'passwords'   => [],
 			'types'       => [],
 			'dropped'     => [],
+			'left'        => [],
 			'missing'     => [],
 			'lost'        => [],
 			'ok'          => false,
@@ -296,7 +297,16 @@ class ExampleSetInstaller {
 			$report['types'][$type] ??= ['declared' => 0, 'created' => 0, 'kept' => 0, 'arrived' => 0];
 			$report['types'][$type]['declared']++;
 
-			$kept = $this->kept(record: $record, app: $fragment['app'], key: $object['key']);
+			$held = $this->kept(record: $record, app: $fragment['app'], key: $object['key']);
+			if ($held['error'] !== '') {
+				// A read that failed proves nothing about the object: writing it again would leave two copies and
+				// forget the original, so nothing is written and the recorded id stays.
+				$report['dropped'][] = $fragment['file'].': object "'.$object['key'].'": the object the record holds could not be read ('.$held['error'].')';
+				$objects[$object['key']] = ['id' => (string) $record['objects'][$name]['id']];
+				continue;
+			}
+
+			$kept = $held['row'];
 			if ($kept !== null) {
 				$report['types'][$type]['kept']++;
 				$objects[$object['key']] = $this->refreshReferences(
@@ -329,6 +339,11 @@ class ExampleSetInstaller {
 
 			$report['types'][$type]['created']++;
 			$record['objects'][$name] = ['register' => $object['register'], 'schema' => $object['schema'], 'id' => $made['id']];
+			$refs                     = array_intersect_key($resolved['data'], array_flip($this->referenceFields(object: $object)));
+			if ($refs !== []) {
+				$record['objects'][$name]['refs'] = $refs;
+			}
+
 			$this->record->write(set: (string) $plan['set'], record: $record);
 			$written[$name] = $resolved['data'];
 			$report         = $this->attachFiles(plan: $plan, fragment: $fragment, object: $object, objectId: $made['id'], report: $report, record: $record);
@@ -383,7 +398,16 @@ class ExampleSetInstaller {
 			return $row;
 		}
 
-		$made = $this->changes->refresh(object: $object, row: $row, values: array_intersect_key($resolved['data'], array_flip($fields)));
+		$made = $this->changes->refresh(
+			object: $object,
+			row: $row,
+			values: array_intersect_key($resolved['data'], array_flip($fields)),
+			written: $this->writtenReferences(record: $record, name: $name, key: $fragment['app'].'/'.$object['key'])
+		);
+		foreach ($made['left'] as $field) {
+			$report['left'][] = $fragment['file'].': object "'.$object['key'].'": field "'.$field.'" was changed after the install and is left as it is';
+		}
+
 		if ($made['error'] !== '') {
 			$report['dropped'][]      = $fragment['file'].': object "'.$object['key'].'": its references cannot be refreshed: '.$made['error'];
 			$report['changes'][$name] = 'failed';
@@ -409,6 +433,29 @@ class ExampleSetInstaller {
 
 		return ($this->store->get(register: $object['register'], schema: $object['schema'], id: (string) $entry['id']) ?? $row);
 	}//end refreshReferences()
+
+	/**
+	 * What the install last wrote into the reference fields of a kept object.
+	 *
+	 * The value a refresh wrote when there was one (the newest `new` of the
+	 * `#references` change), else the value the object was created with.
+	 *
+	 * @param array<string, mixed> $record The record.
+	 * @param string               $name   The record key of the refresh change, `<app>/<key>#references`.
+	 * @param string               $key    The record key of the object, `<app>/<key>`.
+	 *
+	 * @return array<string, mixed> The value by field; a field of a record that predates this is missing.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 */
+	private function writtenReferences(array $record, string $name, string $key): array {
+		$written = (array) ($record['objects'][$key]['refs'] ?? []);
+		foreach ((array) ($record['changes'][$name]['set'] ?? []) as $set) {
+			$written[(string) $set['path']] = $set['new'];
+		}
+
+		return $written;
+	}//end writtenReferences()
 
 	/**
 	 * The top-level fields of an object whose declared value references another object.
@@ -544,9 +591,10 @@ class ExampleSetInstaller {
 	/**
 	 * The id of the one row a lookup by business key describes.
 	 *
-	 * The match is checked here as well: a register that does not filter on a
+	 * The match is checked as well: a register that does not filter on a
 	 * property hands over every row, and the first of those is not the one
-	 * that was asked for.
+	 * that was asked for. Two rows that match (two organisations may share a
+	 * business key) refuse the lookup, naming the count.
 	 *
 	 * @param string                           $register The register of the object being written.
 	 * @param array<string, mixed>             $lookup   `schema` and `where`; `register` when it is another one.
@@ -568,14 +616,13 @@ class ExampleSetInstaller {
 			return ['id' => '', 'reason' => 'nothing: a lookup needs a schema and a where'];
 		}
 
-		// Asked with the filter first, then without: OpenRegister does not
-		// filter on every kind of property, and the match is checked here anyway.
-		foreach ([$where, []] as $filters) {
-			foreach ($this->store->find(register: $from, schema: $schema, filters: $filters) as $row) {
-				if ($this->matches(row: $row, where: $where) === true) {
-					return ['id' => $this->store->idOf(row: $row), 'reason' => ''];
-				}
-			}
+		$rows = $this->store->matching(register: $from, schema: $schema, where: $where);
+		if (count($rows) > 1) {
+			return ['id' => '', 'reason' => count($rows).' '.$from.' '.$schema.' rows with '.$this->asWords(where: $where).'; a lookup needs exactly one'];
+		}
+
+		if ($rows !== []) {
+			return ['id' => $this->store->idOf(row: $rows[0]), 'reason' => ''];
 		}
 
 		$id = $this->plannedMatch(planned: $planned, register: $from, schema: $schema, where: $where);
@@ -583,13 +630,24 @@ class ExampleSetInstaller {
 			return ['id' => $id, 'reason' => ''];
 		}
 
+		return ['id' => '', 'reason' => 'no '.$from.' '.$schema.' with '.$this->asWords(where: $where)];
+	}//end lookedUp()
+
+	/**
+	 * The asked values as words for a refusal.
+	 *
+	 * @param array<string, mixed> $where The asked values, by field.
+	 *
+	 * @return string
+	 */
+	private function asWords(array $where): string {
 		$words = [];
 		foreach ($where as $field => $value) {
 			$words[] = $field.' '.json_encode($value, JSON_UNESCAPED_UNICODE);
 		}
 
-		return ['id' => '', 'reason' => 'no '.$from.' '.$schema.' with '.implode(' and ', $words)];
-	}//end lookedUp()
+		return implode(' and ', $words);
+	}//end asWords()
 
 	/**
 	 * The stand-in id of an object declared earlier in the set that a lookup describes, or ''.
@@ -603,7 +661,7 @@ class ExampleSetInstaller {
 	 */
 	private function plannedMatch(array $planned, string $register, string $schema, array $where): string {
 		foreach ($planned as $object) {
-			if ($object['register'] === $register && $object['schema'] === $schema && $this->matches(row: $object['row'], where: $where) === true) {
+			if ($object['register'] === $register && $object['schema'] === $schema && $this->store->rowMatches(row: $object['row'], where: $where) === true) {
 				return (string) $object['row']['id'];
 			}
 		}
@@ -612,44 +670,24 @@ class ExampleSetInstaller {
 	}//end plannedMatch()
 
 	/**
-	 * Whether a row holds every asked value.
-	 *
-	 * @param array<string, mixed> $row   The row.
-	 * @param array<string, mixed> $where The asked values, by field.
-	 *
-	 * @return bool
-	 */
-	private function matches(array $row, array $where): bool {
-		foreach ($where as $field => $value) {
-			$held = ($row[$field] ?? null);
-			if ($held === $value) {
-				continue;
-			}
-
-			if (is_scalar($held) === false || is_scalar($value) === false || (string) $held !== (string) $value) {
-				return false;
-			}
-		}
-
-		return true;
-	}//end matches()
-
-	/**
 	 * The row the record holds for an object, when it is still there.
+	 *
+	 * A read that failed is not "it is gone": the error comes back and the caller must not write the object again.
 	 *
 	 * @param array<string, mixed> $record The record.
 	 * @param string               $app    The app of the fragment.
 	 * @param string               $key    The object key.
 	 *
-	 * @return array<string, mixed>|null
+	 * @return array{row: array<string, mixed>|null, error: string} The row; null with '' when the record holds none or the
+	 *                                                              instance lost it; null with why when the read failed.
 	 */
-	private function kept(array $record, string $app, string $key): ?array {
+	private function kept(array $record, string $app, string $key): array {
 		$held = ($record['objects'][$app.'/'.$key] ?? null);
 		if ($held === null) {
-			return null;
+			return ['row' => null, 'error' => ''];
 		}
 
-		return $this->store->get(register: $held['register'], schema: $held['schema'], id: $held['id']);
+		return $this->store->read(register: $held['register'], schema: $held['schema'], id: $held['id']);
 	}//end kept()
 
 	/**

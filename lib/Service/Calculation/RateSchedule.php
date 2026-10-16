@@ -134,11 +134,14 @@ final class RateSchedule {
 	 * @spec openspec/changes/graduated-rate-calculation/specs/computed-fields/spec.md
 	 */
 	public function rateAt(int|float $unit, array $bands): int|float|null {
+		// The schedule is checked whatever the unit is: a malformed one must raise an evaluation error and never be read as
+		// an amount, and `graduated` already refuses it at any quantity.
+		$checked = $this->normalise(bands: $bands);
 		if ($unit <= 0) {
 			return null;
 		}
 
-		foreach ($this->normalise(bands: $bands) as $band) {
+		foreach ($checked as $band) {
 			if ($band['upTo'] === null || $unit <= $band['upTo']) {
 				return $band['rate'];
 			}

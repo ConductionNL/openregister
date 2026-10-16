@@ -120,4 +120,49 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 		$this->assertSame($updates, $this->store->updates);
 		$this->assertSame([], $this->record->read(set: 'demo')['changes']);
 	}
+
+	/**
+	 * A user who pointed a kept object's reference at something else keeps that edit: the next install leaves it and says so.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 */
+	public function testAUsersEditOfAKeptObjectsReferenceIsLeftAndNamed(): void {
+		$publications = $this->store->ids(register: 'pub', schema: 'publication');
+		$this->store->rows['pub publication'][$publications[0]]['themes'] = ['an-unrelated-id'];
+		$updates = $this->store->updates;
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertSame(['an-unrelated-id'], $this->store->get(register: 'pub', schema: 'publication', id: $publications[0])['themes']);
+		$this->assertSame($updates, $this->store->updates, 'nothing is written over the edit');
+		$this->assertArrayNotHasKey('alpha/pub-1#references', $report['changes']);
+		$this->assertArrayNotHasKey('alpha/pub-1#references', $this->record->read(set: 'demo')['changes']);
+		$this->assertSame(['lib/Settings/example-sets/demo.json: object "pub-1": field "themes" was changed after the install and is left as it is'], array_map(
+			static fn (string $line): string => preg_replace('#^[^:]*/lib/#', 'lib/', $line),
+			$report['left']
+		));
+		$this->assertTrue($report['ok'], 'an edit is not a failure');
+	}
+
+	/**
+	 * A kept object whose record predates the recorded values is not refreshed over a value nobody can vouch for.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 */
+	public function testAReferenceTheRecordHoldsNoValueForIsLeft(): void {
+		$record = $this->record->read(set: 'demo');
+		foreach ($record['objects'] as $name => $held) {
+			unset($record['objects'][$name]['refs']);
+		}
+
+		$this->record->write(set: 'demo', record: $record);
+		$this->store->undeletable = $this->store->ids(register: 'pub', schema: 'publication');
+		$this->remover->remove(set: 'demo');
+		$this->store->undeletable = [];
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertCount(2, $report['left']);
+		$this->assertArrayNotHasKey('alpha/pub-1#references', $report['changes']);
+	}
 }

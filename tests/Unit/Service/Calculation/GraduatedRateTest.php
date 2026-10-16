@@ -127,6 +127,22 @@ class GraduatedRateTest extends TestCase {
 		$this->fee(4, $bands);
 	}
 
+	/**
+	 * `bandRate` refuses a malformed schedule at a unit of zero or less too, as `graduated` does at any quantity.
+	 *
+	 * @dataProvider malformedSchedules
+	 */
+	public function testAMalformedScheduleIsRefusedByBandRateAtAUnitOfZero(mixed $bands): void {
+		$this->expectException(EvaluationException::class);
+		$this->eval->evaluate(['u' => 0, 'b' => $bands], ['bandRate' => [['prop' => 'u'], ['prop' => 'b']]]);
+	}
+
+	public function testBandRateRefusesAMalformedScheduleAtANegativeUnitAndStillAnswersNullForAGoodOne(): void {
+		$this->assertNull($this->eval->evaluate(['u' => -2, 'b' => self::BANDS], ['bandRate' => [['prop' => 'u'], ['prop' => 'b']]]));
+		$this->expectException(EvaluationException::class);
+		$this->eval->evaluate(['u' => -2, 'b' => []], ['bandRate' => [['prop' => 'u'], ['prop' => 'b']]]);
+	}
+
 	public function testANonNumericQuantityIsRefused(): void {
 		$this->expectException(EvaluationException::class);
 		$this->fee('four');
