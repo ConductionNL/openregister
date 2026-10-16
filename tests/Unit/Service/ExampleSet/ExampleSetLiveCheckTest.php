@@ -81,6 +81,30 @@ class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 	}
 
 	/**
+	 * The check counts objects per register and schema as the install declares
+	 * them, and a change on the same schema apart (the zuiddrecht set read 12
+	 * dossiq cases checked against 10 declared).
+	 */
+	public function testTheCheckCountsObjectsAsTheInstallDeclaresThemAndChangesApart(): void {
+		$this->app(app: 'cases', fragment: [
+			'objects' => [
+				['key' => 'case-1', 'register' => 'cases', 'schema' => 'case', 'data' => ['title' => 'Parkeren']],
+				['key' => 'result-1', 'register' => 'cases', 'schema' => 'result', 'data' => ['case' => '{{object:case-1.id}}']],
+			],
+			'changes' => [['key' => 'case-1-result', 'register' => 'cases', 'schema' => 'case', 'object' => 'case-1', 'set' => ['result' => '{{object:result-1.id}}']]],
+		]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$checked = $this->installer->check(plan: $plan, today: $this->today());
+		$report  = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertSame(['cases case' => 1, 'cases result' => 1], $checked['checked']);
+		$this->assertSame(['cases case' => 1], $checked['checkedChanges']);
+		$this->assertSame($report['types']['cases case']['declared'], $checked['checked']['cases case'], 'check and install count the same objects');
+		$this->assertSame(['cases/case-1-result' => 'created'], $report['changes']);
+	}
+
+	/**
 	 * A change that declares its own `jsonFields` appends to the list inside
 	 * the text, is proved against the decoded list, and is taken out again.
 	 */

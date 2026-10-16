@@ -1297,6 +1297,13 @@ class SchemasController extends Controller {
 		// set to `refuse` blocks the save; otherwise the broken forms are
 		// unpublished after the save, and the response lists them.
 		$formAssessment = $this->assessDependentForms(existing: $existingSchema, data: $data);
+		if ($formAssessment !== null) {
+			// This request judges the forms itself (refusing or unpublishing
+			// after the write): the listener that covers every other schema
+			// writer must not do it a second time.
+			$this->formDependentsCheck()?->claim(schemaId: $id);
+		}
+
 		if ($formAssessment !== null && $formAssessment['refused'] === true) {
 			return new JSONResponse(
 				data: [

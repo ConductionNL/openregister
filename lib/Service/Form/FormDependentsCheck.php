@@ -63,6 +63,13 @@ class FormDependentsCheck {
 	public const SUBJECT = 'form_unpublished';
 
 	/**
+	 * The schemas whose save a caller is judging itself, by id, for this request.
+	 *
+	 * @var array<int, true>
+	 */
+	private array $claimed = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IEventDispatcher         $dispatcher    Asks the owning apps for their forms.
@@ -80,6 +87,39 @@ class FormDependentsCheck {
 	) {
 
 	}//end __construct()
+
+	/**
+	 * Say that the caller of this save judges the dependent forms itself.
+	 *
+	 * The schema API assesses BEFORE the write, so it can refuse the save, and
+	 * applies after it. Every other writer of a schema (the configuration
+	 * importer, the import endpoint, the AI and MCP tools) has no response to
+	 * refuse, and is covered by {@see \OCA\OpenRegister\Listener\FormDestinationSchemaListener}, which
+	 * skips a save its caller has claimed so no form is unpublished or
+	 * announced twice.
+	 *
+	 * @param int $schemaId The schema about to be saved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
+	 */
+	public function claim(int $schemaId): void {
+		$this->claimed[$schemaId] = true;
+	}//end claim()
+
+	/**
+	 * Whether the caller of this schema's save judges the dependent forms itself.
+	 *
+	 * @param int $schemaId The schema.
+	 *
+	 * @return bool True when it was claimed in this request.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
+	 */
+	public function isClaimed(int $schemaId): bool {
+		return isset($this->claimed[$schemaId]);
+	}//end isClaimed()
 
 	/**
 	 * Judge every published form that submits into the proposed schema.

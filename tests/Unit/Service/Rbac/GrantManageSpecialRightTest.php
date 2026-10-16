@@ -45,6 +45,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\InheritedGrantLister;
 use OCA\OpenRegister\Service\Rbac\ObjectAuthorizationWriter;
@@ -54,6 +55,7 @@ use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
+use OCA\OpenRegister\Service\Rbac\SettingsChangeAuditor;
 use OCP\Files\Folder;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -83,6 +85,8 @@ class GrantManageSpecialRightTest extends TestCase {
 	private ObjectAuthorizationWriter&MockObject $authorizationWriter;
 
 	private IRequest&MockObject $request;
+
+	private AuditTrailMapper&MockObject $trail;
 
 	private ObjectSharingService $sharing;
 
@@ -136,6 +140,9 @@ class GrantManageSpecialRightTest extends TestCase {
 		$folders = $this->createMock(FolderManagementHandler::class);
 		$folders->method('getObjectFolder')->willReturn($folder);
 
+		$this->trail = $this->createMock(AuditTrailMapper::class);
+		$auditor = new GrantChangeAuditor($this->trail, $this->createMock(SettingsChangeAuditor::class), new NullLogger());
+
 		$this->sharing = new ObjectSharingService(
 			$this->authorizationWriter,
 			$this->userSession,
@@ -146,7 +153,8 @@ class GrantManageSpecialRightTest extends TestCase {
 			$this->shareManager,
 			new NullLogger(),
 			$this->createMock(InheritedGrantLister::class),
-			new GrantManageGuard(new ObjectScopeResolver(), $specialRights)
+			new GrantManageGuard(new ObjectScopeResolver(), $specialRights),
+			$auditor
 		);
 
 		$this->ownership = new ObjectOwnershipService(
@@ -162,7 +170,8 @@ class GrantManageSpecialRightTest extends TestCase {
 			$registers,
 			$schemas,
 			$this->createMock(INotificationManager::class),
-			new NullLogger()
+			new NullLogger(),
+			$auditor
 		);
 
 		$this->record = $this->record(schema: '12');
@@ -249,6 +258,51 @@ class GrantManageSpecialRightTest extends TestCase {
 		$this->assertSame([], $this->sharing->listGrants($this->record));
 		$this->sharing->revoke($this->record, 'ocinternal:9');
 	}//end testAHolderWritesListsAndRevokesAGrantOnARecordItDoesNotOwn()
+
+	public function testEveryGrantAndRevokeLeavesAnAuditRowNamingHowTheCallerWasAdmitted(): void {
+		$this->signIn('service-account', [self::SERVICE_GROUP]);
+		$share = $this->shareManagerStoresAShare();
+		$share->method('getShareType')->willReturn(IShare::TYPE_USER);
+
+		$rows = [];
+		$this->trail->expects($this->exactly(2))->method('createAuditTrailEntry')->willReturnCallback(
+			function (ObjectEntity $object, string $action, array $context) use (&$rows) {
+				$rows[] = [$object->getUuid(), $action, $context];
+
+				return new \OCA\OpenRegister\Db\AuditTrail();
+			}
+		);
+
+		$this->sharing->grant($this->record, 'user', 'reviewer', 1);
+		$this->sharing->revoke($this->record, 'ocinternal:9');
+
+		$this->assertSame('record-1', $rows[0][0]);
+		$this->assertSame(GrantChangeAuditor::ACTION_GRANTED, $rows[0][1]);
+		$this->assertSame('reviewer', $rows[0][2]['sharedWith']);
+		$this->assertSame(GrantManageGuard::AS_HOLDER, $rows[0][2]['admittedAs']);
+		$this->assertSame(GrantChangeAuditor::ACTION_REVOKED, $rows[1][1]);
+		$this->assertSame('user', $rows[1][2]['type']);
+		$this->assertSame('reviewer', $rows[1][2]['sharedWith']);
+	}//end testEveryGrantAndRevokeLeavesAnAuditRowNamingHowTheCallerWasAdmitted()
+
+	public function testARefusedGrantLeavesNoAuditRow(): void {
+		$this->signIn('service-account', [self::SERVICE_GROUP]);
+		$this->trail->expects($this->never())->method('createAuditTrailEntry');
+
+		$this->expectException(NotAuthorizedException::class);
+		$this->sharing->grant($this->record, 'user', 'service-account', 1);
+	}//end testARefusedGrantLeavesNoAuditRow()
+
+	public function testANewOwningGroupLeavesAnAuditRowWithBothSides(): void {
+		$this->signIn('service-account', [self::SERVICE_GROUP]);
+		$this->trail->expects($this->once())->method('createAuditTrailEntry')->with(
+			$this->record,
+			GrantChangeAuditor::ACTION_OWNER_GROUP,
+			['ownerGroup' => ['old' => null, 'new' => 'supervisors']]
+		);
+
+		$this->ownership->setOwnerGroup(new Register(), new Schema(), $this->record, 'supervisors');
+	}//end testANewOwningGroupLeavesAnAuditRowWithBothSides()
 
 	public function testAHolderNamesTheOwningGroup(): void {
 		$this->signIn('service-account', [self::SERVICE_GROUP]);

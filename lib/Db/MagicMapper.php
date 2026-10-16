@@ -47,6 +47,7 @@ use Exception;
 use RuntimeException;
 use OCA\OpenRegister\Db\MagicMapper\MagicBulkHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicFacetHandler;
+use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumn;
 use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
@@ -4689,7 +4690,25 @@ class MagicMapper extends AbstractObjectMapper {
 		$schemaProperties = $schema->getProperties();
 
 		if (is_array($schemaProperties) === true) {
+			$columnRoles = new MagicMetadataColumn();
 			foreach (array_keys($schemaProperties) as $propertyName) {
+				// A property whose column is a metadata column (`_owner`, `_authorization`,
+				// `_status`, ...) never writes it: the loop above stamped that column from
+				// server-side values, and the client's value must not replace them. The
+				// read side already treats such a column as metadata.
+				if (is_string($propertyName) === true && $columnRoles->shadowsMetadata(key: $propertyName) === true) {
+					$this->logger->warning(
+						message: '[MagicMapper] A schema property is named like a metadata column; its value is not written',
+						context: [
+							'file' => __FILE__,
+							'line' => __LINE__,
+							'propertyName' => $propertyName,
+							'schema' => $schema->getId(),
+						]
+					);
+					continue;
+				}
+
 				// Use array_key_exists to distinguish between:.
 				// - Property exists with null value → include in prepared data (update DB to null).
 				// - Property doesn't exist at all → skip (don't change DB value).
@@ -9660,6 +9679,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param array $row The database row
 	 *
 	 * @return ObjectEntity|null The ObjectEntity or null if conversion fails
+	 *
+	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function rowToObjectEntity(array $row): ?ObjectEntity {
 		// Check if we have the minimum required fields.
@@ -9703,9 +9724,11 @@ class MagicMapper extends AbstractObjectMapper {
 					// path produces (buildTableColumnsFromSchema), keyed by
 					// property name, so collision-resolved columns round-trip
 					// back to their original property instead of being lost.
+					$schemaProperties = ($schema->getProperties() ?? []);
 					foreach ($this->buildTableColumnsFromSchema(schema: $schema) as $propertyName => $columnDef) {
-						// Skip metadata columns (handled separately above).
-						if (str_starts_with($propertyName, '_') === true) {
+						// Skip metadata columns (handled separately above); a schema
+						// property whose name starts with an underscore stays.
+						if (str_starts_with($propertyName, '_') === true && isset($schemaProperties[$propertyName]) === false) {
 							continue;
 						}
 
@@ -9732,8 +9755,8 @@ class MagicMapper extends AbstractObjectMapper {
 		// Build the object data from non-metadata columns.
 		$objectData = [];
 		foreach ($row as $column => $value) {
-			// Skip metadata columns (those starting with _).
-			if (str_starts_with($column, '_') === true) {
+			// Skip metadata columns; a property column with the prefix is read.
+			if ((new MagicMetadataColumn())->field(column: $column, columnToPropertyMap: $columnToPropertyMap) !== null) {
 				continue;
 			}
 
@@ -10137,6 +10160,27 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	public function filterReadableUuids(int $registerId, int $schemaId, array $uuids): array {
+		return ($this->readableUuidsOrNull(registerId: $registerId, schemaId: $schemaId, uuids: $uuids) ?? []);
+	}//end filterReadableUuids()
+
+	/**
+	 * The same filter as filterReadableUuids(), but a failure is told apart from "none".
+	 *
+	 * A caller that reports completeness (a tree that says which bound stopped
+	 * it) must not read "read access could not be established" as "nothing is
+	 * readable here": the first is an incomplete answer, the second is a
+	 * complete one. Null means the check itself failed (and was logged);
+	 * an empty array means it ran and the caller may read none of the uuids.
+	 *
+	 * @param int           $registerId The register the table belongs to.
+	 * @param int           $schemaId   The schema the table belongs to.
+	 * @param array<string> $uuids      UUIDs to test, all expected in that table.
+	 *
+	 * @return array<int, string>|null The readable subset, or null when read access could not be established.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	public function readableUuidsOrNull(int $registerId, int $schemaId, array $uuids): ?array {
 		$uuids = array_values(array_unique(array_filter($uuids, fn ($uuid): bool => is_string($uuid) && $uuid !== '')));
 		if (empty($uuids) === true) {
 			return [];
@@ -10193,11 +10237,11 @@ class MagicMapper extends AbstractObjectMapper {
 					'error' => $e->getMessage(),
 				]
 			);
-			return [];
+			return null;
 		}//end try
 
 		return $readable;
-	}//end filterReadableUuids()
+	}//end readableUuidsOrNull()
 
 	/**
 	 * Find all objects for a given schema.

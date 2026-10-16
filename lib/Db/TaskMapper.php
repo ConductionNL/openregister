@@ -581,15 +581,19 @@ class TaskMapper extends QBMapper {
 	 * reason {@see applyExternalExclusion()} gives: that is the case looking at
 	 * its own work, and it must show what waits and on what.
 	 *
+	 * The portal seam calls it without criteria: a resident's task list is the
+	 * only inbox an external task has, so a task the case holds back waits out
+	 * of sight there too, always.
+	 *
 	 * @param IQueryBuilder $qb The query under construction.
-	 * @param TaskInboxCriteria $criteria Carries the anchors and `includeBlocked`.
+	 * @param TaskInboxCriteria|null $criteria Carries the anchors and `includeBlocked`; null for the portal seam.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
-	private function applyBlockedExclusion(IQueryBuilder $qb, TaskInboxCriteria $criteria): void {
-		if ($criteria->includeBlocked === true || $criteria->objectUuid !== null || $criteria->runUuid !== null) {
+	private function applyBlockedExclusion(IQueryBuilder $qb, ?TaskInboxCriteria $criteria = null): void {
+		if ($criteria !== null && ($criteria->includeBlocked === true || $criteria->objectUuid !== null || $criteria->runUuid !== null)) {
 			return;
 		}
 
@@ -695,7 +699,7 @@ class TaskMapper extends QBMapper {
 	}//end countOpenExternalForParty()
 
 	/**
-	 * The portal seam's predicate: this party's, external, still open.
+	 * The portal seam's predicate: this party's, external, still open, and not held back by an open blocker.
 	 *
 	 * @param IQueryBuilder $qb The query under construction.
 	 * @param string $partyReference The stored party reference.
@@ -708,6 +712,7 @@ class TaskMapper extends QBMapper {
 		$qb->andWhere($qb->expr()->eq('assignee', $qb->createNamedParameter($partyReference)));
 		$qb->andWhere($qb->expr()->eq('performer_type', $qb->createNamedParameter(Task::PERFORMER_EXTERNAL)));
 		$qb->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
+		$this->applyBlockedExclusion(qb: $qb);
 	}//end applyPartyPredicates()
 
 	/**

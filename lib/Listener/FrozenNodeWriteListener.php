@@ -39,6 +39,7 @@ use OCP\Files\Events\Node\BeforeNodeWrittenEvent;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
 use OCP\HintException;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -61,7 +62,8 @@ use Throwable;
  * ancestor. In the home, the nearest ancestor named like a UUID is the
  * candidate owner, and it counts only when that object's own `folder` is
  * that ancestor's id, the same proof `FolderManagementHandler::getObjectForFile()`
- * asks for.
+ * asks for. The mapper that resolves the object is fetched from the container
+ * only at that point, so a node outside every object folder never builds it.
  *
  * Fail closed: when the lookup of a candidate owner FAILS (a database error,
  * anything but "no such object"), the write is refused and logged with the
@@ -95,14 +97,17 @@ class FrozenNodeWriteListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param FileWriteGuard  $guard      Decides whether the owning object refuses file writes.
-	 * @param MagicMapper     $objects    Resolves the owning object by its UUID.
-	 * @param LoggerInterface $logger     Records a refusal on an unresolvable owner.
-	 * @param IRootFolder     $rootFolder Finds a shared node's twin in the `openregister` home by file id.
+	 * @param FileWriteGuard     $guard      Decides whether the owning object refuses file writes.
+	 * @param ContainerInterface $container  Resolves the MagicMapper (the owning object by its UUID) once a node
+	 *                                       has proved to be in an object folder: this listener sits on the four
+	 *                                       node events of every file operation on the instance, and the mapper's
+	 *                                       graph is wide.
+	 * @param LoggerInterface    $logger     Records a refusal on an unresolvable owner.
+	 * @param IRootFolder        $rootFolder Finds a shared node's twin in the `openregister` home by file id.
 	 */
 	public function __construct(
 		private readonly FileWriteGuard $guard,
-		private readonly MagicMapper $objects,
+		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 		private readonly IRootFolder $rootFolder,
 	) {
@@ -229,7 +234,7 @@ class FrozenNodeWriteListener implements IEventListener {
 	 */
 	private function owningObjectOf(Node $node, string $path, array $candidate): ObjectEntity|ObjectStateWriteException|null {
 		try {
-			$found = $this->objects->findAcrossAllSources(
+			$found = $this->container->get(MagicMapper::class)->findAcrossAllSources(
 				identifier: $candidate['uuid'],
 				_rbac: false,
 				_multitenancy: false

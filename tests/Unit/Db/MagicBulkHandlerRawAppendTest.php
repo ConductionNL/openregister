@@ -154,4 +154,33 @@ class MagicBulkHandlerRawAppendTest extends TestCase {
 		$this->assertSame(4, $purged);
 		$this->assertSame(['_schema = :p22', '_expires IS NOT NULL', '_expires < NOW()'], $andWheres);
 	}
+
+	public function testADeclaredPropertyNamedLikeAMetadataColumnNeverReplacesTheStampedValue(): void {
+		$this->schema->setProperties(
+			[
+				'_authorization' => ['type' => 'object'],
+				'_owner' => ['type' => 'string'],
+				'_organisation' => ['type' => 'string'],
+				'_status' => ['type' => 'string'],
+				'_meta' => ['type' => 'string'],
+			]
+		);
+
+		$row = $this->prepare([
+			'@self' => ['uuid' => 'u-3', 'owner' => 'alice', 'organisation' => 'org-1'],
+			'object' => [
+				'_authorization' => ['read' => ['everyone']],
+				'_owner' => 'mallory',
+				'_organisation' => 'org-2',
+				'_status' => 'published',
+				'_meta' => 'kept',
+			],
+		]);
+
+		$this->assertSame('alice', $row['_owner']);
+		$this->assertSame('org-1', $row['_organisation']);
+		$this->assertArrayNotHasKey('_authorization', $row);
+		$this->assertArrayNotHasKey('_status', $row);
+		$this->assertSame('kept', $row['_meta']);
+	}
 }

@@ -220,6 +220,33 @@ class AuditTrailObjectHistoryForReadersTest extends TestCase {
 		$this->assertStringNotContainsString('klokkenluider-bsn', (string)json_encode($result->getData()));
 	}
 
+	public function testACascadeEntryDoesNotNameTheObjectWhoseDeleteCausedIt(): void {
+		$this->readableObject();
+		$entry = new AuditTrail();
+		$entry->setUuid('e2');
+		$entry->setObjectUuid(self::OBJECT_UUID);
+		$entry->setAction('delete');
+		$entry->setChanged([
+			'triggeredBy' => 'referential_integrity',
+			'cascadeContext' => [
+				'triggerObject' => 'f3c2b1a0-0000-4000-8000-00000000beef',
+				'triggerSchema' => 'verborgen-schema',
+				'action_type' => 'referential_integrity.cascade_delete',
+				'property' => 'interneAantekening',
+			],
+		]);
+		$this->auditTrailMapper->method('findAll')->willReturn([$entry]);
+
+		$result = $this->controllerFor('behandelaar', false, ['behandelaars'])->objects('dossiq', 'zaak', self::OBJECT_UUID);
+
+		$cascade = $result->getData()['results'][0]['changed']['cascadeContext'];
+		$this->assertNull($cascade['triggerObject']);
+		$this->assertNull($cascade['triggerSchema']);
+		$this->assertNull($cascade['property'], 'a property the reader may not see is not named either');
+		$this->assertSame('referential_integrity.cascade_delete', $cascade['action_type']);
+		$this->assertStringNotContainsString('beef', (string)json_encode($result->getData()));
+	}
+
 	public function testAReaderAllowedThePropertySeesItInTheHistory(): void {
 		$this->readableObject();
 		$this->auditTrailMapper->method('findAll')->willReturn([$this->updateEntry()]);

@@ -137,6 +137,7 @@ class ObjectOwnershipService {
 	 * @param SchemaMapper $schemaMapper Resolves a child's schema.
 	 * @param INotificationManager $notificationManager Tells the previous owner.
 	 * @param LoggerInterface $logger Where a transfer is noted.
+	 * @param GrantChangeAuditor|null $grantAuditor Writes an audit-trail entry for a change of the owning group. Null only in legacy fixtures.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection; see the
 	 * coupling note on the class.
@@ -155,6 +156,7 @@ class ObjectOwnershipService {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly INotificationManager $notificationManager,
 		private readonly LoggerInterface $logger,
+		private readonly ?GrantChangeAuditor $grantAuditor = null,
 	) {
 	}//end __construct()
 
@@ -378,6 +380,7 @@ class ObjectOwnershipService {
 		// Read-modify-write ONE key, exactly as the scope is written: an action
 		// override or a scope in the same block must survive this.
 		$block = ($object->getAuthorization() ?? []);
+		$before = $this->groupNameOf(value: ($block[ObjectScopeResolver::OWNER_GROUP_KEY] ?? null));
 
 		if ($group === null || $group === '') {
 			unset($block[ObjectScopeResolver::OWNER_GROUP_KEY]);
@@ -396,8 +399,29 @@ class ObjectOwnershipService {
 
 		$object->setAuthorization($block);
 
+		$this->grantAuditor?->recordOwnerGroup(
+			object: $object,
+			before: $before,
+			after: $this->groupNameOf(value: ($block[ObjectScopeResolver::OWNER_GROUP_KEY] ?? null))
+		);
+
 		return $block;
 	}//end setOwnerGroup()
+
+	/**
+	 * The group name an authorization block holds, or null for none.
+	 *
+	 * @param mixed $value The stored `ownerGroup` value.
+	 *
+	 * @return string|null The group id.
+	 */
+	private function groupNameOf(mixed $value): ?string {
+		if (is_string($value) === true && trim($value) !== '') {
+			return trim($value);
+		}
+
+		return null;
+	}//end groupNameOf()
 
 	/**
 	 * Move one record to a new owner, record it, announce it, and carry it down.

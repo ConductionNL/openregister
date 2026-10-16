@@ -42,6 +42,7 @@ use OCP\HintException;
 use OCP\IUser;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -59,15 +60,34 @@ class FrozenNodeWriteListenerTest extends TestCase {
 
 	private IRootFolder&MockObject $rootFolder;
 
+	private ContainerInterface&MockObject $container;
+
+	/**
+	 * How many times the listener asked the container for the mapper.
+	 *
+	 * @var integer
+	 */
+	private int $mapperRequests = 0;
+
 	protected function setUp(): void {
 		parent::setUp();
 		$this->objects = $this->createMock(MagicMapper::class);
+		$this->mapperRequests = 0;
+		$this->container = $this->createMock(ContainerInterface::class);
+		$this->container->method('get')->willReturnCallback(
+			function (string $id): MagicMapper {
+				$this->assertSame(MagicMapper::class, $id);
+				$this->mapperRequests++;
+
+				return $this->objects;
+			}
+		);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->rootFolder = $this->createMock(IRootFolder::class);
 	}//end setUp()
 
 	private function listener(): FrozenNodeWriteListener {
-		return new FrozenNodeWriteListener(guard: new FileWriteGuard(), objects: $this->objects, logger: $this->logger, rootFolder: $this->rootFolder);
+		return new FrozenNodeWriteListener(guard: new FileWriteGuard(), container: $this->container, logger: $this->logger, rootFolder: $this->rootFolder);
 	}//end listener()
 
 	/**
@@ -388,4 +408,42 @@ class FrozenNodeWriteListenerTest extends TestCase {
 		$this->listener()->handle(new \OCP\Files\Events\Node\BeforeNodeReadEvent($this->createMock(Node::class)));
 		$this->addToAssertionCount(1);
 	}//end testAnOtherEventIsIgnored()
+
+	public function testTheMapperIsNotBuiltForANodeOutsideEveryObjectFolder(): void {
+		$files = $this->folder('files', 2, '/openregister/files', null);
+		$loose = $this->createMock(File::class);
+		$loose->method('getName')->willReturn('loose.pdf');
+		$loose->method('getPath')->willReturn('/openregister/files/loose.pdf');
+		$loose->method('getParent')->willReturn($files);
+
+		$listener = $this->listener();
+		$listener->handle(new BeforeNodeWrittenEvent($loose));
+		$listener->handle(new BeforeNodeWrittenEvent($this->fileThroughAShare(ownerUid: 'bob')));
+		$listener->handle(new BeforeNodeCreatedEvent($this->fileInObjectFolder('/alice/files')));
+		$listener->handle(new BeforeNodeDeletedEvent($this->fileInObjectFolder('/alice/files')));
+
+		$this->assertSame(0, $this->mapperRequests);
+	}//end testTheMapperIsNotBuiltForANodeOutsideEveryObjectFolder()
+
+	public function testTheMapperIsFetchedOnceANodeProvesToBeInAnObjectFolder(): void {
+		$this->objects->method('findAcrossAllSources')->willReturn(['object' => $this->frozenObject()]);
+
+		try {
+			$this->listener()->handle(new BeforeNodeWrittenEvent($this->fileInObjectFolder()));
+			$this->fail('Expected the write to be refused');
+		} catch (HintException $e) {
+			$this->assertSame(1, $this->mapperRequests);
+		}
+	}//end testTheMapperIsFetchedOnceANodeProvesToBeInAnObjectFolder()
+
+	public function testAMapperThatCannotBeBuiltRefusesTheWrite(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new \RuntimeException('container failure'));
+		$this->logger->expects($this->once())->method('warning')->with($this->stringContains('could not be resolved'), $this->anything());
+
+		$listener = new FrozenNodeWriteListener(guard: new FileWriteGuard(), container: $container, logger: $this->logger, rootFolder: $this->rootFolder);
+
+		$this->expectException(HintException::class);
+		$listener->handle(new BeforeNodeWrittenEvent($this->fileInObjectFolder()));
+	}//end testAMapperThatCannotBeBuiltRefusesTheWrite()
 }//end class

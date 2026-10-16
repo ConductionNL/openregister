@@ -256,4 +256,16 @@ class FormDependentsCheckTest extends TestCase {
 
 		$this->assertSame([], $this->check->assess(schema: $schema)['affected']);
 	}//end testAChangeThatBreaksNoFormAffectsNothing()
+
+	/**
+	 * A caller that judges a schema's forms itself claims the save, so the listener for every other writer leaves it.
+	 */
+	public function testASchemaSaveCanBeClaimedByItsCallerForTheRequest(): void {
+		$this->assertFalse($this->check->isClaimed(schemaId: 12));
+
+		$this->check->claim(schemaId: 12);
+
+		$this->assertTrue($this->check->isClaimed(schemaId: 12));
+		$this->assertFalse($this->check->isClaimed(schemaId: 13), 'a claim names one schema');
+	}//end testASchemaSaveCanBeClaimedByItsCallerForTheRequest()
 }//end class

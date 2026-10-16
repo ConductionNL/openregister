@@ -99,6 +99,21 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 	private const REQUIRED_APP = 'integriq';
 
 	/**
+	 * The source configuration flag that allows the residents count.
+	 */
+	public const RESIDENT_COUNT_SETTING = 'residentCount';
+
+	/**
+	 * Cause when the source does not allow the residents count.
+	 */
+	public const CAUSE_RESIDENT_COUNT_NOT_ENABLED = 'resident-count-not-enabled';
+
+	/**
+	 * Cause when an address object id is not 16 digits.
+	 */
+	public const CAUSE_INVALID_IDENTIFIER = 'invalid-identifier';
+
+	/**
 	 * Default field set requested from HaalCentraal. The BRP API requires an
 	 * explicit `fields` list on every query. Mirrors the field set pipelinq's
 	 * `HaalCentraalClient` requests so the consuming app's normaliser receives
@@ -357,6 +372,60 @@ class BrpPersonProvider extends AbstractIntegrationProvider {
 	public function health(): array {
 		return $this->router->probe(provider: $this);
 	}//end health()
+
+	/**
+	 * Count the people the BRP registers at an address object.
+	 *
+	 * Issues `ZoekMetAdresseerbaarObjectIdentificatie` with one field and
+	 * keeps only the number of results. Asked only when the source carries
+	 * `configuration.residentCount: true`; the call reaches the connector with
+	 * `withholdBodies`, so the residents' numbers are never stored. Neither the
+	 * answer nor the log holds a person or the address object id.
+	 *
+	 * @param string $addressObjectId The 16-digit adresseerbaarObjectIdentificatie.
+	 *
+	 * @return array<string,mixed> `{ total, meta }`, or `{ unavailable, cause }`.
+	 *
+	 * @spec openspec/specs/integration-person-lookup/spec.md#requirement-brp-count-of-residents-at-an-address-object
+	 */
+	public function countResidentsAtAddressObject(string $addressObjectId): array {
+		$addressObjectId = trim($addressObjectId);
+		if (preg_match('/^\d{16}$/', $addressObjectId) !== 1) {
+			return ['unavailable' => true, 'cause' => self::CAUSE_INVALID_IDENTIFIER];
+		}
+
+		try {
+			$configuration = $this->router->sourceConfiguration(provider: $this);
+			if (($configuration[self::RESIDENT_COUNT_SETTING] ?? null) !== true) {
+				return ['unavailable' => true, 'cause' => self::CAUSE_RESIDENT_COUNT_NOT_ENABLED];
+			}
+
+			$envelope = $this->router->callWithMeta(
+				provider: $this,
+				method: 'POST',
+				path: 'personen',
+				options: [
+					'body' => [
+						'type' => 'ZoekMetAdresseerbaarObjectIdentificatie',
+						'adresseerbaarObjectIdentificatie' => $addressObjectId,
+						'fields' => ['burgerservicenummer'],
+					],
+					'headers' => ['Accept' => 'application/hal+json', 'Content-Type' => 'application/json'],
+					'withholdBodies' => true,
+				]
+			);
+		} catch (ProviderUnavailableException $e) {
+			return ['unavailable' => true, 'cause' => $e->getCause()];
+		} catch (Throwable $e) {
+			$this->logger->warning('BrpPersonProvider::countResidentsAtAddressObject failed (transport).');
+			return ['unavailable' => true, 'cause' => ProviderUnavailableException::CAUSE_UPSTREAM_SERVICE_DOWN];
+		}//end try
+
+		return [
+			'total' => count($this->extractPersonen(response: ($envelope['body'] ?? []))),
+			'meta' => $this->shapeMeta(meta: ($envelope['meta'] ?? [])),
+		];
+	}//end countResidentsAtAddressObject()
 
 	/**
 	 * Build the `RaadpleegMetBurgerservicenummer` query body for the

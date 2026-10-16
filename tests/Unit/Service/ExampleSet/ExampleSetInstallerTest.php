@@ -147,6 +147,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$result = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
 
 		$this->assertSame(['brp person' => 1, 'cases case' => 2], $result['checked']);
+		$this->assertSame([], $result['checkedChanges']);
 		$this->assertSame(['cases/lib/Settings/example-sets/demo.json: object "case-1" (cases case): The property start is not allowed'], $result['refusals']);
 		$this->assertSame(0, $this->store->creates);
 		$this->assertSame(3, $this->store->validations, 'the check validates every object, hard validation or not');

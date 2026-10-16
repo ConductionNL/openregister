@@ -828,12 +828,7 @@ class ReferentialIntegrityService {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	private function extractReferenceKey(array $property): ?string {
-		$key = ($property['referenceKey'] ?? ($property['items']['referenceKey'] ?? null));
-		if (is_string($key) === false || trim($key) === '' || trim($key) === 'uuid') {
-			return null;
-		}
-
-		return trim($key);
+		return (new ReferenceKey())->keyOf(property: $property);
 	}//end extractReferenceKey()
 
 	/**

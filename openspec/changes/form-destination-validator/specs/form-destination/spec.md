@@ -84,13 +84,19 @@ The service SHALL validate every write before the first. When a write is refused
 
 ### Requirement: Saving a schema MUST re-check the forms that submit into it
 
-When a schema's properties or required list are saved, OpenRegister SHALL dispatch `FormDestinationDependentsEvent` with the proposed definition; each owning app adds its published forms into that schema, and the validator SHALL run for each. The owning app's setting `formDestinationBreak` (`unpublish`, the default, or `refuse`) SHALL decide the outcome (Q7): any `refuse` blocks the save with 409 listing the forms and nothing is unpublished; otherwise, after the save, each broken form is unpublished through its owning app, its author is notified (`form_unpublished`), and the save response SHALL list every affected form with its outcome and findings under `affectedForms`. This applies from the first release (Q9).
+When a schema's properties or required list are saved, OpenRegister SHALL dispatch `FormDestinationDependentsEvent` with the proposed definition; each owning app adds its published forms into that schema, and the validator SHALL run for each. The owning app's setting `formDestinationBreak` (`unpublish`, the default, or `refuse`) SHALL decide the outcome (Q7): any `refuse` blocks the save with 409 listing the forms and nothing is unpublished; otherwise, after the save, each broken form is unpublished through its owning app, its author is notified (`form_unpublished`), and the save response SHALL list every affected form with its outcome and findings under `affectedForms`. This applies from the first release (Q9). It holds for every writer of a schema, not only the schema API: a schema written by the configuration importer, the import endpoint or the AI and MCP tools has no response to refuse, so the broken forms are unpublished and their authors notified there too (an owning app's `refuse` setting is logged as not honourable), and the schema API, which judges the forms itself, claims its own save so no form is unpublished twice.
 
 #### Scenario: A new required property unpublishes a form that lacks it
 
 - **GIVEN** a published form into `ticket` without `priority`, and the default setting
 - **WHEN** `priority` becomes required
 - **THEN** the form is unpublished, the response names it, and its author is notified
+
+#### Scenario: A schema import that adds a required property unpublishes a form that lacks it
+
+- **GIVEN** a published form into `ticket` without `priority`
+- **WHEN** a configuration import makes `priority` required on `ticket`
+- **THEN** the form is unpublished and its author is notified, as for an edit through the schema API
 
 ### Requirement: A create refusal MUST use the per-property error shape
 
