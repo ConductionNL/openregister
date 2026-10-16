@@ -12,7 +12,11 @@ leave the object alone and count it as unchanged. Objects the configuration does
 not list SHALL NOT be read or written.
 
 The update SHALL store the shipped version on the object, so the next import
-reads the seed as current. Any other update SHALL bump the patch version.
+reads the seed as current. Any other update SHALL bump the patch version. A
+version carried in `@self.version` SHALL count only for a save that runs
+without RBAC (the import, an administrator, a system caller): a caller judged
+by RBAC SHALL NOT set an object's version, so the seed channel cannot be
+steered from the object API.
 
 #### Scenario: An upgraded instance receives the shipped case type
 
