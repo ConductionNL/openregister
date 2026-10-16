@@ -232,9 +232,9 @@ class DraftStatusPolicy {
 	/**
 	 * The properties the server fills, excused from `required` while a payload is judged in full.
 	 *
-	 * A property with a default, a computation or the serverSet marker is
-	 * filled on save or by a creating listener, so a payload without it is
-	 * complete. The form submit and the owner's activation excuse the same
+	 * A property with a default, a computation, a generated identifier
+	 * (`x-openregister-generated`) or the serverSet marker is filled on save or
+	 * by a creating listener, so a payload without it is complete. The form submit and the owner's activation excuse the same
 	 * set, so a draft that one accepts the other accepts too.
 	 *
 	 * @param Schema               $schema The schema.
@@ -242,7 +242,7 @@ class DraftStatusPolicy {
 	 *
 	 * @return array<string, string> Property => reason, in ValidateObject's notSupplied shape.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FormDestinationValidator::marker() reads a schema property; there is no instance to inject.
+	 * @SuppressWarnings(PHPMD.StaticAccess) FormDestinationValidator::isServerFilled() reads a schema property; there is no instance to inject.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
@@ -253,10 +253,7 @@ class DraftStatusPolicy {
 				continue;
 			}
 
-			$filled = array_key_exists('default', $property) === true
-				|| isset($property['computed']) === true
-				|| FormDestinationValidator::marker(property: $property, name: FormDestinationValidator::MARKER_SERVER_SET);
-			if ($filled === true) {
+			if (FormDestinationValidator::isServerFilled(property: $property) === true) {
 				$excused[(string)$name] = 'server-set';
 			}
 		}

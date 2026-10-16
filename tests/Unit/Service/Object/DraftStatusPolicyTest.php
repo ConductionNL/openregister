@@ -134,15 +134,16 @@ class DraftStatusPolicyTest extends TestCase {
 				'total' => ['type' => 'number', 'computed' => ['expression' => 'a + b']],
 				'number' => ['type' => 'string', 'x-openregister' => ['serverSet' => true]],
 				'reference' => ['type' => 'string', 'x-openregister' => ['serverSet' => false]],
+				'caseNumber' => ['type' => 'string', 'x-openregister-generated' => ['sequence' => 'case', 'format' => 'Z-{year}-{seq:4}']],
 			]
 		);
 
 		$this->assertSame(
-			['priority' => 'server-set', 'total' => 'server-set', 'number' => 'server-set'],
+			['priority' => 'server-set', 'total' => 'server-set', 'number' => 'server-set', 'caseNumber' => 'server-set'],
 			$this->policy->serverFilledExcusals(schema: $schema, object: ['title' => 'x'])
 		);
 		// A value the caller did supply is judged like any other.
-		$this->assertSame(['total' => 'server-set'], $this->policy->serverFilledExcusals(schema: $schema, object: ['priority' => 'high', 'number' => 'T-1']));
+		$this->assertSame(['total' => 'server-set', 'caseNumber' => 'server-set'], $this->policy->serverFilledExcusals(schema: $schema, object: ['priority' => 'high', 'number' => 'T-1']));
 	}//end testServerFilledPropertiesAreExcusedWhenAbsent()
 
 	/**

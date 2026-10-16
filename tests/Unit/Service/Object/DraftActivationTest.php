@@ -641,4 +641,27 @@ class DraftActivationTest extends TestCase {
 		$this->assertSame(DraftActivationRefusedException::NOT_A_DRAFT, $refused->getReason());
 		$this->assertSame([], $this->dispatched);
 	}//end testASaveThatDidNotUseThePromotionAnnouncesNothing()
+
+	/**
+	 * A required property that carries a generated identifier does not keep a draft from leaving draft.
+	 *
+	 * The listener issues the number on the save that leaves draft, so the
+	 * draft cannot hold it; excused like `serverSet`, or such a draft could
+	 * never be sent. Goes red without the `x-openregister-generated` excusal.
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
+	 */
+	public function testAGeneratedRequiredIdentifierDoesNotBlockActivation(): void {
+		$this->schema->setRequired(['subject', 'channel', 'caseNumber']);
+		$this->schema->setProperties(
+			$this->schema->getProperties() + [
+				'caseNumber' => ['type' => 'string', 'x-openregister-generated' => ['sequence' => 'case', 'format' => 'Z-{year}-{seq:4}']],
+			]
+		);
+		$this->store(uuid: 'd1', owner: 'agent', status: 'draft', data: ['subject' => 'A', 'channel' => 'phone']);
+
+		$saved = $this->activation->activate(register: $this->register, schema: $this->schema, draftId: 'd1', owner: DraftOwner::ofUser(user: $this->user(uid: 'agent')));
+
+		$this->assertSame('active', $saved->getStatus());
+	}//end testAGeneratedRequiredIdentifierDoesNotBlockActivation()
 }//end class
