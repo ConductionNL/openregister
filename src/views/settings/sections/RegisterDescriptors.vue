@@ -150,37 +150,11 @@
 				</div>
 			</template>
 
-			<!-- Re-importing takes the file's authorization over a local
-			     change, and re-imports the whole app's configuration where it
-			     has a base document: say so before it runs, not after. -->
-			<NcDialog
+			<ReimportDescriptorDialog
 				v-if="confirming"
-				:open="true"
-				:name="
-					t('openregister', 'Re-import {register}?', {
-						register: confirming.title,
-					})
-				"
-				size="small"
-				@update:open="onConfirmOpenChange">
-				<p>
-					{{
-						t(
-							'openregister',
-							'Re-importing {app} takes the authorization of its schemas from the file, replacing any change made on this instance, and may re-import every register of the app, not only {register}.',
-							{ app: confirming.appId, register: confirming.title },
-						)
-					}}
-				</p>
-				<template #actions>
-					<NcButton @click="cancelReimport">
-						{{ t('openregister', 'Cancel') }}
-					</NcButton>
-					<NcButton variant="primary" @click="confirmReimport">
-						{{ t('openregister', 'Re-import') }}
-					</NcButton>
-				</template>
-			</NcDialog>
+				:row="confirming"
+				@cancel="cancelReimport"
+				@confirm="confirmReimport" />
 		</div>
 	</SettingsSection>
 </template>
@@ -188,9 +162,10 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
+import ReimportDescriptorDialog from '../../../dialogs/settings/ReimportDescriptorDialog.vue'
 
 /**
  * Register descriptors section.
@@ -220,8 +195,8 @@ export default {
 	components: {
 		Download,
 		NcButton,
-		NcDialog,
 		NcLoadingIcon,
+		ReimportDescriptorDialog,
 		SettingsSection,
 	},
 
@@ -383,20 +358,6 @@ export default {
 		},
 
 		/**
-		 * The dialog's own close button or Escape.
-		 *
-		 * @param {boolean} open Whether the dialog stays open.
-		 * @return {void}
-		 *
-		 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
-		 */
-		onConfirmOpenChange(open) {
-			if (!open) {
-				this.cancelReimport()
-			}
-		},
-
-		/**
 		 * The administrator confirmed: run the re-import of the asked row.
 		 *
 		 * @return {Promise<void>} Resolves once the outcome is rendered.
@@ -464,6 +425,7 @@ export default {
 							?? e?.response?.data?.error
 							?? e.message,
 					}),
+
 					replaced: [],
 				}
 			} finally {

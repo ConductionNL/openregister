@@ -85,6 +85,8 @@ final class DescriptorConfigIds {
 	 * @param string $file  The descriptor's file name.
 	 *
 	 * @return string The configuration id.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
 	public static function forFile(string $appId, string $file): string {
 		if ($appId !== self::SHARED) {

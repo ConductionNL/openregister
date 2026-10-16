@@ -217,6 +217,8 @@ class ExampleSetStore {
 	 * @param array<string, mixed> $where The asked values, by field.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
 	 */
 	public function rowMatches(array $row, array $where): bool {
 		foreach ($where as $field => $value) {

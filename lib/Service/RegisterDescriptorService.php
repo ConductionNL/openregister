@@ -381,8 +381,9 @@ class RegisterDescriptorService {
 	 * `counts` reports what actually landed, so `imported` cannot be said over a
 	 * no-op.
 	 *
-	 * @return array{outcome: string, reason: string|null, counts?: array{declared: int, imported: int, skipped: int}, importJobId?: string|null, importAppId?: string}
-	 *                            importJobId and importAppId once the import ran: the job it recorded and the configuration id it ran under.
+	 * @return array<string, mixed> `outcome` and `reason`; `counts` ({declared, imported, skipped}) once the import ran,
+	 *                              with `importJobId` and `importAppId`: the job it recorded and the configuration
+	 *                              id it ran under.
 	 *
 	 * @spec openspec/changes/register-descriptor-admin/specs/register-descriptor-admin/spec.md
 	 */
