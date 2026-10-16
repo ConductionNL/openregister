@@ -22,6 +22,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Schemas;
 
 use Exception;
+use OCA\OpenRegister\Service\Object\ReferenceKey;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 use PHPUnit\Framework\TestCase;
 
@@ -78,4 +79,44 @@ class PropertyValidatorReferenceKeyTest extends TestCase {
 
 		(new PropertyValidatorHandler())->validateProperty(property: ['type' => 'string', 'referenceKey' => 'code', 'onDelete' => 'RESTRICT']);
 	}//end testOnDeleteWithoutTargetIsRefused()
+
+	/**
+	 * `referenceKey: uuid` (or empty) is a plain uuid reference: every onDelete action applies, as the delete reads it.
+	 *
+	 * @return void
+	 */
+	public function testAUuidReferenceKeyIsAPlainReferenceAndAcceptsCascade(): void {
+		$validator = new PropertyValidatorHandler();
+
+		foreach (['uuid', ' uuid ', ''] as $key) {
+			self::assertTrue(
+				$validator->validateProperty(
+					property: ['type' => 'string', 'referenceSchema' => 'label', 'referenceKey' => $key, 'onDelete' => 'CASCADE']
+				),
+				'referenceKey "' . $key . '"'
+			);
+		}
+
+		self::assertTrue(
+			$validator->validateProperty(
+				property: ['type' => 'array', 'items' => ['type' => 'string', 'referenceSchema' => 'label', 'referenceKey' => 'uuid'], 'onDelete' => 'SET_NULL']
+			)
+		);
+	}//end testAUuidReferenceKeyIsAPlainReferenceAndAcceptsCascade()
+
+	/**
+	 * The validator and the delete read one declaration the same way.
+	 *
+	 * @return void
+	 */
+	public function testTheReaderAnswersTheKeyOrNullForAUuidReference(): void {
+		$reader = new ReferenceKey();
+
+		self::assertSame('code', $reader->of(property: ['referenceKey' => ' code ']));
+		self::assertSame('code', $reader->of(property: ['items' => ['referenceKey' => 'code']]));
+		self::assertNull($reader->of(property: ['referenceKey' => 'uuid']));
+		self::assertNull($reader->of(property: ['referenceKey' => '']));
+		self::assertNull($reader->of(property: ['referenceKey' => 7]));
+		self::assertNull($reader->of(property: []));
+	}//end testTheReaderAnswersTheKeyOrNullForAUuidReference()
 }//end class

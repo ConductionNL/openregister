@@ -26,6 +26,7 @@
 namespace OCA\OpenRegister\Service\Schemas;
 
 use Exception;
+use OCA\OpenRegister\Service\Object\ReferenceKey;
 use OCA\OpenRegister\Service\Search\PropertySearchProfile;
 
 /**
@@ -977,8 +978,10 @@ class PropertyValidatorHandler {
 			}
 
 			// A reference by key only refuses: the other actions rewrite or
-			// delete by uuid and would act on the wrong value.
-			$referenceKey = ($property['referenceKey'] ?? ($property['items']['referenceKey'] ?? null));
+			// delete by uuid and would act on the wrong value. An empty
+			// referenceKey or the literal `uuid` is a plain uuid reference,
+			// read the way the delete reads it.
+			$referenceKey = (new ReferenceKey())->of(property: $property);
 			if ($referenceKey !== null && strtoupper((string)$property['onDelete']) !== 'RESTRICT') {
 				throw new Exception("'referenceKey' at '$path' is only valid with onDelete RESTRICT");
 			}
