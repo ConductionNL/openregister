@@ -216,7 +216,7 @@ class FormUploadStore {
 	}//end claim()
 
 	/**
-	 * Delete every expired, unclaimed token.
+	 * Delete every expired, unclaimed token, and the bytes of an upload whose record was never written.
 	 *
 	 * @return int How many tokens were deleted, so a zero is a counted zero.
 	 *
@@ -230,20 +230,33 @@ class FormUploadStore {
 
 		$now = $this->time->getTime();
 		$deleted = 0;
+		$gone = [];
 		foreach ($folder->getDirectoryListing() as $file) {
 			$name = $file->getName();
-			if (str_ends_with($name, '.json') === false) {
+			if (str_ends_with($name, '.json') === true) {
+				$token = substr($name, 0, -5);
+				$meta = $this->meta(token: $token);
+				if ($meta !== null && $meta['expiresAt'] > $now) {
+					continue;
+				}
+
+				$this->deleteToken(folder: $folder, token: $token);
+				$gone[$token] = true;
+				$deleted++;
 				continue;
 			}
 
-			$token = substr($name, 0, -5);
-			$meta = $this->meta(token: $token);
-			if ($meta !== null && $meta['expiresAt'] > $now) {
-				continue;
+			// The bytes of a token whose record was never written (issue() writes
+			// the bytes first): nothing else lists it. Left alone while it could
+			// still be an upload in flight, that is for the length of a token.
+			if (str_ends_with($name, '.bin') === true
+				&& isset($gone[substr($name, 0, -4)]) === false
+				&& $folder->fileExists(substr($name, 0, -4) . '.json') === false
+				&& ($file->getMTime() + self::TTL) <= $now
+			) {
+				$file->delete();
+				$deleted++;
 			}
-
-			$this->deleteToken(folder: $folder, token: $token);
-			$deleted++;
 		}
 
 		return $deleted;
