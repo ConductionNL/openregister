@@ -42,6 +42,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -441,6 +442,16 @@ class PermissionHandler {
 			return true;
 		}
 
+		// A draft answers to its owner only (decision 180). The read predicate
+		// of the list queries keeps it from everybody else, but a check that
+		// is handed the stored object (bulk save, bulk delete, the readable
+		// audit trail, a transition, a file) is a second door onto the same
+		// object and must say the same. Asked before the cache: an object
+		// that is not a draft costs one comparison.
+		if ($object !== null && $this->draftIsKeptFromCaller(object: $object, schema: $schema, userId: $userId) === true) {
+			return false;
+		}
+
 		// Build a per-request cache key. The object UUID (when present) is part
 		// of the key so conditional rules with `match` clauses are still
 		// re-evaluated per object — the cache only deduplicates repeated calls
@@ -491,6 +502,60 @@ class PermissionHandler {
 
 		return $verdict;
 	}//end hasPermission()
+
+	/**
+	 * Whether the object is a draft that its schema keeps from this caller, whatever the action.
+	 *
+	 * The same answer as the read predicate (MagicRbacHandler): an
+	 * administrator and the command line without a user (occ, cron, repair
+	 * steps) are not kept from a draft, the draft's owner is not, and
+	 * everybody else is, including an anonymous web caller. A schema that sets
+	 * `draftsVisible: true` shows its drafts to anyone who may read the
+	 * schema. Every verb is refused, not only `read`: somebody who cannot
+	 * read a draft cannot change, delete or read the history of it either.
+	 *
+	 * @param ObjectEntity $object The object the check is about.
+	 * @param Schema       $schema Its schema.
+	 * @param string|null  $userId The caller, null for the session user.
+	 *
+	 * @return bool True when the caller is refused every action on this object.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AnonymousEvaluationContext is an ambient-context marker by design.
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+	 */
+	private function draftIsKeptFromCaller(ObjectEntity $object, Schema $schema, ?string $userId): bool {
+		if ($object->isDraft() === false) {
+			return false;
+		}
+
+		$subject = ($userId ?? $this->userSession->getUser()?->getUID());
+		if ((new DraftStatusPolicy())->keptFrom(object: $object, schema: $schema, userId: $subject) === false) {
+			return false;
+		}
+
+		if ($subject === null) {
+			// Nobody is signed in: the command line is the system and passes,
+			// as it does on the read path; an anonymous web caller is kept.
+			return AnonymousEvaluationContext::isActive() === true || $this->isCommandLine() === false;
+		}
+
+		// An administrator reads every draft, so is not kept from one.
+		$user = $this->userManager->get($subject);
+
+		return $user === null || in_array('admin', $this->groupManager->getUserGroupIds($user), true) === false;
+	}//end draftIsKeptFromCaller()
+
+	/**
+	 * Whether PHP runs on the command line. A seam, so a test can read as a web request.
+	 *
+	 * @return bool True under the CLI SAPI.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	protected function isCommandLine(): bool {
+		return PHP_SAPI === 'cli';
+	}//end isCommandLine()
 
 	/**
 	 * Dispatch the per-action telemetry event.

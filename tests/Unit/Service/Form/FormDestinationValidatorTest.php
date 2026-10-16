@@ -136,6 +136,25 @@ class FormDestinationValidatorTest extends TestCase {
 	}//end testAServerSetDefaultedOrComputedPropertyIsNotReported()
 
 	/**
+	 * A required generated identifier (`x-openregister-generated`) is filled by the server, so it is not reported either.
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
+	 */
+	public function testAGeneratedIdentifierIsNotReported(): void {
+		$schema = $this->caseSchema(
+			extraProperties: ['caseNumber' => ['type' => 'string', 'x-openregister-generated' => ['sequence' => 'case', 'format' => 'Z-{year}-{seq:4}']]],
+			required: ['title', 'caseNumber']
+		);
+
+		$findings = $this->validator->validate(
+			mapping: ['fields' => [['field' => 'onderwerp', 'property' => 'title', 'type' => 'text', 'maxLength' => 100]]],
+			schema: $schema
+		);
+
+		$this->assertSame([], $findings);
+	}//end testAGeneratedIdentifierIsNotReported()
+
+	/**
 	 * A property-level `required: true` counts as required too.
 	 */
 	public function testAPropertyLevelRequiredFlagCounts(): void {

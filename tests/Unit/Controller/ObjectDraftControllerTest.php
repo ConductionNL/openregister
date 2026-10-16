@@ -60,6 +60,7 @@ class ObjectDraftControllerTest extends TestCase {
 
 	private DraftActivation&MockObject $activation;
 
+
 	private IUserSession&MockObject $session;
 
 	private LoggerInterface&MockObject $logger;
@@ -99,6 +100,16 @@ class ObjectDraftControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->objects = $this->createMock(ObjectService::class);
+		// The render boundary: takes the `writeOnly` property `secret` out of the entity, as the real one does for the schema that declares it.
+		$this->objects->method('renderEntity')->willReturnCallback(
+			static function (ObjectEntity $entity, ?array $_extend = [], ?int $depth = 0, ?array $filter = [], ?array $fields = [], ?array $unset = [], bool $_rbac = true): array {
+				$object = ($entity->getObject() ?? []);
+				unset($object['secret']);
+				$entity->setObject($object);
+
+				return $entity->jsonSerialize();
+			}
+		);
 		$this->objects->method('find')->willReturnCallback(
 			function (
 				int|string $id,
@@ -254,6 +265,28 @@ class ObjectDraftControllerTest extends TestCase {
 		// The record was resolved through the RBAC boundary, in its own register and schema.
 		$this->assertSame(['id' => 'd1', 'register' => $this->register, 'schema' => $this->schema, 'rbac' => true, 'multitenancy' => true], $this->reads[0]);
 	}//end testTheOwnerGetsTheActivatedObject()
+
+	/**
+	 * The answer goes through the render boundary: a `writeOnly` property is never in the 200 body.
+	 *
+	 * Goes red without the redaction: the entity the save handed back carries the secret.
+	 */
+	public function testAWriteOnlyPropertyIsNotInTheActivatedObject(): void {
+		$this->signIn(uid: 'agent');
+		$this->readableDraft();
+
+		$active = new ObjectEntity();
+		$active->setUuid('d1');
+		$active->setStatus('active');
+		$active->setObject(['subject' => 'A', 'secret' => 'hunter2']);
+		$this->activationAnswers(answer: $active);
+
+		$response = $this->controller->activate(register: 'service', schema: 'ticket', id: 'd1');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertStringNotContainsString('hunter2', (string)json_encode($response->getData()));
+		$this->assertSame('A', $response->getData()['subject'] ?? null);
+	}//end testAWriteOnlyPropertyIsNotInTheActivatedObject()
 
 	/**
 	 * A body without `object`, or with something that is no object, activates the draft as stored.

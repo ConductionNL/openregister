@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -1323,16 +1324,24 @@ class ReferentialIntegrityService {
 		string $targetUuid,
 		bool $isArray,
 	): array {
-		$fullTableName = 'oc_openregister_table_' . $register->getId() . '_' . $schema->getId();
-
-		// Convert camelCase property name to snake_case column name and quote it.
-		$columnName = strtolower(preg_replace('/[A-Z]/', '_$0', $propertyName));
-		$quotedCol = '"' . str_replace('"', '""', $columnName) . '"';
-
 		// Validate inputs before database access (also ensures Psalm sees param usage before \OC:: call).
 		if (empty($targetUuid) === true) {
 			return [];
 		}
+
+		$platform = $this->db->getDatabasePlatform();
+
+		// The table with the instance's prefix, and the column the way the table
+		// was built (the schema's column map, collision suffixes included), both
+		// quoted by the connection's own platform: a double-quoted identifier is a
+		// string literal to MySQL and MariaDB (no ANSI_QUOTES), so `"code" = ?`
+		// compared the text 'code' with the value, matched nothing and let the
+		// delete through. Null-safe via get_debug_type() (a mocked IDBConnection
+		// returns a bare platform double in unit tests).
+		$quotedTable = $platform->quoteIdentifier(
+			$this->db->getQueryBuilder()->getTableName($this->objectEntityMapper->getTableNameForRegisterSchema(register: $register, schema: $schema))
+		);
+		$quotedCol = $platform->quoteIdentifier($this->columnOf(schema: $schema, propertyName: $propertyName));
 
 		// Build the array/scalar SQL variant selector before accessing the database.
 		// For array properties we need JSON_CONTAINS / jsonb @> operators; for scalars a simple = suffices.
@@ -1341,8 +1350,6 @@ class ReferentialIntegrityService {
 			$queryMode = 'array';
 		}
 
-		$platform = $this->db->getDatabasePlatform();
-		// Null-safe via get_debug_type() (a mocked IDBConnection returns null here in unit tests).
 		$isPostgres = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
 
 		$deletedCheck = '_deleted IS NULL';
@@ -1350,7 +1357,7 @@ class ReferentialIntegrityService {
 			$deletedCheck = "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
 		}
 
-		$selectClause = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop FROM {$fullTableName}";
+		$selectClause = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop FROM {$quotedTable}";
 		$whereCondition = "{$deletedCheck} AND {$quotedCol} = ?";
 
 		if ($queryMode === 'array' && $isPostgres === true) {
@@ -1397,6 +1404,31 @@ class ReferentialIntegrityService {
 
 		return $results;
 	}//end findReferencingInMagicTable()
+
+	/**
+	 * The physical column of a schema property, as the schema's table was built.
+	 *
+	 * Asked of the mapper's own column map rather than derived here, so a
+	 * property whose column carries a collision suffix, or a name the local
+	 * camel-to-snake rule would spell differently, is found where it lives.
+	 *
+	 * @param Schema $schema       The citing schema.
+	 * @param string $propertyName The citing property.
+	 *
+	 * @return string The column name.
+	 *
+	 * @throws RuntimeException When the schema's table has no column for the property.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function columnOf(Schema $schema, string $propertyName): string {
+		$column = ($this->objectEntityMapper->buildTableColumnsFromSchema(schema: $schema)[$propertyName]['name'] ?? null);
+		if (is_string($column) === false || $column === '') {
+			throw new RuntimeException('The table of schema ' . $schema->getId() . ' has no column for property ' . $propertyName);
+		}
+
+		return $column;
+	}//end columnOf()
 
 	/**
 	 * Check whether a property is required by the given schema.

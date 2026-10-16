@@ -37,11 +37,15 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 
 /**
  * Set, keep, leave and hide drafts.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One rule set (decisions 180 and 216): every save path and both list
+ * emitters ask one of these questions, and none of them has a second home to move to.
  *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
  */
@@ -82,6 +86,23 @@ class DraftStatusPolicy {
 	}//end allowPromotion()
 
 	/**
+	 * Whether the save that followed allowPromotion() used the allowance for an object.
+	 *
+	 * A save that leaves draft consumes the allowance. One that did not (the
+	 * stored object had already left draft, because a parallel request won)
+	 * leaves it standing, and the caller must not announce a creation again.
+	 *
+	 * @param string $uuid The object.
+	 *
+	 * @return bool True when no allowance for the object remains.
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
+	 */
+	public static function promotionWasUsed(string $uuid): bool {
+		return isset(self::$promotions[$uuid]) === false;
+	}//end promotionWasUsed()
+
+	/**
 	 * Forget every allowance (tests, and a submit that was refused after allowing).
 	 *
 	 * @return void
@@ -100,12 +121,23 @@ class DraftStatusPolicy {
 	 *
 	 * @return string|null The status to store; null keeps the date-deduced status.
 	 *
-	 * @throws ValidationException When the move is not allowed.
+	 * @throws ValidationException When the move is not allowed, or (DraftAlreadyLeftException) the draft to promote already left draft.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
 	 */
 	public function resolveStatus(ObjectEntity $entity, array $selfData): ?string {
 		$current = $entity->getStatus();
+
+		// An allowance for an object that is no longer a draft means a parallel
+		// request sent it first. This save would be an ordinary update that
+		// announces the creation a second time, so it is refused.
+		if ($entity->getId() !== null
+			&& $current !== ObjectEntity::STATUS_DRAFT
+			&& isset(self::$promotions[(string)$entity->getUuid()]) === true
+		) {
+			throw new DraftAlreadyLeftException(message: 'This draft has already left draft.');
+		}
+
 		if (array_key_exists('status', $selfData) === false || $selfData['status'] === null || $selfData['status'] === '') {
 			return $current;
 		}
@@ -203,9 +235,9 @@ class DraftStatusPolicy {
 	/**
 	 * The properties the server fills, excused from `required` while a payload is judged in full.
 	 *
-	 * A property with a default, a computation or the serverSet marker is
-	 * filled on save or by a creating listener, so a payload without it is
-	 * complete. The form submit and the owner's activation excuse the same
+	 * A property with a default, a computation, a generated identifier
+	 * (`x-openregister-generated`) or the serverSet marker is filled on save or
+	 * by a creating listener, so a payload without it is complete. The form submit and the owner's activation excuse the same
 	 * set, so a draft that one accepts the other accepts too.
 	 *
 	 * @param Schema               $schema The schema.
@@ -213,7 +245,7 @@ class DraftStatusPolicy {
 	 *
 	 * @return array<string, string> Property => reason, in ValidateObject's notSupplied shape.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) FormDestinationValidator::marker() reads a schema property; there is no instance to inject.
+	 * @SuppressWarnings(PHPMD.StaticAccess) FormDestinationValidator::isServerFilled() reads a schema property; there is no instance to inject.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
@@ -224,10 +256,7 @@ class DraftStatusPolicy {
 				continue;
 			}
 
-			$filled = array_key_exists('default', $property) === true
-				|| isset($property['computed']) === true
-				|| FormDestinationValidator::marker(property: $property, name: FormDestinationValidator::MARKER_SERVER_SET);
-			if ($filled === true) {
+			if (FormDestinationValidator::isServerFilled(property: $property) === true) {
 				$excused[(string)$name] = 'server-set';
 			}
 		}

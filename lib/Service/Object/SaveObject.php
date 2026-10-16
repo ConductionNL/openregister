@@ -3332,7 +3332,7 @@ class SaveObject {
 						register: $register,
 						schema: $schema,
 						data: $data,
-						selfData: $selfData,
+						selfData: $this->selfDataForUpdate(selfData: $selfData, _rbac: $_rbac),
 						folderId: $folderId,
 						persist: $persist,
 						silent: $silent,
@@ -3723,6 +3723,36 @@ class SaveObject {
 			return null;
 		}//end try
 	}//end findAndValidateExistingObject()
+
+	/**
+	 * The `@self` an update works from: a version the caller carries counts only for a trusted caller.
+	 *
+	 * An app's seed objects carry their shipped version in `@self.version`, and
+	 * an update takes it when it is higher than the stored one, so the next
+	 * import reads the seed as current (ObjectVersionHandler::advanceVersion()).
+	 * A caller judged by RBAC could send any higher version through the object
+	 * API, and a seed that reads as newer than every later shipped version
+	 * never receives the app's fix. So `@self.version` is dropped from the
+	 * update of a caller whose RBAC applies, and that update bumps the patch
+	 * like any other. The importer, an administrator and a system caller save
+	 * with RBAC off and keep it.
+	 *
+	 * @param array<string, mixed> $selfData The `@self` the caller sent.
+	 * @param bool                 $_rbac    Whether the save is judged for a signed-in caller.
+	 *
+	 * @return array<string, mixed> The `@self` the update uses.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors saveObject()'s own RBAC flag.
+	 *
+	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 */
+	private function selfDataForUpdate(array $selfData, bool $_rbac): array {
+		if ($_rbac === true) {
+			unset($selfData['version']);
+		}
+
+		return $selfData;
+	}//end selfDataForUpdate()
 
 	/**
 	 * Handle update of existing object.

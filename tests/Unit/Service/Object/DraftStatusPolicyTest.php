@@ -26,6 +26,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Exception\ValidationException
+ * @uses \OCA\OpenRegister\Exception\DraftAlreadyLeftException
  * @uses \OCA\OpenRegister\Service\Form\FormDestinationValidator
  */
 class DraftStatusPolicyTest extends TestCase {
@@ -133,15 +134,16 @@ class DraftStatusPolicyTest extends TestCase {
 				'total' => ['type' => 'number', 'computed' => ['expression' => 'a + b']],
 				'number' => ['type' => 'string', 'x-openregister' => ['serverSet' => true]],
 				'reference' => ['type' => 'string', 'x-openregister' => ['serverSet' => false]],
+				'caseNumber' => ['type' => 'string', 'x-openregister-generated' => ['sequence' => 'case', 'format' => 'Z-{year}-{seq:4}']],
 			]
 		);
 
 		$this->assertSame(
-			['priority' => 'server-set', 'total' => 'server-set', 'number' => 'server-set'],
+			['priority' => 'server-set', 'total' => 'server-set', 'number' => 'server-set', 'caseNumber' => 'server-set'],
 			$this->policy->serverFilledExcusals(schema: $schema, object: ['title' => 'x'])
 		);
 		// A value the caller did supply is judged like any other.
-		$this->assertSame(['total' => 'server-set'], $this->policy->serverFilledExcusals(schema: $schema, object: ['priority' => 'high', 'number' => 'T-1']));
+		$this->assertSame(['total' => 'server-set', 'caseNumber' => 'server-set'], $this->policy->serverFilledExcusals(schema: $schema, object: ['priority' => 'high', 'number' => 'T-1']));
 	}//end testServerFilledPropertiesAreExcusedWhenAbsent()
 
 	/**
@@ -226,4 +228,41 @@ class DraftStatusPolicyTest extends TestCase {
 		$this->assertSame("(t._status IS NULL OR t._status <> 'draft')", $this->policy->notADraftSql(columnPrefix: 't.'));
 		$this->assertSame("(_status IS NULL OR _status <> 'draft')", $this->policy->notADraftSql(columnPrefix: ''));
 	}//end testTheHiddenDraftClause()
+
+	/**
+	 * An allowance for an object that is no longer a draft is refused, so a parallel request that lost the race writes nothing.
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
+	 */
+	public function testAnAllowanceForAnObjectThatAlreadyLeftDraftIsRefused(): void {
+		DraftStatusPolicy::allowPromotion(uuid: 'uuid-1');
+
+		$this->expectException(\OCA\OpenRegister\Exception\DraftAlreadyLeftException::class);
+		$this->policy->resolveStatus(entity: $this->entity(status: 'active'), selfData: ['status' => 'active']);
+	}//end testAnAllowanceForAnObjectThatAlreadyLeftDraftIsRefused()
+
+	/**
+	 * Control: without an allowance, and for a new object, an unchanged status is no refusal.
+	 *
+	 * @return void
+	 */
+	public function testNoAllowanceNoRefusal(): void {
+		$this->assertSame('active', $this->policy->resolveStatus(entity: $this->entity(status: 'active'), selfData: ['status' => 'active']));
+
+		DraftStatusPolicy::allowPromotion(uuid: 'uuid-1');
+		$this->assertNull($this->policy->resolveStatus(entity: $this->entity(status: null, stored: false), selfData: []));
+	}//end testNoAllowanceNoRefusal()
+
+	/**
+	 * The allowance is used by the save that leaves draft, and only then.
+	 *
+	 * @return void
+	 */
+	public function testThePromotionIsUsedBySavingTheDraft(): void {
+		DraftStatusPolicy::allowPromotion(uuid: 'uuid-1');
+		$this->assertFalse(DraftStatusPolicy::promotionWasUsed(uuid: 'uuid-1'));
+
+		$this->assertSame('active', $this->policy->resolveStatus(entity: $this->entity(status: 'draft'), selfData: ['status' => 'active']));
+		$this->assertTrue(DraftStatusPolicy::promotionWasUsed(uuid: 'uuid-1'));
+	}//end testThePromotionIsUsedBySavingTheDraft()
 }//end class
