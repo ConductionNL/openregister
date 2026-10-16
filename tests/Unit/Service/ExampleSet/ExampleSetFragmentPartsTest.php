@@ -197,8 +197,34 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$this->assertTrue($report['ok'], json_encode($report));
 		$this->assertTrue($this->sensitive['alpha']['secret']);
 		$this->assertStringNotContainsString($this->appValues['alpha']['secret'], (string) json_encode($report).json_encode($this->config));
+		$this->assertStringNotContainsString($this->appValues['alpha']['secret'], $this->config['example_set_demo'], 'the record holds a fingerprint, never the value');
 		$this->remover->remove(set: 'demo');
 		$this->assertArrayNotHasKey('secret', $this->appValues['alpha']);
+	}
+
+	public function testAGeneratedKeyAnAdministratorReplacedStaysAndIsNamed(): void {
+		$this->alpha(['appConfig' => [['key' => 'secret', 'generate' => true]]]);
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		// The administrator puts a real token there after the install.
+		$this->appValues['alpha']['secret'] = 'their-real-api-token';
+		$removed = $this->remover->remove(set: 'demo');
+
+		$this->assertSame('their-real-api-token', $this->appValues['alpha']['secret']);
+		$this->assertContains('app config alpha secret, which somebody changed after the install', $removed['left']);
+		$this->assertSame([], $removed['failed']);
+	}
+
+	public function testAGeneratedKeyThatHeldAnEmptyValueGetsItBack(): void {
+		$this->appValues['alpha'] = ['secret' => ''];
+		$this->alpha(['appConfig' => [['key' => 'secret', 'generate' => true]]]);
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->assertNotSame('', $this->appValues['alpha']['secret']);
+
+		$this->remover->remove(set: 'demo');
+
+		$this->assertArrayHasKey('secret', $this->appValues['alpha'], 'a key that was there stays there');
+		$this->assertSame('', $this->appValues['alpha']['secret']);
 	}
 
 	public function testTheInstanceAddressFillsAPlaceholderAndIsNeverEmpty(): void {
