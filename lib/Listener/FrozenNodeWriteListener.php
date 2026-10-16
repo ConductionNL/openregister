@@ -206,6 +206,28 @@ class FrozenNodeWriteListener implements IEventListener {
 			return null;
 		}
 
+		$object = $this->owningObjectOf(node: $node, path: $path, candidate: $candidate);
+		if ($object instanceof ObjectStateWriteException) {
+			return $object;
+		}
+
+		if ($object === null) {
+			return null;
+		}
+
+		return $this->guard->refusalFor(object: $object);
+	}//end refusalFor()
+
+	/**
+	 * The object that owns a file's folder, or a refusal when it cannot be resolved.
+	 *
+	 * @param Node                                      $node      The node about to change.
+	 * @param string                                    $path      The node's path, for the log.
+	 * @param array{uuid: string, folderId: int|string} $candidate The ancestor folder named like a UUID.
+	 *
+	 * @return ObjectEntity|ObjectStateWriteException|null The owning object; the refusal when the lookup failed; null when the folder owns nothing.
+	 */
+	private function owningObjectOf(Node $node, string $path, array $candidate): ObjectEntity|ObjectStateWriteException|null {
 		try {
 			$found = $this->objects->findAcrossAllSources(
 				identifier: $candidate['uuid'],
@@ -234,8 +256,8 @@ class FrozenNodeWriteListener implements IEventListener {
 			return null;
 		}
 
-		return $this->guard->refusalFor(object: $object);
-	}//end refusalFor()
+		return $object;
+	}//end owningObjectOf()
 
 	/**
 	 * The node in the `openregister` home that a node outside it stands for, found by file id.
@@ -297,6 +319,8 @@ class FrozenNodeWriteListener implements IEventListener {
 	 * @param bool $includeSelf Whether the node itself may be the owner folder (a node standing for a not-yet-existing child).
 	 *
 	 * @return array{uuid: string, folderId: int|string}|null The candidate, or null when no ancestor qualifies.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag names where the walk starts (the node or its parent), not a second behaviour.
 	 */
 	private function candidateOwnerFolder(Node $node, bool $includeSelf = false): ?array {
 		$current = $node;

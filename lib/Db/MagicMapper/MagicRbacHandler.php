@@ -131,6 +131,9 @@ class MagicRbacHandler {
 	 *                                      construction sites.
 	 * @param DenyEnforcementMode|null $denyEnforcementMode The staging switch; nullable for the same reason.
 	 * @param MagicMetadataColumnHealer|null $metadataColumns Knows which metadata columns a table that could not be healed still lacks.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection; the optional
+	 * collaborators are nullable so existing construction sites keep working.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,

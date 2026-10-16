@@ -52,6 +52,9 @@ use Throwable;
 /**
  * Guards an app-shipped schema update against local changes.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One guard for every shipped definition kind: baseline read, merge,
+ * audit of each authorization change and the fail-closed fallback share one definition of what "shipped" means.
+ *
  * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
  */
 class ShippedConfigurationGuard {
@@ -163,7 +166,12 @@ class ShippedConfigurationGuard {
 				decisions: $decisions
 			);
 			$this->recordReplaced(slug: $slug, app: $app, roots: $result['replacedLocal']);
-			$this->recordAppliedAuthorization(slug: $slug, app: $app, applied: $result['applied'], recorded: array_merge($result['replacedLocal'], $decisions));
+			$this->recordAppliedAuthorization(
+				slug: $slug,
+				app: $app,
+				applied: $result['applied'],
+				recorded: array_merge($result['replacedLocal'], $decisions)
+			);
 
 			if ($record === true) {
 				$this->baselines->record(
@@ -174,18 +182,7 @@ class ShippedConfigurationGuard {
 				);
 			}
 
-			if ($result['conflicts'] !== []) {
-				// INFO on the parts that were left alone, because this is the
-				// decision somebody re-reads the upgrade log to find. The
-				// upgrade itself completes either way.
-				$this->logger->info(
-					sprintf(
-						'[ShippedConfigurationGuard] %s: %d part(s) changed on both sides, kept local and reported',
-						$slug,
-						count($result['conflicts'])
-					)
-				);
-			}
+			$this->logKeptLocal(slug: $slug, conflicts: $result['conflicts']);
 
 			foreach ($decisions as $path) {
 				$this->recordDecision(slug: $slug, path: (string)$path, app: $app);
@@ -221,6 +218,27 @@ class ShippedConfigurationGuard {
 	}//end guardSchemaUpdate()
 
 	/**
+	 * Log, at INFO, the parts that changed on both sides and were left alone.
+	 *
+	 * INFO, because this is the decision somebody re-reads the upgrade log to
+	 * find. The upgrade itself completes either way.
+	 *
+	 * @param string                           $slug      The schema slug.
+	 * @param array<int, array<string, mixed>> $conflicts The parts kept local.
+	 *
+	 * @return void
+	 */
+	private function logKeptLocal(string $slug, array $conflicts): void {
+		if ($conflicts === []) {
+			return;
+		}
+
+		$this->logger->info(
+			sprintf('[ShippedConfigurationGuard] %s: %d part(s) changed on both sides, kept local and reported', $slug, count($conflicts))
+		);
+	}//end logKeptLocal()
+
+	/**
 	 * The incoming definition with the instance's own authorization blocks put back.
 	 *
 	 * For an import the guard could not judge: the schema's `authorization` and
@@ -234,12 +252,7 @@ class ShippedConfigurationGuard {
 	 * @return array<string, mixed> The definition to write.
 	 */
 	private function keepingLiveAuthorization(array $live, array $incoming): array {
-		$definition = $incoming;
-		if (array_key_exists('authorization', $live) === true) {
-			$definition['authorization'] = $live['authorization'];
-		} else {
-			unset($definition['authorization']);
-		}
+		$definition = $this->withAuthorizationOf(target: $incoming, live: $live);
 
 		$liveProperties = ($live['properties'] ?? null);
 		if (is_array($liveProperties) === false || is_array($definition['properties'] ?? null) === false) {
@@ -251,15 +264,30 @@ class ShippedConfigurationGuard {
 				continue;
 			}
 
-			if (array_key_exists('authorization', $liveProperties[$name]) === true) {
-				$definition['properties'][$name]['authorization'] = $liveProperties[$name]['authorization'];
-			} else {
-				unset($definition['properties'][$name]['authorization']);
-			}
+			$definition['properties'][$name] = $this->withAuthorizationOf(target: $property, live: $liveProperties[$name]);
 		}
 
 		return $definition;
 	}//end keepingLiveAuthorization()
+
+	/**
+	 * A definition part carrying the `authorization` block of the instance's own part, or none when the instance has none.
+	 *
+	 * @param array<string, mixed> $target The part from the incoming definition.
+	 * @param array<string, mixed> $live   The same part as the instance has it.
+	 *
+	 * @return array<string, mixed> The part with the instance's authorization.
+	 */
+	private function withAuthorizationOf(array $target, array $live): array {
+		if (array_key_exists('authorization', $live) === false) {
+			unset($target['authorization']);
+			return $target;
+		}
+
+		$target['authorization'] = $live['authorization'];
+
+		return $target;
+	}//end withAuthorizationOf()
 
 	/**
 	 * Record, on the audit trail, the authorization blocks an upgrade took from the app because only the app changed them.

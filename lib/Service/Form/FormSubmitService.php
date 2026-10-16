@@ -71,6 +71,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The complexity is the submit contract:
  * map, validate all, write in order, compensate, answer. Split, the all-or-none rule would
  * live in two files that must agree on what a plan is.
+ * @SuppressWarnings(PHPMD.TooManyMethods) One private method per step of the submit (map, validate,
+ * write, compensate, answer, idempotency, uploads); the steps are the contract, not incidental helpers.
  * @SuppressWarnings(PHPMD.StaticAccess) FormDestinationValidator::marker() and
  * markedProperties() are pure reads of a schema property's `x-openregister` block;
  * DraftStatusPolicy's promotion allowance is request-scoped state shared with the save path.

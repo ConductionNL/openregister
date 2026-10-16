@@ -41,6 +41,9 @@ use Throwable;
  * Applies a decision to a relation and records it as a decision object.
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The decision flow meets the relation, its mapper, the decision
+ * store, the policies and the ownership check; the conflict exception is the compare-and-swap's one extra collaborator.
  */
 class RelationDecisionService {
 
@@ -105,23 +108,7 @@ class RelationDecisionService {
 		$actorId = $actor->getUID();
 		$linkedUuid = $relation->getDecisionUuid();
 		$current = $this->decisions->find(uuid: $linkedUuid);
-		$owned = $current;
-		if ($owned === null && $linkedUuid !== null && $linkedUuid !== '') {
-			// The relation names a decision whose record cannot be found.
-			// DecisionVisibility hides that state; here it belongs to nobody
-			// but a supervisor, so a reviewer cannot take it over by the gap.
-			$owned = new Decision();
-			$owned->setUuid($linkedUuid);
-			$owned->setDecidedBy('');
-		}
-
-		if ($owned !== null) {
-			$resolved = $this->policies->forRelation(relation: $relation);
-			$refusal = $this->ownership->refusal(decision: $owned, actorId: $actorId, policy: $resolved['policy'], subject: $resolved['subject']);
-			if ($refusal !== null) {
-				throw new DecisionOwnedException(refusal: $refusal);
-			}
-		}
+		$this->assertMayChange(relation: $relation, current: $current, linkedUuid: $linkedUuid, actorId: $actorId);
 
 		$before = [$relation->getBases(), $relation->getSkipAnonymization()];
 
@@ -172,6 +159,41 @@ class RelationDecisionService {
 
 		return ['relation' => $updated, 'decision' => $decision];
 	}//end decide()
+
+	/**
+	 * Refuse a write on a decision the actor does not own.
+	 *
+	 * A relation that names a decision whose record cannot be found belongs to
+	 * nobody but a supervisor: DecisionVisibility hides that state, and a
+	 * reviewer must not take it over through the gap.
+	 *
+	 * @param EntityRelation $relation   The relation.
+	 * @param Decision|null  $current    The decision record the relation links, when it exists.
+	 * @param string|null    $linkedUuid The decision uuid the relation names.
+	 * @param string         $actorId    The reviewer.
+	 *
+	 * @return void
+	 *
+	 * @throws DecisionOwnedException When the decision belongs to someone else.
+	 */
+	private function assertMayChange(EntityRelation $relation, ?Decision $current, ?string $linkedUuid, string $actorId): void {
+		$owned = $current;
+		if ($owned === null && $linkedUuid !== null && $linkedUuid !== '') {
+			$owned = new Decision();
+			$owned->setUuid($linkedUuid);
+			$owned->setDecidedBy('');
+		}
+
+		if ($owned === null) {
+			return;
+		}
+
+		$resolved = $this->policies->forRelation(relation: $relation);
+		$refusal = $this->ownership->refusal(decision: $owned, actorId: $actorId, policy: $resolved['policy'], subject: $resolved['subject']);
+		if ($refusal !== null) {
+			throw new DecisionOwnedException(refusal: $refusal);
+		}
+	}//end assertMayChange()
 
 	/**
 	 * Whether this write is a decision worth recording.

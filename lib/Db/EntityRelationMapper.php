@@ -26,6 +26,7 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\DecisionConflictException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -963,18 +964,22 @@ class EntityRelationMapper extends QBMapper {
 	 * @throws DecisionConflictException When guarded and the stored link changed in the meantime.
 	 *
 	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-a-decision-is-its-own-object-req-dec-001
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The default keeps every unguarded caller unchanged; the guard is one
+	 * extra statement, not a second behaviour.
 	 */
-	public function linkDecision(EntityRelation $relation, string $decisionUuid, ?string $expectedUuid = null, bool $guarded = false): EntityRelation {
+	public function linkDecision(
+		EntityRelation $relation,
+		string $decisionUuid,
+		?string $expectedUuid = null,
+		bool $guarded = false
+	): EntityRelation {
 		if ($guarded === true) {
 			$qb = $this->db->getQueryBuilder();
 			$qb->update($this->getTableName())
 				->set('decision_uuid', $qb->createNamedParameter($decisionUuid))
 				->where($qb->expr()->eq('id', $qb->createNamedParameter($relation->getId(), IQueryBuilder::PARAM_INT)));
-			if ($expectedUuid === null || $expectedUuid === '') {
-				$qb->andWhere($qb->expr()->orX($qb->expr()->isNull('decision_uuid'), $qb->expr()->eq('decision_uuid', $qb->createNamedParameter(''))));
-			} else {
-				$qb->andWhere($qb->expr()->eq('decision_uuid', $qb->createNamedParameter($expectedUuid)));
-			}
+			$qb->andWhere($this->storedLinkIs(qb: $qb, expectedUuid: $expectedUuid));
 
 			if ($qb->executeStatement() === 0) {
 				throw new DecisionConflictException(message: 'The relation was decided by somebody else in the meantime.');
@@ -985,4 +990,20 @@ class EntityRelationMapper extends QBMapper {
 
 		return $this->update(entity: $relation);
 	}//end linkDecision()
+
+	/**
+	 * The condition "the stored decision link is still what the caller read".
+	 *
+	 * @param IQueryBuilder $qb           The query builder the condition is for.
+	 * @param string|null   $expectedUuid The link the caller read; null or empty means none.
+	 *
+	 * @return ICompositeExpression|string The condition for `andWhere()`.
+	 */
+	private function storedLinkIs(IQueryBuilder $qb, ?string $expectedUuid): ICompositeExpression|string {
+		if ($expectedUuid !== null && $expectedUuid !== '') {
+			return $qb->expr()->eq('decision_uuid', $qb->createNamedParameter($expectedUuid));
+		}
+
+		return $qb->expr()->orX($qb->expr()->isNull('decision_uuid'), $qb->expr()->eq('decision_uuid', $qb->createNamedParameter('')));
+	}//end storedLinkIs()
 }//end class

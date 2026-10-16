@@ -3221,10 +3221,11 @@ class ObjectService implements ObjectServiceInterface
                 $deleterIsAdmin = ($deleterUser !== null
                     && in_array('admin', $this->groupManager->getUserGroupIds($deleterUser), true) === true);
                 // An administrator reads every draft, so is not kept from one.
+                $deleterUid = $deleterUser?->getUID();
                 if ($deleterIsAdmin === false
-                    && (new DraftStatusPolicy())->keptFrom(object: $objectToDelete, schema: $this->currentSchema, userId: $deleterUser?->getUID()) === true
+                    && (new DraftStatusPolicy())->keptFrom(object: $objectToDelete, schema: $this->currentSchema, userId: $deleterUid) === true
                 ) {
-                    throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found');
+                    throw new OcpDoesNotExistException('Object not found');
                 }
             }
 

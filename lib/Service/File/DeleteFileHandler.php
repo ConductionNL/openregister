@@ -143,7 +143,8 @@ class DeleteFileHandler {
 			// is still there. Saying true here makes every caller (the example
 			// set remover, the merge) believe a file is gone that is not.
 			$this->logger->warning(
-				message: '[DeleteFileHandler] The file was not deleted: it is still there after delete() (an operation was aborted, for instance by a frozen object).',
+				message: '[DeleteFileHandler] The file was not deleted: it is still there after delete() '
+					. '(an operation was aborted, for instance by a frozen object).',
 				context: ['file' => __FILE__, 'line' => __LINE__, 'fileId' => $fileId]
 			);
 			return false;

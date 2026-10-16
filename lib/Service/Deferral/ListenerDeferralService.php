@@ -363,7 +363,9 @@ class ListenerDeferralService {
 				$reducedLength = (strlen((string)json_encode($reduced)) + 1);
 				if ($reducedLength <= $budget) {
 					$this->logger->warning(
-						message: '[ListenerDeferralService] A deferred listener entry was too large for a background job; it was enqueued without its previous data; conditioned updated rules and calculatedChange rules are skipped for this object',
+						message: '[ListenerDeferralService] A deferred listener entry was too large for a background job; '
+							. 'it was enqueued without its previous data; conditioned updated rules and '
+							. 'calculatedChange rules are skipped for this object',
 						context: [
 							'file' => __FILE__,
 							'line' => __LINE__,

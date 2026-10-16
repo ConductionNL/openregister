@@ -222,14 +222,21 @@ class CasePlanItemTimers {
 				// active without the timer that enforces its statutory expiry.
 				$this->logger->error(
 					sprintf(
-						'[CasePlanItemTimers] Plan item %s of case object %s is active WITHOUT its statutory (%s) %s timer: the term will not run and nothing will end the item. %s',
+						'[CasePlanItemTimers] Plan item %s of case object %s is active WITHOUT its statutory (%s) %s timer: '
+						. 'the term will not run and nothing will end the item. %s',
 						(string)$item->getItemKey(),
 						(string)$item->getObjectUuid(),
 						FlowTimer::LEGAL_WETTELIJK,
 						$purpose,
 						$failure->getMessage()
 					),
-					['item' => $item->getUuid(), 'case' => $item->getObjectUuid(), 'legalEffect' => FlowTimer::LEGAL_WETTELIJK, 'purpose' => $purpose, 'exception' => $failure]
+					[
+						'item' => $item->getUuid(),
+						'case' => $item->getObjectUuid(),
+						'legalEffect' => FlowTimer::LEGAL_WETTELIJK,
+						'purpose' => $purpose,
+						'exception' => $failure,
+					]
 				);
 
 				return false;
