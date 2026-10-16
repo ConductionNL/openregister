@@ -145,7 +145,7 @@ class MagicBulkHandler {
 	private function prepareObjectsForDynamicTable(array $objects, Register $register, Schema $schema): array {
 		$prepared = [];
 		$now = new DateTime();
-		$schemaProperties = ($schema->getProperties() ?? []);
+		$columnRoles = new MagicMetadataColumn();
 
 		foreach ($objects as $object) {
 			$preparedObject = [];
@@ -214,11 +214,7 @@ class MagicBulkHandler {
 			// Properties can be at top level OR in 'object' key (structured format).
 			$propertySource = $object['object'] ?? $object;
 			foreach ($propertySource as $propertyName => $value) {
-				// Skip metadata (already handled) and @self; a schema property
-				// whose name starts with an underscore is written.
-				if ($propertyName === '@self'
-					|| (str_starts_with($propertyName, '_') === true && isset($schemaProperties[$propertyName]) === false)
-				) {
+				if ($columnRoles->skippedOnWrite(key: $propertyName, schemaProperties: ($schema->getProperties() ?? [])) === true) {
 					continue;
 				}
 
@@ -245,6 +241,7 @@ class MagicBulkHandler {
 
 		return $prepared;
 	}//end prepareObjectsForDynamicTable()
+
 
 	/**
 	 * Map the six display-metadata columns onto a prepared row.

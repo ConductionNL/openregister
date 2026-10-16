@@ -56,18 +56,38 @@ final class MagicMetadataColumn {
 	 *
 	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
-	public static function field(string $column, array $columnToPropertyMap): ?string {
+	public function field(string $column, array $columnToPropertyMap): ?string {
 		if (str_starts_with($column, self::PREFIX) === false) {
 			return null;
 		}
 
 		$field = substr($column, strlen(self::PREFIX));
-		if (isset($columnToPropertyMap[$column]) === true && self::attribute(field: $field) === null) {
+		if (isset($columnToPropertyMap[$column]) === true && $this->attribute(field: $field) === null) {
 			return null;
 		}
 
 		return $field;
 	}//end field()
+
+	/**
+	 * Whether a key of an object being written is metadata or `@self`, not a property column.
+	 *
+	 * A key starting with the prefix is metadata unless the schema declares it as a property.
+	 *
+	 * @param string               $key              The object key.
+	 * @param array<string, mixed> $schemaProperties The schema's properties.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 */
+	public function skippedOnWrite(string $key, array $schemaProperties): bool {
+		if ($key === '@self') {
+			return true;
+		}
+
+		return str_starts_with($key, self::PREFIX) === true && isset($schemaProperties[$key]) === false;
+	}//end skippedOnWrite()
 
 	/**
 	 * The ObjectEntity attribute a metadata field sets, or null when it has none.
@@ -78,7 +98,7 @@ final class MagicMetadataColumn {
 	 *
 	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
-	public static function attribute(string $field): ?string {
+	public function attribute(string $field): ?string {
 		$attribute = lcfirst(str_replace('_', '', ucwords($field, '_')));
 		if ($attribute === '' || property_exists(ObjectEntity::class, $attribute) === false) {
 			return null;

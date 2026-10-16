@@ -97,7 +97,14 @@ class MagicStatisticsHandler {
 	 *
 	 * @var array<string, true>
 	 */
-	private static array $skippedMetadataFields = [];
+	private static array $skippedFields = [];
+
+	/**
+	 * Tells metadata columns from underscore-named property columns.
+	 *
+	 * @var MagicMetadataColumn
+	 */
+	private MagicMetadataColumn $columnRoles;
 
 	/**
 	 * Callable for counting objects in a register-schema table.
@@ -126,6 +133,7 @@ class MagicStatisticsHandler {
 		private readonly DateTimeNormalizer $dateTimeNormalizer,
 		private readonly SchemaTypeConverter $schemaTypeConverter,
 	) {
+		$this->columnRoles = new MagicMetadataColumn();
 	}//end __construct()
 
 	/**
@@ -619,7 +627,7 @@ class MagicStatisticsHandler {
 			$objectData = [];
 
 			foreach ($row as $columnName => $value) {
-				$metadataField = MagicMetadataColumn::field(column: $columnName, columnToPropertyMap: $columnToPropertyMap);
+				$metadataField = $this->columnRoles->field(column: $columnName, columnToPropertyMap: $columnToPropertyMap);
 				if ($metadataField !== null) {
 
 					// Handle datetime fields.
@@ -723,7 +731,7 @@ class MagicStatisticsHandler {
 
 				// Entity setters are magic (__call), so is_callable() is true for
 				// any name; ask whether ObjectEntity has the attribute instead.
-				$attribute = MagicMetadataColumn::attribute(field: $field);
+				$attribute = $this->columnRoles->attribute(field: $field);
 				if ($attribute === null) {
 					$this->skipUnknownMetadataField(field: $field);
 					continue;
@@ -777,11 +785,11 @@ class MagicStatisticsHandler {
 	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function skipUnknownMetadataField(string $field): void {
-		if (isset(self::$skippedMetadataFields[$field]) === true) {
+		if (isset(self::$skippedFields[$field]) === true) {
 			return;
 		}
 
-		self::$skippedMetadataFields[$field] = true;
+		self::$skippedFields[$field] = true;
 		$this->logger->debug(
 			message: '[MagicStatisticsHandler] Skipped a metadata column ObjectEntity has no attribute for',
 			context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]

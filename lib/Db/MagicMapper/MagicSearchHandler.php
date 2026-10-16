@@ -205,6 +205,13 @@ class MagicSearchHandler {
 	private SearchTermSqlCompiler $termCompiler;
 
 	/**
+	 * Tells metadata columns from underscore-named property columns.
+	 *
+	 * @var MagicMetadataColumn
+	 */
+	private MagicMetadataColumn $columnRoles;
+
+	/**
 	 * Constructor for MagicSearchHandler
 	 *
 	 * @param IDBConnection $db Database connection for queries
@@ -234,6 +241,7 @@ class MagicSearchHandler {
 	) {
 		$this->termParser = new SearchTermParser();
 		$this->termCompiler = new SearchTermSqlCompiler();
+		$this->columnRoles  = new MagicMetadataColumn();
 	}//end __construct()
 
 	/**
@@ -4092,7 +4100,7 @@ class MagicSearchHandler {
 			$columnToPropertyMap = $schemaMaps['columns'];
 
 			foreach ($row as $column => $value) {
-				$metadataField = MagicMetadataColumn::field(column: $column, columnToPropertyMap: $columnToPropertyMap);
+				$metadataField = $this->columnRoles->field(column: $column, columnToPropertyMap: $columnToPropertyMap);
 				if ($metadataField !== null) {
 					$metadataData[$metadataField] = $value;
 					continue;

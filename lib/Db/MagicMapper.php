@@ -9724,7 +9724,7 @@ class MagicMapper extends AbstractObjectMapper {
 		$objectData = [];
 		foreach ($row as $column => $value) {
 			// Skip metadata columns; a property column with the prefix is read.
-			if (MagicMetadataColumn::field(column: $column, columnToPropertyMap: $columnToPropertyMap) !== null) {
+			if ((new MagicMetadataColumn())->field(column: $column, columnToPropertyMap: $columnToPropertyMap) !== null) {
 				continue;
 			}
 
