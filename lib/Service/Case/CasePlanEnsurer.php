@@ -44,6 +44,9 @@ use Throwable;
 /**
  * Ensures plan items with recorded states, idempotently.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One verb whose steps are each a small check (states, history, anchor,
+ * insert, post-commit arming); the total sums them, no single method is complex.
+ *
  * @spec openspec/specs/flow-cases/spec.md#requirement-plan-items-can-be-ensured-convergently-with-their-recorded-states
  */
 class CasePlanEnsurer {
@@ -172,10 +175,12 @@ class CasePlanEnsurer {
 			return;
 		}
 
-		foreach ($rows as $row) {
-			if ($row->getState() === CaseItem::STATE_ACTIVE && in_array((string)$row->getItemKey(), $created, true) === true) {
-				$this->timers->onEntered(item: $row, actor: $actor);
-			}
+		$entered = array_filter(
+			$rows,
+			static fn (CaseItem $row): bool => $row->getState() === CaseItem::STATE_ACTIVE && in_array((string)$row->getItemKey(), $created, true)
+		);
+		foreach ($entered as $row) {
+			$this->timers->onEntered(item: $row, actor: $actor);
 		}
 	}//end armTimers()
 

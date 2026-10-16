@@ -227,7 +227,32 @@ class ExampleSetInstallCommand extends Command {
 			}
 		}
 
-		foreach ($report['types'] as $type => $counts) {
+		$this->printTypes(types: $report['types'], output: $output);
+
+		if ($report['files'] > 0) {
+			$output->writeln('Files attached: '.$report['files']);
+		}
+
+		$this->printOutstanding(report: $report, output: $output);
+
+		if ($report['passwords'] !== []) {
+			$output->writeln('New passwords, shown once and stored nowhere:');
+			foreach ($report['passwords'] as $uid => $password) {
+				$output->writeln('  '.$uid.': '.$password);
+			}
+		}
+	}//end printReport()
+
+	/**
+	 * Print the counts per register and schema.
+	 *
+	 * @param array<string, array<string, int>> $types  Counts by `<register> <schema>`.
+	 * @param OutputInterface                   $output The command output.
+	 *
+	 * @return void
+	 */
+	private function printTypes(array $types, OutputInterface $output): void {
+		foreach ($types as $type => $counts) {
 			$output->writeln(
 				sprintf(
 					'%s: %d declared, %d created, %d already there, %d found afterwards',
@@ -239,11 +264,17 @@ class ExampleSetInstallCommand extends Command {
 				)
 			);
 		}
+	}//end printTypes()
 
-		if ($report['files'] > 0) {
-			$output->writeln('Files attached: '.$report['files']);
-		}
-
+	/**
+	 * Print what was left as it is, and what is not written, not there or not kept.
+	 *
+	 * @param array<string, mixed> $report The installer's report.
+	 * @param OutputInterface      $output The command output.
+	 *
+	 * @return void
+	 */
+	private function printOutstanding(array $report, OutputInterface $output): void {
 		foreach ($report['left'] as $line) {
 			$output->writeln('Left as it is: '.$line);
 		}
@@ -254,14 +285,7 @@ class ExampleSetInstallCommand extends Command {
 				$output->writeln('<error>'.$words.$line.'</error>');
 			}
 		}
-
-		if ($report['passwords'] !== []) {
-			$output->writeln('New passwords, shown once and stored nowhere:');
-			foreach ($report['passwords'] as $uid => $password) {
-				$output->writeln('  '.$uid.': '.$password);
-			}
-		}
-	}//end printReport()
+	}//end printOutstanding()
 
 	/**
 	 * The words for an outcome.

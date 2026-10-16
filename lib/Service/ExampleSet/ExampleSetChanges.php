@@ -208,16 +208,17 @@ class ExampleSetChanges {
 		$change = ['register' => (string) $object['register'], 'schema' => (string) $object['schema'], 'jsonFields' => $this->jsonFields(change: $object)];
 		$row    = $this->paths->withJsonDecoded(row: $row, fields: $change['jsonFields']);
 
+		$same = static fn (mixed $first, mixed $second): bool => json_encode($first) === json_encode($second);
 		$todo = [];
 		$left = [];
 		foreach ($values as $field => $value) {
 			$held = $this->paths->atPath(row: $row, path: (string) $field);
-			if ($held['found'] === true && $this->same(first: $held['value'], second: $value) === true) {
+			if ($held['found'] === true && $same($held['value'], $value) === true) {
 				continue;
 			}
 
 			$wrote = array_key_exists($field, $written);
-			if ($held['found'] === true && $wrote === true && $this->same(first: $held['value'], second: $written[$field]) === true) {
+			if ($held['found'] === true && $wrote === true && $same($held['value'], $written[$field]) === true) {
 				$todo[$field] = $value;
 				continue;
 			}
@@ -225,10 +226,7 @@ class ExampleSetChanges {
 			$left[] = (string) $field;
 		}
 
-		if ($todo === []) {
-			return ['error' => '', 'entry' => null, 'left' => $left];
-		}
-
+		// Nothing to write (every field already holds its value, or was edited) makes apply() answer no entry.
 		$made = $this->apply(
 			change: $change,
 			resolved: [
@@ -241,18 +239,6 @@ class ExampleSetChanges {
 
 		return ($made + ['left' => $left]);
 	}//end refresh()
-
-	/**
-	 * Whether two values are the same as stored (type and order of a list included).
-	 *
-	 * @param mixed $first  A value.
-	 * @param mixed $second Another.
-	 *
-	 * @return bool
-	 */
-	private function same(mixed $first, mixed $second): bool {
-		return json_encode($first) === json_encode($second);
-	}//end same()
 
 	/**
 	 * The paths of a made change that the stored object does not hold.
@@ -341,9 +327,8 @@ class ExampleSetChanges {
 
 		$row = $this->paths->withJsonText(row: $row, fields: $fields);
 		$why = $this->store->update(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id'], data: $row);
-		$ok  = ($why === '');
 
-		return ['ok' => $ok, 'left' => $left];
+		return ['ok' => ($why === ''), 'left' => $left];
 	}//end revert()
 
 	/**

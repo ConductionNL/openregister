@@ -293,6 +293,9 @@ class RegisterDescriptorService {
 	 * @param string                                                                          $version    Its version.
 	 *
 	 * @return array{success: bool, path: string, via: string, message: string, importJobId: string|null, importAppId: string}
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) DescriptorConfigIds::forFile() is a stateless lookup table shared with the
+	 * repair steps; injecting it would add a dependency without removing any coupling.
 	 */
 	private function importDescriptorFile(string $appId, array $descriptor, string $version): array {
 		$via      = sprintf('OpenRegister (lib/Settings/%s)', $descriptor['file']);

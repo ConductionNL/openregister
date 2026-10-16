@@ -41,6 +41,8 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The one adapter between the loader and ObjectService/ValidateObject:
  *                                                   every OpenRegister failure becomes a refusal or a reason here.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     The loader's whole register surface (read, match, write, delete,
+ *                                                   ids) in one adapter, so the loader never touches ObjectService.
  *
  * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
  */
