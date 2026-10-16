@@ -103,7 +103,8 @@ class ExampleSetPrerequisites {
 	}//end context()
 
 	/**
-	 * Import every required register that is not on the instance, and record the import.
+	 * Import every required register that is not on the instance, or that this set imported and removed the data of,
+	 * and record the import.
 	 *
 	 * @param array<string, mixed> $plan   The plan.
 	 * @param array<string, mixed> $record The record; gains the imports.
@@ -116,7 +117,9 @@ class ExampleSetPrerequisites {
 		$result = ['refusals' => [], 'outcome' => []];
 		foreach ((array) ($plan['requires'] ?? []) as $slug) {
 			$result['outcome'][$slug] = 'kept';
-			if ($this->registers->exists(slug: $slug) === true) {
+			// A register this set imported whose import was removed again is on the instance without its data.
+			$dataRemoved = (array_key_exists($slug, $record['registers']) === true && $record['registers'][$slug] === []);
+			if ($this->registers->exists(slug: $slug) === true && $dataRemoved === false) {
 				continue;
 			}
 

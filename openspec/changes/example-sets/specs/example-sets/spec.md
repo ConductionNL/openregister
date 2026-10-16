@@ -130,12 +130,17 @@ After writing, the loader SHALL read every object it created in this run back fr
 
 ### Requirement: A set imports the OpenRegister registers it requires (REQ-EXS-009)
 
-The cast file MAY name OpenRegister registers in `requires` (for example `["brp", "kvk"]`). Before the check, the loader SHALL import every required register that is not on the instance from OpenRegister's own register descriptor, the way the descriptor import endpoint does, and SHALL record the import jobs that import created. A required register that is already on the instance SHALL be used as it is and SHALL NOT be recorded. A second run SHALL import nothing. Remove SHALL soft-delete exactly the objects of the recorded import jobs, after the set's own objects, and SHALL NOT touch an import it did not make. A required register that cannot be imported SHALL refuse the set.
+The cast file MAY name OpenRegister registers in `requires` (for example `["brp", "kvk"]`). Before the check, the loader SHALL import every required register that is not on the instance from OpenRegister's own register descriptor, the way the descriptor import endpoint does, and SHALL record the import jobs that import created. A required register that is already on the instance SHALL be used as it is and SHALL NOT be recorded. A second run SHALL import nothing. Remove SHALL soft-delete exactly the objects of the recorded import jobs, after the set's own objects, and SHALL NOT touch an import it did not make. The register and its schemas stay on the instance, as they may hold other people's data; so that a later install does not find a register without its data, the record keeps the slug of a register whose import was removed (without jobs, and not counted as an install), and the next install imports that register's data again although the register exists. A required register that cannot be imported SHALL refuse the set.
 
 #### Scenario: A missing register is imported once and removed again
 - **GIVEN** a set that requires `brp` and an instance without it
 - **WHEN** the set is installed twice and then removed
 - **THEN** `brp` SHALL be imported by the first run only, reported as `imported` then `kept`, and remove SHALL delete the objects of that import
+
+#### Scenario: A register whose data was removed is imported again
+- **GIVEN** a set that requires `brp`, installed on an instance without it and then removed
+- **WHEN** the set is installed again
+- **THEN** `brp` SHALL be imported again (its data was removed although the register stayed), reported as `imported`, and remove SHALL delete the objects of that second import
 
 #### Scenario: A register that was there stays there
 - **GIVEN** a set that requires `brp` and an instance that already has it

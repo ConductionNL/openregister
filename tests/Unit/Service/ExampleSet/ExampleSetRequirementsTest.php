@@ -60,7 +60,29 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$removed = $this->remover->remove(set: 'demo');
 		$this->assertSame(1, $removed['removed']['register imports']);
 		$this->assertSame([], $this->registers->jobs);
-		$this->assertSame([], $this->config);
+		$this->assertSame(['example_set_demo' => '{"registers":{"brp":[]}}'], $this->config, 'only the memory that the register\'s data was removed');
+		$this->assertTrue($this->record->isEmpty(record: $this->record->read(set: 'demo')), 'which is not an install');
+	}
+
+	public function testARegisterTheSetImportedIsImportedAgainAfterARemove(): void {
+		$this->store->offer(register: 'brp', schema: 'person');
+		$this->registers->importable['brp'] = true;
+		$this->app(app: 'openregister', fragment: $this->castRequiringBrp());
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$this->remover->remove(set: 'demo');
+		$this->assertSame([], $this->registers->jobs, 'the data of the first import is gone');
+		$this->assertTrue($this->registers->exists(slug: 'brp'), 'the register and its schemas stay');
+
+		$second = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertTrue($second['ok'], json_encode($second));
+		$this->assertSame(2, $this->registers->imports, 'the data is imported again, not skipped because the register exists');
+		$this->assertCount(1, $this->registers->jobs);
+
+		$removed = $this->remover->remove(set: 'demo');
+		$this->assertSame(1, $removed['removed']['register imports']);
+		$this->assertSame([], $this->registers->jobs);
 	}
 
 	public function testARegisterThatWasAlreadyThereIsNeitherImportedNorRemoved(): void {

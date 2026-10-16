@@ -176,6 +176,10 @@ class ExampleSetRemover {
 	/**
 	 * Remove the register imports this set made.
 	 *
+	 * The register itself and its schemas stay, as they may hold other people's
+	 * data; the record keeps the slug without jobs so that an install imports
+	 * the register's data again (REQ-EXS-009).
+	 *
 	 * @param string               $set    The set id.
 	 * @param array<string, mixed> $record The record.
 	 * @param array<string, mixed> $report The report; counts and failures are added.
@@ -195,10 +199,9 @@ class ExampleSetRemover {
 				$report['removed']['register imports']++;
 			}
 
+			// A slug whose jobs are all gone stays with no jobs: the register and its schemas remain on the instance, but
+			// the data the import made does not, and the next install must import it again.
 			$record['registers'][$slug] = $left;
-			if ($left === []) {
-				unset($record['registers'][$slug]);
-			}
 
 			$this->record->write(set: $set, record: $record);
 		}//end foreach

@@ -170,7 +170,13 @@ class ExampleSetRecord {
 	 */
 	public function isEmpty(array $record): bool {
 		foreach (array_keys(self::BLANK) as $part) {
-			if (($record[$part] ?? []) !== []) {
+			$held = ($record[$part] ?? []);
+			if ($part === 'registers') {
+				// A slug with no job left only remembers that its import was removed; it is not something installed.
+				$held = array_filter((array) $held, static fn ($jobs): bool => $jobs !== []);
+			}
+
+			if ($held !== []) {
 				return false;
 			}
 		}
@@ -181,6 +187,9 @@ class ExampleSetRecord {
 	/**
 	 * Keep the record, or drop the key when nothing is left in it.
 	 *
+	 * What stays when nothing is installed is the slug of each register the
+	 * set imported whose import jobs were all removed again (an empty job list).
+	 *
 	 * @param string               $set    The set id.
 	 * @param array<string, mixed> $record The record.
 	 *
@@ -190,6 +199,12 @@ class ExampleSetRecord {
 	 */
 	public function write(string $set, array $record): void {
 		if ($this->isEmpty(record: $record) === true) {
+			// A register this set imported and removed again is remembered, so the next install imports its data again.
+			if (($record['registers'] ?? []) !== []) {
+				$this->appConfig->setValueString(Application::APP_ID, self::PREFIX.$set, (string) json_encode(['registers' => $record['registers']]));
+				return;
+			}
+
 			$this->appConfig->deleteKey(Application::APP_ID, self::PREFIX.$set);
 			return;
 		}
