@@ -179,12 +179,16 @@ class DraftExpiryJobTest extends TestCase {
 
 				// One line for the schema that lost a draft, then the totals (decision 228).
 		$logged = [];
+		$levels = [];
 		$logger = $this->createMock(LoggerInterface::class);
-		$logger->method('info')->willReturnCallback(
-			static function (string $message, array $context = []) use (&$logged): void {
-				$logged[] = [$message, $context];
-			}
-		);
+		foreach (['info', 'warning'] as $level) {
+			$logger->method($level)->willReturnCallback(
+				static function (string $message, array $context = []) use (&$logged, &$levels, $level): void {
+					$logged[] = [$message, $context];
+					$levels[] = $level;
+				}
+			);
+		}
 
 		$job = $this->build(
 			class: $this->declaredJobClass(),
@@ -210,6 +214,8 @@ class DraftExpiryJobTest extends TestCase {
 		// The second schema sets nothing, so it gets 30 days: looked at, nothing expired, no line of its own.
 		$this->assertStringContainsString('swept drafts', $logged[1][0]);
 		$this->assertSame(['schemas' => 2, 'expired' => 1, 'removed' => 1, 'refused' => 0, 'deferred' => 0], $logged[1][1]);
+		// A sweep that removed a draft is logged where the default log level (warning) shows it.
+		$this->assertSame(['warning', 'warning'], $levels);
 	}//end testTheDeclaredJobRemovesAnExpiredDraft()
 
 	/**
@@ -249,4 +255,26 @@ class DraftExpiryJobTest extends TestCase {
 		$this->expectException(RuntimeException::class);
 		$this->runJob(job: $job);
 	}//end testAFailingSweepSurfaces()
+
+	/**
+	 * Drafts that were removed or refused are logged at warning, so the default log level shows them; a zero stays at info.
+	 */
+	public function testARefusalIsLoggedWhereTheDefaultLevelShowsIt(): void {
+		$expiry = $this->createMock(DraftExpiry::class);
+		$expiry->method('sweep')->willReturn(
+			[
+				'schemas' => 1, 'expired' => 2, 'removed' => 0, 'refused' => 2, 'deferred' => 0,
+				'perSchema' => [['register' => 'service', 'schema' => 'ticket', 'lifetimeDays' => 7, 'expired' => 2, 'removed' => 0, 'refused' => 2, 'deferred' => 0]],
+			]
+		);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->exactly(2))->method('warning');
+		$logger->expects($this->never())->method('info');
+
+		$job = $this->build(
+			class: $this->declaredJobClass(),
+			services: [ITimeFactory::class => $this->clock(), LoggerInterface::class => $logger, DraftExpiry::class => $expiry]
+		);
+		$this->runJob(job: $job);
+	}//end testARefusalIsLoggedWhereTheDefaultLevelShowsIt()
 }//end class
