@@ -1018,4 +1018,66 @@ class FormSubmitServiceTest extends TestCase {
 		$this->assertSame('Van Alice', $this->service->readDraft(destination: $destination, draftId: $draft['id'], subject: $alice)['data']['title']);
 		$this->assertSame($draft['id'], $this->service->findDraft(destination: $destination, subject: $alice)['id'] ?? null);
 	}//end testAUsersDraftReadsBackThroughTheSubject()
+
+	/**
+	 * A draft save never takes its uuid from the payload, so it cannot write over another owner's draft.
+	 *
+	 * The save takes a payload `id` as the uuid of an existing object and
+	 * updates it, and a scope-value owner saves with RBAC off. Goes red with
+	 * the id filter removed: the second save then carries `id` and the stored
+	 * draft of subject 1 is the one the fake updates.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	public function testAPayloadIdNeverPicksTheUuidOfADraftSave(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$victim = $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Van subject 1'], subject: null, owner: DraftOwner::portalSubject(subjectRef: 'subject-1'));
+
+		$attacker = $this->service->saveDraft(
+			destination: $destination,
+			mapping: null,
+			payload: ['title' => 'Overschreven', 'id' => $victim['id'], 'uuid' => $victim['id']],
+			subject: null,
+			owner: DraftOwner::portalSubject(subjectRef: 'subject-2')
+		);
+
+		$this->assertNotSame($victim['id'], $attacker['id'], 'The second save made its own object.');
+		$this->assertNull($this->saves[1]['uuid']);
+		$this->assertArrayNotHasKey('id', $this->saves[1]['object']);
+		$this->assertArrayNotHasKey('uuid', $this->saves[1]['object']);
+		$this->assertSame('Van subject 1', $this->stored[$victim['id']]->getObject()['title'], 'The other draft is unchanged.');
+		$this->assertSame('portal:subject-1', $this->stored[$victim['id']]->getOwner());
+	}//end testAPayloadIdNeverPicksTheUuidOfADraftSave()
+
+	/**
+	 * A fresh submit never takes its uuid from the payload, with or without a mapping.
+	 *
+	 * A mapping that points a field at the property `id`, and a fixed
+	 * `@self.id`, are held to the same rule: the submit never names an
+	 * existing object, the draft id is the only way to.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
+	 */
+	public function testAPayloadIdNeverPicksTheUuidOfASubmit(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$this->service->submit(destination: $destination, mapping: null, payload: ['title' => 'a', 'caseType' => 'b', 'id' => 'uuid-existing'], subject: null);
+		$this->service->submit(
+			destination: $destination,
+			mapping: [
+				'fields' => [['field' => 'mail', 'property' => 'id'], ['field' => 'onderwerp', 'property' => 'title']],
+				'fixed' => ['caseType' => 'b', '@self' => ['id' => 'uuid-existing', 'owner' => 'x']],
+			],
+			payload: ['mail' => 'uuid-existing', 'onderwerp' => 'a'],
+			subject: null
+		);
+
+		foreach ($this->saves as $save) {
+			$this->assertNull($save['uuid']);
+			$this->assertArrayNotHasKey('id', $save['object']);
+			$this->assertArrayNotHasKey('id', (array)($save['object']['@self'] ?? []));
+		}
+
+		$this->assertCount(2, $this->saves);
+		$this->assertNotSame('uuid-existing', $this->saves[0]['uuid']);
+	}//end testAPayloadIdNeverPicksTheUuidOfASubmit()
 }//end class

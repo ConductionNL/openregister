@@ -580,7 +580,8 @@ class FormSubmitService {
 	 *
 	 * Only mapped fields reach the object: the submitter does not choose which
 	 * properties a form writes. Without a mapping the payload is the object,
-	 * minus `_` control keys and `@` metadata, as the objects endpoint does.
+	 * minus `_` control keys, `@` metadata and the `id` / `uuid` that would
+	 * name an existing object, as the objects endpoint does.
 	 *
 	 * @param array<string, mixed>|null $mapping The mapping.
 	 * @param array<string, mixed>      $payload The payload.
@@ -623,11 +624,21 @@ class FormSubmitService {
 			}
 		}
 
+		// A submit never chooses the uuid of the object it writes. The save
+		// takes `id` (or `@self.id`) as the uuid of an existing object and
+		// updates it, so a submitter who names one would write over it, with
+		// RBAC off when the owner is a scope value. The only way to name an
+		// existing object is the draft id, which DraftFinder::own() checked.
+		unset($object['id']);
+		if (is_array($object['@self'] ?? null) === true) {
+			unset($object['@self']['id']);
+		}
+
 		return [$object, $files, $tokens];
 	}//end mapPayload()
 
 	/**
-	 * Property => value: the mapped fields, or without a mapping the payload minus control and metadata keys.
+	 * Property => value: the mapped fields, or without a mapping the payload minus control keys, metadata and the object's `id` / `uuid`.
 	 *
 	 * @param array<string, mixed>|null $mapping The mapping.
 	 * @param array<string, mixed>      $payload The payload.
@@ -639,7 +650,8 @@ class FormSubmitService {
 		if ($mapping === null) {
 			foreach ($payload as $name => $value) {
 				$name = (string)$name;
-				if (str_starts_with($name, '_') === false && str_starts_with($name, '@') === false) {
+				// `id` and `uuid` name an object, not a property: see mapPayload().
+				if (str_starts_with($name, '_') === false && str_starts_with($name, '@') === false && $name !== 'id' && $name !== 'uuid') {
 					$pairs[$name] = $value;
 				}
 			}
