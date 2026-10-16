@@ -499,13 +499,31 @@ run's subject by its key. Both SHALL act as the run's attributed identity and
 SHALL go through the same service verbs, validation and authorization as any
 other caller. Opening a plan on an object that already has one SHALL be
 reported on the node's output, not raised. A refused transition SHALL fail
-the step with the engine's message.
+the step with the engine's message. A plan is anchored to the register and
+schema of the received item only when the case is that item's own object; a
+configured `uuid` naming another object SHALL anchor the plan to neither. The
+advance node SHALL move the live realisation of a repeating item (the newest
+row of the key that is not terminal), never an earlier, finished one.
 
 #### Scenario: A flow reaches a milestone
 
 - **GIVEN** a case plan on object O with milestone `besluit-genomen` in `available`
 - **WHEN** a run on O executes `case-advance` with item `besluit-genomen` and `to: completed`
 - **THEN** the milestone MUST be completed with the run's identity in the audit
+- @e2e exclude node behaviour; asserted by unit tests over the real plan service
+
+#### Scenario: A repeating item advances its live realisation
+
+- **GIVEN** a repeating item `assessment` whose first realisation is `completed` and whose second is `active`
+- **WHEN** a run executes `case-advance` with item `assessment` and `to: completed`
+- **THEN** the second realisation MUST be completed and the first left as it is
+- @e2e exclude node behaviour; asserted by unit tests over the real plan service
+
+#### Scenario: A case about another object is not anchored to the item's register
+
+- **GIVEN** an item of register 1 schema 2 and a `case-open` step whose `uuid` renders another object's uuid
+- **WHEN** the step runs
+- **THEN** the plan rows MUST carry no register and no schema
 - @e2e exclude node behaviour; asserted by unit tests over the real plan service
 
 #### Scenario: A refused advance fails the step
