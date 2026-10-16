@@ -17,6 +17,7 @@ use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
 use OCA\OpenRegister\Tests\Unit\Service\Flow\PublishedVersionDouble;
 use OCP\EventDispatcher\Event;
@@ -74,6 +75,13 @@ class CountingNode implements IFlowNode {
 		$this->lastConfig = $config;
 
 		return $items;
+	}
+}
+
+/** A counting node that declares the config keys it reads, so a caller may only set those. */
+class KeyedCountingNode extends CountingNode implements IFlowNodeConfigKeys {
+	public function configKeys(): array {
+		return ['templateId', 'folder'];
 	}
 }
 
@@ -147,7 +155,7 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 
 	private FlowRunMapper $mapper;
 	private FlowRunService $service;
-	private CountingNode $target;
+	private KeyedCountingNode $target;
 	private CountingNode $downstream;
 
 	protected function setUp(): void {
@@ -157,7 +165,7 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 		$this->mapper->method('insert')->willReturnArgument(0);
 		$this->mapper->method('update')->willReturnArgument(0);
 
-		$this->target = new CountingNode('test.target');
+		$this->target = new KeyedCountingNode('test.target');
 		$this->downstream = new CountingNode('test.downstream');
 		$exploding = new ExplodingNode();
 		$suspending = new SuspendingNode();
@@ -338,4 +346,43 @@ class FlowRunServiceExecuteNodeTest extends TestCase {
 
 		$this->assertSame(['templateId' => 'picked', 'folder' => 'Besluiten'], $this->target->lastConfig);
 	}//end testTheCallersConfigOverlaysThePublishedStep()
+
+	/**
+	 * A caller key the node does not declare never reaches it: the author's
+	 * published value stays, and the extra key is dropped.
+	 *
+	 * @return void
+	 */
+	public function testACallerKeyOutsideTheNodesVocabularyDoesNotReachIt(): void {
+		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, user: 'alice');
+
+		$this->service->executeNode(
+			run: $run,
+			flow: $this->flowDoc(),
+			subject: new ExecuteNodeSubject(),
+			nodeId: 'target',
+			config: ['templateId' => 'picked', 'webhookUrl' => 'https://example.invalid/', 'folder' => 'Elders']
+		);
+
+		$this->assertSame(['templateId' => 'picked', 'folder' => 'Elders'], $this->target->lastConfig);
+	}//end testACallerKeyOutsideTheNodesVocabularyDoesNotReachIt()
+
+	/**
+	 * A node that declares no config vocabulary takes nothing from the caller.
+	 *
+	 * @return void
+	 */
+	public function testANodeThatDeclaresNoKeysTakesNothingFromTheCaller(): void {
+		$run = $this->service->queue(flowId: 'f1', trigger: FlowRunService::TRIGGER_DIRECT_NODE, user: 'alice');
+
+		$this->service->executeNode(
+			run: $run,
+			flow: $this->flowDoc(),
+			subject: new ExecuteNodeSubject(),
+			nodeId: 'downstream',
+			config: ['anything' => 'x']
+		);
+
+		$this->assertSame([], $this->downstream->lastConfig);
+	}//end testANodeThatDeclaresNoKeysTakesNothingFromTheCaller()
 }//end class
