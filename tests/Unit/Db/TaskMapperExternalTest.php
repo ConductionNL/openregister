@@ -86,4 +86,20 @@ class TaskMapperExternalTest extends TestCase {
 		$this->assertTrue($this->saw('expr.eq', 'is_terminal'));
 		$this->assertSame(0, (new TaskMapper(db: $this->connectionWith(rows: [])))->countOpenExternalForParty(partyReference: 'party:nobody'));
 	}//end testThePartyFindersPredicateOnPartyTypeAndOpenness()
+
+	/**
+	 * A portal task held back by an open blocker is in neither the party's page nor its total.
+	 *
+	 * @return void
+	 */
+	public function testThePartyFindersLeaveOutATaskWhoseBlockerIsOpen(): void {
+		$mapper = new TaskMapper(db: $this->connectionWith(rows: []));
+		$mapper->findOpenExternalForParty(partyReference: 'party:bsn-1');
+		$this->assertTrue($this->saw('expr.notIn', 'blocked_by'), 'the page excludes a task whose blocker is open');
+		$this->assertTrue($this->saw('expr.isNull', 'blocked_by'), 'a task with no blocker stays listed');
+
+		$this->calls = [];
+		(new TaskMapper(db: $this->connectionWith(rows: [['total' => 0]])))->countOpenExternalForParty(partyReference: 'party:bsn-1');
+		$this->assertTrue($this->saw('expr.notIn', 'blocked_by'), 'the total excludes it too, over the same predicate');
+	}//end testThePartyFindersLeaveOutATaskWhoseBlockerIsOpen()
 }//end class

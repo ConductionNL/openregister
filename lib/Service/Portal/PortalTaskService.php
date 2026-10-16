@@ -126,6 +126,10 @@ class PortalTaskService {
 		$contexts = $this->inbox->subjectContextsFor(tasks: $page);
 		$now = $this->temporal->now();
 
+		// The page was read with the open-blocker exclusion, so no row of it is
+		// blocked: saying so up front spares every row its own blocker query.
+		$openBlockers = [];
+
 		$results = [];
 		foreach ($page as $task) {
 			// Belt and braces over the WHERE clause: a row that is not this
@@ -134,7 +138,7 @@ class PortalTaskService {
 				continue;
 			}
 
-			$results[] = $this->inbox->row(task: $task, subjects: $contexts, now: $now);
+			$results[] = $this->inbox->row(task: $task, subjects: $contexts, now: $now, openBlockers: $openBlockers);
 		}
 
 		return [
@@ -153,9 +157,11 @@ class PortalTaskService {
 	 *
 	 * @return Task The task.
 	 *
-	 * @throws DoesNotExistException When absent, not external, or not this
-	 *                               subject's: all three read identically, so
-	 *                               a stranger learns nothing from the answer.
+	 * @throws DoesNotExistException When absent, not external, not this
+	 *                               subject's, or held back by an open blocker
+	 *                               (the list leaves it out too): all read
+	 *                               identically, so a stranger learns nothing
+	 *                               from the answer.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
 	 */
@@ -163,12 +169,40 @@ class PortalTaskService {
 		$task = $this->tasks->get(uuid: $uuid);
 		if ((string)$task->getPerformerType() !== Task::PERFORMER_EXTERNAL
 			|| hash_equals($subject->partyReference(), (string)$task->getAssignee()) === false
+			|| $this->isHeldBack(task: $task) === true
 		) {
 			throw new DoesNotExistException('No such portal task.');
 		}
 
 		return $task;
 	}//end show()
+
+	/**
+	 * Whether the task waits on a blocker that is still open.
+	 *
+	 * The portal list leaves such a task out, so the party has no way to reach
+	 * it: the task the case meant to hold back cannot be read or completed by
+	 * its uuid either. A blocker that no longer exists blocks nothing, as in
+	 * the list predicate.
+	 *
+	 * @param Task $task The task.
+	 *
+	 * @return bool True when its blocker is open.
+	 *
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 */
+	private function isHeldBack(Task $task): bool {
+		$blockedBy = (string)$task->getBlockedBy();
+		if ($blockedBy === '') {
+			return false;
+		}
+
+		try {
+			return $this->mapper->findByUuid(uuid: $blockedBy)->getIsTerminal() !== true;
+		} catch (DoesNotExistException) {
+			return false;
+		}
+	}//end isHeldBack()
 
 	/**
 	 * The row shape of one task for the portal, with delivery state and
@@ -211,7 +245,7 @@ class PortalTaskService {
 	 * @throws TaskCompleteViaAppException When the task names an app action that
 	 *         completes it and the caller is not that app (nothing stored).
 	 * @throws TaskValidationException When an upload constraint is violated (nothing stored).
-	 * @throws DoesNotExistException When no such task exists.
+	 * @throws DoesNotExistException When no such task exists, or it waits on an open blocker.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-an-upload-completion-lands-as-a-file-attachment-on-the-case-object
 	 */
@@ -228,6 +262,14 @@ class PortalTaskService {
 		//    who knows the uuid must not get a validation message, let alone a
 		//    file on somebody else's case.
 		$task = $this->tasks->openFor(verb: 'complete', uuid: $uuid, actor: $subject->actor());
+
+		// 1a. A task the case holds back behind an open blocker is not on the
+		//     party's list, so it is not theirs to complete either. Asked after
+		//     the authorization, so only the matched party can tell it from a
+		//     task that does not exist, and before anything is stored.
+		if ($this->isHeldBack(task: $task) === true) {
+			throw new DoesNotExistException('No such portal task.');
+		}
 
 		// 1b. A task that names the app action completing it is completed by
 		//     that app alone, so the app's own checks cannot be skipped by

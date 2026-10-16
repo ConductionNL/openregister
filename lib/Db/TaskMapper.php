@@ -593,6 +593,24 @@ class TaskMapper extends QBMapper {
 			return;
 		}
 
+		$this->excludeBlocked(qb: $qb);
+	}//end applyBlockedExclusion()
+
+	/**
+	 * Leave out every task whose blocker is still open.
+	 *
+	 * The one predicate behind "a blocked task is in nobody's list and in
+	 * nobody's total", shared by the inbox and by the portal seam: a resident's
+	 * task list is the only inbox an external task has, so a task the case holds
+	 * back must wait out of sight there too.
+	 *
+	 * @param IQueryBuilder $qb The query under construction.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 */
+	private function excludeBlocked(IQueryBuilder $qb): void {
 		$open = $this->db->getQueryBuilder();
 		$open->select('blocker.uuid')
 			->from($this->getTableName(), 'blocker')
@@ -605,7 +623,7 @@ class TaskMapper extends QBMapper {
 				$qb->expr()->notIn('blocked_by', $qb->createFunction($open->getSQL()))
 			)
 		);
-	}//end applyBlockedExclusion()
+	}//end excludeBlocked()
 
 	/**
 	 * An EXTERNAL task is in nobody's Nextcloud inbox and in nobody's total.
@@ -695,7 +713,7 @@ class TaskMapper extends QBMapper {
 	}//end countOpenExternalForParty()
 
 	/**
-	 * The portal seam's predicate: this party's, external, still open.
+	 * The portal seam's predicate: this party's, external, still open, and not held back by an open blocker.
 	 *
 	 * @param IQueryBuilder $qb The query under construction.
 	 * @param string $partyReference The stored party reference.
@@ -708,6 +726,7 @@ class TaskMapper extends QBMapper {
 		$qb->andWhere($qb->expr()->eq('assignee', $qb->createNamedParameter($partyReference)));
 		$qb->andWhere($qb->expr()->eq('performer_type', $qb->createNamedParameter(Task::PERFORMER_EXTERNAL)));
 		$qb->andWhere($qb->expr()->eq('is_terminal', $qb->createNamedParameter(false, IQueryBuilder::PARAM_BOOL)));
+		$this->excludeBlocked(qb: $qb);
 	}//end applyPartyPredicates()
 
 	/**
