@@ -86,6 +86,21 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$this->assertStringNotContainsString('generated-', $this->config['example_set_demo'], 'a password is never in the record');
 	}
 
+	public function testALookupThatTwoRowsAnswerRefusesTheCheckAndWritesNothing(): void {
+		// Another organisation holds a case type with the same business key.
+		$this->store->seed(register: 'cases', schema: 'caseType', data: ['identifier' => 'woo']);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$check = $this->installer->check(plan: $plan, today: $this->today());
+
+		$this->assertCount(1, $check['refusals']);
+		$this->assertStringContainsString('2 cases caseType rows with identifier "woo"; a lookup needs exactly one', $check['refusals'][0]);
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertCount(1, $report['refusals']);
+		$this->assertSame(0, $this->store->creates, 'a refused set writes nothing');
+	}
+
 	public function testASecondInstallWritesNothingAndSaysAlreadyThere(): void {
 		$plan = $this->catalogue->gather(set: 'demo');
 		$this->installer->install(plan: $plan, today: $this->today());

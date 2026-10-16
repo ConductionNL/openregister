@@ -205,6 +205,27 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$this->assertSame(['nextcloud'], $this->store->get(register: 'site', schema: 'portal', id: $portal)['authentication']['modes']);
 	}
 
+	public function testAChangeWhoseWhereTwoObjectsAnswerRefusesTheCheckAndWritesNothing(): void {
+		$this->store->offer(register: 'site', schema: 'portal');
+		$first  = $this->store->seed(register: 'site', schema: 'portal', data: ['slug' => 'demo', 'authentication' => ['modes' => ['password']]]);
+		$second = $this->store->seed(register: 'site', schema: 'portal', data: ['slug' => 'demo', 'authentication' => ['modes' => ['password']]]);
+		$this->app(app: 'openregister', fragment: $this->castFile());
+		$this->app(app: 'site', fragment: $this->signInChange());
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$check = $this->installer->check(plan: $plan, today: $this->today());
+		$this->assertSame(
+			['site/lib/Settings/example-sets/demo.json: change "sign-in" (site portal): 2 site portal rows match {"slug":"demo"}; a change needs exactly one to change'],
+			$check['refusals']
+		);
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertCount(1, $report['refusals']);
+		$this->assertSame(0, $this->store->updates);
+		$this->assertSame(['password'], $this->store->get(register: 'site', schema: 'portal', id: $first)['authentication']['modes']);
+		$this->assertSame(['password'], $this->store->get(register: 'site', schema: 'portal', id: $second)['authentication']['modes']);
+	}
+
 	public function testAChangeWithoutItsObjectRefusesTheCheck(): void {
 		$this->store->offer(register: 'site', schema: 'portal');
 		$this->app(app: 'openregister', fragment: $this->castFile());

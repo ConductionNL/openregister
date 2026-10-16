@@ -168,6 +168,69 @@ class ExampleSetStore {
 	}//end find()
 
 	/**
+	 * Every row of one schema that holds all the asked values, each once.
+	 *
+	 * Asked with the filter first, then without: OpenRegister does not filter
+	 * on every kind of property, so a register that ignores the filter hands
+	 * over every row, and the match is checked here either way. Reads across
+	 * organisations, so a business key two tenants share yields both rows.
+	 *
+	 * @param string               $register The register slug.
+	 * @param string               $schema   The schema slug.
+	 * @param array<string, mixed> $where    The asked values, by field.
+	 *
+	 * @return array<int, array<string, mixed>> The matching rows; empty when none matches.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-every-placeholder-resolves-or-the-set-is-refused-req-exs-002
+	 */
+	public function matching(string $register, string $schema, array $where): array {
+		foreach ([$where, []] as $filters) {
+			$found = [];
+			foreach ($this->find(register: $register, schema: $schema, filters: $filters) as $row) {
+				if ($this->rowMatches(row: $row, where: $where) === false) {
+					continue;
+				}
+
+				$id = $this->idOf(row: $row);
+				if ($id === '') {
+					$id = 'row-'.count($found);
+				}
+
+				$found[$id] = $row;
+			}
+
+			if ($found !== []) {
+				return array_values($found);
+			}
+		}
+
+		return [];
+	}//end matching()
+
+	/**
+	 * Whether a row holds every asked value.
+	 *
+	 * @param array<string, mixed> $row   The row.
+	 * @param array<string, mixed> $where The asked values, by field.
+	 *
+	 * @return bool
+	 */
+	public function rowMatches(array $row, array $where): bool {
+		foreach ($where as $field => $value) {
+			$held = ($row[$field] ?? null);
+			if ($held === $value) {
+				continue;
+			}
+
+			if (is_scalar($held) === false || is_scalar($value) === false || (string) $held !== (string) $value) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end rowMatches()
+
+	/**
 	 * One row by its id, or null when it is not there.
 	 *
 	 * @param string $register The register slug.

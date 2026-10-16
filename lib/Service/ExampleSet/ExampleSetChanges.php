@@ -80,7 +80,18 @@ class ExampleSetChanges {
 			return array_merge($none, ['refusal' => 'cannot resolve '.implode(', ', array_unique($gaps))]);
 		}
 
-		$row = $this->target(change: $change, where: (array) $fill['where'], objects: (array) ($context['objects'] ?? []));
+		$found = $this->target(change: $change, where: (array) $fill['where'], objects: (array) ($context['objects'] ?? []));
+		$row   = $found[0] ?? null;
+		if (count($found) > 1) {
+			return array_merge(
+				$none,
+				[
+					'refusal' => count($found).' '.$change['register'].' '.$change['schema'].' rows match '
+						.json_encode($fill['where'], JSON_UNESCAPED_UNICODE).'; a change needs exactly one to change',
+				]
+			);
+		}
+
 		if ($row === null && is_string($change['object'] ?? null) === true) {
 			return array_merge($none, ['refusal' => 'object "'.$change['object'].'" is not written earlier in this fragment']);
 		}
@@ -324,39 +335,29 @@ class ExampleSetChanges {
 	}//end jsonFields()
 
 	/**
-	 * The one object a change describes: an object written earlier in the same
-	 * fragment by its key, or the object its `where` finds; null otherwise.
+	 * The objects a change describes: the object written earlier in the same
+	 * fragment by its key, or every object its `where` finds.
 	 *
 	 * @param array<string, mixed>                $change  The declared change.
 	 * @param array<string, mixed>                $where   The filled `where`.
 	 * @param array<string, array<string, mixed>> $objects The fragment's objects so far, by key.
 	 *
-	 * @return array<string, mixed>|null
+	 * @return array<int, array<string, mixed>> None, one, or every match; a change is made only on exactly one.
 	 */
-	private function target(array $change, array $where, array $objects): ?array {
+	private function target(array $change, array $where, array $objects): array {
 		if (is_string($change['object'] ?? null) === true) {
-			return ($objects[$change['object']] ?? null);
-		}
-
-		$register = (string) $change['register'];
-		$schema   = (string) $change['schema'];
-		if ($where === []) {
-			return null;
-		}
-
-		foreach ([$where, []] as $filters) {
-			foreach ($this->store->find(register: $register, schema: $schema, filters: $filters) as $row) {
-				$match = true;
-				foreach ($where as $field => $value) {
-					$match = ($match === true && ($row[$field] ?? null) === $value);
-				}
-
-				if ($match === true) {
-					return $row;
-				}
+			$earlier = ($objects[$change['object']] ?? null);
+			if ($earlier === null) {
+				return [];
 			}
+
+			return [$earlier];
 		}
 
-		return null;
+		if ($where === []) {
+			return [];
+		}
+
+		return $this->store->matching(register: (string) $change['register'], schema: (string) $change['schema'], where: $where);
 	}//end target()
 }//end class

@@ -543,9 +543,10 @@ class ExampleSetInstaller {
 	/**
 	 * The id of the one row a lookup by business key describes.
 	 *
-	 * The match is checked here as well: a register that does not filter on a
+	 * The match is checked as well: a register that does not filter on a
 	 * property hands over every row, and the first of those is not the one
-	 * that was asked for.
+	 * that was asked for. Two rows that match (two organisations may share a
+	 * business key) refuse the lookup, naming the count.
 	 *
 	 * @param string                           $register The register of the object being written.
 	 * @param array<string, mixed>             $lookup   `schema` and `where`; `register` when it is another one.
@@ -567,14 +568,13 @@ class ExampleSetInstaller {
 			return ['id' => '', 'reason' => 'nothing: a lookup needs a schema and a where'];
 		}
 
-		// Asked with the filter first, then without: OpenRegister does not
-		// filter on every kind of property, and the match is checked here anyway.
-		foreach ([$where, []] as $filters) {
-			foreach ($this->store->find(register: $from, schema: $schema, filters: $filters) as $row) {
-				if ($this->matches(row: $row, where: $where) === true) {
-					return ['id' => $this->store->idOf(row: $row), 'reason' => ''];
-				}
-			}
+		$rows = $this->store->matching(register: $from, schema: $schema, where: $where);
+		if (count($rows) > 1) {
+			return ['id' => '', 'reason' => count($rows).' '.$from.' '.$schema.' rows with '.$this->asWords(where: $where).'; a lookup needs exactly one'];
+		}
+
+		if ($rows !== []) {
+			return ['id' => $this->store->idOf(row: $rows[0]), 'reason' => ''];
 		}
 
 		$id = $this->plannedMatch(planned: $planned, register: $from, schema: $schema, where: $where);
@@ -582,13 +582,24 @@ class ExampleSetInstaller {
 			return ['id' => $id, 'reason' => ''];
 		}
 
+		return ['id' => '', 'reason' => 'no '.$from.' '.$schema.' with '.$this->asWords(where: $where)];
+	}//end lookedUp()
+
+	/**
+	 * The asked values as words for a refusal.
+	 *
+	 * @param array<string, mixed> $where The asked values, by field.
+	 *
+	 * @return string
+	 */
+	private function asWords(array $where): string {
 		$words = [];
 		foreach ($where as $field => $value) {
 			$words[] = $field.' '.json_encode($value, JSON_UNESCAPED_UNICODE);
 		}
 
-		return ['id' => '', 'reason' => 'no '.$from.' '.$schema.' with '.implode(' and ', $words)];
-	}//end lookedUp()
+		return implode(' and ', $words);
+	}//end asWords()
 
 	/**
 	 * The stand-in id of an object declared earlier in the set that a lookup describes, or ''.
@@ -602,36 +613,13 @@ class ExampleSetInstaller {
 	 */
 	private function plannedMatch(array $planned, string $register, string $schema, array $where): string {
 		foreach ($planned as $object) {
-			if ($object['register'] === $register && $object['schema'] === $schema && $this->matches(row: $object['row'], where: $where) === true) {
+			if ($object['register'] === $register && $object['schema'] === $schema && $this->store->rowMatches(row: $object['row'], where: $where) === true) {
 				return (string) $object['row']['id'];
 			}
 		}
 
 		return '';
 	}//end plannedMatch()
-
-	/**
-	 * Whether a row holds every asked value.
-	 *
-	 * @param array<string, mixed> $row   The row.
-	 * @param array<string, mixed> $where The asked values, by field.
-	 *
-	 * @return bool
-	 */
-	private function matches(array $row, array $where): bool {
-		foreach ($where as $field => $value) {
-			$held = ($row[$field] ?? null);
-			if ($held === $value) {
-				continue;
-			}
-
-			if (is_scalar($held) === false || is_scalar($value) === false || (string) $held !== (string) $value) {
-				return false;
-			}
-		}
-
-		return true;
-	}//end matches()
 
 	/**
 	 * The row the record holds for an object, when it is still there.
