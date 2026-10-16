@@ -77,7 +77,7 @@ An administrator re-imports an app's real register configuration on demand, and 
 
 ### Requirement: The re-import reports what changed (REQ-RDA-012)
 
-The real re-import SHALL report registers and schemas as created, updated and unchanged, measured from the database before and after the import. It SHALL report how many authorization blocks it took from the file over a change made on the instance, and name each.
+The real re-import SHALL report registers and schemas as created, updated and unchanged, measured from the database before and after the import. It SHALL report how many authorization blocks it took from the file over a change made on the instance, and name each. The administrator panel (Register descriptors) SHALL ask for confirmation before it runs a re-import, saying that the app's schema authorization is taken from the file over any local change and that the app's other registers may be re-imported with it, and SHALL show the response's count and every replaced block (schema and path) in its outcome note, as a warning and not as a plain success when any block was replaced.
 
 #### Scenario: Counts come from the database
 
@@ -90,3 +90,4 @@ The real re-import SHALL report registers and schemas as created, updated and un
 
 - **WHEN** the re-import takes `portalAccount`'s authorization from the file over a local change
 - **THEN** the output counts 1 replaced block and names `portalAccount: authorization`
+- **AND** the panel's outcome note shows the count and `portalAccount: authorization` as a warning, after the administrator confirmed the re-import
