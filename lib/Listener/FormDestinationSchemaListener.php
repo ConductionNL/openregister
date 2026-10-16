@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Service\Form\FormDependentsCheck;
 use OCP\EventDispatcher\Event;
@@ -81,10 +82,7 @@ class FormDestinationSchemaListener implements IEventListener {
 		}
 
 		$schema = $event->getNewSchema();
-		$old = $event->getOldSchema();
-		if (($schema->getProperties() ?? []) == ($old->getProperties() ?? [])
-			&& ($schema->getRequired() ?? []) == ($old->getRequired() ?? [])
-		) {
+		if ($this->definitionChanged(new: $schema, old: $event->getOldSchema()) === false) {
 			return;
 		}
 
@@ -101,7 +99,8 @@ class FormDestinationSchemaListener implements IEventListener {
 
 			if ($assessment['refused'] === true) {
 				$this->logger->warning(
-					message: '[FormDestinationSchemaListener] An owning app set formDestinationBreak to refuse, but this schema write has no response to refuse; the broken forms are unpublished instead',
+					message: '[FormDestinationSchemaListener] An owning app set formDestinationBreak to refuse, but this schema write '
+					. 'has no response to refuse; the broken forms are unpublished instead',
 					context: ['schema' => $assessment['schema'], 'forms' => count($assessment['affected'])]
 				);
 				$assessment['refused'] = false;
@@ -116,4 +115,39 @@ class FormDestinationSchemaListener implements IEventListener {
 			);
 		}
 	}//end handle()
+
+	/**
+	 * Whether a write changed what a form is judged against: the properties or the required list.
+	 *
+	 * Compared by content, not by key order, so a re-import that only reorders
+	 * the keys judges no form.
+	 *
+	 * @param Schema $new The schema after the write.
+	 * @param Schema $old The schema before it.
+	 *
+	 * @return bool True when properties or required differ.
+	 */
+	private function definitionChanged(Schema $new, Schema $old): bool {
+		return $this->canonical(value: ($new->getProperties() ?? [])) !== $this->canonical(value: ($old->getProperties() ?? []))
+			|| $this->canonical(value: ($new->getRequired() ?? [])) !== $this->canonical(value: ($old->getRequired() ?? []));
+	}//end definitionChanged()
+
+	/**
+	 * A value with every map's keys in the same order, recursively.
+	 *
+	 * @param array<int|string, mixed> $value The value.
+	 *
+	 * @return array<int|string, mixed> The value, maps sorted by key.
+	 */
+	private function canonical(array $value): array {
+		foreach ($value as $key => $item) {
+			if (is_array($item) === true) {
+				$value[$key] = $this->canonical(value: $item);
+			}
+		}
+
+		ksort($value);
+
+		return $value;
+	}//end canonical()
 }//end class

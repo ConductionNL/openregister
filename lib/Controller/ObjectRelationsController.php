@@ -74,6 +74,8 @@ class ObjectRelationsController extends Controller {
 	 * @param ExportGate $exportGate The export verb, checked before the graph leaves.
 	 * @param ObjectReadAccess $access Resolves an object under the caller's own RBAC.
 	 * @param ObjectTreeService $trees The bounded walk along a schema's parent property.
+	 * @param PurposeGuard $purposeGuard The doelbinding guard the object read runs, asked before a tree or a graph is answered.
+	 * @param RegisterMapper $registerMapper Resolves an object's register for that guard.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
