@@ -1153,4 +1153,46 @@ class FormSubmitServiceTest extends TestCase {
 
 		$this->assertSame([], $this->dispatched);
 	}//end testASaveThatDidNotUseThePromotionAnnouncesNothing()
+
+	/**
+	 * A draft save claims its upload tokens: the file sits on the draft, so the token cannot be redeemed again.
+	 *
+	 * A refused draft save keeps the token for the retry, as a refused submit does. Goes red without the claim.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	public function testADraftSaveClaimsItsUploadTokens(): void {
+		$path = (string)tempnam(sys_get_temp_dir(), 'or-submit-upload');
+		file_put_contents($path, '%PDF-1.7');
+		$this->temporary[] = $path;
+		$token = $this->uploads->issue(
+			formId: 'form-1',
+			property: 'bijlage',
+			rule: $this->schemaBySlug['case']->getProperties()['bijlage'],
+			file: ['name' => 'a.pdf', 'type' => 'application/pdf', 'tmp_name' => $path, 'error' => UPLOAD_ERR_OK, 'size' => 8]
+		)['token'];
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$payload = ['title' => 'Half af', 'bijlage' => ['uploadToken' => $token]];
+		$alice = $this->user(uid: 'alice');
+
+		// Refused first: the token survives for the retry.
+		$this->refuseSave['case'] = new CustomValidationException(message: 'x', errors: ['title' => 'nope']);
+		try {
+			$this->service->saveDraft(destination: $destination, mapping: null, payload: $payload, subject: $alice, scope: 'form-1');
+			$this->fail('Refused draft save accepted.');
+		} catch (FormSubmitRefusedException) {
+			$this->assertSame('a.pdf', $this->uploads->materialise(formId: 'form-1', token: $token)['name']);
+		}
+
+		unset($this->refuseSave['case']);
+		$this->service->saveDraft(destination: $destination, mapping: null, payload: $payload, subject: $alice, scope: 'form-1');
+		$this->assertSame('a.pdf', $this->saves[1]['files']['bijlage']['name']);
+
+		try {
+			$this->uploads->materialise(formId: 'form-1', token: $token);
+			$this->fail('The token of a saved draft is still redeemable.');
+		} catch (FormSubmitRefusedException $refused) {
+			$this->assertSame('upload-token-unknown', $refused->getFindings()[0]['code'] ?? null);
+		}
+	}//end testADraftSaveClaimsItsUploadTokens()
 }//end class

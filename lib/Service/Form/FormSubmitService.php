@@ -231,6 +231,10 @@ class FormSubmitService {
 		$this->validateAll(plans: $plans, mode: self::MODE_DRAFT);
 		$created = $this->writeAll(plans: $plans, subject: $owner->user(), status: ObjectEntity::STATUS_DRAFT, uuid: $draftId, owner: $owner);
 
+		// The files now sit on the draft: the tokens are spent, as after a submit,
+		// so they cannot be redeemed again for another object or a later save.
+		$this->uploads->claim(tokens: array_merge(...array_map(static fn (array $plan): array => $plan['tokens'], $plans)));
+
 		return ['id' => (string)$created[0]['object']->getUuid(), 'status' => ObjectEntity::STATUS_DRAFT];
 	}//end saveDraft()
 

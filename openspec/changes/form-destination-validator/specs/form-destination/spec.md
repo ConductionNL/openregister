@@ -74,7 +74,7 @@ The service SHALL validate every write before the first. When a write is refused
 
 ### Requirement: Upload tokens MUST hold bytes only and expire
 
-`POST /api/forms/{formId}/uploads` SHALL accept one file and the destination `property` it is for, check it against that property's file rules (`maxSize` in bytes or `fileConfiguration.maxSize` in MB, `allowedTypes` or `fileConfiguration.allowedMimeTypes`, the same reader the save path uses), and return `{ token, expiresAt }`. A submit SHALL claim tokens by a payload value `{ "uploadToken": "<token>" }` for the property the token was issued for, and only after its last write succeeded, so a refused submit leaves the files for the retry. Unclaimed tokens SHALL be deleted after 24 hours by an hourly background job that logs its count, a zero included.
+`POST /api/forms/{formId}/uploads` SHALL accept one file and the destination `property` it is for, check it against that property's file rules (`maxSize` in bytes or `fileConfiguration.maxSize` in MB, `allowedTypes` or `fileConfiguration.allowedMimeTypes`, the same reader the save path uses), and return `{ token, expiresAt }`. A submit SHALL claim tokens by a payload value `{ "uploadToken": "<token>" }` for the property the token was issued for, and only after its last write succeeded, so a refused submit leaves the files for the retry. A draft save SHALL claim its tokens the same way once the draft is written, because the files then sit on the draft. Unclaimed tokens SHALL be deleted after 24 hours by an hourly background job that logs its count, a zero included.
 
 #### Scenario: An oversized file is refused at upload
 
