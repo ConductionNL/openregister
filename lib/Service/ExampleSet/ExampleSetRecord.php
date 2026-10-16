@@ -91,7 +91,7 @@ class ExampleSetRecord {
 	 */
 	public function read(string $set): array {
 		$record  = self::BLANK;
-		$decoded = json_decode($this->appConfig->getValueString(Application::APP_ID, self::PREFIX.$set, ''), true);
+		$decoded = json_decode($this->stored(set: $set), true);
 		if (is_array($decoded) === false) {
 			return $record;
 		}
@@ -201,7 +201,7 @@ class ExampleSetRecord {
 		if ($this->isEmpty(record: $record) === true) {
 			// A register this set imported and removed again is remembered, so the next install imports its data again.
 			if (($record['registers'] ?? []) !== []) {
-				$this->appConfig->setValueString(Application::APP_ID, self::PREFIX.$set, (string) json_encode(['registers' => $record['registers']]));
+				$this->store(set: $set, json: (string) json_encode(['registers' => $record['registers']]));
 				return;
 			}
 
@@ -209,6 +209,41 @@ class ExampleSetRecord {
 			return;
 		}
 
-		$this->appConfig->setValueString(Application::APP_ID, self::PREFIX.$set, (string) json_encode($record));
+		$this->store(set: $set, json: (string) json_encode($record));
 	}//end write()
+
+	/**
+	 * The stored record as JSON text, '' when there is none.
+	 *
+	 * A record is kept as a lazy app-config value: Nextcloud loads every
+	 * non-lazy value of every app on every request, and a demo instance's
+	 * record (each object id, change, file, config entry and preference) is
+	 * large and rewritten after every object an install creates. A record an
+	 * earlier version stored as a non-lazy value is still found, and moves to
+	 * the lazy store the next time it is written.
+	 *
+	 * @param string $set The set id.
+	 *
+	 * @return string
+	 */
+	private function stored(string $set): string {
+		$json = $this->appConfig->getValueString(Application::APP_ID, self::PREFIX.$set, '', true);
+		if ($json === '') {
+			$json = $this->appConfig->getValueString(Application::APP_ID, self::PREFIX.$set, '', false);
+		}
+
+		return $json;
+	}//end stored()
+
+	/**
+	 * Store the record's JSON text as a lazy value.
+	 *
+	 * @param string $set  The set id.
+	 * @param string $json The record as JSON text.
+	 *
+	 * @return void
+	 */
+	private function store(string $set, string $json): void {
+		$this->appConfig->setValueString(Application::APP_ID, self::PREFIX.$set, $json, true);
+	}//end store()
 }//end class

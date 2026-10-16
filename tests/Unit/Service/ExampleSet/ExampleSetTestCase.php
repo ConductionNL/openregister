@@ -68,6 +68,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<string, string> The app config, by key. */
 	protected array $config = [];
 
+	/** @var array<string, bool> Which keys of the app config were stored as lazy values. */
+	protected array $lazyKeys = [];
+
 	protected FakeExampleSetStore $store;
 
 	protected FakeExampleSetAccounts $accounts;
@@ -143,13 +146,19 @@ abstract class ExampleSetTestCase extends TestCase {
 		$instance    = new ExampleSetInstance(container: $container, config: $system);
 
 		$appConfig = $this->createMock(IAppConfig::class);
-		$appConfig->method('getValueString')->willReturnCallback(fn (string $app, string $key, string $default = ''): string => ($this->config[$key] ?? $default));
-		$appConfig->method('setValueString')->willReturnCallback(function (string $app, string $key, string $value): bool {
-			$this->config[$key] = $value;
+		// A value is found only by the lazy flag it was stored with, as a lazy and a non-lazy lookup are separate stores.
+		$appConfig->method('getValueString')->willReturnCallback(
+			fn (string $app, string $key, string $default = '', bool $lazy = false): string => (
+				isset($this->config[$key]) === true && ($this->lazyKeys[$key] ?? false) === $lazy ? $this->config[$key] : $default
+			)
+		);
+		$appConfig->method('setValueString')->willReturnCallback(function (string $app, string $key, string $value, bool $lazy = false): bool {
+			$this->config[$key]   = $value;
+			$this->lazyKeys[$key] = $lazy;
 			return true;
 		});
 		$appConfig->method('deleteKey')->willReturnCallback(function (string $app, string $key): void {
-			unset($this->config[$key]);
+			unset($this->config[$key], $this->lazyKeys[$key]);
 		});
 		$this->record = new ExampleSetRecord(appConfig: $appConfig);
 

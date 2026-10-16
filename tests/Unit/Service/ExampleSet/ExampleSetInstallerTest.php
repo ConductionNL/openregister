@@ -110,6 +110,22 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$this->assertSame($creates, $this->store->creates);
 	}
 
+	public function testTheRecordIsALazyValueAndAnEarlierNonLazyRecordIsStillFound(): void {
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertTrue($this->lazyKeys['example_set_demo'], 'the record stays out of every request');
+
+		// A record an earlier version stored as a non-lazy value is read, and is lazy again after the next write.
+		$this->lazyKeys['example_set_demo'] = false;
+		$creates = $this->store->creates;
+		$this->assertSame(['sanne.devries' => 'kept', 'esra.demir' => 'kept'], $this->installer->install(plan: $plan, today: $this->today())['users']);
+		$this->assertSame($creates, $this->store->creates, 'the old record is found, so nothing is written twice');
+
+		$this->remover->remove(set: 'demo');
+		$this->assertSame([], $this->config);
+	}
+
 	public function testALookupThatTwoRowsAnswerRefusesTheCheckAndWritesNothing(): void {
 		// Another organisation holds a case type with the same business key.
 		$this->store->seed(register: 'cases', schema: 'caseType', data: ['identifier' => 'woo']);
