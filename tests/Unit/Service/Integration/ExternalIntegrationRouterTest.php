@@ -363,6 +363,7 @@ class ExternalIntegrationRouterTest extends TestCase {
 	 *
 	 * @param ObjectService $objectService Answers the source lookup.
 	 * @param object|null $callService The connector CallService stand-in.
+	 * @param LoggerInterface|null $logger The logger to assert on; a null logger when none.
 	 *
 	 * @return ExternalIntegrationRouter
 	 */
