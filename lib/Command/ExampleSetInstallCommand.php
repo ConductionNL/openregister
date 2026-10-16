@@ -83,7 +83,8 @@ class ExampleSetInstallCommand extends Command {
 				name: 'check',
 				shortcut: null,
 				mode: InputOption::VALUE_NONE,
-				description: 'Validate every object against its schema and write nothing'
+				description: 'Validate every object against its schema; writes no account, group or object '
+					.'(a missing required register is still imported, and a missing cast organisation created)'
 			)
 			->addOption(
 				name: 'adopt',
@@ -181,6 +182,9 @@ class ExampleSetInstallCommand extends Command {
 		}
 
 		$output->writeln('<info>Every object passes its schema. No account, group or object of the set was written.</info>');
+		$output->writeln(
+			'A required register the instance lacked was imported, and a cast organisation it lacked was created, because the check needs them.'
+		);
 
 		return self::SUCCESS;
 	}//end check()
