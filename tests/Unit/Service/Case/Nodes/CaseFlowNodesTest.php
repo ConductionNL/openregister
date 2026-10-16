@@ -281,6 +281,32 @@ class CaseFlowNodesTest extends TestCase {
 	}//end testAdvanceMovesTheItemAndRefusalsFailTheStep()
 
 	/**
+	 * A repeating item has one row per realisation, the oldest first in plan
+	 * order. Advancing its key moves the realisation that is still open, not
+	 * the finished first one the old first-match loop stopped at.
+	 *
+	 * @return void
+	 */
+	public function testAdvanceMovesTheLiveRealisationOfARepeatingItem(): void {
+		$first = CaseFixtures::row(id: 1, key: 'assessment', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_COMPLETED);
+		$second = CaseFixtures::row(id: 2, key: 'assessment', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
+		$second->setRealisationCount(2);
+		$second->setPosition(1);
+		$first->setPosition(1);
+		$this->items->seed([$first, $second]);
+
+		$this->sessionUid = 'alice';
+		$node = new CaseAdvanceNode(...$this->collaborators());
+		$out = $node->execute(items: self::items(), config: ['item' => 'assessment', 'to' => CaseItem::STATE_COMPLETED], context: []);
+
+		$this->assertSame(['item' => 'assessment', 'state' => 'completed'], $out[0][FlowItems::JSON]['case']);
+		$this->assertSame(CaseItem::STATE_COMPLETED, $this->items->findByUuid('item-2')->getState(), 'the open realisation moved');
+		$this->assertSame(CaseItem::STATE_COMPLETED, $this->items->findByUuid('item-1')->getState());
+		$this->assertCount(1, $this->audits->findForItem(2), 'the transition is recorded against the second realisation');
+		$this->assertCount(0, $this->audits->findForItem(1), 'and not against the first');
+	}//end testAdvanceMovesTheLiveRealisationOfARepeatingItem()
+
+	/**
 	 * An empty batch passes straight through both nodes; an advance with no
 	 * item key is refused at save time.
 	 *
