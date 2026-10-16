@@ -94,7 +94,7 @@ The loader SHALL create a Nextcloud account for every cast person with a `uid`, 
 
 ### Requirement: A second install writes nothing (REQ-EXS-005)
 
-The loader SHALL keep an install record per set in OpenRegister's app config, listing the accounts it created or adopted, the groups it created, the memberships it added and the id of every object it wrote under `<app>/<key>`. A second install SHALL write nothing that the record holds and still finds on the instance, and SHALL report each as already there. An object the record holds but the instance lost SHALL be written again.
+The loader SHALL keep an install record per set in OpenRegister's app config, listing the accounts it created or adopted, the groups it created, the memberships it added and the id of every object it wrote under `<app>/<key>`. A second install SHALL write nothing that the record holds and still finds on the instance, and SHALL report each as already there. An object the record holds but the instance lost SHALL be written again; only a read that says the object does not exist counts as lost, and an object whose read FAILED (a database or magic-table error, a schema that cannot be resolved) SHALL NOT be written again: the install writes nothing for it, keeps the recorded id, reports it as not written, and the next install tries the read again.
 
 #### Scenario: A repeated install is a no-op
 - **GIVEN** a complete install of set `demo`
@@ -112,7 +112,7 @@ After writing, the loader SHALL read every object it created in this run back fr
 
 ### Requirement: Remove deletes exactly what the install made (REQ-EXS-007)
 
-`openregister:example-set:remove <set>` SHALL delete, in reverse order of writing, every object the record holds, then the memberships it added, then the groups it created, then the accounts it created. It SHALL NOT touch an adopted account, a pre-existing group, or any object it did not write. What it cannot delete SHALL stay in the record and be named, with exit 2.
+`openregister:example-set:remove <set>` SHALL delete, in reverse order of writing, every object the record holds, then the memberships it added, then the groups it created, then the accounts it created. It SHALL NOT touch an adopted account, a pre-existing group, or any object it did not write. What it cannot delete SHALL stay in the record and be named, with exit 2; an object whose read before the delete failed (anything but "it does not exist") cannot be told gone, so it stays and is named with the reason.
 
 #### Scenario: Remove leaves foreign data alone
 - **GIVEN** an object in the same schema that the set did not write

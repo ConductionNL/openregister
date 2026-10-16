@@ -86,6 +86,30 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 		$this->assertStringNotContainsString('generated-', $this->config['example_set_demo'], 'a password is never in the record');
 	}
 
+	public function testAReadErrorOnAKeptObjectWritesNothingAndKeepsTheRecordedId(): void {
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$before  = json_decode($this->config['example_set_demo'], true);
+		$caseId  = $before['objects']['cases/case-1']['id'];
+		$creates = $this->store->creates;
+
+		// The database cannot be read right now: the object is on the instance, but the read says nothing.
+		$this->store->unreadable = [$caseId];
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertSame($creates, $this->store->creates, 'nothing is written again');
+		$after = json_decode($this->config['example_set_demo'], true);
+		$this->assertSame($caseId, $after['objects']['cases/case-1']['id'], 'the original stays in the record');
+		$this->assertSame($before['objects'], $after['objects']);
+		$this->assertFalse($report['ok']);
+		$this->assertStringContainsString('could not be read (database is gone)', implode("\n", $report['dropped']));
+
+		// Once it can be read again the next install finds it and writes nothing.
+		$this->store->unreadable = [];
+		$this->assertTrue($this->installer->install(plan: $plan, today: $this->today())['ok']);
+		$this->assertSame($creates, $this->store->creates);
+	}
+
 	public function testALookupThatTwoRowsAnswerRefusesTheCheckAndWritesNothing(): void {
 		// Another organisation holds a case type with the same business key.
 		$this->store->seed(register: 'cases', schema: 'caseType', data: ['identifier' => 'woo']);

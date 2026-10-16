@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -233,6 +234,9 @@ class ExampleSetStore {
 	/**
 	 * One row by its id, or null when it is not there.
 	 *
+	 * Null is also what a read that failed gives; a caller that must tell
+	 * the two apart uses {@see self::read()}.
+	 *
 	 * @param string $register The register slug.
 	 * @param string $schema   The schema slug.
 	 * @param string $id       The row's id.
@@ -242,24 +246,51 @@ class ExampleSetStore {
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-an-install-proves-what-arrived-req-exs-006
 	 */
 	public function get(string $register, string $schema, string $id): ?array {
+		return $this->read(register: $register, schema: $schema, id: $id)['row'];
+	}//end get()
+
+	/**
+	 * One row by its id, and why it could not be read when that is not simply "it is not there".
+	 *
+	 * Only a row OpenRegister says does not exist (a miss, or null) is
+	 * absent. A database error, a magic-table error or a schema that cannot
+	 * be resolved says nothing about the row, so it comes back as an error:
+	 * a caller must not read it as "the instance lost the object".
+	 *
+	 * @param string $register The register slug.
+	 * @param string $schema   The schema slug.
+	 * @param string $id       The row's id.
+	 *
+	 * @return array{row: array<string, mixed>|null, error: string} The row with `id` set, or null with '' when it is
+	 *                                                              not there, or null with why the read failed.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
+	 */
+	public function read(string $register, string $schema, string $id): array {
 		$service = $this->objectService();
-		if ($service === null || $id === '') {
-			return null;
+		if ($service === null) {
+			return ['row' => null, 'error' => 'OpenRegister\'s object service is not available'];
+		}
+
+		if ($id === '') {
+			return ['row' => null, 'error' => ''];
 		}
 
 		try {
 			$row = $service->find(id: $id, register: $register, schema: $schema, _rbac: false, _multitenancy: false);
-		} catch (Throwable) {
-			return null;
+		} catch (DoesNotExistException) {
+			return ['row' => null, 'error' => ''];
+		} catch (Throwable $e) {
+			return ['row' => null, 'error' => $e->getMessage()];
 		}
 
 		$row = $this->plain(row: $row);
 		if ($row === null || $this->idOf(row: $row) !== $id) {
-			return null;
+			return ['row' => null, 'error' => ''];
 		}
 
-		return (['id' => $id] + $row);
-	}//end get()
+		return ['row' => (['id' => $id] + $row), 'error' => ''];
+	}//end read()
 
 	/**
 	 * Write one row.
@@ -345,11 +376,15 @@ class ExampleSetStore {
 			return 'OpenRegister\'s object service is not available';
 		}
 
-		// A row that cannot be found is gone, as the record's other steps read it.
+		// Only a row OpenRegister says is not there is gone; a read that failed
+		// proves nothing, so the row stays in the record and the reason is named.
 		try {
 			$row = $service->find(id: $id, register: $register, schema: $schema, _rbac: false, _multitenancy: false);
-		} catch (Throwable) {
+		} catch (DoesNotExistException) {
 			$row = null;
+		} catch (Throwable $e) {
+			$this->logger->warning('OpenRegister: example set read before delete failed', ['schema' => $schema, 'id' => $id, 'reason' => $e->getMessage()]);
+			return 'it could not be read: '.$e->getMessage();
 		}
 
 		if ($row?->hasActiveLegalHold() === true) {

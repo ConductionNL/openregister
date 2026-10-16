@@ -178,8 +178,23 @@ class FakeExampleSetStore extends ExampleSetStore {
 		return array_values($this->rows[$register.' '.$schema] ?? []);
 	}
 
+	/** @var array<int, string> Ids whose read fails with an error, as a database that is down would. */
+	public array $unreadable = [];
+
 	public function get(string $register, string $schema, string $id): ?array {
+		if (in_array($id, $this->unreadable, true) === true) {
+			return null;
+		}
+
 		return ($this->rows[$register.' '.$schema][$id] ?? null);
+	}
+
+	public function read(string $register, string $schema, string $id): array {
+		if (in_array($id, $this->unreadable, true) === true) {
+			return ['row' => null, 'error' => 'database is gone'];
+		}
+
+		return ['row' => ($this->rows[$register.' '.$schema][$id] ?? null), 'error' => ''];
 	}
 
 	public function create(string $register, string $schema, array $data): array {

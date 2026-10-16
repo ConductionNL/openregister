@@ -133,7 +133,7 @@ class ExampleSetInstaller {
 
 				$standIn   = $this->standIn(app: $fragment['app'], object: $object, data: $resolved['data']);
 				$planned[] = ['register' => $object['register'], 'schema' => $object['schema'], 'row' => $standIn];
-				$kept      = $this->kept(record: $record, app: $fragment['app'], key: $object['key']);
+				$kept      = $this->kept(record: $record, app: $fragment['app'], key: $object['key'])['row'];
 				$objects[$object['key']] = ($kept ?? $standIn);
 			}//end foreach
 
@@ -295,7 +295,16 @@ class ExampleSetInstaller {
 			$report['types'][$type] ??= ['declared' => 0, 'created' => 0, 'kept' => 0, 'arrived' => 0];
 			$report['types'][$type]['declared']++;
 
-			$kept = $this->kept(record: $record, app: $fragment['app'], key: $object['key']);
+			$held = $this->kept(record: $record, app: $fragment['app'], key: $object['key']);
+			if ($held['error'] !== '') {
+				// A read that failed proves nothing about the object: writing it again would leave two copies and
+				// forget the original, so nothing is written and the recorded id stays.
+				$report['dropped'][] = $fragment['file'].': object "'.$object['key'].'": the object the record holds could not be read ('.$held['error'].')';
+				$objects[$object['key']] = ['id' => (string) $record['objects'][$name]['id']];
+				continue;
+			}
+
+			$kept = $held['row'];
 			if ($kept !== null) {
 				$report['types'][$type]['kept']++;
 				$objects[$object['key']] = $this->refreshReferences(
@@ -624,19 +633,22 @@ class ExampleSetInstaller {
 	/**
 	 * The row the record holds for an object, when it is still there.
 	 *
+	 * A read that failed is not "it is gone": the error comes back and the caller must not write the object again.
+	 *
 	 * @param array<string, mixed> $record The record.
 	 * @param string               $app    The app of the fragment.
 	 * @param string               $key    The object key.
 	 *
-	 * @return array<string, mixed>|null
+	 * @return array{row: array<string, mixed>|null, error: string} The row; null with '' when the record holds none or the
+	 *                                                              instance lost it; null with why when the read failed.
 	 */
-	private function kept(array $record, string $app, string $key): ?array {
+	private function kept(array $record, string $app, string $key): array {
 		$held = ($record['objects'][$app.'/'.$key] ?? null);
 		if ($held === null) {
-			return null;
+			return ['row' => null, 'error' => ''];
 		}
 
-		return $this->store->get(register: $held['register'], schema: $held['schema'], id: $held['id']);
+		return $this->store->read(register: $held['register'], schema: $held['schema'], id: $held['id']);
 	}//end kept()
 
 	/**
