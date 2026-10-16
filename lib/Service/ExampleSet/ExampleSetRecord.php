@@ -138,7 +138,7 @@ class ExampleSetRecord {
 	 *
 	 * @param array<int|string, mixed> $decoded The stored objects.
 	 *
-	 * @return array<string, array{register: string, schema: string, id: string}>
+	 * @return array<string, array{register: string, schema: string, id: string, refs?: array<string, mixed>}>
 	 */
 	private function objects(array $decoded): array {
 		$objects = [];
@@ -149,6 +149,10 @@ class ExampleSetRecord {
 					'schema'   => (string) ($object['schema'] ?? ''),
 					'id'       => $object['id'],
 				];
+				// What the install wrote into the object's reference fields, so a later install can tell its own value from an edit.
+				if (is_array($object['refs'] ?? null) === true && $object['refs'] !== []) {
+					$objects[(string) $key]['refs'] = $object['refs'];
+				}
 			}
 		}
 

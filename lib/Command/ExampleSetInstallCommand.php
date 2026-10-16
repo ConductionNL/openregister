@@ -244,6 +244,10 @@ class ExampleSetInstallCommand extends Command {
 			$output->writeln('Files attached: '.$report['files']);
 		}
 
+		foreach ($report['left'] as $line) {
+			$output->writeln('Left as it is: '.$line);
+		}
+
 		$problems = ['Not written: ' => $report['dropped'], 'Not on the instance: ' => $report['missing'], 'Written but not kept: ' => $report['lost']];
 		foreach ($problems as $words => $lines) {
 			foreach ($lines as $line) {

@@ -179,6 +179,7 @@ class ExampleSetInstaller {
 			'passwords'   => [],
 			'types'       => [],
 			'dropped'     => [],
+			'left'        => [],
 			'missing'     => [],
 			'lost'        => [],
 			'ok'          => false,
@@ -337,6 +338,11 @@ class ExampleSetInstaller {
 
 			$report['types'][$type]['created']++;
 			$record['objects'][$name] = ['register' => $object['register'], 'schema' => $object['schema'], 'id' => $made['id']];
+			$refs                     = array_intersect_key($resolved['data'], array_flip($this->referenceFields(object: $object)));
+			if ($refs !== []) {
+				$record['objects'][$name]['refs'] = $refs;
+			}
+
 			$this->record->write(set: (string) $plan['set'], record: $record);
 			$written[$name] = $resolved['data'];
 			$report         = $this->attachFiles(plan: $plan, fragment: $fragment, object: $object, objectId: $made['id'], report: $report, record: $record);
@@ -391,7 +397,16 @@ class ExampleSetInstaller {
 			return $row;
 		}
 
-		$made = $this->changes->refresh(object: $object, row: $row, values: array_intersect_key($resolved['data'], array_flip($fields)));
+		$made = $this->changes->refresh(
+			object: $object,
+			row: $row,
+			values: array_intersect_key($resolved['data'], array_flip($fields)),
+			written: $this->writtenReferences(record: $record, name: $name, key: $fragment['app'].'/'.$object['key'])
+		);
+		foreach ($made['left'] as $field) {
+			$report['left'][] = $fragment['file'].': object "'.$object['key'].'": field "'.$field.'" was changed after the install and is left as it is';
+		}
+
 		if ($made['error'] !== '') {
 			$report['dropped'][]      = $fragment['file'].': object "'.$object['key'].'": its references cannot be refreshed: '.$made['error'];
 			$report['changes'][$name] = 'failed';
@@ -417,6 +432,29 @@ class ExampleSetInstaller {
 
 		return ($this->store->get(register: $object['register'], schema: $object['schema'], id: (string) $entry['id']) ?? $row);
 	}//end refreshReferences()
+
+	/**
+	 * What the install last wrote into the reference fields of a kept object.
+	 *
+	 * The value a refresh wrote when there was one (the newest `new` of the
+	 * `#references` change), else the value the object was created with.
+	 *
+	 * @param array<string, mixed> $record The record.
+	 * @param string               $name   The record key of the refresh change, `<app>/<key>#references`.
+	 * @param string               $key    The record key of the object, `<app>/<key>`.
+	 *
+	 * @return array<string, mixed> The value by field; a field of a record that predates this is missing.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 */
+	private function writtenReferences(array $record, string $name, string $key): array {
+		$written = (array) ($record['objects'][$key]['refs'] ?? []);
+		foreach ((array) ($record['changes'][$name]['set'] ?? []) as $set) {
+			$written[(string) $set['path']] = $set['new'];
+		}
+
+		return $written;
+	}//end writtenReferences()
 
 	/**
 	 * The top-level fields of an object whose declared value references another object.

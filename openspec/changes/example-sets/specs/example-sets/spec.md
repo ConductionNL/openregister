@@ -315,12 +315,17 @@ Removing an example set is an administrative act on data the set itself wrote, n
 
 ### Requirement: A kept object follows the objects it references (REQ-EXS-023)
 
-When an install keeps an object an earlier run wrote, it SHALL resolve again every top-level field whose declared value holds an `{{object:}}` or `{{lookup:}}` placeholder and SHALL write only a field whose stored value differs, so a reinstall after a partial remove does not leave a kept object pointing at an object that was deleted and written again. The write SHALL be recorded as the change `<app>/<key>#references` with the value it replaced (the first replaced value is kept over later refreshes), the install SHALL prove it like any change (REQ-EXS-011), and remove SHALL stay exact. A kept object whose references already hold their values SHALL not be written.
+When an install keeps an object an earlier run wrote, it SHALL resolve again every top-level field whose declared value holds an `{{object:}}` or `{{lookup:}}` placeholder and SHALL write only a field whose stored value differs AND is still the value the install wrote there (the record keeps what each object was created with in its reference fields, and a refresh keeps its newest value), so a reinstall after a partial remove does not leave a kept object pointing at an object that was deleted and written again. A field that holds any other value, or that the record holds no written value for, is somebody's edit: it SHALL be left as it is and named in the output (`Left as it is`), and it SHALL NOT make the install fail. The write SHALL be recorded as the change `<app>/<key>#references` with the value it replaced (the first replaced value is kept over later refreshes), the install SHALL prove it like any change (REQ-EXS-011), and remove SHALL stay exact. A kept object whose references already hold their values SHALL not be written.
 
 #### Scenario: A kept publication follows its theme
 - **GIVEN** a set whose publication references a theme by `{{object:theme-1.id}}` and another by a lookup, and a remove that deleted the theme but could not delete the publications
 - **WHEN** the set is installed again
 - **THEN** the theme SHALL be written with a new id, the publications SHALL be kept and point at the new theme, and the refresh SHALL be recorded with the old id
+
+#### Scenario: A user's edit of a reference is left
+- **GIVEN** a kept publication whose theme reference a user pointed at an unrelated id after the install
+- **WHEN** the set is installed again
+- **THEN** the reference SHALL keep the user's value, no `#references` change SHALL be recorded, and the output SHALL name the field as left as it is
 
 #### Scenario: A refreshed set installs again without writes
 - **GIVEN** a set whose references were refreshed

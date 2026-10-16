@@ -190,30 +190,69 @@ class ExampleSetChanges {
 	 *
 	 * Made like a change, so only a field that differs is written, its old
 	 * value is recorded, the install proves it and remove can put it back.
+	 * A field is refreshed only while it still holds what the set wrote
+	 * (`$written`): a different value is somebody's edit and is left as it
+	 * is, and named.
 	 *
-	 * @param array<string, mixed> $object The declared object (`register`, `schema`, `jsonFields`).
-	 * @param array<string, mixed> $row    The object as stored.
-	 * @param array<string, mixed> $values The resolved values, by top-level field.
+	 * @param array<string, mixed> $object  The declared object (`register`, `schema`, `jsonFields`).
+	 * @param array<string, mixed> $row     The object as stored.
+	 * @param array<string, mixed> $values  The resolved values, by top-level field.
+	 * @param array<string, mixed> $written What the set last wrote into those fields, by field.
 	 *
-	 * @return array{error: string, entry: array<string, mixed>|null} The record entry (null when every field
-	 *                                                                 already holds its value), or why the write failed.
+	 * @return array{error: string, entry: array<string, mixed>|null, left: array<int, string>} The record entry (null
+	 *         when no field had to be written), or why the write failed, and the fields left because somebody changed them.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
 	 */
-	public function refresh(array $object, array $row, array $values): array {
+	public function refresh(array $object, array $row, array $values, array $written=[]): array {
 		$change = ['register' => (string) $object['register'], 'schema' => (string) $object['schema'], 'jsonFields' => $this->jsonFields(change: $object)];
 		$row    = $this->paths->withJsonDecoded(row: $row, fields: $change['jsonFields']);
 
-		return $this->apply(
+		$todo = [];
+		$left = [];
+		foreach ($values as $field => $value) {
+			$held = $this->paths->atPath(row: $row, path: (string) $field);
+			if ($held['found'] === true && $this->same(first: $held['value'], second: $value) === true) {
+				continue;
+			}
+
+			$wrote = array_key_exists($field, $written);
+			if ($held['found'] === true && $wrote === true && $this->same(first: $held['value'], second: $written[$field]) === true) {
+				$todo[$field] = $value;
+				continue;
+			}
+
+			$left[] = (string) $field;
+		}
+
+		if ($todo === []) {
+			return ['error' => '', 'entry' => null, 'left' => $left];
+		}
+
+		$made = $this->apply(
 			change: $change,
 			resolved: [
 				'row'    => $row,
-				'merged' => $this->paths->withJsonText(row: array_merge($row, $values), fields: $change['jsonFields']),
-				'set'    => $values,
+				'merged' => $this->paths->withJsonText(row: array_merge($row, $todo), fields: $change['jsonFields']),
+				'set'    => $todo,
 				'append' => [],
 			]
 		);
+
+		return ($made + ['left' => $left]);
 	}//end refresh()
+
+	/**
+	 * Whether two values are the same as stored (type and order of a list included).
+	 *
+	 * @param mixed $first  A value.
+	 * @param mixed $second Another.
+	 *
+	 * @return bool
+	 */
+	private function same(mixed $first, mixed $second): bool {
+		return json_encode($first) === json_encode($second);
+	}//end same()
 
 	/**
 	 * The paths of a made change that the stored object does not hold.
