@@ -3216,8 +3216,9 @@ class ObjectService implements ObjectServiceInterface
             // Somebody else's draft is not the caller's to delete, whatever the
             // read lookup above let through. Answered as not found, like the
             // save path (refuseSomebodyElsesDraft), so it is not announced.
+            $deleter = ($currentUser ?? $this->userSession->getUser());
             if ($_rbac === true && $objectToDelete !== null && $this->currentSchema !== null
-                && $this->draftKeptFromCaller(object: $objectToDelete, schema: $this->currentSchema, user: ($currentUser ?? $this->userSession->getUser())) === true
+                && $this->draftKeptFromCaller(object: $objectToDelete, schema: $this->currentSchema, user: $deleter) === true
             ) {
                 throw new OcpDoesNotExistException('Object not found');
             }

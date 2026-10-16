@@ -44,6 +44,9 @@ use OCA\OpenRegister\Service\Form\FormDestinationValidator;
 /**
  * Set, keep, leave and hide drafts.
  *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One rule set (decisions 180 and 216): every save path and both list
+ * emitters ask one of these questions, and none of them has a second home to move to.
+ *
  * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
  */
 class DraftStatusPolicy {
@@ -118,7 +121,7 @@ class DraftStatusPolicy {
 	 *
 	 * @return string|null The status to store; null keeps the date-deduced status.
 	 *
-	 * @throws ValidationException When the move is not allowed, or the draft this save was to promote has already left draft (DraftAlreadyLeftException).
+	 * @throws ValidationException When the move is not allowed, or (DraftAlreadyLeftException) the draft to promote already left draft.
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
 	 */

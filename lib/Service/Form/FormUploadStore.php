@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\File\FilePropertyRules;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
+use OCP\Files\SimpleFS\ISimpleFile;
 use OCP\Files\SimpleFS\ISimpleFolder;
 use OCP\IL10N;
 use OCP\ITempManager;
@@ -246,14 +247,7 @@ class FormUploadStore {
 				continue;
 			}
 
-			// The bytes of a token whose record was never written (issue() writes
-			// the bytes first): nothing else lists it. Left alone while it could
-			// still be an upload in flight, that is for the length of a token.
-			if (str_ends_with($name, '.bin') === true
-				&& isset($gone[substr($name, 0, -4)]) === false
-				&& $folder->fileExists(substr($name, 0, -4) . '.json') === false
-				&& ($file->getMTime() + self::TTL) <= $now
-			) {
+			if ($this->isOrphanedBytes(folder: $folder, file: $file, gone: $gone, now: $now) === true) {
 				$file->delete();
 				$deleted++;
 			}
@@ -261,6 +255,33 @@ class FormUploadStore {
 
 		return $deleted;
 	}//end purge()
+
+	/**
+	 * Whether a file is the bytes of an upload whose record was never written, and old enough not to be in flight.
+	 * The bytes are written first, so a failed second write leaves a `.bin`
+	 * issue() writes the bytes first, so a failed second write leaves a `.bin`
+	 * nothing else lists. One younger than a token's lifetime may still be an
+	 * upload in flight, and is left alone.
+	 *
+	 * @param ISimpleFolder       $folder The store folder.
+	 * @param ISimpleFile         $file   A file of the folder.
+	 * @param array<string, true> $gone   Tokens this purge already deleted.
+	 * @param int                 $now    The moment of the purge.
+	 *
+	 * @return bool True when the purge deletes it.
+	 */
+	private function isOrphanedBytes(ISimpleFolder $folder, ISimpleFile $file, array $gone, int $now): bool {
+		$name = $file->getName();
+		if (str_ends_with($name, '.bin') === false) {
+			return false;
+		}
+
+		$token = substr($name, 0, -4);
+
+		return isset($gone[$token]) === false
+			&& $folder->fileExists($token . '.json') === false
+			&& ($file->getMTime() + self::TTL) <= $now;
+	}//end isOrphanedBytes()
 
 	/**
 	 * A token's record, or null when absent or unreadable.

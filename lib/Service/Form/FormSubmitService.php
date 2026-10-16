@@ -218,7 +218,7 @@ class FormSubmitService {
 		string $scope = '',
 		?DraftOwner $owner = null,
 	): array {
-		$owner = $this->ownerOf(subject: $subject, owner: $owner);
+		$owner = DraftOwner::resolve(subject: $subject, owner: $owner);
 		if ($owner === null) {
 			throw new FormSubmitRefusedException(message: $this->l10n->t('Please sign in to save this form and carry on later.'), status: 401);
 		}
@@ -355,7 +355,7 @@ class FormSubmitService {
 	 */
 	private function writeOrPromote(array $plans, ?IUser $subject, ?string $draftId, ?DraftOwner $owner = null): array {
 		if ($draftId !== null) {
-			return $this->promoteDraft(plans: $plans, owner: $this->ownerOf(subject: $subject, owner: $owner), draftId: $draftId);
+			return $this->promoteDraft(plans: $plans, owner: DraftOwner::resolve(subject: $subject, owner: $owner), draftId: $draftId);
 		}
 
 		$this->validateAll(plans: $plans);
@@ -427,7 +427,7 @@ class FormSubmitService {
 			return false;
 		}
 
-		$owner = $this->ownerOf(subject: $subject, owner: $owner);
+		$owner = DraftOwner::resolve(subject: $subject, owner: $owner);
 
 		return $this->drafts->own(register: $register, schema: $schema, draftId: $draftId, owner: $owner) !== null;
 	}//end isOwnerOfDraft()
@@ -456,26 +456,6 @@ class FormSubmitService {
 	}//end draftData()
 
 	/**
-	 * The draft's owner: the asserted one, else the signed-in subject, else nobody.
-	 *
-	 * @param IUser|null      $subject The signed-in subject.
-	 * @param DraftOwner|null $owner   The asserted owner.
-	 *
-	 * @return DraftOwner|null The owner, or null when there is none.
-	 */
-	private function ownerOf(?IUser $subject, ?DraftOwner $owner): ?DraftOwner {
-		if ($owner !== null) {
-			return $owner;
-		}
-
-		if ($subject !== null) {
-			return DraftOwner::ofUser(user: $subject);
-		}
-
-		return null;
-	}//end ownerOf()
-
-	/**
 	 * Read the owner's draft by id: its data, for resuming a form.
 	 *
 	 * Anything but the owner's own draft answers the same 404 an unknown id
@@ -495,7 +475,7 @@ class FormSubmitService {
 	public function readDraft(array $destination, string $draftId, ?IUser $subject, ?DraftOwner $owner = null): array {
 		$register = $this->register(reference: $destination['register'] ?? null);
 		$schema = $this->schema(reference: $destination['schema'] ?? null);
-		$owner = $this->ownerOf(subject: $subject, owner: $owner);
+		$owner = DraftOwner::resolve(subject: $subject, owner: $owner);
 		$draft = $this->drafts->own(register: $register, schema: $schema, draftId: $draftId, owner: $owner);
 		if ($draft === null) {
 			throw new FormSubmitRefusedException(message: $this->l10n->t('This draft does not exist.'), status: 404);
@@ -521,7 +501,7 @@ class FormSubmitService {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
 	 */
 	public function findDraft(array $destination, ?IUser $subject, ?DraftOwner $owner = null, array $match = []): ?array {
-		$owner = $this->ownerOf(subject: $subject, owner: $owner);
+		$owner = DraftOwner::resolve(subject: $subject, owner: $owner);
 		if ($owner === null) {
 			return null;
 		}
@@ -660,10 +640,8 @@ class FormSubmitService {
 		$pairs = [];
 		if ($mapping === null) {
 			foreach ($payload as $name => $value) {
-				$name = (string)$name;
-				// `id` and `uuid` name an object, not a property: see mapPayload().
-				if (str_starts_with($name, '_') === false && str_starts_with($name, '@') === false && $name !== 'id' && $name !== 'uuid') {
-					$pairs[$name] = $value;
+				if ($this->isPropertyKey(name: (string)$name) === true) {
+					$pairs[(string)$name] = $value;
 				}
 			}
 
@@ -680,6 +658,17 @@ class FormSubmitService {
 
 		return $pairs;
 	}//end pairsOf()
+
+	/**
+	 * Whether a payload key can be a property of the object: not a control key, metadata, or the `id` / `uuid` that name an object.
+	 *
+	 * @param string $name The payload key.
+	 *
+	 * @return bool True when it may reach the object.
+	 */
+	private function isPropertyKey(string $name): bool {
+		return str_starts_with($name, '_') === false && str_starts_with($name, '@') === false && in_array($name, ['id', 'uuid'], true) === false;
+	}//end isPropertyKey()
 
 	/**
 	 * The upload token a payload value carries, or null.

@@ -44,7 +44,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Object;
 
 use DateTimeImmutable;
-use DateTimeZone;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -167,11 +166,7 @@ class DraftExpiry {
 
 			foreach (($register->getSchemas() ?? []) as $schemaId) {
 				$schema = $this->schemaOf(schemaId: $schemaId);
-				if ($schema === null || $this->holdsDrafts(schema: $schema) === false) {
-					continue;
-				}
-
-				$days = $policy->draftLifetimeDays(schema: $schema);
+				$days = $this->lifetimeOf(schema: $schema, policy: $policy);
 				if ($days === null) {
 					continue;
 				}
@@ -201,6 +196,22 @@ class DraftExpiry {
 
 		return $counts;
 	}//end walk()
+
+	/**
+	 * How many days the drafts of a schema may go unchanged, or null when the sweep leaves the schema alone.
+	 *
+	 * @param Schema|null       $schema The schema, null when it could not be loaded.
+	 * @param DraftStatusPolicy $policy The lifetime rules.
+	 *
+	 * @return int|null The days.
+	 */
+	private function lifetimeOf(?Schema $schema, DraftStatusPolicy $policy): ?int {
+		if ($schema === null || $this->holdsDrafts(schema: $schema) === false) {
+			return null;
+		}
+
+		return $policy->draftLifetimeDays(schema: $schema);
+	}//end lifetimeOf()
 
 	/**
 	 * Whether a schema stores objects of its own, so it can hold a draft.
@@ -298,7 +309,7 @@ class DraftExpiry {
 	 * @return array{0: array<int, string>, 1: int} The uuids, and the number of expired drafts left unread.
 	 */
 	private function expiredIn(Register $register, Schema $schema, DateTimeImmutable $cutoff): array {
-		$moment = $cutoff->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+		$moment = gmdate('Y-m-d H:i:s', $cutoff->getTimestamp());
 		$filters = [
 			// Changed at some point, and not since the cutoff.
 			['updated' => ['lt' => $moment]],

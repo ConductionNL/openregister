@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -1416,14 +1417,14 @@ class ReferentialIntegrityService {
 	 *
 	 * @return string The column name.
 	 *
-	 * @throws \RuntimeException When the schema's table has no column for the property.
+	 * @throws RuntimeException When the schema's table has no column for the property.
 	 *
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	private function columnOf(Schema $schema, string $propertyName): string {
 		$column = ($this->objectEntityMapper->buildTableColumnsFromSchema(schema: $schema)[$propertyName]['name'] ?? null);
 		if (is_string($column) === false || $column === '') {
-			throw new \RuntimeException('The table of schema ' . $schema->getId() . ' has no column for property ' . $propertyName);
+			throw new RuntimeException('The table of schema ' . $schema->getId() . ' has no column for property ' . $propertyName);
 		}
 
 		return $column;

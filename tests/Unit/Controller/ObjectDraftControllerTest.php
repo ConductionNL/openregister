@@ -28,7 +28,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\DraftActivationRefusedException;
 use OCA\OpenRegister\Service\Object\DraftActivation;
-use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -61,7 +60,6 @@ class ObjectDraftControllerTest extends TestCase {
 
 	private DraftActivation&MockObject $activation;
 
-	private RenderObject&MockObject $render;
 
 	private IUserSession&MockObject $session;
 
@@ -102,6 +100,16 @@ class ObjectDraftControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->objects = $this->createMock(ObjectService::class);
+		// The render boundary: takes the `writeOnly` property `secret` out of the entity, as the real one does for the schema that declares it.
+		$this->objects->method('renderEntity')->willReturnCallback(
+			static function (ObjectEntity $entity, ?array $_extend = [], ?int $depth = 0, ?array $filter = [], ?array $fields = [], ?array $unset = [], bool $_rbac = true): array {
+				$object = ($entity->getObject() ?? []);
+				unset($object['secret']);
+				$entity->setObject($object);
+
+				return $entity->jsonSerialize();
+			}
+		);
 		$this->objects->method('find')->willReturnCallback(
 			function (
 				int|string $id,
@@ -140,17 +148,6 @@ class ObjectDraftControllerTest extends TestCase {
 		);
 
 		$this->activation = $this->createMock(DraftActivation::class);
-		// The render boundary: takes the `writeOnly` property `secret` out of every row, as the real one does for the schema that declares it.
-		$this->render = $this->createMock(RenderObject::class);
-		$this->render->method('redactWriteOnlyFromRows')->willReturnCallback(
-			static function (array &$rows, bool $_rbac = true): void {
-				foreach ($rows as $row) {
-					$object = ($row->getObject() ?? []);
-					unset($object['secret']);
-					$row->setObject($object);
-				}
-			}
-		);
 		$this->session = $this->createMock(IUserSession::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$l10n = $this->createMock(IL10N::class);
@@ -163,7 +160,6 @@ class ObjectDraftControllerTest extends TestCase {
 			registers: $registers,
 			schemas: $schemas,
 			activation: $this->activation,
-			render: $this->render,
 			session: $this->session,
 			l10n: $l10n,
 			logger: $this->logger
@@ -406,7 +402,6 @@ class ObjectDraftControllerTest extends TestCase {
 			registers: $registers,
 			schemas: $schemas,
 			activation: $this->activation,
-			render: $this->render,
 			session: $this->session,
 			l10n: $l10n,
 			logger: $this->logger
@@ -443,7 +438,6 @@ class ObjectDraftControllerTest extends TestCase {
 			registers: $registers,
 			schemas: $schemas,
 			activation: $this->activation,
-			render: $this->render,
 			session: $this->session,
 			l10n: $l10n,
 			logger: $this->logger
