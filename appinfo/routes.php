@@ -125,6 +125,12 @@ return [
         ['name' => 'objectOwnership#setOwnerGroup', 'url' => '/api/objects/{register}/{schema}/{id}/ownership/group', 'verb' => 'PUT',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#reassign',      'url' => '/api/ownership/reassign',                               'verb' => 'POST'],
 
+        // A draft's owner makes it definitive (decision 216). An explicit action:
+        // a PUT or PATCH that sets `@self.status` to `active` stays refused, so
+        // nothing leaves draft by accident. A plain Controller, so a refusal
+        // keeps its status (OCSMiddleware would turn a 403 into a 200).
+        ['name' => 'objectDraft#activate', 'url' => '/api/objects/{register}/{schema}/{id}/activate', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+
         // Who holds which right on one object, and how that set changed. The
         // other direction of `/api/scopes`: that one answers a caller about
         // themselves, these answer an auditor about everybody. Reading the
@@ -1243,6 +1249,7 @@ return [
         ['name' => 'objectRelations#removeReferences', 'url' => '/api/objects/{register}/{schema}/{id}/relation-references/{anchor}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'anchor' => '[^/]+']],
         ['name' => 'objectRelations#derive',      'url' => '/api/objects/{register}/{schema}/{id}/derive',                     'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#graph',       'url' => '/api/objects/{register}/{schema}/{id}/graph',                      'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectRelations#tree',        'url' => '/api/objects/{register}/{schema}/{id}/tree',                       'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#exportGraph', 'url' => '/api/objects/{register}/{schema}/{id}/graph/export',               'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         // Locks.
             // Whether a row exists in other registers, and nothing about the
@@ -2023,12 +2030,14 @@ return [
 		// Migration mapping packs (migration-mapping-packs): declarative
 		// source-format-to-schema import mappings. Reads (index/show/export)
 		// are available to any authenticated user so the import flow can
-		// browse packs; create/update/destroy/import are admin-gated. The
+		// browse packs; create/update/destroy/import and the preview dry run
+		// are admin-gated and CSRF-protected. The
 		// `packId` request param on registers#import (below) resolves a
 		// pack by its `packSlug` and runs each row through it before save.
 		['name' => 'migrationPacks#index', 'url' => '/api/migration-packs', 'verb' => 'GET'],
 		['name' => 'migrationPacks#create', 'url' => '/api/migration-packs', 'verb' => 'POST'],
 		['name' => 'migrationPacks#import', 'url' => '/api/migration-packs/import', 'verb' => 'POST'],
+		['name' => 'migrationPacks#preview', 'url' => '/api/migration-packs/preview', 'verb' => 'POST'],
 		['name' => 'migrationPacks#show', 'url' => '/api/migration-packs/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
 		['name' => 'migrationPacks#update', 'url' => '/api/migration-packs/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
 		['name' => 'migrationPacks#destroy', 'url' => '/api/migration-packs/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],

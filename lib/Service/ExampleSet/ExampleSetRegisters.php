@@ -6,7 +6,8 @@
  * The OpenRegister registers an example set needs, named in the cast file's
  * `requires` list. A required register that is not on the instance is
  * imported from OpenRegister's own descriptor, the same way
- * `POST /api/register-descriptors/openregister/{slug}/import` does. The
+ * `POST /api/register-descriptors/openregister/{slug}/import` does, or from
+ * its mock descriptor when the set requires the mock. The
  * import jobs that import created are returned, so the set can remove exactly
  * those objects again and leave an import somebody else ran alone.
  *
@@ -100,13 +101,42 @@ class ExampleSetRegisters {
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	public function import(string $slug): array {
-		try {
-			$before = $this->jobIds();
-			$result = $this->container->get(RegisterDescriptorService::class)->reimport(
+		return $this->recordedImport(
+			import: fn (RegisterDescriptorService $descriptors): array => $descriptors->reimport(
 				appId: self::APP,
 				slug: $slug,
 				via: 'example set install'
-			);
+			)
+		);
+	}//end import()
+
+	/**
+	 * Import a register from OpenRegister's mock (sample) descriptor that declares the slug.
+	 *
+	 * @param string $slug The register slug.
+	 *
+	 * @return array{error: string, jobs: array<int, array{appId: string, jobId: string}>} Why it failed, or ''; and
+	 *                                                                                     the import jobs it created.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 */
+	public function importMock(string $slug): array {
+		return $this->recordedImport(
+			import: fn (RegisterDescriptorService $descriptors): array => $descriptors->reimportMock(appId: self::APP, slug: $slug)
+		);
+	}//end importMock()
+
+	/**
+	 * Run one descriptor import and return why it failed and the import jobs it created.
+	 *
+	 * @param callable(RegisterDescriptorService): array<string, mixed> $import The import.
+	 *
+	 * @return array{error: string, jobs: array<int, array{appId: string, jobId: string}>}
+	 */
+	private function recordedImport(callable $import): array {
+		try {
+			$before = $this->jobIds();
+			$result = $import($this->container->get(RegisterDescriptorService::class));
 			$after  = $this->jobIds();
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'jobs' => []];
@@ -125,7 +155,7 @@ class ExampleSetRegisters {
 		}
 
 		return ['error' => $error, 'jobs' => $jobs];
-	}//end import()
+	}//end recordedImport()
 
 	/**
 	 * Soft-delete the objects one import job created, and forget the job when that went cleanly.

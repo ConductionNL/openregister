@@ -33,7 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\MigrationPack;
 
-use InvalidArgumentException;
+use OCA\OpenRegister\Exception\InvalidPackDefinitionException;
 
 /**
  * Structural + business-rule validator for a migration-pack JSON document.
@@ -96,14 +96,14 @@ class PackDefinitionValidator {
 	 *
 	 * @return void
 	 *
-	 * @throws InvalidArgumentException When the definition is invalid. The message joins every error found.
+	 * @throws InvalidPackDefinitionException When the definition is invalid. It carries every error found.
 	 *
 	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
 	 */
 	public function assertValid(array $definition): void {
 		$errors = $this->validate(definition: $definition);
 		if (empty($errors) === false) {
-			throw new InvalidArgumentException('Invalid migration pack definition: ' . implode('; ', $errors));
+			throw new InvalidPackDefinitionException(errors: $errors);
 		}
 	}//end assertValid()
 
@@ -181,9 +181,15 @@ class PackDefinitionValidator {
 	/**
 	 * Validate the `fieldMappings` array and every entry within it.
 	 *
+	 * Errors name a mapping by its position counted from 1 ("Mapping row 4"),
+	 * the number the pack editor shows in its table, not the 0-based array
+	 * index.
+	 *
 	 * @param array<string, mixed> $definition The pack definition.
 	 *
 	 * @return string[]
+	 *
+	 * @spec openspec/specs/migration-mapping-packs/spec.md#the-system-must-validate-migration-pack-definitions-structurally-before-storing-them
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Per-transform-type validation requires many branches.
 	 * @SuppressWarnings(PHPMD.NPathComplexity)      Per-transform-type validation requires many branches.
@@ -195,29 +201,29 @@ class PackDefinitionValidator {
 		}
 
 		$errors = [];
-		foreach ($mappings as $index => $mapping) {
-			$path = 'fieldMappings[' . $index . ']';
+		foreach (array_values($mappings) as $position => $mapping) {
+			$row = 'Mapping row ' . ($position + 1);
 			if (is_array($mapping) === false) {
-				$errors[] = $path . ' must be an object';
+				$errors[] = $row . ' must be an object';
 				continue;
 			}
 
 			$source = $mapping['source'] ?? null;
 			if (is_string($source) === false || $source === '') {
-				$errors[] = $path . '.source is required and must be a non-empty string';
+				$errors[] = $row . ': source is required and must be a non-empty string';
 			}
 
 			$target = $mapping['target'] ?? null;
 			if (is_string($target) === false || $target === '') {
-				$errors[] = $path . '.target is required and must be a non-empty string';
+				$errors[] = $row . ': target is required and must be a non-empty string';
 			}
 
 			if (isset($mapping['required']) === true && is_bool($mapping['required']) === false) {
-				$errors[] = $path . '.required must be a boolean when present';
+				$errors[] = $row . ': required must be a boolean when present';
 			}
 
 			if (isset($mapping['transform']) === true) {
-				$errors = array_merge($errors, $this->validateTransform(transform: $mapping['transform'], path: $path . '.transform'));
+				$errors = array_merge($errors, $this->validateTransform(transform: $mapping['transform'], path: $row . ': transform'));
 			}
 		}//end foreach
 

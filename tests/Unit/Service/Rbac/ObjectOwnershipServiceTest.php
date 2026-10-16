@@ -39,7 +39,9 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Rbac\ObjectAuthorizationWriter;
+use OCA\OpenRegister\Service\Rbac\GrantManageGuard;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnershipService;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\Rbac\ObjectOwnerWriter;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCP\IGroupManager;
@@ -167,7 +169,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 			$this->userSession,
 			$this->userManager,
 			$this->groupManager,
-			new ObjectScopeResolver(),
+			new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
 			$this->permissions,
 			$this->ownerWriter,
 			$this->authorizationWriter,
@@ -672,7 +674,7 @@ class ObjectOwnershipServiceTest extends TestCase {
 			$this->userSession,
 			$this->userManager,
 			$this->groupManager,
-			new ObjectScopeResolver(),
+			new GrantManageGuard(new ObjectScopeResolver(), $this->createMock(OrganisationSpecialRights::class)),
 			$this->permissions,
 			$this->ownerWriter,
 			$this->authorizationWriter,

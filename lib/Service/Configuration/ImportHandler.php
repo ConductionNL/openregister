@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Service\Authorization\GroupProvisioner;
 use OCA\OpenRegister\Service\Authorization\RbacGroupCollector;
@@ -2739,7 +2740,7 @@ class ImportHandler {
 						'seedObjects' => 0,
 					],
 					'unchanged' => ['objects' => 0],
-					'failed' => ['schemas' => []],
+					'failed' => ['schemas' => [], 'objects' => []],
 				];
 			}//end if
 		}//end if
@@ -2792,6 +2793,9 @@ class ImportHandler {
 			],
 			'failed' => [
 				'schemas' => [],
+				// The listed objects this import could not write, each with
+				// its slug, schema and the reason, after one retry.
+				'objects' => [],
 			],
 		];
 
@@ -3296,245 +3300,45 @@ class ImportHandler {
 			}//end foreach
 		}//end foreach
 
-		if (count($seedObjects) > 0) {
-			foreach ($seedObjects as $objectData) {
-				// Log raw values before any mapping.
-				$rawRegister = $objectData['@self']['register'] ?? null;
-				$rawSchema = $objectData['@self']['schema'] ?? null;
-				$rawSlug = $objectData['@self']['slug'] ?? null;
+		// Set when a listed object was refused by a listener (an app's own
+		// validation on the save event). That refusal depends on what the
+		// instance holds, not on the file, so this import must not be
+		// remembered as done: the content hash below is withheld and the next
+		// run imports again instead of fast-skipping.
+		$refusedByListener = false;
 
-				// Only import objects with a slug.
-				$slug = $rawSlug;
-				if (empty($slug) === true) {
-					continue;
+		// A listed object that fails is tried once more after every other one
+		// has been written: an object may name another that comes later in the
+		// list, and a listener may judge it by a row a sibling writes. Only a
+		// second failure is recorded, in `failed.objects`, with the reason.
+		$retry = [];
+		foreach ($seedObjects as $objectData) {
+			if (empty($objectData['@self']['slug'] ?? null) === true) {
+				continue;
+			}
+
+			try {
+				$this->importListedObject(objectData: $objectData, appId: $appId, actingUser: $actingUser, result: $result);
+			} catch (\Throwable $e) {
+				$this->logger->debug(
+					message: '[ImportHandler] Object failed on the first pass, retried after the rest',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'objectSlug' => $objectData['@self']['slug'], 'error' => $e->getMessage()]
+				);
+				$retry[] = $objectData;
+			}
+		}
+
+		foreach ($retry as $objectData) {
+			try {
+				$this->importListedObject(objectData: $objectData, appId: $appId, actingUser: $actingUser, result: $result);
+			} catch (\Throwable $e) {
+				if ($e instanceof HookStoppedException === true) {
+					$refusedByListener = true;
 				}
 
-				// PER-ENTITY RESILIENCE: wrap the whole per-object resolve / search /
-				// save sequence so one validation-failing object (e.g. a name-missing
-				// or title-less seed fragment) is skipped with a warning instead of
-				// aborting every sibling object and the rest of the app import.
-				// Catch \Throwable so opis/json-schema validation throws and folder
-				// access denials are contained too.
-				try {
-					// Get the actual Register and Schema objects from maps (not IDs!).
-					// This is CRITICAL - passing objects avoids organisation filter in find().
-					$registerObject = $this->registersMap[$rawRegister] ?? null;
-					$schemaObject = $this->schemasMap[$rawSchema] ?? null;
-
-					// Fallback for object-only bundles that reference pre-existing
-					// registers/schemas (e.g. the rapportage templates that ship a
-					// dashboard against the already-imported reports/dashboard).
-					if ($registerObject === null && is_string($rawRegister) === true && $rawRegister !== '') {
-						try {
-							$registerObject = $this->registerMapper->find(
-								$rawRegister,
-								_rbac: false,
-								_multitenancy: false
-							);
-							$this->registersMap[$rawRegister] = $registerObject;
-						} catch (\Throwable $e) {
-							$registerObject = null;
-						}
-					}
-
-					if ($schemaObject === null && is_string($rawSchema) === true && $rawSchema !== '') {
-						try {
-							$schemaObject = $this->schemaMapper->find(
-								$rawSchema,
-								_rbac: false,
-								_multitenancy: false
-							);
-							$this->schemasMap[$rawSchema] = $schemaObject;
-						} catch (\Throwable $e) {
-							$schemaObject = null;
-						}
-					}
-
-					if ($registerObject === null || $schemaObject === null) {
-						$this->logger->warning(
-							message: '[ImportHandler] Skipping object import - register or schema not found in maps or DB',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'objectSlug' => $slug,
-								'registerSlug' => $rawRegister,
-								'schemaSlug' => $rawSchema,
-								'registerFound' => $registerObject !== null,
-								'schemaFound' => $schemaObject !== null,
-							]
-						);
-						continue;
-					}
-
-					// A seed whose schema slug resolved to ANOTHER app's schema,
-					// one its register does not list, is a stale seed, not a
-					// write target ({@see self::seedSchemaIsForeign()}).
-					if ($this->seedSchemaIsForeign(register: $registerObject, schema: $schemaObject, appId: $appId) === true) {
-						$result['skipped']['objects']++;
-						continue;
-					}
-
-					// Get IDs for searching existing objects.
-					$registerId = $registerObject->getId();
-					$schemaId = $schemaObject->getId();
-
-					// Use ObjectService::searchObjects to find existing object by register+schema+slug.
-					$search = [
-						'@self' => [
-							'register' => (int)$registerId,
-							'schema' => (int)$schemaId,
-							'slug' => $slug,
-						],
-						'_limit' => 1,
-					];
-					$this->logger->debug(
-						message: '[ImportHandler] Import object search filter',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'filter' => $search]
-					);
-
-					// Search for existing object.
-					// Use _rbac: false and _multitenancy: false to ensure we find objects regardless of organisation context.
-					// This prevents duplicate objects with the same UUID being created.
-					$this->logger->debug(
-						message: "[ImportHandler] Searching: register=$registerId, schema=$schemaId, slug=$slug",
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-					$results = $this->objectService->searchObjects(query: $search, _rbac: false, _multitenancy: false);
-					$resultCount = 0;
-					if (is_array($results) === true) {
-						$resultCount = count($results);
-					}
-
-					$this->logger->debug(
-						message: "[ImportHandler] Found $resultCount results",
-						context: ['file' => __FILE__, 'line' => __LINE__]
-					);
-					$existingObject = null;
-					if ((is_array($results) === true) && count($results) > 0) {
-						$existingObject = $results[0];
-					}
-
-					if ($existingObject === null) {
-						// Debug: fires once PER OBJECT during an import, and says
-						// only that the normal path was taken. The import's
-						// per-phase summaries are the info-level story.
-						$this->logger->debug(
-							message: '[ImportHandler] No existing object found - will create new object',
-							context: [
-								'file' => __FILE__,
-								'line' => __LINE__,
-								'registerId' => $registerId,
-								'schemaId' => $schemaId,
-								'slug' => $slug,
-							]
-						);
-					}
-
-					// Replace string slugs with integer IDs in objectData's @self metadata.
-					// This prevents any internal lookups from using string slugs.
-					$objectData['@self']['register'] = (int)$registerId;
-					$objectData['@self']['schema'] = (int)$schemaId;
-
-					// Identity, not data (live pass O6): a listed object may carry
-					// its uuid and slug at the top level, as seed data does. The
-					// uuid becomes the new object's uuid (an @self uuid wins), and
-					// both keys leave the data unless the schema declares them, so
-					// MagicMapper has nothing undeclared to discard.
-					$listedUuid = $this->listedObjectUuid(objectData: $objectData);
-					$objectData = $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $schemaObject);
-
-					if ($existingObject !== null) {
-						// Handle both ObjectEntity instances and array results from searchObjects.
-						// searchObjects returns ObjectEntity or arrays depending on configuration.
-						// @var ObjectEntity|array $existingObject.
-						$existingObjectData = $existingObject->jsonSerialize();
-						if (is_array($existingObject) === true) {
-							$existingObjectData = $existingObject;
-						}
-
-						$importedVersion = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
-						$existingVersion = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
-						if (version_compare($importedVersion, $existingVersion, '>') > 0) {
-							$uuid = $existingObjectData['@self']['id'] ?? $existingObjectData['id'] ?? null;
-							// CRITICAL: Pass Register and Schema OBJECTS, not IDs.
-							// This avoids organisation filter issues in find().
-							// Installer-time seeding runs in the repair/CLI context
-							// with no user session ('Anonymous'); bypass RBAC and
-							// multitenancy here as everywhere else in this trusted
-							// import path, otherwise seed objects on RBAC-guarded
-							// schemas (e.g. Retainer Drawdown) abort the whole import.
-							$object = $this->objectService->saveObject(
-								object: $objectData,
-								register: $registerObject,
-								schema: $schemaObject,
-								uuid: $uuid,
-								_rbac: false,
-								_multitenancy: false,
-								currentUser: $actingUser
-							);
-							$result['objects'][] = $object;
-						}
-
-						if (version_compare($importedVersion, $existingVersion, '>') <= 0) {
-							// COUNTED, not just logged. Skipping an unchanged
-							// object is the DESIGNED behaviour of a re-import,
-							// but a debug line is invisible to the caller, and
-							// the caller is the one that has to tell an operator
-							// whether the import worked.
-							$result['unchanged']['objects']++;
-							$this->logger->debug(
-								message: '[ImportHandler] Skipped object update: imported version not higher',
-								context: [
-									'file' => __FILE__,
-									'line' => __LINE__,
-									'slug' => $slug,
-									'register' => $registerId,
-									'schema' => $schemaId,
-									'importedVersion' => $importedVersion,
-									'existingVersion' => $existingVersion,
-								]
-							);
-							continue;
-						}//end if
-					}//end if
-
-					if ($existingObject === null) {
-						// Create new object.
-						// CRITICAL: Pass Register and Schema OBJECTS, not IDs.
-						// This avoids organisation filter issues in find().
-						// Installer-time seeding runs without a user session
-						// ('Anonymous'); bypass RBAC/multitenancy as in the rest of
-						// this trusted import path so seed objects on RBAC-guarded
-						// schemas don't abort the whole import.
-						$object = $this->objectService->saveObject(
-							object: $objectData,
-							register: $registerObject,
-							schema: $schemaObject,
-							uuid: $listedUuid,
-							_rbac: false,
-							_multitenancy: false,
-							currentUser: $actingUser
-						);
-						$result['objects'][] = $object;
-					}//end if
-				} catch (\Throwable $e) {
-					// PER-ENTITY RESILIENCE: skip this object, keep importing the rest.
-					$result['skipped']['objects']++;
-					$this->logger->warning(
-						message: "[ImportHandler] Skipping object '{$slug}' - import failed: " . $e->getMessage(),
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'appId' => $appId,
-							'objectSlug' => $slug,
-							'registerSlug' => $rawRegister,
-							'schemaSlug' => $rawSchema,
-							'error' => $e->getMessage(),
-						]
-					);
-				}//end try
-			}//end foreach
-		}//end if
+				$this->recordFailedObject(objectData: $objectData, appId: $appId, error: $e, result: $result);
+			}
+		}
 
 		// Process OpenConnector integration if available.
 		if ($this->connectorConfigSvc !== null) {
@@ -3574,7 +3378,23 @@ class ImportHandler {
 			// the next run can fast-skip only when the definitional content is unchanged
 			// (#426). Storing it even when the per-entity gates ended up updating nothing
 			// is correct: it records "this exact config content has been seen".
-			$this->appConfig->setValueString('openregister', "imported_config_{$appId}_hash", $definitionHash);
+			// Withheld when a listener refused a listed object: the refusal
+			// depends on what the instance holds (a seed naming a row another
+			// step writes later), so the next run must import again rather than
+			// fast-skip on an unchanged hash. A failure the file itself causes
+			// (a schema validation error) does not withhold it: retrying the
+			// same content would fail the same way, on every repair.
+			$storedHash = $definitionHash;
+			if ($refusedByListener === true) {
+				$storedHash = '';
+				$this->logger->warning(
+					message: "[ImportHandler] {$appId}: a listener refused a listed object; "
+						. 'this import is not remembered as done, so the next run imports again',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'failedObjects' => $result['failed']['objects']]
+				);
+			}
+
+			$this->appConfig->setValueString('openregister', "imported_config_{$appId}_hash", $storedHash);
 			// Info: an app's configuration genuinely changed version. The
 			// far more common "unchanged, skipping" is debug — reporting the
 			// NON-event at info is what made a repair unreadable.
@@ -3619,6 +3439,276 @@ class ImportHandler {
 
 		return $result;
 	}//end importFromJson()
+
+	/**
+	 * Import one object listed in a configuration (`components.objects`).
+	 *
+	 * A listed object with a stable `@self.slug` is a seed: shipped with the
+	 * app's register configuration and found again on every import by register,
+	 * schema and slug. A stored seed is updated when the shipped `@self.version`
+	 * is higher than the stored one; at the same or a lower version it is left
+	 * alone and counted as unchanged. An object the configuration does not list
+	 * is never looked at, so instance data is untouched.
+	 *
+	 * Throws on a failed save; the caller decides whether to retry or record it.
+	 *
+	 * @param array<string, mixed> $objectData The listed object, with `@self`.
+	 * @param string|null          $appId      The importing app.
+	 * @param IUser|null           $actingUser The user the save acts as.
+	 * @param array<string, mixed> $result     The import result, updated in place.
+	 *
+	 * @return void
+	 *
+	 * @throws \Throwable When the object cannot be saved.
+	 *
+	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 */
+	private function importListedObject(array $objectData, ?string $appId, ?IUser $actingUser, array &$result): void {
+		$rawRegister = $objectData['@self']['register'] ?? null;
+		$rawSchema = $objectData['@self']['schema'] ?? null;
+		$slug = $objectData['@self']['slug'] ?? null;
+
+
+		// Get the actual Register and Schema objects from maps (not IDs!).
+		// This is CRITICAL - passing objects avoids organisation filter in find().
+		$registerObject = $this->registersMap[$rawRegister] ?? null;
+		$schemaObject = $this->schemasMap[$rawSchema] ?? null;
+
+		// Fallback for object-only bundles that reference pre-existing
+		// registers/schemas (e.g. the rapportage templates that ship a
+		// dashboard against the already-imported reports/dashboard).
+		if ($registerObject === null && is_string($rawRegister) === true && $rawRegister !== '') {
+			try {
+				$registerObject = $this->registerMapper->find(
+					$rawRegister,
+					_rbac: false,
+					_multitenancy: false
+				);
+				$this->registersMap[$rawRegister] = $registerObject;
+			} catch (\Throwable $e) {
+				$registerObject = null;
+			}
+		}
+
+		if ($schemaObject === null && is_string($rawSchema) === true && $rawSchema !== '') {
+			try {
+				$schemaObject = $this->schemaMapper->find(
+					$rawSchema,
+					_rbac: false,
+					_multitenancy: false
+				);
+				$this->schemasMap[$rawSchema] = $schemaObject;
+			} catch (\Throwable $e) {
+				$schemaObject = null;
+			}
+		}
+
+		if ($registerObject === null || $schemaObject === null) {
+			$this->logger->warning(
+				message: '[ImportHandler] Skipping object import - register or schema not found in maps or DB',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'objectSlug' => $slug,
+					'registerSlug' => $rawRegister,
+					'schemaSlug' => $rawSchema,
+					'registerFound' => $registerObject !== null,
+					'schemaFound' => $schemaObject !== null,
+				]
+			);
+			return;
+		}
+
+		// A seed whose schema slug resolved to ANOTHER app's schema,
+		// one its register does not list, is a stale seed, not a
+		// write target ({@see self::seedSchemaIsForeign()}).
+		if ($this->seedSchemaIsForeign(register: $registerObject, schema: $schemaObject, appId: $appId) === true) {
+			$result['skipped']['objects']++;
+			return;
+		}
+
+		// Get IDs for searching existing objects.
+		$registerId = $registerObject->getId();
+		$schemaId = $schemaObject->getId();
+
+		// Use ObjectService::searchObjects to find existing object by register+schema+slug.
+		$search = [
+			'@self' => [
+				'register' => (int)$registerId,
+				'schema' => (int)$schemaId,
+				'slug' => $slug,
+			],
+			'_limit' => 1,
+		];
+		$this->logger->debug(
+			message: '[ImportHandler] Import object search filter',
+			context: ['file' => __FILE__, 'line' => __LINE__, 'filter' => $search]
+		);
+
+		// Search for existing object.
+		// Use _rbac: false and _multitenancy: false to ensure we find objects regardless of organisation context.
+		// This prevents duplicate objects with the same UUID being created.
+		$this->logger->debug(
+			message: "[ImportHandler] Searching: register=$registerId, schema=$schemaId, slug=$slug",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		$results = $this->objectService->searchObjects(query: $search, _rbac: false, _multitenancy: false);
+		$resultCount = 0;
+		if (is_array($results) === true) {
+			$resultCount = count($results);
+		}
+
+		$this->logger->debug(
+			message: "[ImportHandler] Found $resultCount results",
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+		$existingObject = null;
+		if ((is_array($results) === true) && count($results) > 0) {
+			$existingObject = $results[0];
+		}
+
+		if ($existingObject === null) {
+			// Debug: fires once PER OBJECT during an import, and says
+			// only that the normal path was taken. The import's
+			// per-phase summaries are the info-level story.
+			$this->logger->debug(
+				message: '[ImportHandler] No existing object found - will create new object',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'registerId' => $registerId,
+					'schemaId' => $schemaId,
+					'slug' => $slug,
+				]
+			);
+		}
+
+		// Replace string slugs with integer IDs in objectData's @self metadata.
+		// This prevents any internal lookups from using string slugs.
+		$objectData['@self']['register'] = (int)$registerId;
+		$objectData['@self']['schema'] = (int)$schemaId;
+
+		// Identity, not data (live pass O6): a listed object may carry
+		// its uuid and slug at the top level, as seed data does. The
+		// uuid becomes the new object's uuid (an @self uuid wins), and
+		// both keys leave the data unless the schema declares them, so
+		// MagicMapper has nothing undeclared to discard.
+		$listedUuid = $this->listedObjectUuid(objectData: $objectData);
+		$objectData = $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $schemaObject);
+
+		if ($existingObject !== null) {
+			// Handle both ObjectEntity instances and array results from searchObjects.
+			// searchObjects returns ObjectEntity or arrays depending on configuration.
+			// @var ObjectEntity|array $existingObject.
+			// The array check comes first: calling jsonSerialize() on an array
+			// result threw, and the per-object catch reported it as a failed seed.
+			$existingObjectData = $existingObject;
+			if (is_array($existingObject) === false) {
+				$existingObjectData = $existingObject->jsonSerialize();
+			}
+
+			$importedVersion = $objectData['@self']['version'] ?? $objectData['version'] ?? '1.0.0';
+			$existingVersion = $existingObjectData['@self']['version'] ?? $existingObjectData['version'] ?? '1.0.0';
+			if (version_compare($importedVersion, $existingVersion, '>') > 0) {
+				$uuid = $existingObjectData['@self']['id'] ?? $existingObjectData['id'] ?? null;
+				// CRITICAL: Pass Register and Schema OBJECTS, not IDs.
+				// This avoids organisation filter issues in find().
+				// Installer-time seeding runs in the repair/CLI context
+				// with no user session ('Anonymous'); bypass RBAC and
+				// multitenancy here as everywhere else in this trusted
+				// import path, otherwise seed objects on RBAC-guarded
+				// schemas (e.g. Retainer Drawdown) abort the whole import.
+				$object = $this->objectService->saveObject(
+					object: $objectData,
+					register: $registerObject,
+					schema: $schemaObject,
+					uuid: $uuid,
+					_rbac: false,
+					_multitenancy: false,
+					currentUser: $actingUser
+				);
+				$result['objects'][] = $object;
+			}
+
+			if (version_compare($importedVersion, $existingVersion, '>') <= 0) {
+				// COUNTED, not just logged. Skipping an unchanged
+				// object is the DESIGNED behaviour of a re-import,
+				// but a debug line is invisible to the caller, and
+				// the caller is the one that has to tell an operator
+				// whether the import worked.
+				$result['unchanged']['objects']++;
+				$this->logger->debug(
+					message: '[ImportHandler] Skipped object update: imported version not higher',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'slug' => $slug,
+						'register' => $registerId,
+						'schema' => $schemaId,
+						'importedVersion' => $importedVersion,
+						'existingVersion' => $existingVersion,
+					]
+				);
+				return;
+			}//end if
+		}//end if
+
+		if ($existingObject === null) {
+			// Create new object.
+			// CRITICAL: Pass Register and Schema OBJECTS, not IDs.
+			// This avoids organisation filter issues in find().
+			// Installer-time seeding runs without a user session
+			// ('Anonymous'); bypass RBAC/multitenancy as in the rest of
+			// this trusted import path so seed objects on RBAC-guarded
+			// schemas don't abort the whole import.
+			$object = $this->objectService->saveObject(
+				object: $objectData,
+				register: $registerObject,
+				schema: $schemaObject,
+				uuid: $listedUuid,
+				_rbac: false,
+				_multitenancy: false,
+				currentUser: $actingUser
+			);
+			$result['objects'][] = $object;
+		}//end if
+	}//end importListedObject()
+
+	/**
+	 * Record a listed object that failed twice: counted, named and logged.
+	 *
+	 * @param array<string, mixed> $objectData The listed object, with `@self`.
+	 * @param string|null          $appId      The importing app.
+	 * @param \Throwable           $error      Why the save failed.
+	 * @param array<string, mixed> $result     The import result, updated in place.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 */
+	private function recordFailedObject(array $objectData, ?string $appId, \Throwable $error, array &$result): void {
+		$slug = (string)($objectData['@self']['slug'] ?? '');
+		$result['skipped']['objects']++;
+		$result['failed']['objects'][] = [
+			'slug' => $slug,
+			'register' => $objectData['@self']['register'] ?? null,
+			'schema' => $objectData['@self']['schema'] ?? null,
+			'error' => $error->getMessage(),
+			'refusedByListener' => ($error instanceof HookStoppedException),
+		];
+		$this->logger->warning(
+			message: "[ImportHandler] Skipping object '{$slug}' - import failed: " . $error->getMessage(),
+			context: [
+				'file' => __FILE__,
+				'line' => __LINE__,
+				'appId' => $appId,
+				'objectSlug' => $slug,
+				'registerSlug' => $objectData['@self']['register'] ?? null,
+				'schemaSlug' => $objectData['@self']['schema'] ?? null,
+				'error' => $error->getMessage(),
+			]
+		);
+	}//end recordFailedObject()
 
 	/**
 	 * Resolve `@ref:<slug>` seed-reference tokens to target object UUIDs.

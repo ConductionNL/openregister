@@ -120,6 +120,7 @@ DOMAIN_ORDER=(
     "dedup-check"
     "duplicate-merge"
     "upsert-on-key"
+    "draft-activation"
 )
 
 declare -A DOMAIN_COLLECTIONS=(
@@ -214,6 +215,11 @@ declare -A DOMAIN_COLLECTIONS=(
     # contract, `_upsertOn` rides the query string past the body filter, and the
     # schema save must keep configuration.uniqueConstraints for any of it to work.
     [upsert-on-key]="$REPO_ROOT/tests/integration/openregister-upsert-on-key.postman_collection.json"
+    # A draft's owner makes it definitive (decision 216). HTTP-shaped: the
+    # contract is the DELIVERED status of a refusal (403 for somebody else,
+    # 422 with findings, 409, 404), and OCSMiddleware turns a 403 from an
+    # OCSController into a 200 that no unit test of the controller can see.
+    [draft-activation]="$REPO_ROOT/tests/integration/openregister-draft-activation.postman_collection.json"
 )
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

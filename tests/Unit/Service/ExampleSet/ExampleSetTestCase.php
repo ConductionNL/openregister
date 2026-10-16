@@ -32,6 +32,8 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences;
+use OCP\Config\IUserConfig;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
@@ -78,6 +80,12 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<string, array<string, bool>> Which of those keys are kept as sensitive. */
 	protected array $sensitive = [];
 
+	/** @var array<string, array<string, array<string, string>>> User values: uid, app, key, value. */
+	protected array $userValues = [];
+
+	/** @var array<string, array<string, array<string, bool>>> Which user values are kept as sensitive. */
+	protected array $sensitiveUserValues = [];
+
 	/** @var array<string, Organisation> OpenRegister organisations by uuid. */
 	protected array $organisations = [];
 
@@ -117,7 +125,22 @@ abstract class ExampleSetTestCase extends TestCase {
 		$setConfig = new ExampleSetAppConfig(appConfig: $this->appConfigOfApps(), random: $this->random());
 		$system    = $this->createMock(IConfig::class);
 		$system->method('getSystemValueString')->willReturnCallback(fn (string $key, string $default = ''): string => ($key === 'overwrite.cli.url' ? $this->baseUrl : $default));
-		$instance = new ExampleSetInstance(container: $container, config: $system);
+		$system->method('getUserKeys')->willReturnCallback(fn (string $uid, string $app): array => array_keys($this->userValues[$uid][$app] ?? []));
+		$system->method('getUserValue')->willReturnCallback(
+			fn (string $uid, string $app, string $key, mixed $default = ''): mixed => ($this->userValues[$uid][$app][$key] ?? $default)
+		);
+		$system->method('setUserValue')->willReturnCallback(function (string $uid, string $app, string $key, mixed $value): void {
+			$this->userValues[$uid][$app][$key] = (string) $value;
+		});
+		$system->method('deleteUserValue')->willReturnCallback(function (string $uid, string $app, string $key): void {
+			unset($this->userValues[$uid][$app][$key]);
+		});
+		$userConfig = $this->createMock(IUserConfig::class);
+		$userConfig->method('isSensitive')->willReturnCallback(
+			fn (string $uid, string $app, string $key): bool => ($this->sensitiveUserValues[$uid][$app][$key] ?? false)
+		);
+		$preferences = new ExampleSetUserPreferences(config: $system, userConfig: $userConfig, accounts: $this->accounts);
+		$instance    = new ExampleSetInstance(container: $container, config: $system);
 
 		$appConfig = $this->createMock(IAppConfig::class);
 		$appConfig->method('getValueString')->willReturnCallback(fn (string $app, string $key, string $default = ''): string => ($this->config[$key] ?? $default));
@@ -145,7 +168,8 @@ abstract class ExampleSetTestCase extends TestCase {
 			prerequisites: new ExampleSetPrerequisites(registers: $this->registers, instance: $instance, record: $this->record, people: $people),
 			changes: $changes,
 			files: $files,
-			appConfig: $setConfig
+			appConfig: $setConfig,
+			userPreferences: $preferences
 		);
 		$this->remover   = new ExampleSetRemover(
 			store: $this->store,
@@ -155,7 +179,8 @@ abstract class ExampleSetTestCase extends TestCase {
 			registers: $this->registers,
 			files: $files,
 			appConfig: $setConfig,
-			instance: $instance
+			instance: $instance,
+			userPreferences: $preferences
 		);
 	}
 

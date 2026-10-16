@@ -108,12 +108,144 @@ A draft is the destination object itself, saved with `@self.status: draft`
   still refused, whatever the schema's hard-validation flag.
 - A draft is visible to its owner only. Set `draftsVisible: true` in the
   schema configuration to let everyone who may read the schema see drafts.
+- Who cannot read a draft cannot change it. A PATCH, or a create that names
+  the draft's id, answers 403 for anybody but the owner. An administrator
+  may still correct a draft.
 - Submit with `_draft` to leave draft. The submit runs full validation, sets
   `@self.status` to `active`, answers with the moment it left draft as
   `receivedAt`, and dispatches `ObjectActivatedEvent`.
 - A client may create an object as a draft. It cannot turn a saved object
-  into a draft, and only the submit can leave draft.
+  into a draft. A draft leaves draft through the submit, or through its
+  owner's activate action below. A plain save that sets `@self.status` to
+  `active` is refused.
 - An object without a stored status keeps the status it has today.
+
+### Make your own draft definitive
+
+An entry screen that is not a stored form finishes its draft on the object
+API (decision 216):
+
+`POST /index.php/apps/openregister/api/objects/{register}/{schema}/{id}/activate`
+
+- Only the draft's owner can do it. An administrator is not the owner.
+- Send `{ "object": { ... } }` to lay the last values over the stored draft
+  first. Without a body the draft is judged as stored.
+- The draft must pass the whole schema, whatever its hard-validation flag.
+  Properties with a default, a computation or the `serverSet` marker are
+  filled by the server and not asked of you.
+- The answer is the object under the same id, with `@self.status: active`.
+  `ObjectActivatedEvent` is dispatched, as on a submit.
+
+| Status | Reason | When |
+|---|---|---|
+| 200 | | The draft is now active |
+| 401 | `not-signed-in` | Nobody is signed in |
+| 403 | `not-the-owner` | The draft is somebody else's, or you may not write this schema |
+| 404 | `not-found` | No such object, or you may not read it |
+| 409 | `not-a-draft` | The object is not in status `draft` |
+| 422 | `invalid` | The draft is not complete; `findings` lists `{ property, code, message }` per property |
+
+Every refusal answers `{ message, reason, findings }`. From PHP, call
+`DraftActivation::activate()` with a `DraftOwner`; a portal passes its own
+scope value there (decision 195).
+
+### Let abandoned drafts expire
+
+A draft that nobody changed for 30 days is removed. A daily background job
+(`DraftExpiryJob`) does it, for every schema of every app. Your app needs no
+cleanup job of its own.
+
+Set `draftLifetimeDays` in a schema's configuration to change that:
+
+```json
+{ "configuration": { "draftLifetimeDays": 7 } }
+```
+
+| Value | What happens to the schema's drafts |
+|---|---|
+| not set | Removed after 30 days without a change |
+| a whole number, 1 or more | Removed after that many days without a change |
+| `false` | Kept. The job never looks at this schema |
+
+Anything else (zero, a negative number, a fraction, text) is refused. The
+schema is saved with `false`, so a typing error keeps drafts, and the key is
+reported in the log as dropped. The setting survives an import and an export.
+
+The lifetime counts from the draft's last change, not from its first save.
+One run removes at most 1,000 drafts. The rest waits for the next day. The
+job logs one line per schema that lost drafts, and one line with the totals.
+
+#### Look before the job runs
+
+```bash
+occ openregister:drafts:expired
+occ openregister:drafts:expired --json
+```
+
+The command lists how many drafts the next run would remove per schema. It
+removes nothing. Run it before the first job run after an upgrade: the
+30 days apply to the drafts you already have.
+
+### Deleting a draft
+
+Delete a draft like any object: `DELETE .../api/objects/{register}/{schema}/{id}`.
+Two things differ from a record. The draft is removed for good, with its
+files, instead of soft-deleted. And a schema with an `x-openregister-archival`
+block, which refuses every other delete, lets a draft go: a draft was never
+received, so it is not a record yet. An object that is not a draft is refused
+there as before.
+
+Every removed draft leaves one entry on the audit trail, with the action
+`draft.removed`. It shows where other audit entries show.
+
+| The entry says | From |
+|---|---|
+| Who removed it | The signed-in user, or `job:DraftExpiryJob` for the cleanup |
+| When | The moment of the removal |
+| Where | The register and the schema |
+| Which object | The draft's id |
+| That it was a draft | `status: draft` and `permanent: true` |
+| Whose draft it was | The draft's owner |
+
+The entry never holds what the draft contained: no property value and no
+property name.
+
+### What a listener sees of a draft
+
+Nothing, until it is real. Listen to `ObjectCreatedEvent` and you get every
+object once: when it is created outright, or when a draft leaves draft. You
+never get a half-typed object, and you need no status check.
+
+| Moment | Event |
+|---|---|
+| A draft is saved for the first time | `DraftCreatedEvent` |
+| A draft is saved again | `DraftUpdatedEvent` |
+| A draft is discarded or expires | `DraftDeletedEvent` |
+| A draft leaves draft | `ObjectCreatedEvent`, then `ObjectActivatedEvent` |
+| Any other object is created, changed or deleted | `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`, as before |
+
+The draft events are for OpenRegister's own bookkeeping: caches, the
+translation sidecar and cleanup. Do not listen to them from an app.
+`ObjectActivatedEvent` carries the moment of receipt. Do your creation work
+on `ObjectCreatedEvent` only, or it runs twice.
+
+A generated identifier follows the same rule. A draft takes no number. The
+save that leaves draft issues it, so a half-typed case leaves no gap in the
+sequence.
+
+### Keep your own drafts out of a work list
+
+A list leaves out other people's drafts and keeps your own (decision 201).
+When your drafts are offered back on their own entry screen, keep them out
+of every list of the schema:
+
+```json
+{ "configuration": { "draftsListed": false } }
+```
+
+Lists, counts and facets then hold no draft by default. `_drafts=none` asks
+the same of one request. `_drafts=true` shows drafts alone and `_drafts=any`
+shows drafts beside the rest, whatever the schema says.
 
 Receipt listeners: treat `ObjectCreatedEvent` for an object that is not a
 draft, and `ObjectActivatedEvent`, as the moment of receipt. Skip an object

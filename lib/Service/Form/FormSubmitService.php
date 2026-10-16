@@ -46,13 +46,13 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Event\ObjectActivatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Object\DraftFinder;
 use OCA\OpenRegister\Service\Object\DraftOwner;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
+use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -336,7 +336,8 @@ class FormSubmitService {
 		}
 
 		$receivedAt = DateTimeImmutable::createFromMutable($this->time->getDateTime());
-		$this->events->dispatchTyped(new ObjectActivatedEvent(object: $created[0]['object'], receivedAt: $receivedAt));
+		// Creation side effects run now, once (decision 227): the created event, then the receipt.
+		(new ObjectEventGate(events: $this->events))->leftDraft(object: $created[0]['object'], receivedAt: $receivedAt);
 
 		return [$created, $receivedAt];
 	}//end promoteDraft()
@@ -641,9 +642,10 @@ class FormSubmitService {
 			}
 
 			$object = $this->resolveWriteReferences(object: $plan['object'], ids: [], pending: true);
-			$excused = $this->serverFilled(schema: $plan['schema'], object: $object);
+			$policy = new DraftStatusPolicy();
+			$excused = $policy->serverFilledExcusals(schema: $plan['schema'], object: $object);
 			if ($mode === self::MODE_DRAFT) {
-				$excused = array_merge((new DraftStatusPolicy())->requiredExcusals(schema: $plan['schema']), $excused);
+				$excused = array_merge($policy->requiredExcusals(schema: $plan['schema']), $excused);
 			}
 
 			try {
@@ -666,36 +668,6 @@ class FormSubmitService {
 			);
 		}
 	}//end validateAll()
-
-	/**
-	 * The properties the server fills, excused from `required` while the payload is judged.
-	 *
-	 * A property with a default, a computation or the serverSet marker is
-	 * filled on save or by a creating listener, so a payload without it is
-	 * complete. The build-time validator excuses the same set.
-	 *
-	 * @param Schema               $schema The destination schema.
-	 * @param array<string, mixed> $object The mapped object.
-	 *
-	 * @return array<string, string> Property => reason, for ValidateObject's notSupplied.
-	 */
-	private function serverFilled(Schema $schema, array $object): array {
-		$excused = [];
-		foreach ($schema->getProperties() as $name => $property) {
-			if (is_array($property) === false || array_key_exists((string)$name, $object) === true) {
-				continue;
-			}
-
-			$filled = array_key_exists('default', $property) === true
-				|| isset($property['computed']) === true
-				|| FormDestinationValidator::marker(property: $property, name: FormDestinationValidator::MARKER_SERVER_SET);
-			if ($filled === true) {
-				$excused[(string)$name] = 'server-set';
-			}
-		}
-
-		return $excused;
-	}//end serverFilled()
 
 	/**
 	 * Write in order; on a refusal, delete what this submit already wrote, then refuse.

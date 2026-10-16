@@ -116,7 +116,7 @@ class ExampleSetCatalogue {
 	 * @param string $set The set id.
 	 *
 	 * @return array<string, mixed> `set`, `title`, `timezone`, `cast` (people, organisations and groups by key,
-	 *                              plus `entries`, all three merged), `requires` (OpenRegister register slugs),
+	 *                              plus `entries`, all three merged), `requires` (OpenRegister register slug to `{mock}`),
 	 *                              `fragments` (each with `app`, `file`, `objects`, `changes` and `groups`) and
 	 *                              `skipped` (named apps that are not enabled).
 	 *
@@ -161,7 +161,7 @@ class ExampleSetCatalogue {
 			'title'     => (string) ($castFile['title'] ?? $set),
 			'timezone'  => (string) ($castFile['timezone'] ?? 'UTC'),
 			'cast'      => $this->cast(cast: $castFile['cast'], file: $castFile['@file'], set: $set),
-			'requires'  => array_values(array_unique(array_map('strval', (array) ($castFile['requires'] ?? [])))),
+			'requires'  => $this->requiredRegisters(declared: (array) ($castFile['requires'] ?? []), file: $castFile['@file']),
 			'organisations' => $this->organisationEntities(declared: (array) ($castFile['cast']['openregisterOrganisations'] ?? []), file: $castFile['@file']),
 			'fragments' => [],
 			'skipped'   => $ordered['skipped'],
@@ -272,7 +272,8 @@ class ExampleSetCatalogue {
 	 * @return array{app: string, file: string, dir: string, objects: array<int, array<string, mixed>>,
 	 *               changes: array<int, array<string, mixed>>, groups: array<int, array<string, mixed>>,
 	 *               serviceAccounts: array<int, array{key: string, uid: string, displayName: string, groups: array<int, string>}>,
-	 *               appConfig: array<int, array{key: string, value: mixed, generate: bool}>}
+	 *               appConfig: array<int, array{key: string, value: mixed, generate: bool}>,
+	 *               userPreferences: array<int, array{user: string, key: string, value: string}>}
 	 *
 	 * @throws ExampleSetException When an object or change lacks a key, register or schema, or a key is used twice.
 	 */
@@ -289,6 +290,7 @@ class ExampleSetCatalogue {
 			'groups'          => array_values(array_filter((array) ($fragment['groups'] ?? []), 'is_array')),
 			'serviceAccounts' => $this->serviceAccounts(file: $file, declared: (array) ($fragment['serviceAccounts'] ?? [])),
 			'appConfig'       => $this->appConfig(app: $app, file: $file, declared: (array) ($fragment['appConfig'] ?? [])),
+			'userPreferences' => $this->userPreferences(app: $app, file: $file, declared: (array) ($fragment['userPreferences'] ?? [])),
 		];
 	}//end fragment()
 
@@ -352,6 +354,76 @@ class ExampleSetCatalogue {
 
 		return $entries;
 	}//end appConfig()
+
+	/**
+	 * The per-user preferences of a fragment, each for the fragment's own app.
+	 *
+	 * @param string            $app      The app that ships the fragment.
+	 * @param string            $file     The fragment file, for messages.
+	 * @param array<int, mixed> $declared The declared entries.
+	 *
+	 * @return array<int, array{user: string, key: string, value: string}>
+	 *
+	 * @throws ExampleSetException When an entry names another app, or lacks a user, a key or a value.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 */
+	private function userPreferences(string $app, string $file, array $declared): array {
+		$entries = [];
+		foreach ($declared as $index => $entry) {
+			$entry = (array) $entry;
+			if ((string) ($entry['app'] ?? $app) !== $app) {
+				throw new ExampleSetException($file.': user preference '.$index.' is for "'.$entry['app'].'"; a fragment sets only its own app\'s preferences.');
+			}
+
+			$user = ($entry['user'] ?? null);
+			$key  = ($entry['key'] ?? null);
+			if (is_string($user) === false || $user === '' || is_string($key) === false || $key === '' || is_scalar($entry['value'] ?? null) === false) {
+				throw new ExampleSetException($file.': user preference '.$index.' needs a user, a key and a value.');
+			}
+
+			$entries[] = ['user' => $user, 'key' => $key, 'value' => (string) $entry['value']];
+		}
+
+		return $entries;
+	}//end userPreferences()
+
+	/**
+	 * The OpenRegister registers the cast requires, keyed by slug.
+	 *
+	 * An entry is a slug, imported from OpenRegister's real descriptor, or
+	 * `{"register": "<slug>", "mock": true}`, imported from its mock (sample)
+	 * descriptor.
+	 *
+	 * @param array<int, mixed> $declared The declared requirements.
+	 * @param string            $file     The cast file, for messages.
+	 *
+	 * @return array<string, array{mock: bool}> Slug to how it is imported.
+	 *
+	 * @throws ExampleSetException When an entry names no register.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+	 */
+	private function requiredRegisters(array $declared, string $file): array {
+		$registers = [];
+		foreach ($declared as $index => $entry) {
+			if (is_array($entry) === false) {
+				$entry = ['register' => $entry];
+			}
+
+			$slug = $entry['register'] ?? '';
+			$mock = $entry['mock'] ?? false;
+			if (is_string($slug) === false || $slug === '' || is_bool($mock) === false) {
+				throw new ExampleSetException(
+					$file.': requires '.$index.' needs a register slug, or {"register": "<slug>", "mock": true}.'
+				);
+			}
+
+			$registers[$slug] = ['mock' => $mock];
+		}
+
+		return $registers;
+	}//end requiredRegisters()
 
 	/**
 	 * The OpenRegister organisations the cast needs, each with a key, a name and a slug.

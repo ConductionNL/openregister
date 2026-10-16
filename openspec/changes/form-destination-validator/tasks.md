@@ -36,7 +36,7 @@
   - Spec ref: specs/form-destination/spec.md, "A list MUST hide drafts unless asked"
   - Test: DraftListLensTest, MagicSearchHandlerDraftLensTest (union path, single-table path, reserved parameter), DraftFinderTest (the finder asks for drafts)
 - [ ] 2b.8 Live: on an instance, a draft is absent from `GET /api/objects/{register}/{schema}` for an administrator, present with `_drafts=any`, and its total and facets agree (live pass, decision 139)
-- [ ] 2b.3 Answered by Ruben (decision 201), the rest not built here: a draft expires after the owning app's retention (30 days by default), enforced by that app on read from `updatedAt`; a draft gets its case number only when it leaves draft. The list half is 2b.7. Anonymous drafts stay open (Q-openregister-F2)
+- [ ] 2b.3 Answered by Ruben (decision 201), the rest not built here: a draft expires after the owning app's retention (30 days by default); since decision 216 the app declares that as `draftLifetimeDays` on its schema and OpenRegister's one cleanup job enforces it (change `draft-owner-activation-and-lifetime`); a draft gets its case number only when it leaves draft. The list half is 2b.7. Anonymous drafts stay open (Q-openregister-F2)
 
 ## 3. Uploads
 

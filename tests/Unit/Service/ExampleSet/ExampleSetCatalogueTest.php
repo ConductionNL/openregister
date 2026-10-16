@@ -93,7 +93,7 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$plan = $this->catalogue->gather(set: 'zuiddrecht');
 
 		$this->assertCount(16, $plan['cast']['people']);
-		$this->assertSame(['brp', 'kvk'], $plan['requires']);
+		$this->assertSame(['brp' => ['mock' => true], 'kvk' => ['mock' => true]], $plan['requires']);
 		$this->assertSame(['vergunningen'], array_values(array_diff($plan['cast']['people']['marleen']['groups'], ['medewerkers'])));
 		$this->assertSame('Teamleider', $plan['cast']['people']['marleen']['function']);
 		$this->assertNotContains('admin', array_column($plan['cast']['groups'], 'gid'));

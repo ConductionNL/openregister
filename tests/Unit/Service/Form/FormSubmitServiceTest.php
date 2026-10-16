@@ -62,6 +62,8 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Exception\CustomValidationException
  * @uses \OCA\OpenRegister\Exception\NotAuthorizedException
  * @uses \OCA\OpenRegister\Event\ObjectActivatedEvent
+ * @uses \OCA\OpenRegister\Event\ObjectCreatedEvent
+ * @uses \OCA\OpenRegister\Service\Object\ObjectEventGate
  * @uses \OCA\OpenRegister\Service\Object\DraftFinder
  * @uses \OCA\OpenRegister\Service\Object\DraftOwner
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
@@ -709,8 +711,10 @@ class FormSubmitServiceTest extends TestCase {
 		$this->assertSame('2026-10-12T09:15:00+02:00', $answer['receivedAt']);
 		$this->assertSame('2026-0412', $answer['reference']);
 		$this->assertArrayHasKey('termStartsAt', $answer['confirmation']);
-		$this->assertCount(1, $this->dispatched);
-		$this->assertInstanceOf(ObjectActivatedEvent::class, $this->dispatched[0]);
+		// Leaving draft is the object's creation (decision 227): the created event once, then the receipt.
+		$this->assertCount(2, $this->dispatched);
+		$this->assertSame(\OCA\OpenRegister\Event\ObjectCreatedEvent::class, get_class($this->dispatched[0]));
+		$this->assertInstanceOf(ObjectActivatedEvent::class, $this->dispatched[1]);
 	}//end testLeavingDraftRunsFullValidationAndStampsReceipt()
 
 	/**

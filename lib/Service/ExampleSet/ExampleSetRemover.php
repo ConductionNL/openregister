@@ -47,6 +47,7 @@ class ExampleSetRemover {
 	 * @param ExampleSetFiles     $files     Deletes the files the set attached.
 	 * @param ExampleSetAppConfig $appConfig Restores the app config the set wrote.
 	 * @param ExampleSetInstance  $instance  Deletes the OpenRegister organisations the set created.
+	 * @param ExampleSetUserPreferences $userPreferences Restores the user preferences the set wrote.
 	 *
 	 * @return void
 	 */
@@ -59,6 +60,7 @@ class ExampleSetRemover {
 		private readonly ExampleSetFiles $files,
 		private readonly ExampleSetAppConfig $appConfig,
 		private readonly ExampleSetInstance $instance,
+		private readonly ExampleSetUserPreferences $userPreferences,
 	) {
 	}//end __construct()
 
@@ -83,6 +85,7 @@ class ExampleSetRemover {
 				'objects'           => 0,
 				'changes'           => 0,
 				'app config'        => 0,
+				'user preferences'  => 0,
 				'memberships'       => 0,
 				'groups'            => 0,
 				'accounts'          => 0,
@@ -112,6 +115,8 @@ class ExampleSetRemover {
 
 		$record = $this->revertChanges(set: $set, record: $record, report: $report);
 		$record = $this->restoreAppConfig(set: $set, record: $record, report: $report);
+		// Before the accounts: an account the set created goes, an adopted one keeps its own values.
+		$record = $this->restoreUserPreferences(set: $set, record: $record, report: $report);
 
 		foreach ($record['memberships'] as $index => [$gid, $uid]) {
 			if ($this->accounts->removeFromGroup(gid: $gid, uid: $uid) === false) {
@@ -260,6 +265,37 @@ class ExampleSetRemover {
 
 		return $record;
 	}//end restoreAppConfig()
+
+	/**
+	 * Restore the user preferences the set wrote, newest first, while they still hold what the set wrote.
+	 *
+	 * @param string               $set    The set id.
+	 * @param array<string, mixed> $record The record.
+	 * @param array<string, mixed> $report The report; counts, preferences left as somebody changed them, and failures.
+	 *
+	 * @return array<string, mixed> The record without the restored entries.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-fragment-may-set-its-own-apps-preferences-for-the-sets-own-accounts-req-exs-024
+	 */
+	private function restoreUserPreferences(string $set, array $record, array &$report): array {
+		foreach (array_reverse($record['userPreferences'], true) as $name => $entry) {
+			$outcome = $this->userPreferences->revert(entry: $entry);
+			if ($outcome === 'failed') {
+				$report['failed'][] = 'user preference '.$name;
+				continue;
+			}
+
+			if ($outcome === 'left') {
+				$report['left'][] = 'user preference '.$name.', which somebody changed after the install';
+			}
+
+			unset($record['userPreferences'][$name]);
+			$report['removed']['user preferences']++;
+			$this->record->write(set: $set, record: $record);
+		}
+
+		return $record;
+	}//end restoreUserPreferences()
 
 	/**
 	 * Delete the OpenRegister organisations the set created.

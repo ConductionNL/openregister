@@ -2880,7 +2880,9 @@ class Schema extends Entity implements JsonSerializable {
 		// field into an undeclared property is a finding unless the schema opts
 		// into extras. Off this list both were dropped on save, so neither could
 		// ever be declared.
-		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare', 'exportable', 'staging', 'additionalProperties', 'draftsVisible'];
+		// `draftsListed` (decision 216) is read by DraftListLens: false keeps the
+		// caller's own drafts out of the schema's lists by default.
+		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare', 'exportable', 'staging', 'additionalProperties', 'draftsVisible', 'draftsListed'];
 		// `implements` + `x-schema-org` carry the cross-app semantic-type
 		// markers (ADR-048); they must round-trip through the configuration
 		// column so SemanticTypeResolver can discover the schema. Their IRI
@@ -3106,6 +3108,24 @@ class Schema extends Entity implements JsonSerializable {
 			return;
 		}
 
+		// `draftLifetimeDays` (decisions 216 and 228) is read by
+		// DraftStatusPolicy and acted on by DraftExpiryJob. Off this method it
+		// was an unknown key, and an unknown key is dropped on save without a
+		// word. Absent or null means the default of 30 days. A value that
+		// cannot be read is stored as `false` (drafts kept) before the throw
+		// reports it: dropping it would turn a typing error into "remove
+		// after 30 days".
+		if ($key === 'draftLifetimeDays') {
+			if ($value === null) {
+				return;
+			}
+
+			$validatedConfig[$key] = false;
+			$validatedConfig[$key] = $this->validateDraftLifetimeValue(value: $value);
+
+			return;
+		}
+
 		if ($key === 'linkRoles') {
 			$validatedConfig[$key] = $this->validateLinkRolesValue(value: $value);
 			return;
@@ -3159,6 +3179,38 @@ class Schema extends Entity implements JsonSerializable {
 			$this->droppedKeys[] = (string)$key;
 		}//end if
 	}//end validateConfigurationEntry()
+
+	/**
+	 * Validate the `draftLifetimeDays` configuration value.
+	 *
+	 * A whole number of days, one or more, or `false` to keep the schema's
+	 * drafts. Zero, a negative number, a fraction, `true` or text is refused:
+	 * zero in particular must never read as "remove every draft now", and a
+	 * schema that wants to keep its drafts says `false`.
+	 *
+	 * @param mixed $value The raw value, never null.
+	 *
+	 * @throws \InvalidArgumentException If the value is neither a whole number of days, one or more, nor `false`.
+	 *
+	 * @return int|false The days, or false when the schema keeps its drafts.
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-lifetime-must-default-to-thirty-days-and-a-schema-must-be-able-to-change-it-or-opt-out
+	 */
+	private function validateDraftLifetimeValue(mixed $value): int|false {
+		if ($value === false) {
+			return false;
+		}
+
+		if (is_string($value) === true && preg_match('/^[1-9][0-9]*$/', $value) === 1) {
+			$value = (int)$value;
+		}
+
+		if (is_int($value) === false || $value < 1) {
+			throw new InvalidArgumentException('draftLifetimeDays must be a whole number of days, 1 or more, or false to keep drafts');
+		}
+
+		return $value;
+	}//end validateDraftLifetimeValue()
 
 	/**
 	 * Dropped `x-openregister-*` annotation keys collected during the most
