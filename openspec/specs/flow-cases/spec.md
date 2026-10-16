@@ -584,6 +584,11 @@ ensure items as a named app, for code that runs without a user session
 `system:<app>`. These verbs SHALL NOT be reachable over HTTP. The user verbs
 SHALL keep refusing a missing identity.
 
+A flow run realised for such a plan (a stage or process task bound to a flow)
+SHALL be queued without the `system:<app>` label as its user, because that label
+names no account and a run that carried it would refuse every scoped step; the
+flow's own attribution decides who the run acts as.
+
 #### Scenario: An app's listener creates a plan
 
 - **GIVEN** an object without a plan

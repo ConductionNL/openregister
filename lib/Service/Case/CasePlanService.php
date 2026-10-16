@@ -69,6 +69,11 @@ use Throwable;
 class CasePlanService {
 
 	/**
+	 * What an in-process caller's actor id starts with (`system:<app>`): a label for the audit, not a Nextcloud account.
+	 */
+	public const SYSTEM_ACTOR_PREFIX = 'system:';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CaseItemMapper $items The plan-item table.
@@ -773,7 +778,7 @@ class CasePlanService {
 			);
 		}
 
-		return 'system:' . $app;
+		return self::SYSTEM_ACTOR_PREFIX . $app;
 	}//end systemActor()
 
 	/**
