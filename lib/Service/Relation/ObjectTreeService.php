@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Party\PartyDefinition;
 use OCA\OpenRegister\Service\Rbac\HierarchyDescender;
 use OCA\OpenRegister\Service\Rbac\HierarchyGrantExpander;
@@ -105,6 +106,7 @@ class ObjectTreeService {
 	 * @param RegisterMapper         $registerMapper Resolves the root's register.
 	 * @param SchemaMapper           $schemaMapper   Resolves the root's schema.
 	 * @param RelationGraphService   $graphs         Holds the instance's node cap.
+	 * @param RenderObject           $renderer       Strips what the caller may not read from the properties a node carries.
 	 * @param LoggerInterface        $logger         The logger.
 	 */
 	public function __construct(
@@ -114,6 +116,7 @@ class ObjectTreeService {
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
 		private readonly RelationGraphService $graphs,
+		private readonly RenderObject $renderer,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -165,7 +168,7 @@ class ObjectTreeService {
 	 * @param ObjectEntity $root      The object to walk from, already read under the caller's RBAC.
 	 * @param string       $direction One of the DIRECTION_ constants.
 	 * @param int|null     $depth     The depth asked for; null means the declared bound.
-	 * @param string[]     $fields    Object properties to copy onto each node.
+	 * @param string[]     $fields    Object properties to copy onto each node, after the read-side redaction.
 	 * @param bool         $_rbac     Whether to apply the caller's read access to every node.
 	 *
 	 * @return array{root: string, register: int, schema: int, parentProperty: string|null,
@@ -197,7 +200,15 @@ class ObjectTreeService {
 			'depth' => 0,
 			'requestedDepth' => $depth,
 			'maxDepth' => 0,
-			'nodes' => [$this->node(object: $root, level: 0, parent: null, fields: $fields)],
+			'nodes' => [
+				$this->node(
+					object: ($this->redacted(objects: [(string)$root->getUuid() => $root], fields: $fields, rbac: $_rbac)[$rootUuid] ?? null),
+					level: 0,
+					parent: null,
+					fields: $fields,
+					uuid: $rootUuid
+				),
+			],
 			'truncated' => false,
 			'truncatedBy' => null,
 		];
@@ -290,34 +301,48 @@ class ObjectTreeService {
 		$frontier = [$rootUuid];
 
 		for ($level = 1; $level <= $walk['depth']; $level++) {
-			$children = $this->readableChildren(table: $table, column: $column, parents: $frontier, seen: $seen, walk: $walk);
-			if ($children === null) {
+			// What the cap still lets in, the root counted: the read below is
+			// bounded by it, so a level far wider than the cap is never fetched.
+			$budget = ($cap - count($nodes) - 1);
+			$read = $this->readableChildren(
+				table: $table,
+				column: $column,
+				read: ['parents' => $frontier, 'budget' => $budget, 'seen' => $seen, 'walk' => $walk]
+			);
+			if ($read === null) {
 				return ['nodes' => $nodes, 'truncatedBy' => self::TRUNCATED_UNREADABLE];
 			}
 
+			if ($read['overflow'] === true) {
+				return ['nodes' => $nodes, 'truncatedBy' => self::TRUNCATED_CAP];
+			}
+
+			$children = $read['children'];
 			if ($children === []) {
 				return ['nodes' => $nodes, 'truncatedBy' => null];
 			}
 
-			if ((count($nodes) + count($children) + 1) > $cap) {
-				return ['nodes' => $nodes, 'truncatedBy' => self::TRUNCATED_CAP];
-			}
-
-			$objects = $this->load(walk: $walk, uuids: array_keys($children));
+			$objects = $this->redacted(objects: $this->load(walk: $walk, uuids: array_keys($children)), fields: $walk['fields'], rbac: $walk['rbac']);
 			$frontier = [];
 			foreach ($children as $child => $parent) {
 				$seen[$child] = true;
 				$frontier[] = $child;
 				$nodes[] = $this->node(object: ($objects[$child] ?? null), level: $level, parent: $parent, fields: $walk['fields'], uuid: $child);
 			}
-		}
+		}//end for
 
-		$more = $this->readableChildren(table: $table, column: $column, parents: $frontier, seen: $seen, walk: $walk);
-		if ($more === null) {
+		$read = $this->readableChildren(
+			table: $table,
+			column: $column,
+			read: ['parents' => $frontier, 'budget' => ($cap - count($nodes) - 1), 'seen' => $seen, 'walk' => $walk]
+		);
+		if ($read === null) {
 			return ['nodes' => $nodes, 'truncatedBy' => self::TRUNCATED_UNREADABLE];
 		}
 
-		if ($more !== []) {
+		// An overflowing probe still answers from the rows it did read: one
+		// readable child among them is enough to say the depth stopped the walk.
+		if ($read['children'] !== []) {
 			return ['nodes' => $nodes, 'truncatedBy' => self::TRUNCATED_DEPTH];
 		}
 
@@ -327,23 +352,35 @@ class ObjectTreeService {
 	/**
 	 * The children of a level the caller may read and has not met yet, or null when the level cannot be read.
 	 *
-	 * A cycle in the data shows up here as a child already seen, and is dropped.
+	 * The read is bounded by the budget: one row more than the cap still lets
+	 * in is asked for, and getting it means the level is wider than the cap
+	 * (`overflow`); the access check then runs on the rows that fit only, so
+	 * the work stays bounded too. A cycle in the data shows up here as a child
+	 * already seen, and is dropped. Null covers both a level that could not be
+	 * read and one whose read access could not be established: neither may be
+	 * answered as "nothing below".
 	 *
-	 * @param string               $table   The magic table.
-	 * @param string               $column  The parent column.
-	 * @param string[]             $parents The level to read below.
-	 * @param array<string, bool>  $seen    Every uuid already in the answer.
-	 * @param array<string, mixed> $walk    The walk.
+	 * @param string               $table  The magic table.
+	 * @param string               $column The parent column.
+	 * @param array<string, mixed> $read   `parents` (the level to read below), `budget` (the children the cap still
+	 *                                     admits), `seen` (the uuids already in the answer) and `walk`.
 	 *
-	 * @return array<string, string>|null Child uuid => parent uuid.
+	 * @return array{children: array<string, string>, overflow: bool}|null Child uuid => parent uuid, and whether the level is wider than the budget.
 	 */
-	private function readableChildren(string $table, string $column, array $parents, array $seen, array $walk): ?array {
-		if ($parents === []) {
-			return [];
+	private function readableChildren(string $table, string $column, array $read): ?array {
+		if ($read['parents'] === []) {
+			return ['children' => [], 'overflow' => false];
 		}
 
+		$budget = max(0, $read['budget']);
+
 		try {
-			$children = $this->descender->childrenOf(table: $table, parentColumn: $column, parentUuids: $parents);
+			$children = $this->descender->childrenOf(
+				table: $table,
+				parentColumn: $column,
+				parentUuids: $read['parents'],
+				limit: ($budget + 1)
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				message: '[ObjectTreeService] A level of the tree could not be read',
@@ -358,16 +395,30 @@ class ObjectTreeService {
 			return null;
 		}
 
-		$children = array_diff_key($children, $seen);
+		// Counted before the seen ones are dropped: a row that is a cycle
+		// still used up a place of the bounded read, so it may hide a wider level.
+		$overflow = (count($children) > $budget);
+		$children = array_diff_key($children, $read['seen']);
+		if ($overflow === true) {
+			$children = array_slice($children, 0, $budget, true);
+		}
 
-		return $this->readableOnly(walk: $walk, uuids: $children);
+		$readable = $this->readableOnly(walk: $read['walk'], uuids: $children);
+		if ($readable === null) {
+			return null;
+		}
+
+		return ['children' => $readable, 'overflow' => $overflow];
 	}//end readableChildren()
 
 	/**
 	 * The ancestors of the root, nearest first.
 	 *
 	 * The walk stops at the first ancestor the caller may not read: a level
-	 * above a hidden one would carry the wrong level number.
+	 * above a hidden one would carry the wrong level number. A node names the
+	 * uuid of its own parent only when that parent is one the caller may read:
+	 * the topmost node of a walk that stopped at a hidden ancestor, or at one
+	 * that does not exist, carries no parent at all.
 	 *
 	 * @param ObjectEntity         $root The root.
 	 * @param array<string, mixed> $walk The walk.
@@ -375,51 +426,79 @@ class ObjectTreeService {
 	 * @return array{nodes: array<int, array<string, mixed>>, truncatedBy: string|null} The nodes, nearest first.
 	 */
 	private function ancestors(ObjectEntity $root, array $walk): array {
-		$nodes = [];
+		$chain = [];
 		$seen = [(string)$root->getUuid() => true];
 		$current = $root;
+		$truncatedBy = null;
+		$topParent = null;
 
-		for ($level = 1; $level <= $walk['depth']; $level++) {
-			$parent = $this->readableParent(object: $current, seen: $seen, walk: $walk);
-			if ($parent === null) {
-				return ['nodes' => $nodes, 'truncatedBy' => null];
+		// One step past the depth bound: it only finds out whether there is
+		// more above, and which readable uuid the topmost node then names.
+		for ($level = 1; $level <= ($walk['depth'] + 1); $level++) {
+			$step = $this->parentStep(object: $current, seen: $seen, walk: $walk);
+			if ($step['object'] === null) {
+				$truncatedBy = $step['truncatedBy'];
+				break;
 			}
 
-			$uuid = (string)$parent->getUuid();
+			$uuid = (string)$step['object']->getUuid();
+			if ($level > $walk['depth']) {
+				$topParent = $uuid;
+				$truncatedBy = self::TRUNCATED_DEPTH;
+				break;
+			}
+
 			$seen[$uuid] = true;
-			$grandparent = self::reference(value: ($parent->getObject()[$walk['property']] ?? null));
-			$nodes[] = $this->node(object: $parent, level: -$level, parent: $grandparent, fields: $walk['fields']);
-			$current = $parent;
+			$chain[$uuid] = $step['object'];
+			$current = $step['object'];
 		}
 
-		if ($this->readableParent(object: $current, seen: $seen, walk: $walk) !== null) {
-			return ['nodes' => $nodes, 'truncatedBy' => self::TRUNCATED_DEPTH];
+		$shown = $this->redacted(objects: $chain, fields: $walk['fields'], rbac: $walk['rbac']);
+		$uuids = array_keys($chain);
+		$nodes = [];
+		foreach ($uuids as $index => $uuid) {
+			$nodes[] = $this->node(
+				object: ($shown[$uuid] ?? null),
+				level: -($index + 1),
+				parent: ($uuids[($index + 1)] ?? $topParent),
+				fields: $walk['fields'],
+				uuid: $uuid
+			);
 		}
 
-		return ['nodes' => $nodes, 'truncatedBy' => null];
+		return ['nodes' => $nodes, 'truncatedBy' => $truncatedBy];
 	}//end ancestors()
 
 	/**
 	 * The parent of one object when it exists, is new to the walk and is readable.
 	 *
+	 * Tells "there is none" (or it is a cycle) and "the caller may not read it"
+	 * from "read access could not be established": the last one is an
+	 * incomplete answer, and the tree says so.
+	 *
 	 * @param ObjectEntity         $object The object.
 	 * @param array<string, bool>  $seen   Every uuid already in the answer.
 	 * @param array<string, mixed> $walk   The walk.
 	 *
-	 * @return ObjectEntity|null The parent.
+	 * @return array{object: ObjectEntity|null, truncatedBy: string|null} The parent, or why there is none to show.
 	 */
-	private function readableParent(ObjectEntity $object, array $seen, array $walk): ?ObjectEntity {
+	private function parentStep(ObjectEntity $object, array $seen, array $walk): array {
 		$parentUuid = self::reference(value: ($object->getObject()[$walk['property']] ?? null));
 		if ($parentUuid === null || isset($seen[$parentUuid]) === true) {
-			return null;
+			return ['object' => null, 'truncatedBy' => null];
 		}
 
-		if ($this->readableOnly(walk: $walk, uuids: [$parentUuid => '']) === []) {
-			return null;
+		$readable = $this->readableOnly(walk: $walk, uuids: [$parentUuid => '']);
+		if ($readable === null) {
+			return ['object' => null, 'truncatedBy' => self::TRUNCATED_UNREADABLE];
 		}
 
-		return ($this->load(walk: $walk, uuids: [$parentUuid])[$parentUuid] ?? null);
-	}//end readableParent()
+		if ($readable === []) {
+			return ['object' => null, 'truncatedBy' => null];
+		}
+
+		return ['object' => ($this->load(walk: $walk, uuids: [$parentUuid])[$parentUuid] ?? null), 'truncatedBy' => null];
+	}//end parentStep()
 
 	/**
 	 * The entries of a uuid-keyed map the caller may read.
@@ -427,18 +506,21 @@ class ObjectTreeService {
 	 * @param array<string, mixed>  $walk  The walk.
 	 * @param array<string, string> $uuids Uuid => anything.
 	 *
-	 * @return array<string, string> The readable entries, in their order.
+	 * @return array<string, string>|null The readable entries, in their order; null when read access could not be established.
 	 */
-	private function readableOnly(array $walk, array $uuids): array {
+	private function readableOnly(array $walk, array $uuids): ?array {
 		if ($uuids === [] || $walk['rbac'] === false) {
 			return $uuids;
 		}
 
-		$readable = $this->objectMapper->filterReadableUuids(
+		$readable = $this->objectMapper->readableUuidsOrNull(
 			registerId: (int)$walk['register']->getId(),
 			schemaId: (int)$walk['schema']->getId(),
 			uuids: array_map('strval', array_keys($uuids))
 		);
+		if ($readable === null) {
+			return null;
+		}
 
 		return array_intersect_key($uuids, array_flip($readable));
 	}//end readableOnly()
@@ -460,9 +542,35 @@ class ObjectTreeService {
 	}//end load()
 
 	/**
+	 * The objects as the caller may read them: write-only properties, properties
+	 * the caller's group may not read and encrypted values handled the way every
+	 * other read of an object does.
+	 *
+	 * Only a request that names `fields` has properties to carry, so only then
+	 * is anything done. The entities are copied first: the originals are what
+	 * the walk reads the parent property from, and are never written back.
+	 *
+	 * @param array<string, ObjectEntity> $objects Uuid => object, as the mapper loaded them.
+	 * @param string[]                    $fields  The properties the request names.
+	 * @param bool                        $rbac    Whether the read is the caller's own (property read access applies).
+	 *
+	 * @return array<string, ObjectEntity> Uuid => the redacted copy.
+	 */
+	private function redacted(array $objects, array $fields, bool $rbac): array {
+		if ($fields === [] || $objects === []) {
+			return $objects;
+		}
+
+		$copies = array_map(static fn (ObjectEntity $object): ObjectEntity => clone $object, $objects);
+		$this->renderer->redactWriteOnlyFromRows(rows: $copies, _rbac: $rbac);
+
+		return $copies;
+	}//end redacted()
+
+	/**
 	 * One node of the answer.
 	 *
-	 * @param ObjectEntity|null $object The object, when it loaded.
+	 * @param ObjectEntity|null $object The object as the caller may read it, when it loaded.
 	 * @param int               $level  0 for the root, negative above, positive below.
 	 * @param string|null       $parent The parent uuid.
 	 * @param string[]          $fields Properties to copy.

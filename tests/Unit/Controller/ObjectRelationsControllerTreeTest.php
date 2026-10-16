@@ -24,6 +24,11 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectRelationsController;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\ObjectService;
@@ -56,6 +61,26 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 	private ObjectReadAccess&MockObject $access;
 
 	/**
+	 * The doelbinding guard double.
+	 *
+	 * @var PurposeGuard&MockObject
+	 */
+	private PurposeGuard&MockObject $purposeGuard;
+
+	/**
+	 * An object as the access check hands it over: it knows its register and schema.
+	 *
+	 * @return ObjectEntity The object.
+	 */
+	private function object(): ObjectEntity {
+		$object = new ObjectEntity();
+		$object->setRegister('1');
+		$object->setSchema('2');
+
+		return $object;
+	}//end object()
+
+	/**
 	 * Build the controller over a set of query parameters.
 	 *
 	 * @param array<string, mixed> $params The query.
@@ -71,6 +96,10 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 		$this->trees = $this->createMock(ObjectTreeService::class);
 		$this->access = $this->createMock(ObjectReadAccess::class);
 		$this->access->method('notReadable')->willReturn(new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404));
+		$this->access->method('schemaOf')->willReturn(new Schema());
+		$this->purposeGuard = $this->createMock(PurposeGuard::class);
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper->method('find')->willReturn(new Register());
 
 		return new ObjectRelationsController(
 			appName: 'openregister',
@@ -80,7 +109,9 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 			objectService: $this->createMock(ObjectService::class),
 			exportGate: $this->createMock(ExportGate::class),
 			access: $this->access,
-			trees: $this->trees
+			trees: $this->trees,
+			purposeGuard: $this->purposeGuard,
+			registerMapper: $registerMapper
 		);
 	}//end controller()
 
@@ -104,7 +135,7 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 	 */
 	public function testAnUnknownDirectionIsRefused(): void {
 		$controller = $this->controller(params: ['direction' => 'sideways']);
-		$this->access->method('readable')->willReturn(new ObjectEntity());
+		$this->access->method('readable')->willReturn($this->object());
 		$this->trees->expects($this->never())->method('tree');
 
 		$this->assertSame(400, $controller->tree(register: 'r', schema: 's', id: 'x')->getStatus());
@@ -117,7 +148,7 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 	 */
 	public function testTheQueryReachesTheWalk(): void {
 		$controller = $this->controller(params: ['direction' => 'both', 'depth' => '2', 'fields' => 'kvkNumber, tradeName']);
-		$root = new ObjectEntity();
+		$root = $this->object();
 		$this->access->method('readable')->willReturn($root);
 		$this->trees->expects($this->once())->method('tree')
 			->with($root, 'both', 2, ['kvkNumber', 'tradeName'])
@@ -130,13 +161,43 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 	}//end testTheQueryReachesTheWalk()
 
 	/**
+	 * A schema that asks for a declared purpose refuses the tree like the object GET, and nothing is walked.
+	 *
+	 * @return void
+	 */
+	public function testARefusedPurposeAnswersItsStatusAndNothingIsWalked(): void {
+		$controller = $this->controller(params: []);
+		$this->access->method('readable')->willReturn($this->object());
+		$this->purposeGuard->expects($this->once())->method('enforce')
+			->willThrowException(new PurposeRefusedException(rule: PurposeRefusedException::RULE_MISSING, reason: 'A purpose is required.'));
+		$this->trees->expects($this->never())->method('tree');
+
+		$response = $controller->tree(register: 'r', schema: 's', id: 'x');
+
+		$this->assertSame(403, $response->getStatus());
+	}//end testARefusedPurposeAnswersItsStatusAndNothingIsWalked()
+
+	/**
+	 * The purpose check runs after the read check: an unreadable root never reaches the guard.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableRootNeverReachesThePurposeGuard(): void {
+		$controller = $this->controller(params: []);
+		$this->access->method('readable')->willReturn(null);
+		$this->purposeGuard->expects($this->never())->method('enforce');
+
+		$this->assertSame(404, $controller->tree(register: 'r', schema: 's', id: 'x')->getStatus());
+	}//end testAnUnreadableRootNeverReachesThePurposeGuard()
+
+	/**
 	 * Without a depth the walk gets null, which means the schema's own bound.
 	 *
 	 * @return void
 	 */
 	public function testNoDepthMeansTheDeclaredBound(): void {
 		$controller = $this->controller(params: []);
-		$this->access->method('readable')->willReturn(new ObjectEntity());
+		$this->access->method('readable')->willReturn($this->object());
 		$this->trees->expects($this->once())->method('tree')
 			->with($this->anything(), 'descendants', null, [])
 			->willReturn([]);

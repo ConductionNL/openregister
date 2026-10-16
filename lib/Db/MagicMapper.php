@@ -10142,6 +10142,27 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	public function filterReadableUuids(int $registerId, int $schemaId, array $uuids): array {
+		return ($this->readableUuidsOrNull(registerId: $registerId, schemaId: $schemaId, uuids: $uuids) ?? []);
+	}//end filterReadableUuids()
+
+	/**
+	 * The same filter as filterReadableUuids(), but a failure is told apart from "none".
+	 *
+	 * A caller that reports completeness (a tree that says which bound stopped
+	 * it) must not read "read access could not be established" as "nothing is
+	 * readable here": the first is an incomplete answer, the second is a
+	 * complete one. Null means the check itself failed (and was logged);
+	 * an empty array means it ran and the caller may read none of the uuids.
+	 *
+	 * @param int           $registerId The register the table belongs to.
+	 * @param int           $schemaId   The schema the table belongs to.
+	 * @param array<string> $uuids      UUIDs to test, all expected in that table.
+	 *
+	 * @return array<int, string>|null The readable subset, or null when read access could not be established.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	public function readableUuidsOrNull(int $registerId, int $schemaId, array $uuids): ?array {
 		$uuids = array_values(array_unique(array_filter($uuids, fn ($uuid): bool => is_string($uuid) && $uuid !== '')));
 		if (empty($uuids) === true) {
 			return [];
@@ -10198,11 +10219,11 @@ class MagicMapper extends AbstractObjectMapper {
 					'error' => $e->getMessage(),
 				]
 			);
-			return [];
+			return null;
 		}//end try
 
 		return $readable;
-	}//end filterReadableUuids()
+	}//end readableUuidsOrNull()
 
 	/**
 	 * Find all objects for a given schema.
