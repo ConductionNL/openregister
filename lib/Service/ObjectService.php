@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
@@ -91,6 +92,7 @@ use OCA\OpenRegister\Service\Object\RepeatingGroupValidator;
 use OCA\OpenRegister\Exception\AppendOnlyException;
 use OCA\OpenRegister\Exception\ReadOnlyTypeException;
 use OCA\OpenRegister\Exception\ArchivalImmutableException;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
@@ -1692,6 +1694,9 @@ class ObjectService implements ObjectServiceInterface
      * @param bool                     $_dedupOverride Save through a blocking duplicate match, when the caller is
      *                                                entitled to. Read from the RAW request by ObjectsController,
      *                                                because the body filter there strips `_`-prefixed keys.
+     * @param string|null              $_owner        An explicit owner for a NEW object (a draft's scope value such as
+     *                                                `portal:<subjectRef>`, decision 195). Service-level only: no
+     *                                                controller forwards it. An update keeps the stored owner.
      *
      * @return ObjectEntity The saved and rendered object
      *
@@ -1720,7 +1725,8 @@ class ObjectService implements ObjectServiceInterface
         ?IUser $currentUser=null,
         bool $failIfExists=false,
         bool $_unowned=false,
-        bool $_dedupOverride=false
+        bool $_dedupOverride=false,
+        ?string $_owner=null
     ): ObjectEntity {
         // A SAVE SCOPES ITSELF; IT DOES NOT SCOPE THE NEXT CALLER.
         //
@@ -1902,7 +1908,12 @@ class ObjectService implements ObjectServiceInterface
             $this->enforceDeclaredShapes(object: $object);
 
             // Validate if hard validation is enabled.
-            $this->validateObjectIfRequired(object: $object);
+            $updateUuid = $uuid;
+            if ($uuidWasNull === true) {
+                $updateUuid = null;
+            }
+
+            $this->validateObjectIfRequired(object: $object, uuid: $updateUuid);
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('validate');
 
             // Wave-12 Fix 1: enforce JSON-Schema `readOnly: true` on UPDATE.
@@ -1944,7 +1955,8 @@ class ObjectService implements ObjectServiceInterface
                 currentUser: $currentUser,
                 failIfExists: $failIfExists,
                 _unowned: $_unowned,
-                _dedupOverride: $_dedupOverride
+                _dedupOverride: $_dedupOverride,
+                _owner: $_owner
             );
 
             // Invalidate contact matching cache for objects with email properties.
@@ -2267,6 +2279,9 @@ class ObjectService implements ObjectServiceInterface
                 object: $existingObject
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            // Not found FOR THIS CALLER: new, or stored and hidden from them.
+            $this->refuseSomebodyElsesDraft(uuid: $uuid, _rbac: $_rbac);
+
             // Object not found, this is a CREATE operation with specific UUID.
             $this->checkPermission(
                 schema: $this->currentSchema,
@@ -2278,6 +2293,58 @@ class ObjectService implements ObjectServiceInterface
             );
         }//end try
     }//end checkSavePermissions()
+
+    /**
+     * Refuse a write to a stored draft the caller cannot read.
+     *
+     * A draft answers to its owner only (decision 180), and that rule lives in
+     * the read query. The lookup above therefore does not find somebody else's
+     * draft, and the write went on as a create under a chosen uuid, judged by
+     * the schema's create rule, and was then stored over the draft. Anybody
+     * who may create in the schema could change somebody else's draft through
+     * PATCH and got its content back in the answer. Found on a live instance,
+     * 12 October 2026.
+     *
+     * So the uuid is looked up once more, past the read rule, and only for
+     * this question. Skipped with RBAC off: an administrator, a job and a
+     * scope-value owner (decision 195) are judged by their caller.
+     *
+     * @param string $uuid  The uuid the caller's own lookup did not find.
+     * @param bool   $_rbac Whether the write is judged for the signed-in caller.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the uuid is a draft kept from the caller.
+     *
+     * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+     */
+    private function refuseSomebodyElsesDraft(string $uuid, bool $_rbac): void
+    {
+        if ($_rbac === false || $this->currentSchema === null) {
+            return;
+        }
+
+        try {
+            $stored = $this->objectMapper->find(
+                identifier: $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\OCP\AppFramework\Db\DoesNotExistException) {
+            return;
+        }
+
+        $kept = (new DraftStatusPolicy())->keptFrom(
+            object: $stored,
+            schema: $this->currentSchema,
+            userId: $this->userSession->getUser()?->getUID()
+        );
+        if ($kept === true) {
+            throw new NotAuthorizedException(message: 'Only the person who started this draft can change it.');
+        }
+    }//end refuseSomebodyElsesDraft()
 
     /**
      * Build the transient object a create rule's `match` is evaluated against.
@@ -2352,15 +2419,22 @@ class ObjectService implements ObjectServiceInterface
     }//end handleCascadingWithContextPreservation()
 
     /**
-     * Validate object if hard validation is enabled.
+     * Validate an object when its schema has hard validation on, or when the write is a draft.
      *
-     * @param array $object Object data to validate
+     * A draft (decision 180) is validated whatever the hard-validation flag:
+     * it may miss required properties, so `required` is excused, but a wrong
+     * type, format or enum value is always refused.
+     *
+     * @param array       $object Object data to validate
+     * @param string|null $uuid   The object's uuid on an update, null on a create
      *
      * @return void
      *
      * @throws ValidationException If validation fails
+     *
+     * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
      */
-    private function validateObjectIfRequired(array $object): void
+    private function validateObjectIfRequired(array $object, ?string $uuid=null): void
     {
         // BUG-OBJ-4: guard against a null schema reaching the
         // ->getHardValidation() dereference (raw TypeError 500). Callers
@@ -2372,26 +2446,63 @@ class ObjectService implements ObjectServiceInterface
             );
         }
 
-        // Validate the object against the current schema only if hard validation is enabled.
-        if ($this->currentSchema->getHardValidation() === true) {
-            // A property recorded as not supplied carries no value and is
-            // excused from the required rule, so the validator sees neither
-            // the record nor the properties it names. The record itself stays
-            // on the body that gets stored, which is how it reads back.
-            $notSupplied = $this->notSupplied()->declared(object: $object);
+        $draftPolicy = new DraftStatusPolicy();
+        $isDraft     = $draftPolicy->isDraftWrite(object: $object, existing: $this->existingForDraftCheck(object: $object, uuid: $uuid));
 
-            $result = $this->validateHandler->validateObject(
-                object: $this->notSupplied()->stripForValidation(object: $object),
-                schema: $this->currentSchema,
-                notSupplied: $notSupplied
-            );
+        if ($this->currentSchema->getHardValidation() !== true && $isDraft === false) {
+            return;
+        }
 
-            if ($result->isValid() === false) {
-                $meaningfulMessage = $this->validateHandler->generateErrorMessage(result: $result);
-                throw new ValidationException(message: $meaningfulMessage, errors: $result->error());
-            }
+        // A property recorded as not supplied carries no value and is
+        // excused from the required rule, so the validator sees neither
+        // the record nor the properties it names. The record itself stays
+        // on the body that gets stored, which is how it reads back.
+        $notSupplied = $this->notSupplied()->declared(object: $object);
+        if ($isDraft === true) {
+            $notSupplied = array_merge($draftPolicy->requiredExcusals(schema: $this->currentSchema), $notSupplied);
+        }
+
+        $result = $this->validateHandler->validateObject(
+            object: $this->notSupplied()->stripForValidation(object: $object),
+            schema: $this->currentSchema,
+            notSupplied: $notSupplied
+        );
+
+        if ($result->isValid() === false) {
+            $meaningfulMessage = $this->validateHandler->generateErrorMessage(result: $result);
+            throw new ValidationException(message: $meaningfulMessage, errors: $result->error());
         }
     }//end validateObjectIfRequired()
+
+    /**
+     * The stored object, for deciding whether an update keeps a draft; null when the payload says.
+     *
+     * Only looked up when the payload names no status and the write is an
+     * update, so an ordinary create costs nothing.
+     *
+     * @param array       $object The payload.
+     * @param string|null $uuid   The uuid on an update.
+     *
+     * @return ObjectEntity|null The stored object, or null.
+     */
+    private function existingForDraftCheck(array $object, ?string $uuid): ?ObjectEntity
+    {
+        if ($uuid === null || is_string($object['@self']['status'] ?? null) === true) {
+            return null;
+        }
+
+        try {
+            return $this->objectMapper->find(
+                $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Throwable) {
+            return null;
+        }
+    }//end existingForDraftCheck()
 
     /**
      * The repeating-group validator, constructed on first use.
@@ -3000,7 +3111,18 @@ class ObjectService implements ObjectServiceInterface
             // Reject DELETE operations on archival-annotated schemas unless this
             // call originates from the retention sweep cron (which alone sets
             // $_retentionSweep true). User-driven deletes get a structured 403.
-            if ($this->currentSchema !== null) {
+            //
+            // A DRAFT IS NOT YET A RECORD (decisions 180 and 216). It holds
+            // unsent input, nothing refers to it, and it was never received,
+            // so the archival term of its schema has not started. Without
+            // this an archival schema kept every abandoned draft for ever: its
+            // owner could not discard it and the draft cleanup could not
+            // remove it. Only a STORED draft passes, and a saved object can
+            // never go back to draft (DraftStatusPolicy), so no record can be
+            // turned into one to get past this gate.
+            if ($this->currentSchema !== null
+                && $this->isDeletableDraft(uuid: $uuid, retentionSweep: $_retentionSweep, _rbac: $_rbac, _multitenancy: $_multitenancy) === false
+            ) {
                 $this->rejectIfArchivalImmutable(
                     schema: $this->currentSchema,
                     retentionSweep: $_retentionSweep
@@ -3061,6 +3183,13 @@ class ObjectService implements ObjectServiceInterface
                 );
 
                 \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.permitted');
+
+                // A draft is removed for good, with its files: a tombstone of
+                // unsent input serves nobody, and on an archival schema the
+                // purge would refuse it for ever (decisions 180 and 216).
+                if ($objectToDelete->isDraft() === true) {
+                    $permanent = true;
+                }
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Scoped lookup is authoritative: if the caller asked for a
                 // specific (register, schema) and the UUID is not in that scope,
@@ -3168,6 +3297,48 @@ class ObjectService implements ObjectServiceInterface
     {
         return $schema->hasArchivalAnnotation();
     }//end schemaHasArchivalAnnotation()
+
+    /**
+     * Whether the delete targets a stored draft on a schema whose archival gate would refuse it.
+     *
+     * Only asked when the gate would otherwise refuse (an archival schema, not
+     * the retention sweep), so a delete on any other schema costs no lookup.
+     * Looked up with the caller's flags and in the register and schema in
+     * context, like the transferred-object guard: an object the caller cannot
+     * reach is not their draft, and the gate refuses as before.
+     *
+     * @param string $uuid           The object being deleted.
+     * @param bool   $retentionSweep True for the archival retention sweep, which the gate lets through anyway.
+     * @param bool   $_rbac          Apply RBAC to the lookup.
+     * @param bool   $_multitenancy  Apply the tenant scope to the lookup.
+     *
+     * @return bool True when the object is stored in status `draft`.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors deleteObject()'s own flags.
+     *
+     * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-be-deletable-on-every-schema-and-its-delete-must-be-permanent
+     */
+    private function isDeletableDraft(string $uuid, bool $retentionSweep, bool $_rbac, bool $_multitenancy): bool
+    {
+        if ($retentionSweep === true || $this->currentSchema === null
+            || $this->schemaHasArchivalAnnotation(schema: $this->currentSchema) === false
+        ) {
+            return false;
+        }
+
+        try {
+            return $this->objectMapper->find(
+                identifier: $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                includeDeleted: true,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            )->isDraft();
+        } catch (\Throwable) {
+            return false;
+        }
+    }//end isDeletableDraft()
 
     /**
      * Refuse a delete on an archival-annotated schema.

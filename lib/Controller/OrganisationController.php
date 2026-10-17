@@ -35,6 +35,8 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\OrganisationUsageService;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -126,6 +128,9 @@ class OrganisationController extends Controller {
 	 * @param TenantUsageMapper $tenantUsageMapper Usage mapper
 	 * @param IUserSession $userSession User session for authorization checks
 	 * @param IGroupManager $groupManager Group manager for admin checks
+	 * @param OrganisationUsageService $usageService Measures an organisation's usage
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI constructor: each argument is a collaborator an endpoint uses.
 	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
@@ -139,6 +144,7 @@ class OrganisationController extends Controller {
 		TenantUsageMapper $tenantUsageMapper,
 		IUserSession $userSession,
 		IGroupManager $groupManager,
+		private readonly OrganisationUsageService $usageService,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->organisationService = $organisationService;
@@ -261,7 +267,7 @@ class OrganisationController extends Controller {
 	 *     active: bool|null, parent: null|string, children: array,
 	 *     quota: array{storage: int|null, bandwidth: int|null,
 	 *     requests: int|null, users: null, groups: null},
-	 *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+	 *     usage: array{storage: null, bandwidth: null, requests: null,
 	 *     users: int<0, max>, groups: int<0, max>}, authorization: array,
 	 *     created: null|string, updated: null|string}|null}, array<never, never>>
 	 *
@@ -331,7 +337,7 @@ class OrganisationController extends Controller {
 	 *     active: bool|null, parent: null|string, children: array,
 	 *     quota: array{storage: int|null, bandwidth: int|null,
 	 *     requests: int|null, users: null, groups: null},
-	 *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+	 *     usage: array{storage: null, bandwidth: null, requests: null,
 	 *     users: int<0, max>, groups: int<0, max>}, authorization: array,
 	 *     created: null|string, updated: null|string}|null}, array<never, never>>
 	 *
@@ -393,7 +399,7 @@ class OrganisationController extends Controller {
 	 *     parent: null|string, children: array,
 	 *     quota: array{storage: int|null, bandwidth: int|null,
 	 *     requests: int|null, users: null, groups: null},
-	 *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+	 *     usage: array{storage: null, bandwidth: null, requests: null,
 	 *     users: int<0, max>, groups: int<0, max>}, authorization: array,
 	 *     created: null|string, updated: null|string}}, array<never, never>>
 	 *
@@ -634,7 +640,7 @@ class OrganisationController extends Controller {
 	 *     parent: null|string, children: array,
 	 *     quota: array{storage: int|null, bandwidth: int|null,
 	 *     requests: int|null, users: null, groups: null},
-	 *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+	 *     usage: array{storage: int|null, bandwidth: null, requests: int|null,
 	 *     users: int<0, max>, groups: int<0, max>}, authorization: array,
 	 *     created: null|string, updated: null|string}}, array<never, never>>
 	 *
@@ -658,9 +664,14 @@ class OrganisationController extends Controller {
 			$children = $this->organisationMapper->findChildrenChain($uuid);
 			$organisation->setChildren($children);
 
+			// The measured usage replaces the entity's, which cannot measure
+			// storage or requests.
+			$data = $organisation->jsonSerialize();
+			$data['usage'] = $this->usageService->measure(organisation: $organisation);
+
 			return new JSONResponse(
 				data: [
-					'organisation' => $organisation->jsonSerialize(),
+					'organisation' => $data,
 				],
 				statusCode: Http::STATUS_OK
 			);
@@ -711,6 +722,19 @@ class OrganisationController extends Controller {
 
 			$organisation = $this->organisationMapper->findByUuid($uuid);
 			$data = $this->extractRequestData();
+
+			// A member may edit the organisation; only its owner or an administrator
+			// may decide who manages the grants on its records.
+			if ($this->changesGrantManage(organisation: $organisation, data: $data) === true
+				&& $this->organisationService->isOrganisationAdmin($uuid) === false
+			) {
+				return new JSONResponse(
+					data: [
+						'error' => 'Only an administrator or the owner of this organisation may change the special right grant_manage',
+					],
+					statusCode: Http::STATUS_FORBIDDEN
+				);
+			}
 
 			// Apply field updates using extracted helper methods.
 			$this->handleNameAndSlugUpdate(organisation: $organisation, data: $data);
@@ -772,7 +796,7 @@ class OrganisationController extends Controller {
 	 *     children: array,
 	 *     quota: array{storage: int|null, bandwidth: int|null,
 	 *     requests: int|null, users: null, groups: null},
-	 *     usage: array{storage: 0, bandwidth: 0, requests: 0,
+	 *     usage: array{storage: null, bandwidth: null, requests: null,
 	 *     users: int<0, max>, groups: int<0, max>}, authorization: array,
 	 *     created: null|string, updated: null|string}>,
 	 *     limit?: int<1, 100>, offset?: int<0, max>, count?: int<0, max>},
@@ -1062,6 +1086,31 @@ class OrganisationController extends Controller {
 			}
 		}
 	}//end applySimpleFieldUpdates()
+
+	/**
+	 * Whether a request would change who holds the special right `grant_manage`.
+	 *
+	 * The stored block is replaced as a whole, so a request that carries an
+	 * authorization block without the key takes the right away, and that counts.
+	 *
+	 * @param object $organisation Organisation entity.
+	 * @param array<string, mixed> $data Request data.
+	 *
+	 * @return bool True when the request names a different list than the stored one.
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
+	 */
+	private function changesGrantManage(object $organisation, array $data): bool {
+		if (is_array($data['authorization'] ?? null) === false) {
+			return false;
+		}
+
+		$key = OrganisationSpecialRights::GRANT_MANAGE;
+		$stored = ($organisation->getAuthorization()[$key] ?? []);
+		$wanted = ($data['authorization'][$key] ?? []);
+
+		return $wanted !== $stored;
+	}//end changesGrantManage()
 
 	/**
 	 * Apply array field updates

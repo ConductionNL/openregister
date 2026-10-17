@@ -42,6 +42,8 @@ use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationDeclarationException;
 use OCA\OpenRegister\Service\Calculation\PropertyCalculations;
 use OCA\OpenRegister\Service\Consent\ConsentAnnotationValidator;
+use OCA\OpenRegister\Service\Decision\ReviewAnnotationValidator;
+use OCA\OpenRegister\Service\Decision\ReviewDeclarationException;
 use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
@@ -1224,6 +1226,7 @@ class SchemaMapper extends QBMapper {
 		$this->validateDepartmentMatrix(schema: $schema);
 		$this->validateRevealAudit(schema: $schema);
 		$this->validateReversibilityDeclaration(schema: $schema);
+		$this->validateReviewDeclaration(schema: $schema);
 		$this->logDroppedAnnotationKeys(schema: $schema);
 	}//end cleanObject()
 
@@ -1295,6 +1298,30 @@ class SchemaMapper extends QBMapper {
 
 		throw new ReversibilityDeclarationException(errors: $errors);
 	}//end validateReversibilityDeclaration()
+
+	/**
+	 * Refuse an `x-openregister-review` declaration the ownership rule cannot honour.
+	 *
+	 * Refused rather than logged: a mistyped ownership read as open would leave
+	 * a four-eyes review open while its author believes it is closed.
+	 *
+	 * @param Schema $schema Schema to validate.
+	 *
+	 * @return void
+	 *
+	 * @throws ReviewDeclarationException When the declaration is unsound.
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+	 */
+	private function validateReviewDeclaration(Schema $schema): void {
+		$errors = (new ReviewAnnotationValidator())->validate(configuration: ($schema->getConfiguration() ?? []));
+
+		if ($errors === []) {
+			return;
+		}
+
+		throw new ReviewDeclarationException(errors: $errors);
+	}//end validateReviewDeclaration()
 
 	/**
 	 * R07: surface dropped `x-openregister-*` keys via the structured
@@ -2792,6 +2819,8 @@ class SchemaMapper extends QBMapper {
 	 * - Simple property names: "name"
 	 * - Twig-style templates: "{{ voornaam }} {{ tussenvoegsel }} {{ achternaam }}"
 	 * - Pipe-separated fallbacks: "name | identifier | type" (uses first available)
+	 * - Dot-notation paths into an object property: "description.nl.longDescription",
+	 *   valid when the first segment is a property (the reader walks the rest)
 	 *
 	 * @param string $fieldValue The field value to validate
 	 * @param array $propertyKeys Array of valid property keys
@@ -2800,6 +2829,8 @@ class SchemaMapper extends QBMapper {
 	 * @throws \Exception If field references non-existent properties
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
 	 */
 	private function validateConfigField(string $fieldValue, array $propertyKeys, string $fieldName): void {
 		// Check if it's a Twig-style template (contains {{ ... }}).
@@ -2833,7 +2864,7 @@ class SchemaMapper extends QBMapper {
 			// Validate that at least one fallback field exists in properties.
 			$hasValidField = false;
 			foreach ($fallbackFields as $field) {
-				if (in_array($field, $propertyKeys, true) === true) {
+				if ($this->isPropertyPath(path: $field, propertyKeys: $propertyKeys) === true) {
 					$hasValidField = true;
 					break;
 				}
@@ -2848,13 +2879,36 @@ class SchemaMapper extends QBMapper {
 			return;
 		}//end if
 
-		// Simple property name - must exist in property keys.
-		if (in_array($fieldValue, $propertyKeys, true) === false) {
+		// Simple property name or dot-notation path - its first segment must be a property.
+		if ($this->isPropertyPath(path: $fieldValue, propertyKeys: $propertyKeys) === false) {
 			throw new Exception(
 				"The value for {$fieldName} ('{$fieldValue}') does not exist as a property in the schema."
 			);
 		}
 	}//end validateConfigField()
+
+	/**
+	 * Whether a configuration path names a property of the schema.
+	 *
+	 * A plain name must be a property; a dot-notation path must start with one,
+	 * as MetadataHydrationHandler::getValueFromPath() reads it.
+	 *
+	 * @param string            $path         The property name or dot-notation path.
+	 * @param array<int|string> $propertyKeys The schema's property keys.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/schema-configuration-paths/spec.md#requirement-a-name-or-description-field-may-be-a-dot-notation-path-req-scp-001
+	 */
+	private function isPropertyPath(string $path, array $propertyKeys): bool {
+		if (in_array($path, $propertyKeys, true) === true) {
+			return true;
+		}
+
+		$first = strstr($path, '.', true);
+
+		return $first !== false && $first !== '' && in_array($first, $propertyKeys, true) === true;
+	}//end isPropertyPath()
 
 	/**
 	 * Build required fields array from schema or property flags

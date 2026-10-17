@@ -85,13 +85,25 @@ class RelatedRowQueryApplier {
 	 * @throws InvalidArgumentException When a block names a schema that cannot be resolved.
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function apply(IQueryBuilder $qb, array $query, Register $register, string $outerAlias = 't'): int {
-		if (array_key_exists(RelatedRowFilterParser::KEY, $query) === false) {
+		$filters = [];
+		if (array_key_exists(RelatedRowFilterParser::KEY, $query) === true) {
+			$filters = (new RelatedRowFilterParser())->parse($query);
+		}
+
+		if (array_key_exists(RelatedRowFilterParser::FORWARD_KEY, $query) === true) {
+			$filters = array_merge(
+				$filters,
+				(new RelatedRowFilterParser(key: RelatedRowFilterParser::FORWARD_KEY))->parse($query)
+			);
+		}
+
+		if ($filters === []) {
 			return 0;
 		}
 
-		$filters = (new RelatedRowFilterParser())->parse($query);
 		$clause  = new RelatedRowExistsClause();
 		$engine  = $this->engine();
 		$applied = 0;

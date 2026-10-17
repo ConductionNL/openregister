@@ -73,6 +73,15 @@ class ListenerDeferralService {
 	public const DEFAULT_CHUNK_SIZE = 100;
 
 	/**
+	 * The longest job argument Nextcloud accepts, as its own JSON encoding
+	 * (`OC\BackgroundJob\JobList::MAX_ARGUMENT_JSON_LENGTH`). Longer, and
+	 * `IJobList::add()` throws and the whole chunk is lost.
+	 *
+	 * @var integer
+	 */
+	public const MAX_ARGUMENT_LENGTH = 32000;
+
+	/**
 	 * App-config key of the deferral kill switch.
 	 *
 	 * @var string
@@ -246,11 +255,22 @@ class ListenerDeferralService {
 	}//end flushAll()
 
 	/**
-	 * Enqueue one chunk job for a buffer and reset it.
+	 * Enqueue a buffer's entries as chunk jobs and reset it.
+	 *
+	 * A chunk is cut by size as well as by count: an entry may carry the
+	 * object's previous data (an update notification's `oldData`), and 25 of
+	 * those passed Nextcloud's 32,000-character job argument limit. The job
+	 * list then refused the whole chunk and every entry in it was dropped
+	 * with one log line (zuiddrecht live test, 14 October 2026: 11 chunks of
+	 * 25 in one cron run). Now the entries are spread over as many jobs as
+	 * the limit needs; only an entry that alone exceeds it is dropped, and it
+	 * is named in the log.
 	 *
 	 * @param string $jobClass FQCN of the job to enqueue.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/deferred-listener-batches-stay-under-the-job-limit/specs/event-driven-architecture/spec.md#requirement-a-deferred-listener-chunk-fits-the-job-argument-limit
 	 */
 	private function flushBuffer(string $jobClass): void {
 		$entries = ($this->buffers[$jobClass]['entries'] ?? []);
@@ -261,6 +281,71 @@ class ListenerDeferralService {
 		$this->buffers[$jobClass]['entries'] = [];
 		$this->buffers[$jobClass]['dedupe'] = [];
 
+		foreach ($this->chunksUnderLimit(jobClass: $jobClass, entries: $entries) as $chunk) {
+			$this->enqueue(jobClass: $jobClass, entries: $chunk);
+		}
+	}//end flushBuffer()
+
+	/**
+	 * The entries in consecutive chunks whose job argument stays within the
+	 * limit, in their original order.
+	 *
+	 * @param string                           $jobClass FQCN of the job, for the log.
+	 * @param array<int, array<string, mixed>> $entries  The buffered entries.
+	 *
+	 * @return array<int, array<int, array<string, mixed>>> The chunks.
+	 */
+	private function chunksUnderLimit(string $jobClass, array $entries): array {
+		$envelope = new DeferredListenerContext(userId: $this->capturedUserId, orgUuid: $this->capturedOrgUuid, entries: []);
+		// Measured the way the job list measures: plain json_encode. Each entry
+		// adds its own length plus the comma that joins it to the next.
+		$budget = (self::MAX_ARGUMENT_LENGTH - strlen((string)json_encode($envelope->toJobArguments())));
+
+		$chunks  = [];
+		$current = [];
+		$used    = 0;
+		foreach ($entries as $entry) {
+			$length = (strlen((string)json_encode($entry)) + 1);
+			if ($length > $budget) {
+				$this->logger->error(
+					message: '[ListenerDeferralService] A deferred listener entry is larger than a background job may carry; it was not enqueued',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'jobClass' => $jobClass,
+						'uuid' => (string)($entry['uuid'] ?? ''),
+						'length' => $length,
+					]
+				);
+				continue;
+			}
+
+			if ($current !== [] && ($used + $length) > $budget) {
+				$chunks[] = $current;
+				$current  = [];
+				$used     = 0;
+			}
+
+			$current[] = $entry;
+			$used     += $length;
+		}//end foreach
+
+		if ($current !== []) {
+			$chunks[] = $current;
+		}
+
+		return $chunks;
+	}//end chunksUnderLimit()
+
+	/**
+	 * Enqueue one chunk job.
+	 *
+	 * @param string                           $jobClass FQCN of the job to enqueue.
+	 * @param array<int, array<string, mixed>> $entries  The chunk's entries.
+	 *
+	 * @return void
+	 */
+	private function enqueue(string $jobClass, array $entries): void {
 		$context = new DeferredListenerContext(
 			userId: $this->capturedUserId,
 			orgUuid: $this->capturedOrgUuid,
@@ -281,7 +366,7 @@ class ListenerDeferralService {
 				]
 			);
 		}
-	}//end flushBuffer()
+	}//end enqueue()
 
 	/**
 	 * Capture the acting context once per request.

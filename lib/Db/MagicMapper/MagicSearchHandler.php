@@ -54,12 +54,14 @@ use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCA\OpenRegister\Service\Search\PropertySearchProfile;
 use OCA\OpenRegister\Service\Search\SearchTermNode;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;
 use OCA\OpenRegister\Support\FilterParams;
+use OCA\OpenRegister\Support\NullFilter;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
@@ -148,6 +150,7 @@ class MagicSearchHandler {
 		'_deleted',
 		'_archived',
 		'_frozen',
+		'_status',
 		'_locked',
 		'_files',
 		'_relations',
@@ -203,6 +206,20 @@ class MagicSearchHandler {
 	private SearchTermSqlCompiler $termCompiler;
 
 	/**
+	 * Tells metadata columns from underscore-named property columns.
+	 *
+	 * @var MagicMetadataColumn
+	 */
+	private MagicMetadataColumn $columnRoles;
+
+	/**
+	 * Reads filters on a path inside an object property and writes their SQL.
+	 *
+	 * @var NestedPathFilter
+	 */
+	private NestedPathFilter $nestedPaths;
+
+	/**
 	 * Constructor for MagicSearchHandler
 	 *
 	 * @param IDBConnection $db Database connection for queries
@@ -215,6 +232,9 @@ class MagicSearchHandler {
 	 *                                            related schema's own rows
 	 * @param LanguageService|null $languageService The request's languages, so a translatable property sorts by the
 	 *                                              value the response shows
+	 * @param MagicMetadataColumnHealer|null $metadataColumns Knows which metadata columns a table that could not
+	 *                                                        be healed still lacks, so the lifecycle predicates
+	 *                                                        leave them out
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
@@ -225,9 +245,12 @@ class MagicSearchHandler {
 		private readonly DateTimeNormalizer $dateTimeNormalizer,
 		private readonly RelatedRowQueryApplier $relatedRows,
 		private readonly ?LanguageService $languageService = null,
+		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
 	) {
 		$this->termParser = new SearchTermParser();
 		$this->termCompiler = new SearchTermSqlCompiler();
+		$this->columnRoles  = new MagicMetadataColumn();
+		$this->nestedPaths  = new NestedPathFilter();
 	}//end __construct()
 
 	/**
@@ -507,7 +530,10 @@ class MagicSearchHandler {
 		$this->applyBasicFilters(
 			qb: $queryBuilder,
 			includeDeleted: $includeDeleted,
-			archivedMode: $this->resolveArchivedMode(query: $query)
+			archivedMode: $this->resolveArchivedMode(query: $query),
+			query: $query,
+			schema: $schema,
+			missingColumns: $this->missingMetadataColumns(tableName: $tableName)
 		);
 
 		// Apply multi-tenancy and RBAC access control filters.
@@ -545,7 +571,7 @@ class MagicSearchHandler {
 	}//end buildFilteredQuery()
 
 	/**
-	 * Narrow the query by `_related` blocks, or refuse it.
+	 * Narrow the query by `_related` and `_referenced` blocks, or refuse it.
 	 *
 	 * 🔴 A REFUSAL HERE IS DELIBERATE AND MUST NOT BECOME A LOG LINE. Every
 	 * other filter on this path that cannot be honoured is recorded in
@@ -564,9 +590,10 @@ class MagicSearchHandler {
 	 * @throws InvalidArgumentException When a block names a schema that cannot be resolved.
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	private function applyRelatedRowFilters(IQueryBuilder $qb, array $query, ?int $registerId): void {
-		if (array_key_exists('_related', $query) === false) {
+		if (array_key_exists('_related', $query) === false && array_key_exists('_referenced', $query) === false) {
 			return;
 		}
 
@@ -743,6 +770,9 @@ class MagicSearchHandler {
 	 *                             the organisation boundary here exactly as it widens it on the
 	 *                             QueryBuilder path. A caller that names no register gets no
 	 *                             widening, which is narrower and therefore safe.
+	 * @param string|null $tableName The bare magic table the conditions are for, so a metadata column
+	 *                               the table could not be given is left out of the lifecycle
+	 *                               predicates. Null keeps every predicate.
 	 *
 	 * @return string[] Array of SQL WHERE conditions (without leading AND/WHERE).
 	 *
@@ -750,12 +780,14 @@ class MagicSearchHandler {
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
+	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
 	public function buildWhereConditionsSql(
 		array $query,
 		Schema $schema,
 		?array $existingColumns = null,
 		?int $registerId = null,
+		?string $tableName = null,
 	): array {
 		$conditions = [];
 		// Get connection for value quoting through QueryBuilder.
@@ -774,7 +806,10 @@ class MagicSearchHandler {
 
 		$conditions = array_merge(
 			$conditions,
-			$this->lifecycleConditionsSql(query: $query, includeDeleted: $includeDeleted),
+			$this->lifecycleConditionsSql(
+				query: $query, includeDeleted: $includeDeleted, schema: $schema,
+				missingColumns: $this->missingMetadataColumns(tableName: $tableName)
+			),
 			$this->boundaryConditionsSql(
 				query: $query,
 				schema: $schema,
@@ -883,14 +918,17 @@ class MagicSearchHandler {
 	 * rows is the dangerous direction, and an archived record surfacing in a
 	 * working list is that failure with a record attached.
 	 *
-	 * @param array      $query          The query parameters.
-	 * @param boolean    $includeDeleted Whether deleted rows were asked for.
+	 * @param array       $query          The query parameters.
+	 * @param boolean     $includeDeleted Whether deleted rows were asked for.
+	 * @param Schema|null $schema         The schema being listed, for its draft list default (`draftsListed`).
+	 * @param string[]    $missingColumns Metadata columns this table could not be given.
 	 *
 	 * @return string[] The conditions, without leading AND.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
+	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
-	private function lifecycleConditionsSql(array $query, bool $includeDeleted): array {
+	private function lifecycleConditionsSql(array $query, bool $includeDeleted, ?Schema $schema = null, array $missingColumns = []): array {
 		$conditions = [];
 
 		if ($includeDeleted === false) {
@@ -898,16 +936,113 @@ class MagicSearchHandler {
 		}
 
 		$archivedMode = $this->resolveArchivedMode(query: $query);
-		if ($archivedMode === self::ARCHIVED_EXCLUDE) {
-			$conditions[] = '_archived IS NULL';
+		$archived = $this->archivedConditionSql(mode: $archivedMode, columnPrefix: '', missingColumns: $missingColumns);
+		if ($archived !== null) {
+			$conditions[] = $archived;
 		}
 
-		if ($archivedMode === self::ARCHIVED_ONLY) {
-			$conditions[] = '_archived IS NOT NULL';
+		// Decision 201: drafts stay out of a list unless asked for, on this
+		// path as on applyBasicFilters(), with the caller's own kept in view.
+		$userId = $this->rbacHandler->getCurrentUserId();
+		$owner = null;
+		if ($userId !== null && $userId !== '') {
+			$owner = (string)$this->db->getQueryBuilder()->getConnection()->quote($userId);
+		}
+
+		$drafts = $this->draftConditionSql(query: $query, columnPrefix: '', owner: $owner, missingColumns: $missingColumns, schema: $schema);
+		if ($drafts !== null) {
+			$conditions[] = $drafts;
 		}
 
 		return $conditions;
 	}//end lifecycleConditionsSql()
+
+	/**
+	 * The metadata columns a table is known to lack after an attempt to heal it.
+	 *
+	 * Empty in the normal case: a table is healed on its first use, before it
+	 * is queried. Only a table the healer could not alter (no permission, or a
+	 * DDL deferred out of an open transaction) answers non-empty.
+	 *
+	 * @param string|null $tableName Bare magic table name, null when unknown.
+	 *
+	 * @return string[] Missing metadata column names.
+	 */
+	private function missingMetadataColumns(?string $tableName): array {
+		if ($this->metadataColumns === null || $tableName === null || $tableName === '') {
+			return [];
+		}
+
+		return $this->metadataColumns->missingFor(tableName: $tableName);
+	}//end missingMetadataColumns()
+
+	/**
+	 * The archive predicate, or null when it puts no condition on the list.
+	 *
+	 * A table without an `_archived` column holds no archived row, so the
+	 * working set is every row and the archived lens is empty. Saying so in SQL
+	 * is exact, not an approximation, and it keeps a table that could not be
+	 * healed answering instead of failing every request.
+	 *
+	 * @param string   $mode           One of the ARCHIVED_* constants.
+	 * @param string   $columnPrefix   The table alias with its dot, or empty.
+	 * @param string[] $missingColumns Metadata columns this table lacks.
+	 *
+	 * @return string|null The predicate, without a leading AND.
+	 *
+	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 */
+	private function archivedConditionSql(string $mode, string $columnPrefix, array $missingColumns): ?string {
+		if ($mode === self::ARCHIVED_ANY) {
+			return null;
+		}
+
+		if (in_array('_archived', $missingColumns, true) === true) {
+			if ($mode === self::ARCHIVED_ONLY) {
+				return '1=0';
+			}
+
+			return null;
+		}
+
+		if ($mode === self::ARCHIVED_ONLY) {
+			return $columnPrefix.'_archived IS NOT NULL';
+		}
+
+		return $columnPrefix.'_archived IS NULL';
+	}//end archivedConditionSql()
+
+	/**
+	 * The draft predicate (decision 201), or null when it puts no condition on the list.
+	 *
+	 * Without a `_status` column no row is a draft, so the default lens keeps
+	 * every row and the drafts-only lens is empty.
+	 *
+	 * @param array       $query          The search query.
+	 * @param string      $columnPrefix   The table alias with its dot, or empty.
+	 * @param string|null $owner          The caller, already quoted or bound; null for nobody.
+	 * @param string[]    $missingColumns Metadata columns this table lacks.
+	 * @param Schema|null $schema         The schema being listed, for its draft list default (`draftsListed`).
+	 *
+	 * @return string|null The predicate, without a leading AND.
+	 *
+	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-schema-must-be-able-to-keep-the-callers-own-drafts-out-of-its-lists
+	 */
+	private function draftConditionSql(array $query, string $columnPrefix, ?string $owner, array $missingColumns, ?Schema $schema = null): ?string {
+		$lens = new DraftListLens();
+		$mode = $lens->modeFor(query: $query, schema: $schema);
+
+		if (in_array('_status', $missingColumns, true) === true) {
+			if ($mode === DraftListLens::ONLY) {
+				return '1=0';
+			}
+
+			return null;
+		}
+
+		return $lens->sql(mode: $mode, columnPrefix: $columnPrefix, owner: $owner);
+	}//end draftConditionSql()
 
 	/**
 	 * The organisation and RBAC predicates, as SQL fragments.
@@ -1581,9 +1716,10 @@ class MagicSearchHandler {
 	 * @param mixed $value The raw operator value as the request layer delivered it.
 	 *
 	 * @return bool True when the caller asked for IS NULL.
+	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
 	 */
 	private function isNullOperatorAsksForNull(mixed $value): bool {
-		return filter_var($value, FILTER_VALIDATE_BOOLEAN) === true;
+		return NullFilter::isNullOperatorAsksForNull(value: $value);
 	}//end isNullOperatorAsksForNull()
 
 	/**
@@ -1613,6 +1749,25 @@ class MagicSearchHandler {
 		$conditions = [];
 		$reservedParams = $this->getReservedParams();
 		$properties = $schema->getProperties() ?? [];
+
+		[$query, $nestedFilters] = $this->nestedPaths->split(filters: $query, properties: $properties);
+		foreach ($nestedFilters as $filter) {
+			$expression = $this->nestedPaths->expression(
+				column: $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $filter['root']), isPostgres: $isPostgres),
+				path: $filter['path'],
+				isPostgres: $isPostgres
+			);
+			if ($expression === null) {
+				$conditions[] = '1=0';
+				continue;
+			}
+
+			$quote = static fn (string $value): string => (string)$connection->quote($value);
+			array_push(
+				$conditions,
+				...$this->nestedPaths->conditions(expression: $expression, value: $filter['value'], bind: $quote, isPostgres: $isPostgres)
+			);
+		}
 
 		foreach ($query as $key => $value) {
 			// Skip reserved params, underscore-prefixed params, and @ metadata params.
@@ -2153,6 +2308,7 @@ class MagicSearchHandler {
 			'_count',
 			'_includeDeleted',
 			'_archived',
+			DraftListLens::PARAMETER,
 			'_relations_contains',
 			'_multitenancy_explicit',
 			'_fuzzy',
@@ -2172,10 +2328,23 @@ class MagicSearchHandler {
 	 * @param IQueryBuilder $qb Query builder to modify
 	 * @param bool $includeDeleted Whether to include deleted objects
 	 * @param string $archivedMode Which archive lens to apply, one of the ARCHIVED_* constants
+	 * @param array<string, mixed> $query The search query, for the draft lens (`_drafts`, decision 201)
+	 * @param Schema|null $schema The schema being listed, for its draft list default (`draftsListed`)
+	 * @param string[] $missingColumns Metadata columns this table could not be given
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-list-must-hide-drafts-unless-asked
+	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
-	private function applyBasicFilters(IQueryBuilder $qb, bool $includeDeleted, string $archivedMode = self::ARCHIVED_EXCLUDE): void {
+	private function applyBasicFilters(
+		IQueryBuilder $qb,
+		bool $includeDeleted,
+		string $archivedMode = self::ARCHIVED_EXCLUDE,
+		array $query = [],
+		?Schema $schema = null,
+		array $missingColumns = [],
+	): void {
 		// Handle deleted filter.
 		if ($includeDeleted === false) {
 			$qb->andWhere($qb->expr()->isNull('t._deleted'));
@@ -2185,12 +2354,35 @@ class MagicSearchHandler {
 		// filter the caller has to remember, so a caller who forgets the
 		// parameter gets the working set — the safe answer. Asking for both is
 		// the only way to see an archived row beside an open one.
-		if ($archivedMode === self::ARCHIVED_EXCLUDE) {
+		$archivedMissing = in_array('_archived', $missingColumns, true);
+		if ($archivedMode === self::ARCHIVED_EXCLUDE && $archivedMissing === false) {
 			$qb->andWhere($qb->expr()->isNull('t._archived'));
 		}
 
 		if ($archivedMode === self::ARCHIVED_ONLY) {
-			$qb->andWhere($qb->expr()->isNotNull('t._archived'));
+			if ($archivedMissing === true) {
+				// No column, so no archived row: the archived lens is empty.
+				$qb->andWhere($qb->createFunction('1=0'));
+			} else {
+				$qb->andWhere($qb->expr()->isNotNull('t._archived'));
+			}
+		}
+
+		// Decision 201: drafts stay out of a list unless asked for, whoever
+		// asks. The read RBAC keeps a draft to its owner, but an administrator
+		// and an app's service listing with RBAC off pass that by, and their
+		// work lists are the ones the decision is about. The caller's own
+		// drafts stay in view. Raw SQL through createFunction(), spelled once
+		// in DraftListLens for this path and lifecycleConditionsSql().
+		$userId = $this->rbacHandler->getCurrentUserId();
+		$owner = null;
+		if ($userId !== null && $userId !== '') {
+			$owner = (string)$qb->createNamedParameter($userId);
+		}
+
+		$drafts = $this->draftConditionSql(query: $query, columnPrefix: 't.', owner: $owner, missingColumns: $missingColumns, schema: $schema);
+		if ($drafts !== null) {
+			$qb->andWhere($qb->createFunction($drafts));
 		}
 
 	}//end applyBasicFilters()
@@ -2604,6 +2796,9 @@ class MagicSearchHandler {
 
 		$isPostgres = $this->isPostgresPlatform();
 
+		[$filters, $nestedFilters] = $this->nestedPaths->split(filters: $filters, properties: $properties ?? []);
+		$this->applyNestedPathFilters(qb: $qb, nestedFilters: $nestedFilters, properties: $properties ?? [], isPostgres: $isPostgres);
+
 		foreach ($filters as $field => $value) {
 			// Check if this field exists as a column in the schema.
 			if (($properties[$field] ?? null) === null) {
@@ -2836,6 +3031,53 @@ class MagicSearchHandler {
 
 		$qb->andWhere($orConditions);
 	}//end applyJsonArrayFilter()
+
+	/**
+	 * Filter on fields inside object properties (`dunning.currentStage=2`), on the QueryBuilder path.
+	 *
+	 * A path the JSON column cannot be read at (a segment that is not a plain
+	 * name) matches nothing and is reported as an ignored filter, the way an
+	 * unknown property is.
+	 *
+	 * @param IQueryBuilder                                                  $qb            Query builder to modify.
+	 * @param list<array{root: string, path: list<string>, value: mixed}> $nestedFilters The path filters from NestedPathFilter::split().
+	 * @param array<string,mixed>                                            $properties    The schema's properties.
+	 * @param bool                                                           $isPostgres    Whether the platform is PostgreSQL.
+	 *
+	 * @return void
+	 *
+	 * @throws EncryptedFieldFilterException When the object property is encrypted.
+	 *
+	 * @spec openspec/changes/nested-property-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
+	 */
+	private function applyNestedPathFilters(IQueryBuilder $qb, array $nestedFilters, array $properties, bool $isPostgres): void {
+		foreach ($nestedFilters as $filter) {
+			if (($properties[$filter['root']]['x-openregister-encrypted'] ?? false) === true) {
+				throw new EncryptedFieldFilterException(property: $filter['root']);
+			}
+
+			$expression = $this->nestedPaths->expression(
+				column: 't.' . $this->sanitizeColumnName(name: $filter['root']),
+				path: $filter['path'],
+				isPostgres: $isPostgres
+			);
+			if ($expression === null) {
+				$this->ignoredFilters[] = $filter['root'] . '.' . implode('.', $filter['path']);
+				$qb->andWhere('1 = 0');
+				continue;
+			}
+
+			$conditions = $this->nestedPaths->conditions(
+				expression: $expression,
+				value: $filter['value'],
+				bind: static fn (string $value): string => (string)$qb->createNamedParameter($value),
+				isPostgres: $isPostgres
+			);
+			foreach ($conditions as $condition) {
+				$qb->andWhere($condition);
+			}
+		}
+	}//end applyNestedPathFilters()
 
 	/**
 	 * Apply filter for object columns (related objects)
@@ -3911,6 +4153,8 @@ class MagicSearchHandler {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
 	 * @SuppressWarnings(PHPMD.NPathComplexity)       Row to entity conversion requires many field mappings
+	 *
+	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
 	 */
 	private function convertRowToObjectEntity(
 		array $row,
@@ -3936,9 +4180,8 @@ class MagicSearchHandler {
 			$columnToPropertyMap = $schemaMaps['columns'];
 
 			foreach ($row as $column => $value) {
-				if (str_starts_with($column, '_') === true) {
-					// Metadata column - remove prefix and map to ObjectEntity.
-					$metadataField = substr($column, 1);
+				$metadataField = $this->columnRoles->field(column: $column, columnToPropertyMap: $columnToPropertyMap);
+				if ($metadataField !== null) {
 					$metadataData[$metadataField] = $value;
 					continue;
 				}

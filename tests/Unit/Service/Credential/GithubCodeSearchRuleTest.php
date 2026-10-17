@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/github-provider-code-search/specs/credential-broker/spec.md#requirement-github-code-search-allow-rule
+ * @spec openspec/specs/credential-broker/spec.md#requirement-github-code-search-allow-rule
  */
 
 declare(strict_types=1);

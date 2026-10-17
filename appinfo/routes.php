@@ -125,6 +125,12 @@ return [
         ['name' => 'objectOwnership#setOwnerGroup', 'url' => '/api/objects/{register}/{schema}/{id}/ownership/group', 'verb' => 'PUT',  'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectOwnership#reassign',      'url' => '/api/ownership/reassign',                               'verb' => 'POST'],
 
+        // A draft's owner makes it definitive (decision 216). An explicit action:
+        // a PUT or PATCH that sets `@self.status` to `active` stays refused, so
+        // nothing leaves draft by accident. A plain Controller, so a refusal
+        // keeps its status (OCSMiddleware would turn a 403 into a 200).
+        ['name' => 'objectDraft#activate', 'url' => '/api/objects/{register}/{schema}/{id}/activate', 'verb' => 'POST', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+
         // Who holds which right on one object, and how that set changed. The
         // other direction of `/api/scopes`: that one answers a caller about
         // themselves, these answer an auditor about everybody. Reading the
@@ -1193,6 +1199,11 @@ return [
         ['name' => 'objects#geocode', 'url' => '/api/geo/geocode', 'verb' => 'GET'],
 
         ['name' => 'objects#create', 'url' => '/api/objects/{register}/{schema}', 'verb' => 'POST'],
+        // Decision 179 (ADR-117): a form submits into its destination object.
+        ['name' => 'forms#validate', 'url' => '/api/forms/validate', 'verb' => 'POST'],
+        ['name' => 'forms#submit', 'url' => '/api/forms/{formId}/submit', 'verb' => 'POST'],
+        ['name' => 'forms#upload', 'url' => '/api/forms/{formId}/uploads', 'verb' => 'POST'],
+        ['name' => 'forms#draft', 'url' => '/api/forms/{formId}/draft', 'verb' => 'POST'],
         ['name' => 'objects#export', 'url' => '/api/objects/{register}/{schema}/export', 'verb' => 'GET'],
         // BEFORE objects#show, because `{id}` matches `[^/]+` and a route with
         // a longer path must be declared first or the generic one swallows it.
@@ -1238,6 +1249,7 @@ return [
         ['name' => 'objectRelations#removeReferences', 'url' => '/api/objects/{register}/{schema}/{id}/relation-references/{anchor}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+', 'anchor' => '[^/]+']],
         ['name' => 'objectRelations#derive',      'url' => '/api/objects/{register}/{schema}/{id}/derive',                     'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#graph',       'url' => '/api/objects/{register}/{schema}/{id}/graph',                      'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'objectRelations#tree',        'url' => '/api/objects/{register}/{schema}/{id}/tree',                       'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'objectRelations#exportGraph', 'url' => '/api/objects/{register}/{schema}/{id}/graph/export',               'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         // Locks.
             // Whether a row exists in other registers, and nothing about the
@@ -1837,6 +1849,13 @@ return [
 		['name' => 'views#update', 'url' => '/api/views/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'views#patch', 'url' => '/api/views/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'views#destroy', 'url' => '/api/views/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+		// Record templates (records-saved-templates D-4): named values for a new record, shared like a view.
+		['name' => 'recordTemplates#index', 'url' => '/api/record-templates', 'verb' => 'GET'],
+		['name' => 'recordTemplates#show', 'url' => '/api/record-templates/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'recordTemplates#create', 'url' => '/api/record-templates', 'verb' => 'POST'],
+		['name' => 'recordTemplates#update', 'url' => '/api/record-templates/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'recordTemplates#patch', 'url' => '/api/record-templates/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'recordTemplates#destroy', 'url' => '/api/record-templates/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
 		// Read-only presentation data — drag-to-move goes through the existing
 		// guarded object PATCH/PUT (/api/objects/{register}/{schema}/{id}), never
 		// a bespoke endpoint here (REQ-VIEW-KANBAN-03).
@@ -2011,12 +2030,14 @@ return [
 		// Migration mapping packs (migration-mapping-packs): declarative
 		// source-format-to-schema import mappings. Reads (index/show/export)
 		// are available to any authenticated user so the import flow can
-		// browse packs; create/update/destroy/import are admin-gated. The
+		// browse packs; create/update/destroy/import and the preview dry run
+		// are admin-gated and CSRF-protected. The
 		// `packId` request param on registers#import (below) resolves a
 		// pack by its `packSlug` and runs each row through it before save.
 		['name' => 'migrationPacks#index', 'url' => '/api/migration-packs', 'verb' => 'GET'],
 		['name' => 'migrationPacks#create', 'url' => '/api/migration-packs', 'verb' => 'POST'],
 		['name' => 'migrationPacks#import', 'url' => '/api/migration-packs/import', 'verb' => 'POST'],
+		['name' => 'migrationPacks#preview', 'url' => '/api/migration-packs/preview', 'verb' => 'POST'],
 		['name' => 'migrationPacks#show', 'url' => '/api/migration-packs/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
 		['name' => 'migrationPacks#update', 'url' => '/api/migration-packs/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
 		['name' => 'migrationPacks#destroy', 'url' => '/api/migration-packs/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
@@ -2123,6 +2144,9 @@ return [
 		// organisation-scoped like `active`. Same ordering rule: it MUST stay above
 		// the `{uuid}` route or `show('completed')` answers it with a 404.
 		['name' => 'flowRun#completedForSubject', 'url' => '/api/flow-runs/completed', 'verb' => 'GET'],
+		// Per flow: newest run and runs since a moment (flow-run-summary). Same
+		// ordering rule: above `{uuid}`, or `show('summary')` answers with a 404.
+		['name' => 'flowRun#summary', 'url' => '/api/flow-runs/summary', 'verb' => 'GET'],
 		['name' => 'flowRun#show', 'url' => '/api/flow-runs/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#objects', 'url' => '/api/flow-runs/{uuid}/objects', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],

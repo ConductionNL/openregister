@@ -3072,6 +3072,7 @@ class SaveObject {
 	 * @param bool $failIfExists Insert-only: throw ObjectExistsException rather than update when taken (default: false).
 	 * @param bool $_unowned Stamp the system identity even when a session exists.
 	 * @param bool $_dedupOverride Save through a blocking duplicate match, when the caller is entitled to.
+	 * @param string|null $_owner An explicit owner for a new object, such as a draft's scope value (decision 195).
 	 *
 	 * @return ObjectEntity The saved object entity.
 	 *
@@ -3101,6 +3102,7 @@ class SaveObject {
 		bool $failIfExists = false,
 		bool $_unowned = false,
 		bool $_dedupOverride = false,
+		?string $_owner = null,
 	): ObjectEntity {
 		// Extract UUID and @self metadata from data.
 		[$uuid, $selfData, $data] = $this->extractUuidAndSelfData(
@@ -3426,7 +3428,8 @@ class SaveObject {
 				_multitenancy: $_multitenancy,
 				currentUser: $currentUser,
 				failIfExists: $failIfExists,
-				_unowned: $_unowned
+				_unowned: $_unowned,
+				_owner: $_owner
 			);
 
 			// An override is only on record once the object it overrode for
@@ -3870,6 +3873,7 @@ class SaveObject {
 	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata)
 	 * @param bool $failIfExists Insert-only: refuse instead of updating when the identifier is taken.
 	 * @param bool $_unowned Stamp the system identity even when a session exists.
+	 * @param string|null $_owner An explicit owner, such as a draft's scope value (decision 195).
 	 *
 	 * @return ObjectEntity Created object
 	 *
@@ -3894,6 +3898,7 @@ class SaveObject {
 		?IUser $currentUser = null,
 		bool $failIfExists = false,
 		bool $_unowned = false,
+		?string $_owner = null,
 	): ObjectEntity {
 		// Create a new object entity.
 		$objectEntity = new ObjectEntity();
@@ -3919,7 +3924,8 @@ class SaveObject {
 			selfData: $selfData,
 			_multitenancy: $_multitenancy,
 			currentUser: $currentUser,
-			_unowned: $_unowned
+			_unowned: $_unowned,
+			_owner: $_owner
 		);
 
 		// Apply archival metadata from schema archive configuration.
@@ -4217,6 +4223,7 @@ class SaveObject {
 	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
 	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
 	 * @param bool $_unowned Stamp the system identity even when a session exists.
+	 * @param string|null $_owner An explicit owner, such as a draft's scope value (decision 195).
 	 *
 	 * @return ObjectEntity The prepared object entity.
 	 *
@@ -4236,6 +4243,7 @@ class SaveObject {
 		bool $_multitenancy,
 		?IUser $currentUser = null,
 		bool $_unowned = false,
+		?string $_owner = null,
 	): ObjectEntity {
 		// Set @self metadata properties.
 		$this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data, currentUser: $currentUser);
@@ -4291,7 +4299,7 @@ class SaveObject {
 		// Set owner from the active user session, or fall back to the system
 		// identifier when no session is active. See applyOwnerAttribution()
 		// for the system-context contract (openregister#1617).
-		$this->applyOwnerAttribution(objectEntity: $objectEntity, _unowned: $_unowned);
+		$this->applyOwnerAttribution(objectEntity: $objectEntity, _unowned: $_unowned, _owner: $_owner);
 
 		// Set organisation from active organisation if not already set.
 		// setSelfMetadata() (called above) only accepted a client-supplied @self.organisation
@@ -4350,12 +4358,25 @@ class SaveObject {
 	 * from its side, because this method overrides a caller-set owner whenever
 	 * there is a session.
 	 *
+	 * EXPLICITLY OWNED. `$_owner` is the other service-level argument: a caller
+	 * that asserted who owns a new object, such as a portal subject's draft
+	 * owned by `portal:<subjectRef>` (decision 195, see DraftOwner), names
+	 * it here. No controller forwards it either.
+	 *
 	 * @param ObjectEntity $objectEntity Entity being prepared for creation.
 	 * @param bool         $_unowned     Stamp the system identity even when a session exists.
+	 * @param string|null  $_owner       An explicit owner; wins over the session and the system identity.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
 	 */
-	private function applyOwnerAttribution(ObjectEntity $objectEntity, bool $_unowned = false): void {
+	private function applyOwnerAttribution(ObjectEntity $objectEntity, bool $_unowned = false, ?string $_owner = null): void {
+		if ($_owner !== null && $_owner !== '') {
+			$objectEntity->setOwner($_owner);
+			return;
+		}
+
 		// DELIBERATELY UNOWNED. The system identifier rather than an empty
 		// string: rows persisted with an empty `_owner` are invisible to the
 		// REST list path's RBAC filter even for admins (openregister#1617), so
@@ -4409,8 +4430,15 @@ class SaveObject {
 
 		// A save is a patch. Bumped here rather than after the write so the
 		// value the audit trail copies onto its own `version` column is the
-		// version this save produced, not the one it replaced.
-		$this->versionHandler->bumpVersion(entity: $existingObject);
+		// version this save produced, not the one it replaced. A higher
+		// version the save carries (a re-imported seed object) is taken
+		// instead, so the next import sees the seed as current.
+		$carriedVersion = null;
+		if (is_scalar($selfData['version'] ?? null) === true) {
+			$carriedVersion = (string)$selfData['version'];
+		}
+
+		$this->versionHandler->advanceVersion(entity: $existingObject, carried: $carriedVersion);
 
 		// Set folder ID if provided.
 		if ($folderId !== null) {
@@ -4574,6 +4602,11 @@ class SaveObject {
 		// for did not happen. It is now REFUSED, and the refusal names the
 		// endpoint that does change an owner. See refuseOwnerClaim().
 		$this->refuseOwnerClaim(objectEntity: $objectEntity, selfData: $selfData);
+
+		// Decision 180: `@self.status`. A client may create an object as a
+		// draft and keep it one; it may not turn a saved object into a draft,
+		// and only the form submit (after full validation) may leave draft.
+		$objectEntity->setStatus((new DraftStatusPolicy())->resolveStatus(entity: $objectEntity, selfData: $selfData));
 
 		// SECURITY (wave-11 SB1 / wave-12 Fix 3): organisation must only be accepted from
 		// @self when the caller is an admin or has verified membership in that organisation.

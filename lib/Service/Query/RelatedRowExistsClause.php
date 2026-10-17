@@ -132,6 +132,7 @@ final class RelatedRowExistsClause {
 	 * @throws InvalidArgumentException When the engine is unknown or no access predicate was given.
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function render(
 		RelatedRowFilter $filter,
@@ -161,12 +162,7 @@ final class RelatedRowExistsClause {
 			$where[] = sprintf('%s."schema" = :%s_schema', $innerAlias, $parameterPrefix);
 		}
 
-		$where[] = sprintf(
-			'%s = %s.%s',
-			$this->fieldExpression(engine: $engine, storage: $storage, alias: $innerAlias, field: $filter->foreignKey),
-			$outerAlias,
-			$this->metadataColumn(storage: $storage, name: 'uuid')
-		);
+		$where[] = $this->joinCondition(filter: $filter, engine: $engine, storage: $storage, outerAlias: $outerAlias, innerAlias: $innerAlias);
 
 		// Soft-deleted related rows are not rows. Without this a case keeps
 		// matching on a property somebody removed, which reads as the removal
@@ -412,7 +408,7 @@ final class RelatedRowExistsClause {
 	 */
 	private function fieldExpression(string $engine, string $storage, string $alias, string $field): string {
 		if ($storage === self::STORAGE_COLUMNS) {
-			return sprintf('%s.%s', $alias, $this->quoteIdentifier(name: $field));
+			return sprintf('%s.%s', $alias, $this->quoteIdentifier(name: $this->columnName(property: $field)));
 		}
 
 		if ($storage === self::STORAGE_JSON) {
@@ -452,6 +448,66 @@ final class RelatedRowExistsClause {
 			sprintf('No related-row SQL for storage \'%s\'.', $storage)
 		);
 	}//end metadataColumn()
+
+	/**
+	 * How the related row joins the object.
+	 *
+	 * Inverse (`_related`): the related row's property holds the object's uuid.
+	 * Forward (`_referenced`): the object's property holds the related row's uuid.
+	 *
+	 * @param RelatedRowFilter $filter     The parsed filter.
+	 * @param string           $engine     The database engine.
+	 * @param string           $storage    JSON in the objects table or magic-table columns.
+	 * @param string           $outerAlias The alias of the object row.
+	 * @param string           $innerAlias The alias of the related row.
+	 *
+	 * @return string The join condition.
+	 *
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
+	 */
+	private function joinCondition(
+		RelatedRowFilter $filter,
+		string $engine,
+		string $storage,
+		string $outerAlias,
+		string $innerAlias,
+	): string {
+		$uuid = $this->metadataColumn(storage: $storage, name: 'uuid');
+
+		if ($filter->direction === RelatedRowFilter::DIRECTION_FORWARD) {
+			return sprintf(
+				'%s.%s = %s',
+				$innerAlias,
+				$uuid,
+				$this->fieldExpression(engine: $engine, storage: $storage, alias: $outerAlias, field: $filter->foreignKey)
+			);
+		}
+
+		return sprintf(
+			'%s = %s.%s',
+			$this->fieldExpression(engine: $engine, storage: $storage, alias: $innerAlias, field: $filter->foreignKey),
+			$outerAlias,
+			$uuid
+		);
+	}//end joinCondition()
+
+	/**
+	 * The magic-table column a property is stored in.
+	 *
+	 * A magic table names its columns in snake case (`propertyDefinition` is
+	 * `property_definition`, see MagicMapper's column naming), so a property
+	 * name written as the schema spells it must be converted before it can be
+	 * a column. A name already in snake case is unchanged.
+	 *
+	 * @param string $property The property name.
+	 *
+	 * @return string The column name.
+	 *
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
+	 */
+	private function columnName(string $property): string {
+		return strtolower((string)preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $property));
+	}//end columnName()
 
 	/**
 	 * Quote a column name, refusing anything that is not one.

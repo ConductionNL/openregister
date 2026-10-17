@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\EventDispatcher\Event;
@@ -67,30 +68,48 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * @param SchemaMapper $schemaMapper Resolves the object's schema.
 	 * @param SequenceService $sequences Reserves a number, atomically.
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param ObjectEventGate $gate Decides what a draft is held from.
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
 		private readonly SequenceService $sequences,
 		private readonly LoggerInterface $logger,
+		private readonly ObjectEventGate $gate,
 	) {
 	}//end __construct()
 
 	/**
 	 * Fill on create, refuse a change on update.
 	 *
+	 * A draft is not created yet (decisions 201 and 227): it takes no number
+	 * on its first save, and the save that leaves draft is its creation, so
+	 * the number is issued there. The gate that holds a draft's creation side
+	 * effects answers both questions, so "is this a creation" is decided in
+	 * one place before a write as after it.
+	 *
 	 * @param Event $event Dispatched event.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-a-generated-identifier-must-be-issued-when-the-object-leaves-draft
 	 */
 	public function handle(Event $event): void {
 		if ($event instanceof ObjectCreatingEvent) {
-			$this->fill(event: $event);
+			if ($this->gate->holdsCreation(object: $event->getObject()) === false) {
+				$this->fill(object: $event->getObject(), event: $event);
+			}
+
 			return;
 		}
 
 		if ($event instanceof ObjectUpdatingEvent) {
+			if ($this->gate->leavesDraft(new: $event->getNewObject(), old: $event->getOldObject()) === true) {
+				$this->fill(object: $event->getNewObject(), event: $event);
+
+				return;
+			}
+
 			$this->freeze(event: $event);
 		}
 
@@ -107,14 +126,14 @@ class GeneratedIdentifierListener implements IEventListener {
 	 * without the number it was declared to carry is a record somebody will
 	 * quote in a letter, so the create is refused and says why.
 	 *
-	 * @param ObjectCreatingEvent $event The create being prepared.
+	 * @param ObjectEntity $object The object being created, or leaving draft.
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The write being prepared; it carries a refusal.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/generated-identifier/specs/computed-fields/spec.md#requirement-a-property-declares-a-generated-identifier-from-a-sequence-and-a-format
 	 */
-	private function fill(ObjectCreatingEvent $event): void {
-		$object = $event->getObject();
+	private function fill(ObjectEntity $object, ObjectCreatingEvent|ObjectUpdatingEvent $event): void {
 		$schema = $this->loadSchema(object: $object);
 		if ($schema === null) {
 			return;

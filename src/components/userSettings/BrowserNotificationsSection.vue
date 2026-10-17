@@ -22,15 +22,18 @@
  @spec openspec/changes/archive/2026-10-05-openregister-web-push-engine/tasks.md#task-5.2
 -->
 <template>
-	<NcSettingsSection
+	<NcAppSettingsSection
+		id="browser-notifications"
 		:name="t('openregister', 'Browser notifications')"
-		:description="
-			t(
-				'openregister',
-				'Receive OpenRegister notifications as native browser notifications, even when the tab is closed.',
-			)
-		"
 		data-testid="browser-notifications-section">
+		<p class="browser-notifications-section__description">
+			{{
+				t(
+					'openregister',
+					'Receive OpenRegister notifications as native browser notifications, even when the tab is closed.',
+				)
+			}}
+		</p>
 		<NcNoteCard
 			v-if="!supported"
 			type="warning"
@@ -66,18 +69,22 @@
 				{{ error }}
 			</NcNoteCard>
 		</template>
-	</NcSettingsSection>
+	</NcAppSettingsSection>
 </template>
 
 <script>
-import { NcCheckboxRadioSwitch, NcNoteCard, NcSettingsSection } from '@nextcloud/vue'
+import {
+	NcAppSettingsSection,
+	NcCheckboxRadioSwitch,
+	NcNoteCard,
+} from '@nextcloud/vue'
 
 export default {
 	name: 'BrowserNotificationsSection',
 	components: {
 		NcCheckboxRadioSwitch,
 		NcNoteCard,
-		NcSettingsSection,
+		NcAppSettingsSection,
 	},
 
 	data() {
@@ -213,6 +220,11 @@ export default {
 </script>
 
 <style scoped>
+.browser-notifications-section__description {
+	margin-bottom: calc(var(--default-grid-baseline) * 3);
+	color: var(--color-text-maxcontrast);
+}
+
 .user-settings-section {
 	margin-bottom: 24px;
 }

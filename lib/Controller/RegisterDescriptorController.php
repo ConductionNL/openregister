@@ -146,7 +146,11 @@ class RegisterDescriptorController extends Controller {
 			return $refusal;
 		}
 
-		$result = $this->descriptors->reimport(appId: $appId, slug: $slug);
+		$result = $this->descriptors->reimport(
+			appId: $appId,
+			slug: $slug,
+			via: 'admin settings: Register descriptors'
+		);
 		if ($result['outcome'] === 'failed') {
 			return new JSONResponse(data: $result, statusCode: 422);
 		}

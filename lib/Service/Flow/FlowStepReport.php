@@ -32,6 +32,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use DateTimeImmutable;
+use DateTimeZone;
+
 /**
  * Collects a node's own log detail for the current hop.
  */
@@ -43,11 +46,28 @@ class FlowStepReport {
 	public const CONTEXT_KEY = '_stepReport';
 
 	/**
+	 * The most lines one step keeps in its report.
+	 */
+	public const MAX_LINES = 50;
+
+	/**
+	 * The levels a line may carry.
+	 */
+	public const LEVELS = ['info', 'success', 'warning', 'error'];
+
+	/**
 	 * The detail written by the current hop's node.
 	 *
 	 * @var array<string, mixed>
 	 */
 	private array $detail = [];
+
+	/**
+	 * Lines left out of the current hop past {@see self::MAX_LINES}.
+	 *
+	 * @var integer
+	 */
+	private int $dropped = 0;
 
 	/**
 	 * Record one piece of detail for the current step's log entry.
@@ -67,6 +87,68 @@ class FlowStepReport {
 	}//end put()
 
 	/**
+	 * Record one timestamped line for the current step, under `report.lines`.
+	 *
+	 * What a person reads in a run view: "looked up the account", "no
+	 * account, posted nothing". `level` is `info`, `success`, `warning` or
+	 * `error`; anything else is recorded as `info`. At most
+	 * {@see self::MAX_LINES} lines are kept per step, and the last one then
+	 * says how many were left out, so a node writing in a loop cannot grow
+	 * the log without bound.
+	 *
+	 * @param string $level   The line's level.
+	 * @param string $message What happened, in plain words.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/flow-step-log-lines/specs/flow-step-log-lines/spec.md
+	 */
+	public function line(string $level, string $message): void {
+		$lines = ($this->detail['lines'] ?? []);
+		if (is_array($lines) === false) {
+			$lines = [];
+		}
+
+		if (count($lines) >= self::MAX_LINES) {
+			$this->dropped++;
+			$lines[self::MAX_LINES - 1] = [
+				'at' => $this->now(),
+				'level' => 'info',
+				'message' => sprintf('%d more lines left out.', $this->dropped + 1),
+			];
+			$this->detail['lines'] = $lines;
+			return;
+		}
+
+		if (in_array($level, self::LEVELS, true) === false) {
+			$level = 'info';
+		}
+
+		$lines[] = [
+			'at' => $this->now(),
+			'level' => $level,
+			'message' => $message,
+		];
+		$this->detail['lines'] = $lines;
+	}//end line()
+
+	/**
+	 * The current moment as ISO 8601 with milliseconds, UTC.
+	 *
+	 * @return string The moment.
+	 *
+	 * @spec openspec/changes/flow-step-log-lines/specs/flow-step-log-lines/spec.md
+	 */
+	private function now(): string {
+		$moment = DateTimeImmutable::createFromFormat('U.u', sprintf('%.6F', microtime(true)), new DateTimeZone('UTC'));
+		if ($moment === false) {
+			return gmdate('Y-m-d\TH:i:s+00:00');
+		}
+
+		return $moment->format('Y-m-d\TH:i:s.vP');
+	}//end now()
+
+	/**
 	 * Return and clear the current hop's detail.
 	 *
 	 * Clearing on read is what scopes the report to one hop: the engine takes
@@ -79,6 +161,7 @@ class FlowStepReport {
 	public function take(): array {
 		$detail = $this->detail;
 		$this->detail = [];
+		$this->dropped = 0;
 
 		return $detail;
 	}//end take()

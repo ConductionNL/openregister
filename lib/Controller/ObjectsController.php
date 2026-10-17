@@ -3420,8 +3420,10 @@ class ObjectsController extends Controller {
 			// instead of being flattened by the generic validation handler.
 			return new JSONResponse(data: $exception->toErrorBody(), statusCode: 400);
 		} catch (ValidationException|CustomValidationException $exception) {
-			// Handle validation errors.
-			return new JSONResponse(data: $exception->getMessage(), statusCode: 400);
+			// Decision 179: refuse in the per-property shape update and patch
+			// use ({ status, message, errors[] }), not a bare string, so a form
+			// can mark the field the destination refused.
+			return $objectService->handleValidationException(exception: $exception);
 		} catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
 			// Handle hook rejection — return 422 with validation errors from the workflow.
 			return new JSONResponse(

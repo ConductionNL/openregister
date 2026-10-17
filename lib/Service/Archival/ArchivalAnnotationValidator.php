@@ -52,14 +52,25 @@ final class ArchivalAnnotationValidator {
 	/**
 	 * Allowed keys directly under `x-openregister-archival`.
 	 *
-	 * `retention` is the disposal decision. The other three are the archival
-	 * facts MDTO asks for that nothing in openregister used to write, so an
-	 * export could only ever omit them; see the archival-conformance A3
-	 * finding.
+	 * `retention` is the disposal decision. `aggregationLevel`,
+	 * `useRestriction` and `temporalCoverage` are the archival facts MDTO asks
+	 * for that nothing in openregister used to write, so an export could only
+	 * ever omit them; see the archival-conformance A3 finding. `category`,
+	 * `categoryProperty` and `action` are read by ArchivalDeclarationReader and
+	 * ClassificationOverride, so calling them unknown was a false warning on
+	 * every import of a schema that declares them.
 	 *
 	 * @var array<int, string>
 	 */
-	private const ALLOWED_ANNOTATION_KEYS = ['retention', 'aggregationLevel', 'useRestriction', 'temporalCoverage'];
+	private const ALLOWED_ANNOTATION_KEYS = [
+		'retention',
+		'aggregationLevel',
+		'useRestriction',
+		'temporalCoverage',
+		'category',
+		'categoryProperty',
+		'action',
+	];
 
 	/**
 	 * Allowed top-level keys under `retention`.
