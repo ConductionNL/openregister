@@ -290,6 +290,27 @@ class ChatStreamController extends Controller {
 				throw $e;
 			}
 
+			// Special rights (decision 239), before the model is called. The
+			// SSE headers are already on the wire, so a refusal is the same
+			// `forbidden` frame as a conversation that is not the caller's;
+			// ChatService::processMessage() checks again for every other path.
+			$agent = null;
+			if ($conversation->getAgentId() !== null) {
+				$agent = $this->agentMapper->find($conversation->getAgentId());
+			}
+
+			$missingRight = $this->chatService->missingRight(conversation: $conversation, agent: $agent, userId: $userId);
+			if ($missingRight !== null) {
+				$this->emitAndExit(
+					eventType: 'error',
+					payload: [
+						'code' => 'forbidden',
+						'message' => 'You do not hold the special right ' . $missingRight . ' in this organisation',
+						'right' => $missingRight,
+					]
+				);
+			}
+
 			// Persist the CnAiContext snapshot on the user-authored Message
 			// row that ChatService::processMessage will create. The
 			// orchestrator's Version1Date20260511130000 migration ships the

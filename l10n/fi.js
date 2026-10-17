@@ -1,6 +1,8 @@
 OC.L10N.register(
     "openregister",
     {
+        "Everyone": "Kaikki",
+        "Only an administrator or the owner of this organisation can change its special rights.": "Vain ylläpitäjä tai tämän organisaation omistaja voi muuttaa sen erityisoikeuksia.",
         "3": "3",
         "30": "30",
         "App that ships or owns this table, for example `dossiq`. Empty for a table an administrator authored.": "Sovellus, joka toimittaa tai omistaa tämän taulukon, esimerkiksi `dossiq`. Tyhjä, jos ylläpitäjä on laatinut taulukon.",

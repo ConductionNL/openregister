@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Chat\MessageHistoryHandler;
 use OCA\OpenRegister\Service\Chat\ResponseGenerationHandler;
 use OCA\OpenRegister\Service\Chat\StreamYieldChannel;
 use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -152,8 +153,12 @@ class ChatService {
 	 * @param MessageHistoryHandler $historyHandler History handler.
 	 * @param ToolManagementHandler $toolHandler Tool handler.
 	 * @param LoggerInterface $logger Logger.
+	 * @param OrganisationSpecialRights $specialRights Reads agent_use and llm_use.
 	 *
 	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) The facade's eight handlers and mappers, plus the
+	 *                                                 special-rights reader every message is checked against.
 	 */
 	public function __construct(
 		ConversationMapper $conversationMapper,
@@ -165,6 +170,7 @@ class ChatService {
 		MessageHistoryHandler $historyHandler,
 		ToolManagementHandler $toolHandler,
 		LoggerInterface $logger,
+		private readonly OrganisationSpecialRights $specialRights,
 	) {
 		$this->conversationMapper = $conversationMapper;
 		$this->messageMapper = $messageMapper;
@@ -244,6 +250,13 @@ class ChatService {
 			$agent = null;
 			if ($conversation->getAgentId() !== null) {
 				$agent = $this->agentMapper->find($conversation->getAgentId());
+			}
+
+			// Special rights (decision 239), before anything is stored or sent
+			// to a model. Every caller of the LLM below comes through here.
+			$missing = $this->missingRight(conversation: $conversation, agent: $agent, userId: $userId);
+			if ($missing !== null) {
+				throw new Exception('You do not hold the special right ' . $missing . ' in this organisation', 403);
 			}
 
 			// Capture the CnAiContext snapshot under its own name before
@@ -358,6 +371,46 @@ class ChatService {
 			throw $e;
 		}//end try
 	}//end processMessage()
+
+	/**
+	 * The special right a caller lacks to send a message in a conversation, or null.
+	 *
+	 * `llm_use` is read from the conversation's organisation: every message
+	 * calls a language model on the caller's behalf. `agent_use` is read from
+	 * the agent's organisation when the conversation runs an agent.
+	 * {@see OrganisationSpecialRights::mayUse()} for administrators, a missing
+	 * organisation and a missing key.
+	 *
+	 * @param Conversation $conversation The conversation.
+	 * @param Agent|null $agent The agent it runs, or null.
+	 * @param string $userId The caller.
+	 *
+	 * @return string|null The right's key, or null when the caller holds both.
+	 *
+	 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+	 */
+	public function missingRight(Conversation $conversation, ?Agent $agent, string $userId): ?string {
+		if ($this->specialRights->mayUse(
+			right: OrganisationSpecialRights::LLM_USE,
+			userId: $userId,
+			organisationUuid: $conversation->getOrganisation()
+		) === false
+		) {
+			return OrganisationSpecialRights::LLM_USE;
+		}
+
+		if ($agent !== null
+			&& $this->specialRights->mayUse(
+				right: OrganisationSpecialRights::AGENT_USE,
+				userId: $userId,
+				organisationUuid: $agent->getOrganisation()
+			) === false
+		) {
+			return OrganisationSpecialRights::AGENT_USE;
+		}
+
+		return null;
+	}//end missingRight()
 
 	/**
 	 * Generate conversation title from first message

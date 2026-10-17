@@ -68,9 +68,7 @@ export type TOrganisation = {
 			update?: string[]
 			delete?: string[]
 		}
-		object_publish?: string[]
 		agent_use?: string[]
-		dashboard_view?: string[]
 		llm_use?: string[]
 	}
 	created?: string

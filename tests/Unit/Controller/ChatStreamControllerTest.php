@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ChatStreamController;
 use OCA\OpenRegister\Db\AgentMapper;
+use OCA\OpenRegister\Db\Conversation;
 use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Service\ChatService;
 use OCP\IDBConnection;
@@ -79,6 +80,46 @@ class TestableChatStreamController extends ChatStreamController {
 	 */
 	protected function emitSseHeaders(): void {
 	}//end emitSseHeaders()
+}//end class
+
+/**
+ * A php:// stream that serves one request body, so stream() reads a message.
+ */
+class ChatStreamBodyStream {
+
+	/**
+	 * @var string
+	 */
+	public static string $body = '';
+
+	/**
+	 * @var int
+	 */
+	private int $pos = 0;
+
+	/**
+	 * @var resource|null
+	 */
+	public $context;
+
+	public function stream_open(string $path, string $mode, int $options, ?string &$openedPath): bool {
+		$this->pos = 0;
+		return true;
+	}
+
+	public function stream_read(int $count): string {
+		$chunk = substr(self::$body, $this->pos, $count);
+		$this->pos += strlen($chunk);
+		return $chunk;
+	}
+
+	public function stream_eof(): bool {
+		return $this->pos >= strlen(self::$body);
+	}
+
+	public function stream_stat(): array {
+		return [];
+	}
 }//end class
 
 class ChatStreamControllerTest extends TestCase {
@@ -227,4 +268,40 @@ class ChatStreamControllerTest extends TestCase {
 		);
 		$this->assertCount(0, $tokenFrames, 'tokens must never be emitted on the unauthenticated path');
 	}//end testNoTokenEventsOnEarlyExitPaths()
+
+	/**
+	 * Decision 239: a caller without llm_use or agent_use gets a `forbidden`
+	 * frame naming the right, and the model is never called. The SSE headers
+	 * are already sent, so the refusal is a frame, as for a conversation that
+	 * is not the caller's.
+	 */
+	public function testAMissingSpecialRightEmitsForbiddenBeforeTheModelIsCalled(): void {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$conversation = new Conversation();
+		$conversation->setUserId('alice');
+		$conversation->setUuid('conv-1');
+		$this->conversationMapper->method('findByUuid')->willReturn($conversation);
+
+		$this->chatService->expects($this->once())->method('missingRight')
+			->with($conversation, null, 'alice')
+			->willReturn('llm_use');
+		$this->chatService->expects($this->never())->method('processMessage');
+
+		stream_wrapper_unregister('php');
+		stream_wrapper_register('php', ChatStreamBodyStream::class);
+		ChatStreamBodyStream::$body = json_encode(['message' => 'Hello', 'conversationUuid' => 'conv-1']);
+		try {
+			$controller = $this->makeController();
+			$this->runStream($controller);
+		} finally {
+			stream_wrapper_restore('php');
+		}
+
+		$this->assertSame('error', $controller->capturedEvents[0]['type']);
+		$this->assertSame('forbidden', $controller->capturedEvents[0]['payload']['code']);
+		$this->assertSame('llm_use', $controller->capturedEvents[0]['payload']['right']);
+	}//end testAMissingSpecialRightEmitsForbiddenBeforeTheModelIsCalled()
 }//end class

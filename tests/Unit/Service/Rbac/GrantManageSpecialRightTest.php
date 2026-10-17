@@ -129,7 +129,7 @@ class GrantManageSpecialRightTest extends TestCase {
 			}
 		);
 
-		$specialRights = new OrganisationSpecialRights($organisations, $registers, $schemas, new NullLogger());
+		$specialRights = new OrganisationSpecialRights($organisations, $registers, $schemas, new NullLogger(), $this->createMock(IGroupManager::class));
 
 		$folder = $this->createMock(Folder::class);
 		$folder->method('getId')->willReturn(55);

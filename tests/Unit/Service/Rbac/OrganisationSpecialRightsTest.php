@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IGroupManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -69,7 +70,8 @@ class OrganisationSpecialRightsTest extends TestCase {
 			$this->organisations,
 			$this->registers,
 			$this->schemas,
-			new NullLogger()
+			new NullLogger(),
+			$this->createMock(IGroupManager::class)
 		);
 	}//end setUp()
 
@@ -175,7 +177,7 @@ class OrganisationSpecialRightsTest extends TestCase {
 	public function testASchemaThatCannotBeLoadedAdmitsNobodyThroughANarrowedEntry(): void {
 		$schemas = $this->createMock(SchemaMapper::class);
 		$schemas->method('find')->willThrowException(new DoesNotExistException('gone'));
-		$rights = new OrganisationSpecialRights($this->organisations, $this->registers, $schemas, new NullLogger());
+		$rights = new OrganisationSpecialRights($this->organisations, $this->registers, $schemas, new NullLogger(), $this->createMock(IGroupManager::class));
 		$this->organisationWith([['group' => 'svc', 'schemas' => ['reviewBatch']]]);
 
 		$this->assertFalse($rights->holdsOn(self::RIGHT, ['svc'], $this->record()));

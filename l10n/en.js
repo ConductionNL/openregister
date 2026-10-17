@@ -2,6 +2,8 @@ OC.L10N.register(
     "openregister",
     {
         "3": "3",
+        "Everyone": "Everyone",
+        "Only an administrator or the owner of this organisation can change its special rights.": "Only an administrator or the owner of this organisation can change its special rights.",
         "30": "30",
         "App that ships or owns this table, for example `dossiq`. Empty for a table an administrator authored.": "App that ships or owns this table, for example `dossiq`. Empty for a table an administrator authored.",
         "Connect a social or analytics account once. OpenRegister keeps the token and refreshes it, so apps never hold it.": "Connect a social or analytics account once. OpenRegister keeps the token and refreshes it, so apps never hold it.",

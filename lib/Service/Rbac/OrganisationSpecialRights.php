@@ -4,17 +4,27 @@
  * Reads an organisation's special rights, and answers whether a caller holds one.
  *
  * WHAT A SPECIAL RIGHT IS. An organisation's `authorization` block carries the
- * create, read, update and delete lists per entity type, and beside them a few
- * rights that are not one of those four: `object_publish`, `agent_use`,
- * `dashboard_view` and `llm_use` ({@see \OCA\OpenRegister\Db\Organisation}). The
- * organisation editor shows them in its "Special Rights" tab. Each is a list of
- * the groups that hold it.
+ * create, read, update and delete lists per entity type, and beside them three
+ * rights that are not one of those four: `agent_use`, `llm_use` and
+ * `grant_manage` ({@see \OCA\OpenRegister\Db\Organisation}). The organisation
+ * editor shows them in its "Special Rights" tab. Each is a list of entries.
  *
- * WHY THIS CLASS EXISTS. The four rights above are declared, stored and
- * assignable, and nothing reads them: no code path asks whether a caller holds
- * one. This is the read. It is written for the first special right that IS
- * enforced, `grant_manage`, and answers for any right by name so the next one
- * does not get a second reader.
+ * `object_publish` and `dashboard_view` are retired (decisions 247, 248). They
+ * were never enforced. An organisation that still stores them loads as before;
+ * nothing reads or writes them.
+ *
+ * WHY THIS CLASS EXISTS. It is the one read of every special right: a right
+ * over one record, `grant_manage` ({@see holdsOn()}), and the rights a caller
+ * USES, `agent_use` and `llm_use` ({@see mayUse()}).
+ *
+ * A RIGHT A CALLER USES. Read from the organisation the thing being used
+ * belongs to: an agent's organisation for `agent_use`, a conversation's for
+ * `llm_use`. A list of group ids, where `*` stands for every signed-in user.
+ * An administrator always holds it. A key the organisation does not carry is
+ * not narrowed, and holds for everybody: an upgrade must not refuse a caller
+ * nobody decided to refuse. The repair step
+ * {@see \OCA\OpenRegister\Repair\OpenSpecialRightsToEveryone} writes that `*`
+ * into every organisation once, so an administrator sees it and can narrow it.
  *
  * `grant_manage` lets its holder list, add and remove the grants on a record
  * and name the record's owning group, on records the holder does not own. It is
@@ -25,7 +35,7 @@
  * groups, so the right cannot be turned into a read.
  *
  * AN ENTRY. Either a group id, which holds the right on every record of the
- * organisation, as the four existing rights are written. Or an object naming a
+ * organisation, as `agent_use` and `llm_use` are written. Or an object naming a
  * group and narrowing it:
  *
  *   {"group": "dossiq-background-service", "register": "dossiq", "schemas": ["reviewBatch"]}
@@ -64,11 +74,19 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use InvalidArgumentException;
+use OCP\IGroupManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * The one reader, and the one in-process writer, of an organisation's special rights.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Decision 239 asks for ONE reader of every special
+ *                                                   right; a right over a record and a right a caller
+ *                                                   uses are answered here so they cannot drift apart.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Same reason: the record, register, schema and
+ *                                                   organisation lookups plus the group manager.
  *
  * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
  */
@@ -80,6 +98,51 @@ class OrganisationSpecialRights {
 	 * @var string
 	 */
 	public const GRANT_MANAGE = 'grant_manage';
+
+	/**
+	 * The special right to run an agent.
+	 *
+	 * @var string
+	 */
+	public const AGENT_USE = 'agent_use';
+
+	/**
+	 * The special right to have a language model called on one's behalf.
+	 *
+	 * @var string
+	 */
+	public const LLM_USE = 'llm_use';
+
+	/**
+	 * Every special right an organisation carries, in the order the editor shows them.
+	 *
+	 * @var string[]
+	 */
+	public const ALL = [
+		self::AGENT_USE,
+		self::LLM_USE,
+		self::GRANT_MANAGE,
+	];
+
+	/**
+	 * The rights where `*` means every signed-in user, and a missing key means nobody narrowed it.
+	 *
+	 * Not `grant_manage`: a right that decides who reads a record is never given
+	 * to everybody by a wildcard or by leaving it out.
+	 *
+	 * @var string[]
+	 */
+	public const OPEN_BY_DEFAULT = [
+		self::AGENT_USE,
+		self::LLM_USE,
+	];
+
+	/**
+	 * The entry that gives a right to every signed-in user.
+	 *
+	 * @var string
+	 */
+	public const EVERYONE = '*';
 
 	/**
 	 * Organisations read per page when giving a right in all of them.
@@ -95,12 +158,14 @@ class OrganisationSpecialRights {
 	 * @param RegisterMapper $registers Loads a record's register, for a narrowed entry.
 	 * @param SchemaMapper $schemas Loads a record's schema, for a narrowed entry.
 	 * @param LoggerInterface $logger Logger.
+	 * @param IGroupManager $groupManager Says whether a caller is an administrator, and which groups it is in.
 	 */
 	public function __construct(
 		private readonly OrganisationMapper $organisations,
 		private readonly RegisterMapper $registers,
 		private readonly SchemaMapper $schemas,
 		private readonly LoggerInterface $logger,
+		private readonly IGroupManager $groupManager,
 	) {
 	}//end __construct()
 
@@ -145,6 +210,159 @@ class OrganisationSpecialRights {
 
 		return false;
 	}//end holdsOn()
+
+	/**
+	 * Whether a caller may use something a special right guards, in one organisation.
+	 *
+	 * For the rights in {@see OPEN_BY_DEFAULT}; any other right answers false.
+	 *
+	 * - An administrator may.
+	 * - The organisation is the one the used thing belongs to. When it names
+	 *   none, the instance's default organisation is read. When there is no
+	 *   default either, no organisation could have narrowed the right, and the
+	 *   caller may: that is how the instance behaved before the right was read.
+	 * - An organisation that is named and cannot be loaded refuses.
+	 * - A key the organisation does not carry is not narrowed: the caller may.
+	 * - A value that is not a list refuses. A list holding `*` admits every
+	 *   signed-in user. Otherwise the caller must be in one of the listed groups.
+	 *   An empty list admits only administrators.
+	 *
+	 * @param string $right The special right's key.
+	 * @param string $userId The caller.
+	 * @param string|null $organisationUuid The organisation the used thing belongs to, or null.
+	 *
+	 * @return bool True when the caller may.
+	 *
+	 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+	 */
+	public function mayUse(string $right, string $userId, ?string $organisationUuid): bool {
+		if ($userId === '' || in_array(needle: $right, haystack: self::OPEN_BY_DEFAULT, strict: true) === false) {
+			return false;
+		}
+
+		if ($this->groupManager->isAdmin($userId) === true) {
+			return true;
+		}
+
+		$entries = $this->entriesInUse(right: $right, organisationUuid: $organisationUuid);
+		if ($entries === null) {
+			return true;
+		}
+
+		return $this->entriesAdmit(entries: $entries, userId: $userId);
+	}//end mayUse()
+
+	/**
+	 * Whether a list of a right a caller uses admits the caller: `*`, or one of its groups.
+	 *
+	 * @param array<int|string, mixed> $entries The stored entries.
+	 * @param string $userId The caller.
+	 *
+	 * @return bool True when it does.
+	 */
+	private function entriesAdmit(array $entries, string $userId): bool {
+		foreach ($entries as $entry) {
+			if ($entry === self::EVERYONE) {
+				return true;
+			}
+
+			if (is_string($entry) === true && $entry !== '' && $this->groupManager->isInGroup($userId, $entry) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end entriesAdmit()
+
+	/**
+	 * The list a right a caller uses is read from, or null when nothing narrows it.
+	 *
+	 * @param string $right The special right's key.
+	 * @param string|null $organisationUuid The organisation the used thing belongs to, or null.
+	 *
+	 * @return array<int|string, mixed>|null The stored entries; empty when the organisation
+	 *                                       cannot be loaded or the value is not a list.
+	 */
+	private function entriesInUse(string $right, ?string $organisationUuid): ?array {
+		$uuid = $organisationUuid;
+		if (is_string($uuid) === false || $uuid === '') {
+			$uuid = $this->organisations->getDefaultOrganisationFromConfig();
+		}
+
+		if (is_string($uuid) === false || $uuid === '') {
+			return null;
+		}
+
+		try {
+			$authorization = $this->organisations->findByUuid($uuid)->getAuthorization();
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				message: '[OrganisationSpecialRights] Could not load the organisation a special right is read from; refused',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'right' => $right, 'organisation' => $uuid, 'error' => $e->getMessage()]
+			);
+			return [];
+		}
+
+		if (array_key_exists($right, $authorization) === false) {
+			return null;
+		}
+
+		if (is_array($authorization[$right]) === false) {
+			return [];
+		}
+
+		return $authorization[$right];
+	}//end entriesInUse()
+
+	/**
+	 * Give every signed-in user a special right in every organisation that does not already.
+	 *
+	 * For the upgrade that starts reading a right: it writes down what the
+	 * instance did before, so nothing is refused until an administrator
+	 * narrows it. Adds `*` to the list and keeps whatever groups it names. An
+	 * organisation whose list already holds `*` is not written.
+	 *
+	 * @param string $right The special right's key, one of {@see OPEN_BY_DEFAULT}.
+	 *
+	 * @return array{organisations: int, changed: int} How many organisations were seen and written.
+	 *
+	 * @throws InvalidArgumentException When the right may not be given to everybody.
+	 *
+	 * @spec openspec/changes/enforce-organisation-special-rights/specs/organisation-special-rights/spec.md
+	 */
+	public function openToEveryoneInEveryOrganisation(string $right): array {
+		if (in_array(needle: $right, haystack: self::OPEN_BY_DEFAULT, strict: true) === false) {
+			throw new InvalidArgumentException(message: 'The special right ' . $right . ' is never given to everybody');
+		}
+
+		$answer = ['organisations' => 0, 'changed' => 0];
+		$offset = 0;
+		do {
+			$page = $this->organisations->findAll(limit: self::PAGE, offset: $offset);
+			$offset += self::PAGE;
+			$read = count($page);
+			foreach ($page as $organisation) {
+				$answer['organisations']++;
+				$authorization = $organisation->getAuthorization();
+				$entries = [];
+				if (is_array($authorization[$right] ?? null) === true) {
+					$entries = array_values($authorization[$right]);
+				}
+
+				if (in_array(needle: self::EVERYONE, haystack: $entries, strict: true) === true) {
+					continue;
+				}
+
+				$entries[] = self::EVERYONE;
+				$authorization[$right] = $entries;
+				$organisation->setAuthorization($authorization);
+				$this->organisations->update($organisation);
+				$answer['changed']++;
+			}
+		} while ($read === self::PAGE);
+
+		return $answer;
+	}//end openToEveryoneInEveryOrganisation()
 
 	/**
 	 * Give a group a special right in one organisation, or narrow or widen what it has.

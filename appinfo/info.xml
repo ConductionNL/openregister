@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>2.1.35-unstable.20261012153000</version>
+    <version>2.1.35-unstable.20261015190000</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -404,6 +404,13 @@ Vrij en open source onder de EUPL-licentie.
 			     1,664 tables, measured 2026-10-06). Last, after every step that
 			     creates tasks. Idempotent. -->
 			<step>OCA\OpenRegister\Repair\BackfillTaskSubjectLocation</step>
+			<!-- Special rights are enforced (decision 239). Until then nobody's
+			     agent_use or llm_use was read, so everybody could; the stored
+			     lists say [] or ["admin"]. Writes "*" beside them, ONCE (an app
+			     config flag), so nothing is refused until an administrator or
+			     the owner narrows a list. Post-migration only: a fresh install's
+			     organisations already default to "*". -->
+			<step>OCA\OpenRegister\Repair\OpenSpecialRightsToEveryone</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>

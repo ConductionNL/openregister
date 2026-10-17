@@ -27,15 +27,21 @@ namespace OCA\OpenRegister\Tests\Unit\Controller;
 use OCA\OpenRegister\Controller\McpServerController;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
+use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Capability\ToolGrantResolver;
 use OCA\OpenRegister\Service\Mcp\McpAgentScope;
 use OCA\OpenRegister\Service\Mcp\McpProtocolService;
 use OCA\OpenRegister\Service\Mcp\McpResourcesService;
 use OCA\OpenRegister\Service\Mcp\McpToolsService;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -142,6 +148,18 @@ class McpAgentLimitsTest extends TestCase {
 
 	private ?McpServerController $controller = null;
 
+	/**
+	 * What organisation `org-1`, which every agent belongs to, stores under agent_use; null leaves the key out.
+	 *
+	 * @var list<string>|null
+	 */
+	private ?array $agentUse = null;
+
+	/**
+	 * Whether alice is an administrator.
+	 */
+	private bool $aliceIsAdmin = false;
+
 	protected function setUp(): void {
 		parent::setUp();
 		stream_wrapper_unregister('php');
@@ -204,6 +222,29 @@ class McpAgentLimitsTest extends TestCase {
 
 		$logger = new NullLogger();
 		$tools = new McpToolsService([$provider], $logger);
+
+		// The real reader of special rights (decision 239), over one organisation.
+		$organisations = $this->createMock(OrganisationMapper::class);
+		$organisations->method('findByUuid')->willReturnCallback(function (string $uuid): Organisation {
+			$organisation = new Organisation();
+			$organisation->setUuid($uuid);
+			$authorization = ['object' => ['read' => []]];
+			if ($this->agentUse !== null) {
+				$authorization[OrganisationSpecialRights::AGENT_USE] = $this->agentUse;
+			}
+			$organisation->setAuthorization($authorization);
+			return $organisation;
+		});
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('isAdmin')->willReturnCallback(fn (string $uid): bool => $uid === 'alice' && $this->aliceIsAdmin);
+		$groupManager->method('isInGroup')->willReturnCallback(static fn (string $uid, string $group): bool => $group === 'staff');
+		$specialRights = new OrganisationSpecialRights(
+			$organisations,
+			$this->createMock(RegisterMapper::class),
+			$this->createMock(SchemaMapper::class),
+			$logger,
+			$groupManager
+		);
 		$this->controller = new McpServerController(
 			'openregister',
 			$request,
@@ -212,7 +253,7 @@ class McpAgentLimitsTest extends TestCase {
 			$this->createMock(McpResourcesService::class),
 			$logger,
 			$this->aliceSession(),
-			new McpAgentScope($agentMapper, new ToolGrantResolver(), $tools, $cacheFactory, $logger),
+			new McpAgentScope($agentMapper, new ToolGrantResolver(), $tools, $cacheFactory, $logger, $specialRights),
 		);
 	}
 
@@ -241,6 +282,7 @@ class McpAgentLimitsTest extends TestCase {
 		$agent->setIsPrivate($private);
 		$agent->setOwner('bob');
 		$agent->setActive($active);
+		$agent->setOrganisation('org-1');
 		$this->agents[$uuid] = $agent;
 	}
 
@@ -319,6 +361,51 @@ class McpAgentLimitsTest extends TestCase {
 			$out = $this->rpc('initialize', ['agent' => $uuid]);
 			$this->assertArrayHasKey('error', $out, 'initialize as ' . $uuid . ' must be refused, not silently unscoped');
 		}
+	}
+
+	public function testAUserWithoutAgentUseIsRefusedAtInitialize(): void {
+		$this->agent('a1', ['openregister.objects.search']);
+		$this->agentUse = ['ai-users'];
+
+		$out = $this->rpc('initialize', ['agent' => 'a1']);
+
+		$this->assertArrayHasKey('error', $out);
+		$this->assertStringContainsString('agent_use', $out['error']['message']);
+		$this->assertSame('', $this->headers['Mcp-Session-Id'], 'a refused agent yields no session');
+	}
+
+	public function testAHolderOfAgentUseActsAsTheAgent(): void {
+		$this->agent('a1', ['openregister.objects.search']);
+		$this->agentUse = ['staff'];
+		$this->rpc('initialize', ['agent' => 'a1']);
+
+		$out = $this->rpc('tools/call', ['name' => 'openregister.objects.search', 'arguments' => []]);
+
+		$this->assertArrayHasKey('result', $out);
+		$this->assertSame(['openregister.objects.search'], $this->ran);
+	}
+
+	public function testAnAdministratorActsAsTheAgentWithoutBeingListed(): void {
+		$this->agent('a1', ['openregister.objects.search']);
+		$this->agentUse = [];
+		$this->aliceIsAdmin = true;
+		$this->rpc('initialize', ['agent' => 'a1']);
+
+		$out = $this->rpc('tools/call', ['name' => 'openregister.objects.search', 'arguments' => []]);
+
+		$this->assertArrayHasKey('result', $out);
+	}
+
+	public function testNarrowingAgentUseAppliesToAnOpenSession(): void {
+		$this->agent('a1', ['openregister.objects.search']);
+		$this->agentUse = ['*'];
+		$this->rpc('initialize', ['agent' => 'a1']);
+		$this->agentUse = ['ai-users'];
+
+		$out = $this->rpc('tools/call', ['name' => 'openregister.objects.search', 'arguments' => []]);
+
+		$this->assertArrayHasKey('error', $out);
+		$this->assertSame([], $this->ran);
 	}
 
 	public function testASessionWithoutAnAgentKeepsTheUserRights(): void {

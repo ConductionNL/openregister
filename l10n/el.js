@@ -1,6 +1,8 @@
 OC.L10N.register(
     "openregister",
     {
+        "Everyone": "Όλοι",
+        "Only an administrator or the owner of this organisation can change its special rights.": "Μόνο ένας διαχειριστής ή ο κάτοχος αυτού του οργανισμού μπορεί να αλλάξει τα ειδικά δικαιώματά του.",
         "3": "3",
         "30": "30",
         "App that ships or owns this table, for example `dossiq`. Empty for a table an administrator authored.": "Η εφαρμογή που παρέχει ή κατέχει αυτόν τον πίνακα, για παράδειγμα `dossiq`. Κενό για πίνακα που δημιούργησε διαχειριστής.",
