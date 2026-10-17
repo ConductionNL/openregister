@@ -217,11 +217,14 @@ class FlowRunMapper extends QBMapper {
 	 *                                  (administrators and system reads only).
 	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns; runs of these
 	 *                                         are visible regardless of who triggered them.
+	 * @param DateTime|null $since Only runs created at or after this moment.
+	 * @param array<int, string> $flowIds Restrict to any of these flows; empty means no restriction.
 	 *
 	 * @return array<int, FlowRun> The runs.
 	 *
 	 * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
 	 * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
 	 */
 	public function findAllRuns(
 		?string $flowId = null,
@@ -230,6 +233,8 @@ class FlowRunMapper extends QBMapper {
 		int $offset = 0,
 		?string $requesterUid = null,
 		array $ownedFlowIds = [],
+		?DateTime $since = null,
+		array $flowIds = [],
 	): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
@@ -242,6 +247,14 @@ class FlowRunMapper extends QBMapper {
 			$qb->andWhere($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)));
 		}
 
+		if (empty($flowIds) === false) {
+			$qb->andWhere($qb->expr()->in('flow_id', $qb->createNamedParameter(array_values($flowIds), IQueryBuilder::PARAM_STR_ARRAY)));
+		}
+
+		if ($since !== null) {
+			$qb->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE)));
+		}
+
 		if ($status !== null && $status !== '') {
 			$qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter($status)));
 		}
@@ -250,6 +263,147 @@ class FlowRunMapper extends QBMapper {
 
 		return $this->findEntities(query: $qb);
 	}//end findAllRuns()
+
+	/**
+	 * Per flow: its most recent run and how many runs started since a moment.
+	 *
+	 * The read behind a flow list's "last run" and "runs this week" columns.
+	 * Both halves apply the same visibility rule as {@see findAllRuns}, so the
+	 * numbers a list shows never count a run its history would hide. Every
+	 * requested flow gets an entry, a flow with no visible run included, so a
+	 * caller can tell "never ran" from "not asked".
+	 *
+	 * @param array<int, string> $flowIds      The flows to summarise.
+	 * @param DateTime           $since        Count runs created at or after this.
+	 * @param string|null        $requesterUid The caller, or null for no scoping.
+	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns.
+	 *
+	 * @return array<string, array{lastRun: array<string, mixed>|null, runsSince: int}> Keyed by flow id.
+	 *
+	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 */
+	public function summarizeByFlow(
+		array $flowIds,
+		DateTime $since,
+		?string $requesterUid = null,
+		array $ownedFlowIds = [],
+	): array {
+		$summary = [];
+		foreach ($flowIds as $flowId) {
+			$flowId = trim((string)$flowId);
+			if ($flowId !== '') {
+				$summary[$flowId] = ['lastRun' => null, 'runsSince' => 0];
+			}
+		}
+
+		if ($summary === []) {
+			return [];
+		}
+
+		$ids = array_keys($summary);
+		$ids = array_map(static fn ($id): string => (string)$id, $ids);
+
+		foreach ($this->countSinceByFlow(flowIds: $ids, since: $since, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds) as $flowId => $count) {
+			if (isset($summary[$flowId]) === true) {
+				$summary[$flowId]['runsSince'] = $count;
+			}
+		}
+
+		foreach ($this->latestRunsByFlow(flowIds: $ids, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds) as $run) {
+			$flowId = (string)$run->getFlowId();
+			if (isset($summary[$flowId]) === false) {
+				continue;
+			}
+
+			$summary[$flowId]['lastRun'] = [
+				'uuid' => $run->getUuid(),
+				'status' => $run->getStatus(),
+				'error' => $run->getError(),
+				'created' => $run->getCreated()?->format(DateTime::ATOM),
+				'updated' => $run->getUpdated()?->format(DateTime::ATOM),
+			];
+		}
+
+		return $summary;
+	}//end summarizeByFlow()
+
+	/**
+	 * How many visible runs each flow started since a moment.
+	 *
+	 * @param array<int, string> $flowIds      The flows to count.
+	 * @param DateTime           $since        Count runs created at or after this.
+	 * @param string|null        $requesterUid The caller, or null for no scoping.
+	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns.
+	 *
+	 * @return array<string, int> Run count keyed by flow id; flows without runs are absent.
+	 *
+	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 */
+	public function countSinceByFlow(array $flowIds, DateTime $since, ?string $requesterUid, array $ownedFlowIds): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->select('flow_id')
+			->selectAlias($qb->func()->count('id'), 'total')
+			->from($this->getTableName())
+			->where($qb->expr()->in('flow_id', $qb->createNamedParameter($flowIds, IQueryBuilder::PARAM_STR_ARRAY)))
+			->andWhere($qb->expr()->gte('created', $qb->createNamedParameter($since, IQueryBuilder::PARAM_DATETIME_MUTABLE)))
+			->groupBy('flow_id');
+
+		$this->scopeToVisible(qb: $qb, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
+
+		$counts = [];
+		$result = $qb->executeQuery();
+		while (($row = $result->fetch()) !== false) {
+			$counts[(string)$row['flow_id']] = (int)$row['total'];
+		}
+
+		$result->closeCursor();
+
+		return $counts;
+	}//end countSinceByFlow()
+
+	/**
+	 * The newest visible run of each flow, without its log or marking.
+	 *
+	 * Two queries rather than one per flow: the newest id per flow, then those
+	 * rows. Only the columns a summary shows are read, so a list of a hundred
+	 * flows never loads a hundred run logs.
+	 *
+	 * @param array<int, string> $flowIds      The flows to read.
+	 * @param string|null        $requesterUid The caller, or null for no scoping.
+	 * @param array<int, string> $ownedFlowIds Flow ids the caller owns.
+	 *
+	 * @return array<int, FlowRun> At most one run per flow.
+	 *
+	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 */
+	public function latestRunsByFlow(array $flowIds, ?string $requesterUid, array $ownedFlowIds): array {
+		$qb = $this->db->getQueryBuilder();
+		$qb->selectAlias($qb->func()->max('id'), 'latest')
+			->from($this->getTableName())
+			->where($qb->expr()->in('flow_id', $qb->createNamedParameter($flowIds, IQueryBuilder::PARAM_STR_ARRAY)))
+			->groupBy('flow_id');
+
+		$this->scopeToVisible(qb: $qb, requesterUid: $requesterUid, ownedFlowIds: $ownedFlowIds);
+
+		$latest = [];
+		$result = $qb->executeQuery();
+		while (($row = $result->fetch()) !== false) {
+			$latest[] = (int)$row['latest'];
+		}
+
+		$result->closeCursor();
+
+		if ($latest === []) {
+			return [];
+		}
+
+		$rows = $this->db->getQueryBuilder();
+		$rows->select('id', 'uuid', 'flow_id', 'status', 'error', 'created', 'updated')
+			->from($this->getTableName())
+			->where($rows->expr()->in('id', $rows->createNamedParameter($latest, IQueryBuilder::PARAM_INT_ARRAY)));
+
+		return $this->findEntities(query: $rows);
+	}//end latestRunsByFlow()
 
 	/**
 	 * Narrow a run query to what one caller may see.

@@ -2144,6 +2144,9 @@ return [
 		// organisation-scoped like `active`. Same ordering rule: it MUST stay above
 		// the `{uuid}` route or `show('completed')` answers it with a 404.
 		['name' => 'flowRun#completedForSubject', 'url' => '/api/flow-runs/completed', 'verb' => 'GET'],
+		// Per flow: newest run and runs since a moment (flow-run-summary). Same
+		// ordering rule: above `{uuid}`, or `show('summary')` answers with a 404.
+		['name' => 'flowRun#summary', 'url' => '/api/flow-runs/summary', 'verb' => 'GET'],
 		['name' => 'flowRun#show', 'url' => '/api/flow-runs/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#objects', 'url' => '/api/flow-runs/{uuid}/objects', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
