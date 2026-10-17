@@ -15,4 +15,4 @@
 - [x] 3.3 Controller test: preview and apply.
 
 ## 4. Follow-up
-- [ ] 4.1 Live: run the command for learniq `learner-profile` `authorization.read` on the dev instance (needs the live instance; recipe in the PR body).
+- [x] 4.1 Live: run the command for learniq `learner-profile` `authorization.read` on the dev instance. Done 5 Oct (live pass lane 15): the preview printed Now and Shipped and wrote nothing; `--apply --actor=admin` wrote only `authorization.read` (audit row `configuration.baseline.reset`, user admin, from and to); lp-learner then read their own learning record (GET /apps/learniq/api/learning-records/me 200, was 404).
