@@ -25,6 +25,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Middleware;
 
 use OCA\OpenRegister\Controller\OperationsConsoleController;
+use OCA\OpenRegister\Controller\OperationsConsistencyController;
+use OCA\OpenRegister\Controller\OperationsMaintenanceController;
 use OCA\OpenRegister\Service\Operations\MaintenanceModeService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -52,9 +54,19 @@ class MaintenanceModeMiddleware extends Middleware {
 	/**
 	 * The controllers that stay reachable while the mode holds.
 	 *
+	 * Every controller serving a route under /api/operations belongs here.
+	 * Maintenance and consistency left the console controller in bd7fe3470d
+	 * and this list kept naming only the console, so entering the mode worked
+	 * and leaving it answered 503. MaintenanceModeMiddlewareTest reads the
+	 * routes to keep the next split from doing the same.
+	 *
 	 * @var array<int, string>
 	 */
-	private const ALWAYS_REACHABLE = [OperationsConsoleController::class];
+	private const ALWAYS_REACHABLE = [
+		OperationsConsoleController::class,
+		OperationsConsistencyController::class,
+		OperationsMaintenanceController::class,
+	];
 
 	/**
 	 * Constructor.
