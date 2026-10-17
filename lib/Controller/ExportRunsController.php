@@ -38,6 +38,8 @@ use OCA\OpenRegister\Service\Export\ExportRunRecorder;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\Response;
+use OCP\AppFramework\Http\StreamResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
 
@@ -137,4 +139,54 @@ class ExportRunsController extends Controller {
 			]
 		);
 	}//end index()
+
+	/**
+	 * GET /api/exports/{uuid}/download - hand the run's file back, and count it.
+	 *
+	 * The maker of the run gets it, and so does a caller ExportRightService
+	 * lets see every run; anybody else gets 404, as for a uuid nobody has. An
+	 * expired run answers 410: the record stays, the file does not. Each
+	 * served download counts once on the run, never on the file, because a
+	 * file copied inside Files is no longer what the register handed out.
+	 *
+	 * @param string $uuid The run.
+	 *
+	 * @return Response The file, or a JSON error.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 * @no-admin-idor-exempt Guarded in-body: ExportRunRecorder::openForDownload() serves only the
+	 *     run's maker or a caller who sees every run, and answers 404 to anybody else.
+	 *
+	 * @spec openspec/changes/an-export-is-a-file-with-a-life/specs/data-import-export/spec.md#requirement-downloads-are-counted-on-the-run
+	 */
+	public function download(string $uuid): Response {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: Http::STATUS_UNAUTHORIZED);
+		}
+
+		$found = $this->runs->openForDownload(
+			uuid: $uuid,
+			callerUid: $user->getUID(),
+			seesEveryRun: $this->rights->seesEveryExportRun(userId: $user->getUID())
+		);
+		if ($found['status'] !== Http::STATUS_OK || isset($found['file']) === false) {
+			return new JSONResponse(data: ['error' => ($found['error'] ?? 'No export with this id.')], statusCode: $found['status']);
+		}
+
+		$file = $found['file'];
+		$handle = $file->fopen('r');
+		if (is_resource($handle) === false) {
+			return new JSONResponse(data: ['error' => 'The file of this export could not be opened.'], statusCode: Http::STATUS_GONE);
+		}
+
+		$this->runs->countDownload(uuid: $uuid);
+
+		$response = new StreamResponse($handle);
+		$response->addHeader('Content-Type', (string)$file->getMimetype());
+		$response->addHeader('Content-Disposition', 'attachment; filename="'.rawurlencode((string)$file->getName()).'"');
+
+		return $response;
+	}//end download()
 }//end class
