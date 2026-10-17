@@ -7595,6 +7595,51 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end findDeletedAcrossAllMagicTables()
 
 	/**
+	 * The file ids of the object folders that belong to one organisation.
+	 *
+	 * Scans every magic table for live rows whose `_organisation` is the given
+	 * uuid and returns their distinct numeric `_folder` values. Not narrowed to
+	 * a caller: it measures the organisation, and the caller decides who may
+	 * see the measurement.
+	 *
+	 * @param string $organisationUuid The organisation uuid.
+	 *
+	 * @return list<int> The folder file ids.
+	 *
+	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 */
+	public function findFolderIdsByOrganisation(string $organisationUuid): array {
+		$organisationCol = 't.' . self::METADATA_PREFIX . 'organisation';
+		$folderCol = 't.' . self::METADATA_PREFIX . 'folder';
+		$deletedCol = 't.' . self::METADATA_PREFIX . 'deleted';
+		$folderIds = [];
+
+		foreach (array_keys($this->discoverMagicTables()) as $fullTableName) {
+			$bareTableName = substr($fullTableName, strlen($this->getTablePrefix()));
+			try {
+				$qb = $this->db->getQueryBuilder();
+				$qb->selectDistinct($folderCol)
+					->from($bareTableName, 't')
+					->where($qb->expr()->eq($organisationCol, $qb->createNamedParameter($organisationUuid)))
+					->andWhere($qb->expr()->isNotNull($folderCol))
+					->andWhere($qb->expr()->isNull($deletedCol));
+				$result = $qb->executeQuery();
+				while (($folder = $result->fetchOne()) !== false) {
+					if (is_numeric($folder) === true) {
+						$folderIds[(int)$folder] = true;
+					}
+				}
+
+				$result->closeCursor();
+			} catch (\Exception $e) {
+				continue;
+			}
+		}//end foreach
+
+		return array_keys($folderIds);
+	}//end findFolderIdsByOrganisation()
+
+	/**
 	 * Count all soft-deleted objects across ALL magic tables.
 	 *
 	 * Narrowed per table exactly as {@see findDeletedAcrossAllMagicTables()}

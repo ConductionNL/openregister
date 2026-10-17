@@ -1077,6 +1077,35 @@ class FileMapper extends QBMapper {
 	}//end getTotalFilesSize()
 
 	/**
+	 * The summed size of the given files or folders.
+	 *
+	 * A folder's size in the file cache is the size of everything under it. A
+	 * negative size means the entry was never scanned and is left out.
+	 *
+	 * @param list<int> $fileIds The file cache ids.
+	 *
+	 * @return int The total size in bytes, 0 for no ids.
+	 *
+	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 */
+	public function sumSizesByFileIds(array $fileIds): int {
+		$total = 0;
+		foreach (array_chunk(array_values(array_unique($fileIds)), 1000) as $chunk) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->selectAlias($qb->createFunction('SUM(fc.size)'), 'total_size')
+				->from('filecache', 'fc')
+				->where($qb->expr()->in('fc.fileid', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_INT_ARRAY)))
+				->andWhere($qb->expr()->gte('fc.size', $qb->createNamedParameter(0, IQueryBuilder::PARAM_INT)));
+			$result = $qb->executeQuery();
+			$row = $result->fetch();
+			$result->closeCursor();
+			$total += (int)($row['total_size'] ?? 0);
+		}
+
+		return $total;
+	}//end sumSizesByFileIds()
+
+	/**
 	 * Find files in Nextcloud that are not tracked in the extraction system yet
 	 *
 	 * This queries oc_filecache for files that don't have a corresponding record

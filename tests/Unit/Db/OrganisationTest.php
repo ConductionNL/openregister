@@ -553,9 +553,9 @@ class OrganisationTest extends TestCase {
 		$json = $this->organisation->jsonSerialize();
 		$usage = $json['usage'];
 
-		$this->assertSame(0, $usage['storage']);
-		$this->assertSame(0, $usage['bandwidth']);
-		$this->assertSame(0, $usage['requests']);
+		$this->assertNull($usage['storage']);
+		$this->assertNull($usage['bandwidth']);
+		$this->assertNull($usage['requests']);
 		$this->assertSame(2, $usage['users']);
 		$this->assertSame(3, $usage['groups']);
 	}

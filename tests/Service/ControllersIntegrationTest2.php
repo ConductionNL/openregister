@@ -1861,7 +1861,8 @@ class ControllersIntegrationTest2 extends TestCase {
 			\OC::$server->get(TenantLifecycleService::class),
 			\OC::$server->get(TenantUsageMapper::class),
 			\OC::$server->get(IUserSession::class),
-			\OC::$server->get(IGroupManager::class)
+			\OC::$server->get(IGroupManager::class),
+			\OC::$server->get(\OCA\OpenRegister\Service\OrganisationUsageService::class)
 		);
 	}//end buildOrganisationController()
 
