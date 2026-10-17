@@ -87,6 +87,8 @@ class OrganisationUsageService {
 	 * @param Organisation $organisation The organisation.
 	 *
 	 * @return int|null The bytes, or null when they could not be read.
+	 *
+	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
 	 */
 	private function measureStorage(Organisation $organisation): ?int {
 		$uuid = $organisation->getUuid();
@@ -112,6 +114,8 @@ class OrganisationUsageService {
 	 * @param Organisation $organisation The organisation.
 	 *
 	 * @return int|null The count, or null when nothing counts them.
+	 *
+	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
 	 */
 	private function measureRequests(Organisation $organisation): ?int {
 		$uuid = $organisation->getUuid();
@@ -129,6 +133,8 @@ class OrganisationUsageService {
 	 * Whether APCu is enabled.
 	 *
 	 * @return bool True when APCu can be read.
+	 *
+	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
 	 */
 	protected function apcuAvailable(): bool {
 		return function_exists('apcu_enabled') === true && apcu_enabled() === true;
@@ -140,6 +146,8 @@ class OrganisationUsageService {
 	 * @param string $key The key.
 	 *
 	 * @return int|null The value, or null when the key is not set.
+	 *
+	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
 	 */
 	protected function apcuFetchInt(string $key): ?int {
 		$success = false;

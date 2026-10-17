@@ -77,8 +77,8 @@ class OrganisationGrantManageGuardTest extends TestCase {
 			$this->createMock(TenantLifecycleService::class),
 			$this->createMock(TenantUsageMapper::class),
 			$this->createMock(IUserSession::class),
-			$this->createMock(IGroupManager::class),
-			$this->createMock(\OCA\OpenRegister\Service\OrganisationUsageService::class)
+			$this->createMock(originalClassName: IGroupManager::class),
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\OrganisationUsageService::class)
 		);
 	}//end setUp()
 

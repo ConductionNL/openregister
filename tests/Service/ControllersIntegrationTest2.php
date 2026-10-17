@@ -1861,8 +1861,9 @@ class ControllersIntegrationTest2 extends TestCase {
 			\OC::$server->get(TenantLifecycleService::class),
 			\OC::$server->get(TenantUsageMapper::class),
 			\OC::$server->get(IUserSession::class),
+			// phpcs:ignore CustomSniffs.Nextcloud.NoServiceLocator.GlobalContainerLookup -- this helper wires the real container services, as every argument above does.
 			\OC::$server->get(IGroupManager::class),
-			\OC::$server->get(\OCA\OpenRegister\Service\OrganisationUsageService::class)
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\OrganisationUsageService::class)
 		);
 	}//end buildOrganisationController()
 
