@@ -61,6 +61,7 @@ use OCA\OpenRegister\Service\Search\SearchTermNode;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;
 use OCA\OpenRegister\Support\FilterParams;
+use OCA\OpenRegister\Support\NullFilter;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
@@ -1715,9 +1716,10 @@ class MagicSearchHandler {
 	 * @param mixed $value The raw operator value as the request layer delivered it.
 	 *
 	 * @return bool True when the caller asked for IS NULL.
+	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
 	 */
 	private function isNullOperatorAsksForNull(mixed $value): bool {
-		return filter_var($value, FILTER_VALIDATE_BOOLEAN) === true;
+		return NullFilter::isNullOperatorAsksForNull(value: $value);
 	}//end isNullOperatorAsksForNull()
 
 	/**

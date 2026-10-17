@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use OCA\OpenRegister\Db\LikeOperator;
+use OCA\OpenRegister\Support\NullFilter;
 
 /**
  * Reads nested-path filters out of a filter map and writes their SQL.
@@ -221,12 +222,16 @@ class NestedPathFilter {
 	 * @param callable     $bind       Value to SQL.
 	 *
 	 * @return list<string> The conditions.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter is the one reader of the isnull value, shared with the list and aggregation paths.
+	 *
+	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
 	 */
 	private static function presenceConditions(string $expression, array $value, callable $bind): array {
 		$conditions = [];
 		if (array_key_exists('isnull', $value) === true) {
 			$predicate = 'IS NOT NULL';
-			if (filter_var($value['isnull'], FILTER_VALIDATE_BOOLEAN) === true) {
+			if (NullFilter::isNullOperatorAsksForNull(value: $value['isnull']) === true) {
 				$predicate = 'IS NULL';
 			}
 
