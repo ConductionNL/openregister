@@ -61,6 +61,7 @@ use OCA\OpenRegister\Service\TaskService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
+use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -330,6 +331,8 @@ class ImportHandler {
 	 *        records the jobs that created objects; null imports untagged, as before.
 	 * @param ?SchemaImportInstaller $schemaInstaller Installs a schema's flows and webhooks when an
 	 *        import fired no SchemaUpdatedEvent; null leaves an unchanged re-import installing nothing.
+	 * @param ?IDBConnection $db The connection the definition phases run a transaction on; null runs
+	 *        them without one, as before.
 	 */
 	public function __construct(
 		SchemaMapper $schemaMapper,
@@ -348,6 +351,7 @@ class ImportHandler {
 		private readonly ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard = null,
 		private readonly ?AppImportJobRecorder $importJobRecorder = null,
 		private readonly ?SchemaImportInstaller $schemaInstaller = null,
+		private readonly ?IDBConnection $db = null,
 	) {
 		$this->schemaMapper = $schemaMapper;
 		$this->registerMapper = $registerMapper;
@@ -2596,6 +2600,118 @@ class ImportHandler {
 	}//end computeRegisterScopedSchemaIds()
 
 	/**
+	 * Open the import's transaction, unless the caller already holds one.
+	 *
+	 * A caller that already runs a transaction keeps ownership of it: the
+	 * per-item savepoints nest inside it, and this import neither commits nor
+	 * rolls it back.
+	 *
+	 * @return bool True when this call opened the transaction and must close it.
+	 *
+	 * @spec exclude Transaction plumbing for the import, not a specified behaviour of its own.
+	 */
+	private function beginImportTransaction(): bool {
+		if ($this->db === null || $this->db->inTransaction() === true) {
+			return false;
+		}
+
+		$this->db->beginTransaction();
+		return true;
+	}//end beginImportTransaction()
+
+	/**
+	 * Commit the import's transaction when this import opened it.
+	 *
+	 * @param bool $owned What beginImportTransaction() returned.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Transaction plumbing for the import, not a specified behaviour of its own.
+	 */
+	private function commitImportTransaction(bool $owned): void {
+		if ($owned === true && $this->db !== null) {
+			$this->db->commit();
+		}
+	}//end commitImportTransaction()
+
+	/**
+	 * Close the import's transaction after an error escaped the definition phases.
+	 *
+	 * Before the transaction existed every write committed on its own, so an
+	 * error escaping the loop left the items before it in place. Committing
+	 * here keeps that: the failing item's own savepoint was already rolled
+	 * back by inSavepoint(). Only when the commit itself fails is the whole
+	 * transaction rolled back, and the original error is what the caller sees.
+	 *
+	 * @param bool       $owned What beginImportTransaction() returned.
+	 * @param \Throwable $error The error that escaped, for the log line.
+	 *
+	 * @return void
+	 *
+	 * @spec exclude Transaction plumbing for the import, not a specified behaviour of its own.
+	 */
+	private function closeImportTransactionAfterError(bool $owned, \Throwable $error): void {
+		if ($owned === false || $this->db === null) {
+			return;
+		}
+
+		try {
+			$this->db->commit();
+		} catch (\Throwable $commitError) {
+			$this->logger->error(
+				message: '[ImportHandler] Could not commit the import transaction after an error; rolling back',
+				context: [
+					'file' => __FILE__,
+					'line' => __LINE__,
+					'error' => $error->getMessage(),
+					'commitError' => $commitError->getMessage(),
+				]
+			);
+			if ($this->db->inTransaction() === true) {
+				$this->db->rollBack();
+			}
+		}
+	}//end closeImportTransactionAfterError()
+
+	/**
+	 * Run one import item (a schema, register or mapping) in its own savepoint.
+	 *
+	 * Inside the import's transaction a nested beginTransaction() is a
+	 * SAVEPOINT: Nextcloud's connection enables Doctrine's
+	 * setNestTransactionsWithSavepoints(true). A throwing item is rolled back
+	 * to that savepoint, so only its own writes are undone, and the exception
+	 * reaches the caller's existing catch unchanged. This matters most on
+	 * PostgreSQL, where one failed statement otherwise aborts the whole
+	 * transaction and every item after it.
+	 *
+	 * @param callable(): T $item The import step.
+	 *
+	 * @return T What the step returned.
+	 *
+	 * @throws \Throwable Whatever the step threw, after its savepoint was rolled back.
+	 *
+	 * @template T
+	 *
+	 * @spec exclude Transaction plumbing for the import, not a specified behaviour of its own.
+	 */
+	private function inSavepoint(callable $item): mixed {
+		if ($this->db === null) {
+			return $item();
+		}
+
+		$this->db->beginTransaction();
+		try {
+			$value = $item();
+		} catch (\Throwable $e) {
+			$this->db->rollBack();
+			throw $e;
+		}
+
+		$this->db->commit();
+		return $value;
+	}//end inSavepoint()
+
+	/**
 	 * Import configuration data from JSON structure.
 	 *
 	 * This is the core import method that processes all configuration components
@@ -2808,433 +2924,470 @@ class ImportHandler {
 		// slug" (the latter is how a foreign same-slug schema gets silently reused).
 		$slugToSchemaIds = $this->computeRegisterScopedSchemaIds(data: $data);
 
-		// Process and import schemas if present.
-		// TWO-PASS APPROACH: First create all schemas without resolving cross-references,
-		// then resolve cross-references after all schemas exist to avoid "Schema not found" errors.
-		if (($data['components']['schemas'] ?? null) !== null && is_array($data['components']['schemas']) === true) {
-			$slugsAndIdsMap = $this->schemaMapper->getSlugToIdMap();
-			$this->logger->debug(
-				message: '[ImportHandler] Starting TWO-PASS schema import process',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'totalSchemas' => count($data['components']['schemas']),
-					'schemaKeys' => array_keys($data['components']['schemas']),
-				]
-			);
-
-			// PASS 1: Create all schemas without resolving objectConfiguration.schema references.
-			// This ensures all schema entities exist before we try to look them up.
-			$this->logger->debug(
-				message: '[ImportHandler] PASS 1: Creating all schemas without cross-reference resolution',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-			$schemasToResolve = [];
-			// Track schemas that need $ref resolution in Pass 2.
-			foreach ($data['components']['schemas'] as $key => $schemaData) {
+		// ONE TRANSACTION FOR THE DEFINITION PHASES (schemas, registers, mappings).
+		//
+		// Nextcloud logs `dirty table reads: <sql>` with a full exception for
+		// every read of a table this request already wrote, unless a
+		// transaction is active. The schema passes below read back what they
+		// just wrote on almost every step, and `occ upgrade` forces the log
+		// level to debug, so one app upgrade wrote an 83 GB nextcloud.log.
+		// Inside a transaction those reads go to the primary and log nothing.
+		//
+		// Every item below runs in its own savepoint (inSavepoint()), so a
+		// rejected item rolls back only itself and the import carries on as
+		// before. Without the savepoints a single failed statement would
+		// abort the whole transaction on PostgreSQL.
+		//
+		// The object and seed phases after this block stay OUTSIDE the
+		// transaction on purpose: they create and alter magic tables, and on
+		// MySQL/MariaDB any DDL statement silently commits the open
+		// transaction, which then breaks every savepoint and the final commit.
+		$ownsTransaction = $this->beginImportTransaction();
+		try {
+			// Process and import schemas if present.
+			// TWO-PASS APPROACH: First create all schemas without resolving cross-references,
+			// then resolve cross-references after all schemas exist to avoid "Schema not found" errors.
+			if (($data['components']['schemas'] ?? null) !== null && is_array($data['components']['schemas']) === true) {
+				$slugsAndIdsMap = $this->schemaMapper->getSlugToIdMap();
 				$this->logger->debug(
-					message: '[ImportHandler] Processing schema (Pass 1)',
+					message: '[ImportHandler] Starting TWO-PASS schema import process',
 					context: [
 						'file' => __FILE__,
 						'line' => __LINE__,
-						'schemaKey' => $key,
-						'schemaTitle' => $schemaData['title'] ?? 'no title',
-						'schemaSlug' => $schemaData['slug'] ?? $key,
+						'totalSchemas' => count($data['components']['schemas']),
+						'schemaKeys' => array_keys($data['components']['schemas']),
 					]
 				);
 
-				if (isset($schemaData['title']) === false && is_string($key) === true) {
-					$schemaData['title'] = $key;
-				}
-
-				// The component key IS the slug in every app configuration this
-				// handler has ever received: the register lists name schemas by
-				// key, and `$schemaSlugLower` below already reads the key when
-				// `slug` is absent. Only importSchema()'s guard disagreed, and
-				// it rejected the fragment outright. pipelinq shipped sixteen
-				// schemas over four fragments without a `slug`, all sixteen
-				// went dark for nine days, and the app's re-import reported
-				// success. Defaulting the slug here, exactly as `title` is
-				// defaulted two lines up, makes the payload say what every
-				// caller already assumed. A slug that is present but blank is
-				// left alone: that is a mistake to reject, not to paper over.
-				if (array_key_exists('slug', $schemaData) === false && is_string($key) === true) {
-					$schemaData['slug'] = $key;
-				}
-
-				// Blanking `schemasMap` is a TEMPORARY mutation of shared state
-				// whose only purpose is to stop importSchema() resolving $refs in
-				// Pass 1. Its undo therefore belongs to leaving this region — on
-				// EVERY path — which is what `finally` is for.
-				//
-				// 🔴 It used to be undone on the success path only. One rejected
-				// schema then left the map empty for everything that followed, so
-				// each later schema re-saved an already-emptied map and the map
-				// ended Pass 1 holding ONLY the schemas declared after the LAST
-				// failure. The register pass resolves its slugs against that map,
-				// finds nothing, and creates the register WITHOUT those links.
-				// The fingerprint is arithmetic: in softwarecatalog 2 rejected
-				// schemas produced 18 missing register<->schema links out of 20.
-				// See ImportHandlerSchemaMapRestoreTest.
-				$savedSchemasMap = $this->schemasMap;
-				$this->schemasMap = [];
-				$schema = null;
-
-				try {
-					// Create schema without resolving cross-references.
-					$schemaSlugLower = strtolower((string)($schemaData['slug'] ?? $key));
-					$schema = $this->importSchema(
-						data: $schemaData,
-						slugsAndIdsMap: $slugsAndIdsMap,
-						owner: $owner,
-						appId: $appId,
-						version: $version,
-						force: $force,
-						registerSchemaIds: $slugToSchemaIds[$schemaSlugLower] ?? null
-					);
-				} catch (Exception $e) {
-					// A rejected schema is CONTAINED (siblings still import) but it
-					// is never silent: it is counted and NAMED in the result, so the
-					// operator sees it here rather than three layers downstream.
-					$result['skipped']['schemas']++;
-					$result['failed']['schemas'][] = [
-						'key' => (string)$key,
-						'slug' => (string)($schemaData['slug'] ?? $key),
-						'error' => $e->getMessage(),
-					];
-					$this->logger->error(
-						message: '[ImportHandler] Failed to create schema (Pass 1)',
+				// PASS 1: Create all schemas without resolving objectConfiguration.schema references.
+				// This ensures all schema entities exist before we try to look them up.
+				$this->logger->debug(
+					message: '[ImportHandler] PASS 1: Creating all schemas without cross-reference resolution',
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
+				$schemasToResolve = [];
+				// Track schemas that need $ref resolution in Pass 2.
+				foreach ($data['components']['schemas'] as $key => $schemaData) {
+					$this->logger->debug(
+						message: '[ImportHandler] Processing schema (Pass 1)',
 						context: [
 							'file' => __FILE__,
 							'line' => __LINE__,
 							'schemaKey' => $key,
-							'error' => $e->getMessage(),
-							'trace' => $e->getTraceAsString(),
+							'schemaTitle' => $schemaData['title'] ?? 'no title',
+							'schemaSlug' => $schemaData['slug'] ?? $key,
 						]
 					);
-					// Continue with other schemas instead of failing the entire import.
-				} finally {
-					// Restore on every path — success, rejection, or an \Error
-					// escaping this loop entirely.
-					$this->schemasMap = $savedSchemasMap;
-				}//end try
 
-				if ($schema === null) {
-					continue;
-				}
-
-				$this->schemasMap[$schema->getSlug()] = $schema;
-				$result['schemas'][] = $schema;
-				$schemasToResolve[$key] = $schemaData;
-				// Save for Pass 2.
-				$this->logger->debug(
-					message: '[ImportHandler] Successfully created schema (Pass 1)',
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'schemaKey' => $key,
-						'schemaSlug' => $schema->getSlug(),
-						'schemaId' => $schema->getId(),
-					]
-				);
-			}//end foreach
-
-			// One warning naming every rejected schema, at the end of the pass.
-			// The per-schema `error` lines above are one line each in a log that
-			// is otherwise almost all `debug`, so on a real import they are easy
-			// to miss; this is the line that says the import was PARTIAL.
-			if ($result['failed']['schemas'] !== []) {
-				$rejectedSlugs = array_column($result['failed']['schemas'], 'slug');
-				$this->logger->warning(
-					message: sprintf(
-						'[ImportHandler] PARTIAL IMPORT: %d of %d schema(s) were rejected and are NOT '
-						. 'linked to any register in this import: %s. Registers declaring them were '
-						. 'created without those schema references.',
-						count($rejectedSlugs),
-						count($data['components']['schemas']),
-						implode(', ', $rejectedSlugs)
-					),
-					context: [
-						'file' => __FILE__,
-						'line' => __LINE__,
-						'appId' => $appId,
-						'failedSchemas' => $result['failed']['schemas'],
-					]
-				);
-			}
-
-			$this->logger->debug(
-				message: '[ImportHandler] Pass 1 completed - all schemas created',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'createdCount' => count($result['schemas']),
-					'createdSchemas' => array_map(fn ($schema) => $schema->getSlug(), $result['schemas']),
-				]
-			);
-
-			// PASS 2: Now resolve cross-references (objectConfiguration.schema) for all schemas.
-			// All schemas now exist, so find() calls will succeed.
-			$this->logger->debug(
-				message: '[ImportHandler] PASS 2: Resolving schema cross-references',
-				context: ['file' => __FILE__, 'line' => __LINE__]
-			);
-
-			foreach ($schemasToResolve as $key => $schemaData) {
-				if (isset($schemaData['title']) === false && is_string($key) === true) {
-					$schemaData['title'] = $key;
-				}
-
-				$schemaSlug = $schemaData['slug'] ?? $key;
-
-				// Find the schema we created in Pass 1. Schemas Pass 1 skipped
-				// as up-to-date (or already reported as failed) are not in the
-				// map — the expected case on every boot of an unchanged config,
-				// so debug rather than one warning per schema per import.
-				if (($this->schemasMap[$schemaSlug] ?? null) === null) {
-					$this->logger->debug(
-						message: '[ImportHandler] Schema not found in map for Pass 2 - skipping cross-reference resolution',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'schemaSlug' => $schemaSlug]
-					);
-					continue;
-				}
-
-				try {
-					$this->logger->debug(
-						message: '[ImportHandler] Resolving cross-references for schema (Pass 2)',
-						context: ['file' => __FILE__, 'line' => __LINE__, 'schemaSlug' => $schemaSlug]
-					);
-
-					// Pass 2 MUST resolve back to the EXACT same schema Pass 1 just
-					// created/updated (schemasMap[$schemaSlug]) — not fork a second
-					// one. $slugToSchemaIds was computed from PRE-IMPORT
-					// register state, so a schema freshly CREATED in Pass 1 is not
-					// in it yet; union that schema's own id in so findBySlugInIds()
-					// below still finds it deterministically.
-					$schemaSlugLower = strtolower((string)$schemaSlug);
-					$pass2SchemaIds = $slugToSchemaIds[$schemaSlugLower] ?? null;
-					$resolvedSchemaId = $this->schemasMap[$schemaSlug]->getId();
-					if ($resolvedSchemaId !== null) {
-						$pass2SchemaIds = ($pass2SchemaIds ?? []);
-						$pass2SchemaIds[] = (int)$resolvedSchemaId;
+					if (isset($schemaData['title']) === false && is_string($key) === true) {
+						$schemaData['title'] = $key;
 					}
 
-					// Re-import with schemasMap populated to resolve cross-references.
-					$schema = $this->importSchema(
-						data: $schemaData,
-						slugsAndIdsMap: $slugsAndIdsMap,
-						owner: $owner,
-						appId: $appId,
-						version: $version,
-						force: true,
-						// Force update to resolve cross-references.
-						registerSchemaIds: $pass2SchemaIds
-					);
+					// The component key IS the slug in every app configuration this
+					// handler has ever received: the register lists name schemas by
+					// key, and `$schemaSlugLower` below already reads the key when
+					// `slug` is absent. Only importSchema()'s guard disagreed, and
+					// it rejected the fragment outright. pipelinq shipped sixteen
+					// schemas over four fragments without a `slug`, all sixteen
+					// went dark for nine days, and the app's re-import reported
+					// success. Defaulting the slug here, exactly as `title` is
+					// defaulted two lines up, makes the payload say what every
+					// caller already assumed. A slug that is present but blank is
+					// left alone: that is a mistake to reject, not to paper over.
+					if (array_key_exists('slug', $schemaData) === false && is_string($key) === true) {
+						$schemaData['slug'] = $key;
+					}
 
-					// Update in map with resolved version.
+					// Blanking `schemasMap` is a TEMPORARY mutation of shared state
+					// whose only purpose is to stop importSchema() resolving $refs in
+					// Pass 1. Its undo therefore belongs to leaving this region — on
+					// EVERY path — which is what `finally` is for.
+					//
+					// 🔴 It used to be undone on the success path only. One rejected
+					// schema then left the map empty for everything that followed, so
+					// each later schema re-saved an already-emptied map and the map
+					// ended Pass 1 holding ONLY the schemas declared after the LAST
+					// failure. The register pass resolves its slugs against that map,
+					// finds nothing, and creates the register WITHOUT those links.
+					// The fingerprint is arithmetic: in softwarecatalog 2 rejected
+					// schemas produced 18 missing register<->schema links out of 20.
+					// See ImportHandlerSchemaMapRestoreTest.
+					$savedSchemasMap = $this->schemasMap;
+					$this->schemasMap = [];
+					$schema = null;
+
+					try {
+						// Create schema without resolving cross-references.
+						$schemaSlugLower = strtolower((string)($schemaData['slug'] ?? $key));
+						// Its own savepoint: a rejected schema rolls back only its own
+						// writes (see inSavepoint()).
+						$schema = $this->inSavepoint(
+							item: fn (): Schema => $this->importSchema(
+								data: $schemaData,
+								slugsAndIdsMap: $slugsAndIdsMap,
+								owner: $owner,
+								appId: $appId,
+								version: $version,
+								force: $force,
+								registerSchemaIds: $slugToSchemaIds[$schemaSlugLower] ?? null
+							)
+						);
+					} catch (Exception $e) {
+						// A rejected schema is CONTAINED (siblings still import) but it
+						// is never silent: it is counted and NAMED in the result, so the
+						// operator sees it here rather than three layers downstream.
+						$result['skipped']['schemas']++;
+						$result['failed']['schemas'][] = [
+							'key' => (string)$key,
+							'slug' => (string)($schemaData['slug'] ?? $key),
+							'error' => $e->getMessage(),
+						];
+						$this->logger->error(
+							message: '[ImportHandler] Failed to create schema (Pass 1)',
+							context: [
+								'file' => __FILE__,
+								'line' => __LINE__,
+								'schemaKey' => $key,
+								'error' => $e->getMessage(),
+								'trace' => $e->getTraceAsString(),
+							]
+						);
+						// Continue with other schemas instead of failing the entire import.
+					} finally {
+						// Restore on every path — success, rejection, or an \Error
+						// escaping this loop entirely.
+						$this->schemasMap = $savedSchemasMap;
+					}//end try
+
+					if ($schema === null) {
+						continue;
+					}
+
 					$this->schemasMap[$schema->getSlug()] = $schema;
-
+					$result['schemas'][] = $schema;
+					$schemasToResolve[$key] = $schemaData;
+					// Save for Pass 2.
 					$this->logger->debug(
-						message: '[ImportHandler] Cross-references resolved for schema (Pass 2)',
+						message: '[ImportHandler] Successfully created schema (Pass 1)',
 						context: [
 							'file' => __FILE__,
 							'line' => __LINE__,
-							'schemaSlug' => $schemaSlug,
+							'schemaKey' => $key,
+							'schemaSlug' => $schema->getSlug(),
 							'schemaId' => $schema->getId(),
 						]
 					);
-				} catch (Exception $e) {
-					$this->logger->error(
-						message: '[ImportHandler] Failed to resolve cross-references for schema (Pass 2)',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'schemaKey' => $key,
-							'error' => $e->getMessage(),
-							'trace' => $e->getTraceAsString(),
-						]
-					);
-				}//end try
-			}//end foreach
+				}//end foreach
 
-			$this->logger->debug(
-				message: '[ImportHandler] Schema import process completed (TWO-PASS)',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'importedCount' => count($result['schemas']),
-					'importedSchemas' => array_map(fn ($schema) => $schema->getSlug(), $result['schemas']),
-				]
-			);
-		}//end if
-
-		// Process and import registers if present.
-		if (($data['components']['registers'] ?? null) !== null && is_array($data['components']['registers']) === true) {
-			foreach ($data['components']['registers'] as $slug => $registerData) {
-				$slug = strtolower($slug);
-
-				if (($registerData['schemas'] ?? null) !== null && is_array($registerData['schemas']) === true) {
-					$schemaIds = [];
-					foreach ($registerData['schemas'] as $schemaSlug) {
-						// First check if schema exists in schemasMap (schemas imported in this session).
-						if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
-							$schemaId = $this->schemasMap[$schemaSlug]->getId();
-							$schemaIds[] = $schemaId;
-							$this->logger->debug(
-								message: "[ImportHandler] Schema '{$schemaSlug}' found in schemasMap",
-								context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
-							);
-							continue;
-						}
-
-						// Schema not in map. Since the Pass-1 restore fix this has
-						// exactly ONE cause — the schema pass rejected it — so name
-						// that reason here instead of leaving the operator to
-						// correlate two log lines. Do not fall back to a database
-						// lookup: it may fail on organisation/multi-tenancy filters
-						// during cross-instance imports.
-						$rejection = null;
-						foreach ($result['failed']['schemas'] as $failedSchema) {
-							if ($failedSchema['slug'] === $schemaSlug || $failedSchema['key'] === $schemaSlug) {
-								$rejection = $failedSchema['error'];
-								break;
-							}
-						}
-
-						$reason = 'This schema should have been created in the TWO-PASS schema import phase. ';
-						if ($rejection !== null) {
-							$reason = 'It was REJECTED by the schema import phase (' . $rejection . '). ';
-						}
-
-						$msg = 'Schema with slug %s not found in schemasMap during register import. ';
-						$msg .= $reason;
-						$msg .= 'This register will be created without this schema reference.';
-						$this->logger->warning(
-							message: '[ImportHandler] ' . sprintf($msg, $schemaSlug),
-							context: ['file' => __FILE__, 'line' => __LINE__]
-						);
-					}//end foreach
-
-					$registerData['schemas'] = $schemaIds;
-				}//end if
-
-				// Propagate parent-level x-openregister.type onto the register
-				// so consuming apps can filter mock/demo data via
-				// `GET /api/registers?filters[type]=mock`. Per-register
-				// overrides on `$registerData['type']` take precedence so a
-				// single configuration file can mix register types.
-				$parentType = ($data['x-openregister']['type'] ?? null);
-				if (isset($registerData['type']) === false && $parentType !== null && $parentType !== '') {
-					$registerData['type'] = (string)$parentType;
-				}
-
-				// PER-ENTITY RESILIENCE: a single failing register MUST NOT abort
-				// the rest of the data-layer import (sibling registers, mappings,
-				// objects, seed data). Catch \Throwable (not just \Exception) so
-				// opis/json-schema validation failures and folder-access denials
-				// are also contained. Skip-and-continue with a descriptive warning,
-				// mirroring the existing per-schema / per-mapping idiom.
-				try {
-					$register = $this->importRegister(
-						data: $registerData,
-						owner: $owner,
-						appId: $appId,
-						version: $version,
-						force: $force
-					);
-					// Store register in map by slug for reference. The import call
-					// above is declared non-nullable and throws on failure, which
-					// the catch below handles.
-					$this->registersMap[$slug] = $register;
-					$result['registers'][] = $register;
-				} catch (\Throwable $e) {
-					$result['skipped']['registers']++;
+				// One warning naming every rejected schema, at the end of the pass.
+				// The per-schema `error` lines above are one line each in a log that
+				// is otherwise almost all `debug`, so on a real import they are easy
+				// to miss; this is the line that says the import was PARTIAL.
+				if ($result['failed']['schemas'] !== []) {
+					$rejectedSlugs = array_column($result['failed']['schemas'], 'slug');
 					$this->logger->warning(
-						message: "[ImportHandler] Skipping register '{$slug}' - import failed: " . $e->getMessage(),
+						message: sprintf(
+							'[ImportHandler] PARTIAL IMPORT: %d of %d schema(s) were rejected and are NOT '
+							. 'linked to any register in this import: %s. Registers declaring them were '
+							. 'created without those schema references.',
+							count($rejectedSlugs),
+							count($data['components']['schemas']),
+							implode(', ', $rejectedSlugs)
+						),
 						context: [
 							'file' => __FILE__,
 							'line' => __LINE__,
 							'appId' => $appId,
-							'registerSlug' => $slug,
-							'error' => $e->getMessage(),
+							'failedSchemas' => $result['failed']['schemas'],
 						]
 					);
-				}//end try
-			}//end foreach
-		}//end if
-
-		// Process and import mappings if present.
-		if (($data['components']['mappings'] ?? null) !== null
-			&& is_array($data['components']['mappings']) === true
-		) {
-			$slugsAndIdsMap = $this->mappingMapper->getSlugToIdMap(includeNullOrg: true);
-
-			$this->logger->debug(
-				message: '[ImportHandler] Starting mapping import',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'totalMappings' => count($data['components']['mappings']),
-					'mappingKeys' => array_keys($data['components']['mappings']),
-				]
-			);
-
-			foreach ($data['components']['mappings'] as $key => $mappingData) {
-				if (isset($mappingData['name']) === false && is_string($key) === true) {
-					$mappingData['name'] = $key;
 				}
 
-				$mappingSlug = $mappingData['slug'] ?? $key;
+				$this->logger->debug(
+					message: '[ImportHandler] Pass 1 completed - all schemas created',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'createdCount' => count($result['schemas']),
+						'createdSchemas' => array_map(fn ($schema) => $schema->getSlug(), $result['schemas']),
+					]
+				);
 
-				try {
-					$mapping = $this->importMapping(
-						data: $mappingData,
-						slugsAndIdsMap: $slugsAndIdsMap,
-						configuration: $configuration,
-						version: $version,
-						force: $force
-					);
+				// PASS 2: Now resolve cross-references (objectConfiguration.schema) for all schemas.
+				// All schemas now exist, so find() calls will succeed.
+				$this->logger->debug(
+					message: '[ImportHandler] PASS 2: Resolving schema cross-references',
+					context: ['file' => __FILE__, 'line' => __LINE__]
+				);
 
-					if ($mapping !== null) {
-						$result['mappings'][] = $mapping;
+				foreach ($schemasToResolve as $key => $schemaData) {
+					if (isset($schemaData['title']) === false && is_string($key) === true) {
+						$schemaData['title'] = $key;
 					}
 
-					$mappingId = null;
-					if ($mapping !== null) {
-						$mappingId = $mapping->getId();
+					$schemaSlug = $schemaData['slug'] ?? $key;
+
+					// Find the schema we created in Pass 1. Schemas Pass 1 skipped
+					// as up-to-date (or already reported as failed) are not in the
+					// map — the expected case on every boot of an unchanged config,
+					// so debug rather than one warning per schema per import.
+					if (($this->schemasMap[$schemaSlug] ?? null) === null) {
+						$this->logger->debug(
+							message: '[ImportHandler] Schema not found in map for Pass 2 - skipping cross-reference resolution',
+							context: ['file' => __FILE__, 'line' => __LINE__, 'schemaSlug' => $schemaSlug]
+						);
+						continue;
 					}
 
-					$this->logger->debug(
-						message: '[ImportHandler] Mapping imported successfully',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'mappingSlug' => $mappingSlug,
-							'mappingId' => $mappingId,
-						]
-					);
-				} catch (Exception $e) {
-					$this->logger->error(
-						message: '[ImportHandler] Failed to import mapping',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'mappingKey' => $key,
-							'error' => $e->getMessage(),
-						]
-					);
-				}//end try
-			}//end foreach
+					try {
+						$this->logger->debug(
+							message: '[ImportHandler] Resolving cross-references for schema (Pass 2)',
+							context: ['file' => __FILE__, 'line' => __LINE__, 'schemaSlug' => $schemaSlug]
+						);
 
-			$this->logger->debug(
-				message: '[ImportHandler] Mapping import completed',
-				context: [
-					'file' => __FILE__,
-					'line' => __LINE__,
-					'importedCount' => count($result['mappings']),
-				]
-			);
-		}//end if
+						// Pass 2 MUST resolve back to the EXACT same schema Pass 1 just
+						// created/updated (schemasMap[$schemaSlug]) — not fork a second
+						// one. $slugToSchemaIds was computed from PRE-IMPORT
+						// register state, so a schema freshly CREATED in Pass 1 is not
+						// in it yet; union that schema's own id in so findBySlugInIds()
+						// below still finds it deterministically.
+						$schemaSlugLower = strtolower((string)$schemaSlug);
+						$pass2SchemaIds = $slugToSchemaIds[$schemaSlugLower] ?? null;
+						$resolvedSchemaId = $this->schemasMap[$schemaSlug]->getId();
+						if ($resolvedSchemaId !== null) {
+							$pass2SchemaIds = ($pass2SchemaIds ?? []);
+							$pass2SchemaIds[] = (int)$resolvedSchemaId;
+						}
+
+						// Re-import with schemasMap populated to resolve cross-references.
+						$schema = $this->inSavepoint(
+							item: fn (): Schema => $this->importSchema(
+								data: $schemaData,
+								slugsAndIdsMap: $slugsAndIdsMap,
+								owner: $owner,
+								appId: $appId,
+								version: $version,
+								force: true,
+								// Force update to resolve cross-references.
+								registerSchemaIds: $pass2SchemaIds
+							)
+						);
+
+						// Update in map with resolved version.
+						$this->schemasMap[$schema->getSlug()] = $schema;
+
+						$this->logger->debug(
+							message: '[ImportHandler] Cross-references resolved for schema (Pass 2)',
+							context: [
+								'file' => __FILE__,
+								'line' => __LINE__,
+								'schemaSlug' => $schemaSlug,
+								'schemaId' => $schema->getId(),
+							]
+						);
+					} catch (Exception $e) {
+						$this->logger->error(
+							message: '[ImportHandler] Failed to resolve cross-references for schema (Pass 2)',
+							context: [
+								'file' => __FILE__,
+								'line' => __LINE__,
+								'schemaKey' => $key,
+								'error' => $e->getMessage(),
+								'trace' => $e->getTraceAsString(),
+							]
+						);
+					}//end try
+				}//end foreach
+
+				$this->logger->debug(
+					message: '[ImportHandler] Schema import process completed (TWO-PASS)',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'importedCount' => count($result['schemas']),
+						'importedSchemas' => array_map(fn ($schema) => $schema->getSlug(), $result['schemas']),
+					]
+				);
+			}//end if
+
+			// Process and import registers if present.
+			if (($data['components']['registers'] ?? null) !== null && is_array($data['components']['registers']) === true) {
+				foreach ($data['components']['registers'] as $slug => $registerData) {
+					$slug = strtolower($slug);
+
+					if (($registerData['schemas'] ?? null) !== null && is_array($registerData['schemas']) === true) {
+						$schemaIds = [];
+						foreach ($registerData['schemas'] as $schemaSlug) {
+							// First check if schema exists in schemasMap (schemas imported in this session).
+							if (($this->schemasMap[$schemaSlug] ?? null) !== null) {
+								$schemaId = $this->schemasMap[$schemaSlug]->getId();
+								$schemaIds[] = $schemaId;
+								$this->logger->debug(
+									message: "[ImportHandler] Schema '{$schemaSlug}' found in schemasMap",
+									context: ['file' => __FILE__, 'line' => __LINE__, 'schemaId' => $schemaId]
+								);
+								continue;
+							}
+
+							// Schema not in map. Since the Pass-1 restore fix this has
+							// exactly ONE cause — the schema pass rejected it — so name
+							// that reason here instead of leaving the operator to
+							// correlate two log lines. Do not fall back to a database
+							// lookup: it may fail on organisation/multi-tenancy filters
+							// during cross-instance imports.
+							$rejection = null;
+							foreach ($result['failed']['schemas'] as $failedSchema) {
+								if ($failedSchema['slug'] === $schemaSlug || $failedSchema['key'] === $schemaSlug) {
+									$rejection = $failedSchema['error'];
+									break;
+								}
+							}
+
+							$reason = 'This schema should have been created in the TWO-PASS schema import phase. ';
+							if ($rejection !== null) {
+								$reason = 'It was REJECTED by the schema import phase (' . $rejection . '). ';
+							}
+
+							$msg = 'Schema with slug %s not found in schemasMap during register import. ';
+							$msg .= $reason;
+							$msg .= 'This register will be created without this schema reference.';
+							$this->logger->warning(
+								message: '[ImportHandler] ' . sprintf($msg, $schemaSlug),
+								context: ['file' => __FILE__, 'line' => __LINE__]
+							);
+						}//end foreach
+
+						$registerData['schemas'] = $schemaIds;
+					}//end if
+
+					// Propagate parent-level x-openregister.type onto the register
+					// so consuming apps can filter mock/demo data via
+					// `GET /api/registers?filters[type]=mock`. Per-register
+					// overrides on `$registerData['type']` take precedence so a
+					// single configuration file can mix register types.
+					$parentType = ($data['x-openregister']['type'] ?? null);
+					if (isset($registerData['type']) === false && $parentType !== null && $parentType !== '') {
+						$registerData['type'] = (string)$parentType;
+					}
+
+					// PER-ENTITY RESILIENCE: a single failing register MUST NOT abort
+					// the rest of the data-layer import (sibling registers, mappings,
+					// objects, seed data). Catch \Throwable (not just \Exception) so
+					// opis/json-schema validation failures and folder-access denials
+					// are also contained. Skip-and-continue with a descriptive warning,
+					// mirroring the existing per-schema / per-mapping idiom.
+					try {
+						$register = $this->inSavepoint(
+							item: fn (): Register => $this->importRegister(
+								data: $registerData,
+								owner: $owner,
+								appId: $appId,
+								version: $version,
+								force: $force
+							)
+						);
+						// Store register in map by slug for reference. The import call
+						// above is declared non-nullable and throws on failure, which
+						// the catch below handles.
+						$this->registersMap[$slug] = $register;
+						$result['registers'][] = $register;
+					} catch (\Throwable $e) {
+						$result['skipped']['registers']++;
+						$this->logger->warning(
+							message: "[ImportHandler] Skipping register '{$slug}' - import failed: " . $e->getMessage(),
+							context: [
+								'file' => __FILE__,
+								'line' => __LINE__,
+								'appId' => $appId,
+								'registerSlug' => $slug,
+								'error' => $e->getMessage(),
+							]
+						);
+					}//end try
+				}//end foreach
+			}//end if
+
+			// Process and import mappings if present.
+			if (($data['components']['mappings'] ?? null) !== null
+				&& is_array($data['components']['mappings']) === true
+			) {
+				$slugsAndIdsMap = $this->mappingMapper->getSlugToIdMap(includeNullOrg: true);
+
+				$this->logger->debug(
+					message: '[ImportHandler] Starting mapping import',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'totalMappings' => count($data['components']['mappings']),
+						'mappingKeys' => array_keys($data['components']['mappings']),
+					]
+				);
+
+				foreach ($data['components']['mappings'] as $key => $mappingData) {
+					if (isset($mappingData['name']) === false && is_string($key) === true) {
+						$mappingData['name'] = $key;
+					}
+
+					$mappingSlug = $mappingData['slug'] ?? $key;
+
+					try {
+						$mapping = $this->inSavepoint(
+							item: fn (): ?Mapping => $this->importMapping(
+								data: $mappingData,
+								slugsAndIdsMap: $slugsAndIdsMap,
+								configuration: $configuration,
+								version: $version,
+								force: $force
+							)
+						);
+
+						if ($mapping !== null) {
+							$result['mappings'][] = $mapping;
+						}
+
+						$mappingId = null;
+						if ($mapping !== null) {
+							$mappingId = $mapping->getId();
+						}
+
+						$this->logger->debug(
+							message: '[ImportHandler] Mapping imported successfully',
+							context: [
+								'file' => __FILE__,
+								'line' => __LINE__,
+								'mappingSlug' => $mappingSlug,
+								'mappingId' => $mappingId,
+							]
+						);
+					} catch (Exception $e) {
+						$this->logger->error(
+							message: '[ImportHandler] Failed to import mapping',
+							context: [
+								'file' => __FILE__,
+								'line' => __LINE__,
+								'mappingKey' => $key,
+								'error' => $e->getMessage(),
+							]
+						);
+					}//end try
+				}//end foreach
+
+				$this->logger->debug(
+					message: '[ImportHandler] Mapping import completed',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'importedCount' => count($result['mappings']),
+					]
+				);
+			}//end if
+		} catch (\Throwable $e) {
+			// Keep what completed before the escape, exactly as autocommit did.
+			$this->closeImportTransactionAfterError(owned: $ownsTransaction, error: $e);
+			throw $e;
+		}//end try
+
+		$this->commitImportTransaction(owned: $ownsTransaction);
 
 		// Selectielijst categories the app ships (`components.selectionLists`),
 		// written as selectielijst register rows so its schemas' `archive.classification`
