@@ -570,7 +570,7 @@ class MagicSearchHandler {
 	}//end buildFilteredQuery()
 
 	/**
-	 * Narrow the query by `_related` blocks, or refuse it.
+	 * Narrow the query by `_related` and `_referenced` blocks, or refuse it.
 	 *
 	 * 🔴 A REFUSAL HERE IS DELIBERATE AND MUST NOT BECOME A LOG LINE. Every
 	 * other filter on this path that cannot be honoured is recorded in
@@ -589,9 +589,10 @@ class MagicSearchHandler {
 	 * @throws InvalidArgumentException When a block names a schema that cannot be resolved.
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	private function applyRelatedRowFilters(IQueryBuilder $qb, array $query, ?int $registerId): void {
-		if (array_key_exists('_related', $query) === false) {
+		if (array_key_exists('_related', $query) === false && array_key_exists('_referenced', $query) === false) {
 			return;
 		}
 
