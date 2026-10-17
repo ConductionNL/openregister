@@ -130,6 +130,8 @@ class OrganisationController extends Controller {
 	 * @param IGroupManager $groupManager Group manager for admin checks
 	 * @param OrganisationUsageService $usageService Measures an organisation's usage
 	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI constructor: each argument is a collaborator an endpoint uses.
+	 *
 	 * @spec openspec/specs/tenant-lifecycle/spec.md
 	 */
 	public function __construct(
