@@ -485,7 +485,7 @@ class FlowEngine {
 				$items = $pinned;
 				$log[] = [
 					'transition' => $name,
-					'startedAt' => $this->moment(at: $startedAt),
+					'startedAt' => $this->moment(microtime: $startedAt),
 					'type' => $stepType,
 					'status' => 'pinned',
 					'itemsIn' => count($itemsIn),
@@ -544,7 +544,7 @@ class FlowEngine {
 				$items = FlowItems::normalise(value: $produced);
 				$entry = [
 					'transition' => $name,
-					'startedAt' => $this->moment(at: $startedAt),
+					'startedAt' => $this->moment(microtime: $startedAt),
 					'type' => $stepType,
 					'status' => 'completed',
 					'itemsIn' => count($itemsIn),
@@ -576,7 +576,7 @@ class FlowEngine {
 				// to end, and it ends with their message and their outcome.
 				$log[] = [
 					'transition' => $name,
-					'startedAt' => $this->moment(at: $startedAt),
+					'startedAt' => $this->moment(microtime: $startedAt),
 					'type' => $stepType,
 					'status' => 'stopped',
 					'reason' => $stop->getMessage(),
@@ -609,7 +609,7 @@ class FlowEngine {
 				// transition, re-entering the step that asked to wait.
 				$log[] = [
 					'transition' => $name,
-					'startedAt' => $this->moment(at: $startedAt),
+					'startedAt' => $this->moment(microtime: $startedAt),
 					'status' => 'suspended',
 					'reason' => $suspension->getMessage(),
 				];
@@ -624,7 +624,7 @@ class FlowEngine {
 			} catch (Throwable $e) {
 				$entry = [
 					'transition' => $name,
-					'startedAt' => $this->moment(at: $startedAt),
+					'startedAt' => $this->moment(microtime: $startedAt),
 					'type' => $stepType,
 					'status' => 'failed',
 					'error' => $e->getMessage(),
@@ -859,7 +859,7 @@ class FlowEngine {
 				$items = $pinned;
 				$entry = [
 					'transition' => $name,
-					'startedAt' => $this->moment(at: $startedAt),
+					'startedAt' => $this->moment(microtime: $startedAt),
 					'type' => $stepType,
 					'status' => 'pinned',
 					'itemsIn' => count($itemsIn),
@@ -895,7 +895,7 @@ class FlowEngine {
 				$items = FlowItems::normalise(value: $produced);
 				$entry = [
 					'transition' => $name,
-					'startedAt' => $this->moment(at: $startedAt),
+					'startedAt' => $this->moment(microtime: $startedAt),
 					'type' => $stepType,
 					'status' => 'completed',
 					'itemsIn' => count($itemsIn),
@@ -912,7 +912,7 @@ class FlowEngine {
 				$streams->release(places: $claimed);
 				$log[] = [
 					'transition' => $name,
-					'startedAt' => $this->moment(at: $startedAt),
+					'startedAt' => $this->moment(microtime: $startedAt),
 					'type' => $stepType,
 					'status' => 'stopped',
 					'reason' => $stop->getMessage(),
@@ -938,7 +938,7 @@ class FlowEngine {
 				// resumes ON this transition — and its siblings keep going.
 				$log[] = [
 					'transition' => $name,
-					'startedAt' => $this->moment(at: $startedAt),
+					'startedAt' => $this->moment(microtime: $startedAt),
 					'status' => 'suspended',
 					'reason' => $suspension->getMessage(),
 					'streamId' => $streamId,
@@ -963,7 +963,7 @@ class FlowEngine {
 			} catch (Throwable $e) {
 				$entry = [
 					'transition' => $name,
-					'startedAt' => $this->moment(at: $startedAt),
+					'startedAt' => $this->moment(microtime: $startedAt),
 					'type' => $stepType,
 					'status' => 'failed',
 					'error' => $e->getMessage(),
@@ -1310,16 +1310,16 @@ class FlowEngine {
 	 * A step's own start, so a run view can say when each step ran rather
 	 * than adding up durations from the run's start.
 	 *
-	 * @param float $at The moment.
+	 * @param float $microtime The moment, as `microtime(true)` returns it.
 	 *
 	 * @return string The moment, UTC, e.g. `2026-10-07T08:41:02.380+00:00`.
 	 *
 	 * @spec openspec/changes/flow-step-log-lines/specs/flow-step-log-lines/spec.md
 	 */
-	private function moment(float $at): string {
-		$moment = DateTimeImmutable::createFromFormat('U.u', sprintf('%.6F', $at), new DateTimeZone('UTC'));
+	private function moment(float $microtime): string {
+		$moment = DateTimeImmutable::createFromFormat('U.u', sprintf('%.6F', $microtime), new DateTimeZone('UTC'));
 		if ($moment === false) {
-			return gmdate('Y-m-d\TH:i:s+00:00', (int)$at);
+			return gmdate('Y-m-d\TH:i:s+00:00', (int)$microtime);
 		}
 
 		return $moment->format('Y-m-d\TH:i:s.vP');
