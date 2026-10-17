@@ -36,13 +36,29 @@ use Psr\Log\NullLogger;
  * service cannot measure is null, never 0.
  */
 class OrganisationUsageServiceTest extends TestCase {
+	/**
+	 * The magic mapper double.
+	 *
+	 * @var MagicMapper&MockObject
+	 */
 	private MagicMapper&MockObject $magicMapper;
+
+	/**
+	 * The file mapper double.
+	 *
+	 * @var FileMapper&MockObject
+	 */
 	private FileMapper&MockObject $fileMapper;
 
+	/**
+	 * Create the mapper doubles.
+	 *
+	 * @return void
+	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->magicMapper = $this->createMock(MagicMapper::class);
-		$this->fileMapper = $this->createMock(FileMapper::class);
+		$this->magicMapper = $this->createMock(originalClassName: MagicMapper::class);
+		$this->fileMapper = $this->createMock(originalClassName: FileMapper::class);
 	}
 
 	/**
@@ -69,13 +85,25 @@ class OrganisationUsageServiceTest extends TestCase {
 				private bool $available,
 				private array $counters,
 			) {
-				parent::__construct($magicMapper, $fileMapper, $logger);
+				parent::__construct(magicMapper: $magicMapper, fileMapper: $fileMapper, logger: $logger);
 			}
 
+			/**
+			 * Whether the stand-in APCu is enabled.
+			 *
+			 * @return bool
+			 */
 			protected function apcuAvailable(): bool {
 				return $this->available;
 			}
 
+			/**
+			 * Read a stand-in counter.
+			 *
+			 * @param string $key The key.
+			 *
+			 * @return int|null
+			 */
 			protected function apcuFetchInt(string $key): ?int {
 				return $this->counters[$key] ?? null;
 			}
@@ -99,52 +127,92 @@ class OrganisationUsageServiceTest extends TestCase {
 		return $organisation;
 	}
 
+	/**
+	 * Users and groups count the members.
+	 *
+	 * @return void
+	 */
 	public function testUsersAndGroupsCountTheMembers(): void {
 		$usage = $this->service(available: false)->measure($this->organisation());
 
-		$this->assertSame(2, $usage['users']);
-		$this->assertSame(1, $usage['groups']);
+		$this->assertSame(expected: 2, actual: $usage['users']);
+		$this->assertSame(expected: 1, actual: $usage['groups']);
 	}
 
+	/**
+	 * Storage sums the folders of the organisations objects.
+	 *
+	 * @return void
+	 */
 	public function testStorageSumsTheFoldersOfTheOrganisationsObjects(): void {
 		$this->magicMapper->expects($this->once())->method('findFolderIdsByOrganisation')
 			->with('org-1')->willReturn([11, 12]);
 		$this->fileMapper->expects($this->once())->method('sumSizesByFileIds')
 			->with([11, 12])->willReturn(5120);
 
-		$this->assertSame(5120, $this->service(available: false)->measure($this->organisation())['storage']);
+		$this->assertSame(expected: 5120, actual: $this->service(available: false)->measure($this->organisation())['storage']);
 	}
 
+	/**
+	 * Storage that cannot be read is null not zero.
+	 *
+	 * @return void
+	 */
 	public function testStorageThatCannotBeReadIsNullNotZero(): void {
-		$this->magicMapper->method('findFolderIdsByOrganisation')->willThrowException(new Exception('db down'));
+		$this->magicMapper->method('findFolderIdsByOrganisation')->willThrowException(exception: new Exception(message: 'db down'));
 
-		$this->assertNull($this->service(available: false)->measure($this->organisation())['storage']);
+		$this->assertNull(actual: $this->service(available: false)->measure($this->organisation())['storage']);
 	}
 
+	/**
+	 * Requests are null without a quota because nothing counts them.
+	 *
+	 * @return void
+	 */
 	public function testRequestsAreNullWithoutAQuotaBecauseNothingCountsThem(): void {
 		$usage = $this->service(available: true, counters: ['or_quota_org-1_' . date('YmdH') => 7])->measure($this->organisation());
 
-		$this->assertNull($usage['requests']);
+		$this->assertNull(actual: $usage['requests']);
 	}
 
+	/**
+	 * Requests are null without apcu.
+	 *
+	 * @return void
+	 */
 	public function testRequestsAreNullWithoutApcu(): void {
-		$this->assertNull($this->service(available: false)->measure($this->organisation(requestQuota: 100))['requests']);
+		$this->assertNull(actual: $this->service(available: false)->measure($this->organisation(requestQuota: 100))['requests']);
 	}
 
+	/**
+	 * Requests read this hours counter.
+	 *
+	 * @return void
+	 */
 	public function testRequestsReadThisHoursCounter(): void {
 		$usage = $this->service(available: true, counters: ['or_quota_org-1_' . date('YmdH') => 7])
 			->measure($this->organisation(requestQuota: 100));
 
-		$this->assertSame(7, $usage['requests']);
+		$this->assertSame(expected: 7, actual: $usage['requests']);
 	}
 
+	/**
+	 * Requests are zero when counted and none this hour.
+	 *
+	 * @return void
+	 */
 	public function testRequestsAreZeroWhenCountedAndNoneThisHour(): void {
 		$usage = $this->service(available: true)->measure($this->organisation(requestQuota: 100));
 
-		$this->assertSame(0, $usage['requests']);
+		$this->assertSame(expected: 0, actual: $usage['requests']);
 	}
 
+	/**
+	 * Bandwidth is never claimed.
+	 *
+	 * @return void
+	 */
 	public function testBandwidthIsNeverClaimed(): void {
-		$this->assertNull($this->service(available: true)->measure($this->organisation(requestQuota: 100))['bandwidth']);
+		$this->assertNull(actual: $this->service(available: true)->measure($this->organisation(requestQuota: 100))['bandwidth']);
 	}
 }
