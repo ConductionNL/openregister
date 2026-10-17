@@ -142,7 +142,7 @@ class CredentialController extends Controller {
 		}
 
 		if ($this->requestedScope() === self::SCOPE_ORGANISATION) {
-			return $this->indexOrganisation();
+			return $this->indexOrganisation(uid: $uid);
 		}
 
 		try {
@@ -169,20 +169,34 @@ class CredentialController extends Controller {
 	}//end index()
 
 	/**
-	 * List the caller's active organisation's credential metadata (members may read).
+	 * List one organisation's credential metadata (members may read).
 	 *
-	 * Returns the organisation-scoped credentials whose `organisation` equals the
-	 * caller's active organisation UUID. The caller is a member of their own active
-	 * organisation by construction, so any member may read this metadata; no secret
-	 * is ever included (design D4).
+	 * Without an `organisation` param this is the caller's active organisation, of which
+	 * the caller is a member by construction. With one (the organisation picker of the
+	 * credential form), the caller must have access to THAT organisation (a member, or a
+	 * Nextcloud admin), checked here rather than trusted from the client. No secret is ever
+	 * included (design D4).
 	 *
-	 * @return JSONResponse The active organisation's credential metadata.
+	 * @param string $uid The caller's UID.
+	 *
+	 * @return JSONResponse The organisation's credential metadata, or a static 403.
 	 *
 	 * @spec openspec/specs/credential-broker/spec.md
+	 * @spec openspec/changes/broker-acts-for-an-organisation-member/specs/credential-broker/spec.md#requirement-an-organisation-credential-names-and-lets-the-admin-choose-its-organisation
 	 */
-	private function indexOrganisation(): JSONResponse {
-		$activeOrg = $this->organisationService->getActiveOrganisation()?->getUuid();
-		if ($activeOrg === null || $activeOrg === '') {
+	private function indexOrganisation(string $uid): JSONResponse {
+		$activeOrg = trim((string)$this->request->getParam('organisation', ''));
+		if ($activeOrg !== ''
+			&& $this->organisationService->userHasAccessToOrganisation(organisationUuid: $activeOrg, userId: $uid) === false
+		) {
+			return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
+		}
+
+		if ($activeOrg === '') {
+			$activeOrg = (string)($this->organisationService->getActiveOrganisation()?->getUuid() ?? '');
+		}
+
+		if ($activeOrg === '') {
 			return new JSONResponse(['results' => []]);
 		}
 
