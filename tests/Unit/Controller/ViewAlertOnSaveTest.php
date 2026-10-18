@@ -266,16 +266,18 @@ class ViewAlertOnSaveTest extends TestCase {
 	}//end testPatchWithoutAlertKeepsIt()
 
 	/**
-	 * A member with write on a shared view may set its alert.
+	 * A member with write on a shared view may set its alert, naming themselves.
+	 *
+	 * Naming anybody else is refused; ViewAlertRecipientsTest pins that.
 	 */
 	public function testAWriteMemberMaySetTheAlert(): void {
 		$this->stored(sharedWith: [['group' => 'sales', 'mode' => 'write']]);
-		$this->request->method('getParams')->willReturn(['alert' => self::ALERT]);
+		$this->request->method('getParams')->willReturn(['alert' => ['recipients' => ['user:member']] + self::ALERT]);
 
 		$response = $this->controllerFor(uid: 'member', groups: ['sales'])->patch('7');
 
 		$this->assertSame(200, $response->getStatus());
-		$this->assertSame(self::STORED_ALERT, $this->written?->getAlert());
+		$this->assertSame(expected: array_replace(self::STORED_ALERT, ['recipients' => ['user:member']]), actual: $this->written?->getAlert());
 	}//end testAWriteMemberMaySetTheAlert()
 
 	/**

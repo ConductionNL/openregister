@@ -22,6 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCA\OpenRegister\Exception\ViewAlertRecipientException;
+use OCA\OpenRegister\Service\View\ViewAlert;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -198,5 +200,122 @@ class ViewerReachResolver {
 			mayAdminister: $mayAdminister
 		);
 	}//end refusedFields()
+
+	/**
+	 * Refuse a save whose alert names recipients this caller may not add.
+	 *
+	 * The view is judged as it will be saved: the stored view (or, on create,
+	 * just its owner) with the body's `isPublic` and `sharedWith` laid over it.
+	 * The stored alert's recipients are the ones not judged again.
+	 *
+	 * @param array<string, mixed> $view  The stored view, or `['owner' => <uid>]` on create.
+	 * @param ViewerReach          $reach The caller's reach.
+	 * @param array<string, mixed> $data  The request body.
+	 *
+	 * @return void
+	 *
+	 * @throws ViewAlertRecipientException When a recipient may not be added.
+	 *
+	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+	 */
+	public function assertMayNameRecipients(array $view, ViewerReach $reach, array $data): void {
+		$previous = ($view['alert']['recipients'] ?? []);
+		$refused  = $this->refusedRecipients(
+			view: array_merge($view, array_intersect_key($data, ['isPublic' => true, 'sharedWith' => true])),
+			reach: $reach,
+			alert: ViewAlert::declaredIn(body: $data),
+			previous: array_values(array_filter((array)$previous, 'is_string'))
+		);
+		if ($refused !== []) {
+			throw new ViewAlertRecipientException(recipients: $refused);
+		}
+	}//end assertMayNameRecipients()
+
+	/**
+	 * The alert recipients this caller may not add to one view.
+	 *
+	 * An alert tells its recipients the view's name and count, so a recipient
+	 * must be someone the view already reaches. The owner and an administrator
+	 * may add any user or group the view reaches; a write member may add only
+	 * themselves. Recipients already on the stored alert are not judged again,
+	 * so a member can change the threshold of an alert the owner set up.
+	 *
+	 * @param array<string, mixed>    $view     The view as it will be saved: owner, isPublic, sharedWith.
+	 * @param ViewerReach             $reach    The caller's reach.
+	 * @param array<string, mixed>|null $alert  The declared alert, or null when the body carries none.
+	 * @param array<int, string>      $previous The recipients on the stored alert.
+	 *
+	 * @return array<int, string> The refused recipients, empty when the alert may be saved.
+	 *
+	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+	 */
+	public function refusedRecipients(array $view, ViewerReach $reach, ?array $alert, array $previous): array {
+		$declared = ($alert['recipients'] ?? []);
+		if (is_array($declared) === false) {
+			return [];
+		}
+
+		$mayAdminister = $this->shares->mayAdminister(view: $view, userId: $reach->userId, isAdmin: $reach->isAdmin);
+
+		$refused = [];
+		foreach ($declared as $recipient) {
+			if (is_string($recipient) === false || in_array($recipient, $previous, true) === true) {
+				continue;
+			}
+
+			$allowed = ($recipient === ViewAlert::USER_PREFIX.$reach->userId);
+			if ($mayAdminister === true) {
+				$allowed = $this->recipientReads(view: $view, recipient: $recipient);
+			}
+
+			if ($allowed === false) {
+				$refused[] = $recipient;
+			}
+		}
+
+		return array_values(array_unique($refused));
+	}//end refusedRecipients()
+
+	/**
+	 * Whether a recipient, a `user:<uid>` or a group id, may read the view.
+	 *
+	 * @param array<string, mixed> $view      The view.
+	 * @param string               $recipient The recipient.
+	 *
+	 * @return bool True when the view reaches every person the recipient names.
+	 */
+	private function recipientReads(array $view, string $recipient): bool {
+		if (str_starts_with($recipient, ViewAlert::USER_PREFIX) === false) {
+			// A group reads the view when the view is shared with it or public.
+			return $this->shares->accessFor(view: $view, userId: '', userGroups: [$recipient]) !== null;
+		}
+
+		$uid = substr($recipient, strlen(ViewAlert::USER_PREFIX));
+		if ($uid === '') {
+			return false;
+		}
+
+		try {
+			if ($this->groupManager->isAdmin($uid) === true) {
+				return true;
+			}
+
+			$groups = array_values(
+				array_filter(
+					$this->shares->shareGroups(view: $view),
+					fn (string $gid): bool => $this->groupManager->isInGroup($uid, $gid) === true
+				)
+			);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'[ViewerReachResolver] Could not read the groups of alert recipient {uid}; refusing it: {error}',
+				['uid' => $uid, 'error' => $e->getMessage()]
+			);
+
+			return false;
+		}
+
+		return $this->shares->accessFor(view: $view, userId: $uid, userGroups: $groups) !== null;
+	}//end recipientReads()
 
 }//end class

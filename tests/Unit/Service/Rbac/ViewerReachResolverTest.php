@@ -200,4 +200,23 @@ class ViewerReachResolverTest extends TestCase {
 		$this->assertSame([], $refused);
 	}//end testTheOwnerIsRefusedNothingOnTheirOwnView()
 
+	/**
+	 * An unreadable membership refuses the recipient rather than admitting it.
+	 *
+	 * @return void
+	 */
+	public function testARecipientWhoseGroupsCannotBeReadIsRefused(): void {
+		$this->groupManager->method('isAdmin')->willReturn(false);
+		$this->groupManager->method('isInGroup')->willThrowException(new RuntimeException('LDAP is down'));
+
+		$refused = $this->resolver->refusedRecipients(
+			view: ['owner' => 'annemarie', 'isPublic' => false, 'sharedWith' => [['group' => 'sales', 'mode' => 'read']]],
+			reach: new ViewerReach(userId: 'annemarie', groups: [], isAdmin: false),
+			alert: ['recipients' => ['user:pieter']],
+			previous: []
+		);
+
+		$this->assertSame(expected: ['user:pieter'], actual: $refused);
+	}//end testARecipientWhoseGroupsCannotBeReadIsRefused()
+
 }//end class

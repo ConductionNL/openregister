@@ -65,6 +65,13 @@ final class ViewAlert implements JsonSerializable {
 	public const OPERATORS = [self::GTE, self::LTE];
 
 	/**
+	 * The prefix that names a person rather than a group among the recipients.
+	 *
+	 * @var string
+	 */
+	public const USER_PREFIX = 'user:';
+
+	/**
 	 * Waiting for the count to cross.
 	 *
 	 * @var string

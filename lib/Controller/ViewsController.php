@@ -199,7 +199,7 @@ class ViewsController extends Controller {
 	}//end sharesFrom()
 
 	/**
-	 * The answer to a refused save: 422 naming the field of a malformed alert, 400 otherwise.
+	 * The answer to a refused save: the alert's own status naming its field, 400 otherwise.
 	 *
 	 * @param InvalidArgumentException $e The refusal.
 	 *
@@ -207,7 +207,7 @@ class ViewsController extends Controller {
 	 */
 	private function refusalFor(InvalidArgumentException $e): JSONResponse {
 		if ($e instanceof InvalidViewAlertException) {
-			return new JSONResponse(data: ['error' => $e->getMessage(), 'field' => $e->getField()], statusCode: 422);
+			return new JSONResponse(data: ['error' => $e->getMessage(), 'field' => $e->getField()] + $e->getDetails(), statusCode: $e->getStatus());
 		}
 
 		return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
@@ -229,7 +229,10 @@ class ViewsController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal, or null when allowed.
 	 *
+	 * @throws InvalidViewAlertException When the alert names a recipient this caller may not add.
+	 *
 	 * @spec openspec/specs/saved-search-views/spec.md
+	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
 	 */
 	private function refuseForbiddenViewFields(View $view, string $userId, array $data): ?JSONResponse {
 		// Only keys that name a view property are judged, so a `_limit` or
@@ -258,6 +261,7 @@ class ViewsController extends Controller {
 		);
 
 		if ($refused === []) {
+			$this->viewers->assertMayNameRecipients(view: $view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId), data: $data);
 			return null;
 		}
 
@@ -508,6 +512,7 @@ class ViewsController extends Controller {
 				return $shareRefusal;
 			}
 
+			$this->viewers->assertMayNameRecipients(view: ['owner' => $userId], reach: $this->viewers->reachOf(userId: $userId), data: $data);
 			$view = $this->viewService->create(
 				name: $data['name'],
 				description: $data['description'] ?? '',
