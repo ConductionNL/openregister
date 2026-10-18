@@ -84,7 +84,7 @@ class ViewAlertCrossedListener implements IEventListener {
 	 *
 	 * @var string
 	 */
-	public const USER_PREFIX = 'user:';
+	public const USER_PREFIX = ViewAlert::USER_PREFIX;
 
 	/**
 	 * Constructor.
