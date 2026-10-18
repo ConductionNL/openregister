@@ -130,7 +130,7 @@ class ReferencedRowFilterTest extends TestCase {
 		$schemaMapper->expects($this->once())->method('findBySlug')->with('subsidieAanvraag', 2)->willReturn([$schema]);
 
 		$tableHandler = $this->createMock(MagicTableHandler::class);
-		$tableHandler->method('getTableNameForRegisterSchema')->willReturn('oc_openregister_table_1_7');
+		$tableHandler->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_7');
 		$tableHandler->method('existsTableForRegisterSchema')->willReturn(true);
 
 		$rbac = $this->createMock(MagicRbacHandler::class);
