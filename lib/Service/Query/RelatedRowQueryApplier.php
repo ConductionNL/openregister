@@ -111,6 +111,15 @@ class RelatedRowQueryApplier {
 		foreach (array_values($filters) as $position => $filter) {
 			$alias   = sprintf('rel%d', $position);
 			$schema  = $this->resolveSchema(name: $filter->schema);
+
+			// A schema that has never stored an object has no table yet, so no
+			// row can match. Same answer the list path gives for a missing table.
+			if ($this->tableHandler->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+				$qb->andWhere($qb->createFunction('1 = 0'));
+				$applied++;
+				continue;
+			}
+
 			$rendered = $clause->render(
 				filter: $filter,
 				engine: $engine,

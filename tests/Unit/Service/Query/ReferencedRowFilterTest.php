@@ -131,6 +131,7 @@ class ReferencedRowFilterTest extends TestCase {
 
 		$tableHandler = $this->createMock(MagicTableHandler::class);
 		$tableHandler->method('getTableNameForRegisterSchema')->willReturn('oc_openregister_table_1_7');
+		$tableHandler->method('existsTableForRegisterSchema')->willReturn(true);
 
 		$rbac = $this->createMock(MagicRbacHandler::class);
 		$rbac->expects($this->once())->method('buildRbacPredicateForAlias')
