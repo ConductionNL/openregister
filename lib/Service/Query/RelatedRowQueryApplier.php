@@ -123,7 +123,9 @@ class RelatedRowQueryApplier {
 			$rendered = $clause->render(
 				filter: $filter,
 				engine: $engine,
-				table: $this->tableHandler->getTableNameForRegisterSchema(register: $register, schema: $schema),
+				// Raw SQL gets no automatic table prefix; Nextcloud's connection
+				// replaces `*PREFIX*` with the instance's (`oc_` by default).
+				table: '*PREFIX*'.$this->tableHandler->getTableNameForRegisterSchema(register: $register, schema: $schema),
 				outerAlias: $outerAlias,
 				innerAlias: $alias,
 				// 🔴 THE ACCESS PREDICATE FOR THE RELATED SCHEMA, NOT THE OUTER

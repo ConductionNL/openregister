@@ -63,7 +63,7 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$schemaMapper->method('findBySlug')->willReturn($found);
 
 		$tableHandler = $this->createMock(MagicTableHandler::class);
-		$tableHandler->method('getTableNameForRegisterSchema')->willReturn('oc_openregister_table_1_2');
+		$tableHandler->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_2');
 		$tableHandler->method('existsTableForRegisterSchema')->willReturn($tableExists);
 
 		$rbac = $this->createMock(MagicRbacHandler::class);

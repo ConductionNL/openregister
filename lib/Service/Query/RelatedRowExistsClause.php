@@ -120,7 +120,7 @@ final class RelatedRowExistsClause {
 	 *
 	 * @param RelatedRowFilter $filter          The parsed filter.
 	 * @param string           $engine          The database engine.
-	 * @param string           $table           The objects table.
+	 * @param string           $table           The related table as SQL names it, `*PREFIX*`-qualified.
 	 * @param string           $outerAlias      The alias of the outer object row.
 	 * @param string           $innerAlias      The alias to give the related row.
 	 * @param string           $accessPredicate SQL restricting the related rows to ones the caller may read.
