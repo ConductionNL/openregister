@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Service\Rbac;
 use OCA\OpenRegister\Exception\ViewAlertRecipientException;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCP\IGroupManager;
+use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -59,18 +60,20 @@ class ViewerReachResolver {
 	 *
 	 * @param IUserSession    $userSession  Who is signed in.
 	 * @param IGroupManager   $groupManager Their groups, and whether they administer the instance.
-	 * @param LoggerInterface $logger       Where an unreadable membership is noted.
+	 * @param LoggerInterface   $logger       Where an unreadable membership is noted.
+	 * @param IUserManager|null $userManager  Which users exist, for user shares; without it no user share is accepted.
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
+		private readonly ?IUserManager $userManager=null,
 	) {
 		$this->shares = new ViewShareResolver();
 	}//end __construct()
 
 	/**
-	 * Findings for a share list about to be written, against the groups that exist.
+	 * Findings for a share list about to be written, against the users and groups that exist.
 	 *
 	 * @param mixed $sharedWith The declared share list.
 	 *
@@ -81,7 +84,8 @@ class ViewerReachResolver {
 	public function shareFindings(mixed $sharedWith): array {
 		return $this->shares->validateShares(
 			sharedWith: $sharedWith,
-			groupExists: fn (string $gid): bool => $this->groupManager->groupExists($gid)
+			groupExists: fn (string $gid): bool => $this->groupManager->groupExists($gid),
+			userExists: fn (string $uid): bool => $this->userManager?->userExists($uid) === true
 		);
 	}//end shareFindings()
 

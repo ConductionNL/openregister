@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCP\IGroupManager;
 use OCP\IUser;
+use OCP\IUserManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -219,4 +220,25 @@ class ViewerReachResolverTest extends TestCase {
 		$this->assertSame(expected: ['user:pieter'], actual: $refused);
 	}//end testARecipientWhoseGroupsCannotBeReadIsRefused()
 
+	/**
+	 * A user share is checked against the users that exist, and refused without a user manager.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/saved-view-user-shares/tasks.md#task-2
+	 */
+	public function testUserSharesAreCheckedAgainstTheUserManager(): void {
+		$users = $this->createMock(IUserManager::class);
+		$users->method('userExists')->willReturnCallback(static fn (string $uid): bool => $uid === 'fatma');
+		$withUsers = new ViewerReachResolver(
+			userSession: $this->userSession,
+			groupManager: $this->groupManager,
+			logger: $this->createMock(LoggerInterface::class),
+			userManager: $users
+		);
+
+		$this->assertSame([], $withUsers->shareFindings(sharedWith: [['user' => 'fatma', 'mode' => 'read']]));
+		$this->assertSame('share.unknown-user', $withUsers->shareFindings(sharedWith: [['user' => 'nobody', 'mode' => 'read']])[0]['code']);
+		$this->assertSame('share.unknown-user', $this->resolver->shareFindings(sharedWith: [['user' => 'fatma', 'mode' => 'read']])[0]['code']);
+	}//end testUserSharesAreCheckedAgainstTheUserManager()
 }//end class
