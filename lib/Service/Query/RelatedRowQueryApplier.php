@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Query;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -55,29 +54,19 @@ class RelatedRowQueryApplier {
 	 *
 	 * @param SchemaMapper      $schemaMapper The schema lookup.
 	 * @param MagicTableHandler $tableHandler Resolves a register and schema to their table.
-	 * @param MagicRbacHandler  $rbacHandler  Builds the access predicate for the related rows.
 	 * @param IDBConnection     $db           The connection, read for its platform.
 	 * @param LoggerInterface   $logger       The logger.
-	 * @param RelatedRowAccess|null $access       The access rules beyond the row predicate (property read rule,
-	 *                                            organisation boundary); defaults to one that fails closed.
+	 * @param RelatedRowAccess  $access       The access rules for the related rows (row predicate, property read
+	 *                                        rule, organisation boundary).
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
 		private readonly MagicTableHandler $tableHandler,
-		private readonly MagicRbacHandler $rbacHandler,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
-		?RelatedRowAccess $access = null,
+		private readonly RelatedRowAccess $access,
 	) {
-		$this->access = ($access ?? new RelatedRowAccess(logger: $logger));
 	}//end __construct()
-
-	/**
-	 * The access rules beyond the related schema's row predicate.
-	 *
-	 * @var RelatedRowAccess
-	 */
-	private readonly RelatedRowAccess $access;
 
 	/**
 	 * Whether the caller may read a property, for a filter that names it (nested-path filters on the outer table).
@@ -163,14 +152,10 @@ class RelatedRowQueryApplier {
 				// case properties by asking who may read cases.
 				accessPredicate: $this->access->predicate(
 					qb: $qb,
-					rbacPredicate: $this->rbacHandler->buildRbacPredicateForAlias(
-						schema: $schema,
-						alias: $alias,
-						action: 'read',
-						tableName: $relatedTable
-					),
-					scope: $organisationScopeFor($schema, $register->getId()),
-					alias: $alias
+					schema: $schema,
+					alias: $alias,
+					tableName: $relatedTable,
+					scope: $organisationScopeFor($schema, $register->getId())
 				),
 				parameterPrefix: $alias,
 				storage: RelatedRowExistsClause::STORAGE_COLUMNS

@@ -618,13 +618,13 @@ class MagicMapper extends AbstractObjectMapper {
 		// reference and one on a path inside an object property are the same
 		// oracle on a field the caller may not read.
 		$relatedRowAccess = new RelatedRowAccess(
+			rbac: $this->rbacHandler,
 			logger: $this->logger,
 			guard: new PropertyReadGuard(container: $this->container, logger: $this->logger)
 		);
 		$relatedRowApplier = new RelatedRowQueryApplier(
 			schemaMapper: $this->schemaMapper,
 			tableHandler: $this->tableHandler,
-			rbacHandler: $this->rbacHandler,
 			db: $this->db,
 			logger: $this->logger,
 			access: $relatedRowAccess

@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -123,9 +124,9 @@ class RelatedRowPrefixedDatabaseTest extends TestCase {
 		(new RelatedRowQueryApplier(
 			schemaMapper: $schemaMapper,
 			tableHandler: $tableHandler,
-			rbacHandler: $rbac,
 			db: $this->createMock(IDBConnection::class),
-			logger: new NullLogger()
+			logger: new NullLogger(),
+			access: new RelatedRowAccess(rbac: $rbac, logger: new NullLogger())
 		))->apply(qb: $qb, query: $query, register: $register, organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]);
 
 		return [$where, $parameters];

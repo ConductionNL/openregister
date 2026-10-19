@@ -80,10 +80,9 @@ class RelatedRowQueryApplierTest extends TestCase {
 		return new RelatedRowQueryApplier(
 			schemaMapper: $schemaMapper,
 			tableHandler: $tableHandler,
-			rbacHandler: $rbac,
 			db: $this->createMock(IDBConnection::class),
 			logger: new NullLogger(),
-			access: ($guard === null ? null : new RelatedRowAccess(logger: new NullLogger(), guard: $guard))
+			access: new RelatedRowAccess(rbac: $rbac, logger: new NullLogger(), guard: $guard)
 		);
 	}//end applierFinding()
 

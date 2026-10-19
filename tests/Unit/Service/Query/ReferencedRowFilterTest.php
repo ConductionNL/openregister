@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Query\RelatedRowExistsClause;
 use OCA\OpenRegister\Service\Query\RelatedRowFilter;
 use OCA\OpenRegister\Service\Query\RelatedRowFilterParser;
+use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -154,9 +155,9 @@ class ReferencedRowFilterTest extends TestCase {
 		$applied = (new RelatedRowQueryApplier(
 			schemaMapper: $schemaMapper,
 			tableHandler: $tableHandler,
-			rbacHandler: $rbac,
 			db: $this->createMock(IDBConnection::class),
-			logger: new NullLogger()
+			logger: new NullLogger(),
+			access: new RelatedRowAccess(rbac: $rbac, logger: new NullLogger())
 		))->apply(qb: $qb, query: $this->forwardQuery(), register: $register, organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]);
 
 		$this->assertSame(1, $applied);
