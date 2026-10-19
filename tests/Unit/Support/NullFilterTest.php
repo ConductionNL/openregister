@@ -36,4 +36,27 @@ class NullFilterTest extends TestCase {
 		$this->assertNull(NullFilter::nullCheck(criterion: ['in' => ['a']]));
 		$this->assertNull(NullFilter::nullCheck(criterion: ['isnull' => 'true', 'ne' => 'x']));
 	}
+
+	public function testOrNullIsTakenOffTheBagAndReadAsAQueryStringBoolean(): void {
+		$this->assertSame([['ne' => 'true'], true], NullFilter::splitOrNull(criterion: ['ne' => 'true', 'orNull' => 'true']));
+		$this->assertSame([['ne' => 'true'], true], NullFilter::splitOrNull(criterion: ['ne' => 'true', 'orNull' => true]));
+		$this->assertSame([['ne' => 'true'], false], NullFilter::splitOrNull(criterion: ['ne' => 'true', 'orNull' => 'false']));
+	}
+
+	public function testACriterionWithoutOrNullComesBackUnchanged(): void {
+		$this->assertSame(['open', false], NullFilter::splitOrNull(criterion: 'open'));
+		$this->assertSame([['ne' => 'x'], false], NullFilter::splitOrNull(criterion: ['ne' => 'x']));
+	}
+
+	public function testAdmitNullOrsTheAndedConditionsWithIsNull(): void {
+		$this->assertSame(
+			['(((a > 1) AND (a < 5)) OR a IS NULL)'],
+			NullFilter::admitNull(conditions: ['a > 1', 'a < 5'], column: 'a', orNull: true)
+		);
+	}
+
+	public function testAdmitNullLeavesTheConditionsAloneWhenNotAsked(): void {
+		$this->assertSame(['a <> 1'], NullFilter::admitNull(conditions: ['a <> 1'], column: 'a', orNull: false));
+		$this->assertSame([], NullFilter::admitNull(conditions: [], column: 'a', orNull: true));
+	}
 }
