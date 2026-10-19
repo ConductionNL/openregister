@@ -7694,6 +7694,9 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return list<int> The folder file ids.
 	 *
+	 * @throws \RuntimeException When a table could not be read: a sum over the tables that could be read would
+	 *                           be too low and look measured, so the whole measurement fails (and is logged).
+	 *
 	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
 	 */
 	public function findFolderIdsByOrganisation(string $organisationUuid): array {
@@ -7701,6 +7704,7 @@ class MagicMapper extends AbstractObjectMapper {
 		$folderCol = 't.' . self::METADATA_PREFIX . 'folder';
 		$deletedCol = 't.' . self::METADATA_PREFIX . 'deleted';
 		$folderIds = [];
+		$failed    = [];
 
 		foreach (array_keys($this->discoverMagicTables()) as $fullTableName) {
 			$bareTableName = substr($fullTableName, strlen($this->getTablePrefix()));
@@ -7720,9 +7724,31 @@ class MagicMapper extends AbstractObjectMapper {
 
 				$result->closeCursor();
 			} catch (\Exception $e) {
-				continue;
-			}
+				// 🔴 NEVER SKIPPED IN SILENCE. A table that fails (a missing
+				// _folder/_organisation column, a lock, a timeout) drops its folders
+				// from the sum, and the caller would show a measured-looking number
+				// that is too low. The service contract is "a figure that cannot be
+				// measured is null, never 0", so this fails after the scan, naming
+				// every table it could not read.
+				$this->logger->warning(
+					message: '[MagicMapper] findFolderIdsByOrganisation: could not read a table',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'table' => $fullTableName,
+						'organisation' => $organisationUuid,
+						'error' => $e->getMessage(),
+					]
+				);
+				$failed[] = $fullTableName;
+			}//end try
 		}//end foreach
+
+		if ($failed !== []) {
+			throw new \RuntimeException(
+				'The folders of organisation ' . $organisationUuid . ' could not be read from: ' . implode(', ', $failed)
+			);
+		}
 
 		return array_keys($folderIds);
 	}//end findFolderIdsByOrganisation()
