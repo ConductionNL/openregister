@@ -52,6 +52,11 @@ use Symfony\Component\Uid\Uuid;
  */
 class RelationCascadeHandler {
 	/**
+	 * The lookup scope of a caller that compares identities only: no RBAC, no tenancy.
+	 */
+	public const SYSTEM_SCOPE = ['_rbac' => false, '_multitenancy' => false];
+
+	/**
 	 * Constructor for RelationCascadeHandler.
 	 *
 	 * @param MagicMapper $objectEntityMapper Object entity data mapper.
@@ -80,7 +85,10 @@ class RelationCascadeHandler {
 	 *
 	 * For path and URL references, it extracts the last part and matches against schema slugs (case-insensitive).
 	 *
-	 * @param string $reference The schema reference to resolve.
+	 * @param string               $reference The schema reference to resolve.
+	 * @param array<string, mixed> $scope     Named arguments for the schema lookup; {@see self::SYSTEM_SCOPE} reads the
+	 *                                        schema without the caller's RBAC and tenancy, for callers that only
+	 *                                        compare identities (metadata) and disclose nothing of the schema.
 	 *
 	 * @return null|numeric-string The resolved schema ID or null if not found.
 	 *
@@ -88,7 +96,7 @@ class RelationCascadeHandler {
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function resolveSchemaReference(string $reference): ?string {
+	public function resolveSchemaReference(string $reference, array $scope = []): ?string {
 		if (empty($reference) === true) {
 			return null;
 		}
@@ -104,7 +112,7 @@ class RelationCascadeHandler {
 			) === true
 		) {
 			try {
-				$schema = $this->schemaMapper->find(id: $cleanReference);
+				$schema = $this->schemaMapper->find(...(['id' => $cleanReference] + $scope));
 				return (string)$schema->getId();
 			} catch (DoesNotExistException $e) {
 				// Continue with other resolution methods.
@@ -120,7 +128,7 @@ class RelationCascadeHandler {
 
 		// Try to find schema by slug (case-insensitive).
 		try {
-			$schemas = $this->schemaMapper->findAll();
+			$schemas = $this->schemaMapper->findAll(...$scope);
 			foreach ($schemas as $schema) {
 				if (strcasecmp($schema->getSlug(), $slug) === 0) {
 					return (string)$schema->getId();

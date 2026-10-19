@@ -222,6 +222,9 @@ class ContextCapturingNode implements IFlowNode {
 }
 
 class FlowRunServiceTest extends TestCase {
+
+	private LoggerInterface&\PHPUnit\Framework\MockObject\MockObject $logger;
+
 	use \OCA\OpenRegister\Tests\Unit\Service\Flow\PublishedVersionDouble;
 
 	private FlowRunMapper $mapper;
@@ -286,12 +289,13 @@ class FlowRunServiceTest extends TestCase {
 			}
 		);
 
+		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->service = new FlowRunService(
 			$this->mapper,
 			$this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
 			$engine,
 			$registry,
-			$this->createMock(LoggerInterface::class),
+			$this->logger,
 			$container
 		);
 	}
@@ -476,7 +480,7 @@ class FlowRunServiceTest extends TestCase {
 	}//end testAReAskLoopThatReceivesTheAnswerTerminates()
 
 	/**
-	 * Two signals on one suspended run keep the keys of both, whichever came last.
+	 * Two signals on one suspended run keep the keys of both; a key both carry keeps the answer already waiting.
 	 *
 	 * @return void
 	 */
@@ -493,8 +497,29 @@ class FlowRunServiceTest extends TestCase {
 		$signal = $run->getContext()[FlowRunService::SIGNAL_CONTEXT_KEY];
 		$this->assertSame('task-1', $signal['taskId'], 'the first listener\'s key survives');
 		$this->assertSame('alice', $signal['completedBy'], 'the second listener\'s key is added');
-		$this->assertSame('approved-later', $signal['decision'], 'a key both set takes the later value');
+		$this->assertSame('approved', $signal['decision'], 'a key both set keeps the answer already waiting, never the later value');
 	}//end testTwoSignalsOnASuspendedRunAreMerged()
+
+	/**
+	 * A conflicting key is logged once with the key name (not the values); the same value twice is no conflict.
+	 *
+	 * @return void
+	 */
+	public function testAConflictingSignalKeyIsLoggedAndASameValueIsNot(): void {
+		$flow = ['id' => 'f1', 'nodes' => [['id' => 'first', 'type' => 'test.ask']], 'edges' => []];
+		$run = $this->service->queue('f1', user: 'alice');
+		$run = $this->service->execute($run, $flow, new RunSubject());
+		$this->logger->expects($this->once())->method('warning')->with(
+			$this->stringContains('first answer stands'),
+			$this->callback(static fn (array $context): bool => $context['keys'] === ['decision'])
+		);
+
+		$run = $this->service->signal($run, ['decision' => 'approved', 'taskId' => 'task-1']);
+		$run = $this->service->signal($run, ['taskId' => 'task-1']);
+		$run = $this->service->signal($run, ['decision' => 'rejected']);
+
+		$this->assertSame(['decision' => 'approved', 'taskId' => 'task-1'], $run->getContext()[FlowRunService::SIGNAL_CONTEXT_KEY]);
+	}//end testAConflictingSignalKeyIsLoggedAndASameValueIsNot()
 
 	/**
 	 * THE RESUME ANSWER IS SCOPED TO THE NODE THAT SUSPENDED — through the

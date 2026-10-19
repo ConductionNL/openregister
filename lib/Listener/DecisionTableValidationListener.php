@@ -103,40 +103,59 @@ class DecisionTableValidationListener implements IEventListener {
 	 * @return void
 	 */
 	private function validate(ObjectCreatingEvent|ObjectUpdatingEvent $event, ObjectEntity $object): void {
-		$isTable = $this->isDecisionTable(object: $object);
-		if ($isTable === false) {
-			return;
-		}
-
-		if ($isTable === null) {
-			$this->refuse(
-				event: $event,
-				message: 'The object could not be checked against the decision-table rules, so it was not saved: its schema or register could not be read.'
-			);
-
-			return;
-		}
-
 		$data = $object->getObject();
 		if (is_array($data) === false) {
 			$data = [];
 		}
 
+		$problems = $this->problemsFor(
+			schema: $object->getSchema(),
+			register: $object->getRegister(),
+			data: $data,
+			uuid: (string)$object->getUuid()
+		);
+		if ($problems === null || $problems === []) {
+			return;
+		}
+
+		$this->refuse(event: $event, message: 'The decision table cannot be saved: ' . implode('; ', $problems) . '.');
+	}//end validate()
+
+	/**
+	 * What stops a row from being stored as a decision table, for the single save and for the bulk path.
+	 *
+	 * The bulk writer dispatches no ObjectCreatingEvent, so it asks this directly: one rule, two entry points.
+	 *
+	 * @param string|null          $schema   The row's schema reference (id or slug).
+	 * @param string|null          $register The row's register reference (id or slug).
+	 * @param array<string, mixed> $data     The row's own properties.
+	 * @param string               $uuid     The row's uuid, '' for a new row.
+	 *
+	 * @return array<int, string>|null Null when the row is no decision table, else the problems (empty when it is valid).
+	 *
+	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
+	 */
+	public function problemsFor(?string $schema, ?string $register, array $data, string $uuid): ?array {
+		$isTable = $this->isDecisionTableRef(schema: $schema, register: $register);
+		if ($isTable === false) {
+			return null;
+		}
+
+		if ($isTable === null) {
+			return ['The object could not be checked against the decision-table rules, so it was not saved: its schema or register could not be read'];
+		}
+
 		$problems = $this->validator->validate(table: $data);
 		$key      = trim((string)($data['key'] ?? ''));
-		$clash    = $this->keyTakenBy(key: $key, uuid: (string)$object->getUuid());
+		$clash    = $this->keyTakenBy(key: $key, uuid: $uuid);
 		if ($clash === null) {
 			$problems[] = sprintf('the key "%s" could not be checked against the tables already stored', $key);
 		} elseif ($clash !== '') {
 			$problems[] = sprintf('the key "%s" is already used by decision table %s', $key, $clash);
 		}
 
-		if ($problems === []) {
-			return;
-		}
-
-		$this->refuse(event: $event, message: 'The decision table cannot be saved: ' . implode('; ', $problems) . '.');
-	}//end validate()
+		return $problems;
+	}//end problemsFor()
 
 	/**
 	 * Refuse the save.
@@ -159,12 +178,15 @@ class DecisionTableValidationListener implements IEventListener {
 	 * cannot be told, and that answer is null: the guard must not wave a table
 	 * through because it could not look.
 	 *
-	 * @param ObjectEntity $object The object being saved.
+	 * @param string|null $schema   The schema reference.
+	 * @param string|null $register The register reference.
 	 *
 	 * @return bool|null True for a decision table, false for any other object, null when it cannot be told.
+	 *
+	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
 	 */
-	private function isDecisionTable(ObjectEntity $object): ?bool {
-		$reference = $object->getSchema();
+	public function isDecisionTableRef(?string $schema, ?string $register): ?bool {
+		$reference = $schema;
 		if ($reference === null || $reference === '') {
 			return false;
 		}
@@ -184,18 +206,17 @@ class DecisionTableValidationListener implements IEventListener {
 		// The slug alone is not the table: another app may still hold a schema
 		// of the same slug in its own register (buildiq did until decision
 		// 196), and its rows are not OpenRegister's tables to validate.
-		return $this->inDecisionTableRegister(object: $object);
-	}//end isDecisionTable()
+		return $this->inDecisionTableRegister(reference: $register);
+	}//end isDecisionTableRef()
 
 	/**
 	 * Whether the object lives in the decision-tables register.
 	 *
-	 * @param ObjectEntity $object The object being saved.
+	 * @param string|null $reference The register reference.
 	 *
 	 * @return bool|null True when its register is `decision-tables`, null when the register could not be read.
 	 */
-	private function inDecisionTableRegister(ObjectEntity $object): ?bool {
-		$reference = $object->getRegister();
+	private function inDecisionTableRegister(?string $reference): ?bool {
 		if ($reference === null || $reference === '') {
 			return false;
 		}

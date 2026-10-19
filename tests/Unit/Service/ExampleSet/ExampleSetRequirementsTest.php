@@ -210,6 +210,28 @@ class ExampleSetRequirementsTest extends ExampleSetTestCase {
 		$this->assertSame(['password'], $row['authentication']['modes'], 'what the set appended is still taken out');
 	}
 
+	public function testAChangeOnAnObjectThatCannotBeReadIsNotReportedAsReverted(): void {
+		$this->store->offer(register: 'site', schema: 'portal');
+		$portal = $this->store->seed(register: 'site', schema: 'portal', data: ['slug' => 'demo', 'title' => 'Demo', 'authentication' => ['modes' => ['password']]]);
+		$this->app(app: 'openregister', fragment: $this->castFile());
+		$this->app(app: 'site', fragment: $this->signInChange());
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		// A database that is down says nothing about the object: the change is still on it and still recorded.
+		$this->store->unreadable = [$portal];
+		$removed = $this->remover->remove(set: 'demo');
+
+		$this->assertSame(0, $removed['removed']['changes']);
+		$this->assertCount(1, array_filter($removed['failed'], static fn (string $line): bool => str_starts_with($line, 'change site/sign-in')));
+		$this->assertSame(['password', 'nextcloud'], $this->store->rows['site portal'][$portal]['authentication']['modes']);
+
+		// Once it can be read again the next remove undoes it.
+		$this->store->unreadable = [];
+		$again = $this->remover->remove(set: 'demo');
+		$this->assertSame(1, $again['removed']['changes']);
+		$this->assertSame(['password'], $this->store->rows['site portal'][$portal]['authentication']['modes']);
+	}
+
 	public function testAChangeThatIsAlreadyThereIsNotRecordedAndSurvivesRemove(): void {
 		$this->store->offer(register: 'site', schema: 'portal');
 		$portal = $this->store->seed(

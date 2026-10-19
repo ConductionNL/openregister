@@ -59,6 +59,13 @@ class SeedVersionLedger {
 	private array $maps = [];
 
 	/**
+	 * The app ids whose map changed since it was last written.
+	 *
+	 * @var array<string, true>
+	 */
+	private array $dirty = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IAppConfig $appConfig OpenRegister's app config.
@@ -86,6 +93,9 @@ class SeedVersionLedger {
 	/**
 	 * Record the version a seed was shipped at, when it differs from the recorded one.
 	 *
+	 * Kept in memory until {@see self::flush()}: an app ships up to a hundred and more seeds in one import,
+	 * and rewriting the whole map once per seed made the import quadratic in the map's size.
+	 *
 	 * @param string $appId   The importing app id.
 	 * @param string $seed    The seed's identity: register id, schema id and slug.
 	 * @param string $version The shipped version.
@@ -102,8 +112,26 @@ class SeedVersionLedger {
 
 		$map[$seed] = $version;
 		$this->maps[$appId] = $map;
-		$this->appConfig->setValueString('openregister', $this->key(appId: $appId), (string)json_encode($map), lazy: true);
+		$this->dirty[$appId] = true;
 	}//end record()
+
+	/**
+	 * Write every map that changed, once per app id.
+	 *
+	 * The import calls this when it has gone through its seeds. A map that was not written (the process ended
+	 * first) only costs the next import a comparison against the older version, never a lost update.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/seed-objects-follow-the-shipped-version/specs/data-import-export/spec.md
+	 */
+	public function flush(): void {
+		foreach (array_keys($this->dirty) as $appId) {
+			$this->appConfig->setValueString('openregister', $this->key(appId: (string)$appId), (string)json_encode($this->maps[$appId]), lazy: true);
+		}
+
+		$this->dirty = [];
+	}//end flush()
 
 	/**
 	 * One app id's map, read once per request.

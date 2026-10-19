@@ -26,7 +26,7 @@ use OCA\OpenRegister\Service\Decision\DecisionService;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
 use OCA\OpenRegister\Service\Decision\ReviewPolicyResolver;
-use OCA\OpenRegister\Service\File\FolderManagementHandler;
+use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\AppFramework\Http;
@@ -192,7 +192,7 @@ class DecisionOwnershipTest extends TestCase {
 				schemaMapper: $schemas,
 				fileSettings: new FileSettingsHandler(appConfig: $this->createMock(IAppConfig::class)),
 				rootFolder: $this->createMock(IRootFolder::class),
-				folders: $this->createMock(FolderManagementHandler::class),
+				owners: $this->createMock(ManagedFileOwnerLookup::class),
 				logger: $logger
 			),
 			db: $this->createMock(IDBConnection::class)
@@ -216,7 +216,7 @@ class DecisionOwnershipTest extends TestCase {
 					schemaMapper: $schemas,
 					fileSettings: new FileSettingsHandler(appConfig: $this->createMock(IAppConfig::class)),
 					rootFolder: $this->createMock(IRootFolder::class),
-					folders: $this->createMock(FolderManagementHandler::class),
+					owners: $this->createMock(ManagedFileOwnerLookup::class),
 					logger: $logger
 				),
 				decisions: new DecisionService(decisionMapper: $decisionMapper),

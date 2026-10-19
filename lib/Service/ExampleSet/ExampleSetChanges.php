@@ -284,16 +284,20 @@ class ExampleSetChanges {
 	 *
 	 * @param array<string, mixed> $entry A record entry from apply().
 	 *
-	 * @return array{ok: bool, left: array<int, string>} Whether the object no longer carries the change (or is gone),
+	 * @return array{ok: bool, left: array<int, string>} Whether the object no longer carries the change (or is gone; false
+	 *                                                    too when the object could not be read),
 	 *                                                    and the paths left because somebody changed them.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function revert(array $entry): array {
-		$row = $this->store->get(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']);
+		// `read()` tells an object that is gone (nothing left to undo) from a read that failed (nothing is known,
+		// so nothing is reported as undone and the record keeps the change).
+		$read = $this->store->read(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']);
+		$row  = $read['row'];
 		if ($row === null) {
-			return ['ok' => true, 'left' => []];
+			return ['ok' => ($read['error'] === ''), 'left' => []];
 		}
 
 		$fields = $this->jsonFields(change: $entry);
@@ -319,17 +323,30 @@ class ExampleSetChanges {
 			}
 		}
 
-		foreach ((array) $entry['append'] as $append) {
-			$list = (array) ($this->paths->atPath(row: $row, path: $append['path'])['value'] ?? []);
-			$kept = array_values(array_filter($list, static fn ($item): bool => $item !== $append['value']));
-			$row  = $this->paths->withPath(row: $row, path: $append['path'], value: $kept);
-		}
-
+		$row = $this->withoutAppended(row: $row, appended: (array) $entry['append']);
 		$row = $this->paths->withJsonText(row: $row, fields: $fields);
 		$why = $this->store->update(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id'], data: $row);
 
 		return ['ok' => ($why === ''), 'left' => $left];
 	}//end revert()
+
+	/**
+	 * The row without the values a change appended, wherever their lists are now.
+	 *
+	 * @param array<string, mixed>              $row      The row.
+	 * @param array<int, array<string, mixed>>  $appended The appended values, each with its list `path` and `value`.
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	private function withoutAppended(array $row, array $appended): array {
+		foreach ($appended as $append) {
+			$list = (array) ($this->paths->atPath(row: $row, path: $append['path'])['value'] ?? []);
+			$kept = array_values(array_filter($list, static fn ($item): bool => $item !== $append['value']));
+			$row  = $this->paths->withPath(row: $row, path: $append['path'], value: $kept);
+		}
+
+		return $row;
+	}//end withoutAppended()
 
 	/**
 	 * An object as it is sent, with each field it keeps as JSON text encoded.

@@ -96,8 +96,11 @@ async function mountPanel() {
 		global: {
 			mocks: {
 				t: (app, text, params = {}) =>
-					text.replace(/\{(\w+)\}/g, (match, key) => String(params[key] ?? match)),
-				n: (app, singular, plural, count) => singular.replace('%n', String(count)),
+					text.replace(/\{(\w+)\}/g, (match, key) =>
+						String(params[key] ?? match),
+					),
+				n: (app, singular, plural, count) =>
+					singular.replace('%n', String(count)),
 			},
 		},
 	})
@@ -131,7 +134,9 @@ describe('the Register descriptors panel', () => {
 		await button(wrapper, 'Re-import').trigger('click')
 		const dialog = wrapper.find('[data-nc="NcDialog"]')
 		expect(dialog.exists()).toBe(true)
-		expect(dialog.text()).toContain('takes the authorization of its schemas from the file')
+		expect(dialog.text()).toContain(
+			'takes the authorization of its schemas from the file',
+		)
 		expect(axios.post).not.toHaveBeenCalled()
 
 		await button(dialog, 'Cancel').trigger('click')
@@ -151,13 +156,17 @@ describe('the Register descriptors panel', () => {
 		const wrapper = await mountPanel()
 
 		await button(wrapper, 'Re-import').trigger('click')
-		await button(wrapper.find('[data-nc="NcDialog"]'), 'Re-import').trigger('click')
+		await button(wrapper.find('[data-nc="NcDialog"]'), 'Re-import').trigger(
+			'click',
+		)
 		await flush()
 
 		expect(axios.post).toHaveBeenCalledTimes(1)
 		const note = wrapper.find('.descriptors__outcome')
 		expect(note.text()).toContain('Dossiq was imported from dossiq.')
-		expect(note.text()).toContain('Authorization taken from the file over a local change: 1.')
+		expect(note.text()).toContain(
+			'Authorization taken from the file over a local change: 1.',
+		)
 		expect(note.text()).toContain('x: authorization')
 		expect(note.classes()).toContain('descriptors__outcome--warning')
 		wrapper.unmount()
@@ -165,12 +174,18 @@ describe('the Register descriptors panel', () => {
 
 	it('is a plain success when no authorization block was replaced', async () => {
 		axios.post.mockResolvedValueOnce({
-			data: { outcome: 'imported', counts: { authorizationReplaced: 0 }, replaced: [] },
+			data: {
+				outcome: 'imported',
+				counts: { authorizationReplaced: 0 },
+				replaced: [],
+			},
 		})
 		const wrapper = await mountPanel()
 
 		await button(wrapper, 'Re-import').trigger('click')
-		await button(wrapper.find('[data-nc="NcDialog"]'), 'Re-import').trigger('click')
+		await button(wrapper.find('[data-nc="NcDialog"]'), 'Re-import').trigger(
+			'click',
+		)
 		await flush()
 
 		const note = wrapper.find('.descriptors__outcome')

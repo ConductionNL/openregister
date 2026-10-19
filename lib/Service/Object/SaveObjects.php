@@ -71,6 +71,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
@@ -189,6 +190,7 @@ class SaveObjects {
 	 *                                             wave-12 Fix 3 per-row JSON-Schema validation
 	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher for object lifecycle events
 	 * @param AuditTrailMapper|null $auditTrailMapper Audit trail mapper for logging bulk changes
+	 * @param DecisionTableBulkGuard|null $decisionTables Applies the decision-table save rules to a bulk save
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -205,6 +207,7 @@ class SaveObjects {
 		private readonly ?ValidateObject $validateHandler = null,
 		private readonly ?IEventDispatcher $eventDispatcher = null,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
+		private readonly ?DecisionTableBulkGuard $decisionTables = null,
 	) {
 
 	}//end __construct()
@@ -368,6 +371,7 @@ class SaveObjects {
 		// Validation under `_validation: true` runs Opis per-row when
 		// requested. See `/tmp/wave11-or-engine-primitives.md` Section D.
 		$safeguardStart = microtime(true);
+		$objects = $this->refuseInvalidDecisionTables(objects: $objects, register: $register, schema: $schema, result: $result);
 		$objects = $this->applyBulkSafeguards(
 			objects: $objects,
 			register: $register,
@@ -3349,4 +3353,41 @@ class SaveObjects {
 
 		return [];
 	}//end scanStringForRelation()
+
+	/**
+	 * Drop the decision-table rows the single save would have refused.
+	 *
+	 * The bulk writer dispatches no ObjectCreatingEvent, so the duplicate-key and executability checks of
+	 * DecisionTableValidationListener never ran for a bulk save. Runs before the other safeguards, on the caller's
+	 * own array positions, so a refusal names the row it is about.
+	 *
+	 * @param array<int|string, array<string, mixed>> $objects  The raw rows.
+	 * @param Register|string|int|null                $register Default register context.
+	 * @param Schema|string|int|null                  $schema   Default schema context.
+	 * @param array                                   $result   Result accumulator (mutated in place).
+	 *
+	 * @return array<int|string, array<string, mixed>> The rows that may go on.
+	 */
+	private function refuseInvalidDecisionTables(
+		array $objects,
+		Register|string|int|null $register,
+		Schema|string|int|null $schema,
+		array &$result
+	): array {
+		if ($this->decisionTables === null) {
+			return $objects;
+		}
+
+		foreach ($this->decisionTables->refusals(objects: $objects, register: $register, schema: $schema) as $position => $reason) {
+			$index = null;
+			if (is_int($position) === true) {
+				$index = $position;
+			}
+
+			$this->recordSafeguardRejection(object: $objects[$position], reason: $reason, result: $result, index: $index);
+			unset($objects[$position]);
+		}
+
+		return $objects;
+	}//end refuseInvalidDecisionTables()
 }//end class

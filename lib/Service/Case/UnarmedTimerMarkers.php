@@ -40,14 +40,23 @@ use Throwable;
 /**
  * Remembers which plan items still lack their statutory expiry timer.
  *
+ * One app-config key per item (`case_unarmed_<item uuid>`), so two processes that mark or clear different
+ * items never rewrite each other's marker: there is no shared map to read, modify and write back.
+ *
  * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
  */
 class UnarmedTimerMarkers {
 
 	/**
-	 * The app-config key of the marker map (a lazy value: it is read by one job, not on a request).
+	 * The app-config key prefix of one marker (lazy values: they are read by one job, not on a request).
+	 * App-config keys are capped at 64 characters, so the prefix plus a 36 character uuid fits.
 	 */
-	public const KEY = 'case_unarmed_statutory_timers';
+	public const KEY_PREFIX = 'case_unarmed_';
+
+	/**
+	 * The longest key an app-config accepts.
+	 */
+	private const MAX_KEY_LENGTH = 64;
 
 	/**
 	 * Constructor.
@@ -74,15 +83,22 @@ class UnarmedTimerMarkers {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
 	public function add(string $itemUuid, ?DateTimeInterface $now = null): bool {
-		$markers = $this->all();
-		if (isset($markers[$itemUuid]) === true) {
-			return true;
+		$key = $this->keyFor(itemUuid: $itemUuid);
+		if ($key === null) {
+			return false;
 		}
 
-		$moment = DateTimeImmutable::createFromInterface($now ?? new DateTimeImmutable());
-		$markers[$itemUuid] = $moment->format(DATE_ATOM);
+		try {
+			if ($this->appConfig->getValueString(Application::APP_ID, $key, '', true) !== '') {
+				return true;
+			}
 
-		return $this->store(markers: $markers);
+			$moment = DateTimeImmutable::createFromInterface($now ?? new DateTimeImmutable());
+
+			return $this->appConfig->setValueString(Application::APP_ID, $key, $moment->format(DATE_ATOM), true);
+		} catch (Throwable) {
+			return false;
+		}
 	}//end add()
 
 	/**
@@ -95,13 +111,17 @@ class UnarmedTimerMarkers {
 	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
 	 */
 	public function remove(string $itemUuid): void {
-		$markers = $this->all();
-		if (isset($markers[$itemUuid]) === false) {
+		$key = $this->keyFor(itemUuid: $itemUuid);
+		if ($key === null) {
 			return;
 		}
 
-		unset($markers[$itemUuid]);
-		$this->store(markers: $markers);
+		try {
+			$this->appConfig->deleteKey(Application::APP_ID, $key);
+		} catch (Throwable) {
+			// A marker that cannot be cleared is looked at again by the next pass.
+			return;
+		}
 	}//end remove()
 
 	/**
@@ -113,19 +133,25 @@ class UnarmedTimerMarkers {
 	 */
 	public function all(): array {
 		try {
-			$decoded = json_decode($this->appConfig->getValueString(Application::APP_ID, self::KEY, '', true), true);
+			$keys = $this->appConfig->getKeys(Application::APP_ID);
 		} catch (Throwable) {
 			return [];
 		}
 
-		if (is_array($decoded) === false) {
-			return [];
-		}
-
 		$markers = [];
-		foreach ($decoded as $uuid => $moment) {
-			if (is_string($uuid) === true && $uuid !== '' && is_string($moment) === true) {
-				$markers[$uuid] = $moment;
+		foreach ($keys as $key) {
+			if (str_starts_with($key, self::KEY_PREFIX) === false || strlen($key) === strlen(self::KEY_PREFIX)) {
+				continue;
+			}
+
+			try {
+				$moment = $this->appConfig->getValueString(Application::APP_ID, $key, '', true);
+			} catch (Throwable) {
+				continue;
+			}
+
+			if ($moment !== '') {
+				$markers[substr($key, strlen(self::KEY_PREFIX))] = $moment;
 			}
 		}
 
@@ -133,23 +159,18 @@ class UnarmedTimerMarkers {
 	}//end all()
 
 	/**
-	 * Store the map, or drop the key when it is empty.
+	 * The app-config key of an item's marker, or null when the uuid cannot make a valid one.
 	 *
-	 * @param array<string, string> $markers The map.
+	 * @param string $itemUuid The plan item.
 	 *
-	 * @return bool True when stored.
+	 * @return string|null
 	 */
-	private function store(array $markers): bool {
-		try {
-			if ($markers === []) {
-				$this->appConfig->deleteKey(Application::APP_ID, self::KEY);
-
-				return true;
-			}
-
-			return $this->appConfig->setValueString(Application::APP_ID, self::KEY, (string)json_encode($markers), true);
-		} catch (Throwable) {
-			return false;
+	private function keyFor(string $itemUuid): ?string {
+		$key = self::KEY_PREFIX . $itemUuid;
+		if ($itemUuid === '' || strlen($key) > self::MAX_KEY_LENGTH) {
+			return null;
 		}
-	}//end store()
+
+		return $key;
+	}//end keyFor()
 }//end class

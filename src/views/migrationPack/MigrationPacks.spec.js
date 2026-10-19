@@ -481,7 +481,10 @@ describe('the list', () => {
 
 	it('says a pack was replaced when the import overwrote a stored one', async () => {
 		// The server answers 200 for a pack it replaced and 201 for one it created.
-		axios.post.mockResolvedValueOnce({ status: 200, data: storedPack({ name: 'Edited here' }) })
+		axios.post.mockResolvedValueOnce({
+			status: 200,
+			data: storedPack({ name: 'Edited here' }),
+		})
 		axios.get.mockResolvedValue({ data: { results: [] } })
 		const vm = instance(MigrationPacksIndex)
 		const file = new File(['{}'], 'pack.json', { type: 'application/json' })
@@ -505,7 +508,10 @@ describe('the list', () => {
 	})
 
 	it('imports a JSON file and shows a refusal readably', async () => {
-		axios.post.mockResolvedValueOnce({ status: 201, data: storedPack({ name: 'Imported' }) })
+		axios.post.mockResolvedValueOnce({
+			status: 201,
+			data: storedPack({ name: 'Imported' }),
+		})
 		axios.get.mockResolvedValue({ data: { results: [] } })
 		const vm = instance(MigrationPacksIndex)
 		const file = new File(['{}'], 'pack.json', { type: 'application/json' })

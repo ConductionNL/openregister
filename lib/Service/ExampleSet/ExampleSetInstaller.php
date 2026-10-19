@@ -418,14 +418,25 @@ class ExampleSetInstaller {
 			return $row;
 		}
 
-		$entry = $made['entry'];
+		// Merge per field: a field refreshed in an earlier run and not in this one keeps its entry (its newest `new`
+		// is what the install last wrote, so a later run does not read it as edited by somebody), and a field
+		// refreshed again keeps the old value it was first replaced from.
+		$entry  = $made['entry'];
+		$merged = [];
 		foreach ((array) ($record['changes'][$name]['set'] ?? []) as $earlier) {
-			foreach ($entry['set'] as $index => $set) {
-				if ($set['path'] === $earlier['path']) {
-					$entry['set'][$index] = array_merge($set, ['had' => $earlier['had'], 'old' => $earlier['old'], 'from' => $earlier['from']]);
-				}
-			}
+			$merged[(string) $earlier['path']] = $earlier;
 		}
+
+		foreach ($entry['set'] as $set) {
+			$earlier = ($merged[(string) $set['path']] ?? null);
+			if ($earlier !== null) {
+				$set = array_merge($set, ['had' => $earlier['had'], 'old' => $earlier['old'], 'from' => $earlier['from']]);
+			}
+
+			$merged[(string) $set['path']] = $set;
+		}
+
+		$entry['set'] = array_values($merged);
 
 		$record['changes'][$name] = $entry;
 		$report['changes'][$name] = 'refreshed';

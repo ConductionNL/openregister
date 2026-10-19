@@ -152,7 +152,7 @@ class CasePlanEnsurer {
 	}//end ensure()
 
 	/**
-	 * Arm the deadlines of the items this call created as active.
+	 * Arm the deadlines of the items this call created as active, and mark the rest.
 	 *
 	 * An item inserted in a state it carries goes through no state machine, so
 	 * no `CaseItemTransitionedEvent` reaches the timer listener, and an
@@ -160,7 +160,10 @@ class CasePlanEnsurer {
 	 * above all) would never get its timer. Done after the commit, like the
 	 * listener: a refused arm is logged and, for a statutory expiry, marked
 	 * for the re-arm pass, and never undoes the ensure. An item that already
-	 * existed is not touched: its timers were armed when it became active.
+	 * existed and is active was armed when it became active, unless that arm
+	 * failed earlier and a resumed ensure is the only thing that looks at it
+	 * again: its statutory expiry is marked, and the re-arm pass arms it or
+	 * drops the marker when a timer is already running.
 	 *
 	 * @param array<int, CaseItem> $rows Every row of the object, after the commit.
 	 * @param array<int, string> $created The keys this call created.
@@ -181,6 +184,12 @@ class CasePlanEnsurer {
 		);
 		foreach ($entered as $row) {
 			$this->timers->onEntered(item: $row, actor: $actor);
+		}
+
+		foreach ($rows as $row) {
+			if ($row->getState() === CaseItem::STATE_ACTIVE && in_array((string)$row->getItemKey(), $created, true) === false) {
+				$this->timers->markIfStatutory(item: $row);
+			}
 		}
 	}//end armTimers()
 

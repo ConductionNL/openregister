@@ -200,6 +200,37 @@ class FlowRunAttributionTest extends TestCase {
 	}
 
 	/**
+	 * A run a case plan queues without a caller (a system or cascade realisation) goes through the real queue
+	 * path and acts as the identity the flow's schedule trigger declares; the flow's owner still does not answer.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 */
+	public function testACaseRunWithoutACallerActsAsTheFlowsDeclaredIdentity(): void {
+		$flow = $this->ownedFlow('alice', 'org-a');
+		$flow->setNodes([
+			['id' => 'start', 'type' => 'openregister.trigger-schedule', 'config' => ['runAs' => 'carol']],
+			['id' => 'stop', 'type' => 'end'],
+		]);
+
+		$run = $this->service($flow)->queue(flowId: 'flow-1', trigger: 'case', user: null);
+
+		$this->assertSame('carol', $run->getRunAs());
+	}
+
+	/**
+	 * A case run for a flow that declares no identity is refused as unattributed, never run as the owner.
+	 *
+	 * @return void
+	 */
+	public function testACaseRunWithoutACallerOrADeclaredIdentityIsRefused(): void {
+		$this->expectException(FlowUnattributed::class);
+
+		$this->service($this->ownedFlow('alice', 'org-a'))->queue(flowId: 'flow-1', trigger: 'case', user: null);
+	}
+
+	/**
 	 * A trigger node still mid-cutover declares nothing, so the run is refused.
 	 *
 	 * Measured on the dev instance: all three flows carrying a schedule trigger

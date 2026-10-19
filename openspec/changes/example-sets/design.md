@@ -144,7 +144,8 @@ the Woo journey depends on them. That is a separate portaliq PR.
    rule 3), so a fresh instance lacks them. The loader imports a missing one
    from OpenRegister's own descriptor before the check, through
    `RegisterDescriptorService::reimport()`, and records the import job ids the
-   import created (the difference in `AppImportJobRecorder` before and after).
+   import reports it ran under (never worked out from the jobs the instance holds
+   before and after, which would claim an import another process recorded meanwhile).
    Remove soft-deletes exactly those jobs' objects (their uuids from the audit
    trail, `AuditTrailMapper::objectUuidsByImportJobId()`), last, without access
    rules like every other delete of the loader, and forgets the jobs. It does
