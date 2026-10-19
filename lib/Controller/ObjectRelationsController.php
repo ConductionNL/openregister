@@ -553,7 +553,11 @@ class ObjectRelationsController extends Controller {
 	 * @return bool False when a purpose is needed and none is usable, or the schema does not resolve.
 	 */
 	private function purposeAdmits(mixed $registerId, mixed $schemaId): bool {
-		$schema = $this->access->schemaById(schemaId: (is_scalar($schemaId) === true ? $schemaId : null));
+		$schema = null;
+		if (is_scalar($schemaId) === true) {
+			$schema = $this->access->schemaById(schemaId: $schemaId);
+		}
+
 		$register = null;
 		if (is_scalar($registerId) === true && $registerId !== '') {
 			try {
