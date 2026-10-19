@@ -40,6 +40,7 @@ use RuntimeException;
  *
  * @covers \OCA\OpenRegister\Service\File\ManagedFileOwnerLookup
  * @covers \OCA\OpenRegister\Service\File\FolderManagementHandler::getObjectForFile
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class ManagedFileOwnerLookupTest extends TestCase {
 

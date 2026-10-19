@@ -70,6 +70,9 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\DraftOwner
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Exception\DraftAlreadyLeftException
+ * @uses \OCA\OpenRegister\Exception\ValidationException
+ * @uses \OCA\OpenRegister\Service\Form\FormUploadClaims
+ * @uses \OCA\OpenRegister\Service\Form\NestedIdentityGuard
  */
 class FormSubmitServiceTest extends TestCase {
 

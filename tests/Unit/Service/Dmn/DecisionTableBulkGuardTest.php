@@ -40,6 +40,13 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Listener\DecisionTableValidationListener
  *
  * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator
+ * @uses \OCA\OpenRegister\Service\Dmn\DecisionTableValidator
+ * @uses \OCA\OpenRegister\Service\Dmn\UnaryTestEvaluator
+ * @uses \OCA\OpenRegister\Service\Object\SaveObjects
  */
 class DecisionTableBulkGuardTest extends TestCase {
 

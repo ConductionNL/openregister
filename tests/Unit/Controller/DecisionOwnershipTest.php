@@ -62,6 +62,10 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\OpenRegister\Db\EntityRelation
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Exception\CustomValidationException
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionVisibility
  */
 class DecisionOwnershipTest extends TestCase {
 

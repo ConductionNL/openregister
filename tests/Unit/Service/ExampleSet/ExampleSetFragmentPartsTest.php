@@ -35,6 +35,15 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
+ * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
  */
 class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	protected function setUp(): void {

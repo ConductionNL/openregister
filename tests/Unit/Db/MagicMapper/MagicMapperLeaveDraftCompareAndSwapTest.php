@@ -33,6 +33,9 @@ use ReflectionMethod;
  * The conditional UPDATE and its refusal.
  *
  * @covers \OCA\OpenRegister\Db\MagicMapper
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Exception\ValidationException
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  */
 class MagicMapperLeaveDraftCompareAndSwapTest extends TestCase {
 

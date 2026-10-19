@@ -54,6 +54,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Dto\DeletionAnalysis
+ * @uses \OCA\OpenRegister\Service\Object\ReferenceKey
  */
 class ReferentialIntegrityKeyReferenceTest extends TestCase {
 

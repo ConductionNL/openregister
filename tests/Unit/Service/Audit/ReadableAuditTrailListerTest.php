@@ -50,6 +50,12 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister
  * @uses \OCA\OpenRegister\Db\AuditTrail
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Object\DraftCallerRule
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class ReadableAuditTrailListerTest extends TestCase {
 

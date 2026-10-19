@@ -55,6 +55,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\PortalTaskDelivery
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Task\TaskTemporalProjection
+ * @uses \OCA\OpenRegister\Service\Task\TaskBlockerGuard
  */
 class PortalTaskServiceTest extends TestCase {
 

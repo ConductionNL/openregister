@@ -101,6 +101,8 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\Hinge\LensResolver
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Object\DraftCallerRule
  */
 class ObjectServiceDraftWriteTest extends TestCase {
 
