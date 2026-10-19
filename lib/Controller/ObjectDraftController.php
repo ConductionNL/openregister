@@ -186,8 +186,37 @@ class ObjectDraftController extends Controller {
 		// renders its result already, but an automatic transition the save
 		// applied hands back an entity of its own, so it is rendered here once
 		// more: rendering is idempotent.
-		return new JSONResponse(data: $this->objects->renderEntity(entity: $activated, _rbac: true));
+		return $this->renderedActivation(activated: $activated);
 	}//end activate()
+
+	/**
+	 * The answer for an activation that was committed: the rendered object, or its id and status when rendering fails.
+	 *
+	 * The activation has been committed by now, so a render that fails must
+	 * not answer 500: the caller would read "nothing changed" and retry or
+	 * give up on a draft that is definitive. The fallback names the object and
+	 * its new status only, and the failure is logged.
+	 *
+	 * @param ObjectEntity $activated The activated object.
+	 *
+	 * @return JSONResponse The 200 answer.
+	 */
+	private function renderedActivation(ObjectEntity $activated): JSONResponse {
+		try {
+			return new JSONResponse(data: $this->objects->renderEntity(entity: $activated, _rbac: true));
+		} catch (Throwable $exception) {
+			$this->logger->error(
+				message: '[ObjectDraftController] activate: the activated object could not be rendered: ' . $exception->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $exception]
+			);
+
+			$uuid = (string)$activated->getUuid();
+
+			return new JSONResponse(
+				data: ['id' => $uuid, 'uuid' => $uuid, '@self' => ['id' => $uuid, 'status' => $activated->getStatus()]]
+			);
+		}
+	}//end renderedActivation()
 
 	/**
 	 * A refusal in the one body shape this endpoint answers with.

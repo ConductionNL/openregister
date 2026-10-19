@@ -62,10 +62,12 @@ use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
+use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\SettingsService;
@@ -4417,7 +4419,7 @@ class MagicMapper extends AbstractObjectMapper {
 			}
 
 			// Update existing object.
-			$this->updateObjectInRegisterSchemaTable(uuid: $uuid, data: $preparedData, tableName: $tableName);
+			$this->updateExistingObject(uuid: $uuid, data: $preparedData, tableName: $tableName);
 			$this->lastWriteAction = 'update';
 			$this->logger->debug(
 				message: '[MagicMapper] Updated object in register+schema table',
@@ -5300,17 +5302,53 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end insertObjectInRegisterSchemaTable()
 
 	/**
+	 * Update a stored object, as a compare-and-swap when the save moves it out of draft.
+	 *
+	 * A save that leaves draft writes its status conditionally: of two
+	 * requests that both read the object as a draft, the database lets one
+	 * change the row and the other changes nothing and is refused, so the
+	 * creation is announced once (DraftStatusPolicy::isLeaving()).
+	 *
+	 * @param string $uuid      The object UUID.
+	 * @param array  $data      The prepared column values.
+	 * @param string $tableName The table name.
+	 *
+	 * @return void
+	 *
+	 * @throws DraftAlreadyLeftException When the save leaves draft and the stored object already left it.
+	 * @throws Exception If the update fails.
+	 */
+	private function updateExistingObject(string $uuid, array $data, string $tableName): void {
+		$leavingDraft = DraftStatusPolicy::isLeaving(uuid: $uuid);
+		$onlyFromStatus = null;
+		if ($leavingDraft === true) {
+			$onlyFromStatus = ObjectEntity::STATUS_DRAFT;
+		}
+
+		$changed = $this->updateObjectInRegisterSchemaTable(
+			uuid: $uuid,
+			data: $data,
+			tableName: $tableName,
+			onlyFromStatus: $onlyFromStatus
+		);
+		if ($leavingDraft === true && $changed === 0) {
+			throw new DraftAlreadyLeftException(message: 'This draft has already left draft.');
+		}
+	}//end updateExistingObject()
+
+	/**
 	 * Update object in register+schema table
 	 *
-	 * @param string $uuid The object UUID
-	 * @param array $data The object data to update
-	 * @param string $tableName The table name
+	 * @param string      $uuid           The object UUID
+	 * @param array       $data           The object data to update
+	 * @param string      $tableName      The table name
+	 * @param string|null $onlyFromStatus When set, the row is only changed while its stored `_status` is this (compare-and-swap).
 	 *
 	 * @throws Exception If update fails
 	 *
-	 * @return void
+	 * @return int The number of rows changed.
 	 */
-	private function updateObjectInRegisterSchemaTable(string $uuid, array $data, string $tableName): void {
+	private function updateObjectInRegisterSchemaTable(string $uuid, array $data, string $tableName, ?string $onlyFromStatus = null): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($tableName);
 
@@ -5328,7 +5366,11 @@ class MagicMapper extends AbstractObjectMapper {
 		}
 
 		$qb->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)));
-		$qb->executeStatement();
+		if ($onlyFromStatus !== null) {
+			$qb->andWhere($qb->expr()->eq(self::METADATA_PREFIX . 'status', $qb->createNamedParameter($onlyFromStatus)));
+		}
+
+		return (int)$qb->executeStatement();
 	}//end updateObjectInRegisterSchemaTable()
 
 	/**

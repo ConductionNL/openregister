@@ -228,4 +228,58 @@ class FormUploadStoreTest extends TestCase {
 		$this->assertTrue($folder->fileExists('fedcba9876543210fedcba9876543210.bin'), 'A young bytes file may still be in flight.');
 		$this->assertCount(3, $folder->files, 'The live token (bytes and record) and the young file stay.');
 	}//end testThePurgeDeletesAnOrphanedBytesFile()
+
+	/**
+	 * A token claimed for a draft is satisfied for that draft, that property and that form only, until it expires, and the purge clears the record.
+	 */
+	public function testAClaimedTokenIsSatisfiedForItsDraftOnly(): void {
+		$token = $this->store->issue(formId: 'form-1', property: 'bijlage', rule: ['type' => 'file', 'maxSize' => 1024], file: $this->upload('%PDF-1.7'))['token'];
+		$this->store->claim(tokens: [$token], draftId: 'draft-1');
+
+		$this->assertNull($this->store->redeem(formId: 'form-1', property: 'bijlage', token: $token, draftId: 'draft-1'));
+		foreach ([['form-1', 'bijlage', 'draft-2'], ['form-1', 'other', 'draft-1'], ['form-2', 'bijlage', 'draft-1'], ['form-1', 'bijlage', null]] as [$form, $property, $draft]) {
+			try {
+				$this->store->redeem(formId: $form, property: $property, token: $token, draftId: $draft);
+				$this->fail('A claimed token was redeemed by the wrong asker.');
+			} catch (FormSubmitRefusedException $refused) {
+				$this->assertSame(422, $refused->getStatus());
+			}
+		}
+
+		$this->now += 86_401;
+		$this->assertSame(1, $this->store->purge(), 'The expired record is removed.');
+		$this->assertSame(0, $this->store->purge());
+	}//end testAClaimedTokenIsSatisfiedForItsDraftOnly()
+
+	/**
+	 * A final submit (no draft) leaves no record behind.
+	 */
+	public function testAFinalClaimLeavesNoRecord(): void {
+		$token = $this->store->issue(formId: 'form-1', property: 'bijlage', rule: ['type' => 'file', 'maxSize' => 1024], file: $this->upload('%PDF-1.7'))['token'];
+		$this->store->claim(tokens: [$token]);
+
+		$this->expectException(FormSubmitRefusedException::class);
+		$this->store->redeem(formId: 'form-1', property: 'bijlage', token: $token, draftId: 'draft-1');
+	}//end testAFinalClaimLeavesNoRecord()
+
+	/**
+	 * An unissued token, one for another property, and a live one are told apart; the plans' tokens are claimed together.
+	 */
+	public function testRedeemRefusesAnotherPropertyAndClaimPlannedClaimsEveryToken(): void {
+		$one = $this->store->issue(formId: 'form-1', property: 'bijlage', rule: ['type' => 'file', 'maxSize' => 1024], file: $this->upload('a'))['token'];
+		$two = $this->store->issue(formId: 'form-1', property: 'bijlage', rule: ['type' => 'file', 'maxSize' => 1024], file: $this->upload('b'))['token'];
+
+		$this->assertSame('bewijs.pdf', $this->store->redeem(formId: 'form-1', property: 'bijlage', token: $one)['name']);
+		try {
+			$this->store->redeem(formId: 'form-1', property: 'andere', token: $one);
+			$this->fail('A token for another property was redeemed.');
+		} catch (FormSubmitRefusedException $refused) {
+			$this->assertSame('upload-token-unknown', $refused->getFindings()[0]['code']);
+		}
+
+		$this->store->claimPlanned(plans: [['tokens' => [$one]], ['tokens' => [$two]]], draftId: 'draft-1');
+		$this->assertNull($this->store->redeem(formId: 'form-1', property: 'bijlage', token: $one, draftId: 'draft-1'));
+		$this->assertNull($this->store->redeem(formId: 'form-1', property: 'bijlage', token: $two, draftId: 'draft-1'));
+		$this->store->claimPlanned(plans: []);
+	}//end testRedeemRefusesAnotherPropertyAndClaimPlannedClaimsEveryToken()
 }//end class

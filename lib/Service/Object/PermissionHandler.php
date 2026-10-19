@@ -42,7 +42,6 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Rbac\DenyEnforcementMode;
 use OCA\OpenRegister\Service\Rbac\DenyResolver;
@@ -506,12 +505,18 @@ class PermissionHandler {
 	/**
 	 * Whether the object is a draft that its schema keeps from this caller, whatever the action.
 	 *
-	 * The same answer as the read predicate (MagicRbacHandler): an
-	 * administrator and the command line without a user (occ, cron, repair
-	 * steps) are not kept from a draft, the draft's owner is not, and
-	 * everybody else is, including an anonymous web caller. A schema that sets
+	 * The one rule every explicit draft guard asks
+	 * (DraftStatusPolicy::keptFromCaller()): an administrator and a system
+	 * caller without a user (occ, cron, repair steps, a SystemOperationContext)
+	 * are not kept from a draft, the draft's owner is not, and everybody else is,
+	 * including an anonymous web caller. A schema that sets
 	 * `draftsVisible: true` shows its drafts to anyone who may read the
-	 * schema. Every verb is refused, not only `read`: somebody who cannot
+	 * schema. This is NOT identical to the read predicate in one respect: the
+	 * list query (MagicRbacHandler) also admits the owning group's members and
+	 * the system user's rows outside its draft clause, while this rule knows the
+	 * draft's owner only. It is deliberately the stricter of the two for those
+	 * rows, so a group-owned draft that a list shows is still refused here.
+	 * Every verb is refused, not only `read`: somebody who cannot
 	 * read a draft cannot change, delete or read the history of it either.
 	 *
 	 * @param ObjectEntity $object The object the check is about.
@@ -519,8 +524,6 @@ class PermissionHandler {
 	 * @param string|null  $userId The caller, null for the session user.
 	 *
 	 * @return bool True when the caller is refused every action on this object.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) AnonymousEvaluationContext is an ambient-context marker by design.
 	 *
 	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
 	 */
@@ -530,20 +533,19 @@ class PermissionHandler {
 		}
 
 		$subject = ($userId ?? $this->userSession->getUser()?->getUID());
-		if ((new DraftStatusPolicy())->keptFrom(object: $object, schema: $schema, userId: $subject) === false) {
-			return false;
+		$isAdmin = false;
+		if ($subject !== null) {
+			$user = $this->userManager->get($subject);
+			$isAdmin = ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true);
 		}
 
-		if ($subject === null) {
-			// Nobody is signed in: the command line is the system and passes,
-			// as it does on the read path; an anonymous web caller is kept.
-			return AnonymousEvaluationContext::isActive() === true || $this->isCommandLine() === false;
-		}
-
-		// An administrator reads every draft, so is not kept from one.
-		$user = $this->userManager->get($subject);
-
-		return $user === null || in_array('admin', $this->groupManager->getUserGroupIds($user), true) === false;
+		return (new DraftCallerRule())->keptFromCaller(
+			object: $object,
+			schema: $schema,
+			userId: $subject,
+			isAdmin: $isAdmin,
+			commandLine: $this->isCommandLine()
+		);
 	}//end draftIsKeptFromCaller()
 
 	/**
@@ -1935,7 +1937,14 @@ class PermissionHandler {
 						// Another user's draft is kept from this caller as on every
 						// other path: it is left out like an object that does not
 						// exist, so the delete does not announce it.
-						if ($callerIsAdmin === false && (new DraftStatusPolicy())->keptFrom(object: $object, schema: $schema, userId: $userId) === true) {
+						$draftKept = (new DraftCallerRule())->keptFromCaller(
+							object: $object,
+							schema: $schema,
+							userId: $userId,
+							isAdmin: $callerIsAdmin,
+							commandLine: $this->isCommandLine()
+						);
+						if ($draftKept === true) {
 							continue;
 						}
 

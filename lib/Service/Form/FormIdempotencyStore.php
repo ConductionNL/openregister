@@ -16,7 +16,12 @@
  *
  * A key is reserved (an exclusive lock) while its submit runs, so a double
  * click or a parallel retry with the same key waits out with a 409 instead of
- * writing a second object.
+ * writing a second object. That needs a real locking provider (Redis, or the
+ * database locking of a default install); an instance whose provider is the
+ * no-op one (no memory cache configured for locking) reserves nothing, so a
+ * parallel retry can write a second object. The stored answer still repeats
+ * for every retry after the first submit finished. The store says so once in
+ * the log when it finds itself on such an instance.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -46,6 +51,7 @@ use OCP\Files\SimpleFS\ISimpleFolder;
 use OCP\IL10N;
 use OCP\Lock\ILockingProvider;
 use OCP\Lock\LockedException;
+use Psr\Log\LoggerInterface;
 
 /**
  * Find, remember and purge submit answers by key.
@@ -69,18 +75,27 @@ class FormIdempotencyStore {
 	public const TTL = 86400;
 
 	/**
+	 * Whether the no-op warning went out in this process.
+	 *
+	 * @var bool
+	 */
+	private static bool $warned = false;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IAppData         $appData The app's data store.
 	 * @param ITimeFactory     $time    The clock.
 	 * @param ILockingProvider $locks   Reserves a key while its submit runs.
 	 * @param IL10N            $l10n    Translations, for refusals a resident reads.
+	 * @param LoggerInterface|null $logger Says once that reservation is a no-op on this instance.
 	 */
 	public function __construct(
 		private readonly IAppData $appData,
 		private readonly ITimeFactory $time,
 		private readonly ILockingProvider $locks,
 		private readonly IL10N $l10n,
+		private readonly ?LoggerInterface $logger = null,
 	) {
 
 	}//end __construct()
@@ -112,6 +127,8 @@ class FormIdempotencyStore {
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
 	public function reserve(string $scope, string $key): void {
+		$this->warnWhenReservationIsANoop();
+
 		try {
 			$this->locks->acquireLock($this->lockPath(scope: $scope, key: $key), ILockingProvider::LOCK_EXCLUSIVE);
 		} catch (LockedException) {
@@ -121,6 +138,35 @@ class FormIdempotencyStore {
 			);
 		}
 	}//end reserve()
+
+	/**
+	 * Whether the locking provider reserves nothing (the no-op provider of an instance without a locking cache).
+	 *
+	 * @return bool True when a parallel retry with one key is not held back.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
+	 */
+	public function reservationIsANoop(): bool {
+		return str_ends_with($this->locks::class, 'NoopLockingProvider') === true;
+	}//end reservationIsANoop()
+
+	/**
+	 * Log once per process that a key is not reserved on this instance.
+	 *
+	 * @return void
+	 */
+	private function warnWhenReservationIsANoop(): void {
+		if (self::$warned === true || $this->reservationIsANoop() === false) {
+			return;
+		}
+
+		self::$warned = true;
+		$this->logger?->warning(
+			message: '[FormIdempotencyStore] The locking provider is a no-op: an Idempotency-Key is not reserved while its submit runs, '
+				. 'so a parallel retry can write a second object. Configure a locking cache (memcache.locking) to close this.',
+			context: ['file' => __FILE__, 'line' => __LINE__]
+		);
+	}//end warnWhenReservationIsANoop()
 
 	/**
 	 * Release a key reserved by reserve().

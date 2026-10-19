@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
@@ -2336,10 +2337,12 @@ class ObjectService implements ObjectServiceInterface
             return;
         }
 
-        $kept = (new DraftStatusPolicy())->keptFrom(
+        $user = $this->userSession->getUser();
+        $kept = (new DraftCallerRule())->keptFromCaller(
             object: $stored,
             schema: $this->currentSchema,
-            userId: $this->userSession->getUser()?->getUID()
+            userId: $user?->getUID(),
+            isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
         );
         if ($kept === true) {
             throw new NotAuthorizedException(message: 'Only the person who started this draft can change it.');
@@ -3352,7 +3355,7 @@ class ObjectService implements ObjectServiceInterface
     }//end isDeletableDraft()
 
     /**
-     * Whether a stored draft is kept from the caller, as on the read path.
+     * Whether a stored draft is kept from the caller (DraftStatusPolicy::keptFromCaller(), the one rule of every draft guard).
      *
      * One answer for the single delete and the bulk delete: another user's
      * draft is not theirs to remove. An administrator reads every draft, so
@@ -3368,11 +3371,12 @@ class ObjectService implements ObjectServiceInterface
      */
     private function draftKeptFromCaller(ObjectEntity $object, Schema $schema, ?IUser $user): bool
     {
-        if ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true) {
-            return false;
-        }
-
-        return (new DraftStatusPolicy())->keptFrom(object: $object, schema: $schema, userId: $user?->getUID());
+        return (new DraftCallerRule())->keptFromCaller(
+            object: $object,
+            schema: $schema,
+            userId: $user?->getUID(),
+            isAdmin: ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true)
+        );
     }//end draftKeptFromCaller()
 
     /**

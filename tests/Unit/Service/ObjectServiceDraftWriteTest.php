@@ -336,7 +336,9 @@ class ObjectServiceDraftWriteTest extends TestCase {
 		$this->hiddenFromTheCaller(status: 'draft');
 
 		try {
-			$this->saveOver();
+			// Nobody signed in is judged as an anonymous web caller here: on the command line
+			// (where PHPUnit runs) a userless caller is the system, which no draft is kept from.
+			\OCA\OpenRegister\Service\AnonymousEvaluationContext::run(fn () => $this->saveOver());
 			$this->fail('A save over somebody else\'s draft was let through.');
 		} catch (NotAuthorizedException $refused) {
 			$this->assertSame('Only the person who started this draft can change it.', $refused->getMessage());

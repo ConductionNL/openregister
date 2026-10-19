@@ -223,7 +223,7 @@ class FormSubmitService {
 			throw new FormSubmitRefusedException(message: $this->l10n->t('Please sign in to save this form and carry on later.'), status: 401);
 		}
 
-		$plans = $this->plan(writes: [array_merge($destination, ['mapping' => $mapping])], payload: $payload, scope: $scope);
+		$plans = $this->plan(writes: [array_merge($destination, ['mapping' => $mapping])], payload: $payload, scope: $scope, draftId: $draftId);
 		if ($draftId !== null) {
 			$plans[0]['object'] = array_merge($this->draftData(plan: $plans[0], draftId: $draftId, owner: $owner), $plans[0]['object']);
 		}
@@ -233,7 +233,7 @@ class FormSubmitService {
 
 		// The files now sit on the draft: the tokens are spent, as after a submit,
 		// so they cannot be redeemed again for another object or a later save.
-		$this->uploads->claim(tokens: array_merge(...array_map(static fn (array $plan): array => $plan['tokens'], $plans)));
+		$this->uploads->claimPlanned(plans: $plans, draftId: (string)$created[0]['object']->getUuid());
 
 		return ['id' => (string)$created[0]['object']->getUuid(), 'status' => ObjectEntity::STATUS_DRAFT];
 	}//end saveDraft()
@@ -313,10 +313,10 @@ class FormSubmitService {
 	 * @throws FormSubmitRefusedException 422, 403, 404 or 503.
 	 */
 	private function submitOnce(array $writes, array $payload, ?IUser $subject, string $scope, ?string $draftId, ?DraftOwner $owner): array {
-		$plans = $this->plan(writes: $writes, payload: $payload, scope: $scope);
+		$plans = $this->plan(writes: $writes, payload: $payload, scope: $scope, draftId: $draftId);
 		[$created, $receivedAt] = $this->writeOrPromote(plans: $plans, subject: $subject, draftId: $draftId, owner: $owner);
 
-		$this->uploads->claim(tokens: array_merge(...array_map(static fn (array $plan): array => $plan['tokens'], $plans)));
+		$this->uploads->claimPlanned(plans: $plans, draftId: $draftId);
 
 		return $this->answer(created: $created, receivedAt: $receivedAt);
 	}//end submitOnce()
@@ -527,12 +527,13 @@ class FormSubmitService {
 	 * @param array<int, array<string, mixed>> $writes  The writes.
 	 * @param array<string, mixed>             $payload The payload.
 	 * @param string                           $scope   The form id upload tokens belong to.
+	 * @param string|null                      $draftId The draft the payload is saved into, whose already claimed upload tokens count as satisfied.
 	 *
 	 * @return array<int, array<string, mixed>> The plans: as, named, register, schema, mapping, object, files, tokens.
 	 *
 	 * @throws FormSubmitRefusedException 404 when a destination does not exist; 422 for a bad upload token.
 	 */
-	private function plan(array $writes, array $payload, string $scope): array {
+	private function plan(array $writes, array $payload, string $scope, ?string $draftId = null): array {
 		$plans = [];
 		foreach (array_values($writes) as $index => $write) {
 			$writeName = trim((string)($write['as'] ?? ''));
@@ -546,14 +547,15 @@ class FormSubmitService {
 				$mapping = $write['mapping'];
 			}
 
-			[$object, $files, $tokens] = $this->mapPayload(mapping: $mapping, payload: $payload, scope: $scope);
+			[$object, $files, $tokens] = $this->mapPayload(mapping: $mapping, payload: $payload, scope: $scope, draftId: $draftId);
+			$schema = $this->schema(reference: $write['schema'] ?? null);
 			$plans[] = [
 				'as' => $writeName,
 				'named' => $named && count($writes) > 1,
 				'register' => $this->register(reference: $write['register'] ?? null),
-				'schema' => $this->schema(reference: $write['schema'] ?? null),
+				'schema' => $schema,
 				'mapping' => $mapping,
-				'object' => $object,
+				'object' => (new NestedIdentityGuard())->strip(object: $object, schema: $schema),
 				'files' => $files,
 				'tokens' => $tokens,
 			];
@@ -577,12 +579,13 @@ class FormSubmitService {
 	 * @param array<string, mixed>|null $mapping The mapping.
 	 * @param array<string, mixed>      $payload The payload.
 	 * @param string                    $scope   The form id upload tokens belong to.
+	 * @param string|null               $draftId The draft being saved or left; a token it already claimed is satisfied, not an error.
 	 *
 	 * @return array{0: array<string, mixed>, 1: array<string, array<string, mixed>>, 2: array<int, string>} Object, uploads, tokens.
 	 *
 	 * @throws FormSubmitRefusedException 422 for an unknown, expired or misdirected upload token.
 	 */
-	private function mapPayload(?array $mapping, array $payload, string $scope): array {
+	private function mapPayload(?array $mapping, array $payload, string $scope, ?string $draftId = null): array {
 		$object = [];
 		$files = [];
 		$tokens = [];
@@ -593,17 +596,14 @@ class FormSubmitService {
 				continue;
 			}
 
-			$file = $this->uploads->materialise(formId: $scope, token: $token);
-			if ($file['property'] !== $property) {
-				$message = $this->l10n->t('An uploaded file was sent for another question. Please add it again.');
-				throw new FormSubmitRefusedException(
-					message: $message,
-					status: 422,
-					findings: [['property' => $property, 'code' => 'upload-token-unknown', 'message' => $message]]
-				);
+			// A token this very draft already claimed (the autosave before this
+			// one, or the draft the final submit leaves) names a file the draft
+			// holds: the property is left as the draft stores it.
+			$file = $this->uploads->redeem(formId: $scope, property: (string)$property, token: $token, draftId: $draftId);
+			if ($file === null) {
+				continue;
 			}
 
-			unset($file['property']);
 			$files[$property] = $file;
 			$tokens[] = $token;
 		}

@@ -1195,4 +1195,108 @@ class FormSubmitServiceTest extends TestCase {
 			$this->assertSame('upload-token-unknown', $refused->getFindings()[0]['code'] ?? null);
 		}
 	}//end testADraftSaveClaimsItsUploadTokens()
+
+	/**
+	 * Issue a token for the case schema's file property.
+	 *
+	 * @return string The token.
+	 */
+	private function bijlageToken(): string {
+		$path = (string)tempnam(sys_get_temp_dir(), 'or-submit-upload');
+		file_put_contents($path, '%PDF-1.7');
+		$this->temporary[] = $path;
+
+		return $this->uploads->issue(
+			formId: 'form-1',
+			property: 'bijlage',
+			rule: $this->schemaBySlug['case']->getProperties()['bijlage'],
+			file: ['name' => 'a.pdf', 'type' => 'application/pdf', 'tmp_name' => $path, 'error' => UPLOAD_ERR_OK, 'size' => 8]
+		)['token'];
+	}//end bijlageToken()
+
+	/**
+	 * The next autosave carrying the token its own draft already claimed is accepted, not refused 422.
+	 *
+	 * Goes red without the claimed-by-this-draft record: the second save then
+	 * materialises a deleted token and is refused as unknown.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
+	 */
+	public function testAnAutosaveWithTheTokenItsDraftAlreadyClaimedIsAccepted(): void {
+		$token = $this->bijlageToken();
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$alice = $this->user(uid: 'alice');
+
+		$first = $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Half af', 'bijlage' => ['uploadToken' => $token]], subject: $alice, scope: 'form-1');
+		$second = $this->service->saveDraft(
+			destination: $destination,
+			mapping: null,
+			payload: ['title' => 'Iets verder', 'bijlage' => ['uploadToken' => $token]],
+			subject: $alice,
+			draftId: $first['id'],
+			scope: 'form-1'
+		);
+
+		$this->assertSame($first['id'], $second['id']);
+		$this->assertNull($this->saves[1]['files'] ?? null, 'The file stays as the draft holds it; nothing is attached twice.');
+		$this->assertArrayNotHasKey('bijlage', $this->saves[1]['object']);
+	}//end testAnAutosaveWithTheTokenItsDraftAlreadyClaimedIsAccepted()
+
+	/**
+	 * A token another draft claimed stays unknown to this one.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
+	 */
+	public function testATokenAnotherDraftClaimedIsStillRefused(): void {
+		$token = $this->bijlageToken();
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$alice = $this->user(uid: 'alice');
+		$bob = $this->user(uid: 'bob');
+
+		$this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Van alice', 'bijlage' => ['uploadToken' => $token]], subject: $alice, scope: 'form-1');
+		$mine = $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Van bob'], subject: $bob, scope: 'form-1');
+
+		$this->expectException(FormSubmitRefusedException::class);
+		$this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Van bob', 'bijlage' => ['uploadToken' => $token]], subject: $bob, draftId: $mine['id'], scope: 'form-1');
+	}//end testATokenAnotherDraftClaimedIsStillRefused()
+
+	/**
+	 * A nested object under a cascading property never names an existing object: its identity keys are dropped.
+	 *
+	 * The cascade takes a nested `id` (or `@self.id`) as the uuid of an
+	 * existing object and updates it. Goes red without withoutNestedIdentity().
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
+	 */
+	public function testANestedCascadeObjectNeverNamesAnExistingObject(): void {
+		$case = $this->schemaBySlug['case'];
+		$case->setProperties(
+			array_merge(
+				$case->getProperties(),
+				[
+					'parties' => ['type' => 'array', 'items' => ['type' => 'object', 'inversedBy' => 'case']],
+					'owner' => ['type' => 'object', 'inversedBy' => 'case'],
+					'tags' => ['type' => 'array', 'items' => ['type' => 'object']],
+				]
+			)
+		);
+
+		$this->service->submit(
+			destination: ['register' => 'dossiq', 'schema' => 'case'],
+			mapping: null,
+			payload: [
+				'title' => 'a',
+				'caseType' => 'b',
+				'parties' => [['id' => 'victim-1', 'name' => 'x', 'address' => ['id' => 'victim-3']], ['@self' => ['id' => 'victim-2'], 'name' => 'y']],
+				'owner' => ['id' => 'victim-4', 'name' => 'z'],
+				'tags' => [['id' => 'plain-data', 'label' => 'kept']],
+			],
+			subject: null
+		);
+
+		$saved = $this->saves[0]['object'];
+		$this->assertSame([['name' => 'x', 'address' => []], ['@self' => [], 'name' => 'y']], $saved['parties']);
+		$this->assertSame(['name' => 'z'], $saved['owner']);
+		$this->assertSame([['id' => 'plain-data', 'label' => 'kept']], $saved['tags'], 'Data under a property that does not cascade is not touched.');
+	}//end testANestedCascadeObjectNeverNamesAnExistingObject()
 }//end class

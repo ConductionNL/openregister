@@ -199,22 +199,81 @@ class FormUploadStore {
 	/**
 	 * Delete claimed tokens: their bytes now live on the destination object.
 	 *
-	 * @param array<int, string> $tokens The tokens.
+	 * A token claimed for a draft leaves a small record behind (which form,
+	 * which property, which draft, until when), so the next autosave or the
+	 * final submit that still carries the same token is recognised as the
+	 * draft's own and not refused as unknown (see claimedBy()).
+	 *
+	 * @param array<int, string> $tokens  The tokens.
+	 * @param string|null        $draftId The draft the files now sit on; null for a final submit, which leaves no record.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
-	public function claim(array $tokens): void {
+	public function claim(array $tokens, ?string $draftId = null): void {
 		$folder = $this->folder(create: false);
 		if ($folder === null) {
 			return;
 		}
 
+		$claims = new FormUploadClaims(time: $this->time);
 		foreach ($tokens as $token) {
+			$meta = $this->meta(token: $token);
 			$this->deleteToken(folder: $folder, token: $token);
+			if ($draftId !== null && $meta !== null) {
+				$claims->record(folder: $folder, token: $token, meta: $meta, draftId: $draftId);
+			}
 		}
 	}//end claim()
+
+	/**
+	 * A token as the upload for the property a payload put it on, or null when the draft already holds that file.
+	 *
+	 * @param string      $formId   The form submitting it.
+	 * @param string      $property The destination property the payload put the token on.
+	 * @param string      $token    The token.
+	 * @param string|null $draftId  The draft being saved or left; a token it already claimed is satisfied.
+	 *
+	 * @return array{name: string, type: string, tmp_name: string, error: int, size: int}|null The upload, null when satisfied.
+	 *
+	 * @throws FormSubmitRefusedException 422 when the token is unknown, expired, another form's or issued for another property.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
+	 */
+	public function redeem(string $formId, string $property, string $token, ?string $draftId = null): ?array {
+		$claims = new FormUploadClaims(time: $this->time);
+		if ($claims->isClaimedBy(folder: $this->folder(create: false), formId: $formId, token: $token, property: $property, draftId: $draftId) === true) {
+			return null;
+		}
+
+		$file = $this->materialise(formId: $formId, token: $token);
+		if ($file['property'] !== $property) {
+			$this->refuse(
+				property: $property,
+				code: 'upload-token-unknown',
+				message: $this->l10n->t('An uploaded file was sent for another question. Please add it again.')
+			);
+		}
+
+		unset($file['property']);
+
+		return $file;
+	}//end redeem()
+
+	/**
+	 * Claim every token the plans of a submit or an autosave hold.
+	 *
+	 * @param array<int, array<string, mixed>> $plans   The plans; each carries its `tokens`.
+	 * @param string|null                      $draftId The draft the files now sit on; null for a final submit.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
+	 */
+	public function claimPlanned(array $plans, ?string $draftId = null): void {
+		$this->claim(tokens: array_merge([], ...array_map(static fn (array $plan): array => $plan['tokens'], $plans)), draftId: $draftId);
+	}//end claimPlanned()
 
 	/**
 	 * Delete every expired, unclaimed token, and the bytes of an upload whose record was never written.
@@ -244,6 +303,11 @@ class FormUploadStore {
 				$this->deleteToken(folder: $folder, token: $token);
 				$gone[$token] = true;
 				$deleted++;
+				continue;
+			}
+
+			if (str_ends_with($name, FormUploadClaims::SUFFIX) === true) {
+				$deleted += (new FormUploadClaims(time: $this->time))->purgeIfExpired(file: $file);
 				continue;
 			}
 

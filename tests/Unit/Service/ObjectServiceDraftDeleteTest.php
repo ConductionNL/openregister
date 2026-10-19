@@ -357,7 +357,10 @@ class ObjectServiceDraftDeleteTest extends TestCase {
 		$this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
 		try {
 			// The stored draft belongs to 'agent'; the caller (no session user) is not that owner.
-			$this->service->deleteObject(uuid: 'draft-1', register: $register, schema: $schema, _rbac: true, _multitenancy: false);
+			// Judged as an anonymous web caller: a userless command-line caller is the system, which no draft is kept from.
+			\OCA\OpenRegister\Service\AnonymousEvaluationContext::run(
+				fn () => $this->service->deleteObject(uuid: 'draft-1', register: $register, schema: $schema, _rbac: true, _multitenancy: false)
+			);
 		} finally {
 			$this->assertSame([], $asked);
 		}

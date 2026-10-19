@@ -18,7 +18,9 @@ use OCA\OpenRegister\Exception\FormSubmitRefusedException;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryAppData;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryLockingProvider;
 use OCP\AppFramework\Utility\ITimeFactory;
+use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\NoopLockingProvider;
 use OCP\IL10N;
+use Psr\Log\LoggerInterface;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -154,4 +156,21 @@ class FormIdempotencyStoreTest extends TestCase {
 	public function testAPurgeWithNoFolderCountsZero(): void {
 		$this->assertSame(0, $this->store->purge());
 	}//end testAPurgeWithNoFolderCountsZero()
+
+	/**
+	 * On a no-op locking provider a key is not reserved, the store says so, and it says so once.
+	 */
+	public function testANoopLockingProviderIsSaidOnceInTheLog(): void {
+		$time = $this->createMock(ITimeFactory::class);
+		$l10n = $this->createMock(IL10N::class);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with($this->stringContains('locking provider is a no-op'));
+		$noop = new FormIdempotencyStore(appData: $this->appData, time: $time, locks: new NoopLockingProvider(), l10n: $l10n, logger: $logger);
+
+		$this->assertTrue($noop->reservationIsANoop());
+		$noop->reserve(scope: 'form-1', key: 'k1');
+		$noop->reserve(scope: 'form-1', key: 'k1');
+		// A real provider never warns, and holds the key.
+		$this->assertFalse($this->store->reservationIsANoop());
+	}//end testANoopLockingProviderIsSaidOnceInTheLog()
 }//end class
