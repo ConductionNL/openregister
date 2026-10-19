@@ -63,6 +63,7 @@ use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;
 use OCA\OpenRegister\Support\FilterParams;
 use OCA\OpenRegister\Support\NullFilter;
 use OCA\OpenRegister\Support\QueryLimit;
+use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
@@ -1664,28 +1665,25 @@ class MagicSearchHandler {
 	}//end columnMatchSql()
 
 	/**
-	 * Apply a `like` filter with bound parameters.
+	 * Build a `like` condition with bound parameters.
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify.
+	 * @param IQueryBuilder $qb Query builder that binds the parameters.
 	 * @param string $columnRef Qualified column reference.
 	 * @param mixed $value The value under the `like` key: one term or a list.
 	 *
-	 * @return void
+	 * @return string|null The SQL condition, or null when no term is left.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
-	private function applyLikeFilter(IQueryBuilder $qb, string $columnRef, mixed $value): void {
+	private function likeCondition(IQueryBuilder $qb, string $columnRef, mixed $value): ?string {
 		$like = new LikeOperator(databasePlatform: $this->db->getDatabasePlatform());
 		$placeholders = [];
 		foreach ($like->terms(value: $value) as $term) {
 			$placeholders[] = (string)$qb->createNamedParameter($like->pattern(term: $term));
 		}
 
-		$condition = $like->anyCondition(column: $columnRef, patternSqls: $placeholders);
-		if ($condition !== null) {
-			$qb->andWhere($condition);
-		}
-	}//end applyLikeFilter()
+		return $like->anyCondition(column: $columnRef, patternSqls: $placeholders);
+	}//end likeCondition()
 
 	/**
 	 * Build a `like` condition for the raw UNION path.
@@ -1751,6 +1749,7 @@ class MagicSearchHandler {
 	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity)
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
 	private function buildObjectFilterConditionsSql(
 		array $query,
@@ -1777,7 +1776,16 @@ class MagicSearchHandler {
 			$quote = static fn (string $value): string => (string)$connection->quote($value);
 			array_push(
 				$conditions,
-				...$this->nestedPaths->conditions(expression: $expression, value: $filter['value'], bind: $quote, isPostgres: $isPostgres)
+				...NullFilter::conditionsFor(
+					criterion: $filter['value'],
+					column: $expression,
+					build: fn (mixed $criterion): array => $this->nestedPaths->conditions(
+						expression: $expression,
+						value: $criterion,
+						bind: $quote,
+						isPostgres: $isPostgres
+					)
+				)
 			);
 		}
 
@@ -1801,165 +1809,212 @@ class MagicSearchHandler {
 			$quotedCol = $this->quoteIdentifier(name: $columnName, isPostgres: $isPostgres);
 			$propertyType = $properties[$key]['type'] ?? 'string';
 
-			// `like` first, for every column type; see applyObjectFilters().
-			if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
-				$likeCondition = $this->likeConditionSql(column: $quotedCol, value: $value[LikeOperator::KEY], connection: $connection);
-				if ($likeCondition !== null) {
-					$conditions[] = $likeCondition;
-				}
-
-				unset($value[LikeOperator::KEY]);
-				if ($value === []) {
-					continue;
-				}
-			}
-
-			// Handle array-type properties (JSONB columns) with JSON containment operator.
-			if ($propertyType === 'array') {
-				$conditions[] = $this->buildArrayPropertyConditionSql(
-					columnName: $quotedCol,
-					value: $value,
-					connection: $connection
-				);
-				continue;
-			}
-
-			// A PHP boolean compares in its string form (boolean-filter-values).
-			$value = FilterParams::comparableValue(value: $value, propertyType: $propertyType);
-
-			// Handle array filter values: comparison operators
-			// (gte/lte/gt/lt/in/notIn/ne) or a bare IN clause.
-			if (is_array($value) === true) {
-				$comparisonOperators = self::COMPARISON_OPERATORS;
-				if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
-					if (isset($value['gte']) === true) {
-						$colRef = $this->buildFilterColumnRef(
-							columnRef: $quotedCol,
-							propertyType: $propertyType,
-							value: $value['gte'],
-							isPostgres: $isPostgres
-						);
-						$conditions[] = "{$colRef} >= " . $connection->quote((string)$value['gte']);
-					}
-
-					if (isset($value['lte']) === true) {
-						$colRef = $this->buildFilterColumnRef(
-							columnRef: $quotedCol,
-							propertyType: $propertyType,
-							value: $value['lte'],
-							isPostgres: $isPostgres
-						);
-						$conditions[] = "{$colRef} <= " . $connection->quote((string)$value['lte']);
-					}
-
-					if (isset($value['gt']) === true) {
-						$colRef = $this->buildFilterColumnRef(
-							columnRef: $quotedCol,
-							propertyType: $propertyType,
-							value: $value['gt'],
-							isPostgres: $isPostgres
-						);
-						$conditions[] = "{$colRef} > " . $connection->quote((string)$value['gt']);
-					}
-
-					if (isset($value['lt']) === true) {
-						$colRef = $this->buildFilterColumnRef(
-							columnRef: $quotedCol,
-							propertyType: $propertyType,
-							value: $value['lt'],
-							isPostgres: $isPostgres
-						);
-						$conditions[] = "{$colRef} < " . $connection->quote((string)$value['lt']);
-					}
-
-					if (isset($value['in']) === true) {
-						$inValues = [$value['in']];
-						if (is_array($value['in']) === true) {
-							$inValues = $value['in'];
-						}
-
-						$colRef = $this->buildFilterColumnRef(
-							columnRef: $quotedCol,
-							propertyType: $propertyType,
-							value: $inValues,
-							isPostgres: $isPostgres
-						);
-						$quotedValues = array_map(fn ($v) => $connection->quote((string)$v), $inValues);
-						$conditions[] = "{$colRef} IN (" . implode(', ', $quotedValues) . ')';
-					}
-
-					if (isset($value['notIn']) === true) {
-						$notInValues = [$value['notIn']];
-						if (is_array($value['notIn']) === true) {
-							$notInValues = $value['notIn'];
-						}
-
-						// An empty exclusion list excludes nothing — skip the
-						// clause rather than emit `NOT IN ()`.
-						if (count($notInValues) > 0) {
-							$colRef = $this->buildFilterColumnRef(
-								columnRef: $quotedCol,
-								propertyType: $propertyType,
-								value: $notInValues,
-								isPostgres: $isPostgres
-							);
-							$quotedValues = array_map(fn ($v) => $connection->quote((string)$v), $notInValues);
-							$conditions[] = "{$colRef} NOT IN (" . implode(', ', $quotedValues) . ')';
-						}
-					}
-
-					if (isset($value['ne']) === true) {
-						$colRef = $this->buildFilterColumnRef(
-							columnRef: $quotedCol,
-							propertyType: $propertyType,
-							value: $value['ne'],
-							isPostgres: $isPostgres
-						);
-						$conditions[] = "{$colRef} <> " . $connection->quote((string)$value['ne']);
-					}
-
-					if (isset($value['isnull']) === true) {
-						// No column-ref cast: a null check is about the column's
-						// presence, not its type, and casting a NULL would only
-						// obscure it.
-						$predicate = 'IS NOT NULL';
-						if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
-							$predicate = 'IS NULL';
-						}
-
-						$conditions[] = "{$quotedCol} {$predicate}";
-					}
-				} elseif (empty($value) === false) {
-					$colRef = $this->buildFilterColumnRef(
-						columnRef: $quotedCol,
+			array_push(
+				$conditions,
+				...NullFilter::conditionsFor(
+					criterion: $value,
+					column: $quotedCol,
+					build: fn (mixed $criterion): array => $this->objectFieldConditionsSql(
+						value: $criterion,
+						quotedCol: $quotedCol,
 						propertyType: $propertyType,
-						value: $value,
+						connection: $connection,
 						isPostgres: $isPostgres
-					);
-					$quotedValues = array_map(
-						fn ($v) => $connection->quote((string)$v),
-						$value
-					);
-					$conditions[] = "{$colRef} IN (" . implode(', ', $quotedValues) . ')';
-				}//end if
-
-				continue;
-			}//end if
-
-			// Simple equality filter. Cast numeric columns to text when filtered
-			// by a non-numeric (e.g. UUID) value so PostgreSQL does not abort the
-			// whole UNION query with SQLSTATE[22P02].
-			$colRef = $this->buildFilterColumnRef(
-				columnRef: $quotedCol,
-				propertyType: $propertyType,
-				value: $value,
-				isPostgres: $isPostgres
+					)
+				)
 			);
-			$conditions[] = "{$colRef} = " . $connection->quote((string)$value);
 		}//end foreach
 
 		return $conditions;
 	}//end buildObjectFilterConditionsSql()
+
+	/**
+	 * The SQL conditions one object-field filter contributes on the raw UNION path
+	 *
+	 * @param mixed $value The filter value, without its `orNull` modifier
+	 * @param string $quotedCol Quoted column identifier
+	 * @param string $propertyType The property's declared JSON-Schema type
+	 * @param object $connection Database connection for value quoting
+	 * @param bool $isPostgres Whether the active platform is PostgreSQL
+	 *
+	 * @return string[] The field's conditions, to be ANDed
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 */
+	private function objectFieldConditionsSql(
+		mixed $value,
+		string $quotedCol,
+		string $propertyType,
+		object $connection,
+		bool $isPostgres,
+	): array {
+		$fieldConditions = [];
+
+		// `like` first, for every column type; see applyObjectFilters().
+		if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
+			$likeCondition = $this->likeConditionSql(column: $quotedCol, value: $value[LikeOperator::KEY], connection: $connection);
+			if ($likeCondition !== null) {
+				$fieldConditions[] = $likeCondition;
+			}
+
+			unset($value[LikeOperator::KEY]);
+			if ($value === []) {
+				return $fieldConditions;
+			}
+		}
+
+		// Handle array-type properties (JSONB columns) with JSON containment operator.
+		if ($propertyType === 'array') {
+			$fieldConditions[] = $this->buildArrayPropertyConditionSql(
+				columnName: $quotedCol,
+				value: $value,
+				connection: $connection
+			);
+			return $fieldConditions;
+		}
+
+		// A PHP boolean compares in its string form (boolean-filter-values).
+		$value = FilterParams::comparableValue(value: $value, propertyType: $propertyType);
+
+		// Handle array filter values: comparison operators
+		// (gte/lte/gt/lt/in/notIn/ne) or a bare IN clause.
+		if (is_array($value) === true) {
+			$comparisonOperators = self::COMPARISON_OPERATORS;
+			if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
+				return $this->objectOperatorConditionsSql(
+					value: $value,
+					quotedCol: $quotedCol,
+					propertyType: $propertyType,
+					connection: $connection,
+					isPostgres: $isPostgres
+				);
+			}
+
+			if (empty($value) === false) {
+				$colRef = $this->buildFilterColumnRef(
+					columnRef: $quotedCol,
+					propertyType: $propertyType,
+					value: $value,
+					isPostgres: $isPostgres
+				);
+				$quotedValues = array_map(
+					fn ($v) => $connection->quote((string)$v),
+					$value
+				);
+				$fieldConditions[] = "{$colRef} IN (" . implode(', ', $quotedValues) . ')';
+			}//end if
+
+			return $fieldConditions;
+		}//end if
+
+		// Simple equality filter. Cast numeric columns to text when filtered
+		// by a non-numeric (e.g. UUID) value so PostgreSQL does not abort the
+		// whole UNION query with SQLSTATE[22P02].
+		$colRef = $this->buildFilterColumnRef(
+			columnRef: $quotedCol,
+			propertyType: $propertyType,
+			value: $value,
+			isPostgres: $isPostgres
+		);
+		$fieldConditions[] = "{$colRef} = " . $connection->quote((string)$value);
+		return $fieldConditions;
+	}//end objectFieldConditionsSql()
+
+	/**
+	 * The conditions of one object field's operator bag on the raw UNION path
+	 *
+	 * @param array $value The operator bag, in its comparable form
+	 * @param string $quotedCol Quoted column identifier
+	 * @param string $propertyType The property's declared JSON-Schema type
+	 * @param object $connection Database connection for value quoting
+	 * @param bool $isPostgres Whether the active platform is PostgreSQL
+	 *
+	 * @return string[] The conditions, to be ANDed
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
+	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 */
+	private function objectOperatorConditionsSql(
+		array $value,
+		string $quotedCol,
+		string $propertyType,
+		object $connection,
+		bool $isPostgres,
+	): array {
+		$fieldConditions = [];
+		foreach (['gte' => '>=', 'lte' => '<=', 'gt' => '>', 'lt' => '<'] as $operator => $sqlOperator) {
+			if (isset($value[$operator]) === true) {
+				$colRef = $this->buildFilterColumnRef(
+					columnRef: $quotedCol,
+					propertyType: $propertyType,
+					value: $value[$operator],
+					isPostgres: $isPostgres
+				);
+				$fieldConditions[] = "{$colRef} {$sqlOperator} " . $connection->quote((string)$value[$operator]);
+			}
+		}
+
+		if (isset($value['in']) === true) {
+			$inValues = [$value['in']];
+			if (is_array($value['in']) === true) {
+				$inValues = $value['in'];
+			}
+
+			$colRef = $this->buildFilterColumnRef(
+				columnRef: $quotedCol,
+				propertyType: $propertyType,
+				value: $inValues,
+				isPostgres: $isPostgres
+			);
+			$quotedValues = array_map(fn ($v) => $connection->quote((string)$v), $inValues);
+			$fieldConditions[] = "{$colRef} IN (" . implode(', ', $quotedValues) . ')';
+		}
+
+		if (isset($value['notIn']) === true) {
+			$notInValues = [$value['notIn']];
+			if (is_array($value['notIn']) === true) {
+				$notInValues = $value['notIn'];
+			}
+
+			// An empty exclusion list excludes nothing — skip the
+			// clause rather than emit `NOT IN ()`.
+			if (count($notInValues) > 0) {
+				$colRef = $this->buildFilterColumnRef(
+					columnRef: $quotedCol,
+					propertyType: $propertyType,
+					value: $notInValues,
+					isPostgres: $isPostgres
+				);
+				$quotedValues = array_map(fn ($v) => $connection->quote((string)$v), $notInValues);
+				$fieldConditions[] = "{$colRef} NOT IN (" . implode(', ', $quotedValues) . ')';
+			}
+		}
+
+		if (isset($value['ne']) === true) {
+			$colRef = $this->buildFilterColumnRef(
+				columnRef: $quotedCol,
+				propertyType: $propertyType,
+				value: $value['ne'],
+				isPostgres: $isPostgres
+			);
+			$fieldConditions[] = "{$colRef} <> " . $connection->quote((string)$value['ne']);
+		}
+
+		if (isset($value['isnull']) === true) {
+			// No column-ref cast: a null check is about the column's
+			// presence, not its type, and casting a NULL would only
+			// obscure it.
+			$predicate = 'IS NOT NULL';
+			if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
+				$predicate = 'IS NULL';
+			}
+
+			$fieldConditions[] = "{$quotedCol} {$predicate}";
+		}
+
+		return $fieldConditions;
+	}//end objectOperatorConditionsSql()
 
 	/**
 	 * Build SQL condition for array-type (JSONB) property filtering
@@ -2074,8 +2129,28 @@ class MagicSearchHandler {
 	 *
 	 * @return string[] Array of SQL conditions
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
 	private function buildMetadataOperatorConditionsSql(string $column, array $value, object $connection): array {
+		return NullFilter::conditionsFor(
+			criterion: $value,
+			column: $column,
+			build: fn (array $bag): array => $this->metadataBagConditionsSql(column: $column, value: $bag, connection: $connection)
+		);
+	}//end buildMetadataOperatorConditionsSql()
+
+	/**
+	 * The SQL conditions of one metadata operator bag (or bare IN list), to be ANDed
+	 *
+	 * @param string $column Quoted column identifier
+	 * @param array $value Operator bag or bare list of values, without `orNull`
+	 * @param object $connection Database connection for value quoting
+	 *
+	 * @return string[] Array of SQL conditions
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 */
+	private function metadataBagConditionsSql(string $column, array $value, object $connection): array {
 		$likeConditions = [];
 		if (array_key_exists(LikeOperator::KEY, $value) === true) {
 			$likeCondition = $this->likeConditionSql(column: $column, value: $value[LikeOperator::KEY], connection: $connection);
@@ -2104,7 +2179,7 @@ class MagicSearchHandler {
 			$this->metadataListConditionsSql(column: $column, value: $value, connection: $connection),
 			$this->metadataNullConditionsSql(column: $column, value: $value)
 		);
-	}//end buildMetadataOperatorConditionsSql()
+	}//end metadataBagConditionsSql()
 
 	/**
 	 * Quote every value in a bag, accepting a bare scalar as a one-item list
@@ -2668,46 +2743,60 @@ class MagicSearchHandler {
 	 *
 	 * @return void
 	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
+	 */
+	private function applyMetadataOperators(IQueryBuilder $qb, string $columnRef, array $value): void {
+		$conditions = NullFilter::conditionsFor(
+			criterion: $value,
+			column: $columnRef,
+			build: fn (array $bag): array => $this->metadataOperatorPredicates(qb: $qb, columnRef: $columnRef, value: $bag)
+		);
+		foreach ($conditions as $condition) {
+			$qb->andWhere($condition);
+		}
+	}//end applyMetadataOperators()
+
+	/**
+	 * The predicates of one metadata operator bag (or bare IN list), to be ANDed
+	 *
+	 * @param IQueryBuilder $qb Query builder that binds the parameters
+	 * @param string $columnRef Fully qualified column reference
+	 * @param array $value Operator bag or bare list of values, without `orNull`
+	 *
+	 * @return list<string|\Stringable> The predicates
+	 *
 	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
 	 */
-	private function applyMetadataOperators(IQueryBuilder $qb, string $columnRef, array $value): void {
+	private function metadataOperatorPredicates(IQueryBuilder $qb, string $columnRef, array $value): array {
+		$predicates = [];
 		if (array_key_exists(LikeOperator::KEY, $value) === true) {
-			$this->applyLikeFilter(qb: $qb, columnRef: $columnRef, value: $value[LikeOperator::KEY]);
+			$likeCondition = $this->likeCondition(qb: $qb, columnRef: $columnRef, value: $value[LikeOperator::KEY]);
+			if ($likeCondition !== null) {
+				$predicates[] = $likeCondition;
+			}
+
 			unset($value[LikeOperator::KEY]);
 			if ($value === []) {
-				return;
+				return $predicates;
 			}
 		}
 
 		// No operator key at all: a bare list keeps its historical IN(...) meaning.
 		if (empty(array_intersect(array_keys($value), self::COMPARISON_OPERATORS)) === true) {
-			$qb->andWhere(
-				$qb->expr()->in($columnRef, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY))
-			);
+			$predicates[] = $qb->expr()->in($columnRef, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY));
 
-			return;
+			return $predicates;
 		}
 
 		// Multiple operators AND together, so {"gte":a,"lte":b} is a range.
-		if (isset($value['gte']) === true) {
-			$qb->andWhere($qb->expr()->gte($columnRef, $qb->createNamedParameter($value['gte'])));
-		}
-
-		if (isset($value['lte']) === true) {
-			$qb->andWhere($qb->expr()->lte($columnRef, $qb->createNamedParameter($value['lte'])));
-		}
-
-		if (isset($value['gt']) === true) {
-			$qb->andWhere($qb->expr()->gt($columnRef, $qb->createNamedParameter($value['gt'])));
-		}
-
-		if (isset($value['lt']) === true) {
-			$qb->andWhere($qb->expr()->lt($columnRef, $qb->createNamedParameter($value['lt'])));
-		}
-
-		if (isset($value['ne']) === true) {
-			$qb->andWhere($qb->expr()->neq($columnRef, $qb->createNamedParameter($value['ne'])));
+		$comparisons = ['gte' => 'gte', 'lte' => 'lte', 'gt' => 'gt', 'lt' => 'lt', 'ne' => 'neq'];
+		foreach ($comparisons as $operator => $method) {
+			if (isset($value[$operator]) === true) {
+				$predicates[] = $qb->expr()->$method($columnRef, $qb->createNamedParameter($value[$operator]));
+			}
 		}
 
 		if (isset($value['in']) === true) {
@@ -2716,9 +2805,7 @@ class MagicSearchHandler {
 				$inValues = [$inValues];
 			}
 
-			$qb->andWhere(
-				$qb->expr()->in($columnRef, $qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY))
-			);
+			$predicates[] = $qb->expr()->in($columnRef, $qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY));
 		}
 
 		if (isset($value['notIn']) === true) {
@@ -2729,23 +2816,24 @@ class MagicSearchHandler {
 
 			// An empty NOT IN () is a SQL syntax error and means "exclude nothing".
 			if (empty($notInValues) === false) {
-				$qb->andWhere(
-					$qb->expr()->notIn(
-						$columnRef,
-						$qb->createNamedParameter($notInValues, IQueryBuilder::PARAM_STR_ARRAY)
-					)
+				$predicates[] = $qb->expr()->notIn(
+					$columnRef,
+					$qb->createNamedParameter($notInValues, IQueryBuilder::PARAM_STR_ARRAY)
 				);
 			}
 		}
 
 		if (isset($value['isnull']) === true) {
+			$predicate = $qb->expr()->isNotNull($columnRef);
 			if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
-				$qb->andWhere($qb->expr()->isNull($columnRef));
-			} else {
-				$qb->andWhere($qb->expr()->isNotNull($columnRef));
+				$predicate = $qb->expr()->isNull($columnRef);
 			}
+
+			$predicates[] = $predicate;
 		}
-	}//end applyMetadataOperators()
+
+		return $predicates;
+	}//end metadataOperatorPredicates()
 
 	/**
 	 * Resolve a `@self` field name to its magic-table metadata column
@@ -2791,6 +2879,7 @@ class MagicSearchHandler {
 	 *
 	 * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-a-like-filter-matches-a-substring-ignoring-case
+	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
 	private function applyObjectFilters(IQueryBuilder $qb, array $filters, Schema $schema): void {
 		$properties = $schema->getProperties();
@@ -2831,193 +2920,235 @@ class MagicSearchHandler {
 			$columnName = $this->sanitizeColumnName(name: $field);
 			$propertyType = $properties[$field]['type'] ?? 'string';
 
-			if ($value === 'IS NOT NULL') {
-				$qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-				continue;
-			}
-
-			if ($value === 'IS NULL') {
-				$qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-				continue;
-			}
-
-			// `like` matches the column's text, whatever the column type, so it is
-			// applied ahead of the type-specific branches and then taken out of the bag.
-			if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
-				$this->applyLikeFilter(qb: $qb, columnRef: "t.{$columnName}", value: $value[LikeOperator::KEY]);
-				unset($value[LikeOperator::KEY]);
-				if ($value === []) {
-					continue;
-				}
-			}
-
-			// Handle array type columns (JSON arrays in PostgreSQL).
-			if ($propertyType === 'array') {
-				$this->applyJsonArrayFilter(qb: $qb, columnName: $columnName, value: $value);
-				continue;
-			}
-
-			// Handle object type columns (JSON objects with 'value' key containing UUID).
-			if ($propertyType === 'object') {
-				$this->applyJsonObjectFilter(qb: $qb, columnName: $columnName, value: $value, isPostgres: $isPostgres);
-				continue;
-			}
-
-			// A PHP boolean compares in its string form (boolean-filter-values).
-			$value = FilterParams::comparableValue(value: $value, propertyType: $propertyType);
-
-			if (is_array($value) === true) {
-				$comparisonOperators = self::COMPARISON_OPERATORS;
-				if (empty(array_intersect(array_keys($value), $comparisonOperators)) === true) {
-					// Cast numeric columns to text when filtered by non-numeric
-					// (e.g. UUID) values so PostgreSQL does not abort with 22P02.
-					$columnRef = $this->buildFilterColumnRef(
-						columnRef: "t.{$columnName}",
-						propertyType: $propertyType,
-						value: $value,
-						isPostgres: $isPostgres
-					);
-					$qb->andWhere(
-						$qb->expr()->in(
-							$columnRef,
-							$qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
-						)
-					);
-					continue;
-				}
-
-				if (isset($value['gte']) === true) {
-					$columnRef = $this->buildFilterColumnRef(
-						columnRef: "t.{$columnName}",
-						propertyType: $propertyType,
-						value: $value['gte'],
-						isPostgres: $isPostgres
-					);
-					$qb->andWhere($qb->expr()->gte($columnRef, $qb->createNamedParameter($value['gte'])));
-				}
-
-				if (isset($value['lte']) === true) {
-					$columnRef = $this->buildFilterColumnRef(
-						columnRef: "t.{$columnName}",
-						propertyType: $propertyType,
-						value: $value['lte'],
-						isPostgres: $isPostgres
-					);
-					$qb->andWhere($qb->expr()->lte($columnRef, $qb->createNamedParameter($value['lte'])));
-				}
-
-				if (isset($value['gt']) === true) {
-					$columnRef = $this->buildFilterColumnRef(
-						columnRef: "t.{$columnName}",
-						propertyType: $propertyType,
-						value: $value['gt'],
-						isPostgres: $isPostgres
-					);
-					$qb->andWhere($qb->expr()->gt($columnRef, $qb->createNamedParameter($value['gt'])));
-				}
-
-				if (isset($value['lt']) === true) {
-					$columnRef = $this->buildFilterColumnRef(
-						columnRef: "t.{$columnName}",
-						propertyType: $propertyType,
-						value: $value['lt'],
-						isPostgres: $isPostgres
-					);
-					$qb->andWhere($qb->expr()->lt($columnRef, $qb->createNamedParameter($value['lt'])));
-				}
-
-				if (isset($value['in']) === true) {
-					$inValues = [$value['in']];
-					if (is_array($value['in']) === true) {
-						$inValues = $value['in'];
-					}
-
-					$columnRef = $this->buildFilterColumnRef(
-						columnRef: "t.{$columnName}",
-						propertyType: $propertyType,
-						value: $inValues,
-						isPostgres: $isPostgres
-					);
-					$qb->andWhere(
-						$qb->expr()->in(
-							$columnRef,
-							$qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY)
-						)
-					);
-				}
-
-				if (isset($value['notIn']) === true) {
-					$notInValues = [$value['notIn']];
-					if (is_array($value['notIn']) === true) {
-						$notInValues = $value['notIn'];
-					}
-
-					// An empty exclusion list excludes nothing, so skip the
-					// clause entirely — emitting `NOT IN ()` is a SQL error
-					// on some engines and a no-op-shaped clause on others.
-					if (count($notInValues) > 0) {
-						$columnRef = $this->buildFilterColumnRef(
-							columnRef: "t.{$columnName}",
-							propertyType: $propertyType,
-							value: $notInValues,
-							isPostgres: $isPostgres
-						);
-						$qb->andWhere(
-							$qb->expr()->notIn(
-								$columnRef,
-								$qb->createNamedParameter($notInValues, IQueryBuilder::PARAM_STR_ARRAY)
-							)
-						);
-					}
-				}//end if
-
-				if (isset($value['ne']) === true) {
-					$columnRef = $this->buildFilterColumnRef(
-						columnRef: "t.{$columnName}",
-						propertyType: $propertyType,
-						value: $value['ne'],
-						isPostgres: $isPostgres
-					);
-					$qb->andWhere($qb->expr()->neq($columnRef, $qb->createNamedParameter($value['ne'])));
-				}
-
-				if (isset($value['isnull']) === true) {
-					// The bare column, not `buildFilterColumnRef`: a null check
-					// asks whether the column has a value at all, and a cast
-					// would only obscure that.
-					if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
-						$qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-					} else {
-						$qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-					}
-				}
-
-				continue;
-			}//end if
-
-			// Cast numeric columns to text when filtered by a non-numeric
-			// (e.g. UUID) value so PostgreSQL does not abort the query with
-			// SQLSTATE[22P02]; numeric values keep the indexed numeric path.
-			$columnRef = $this->buildFilterColumnRef(
-				columnRef: "t.{$columnName}",
-				propertyType: $propertyType,
-				value: $value,
-				isPostgres: $isPostgres
+			$conditions = NullFilter::conditionsFor(
+				criterion: $value,
+				column: "t.{$columnName}",
+				build: fn (mixed $criterion): array => $this->objectFieldPredicates(
+					qb: $qb,
+					columnName: $columnName,
+					propertyType: $propertyType,
+					value: $criterion,
+					isPostgres: $isPostgres
+				)
 			);
-			$qb->andWhere($qb->expr()->eq($columnRef, $qb->createNamedParameter($value)));
+			foreach ($conditions as $condition) {
+				$qb->andWhere($condition);
+			}
 		}//end foreach
 	}//end applyObjectFilters()
 
 	/**
+	 * The predicates one object-field filter contributes on the QueryBuilder path
+	 *
+	 * @param IQueryBuilder $qb Query builder that binds the parameters
+	 * @param string $columnName Sanitized column name
+	 * @param string $propertyType The property's declared JSON-Schema type
+	 * @param mixed $value The filter value, without its `orNull` modifier
+	 * @param bool $isPostgres Whether the active platform is PostgreSQL
+	 *
+	 * @return list<string|\Stringable> The field's predicates, to be ANDed
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity)
+	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 */
+	private function objectFieldPredicates(
+		IQueryBuilder $qb,
+		string $columnName,
+		string $propertyType,
+		mixed $value,
+		bool $isPostgres,
+	): array {
+		$predicates = [];
+
+		if ($value === 'IS NOT NULL') {
+			$predicates[] = $qb->expr()->isNotNull("t.{$columnName}");
+			return $predicates;
+		}
+
+		if ($value === 'IS NULL') {
+			$predicates[] = $qb->expr()->isNull("t.{$columnName}");
+			return $predicates;
+		}
+
+		// `like` matches the column's text, whatever the column type, so it is
+		// applied ahead of the type-specific branches and then taken out of the bag.
+		if (is_array($value) === true && array_key_exists(LikeOperator::KEY, $value) === true) {
+			$likeCondition = $this->likeCondition(qb: $qb, columnRef: "t.{$columnName}", value: $value[LikeOperator::KEY]);
+			if ($likeCondition !== null) {
+				$predicates[] = $likeCondition;
+			}
+
+			unset($value[LikeOperator::KEY]);
+			if ($value === []) {
+				return $predicates;
+			}
+		}
+
+		// Handle array type columns (JSON arrays in PostgreSQL).
+		if ($propertyType === 'array') {
+			$predicates[] = $this->jsonArrayCondition(qb: $qb, columnName: $columnName, value: $value);
+			return $predicates;
+		}
+
+		// Handle object type columns (JSON objects with 'value' key containing UUID).
+		if ($propertyType === 'object') {
+			$predicates[] = $this->jsonObjectCondition(qb: $qb, columnName: $columnName, value: $value, isPostgres: $isPostgres);
+			return $predicates;
+		}
+
+		// A PHP boolean compares in its string form (boolean-filter-values).
+		$value = FilterParams::comparableValue(value: $value, propertyType: $propertyType);
+
+		if (is_array($value) === true) {
+			$comparisonOperators = self::COMPARISON_OPERATORS;
+			if (empty(array_intersect(array_keys($value), $comparisonOperators)) === true) {
+				// Cast numeric columns to text when filtered by non-numeric
+				// (e.g. UUID) values so PostgreSQL does not abort with 22P02.
+				$columnRef = $this->buildFilterColumnRef(
+					columnRef: "t.{$columnName}",
+					propertyType: $propertyType,
+					value: $value,
+					isPostgres: $isPostgres
+				);
+				$predicates[] = $qb->expr()->in(
+					$columnRef,
+					$qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
+				);
+				return $predicates;
+			}
+
+			return $this->objectOperatorPredicates(
+				qb: $qb,
+				columnName: $columnName,
+				propertyType: $propertyType,
+				value: $value,
+				isPostgres: $isPostgres
+			);
+		}//end if
+
+		// Cast numeric columns to text when filtered by a non-numeric
+		// (e.g. UUID) value so PostgreSQL does not abort the query with
+		// SQLSTATE[22P02]; numeric values keep the indexed numeric path.
+		$columnRef = $this->buildFilterColumnRef(
+			columnRef: "t.{$columnName}",
+			propertyType: $propertyType,
+			value: $value,
+			isPostgres: $isPostgres
+		);
+		$predicates[] = $qb->expr()->eq($columnRef, $qb->createNamedParameter($value));
+		return $predicates;
+	}//end objectFieldPredicates()
+
+	/**
+	 * The predicates of one object field's operator bag on the QueryBuilder path
+	 *
+	 * @param IQueryBuilder $qb Query builder that binds the parameters
+	 * @param string $columnName Sanitized column name
+	 * @param string $propertyType The property's declared JSON-Schema type
+	 * @param array $value The operator bag, in its comparable form
+	 * @param bool $isPostgres Whether the active platform is PostgreSQL
+	 *
+	 * @return list<string|\Stringable> The predicates, to be ANDed
+	 *
+	 * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
+	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 */
+	private function objectOperatorPredicates(
+		IQueryBuilder $qb,
+		string $columnName,
+		string $propertyType,
+		array $value,
+		bool $isPostgres,
+	): array {
+		$predicates = [];
+		// Multiple operators AND together, so {"gte":a,"lte":b} is a range.
+		foreach (['gte', 'lte', 'gt', 'lt'] as $operator) {
+			if (isset($value[$operator]) === true) {
+				$columnRef = $this->buildFilterColumnRef(
+					columnRef: "t.{$columnName}",
+					propertyType: $propertyType,
+					value: $value[$operator],
+					isPostgres: $isPostgres
+				);
+				$predicates[] = $qb->expr()->$operator($columnRef, $qb->createNamedParameter($value[$operator]));
+			}
+		}
+
+		if (isset($value['in']) === true) {
+			$inValues = [$value['in']];
+			if (is_array($value['in']) === true) {
+				$inValues = $value['in'];
+			}
+
+			$columnRef = $this->buildFilterColumnRef(
+				columnRef: "t.{$columnName}",
+				propertyType: $propertyType,
+				value: $inValues,
+				isPostgres: $isPostgres
+			);
+			$predicates[] = $qb->expr()->in(
+				$columnRef,
+				$qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY)
+			);
+		}
+
+		if (isset($value['notIn']) === true) {
+			$notInValues = [$value['notIn']];
+			if (is_array($value['notIn']) === true) {
+				$notInValues = $value['notIn'];
+			}
+
+			// An empty exclusion list excludes nothing, so skip the
+			// clause entirely — emitting `NOT IN ()` is a SQL error
+			// on some engines and a no-op-shaped clause on others.
+			if (count($notInValues) > 0) {
+				$columnRef = $this->buildFilterColumnRef(
+					columnRef: "t.{$columnName}",
+					propertyType: $propertyType,
+					value: $notInValues,
+					isPostgres: $isPostgres
+				);
+				$predicates[] = $qb->expr()->notIn(
+					$columnRef,
+					$qb->createNamedParameter($notInValues, IQueryBuilder::PARAM_STR_ARRAY)
+				);
+			}
+		}//end if
+
+		if (isset($value['ne']) === true) {
+			$columnRef = $this->buildFilterColumnRef(
+				columnRef: "t.{$columnName}",
+				propertyType: $propertyType,
+				value: $value['ne'],
+				isPostgres: $isPostgres
+			);
+			$predicates[] = $qb->expr()->neq($columnRef, $qb->createNamedParameter($value['ne']));
+		}
+
+		if (isset($value['isnull']) === true) {
+			// The bare column, not `buildFilterColumnRef`: a null check
+			// asks whether the column has a value at all, and a cast
+			// would only obscure that.
+			if ($this->isNullOperatorAsksForNull(value: $value['isnull']) === true) {
+				$predicates[] = $qb->expr()->isNull("t.{$columnName}");
+			} else {
+				$predicates[] = $qb->expr()->isNotNull("t.{$columnName}");
+			}
+		}
+
+		return $predicates;
+	}//end objectOperatorPredicates()
+
+	/**
 	 * Apply filter for JSON array columns using PostgreSQL jsonb operators
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify
+	 * @param IQueryBuilder $qb Query builder that binds the parameters
 	 * @param string $columnName Column name to filter
 	 * @param mixed $value Filter value (string or array of strings)
 	 *
-	 * @return void
+	 * @return string|ICompositeExpression The condition
 	 */
-	private function applyJsonArrayFilter(IQueryBuilder $qb, string $columnName, mixed $value): void {
+	private function jsonArrayCondition(IQueryBuilder $qb, string $columnName, mixed $value): string|ICompositeExpression {
 		// Normalize value to array.
 		$values = [$value];
 		if (is_array($value) === true) {
@@ -3028,10 +3159,7 @@ class MagicSearchHandler {
 			// Single value: check if JSON array contains this value.
 			// Use COALESCE to handle NULL values and avoid type cast issues with QueryBuilder.
 			$jsonValue = json_encode([$values[0]]);
-			$qb->andWhere(
-				"COALESCE(t.{$columnName}, '[]')::jsonb @> " . $qb->createNamedParameter($jsonValue)
-			);
-			return;
+			return "COALESCE(t.{$columnName}, '[]')::jsonb @> " . $qb->createNamedParameter($jsonValue);
 		}
 
 		// Multiple values: check if JSON array contains ANY of the values (OR logic).
@@ -3044,8 +3172,8 @@ class MagicSearchHandler {
 			);
 		}
 
-		$qb->andWhere($orConditions);
-	}//end applyJsonArrayFilter()
+		return $orConditions;
+	}//end jsonArrayCondition()
 
 	/**
 	 * Filter on fields inside object properties (`dunning.currentStage=2`), on the QueryBuilder path.
@@ -3064,6 +3192,7 @@ class MagicSearchHandler {
 	 * @throws EncryptedFieldFilterException When the object property is encrypted.
 	 *
 	 * @spec openspec/changes/nested-property-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
+	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
 	private function applyNestedPathFilters(IQueryBuilder $qb, array $nestedFilters, array $properties, bool $isPostgres): void {
 		foreach ($nestedFilters as $filter) {
@@ -3082,11 +3211,15 @@ class MagicSearchHandler {
 				continue;
 			}
 
-			$conditions = $this->nestedPaths->conditions(
-				expression: $expression,
-				value: $filter['value'],
-				bind: static fn (string $value): string => (string)$qb->createNamedParameter($value),
-				isPostgres: $isPostgres
+			$conditions = NullFilter::conditionsFor(
+				criterion: $filter['value'],
+				column: $expression,
+				build: fn (mixed $criterion): array => $this->nestedPaths->conditions(
+					expression: $expression,
+					value: $criterion,
+					bind: static fn (string $value): string => (string)$qb->createNamedParameter($value),
+					isPostgres: $isPostgres
+				)
 			);
 			foreach ($conditions as $condition) {
 				$qb->andWhere($condition);
@@ -3103,14 +3236,14 @@ class MagicSearchHandler {
 	 *
 	 * Uses text-based matching to work with both column types safely.
 	 *
-	 * @param IQueryBuilder $qb Query builder to modify
+	 * @param IQueryBuilder $qb Query builder that binds the parameters
 	 * @param string $columnName Column name to filter
 	 * @param mixed $value Filter value (UUID string or array of UUIDs)
 	 * @param bool $isPostgres Whether the backing database is PostgreSQL.
 	 *
-	 * @return void
+	 * @return string|ICompositeExpression The condition
 	 */
-	private function applyJsonObjectFilter(IQueryBuilder $qb, string $columnName, mixed $value, bool $isPostgres): void {
+	private function jsonObjectCondition(IQueryBuilder $qb, string $columnName, mixed $value, bool $isPostgres): string|ICompositeExpression {
 		// Normalize value to array.
 		$values = [$value];
 		if (is_array($value) === true) {
@@ -3129,10 +3262,7 @@ class MagicSearchHandler {
 			// JSON format: column contains "value": "uuid" pattern.
 			$param = $qb->createNamedParameter($values[0]);
 			$jsonPattern = $qb->createNamedParameter('%"value": "' . $values[0] . '"%');
-			$qb->andWhere(
-				"({$colCast} = {$param} OR {$colCast} LIKE {$jsonPattern})"
-			);
-			return;
+			return "({$colCast} = {$param} OR {$colCast} LIKE {$jsonPattern})";
 		}
 
 		// Multiple values: check if value matches ANY of the values (OR logic).
@@ -3145,8 +3275,8 @@ class MagicSearchHandler {
 			);
 		}
 
-		$qb->andWhere($orConditions);
-	}//end applyJsonObjectFilter()
+		return $orConditions;
+	}//end jsonObjectCondition()
 
 	/**
 	 * Narrow a query to the objects one user has NOT seen since they last changed.

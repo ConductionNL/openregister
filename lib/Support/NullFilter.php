@@ -52,6 +52,11 @@ final class NullFilter {
 	public const ISNULL_OPERATOR = 'isnull';
 
 	/**
+	 * The modifier that also admits an empty field (`flag[ne]=true&flag[orNull]=true`).
+	 */
+	public const OR_NULL_MODIFIER = 'orNull';
+
+	/**
 	 * Whether an `isnull` operator value asks for IS NULL rather than IS NOT NULL.
 	 *
 	 * A query string only delivers strings, so a strict `=== true` can never
@@ -100,4 +105,82 @@ final class NullFilter {
 
 		return null;
 	}//end nullCheck()
+
+	/**
+	 * Take the `orNull` modifier off an operator bag.
+	 *
+	 * Every comparison SQL offers (`=`, `<>`, `IN`, `NOT IN`, `<`, ...) is
+	 * unknown for a NULL column, so a row whose field was never written drops
+	 * out of `{ne: true}` as well as `{eq: false}`. `orNull: true` asks for
+	 * those rows back: the bag's own operators still AND together, and the
+	 * result is OR-ed with `IS NULL`. The value is read like `isnull`'s.
+	 *
+	 * @param mixed $criterion A filter value: a scalar or an operator bag.
+	 *
+	 * @return array{0: mixed, 1: bool} The criterion without the modifier, and whether NULL is admitted.
+	 *
+	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 */
+	public static function splitOrNull(mixed $criterion): array {
+		if (is_array($criterion) === false || array_key_exists(self::OR_NULL_MODIFIER, $criterion) === false) {
+			return [$criterion, false];
+		}
+
+		$orNull = self::isNullOperatorAsksForNull(value: $criterion[self::OR_NULL_MODIFIER]);
+		unset($criterion[self::OR_NULL_MODIFIER]);
+
+		return [$criterion, $orNull];
+	}//end splitOrNull()
+
+	/**
+	 * Build one field's conditions, honouring an `orNull` modifier in its criterion.
+	 *
+	 * `$build` receives the criterion without the modifier and returns the
+	 * field's conditions. A bag that held nothing but `orNull` adds no condition.
+	 *
+	 * @param mixed    $criterion A filter value: a scalar or an operator bag.
+	 * @param string   $column    The column reference the conditions test.
+	 * @param callable $build     fn(mixed $criterion): list<string|\Stringable>.
+	 *
+	 * @return list<string|\Stringable> The conditions to AND into the query.
+	 *
+	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 */
+	public static function conditionsFor(mixed $criterion, string $column, callable $build): array {
+		[$criterion, $orNull] = self::splitOrNull(criterion: $criterion);
+		if ($orNull === true && $criterion === []) {
+			return [];
+		}
+
+		return self::admitNull(conditions: $build($criterion), column: $column, orNull: $orNull);
+	}//end conditionsFor()
+
+	/**
+	 * Join one field's conditions into `(a AND b) OR column IS NULL`.
+	 *
+	 * Without `orNull`, or without any condition to widen, the list is
+	 * returned as it came: no condition at all already admits NULL.
+	 *
+	 * @param list<T> $conditions The field's conditions, each a SQL predicate.
+	 * @param string  $column     The column reference the conditions test.
+	 * @param bool    $orNull     Whether the caller asked for NULL rows too.
+	 *
+	 * @return list<T|string> The conditions to AND into the query.
+	 *
+	 * @template T of string|\Stringable
+	 *
+	 * @spec openspec/changes/filter-or-null/specs/zoeken-filteren/spec.md
+	 */
+	public static function admitNull(array $conditions, string $column, bool $orNull): array {
+		if ($orNull === false || $conditions === []) {
+			return $conditions;
+		}
+
+		$group = implode(' AND ', array_map(static fn (string|\Stringable $condition): string => '(' . $condition . ')', $conditions));
+		if (count($conditions) > 1) {
+			$group = '(' . $group . ')';
+		}
+
+		return ['(' . $group . " OR {$column} IS NULL)"];
+	}//end admitNull()
 }//end class
