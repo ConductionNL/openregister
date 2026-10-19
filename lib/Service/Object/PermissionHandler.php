@@ -539,7 +539,7 @@ class PermissionHandler {
 			$isAdmin = ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true);
 		}
 
-		return (new DraftStatusPolicy())->keptFromCaller(
+		return (new DraftCallerRule())->keptFromCaller(
 			object: $object,
 			schema: $schema,
 			userId: $subject,
@@ -1937,7 +1937,7 @@ class PermissionHandler {
 						// Another user's draft is kept from this caller as on every
 						// other path: it is left out like an object that does not
 						// exist, so the delete does not announce it.
-						$draftKept = (new DraftStatusPolicy())->keptFromCaller(
+						$draftKept = (new DraftCallerRule())->keptFromCaller(
 							object: $object,
 							schema: $schema,
 							userId: $userId,

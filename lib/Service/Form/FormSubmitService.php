@@ -233,10 +233,7 @@ class FormSubmitService {
 
 		// The files now sit on the draft: the tokens are spent, as after a submit,
 		// so they cannot be redeemed again for another object or a later save.
-		$this->uploads->claim(
-			tokens: array_merge(...array_map(static fn (array $plan): array => $plan['tokens'], $plans)),
-			draftId: (string)$created[0]['object']->getUuid()
-		);
+		$this->uploads->claimPlanned(plans: $plans, draftId: (string)$created[0]['object']->getUuid());
 
 		return ['id' => (string)$created[0]['object']->getUuid(), 'status' => ObjectEntity::STATUS_DRAFT];
 	}//end saveDraft()
@@ -319,7 +316,7 @@ class FormSubmitService {
 		$plans = $this->plan(writes: $writes, payload: $payload, scope: $scope, draftId: $draftId);
 		[$created, $receivedAt] = $this->writeOrPromote(plans: $plans, subject: $subject, draftId: $draftId, owner: $owner);
 
-		$this->uploads->claim(tokens: array_merge(...array_map(static fn (array $plan): array => $plan['tokens'], $plans)), draftId: $draftId);
+		$this->uploads->claimPlanned(plans: $plans, draftId: $draftId);
 
 		return $this->answer(created: $created, receivedAt: $receivedAt);
 	}//end submitOnce()
@@ -552,14 +549,13 @@ class FormSubmitService {
 
 			[$object, $files, $tokens] = $this->mapPayload(mapping: $mapping, payload: $payload, scope: $scope, draftId: $draftId);
 			$schema = $this->schema(reference: $write['schema'] ?? null);
-			$object = $this->withoutNestedIdentity(object: $object, schema: $schema);
 			$plans[] = [
 				'as' => $writeName,
 				'named' => $named && count($writes) > 1,
 				'register' => $this->register(reference: $write['register'] ?? null),
 				'schema' => $schema,
 				'mapping' => $mapping,
-				'object' => $object,
+				'object' => (new NestedIdentityGuard())->strip(object: $object, schema: $schema),
 				'files' => $files,
 				'tokens' => $tokens,
 			];
@@ -602,23 +598,12 @@ class FormSubmitService {
 
 			// A token this very draft already claimed (the autosave before this
 			// one, or the draft the final submit leaves) names a file the draft
-			// holds: the client resends the token, and the property is left as
-			// the draft stores it. A token claimed elsewhere stays unknown.
-			if ($draftId !== null && $this->uploads->claimedBy(formId: $scope, token: $token, property: $property, draftId: $draftId) === true) {
+			// holds: the property is left as the draft stores it.
+			$file = $this->uploads->redeem(formId: $scope, property: (string)$property, token: $token, draftId: $draftId);
+			if ($file === null) {
 				continue;
 			}
 
-			$file = $this->uploads->materialise(formId: $scope, token: $token);
-			if ($file['property'] !== $property) {
-				$message = $this->l10n->t('An uploaded file was sent for another question. Please add it again.');
-				throw new FormSubmitRefusedException(
-					message: $message,
-					status: 422,
-					findings: [['property' => $property, 'code' => 'upload-token-unknown', 'message' => $message]]
-				);
-			}
-
-			unset($file['property']);
 			$files[$property] = $file;
 			$tokens[] = $token;
 		}
@@ -642,64 +627,6 @@ class FormSubmitService {
 
 		return [$object, $files, $tokens];
 	}//end mapPayload()
-
-	/**
-	 * The object without the identity keys of the nested objects its cascading properties carry.
-	 *
-	 * The mapping drops the top-level `id`, but a property that cascades (its
-	 * definition, or its `items`, has a `$ref` or an `inversedBy`) saves each
-	 * nested object through the cascade, which takes the nested `id` (or
-	 * `@self.id`) as the uuid of an existing object and updates it. A submitter
-	 * who names one would write over that object, so no nested identity under a
-	 * cascading property survives, however deep.
-	 *
-	 * @param array<string, mixed> $object The mapped object.
-	 * @param Schema               $schema Its destination schema.
-	 *
-	 * @return array<string, mixed> The object, safe to save.
-	 */
-	private function withoutNestedIdentity(array $object, Schema $schema): array {
-		foreach ((array)$schema->getProperties() as $name => $definition) {
-			if (is_array($definition) === false || array_key_exists((string)$name, $object) === false || is_array($object[$name]) === false) {
-				continue;
-			}
-
-			$items = [];
-			if (is_array($definition['items'] ?? null) === true) {
-				$items = $definition['items'];
-			}
-
-			$cascades = isset($definition['$ref']) === true || isset($definition['inversedBy']) === true
-				|| isset($items['$ref']) === true || isset($items['inversedBy']) === true;
-			if ($cascades === true) {
-				$object[$name] = $this->stripIdentity(value: $object[$name]);
-			}
-		}
-
-		return $object;
-	}//end withoutNestedIdentity()
-
-	/**
-	 * Remove `id` and `@self.id` from a value and from every array nested in it.
-	 *
-	 * @param array<mixed> $value A nested object, or a list of them.
-	 *
-	 * @return array<mixed> The value without identity keys.
-	 */
-	private function stripIdentity(array $value): array {
-		unset($value['id']);
-		if (is_array($value['@self'] ?? null) === true) {
-			unset($value['@self']['id']);
-		}
-
-		foreach ($value as $key => $nested) {
-			if (is_array($nested) === true) {
-				$value[$key] = $this->stripIdentity(value: $nested);
-			}
-		}
-
-		return $value;
-	}//end stripIdentity()
 
 	/**
 	 * Property => value: the mapped fields, or without a mapping the payload minus control keys, metadata and the object's `id` / `uuid`.

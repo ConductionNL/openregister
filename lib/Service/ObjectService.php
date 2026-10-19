@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Lifecycle\AutoTransitionPass;
+use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
@@ -2337,7 +2338,7 @@ class ObjectService implements ObjectServiceInterface
         }
 
         $user = $this->userSession->getUser();
-        $kept = (new DraftStatusPolicy())->keptFromCaller(
+        $kept = (new DraftCallerRule())->keptFromCaller(
             object: $stored,
             schema: $this->currentSchema,
             userId: $user?->getUID(),
@@ -3370,7 +3371,7 @@ class ObjectService implements ObjectServiceInterface
      */
     private function draftKeptFromCaller(ObjectEntity $object, Schema $schema, ?IUser $user): bool
     {
-        return (new DraftStatusPolicy())->keptFromCaller(
+        return (new DraftCallerRule())->keptFromCaller(
             object: $object,
             schema: $schema,
             userId: $user?->getUID(),

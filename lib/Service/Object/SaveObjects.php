@@ -826,7 +826,7 @@ class SaveObjects {
 			// unannounced (same rule as ObjectService::refuseSomebodyElsesDraft).
 			// An administrator reads every draft, so is not kept from one.
 			if ($effectiveRbac === true && $existingEntity !== null) {
-				$draftKept = (new DraftStatusPolicy())->keptFromCaller(
+				$draftKept = (new DraftCallerRule())->keptFromCaller(
 					object: $existingEntity,
 					schema: $rowSchema,
 					userId: $currentUser?->getUID(),

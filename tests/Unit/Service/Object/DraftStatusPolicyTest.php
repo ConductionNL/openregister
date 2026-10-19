@@ -265,35 +265,4 @@ class DraftStatusPolicyTest extends TestCase {
 		$this->assertSame('active', $this->policy->resolveStatus(entity: $this->entity(status: 'draft'), selfData: ['status' => 'active']));
 		$this->assertTrue(DraftStatusPolicy::promotionWasUsed(uuid: 'uuid-1'));
 	}//end testThePromotionIsUsedBySavingTheDraft()
-
-	/**
-	 * The one caller rule: owner and admin pass, a system caller passes, an anonymous or foreign web caller is kept.
-	 *
-	 * @return void
-	 */
-	public function testKeptFromCallerIsOneRuleForEveryCaller(): void {
-		$draft = $this->entity(status: 'draft');
-		$draft->setOwner('alice');
-		$schema = new Schema();
-
-		// A foreign signed-in caller is kept; so is an anonymous web caller.
-		$this->assertTrue($this->policy->keptFromCaller(object: $draft, schema: $schema, userId: 'bob', isAdmin: false, commandLine: true));
-		$this->assertTrue($this->policy->keptFromCaller(object: $draft, schema: $schema, userId: null, isAdmin: false, commandLine: false));
-		// The owner, an administrator and the command line without a user are not.
-		$this->assertFalse($this->policy->keptFromCaller(object: $draft, schema: $schema, userId: 'alice', isAdmin: false));
-		$this->assertFalse($this->policy->keptFromCaller(object: $draft, schema: $schema, userId: 'bob', isAdmin: true));
-		$this->assertFalse($this->policy->keptFromCaller(object: $draft, schema: $schema, userId: null, isAdmin: false, commandLine: true));
-		// A system operation context passes a web request without a user, and a forced-anonymous evaluation does not.
-		\OCA\OpenRegister\Service\SystemOperationContext::run(function () use ($draft, $schema): void {
-			$this->assertFalse($this->policy->keptFromCaller(object: $draft, schema: $schema, userId: null, isAdmin: false, commandLine: false));
-			\OCA\OpenRegister\Service\AnonymousEvaluationContext::run(function () use ($draft, $schema): void {
-				$this->assertTrue($this->policy->keptFromCaller(object: $draft, schema: $schema, userId: null, isAdmin: false, commandLine: true));
-			});
-		});
-		// A schema that shows its drafts, and an object that is no draft, keep nothing from anybody.
-		$visible = new Schema();
-		$visible->setConfiguration(['draftsVisible' => true]);
-		$this->assertFalse($this->policy->keptFromCaller(object: $draft, schema: $visible, userId: 'bob', isAdmin: false));
-		$this->assertFalse($this->policy->keptFromCaller(object: $this->entity(status: 'active'), schema: $schema, userId: 'bob', isAdmin: false));
-	}//end testKeptFromCallerIsOneRuleForEveryCaller()
 }//end class

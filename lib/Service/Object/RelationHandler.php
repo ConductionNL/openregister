@@ -26,7 +26,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
+use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -827,7 +827,7 @@ class RelationHandler {
 
 		$schemaCache = [];
 		$filtered = [];
-		$drafts = new DraftStatusPolicy();
+		$drafts = new DraftCallerRule();
 
 		foreach ($objects as $object) {
 			if (($object instanceof ObjectEntity) === false) {
