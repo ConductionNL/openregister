@@ -67,7 +67,11 @@ class DecisionTableBulkGuard {
 		$refused         = [];
 
 		foreach ($objects as $position => $row) {
-			$self        = (is_array($row['@self'] ?? null) === true) ? $row['@self'] : [];
+			$self = [];
+			if (is_array($row['@self'] ?? null) === true) {
+				$self = $row['@self'];
+			}
+
 			$schemaRef   = ($this->reference(value: ($self['schema'] ?? null)) ?? $defaultSchema);
 			$registerRef = ($this->reference(value: ($self['register'] ?? null)) ?? $defaultRegister);
 
@@ -133,6 +137,10 @@ class DecisionTableBulkGuard {
 	private function uuidOf(array $row, array $self): string {
 		$uuid = ($self['uuid'] ?? $self['id'] ?? $row['id'] ?? '');
 
-		return is_string($uuid) === true ? $uuid : '';
+		if (is_string($uuid) === true) {
+			return $uuid;
+		}
+
+		return '';
 	}//end uuidOf()
 }//end class

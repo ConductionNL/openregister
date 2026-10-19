@@ -190,6 +190,7 @@ class SaveObjects {
 	 *                                             wave-12 Fix 3 per-row JSON-Schema validation
 	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher for object lifecycle events
 	 * @param AuditTrailMapper|null $auditTrailMapper Audit trail mapper for logging bulk changes
+	 * @param DecisionTableBulkGuard|null $decisionTables Applies the decision-table save rules to a bulk save
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -3299,7 +3300,12 @@ class SaveObjects {
 	 *
 	 * @return array<int|string, array<string, mixed>> The rows that may go on.
 	 */
-	private function refuseInvalidDecisionTables(array $objects, Register|string|int|null $register, Schema|string|int|null $schema, array &$result): array {
+	private function refuseInvalidDecisionTables(
+		array $objects,
+		Register|string|int|null $register,
+		Schema|string|int|null $schema,
+		array &$result
+	): array {
 		if ($this->decisionTables === null) {
 			return $objects;
 		}

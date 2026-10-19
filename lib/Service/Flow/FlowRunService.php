@@ -913,10 +913,17 @@ class FlowRunService {
 		$context = ($run->getContext() ?? []);
 		$waiting = ($context[self::SIGNAL_CONTEXT_KEY] ?? null);
 		if (is_array($waiting) === true) {
-			$conflicts = array_keys(array_filter($payload, static fn ($value, $key): bool => array_key_exists($key, $waiting) === true && $waiting[$key] !== $value, ARRAY_FILTER_USE_BOTH));
+			$conflicts = [];
+			foreach ($payload as $key => $value) {
+				if (array_key_exists($key, $waiting) === true && $waiting[$key] !== $value) {
+					$conflicts[] = $key;
+				}
+			}
+
 			if ($conflicts !== []) {
 				$this->logger->warning(
-					message: '[FlowRunService] A second signal on run ' . (string)$run->getUuid() . ' carried a different value for a key already answered; the first answer stands.',
+					message: '[FlowRunService] A second signal on run ' . (string)$run->getUuid()
+						. ' carried a different value for a key already answered; the first answer stands.',
 					context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $run->getUuid(), 'keys' => $conflicts]
 				);
 			}

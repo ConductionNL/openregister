@@ -845,7 +845,20 @@ final class NotificationAnnotationValidator {
 				}
 
 				if ($kind === ReferencedAddressNotifier::KIND) {
-					foreach ($this->emailRecipientErrors(recipient: $recipient, spec: $spec, propKeys: $propKeys, properties: (is_array($properties) === true ? $properties : []), name: (string)$name, index: (int)$i) as $error) {
+					$declared = [];
+					if (is_array($properties) === true) {
+						$declared = $properties;
+					}
+
+					$emailErrors = $this->emailRecipientErrors(
+						recipient: $recipient,
+						spec: $spec,
+						propKeys: $propKeys,
+						properties: $declared,
+						name: (string)$name,
+						index: (int)$i
+					);
+					foreach ($emailErrors as $error) {
 						$errors[] = $error;
 					}
 				}
