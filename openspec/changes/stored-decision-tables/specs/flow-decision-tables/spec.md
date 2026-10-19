@@ -13,7 +13,7 @@ OpenRegister MUST ship a core register `decision-tables` with a schema `decision
 
 ### Requirement: A stored table the evaluator cannot run is refused at save (REQ-SDT-02)
 
-Saving a `decision-table` object MUST be refused with error code `decision-table-invalid` when `DecisionTableValidator` reports a problem, or when another table already carries the same `key`, or when the check for another table with the same `key` cannot run (the save is refused, never waved through), or when whether the object is a decision table cannot be read (a schema or register that cannot be read, as opposed to one that does not exist, which leaves the object alone). Objects of other schemas MUST NOT be affected.
+Saving a `decision-table` object MUST be refused with error code `decision-table-invalid` when `DecisionTableValidator` reports a problem, or when another table already carries the same `key`, or when the check for another table with the same `key` cannot run (the save is refused, never waved through), or when whether the object is a decision table cannot be read (a schema or register that cannot be read, as opposed to one that does not exist, which leaves the object alone). Objects of other schemas MUST NOT be affected. The same rules MUST hold for a bulk save, which dispatches no save event: a row of a bulk save that the single save would refuse MUST be reported as invalid at its position and not written, and two rows of one bulk save that claim the same `key` MUST NOT both be stored.
 
 #### Scenario: A rule with too few input entries
 - **GIVEN** a table whose rule has fewer input entries than the table has inputs
@@ -24,6 +24,11 @@ Saving a `decision-table` object MUST be refused with error code `decision-table
 - **GIVEN** a stored table with key `parcel-carrier`
 - **WHEN** a second table with key `parcel-carrier` is saved
 - **THEN** the save MUST be refused naming the first table
+
+#### Scenario: A duplicate key in a bulk save
+- **GIVEN** a stored table with key `parcel-carrier`
+- **WHEN** a bulk save carries a second table with key `parcel-carrier`
+- **THEN** that row MUST be reported invalid at its position and not written
 
 #### Scenario: A key that cannot be checked
 - **GIVEN** a search for tables with the key that fails
