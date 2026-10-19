@@ -101,6 +101,7 @@ class RelatedRowQueryApplierTest extends TestCase {
 	private function schema(): Schema {
 		$schema = new Schema();
 		$schema->setId(2);
+		$schema->setProperties(['case' => ['type' => 'string'], 'value' => ['type' => 'number']]);
 
 		return $schema;
 	}//end schema()
@@ -403,4 +404,48 @@ class RelatedRowQueryApplierTest extends TestCase {
 			$this->assertStringContainsString($expected, $sql[0], $label);
 		}
 	}//end testAScopeThatAdmitsNothingMatchesNothing()
+	/**
+	 * 🔴 A METADATA COLUMN OR AN UNKNOWN NAME IS NOT A PROPERTY OF THE RELATED SCHEMA.
+	 *
+	 * Without the lookup, `_owner`, `_authorization` and `_status` of readable
+	 * rows could be compared with `gt`/`lt` (sharing metadata by binary search),
+	 * and an unknown name reached the database as an unknown column.
+	 *
+	 * @return void
+	 */
+	public function testAFieldThatIsNotAPropertyOfTheRelatedSchemaIsRefused(): void {
+		foreach (['_owner', '_authorization', '_status', 'noSuchProperty'] as $field) {
+			$qb = $this->createMock(IQueryBuilder::class);
+			$qb->expects($this->never())->method('andWhere');
+
+			try {
+				$this->applierFinding([$this->schema()])->apply(
+					qb: $qb,
+					query: ['_related' => ['caseProperty' => ['case' => [$field => ['gt' => 'a']]]]],
+					register: $this->register(),
+					organisationScopeFor: $this->allOrganisations()
+				);
+				$this->fail('Expected a refusal for ' . $field);
+			} catch (InvalidArgumentException $e) {
+				$this->assertStringContainsString("'" . $field . "'", $e->getMessage());
+			}
+		}
+	}//end testAFieldThatIsNotAPropertyOfTheRelatedSchemaIsRefused()
+
+	/**
+	 * The foreign key the join compares is a property of the related schema too, for `_related`.
+	 *
+	 * @return void
+	 */
+	public function testAForeignKeyThatIsNotAPropertyIsRefused(): void {
+		$this->expectException(InvalidArgumentException::class);
+		$this->expectExceptionMessage("'_organisation'");
+
+		$this->applierFinding([$this->schema()])->apply(
+			qb: $this->createMock(IQueryBuilder::class),
+			query: ['_related' => ['caseProperty' => ['_organisation' => ['value' => 'x']]]],
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
+		);
+	}//end testAForeignKeyThatIsNotAPropertyIsRefused()
 }//end class

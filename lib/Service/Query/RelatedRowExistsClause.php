@@ -494,10 +494,16 @@ final class RelatedRowExistsClause {
 	/**
 	 * The magic-table column a property is stored in.
 	 *
-	 * A magic table names its columns in snake case (`propertyDefinition` is
-	 * `property_definition`, see MagicMapper's column naming), so a property
-	 * name written as the schema spells it must be converted before it can be
-	 * a column. A name already in snake case is unchanged.
+	 * Applies the rule that names the columns (`MagicMapper::sanitizeColumnName`):
+	 * camelCase to snake_case, lower-cased, any character outside `[a-z0-9_]`
+	 * replaced by an underscore, runs of underscores collapsed, trailing
+	 * underscores removed (`propertyDefinition` is `property_definition`, a name
+	 * already in snake case is unchanged). The earlier one-line conversion
+	 * skipped the replacement and collapse steps, so a property those steps map
+	 * differently was filtered on a column that does not exist, or refused. The
+	 * `col_` prefix for a leading digit is NOT applied, because the rule that
+	 * creates the columns never applies it either (its guard compares
+	 * `preg_match()` to `false`); such a name is refused by quoteIdentifier().
 	 *
 	 * @param string $property The property name.
 	 *
@@ -506,7 +512,11 @@ final class RelatedRowExistsClause {
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	private function columnName(string $property): string {
-		return strtolower((string)preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $property));
+		$name = strtolower((string)preg_replace('/([a-z0-9])([A-Z])/', '$1_$2', $property));
+		$name = (string)preg_replace('/[^a-z0-9_]/', '_', $name);
+		$name = (string)preg_replace('/_+/', '_', $name);
+
+		return rtrim($name, '_');
 	}//end columnName()
 
 	/**

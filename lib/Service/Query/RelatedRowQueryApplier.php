@@ -237,7 +237,14 @@ class RelatedRowQueryApplier {
 	}//end accessPredicate()
 
 	/**
-	 * Refuse a block that matches on a property the caller may not read.
+	 * Refuse a block that names a field that is not a readable property of the related schema.
+	 *
+	 * 🔴 TWO REFUSALS, ONE MESSAGE. A field must be a PROPERTY of the related
+	 * schema, not merely a well-formed name: a magic table also has metadata
+	 * columns (`_owner`, `_organisation`, `_authorization`, `_status`), and a
+	 * `gt`/`lt` on those discloses object-level sharing metadata of readable rows
+	 * by binary search, while an unknown name reached the database as an unknown
+	 * column (HTTP 500 instead of the 400 the parser answers elsewhere).
 	 *
 	 * 🔴 A CONDITION IS A BOOLEAN ORACLE ON THE FIELD IT NAMES. The related
 	 * schema's ROW predicate decides which rows may be consulted; it says
@@ -256,7 +263,7 @@ class RelatedRowQueryApplier {
 	 *
 	 * @return void
 	 *
-	 * @throws InvalidArgumentException When a named property is withheld from the caller.
+	 * @throws InvalidArgumentException When a named field is not a property of the schema, or is withheld from the caller.
 	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
@@ -266,10 +273,14 @@ class RelatedRowQueryApplier {
 			$fields[] = $filter->foreignKey;
 		}
 
+		$properties = $schema->getProperties();
 		foreach ($fields as $field) {
-			if ($this->propertyGuard->mayRead(schema: $schema, property: (string)$field) === false) {
+			$field = (string)$field;
+			if (array_key_exists($field, $properties) === false
+				|| $this->propertyGuard->mayRead(schema: $schema, property: $field) === false
+			) {
 				throw new InvalidArgumentException(
-					sprintf('\'%s\' is not a property of schema \'%s\' that a related-row filter can match on.', (string)$field, $filter->schema)
+					sprintf('\'%s\' is not a property of schema \'%s\' that a related-row filter can match on.', $field, $filter->schema)
 				);
 			}
 		}

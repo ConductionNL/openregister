@@ -91,6 +91,7 @@ class RelatedRowPrefixedDatabaseTest extends TestCase {
 	private function clausesFor(array $query): array {
 		$schema = new Schema();
 		$schema->setId(2);
+		$schema->setProperties(['case' => ['type' => 'string']]);
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('findBySlug')->willReturn([$schema]);
 
