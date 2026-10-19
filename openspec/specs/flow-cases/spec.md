@@ -585,9 +585,11 @@ ensure items as a named app, for code that runs without a user session
 SHALL keep refusing a missing identity.
 
 A flow run realised for such a plan (a stage or process task bound to a flow)
-SHALL be queued without the `system:<app>` label as its user, because that label
-names no account and a run that carried it would refuse every scoped step; the
-flow's own attribution decides who the run acts as.
+SHALL be queued without the `system:<app>` label (or the cascade's own
+`case-plan` actor) as its user, because neither names an account and a run that
+carried it would refuse every scoped step. A run queued under the `case` trigger
+without a caller acts as the identity the flow's schedule trigger declares, like
+a scheduled run; a flow that declares none is refused as unattributed.
 
 #### Scenario: An app's listener creates a plan
 

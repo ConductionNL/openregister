@@ -74,6 +74,25 @@ class CasePlanService {
 	public const SYSTEM_ACTOR_PREFIX = 'system:';
 
 	/**
+	 * Whether an actor id names a Nextcloud account, as opposed to an audit label.
+	 *
+	 * Two kinds of label reach the plan engine: an in-process caller's `system:<app>` and the cascade's own
+	 * {@see CasePlanStateMachine::SYSTEM_ACTOR}. Neither is an account, so neither may become a run's user.
+	 *
+	 * @param string|null $actor The actor id.
+	 *
+	 * @return bool True when the id is an account uid.
+	 */
+	public static function isAccountActor(?string $actor): bool {
+		$id = trim((string)$actor);
+		if ($id === '' || $id === CasePlanStateMachine::SYSTEM_ACTOR) {
+			return false;
+		}
+
+		return str_starts_with($id, self::SYSTEM_ACTOR_PREFIX) === false;
+	}//end isAccountActor()
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CaseItemMapper $items The plan-item table.

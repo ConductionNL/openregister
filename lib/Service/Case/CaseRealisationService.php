@@ -100,12 +100,14 @@ class CaseRealisationService {
 		$flow = trim((string)($item->getPlanSettings()['flows'][(string)$item->getItemKey()] ?? ''));
 		$runnable = in_array($item->getPlanItemType(), [CaseItem::TYPE_STAGE, CaseItem::TYPE_PROCESS_TASK], true);
 		if ($runnable === true && $flow !== '') {
-			// An in-process caller's `system:<app>` is a label for the audit, not an account. As the run's user it
-			// would become the run's `runAs`, and every scoped step would be refused ("not a user account"), so the
-			// run is queued without a caller and the flow's own attribution (or its declared runAs) decides.
-			$user = $actor;
-			if (str_starts_with($actor, CasePlanService::SYSTEM_ACTOR_PREFIX) === true) {
-				$user = null;
+			// `system:<app>` and the cascade's own `case-plan` are labels for the audit, not accounts. As the run's
+			// user either would become its `runAs`, and every scoped step would be refused ("not a user account"),
+			// so the run is queued without a caller. FlowRunAttribution then lets the `case` trigger answer from
+			// the identity the flow's schedule trigger declares (validated and delegation-checked at save time);
+			// a flow that declares none is refused as unattributed, loudly, rather than run as a label.
+			$user = null;
+			if (CasePlanService::isAccountActor(actor: $actor) === true) {
+				$user = $actor;
 			}
 
 			$run = $this->runs->queue(
