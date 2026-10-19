@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Service\Dmn;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Listener\DecisionTableValidationListener;
+use Psr\Container\ContainerInterface;
 
 /**
  * Refuses the decision-table rows of a bulk save that the single save would have refused.
@@ -39,14 +40,40 @@ use OCA\OpenRegister\Listener\DecisionTableValidationListener;
 class DecisionTableBulkGuard {
 
 	/**
+	 * The single-save rule, resolved on first use.
+	 *
+	 * @var DecisionTableValidationListener|null
+	 */
+	private ?DecisionTableValidationListener $listener = null;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param DecisionTableValidationListener $listener The single-save rule.
+	 * The listener is not injected directly: it needs ObjectService, which
+	 * needs SaveObjects, which needs this guard. Resolving it when the first
+	 * row is checked breaks that cycle; ObjectService exists by then.
+	 *
+	 * @param ContainerInterface $container Hands out the single-save rule.
 	 */
 	public function __construct(
-		private readonly DecisionTableValidationListener $listener,
+		private readonly ContainerInterface $container,
 	) {
 	}//end __construct()
+
+	/**
+	 * The single-save rule.
+	 *
+	 * @return DecisionTableValidationListener The listener.
+	 *
+	 * @spec openspec/changes/stored-decision-tables/specs/flow-decision-tables/spec.md
+	 */
+	private function listener(): DecisionTableValidationListener {
+		if ($this->listener === null) {
+			$this->listener = $this->container->get(DecisionTableValidationListener::class);
+		}
+
+		return $this->listener;
+	}//end listener()
 
 	/**
 	 * The rows that must not be stored, by their position in the batch.
@@ -77,7 +104,7 @@ class DecisionTableBulkGuard {
 
 			$memo = ($schemaRef . '|' . $registerRef);
 			if (array_key_exists($memo, $isTable) === false) {
-				$isTable[$memo] = $this->listener->isDecisionTableRef(schema: $schemaRef, register: $registerRef);
+				$isTable[$memo] = $this->listener()->isDecisionTableRef(schema: $schemaRef, register: $registerRef);
 			}
 
 			if ($isTable[$memo] === false) {
@@ -87,7 +114,7 @@ class DecisionTableBulkGuard {
 			$data = $row;
 			unset($data['@self']);
 			$uuid     = $this->uuidOf(row: $row, self: $self);
-			$problems = ($this->listener->problemsFor(schema: $schemaRef, register: $registerRef, data: $data, uuid: $uuid) ?? []);
+			$problems = ($this->listener()->problemsFor(schema: $schemaRef, register: $registerRef, data: $data, uuid: $uuid) ?? []);
 
 			$clash = $this->claim(claimed: $claimed, key: trim((string)($data['key'] ?? '')), uuid: $uuid);
 			if ($clash !== null) {

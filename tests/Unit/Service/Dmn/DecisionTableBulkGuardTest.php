@@ -67,7 +67,11 @@ class DecisionTableBulkGuardTest extends TestCase {
 		$registers = $this->createMock(RegisterMapper::class);
 		$registers->method('find')->willReturn($register);
 
-		return new DecisionTableBulkGuard(new DecisionTableValidationListener($schemas, new DecisionTableValidator(), $objects, $registers));
+		$listener  = new DecisionTableValidationListener($schemas, new DecisionTableValidator(), $objects, $registers);
+		$container = $this->createMock(\Psr\Container\ContainerInterface::class);
+		$container->method('get')->with(DecisionTableValidationListener::class)->willReturn($listener);
+
+		return new DecisionTableBulkGuard($container);
 	}//end guard()
 
 	/**
