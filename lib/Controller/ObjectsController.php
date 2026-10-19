@@ -4908,8 +4908,8 @@ class ObjectsController extends Controller {
 					'limit' => $config['limit'],
 					'offset' => $config['offset'],
 					'page' => $config['page'],
-					'filters' => [],
-					'sort' => [],
+					'filters' => $config['filters'],
+					'sort' => $config['sort'],
 					'search' => $search,
 				]
 			);

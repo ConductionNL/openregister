@@ -66,7 +66,7 @@ class ObjectsControllerLogsRedactionTest extends TestCase {
 		$session->method('getUser')->willReturn($user);
 		$this->groupManager = $this->createMock(IGroupManager::class);
 		$request = $this->createMock(IRequest::class);
-		$request->method('getParams')->willReturn(['limit' => 5, '_search' => 'x']);
+		$request->method('getParams')->willReturn(['limit' => 5, '_search' => 'x', 'action' => 'update', 'order' => ['created' => 'ASC']]);
 		$this->objectService = $this->createMock(ObjectService::class);
 
 		$this->controller = new ObjectsController(
@@ -97,7 +97,7 @@ class ObjectsControllerLogsRedactionTest extends TestCase {
 		$this->groupManager->method('getUserGroupIds')->willReturn(['staff']);
 		$page = ['results' => [['action' => 'update', 'changed' => ['title' => ['old' => 'a', 'new' => 'b']]]], 'total' => 1, 'page' => null, 'pages' => 1.0, 'limit' => 5, 'offset' => null];
 		$this->history->expects($this->once())->method('page')
-			->with('reg', 'sch', 'obj-1', $this->callback(static fn (array $params): bool => $params['limit'] === 5 && $params['search'] === 'x' && $params['filters'] === []))
+			->with('reg', 'sch', 'obj-1', $this->callback(static fn (array $params): bool => $params['limit'] === 5 && $params['search'] === 'x' && ($params['filters']['action'] ?? null) === 'update' && $params['sort'] === ['created' => 'ASC']))
 			->willReturn($page);
 		$this->objectService->expects($this->never())->method('getLogs');
 
