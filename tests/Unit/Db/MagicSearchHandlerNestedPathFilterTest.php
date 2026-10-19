@@ -343,4 +343,24 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 			$nested
 		);
 	}//end testSplitCollectsEveryLeaf()
+	/**
+	 * A segment with a trailing newline is not a plain name and is refused.
+	 *
+	 * `$` matches before a final newline, so `a\n` passed the segment check and
+	 * reached the JSON path literal, where MariaDB rejects it with a 500.
+	 *
+	 * @return void
+	 */
+	public function testASegmentWithATrailingNewlineIsRefused(): void {
+		$filter = new NestedPathFilter();
+
+		foreach (["a\n", "currentStage\n", "\n", "a\r\n"] as $segment) {
+			$this->assertNull($filter->expression(column: 't.dunning', path: [$segment], isPostgres: true), json_encode($segment));
+			$this->assertNull($filter->expression(column: 't.dunning', path: ['ok', $segment], isPostgres: false), json_encode($segment));
+		}
+
+		$this->assertNotNull($filter->expression(column: 't.dunning', path: ['currentStage'], isPostgres: true));
+		$this->assertSame(['1 = 0'], $this->applyObject(["dunning.current\nStage" => 'a']));
+		$this->assertSame(['1 = 0'], $this->applyObject(['dunning' => ["currentStage\n" => 'a']]));
+	}//end testASegmentWithATrailingNewlineIsRefused()
 }//end class

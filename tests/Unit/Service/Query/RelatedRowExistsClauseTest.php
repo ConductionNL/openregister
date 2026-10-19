@@ -439,6 +439,19 @@ class RelatedRowExistsClauseTest extends TestCase {
 	}//end testAnInjectionPayloadNeverReachesTheSql()
 
 	/**
+	 * The identifier check ends at the end of the string, not before a trailing newline.
+	 *
+	 * @return void
+	 */
+	public function testAnIdentifierWithATrailingNewlineIsRefused(): void {
+		$method = new \ReflectionMethod(RelatedRowExistsClause::class, 'quoteIdentifier');
+
+		$this->assertSame('"case_id"', $method->invoke($this->clause, 'case_id'));
+		$this->expectException(InvalidArgumentException::class);
+		$method->invoke($this->clause, "case_id\n");
+	}//end testAnIdentifierWithATrailingNewlineIsRefused()
+
+	/**
 	 * An unknown storage is refused rather than guessed.
 	 *
 	 * @return void

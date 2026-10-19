@@ -1672,7 +1672,7 @@ class MagicRbacHandler {
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function buildRbacPredicateForAlias(Schema $schema, string $alias, string $action = 'read', ?string $tableName = null): string {
-		if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $alias) !== 1) {
+		if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*\z/', $alias) !== 1) {
 			throw new InvalidArgumentException(
 				sprintf('\'%s\' is not a table alias an access predicate may be built for.', $alias)
 			);

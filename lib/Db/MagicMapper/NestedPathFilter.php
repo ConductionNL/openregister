@@ -54,8 +54,12 @@ class NestedPathFilter {
 
 	/**
 	 * A path segment: a property name, nothing that could leave the JSON path.
+	 *
+	 * Ends in `\z`, not `$`: `$` also matches before a trailing newline, so
+	 * `a\n` passed and reached the JSON path literal, which MariaDB rejects (a
+	 * 500 instead of the refusal this class intends).
 	 */
-	private const SEGMENT = '/^[A-Za-z0-9_\-]+$/';
+	private const SEGMENT = '/^[A-Za-z0-9_\-]+\z/';
 
 	/**
 	 * Split a filter map into the filters on columns and the filters on a path inside an object property.

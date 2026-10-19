@@ -535,7 +535,7 @@ final class RelatedRowExistsClause {
 	 * @throws InvalidArgumentException When the name is not a plain identifier.
 	 */
 	private function quoteIdentifier(string $name): string {
-		if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name) !== 1) {
+		if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*\z/', $name) !== 1) {
 			throw new InvalidArgumentException(
 				sprintf('\'%s\' is not a column name a related-row filter may reference.', $name)
 			);
