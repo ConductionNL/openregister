@@ -295,13 +295,9 @@ class ExampleSetChanges {
 		// `read()` tells an object that is gone (nothing left to undo) from a read that failed (nothing is known,
 		// so nothing is reported as undone and the record keeps the change).
 		$read = $this->store->read(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']);
-		if ($read['error'] !== '') {
-			return ['ok' => false, 'left' => []];
-		}
-
-		$row = $read['row'];
+		$row  = $read['row'];
 		if ($row === null) {
-			return ['ok' => true, 'left' => []];
+			return ['ok' => ($read['error'] === ''), 'left' => []];
 		}
 
 		$fields = $this->jsonFields(change: $entry);
