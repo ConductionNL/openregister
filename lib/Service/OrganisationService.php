@@ -27,6 +27,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
 use OCP\IConfig;
@@ -1101,7 +1102,7 @@ class OrganisationService {
 		}
 
 		// Add admin group to special permissions.
-		$specialPermissions = ['object_publish', 'agent_use', 'dashboard_view', 'llm_use'];
+		$specialPermissions = OrganisationSpecialRights::OPEN_BY_DEFAULT;
 		foreach ($specialPermissions as $permission) {
 			if (($authorization[$permission] ?? null) !== null && is_array($authorization[$permission]) === true) {
 				if (in_array($adminGroupId, $authorization[$permission], true) === false) {
@@ -1154,7 +1155,7 @@ class OrganisationService {
 		}
 
 		// Check special permissions.
-		$specialPermissions = ['object_publish', 'agent_use', 'dashboard_view', 'llm_use'];
+		$specialPermissions = OrganisationSpecialRights::OPEN_BY_DEFAULT;
 		foreach ($specialPermissions as $permission) {
 			if (($authorization[$permission] ?? null) !== null && is_array($authorization[$permission]) === true) {
 				if (in_array($adminGroupId, $authorization[$permission], true) === true) {

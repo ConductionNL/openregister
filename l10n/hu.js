@@ -1,6 +1,8 @@
 OC.L10N.register(
     "openregister",
     {
+        "Everyone": "Mindenki",
+        "Only an administrator or the owner of this organisation can change its special rights.": "Csak egy rendszergazda vagy a szervezet tulajdonosa módosíthatja a szervezet különleges jogait.",
         "3": "3",
         "30": "30",
         "App that ships or owns this table, for example `dossiq`. Empty for a table an administrator authored.": "Az alkalmazás, amely ezt a táblázatot szállítja vagy birtokolja, például `dossiq`. Üres, ha a táblázatot egy rendszergazda hozta létre.",

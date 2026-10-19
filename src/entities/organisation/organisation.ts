@@ -75,10 +75,8 @@ export class Organisation implements TOrganisation {
 			agent: { create: [], read: [], update: [], delete: [] },
 			configuration: { create: [], read: [], update: [], delete: [] },
 			application: { create: [], read: [], update: [], delete: [] },
-			object_publish: [],
-			agent_use: [],
-			dashboard_view: [],
-			llm_use: [],
+			agent_use: ['*'],
+			llm_use: ['*'],
 		}
 		this.created = organisation.created || ''
 		this.updated = organisation.updated || ''
@@ -130,9 +128,7 @@ export class Organisation implements TOrganisation {
 					agent: crudSchema.optional(),
 					configuration: crudSchema.optional(),
 					application: crudSchema.optional(),
-					object_publish: z.array(z.string()).optional(),
 					agent_use: z.array(z.string()).optional(),
-					dashboard_view: z.array(z.string()).optional(),
 					llm_use: z.array(z.string()).optional(),
 				})
 				.optional(),

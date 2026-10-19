@@ -28,6 +28,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Service\Capability\ToolGrantResolver;
+use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
@@ -73,6 +74,7 @@ class McpAgentScope {
 	 * @param McpToolsService $toolsService The MCP tool catalogue
 	 * @param ICacheFactory $cacheFactory Cache factory
 	 * @param LoggerInterface $logger Logger
+	 * @param OrganisationSpecialRights $specialRights Reads agent_use from the agent's organisation
 	 */
 	public function __construct(
 		private readonly AgentMapper $agentMapper,
@@ -80,6 +82,7 @@ class McpAgentScope {
 		private readonly McpToolsService $toolsService,
 		ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
+		private readonly OrganisationSpecialRights $specialRights,
 	) {
 		$this->cache = $cacheFactory->createDistributed(prefix: 'openregister_mcp_agent');
 	}//end __construct()
@@ -240,6 +243,19 @@ class McpAgentScope {
 			|| $this->agentMapper->canUserAccessAgent(agent: $agent, userId: $userId) === false
 		) {
 			throw new InvalidArgumentException(message: 'Agent ' . $agentUuid . ' is not available to this user');
+		}
+
+		// Acting as an agent is running it (decision 239). Read on every call,
+		// like the grant, so narrowing agent_use narrows open sessions too.
+		if ($this->specialRights->mayUse(
+			right: OrganisationSpecialRights::AGENT_USE,
+			userId: $userId,
+			organisationUuid: $agent->getOrganisation()
+		) === false
+		) {
+			throw new InvalidArgumentException(
+				message: 'Agent ' . $agentUuid . ' needs the special right agent_use, which this user does not hold'
+			);
 		}
 
 		return $agent;
