@@ -57,6 +57,8 @@ class DraftCallerRule {
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) Both contexts are ambient static markers by design.
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The caller's two facts, resolved by each caller from the services it holds.
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
 	 */
 	public function keptFromCaller(ObjectEntity $object, Schema $schema, ?string $userId, bool $isAdmin, ?bool $commandLine = null): bool {
 		if ((new DraftStatusPolicy())->keptFrom(object: $object, schema: $schema, userId: $userId) === false || $isAdmin === true) {

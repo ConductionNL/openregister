@@ -127,6 +127,8 @@ class ObjectReadAccess {
 	 * @param string|int|null $schemaId The schema id.
 	 *
 	 * @return Schema|null The schema.
+	 *
+	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
 	 */
 	public function schemaById(string|int|null $schemaId): ?Schema {
 		if ($schemaId === null || $schemaId === '') {

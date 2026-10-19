@@ -46,6 +46,8 @@ class NestedIdentityGuard {
 	 * @param Schema               $schema Its destination schema.
 	 *
 	 * @return array<string, mixed> The object, safe to save.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
 	 */
 	public function strip(array $object, Schema $schema): array {
 		foreach ((array)$schema->getProperties() as $name => $definition) {

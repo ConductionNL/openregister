@@ -66,6 +66,8 @@ class FormUploadClaims {
 	 * @param string               $draftId The draft that claimed it.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
 	public function record(ISimpleFolder $folder, string $token, array $meta, string $draftId): void {
 		$folder->newFile(
@@ -91,6 +93,8 @@ class FormUploadClaims {
 	 * @param string|null        $draftId  The draft being saved or left; null (a final submit of no draft) claims nothing.
 	 *
 	 * @return bool True when the draft already holds the file this token named.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
 	public function isClaimedBy(?ISimpleFolder $folder, string $formId, string $token, string $property, ?string $draftId): bool {
 		if ($draftId === null || $folder === null || preg_match('/^[a-f0-9]{32}$/', $token) !== 1 || $folder->fileExists($token . self::SUFFIX) === false) {
@@ -114,6 +118,8 @@ class FormUploadClaims {
 	 * @param ISimpleFile $file The record file.
 	 *
 	 * @return int 1 when the file was deleted, else 0.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
 	public function purgeIfExpired(ISimpleFile $file): int {
 		$record = json_decode($file->getContent(), true);

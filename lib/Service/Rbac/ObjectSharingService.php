@@ -414,6 +414,8 @@ class ObjectSharingService {
 	 * @throws InvalidArgumentException On an unresolvable folder or a bad expiry.
 	 *
 	 * @return array<string, mixed> The created link, including its token.
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	public function createLink(
 		ObjectEntity $object,
@@ -477,6 +479,8 @@ class ObjectSharingService {
 	 * @throws InvalidArgumentException On a missing address or unresolvable folder.
 	 *
 	 * @return array<string, mixed> The created invitation.
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
 	public function inviteByEmail(
 		ObjectEntity $object,
