@@ -284,14 +284,22 @@ class ExampleSetChanges {
 	 *
 	 * @param array<string, mixed> $entry A record entry from apply().
 	 *
-	 * @return array{ok: bool, left: array<int, string>} Whether the object no longer carries the change (or is gone),
+	 * @return array{ok: bool, left: array<int, string>} Whether the object no longer carries the change (or is gone; false
+	 *                                                    too when the object could not be read),
 	 *                                                    and the paths left because somebody changed them.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-field-a-schema-keeps-as-json-text-is-sent-as-text-req-exs-012
 	 */
 	public function revert(array $entry): array {
-		$row = $this->store->get(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']);
+		// `read()` tells an object that is gone (nothing left to undo) from a read that failed (nothing is known,
+		// so nothing is reported as undone and the record keeps the change).
+		$read = $this->store->read(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id']);
+		if ($read['error'] !== '') {
+			return ['ok' => false, 'left' => []];
+		}
+
+		$row = $read['row'];
 		if ($row === null) {
 			return ['ok' => true, 'left' => []];
 		}
