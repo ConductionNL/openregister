@@ -51,6 +51,19 @@ class FlowStepReport {
 	public const MAX_LINES = 50;
 
 	/**
+	 * The most characters one line's message keeps.
+	 *
+	 * The count cap alone does not bound the log: fifty lines of a megabyte each
+	 * are fifty megabytes per step, kept for months.
+	 */
+	public const MAX_MESSAGE_LENGTH = 500;
+
+	/**
+	 * What replaces the end of a message cut at {@see self::MAX_MESSAGE_LENGTH}.
+	 */
+	public const TRUNCATION_MARKER = '… [truncated]';
+
+	/**
 	 * The levels a line may carry.
 	 */
 	public const LEVELS = ['info', 'success', 'warning', 'error'];
@@ -94,7 +107,9 @@ class FlowStepReport {
 	 * `error`; anything else is recorded as `info`. At most
 	 * {@see self::MAX_LINES} lines are kept per step, and the last one then
 	 * says how many were left out, so a node writing in a loop cannot grow
-	 * the log without bound.
+	 * the log without bound. A message longer than
+	 * {@see self::MAX_MESSAGE_LENGTH} characters is cut and ends in
+	 * {@see self::TRUNCATION_MARKER}, so one large string cannot grow it either.
 	 *
 	 * @param string $level   The line's level.
 	 * @param string $message What happened, in plain words.
@@ -127,10 +142,29 @@ class FlowStepReport {
 		$lines[] = [
 			'at' => $this->now(),
 			'level' => $level,
-			'message' => $message,
+			'message' => $this->bounded(message: $message),
 		];
 		$this->detail['lines'] = $lines;
 	}//end line()
+
+	/**
+	 * The message, cut to {@see self::MAX_MESSAGE_LENGTH} characters with a marker when it is longer.
+	 *
+	 * The result, marker included, is at most MAX_MESSAGE_LENGTH characters.
+	 *
+	 * @param string $message The message as the node wrote it.
+	 *
+	 * @return string The bounded message.
+	 */
+	private function bounded(string $message): string {
+		if (mb_strlen($message) <= self::MAX_MESSAGE_LENGTH) {
+			return $message;
+		}
+
+		$keep = (self::MAX_MESSAGE_LENGTH - mb_strlen(self::TRUNCATION_MARKER));
+
+		return mb_substr($message, 0, $keep) . self::TRUNCATION_MARKER;
+	}//end bounded()
 
 	/**
 	 * The current moment as ISO 8601 with milliseconds, UTC.

@@ -68,4 +68,20 @@ class FlowStepReportTest extends TestCase {
 		$report->line('info', 'Next hop.');
 		$this->assertSame('Next hop.', $report->take()['lines'][0]['message']);
 	}
+
+	public function testALongMessageIsCutToTheCapAndEndsInAMarker(): void {
+		$report = new FlowStepReport();
+		$report->line('info', str_repeat('x', 100000));
+		$report->line('info', str_repeat('é', FlowStepReport::MAX_MESSAGE_LENGTH + 1));
+		$report->line('info', str_repeat('y', FlowStepReport::MAX_MESSAGE_LENGTH));
+
+		$lines = $report->take()['lines'];
+
+		$this->assertSame(FlowStepReport::MAX_MESSAGE_LENGTH, mb_strlen($lines[0]['message']));
+		$this->assertStringEndsWith(FlowStepReport::TRUNCATION_MARKER, $lines[0]['message']);
+		$this->assertStringStartsWith('xxx', $lines[0]['message']);
+		$this->assertSame(FlowStepReport::MAX_MESSAGE_LENGTH, mb_strlen($lines[1]['message']), 'multibyte text is cut by characters');
+		$this->assertStringEndsWith(FlowStepReport::TRUNCATION_MARKER, $lines[1]['message']);
+		$this->assertSame(str_repeat('y', FlowStepReport::MAX_MESSAGE_LENGTH), $lines[2]['message'], 'a message at the cap is untouched');
+	}
 }
