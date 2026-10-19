@@ -50,6 +50,12 @@
 - **WHEN** the same key is submitted again within 24 hours by the same subject with the same payload
 - **THEN** the response repeats object 7's reference and no object is created
 
+#### Scenario: A key is not reserved on an instance without a locking provider
+
+- **GIVEN** an instance whose locking provider is the no-op one (no memory cache configured for locking)
+- **WHEN** two submits with the same key run at the same time
+- **THEN** the key is not reserved, so both can write; the stored answer still repeats for every retry after the first submit finished, and the store logs once per process that a locking cache (`memcache.locking`) closes this gap
+
 #### Scenario: A repeated key from somebody else, or with another payload, is refused
 
 - **GIVEN** a submit with key `k1` that created object 7
@@ -74,7 +80,7 @@ The service SHALL validate every write before the first. When a write is refused
 
 ### Requirement: Upload tokens MUST hold bytes only and expire
 
-`POST /api/forms/{formId}/uploads` SHALL accept one file and the destination `property` it is for, check it against that property's file rules (`maxSize` in bytes or `fileConfiguration.maxSize` in MB, `allowedTypes` or `fileConfiguration.allowedMimeTypes`, the same reader the save path uses), and return `{ token, expiresAt }`. A submit SHALL claim tokens by a payload value `{ "uploadToken": "<token>" }` for the property the token was issued for, and only after its last write succeeded, so a refused submit leaves the files for the retry. A draft save SHALL claim its tokens the same way once the draft is written, because the files then sit on the draft. Unclaimed tokens SHALL be deleted after 24 hours by an hourly background job that logs its count, a zero included.
+`POST /api/forms/{formId}/uploads` SHALL accept one file and the destination `property` it is for, check it against that property's file rules (`maxSize` in bytes or `fileConfiguration.maxSize` in MB, `allowedTypes` or `fileConfiguration.allowedMimeTypes`, the same reader the save path uses), and return `{ token, expiresAt }`. A submit SHALL claim tokens by a payload value `{ "uploadToken": "<token>" }` for the property the token was issued for, and only after its last write succeeded, so a refused submit leaves the files for the retry. A draft save SHALL claim its tokens the same way once the draft is written, because the files then sit on the draft. A property that declares no `maxSize` SHALL still be capped at 20 MiB (`FormUploadStore::DEFAULT_MAX_BYTES`), because the upload endpoint is a public page; a property that declares a limit, larger or smaller, keeps it. A token claimed for a draft SHALL leave a record of its form, property and draft for 24 hours, and a later autosave or the final submit of THAT draft that still carries the same token SHALL be satisfied by it (the property stays as the draft stores it) instead of refused 422; a token claimed by another draft, issued for another property or form, expired, or never issued stays unknown. Unclaimed tokens SHALL be deleted after 24 hours by an hourly background job that logs its count, a zero included.
 
 #### Scenario: An oversized file is refused at upload
 
