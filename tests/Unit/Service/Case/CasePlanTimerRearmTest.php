@@ -171,6 +171,44 @@ class CasePlanTimerRearmTest extends TestCase {
 	}//end testATermThatPassedMeanwhileTerminatesTheItem()
 
 	/**
+	 * An enforcement whose transition threw is reported failed and keeps its marker for the next pass.
+	 *
+	 * @return void
+	 */
+	public function testAnEnforcementThatThrewIsFailedAndKeepsTheMarker(): void {
+		$row = $this->markedItem(expires: '-1 hour');
+		$this->timerRows->method('findBySubject')->willReturn([]);
+		$this->plans->method('onTimerExpired')->willReturn(false);
+
+		$result = $this->pass()->run(now: new DateTimeImmutable());
+
+		$this->assertSame(['armed' => 0, 'enforced' => 0, 'dropped' => 0, 'failed' => 1], $result);
+		$this->assertSame([(string)$row->getUuid()], array_keys($this->markers->all()));
+	}//end testAnEnforcementThatThrewIsFailedAndKeepsTheMarker()
+
+	/**
+	 * An enforcement refused because the item went terminal meanwhile needs nothing more: the marker goes.
+	 *
+	 * @return void
+	 */
+	public function testAnEnforcementRefusedForATerminalItemDropsTheMarker(): void {
+		$row = $this->markedItem(expires: '-1 hour');
+		$this->timerRows->method('findBySubject')->willReturn([]);
+		$this->plans->method('onTimerExpired')->willReturnCallback(
+			static function () use ($row): bool {
+				$row->setState(CaseItem::STATE_COMPLETED);
+
+				return false;
+			}
+		);
+
+		$result = $this->pass()->run(now: new DateTimeImmutable());
+
+		$this->assertSame(['armed' => 0, 'enforced' => 0, 'dropped' => 1, 'failed' => 0], $result);
+		$this->assertSame([], $this->markers->all());
+	}//end testAnEnforcementRefusedForATerminalItemDropsTheMarker()
+
+	/**
 	 * Nothing is armed for an item that is gone, no longer active, or already has a running expiry timer.
 	 *
 	 * @return void

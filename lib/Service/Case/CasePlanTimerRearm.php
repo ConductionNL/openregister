@@ -8,8 +8,8 @@
  * (and drops the marker), arms it, or, when the term has passed meanwhile,
  * enforces the expiry the timer would have: the item is terminated, as a
  * fired statutory timer terminates it. An item that is gone, or no longer
- * active, needs nothing and loses its marker. A pass that cannot arm an item
- * leaves the marker for the next one.
+ * active, needs nothing and loses its marker. A pass that cannot arm an item, or whose
+ * enforcement threw, leaves the marker for the next one.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -132,10 +132,20 @@ class CasePlanTimerRearm {
 
 		if ($outcome === CasePlanItemTimers::REARM_OVERDUE) {
 			// The term ran out while nothing was watching it: end the item as the fired timer would have.
-			$this->plans->onTimerExpired(itemUuid: $itemUuid, timerUuid: self::CAUSE_REF);
-			$this->markers->remove(itemUuid: $itemUuid);
+			if ($this->plans->onTimerExpired(itemUuid: $itemUuid, timerUuid: self::CAUSE_REF) === true) {
+				$this->markers->remove(itemUuid: $itemUuid);
 
-			return 'enforced';
+				return 'enforced';
+			}
+
+			// False covers three cases: gone and already terminal need nothing, a transition that threw does.
+			if ($this->needsNothingMore(itemUuid: $itemUuid) === true) {
+				$this->markers->remove(itemUuid: $itemUuid);
+
+				return 'dropped';
+			}
+
+			return 'failed';
 		}
 
 		$this->markers->remove(itemUuid: $itemUuid);
@@ -145,6 +155,21 @@ class CasePlanTimerRearm {
 
 		return 'dropped';
 	}//end rearm()
+
+	/**
+	 * Whether the item is gone or terminal, so a refused enforcement left nothing to retry.
+	 *
+	 * @param string $itemUuid The item.
+	 *
+	 * @return bool
+	 */
+	private function needsNothingMore(string $itemUuid): bool {
+		try {
+			return $this->items->findByUuid(uuid: $itemUuid)->isInTerminalState() === true;
+		} catch (DoesNotExistException) {
+			return true;
+		}
+	}//end needsNothingMore()
 
 	/**
 	 * Whether the item already has an expiry timer that is still running or suspended.
