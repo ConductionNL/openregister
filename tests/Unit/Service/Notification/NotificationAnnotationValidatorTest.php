@@ -107,7 +107,7 @@ class NotificationAnnotationValidatorTest extends TestCase {
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
 	 */
 	public function testAnEmailRecipientNeedsADeclaredFieldAndTheEmailChannel(): void {
-		$properties = ['supplierRef' => ['type' => 'string', 'format' => 'uuid'], 'subject' => ['type' => 'string']];
+		$properties = ['supplierRef' => ['type' => 'string', 'format' => 'uuid', '$ref' => '#/components/schemas/supplier'], 'looseRef' => ['type' => 'string', 'format' => 'uuid'], 'blankRef' => ['type' => 'string', '$ref' => ' '], 'subject' => ['type' => 'string']];
 		$rule = static fn (array $recipient, array $channels = ['email']): array => [
 			'x-openregister-notifications' => [
 				'x' => [
@@ -125,12 +125,17 @@ class NotificationAnnotationValidatorTest extends TestCase {
 		$cases = [
 			'notification-recipient-field-unknown' => $rule(['kind' => 'email', 'field' => 'nope.contactEmail']),
 			'notification-recipient-email-field-missing' => $rule(['kind' => 'email']),
+			'notification-recipient-email-reference-has-no-ref' => $rule(['kind' => 'email', 'field' => 'looseRef.contactEmail']),
+			'notification-recipient-email-reference-has-no-ref (blank)' => $rule(['kind' => 'email', 'field' => 'blankRef.contactEmail']),
 			'notification-recipient-email-path-too-deep' => $rule(['kind' => 'email', 'field' => 'supplierRef.a.b.c.d']),
 			'notification-recipient-email-needs-email-channel' => $rule(['kind' => 'email', 'field' => 'supplierRef.contactEmail'], ['nc-notification']),
 		];
 		foreach ($cases as $code => $schema) {
-			$this->assertContains($code, array_column($this->v->validate($schema), 'code'), $code);
+			$this->assertContains(explode(' ', $code)[0], array_column($this->v->validate($schema), 'code'), $code);
 		}
+
+		// An address read straight off the object goes through no reference, so it needs no `$ref`.
+		$this->assertSame([], $this->v->validate($rule(['kind' => 'email', 'field' => 'subject'])));
 	}
 
 	public function testValidNoErrors(): void {
