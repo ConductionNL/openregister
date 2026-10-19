@@ -184,7 +184,7 @@ class TaggingHandler {
 			$allTags = $this->systemTagManager->getAllTags(visibilityFilter: null, nameSearchPattern: $tagName);
 			foreach ($allTags as $tag) {
 				if ($tag->getName() === $tagName) {
-					return $tag;
+					return $this->hideInternalTag(tag: $tag);
 				}
 			}
 
@@ -203,13 +203,56 @@ class TaggingHandler {
 			$allTags = $this->systemTagManager->getAllTags(visibilityFilter: null, nameSearchPattern: $tagName);
 			foreach ($allTags as $tag) {
 				if ($tag->getName() === $tagName) {
-					return $tag;
+					return $this->hideInternalTag(tag: $tag);
 				}
 			}
 
 			throw new Exception('Tag exists but could not be found: ' . $tagName);
 		}//end try
 	}//end findOrCreateTag()
+
+	/**
+	 * Hide an existing internal `object:<uuid>` tag from users, when it is still visible or assignable.
+	 *
+	 * 🔴 CREATION IS NOT THE ONLY WAY AN OBJECT TAG EXISTS. A tag created before
+	 * the hidden/not-assignable default, or first created by a user in the Files
+	 * tag UI under the same name, keeps `userVisible` and `userAssignable` true,
+	 * so the "out of every user's tag list" outcome held for new installs only.
+	 * Every attach goes through here, so the tag is repaired the next time it is
+	 * touched. A tag that is never attached again is not reached; hiding those
+	 * needs an upgrade step. Best effort: a refused update is logged and the tag
+	 * is still used, because losing the file link is worse than a visible tag.
+	 *
+	 * @param ISystemTag $tag The tag that was found.
+	 *
+	 * @return ISystemTag The same tag.
+	 */
+	private function hideInternalTag(ISystemTag $tag): ISystemTag {
+		if (str_starts_with($tag->getName(), self::OBJECT_TAG_PREFIX) === false) {
+			return $tag;
+		}
+
+		if ($tag->isUserVisible() === false && $tag->isUserAssignable() === false) {
+			return $tag;
+		}
+
+		try {
+			$this->systemTagManager->updateTag(
+				tagId: $tag->getId(),
+				newName: $tag->getName(),
+				userVisible: false,
+				userAssignable: false,
+				color: $tag->getColor()
+			);
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[TaggingHandler] Could not hide the internal tag ' . $tag->getName() . ': ' . $e->getMessage(),
+				context: ['file' => __FILE__, 'line' => __LINE__]
+			);
+		}
+
+		return $tag;
+	}//end hideInternalTag()
 
 	/**
 	 * Get tags for a file.
