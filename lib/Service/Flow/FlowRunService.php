@@ -882,7 +882,11 @@ class FlowRunService {
 	 * correctly formatted.
 	 *
 	 * Signals that arrive before the run wakes are merged, not replaced: a later
-	 * signal adds its keys to the waiting one and wins only a key both carry.
+	 * signal adds the keys the waiting one lacks. A key both carry with different
+	 * values is a conflict between two signallers: the answer already waiting
+	 * stands, the later value is refused and logged, so one signaller can never
+	 * overwrite what another delivered (and the two answers are never mixed
+	 * under one key).
 	 *
 	 * @param FlowRun $run The suspended run to wake.
 	 * @param array $payload What the signaller wants the run to know.
@@ -900,15 +904,24 @@ class FlowRunService {
 		}
 
 		// Two listeners on one event may each signal the same suspended run.
-		// The signal still waiting is kept and the new payload is merged over
-		// it (a key both set takes the later value), so the answer does not
-		// depend on which listener ran last; a consumed signal is removed by
-		// persistResult(), so nothing left over from an earlier question can
-		// reach here.
+		// The signal still waiting is kept and the new payload adds the keys it
+		// lacks. A key both set to different values is refused for the later
+		// signal (the waiting answer stands, and the conflict is logged), so the
+		// stored answer never mixes two signallers' values under one key; a
+		// consumed signal is removed by persistResult(), so nothing left over
+		// from an earlier question can reach here.
 		$context = ($run->getContext() ?? []);
 		$waiting = ($context[self::SIGNAL_CONTEXT_KEY] ?? null);
 		if (is_array($waiting) === true) {
-			$payload = array_merge($waiting, $payload);
+			$conflicts = array_keys(array_filter($payload, static fn ($value, $key): bool => array_key_exists($key, $waiting) === true && $waiting[$key] !== $value, ARRAY_FILTER_USE_BOTH));
+			if ($conflicts !== []) {
+				$this->logger->warning(
+					message: '[FlowRunService] A second signal on run ' . (string)$run->getUuid() . ' carried a different value for a key already answered; the first answer stands.',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $run->getUuid(), 'keys' => $conflicts]
+				);
+			}
+
+			$payload = ($waiting + $payload);
 		}
 
 		$context[self::SIGNAL_CONTEXT_KEY] = $payload;
