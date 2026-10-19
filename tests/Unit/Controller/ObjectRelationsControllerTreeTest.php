@@ -61,6 +61,13 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 	private ObjectReadAccess&MockObject $access;
 
 	/**
+	 * The graph walk double.
+	 *
+	 * @var RelationGraphService&MockObject
+	 */
+	private RelationGraphService&MockObject $graphs;
+
+	/**
 	 * The doelbinding guard double.
 	 *
 	 * @var PurposeGuard&MockObject
@@ -94,6 +101,7 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 		);
 
 		$this->trees = $this->createMock(ObjectTreeService::class);
+		$this->graphs = $this->createMock(RelationGraphService::class);
 		$this->access = $this->createMock(ObjectReadAccess::class);
 		$this->access->method('notReadable')->willReturn(new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404));
 		$this->access->method('schemaOf')->willReturn(new Schema());
@@ -105,7 +113,7 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 			appName: 'openregister',
 			request: $request,
 			relations: $this->createMock(ObjectRelationService::class),
-			graphs: $this->createMock(RelationGraphService::class),
+			graphs: $this->graphs,
 			objectService: $this->createMock(ObjectService::class),
 			exportGate: $this->createMock(ExportGate::class),
 			access: $this->access,
@@ -204,4 +212,71 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 
 		$controller->tree(register: 'r', schema: 's', id: 'x');
 	}//end testNoDepthMeansTheDeclaredBound()
-}//end class
+
+	/**
+	 * A graph node of a schema whose purpose was not named is left out with its edges and what hung on it.
+	 *
+	 * @return void
+	 */
+	public function testAGraphNodeOfARefusedSchemaIsMaskedWithItsSubtree(): void {
+		$controller = $this->controller(params: []);
+		$this->access->method('readable')->willReturn($this->object());
+		$node = static fn (string $uuid, string $schema): array => [
+			'uuid' => $uuid, 'title' => $uuid, 'register' => '1', 'schema' => $schema,
+			'distance' => 1, 'resolved' => true, 'external' => false,
+		];
+		$this->graphs->method('graph')->willReturn(
+			[
+				'root' => 'root',
+				'nodes' => [$node('root', '2'), $node('open', '2'), $node('secret', '9'), $node('behind', '2')],
+				'edges' => [
+					['from' => 'root', 'to' => 'open', 'direction' => 'outgoing'],
+					['from' => 'root', 'to' => 'secret', 'direction' => 'outgoing'],
+					['from' => 'secret', 'to' => 'behind', 'direction' => 'outgoing'],
+				],
+			]
+		);
+		$this->access->method('schemaById')->willReturnCallback(
+			static function (string|int|null $id): Schema {
+				$schema = new Schema();
+				$schema->setId((int)$id);
+
+				return $schema;
+			}
+		);
+		$this->purposeGuard->method('enforce')->willReturnCallback(
+			static function (?Register $register, ?Schema $schema): ?string {
+				if ($schema !== null && $schema->getId() === 9) {
+					throw new PurposeRefusedException(rule: PurposeRefusedException::RULE_MISSING, reason: 'A purpose is required.');
+				}
+
+				return null;
+			}
+		);
+
+		$data = $controller->graph(register: 'r', schema: 's', id: 'x')->getData();
+
+		$this->assertSame(['root', 'open'], array_column($data['nodes'], 'uuid'));
+		$this->assertCount(1, $data['edges']);
+		$this->assertSame('open', $data['edges'][0]['to']);
+	}//end testAGraphNodeOfARefusedSchemaIsMaskedWithItsSubtree()
+
+	/**
+	 * A graph whose schemas are all admitted is answered unchanged.
+	 *
+	 * @return void
+	 */
+	public function testAGraphOfAdmittedSchemasIsUnchanged(): void {
+		$controller = $this->controller(params: []);
+		$this->access->method('readable')->willReturn($this->object());
+		$this->access->method('schemaById')->willReturn(new Schema());
+		$graph = [
+			'root' => 'root',
+			'nodes' => [['uuid' => 'root', 'register' => '1', 'schema' => '2', 'resolved' => true, 'external' => false]],
+			'edges' => [],
+		];
+		$this->graphs->method('graph')->willReturn($graph);
+
+		$this->assertSame($graph, $controller->graph(register: 'r', schema: 's', id: 'x')->getData());
+	}//end testAGraphOfAdmittedSchemasIsUnchanged()
+}

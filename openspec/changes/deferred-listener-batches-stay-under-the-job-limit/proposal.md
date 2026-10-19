@@ -6,13 +6,13 @@ kind: code
 
 ## Summary
 
-`ListenerDeferralService` enqueued every buffered chunk as one background job. Nextcloud refuses a job argument longer than 32,000 characters, and an update notification entry carries the object's previous data (`oldData`), so a chunk of 25 updates of an ordinary case passed the limit. `IJobList::add()` threw, the service logged "Failed to enqueue deferred listener job" and every entry of the chunk was lost.
+`ListenerDeferralService` enqueued every buffered chunk as one background job. Nextcloud refuses a job argument longer than its limit (4,000 characters on Nextcloud 32 and 33, 32,000 from 34), and an update notification entry carries the object's previous data (`oldData`), so a chunk of 25 updates of an ordinary case passed the limit. `IJobList::add()` threw, the service logged "Failed to enqueue deferred listener job" and every entry of the chunk was lost.
 
-A chunk is now cut by size as well as by count, so its entries spread over as many jobs as the limit needs. Only an entry that alone exceeds the limit is left out, and the log names it.
+A chunk is now cut by size as well as by count, so its entries spread over as many jobs as the limit needs. An entry that alone exceeds the limit is enqueued without its `oldData`; only one that still exceeds it afterwards is left out, and the log names it.
 
 ## Why
 
-Zuiddrecht live test, 14 October 2026: one cron run that swept hundreds of dossiq cases logged `ListenerDeferralService.php:277` "Background job arguments can't exceed 32000 characters" eleven times, each for a chunk of 25 `AnnotationNotificationDispatchJob` entries. Those updates sent no notification.
+Zuiddrecht live test, 14 October 2026: one cron run that swept hundreds of dossiq cases logged `ListenerDeferralService.php:277` "Background job arguments can't exceed 32000 characters" (32,000 is the limit from Nextcloud 34; 32 and 33 refuse at 4,000) eleven times, each for a chunk of 25 `AnnotationNotificationDispatchJob` entries. Those updates sent no notification.
 
 ## What changes
 

@@ -349,6 +349,13 @@ class ObjectTreeService {
 			return ['nodes' => $nodes, 'truncatedBy' => self::TRUNCATED_DEPTH];
 		}
 
+		// An exhausted cap leaves a budget of zero: the probe then reads one row,
+		// finds it, and slices it away. Unread children below a full answer mean
+		// the cap stopped the walk, not that there is nothing below.
+		if ($read['overflow'] === true) {
+			return ['nodes' => $nodes, 'truncatedBy' => self::TRUNCATED_CAP];
+		}
+
 		return ['nodes' => $nodes, 'truncatedBy' => null];
 	}//end descendants()
 

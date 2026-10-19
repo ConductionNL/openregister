@@ -533,6 +533,19 @@ class ObjectTreeServiceTest extends TestCase {
 	}//end testTheCapBoundsTheRowsAskedFor()
 
 	/**
+	 * A cap used up exactly at the depth bound, with children below, is a cap truncation.
+	 *
+	 * @return void
+	 */
+	public function testAnExhaustedCapWithUnreadChildrenBelowIsReportedAsCap(): void {
+		$tree = $this->service(parentOf: self::group(), cap: 3)->tree(root: $this->organisation(uuid: 'holding', parent: null), depth: 1);
+
+		$this->assertSame(['holding' => 0, 'sub-a' => 1, 'sub-b' => 1], self::levels(tree: $tree));
+		$this->assertTrue($tree['truncated']);
+		$this->assertSame(ObjectTreeService::TRUNCATED_CAP, $tree['truncatedBy']);
+	}//end testAnExhaustedCapWithUnreadChildrenBelowIsReportedAsCap()
+
+	/**
 	 * A level exactly as wide as the cap allows is answered whole.
 	 *
 	 * @return void

@@ -496,13 +496,155 @@ class ObjectRelationsController extends Controller {
 		}
 
 		return new JSONResponse(
-			data: $this->graphs->graph(
-				rootUuid: (string)$object->getUuid(),
-				depth: $this->depth(),
-				language: $this->language()
+			data: $this->withinPurpose(
+				graph: $this->graphs->graph(
+					rootUuid: (string)$object->getUuid(),
+					depth: $this->depth(),
+					language: $this->language()
+				)
 			)
 		);
 	}//end graph()
+
+	/**
+	 * The graph without the nodes of schemas whose purpose the caller did not name.
+	 *
+	 * The root's schema is checked before the walk; a node carries the title and
+	 * schema of a related object that may sit in another schema, so every schema
+	 * present in the answer passes the same guard. A refused node leaves the
+	 * answer with its edges, and so does everything that was only reachable
+	 * through it.
+	 *
+	 * @param array<string, mixed> $graph The graph the walk answered.
+	 *
+	 * @return array<string, mixed> The graph the caller may see.
+	 */
+	private function withinPurpose(array $graph): array {
+		$refused = [];
+		$decided = [];
+		foreach (($graph['nodes'] ?? []) as $node) {
+			if (($node['resolved'] ?? false) !== true || ($node['external'] ?? false) === true) {
+				continue;
+			}
+
+			$key = ((string)($node['register'] ?? '')).'/'.((string)($node['schema'] ?? ''));
+			if (isset($decided[$key]) === false) {
+				$decided[$key] = $this->purposeAdmits(registerId: $node['register'] ?? null, schemaId: $node['schema'] ?? null);
+			}
+
+			if ($decided[$key] === false) {
+				$refused[(string)($node['uuid'] ?? '')] = true;
+			}
+		}
+
+		if ($refused === []) {
+			return $graph;
+		}
+
+		return $this->reachableFromRoot(graph: $graph, refused: $refused);
+	}//end withinPurpose()
+
+	/**
+	 * Whether the doelbinding guard admits a read of the schema of one node.
+	 *
+	 * @param mixed $registerId The node's register id.
+	 * @param mixed $schemaId   The node's schema id.
+	 *
+	 * @return bool False when a purpose is needed and none is usable, or the schema does not resolve.
+	 */
+	private function purposeAdmits(mixed $registerId, mixed $schemaId): bool {
+		$schema = null;
+		if (is_scalar($schemaId) === true) {
+			$schema = $this->access->schemaById(schemaId: $schemaId);
+		}
+
+		$register = null;
+		if (is_scalar($registerId) === true && $registerId !== '') {
+			try {
+				$register = $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
+			} catch (\Throwable $e) {
+				$register = null;
+			}
+		}
+
+		if ($schema === null || $register === null) {
+			return false;
+		}
+
+		try {
+			$this->purposeGuard->enforce(register: $register, schema: $schema);
+		} catch (PurposeRefusedException $refusal) {
+			return false;
+		}
+
+		return true;
+	}//end purposeAdmits()
+
+	/**
+	 * The graph without the refused nodes, their edges and what hangs only on them.
+	 *
+	 * @param array<string, mixed> $graph   The graph.
+	 * @param array<string, true>  $refused The uuids of the refused nodes.
+	 *
+	 * @return array<string, mixed> The graph.
+	 */
+	private function reachableFromRoot(array $graph, array $refused): array {
+		$edges = array_values(
+			array_filter(
+				($graph['edges'] ?? []),
+				static fn (array $edge): bool => isset($refused[(string)($edge['from'] ?? '')]) === false
+					&& isset($refused[(string)($edge['to'] ?? '')]) === false
+			)
+		);
+
+		$reached = $this->reached(root: (string)($graph['root'] ?? ''), edges: $edges);
+
+		$graph['nodes'] = array_values(
+			array_filter(
+				($graph['nodes'] ?? []),
+				static fn (array $node): bool => isset($reached[(string)($node['uuid'] ?? '')]) === true
+					&& isset($refused[(string)($node['uuid'] ?? '')]) === false
+			)
+		);
+		$graph['edges'] = array_values(
+			array_filter(
+				$edges,
+				static fn (array $edge): bool => isset($reached[(string)($edge['from'] ?? '')]) === true
+					&& isset($reached[(string)($edge['to'] ?? '')]) === true
+			)
+		);
+
+		return $graph;
+	}//end reachableFromRoot()
+
+	/**
+	 * The uuids connected to the root through the given edges, either direction.
+	 *
+	 * @param string                           $root  The root uuid.
+	 * @param array<int, array<string, mixed>> $edges The edges that remain.
+	 *
+	 * @return array<string, true> The reached uuids.
+	 */
+	private function reached(string $root, array $edges): array {
+		$reached = [$root => true];
+		do {
+			$grew = false;
+			foreach ($edges as $edge) {
+				$from = (string)($edge['from'] ?? '');
+				$to = (string)($edge['to'] ?? '');
+				if (isset($reached[$from]) === isset($reached[$to])) {
+					continue;
+				}
+
+				$reached[$from] = true;
+				$reached[$to] = true;
+				$grew = true;
+			}
+		} while ($grew === true);
+
+		return $reached;
+	}//end reached()
+
 
 	/**
 	 * The ancestors and descendants of an object along its schema's parent property.

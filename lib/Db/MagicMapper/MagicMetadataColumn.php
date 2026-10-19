@@ -73,6 +73,8 @@ final class MagicMetadataColumn {
 	 * Whether a key of an object being written is metadata or `@self`, not a property column.
 	 *
 	 * A key starting with the prefix is metadata unless the schema declares it as a property.
+	 * A key is also metadata when the column it sanitises to is a metadata column, whatever
+	 * its first character (`@owner`, `-organisation`, `.authorization`, `$status`).
 	 * A declared property whose column is a metadata column (`_owner`, `_authorization`,
 	 * `_status`, and the spellings that sanitise to one, `_Owner` or `__owner_`) is skipped
 	 * too: the writer stamps the metadata columns from server-side values, and a client
@@ -91,11 +93,17 @@ final class MagicMetadataColumn {
 			return true;
 		}
 
+		// Decide on the column the writer would really use: `@owner`, `-organisation`,
+		// `.authorization` and `$status` sanitise to metadata columns just as `_owner` does.
+		if ($this->shadowsMetadata(key: $key) === true) {
+			return true;
+		}
+
 		if (str_starts_with($key, self::PREFIX) === false) {
 			return false;
 		}
 
-		return isset($schemaProperties[$key]) === false || $this->shadowsMetadata(key: $key);
+		return isset($schemaProperties[$key]) === false;
 	}//end skippedOnWrite()
 
 	/**

@@ -432,6 +432,19 @@ class ObjectSharingService {
 
 		$created = $this->shareManager->createShare($share);
 
+		// A public link is a grant like any other: the trail names it (never its token).
+		$this->auditor?->recordGrant(
+			object: $object,
+			grant: [
+				'id' => $created->getFullId(),
+				'type' => 'link',
+				'sharedWith' => null,
+				'permissions' => $created->getPermissions(),
+				'verbs' => [],
+			],
+			admittedAs: null
+		);
+
 		return [
 			'id' => $created->getFullId(),
 			'type' => 'link',
@@ -486,6 +499,18 @@ class ObjectSharingService {
 		$this->applyLinkOptions(share: $share, password: $password, expiration: $expiration);
 
 		$created = $this->shareManager->createShare($share);
+
+		$this->auditor?->recordGrant(
+			object: $object,
+			grant: [
+				'id' => $created->getFullId(),
+				'type' => 'email',
+				'sharedWith' => $created->getSharedWith(),
+				'permissions' => $created->getPermissions(),
+				'verbs' => [],
+			],
+			admittedAs: null
+		);
 
 		return [
 			'id' => $created->getFullId(),

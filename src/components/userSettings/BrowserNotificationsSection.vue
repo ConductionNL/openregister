@@ -10,11 +10,10 @@
  per Chrome's permission-abuse rules. Shows the current permission state and an
  unsupported-browser notice when the Push API is unavailable.
 
- TODO mount: this component is not mounted yet. The per-person settings live in
- the user settings dialog (src/views/settings/UserSettings.vue, opened from the
- app navigation and at #user-settings); OpenRegister registers no Nextcloud
- personal settings page. To surface this toggle to end users, add it as a
- section of that dialog. It is fully functional and only needs that host.
+ Mounted in the user settings dialog (src/views/settings/UserSettings.vue,
+ opened from the app navigation and at #user-settings), as a section after the
+ library's notification preferences; OpenRegister registers no Nextcloud
+ personal settings page.
  See openspec/changes/openregister-web-push-engine.
 
  @spec openspec/changes/archive/2026-10-05-openregister-web-push-engine/tasks.md#task-5.2

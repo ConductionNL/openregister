@@ -56,6 +56,11 @@ require_once __DIR__ . '/../../../Support/ShutdownFunctionSpy.php';
 class DeferredChunksFitTheJobLimitTest extends TestCase {
 
 	/**
+	 * The job argument limit of Nextcloud 34 and later.
+	 */
+	private const NC34_LIMIT = 32000;
+
+	/**
 	 * The arguments the job list took, per job.
 	 *
 	 * @var array<int, array<string, mixed>>
@@ -100,7 +105,7 @@ class DeferredChunksFitTheJobLimitTest extends TestCase {
 	 *
 	 * @return ListenerDeferralService
 	 */
-	private function deferral(int $limit = ListenerDeferralService::ARGUMENT_LENGTH_NC34): ListenerDeferralService {
+	private function deferral(int $limit = self::NC34_LIMIT): ListenerDeferralService {
 		$jobList = $this->createMock(IJobList::class);
 		$jobList->method('add')->willReturnCallback(
 			function (string $job, mixed $argument) use ($limit): void {
