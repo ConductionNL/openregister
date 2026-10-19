@@ -23,16 +23,11 @@ second entry kind, `{user, mode}`, to the same list.
 - Nothing is migrated. Existing `{group, mode}` entries keep their meaning;
   the column stays the same JSON list.
 
-## Decision needed (why this is handed back before building)
+## Decision (Ruben, 19 Oct 2026)
 
-The brief asks for a plan first when stored data changes shape. This adds an
-entry kind to a stored list; no existing view changes or is lost. Options:
+Option 1, additive `{user, mode}` entries, no migration. The picker follows
+Nextcloud's own sharing settings through the sharee API, the same as files;
+the server checks that the user exists, as it checks groups.
 
-1. Build as above (recommended): additive, no migration.
-2. Store users in a separate column. More schema, no gain.
-
-Also to decide: may a user share with a user outside their own groups?
-Nextcloud's sharee API already limits the picker by the instance's sharing
-settings (`shareapi_only_share_with_group_members`); the server check
-proposed here only checks the user exists, matching how groups are checked
-today.
+Record templates share the same validator and `accessFor()`, so they accept
+user shares too.
