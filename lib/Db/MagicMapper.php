@@ -4550,6 +4550,9 @@ class MagicMapper extends AbstractObjectMapper {
 		$metadata['register'] = $register->getId();
 		$metadata['schema'] = $schema->getId();
 
+		// The entity serialises `schemaVersion`; the column loop below reads `schema_version`.
+		$metadata['schema_version'] = $metadata['schemaVersion'] ?? $metadata['schema_version'] ?? null;
+
 		// Map metadata fields with prefix.
 		$metadataFields = [
 			'uuid',
