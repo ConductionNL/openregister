@@ -398,4 +398,70 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 		// The control: without the keys the same builder answers.
 		$this->assertIsArray($handler->buildWhereConditionsSql(query: [], schema: new Schema()));
 	}//end testTheUnionBuilderRefusesRelatedRowFilters()
+
+	/**
+	 * `_multitenancy=false` waives the boundary for the related subquery as it does for the list.
+	 *
+	 * @return void
+	 */
+	public function testARelatedRowSubqueryHonoursTheMultitenancyOptOut(): void {
+		$scope  = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-a']];
+		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
+
+		$off = $method->invoke($this->handler($scope), ['_multitenancy' => false], new Schema(), 1);
+		$this->assertSame(MagicOrganizationHandler::SCOPE_ALL, $off['mode']);
+
+		// A string 'false' from the query string is read as false too; an unreadable value keeps the boundary ON.
+		$string = $method->invoke($this->handler($scope), ['_multitenancy' => 'false'], new Schema(), 1);
+		$this->assertSame(MagicOrganizationHandler::SCOPE_ALL, $string['mode']);
+		$garbage = $method->invoke($this->handler($scope), ['_multitenancy' => ['x']], new Schema(), 1);
+		$this->assertSame($scope, $garbage);
+	}//end testARelatedRowSubqueryHonoursTheMultitenancyOptOut()
+
+	/**
+	 * `_rbac=false` does not widen the tenant edge: no RBAC rule can waive the boundary, so it stands.
+	 *
+	 * @return void
+	 */
+	public function testARelatedRowSubqueryKeepsTheBoundaryWhenRbacIsOff(): void {
+		$scope  = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-a']];
+		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
+
+		// Even a handler that WOULD waive the boundary for an RBAC caller must not do so with RBAC off.
+		$decided = $method->invoke($this->handler($scope, conditionalBypass: true), ['_rbac' => false], new Schema(), 1);
+
+		$this->assertSame($scope, $decided);
+	}//end testARelatedRowSubqueryKeepsTheBoundaryWhenRbacIsOff()
+
+	/**
+	 * An anonymous caller (no active organisation) gets the empty scope, which the subquery renders as no rows.
+	 *
+	 * @return void
+	 */
+	public function testARelatedRowSubqueryGivesAnAnonymousCallerNoRows(): void {
+		$none   = ['mode' => MagicOrganizationHandler::SCOPE_NONE, 'uuids' => []];
+		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
+
+		$decided = $method->invoke($this->handler($none), [], new Schema(), 1);
+
+		$this->assertSame($none, $decided);
+	}//end testARelatedRowSubqueryGivesAnAnonymousCallerNoRows()
+
+	/**
+	 * A public schema drops the boundary unless the caller explicitly asked for multitenancy.
+	 *
+	 * @return void
+	 */
+	public function testARelatedRowSubqueryOfAPublicSchemaDropsTheBoundaryUnlessExplicit(): void {
+		$scope  = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-a']];
+		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
+		$public = new Schema();
+		$public->setAuthorization(['read' => ['public']]);
+
+		$dropped = $method->invoke($this->handler($scope), [], $public, 1);
+		$this->assertSame(MagicOrganizationHandler::SCOPE_ALL, $dropped['mode']);
+
+		$explicit = $method->invoke($this->handler($scope), ['_multitenancy_explicit' => true], $public, 1);
+		$this->assertSame($scope, $explicit);
+	}//end testARelatedRowSubqueryOfAPublicSchemaDropsTheBoundaryUnlessExplicit()
 }//end class
