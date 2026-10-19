@@ -519,7 +519,8 @@ final class RelatedRowExistsClause {
 		$name = (string)preg_replace('/[^a-z0-9_]/', '_', $name);
 		$name = (string)preg_replace('/_+/', '_', $name);
 
-		return rtrim($name, '_');
+		// The 64-character cap the read path applies (MySQL's identifier limit).
+		return substr(rtrim($name, '_'), 0, 64);
 	}//end columnName()
 
 	/**

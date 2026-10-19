@@ -180,5 +180,8 @@ class ReferencedRowFilterTest extends TestCase {
 		$this->assertStringContainsString('rel0."due_date" = :rel0_c0', $sql('due-date'));
 		$this->assertStringContainsString('rel0."first_name" = :rel0_c0', $sql('first__name'));
 		$this->assertStringContainsString('rel0."is_active" = :rel0_c0', $sql('isActive_'));
+
+		// Capped at 64 characters, as MagicSearchHandler::sanitizeColumnName caps it.
+		$this->assertStringContainsString('rel0."' . str_repeat('a', 64) . '" = :rel0_c0', $sql(str_repeat('a', 70)));
 	}
 }
