@@ -3347,6 +3347,9 @@ class ImportHandler {
 			}
 		}
 
+		// The shipped versions the seeds above recorded are written once, not once per seed.
+		$this->seedVersions()->flush();
+
 		// Process OpenConnector integration if available.
 		if ($this->connectorConfigSvc !== null) {
 			try {
