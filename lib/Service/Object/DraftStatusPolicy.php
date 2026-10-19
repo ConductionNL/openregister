@@ -39,7 +39,9 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Service\AnonymousEvaluationContext;
 use OCA\OpenRegister\Service\Form\FormDestinationValidator;
+use OCA\OpenRegister\Service\SystemOperationContext;
 
 /**
  * Set, keep, leave and hide drafts.
@@ -326,6 +328,45 @@ class DraftStatusPolicy {
 			&& $this->draftsVisibleToOthers(schema: $schema) === false
 			&& $object->getOwner() !== $userId;
 	}//end keptFrom()
+
+	/**
+	 * Whether a stored draft is kept from THIS caller: the one rule every explicit guard asks.
+	 *
+	 * keptFrom() answers for a named owner; this adds who the caller is, the
+	 * same way the read path does (MagicRbacHandler::isTrustedSystemCaller()):
+	 * an administrator is not kept from a draft, and neither is a system caller
+	 * without a user (the command line, or code inside a SystemOperationContext)
+	 * unless it asked to be judged as nobody (AnonymousEvaluationContext). An
+	 * anonymous web caller is kept. Every guard that looks a draft up past the
+	 * read rule (single save, bulk save, single and bulk delete, permission
+	 * check) asks here, so none of them can answer differently.
+	 *
+	 * @param ObjectEntity $object      The stored object.
+	 * @param Schema       $schema      Its schema.
+	 * @param string|null  $userId      The caller, null when nobody is signed in.
+	 * @param bool         $isAdmin     Whether the caller is an administrator.
+	 * @param bool|null    $commandLine Whether PHP runs on the command line; null reads PHP_SAPI.
+	 *
+	 * @return bool True when the caller may not touch it.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Both contexts are ambient static markers by design.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The caller's two facts, resolved by each caller from the services it holds.
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+	 */
+	public function keptFromCaller(ObjectEntity $object, Schema $schema, ?string $userId, bool $isAdmin, ?bool $commandLine = null): bool {
+		if ($this->keptFrom(object: $object, schema: $schema, userId: $userId) === false || $isAdmin === true) {
+			return false;
+		}
+
+		if ($userId === null && AnonymousEvaluationContext::isActive() === false) {
+			$cli = ($commandLine ?? (PHP_SAPI === 'cli'));
+
+			return $cli === false && SystemOperationContext::isActive() === false;
+		}
+
+		return true;
+	}//end keptFromCaller()
 
 	/**
 	 * Whether the schema's lists show the caller their own drafts by default.

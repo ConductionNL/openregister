@@ -825,11 +825,12 @@ class SaveObjects {
 			// the one a refused permission gives, so the draft's existence stays
 			// unannounced (same rule as ObjectService::refuseSomebodyElsesDraft).
 			// An administrator reads every draft, so is not kept from one.
-			if ($effectiveRbac === true && $isAdmin === false && $existingEntity !== null) {
-				$draftKept = (new DraftStatusPolicy())->keptFrom(
+			if ($effectiveRbac === true && $existingEntity !== null) {
+				$draftKept = (new DraftStatusPolicy())->keptFromCaller(
 					object: $existingEntity,
 					schema: $rowSchema,
-					userId: $currentUser?->getUID()
+					userId: $currentUser?->getUID(),
+					isAdmin: $isAdmin
 				);
 				if ($draftKept === true) {
 					$this->recordSafeguardRejection(
