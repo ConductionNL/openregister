@@ -147,6 +147,7 @@ class MagicSearchHandler {
 		'_size',
 		'_created',
 		'_updated',
+		'_last_user_activity',
 		'_expires',
 		'_deleted',
 		'_archived',
@@ -3925,8 +3926,9 @@ class MagicSearchHandler {
 			}
 
 			if (str_starts_with($field, '@self.') === true) {
-				// Metadata field sorting (e.g., @self.created → t._created).
-				$metadataField = '_' . str_replace('@self.', '', $field);
+				// Metadata field sorting (e.g., @self.created → t._created,
+				// @self.lastUserActivity → t._last_user_activity).
+				$metadataField = '_' . $this->sanitizeColumnName(name: str_replace('@self.', '', $field));
 				$qb->addOrderBy($this->metadataSortExpression(qb: $qb, column: $metadataField), $direction);
 			} elseif (in_array(
 				$field,
@@ -4420,6 +4422,10 @@ class MagicSearchHandler {
 
 			if (($metadataData['updated'] ?? null) !== null) {
 				$objectEntity->setUpdated(new DateTime($metadataData['updated']));
+			}
+
+			if (($metadataData['last_user_activity'] ?? null) !== null) {
+				$objectEntity->setLastUserActivity(new DateTime($metadataData['last_user_activity']));
 			}
 
 			if (($metadataData['deleted'] ?? null) !== null) {

@@ -340,6 +340,7 @@ class SaveObject {
 	 * @param FieldEncryptionHandler|null $fieldEncryptionHandler Field-level encryption handler
 	 * @param \OCA\OpenRegister\Service\Flow\FlowRunContext|null $runContext The ambient flow-run stack, so the lock guard can tell which run is writing
 	 * @param ContainerInterface|null $container App container, consulted lazily for the retention service (see resolveRetentionService)
+	 * @param UserActivityStamper|null $userActivity Stamps `@self.lastUserActivity` when a person writes
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
 	 *
@@ -376,6 +377,7 @@ class SaveObject {
 		private readonly ?FieldEncryptionHandler $fieldEncryptionHandler = null,
 		private readonly ?\OCA\OpenRegister\Service\Flow\FlowRunContext $runContext = null,
 		private readonly ?ContainerInterface $container = null,
+		private readonly ?UserActivityStamper $userActivity = null,
 	) {
 		$this->twig = new Environment($arrayLoader);
 		$this->versionHandler = new ObjectVersionHandler();
@@ -3936,6 +3938,7 @@ class SaveObject {
 		$objectEntity->setSchema((string)$schemaId);
 		$objectEntity->setCreated(new DateTime());
 		$objectEntity->setUpdated(new DateTime());
+		$this->userActivity?->stamp(object: $objectEntity);
 
 		if ($uuid !== null) {
 			$objectEntity->setUuid($uuid);
@@ -6327,6 +6330,7 @@ class SaveObject {
 		$preparedObject->setRegister((string)$registerId);
 		$preparedObject->setSchema((string)$schemaId);
 		$preparedObject->setUpdated(new DateTime());
+		$this->userActivity?->stamp(object: $preparedObject);
 
 		// Log that we're about to update using MagicMapper.
 		$this->logger->debug(

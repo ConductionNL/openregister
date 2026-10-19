@@ -244,9 +244,34 @@ The following metadata fields are available for filtering on all objects:
 | Field | Description | Type | Example |
 |-------|-------------|------|---------|
 | `created` | Creation timestamp | DateTime | `@self[created][gte]=2025-06-25T00:00:00` |
-| `updated` | Last update timestamp | DateTime | `@self[updated][lt]=2025-06-30T23:59:59` |
+| `updated` | Last write, by anyone or anything | DateTime | `@self[updated][lt]=2025-06-30T23:59:59` |
+| `lastUserActivity` | Last write by a person (empty until a person writes) | DateTime | `@self[lastUserActivity][lt]=2025-06-30T23:59:59` |
 | `published` | Publication timestamp | DateTime | `@self[published][gte]=2025-01-01T00:00:00` |
 | `depublished` | Depublication timestamp | DateTime | `@self[depublished][lte]=2025-12-31T23:59:59` |
+
+`updated` moves on every write, including background jobs, listeners and
+other system writes that recompute a field. `lastUserActivity` moves only when a
+signed-in user writes the object in a web request. Use it to find objects nobody
+has worked on, for example cases that stalled:
+
+```
+GET /api/objects/5/24?@self[lastUserActivity][lt]=2026-10-01T00:00:00&_order[@self.lastUserActivity]=asc
+```
+
+These writes leave `lastUserActivity` as it was:
+
+- anything on the command line: occ commands, CLI cron and repair steps;
+- Nextcloud's web or AJAX cron (`cron.php`), including jobs that act as a user;
+- a write without a signed-in user;
+- a write inside `SystemOperationContext`;
+- a write labelled with a `WriteCause` other than `person` (`scheduled`, `rule`,
+  `import`, `migration`, `cascade`). A listener that recomputes fields during a
+  user's request can wrap its save in
+  `WriteCause::runAs(cause: WriteCause::RULE, run: null, operation: fn () => ...)`
+  to stay out of it.
+
+Bulk saves (`saveObjects`, imports) do not set it either. Objects that existed
+before the field was added have no value until a person writes them.
 
 #### Content Fields
 | Field | Description | Type | Example |
