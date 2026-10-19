@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Exception\ViewAlertRecipientException;
 use OCA\OpenRegister\Service\Rbac\ViewerReach;
 use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCP\IGroupManager;
@@ -241,4 +242,58 @@ class ViewerReachResolverTest extends TestCase {
 		$this->assertSame('share.unknown-user', $withUsers->shareFindings(sharedWith: [['user' => 'nobody', 'mode' => 'read']])[0]['code']);
 		$this->assertSame('share.unknown-user', $this->resolver->shareFindings(sharedWith: [['user' => 'fatma', 'mode' => 'read']])[0]['code']);
 	}//end testUserSharesAreCheckedAgainstTheUserManager()
+	/**
+	 * 🔴 A SAVE THAT NARROWS REACH REFUSES THE STORED RECIPIENTS IT STOPS REACHING.
+	 *
+	 * Stored recipients are not judged as additions and an update with no
+	 * `alert` key declares none, so un-publishing the view left pieter on an
+	 * alert about a view he can no longer open.
+	 *
+	 * @return void
+	 */
+	public function testASaveThatUnpublishesTheViewRefusesTheStoredRecipientsItStopsReaching(): void {
+		$this->groupManager->method('isAdmin')->willReturn(false);
+		$this->groupManager->method('isInGroup')->willReturn(false);
+
+		$stored = ['owner' => 'annemarie', 'isPublic' => true, 'sharedWith' => [], 'alert' => ['recipients' => ['user:pieter']]];
+
+		try {
+			$this->resolver->assertMayNameRecipients(
+				view: $stored,
+				reach: new ViewerReach(userId: 'annemarie', groups: [], isAdmin: false),
+				data: ['isPublic' => false]
+			);
+			$this->fail('Expected the narrowing save to be refused');
+		} catch (ViewAlertRecipientException $e) {
+			$this->assertSame(['user:pieter'], $e->getRecipients());
+		}
+
+		// The control: a save that does not narrow reach is untouched.
+		$this->resolver->assertMayNameRecipients(
+			view: $stored,
+			reach: new ViewerReach(userId: 'annemarie', groups: [], isAdmin: false),
+			data: ['name' => 'Renamed']
+		);
+		$this->addToAssertionCount(1);
+	}//end testASaveThatUnpublishesTheViewRefusesTheStoredRecipientsItStopsReaching()
+
+	/**
+	 * Removing the share a group recipient reached the view through is refused too.
+	 *
+	 * @return void
+	 */
+	public function testRemovingTheShareAStoredGroupRecipientReachesTheViewThroughIsRefused(): void {
+		$this->expectException(ViewAlertRecipientException::class);
+
+		$this->resolver->assertMayNameRecipients(
+			view: [
+				'owner' => 'annemarie',
+				'isPublic' => false,
+				'sharedWith' => [['group' => 'sales', 'mode' => 'read']],
+				'alert' => ['recipients' => ['sales']],
+			],
+			reach: new ViewerReach(userId: 'annemarie', groups: [], isAdmin: false),
+			data: ['sharedWith' => []]
+		);
+	}//end testRemovingTheShareAStoredGroupRecipientReachesTheViewThroughIsRefused()
 }//end class

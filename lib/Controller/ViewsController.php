@@ -226,6 +226,7 @@ class ViewsController extends Controller {
 	 * @param View $view The stored view.
 	 * @param string $userId The caller.
 	 * @param array<string, mixed> $data The request body.
+	 * @param bool $replacesView Whether the save replaces the view (PUT), which writes `isPublic` as false when the body omits it.
 	 *
 	 * @return JSONResponse|null The refusal, or null when allowed.
 	 *
@@ -234,7 +235,7 @@ class ViewsController extends Controller {
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
 	 */
-	private function refuseForbiddenViewFields(View $view, string $userId, array $data): ?JSONResponse {
+	private function refuseForbiddenViewFields(View $view, string $userId, array $data, bool $replacesView=false): ?JSONResponse {
 		// Only keys that name a view property are judged, so a `_limit` or
 		// routing key on the body cannot refuse an update a member may make.
 		$fields = array_intersect_key(
@@ -261,7 +262,16 @@ class ViewsController extends Controller {
 		);
 
 		if ($refused === []) {
-			$this->viewers->assertMayNameRecipients(view: $view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId), data: $data);
+			// The recipients are judged against the view AS IT WILL BE SAVED. A
+			// PUT writes `isPublic` as false when the body omits it, so judging
+			// against the stored (possibly public) view admitted recipients a
+			// private view does not reach.
+			$judged = $data;
+			if ($replacesView === true) {
+				$judged['isPublic'] = ($data['isPublic'] ?? false);
+			}
+
+			$this->viewers->assertMayNameRecipients(view: $view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId), data: $judged);
 			return null;
 		}
 
@@ -592,7 +602,7 @@ class ViewsController extends Controller {
 			// an administrator are unaffected: `mayAdminister()` answers true
 			// for both and the guard returns null.
 			$stored = $this->requireReachableView(id: $id, userId: $userId);
-			$refusal = $this->refuseForbiddenViewFields(view: $stored, userId: $userId, data: $data);
+			$refusal = $this->refuseForbiddenViewFields(view: $stored, userId: $userId, data: $data, replacesView: true);
 			if ($refusal !== null) {
 				return $refusal;
 			}
