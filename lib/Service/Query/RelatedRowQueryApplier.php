@@ -111,6 +111,7 @@ class RelatedRowQueryApplier {
 		foreach (array_values($filters) as $position => $filter) {
 			$alias   = sprintf('rel%d', $position);
 			$schema  = $this->resolveSchema(name: $filter->schema);
+			$relatedTable = $this->tableHandler->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
 			// A schema that has never stored an object has no table yet, so no
 			// row can match. Same answer the list path gives for a missing table.
@@ -125,7 +126,7 @@ class RelatedRowQueryApplier {
 				engine: $engine,
 				// Raw SQL gets no automatic table prefix; Nextcloud's connection
 				// replaces `*PREFIX*` with the instance's (`oc_` by default).
-				table: '*PREFIX*'.$this->tableHandler->getTableNameForRegisterSchema(register: $register, schema: $schema),
+				table: '*PREFIX*'.$relatedTable,
 				outerAlias: $outerAlias,
 				innerAlias: $alias,
 				// 🔴 THE ACCESS PREDICATE FOR THE RELATED SCHEMA, NOT THE OUTER
@@ -135,7 +136,8 @@ class RelatedRowQueryApplier {
 				accessPredicate: $this->rbacHandler->buildRbacPredicateForAlias(
 					schema: $schema,
 					alias: $alias,
-					action: 'read'
+					action: 'read',
+					tableName: $relatedTable
 				),
 				parameterPrefix: $alias,
 				storage: RelatedRowExistsClause::STORAGE_COLUMNS

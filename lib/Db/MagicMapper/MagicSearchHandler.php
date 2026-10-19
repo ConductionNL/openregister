@@ -453,6 +453,8 @@ class MagicSearchHandler {
 	 * @param bool $_rbac Whether to apply RBAC filtering.
 	 * @param bool $_multitenancy Whether to apply multitenancy filtering.
 	 * @param int|null $registerId The register of the table being read, for shared master data.
+	 * @param string|null $tableName The bare magic table being read, so a `_status` column it could not be
+	 *                               given is left out of the draft predicate. Null keeps the predicate.
 	 *
 	 * @return void
 	 *
@@ -464,6 +466,7 @@ class MagicSearchHandler {
 		bool $_rbac = true,
 		bool $_multitenancy = true,
 		?int $registerId = null,
+		?string $tableName = null,
 	): void {
 		// Mirror the list path: public schemas bypass multitenancy by default.
 		// No explicit multitenancy request exists on the single-object read path,
@@ -480,7 +483,8 @@ class MagicSearchHandler {
 			_rbac: $_rbac,
 			_multitenancy: $resolvedMultitenancy,
 			multitenancyExplicit: false,
-			registerId: $registerId
+			registerId: $registerId,
+			tableName: $tableName
 		);
 	}//end applyAccessControlToQuery()
 
@@ -543,7 +547,8 @@ class MagicSearchHandler {
 			_rbac: $_rbac,
 			_multitenancy: $_multitenancy,
 			multitenancyExplicit: $multitenancyExplicit,
-			registerId: ($registerId ?? $this->registerIdFromQuery(query: $query))
+			registerId: ($registerId ?? $this->registerIdFromQuery(query: $query)),
+			tableName: $tableName
 		);
 
 		// Apply metadata, object-field and ID filters.
@@ -815,7 +820,8 @@ class MagicSearchHandler {
 				schema: $schema,
 				rbac: $_rbac,
 				connection: $connection,
-				registerId: $registerId
+				registerId: $registerId,
+				tableName: $tableName
 			)
 		);
 
@@ -1065,6 +1071,7 @@ class MagicSearchHandler {
 	 * @param mixed      $rbac       The raw `_rbac` flag as the caller wrote it.
 	 * @param mixed      $connection The connection, for value quoting.
 	 * @param integer|null $registerId The register whose table this is built for.
+	 * @param string|null  $tableName  The bare magic table, so a missing `_status` column is left out of the draft predicate.
 	 *
 	 * @return string[] The conditions, without leading AND.
 	 *
@@ -1075,7 +1082,8 @@ class MagicSearchHandler {
 		Schema $schema,
 		mixed $rbac,
 		mixed $connection,
-		?int $registerId
+		?int $registerId,
+		?string $tableName = null
 	): array {
 		$conditions = [];
 
@@ -1110,7 +1118,7 @@ class MagicSearchHandler {
 		}
 
 		if ($rbac === true) {
-			$rbacCondition = $this->buildRbacConditionSql(schema: $schema);
+			$rbacCondition = $this->buildRbacConditionSql(schema: $schema, tableName: $tableName);
 			if ($rbacCondition !== null) {
 				$conditions[] = $rbacCondition;
 			}
@@ -1379,12 +1387,13 @@ class MagicSearchHandler {
 	/**
 	 * Build the RBAC SQL condition
 	 *
-	 * @param Schema $schema Schema for RBAC rules
+	 * @param Schema      $schema    Schema for RBAC rules
+	 * @param string|null $tableName The bare magic table, so a missing `_status` column is left out of the draft predicate
 	 *
 	 * @return string|null SQL condition or null if no RBAC filtering needed
 	 */
-	private function buildRbacConditionSql(Schema $schema): ?string {
-		$rbacResult = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read');
+	private function buildRbacConditionSql(Schema $schema, ?string $tableName = null): ?string {
+		$rbacResult = $this->rbacHandler->buildRbacConditionsSql(schema: $schema, action: 'read', tableName: $tableName);
 
 		if ($rbacResult['bypass'] === false) {
 			// User doesn't have unconditional access.
@@ -1716,6 +1725,9 @@ class MagicSearchHandler {
 	 * @param mixed $value The raw operator value as the request layer delivered it.
 	 *
 	 * @return bool True when the caller asked for IS NULL.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::isNullOperatorAsksForNull() is a pure function shared with the aggregation path.
+	 *
 	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
 	 */
 	private function isNullOperatorAsksForNull(mixed $value): bool {
@@ -2515,6 +2527,7 @@ class MagicSearchHandler {
 	 * @param bool $_multitenancy Whether multitenancy filtering is enabled
 	 * @param bool $multitenancyExplicit Whether multitenancy was explicitly requested
 	 * @param int|null $registerId The register of the table being read, for shared master data
+	 * @param string|null $tableName The bare magic table being read, so a missing `_status` column is left out of the draft predicate
 	 *
 	 * @return void
 	 *
@@ -2527,6 +2540,7 @@ class MagicSearchHandler {
 		bool $_multitenancy,
 		bool $multitenancyExplicit,
 		?int $registerId = null,
+		?string $tableName = null,
 	): void {
 		// Whether the organisation boundary applies is decided in ONE place
 		// (multitenancyApplies), because the string-SQL path renders the same
@@ -2568,7 +2582,8 @@ class MagicSearchHandler {
 			$this->rbacHandler->applyRbacFilters(
 				qb: $qb,
 				schema: $schema,
-				action: 'read'
+				action: 'read',
+				tableName: $tableName
 			);
 		}
 	}//end applyAccessControlFilters()

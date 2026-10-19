@@ -131,6 +131,24 @@ final class DraftOwner {
 	}//end portalSubject()
 
 	/**
+	 * The draft's owner: the asserted one, else the signed-in subject, else nobody.
+	 *
+	 * @param IUser|null      $subject The signed-in subject.
+	 * @param DraftOwner|null $owner   The asserted owner.
+	 *
+	 * @return self|null The owner, or null when there is none.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	public static function resolve(?IUser $subject, ?self $owner): ?self {
+		if ($owner !== null || $subject === null) {
+			return $owner;
+		}
+
+		return self::ofUser(user: $subject);
+	}//end resolve()
+
+	/**
 	 * The value stored in, and compared with, the object's owner.
 	 *
 	 * @return string The value.

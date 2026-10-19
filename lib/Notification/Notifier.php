@@ -618,16 +618,14 @@ class Notifier implements INotifier {
 			$l->t(
 				'The connection to %s is no longer accepted by the provider, so anything using it has '
 				. 'stopped. This cannot be repaired automatically: open Connected accounts in your '
-				. 'personal settings and reconnect the account.',
+				. 'user settings and reconnect the account.',
 				[$provider]
 			)
 		);
 
+		// The connected accounts live in OpenRegister's own user settings dialog.
 		$notification->setLink(
-			$this->urlGenerator->linkToRouteAbsolute(
-				'settings.PersonalSettings.index',
-				['section' => 'additional']
-			)
+			$this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page') . '#user-settings'
 		);
 
 		$notification->setIcon(

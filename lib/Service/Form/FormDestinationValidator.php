@@ -42,6 +42,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Form;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
 use OCP\IL10N;
 
 /**
@@ -516,7 +517,7 @@ class FormDestinationValidator {
 		$findings = [];
 		foreach (array_values(array_unique(array_map('strval', $required))) as $name) {
 			$property = (array)($properties[$name] ?? []);
-			if (in_array($name, $sourced, true) === true || $this->isServerFilled(property: $property) === true) {
+			if (in_array($name, $sourced, true) === true || self::isServerFilled(property: $property) === true) {
 				continue;
 			}
 
@@ -531,14 +532,26 @@ class FormDestinationValidator {
 	}//end requiredFindings()
 
 	/**
-	 * Whether the server fills a property: a default, a computation, or the serverSet marker.
+	 * Whether the server fills a property: a default, a computation, a generated identifier, or the serverSet marker.
+	 *
+	 * The one definition of "no field needs to": the form's mapping check and
+	 * the draft policy's `required` excusals both ask it, so a draft that one
+	 * accepts the other accepts too.
 	 *
 	 * @param array<string, mixed> $property The schema property.
 	 *
 	 * @return bool True when no field needs to.
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-drafts-owner-must-be-able-to-make-it-definitive-through-the-object-api
 	 */
-	private function isServerFilled(array $property): bool {
+	public static function isServerFilled(array $property): bool {
 		if (array_key_exists('default', $property) === true || isset($property['computed']) === true) {
+			return true;
+		}
+
+		// An `x-openregister-generated` identifier is issued by the creating
+		// listener, and on the save that leaves draft (decision 227).
+		if (array_key_exists(GeneratedIdentifierDeclaration::ANNOTATION, $property) === true) {
 			return true;
 		}
 

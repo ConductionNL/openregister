@@ -69,6 +69,11 @@ use Throwable;
 class CasePlanService {
 
 	/**
+	 * What an in-process caller's actor id starts with (`system:<app>`): a label for the audit, not a Nextcloud account.
+	 */
+	public const SYSTEM_ACTOR_PREFIX = 'system:';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param CaseItemMapper $items The plan-item table.
@@ -84,6 +89,8 @@ class CasePlanService {
 	 * @param LoggerInterface $logger Failure reporting.
 	 * @param CasePlanEnsurer|null $ensurer Convergent bring-over; built from the
 	 *                                      same collaborators when not injected.
+	 * @param CasePlanItemTimers|null $timers Arms the deadlines of items the ensurer creates as active, when it is
+	 *                                        built here.
 	 */
 	public function __construct(
 		private readonly CaseItemMapper $items,
@@ -98,6 +105,7 @@ class CasePlanService {
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
 		private ?CasePlanEnsurer $ensurer = null,
+		private readonly ?CasePlanItemTimers $timers = null,
 	) {
 
 	}//end __construct()
@@ -252,7 +260,8 @@ class CasePlanService {
 				audits: $this->audits,
 				definitions: $this->definitions,
 				transitions: new CasePlanTransitions(),
-				db: $this->db
+				db: $this->db,
+				timers: $this->timers
 			);
 		}
 
@@ -769,7 +778,7 @@ class CasePlanService {
 			);
 		}
 
-		return 'system:' . $app;
+		return self::SYSTEM_ACTOR_PREFIX . $app;
 	}//end systemActor()
 
 	/**

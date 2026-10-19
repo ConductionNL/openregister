@@ -46,6 +46,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Task\TaskState
  * @uses \OCA\OpenRegister\Db\TaskAudit
  * @covers \OCA\OpenRegister\Service\Task\TaskBlockerGuard
+ * @uses \OCA\OpenRegister\Service\Task\TaskSubjectAccessGuard
  */
 class TaskBlockedByCreateTest extends TestCase {
 
@@ -92,13 +93,19 @@ class TaskBlockedByCreateTest extends TestCase {
 	/**
 	 * The service under test, with real builder and mocked stores.
 	 *
+	 * @param bool                   $administrator Whether the actor is an administrator.
+	 * @param array<int, string>|null $readable     The uuids of the tasks an ordinary actor may read.
+	 *
 	 * @return TaskService The service.
 	 */
-	private function service(): TaskService {
+	private function service(bool $administrator = true, ?array $readable = null): TaskService {
 		$audits = $this->createMock(TaskAuditMapper::class);
 		$audits->method('insert')->willReturnArgument(0);
 		$authorization = $this->createMock(TaskAuthorizationService::class);
-		$authorization->method('isAdministrator')->willReturn(true);
+		$authorization->method('isAdministrator')->willReturn($administrator);
+		$authorization->method('mayRead')->willReturnCallback(
+			static fn (Task $task, ?string $uid): bool => in_array($task->getUuid(), ($readable ?? []), true)
+		);
 
 		return new TaskService(
 			tasks: $this->tasks,
@@ -207,4 +214,54 @@ class TaskBlockedByCreateTest extends TestCase {
 
 		$this->service()->create(data: ['uuid' => 'task-a', 'title' => 'A', 'blockedBy' => 'task-b'], actor: 'anna');
 	}//end testALoopOfBlockersIsRefused()
+
+	/**
+	 * An ordinary caller may not name a blocker they cannot read: it answers like a task that does not exist.
+	 *
+	 * @return void
+	 */
+	public function testABlockerTheCallerMayNotReadAnswersLikeOneThatDoesNotExist(): void {
+		$this->store(uuid: 'task-elsewhere');
+		$this->tasks->expects($this->never())->method('insert');
+
+		$messages = [];
+		foreach (['task-elsewhere', 'task-ghost'] as $blocker) {
+			try {
+				$this->service(administrator: false, readable: [])->create(data: ['title' => 'Write the advice', 'blockedBy' => $blocker], actor: 'anna');
+				$this->fail('Expected the blocker to be refused');
+			} catch (TaskValidationException $e) {
+				$messages[$blocker] = str_replace($blocker, '<uuid>', $e->getMessage());
+			}
+		}
+
+		$this->assertSame($messages['task-ghost'], $messages['task-elsewhere'], 'the two refusals must read the same');
+	}//end testABlockerTheCallerMayNotReadAnswersLikeOneThatDoesNotExist()
+
+	/**
+	 * A blocker the ordinary caller may read is accepted as before.
+	 *
+	 * @return void
+	 */
+	public function testABlockerTheCallerMayReadIsAccepted(): void {
+		$this->store(uuid: 'task-visit');
+
+		$created = $this->service(administrator: false, readable: ['task-visit'])
+			->create(data: ['title' => 'Write the advice', 'blockedBy' => 'task-visit'], actor: 'anna');
+
+		$this->assertSame('task-visit', $created->getBlockedBy());
+	}//end testABlockerTheCallerMayReadIsAccepted()
+
+	/**
+	 * The trusted import path names blockers of its own making and is not held to a read rule.
+	 *
+	 * @return void
+	 */
+	public function testTheTrustedImportPathIsNotHeldToAReadRule(): void {
+		$this->store(uuid: 'task-visit');
+
+		$created = $this->service(administrator: false, readable: [])
+			->import(data: ['title' => 'Write the advice', 'blockedBy' => 'task-visit'], actor: 'anna');
+
+		$this->assertSame('task-visit', $created->getBlockedBy());
+	}//end testTheTrustedImportPathIsNotHeldToAReadRule()
 }//end class

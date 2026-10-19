@@ -48,6 +48,24 @@ use Psr\Log\LoggerInterface;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRegisters
  *
  * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
+ * @uses \OCA\OpenRegister\AppHost\Service\RegisterDocumentLoader
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Service\AppRegisterImportRunner
+ * @uses \OCA\OpenRegister\Service\CountedRegisterImport
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Service\RegisterDescriptorService
  */
 class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
 	/** @var array<string, string> Registers on the fake instance, slug to version. */
@@ -89,9 +107,11 @@ class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
 					$this->instance[strtolower((string) $slug)] = $version;
 				}
 
-				$this->recorded[$appId][] = ['jobId' => 'job-'.count($this->importedAs), 'version' => $version, 'created' => 1, 'importedAt' => ''];
+				$jobId = 'job-'.count($this->importedAs);
+				$this->recorded[$appId][] = ['jobId' => $jobId, 'version' => $version, 'created' => 1, 'importedAt' => ''];
 
-				return ['objects' => array_keys((array) ($data['components']['objects'] ?? [])), 'skipped' => []];
+				// As ImportHandler does: the result names the job the import ran under.
+				return ['objects' => array_keys((array) ($data['components']['objects'] ?? [])), 'skipped' => [], 'importJobId' => $jobId];
 			}
 		);
 

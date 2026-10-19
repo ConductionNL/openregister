@@ -62,10 +62,12 @@ use OCA\OpenRegister\Event\ObjectLockedEvent;
 use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCA\OpenRegister\Exception\DraftAlreadyLeftException;
 use OCA\OpenRegister\Exception\HookStoppedException;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
+use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\SettingsService;
@@ -191,6 +193,13 @@ class MagicMapper extends AbstractObjectMapper {
 	 * Metadata column prefix to avoid conflicts with schema properties
 	 */
 	private const METADATA_PREFIX = '_';
+
+	/**
+	 * Schema-and-property pairs already warned about as named like a metadata column.
+	 *
+	 * @var array<string, true>
+	 */
+	private static array $warnedMetadataNamedProperties = [];
 
 	/**
 	 * Whether the last single-object write INSERTED or UPDATED.
@@ -555,6 +564,16 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @return void
 	 */
 	private function initializeHandlers(): void {
+		// Built first: the RBAC handler asks it which metadata columns a
+		// degraded table still lacks, so the read predicate does not name a
+		// `_status` column the table could not be given.
+		$this->metadataColumnHealer = new MagicMetadataColumnHealer(
+			db: $this->db,
+			logger: $this->logger,
+			magicMapper: $this,
+			cache: $this->createMetadataColumnCache()
+		);
+
 		$this->rbacHandler = new MagicRbacHandler(
 			userSession: $this->userSession,
 			groupManager: $this->groupManager,
@@ -562,7 +581,8 @@ class MagicMapper extends AbstractObjectMapper {
 			appConfig: $this->appConfig,
 			conditionMatcher: $this->container->get(\OCA\OpenRegister\Service\ConditionMatcher::class),
 			container: $this->container,
-			logger: $this->logger
+			logger: $this->logger,
+			metadataColumns: $this->metadataColumnHealer
 		);
 
 		$this->organizationHandler = new MagicOrganizationHandler(
@@ -580,13 +600,6 @@ class MagicMapper extends AbstractObjectMapper {
 		// Built before the table handler, which asks it on every first use
 		// of a table, and before the search handler, which asks it which
 		// metadata columns a degraded table still lacks.
-		$this->metadataColumnHealer = new MagicMetadataColumnHealer(
-			db: $this->db,
-			logger: $this->logger,
-			magicMapper: $this,
-			cache: $this->createMetadataColumnCache()
-		);
-
 		$this->tableHandler = new MagicTableHandler(
 			db: $this->db,
 			appConfig: $this->appConfig,
@@ -4413,7 +4426,7 @@ class MagicMapper extends AbstractObjectMapper {
 			}
 
 			// Update existing object.
-			$this->updateObjectInRegisterSchemaTable(uuid: $uuid, data: $preparedData, tableName: $tableName);
+			$this->updateExistingObject(uuid: $uuid, data: $preparedData, tableName: $tableName);
 			$this->lastWriteAction = 'update';
 			$this->logger->debug(
 				message: '[MagicMapper] Updated object in register+schema table',
@@ -4686,7 +4699,31 @@ class MagicMapper extends AbstractObjectMapper {
 		$schemaProperties = $schema->getProperties();
 
 		if (is_array($schemaProperties) === true) {
+			$columnRoles = new MagicMetadataColumn();
 			foreach (array_keys($schemaProperties) as $propertyName) {
+				// A property whose column is a metadata column (`_owner`, `_authorization`,
+				// `_status`, ...) never writes it: the loop above stamped that column from
+				// server-side values, and the client's value must not replace them. The
+				// read side already treats such a column as metadata.
+				if (is_string($propertyName) === true && $columnRoles->shadowsMetadata(key: $propertyName) === true) {
+					// Once per schema and property per request: the loop runs for every write.
+					$warnedKey = $schema->getId().':'.$propertyName;
+					if (isset(self::$warnedMetadataNamedProperties[$warnedKey]) === false) {
+						self::$warnedMetadataNamedProperties[$warnedKey] = true;
+						$this->logger->warning(
+							message: '[MagicMapper] A schema property is named like a metadata column; its value is not written',
+							context: [
+								'file' => __FILE__,
+								'line' => __LINE__,
+								'propertyName' => $propertyName,
+								'schema' => $schema->getId(),
+							]
+						);
+					}
+
+					continue;
+				}
+
 				// Use array_key_exists to distinguish between:.
 				// - Property exists with null value → include in prepared data (update DB to null).
 				// - Property doesn't exist at all → skip (don't change DB value).
@@ -5278,17 +5315,55 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end insertObjectInRegisterSchemaTable()
 
 	/**
+	 * Update a stored object, as a compare-and-swap when the save moves it out of draft.
+	 *
+	 * A save that leaves draft writes its status conditionally: of two
+	 * requests that both read the object as a draft, the database lets one
+	 * change the row and the other changes nothing and is refused, so the
+	 * creation is announced once (DraftStatusPolicy::consumeLeaving()). Only that
+	 * first write is conditional: a later write of the same object in the same
+	 * request finds it active and is an ordinary update.
+	 *
+	 * @param string $uuid      The object UUID.
+	 * @param array  $data      The prepared column values.
+	 * @param string $tableName The table name.
+	 *
+	 * @return void
+	 *
+	 * @throws DraftAlreadyLeftException When the save leaves draft and the stored object already left it.
+	 * @throws Exception If the update fails.
+	 */
+	private function updateExistingObject(string $uuid, array $data, string $tableName): void {
+		$leavingDraft = DraftStatusPolicy::consumeLeaving(uuid: $uuid);
+		$onlyFromStatus = null;
+		if ($leavingDraft === true) {
+			$onlyFromStatus = ObjectEntity::STATUS_DRAFT;
+		}
+
+		$changed = $this->updateObjectInRegisterSchemaTable(
+			uuid: $uuid,
+			data: $data,
+			tableName: $tableName,
+			onlyFromStatus: $onlyFromStatus
+		);
+		if ($leavingDraft === true && $changed === 0) {
+			throw new DraftAlreadyLeftException(message: 'This draft has already left draft.');
+		}
+	}//end updateExistingObject()
+
+	/**
 	 * Update object in register+schema table
 	 *
-	 * @param string $uuid The object UUID
-	 * @param array $data The object data to update
-	 * @param string $tableName The table name
+	 * @param string      $uuid           The object UUID
+	 * @param array       $data           The object data to update
+	 * @param string      $tableName      The table name
+	 * @param string|null $onlyFromStatus When set, the row is only changed while its stored `_status` is this (compare-and-swap).
 	 *
 	 * @throws Exception If update fails
 	 *
-	 * @return void
+	 * @return int The number of rows changed.
 	 */
-	private function updateObjectInRegisterSchemaTable(string $uuid, array $data, string $tableName): void {
+	private function updateObjectInRegisterSchemaTable(string $uuid, array $data, string $tableName, ?string $onlyFromStatus = null): int {
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($tableName);
 
@@ -5306,7 +5381,11 @@ class MagicMapper extends AbstractObjectMapper {
 		}
 
 		$qb->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)));
-		$qb->executeStatement();
+		if ($onlyFromStatus !== null) {
+			$qb->andWhere($qb->expr()->eq(self::METADATA_PREFIX . 'status', $qb->createNamedParameter($onlyFromStatus)));
+		}
+
+		return (int)$qb->executeStatement();
 	}//end updateObjectInRegisterSchemaTable()
 
 	/**
@@ -6438,7 +6517,8 @@ class MagicMapper extends AbstractObjectMapper {
 				schema: $schema,
 				_rbac: $_rbac,
 				_multitenancy: $_multitenancy,
-				registerId: $register->getId()
+				registerId: $register->getId(),
+				tableName: $tableName
 			);
 		}
 
@@ -6795,7 +6875,8 @@ class MagicMapper extends AbstractObjectMapper {
 					schema: $schema,
 					_rbac: $_rbac,
 					_multitenancy: $_multitenancy,
-					registerId: $register?->getId()
+					registerId: $register?->getId(),
+					tableName: $tableName
 				);
 
 				$accessResult = $accessQb->executeQuery();
@@ -7716,7 +7797,8 @@ class MagicMapper extends AbstractObjectMapper {
 			schema: $schema,
 			_rbac: $_rbac,
 			_multitenancy: $_multitenancy,
-			registerId: $table['registerId']
+			registerId: $table['registerId'],
+			tableName: self::TABLE_PREFIX . $table['registerId'] . '_' . $table['schemaId']
 		);
 
 		return true;
@@ -7971,16 +8053,23 @@ class MagicMapper extends AbstractObjectMapper {
 	 * the list and the raw query cannot drift apart. Columns are unqualified:
 	 * the query must read the magic table without an alias.
 	 *
-	 * @param Schema $schema The schema of the table being read.
-	 * @param string $action The action the rows are filtered for (default: 'read').
+	 * @param Schema        $schema   The schema of the table being read.
+	 * @param string        $action   The action the rows are filtered for (default: 'read').
+	 * @param Register|null $register The register of the table, so a metadata column the table could not
+	 *                                be given is left out of the predicate. Null keeps every predicate.
 	 *
 	 * @return string|null Null when no row restriction applies (an admin); otherwise
 	 *                     a predicate safe to AND into a WHERE, `1 = 0` for deny-all.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
-	public function rbacRowPredicateSql(Schema $schema, string $action = 'read'): ?string {
-		return $this->rbacHandler->buildRbacRowPredicateSql(schema: $schema, action: $action);
+	public function rbacRowPredicateSql(Schema $schema, string $action = 'read', ?Register $register = null): ?string {
+		$tableName = null;
+		if ($register !== null) {
+			$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		}
+
+		return $this->rbacHandler->buildRbacRowPredicateSql(schema: $schema, action: $action, tableName: $tableName);
 	}//end rbacRowPredicateSql()
 
 	/**
@@ -10173,6 +10262,27 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
 	 */
 	public function filterReadableUuids(int $registerId, int $schemaId, array $uuids): array {
+		return ($this->readableUuidsOrNull(registerId: $registerId, schemaId: $schemaId, uuids: $uuids) ?? []);
+	}//end filterReadableUuids()
+
+	/**
+	 * The same filter as filterReadableUuids(), but a failure is told apart from "none".
+	 *
+	 * A caller that reports completeness (a tree that says which bound stopped
+	 * it) must not read "read access could not be established" as "nothing is
+	 * readable here": the first is an incomplete answer, the second is a
+	 * complete one. Null means the check itself failed (and was logged);
+	 * an empty array means it ran and the caller may read none of the uuids.
+	 *
+	 * @param int           $registerId The register the table belongs to.
+	 * @param int           $schemaId   The schema the table belongs to.
+	 * @param array<string> $uuids      UUIDs to test, all expected in that table.
+	 *
+	 * @return array<int, string>|null The readable subset, or null when read access could not be established.
+	 *
+	 * @spec openspec/specs/schema-driven-read-coercion/spec.md
+	 */
+	public function readableUuidsOrNull(int $registerId, int $schemaId, array $uuids): ?array {
 		$uuids = array_values(array_unique(array_filter($uuids, fn ($uuid): bool => is_string($uuid) && $uuid !== '')));
 		if (empty($uuids) === true) {
 			return [];
@@ -10204,7 +10314,8 @@ class MagicMapper extends AbstractObjectMapper {
 					schema: $schema,
 					_rbac: true,
 					_multitenancy: true,
-					registerId: $registerId
+					registerId: $registerId,
+					tableName: $tableName
 				);
 
 				$result = $qb->executeQuery();
@@ -10228,11 +10339,11 @@ class MagicMapper extends AbstractObjectMapper {
 					'error' => $e->getMessage(),
 				]
 			);
-			return [];
+			return null;
 		}//end try
 
 		return $readable;
-	}//end filterReadableUuids()
+	}//end readableUuidsOrNull()
 
 	/**
 	 * Find all objects for a given schema.

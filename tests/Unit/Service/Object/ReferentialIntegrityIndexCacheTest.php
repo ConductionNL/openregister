@@ -43,6 +43,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
  * @covers \OCA\OpenRegister\Service\Object\ReferentialIntegrityService
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard
+ * @uses \OCA\OpenRegister\Service\Object\ReferenceKey
  */
 class ReferentialIntegrityIndexCacheTest extends TestCase {
 

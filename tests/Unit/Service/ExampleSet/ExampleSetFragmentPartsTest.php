@@ -35,6 +35,15 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetException;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
+ * @uses \OCA\OpenRegister\Db\Organisation
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
  */
 class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 	protected function setUp(): void {
@@ -197,8 +206,34 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$this->assertTrue($report['ok'], json_encode($report));
 		$this->assertTrue($this->sensitive['alpha']['secret']);
 		$this->assertStringNotContainsString($this->appValues['alpha']['secret'], (string) json_encode($report).json_encode($this->config));
+		$this->assertStringNotContainsString($this->appValues['alpha']['secret'], $this->config['example_set_demo'], 'the record holds a fingerprint, never the value');
 		$this->remover->remove(set: 'demo');
 		$this->assertArrayNotHasKey('secret', $this->appValues['alpha']);
+	}
+
+	public function testAGeneratedKeyAnAdministratorReplacedStaysAndIsNamed(): void {
+		$this->alpha(['appConfig' => [['key' => 'secret', 'generate' => true]]]);
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		// The administrator puts a real token there after the install.
+		$this->appValues['alpha']['secret'] = 'their-real-api-token';
+		$removed = $this->remover->remove(set: 'demo');
+
+		$this->assertSame('their-real-api-token', $this->appValues['alpha']['secret']);
+		$this->assertContains('app config alpha secret, which somebody changed after the install', $removed['left']);
+		$this->assertSame([], $removed['failed']);
+	}
+
+	public function testAGeneratedKeyThatHeldAnEmptyValueGetsItBack(): void {
+		$this->appValues['alpha'] = ['secret' => ''];
+		$this->alpha(['appConfig' => [['key' => 'secret', 'generate' => true]]]);
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->assertNotSame('', $this->appValues['alpha']['secret']);
+
+		$this->remover->remove(set: 'demo');
+
+		$this->assertArrayHasKey('secret', $this->appValues['alpha'], 'a key that was there stays there');
+		$this->assertSame('', $this->appValues['alpha']['secret']);
 	}
 
 	public function testTheInstanceAddressFillsAPlaceholderAndIsNeverEmpty(): void {
@@ -274,6 +309,29 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$removed = $this->remover->remove(set: 'demo');
 		$this->assertSame(1, $removed['removed']['organisations']);
 		$this->assertSame(['org-existing'], array_keys($this->organisations));
+	}
+
+	public function testAnOrganisationWithAMemberTheSetDidNotAddSurvivesRemoveAndIsNamed(): void {
+		$file = $this->castFile();
+		$file['cast']['openregisterOrganisations'] = [['key' => 'gemeente', 'name' => 'Gemeente Demo', 'slug' => 'demo']];
+		$this->app(app: 'openregister', fragment: $file);
+		$this->alpha(['objects' => [['key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['organization' => '{{organisation:demo}}']]]]);
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$this->accounts->users['real.person'] = ['displayName' => 'Real Person', 'email' => '', 'password' => 'x'];
+		$this->organisations['org-1']->setUsers(['sanne.devries', 'real.person']);
+
+		$removed = $this->remover->remove(set: 'demo');
+
+		$this->assertSame(0, $removed['removed']['organisations']);
+		$this->assertCount(1, $this->organisations, 'a tenant somebody joined is not deleted');
+		$this->assertSame(['OpenRegister organisation org-1, which has members the set did not add'], $removed['left']);
+		$this->assertSame([], $removed['failed']);
+		$this->assertSame(['org-1'], $this->record->read(set: 'demo')['organisations'], 'it stays in the record');
+
+		unset($this->accounts->users['real.person']);
+		$again = $this->remover->remove(set: 'demo');
+		$this->assertSame(1, $again['removed']['organisations'], 'once only its own accounts and leftovers of deleted ones are members it goes');
+		$this->assertSame([], $this->organisations);
 	}
 
 	public function testEveryCastMemberHasAStableContactsUid(): void {

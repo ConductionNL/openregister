@@ -34,6 +34,17 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetPaths
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetPeople
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetAppConfig
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetOrder
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetPrerequisites
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetProof
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRecord
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
  */
 class ExampleSetLiveCheckTest extends ExampleSetTestCase {
 	protected function setUp(): void {

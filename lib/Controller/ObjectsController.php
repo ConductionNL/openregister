@@ -31,6 +31,8 @@ use DateTime;
 use DateTimeImmutable;
 use OCA\OpenRegister\Controller\Trait\ResolvesRegisterAndSchemaTrait;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Service\Audit\ObjectHistoryForReaders;
+use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -4782,6 +4784,14 @@ class ObjectsController extends Controller {
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
 	 */
 	public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse {
+		// Whoever may read the object reads its history, redacted like the
+		// audit-trails route: a non-admin is answered by ObjectHistoryForReaders
+		// (404 when the object GET would be, the doelbinding guard, and no
+		// `session`, `request`, `ipAddress` or property the caller may not see).
+		if ($this->isCurrentUserAdmin() === false) {
+			return $this->logsForReader(register: $register, schema: $schema, id: $id);
+		}
+
 		// Set the register and schema context first.
 		$objectService->setRegister(register: $register);
 		$objectService->setSchema(schema: $schema);
@@ -4869,6 +4879,51 @@ class ObjectsController extends Controller {
 			)
 		);
 	}//end logs()
+
+	/**
+	 * One object's history for a non-admin, when they may read the object.
+	 *
+	 * @param string $register The register slug or identifier
+	 * @param string $schema   The schema slug or identifier
+	 * @param string $id       The object ID or UUID
+	 *
+	 * @return JSONResponse 200 with the redacted page, 404 when the object is not readable to this caller,
+	 *     or the doelbinding refusal.
+	 *
+	 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
+	 */
+	private function logsForReader(string $register, string $schema, string $id): JSONResponse {
+		$config = $this->getConfig(_register: $register, _schema: $schema);
+		$search = null;
+		if ($config['_search'] !== null) {
+			$search = (string)$config['_search'];
+		}
+
+		try {
+			$page = $this->container->get(ObjectHistoryForReaders::class)->page(
+				register: $register,
+				schema: $schema,
+				id: $id,
+				params: [
+					'limit' => $config['limit'],
+					'offset' => $config['offset'],
+					'page' => $config['page'],
+					'filters' => $config['filters'],
+					'sort' => $config['sort'],
+					'search' => $search,
+				]
+			);
+		} catch (PurposeRefusedException $refusal) {
+			return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
+		}
+
+		if ($page === null) {
+			// The answer the object GET gives a caller who may not read the object.
+			return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
+		}
+
+		return new JSONResponse(data: $page);
+	}//end logsForReader()
 
 	/**
 	 * Lock an object

@@ -161,6 +161,10 @@ class HistoryEntryRedactor {
 
 		$changed = $this->stripNestedWriteOnly(changed: $changed, schema: $schema);
 
+		if (is_array($changed['cascadeContext'] ?? null) === true) {
+			$changed['cascadeContext'] = $this->filterCascade(cascade: $changed['cascadeContext'], hidden: $hidden);
+		}
+
 		if (is_array($changed['@self'] ?? null) === false) {
 			return $changed;
 		}
@@ -177,6 +181,32 @@ class HistoryEntryRedactor {
 
 		return $changed;
 	}//end filterChanged()
+
+	/**
+	 * The cascade context of a referential-integrity entry, as a reader is given it.
+	 *
+	 * The context names the object whose delete cascaded into this one
+	 * (`triggerObject`, `triggerSchema`), and that object may be one the reader
+	 * may not read: the object read path would not tell them it exists. They are
+	 * withheld for every reader; the kind of cascade stays, and the property that
+	 * carried the reference stays unless the reader may not see that property.
+	 *
+	 * @param array              $cascade The `cascadeContext` of one entry.
+	 * @param array<int, string> $hidden  Withheld property names.
+	 *
+	 * @return array The context without the other object's identity.
+	 */
+	private function filterCascade(array $cascade, array $hidden): array {
+		$cascade['triggerObject'] = null;
+		$cascade['triggerSchema'] = null;
+
+		$property = ($cascade['property'] ?? null);
+		if (is_string($property) === true && in_array(explode('.', $property)[0], $hidden, true) === true) {
+			$cascade['property'] = null;
+		}
+
+		return $cascade;
+	}//end filterCascade()
 
 	/**
 	 * Strip declared nested write-only paths from the old and new values.

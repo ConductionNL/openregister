@@ -676,6 +676,26 @@ class WebhookServiceTest extends TestCase {
 		$this->assertSame(2, $enqueued[1][1]['webhook_id']);
 	}
 
+	public function testARefusedJobArgumentDoesNotStopTheOtherWebhooks(): void {
+		$event = $this->createMock(\OCP\EventDispatcher\Event::class);
+		$this->webhookMapper->method('findForEvent')->willReturn([$this->createTestWebhook(id: 1), $this->createTestWebhook(id: 2)]);
+
+		$enqueued = [];
+		$this->jobList->method('add')->willReturnCallback(function (string $job, array $arg) use (&$enqueued) {
+			if ($arg['webhook_id'] === 1) {
+				throw new \InvalidArgumentException("Background job arguments can't exceed 4000 characters (json encoded)");
+			}
+
+			$enqueued[] = $arg['webhook_id'];
+		});
+		$this->logger->expects($this->atLeastOnce())->method('error')
+			->with($this->stringContains('could not be enqueued'), $this->callback(static fn (array $context): bool => $context['webhook_id'] === 1));
+
+		$this->service->dispatchEvent($event, 'SomeEvent', ['test' => str_repeat('x', 5000)]);
+
+		$this->assertSame([2], $enqueued, 'the refusal is contained to the one delivery');
+	}
+
 	// ─── deliverWebhook tests ────────────────────────────────────────
 
 	public function testDeliverWebhookReturnsFalseWhenDisabled(): void {

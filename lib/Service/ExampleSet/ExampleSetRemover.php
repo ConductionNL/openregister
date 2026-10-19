@@ -131,13 +131,14 @@ class ExampleSetRemover {
 		$record['memberships'] = array_values($record['memberships']);
 		$this->record->write(set: $set, record: $record);
 
+		$accounts = array_map('strval', array_keys($record['users']));
 		$record = $this->removeGroupsAndAccounts(set: $set, record: $record, report: $report);
 		$this->record->write(set: $set, record: $record);
 
 		// Last: the set's own objects may point into a register it imported,
 		// and may belong to an organisation it created.
 		$record = $this->removeImports(set: $set, record: $record, report: $report);
-		$this->removeOrganisations(set: $set, record: $record, report: $report);
+		$this->removeOrganisations(set: $set, record: $record, report: $report, accounts: $accounts);
 
 		return $report;
 	}//end remove()
@@ -147,15 +148,21 @@ class ExampleSetRemover {
 	 *
 	 * @param string               $set    The set id.
 	 * @param array<string, mixed> $record The record.
-	 * @param array<string, mixed> $report The report; counts and failures are added.
+	 * @param array<string, mixed> $report The report; counts, paths left as somebody changed them, and failures.
 	 *
 	 * @return array<string, mixed> The record without the reverted changes.
 	 */
 	private function revertChanges(string $set, array $record, array &$report): array {
 		foreach (array_reverse($record['changes'], true) as $name => $entry) {
-			if ($this->changes->revert(entry: $entry) === false) {
+			$reverted = $this->changes->revert(entry: $entry);
+			if ($reverted['ok'] === false) {
 				$report['failed'][] = 'change '.$name.' on '.$entry['register'].' '.$entry['schema'].' ('.$entry['id'].')';
 				continue;
+			}
+
+			foreach ($reverted['left'] as $path) {
+				$report['left'][] = 'change '.$name.' on '.$entry['register'].' '.$entry['schema'].' ('.$entry['id'].'), path '.$path
+					.', which somebody changed after the install';
 			}
 
 			unset($record['changes'][$name]);
@@ -168,6 +175,10 @@ class ExampleSetRemover {
 
 	/**
 	 * Remove the register imports this set made.
+	 *
+	 * The register itself and its schemas stay, as they may hold other people's
+	 * data; the record keeps the slug without jobs so that an install imports
+	 * the register's data again (REQ-EXS-009).
 	 *
 	 * @param string               $set    The set id.
 	 * @param array<string, mixed> $record The record.
@@ -188,10 +199,9 @@ class ExampleSetRemover {
 				$report['removed']['register imports']++;
 			}
 
+			// A slug whose jobs are all gone stays with no jobs: the register and its schemas remain on the instance, but
+			// the data the import made does not, and the next install must import it again.
 			$record['registers'][$slug] = $left;
-			if ($left === []) {
-				unset($record['registers'][$slug]);
-			}
 
 			$this->record->write(set: $set, record: $record);
 		}//end foreach
@@ -302,16 +312,30 @@ class ExampleSetRemover {
 	 *
 	 * @param string               $set    The set id.
 	 * @param array<string, mixed> $record The record.
-	 * @param array<string, mixed> $report The report; counts and failures are added.
+	 * @param array<string, mixed> $report The report; counts, organisations kept and failures are added.
+	 * @param array<int, string>   $accounts The accounts the record held before remove deleted them; they, and any
+	 *                                       member that is no account any more, do not keep an organisation.
 	 *
 	 * @return void
 	 */
-	private function removeOrganisations(string $set, array $record, array &$report): void {
+	private function removeOrganisations(string $set, array $record, array &$report, array $accounts): void {
 		$left = [];
 		foreach ($record['organisations'] as $uuid) {
-			if ($this->instance->delete(uuid: $uuid) === false) {
+			$outcome = $this->instance->delete(
+				uuid: $uuid,
+				ignorable: fn (string $member): bool => (
+					in_array($member, $accounts, true) === true || $this->accounts->userExists(uid: $member) === false
+				)
+			);
+			if ($outcome === ExampleSetInstance::FAILED) {
 				$report['failed'][] = 'OpenRegister organisation '.$uuid;
 				$left[]             = $uuid;
+				continue;
+			}
+
+			if ($outcome === ExampleSetInstance::LEFT) {
+				$report['left'][] = 'OpenRegister organisation '.$uuid.', which has members the set did not add';
+				$left[]           = $uuid;
 				continue;
 			}
 

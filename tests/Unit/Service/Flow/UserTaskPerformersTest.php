@@ -63,6 +63,7 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Event\AgentRunRequestedEvent
  * @uses \OCA\OpenRegister\Service\Task\TaskFormReader
  * @uses \OCA\OpenRegister\Db\Task
+ * @uses \OCA\OpenRegister\Service\Form\FormDestinationValidator
  */
 final class UserTaskPerformersTest extends TestCase {
 

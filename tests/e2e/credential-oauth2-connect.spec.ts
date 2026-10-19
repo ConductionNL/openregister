@@ -30,7 +30,7 @@
  * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-re-authorisation-overrides-the-same-credential
  * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-disconnecting-revokes-upstream-where-it-can-and-disables-locally
  * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
- * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-personal-settings
+ * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-user-settings
  */
 import { expect, test } from '@playwright/test'
 

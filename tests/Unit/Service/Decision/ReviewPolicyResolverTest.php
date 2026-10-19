@@ -14,7 +14,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Decision\ReviewPolicyResolver;
-use OCA\OpenRegister\Service\File\FolderManagementHandler;
+use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
@@ -32,6 +32,9 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Service\Settings\FileSettingsHandler
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @uses \OCA\OpenRegister\Db\EntityRelation
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class ReviewPolicyResolverTest extends TestCase {
 
@@ -40,10 +43,12 @@ class ReviewPolicyResolverTest extends TestCase {
 	 *
 	 * @param array<string, mixed>|null $schemaConfiguration The schema's configuration, or null when it cannot be read.
 	 * @param array<string, mixed>      $fileSettings        The stored file settings.
+	 * @param bool                      $lookupFails         Whether the file-to-object lookup throws.
+	 * @param bool                      $objectLookupFails   Whether the object lookup behind an existing file throws.
 	 *
 	 * @return ReviewPolicyResolver The resolver.
 	 */
-	private function resolver(?array $schemaConfiguration, array $fileSettings=[]): ReviewPolicyResolver {
+	private function resolver(?array $schemaConfiguration, array $fileSettings=[], bool $lookupFails=false, bool $objectLookupFails=false): ReviewPolicyResolver {
 		$schemas = $this->createMock(SchemaMapper::class);
 		if ($schemaConfiguration === null) {
 			$schemas->method('find')->willThrowException(new RuntimeException('gone'));
@@ -64,21 +69,31 @@ class ReviewPolicyResolverTest extends TestCase {
 		);
 
 		$file = $this->createMock(File::class);
+		$loose = $this->createMock(File::class);
 		$root = $this->createMock(IRootFolder::class);
-		$root->method('getFirstNodeById')->willReturnCallback(static fn (int $id) => ($id === 99 ? $file : null));
+		if ($lookupFails === true) {
+			$root->method('getFirstNodeById')->willThrowException(new RuntimeException('lookup failed'));
+		} else {
+			$root->method('getFirstNodeById')->willReturnCallback(static fn (int $id) => ([99 => $file, 50 => $loose][$id] ?? null));
+		}
 
 		$object = new ObjectEntity();
 		$object->setRegister('3');
 		$object->setSchema('12');
 		$object->setUuid('doc-1');
-		$folders = $this->createMock(FolderManagementHandler::class);
-		$folders->method('getObjectForFile')->willReturn($object);
+		$owners = $this->createMock(ManagedFileOwnerLookup::class);
+		if ($objectLookupFails === true) {
+			$owners->method('find')->willThrowException(new RuntimeException('database is gone'));
+		} else {
+			// File 99 belongs to `doc-1`; file 50 exists and belongs to no object.
+			$owners->method('find')->willReturnCallback(static fn ($node) => ($node === $file ? $object : null));
+		}
 
 		return new ReviewPolicyResolver(
 			schemaMapper: $schemas,
 			fileSettings: new FileSettingsHandler(appConfig: $appConfig),
 			rootFolder: $root,
-			folders: $folders,
+			owners: $owners,
 			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end resolver()
@@ -122,6 +137,11 @@ class ReviewPolicyResolverTest extends TestCase {
 		self::assertTrue($resolver->forRelation(relation: $orphan)['policy']->isDeciderOwned());
 
 		self::assertFalse($this->resolver(schemaConfiguration: [])->forRelation(relation: $orphan)['policy']->isDeciderOwned());
+
+		// A file that cannot be found at all has no known owner: closed, never the open default.
+		$gone = new EntityRelation();
+		$gone->setFileId(404);
+		self::assertTrue($this->resolver(schemaConfiguration: [])->forRelation(relation: $gone)['policy']->isDeciderOwned());
 	}//end testWithoutADeclarationTheInstanceDefaultApplies()
 
 	/**
@@ -137,5 +157,40 @@ class ReviewPolicyResolverTest extends TestCase {
 
 		self::assertTrue($policy->isDeciderOwned());
 		self::assertSame([], $policy->getSupervisors());
+		self::assertTrue($policy->hidesOthers());
 	}//end testAnUnreadableSchemaFailsClosed()
+
+	/**
+	 * A file whose object cannot be looked up is decider-owned and hidden, not the open instance default.
+	 *
+	 * @return void
+	 */
+	public function testAFailedFileLookupFailsClosed(): void {
+		$relation = new EntityRelation();
+		$relation->setId(7);
+		$relation->setFileId(99);
+
+		$resolved = $this->resolver(schemaConfiguration: [], lookupFails: true)->forRelation(relation: $relation);
+
+		self::assertTrue($resolved['policy']->isDeciderOwned());
+		self::assertTrue($resolved['policy']->hidesOthers());
+		self::assertSame([], $resolved['policy']->getSupervisors());
+		self::assertArrayNotHasKey('lookupFailed', $resolved['subject']);
+	}//end testAFailedFileLookupFailsClosed()
+
+	/**
+	 * An object lookup that fails behind an existing file fails closed, like a failed file lookup.
+	 *
+	 * @return void
+	 */
+	public function testAFailedObjectLookupBehindAnExistingFileFailsClosed(): void {
+		$relation = new EntityRelation();
+		$relation->setId(7);
+		$relation->setFileId(99);
+
+		$resolved = $this->resolver(schemaConfiguration: [], objectLookupFails: true)->forRelation(relation: $relation);
+
+		self::assertTrue($resolved['policy']->isDeciderOwned());
+		self::assertTrue($resolved['policy']->hidesOthers());
+	}//end testAFailedObjectLookupBehindAnExistingFileFailsClosed()
 }//end class

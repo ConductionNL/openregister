@@ -235,7 +235,7 @@ final class ExportProfileServiceTest extends TestCase {
 	 * @return array<string, array{0: mixed}>
 	 */
 	public static function badRetentions(): array {
-		return ['zero' => [0], 'beyond the cap' => [91], 'a string' => ['30']];
+		return ['zero' => [0], 'negative' => [-5], 'beyond the cap' => [91], 'a string' => ['30'], 'not a number' => ['abc'], 'a fraction' => [1.5]];
 	}//end badRetentions()
 
 	public function testSomebodyElsesProfileIsRefused(): void {

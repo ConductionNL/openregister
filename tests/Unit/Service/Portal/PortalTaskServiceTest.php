@@ -55,6 +55,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Db\PortalTaskDelivery
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Service\Task\TaskTemporalProjection
+ * @uses \OCA\OpenRegister\Service\Task\TaskBlockerGuard
  */
 class PortalTaskServiceTest extends TestCase {
 
@@ -509,4 +510,76 @@ class PortalTaskServiceTest extends TestCase {
 		$task->setMetadata([PortalTaskService::COMPLETE_VIA => ['app' => ' dossiq ', 'action' => 'completeChecklistTask']]);
 		$this->assertSame(['app' => 'dossiq', 'action' => 'completeChecklistTask'], $this->service->completeVia(task: $task));
 	}//end testOnlyAWholeCompleteViaCounts()
+
+	/**
+	 * A task held back by an open blocker cannot be completed by its party, and nothing is stored.
+	 *
+	 * @return void
+	 */
+	public function testATaskWaitingOnAnOpenBlockerCannotBeCompletedThroughThePortal(): void {
+		$task = $this->task(['required' => false]);
+		$task->setBlockedBy('t-blocker');
+		$this->openForRuns($task);
+		$blocker = new Task();
+		$blocker->setUuid('t-blocker');
+		$blocker->setIsTerminal(false);
+		$this->mapper->method('findByUuid')->with('t-blocker')->willReturn($blocker);
+		$this->files->expects($this->never())->method('addFile');
+		$this->tasks->expects($this->never())->method('complete');
+
+		$this->expectException(DoesNotExistException::class);
+		$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1');
+	}//end testATaskWaitingOnAnOpenBlockerCannotBeCompletedThroughThePortal()
+
+	/**
+	 * Once the blocker is closed (or gone) the task is the party's again.
+	 *
+	 * @return void
+	 */
+	public function testATaskWhoseBlockerIsClosedIsCompletedAsBefore(): void {
+		$task = $this->task(['required' => false]);
+		$task->setBlockedBy('t-blocker');
+		$this->openForRuns($task);
+		$blocker = new Task();
+		$blocker->setUuid('t-blocker');
+		$blocker->setIsTerminal(true);
+		$this->mapper->method('findByUuid')->willReturn($blocker);
+		$this->tasks->expects($this->once())->method('complete')->willReturn($task);
+
+		$this->service->complete(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1');
+	}//end testATaskWhoseBlockerIsClosedIsCompletedAsBefore()
+
+	/**
+	 * A blocked portal task is not shown by its uuid either: it reads like one that does not exist.
+	 *
+	 * @return void
+	 */
+	public function testABlockedPortalTaskIsNotShown(): void {
+		$task = $this->task();
+		$task->setBlockedBy('t-blocker');
+		$this->tasks->method('get')->willReturn($task);
+		$blocker = new Task();
+		$blocker->setIsTerminal(false);
+		$this->mapper->method('findByUuid')->willReturn($blocker);
+
+		$this->expectException(DoesNotExistException::class);
+		$this->service->show(subject: new PortalSubject(subjectRef: 'bsn-1'), uuid: 't-1');
+	}//end testABlockedPortalTaskIsNotShown()
+
+	/**
+	 * The list reads its page with the blocker exclusion, so no row runs its own blocker query.
+	 *
+	 * @return void
+	 */
+	public function testThePortalListMarksNoRowBlockedAndAsksForNoBlockerPerRow(): void {
+		$task = $this->task();
+		$this->mapper->method('findOpenExternalForParty')->willReturn([$task]);
+		$this->mapper->method('countOpenExternalForParty')->willReturn(1);
+		$this->mapper->expects($this->never())->method('findByUuid');
+
+		$page = $this->service->listForSubject(subject: new PortalSubject(subjectRef: 'bsn-1'));
+
+		$this->assertSame(1, $page['total']);
+		$this->assertFalse($page['results'][0]['blocked']);
+	}//end testThePortalListMarksNoRowBlockedAndAsksForNoBlockerPerRow()
 }//end class

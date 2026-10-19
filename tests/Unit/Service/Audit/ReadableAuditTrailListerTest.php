@@ -35,13 +35,27 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister;
+use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCP\IAppConfig;
+use OCP\IGroupManager;
+use OCP\IUser;
+use OCP\IUserManager;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Audit\ReadableAuditTrailLister
  * @uses \OCA\OpenRegister\Db\AuditTrail
  * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\Object\DraftCallerRule
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\Object\PermissionHandler
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class ReadableAuditTrailListerTest extends TestCase {
 
@@ -183,6 +197,88 @@ class ReadableAuditTrailListerTest extends TestCase {
 		$this->assertContains(self::READABLE, $uuids, 'The entry on the readable object was dropped.');
 		$this->assertCount(1, $page['results']);
 	}//end testAnUnreadableObjectsEntryIsAbsent()
+
+	/**
+	 * A lister over the REAL permission handler, for one caller and one draft owned by somebody else.
+	 *
+	 * @param string $caller The signed-in user.
+	 *
+	 * @return array<int, string> The uuids of the entries the caller gets back.
+	 */
+	private function draftEntriesFor(string $caller): array {
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn($caller);
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+		$userManager = $this->createMock(IUserManager::class);
+		$userManager->method('get')->willReturn($user);
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('getUserGroupIds')->willReturn(['staff']);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new \RuntimeException('not available'));
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueBool')->willReturnCallback(
+			static fn (string $app, string $key, bool $default=false): bool => $default
+		);
+
+		// The schema lets every signed-in user read: only the draft rule can refuse.
+		$schema = new Schema();
+		$schema->setId(7);
+		$schema->setAuthorization(['read' => ['authenticated']]);
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('find')->willReturn($schema);
+
+		$draft = $this->object(uuid: 'obj-draft');
+		$draft->setStatus('draft');
+		$draft->setOwner('alice');
+
+		$objectMapper = $this->createMock(MagicMapper::class);
+		$objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$draft]);
+		$auditMapper = $this->createMock(AuditTrailMapper::class);
+		$auditMapper->method('findAll')->willReturnCallback(
+			fn (?int $limit = null, ?int $offset = null): array => (($offset !== null && $offset > 0) ? [] : [$this->entry(objectUuid: 'obj-draft', action: 'create')])
+		);
+
+		$lister = new ReadableAuditTrailLister(
+			auditTrailMapper: $auditMapper,
+			objectMapper: $objectMapper,
+			schemaMapper: $schemaMapper,
+			permissionHandler: new PermissionHandler(
+				userSession: $session,
+				userManager: $userManager,
+				groupManager: $groupManager,
+				schemaMapper: $schemaMapper,
+				objectEntityMapper: $objectMapper,
+				conditionMatcher: $this->createMock(ConditionMatcher::class),
+				appConfig: $appConfig,
+				logger: $this->createMock(LoggerInterface::class),
+				container: $container,
+			)
+		);
+
+		return array_column($lister->page(userId: $caller, limit: 20)['results'], 'objectUuid');
+	}//end draftEntriesFor()
+
+	/**
+	 * What a user typed into a draft is not in the readable trail of anybody else (the draft rule of hasPermission()).
+	 *
+	 * Goes red without the draft rule: the schema lets bob read, and the entry
+	 * holds the draft's values in its `changed` column.
+	 *
+	 * @return void
+	 */
+	public function testSomebodyElsesDraftHasNoEntriesInTheTrail(): void {
+		$this->assertSame([], $this->draftEntriesFor(caller: 'bob'), "bob got the audit entries of alice's draft.");
+	}//end testSomebodyElsesDraftHasNoEntriesInTheTrail()
+
+	/**
+	 * The owner still reads the entries of their own draft.
+	 *
+	 * @return void
+	 */
+	public function testTheOwnerStillGetsTheEntriesOfTheirDraft(): void {
+		$this->assertSame(['obj-draft'], $this->draftEntriesFor(caller: 'alice'));
+	}//end testTheOwnerStillGetsTheEntriesOfTheirDraft()
 
 	/**
 	 * An anonymous caller gets nothing, and the mapper is never asked.

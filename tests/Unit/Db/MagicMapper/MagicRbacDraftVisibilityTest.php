@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace Unit\Db\MagicMapper;
 
+use OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\RbacResolvers;
 use OCA\OpenRegister\Db\Schema;
@@ -47,7 +48,7 @@ class MagicRbacDraftVisibilityTest extends TestCase {
 	 *
 	 * @param array<string> $groups The caller's groups.
 	 */
-	private function handlerFor(string $userId, array $groups = []): MagicRbacHandler {
+	private function handlerFor(string $userId, array $groups = [], ?MagicMetadataColumnHealer $healer = null): MagicRbacHandler {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn($userId);
 		$userSession = $this->createMock(IUserSession::class);
@@ -63,7 +64,9 @@ class MagicRbacDraftVisibilityTest extends TestCase {
 			$this->createMock(ConditionMatcher::class),
 			$this->createMock(ContainerInterface::class),
 			new NullLogger(),
-			new RbacResolvers(objectScopeResolver: null, objectGrantResolver: null, denyResolver: new DenyResolver(new DenyEntryMatcher()))
+			new RbacResolvers(objectScopeResolver: null, objectGrantResolver: null, denyResolver: new DenyResolver(new DenyEntryMatcher())),
+			null,
+			$healer
 		);
 	}//end handlerFor()
 
@@ -102,6 +105,34 @@ class MagicRbacDraftVisibilityTest extends TestCase {
 
 		$this->assertStringContainsString("_status <> 'draft'", $predicate);
 	}//end testAnOpenSchemaStillHidesOthersDrafts()
+
+	/**
+	 * A table that could not be given its `_status` column cannot hold a draft: the predicate leaves it out, and keeps it for a healthy table.
+	 *
+	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 */
+	public function testADegradedTableGetsNoDraftPredicate(): void {
+		$healer = $this->createMock(MagicMetadataColumnHealer::class);
+		$healer->method('missingFor')->willReturnCallback(
+			static fn (string $table): array => ($table === 'openregister_table_1_2' ? ['_status'] : [])
+		);
+		$handler = $this->handlerFor('alice', ['behandelaars'], $healer);
+		$schema = $this->schema(['read' => ['behandelaars']]);
+
+		$degraded = (string)$handler->buildRbacRowPredicateSql(schema: $schema, tableName: 'openregister_table_1_2');
+		$this->assertStringNotContainsString('_status', $degraded);
+		$this->assertStringContainsString("_owner = 'alice'", $degraded);
+
+		$healthy = (string)$handler->buildRbacRowPredicateSql(schema: $schema, tableName: 'openregister_table_1_3');
+		$this->assertStringContainsString("(_status IS NULL OR _status <> 'draft')", $healthy);
+
+		// A caller that names no table keeps the predicate: narrower, so safe.
+		$unnamed = (string)$handler->buildRbacRowPredicateSql(schema: $schema);
+		$this->assertStringContainsString('_status', $unnamed);
+
+		$aliased = $handler->buildRbacPredicateForAlias(schema: $schema, alias: 'rel0', tableName: 'openregister_table_1_2');
+		$this->assertStringNotContainsString('_status', $aliased);
+	}//end testADegradedTableGetsNoDraftPredicate()
 
 	/**
 	 * A schema with draftsVisible shows drafts to everyone who may read; an admin is never restricted.

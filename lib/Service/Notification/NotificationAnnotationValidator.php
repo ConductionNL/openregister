@@ -845,7 +845,20 @@ final class NotificationAnnotationValidator {
 				}
 
 				if ($kind === ReferencedAddressNotifier::KIND) {
-					foreach ($this->emailRecipientErrors(recipient: $recipient, spec: $spec, propKeys: $propKeys, name: (string)$name, index: (int)$i) as $error) {
+					$declared = [];
+					if (is_array($properties) === true) {
+						$declared = $properties;
+					}
+
+					$emailErrors = $this->emailRecipientErrors(
+						recipient: $recipient,
+						spec: $spec,
+						propKeys: $propKeys,
+						properties: $declared,
+						name: (string)$name,
+						index: (int)$i
+					);
+					foreach ($emailErrors as $error) {
 						$errors[] = $error;
 					}
 				}
@@ -915,14 +928,18 @@ final class NotificationAnnotationValidator {
 	/**
 	 * Errors for one `email` recipient entry (REQ-ERO-007).
 	 *
-	 * The first path segment must be a declared property, the path may follow
-	 * at most ReferencedAddressNotifier::MAX_HOPS references, and the rule must
+	 * The first path segment must be a declared property, and when the path
+	 * goes through a reference that property must declare the `$ref` the
+	 * notifier compares the referenced object's schema with (without it the
+	 * rule would be saved and then never send); the path may follow at most
+	 * ReferencedAddressNotifier::MAX_HOPS references, and the rule must
 	 * send e-mail: an `email` entry on a rule without the email channel would
 	 * reach nobody, every time, in silence.
 	 *
 	 * @param array<string, mixed> $recipient The entry.
 	 * @param array<string, mixed> $spec      The rule.
 	 * @param array<int, string>   $propKeys  The schema's declared properties.
+	 * @param array<string, mixed> $properties The schema's property definitions.
 	 * @param string               $name      The rule name, for messages.
 	 * @param int                  $index     The entry's index, for messages.
 	 *
@@ -930,7 +947,7 @@ final class NotificationAnnotationValidator {
 	 *
 	 * @spec openspec/specs/external-recipient-opt-out/spec.md#requirement-an-email-recipient-reads-its-address-through-a-reference-req-ero-007
 	 */
-	private function emailRecipientErrors(array $recipient, array $spec, array $propKeys, string $name, int $index): array {
+	private function emailRecipientErrors(array $recipient, array $spec, array $propKeys, array $properties, string $name, int $index): array {
 		$errors = [];
 		$path = trim((string)($recipient['field'] ?? ''));
 		$segments = array_values(array_filter(explode('.', $path), static fn (string $s): bool => $s !== ''));
@@ -955,6 +972,19 @@ final class NotificationAnnotationValidator {
 					$segments[0]
 				),
 			];
+		}
+
+		if (count($segments) > 1 && in_array($segments[0], $propKeys, true) === true) {
+			$errors = array_merge(
+				$errors,
+				$this->referenceWithoutRefErrors(
+					declared: ($properties[$segments[0]] ?? null),
+					path: $path,
+					first: $segments[0],
+					name: $name,
+					index: $index
+				)
+			);
 		}
 
 		if (count($segments) > (ReferencedAddressNotifier::MAX_HOPS + 1)) {
@@ -983,6 +1013,40 @@ final class NotificationAnnotationValidator {
 
 		return $errors;
 	}//end emailRecipientErrors()
+
+	/**
+	 * The error for an e-mail path whose first segment goes through a reference that declares no `$ref`.
+	 *
+	 * @param mixed  $declared The property definition of the first segment.
+	 * @param string $path     The whole path, for the message.
+	 * @param string $first    The first segment.
+	 * @param string $name     The rule name, for messages.
+	 * @param int    $index    The entry's index, for messages.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function referenceWithoutRefErrors(mixed $declared, string $path, string $first, string $name, int $index): array {
+		$ref = null;
+		if (is_array($declared) === true) {
+			$ref = ($declared['$ref'] ?? null);
+		}
+
+		if (is_string($ref) === true && trim($ref) !== '') {
+			return [];
+		}
+
+		return [[
+			'code' => 'notification-recipient-email-reference-has-no-ref',
+			'message' => sprintf(
+				'Notification "%s" recipient[%d] field "%s" goes through "%s", which declares no `$ref`: '
+				. 'the referenced object cannot be checked against a schema, so the rule would never send.',
+				$name,
+				$index,
+				$path,
+				$first
+			),
+		]];
+	}//end referenceWithoutRefErrors()
 
 	/**
 	 * Validate the optional `actions[]` array (foundation contract / ADR-031).

@@ -124,6 +124,19 @@ class DeleteFileHandlerTest extends TestCase {
 	// =========================================================================
 
 	/**
+	 * A delete that returns without removing the node (an aborted operation) is reported as not deleted.
+	 */
+	public function testADeleteThatLeavesTheNodeBehindIsReportedFalse(): void {
+		$file = $this->createMock(File::class);
+		$file->method('getId')->willReturn(42);
+		$file->method('isDeletable')->willReturn(true);
+		$file->expects($this->once())->method('delete');
+		$this->rootFolder->method('getFirstNodeById')->with(42)->willReturn($file);
+
+		$this->assertFalse($this->handler->deleteFile(file: $file, object: $this->createMock(ObjectEntity::class)));
+	}//end testADeleteThatLeavesTheNodeBehindIsReportedFalse()
+
+	/**
 	 * A Node argument MUST be deleted directly, never cast to string.
 	 *
 	 * The docblock has always promised Node|string|int. The handler cast the

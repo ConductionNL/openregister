@@ -356,7 +356,7 @@ class AttributeToolScannerTest extends TestCase {
 	}//end testUndeclaredAnnotationsStayOmitted()
 
 	public function testMalformedAnnotationsAreRejectedAndLogged(): void {
-		$this->logger->expects($this->once())
+		$this->logger->expects($this->exactly(2))
 			->method('warning')
 			->with($this->stringContains('unrecognised `annotations`'));
 
@@ -367,4 +367,23 @@ class AttributeToolScannerTest extends TestCase {
 		$this->assertArrayHasKey('reassignCase', $descriptors);
 
 	}//end testMalformedAnnotationsAreRejectedAndLogged()
+
+	public function testAReservedMcpHintKeyInAnnotationsIsRejectedAndLogged(): void {
+		$logged = [];
+		$this->logger->method('warning')->willReturnCallback(
+			function (string $message, array $context = []) use (&$logged): void {
+				$logged[] = ['message' => $message, 'context' => $context];
+			}
+		);
+
+		$descriptors = $this->scanAnnotationFixture();
+
+		$this->assertArrayNotHasKey('hintClaimingTool', $descriptors);
+		$this->assertArrayHasKey('fileCase', $descriptors);
+		$named = array_values(array_filter($logged, static fn (array $entry): bool => (($entry['context']['method'] ?? '') === 'hintClaimingTool')));
+		$this->assertCount(1, $named);
+		$this->assertStringContainsString('unrecognised `annotations`', $named[0]['message']);
+		$this->assertSame('readOnlyHint', $named[0]['context']['annotations']);
+
+	}//end testAReservedMcpHintKeyInAnnotationsIsRejectedAndLogged()
 }//end class

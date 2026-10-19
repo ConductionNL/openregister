@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\OrganisationUsageService;
+use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\AppFramework\Controller;
@@ -117,6 +118,13 @@ class OrganisationController extends Controller {
 	private IGroupManager $groupManager;
 
 	/**
+	 * Records a change of who holds the special right `grant_manage`.
+	 *
+	 * @var GrantChangeAuditor|null
+	 */
+	private ?GrantChangeAuditor $grantAuditor;
+
+	/**
 	 * OrganisationController constructor
 	 *
 	 * @param string $appName Application name
@@ -129,6 +137,7 @@ class OrganisationController extends Controller {
 	 * @param IUserSession $userSession User session for authorization checks
 	 * @param IGroupManager $groupManager Group manager for admin checks
 	 * @param OrganisationUsageService $usageService Measures an organisation's usage
+	 * @param GrantChangeAuditor|null $grantAuditor Records a change of who holds the special right `grant_manage`. Null only in legacy fixtures.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI constructor: each argument is a collaborator an endpoint uses.
 	 *
@@ -145,8 +154,10 @@ class OrganisationController extends Controller {
 		IUserSession $userSession,
 		IGroupManager $groupManager,
 		private readonly OrganisationUsageService $usageService,
+		?GrantChangeAuditor $grantAuditor = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
+		$this->grantAuditor = $grantAuditor;
 		$this->organisationService = $organisationService;
 		$this->organisationMapper = $organisationMapper;
 		$this->logger = $logger;
@@ -722,6 +733,7 @@ class OrganisationController extends Controller {
 
 			$organisation = $this->organisationMapper->findByUuid($uuid);
 			$data = $this->extractRequestData();
+			$grantManageBefore = $this->grantManageOf(organisation: $organisation);
 
 			// A member may edit the organisation; only its owner or an administrator
 			// may decide who manages the grants on its records.
@@ -754,11 +766,42 @@ class OrganisationController extends Controller {
 				return $parentUpdateResponse;
 			}
 
-			return $this->saveAndReturnOrganisation(organisation: $organisation);
+			$response = $this->saveAndReturnOrganisation(organisation: $organisation);
+
+			// Who holds the right to decide who reads a record is the one change
+			// here that must be on the trail, whoever made it.
+			$grantManageAfter = $this->grantManageOf(organisation: $organisation);
+			if ($grantManageAfter !== $grantManageBefore) {
+				$this->grantAuditor?->recordSpecialRight(
+					organisationUuid: $uuid,
+					before: $grantManageBefore,
+					after: $grantManageAfter
+				);
+			}
+
+			return $response;
 		} catch (Exception $e) {
 			return $this->handleUpdateError(uuid: $uuid, exception: $e);
 		}//end try
 	}//end update()
+
+	/**
+	 * The groups that hold the special right `grant_manage` on an organisation's records.
+	 *
+	 * @param object $organisation Organisation entity.
+	 *
+	 * @return array<int|string, mixed> The stored list, empty when there is none.
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
+	 */
+	private function grantManageOf(object $organisation): array {
+		$list = ($organisation->getAuthorization()[OrganisationSpecialRights::GRANT_MANAGE] ?? []);
+		if (is_array($list) === false) {
+			return [];
+		}
+
+		return $list;
+	}//end grantManageOf()
 
 	/**
 	 * Patch organisation details (alias for update)

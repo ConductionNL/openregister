@@ -63,6 +63,13 @@ class FormDependentsCheck {
 	public const SUBJECT = 'form_unpublished';
 
 	/**
+	 * The schemas whose save a caller is judging itself, by id, for this request.
+	 *
+	 * @var array<int, true>
+	 */
+	private array $claimed = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IEventDispatcher         $dispatcher    Asks the owning apps for their forms.
@@ -80,6 +87,39 @@ class FormDependentsCheck {
 	) {
 
 	}//end __construct()
+
+	/**
+	 * Say that the caller of this save judges the dependent forms itself.
+	 *
+	 * The schema API assesses BEFORE the write, so it can refuse the save, and
+	 * applies after it. Every other writer of a schema (the configuration
+	 * importer, the import endpoint, the AI and MCP tools) has no response to
+	 * refuse, and is covered by {@see \OCA\OpenRegister\Listener\FormDestinationSchemaListener}, which
+	 * skips a save its caller has claimed so no form is unpublished or
+	 * announced twice.
+	 *
+	 * @param int $schemaId The schema about to be saved.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
+	 */
+	public function claim(int $schemaId): void {
+		$this->claimed[$schemaId] = true;
+	}//end claim()
+
+	/**
+	 * Whether the caller of this schema's save judges the dependent forms itself.
+	 *
+	 * @param int $schemaId The schema.
+	 *
+	 * @return bool True when it was claimed in this request.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
+	 */
+	public function isClaimed(int $schemaId): bool {
+		return isset($this->claimed[$schemaId]);
+	}//end isClaimed()
 
 	/**
 	 * Judge every published form that submits into the proposed schema.
@@ -151,13 +191,22 @@ class FormDependentsCheck {
 	 * @param string                           $schema   The schema slug.
 	 * @param array<int, array<string, mixed>> $findings Why.
 	 *
-	 * @return string `unpublished`, or `unpublish-failed` when the owning app could not.
+	 * @return string `unpublished`, `unpublish-failed` when the owning app could not, or
+	 *                `unpublish-unavailable` when it registered the form without a way to unpublish it.
 	 */
 	private function unpublish(FormDependent $form, string $schema, array $findings): string {
+		if ($form->unpublish === null) {
+			// Nothing was unpublished: say so, and do not tell the author it was.
+			$this->logger->warning(
+				message: '[FormDependentsCheck] A form broken by a schema change has no way to be unpublished; it stays published',
+				context: ['form' => $form->id, 'app' => $form->app, 'schema' => $schema]
+			);
+
+			return 'unpublish-unavailable';
+		}
+
 		try {
-			if ($form->unpublish !== null) {
-				($form->unpublish)();
-			}
+			($form->unpublish)();
 		} catch (Throwable $exception) {
 			$this->logger->error(
 				message: '[FormDependentsCheck] An owning app could not unpublish a form broken by a schema change',

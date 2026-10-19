@@ -47,6 +47,13 @@ use Psr\Log\NullLogger;
 /**
  * @covers \OCA\OpenRegister\Controller\ViewsController
  * @covers \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
+ * @uses \OCA\OpenRegister\Db\View
+ * @uses \OCA\OpenRegister\Exception\InvalidViewAlertException
+ * @uses \OCA\OpenRegister\Exception\ViewAlertRecipientException
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewShareListValidator
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewShareResolver
+ * @uses \OCA\OpenRegister\Service\ViewService
+ * @uses \OCA\OpenRegister\Service\View\ViewAlert
  */
 class ViewAlertRecipientsTest extends TestCase {
 

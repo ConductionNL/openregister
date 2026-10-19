@@ -39,6 +39,10 @@ use RuntimeException;
  * A blind second review: another reviewer's decision is listed but not shown.
  *
  * @covers \OCA\OpenRegister\Service\Decision\DecisionVisibility
+ * @uses \OCA\OpenRegister\Db\Decision
+ * @uses \OCA\OpenRegister\Db\EntityRelation
+ * @uses \OCA\OpenRegister\Event\DecisionVisibilityRequestedEvent
+ * @uses \OCA\OpenRegister\Service\Decision\ReviewPolicy
  */
 class HiddenDecisionTest extends TestCase {
 
@@ -119,6 +123,8 @@ class HiddenDecisionTest extends TestCase {
 		$relation->setPositionEnd(20);
 		$relation->setBases(['5.1.2e']);
 		$relation->setSkipAnonymization(false);
+		$relation->setAnonymized(true);
+		$relation->setAnonymizedValue('[REDACTED]');
 		$relation->setDecisionUuid($decisionUuid);
 
 		return $relation;
@@ -135,6 +141,8 @@ class HiddenDecisionTest extends TestCase {
 		self::assertSame(DecisionVisibility::HIDDEN, $data['decision']);
 		self::assertNull($data['bases']);
 		self::assertNull($data['skipAnonymization']);
+		self::assertNull($data['anonymized'], 'an anonymise pass would otherwise show the verdict');
+		self::assertNull($data['anonymizedValue']);
 		self::assertSame(12, $data['id']);
 		self::assertSame(10, $data['positionStart']);
 		self::assertSame(20, $data['positionEnd']);
@@ -152,6 +160,8 @@ class HiddenDecisionTest extends TestCase {
 			self::assertSame(self::DECISION, $data['decision'], $userId);
 			self::assertSame(['5.1.2e'], $data['bases'], $userId);
 			self::assertFalse($data['skipAnonymization'], $userId);
+			self::assertTrue($data['anonymized'], $userId);
+			self::assertSame('[REDACTED]', $data['anonymizedValue'], $userId);
 		}
 	}//end testTheSupervisorSeesIt()
 

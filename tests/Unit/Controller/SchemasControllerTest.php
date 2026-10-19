@@ -369,6 +369,27 @@ class SchemasControllerTest extends TestCase {
 		$this->assertSame([['id' => 'form-a', 'outcome' => 'unpublished']], $result->getData()['affectedForms']);
 	}//end testUpdateListsTheFormsItUnpublished()
 
+	/**
+	 * A dependent-form check that cannot be built is logged, not read as "no forms affected".
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
+	 */
+	public function testAFailingDependentFormCheckIsLogged(): void {
+		$schema = $this->createRealSchema(1, 'Ticket');
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$this->schemaMapper->method('updateFromArray')->willReturn($schema);
+		$this->request->method('getParams')->willReturn(['required' => ['title', 'priority']]);
+		$this->schemaVersioningService->method('classify')->willReturn(new \OCA\OpenRegister\Service\Schema\SchemaChangeSet([], 'none', 'none'));
+		$this->formCheck = null;
+		$this->logger->expects($this->atLeastOnce())->method('warning')
+			->with($this->stringContains('dependent-form check could not be built'), $this->anything());
+
+		$result = $this->controller->update(1);
+
+		$this->assertSame(200, $result->getStatus());
+		$this->assertArrayNotHasKey('affectedForms', $result->getData() instanceof Schema ? [] : (array)$result->getData());
+	}//end testAFailingDependentFormCheckIsLogged()
+
 	public function testPatchDelegatesToUpdate(): void {
 		$schema = $this->createRealSchema(1, 'Patched');
 

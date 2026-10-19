@@ -499,13 +499,31 @@ run's subject by its key. Both SHALL act as the run's attributed identity and
 SHALL go through the same service verbs, validation and authorization as any
 other caller. Opening a plan on an object that already has one SHALL be
 reported on the node's output, not raised. A refused transition SHALL fail
-the step with the engine's message.
+the step with the engine's message. A plan is anchored to the register and
+schema of the received item only when the case is that item's own object; a
+configured `uuid` naming another object SHALL anchor the plan to neither. The
+advance node SHALL move the live realisation of a repeating item (the newest
+row of the key that is not terminal), never an earlier, finished one.
 
 #### Scenario: A flow reaches a milestone
 
 - **GIVEN** a case plan on object O with milestone `besluit-genomen` in `available`
 - **WHEN** a run on O executes `case-advance` with item `besluit-genomen` and `to: completed`
 - **THEN** the milestone MUST be completed with the run's identity in the audit
+- @e2e exclude node behaviour; asserted by unit tests over the real plan service
+
+#### Scenario: A repeating item advances its live realisation
+
+- **GIVEN** a repeating item `assessment` whose first realisation is `completed` and whose second is `active`
+- **WHEN** a run executes `case-advance` with item `assessment` and `to: completed`
+- **THEN** the second realisation MUST be completed and the first left as it is
+- @e2e exclude node behaviour; asserted by unit tests over the real plan service
+
+#### Scenario: A case about another object is not anchored to the item's register
+
+- **GIVEN** an item of register 1 schema 2 and a `case-open` step whose `uuid` renders another object's uuid
+- **WHEN** the step runs
+- **THEN** the plan rows MUST carry no register and no schema
 - @e2e exclude node behaviour; asserted by unit tests over the real plan service
 
 #### Scenario: A refused advance fails the step
@@ -522,13 +540,33 @@ timer service, subject type `case-item`, when it becomes active, and every
 open timer of an item SHALL be cancelled when the item reaches a terminal
 state. An enforcing expiry SHALL terminate the item. The case layer SHALL NOT
 keep a clock of its own. A failure to arm SHALL be logged and SHALL NOT
-block the transition.
+block the transition. The arm of a statutory (`wettelijk`) expiry that fails
+SHALL additionally leave a durable marker on the item (kept in app config, so
+no table changes), and a background pass SHALL arm that item again, or, when
+the term has passed meanwhile, terminate it as a fired statutory timer
+would; an item that is gone, no longer active, or already has a running expiry
+timer SHALL only lose its marker. An item ensured as `active` SHALL have its
+due and expiry timers armed like one that became active by a transition,
+because an ensure dispatches no transition event.
 
 #### Scenario: An active item with a due date gets a timer
 
 - **GIVEN** a human item with `dueAt` set
 - **WHEN** it becomes active
 - **THEN** a `due` timer with subject type `case-item` and the item's uuid MUST be armed
+
+#### Scenario: A statutory expiry that could not be armed is armed again
+
+- **GIVEN** an active item listed under `statutory` with an `expiresAt` whose expiry timer was refused when it became active
+- **WHEN** the re-arm pass runs
+- **THEN** the item's enforcing `expiry` timer with outcome `transition:terminate` MUST be armed and the marker removed
+- **AND** when `expiresAt` has passed meanwhile the item MUST be terminated instead
+
+#### Scenario: An item ensured as active arms its statutory expiry
+
+- **GIVEN** an ensure call creating an `active` item with a future `expiresAt` listed under `statutory`
+- **WHEN** the call runs
+- **THEN** one `expiry` timer with outcome `transition:terminate` MUST be armed, and none for an item that already existed
 
 #### Scenario: Completing an item cancels its timers
 
@@ -545,6 +583,13 @@ ensure items as a named app, for code that runs without a user session
 (listeners, commands, repair steps). The audit SHALL record the actor as
 `system:<app>`. These verbs SHALL NOT be reachable over HTTP. The user verbs
 SHALL keep refusing a missing identity.
+
+A flow run realised for such a plan (a stage or process task bound to a flow)
+SHALL be queued without the `system:<app>` label (or the cascade's own
+`case-plan` actor) as its user, because neither names an account and a run that
+carried it would refuse every scoped step. A run queued under the `case` trigger
+without a caller acts as the identity the flow's schedule trigger declares, like
+a scheduled run; a flow that declares none is refused as unattributed.
 
 #### Scenario: An app's listener creates a plan
 

@@ -281,6 +281,61 @@ class CaseFlowNodesTest extends TestCase {
 	}//end testAdvanceMovesTheItemAndRefusalsFailTheStep()
 
 	/**
+	 * A configured `uuid` that names ANOTHER object than the received item
+	 * must not anchor that object's plan to the item's register and schema;
+	 * naming the item's own object keeps them.
+	 *
+	 * @return void
+	 */
+	public function testAConfiguredUuidNamingAnotherObjectIsNotAnchoredToTheItemsRegisterAndSchema(): void {
+		$node = new CaseOpenNode(...$this->collaborators());
+		$context = [FlowRunService::RUN_AS_CONTEXT_KEY => 'alice'];
+		$other = CaseFixtures::OBJECT;
+		$items = [[FlowItems::JSON => ['uuid' => 'received-object-of-schema-a', 'parent' => $other, '@self' => ['register' => '1', 'schema' => 2]]]];
+
+		$out = $node->execute(items: $items, config: ['definition' => self::definition(), 'uuid' => '{{ parent }}'], context: $context);
+
+		$this->assertSame(['opened' => true, 'reason' => 'opened'], $out[0][FlowItems::JSON]['case']);
+		$rows = $this->items->findByObject(objectUuid: $other);
+		$this->assertCount(2, $rows);
+		$this->assertNull($rows[0]->getRegisterId(), 'the item\'s register is not the other object\'s');
+		$this->assertNull($rows[0]->getSchemaId(), 'the item\'s schema is not the other object\'s');
+
+		// A template that renders the item's own uuid still anchors to its register and schema.
+		$ownItems = [[FlowItems::JSON => ['uuid' => 'own-object', 'again' => 'own-object', '@self' => ['register' => '1', 'schema' => 2]]]];
+		$node->execute(items: $ownItems, config: ['definition' => self::definition(), 'uuid' => '{{ again }}'], context: $context);
+		$own = $this->items->findByObject(objectUuid: 'own-object');
+		$this->assertSame(1, $own[0]->getRegisterId());
+		$this->assertSame(2, $own[0]->getSchemaId());
+	}//end testAConfiguredUuidNamingAnotherObjectIsNotAnchoredToTheItemsRegisterAndSchema()
+
+	/**
+	 * A repeating item has one row per realisation, the oldest first in plan
+	 * order. Advancing its key moves the realisation that is still open, not
+	 * the finished first one the old first-match loop stopped at.
+	 *
+	 * @return void
+	 */
+	public function testAdvanceMovesTheLiveRealisationOfARepeatingItem(): void {
+		$first = CaseFixtures::row(id: 1, key: 'assessment', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_COMPLETED);
+		$second = CaseFixtures::row(id: 2, key: 'assessment', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
+		$second->setRealisationCount(2);
+		$second->setPosition(1);
+		$first->setPosition(1);
+		$this->items->seed([$first, $second]);
+
+		$this->sessionUid = 'alice';
+		$node = new CaseAdvanceNode(...$this->collaborators());
+		$out = $node->execute(items: self::items(), config: ['item' => 'assessment', 'to' => CaseItem::STATE_COMPLETED], context: []);
+
+		$this->assertSame(['item' => 'assessment', 'state' => 'completed'], $out[0][FlowItems::JSON]['case']);
+		$this->assertSame(CaseItem::STATE_COMPLETED, $this->items->findByUuid('item-2')->getState(), 'the open realisation moved');
+		$this->assertSame(CaseItem::STATE_COMPLETED, $this->items->findByUuid('item-1')->getState());
+		$this->assertCount(1, $this->audits->findForItem(2), 'the transition is recorded against the second realisation');
+		$this->assertCount(0, $this->audits->findForItem(1), 'and not against the first');
+	}//end testAdvanceMovesTheLiveRealisationOfARepeatingItem()
+
+	/**
 	 * An empty batch passes straight through both nodes; an advance with no
 	 * item key is refused at save time.
 	 *

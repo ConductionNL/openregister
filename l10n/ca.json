@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} fallits",
         "0 = unlimited": "0 = il·limitat",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Un flux executa una sèrie de passos quan passa alguna cosa — un objecte canvia, una programació es dispara o l'executeu vós mateix. Aquesta llista mostra els fluxos de cada aplicació.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "Hi ha un parell de claus VAPID configurat. Els usuaris poden activar les notificacions del navegador des de la configuració personal; s'entreguen fins i tot quan la pestanya del navegador està tancada.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "Hi ha un parell de claus VAPID configurat. Els usuaris poden activar les notificacions del navegador des de la configuració d'usuari; s'entreguen fins i tot quan la pestanya del navegador està tancada.",
         "A deactivation request is pending.": "Hi ha una sol·licitud de desactivació pendent.",
         "AI Assistant": "Assistent d'IA",
         "AI Chat": "Xat d'IA",

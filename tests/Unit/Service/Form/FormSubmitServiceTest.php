@@ -29,9 +29,11 @@ use OCA\OpenRegister\Service\Form\FormPayloadFindings;
 use OCA\OpenRegister\Service\Form\FormSubmitService;
 use OCA\OpenRegister\Service\Form\FormUploadStore;
 use OCA\OpenRegister\Service\Object\DraftOwner;
+use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryAppData;
+use OCA\OpenRegister\Tests\Unit\Service\Form\Fakes\MemoryLockingProvider;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
@@ -67,6 +69,10 @@ use RuntimeException;
  * @uses \OCA\OpenRegister\Service\Object\DraftFinder
  * @uses \OCA\OpenRegister\Service\Object\DraftOwner
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Exception\DraftAlreadyLeftException
+ * @uses \OCA\OpenRegister\Exception\ValidationException
+ * @uses \OCA\OpenRegister\Service\Form\FormUploadClaims
+ * @uses \OCA\OpenRegister\Service\Form\NestedIdentityGuard
  */
 class FormSubmitServiceTest extends TestCase {
 
@@ -137,7 +143,27 @@ class FormSubmitServiceTest extends TestCase {
 	 */
 	private array $dispatched = [];
 
+	/**
+	 * The locks the idempotency store holds.
+	 */
+	private MemoryLockingProvider $locks;
+
+	/**
+	 * Run inside the next save, to simulate a parallel request.
+	 *
+	 * @var callable|null
+	 */
+	private $duringSave = null;
+
+	/**
+	 * Whether the fake save skips the real status policy, as a save that never reached it would.
+	 *
+	 * @var bool
+	 */
+	private bool $saveSkipsStatusPolicy = false;
+
 	protected function setUp(): void {
+		DraftStatusPolicy::resetPromotions();
 		$this->schemaBySlug = [
 			'case' => $this->schema(
 				id: 1,
@@ -231,6 +257,7 @@ class FormSubmitServiceTest extends TestCase {
 		);
 
 		$appData = new MemoryAppData();
+		$this->locks = new MemoryLockingProvider();
 		$this->uploads = new FormUploadStore(appData: $appData, time: $time, temp: $temp, rules: new FilePropertyRules(), l10n: $l10n);
 
 		$this->service = new FormSubmitService(
@@ -239,7 +266,7 @@ class FormSubmitServiceTest extends TestCase {
 			validator: $validateObject,
 			objects: $this->objects,
 			findings: new FormPayloadFindings(),
-			keys: new FormIdempotencyStore(appData: $appData, time: $time),
+			keys: new FormIdempotencyStore(appData: $appData, time: $time, locks: $this->locks, l10n: $l10n),
 			uploads: $this->uploads,
 			l10n: $l10n,
 			logger: $this->createMock(LoggerInterface::class),
@@ -330,6 +357,12 @@ class FormSubmitServiceTest extends TestCase {
 		?string $_owner = null,
 	): ObjectEntity {
 		$this->assertInstanceOf(Schema::class, $schema);
+		if ($this->duringSave !== null) {
+			$hook = $this->duringSave;
+			$this->duringSave = null;
+			$hook();
+		}
+
 		$this->saves[] = ['object' => $object, 'schema' => $schema->getSlug(), 'rbac' => $_rbac, 'user' => $currentUser, 'unowned' => $_unowned, 'files' => $uploadedFiles, 'uuid' => $uuid, 'owner' => $_owner];
 		if (isset($this->refuseSave[$schema->getSlug()]) === true) {
 			throw $this->refuseSave[$schema->getSlug()];
@@ -344,6 +377,16 @@ class FormSubmitServiceTest extends TestCase {
 		$data = (array)$object;
 		$status = ($data['@self']['status'] ?? null);
 		unset($data['@self']);
+
+		// The real status policy judges a save of a stored object, as SaveObject
+		// does: a promotion out of draft is allowed once, and an allowance for an
+		// object that is no longer a draft is refused.
+		$storedBefore = ($this->stored[(string)$uuid] ?? null);
+		if ($storedBefore !== null && $status !== null && $this->saveSkipsStatusPolicy === false) {
+			$storedBefore->setId(1);
+			(new DraftStatusPolicy())->resolveStatus(entity: $storedBefore, selfData: ['status' => $status]);
+		}
+
 		if ($status === 'draft') {
 			// The fake listener stamps receipt fields only on a received object.
 			$entity = new ObjectEntity();
@@ -456,6 +499,73 @@ class FormSubmitServiceTest extends TestCase {
 		$this->service->submit(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'a', 'caseType' => 'b'], idempotencyKey: 'k2', scope: 'form-1');
 		$this->assertCount(2, $this->saves);
 	}//end testARepeatedIdempotencyKeyRepeatsTheAnswer()
+
+	/**
+	 * The key is client-chosen: another user, or another payload, with the same key never gets the first answer.
+	 */
+	public function testAnIdempotencyKeyDoesNotHandTheAnswerToSomebodyElse(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$alice = $this->createMock(IUser::class);
+		$alice->method('getUID')->willReturn('alice');
+		$bob = $this->createMock(IUser::class);
+		$bob->method('getUID')->willReturn('bob');
+		$payload = ['title' => 'a', 'caseType' => 'b'];
+
+		$first = $this->service->submit(destination: $destination, mapping: null, payload: $payload, subject: $alice, idempotencyKey: 'k1', scope: 'form-1');
+
+		foreach ([[$bob, $payload], [null, $payload], [$alice, ['title' => 'other', 'caseType' => 'b']]] as [$subject, $body]) {
+			try {
+				$this->service->submit(destination: $destination, mapping: null, payload: $body, subject: $subject, idempotencyKey: 'k1', scope: 'form-1');
+				$this->fail('The key handed over the first answer.');
+			} catch (FormSubmitRefusedException $refused) {
+				$this->assertSame(409, $refused->getStatus());
+				$this->assertStringNotContainsString((string)$first['reference'], $refused->getMessage());
+			}
+		}
+
+		$this->assertCount(1, $this->saves);
+		$this->assertSame($first, $this->service->submit(destination: $destination, mapping: null, payload: $payload, subject: $alice, idempotencyKey: 'k1', scope: 'form-1'));
+	}//end testAnIdempotencyKeyDoesNotHandTheAnswerToSomebodyElse()
+
+	/**
+	 * Two submits in flight with one key create one object; the key is free again afterwards.
+	 */
+	public function testTwoConcurrentSubmitsWithOneKeyCreateOneObject(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$payload = ['title' => 'a', 'caseType' => 'b'];
+		$status = null;
+		// While the first submit is writing, the same request arrives again.
+		$this->duringSave = function () use ($destination, $payload, &$status): void {
+			try {
+				$this->service->submit(destination: $destination, mapping: null, payload: $payload, idempotencyKey: 'k1', scope: 'form-1');
+			} catch (FormSubmitRefusedException $refused) {
+				$status = $refused->getStatus();
+			}
+		};
+
+		$first = $this->service->submit(destination: $destination, mapping: null, payload: $payload, idempotencyKey: 'k1', scope: 'form-1');
+
+		$this->assertSame(409, $status);
+		$this->assertCount(1, $this->saves);
+		$this->assertSame([], $this->locks->held);
+		$this->assertSame($first, $this->service->submit(destination: $destination, mapping: null, payload: $payload, idempotencyKey: 'k1', scope: 'form-1'));
+	}//end testTwoConcurrentSubmitsWithOneKeyCreateOneObject()
+
+	/**
+	 * A refused submit releases its key, so the corrected retry is not locked out.
+	 */
+	public function testARefusedSubmitReleasesItsKey(): void {
+		try {
+			$this->service->submit(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'a'], idempotencyKey: 'k1', scope: 'form-1');
+			$this->fail('An incomplete submit was accepted.');
+		} catch (FormSubmitRefusedException $refused) {
+			$this->assertSame(422, $refused->getStatus());
+		}
+
+		$this->assertSame([], $this->locks->held);
+		$this->service->submit(destination: ['register' => 'dossiq', 'schema' => 'case'], mapping: null, payload: ['title' => 'a', 'caseType' => 'b'], idempotencyKey: 'k1', scope: 'form-1');
+		$this->assertCount(1, $this->saves);
+	}//end testARefusedSubmitReleasesItsKey()
 
 	/**
 	 * Every write is validated before the first: an invalid second write means no write at all.
@@ -588,6 +698,36 @@ class FormSubmitServiceTest extends TestCase {
 		$this->expectException(FormSubmitRefusedException::class);
 		$this->uploads->materialise(formId: 'form-1', token: $token);
 	}//end testAnUploadTokenIsClaimedOnlyOnSuccess()
+
+	/**
+	 * A required file property is satisfied by its upload token, and still `required` without one.
+	 */
+	public function testARequiredFilePropertyIsSatisfiedByAnUploadToken(): void {
+		$case = $this->schemaBySlug['case'];
+		$case->setRequired(['title', 'caseType', 'identifier', 'bijlage']);
+		$path = (string)tempnam(sys_get_temp_dir(), 'or-submit-upload');
+		file_put_contents($path, '%PDF-1.7');
+		$this->temporary[] = $path;
+		$token = $this->uploads->issue(
+			formId: 'form-1',
+			property: 'bijlage',
+			rule: $case->getProperties()['bijlage'],
+			file: ['name' => 'a.pdf', 'type' => 'application/pdf', 'tmp_name' => $path, 'error' => UPLOAD_ERR_OK, 'size' => 8]
+		)['token'];
+		$mapping = ['fields' => [['field' => 'onderwerp', 'property' => 'title'], ['field' => 'bewijs', 'property' => 'bijlage']], 'fixed' => ['caseType' => 'ct']];
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+
+		try {
+			$this->service->submit(destination: $destination, mapping: $mapping, payload: ['onderwerp' => 'a'], scope: 'form-1');
+			$this->fail('A required file property without an upload was accepted.');
+		} catch (FormSubmitRefusedException $refused) {
+			$this->assertSame(422, $refused->getStatus());
+			$this->assertContains('bijlage', array_map(static fn (array $finding): string => (string)($finding['property'] ?? ''), $refused->getFindings()));
+		}
+
+		$this->service->submit(destination: $destination, mapping: $mapping, payload: ['onderwerp' => 'a', 'bewijs' => ['uploadToken' => $token]], scope: 'form-1');
+		$this->assertSame('a.pdf', $this->saves[0]['files']['bijlage']['name']);
+	}//end testARequiredFilePropertyIsSatisfiedByAnUploadToken()
 
 	/**
 	 * A token issued for another property is refused, not attached elsewhere.
@@ -901,4 +1041,265 @@ class FormSubmitServiceTest extends TestCase {
 		$this->assertSame('Van Alice', $this->service->readDraft(destination: $destination, draftId: $draft['id'], subject: $alice)['data']['title']);
 		$this->assertSame($draft['id'], $this->service->findDraft(destination: $destination, subject: $alice)['id'] ?? null);
 	}//end testAUsersDraftReadsBackThroughTheSubject()
+
+	/**
+	 * A draft save never takes its uuid from the payload, so it cannot write over another owner's draft.
+	 *
+	 * The save takes a payload `id` as the uuid of an existing object and
+	 * updates it, and a scope-value owner saves with RBAC off. Goes red with
+	 * the id filter removed: the second save then carries `id` and the stored
+	 * draft of subject 1 is the one the fake updates.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-draft-must-be-able-to-be-owned-by-a-scope-value
+	 */
+	public function testAPayloadIdNeverPicksTheUuidOfADraftSave(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$victim = $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Van subject 1'], subject: null, owner: DraftOwner::portalSubject(subjectRef: 'subject-1'));
+
+		$attacker = $this->service->saveDraft(
+			destination: $destination,
+			mapping: null,
+			payload: ['title' => 'Overschreven', 'id' => $victim['id'], 'uuid' => $victim['id']],
+			subject: null,
+			owner: DraftOwner::portalSubject(subjectRef: 'subject-2')
+		);
+
+		$this->assertNotSame($victim['id'], $attacker['id'], 'The second save made its own object.');
+		$this->assertNull($this->saves[1]['uuid']);
+		$this->assertArrayNotHasKey('id', $this->saves[1]['object']);
+		$this->assertArrayNotHasKey('uuid', $this->saves[1]['object']);
+		$this->assertSame('Van subject 1', $this->stored[$victim['id']]->getObject()['title'], 'The other draft is unchanged.');
+		$this->assertSame('portal:subject-1', $this->stored[$victim['id']]->getOwner());
+	}//end testAPayloadIdNeverPicksTheUuidOfADraftSave()
+
+	/**
+	 * A fresh submit never takes its uuid from the payload, with or without a mapping.
+	 *
+	 * A mapping that points a field at the property `id`, and a fixed
+	 * `@self.id`, are held to the same rule: the submit never names an
+	 * existing object, the draft id is the only way to.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
+	 */
+	public function testAPayloadIdNeverPicksTheUuidOfASubmit(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$this->service->submit(destination: $destination, mapping: null, payload: ['title' => 'a', 'caseType' => 'b', 'id' => 'uuid-existing'], subject: null);
+		$this->service->submit(
+			destination: $destination,
+			mapping: [
+				'fields' => [['field' => 'mail', 'property' => 'id'], ['field' => 'onderwerp', 'property' => 'title']],
+				'fixed' => ['caseType' => 'b', '@self' => ['id' => 'uuid-existing', 'owner' => 'x']],
+			],
+			payload: ['mail' => 'uuid-existing', 'onderwerp' => 'a'],
+			subject: null
+		);
+
+		foreach ($this->saves as $save) {
+			$this->assertNull($save['uuid']);
+			$this->assertArrayNotHasKey('id', $save['object']);
+			$this->assertArrayNotHasKey('id', (array)($save['object']['@self'] ?? []));
+		}
+
+		$this->assertCount(2, $this->saves);
+		$this->assertNotSame('uuid-existing', $this->saves[0]['uuid']);
+	}//end testAPayloadIdNeverPicksTheUuidOfASubmit()
+
+	/**
+	 * Two requests on one draft: the one that finds it already sent is refused and announces nothing.
+	 *
+	 * The first request's save leaves draft between the second one's "is it
+	 * still a draft" read and its save. The status policy refuses the second
+	 * write (an allowance for an object that is no longer a draft), so no
+	 * second `ObjectCreatedEvent` goes out.
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
+	 */
+	public function testALostRaceToLeaveDraftAnnouncesNothing(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$alice = $this->user(uid: 'alice');
+		$draft = $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Kapvergunning'], subject: $alice);
+		$this->duringSave = function () use ($draft): void {
+			$this->stored[$draft['id']]->setStatus('active');
+		};
+
+		try {
+			$this->service->submit(destination: $destination, mapping: null, payload: ['caseType' => 'ct-1'], subject: $alice, draftId: $draft['id']);
+			$this->fail('The second send of one draft was accepted.');
+		} catch (FormSubmitRefusedException $refused) {
+			$this->assertSame(404, $refused->getStatus());
+		}
+
+		$this->assertSame([], $this->dispatched, 'Nothing is announced a second time.');
+	}//end testALostRaceToLeaveDraftAnnouncesNothing()
+
+	/**
+	 * A save that did not use the promotion allowance does not announce the creation either.
+	 *
+	 * The save is doubled as one that never reached the status policy and
+	 * returned an object that was already `active`; goes red without the
+	 * check on the allowance after the write.
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
+	 */
+	public function testASaveThatDidNotUseThePromotionAnnouncesNothing(): void {
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$alice = $this->user(uid: 'alice');
+		$draft = $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Kapvergunning'], subject: $alice);
+		$this->saveSkipsStatusPolicy = true;
+
+		try {
+			$this->service->submit(destination: $destination, mapping: null, payload: ['caseType' => 'ct-1'], subject: $alice, draftId: $draft['id']);
+			$this->fail('A save that did not leave draft was announced.');
+		} catch (FormSubmitRefusedException $refused) {
+			$this->assertSame(404, $refused->getStatus());
+		}
+
+		$this->assertSame([], $this->dispatched);
+	}//end testASaveThatDidNotUseThePromotionAnnouncesNothing()
+
+	/**
+	 * A draft save claims its upload tokens: the file sits on the draft, so the token cannot be redeemed again.
+	 *
+	 * A refused draft save keeps the token for the retry, as a refused submit does. Goes red without the claim.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-an-object-must-be-able-to-carry-the-explicit-lifecycle-status-draft
+	 */
+	public function testADraftSaveClaimsItsUploadTokens(): void {
+		$path = (string)tempnam(sys_get_temp_dir(), 'or-submit-upload');
+		file_put_contents($path, '%PDF-1.7');
+		$this->temporary[] = $path;
+		$token = $this->uploads->issue(
+			formId: 'form-1',
+			property: 'bijlage',
+			rule: $this->schemaBySlug['case']->getProperties()['bijlage'],
+			file: ['name' => 'a.pdf', 'type' => 'application/pdf', 'tmp_name' => $path, 'error' => UPLOAD_ERR_OK, 'size' => 8]
+		)['token'];
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$payload = ['title' => 'Half af', 'bijlage' => ['uploadToken' => $token]];
+		$alice = $this->user(uid: 'alice');
+
+		// Refused first: the token survives for the retry.
+		$this->refuseSave['case'] = new CustomValidationException(message: 'x', errors: ['title' => 'nope']);
+		try {
+			$this->service->saveDraft(destination: $destination, mapping: null, payload: $payload, subject: $alice, scope: 'form-1');
+			$this->fail('Refused draft save accepted.');
+		} catch (FormSubmitRefusedException) {
+			$this->assertSame('a.pdf', $this->uploads->materialise(formId: 'form-1', token: $token)['name']);
+		}
+
+		unset($this->refuseSave['case']);
+		$this->service->saveDraft(destination: $destination, mapping: null, payload: $payload, subject: $alice, scope: 'form-1');
+		$this->assertSame('a.pdf', $this->saves[1]['files']['bijlage']['name']);
+
+		try {
+			$this->uploads->materialise(formId: 'form-1', token: $token);
+			$this->fail('The token of a saved draft is still redeemable.');
+		} catch (FormSubmitRefusedException $refused) {
+			$this->assertSame('upload-token-unknown', $refused->getFindings()[0]['code'] ?? null);
+		}
+	}//end testADraftSaveClaimsItsUploadTokens()
+
+	/**
+	 * Issue a token for the case schema's file property.
+	 *
+	 * @return string The token.
+	 */
+	private function bijlageToken(): string {
+		$path = (string)tempnam(sys_get_temp_dir(), 'or-submit-upload');
+		file_put_contents($path, '%PDF-1.7');
+		$this->temporary[] = $path;
+
+		return $this->uploads->issue(
+			formId: 'form-1',
+			property: 'bijlage',
+			rule: $this->schemaBySlug['case']->getProperties()['bijlage'],
+			file: ['name' => 'a.pdf', 'type' => 'application/pdf', 'tmp_name' => $path, 'error' => UPLOAD_ERR_OK, 'size' => 8]
+		)['token'];
+	}//end bijlageToken()
+
+	/**
+	 * The next autosave carrying the token its own draft already claimed is accepted, not refused 422.
+	 *
+	 * Goes red without the claimed-by-this-draft record: the second save then
+	 * materialises a deleted token and is refused as unknown.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
+	 */
+	public function testAnAutosaveWithTheTokenItsDraftAlreadyClaimedIsAccepted(): void {
+		$token = $this->bijlageToken();
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$alice = $this->user(uid: 'alice');
+
+		$first = $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Half af', 'bijlage' => ['uploadToken' => $token]], subject: $alice, scope: 'form-1');
+		$second = $this->service->saveDraft(
+			destination: $destination,
+			mapping: null,
+			payload: ['title' => 'Iets verder', 'bijlage' => ['uploadToken' => $token]],
+			subject: $alice,
+			draftId: $first['id'],
+			scope: 'form-1'
+		);
+
+		$this->assertSame($first['id'], $second['id']);
+		$this->assertNull($this->saves[1]['files'] ?? null, 'The file stays as the draft holds it; nothing is attached twice.');
+		$this->assertArrayNotHasKey('bijlage', $this->saves[1]['object']);
+	}//end testAnAutosaveWithTheTokenItsDraftAlreadyClaimedIsAccepted()
+
+	/**
+	 * A token another draft claimed stays unknown to this one.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
+	 */
+	public function testATokenAnotherDraftClaimedIsStillRefused(): void {
+		$token = $this->bijlageToken();
+		$destination = ['register' => 'dossiq', 'schema' => 'case'];
+		$alice = $this->user(uid: 'alice');
+		$bob = $this->user(uid: 'bob');
+
+		$this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Van alice', 'bijlage' => ['uploadToken' => $token]], subject: $alice, scope: 'form-1');
+		$mine = $this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Van bob'], subject: $bob, scope: 'form-1');
+
+		$this->expectException(FormSubmitRefusedException::class);
+		$this->service->saveDraft(destination: $destination, mapping: null, payload: ['title' => 'Van bob', 'bijlage' => ['uploadToken' => $token]], subject: $bob, draftId: $mine['id'], scope: 'form-1');
+	}//end testATokenAnotherDraftClaimedIsStillRefused()
+
+	/**
+	 * A nested object under a cascading property never names an existing object: its identity keys are dropped.
+	 *
+	 * The cascade takes a nested `id` (or `@self.id`) as the uuid of an
+	 * existing object and updates it. Goes red without withoutNestedIdentity().
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-a-submit-must-create-the-destination-in-one-request-and-return-its-reference
+	 */
+	public function testANestedCascadeObjectNeverNamesAnExistingObject(): void {
+		$case = $this->schemaBySlug['case'];
+		$case->setProperties(
+			array_merge(
+				$case->getProperties(),
+				[
+					'parties' => ['type' => 'array', 'items' => ['type' => 'object', 'inversedBy' => 'case']],
+					'owner' => ['type' => 'object', 'inversedBy' => 'case'],
+					'tags' => ['type' => 'array', 'items' => ['type' => 'object']],
+				]
+			)
+		);
+
+		$this->service->submit(
+			destination: ['register' => 'dossiq', 'schema' => 'case'],
+			mapping: null,
+			payload: [
+				'title' => 'a',
+				'caseType' => 'b',
+				'parties' => [['id' => 'victim-1', 'name' => 'x', 'address' => ['id' => 'victim-3']], ['@self' => ['id' => 'victim-2'], 'name' => 'y']],
+				'owner' => ['id' => 'victim-4', 'name' => 'z'],
+				'tags' => [['id' => 'plain-data', 'label' => 'kept']],
+			],
+			subject: null
+		);
+
+		$saved = $this->saves[0]['object'];
+		$this->assertSame([['name' => 'x', 'address' => []], ['@self' => [], 'name' => 'y']], $saved['parties']);
+		$this->assertSame(['name' => 'z'], $saved['owner']);
+		$this->assertSame([['id' => 'plain-data', 'label' => 'kept']], $saved['tags'], 'Data under a property that does not cascade is not touched.');
+	}//end testANestedCascadeObjectNeverNamesAnExistingObject()
 }//end class

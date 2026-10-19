@@ -60,6 +60,7 @@ class ObjectDraftControllerTest extends TestCase {
 
 	private DraftActivation&MockObject $activation;
 
+
 	private IUserSession&MockObject $session;
 
 	private LoggerInterface&MockObject $logger;
@@ -91,6 +92,13 @@ class ObjectDraftControllerTest extends TestCase {
 	 */
 	private ?ObjectEntity $readable = null;
 
+	/**
+	 * Whether the render boundary throws.
+	 *
+	 * @var bool
+	 */
+	private bool $renderFails = false;
+
 	protected function setUp(): void {
 		$this->register = new Register();
 		$this->register->setId(10);
@@ -99,6 +107,20 @@ class ObjectDraftControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->objects = $this->createMock(ObjectService::class);
+		// The render boundary: takes the `writeOnly` property `secret` out of the entity, as the real one does for the schema that declares it.
+		$this->objects->method('renderEntity')->willReturnCallback(
+			function (ObjectEntity $entity, ?array $_extend = [], ?int $depth = 0, ?array $filter = [], ?array $fields = [], ?array $unset = [], bool $_rbac = true): array {
+				if ($this->renderFails === true) {
+					throw new RuntimeException('render boundary down');
+				}
+
+				$object = ($entity->getObject() ?? []);
+				unset($object['secret']);
+				$entity->setObject($object);
+
+				return $entity->jsonSerialize();
+			}
+		);
 		$this->objects->method('find')->willReturnCallback(
 			function (
 				int|string $id,
@@ -254,6 +276,52 @@ class ObjectDraftControllerTest extends TestCase {
 		// The record was resolved through the RBAC boundary, in its own register and schema.
 		$this->assertSame(['id' => 'd1', 'register' => $this->register, 'schema' => $this->schema, 'rbac' => true, 'multitenancy' => true], $this->reads[0]);
 	}//end testTheOwnerGetsTheActivatedObject()
+
+	/**
+	 * The answer goes through the render boundary: a `writeOnly` property is never in the 200 body.
+	 *
+	 * Goes red without the redaction: the entity the save handed back carries the secret.
+	 */
+	public function testAWriteOnlyPropertyIsNotInTheActivatedObject(): void {
+		$this->signIn(uid: 'agent');
+		$this->readableDraft();
+
+		$active = new ObjectEntity();
+		$active->setUuid('d1');
+		$active->setStatus('active');
+		$active->setObject(['subject' => 'A', 'secret' => 'hunter2']);
+		$this->activationAnswers(answer: $active);
+
+		$response = $this->controller->activate(register: 'service', schema: 'ticket', id: 'd1');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertStringNotContainsString('hunter2', (string)json_encode($response->getData()));
+		$this->assertSame('A', $response->getData()['subject'] ?? null);
+	}//end testAWriteOnlyPropertyIsNotInTheActivatedObject()
+
+	/**
+	 * A render that fails after the activation was committed answers 200 with the id and status, never 500.
+	 *
+	 * Goes red without the try around renderEntity(): the exception escapes.
+	 */
+	public function testARenderFailureAfterTheCommitIsStillA200(): void {
+		$this->signIn(uid: 'agent');
+		$this->readableDraft();
+		$active = new ObjectEntity();
+		$active->setUuid('d1');
+		$active->setStatus('active');
+		$active->setObject(['subject' => 'A']);
+		$this->activationAnswers(answer: $active);
+		$this->renderFails = true;
+		$this->logger->expects($this->once())->method('error')->with($this->stringContains('could not be rendered'));
+
+		$response = $this->controller->activate(register: 'service', schema: 'ticket', id: 'd1');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame('d1', $response->getData()['id']);
+		$this->assertSame('active', $response->getData()['@self']['status']);
+		$this->assertArrayNotHasKey('subject', $response->getData(), 'Nothing the render boundary would have redacted is sent without it.');
+	}//end testARenderFailureAfterTheCommitIsStillA200()
 
 	/**
 	 * A body without `object`, or with something that is no object, activates the draft as stored.

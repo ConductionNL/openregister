@@ -8,7 +8,7 @@ An administrator re-imports an app's real register configuration on demand, and 
 
 ### Requirement: Re-import imports the app's real register configuration (REQ-RDA-010)
 
-`occ openregister:descriptors:list --app=<app> --import=<slug>` SHALL import the app's real register configuration, forced. That is `lib/Settings/<app>_register.json` with its `lib/Settings/register.d/*.json` fragments, the same configuration an install or upgrade imports. It SHALL run through the app's own SettingsService when that has a forced entry point. Otherwise OpenRegister SHALL import those files itself and SHALL say the app's own post-import steps did not run. A mock descriptor SHALL NOT be imported by `--import` alone.
+`occ openregister:descriptors:list --app=<app> --import=<slug>` SHALL import the app's real register configuration, forced. That is `lib/Settings/<app>_register.json` with its `lib/Settings/register.d/*.json` fragments, the same configuration an install or upgrade imports. It SHALL run through the app's own SettingsService when that has a forced entry point. Otherwise OpenRegister SHALL import those files itself and SHALL say the app's own post-import steps did not run. A mock descriptor SHALL NOT be imported by `--import` alone. Of OpenRegister's own descriptors, the ones whose install and upgrade steps import under a configuration id of their own (`openregister.decision-tables`, `openregister.dismissed-pair`, `openregister.edepot-transfers`, `openregister.merge-operation`, `openregister.trust-configuration`, `openregister.vocabulary`, `openregister.dsar-cases`, `openregister.dsar-policy-packs`) SHALL be re-imported under that same id, read from the one map the install steps read, so the re-import moves no version gate another descriptor shares under `openregister`; the others import under `openregister`. The result SHALL carry the import job and the configuration id it ran under when the import recorded one. An instance that re-imported one of those eight descriptors under the shared `openregister` id before this was true is not repaired by an upgrade: only a development instance can carry that (the `beta` release never had the re-import of a real descriptor), and its shared `openregister` configuration then holds the version of whichever descriptor was imported last. Importing a descriptor that does share the id (for example `--import=flow`) sets that version again.
 
 #### Scenario: The app ships both a mock and a real descriptor for the same register
 
@@ -16,6 +16,12 @@ An administrator re-imports an app's real register configuration on demand, and 
 - **WHEN** an administrator runs `occ openregister:descriptors:list --app=portaliq --import=portaliq`
 - **THEN** the configuration of version 0.97.0 is imported under configuration id `portaliq`
 - **AND** no demo object from the mock is imported
+
+#### Scenario: A core descriptor keeps its install-time configuration id
+
+- **GIVEN** OpenRegister ships `merge_operation_register.json`, which its repair step imports under `openregister.merge-operation`
+- **WHEN** an administrator re-imports register `merge-operation` of `openregister`
+- **THEN** the import runs under configuration id `openregister.merge-operation`, not `openregister`
 
 #### Scenario: Fragments are part of the configuration
 
@@ -71,7 +77,7 @@ An administrator re-imports an app's real register configuration on demand, and 
 
 ### Requirement: The re-import reports what changed (REQ-RDA-012)
 
-The real re-import SHALL report registers and schemas as created, updated and unchanged, measured from the database before and after the import. It SHALL report how many authorization blocks it took from the file over a change made on the instance, and name each.
+The real re-import SHALL report registers and schemas as created, updated and unchanged, measured from the database before and after the import. It SHALL report how many authorization blocks it took from the file over a change made on the instance, and name each. The administrator panel (Register descriptors) SHALL ask for confirmation before it runs a re-import, saying that the app's schema authorization is taken from the file over any local change and that the app's other registers may be re-imported with it, and SHALL show the response's count and every replaced block (schema and path) in its outcome note, as a warning and not as a plain success when any block was replaced.
 
 #### Scenario: Counts come from the database
 
@@ -84,3 +90,4 @@ The real re-import SHALL report registers and schemas as created, updated and un
 
 - **WHEN** the re-import takes `portalAccount`'s authorization from the file over a local change
 - **THEN** the output counts 1 replaced block and names `portalAccount: authorization`
+- **AND** the panel's outcome note shows the count and `portalAccount: authorization` as a warning, after the administrator confirmed the re-import

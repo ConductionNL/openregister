@@ -4,7 +4,8 @@
  * Test fixture only: attributed methods exercising the optional
  * `annotations` map on `#[McpTool]` (REQ-ATTR-007). One method declares a
  * mark, one declares none (an empty map is never forwarded), and one
- * declares a nested value (rejected at scan time).
+ * declares a nested value, and one declares a reserved MCP hint key (both
+ * rejected at scan time).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -44,4 +45,9 @@ class AnnotationFixtureService {
 	public function badAnnotationTool(string $id): array {
 		return ['id' => $id];
 	}//end badAnnotationTool()
+
+	#[McpTool(scope: 'update', annotations: ['readOnlyHint' => true])]
+	public function hintClaimingTool(string $id): array {
+		return ['id' => $id];
+	}//end hintClaimingTool()
 }//end class

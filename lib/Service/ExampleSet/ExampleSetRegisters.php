@@ -6,8 +6,7 @@
  * The OpenRegister registers an example set needs, named in the cast file's
  * `requires` list. A required register that is not on the instance is
  * imported from OpenRegister's own descriptor, the same way
- * `POST /api/register-descriptors/openregister/{slug}/import` does, or from
- * its mock descriptor when the set requires the mock. The
+ * `POST /api/register-descriptors/openregister/{slug}/import` does. The
  * import jobs that import created are returned, so the set can remove exactly
  * those objects again and leave an import somebody else ran alone.
  *
@@ -52,12 +51,6 @@ class ExampleSetRegisters {
 	private const APP = 'openregister';
 
 	/**
-	 * The configuration ids OpenRegister's descriptor imports run under: its
-	 * own registers, and its mock registers, which import under their own id.
-	 */
-	private const IMPORT_IDS = ['openregister', 'openregister.mock'];
-
-	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container Hands out the descriptor, import and register services on first use.
@@ -93,10 +86,16 @@ class ExampleSetRegisters {
 	/**
 	 * Import a register from OpenRegister's own descriptor.
 	 *
+	 * The import job is the one the import itself reports. It is not worked out
+	 * from the jobs the instance holds before and after: a job another process
+	 * records in that window (a repair step during an upgrade, an
+	 * administrator's re-import) would be taken for the set's, and remove would
+	 * soft-delete its objects.
+	 *
 	 * @param string $slug The register slug.
 	 *
 	 * @return array{error: string, jobs: array<int, array{appId: string, jobId: string}>} Why it failed, or ''; and
-	 *                                                                                     the import jobs it created.
+	 *                                                                                     the import job it ran under.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
@@ -116,7 +115,7 @@ class ExampleSetRegisters {
 	 * @param string $slug The register slug.
 	 *
 	 * @return array{error: string, jobs: array<int, array{appId: string, jobId: string}>} Why it failed, or ''; and
-	 *                                                                                     the import jobs it created.
+	 *                                                                                     the import job it ran under.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
@@ -127,26 +126,24 @@ class ExampleSetRegisters {
 	}//end importMock()
 
 	/**
-	 * Run one descriptor import and return why it failed and the import jobs it created.
+	 * Run one descriptor import and return why it failed and the import job it reports.
 	 *
 	 * @param callable(RegisterDescriptorService): array<string, mixed> $import The import.
 	 *
 	 * @return array{error: string, jobs: array<int, array{appId: string, jobId: string}>}
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-set-imports-the-openregister-registers-it-requires-req-exs-009
 	 */
 	private function recordedImport(callable $import): array {
 		try {
-			$before = $this->jobIds();
 			$result = $import($this->container->get(RegisterDescriptorService::class));
-			$after  = $this->jobIds();
 		} catch (Throwable $e) {
 			return ['error' => $e->getMessage(), 'jobs' => []];
 		}
 
 		$jobs = [];
-		foreach ($after as $key => $job) {
-			if (isset($before[$key]) === false) {
-				$jobs[] = $job;
-			}
+		if (is_string($result['importJobId'] ?? null) === true && $result['importJobId'] !== '') {
+			$jobs[] = ['appId' => (string) ($result['importAppId'] ?? self::APP), 'jobId' => $result['importJobId']];
 		}
 
 		$error = '';
@@ -194,21 +191,4 @@ class ExampleSetRegisters {
 
 		return $clean;
 	}//end removeImport()
-
-	/**
-	 * Every recorded import job of OpenRegister's own descriptors.
-	 *
-	 * @return array<string, array{appId: string, jobId: string}> Keyed by `appId/jobId`.
-	 */
-	private function jobIds(): array {
-		$recorder = $this->container->get(AppImportJobRecorder::class);
-		$jobs     = [];
-		foreach (self::IMPORT_IDS as $appId) {
-			foreach ($recorder->jobs(appId: $appId) as $job) {
-				$jobs[$appId.'/'.$job['jobId']] = ['appId' => $appId, 'jobId' => (string) $job['jobId']];
-			}
-		}
-
-		return $jobs;
-	}//end jobIds()
 }//end class

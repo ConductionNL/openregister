@@ -57,6 +57,17 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\File\ObjectFileAccess
  *
  * @spec openspec/changes/roles-block-that-resolves-to-nothing-grants-nothing/specs/rbac-scopes/spec.md
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\ConditionMatcher
+ * @uses \OCA\OpenRegister\Service\OperatorEvaluator
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEnforcementMode
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\GrantConstraints
+ * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class PermissionHandlerHandlingTeamRuleTest extends TestCase {
 

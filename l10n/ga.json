@@ -43,7 +43,7 @@
         ", {failed} failed": ", theip ar {failed}",
         "0 = unlimited": "0 = gan teorainn",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Ritheann sruth sraith céimeanna nuair a tharlaíonn rud éigin — athraíonn oibiacht, lasann sceideal, nó ritheann tú féin é. Taispeánann an liosta seo sruthanna gach aipe.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "Tá péire eochracha VAPID cumraithe. Is féidir le húsáideoirí fógraí brabhsálaí a roghnú ina socruithe pearsanta, agus seachadtar iad fiú nuair a bhíonn cluaisín an bhrabhsálaí dúnta.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "Tá péire eochracha VAPID cumraithe. Is féidir le húsáideoirí fógraí brabhsálaí a roghnú ina socruithe úsáideora, agus seachadtar iad fiú nuair a bhíonn cluaisín an bhrabhsálaí dúnta.",
         "A deactivation request is pending.": "Tá iarratas díghníomhachtaithe ar feitheamh.",
         "AI Assistant": "Cúntóir AI",
         "AI Chat": "Comhrá AI",

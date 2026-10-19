@@ -30,7 +30,7 @@
 
 ### Requirement: A submit MUST create the destination in one request and return its reference
 
-`FormSubmitService::submit(destination, mapping, payload, subject, idempotencyKey, scope)` and `submitAll(writes, payload, subject, idempotencyKey, scope)` SHALL map the payload through the mapping (only mapped fields and fixed values reach the object; without a mapping the payload minus `_` and `@` keys is the object), validate it with the destination schema's full validator regardless of the schema's hard-validation flag (properties the server fills are excused from `required`), then create the object under the subject's RBAC; an anonymous submit is saved unowned. It SHALL return `reference` (the property marked `x-openregister.reference: true`, else the uuid), `id`, `receivedAt` (the object's created moment), a `confirmation` map of every property marked `x-openregister.confirmation: true`, read after every create listener ran, and `objects[]` listing each write. A refused payload SHALL answer 422 `{ message, findings }`; a subject not allowed to create 403; an unknown destination 404; an unreachable destination 503 "try again later" with nothing created (Q3). `POST /api/forms/{formId}/submit` SHALL wrap it for forms stored in OpenRegister, with `#[PublicPage]`, `#[AnonRateLimit]`, `#[UserRateLimit]` and `#[BruteForceProtection]` per ADR-082; an unknown, unpublished or destination-less form SHALL answer one identical 404 and register a brute-force attempt; a filled honeypot field `_hp` SHALL answer 202 and store nothing; a form whose `audience` is not `public` SHALL answer 401 to an anonymous visitor. A form stored in OpenRegister is any object whose body carries `status: published` (or `published: true`), `destination: { register, schema }` or `writes[]`, and optionally `mapping` and `audience`.
+`FormSubmitService::submit(destination, mapping, payload, subject, idempotencyKey, scope)` and `submitAll(writes, payload, subject, idempotencyKey, scope)` SHALL map the payload through the mapping (only mapped fields and fixed values reach the object; without a mapping the payload minus `_` and `@` keys and minus `id` and `uuid` is the object; a submit never chooses the uuid of the object it writes, so an `id` or `@self.id` is dropped from the object whatever the mapping says, and the only way to name an existing object is the draft id), validate it with the destination schema's full validator regardless of the schema's hard-validation flag (properties the server fills are excused from `required`), then create the object under the subject's RBAC; an anonymous submit is saved unowned. It SHALL return `reference` (the property marked `x-openregister.reference: true`, else the uuid), `id`, `receivedAt` (the object's created moment), a `confirmation` map of every property marked `x-openregister.confirmation: true`, read after every create listener ran, and `objects[]` listing each write. A refused payload SHALL answer 422 `{ message, findings }`; a subject not allowed to create 403; an unknown destination 404; an unreachable destination 503 "try again later" with nothing created (Q3). `POST /api/forms/{formId}/submit` SHALL wrap it for forms stored in OpenRegister, with `#[PublicPage]`, `#[AnonRateLimit]`, `#[UserRateLimit]` and `#[BruteForceProtection]` per ADR-082; an unknown, unpublished or destination-less form SHALL answer one identical 404 and register a brute-force attempt; a filled honeypot field `_hp` SHALL answer 202 and store nothing; a form whose `audience` is not `public` SHALL answer 401 to an anonymous visitor. A form stored in OpenRegister is any object whose body carries `status: published` (or `published: true`), `destination: { register, schema }` or `writes[]`, and optionally `mapping` and `audience`.
 
 #### Scenario: The response carries the listener-computed fields
 
@@ -47,8 +47,26 @@
 #### Scenario: A repeated idempotency key repeats the answer
 
 - **GIVEN** a submit with key `k1` that created object 7
-- **WHEN** the same key is submitted again within 24 hours
+- **WHEN** the same key is submitted again within 24 hours by the same subject with the same payload
 - **THEN** the response repeats object 7's reference and no object is created
+
+#### Scenario: A key is not reserved on an instance without a locking provider
+
+- **GIVEN** an instance whose locking provider is the no-op one (no memory cache configured for locking)
+- **WHEN** two submits with the same key run at the same time
+- **THEN** the key is not reserved, so both can write; the stored answer still repeats for every retry after the first submit finished, and the store logs once per process that a locking cache (`memcache.locking`) closes this gap
+
+#### Scenario: A repeated key from somebody else, or with another payload, is refused
+
+- **GIVEN** a submit with key `k1` that created object 7
+- **WHEN** another subject, or the same subject with another payload, submits key `k1` within 24 hours
+- **THEN** the response is 409, carries nothing of object 7's answer, and no object is created
+
+#### Scenario: A parallel retry with the same key is refused
+
+- **GIVEN** a submit with key `k1` that is still being written
+- **WHEN** the same key arrives again before it finishes
+- **THEN** the second request is answered 409 and only one object is created
 
 ### Requirement: A submit writing several objects MUST commit all or none
 
@@ -62,7 +80,7 @@ The service SHALL validate every write before the first. When a write is refused
 
 ### Requirement: Upload tokens MUST hold bytes only and expire
 
-`POST /api/forms/{formId}/uploads` SHALL accept one file and the destination `property` it is for, check it against that property's file rules (`maxSize` in bytes or `fileConfiguration.maxSize` in MB, `allowedTypes` or `fileConfiguration.allowedMimeTypes`, the same reader the save path uses), and return `{ token, expiresAt }`. A submit SHALL claim tokens by a payload value `{ "uploadToken": "<token>" }` for the property the token was issued for, and only after its last write succeeded, so a refused submit leaves the files for the retry. Unclaimed tokens SHALL be deleted after 24 hours by an hourly background job that logs its count, a zero included.
+`POST /api/forms/{formId}/uploads` SHALL accept one file and the destination `property` it is for, check it against that property's file rules (`maxSize` in bytes or `fileConfiguration.maxSize` in MB, `allowedTypes` or `fileConfiguration.allowedMimeTypes`, the same reader the save path uses), and return `{ token, expiresAt }`. A submit SHALL claim tokens by a payload value `{ "uploadToken": "<token>" }` for the property the token was issued for, and only after its last write succeeded, so a refused submit leaves the files for the retry. A draft save SHALL claim its tokens the same way once the draft is written, because the files then sit on the draft. A property that declares no `maxSize` SHALL still be capped at 20 MiB (`FormUploadStore::DEFAULT_MAX_BYTES`), because the upload endpoint is a public page; a property that declares a limit, larger or smaller, keeps it. A token claimed for a draft SHALL leave a record of its form, property and draft for 24 hours, and a later autosave or the final submit of THAT draft that still carries the same token SHALL be satisfied by it (the property stays as the draft stores it) instead of refused 422; a token claimed by another draft, issued for another property or form, expired, or never issued stays unknown. Unclaimed tokens SHALL be deleted after 24 hours by an hourly background job that logs its count, a zero included.
 
 #### Scenario: An oversized file is refused at upload
 
@@ -72,13 +90,19 @@ The service SHALL validate every write before the first. When a write is refused
 
 ### Requirement: Saving a schema MUST re-check the forms that submit into it
 
-When a schema's properties or required list are saved, OpenRegister SHALL dispatch `FormDestinationDependentsEvent` with the proposed definition; each owning app adds its published forms into that schema, and the validator SHALL run for each. The owning app's setting `formDestinationBreak` (`unpublish`, the default, or `refuse`) SHALL decide the outcome (Q7): any `refuse` blocks the save with 409 listing the forms and nothing is unpublished; otherwise, after the save, each broken form is unpublished through its owning app, its author is notified (`form_unpublished`), and the save response SHALL list every affected form with its outcome and findings under `affectedForms`. This applies from the first release (Q9).
+When a schema's properties or required list are saved, OpenRegister SHALL dispatch `FormDestinationDependentsEvent` with the proposed definition; each owning app adds its published forms into that schema, and the validator SHALL run for each. The owning app's setting `formDestinationBreak` (`unpublish`, the default, or `refuse`) SHALL decide the outcome (Q7): any `refuse` blocks the save with 409 listing the forms and nothing is unpublished; otherwise, after the save, each broken form is unpublished through its owning app, its author is notified (`form_unpublished`), and the save response SHALL list every affected form with its outcome and findings under `affectedForms`. This applies from the first release (Q9). It holds for every writer of a schema, not only the schema API: a schema written by the configuration importer, the import endpoint or the AI and MCP tools has no response to refuse, so the broken forms are unpublished and their authors notified there too (an owning app's `refuse` setting is logged as not honourable), and the schema API, which judges the forms itself, claims its own save so no form is unpublished twice.
 
 #### Scenario: A new required property unpublishes a form that lacks it
 
 - **GIVEN** a published form into `ticket` without `priority`, and the default setting
 - **WHEN** `priority` becomes required
 - **THEN** the form is unpublished, the response names it, and its author is notified
+
+#### Scenario: A schema import that adds a required property unpublishes a form that lacks it
+
+- **GIVEN** a published form into `ticket` without `priority`
+- **WHEN** a configuration import makes `priority` required on `ticket`
+- **THEN** the form is unpublished and its author is notified, as for an edit through the schema API
 
 ### Requirement: A create refusal MUST use the per-property error shape
 

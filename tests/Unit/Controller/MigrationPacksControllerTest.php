@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use OCA\OpenRegister\Tests\Unit\Service\MigrationPack\PassThroughL10nTrait;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use OCA\OpenRegister\Controller\MigrationPacksController;
@@ -63,6 +64,8 @@ use ReflectionMethod;
 use RuntimeException;
 
 class MigrationPacksControllerTest extends TestCase {
+	use PassThroughL10nTrait;
+
 	private MigrationPacksController $controller;
 	private MigrationPackService&MockObject $service;
 	private IUserSession&MockObject $userSession;
@@ -133,7 +136,7 @@ class MigrationPacksControllerTest extends TestCase {
 			$this->userSession,
 			$this->groupManager,
 			$this->logger,
-			new MigrationPackRequestReader(new PackDefinitionValidator(), $this->l10n),
+			new MigrationPackRequestReader(new PackDefinitionValidator($this->passThroughL10n()), $this->l10n),
 			new MigrationPackErrorResponder($this->l10n, $this->logger)
 		);
 	}
@@ -854,7 +857,7 @@ class MigrationPacksControllerTest extends TestCase {
 			);
 
 		$response = $this->importController($this->validDefinition())->import();
-		$this->assertSame(201, $response->getStatus());
+		$this->assertSame(200, $response->getStatus(), 'a replaced pack is not answered as Created');
 	}
 
 	public function testImportOfANewSlugLogsThatItCreatedAPack(): void {
@@ -970,13 +973,16 @@ class MigrationPacksControllerTest extends TestCase {
 
 	public function testEveryTranslatedMessageHasADutchTranslation(): void {
 		// PHP IL10N reads l10n/<lang>.json; a key missing there reaches a Dutch
-		// administrator in English. The controller's messages live in its two
-		// collaborators.
+		// administrator in English. The controller's messages live in its
+		// collaborators, and the pack editor shows the validator's and the
+		// mapping engine's findings too.
 		$source = '';
 		foreach ([
 			'lib/Controller/MigrationPacksController.php',
 			'lib/Service/MigrationPack/MigrationPackErrorResponder.php',
 			'lib/Service/MigrationPack/MigrationPackRequestReader.php',
+			'lib/Service/MigrationPack/PackDefinitionValidator.php',
+			'lib/Service/MigrationPack/MappingEngine.php',
 		] as $file) {
 			$source .= file_get_contents(__DIR__ . '/../../../' . $file);
 		}
@@ -1040,8 +1046,8 @@ class MigrationPacksControllerTest extends TestCase {
 	private function previewController(array $body): MigrationPacksController {
 		$service = new MigrationPackService(
 			$this->createMock(MigrationPackMapper::class),
-			new PackDefinitionValidator(),
-			new MappingEngine(),
+			new PackDefinitionValidator($this->passThroughL10n()),
+			new MappingEngine($this->passThroughL10n()),
 			$this->createMock(IAppConfig::class)
 		);
 		$request = new MergingRequestFake(['_route' => 'openregister.migrationPacks.preview'], $body, 'POST');

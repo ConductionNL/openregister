@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -52,6 +53,8 @@ class OrganisationGrantManageGuardTest extends TestCase {
 
 	private OrganisationController $controller;
 
+	private GrantChangeAuditor&MockObject $auditor;
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -67,6 +70,7 @@ class OrganisationGrantManageGuardTest extends TestCase {
 		$this->organisationMapper->method('findByUuid')->willReturn($this->organisation);
 		$this->organisationMapper->method('save')->willReturnArgument(0);
 		$this->organisationMapper->method('update')->willReturnArgument(0);
+		$this->auditor = $this->createMock(GrantChangeAuditor::class);
 
 		$this->controller = new OrganisationController(
 			'openregister',
@@ -78,7 +82,8 @@ class OrganisationGrantManageGuardTest extends TestCase {
 			$this->createMock(TenantUsageMapper::class),
 			$this->createMock(IUserSession::class),
 			$this->createMock(originalClassName: IGroupManager::class),
-			$this->createMock(originalClassName: \OCA\OpenRegister\Service\OrganisationUsageService::class)
+			$this->createMock(originalClassName: \OCA\OpenRegister\Service\OrganisationUsageService::class),
+			$this->auditor
 		);
 	}//end setUp()
 
@@ -122,6 +127,36 @@ class OrganisationGrantManageGuardTest extends TestCase {
 		$this->assertNotSame(403, $response->getStatus());
 		$this->assertSame(['editors'], $this->organisation->getAuthorization()['object_publish']);
 	}//end testAMemberStillEditsTheRestOfTheBlock()
+
+	public function testAChangeOfWhoHoldsTheRightIsRecordedOnTheTrail(): void {
+		$this->organisationService->method('isOrganisationAdmin')->willReturn(true);
+		$this->request->method('getParams')->willReturn(
+			['authorization' => ['grant_manage' => ['records-service', 'second-service']]]
+		);
+		$this->auditor->expects($this->once())->method('recordSpecialRight')->with(
+			'org-1',
+			['records-service'],
+			['records-service', 'second-service']
+		);
+
+		$this->controller->update('org-1');
+	}//end testAChangeOfWhoHoldsTheRightIsRecordedOnTheTrail()
+
+	public function testASaveThatLeavesTheListAloneRecordsNothing(): void {
+		$this->organisationService->method('isOrganisationAdmin')->willReturn(true);
+		$this->request->method('getParams')->willReturn(['name' => 'Gemeente Utrecht']);
+		$this->auditor->expects($this->never())->method('recordSpecialRight');
+
+		$this->controller->update('org-1');
+	}//end testASaveThatLeavesTheListAloneRecordsNothing()
+
+	public function testARefusedChangeRecordsNothing(): void {
+		$this->organisationService->method('isOrganisationAdmin')->willReturn(false);
+		$this->request->method('getParams')->willReturn(['authorization' => ['grant_manage' => []]]);
+		$this->auditor->expects($this->never())->method('recordSpecialRight');
+
+		$this->assertSame(403, $this->controller->update('org-1')->getStatus());
+	}//end testARefusedChangeRecordsNothing()
 
 	public function testTheOwnerOrAnAdministratorChangesWhoHoldsTheRight(): void {
 		$this->organisationService->method('isOrganisationAdmin')->with('org-1')->willReturn(true);

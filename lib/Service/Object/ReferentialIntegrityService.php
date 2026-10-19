@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Archival\ArchivalRetentionGuard;
 use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -827,12 +828,7 @@ class ReferentialIntegrityService {
 	 * @spec openspec/specs/referential-integrity/spec.md
 	 */
 	private function extractReferenceKey(array $property): ?string {
-		$key = ($property['referenceKey'] ?? ($property['items']['referenceKey'] ?? null));
-		if (is_string($key) === false || trim($key) === '' || trim($key) === 'uuid') {
-			return null;
-		}
-
-		return trim($key);
+		return (new ReferenceKey())->keyOf(property: $property);
 	}//end extractReferenceKey()
 
 	/**
@@ -942,6 +938,18 @@ class ReferentialIntegrityService {
 				targetUuid: $uuid,
 				isArray: $dep['isArray']
 			);
+			if ($referencingObjects === null) {
+				// Not known whether anything cites it: refuse rather than delete past a RESTRICT.
+				$blockers[] = [
+					'objectUuid' => '',
+					'schema' => $dep['sourceSchemaId'],
+					'property' => $dep['property'],
+					'action' => 'RESTRICT',
+					'reason' => 'unverifiable',
+					'chain' => array_merge($chain, ["{$uuid} → {$dep['property']} (not verifiable)"]),
+				];
+				continue;
+			}
 
 			foreach ($referencingObjects as $refObj) {
 				// Skip already soft-deleted objects.
@@ -1189,7 +1197,11 @@ class ReferentialIntegrityService {
 	 * @param string $targetUuid The UUID being referenced.
 	 * @param bool $isArray Whether the property is an array type.
 	 *
-	 * @return ObjectEntity[] Matching objects.
+	 * A lookup that fails on a table that exists answers null, never an empty
+	 * list: "nothing cites it" would let a RESTRICT delete through and skip a
+	 * CASCADE, as the key lookup already refuses (findReferencingByKey()).
+	 *
+	 * @return ObjectEntity[]|null Matching objects, or null when the lookup could not be done.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -1198,7 +1210,7 @@ class ReferentialIntegrityService {
 		string $propertyName,
 		string $targetUuid,
 		bool $isArray,
-	): array {
+	): ?array {
 		$candidates = [];
 
 		$this->ensureSchemaDetail();
@@ -1219,12 +1231,16 @@ class ReferentialIntegrityService {
 				// Direct match: no further filtering needed.
 				return $candidates;
 			} catch (\Exception $e) {
-				// Table doesn't exist or column missing — no referencing objects possible.
-				$this->logger->debug(
-					message: '[ReferentialIntegrity] Targeted magic table search failed',
-					context: ['schemaId' => $sourceSchemaId, 'error' => $e->getMessage()]
+				// No table yet: nothing can cite the object from there.
+				if ($this->db->tableExists('openregister_table_' . $register->getId() . '_' . $schema->getId()) === false) {
+					return [];
+				}
+
+				$this->logger->warning(
+					message: '[ReferentialIntegrity] reference could not be checked, so the delete is refused',
+					context: ['schemaId' => $sourceSchemaId, 'property' => $propertyName, 'error' => $e->getMessage()]
 				);
-				return [];
+				return null;
 			}
 		}
 
@@ -1235,10 +1251,10 @@ class ReferentialIntegrityService {
 			);
 		} catch (\Exception $e) {
 			$this->logger->warning(
-				message: '[ReferentialIntegrity] findByRelation failed',
+				message: '[ReferentialIntegrity] findByRelation failed, so the delete is refused',
 				context: ['uuid' => $targetUuid, 'error' => $e->getMessage()]
 			);
-			return [];
+			return null;
 		}
 
 		$matches = [];
@@ -1323,16 +1339,28 @@ class ReferentialIntegrityService {
 		string $targetUuid,
 		bool $isArray,
 	): array {
-		$fullTableName = 'oc_openregister_table_' . $register->getId() . '_' . $schema->getId();
-
-		// Convert camelCase property name to snake_case column name and quote it.
-		$columnName = strtolower(preg_replace('/[A-Z]/', '_$0', $propertyName));
-		$quotedCol = '"' . str_replace('"', '""', $columnName) . '"';
-
 		// Validate inputs before database access (also ensures Psalm sees param usage before \OC:: call).
 		if (empty($targetUuid) === true) {
 			return [];
 		}
+
+		$platform = $this->db->getDatabasePlatform();
+
+		// The table with the instance's prefix, and the column the way the table
+		// was built (the schema's column map, collision suffixes included).
+		// Nextcloud's QueryBuilder::getTableName() returns the prefixed table
+		// ALREADY quoted for the platform, so it is used as is: quoting it again
+		// doubled the quote characters, named a table that does not exist, and
+		// the lookup's catch turned that into "nothing references this row"
+		// (every CASCADE, RESTRICT and SET_NULL silently stopped). The column is
+		// quoted by the connection's own platform: a double-quoted identifier is a
+		// string literal to MySQL and MariaDB (no ANSI_QUOTES), so `"code" = ?`
+		// compared the text 'code' with the value, matched nothing and let the
+		// delete through. Null-safe via get_debug_type() (a mocked IDBConnection
+		// returns a bare platform double in unit tests).
+		$bareTable = $this->objectEntityMapper->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$quotedTable = $this->db->getQueryBuilder()->getTableName($bareTable);
+		$quotedCol = $platform->quoteIdentifier($this->columnOf(schema: $schema, propertyName: $propertyName));
 
 		// Build the array/scalar SQL variant selector before accessing the database.
 		// For array properties we need JSON_CONTAINS / jsonb @> operators; for scalars a simple = suffices.
@@ -1341,8 +1369,6 @@ class ReferentialIntegrityService {
 			$queryMode = 'array';
 		}
 
-		$platform = $this->db->getDatabasePlatform();
-		// Null-safe via get_debug_type() (a mocked IDBConnection returns null here in unit tests).
 		$isPostgres = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
 
 		$deletedCheck = '_deleted IS NULL';
@@ -1350,7 +1376,7 @@ class ReferentialIntegrityService {
 			$deletedCheck = "(_deleted IS NULL OR _deleted = 'null'::jsonb)";
 		}
 
-		$selectClause = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop FROM {$fullTableName}";
+		$selectClause = "SELECT _uuid, _register, _schema, _deleted, {$quotedCol} AS _prop FROM {$quotedTable}";
 		$whereCondition = "{$deletedCheck} AND {$quotedCol} = ?";
 
 		if ($queryMode === 'array' && $isPostgres === true) {
@@ -1397,6 +1423,31 @@ class ReferentialIntegrityService {
 
 		return $results;
 	}//end findReferencingInMagicTable()
+
+	/**
+	 * The physical column of a schema property, as the schema's table was built.
+	 *
+	 * Asked of the mapper's own column map rather than derived here, so a
+	 * property whose column carries a collision suffix, or a name the local
+	 * camel-to-snake rule would spell differently, is found where it lives.
+	 *
+	 * @param Schema $schema       The citing schema.
+	 * @param string $propertyName The citing property.
+	 *
+	 * @return string The column name.
+	 *
+	 * @throws RuntimeException When the schema's table has no column for the property.
+	 *
+	 * @spec openspec/specs/referential-integrity/spec.md
+	 */
+	private function columnOf(Schema $schema, string $propertyName): string {
+		$column = ($this->objectEntityMapper->buildTableColumnsFromSchema(schema: $schema)[$propertyName]['name'] ?? null);
+		if (is_string($column) === false || $column === '') {
+			throw new RuntimeException('The table of schema ' . $schema->getId() . ' has no column for property ' . $propertyName);
+		}
+
+		return $column;
+	}//end columnOf()
 
 	/**
 	 * Check whether a property is required by the given schema.
