@@ -162,7 +162,8 @@ class FormIdempotencyStore {
 
 		self::$warned = true;
 		$this->logger?->warning(
-			message: '[FormIdempotencyStore] The locking provider is a no-op: an Idempotency-Key is not reserved while its submit runs, so a parallel retry can write a second object. Configure a locking cache (memcache.locking) to close this.',
+			message: '[FormIdempotencyStore] The locking provider is a no-op: an Idempotency-Key is not reserved while its submit runs, '
+				. 'so a parallel retry can write a second object. Configure a locking cache (memcache.locking) to close this.',
 			context: ['file' => __FILE__, 'line' => __LINE__]
 		);
 	}//end warnWhenReservationIsANoop()

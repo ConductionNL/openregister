@@ -5320,11 +5320,16 @@ class MagicMapper extends AbstractObjectMapper {
 	 */
 	private function updateExistingObject(string $uuid, array $data, string $tableName): void {
 		$leavingDraft = DraftStatusPolicy::isLeaving(uuid: $uuid);
+		$onlyFromStatus = null;
+		if ($leavingDraft === true) {
+			$onlyFromStatus = ObjectEntity::STATUS_DRAFT;
+		}
+
 		$changed = $this->updateObjectInRegisterSchemaTable(
 			uuid: $uuid,
 			data: $data,
 			tableName: $tableName,
-			onlyFromStatus: ($leavingDraft === true) ? ObjectEntity::STATUS_DRAFT : null
+			onlyFromStatus: $onlyFromStatus
 		);
 		if ($leavingDraft === true && $changed === 0) {
 			throw new DraftAlreadyLeftException(message: 'This draft has already left draft.');

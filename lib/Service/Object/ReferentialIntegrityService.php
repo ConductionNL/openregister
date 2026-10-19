@@ -1338,7 +1338,8 @@ class ReferentialIntegrityService {
 		// compared the text 'code' with the value, matched nothing and let the
 		// delete through. Null-safe via get_debug_type() (a mocked IDBConnection
 		// returns a bare platform double in unit tests).
-		$quotedTable = $this->db->getQueryBuilder()->getTableName($this->objectEntityMapper->getTableNameForRegisterSchema(register: $register, schema: $schema));
+		$bareTable = $this->objectEntityMapper->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$quotedTable = $this->db->getQueryBuilder()->getTableName($bareTable);
 		$quotedCol = $platform->quoteIdentifier($this->columnOf(schema: $schema, propertyName: $propertyName));
 
 		// Build the array/scalar SQL variant selector before accessing the database.

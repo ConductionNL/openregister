@@ -646,7 +646,7 @@ class FormSubmitService {
 	/**
 	 * The object without the identity keys of the nested objects its cascading properties carry.
 	 *
-	 * mapPayload() drops the top-level `id`, but a property that cascades (its
+	 * The mapping drops the top-level `id`, but a property that cascades (its
 	 * definition, or its `items`, has a `$ref` or an `inversedBy`) saves each
 	 * nested object through the cascade, which takes the nested `id` (or
 	 * `@self.id`) as the uuid of an existing object and updates it. A submitter

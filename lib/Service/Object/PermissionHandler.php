@@ -1937,7 +1937,14 @@ class PermissionHandler {
 						// Another user's draft is kept from this caller as on every
 						// other path: it is left out like an object that does not
 						// exist, so the delete does not announce it.
-						if ((new DraftStatusPolicy())->keptFromCaller(object: $object, schema: $schema, userId: $userId, isAdmin: $callerIsAdmin, commandLine: $this->isCommandLine()) === true) {
+						$draftKept = (new DraftStatusPolicy())->keptFromCaller(
+							object: $object,
+							schema: $schema,
+							userId: $userId,
+							isAdmin: $callerIsAdmin,
+							commandLine: $this->isCommandLine()
+						);
+						if ($draftKept === true) {
 							continue;
 						}
 

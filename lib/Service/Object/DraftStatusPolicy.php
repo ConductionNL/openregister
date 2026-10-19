@@ -365,7 +365,7 @@ class DraftStatusPolicy {
 	/**
 	 * Whether a stored draft is kept from THIS caller: the one rule every explicit guard asks.
 	 *
-	 * keptFrom() answers for a named owner; this adds who the caller is, the
+	 * The method keptFrom() answers for a named owner; this adds who the caller is, the
 	 * same way the read path does (MagicRbacHandler::isTrustedSystemCaller()):
 	 * an administrator is not kept from a draft, and neither is a system caller
 	 * without a user (the command line, or code inside a SystemOperationContext)
