@@ -589,9 +589,14 @@ class ObjectRelationsController extends Controller {
 	 * @return array<string, mixed> The graph.
 	 */
 	private function reachableFromRoot(array $graph, array $refused): array {
+		/** @var array<int, array<string, mixed>> $allEdges */
+		$allEdges = is_array($graph['edges'] ?? null) === true ? $graph['edges'] : [];
+		/** @var array<int, array<string, mixed>> $allNodes */
+		$allNodes = is_array($graph['nodes'] ?? null) === true ? $graph['nodes'] : [];
+
 		$edges = array_values(
 			array_filter(
-				($graph['edges'] ?? []),
+				$allEdges,
 				static fn (array $edge): bool => isset($refused[(string)($edge['from'] ?? '')]) === false
 					&& isset($refused[(string)($edge['to'] ?? '')]) === false
 			)
@@ -601,7 +606,7 @@ class ObjectRelationsController extends Controller {
 
 		$graph['nodes'] = array_values(
 			array_filter(
-				($graph['nodes'] ?? []),
+				$allNodes,
 				static fn (array $node): bool => isset($reached[(string)($node['uuid'] ?? '')]) === true
 					&& isset($refused[(string)($node['uuid'] ?? '')]) === false
 			)
