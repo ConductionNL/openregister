@@ -165,4 +165,41 @@ class ExampleSetReferencesTest extends ExampleSetTestCase {
 		$this->assertCount(2, $report['left']);
 		$this->assertArrayNotHasKey('alpha/pub-1#references', $report['changes']);
 	}
+
+	/**
+	 * A field refreshed in an earlier run stays in the refresh record when a later run refreshes another field of
+	 * the object, so the earlier field is not read as edited by somebody on the run after.
+	 *
+	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-kept-object-follows-the-objects-it-references-req-exs-023
+	 */
+	public function testARefreshKeepsTheFieldsAnEarlierRunRefreshed(): void {
+		$this->app(app: 'beta', fragment: ['objects' => [
+			['key' => 'theme-2', 'register' => 'pub', 'schema' => 'theme', 'data' => ['slug' => 'werk', 'title' => 'Werk']],
+			['key' => 'pub-3', 'register' => 'pub', 'schema' => 'publication', 'data' => ['title' => 'Twee', 'theme' => '{{object:theme-2.id}}', 'second' => '{{object:theme-2.id}}']],
+		]]);
+		$plan = $this->catalogue->gather(set: 'demo');
+		$this->installer->install(plan: $plan, today: $this->today());
+		$theme = $this->store->ids(register: 'pub', schema: 'theme');
+		$themeId = end($theme);
+		$all = $this->store->ids(register: 'pub', schema: 'publication');
+		$pubId = end($all);
+
+		// Each field points at an id the install once wrote and the object since lost: the install must refresh it.
+		foreach (['theme' => 'stale-1', 'second' => 'stale-2'] as $field => $stale) {
+			$record = $this->record->read(set: 'demo');
+			$record['objects']['beta/pub-3']['refs'][$field] = $stale;
+			$this->record->write(set: 'demo', record: $record);
+			$this->store->rows['pub publication'][$pubId][$field] = $stale;
+			$report = $this->installer->install(plan: $plan, today: $this->today());
+			$this->assertSame('refreshed', $report['changes']['beta/pub-3#references'], $field);
+			$this->assertSame($themeId, $this->store->get(register: 'pub', schema: 'publication', id: $pubId)[$field]);
+		}
+
+		$paths = array_column($this->record->read(set: 'demo')['changes']['beta/pub-3#references']['set'], 'path');
+		sort($paths);
+		$this->assertSame(['second', 'theme'], $paths, 'both refreshes are in the record');
+
+		$again = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertSame([], $again['left'], 'a field the install refreshed is not read as edited by somebody');
+	}
 }
