@@ -262,6 +262,58 @@ class ObjectRelationsControllerTreeTest extends TestCase {
 	}//end testAGraphNodeOfARefusedSchemaIsMaskedWithItsSubtree()
 
 	/**
+	 * The CSV export of the graph leaves out the same nodes as the graph answer: no title or uuid of a node of a
+	 * schema whose purpose was not named, nor of what hung on it.
+	 *
+	 * @return void
+	 */
+	public function testTheGraphExportLeavesOutANodeOfARefusedSchema(): void {
+		$controller = $this->controller(params: []);
+		$this->access->method('readable')->willReturn($this->object());
+		$node = static fn (string $uuid, string $schema): array => [
+			'uuid' => $uuid, 'title' => 'title-'.$uuid, 'register' => '1', 'schema' => $schema,
+			'distance' => 1, 'resolved' => true, 'external' => false,
+		];
+		$this->graphs->method('graph')->willReturn(
+			[
+				'root' => 'root',
+				'nodes' => [$node('root', '2'), $node('open', '2'), $node('secret', '9'), $node('behind', '2')],
+				'edges' => [
+					['from' => 'root', 'to' => 'open', 'direction' => 'outgoing'],
+					['from' => 'root', 'to' => 'secret', 'direction' => 'outgoing'],
+					['from' => 'secret', 'to' => 'behind', 'direction' => 'outgoing'],
+				],
+				'truncated' => false,
+			]
+		);
+		$rows = (new \ReflectionClass(RelationGraphService::class))->newInstanceWithoutConstructor();
+		$this->graphs->method('rowsOf')->willReturnCallback(static fn (array $graph): array => $rows->rowsOf(graph: $graph));
+		$this->access->method('schemaById')->willReturnCallback(
+			static function (string|int|null $id): Schema {
+				$schema = new Schema();
+				$schema->setId((int)$id);
+
+				return $schema;
+			}
+		);
+		$this->purposeGuard->method('enforce')->willReturnCallback(
+			static function (?Register $register, ?Schema $schema): ?string {
+				if ($schema !== null && $schema->getId() === 9) {
+					throw new PurposeRefusedException(rule: PurposeRefusedException::RULE_MISSING, reason: 'A purpose is required.');
+				}
+
+				return null;
+			}
+		);
+
+		$csv = (string)$controller->exportGraph(register: 'r', schema: 's', id: 'x')->render();
+
+		$this->assertStringContainsString('title-open', $csv);
+		$this->assertStringNotContainsString('secret', $csv);
+		$this->assertStringNotContainsString('behind', $csv);
+	}//end testTheGraphExportLeavesOutANodeOfARefusedSchema()
+
+	/**
 	 * A graph whose schemas are all admitted is answered unchanged.
 	 *
 	 * @return void

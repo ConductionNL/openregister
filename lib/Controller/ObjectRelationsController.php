@@ -749,16 +749,20 @@ class ObjectRelationsController extends Controller {
 			return $refusal;
 		}
 
+		// The CSV carries the titles and uuids of every node, so it is narrowed by
+		// the same doelbinding rule as the graph answer before its rows are written.
 		$uuid = (string)$object->getUuid();
-		$export = $this->graphs->export(
-			rootUuid: $uuid,
-			depth: $this->depth(),
-			language: $this->language()
+		$graph = $this->withinPurpose(
+			graph: $this->graphs->graph(
+				rootUuid: $uuid,
+				depth: $this->depth(),
+				language: $this->language()
+			)
 		);
 
 		$handle = fopen('php://temp', 'r+');
-		foreach ($export['rows'] as $row) {
-			fputcsv($handle, $row);
+		foreach ($this->graphs->rowsOf(graph: $graph) as $row) {
+			fputcsv($handle, $row, escape: '');
 		}
 
 		rewind($handle);
