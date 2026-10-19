@@ -82,14 +82,6 @@ class ListenerDeferralService {
 	public const ARGUMENT_LENGTH_NC32 = 4000;
 
 	/**
-	 * The longest job argument Nextcloud 34 and later accept
-	 * (`OC\BackgroundJob\JobList::MAX_ARGUMENT_JSON_LENGTH`, introduced in 34).
-	 *
-	 * @var integer
-	 */
-	public const ARGUMENT_LENGTH_NC34 = 32000;
-
-	/**
 	 * The server's own name for the limit, defined from Nextcloud 34 on.
 	 *
 	 * @var string
