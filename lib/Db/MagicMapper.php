@@ -1687,6 +1687,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * UNION ALL is faster but has limitations:
 	 * - All tables must exist
 	 * - No complex aggregations
+	 * - No related-row filters (`_related`, `_referenced`)
 	 * - Simpler query structure
 	 *
 	 * @param array $query Search query parameters.
@@ -1698,6 +1699,14 @@ class MagicMapper extends AbstractObjectMapper {
 		// this search returns rows only and facets are computed separately. The
 		// sequential fallback orders and pages like UNION, but runs one query per table.
 		if (isset($query['_aggregations']) === true) {
+			return false;
+		}
+
+		// 🔴 `_related` and `_referenced` are EXISTS subqueries that only the
+		// QueryBuilder path (the sequential one) builds. The raw-SQL UNION builder
+		// refuses them, which on this route would end in an uncaught exception
+		// (HTTP 500), so a query carrying either takes the sequential path.
+		if (array_key_exists('_related', $query) === true || array_key_exists('_referenced', $query) === true) {
 			return false;
 		}
 
