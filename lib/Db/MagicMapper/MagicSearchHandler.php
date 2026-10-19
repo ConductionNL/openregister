@@ -1725,6 +1725,9 @@ class MagicSearchHandler {
 	 * @param mixed $value The raw operator value as the request layer delivered it.
 	 *
 	 * @return bool True when the caller asked for IS NULL.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::isNullOperatorAsksForNull() is a pure function shared with the aggregation path.
+	 *
 	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
 	 */
 	private function isNullOperatorAsksForNull(mixed $value): bool {
