@@ -272,6 +272,14 @@ class MagicSearchHandlerOrNullModifierTest extends TestCase {
 		);
 	}//end testUnionPathNeWithoutOrNullKeepsItsMeaning()
 
+	public function testUnionPathKeepsLikeBesideAnOperatorBag(): void {
+		$conditions = $this->unionObject(['title' => ['like' => 'aan', 'ne' => 'x']]);
+
+		$this->assertCount(2, $conditions);
+		$this->assertStringContainsString('LIKE', $conditions[0]);
+		$this->assertSame('"title" <> \'x\'', $conditions[1]);
+	}//end testUnionPathKeepsLikeBesideAnOperatorBag()
+
 	public function testUnionMetadataPathAdmitsNull(): void {
 		$this->assertSame(
 			['(("_expires" < \'2026-10-01\') OR "_expires" IS NULL)'],

@@ -1882,12 +1882,15 @@ class MagicSearchHandler {
 		if (is_array($value) === true) {
 			$comparisonOperators = self::COMPARISON_OPERATORS;
 			if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
-				return $this->objectOperatorConditionsSql(
-					value: $value,
-					quotedCol: $quotedCol,
-					propertyType: $propertyType,
-					connection: $connection,
-					isPostgres: $isPostgres
+				return array_merge(
+					$fieldConditions,
+					$this->objectOperatorConditionsSql(
+						value: $value,
+						quotedCol: $quotedCol,
+						propertyType: $propertyType,
+						connection: $connection,
+						isPostgres: $isPostgres
+					)
 				);
 			}
 
@@ -3017,12 +3020,15 @@ class MagicSearchHandler {
 				return $predicates;
 			}
 
-			return $this->objectOperatorPredicates(
-				qb: $qb,
-				columnName: $columnName,
-				propertyType: $propertyType,
-				value: $value,
-				isPostgres: $isPostgres
+			return array_merge(
+				$predicates,
+				$this->objectOperatorPredicates(
+					qb: $qb,
+					columnName: $columnName,
+					propertyType: $propertyType,
+					value: $value,
+					isPostgres: $isPostgres
+				)
 			);
 		}//end if
 
