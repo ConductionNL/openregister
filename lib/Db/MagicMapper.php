@@ -193,6 +193,13 @@ class MagicMapper extends AbstractObjectMapper {
 	private const METADATA_PREFIX = '_';
 
 	/**
+	 * Schema-and-property pairs already warned about as named like a metadata column.
+	 *
+	 * @var array<string, true>
+	 */
+	private static array $warnedMetadataNamedProperties = [];
+
+	/**
 	 * Whether the last single-object write INSERTED or UPDATED.
 	 *
 	 * The mapper is the only layer that knows. `SaveObject` performs its own
@@ -4697,15 +4704,21 @@ class MagicMapper extends AbstractObjectMapper {
 				// server-side values, and the client's value must not replace them. The
 				// read side already treats such a column as metadata.
 				if (is_string($propertyName) === true && $columnRoles->shadowsMetadata(key: $propertyName) === true) {
-					$this->logger->warning(
-						message: '[MagicMapper] A schema property is named like a metadata column; its value is not written',
-						context: [
-							'file' => __FILE__,
-							'line' => __LINE__,
-							'propertyName' => $propertyName,
-							'schema' => $schema->getId(),
-						]
-					);
+					// Once per schema and property per request: the loop runs for every write.
+					$warnedKey = $schema->getId().':'.$propertyName;
+					if (isset(self::$warnedMetadataNamedProperties[$warnedKey]) === false) {
+						self::$warnedMetadataNamedProperties[$warnedKey] = true;
+						$this->logger->warning(
+							message: '[MagicMapper] A schema property is named like a metadata column; its value is not written',
+							context: [
+								'file' => __FILE__,
+								'line' => __LINE__,
+								'propertyName' => $propertyName,
+								'schema' => $schema->getId(),
+							]
+						);
+					}
+
 					continue;
 				}
 

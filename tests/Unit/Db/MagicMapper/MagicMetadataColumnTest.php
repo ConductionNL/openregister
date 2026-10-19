@@ -98,4 +98,21 @@ class MagicMetadataColumnTest extends TestCase {
 		$this->assertFalse($roles->shadowsMetadata(key: '_meta'));
 		$this->assertFalse($roles->shadowsMetadata(key: 'owner'));
 	}//end testAPropertyThatWouldWriteAMetadataColumnIsSkipped()
+
+	/**
+	 * A key that only sanitises to a metadata column is skipped, declared or not.
+	 *
+	 * @return void
+	 */
+	public function testKeysThatSanitiseToAMetadataColumnAreSkipped(): void {
+		$roles = new MagicMetadataColumn();
+
+		foreach (['@owner', '-organisation', '.authorization', '$status', '_Owner'] as $key) {
+			$this->assertTrue($roles->skippedOnWrite(key: $key, schemaProperties: []), $key);
+			$this->assertTrue($roles->skippedOnWrite(key: $key, schemaProperties: [$key => ['type' => 'string']]), $key);
+		}
+
+		$this->assertFalse($roles->skippedOnWrite(key: 'ownerName', schemaProperties: []));
+		$this->assertFalse($roles->skippedOnWrite(key: '_meta', schemaProperties: ['_meta' => []]));
+	}//end testKeysThatSanitiseToAMetadataColumnAreSkipped()
 }//end class
