@@ -625,8 +625,66 @@ class MagicSearchHandler {
 		$register = new Register();
 		$register->setId($registerId);
 
-		$this->relatedRows->apply(qb: $qb, query: $query, register: $register, outerAlias: 't');
+		$this->relatedRows->apply(
+			qb: $qb,
+			query: $query,
+			register: $register,
+			organisationScopeFor: fn (Schema $related, ?int $relatedRegisterId): array => $this->organisationScopeForRelated(
+				query: $query,
+				related: $related,
+				registerId: $relatedRegisterId
+			)
+		);
 	}//end applyRelatedRowFilters()
+
+	/**
+	 * The organisation scope a related-row subquery must apply to the related table.
+	 *
+	 * The SAME decision the list path takes for a table (`multitenancyApplies()`,
+	 * the cascade widening, `resolveOrganizationScope()`), made for the RELATED
+	 * schema with the request's own flags, so the subquery cannot consult rows
+	 * the list of that table would not return. `SCOPE_ALL` when the boundary does
+	 * not apply (system context, admin bypass, an RBAC rule that waives it).
+	 *
+	 * @param array<mixed> $query      The request query, for `_rbac` and `_multitenancy`.
+	 * @param Schema       $related    The related schema.
+	 * @param int|null     $registerId The register the related table lives in.
+	 *
+	 * @return array{mode: string, uuids: array<int, string>} The decided scope.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function organisationScopeForRelated(array $query, Schema $related, ?int $registerId): array {
+		$_rbac                = $this->flagFromQuery(value: ($query['_rbac'] ?? true));
+		$multitenancyExplicit = $this->isExplicitlyTrue(value: ($query['_multitenancy_explicit'] ?? false));
+		$resolved             = $this->resolveMultitenancyFlag(
+			_multitenancy: $this->flagFromQuery(value: ($query['_multitenancy'] ?? true)),
+			multitenancyExplicit: $multitenancyExplicit,
+			schema: $related
+		);
+
+		$applies = $this->multitenancyApplies(
+			schema: $related,
+			_rbac: $_rbac,
+			_multitenancy: $resolved,
+			multitenancyExplicit: $multitenancyExplicit
+		);
+		if ($applies === false) {
+			return ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []];
+		}
+
+		$scope = $this->organizationHandler->resolveOrganizationScope(
+			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+			registerId: $registerId,
+			schemaId: $related->getId()
+		);
+
+		if ($this->organisationlessRowsAdmitted(schema: $related, _rbac: $_rbac, multitenancyExplicit: $multitenancyExplicit) === true) {
+			$scope = MagicOrganizationHandler::admitOrganisationless(scope: $scope);
+		}
+
+		return $scope;
+	}//end organisationScopeForRelated()
 
 	/**
 	 * Apply metadata, object-field and ID filters to the query.

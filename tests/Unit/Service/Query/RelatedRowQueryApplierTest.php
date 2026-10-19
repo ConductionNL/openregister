@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
@@ -44,6 +45,7 @@ use Psr\Log\NullLogger;
  *
  * @covers \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
  * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Query\PropertyReadGuard
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowExistsClause
@@ -81,6 +83,15 @@ class RelatedRowQueryApplierTest extends TestCase {
 			propertyGuard: $guard
 		);
 	}//end applierFinding()
+
+	/**
+	 * An organisation scope that admits every organisation (admin bypass, system context).
+	 *
+	 * @return callable The scope resolver.
+	 */
+	private function allOrganisations(): callable {
+		return static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []];
+	}//end allOrganisations()
 
 	/**
 	 * A schema.
@@ -136,7 +147,8 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$applied = $this->applierFinding([])->apply(
 			qb: $qb,
 			query: ['_limit' => 10],
-			register: $this->register()
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
 		);
 
 		$this->assertSame(0, $applied);
@@ -160,7 +172,8 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$this->applierFinding([])->apply(
 			qb: $qb,
 			query: $this->relatedQuery(),
-			register: $this->register()
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
 		);
 	}//end testAnUnresolvableSchemaIsRefusedNotSkipped()
 
@@ -178,7 +191,8 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$this->applierFinding([$this->schema(), $this->schema()])->apply(
 			qb: $this->createMock(IQueryBuilder::class),
 			query: $this->relatedQuery(),
-			register: $this->register()
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
 		);
 	}//end testAnAmbiguousSchemaNameIsRefused()
 
@@ -199,7 +213,8 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$applied = $this->applierFinding([$this->schema()])->apply(
 			qb: $qb,
 			query: $this->relatedQuery(),
-			register: $this->register()
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
 		);
 
 		$this->assertSame(1, $applied);
@@ -230,7 +245,8 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$applied = $this->applierFinding([$this->schema()])->apply(
 			qb: $qb,
 			query: $query,
-			register: $this->register()
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
 		);
 
 		$this->assertSame(1, $applied);
@@ -266,7 +282,8 @@ class RelatedRowQueryApplierTest extends TestCase {
 					],
 				],
 			],
-			register: $this->register()
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
 		);
 
 		$this->assertSame(expected: 1, actual: $applied);
@@ -294,7 +311,8 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$this->applierFinding(found: [$this->schema()], guard: $guard)->apply(
 			qb: $qb,
 			query: $this->relatedQuery(),
-			register: $this->register()
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
 		);
 	}//end testAConditionOnAnUnreadablePropertyIsRefused()
 
@@ -314,9 +332,75 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$applied = $this->applierFinding(found: [$this->schema()], guard: $guard)->apply(
 			qb: $qb,
 			query: $this->relatedQuery(),
-			register: $this->register()
+			register: $this->register(),
+			organisationScopeFor: $this->allOrganisations()
 		);
 
 		$this->assertSame(1, $applied);
 	}//end testAConditionOnAReadablePropertyIsApplied()
+	/**
+	 * 🔴 THE RELATED ROWS ARE CONFINED TO THE CALLER'S ORGANISATION.
+	 *
+	 * The row predicate carries no `_organisation` term, so on a schema with no
+	 * authorization block a foreign organisation's row satisfied a related-row
+	 * condition. The subquery now carries the boundary the list applies.
+	 *
+	 * @return void
+	 */
+	public function testTheRelatedRowsAreConfinedToTheCallersOrganisation(): void {
+		$sql        = [];
+		$parameters = [];
+		$qb         = $this->createMock(IQueryBuilder::class);
+		$qb->method('createFunction')->willReturnCallback(static function (string $text) use (&$sql): string {
+			$sql[] = $text;
+			return $text;
+		});
+		$qb->method('setParameter')->willReturnCallback(function (string $name, mixed $value) use (&$parameters, $qb) {
+			$parameters[$name] = $value;
+			return $qb;
+		});
+
+		$this->applierFinding([$this->schema()])->apply(
+			qb: $qb,
+			query: $this->relatedQuery(),
+			register: $this->register(),
+			organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_IN_OR_NULL, 'uuids' => ['org-a', 'org-b']]
+		);
+
+		$this->assertStringContainsString("(rel0._owner = 'alice') AND (rel0._organisation IN (:rel0_org0, :rel0_org1) OR rel0._organisation IS NULL)", $sql[0]);
+		$this->assertSame('org-a', $parameters['rel0_org0']);
+		$this->assertSame('org-b', $parameters['rel0_org1']);
+	}//end testTheRelatedRowsAreConfinedToTheCallersOrganisation()
+
+	/**
+	 * No organisation, or a scope the renderer does not know, matches nothing; null-only matches the org-less rows.
+	 *
+	 * @return void
+	 */
+	public function testAScopeThatAdmitsNothingMatchesNothing(): void {
+		$cases = [
+			'none'    => [['mode' => MagicOrganizationHandler::SCOPE_NONE, 'uuids' => []], 'AND 1 = 0'],
+			'unknown' => [['mode' => 'surprise', 'uuids' => ['org-a']], 'AND 1 = 0'],
+			'empty'   => [['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => []], 'AND 1 = 0'],
+			'null'    => [['mode' => MagicOrganizationHandler::SCOPE_NULL_ONLY, 'uuids' => []], 'AND rel0._organisation IS NULL'],
+		];
+
+		foreach ($cases as $label => [$scope, $expected]) {
+			$sql = [];
+			$qb  = $this->createMock(IQueryBuilder::class);
+			$qb->method('createFunction')->willReturnCallback(static function (string $text) use (&$sql): string {
+				$sql[] = $text;
+				return $text;
+			});
+
+			$this->applierFinding([$this->schema()])->apply(
+				qb: $qb,
+				query: $this->relatedQuery(),
+				register: $this->register(),
+				organisationScopeFor: static fn (): array => $scope
+			);
+
+			$this->assertStringContainsString($expected, $sql[0], $label);
+		}
+	}//end testAScopeThatAdmitsNothingMatchesNothing()
 }//end class

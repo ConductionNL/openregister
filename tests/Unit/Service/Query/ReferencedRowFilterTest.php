@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
@@ -155,7 +156,7 @@ class ReferencedRowFilterTest extends TestCase {
 			rbacHandler: $rbac,
 			db: $this->createMock(IDBConnection::class),
 			logger: new NullLogger()
-		))->apply(qb: $qb, query: $this->forwardQuery(), register: $register);
+		))->apply(qb: $qb, query: $this->forwardQuery(), register: $register, organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]);
 
 		$this->assertSame(1, $applied);
 		$this->assertStringContainsString('rel0._uuid = t."subsidieaanvraag"', $sql[0]);

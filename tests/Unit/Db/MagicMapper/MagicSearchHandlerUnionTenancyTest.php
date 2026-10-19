@@ -344,4 +344,34 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 
 		$this->assertStringContainsString("_organisation IN ('org-a')", $sql);
 	}//end testAnUnreadableFlagKeepsTheBoundary()
+
+	/**
+	 * A related-row subquery gets the SAME organisation scope the list applies to that table.
+	 *
+	 * @return void
+	 */
+	public function testARelatedRowSubqueryIsConfinedToTheCallersOrganisation(): void {
+		$scope = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-a']];
+		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
+
+		$decided = $method->invoke($this->handler($scope), [], new Schema(), 1);
+
+		$this->assertSame($scope, $decided);
+	}//end testARelatedRowSubqueryIsConfinedToTheCallersOrganisation()
+
+	/**
+	 * Where the list waives the boundary (an RBAC rule governs), the subquery waives it too, and a grant holder keeps it.
+	 *
+	 * @return void
+	 */
+	public function testARelatedRowSubqueryWaivesTheBoundaryExactlyWhereTheListDoes(): void {
+		$scope  = ['mode' => MagicOrganizationHandler::SCOPE_IN, 'uuids' => ['org-a']];
+		$method = new \ReflectionMethod(MagicSearchHandler::class, 'organisationScopeForRelated');
+
+		$waived = $method->invoke($this->handler($scope, conditionalBypass: true), [], new Schema(), 1);
+		$this->assertSame(MagicOrganizationHandler::SCOPE_ALL, $waived['mode']);
+
+		$held = $method->invoke($this->handler($scope, conditionalBypass: true, holdsGrants: true), [], new Schema(), 1);
+		$this->assertSame($scope, $held);
+	}//end testARelatedRowSubqueryWaivesTheBoundaryExactlyWhereTheListDoes()
 }//end class

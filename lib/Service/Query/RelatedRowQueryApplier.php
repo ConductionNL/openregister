@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Query;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
@@ -89,6 +90,8 @@ class RelatedRowQueryApplier {
 	 * @param IQueryBuilder $qb         The query being built.
 	 * @param array<mixed>  $query      The request query.
 	 * @param Register      $register   The register the related rows live in.
+	 * @param callable      $organisationScopeFor Given the related schema and the register id, the organisation scope
+	 *                                            the list path applies to that table: `array{mode: string, uuids: array<int, string>}`.
 	 * @param string        $outerAlias The alias of the outer object row.
 	 *
 	 * @return int How many clauses were applied.
@@ -98,7 +101,7 @@ class RelatedRowQueryApplier {
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	public function apply(IQueryBuilder $qb, array $query, Register $register, string $outerAlias = 't'): int {
+	public function apply(IQueryBuilder $qb, array $query, Register $register, callable $organisationScopeFor, string $outerAlias = 't'): int {
 		$filters = [];
 		if (array_key_exists(RelatedRowFilterParser::KEY, $query) === true) {
 			$filters = (new RelatedRowFilterParser())->parse($query);
@@ -146,11 +149,16 @@ class RelatedRowQueryApplier {
 				// ONE. The two schemas have different authorization blocks, and
 				// reusing the outer query's predicate would decide who may read
 				// case properties by asking who may read cases.
-				accessPredicate: $this->rbacHandler->buildRbacPredicateForAlias(
-					schema: $schema,
-					alias: $alias,
-					action: 'read',
-					tableName: $relatedTable
+				accessPredicate: $this->accessPredicate(
+					qb: $qb,
+					rbacPredicate: $this->rbacHandler->buildRbacPredicateForAlias(
+						schema: $schema,
+						alias: $alias,
+						action: 'read',
+						tableName: $relatedTable
+					),
+					scope: $organisationScopeFor($schema, $register->getId()),
+					alias: $alias
 				),
 				parameterPrefix: $alias,
 				storage: RelatedRowExistsClause::STORAGE_COLUMNS
@@ -166,6 +174,67 @@ class RelatedRowQueryApplier {
 
 		return $applied;
 	}//end apply()
+
+	/**
+	 * The related rows' access predicate: the RBAC row rule AND the organisation boundary.
+	 *
+	 * 🔴 THE ORGANISATION BOUNDARY IS A SEPARATE TERM FROM THE ROW RULE. The row
+	 * predicate carries no `_organisation` term (on a schema with no
+	 * authorization block it admits every row), so a subquery that stopped there
+	 * matched rows of another organisation: a caller who writes a foreign row's
+	 * uuid into their own object could probe that row's fields, and foreign rows
+	 * pointing at the caller's object satisfied `_related`. The outer list would
+	 * never return those rows, so the subquery must not consult them.
+	 *
+	 * The SCOPE is decided by the caller of the list path (one decision, shared
+	 * with the outer query); this only renders it for the related alias. A mode
+	 * it does not know matches nothing.
+	 *
+	 * @param IQueryBuilder                                  $qb            The query, which receives the organisation parameters.
+	 * @param string                                         $rbacPredicate The related schema's row predicate.
+	 * @param array{mode: string, uuids: array<int, string>} $scope         The decided organisation scope.
+	 * @param string                                         $alias         The related row's alias.
+	 *
+	 * @return string The combined predicate.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function accessPredicate(IQueryBuilder $qb, string $rbacPredicate, array $scope, string $alias): string {
+		$column = $alias . '._organisation';
+		$mode   = ($scope['mode'] ?? null);
+
+		if ($mode === MagicOrganizationHandler::SCOPE_ALL) {
+			return $rbacPredicate;
+		}
+
+		if ($mode === MagicOrganizationHandler::SCOPE_NULL_ONLY) {
+			return '(' . $rbacPredicate . ') AND ' . $column . ' IS NULL';
+		}
+
+		$uuids = array_values(array_filter(
+			($scope['uuids'] ?? []),
+			static fn ($uuid): bool => is_string($uuid) === true && $uuid !== ''
+		));
+		$scoped = [MagicOrganizationHandler::SCOPE_IN, MagicOrganizationHandler::SCOPE_IN_OR_NULL];
+		if (in_array($mode, $scoped, true) === false || $uuids === []) {
+			// SCOPE_NONE, an unknown mode, or "in these organisations" naming none.
+			return '(' . $rbacPredicate . ') AND 1 = 0';
+		}
+
+		$placeholders = [];
+		foreach ($uuids as $position => $uuid) {
+			$name           = sprintf('%s_org%d', $alias, $position);
+			$placeholders[] = ':' . $name;
+			$qb->setParameter($name, $uuid);
+		}
+
+		$term = $column . ' IN (' . implode(', ', $placeholders) . ')';
+		if ($mode === MagicOrganizationHandler::SCOPE_IN_OR_NULL) {
+			$term = '(' . $term . ' OR ' . $column . ' IS NULL)';
+		}
+
+		return '(' . $rbacPredicate . ') AND ' . $term;
+	}//end accessPredicate()
 
 	/**
 	 * Refuse a block that matches on a property the caller may not read.

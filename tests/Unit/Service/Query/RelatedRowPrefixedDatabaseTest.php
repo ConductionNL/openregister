@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
+use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
@@ -47,6 +48,8 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
  * @covers \OCA\OpenRegister\Service\Query\RelatedRowExistsClause
  * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
+ * @uses \OCA\OpenRegister\Service\Query\PropertyReadGuard
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilterParser
@@ -121,7 +124,7 @@ class RelatedRowPrefixedDatabaseTest extends TestCase {
 			rbacHandler: $rbac,
 			db: $this->createMock(IDBConnection::class),
 			logger: new NullLogger()
-		))->apply(qb: $qb, query: $query, register: $register);
+		))->apply(qb: $qb, query: $query, register: $register, organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]);
 
 		return [$where, $parameters];
 	}
