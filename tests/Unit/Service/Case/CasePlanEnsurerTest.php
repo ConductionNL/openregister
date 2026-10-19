@@ -353,4 +353,35 @@ class CasePlanEnsurerTest extends TestCase {
 		$row = $this->items->findByObject(objectUuid: CaseFixtures::OBJECT)[0];
 		$this->assertSame([(string)$row->getUuid()], array_keys((new UnarmedTimerMarkers(appConfig: $appConfig))->all()), 'the item is marked');
 	}//end testARefusedStatutoryArmDuringEnsureIsMarkedAndTheEnsureStands()
+
+	/**
+	 * A resumed ensure marks an existing active statutory item, so an arm that failed earlier is not forgotten.
+	 *
+	 * @return void
+	 */
+	public function testAResumedEnsureMarksAnExistingActiveStatutoryItem(): void {
+		$definition = [
+			'settings' => ['authorization' => ['demo-behandelaars'], 'statutory' => ['beoordeling']],
+			'items' => [
+				['key' => 'beoordeling', 'type' => CaseItem::TYPE_HUMAN_TASK, 'name' => 'B', 'state' => CaseItem::STATE_ACTIVE, 'expiresAt' => (new \DateTime('+10 days'))->format('c')],
+				['key' => 'gewoon', 'type' => CaseItem::TYPE_HUMAN_TASK, 'name' => 'G', 'state' => CaseItem::STATE_ACTIVE],
+			],
+		];
+		$core = $this->createMock(FlowTimerService::class);
+		$core->method('arm')->willThrowException(new \RuntimeException('calendar unknown'));
+
+		// The first ensure ran without any marker store: the failed arm was lost.
+		$first = $this->ensurer(new CasePlanItemTimers(timers: $core, logger: new NullLogger()));
+		$first->ensure(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2, definition: $definition, history: [], actor: 'system:dossiq');
+
+		$stored = [];
+		$markers = new UnarmedTimerMarkers(appConfig: CaseFixtures::memoryAppConfig(case: $this, store: $stored));
+		$resumed = $this->ensurer(new CasePlanItemTimers(timers: $core, logger: new NullLogger(), markers: $markers));
+		$result = $resumed->ensure(objectUuid: CaseFixtures::OBJECT, registerId: 1, schemaId: 2, definition: $definition, history: [], actor: 'system:dossiq');
+
+		$this->assertSame([], $result['created']);
+		$rows = $this->items->findByObject(objectUuid: CaseFixtures::OBJECT);
+		$statutory = array_values(array_filter($rows, static fn (CaseItem $row): bool => $row->getItemKey() === 'beoordeling'));
+		$this->assertSame([(string)$statutory[0]->getUuid()], array_keys($markers->all()), 'only the statutory item is marked');
+	}//end testAResumedEnsureMarksAnExistingActiveStatutoryItem()
 }

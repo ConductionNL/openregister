@@ -122,6 +122,28 @@ class CasePlanItemTimers {
 	}//end onEntered()
 
 	/**
+	 * Mark an active item for the re-arm pass when it carries a statutory expiry.
+	 *
+	 * For an item that already existed when its plan was ensured again: its first arm may have failed, and
+	 * nothing else would look at it. The pass drops the marker at once for an item whose timer is running.
+	 *
+	 * @param CaseItem $item The active item.
+	 *
+	 * @return bool True when the item was marked.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-plan-item-deadlines-run-on-the-shared-clock
+	 */
+	public function markIfStatutory(CaseItem $item): bool {
+		if ($item->getExpiresAt() === null || $this->legalEffect(item: $item, purpose: FlowTimer::PURPOSE_EXPIRY) !== FlowTimer::LEGAL_WETTELIJK) {
+			return false;
+		}
+
+		$this->mark(item: $item);
+
+		return true;
+	}//end markIfStatutory()
+
+	/**
 	 * Arm the statutory expiry of an item that is active without one, again.
 	 *
 	 * Called by {@see CasePlanTimerRearm} for an item the first arm failed
@@ -231,6 +253,12 @@ class CasePlanItemTimers {
 				'[CasePlanItemTimers] A plan item became active after its deadline; no timer is armed.',
 				['item' => $item->getUuid(), 'purpose' => $purpose]
 			);
+
+			// A statutory term that ran out before the item became active still has to be enforced: mark it, and
+			// the re-arm pass (which enforces an overdue term) ends the item as a fired timer would have.
+			if ($purpose === FlowTimer::PURPOSE_EXPIRY && $this->legalEffect(item: $item, purpose: $purpose) === FlowTimer::LEGAL_WETTELIJK) {
+				$this->mark(item: $item);
+			}
 
 			return false;
 		}

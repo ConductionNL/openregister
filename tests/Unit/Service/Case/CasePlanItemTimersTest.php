@@ -202,6 +202,51 @@ class CasePlanItemTimersTest extends TestCase {
 	}//end testARefusedStatutoryTimerIsLoggedLoudly()
 
 	/**
+	 * A statutory expiry that is already past when the item becomes active is marked for the re-arm pass, which
+	 * enforces an overdue term; a service-norm one only logs.
+	 *
+	 * @return void
+	 */
+	public function testAStatutoryExpiryAlreadyPastIsMarkedNotDropped(): void {
+		$now = new DateTimeImmutable('2026-10-10T10:00:00+00:00');
+		$statutory = CaseFixtures::row(id: 9, key: 'stat', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
+		$statutory->setExpiresAt(new DateTime('2026-10-01T10:00:00+00:00'));
+		$statutory->setPlanSettings(['statutory' => ['stat']]);
+		$norm = CaseFixtures::row(id: 10, key: 'norm', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
+		$norm->setExpiresAt(new DateTime('2026-10-01T10:00:00+00:00'));
+		$this->timers->expects($this->never())->method('arm');
+		$stored = [];
+		$markers = new UnarmedTimerMarkers(appConfig: CaseFixtures::memoryAppConfig(case: $this, store: $stored));
+		$service = new CasePlanItemTimers(timers: $this->timers, logger: new \Psr\Log\NullLogger(), markers: $markers);
+
+		$this->assertSame(0, $service->onEntered(item: $statutory, actor: null, now: $now));
+		$this->assertSame(0, $service->onEntered(item: $norm, actor: null, now: $now));
+
+		$this->assertSame(['item-9'], array_keys($markers->all()));
+	}//end testAStatutoryExpiryAlreadyPastIsMarkedNotDropped()
+
+	/**
+	 * Only an item with a statutory expiry is marked by markIfStatutory.
+	 *
+	 * @return void
+	 */
+	public function testMarkIfStatutoryMarksOnlyAStatutoryExpiry(): void {
+		$stored = [];
+		$markers = new UnarmedTimerMarkers(appConfig: CaseFixtures::memoryAppConfig(case: $this, store: $stored));
+		$service = new CasePlanItemTimers(timers: $this->timers, logger: new \Psr\Log\NullLogger(), markers: $markers);
+		$statutory = CaseFixtures::row(id: 9, key: 'stat', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
+		$statutory->setPlanSettings(['statutory' => ['stat']]);
+
+		$this->assertFalse($service->markIfStatutory(item: $statutory), 'no expiry, nothing to enforce');
+		$statutory->setExpiresAt(new DateTime('2026-10-20T10:00:00+00:00'));
+		$this->assertTrue($service->markIfStatutory(item: $statutory));
+		$norm = CaseFixtures::row(id: 10, key: 'norm', type: CaseItem::TYPE_HUMAN_TASK, state: CaseItem::STATE_ACTIVE);
+		$norm->setExpiresAt(new DateTime('2026-10-20T10:00:00+00:00'));
+		$this->assertFalse($service->markIfStatutory(item: $norm));
+		$this->assertSame(['item-9'], array_keys($markers->all()));
+	}//end testMarkIfStatutoryMarksOnlyAStatutoryExpiry()
+
+	/**
 	 * Reaching a terminal state cancels the item's open timers; a failure to
 	 * cancel is logged, never thrown.
 	 *
