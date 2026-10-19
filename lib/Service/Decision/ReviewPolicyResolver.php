@@ -121,7 +121,9 @@ class ReviewPolicyResolver {
 	 *
 	 * @return array<string, mixed> subjectType, subjectId, fileId, objectId,
 	 *                              register, schema and objectUuid; `lookupFailed`
-	 *                              (true) when the file-to-object lookup threw.
+	 *                              (true) when the file-to-object lookup threw or
+	 *                              the file itself could not be found. A file that
+	 *                              exists and belongs to no object is not a failure.
 	 */
 	private function subjectOf(EntityRelation $relation): array {
 		$subject = [
@@ -141,10 +143,15 @@ class ReviewPolicyResolver {
 
 		try {
 			$node = $this->rootFolder->getFirstNodeById($fileId);
-			$object = null;
-			if ($node !== null) {
-				$object = $this->folders->getObjectForFile(file: $node);
+			if ($node === null) {
+				// The file cannot be found, so nothing says which object (and schema) it belongs to: that is an
+				// unknown owner, not a file without one, and an unknown policy fails closed.
+				$subject['lookupFailed'] = true;
+
+				return $subject;
 			}
+
+			$object = $this->folders->findObjectForFile(file: $node);
 		} catch (Throwable $error) {
 			$this->logger->info(
 				message: '[ReviewPolicyResolver] The file\'s object could not be found; the decision stays with its decider.',

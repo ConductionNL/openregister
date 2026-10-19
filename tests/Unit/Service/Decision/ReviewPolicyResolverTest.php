@@ -41,10 +41,11 @@ class ReviewPolicyResolverTest extends TestCase {
 	 * @param array<string, mixed>|null $schemaConfiguration The schema's configuration, or null when it cannot be read.
 	 * @param array<string, mixed>      $fileSettings        The stored file settings.
 	 * @param bool                      $lookupFails         Whether the file-to-object lookup throws.
+	 * @param bool                      $objectLookupFails   Whether the object lookup behind an existing file throws.
 	 *
 	 * @return ReviewPolicyResolver The resolver.
 	 */
-	private function resolver(?array $schemaConfiguration, array $fileSettings=[], bool $lookupFails=false): ReviewPolicyResolver {
+	private function resolver(?array $schemaConfiguration, array $fileSettings=[], bool $lookupFails=false, bool $objectLookupFails=false): ReviewPolicyResolver {
 		$schemas = $this->createMock(SchemaMapper::class);
 		if ($schemaConfiguration === null) {
 			$schemas->method('find')->willThrowException(new RuntimeException('gone'));
@@ -65,11 +66,12 @@ class ReviewPolicyResolverTest extends TestCase {
 		);
 
 		$file = $this->createMock(File::class);
+		$loose = $this->createMock(File::class);
 		$root = $this->createMock(IRootFolder::class);
 		if ($lookupFails === true) {
 			$root->method('getFirstNodeById')->willThrowException(new RuntimeException('lookup failed'));
 		} else {
-			$root->method('getFirstNodeById')->willReturnCallback(static fn (int $id) => ($id === 99 ? $file : null));
+			$root->method('getFirstNodeById')->willReturnCallback(static fn (int $id) => ([99 => $file, 50 => $loose][$id] ?? null));
 		}
 
 		$object = new ObjectEntity();
@@ -77,7 +79,12 @@ class ReviewPolicyResolverTest extends TestCase {
 		$object->setSchema('12');
 		$object->setUuid('doc-1');
 		$folders = $this->createMock(FolderManagementHandler::class);
-		$folders->method('getObjectForFile')->willReturn($object);
+		if ($objectLookupFails === true) {
+			$folders->method('findObjectForFile')->willThrowException(new RuntimeException('database is gone'));
+		} else {
+			// File 99 belongs to `doc-1`; file 50 exists and belongs to no object.
+			$folders->method('findObjectForFile')->willReturnCallback(static fn ($node) => ($node === $file ? $object : null));
+		}
 
 		return new ReviewPolicyResolver(
 			schemaMapper: $schemas,
@@ -127,6 +134,11 @@ class ReviewPolicyResolverTest extends TestCase {
 		self::assertTrue($resolver->forRelation(relation: $orphan)['policy']->isDeciderOwned());
 
 		self::assertFalse($this->resolver(schemaConfiguration: [])->forRelation(relation: $orphan)['policy']->isDeciderOwned());
+
+		// A file that cannot be found at all has no known owner: closed, never the open default.
+		$gone = new EntityRelation();
+		$gone->setFileId(404);
+		self::assertTrue($this->resolver(schemaConfiguration: [])->forRelation(relation: $gone)['policy']->isDeciderOwned());
 	}//end testWithoutADeclarationTheInstanceDefaultApplies()
 
 	/**
@@ -162,4 +174,20 @@ class ReviewPolicyResolverTest extends TestCase {
 		self::assertSame([], $resolved['policy']->getSupervisors());
 		self::assertArrayNotHasKey('lookupFailed', $resolved['subject']);
 	}//end testAFailedFileLookupFailsClosed()
+
+	/**
+	 * An object lookup that fails behind an existing file fails closed, like a failed file lookup.
+	 *
+	 * @return void
+	 */
+	public function testAFailedObjectLookupBehindAnExistingFileFailsClosed(): void {
+		$relation = new EntityRelation();
+		$relation->setId(7);
+		$relation->setFileId(99);
+
+		$resolved = $this->resolver(schemaConfiguration: [], objectLookupFails: true)->forRelation(relation: $relation);
+
+		self::assertTrue($resolved['policy']->isDeciderOwned());
+		self::assertTrue($resolved['policy']->hidesOthers());
+	}//end testAFailedObjectLookupBehindAnExistingFileFailsClosed()
 }//end class
