@@ -38,6 +38,7 @@ use ReflectionMethod;
 
 /**
  * @covers \OCA\OpenRegister\Service\Object\MergeHandler
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class MergeHandlerFileTransferTest extends TestCase {
 

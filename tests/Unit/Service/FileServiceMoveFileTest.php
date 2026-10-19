@@ -34,6 +34,7 @@ use ReflectionProperty;
 
 /**
  * @covers \OCA\OpenRegister\Service\FileService::moveFile
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class FileServiceMoveFileTest extends TestCase {
 

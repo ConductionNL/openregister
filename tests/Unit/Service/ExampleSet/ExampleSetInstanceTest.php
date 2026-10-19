@@ -32,6 +32,7 @@ use RuntimeException;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance
+ * @uses \OCA\OpenRegister\Db\Organisation
  */
 class ExampleSetInstanceTest extends TestCase {
 	/** @var OrganisationMapper&MockObject */

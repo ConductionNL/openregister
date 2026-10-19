@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
  * Remember, find, expire, purge, and keys scoped per form.
  *
  * @covers \OCA\OpenRegister\Service\Form\FormIdempotencyStore
+ * @uses \OCA\OpenRegister\Exception\FormSubmitRefusedException
  */
 class FormIdempotencyStoreTest extends TestCase {
 

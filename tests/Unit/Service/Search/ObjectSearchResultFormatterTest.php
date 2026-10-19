@@ -45,6 +45,7 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\MdiIconRenderer
  * @uses \OCA\OpenRegister\Service\Reference\ObjectPreviewFormatter
+ * @uses \OCA\OpenRegister\Dto\DeepLinkRegistration
  */
 class ObjectSearchResultFormatterTest extends TestCase {
 

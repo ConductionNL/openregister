@@ -25,6 +25,8 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\AnonymousEvaluationContext
+ * @uses \OCA\OpenRegister\Service\SystemOperationContext
  */
 class DraftCallerRuleTest extends TestCase {
 

@@ -30,6 +30,7 @@ use RuntimeException;
  * @uses   \OCA\OpenRegister\Db\Decision
  *
  * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
+ * @uses \OCA\OpenRegister\Service\Decision\DecisionOwnedException
  */
 class DecisionOwnershipTest extends TestCase {
 

@@ -37,6 +37,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\GrantChangeAuditor
+ * @uses \OCA\OpenRegister\Db\ObjectEntity
  */
 class GrantChangeAuditorTest extends TestCase {
 

@@ -59,6 +59,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\OpenRegister\Service\Rbac\ObjectScopeResolver
  * @uses \OCA\OpenRegister\Service\Rbac\PermissionCatalogue
  * @uses \OCA\OpenRegister\Service\SystemOperationContext
+ * @uses \OCA\OpenRegister\Service\Rbac\DenyEntryMatcher
  */
 class PermissionHandlerPermittedActionsTest extends TestCase {
 

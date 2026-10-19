@@ -39,6 +39,10 @@ use RuntimeException;
  * A blind second review: another reviewer's decision is listed but not shown.
  *
  * @covers \OCA\OpenRegister\Service\Decision\DecisionVisibility
+ * @uses \OCA\OpenRegister\Db\Decision
+ * @uses \OCA\OpenRegister\Db\EntityRelation
+ * @uses \OCA\OpenRegister\Event\DecisionVisibilityRequestedEvent
+ * @uses \OCA\OpenRegister\Service\Decision\ReviewPolicy
  */
 class HiddenDecisionTest extends TestCase {
 

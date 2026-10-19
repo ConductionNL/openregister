@@ -30,6 +30,8 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\EffectiveAuthorization
+ * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\Schema
  */
 class EffectiveAuthorizationTest extends TestCase {
 
