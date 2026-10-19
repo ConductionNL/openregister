@@ -316,6 +316,39 @@ All metadata fields support the following operators for precise filtering:
 | `exists` | Property exists check | `@self[published][exists]=true` |
 | `empty` | Empty value check | `@self[summary][empty]=true` |
 | `null` | Null value check | `@self[depublished][null]=true` |
+| `isnull` | Empty (`true`) or filled (`false`) | `@self[expires][isnull]=true` |
+| `orNull` | Also match rows where the field is empty (a modifier, see below) | `@self[expires][lt]=2026-01-01&@self[expires][orNull]=true` |
+
+#### Including empty values with `orNull`
+
+Every comparison leaves out rows where the field is empty, because SQL treats a
+comparison with NULL as unknown. So `isFinalStatus[ne]=true` does not return a
+case whose `isFinalStatus` was never written, and neither does
+`isFinalStatus=false`.
+
+Add `orNull=true` to the same field to get those rows as well. The other
+operators on that field still apply together, and the field also matches when it
+is empty:
+
+```
+GET /api/objects/5/24?isFinalStatus[ne]=true&isFinalStatus[orNull]=true
+GET /api/objects/5/24?isFinalStatus_ne=true&isFinalStatus_orNull=true
+```
+
+From PHP, through `ObjectService::searchObjects()`:
+
+```php
+['isFinalStatus' => ['ne' => true, 'orNull' => true]]
+['isFinalStatus' => ['in' => [false], 'orNull' => true]]
+['@self' => ['expires' => ['lt' => '2026-01-01', 'orNull' => true]]]
+```
+
+`orNull` works on schema properties, on `@self` metadata fields and on paths
+inside object properties (`dwell.breached[ne]=true&dwell.breached[orNull]=true`).
+It reads its value like `isnull`: `true`, `1`, `on` and `yes` switch it on,
+anything else leaves the filter as it was. On its own, without another operator,
+it adds no condition. `ne` and the other operators keep their meaning when
+`orNull` is absent.
 
 :::info Why Operator Names Instead of Mathematical Symbols?
 
