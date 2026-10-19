@@ -80,6 +80,8 @@ class MagicSearchHandlerOrNullModifierTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getDatabasePlatform')->willReturn($this->createMock(PostgreSQL120Platform::class));
+		$related = $this->createMock(RelatedRowQueryApplier::class);
+		$related->method('mayReadProperty')->willReturn(true);
 
 		$this->handler = new MagicSearchHandler(
 			db: $db,
@@ -88,7 +90,7 @@ class MagicSearchHandlerOrNullModifierTest extends TestCase {
 			organizationHandler: $this->createMock(MagicOrganizationHandler::class),
 			schemaTypeConverter: new SchemaTypeConverter(),
 			dateTimeNormalizer: new DateTimeNormalizer($logger),
-			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
+			relatedRows: $related
 		);
 		$this->captured = [];
 	}//end setUp()
