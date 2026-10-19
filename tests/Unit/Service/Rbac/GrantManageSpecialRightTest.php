@@ -285,6 +285,30 @@ class GrantManageSpecialRightTest extends TestCase {
 		$this->assertSame('reviewer', $rows[1][2]['sharedWith']);
 	}//end testEveryGrantAndRevokeLeavesAnAuditRowNamingHowTheCallerWasAdmitted()
 
+	public function testAPublicLinkAndAnEmailInvitationLeaveAnAuditRowWithoutTheToken(): void {
+		$this->signIn('handler', ['staff']);
+		$share = $this->shareManagerStoresAShare();
+		$share->method('getToken')->willReturn('secret-token');
+
+		$rows = [];
+		$this->trail->expects($this->exactly(2))->method('createAuditTrailEntry')->willReturnCallback(
+			function (ObjectEntity $object, string $action, array $context) use (&$rows) {
+				$rows[] = [$action, $context];
+
+				return new \OCA\OpenRegister\Db\AuditTrail();
+			}
+		);
+
+		$this->sharing->createLink($this->record, 1);
+		$this->sharing->inviteByEmail($this->record, 'guest@example.nl', 1);
+
+		$this->assertSame(GrantChangeAuditor::ACTION_GRANTED, $rows[0][0]);
+		$this->assertSame('link', $rows[0][1]['type']);
+		$this->assertSame(GrantChangeAuditor::ACTION_GRANTED, $rows[1][0]);
+		$this->assertSame('email', $rows[1][1]['type']);
+		$this->assertStringNotContainsString('secret-token', json_encode($rows));
+	}//end testAPublicLinkAndAnEmailInvitationLeaveAnAuditRowWithoutTheToken()
+
 	public function testARefusedGrantLeavesNoAuditRow(): void {
 		$this->signIn('service-account', [self::SERVICE_GROUP]);
 		$this->trail->expects($this->never())->method('createAuditTrailEntry');
