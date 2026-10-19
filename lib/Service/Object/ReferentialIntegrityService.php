@@ -938,6 +938,18 @@ class ReferentialIntegrityService {
 				targetUuid: $uuid,
 				isArray: $dep['isArray']
 			);
+			if ($referencingObjects === null) {
+				// Not known whether anything cites it: refuse rather than delete past a RESTRICT.
+				$blockers[] = [
+					'objectUuid' => '',
+					'schema' => $dep['sourceSchemaId'],
+					'property' => $dep['property'],
+					'action' => 'RESTRICT',
+					'reason' => 'unverifiable',
+					'chain' => array_merge($chain, ["{$uuid} → {$dep['property']} (not verifiable)"]),
+				];
+				continue;
+			}
 
 			foreach ($referencingObjects as $refObj) {
 				// Skip already soft-deleted objects.
@@ -1185,7 +1197,11 @@ class ReferentialIntegrityService {
 	 * @param string $targetUuid The UUID being referenced.
 	 * @param bool $isArray Whether the property is an array type.
 	 *
-	 * @return ObjectEntity[] Matching objects.
+	 * A lookup that fails on a table that exists answers null, never an empty
+	 * list: "nothing cites it" would let a RESTRICT delete through and skip a
+	 * CASCADE, as the key lookup already refuses (findReferencingByKey()).
+	 *
+	 * @return ObjectEntity[]|null Matching objects, or null when the lookup could not be done.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -1194,7 +1210,7 @@ class ReferentialIntegrityService {
 		string $propertyName,
 		string $targetUuid,
 		bool $isArray,
-	): array {
+	): ?array {
 		$candidates = [];
 
 		$this->ensureSchemaDetail();
@@ -1215,12 +1231,16 @@ class ReferentialIntegrityService {
 				// Direct match: no further filtering needed.
 				return $candidates;
 			} catch (\Exception $e) {
-				// Table doesn't exist or column missing — no referencing objects possible.
-				$this->logger->debug(
-					message: '[ReferentialIntegrity] Targeted magic table search failed',
-					context: ['schemaId' => $sourceSchemaId, 'error' => $e->getMessage()]
+				// No table yet: nothing can cite the object from there.
+				if ($this->db->tableExists('openregister_table_' . $register->getId() . '_' . $schema->getId()) === false) {
+					return [];
+				}
+
+				$this->logger->warning(
+					message: '[ReferentialIntegrity] reference could not be checked, so the delete is refused',
+					context: ['schemaId' => $sourceSchemaId, 'property' => $propertyName, 'error' => $e->getMessage()]
 				);
-				return [];
+				return null;
 			}
 		}
 
@@ -1231,10 +1251,10 @@ class ReferentialIntegrityService {
 			);
 		} catch (\Exception $e) {
 			$this->logger->warning(
-				message: '[ReferentialIntegrity] findByRelation failed',
+				message: '[ReferentialIntegrity] findByRelation failed, so the delete is refused',
 				context: ['uuid' => $targetUuid, 'error' => $e->getMessage()]
 			);
-			return [];
+			return null;
 		}
 
 		$matches = [];
