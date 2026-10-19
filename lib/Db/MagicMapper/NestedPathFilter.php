@@ -50,7 +50,7 @@ class NestedPathFilter {
 	/**
 	 * Operator keys of an operator bag.
 	 */
-	public const OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull', LikeOperator::KEY];
+	public const OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne', 'isnull', NullFilter::OR_NULL_MODIFIER, LikeOperator::KEY];
 
 	/**
 	 * A path segment: a property name, nothing that could leave the JSON path.

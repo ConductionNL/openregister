@@ -138,6 +138,8 @@ use OCP\IUserSession;
  * @method void setCreated(?DateTime $created)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
+ * @method DateTime|null getLastUserActivity()
+ * @method void setLastUserActivity(?DateTime $lastUserActivity)
  * @method DateTime|null getModified()
  * @method void setModified(?DateTime $modified)
  * @method float|null getRelevance()
@@ -477,6 +479,19 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 	 * @var DateTime|null Last update timestamp
 	 */
 	protected ?DateTime $updated = null;
+
+	/**
+	 * When a person last wrote this object.
+	 *
+	 * Unlike `updated`, which moves on every write, this moves only on a write
+	 * made by a signed-in user in a web request. A background job, an occ
+	 * command, a repair step, a system-elevated write or a write labelled with
+	 * a non-person {@see \OCA\OpenRegister\Service\WriteCause} leaves it as
+	 * it was. Null until a person writes the object.
+	 *
+	 * @var DateTime|null
+	 */
+	protected ?DateTime $lastUserActivity = null;
 
 	/**
 	 * Creation timestamp.
@@ -1148,6 +1163,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 		$this->addType(fieldName: 'summary', type: 'string');
 		$this->addType(fieldName: 'image', type: 'string');
 		$this->addType(fieldName: 'updated', type: 'datetime');
+		$this->addType(fieldName: 'lastUserActivity', type: 'datetime');
 		$this->addType(fieldName: 'created', type: 'datetime');
 		$this->addType(fieldName: 'groups', type: 'json');
 		$this->addType(fieldName: 'expires', type: 'datetime');
@@ -1449,6 +1465,7 @@ class ObjectEntity extends Entity implements JsonSerializable, ObjectEntityInter
 			'tmlo' => $this->getTmlo(),
 			'size' => $this->size,
 			'updated' => $this->getFormattedDate(date: $this->updated),
+			'lastUserActivity' => $this->getFormattedDate(date: $this->lastUserActivity),
 			'created' => $this->getFormattedDate(date: $this->created),
 			'deleted' => $this->getDeleted(),
 			'archived' => $this->getArchived(),

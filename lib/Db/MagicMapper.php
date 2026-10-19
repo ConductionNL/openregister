@@ -3163,6 +3163,8 @@ class MagicMapper extends AbstractObjectMapper {
 	 *     nullable: true, index: true},
 	 *     _updated: array{name: '_updated', type: 'datetime',
 	 *     nullable: true, index: true},
+	 *     _last_user_activity: array{name: '_last_user_activity',
+	 *     type: 'datetime', nullable: true, index: true},
 	 *     _expires: array{name: '_expires', type: 'datetime',
 	 *     nullable: true, index: true},
 	 *     _files: array{name: '_files', type: 'json', nullable: true},
@@ -3301,6 +3303,14 @@ class MagicMapper extends AbstractObjectMapper {
 			],
 			self::METADATA_PREFIX . 'updated' => [
 				'name' => self::METADATA_PREFIX . 'updated',
+				'type' => 'datetime',
+				'nullable' => true,
+				'index' => true,
+			],
+			// When a person last wrote the row; `_updated` moves on every write.
+			// Retrofitted onto existing tables by addMissingColumns(), like `_frozen`.
+			self::METADATA_PREFIX . 'last_user_activity' => [
+				'name' => self::METADATA_PREFIX . 'last_user_activity',
 				'type' => 'datetime',
 				'nullable' => true,
 				'index' => true,
@@ -4093,7 +4103,7 @@ class MagicMapper extends AbstractObjectMapper {
 			// Measured on the contract register (2,962 rows): 2.5ms as a Seq Scan
 			// against 0.107ms for the same row by `_uuid` alone, and that read
 			// happens on every object fetch in every sharded table.
-			$idxMetaFields = ['created', 'updated', 'name', 'slug', 'uri'];
+			$idxMetaFields = ['created', 'updated', 'name', 'slug', 'uri', 'last_user_activity'];
 			foreach ($idxMetaFields as $field) {
 				$col = self::METADATA_PREFIX . $field;
 				$idx = "{$tableName}_{$field}_idx";
@@ -4570,6 +4580,9 @@ class MagicMapper extends AbstractObjectMapper {
 		$metadata['register'] = $register->getId();
 		$metadata['schema'] = $schema->getId();
 
+		// The entity serialises `schemaVersion`; the column loop below reads `schema_version`.
+		$metadata['schema_version'] = $metadata['schemaVersion'] ?? $metadata['schema_version'] ?? null;
+
 		// Map metadata fields with prefix.
 		$metadataFields = [
 			'uuid',
@@ -4634,8 +4647,12 @@ class MagicMapper extends AbstractObjectMapper {
 			'tmlo',
 			'created',
 			'updated',
+			'last_user_activity',
 			'expires',
 		];
+
+		// `@self` carries the camelCase name the entity serialises.
+		$metadata['last_user_activity'] = $metadata['lastUserActivity'] ?? null;
 
 		// Dynamically add linked type fields based on schema's linkedTypes configuration.
 		// LINKED_TYPE_COLUMN_MAP values are column names with _ prefix (e.g., '_mail'),
@@ -4650,7 +4667,7 @@ class MagicMapper extends AbstractObjectMapper {
 			$value = $metadata[$field] ?? null;
 
 			// Handle datetime fields.
-			if (in_array($field, ['created', 'updated', 'expires']) === true) {
+			if (in_array($field, ['created', 'updated', 'last_user_activity', 'expires']) === true) {
 				if ($value === null && in_array($field, ['created', 'updated']) === true) {
 					$value = $now;
 				}
