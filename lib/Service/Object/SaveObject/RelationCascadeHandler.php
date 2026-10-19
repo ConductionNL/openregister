@@ -80,7 +80,9 @@ class RelationCascadeHandler {
 	 *
 	 * For path and URL references, it extracts the last part and matches against schema slugs (case-insensitive).
 	 *
-	 * @param string $reference The schema reference to resolve.
+	 * @param string $reference  The schema reference to resolve.
+	 * @param bool   $systemSide True to look the schema up without the caller's RBAC and tenancy, for callers that
+	 *                           only compare identities (metadata) and disclose nothing of the schema.
 	 *
 	 * @return null|numeric-string The resolved schema ID or null if not found.
 	 *
@@ -88,7 +90,7 @@ class RelationCascadeHandler {
 	 *
 	 * @spec openspec/specs/linked-entity-types/spec.md
 	 */
-	public function resolveSchemaReference(string $reference): ?string {
+	public function resolveSchemaReference(string $reference, bool $systemSide = false): ?string {
 		if (empty($reference) === true) {
 			return null;
 		}
@@ -104,7 +106,7 @@ class RelationCascadeHandler {
 			) === true
 		) {
 			try {
-				$schema = $this->schemaMapper->find(id: $cleanReference);
+				$schema = $this->schemaMapper->find(id: $cleanReference, _rbac: ($systemSide === false), _multitenancy: ($systemSide === false));
 				return (string)$schema->getId();
 			} catch (DoesNotExistException $e) {
 				// Continue with other resolution methods.
@@ -120,7 +122,7 @@ class RelationCascadeHandler {
 
 		// Try to find schema by slug (case-insensitive).
 		try {
-			$schemas = $this->schemaMapper->findAll();
+			$schemas = $this->schemaMapper->findAll(_rbac: ($systemSide === false), _multitenancy: ($systemSide === false));
 			foreach ($schemas as $schema) {
 				if (strcasecmp($schema->getSlug(), $slug) === 0) {
 					return (string)$schema->getId();

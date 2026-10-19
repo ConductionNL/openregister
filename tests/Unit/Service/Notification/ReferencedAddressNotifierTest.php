@@ -115,7 +115,8 @@ class ReferencedAddressNotifierTest extends TestCase {
 		);
 		$this->refs = $this->createMock(RelationCascadeHandler::class);
 		$this->refs->method('resolveSchemaReference')->willReturnCallback(
-			static fn (string $reference): ?string => ($reference === '#/components/schemas/supplier' ? self::SUPPLIER_SCHEMA : null)
+			// Only a system-side lookup resolves: a caller-scoped one would not see the schema of an anonymous submit.
+			static fn (string $reference, bool $systemSide = false): ?string => (($systemSide === true && $reference === '#/components/schemas/supplier') ? self::SUPPLIER_SCHEMA : null)
 		);
 		$this->optOut = $this->createMock(OptOutAuthority::class);
 		$this->optOut->method('withLink')->willReturnCallback(
