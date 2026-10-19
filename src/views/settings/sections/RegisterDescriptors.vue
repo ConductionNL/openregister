@@ -395,7 +395,8 @@ export default {
 				const replaced = Array.isArray(response?.data?.replaced)
 					? response.data.replaced
 					: []
-				const count = response?.data?.counts?.authorizationReplaced ?? replaced.length
+				const count =
+					response?.data?.counts?.authorizationReplaced ?? replaced.length
 				let message = this.t(
 					'openregister',
 					'{register} was imported from {app}.',
@@ -405,11 +406,13 @@ export default {
 					},
 				)
 				if (count > 0 || replaced.length > 0) {
-					message += ' ' + this.t(
-						'openregister',
-						'Authorization taken from the file over a local change: {count}.',
-						{ count: Math.max(count, replaced.length) },
-					)
+					message +=
+						' '
+						+ this.t(
+							'openregister',
+							'Authorization taken from the file over a local change: {count}.',
+							{ count: Math.max(count, replaced.length) },
+						)
 				}
 				this.outcome = { ok: true, message, replaced }
 				// Re-read rather than patch the row locally: the inventory is
