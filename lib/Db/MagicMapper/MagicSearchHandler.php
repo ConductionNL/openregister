@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
+use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\LanguageService;
@@ -614,8 +615,99 @@ class MagicSearchHandler {
 		$register = new Register();
 		$register->setId($registerId);
 
-		$this->relatedRows->apply(qb: $qb, query: $query, register: $register, outerAlias: 't');
+		$this->relatedRows->apply(
+			qb: $qb,
+			query: $query,
+			register: $register,
+			organisationScopeFor: fn (Schema $related, ?int $relatedRegisterId): array => $this->organisationScopeForRelated(
+				query: $query,
+				related: $related,
+				registerId: $relatedRegisterId
+			)
+		);
 	}//end applyRelatedRowFilters()
+
+	/**
+	 * Refuse a query carrying `_related` or `_referenced` where it cannot be honoured.
+	 *
+	 * 🔴 REFUSE, DO NOT DROP. The related-row filters are written for the
+	 * QueryBuilder path (applyRelatedRowFilters). Underscore keys are skipped by
+	 * the raw-SQL builder, so a cross-table UNION search or UNION facet carrying
+	 * one answered the UNFILTERED set to a deliberately narrow question, and its
+	 * counts disagreed with the single-schema facet for the same query.
+	 *
+	 * @param array<mixed> $query The request query.
+	 *
+	 * @return void
+	 *
+	 * @throws RelatedRowFilterNotSupportedException When the query carries either key.
+	 *
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
+	 */
+	public function refuseRelatedRowFilters(array $query): void {
+		foreach (['_related', '_referenced'] as $key) {
+			if (array_key_exists($key, $query) === true) {
+				throw new RelatedRowFilterNotSupportedException(
+					message: sprintf(
+						'\'%s\' filters are not supported on a query across several schemas; narrow the query to one schema. '
+						. 'Answering without the filter would return rows it was meant to exclude.',
+						$key
+					)
+				);
+			}
+		}
+	}//end refuseRelatedRowFilters()
+
+	/**
+	 * The organisation scope a related-row subquery must apply to the related table.
+	 *
+	 * The SAME decision the list path takes for a table (`multitenancyApplies()`,
+	 * the cascade widening, `resolveOrganizationScope()`), made for the RELATED
+	 * schema with the request's own flags, so the subquery cannot consult rows
+	 * the list of that table would not return. `SCOPE_ALL` when the boundary does
+	 * not apply (system context, admin bypass, an RBAC rule that waives it).
+	 *
+	 * @param array<mixed> $query      The request query, for `_rbac` and `_multitenancy`.
+	 * @param Schema       $related    The related schema.
+	 * @param int|null     $registerId The register the related table lives in.
+	 *
+	 * @return array{mode: string, uuids: array<int, string>} The decided scope.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) admitOrganisationless() is a pure transform of the decided scope.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	private function organisationScopeForRelated(array $query, Schema $related, ?int $registerId): array {
+		$_rbac                = $this->flagFromQuery(value: ($query['_rbac'] ?? true));
+		$multitenancyExplicit = $this->isExplicitlyTrue(value: ($query['_multitenancy_explicit'] ?? false));
+		$resolved             = $this->resolveMultitenancyFlag(
+			_multitenancy: $this->flagFromQuery(value: ($query['_multitenancy'] ?? true)),
+			multitenancyExplicit: $multitenancyExplicit,
+			schema: $related
+		);
+
+		$applies = $this->multitenancyApplies(
+			schema: $related,
+			_rbac: $_rbac,
+			_multitenancy: $resolved,
+			multitenancyExplicit: $multitenancyExplicit
+		);
+		if ($applies === false) {
+			return ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []];
+		}
+
+		$scope = $this->organizationHandler->resolveOrganizationScope(
+			adminBypassEnabled: $this->organizationHandler->isAdminOverrideEnabled(),
+			registerId: $registerId,
+			schemaId: $related->getId()
+		);
+
+		if ($this->organisationlessRowsAdmitted(schema: $related, _rbac: $_rbac, multitenancyExplicit: $multitenancyExplicit) === true) {
+			$scope = MagicOrganizationHandler::admitOrganisationless(scope: $scope);
+		}
+
+		return $scope;
+	}//end organisationScopeForRelated()
 
 	/**
 	 * Apply metadata, object-field and ID filters to the query.
@@ -784,10 +876,12 @@ class MagicSearchHandler {
 	 * @return string[] Array of SQL WHERE conditions (without leading AND/WHERE).
 	 *
 	 * @throws UnknownMetadataFieldException When a `@self` key names no metadata column.
+	 * @throws RelatedRowFilterNotSupportedException When the query carries `_related` or `_referenced`, which this raw-SQL builder cannot honour.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
 	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function buildWhereConditionsSql(
 		array $query,
@@ -796,7 +890,8 @@ class MagicSearchHandler {
 		?int $registerId = null,
 		?string $tableName = null,
 	): array {
-		$conditions = [];
+		$this->refuseRelatedRowFilters(query: $query);
+
 		// Get connection for value quoting through QueryBuilder.
 		$qb = $this->db->getQueryBuilder();
 		$connection = $qb->getConnection();
@@ -812,7 +907,6 @@ class MagicSearchHandler {
 		$_rbac = $query['_rbac'] ?? true;
 
 		$conditions = array_merge(
-			$conditions,
 			$this->lifecycleConditionsSql(
 				query: $query, includeDeleted: $includeDeleted, schema: $schema,
 				missingColumns: $this->missingMetadataColumns(tableName: $tableName)
@@ -1764,6 +1858,13 @@ class MagicSearchHandler {
 
 		[$query, $nestedFilters] = $this->nestedPaths->split(filters: $query, properties: $properties);
 		foreach ($nestedFilters as $filter) {
+			// A filter on a path inside an object property is an oracle on that
+			// property: one the caller may not read matches nothing.
+			if ($this->relatedRows->mayReadProperty(schema: $schema, property: $filter['root']) === false) {
+				$conditions[] = '1=0';
+				continue;
+			}
+
 			$expression = $this->nestedPaths->expression(
 				column: $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $filter['root']), isPostgres: $isPostgres),
 				path: $filter['path'],
@@ -2905,7 +3006,7 @@ class MagicSearchHandler {
 		$isPostgres = $this->isPostgresPlatform();
 
 		[$filters, $nestedFilters] = $this->nestedPaths->split(filters: $filters, properties: $properties ?? []);
-		$this->applyNestedPathFilters(qb: $qb, nestedFilters: $nestedFilters, properties: $properties ?? [], isPostgres: $isPostgres);
+		$this->applyNestedPathFilters(qb: $qb, nestedFilters: $nestedFilters, properties: $properties ?? [], isPostgres: $isPostgres, schema: $schema);
 
 		foreach ($filters as $field => $value) {
 			// Check if this field exists as a column in the schema.
@@ -3193,6 +3294,7 @@ class MagicSearchHandler {
 	 * @param list<array{root: string, path: list<string>, value: mixed}> $nestedFilters The path filters from NestedPathFilter::split().
 	 * @param array<string,mixed>                                            $properties    The schema's properties.
 	 * @param bool                                                           $isPostgres    Whether the platform is PostgreSQL.
+	 * @param Schema                                                         $schema        The schema, for the property read rule.
 	 *
 	 * @return void
 	 *
@@ -3201,10 +3303,18 @@ class MagicSearchHandler {
 	 * @spec openspec/changes/nested-property-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 * @SuppressWarnings(PHPMD.StaticAccess) NullFilter::conditionsFor() is the one reader of `orNull`, shared by every filter path.
 	 */
-	private function applyNestedPathFilters(IQueryBuilder $qb, array $nestedFilters, array $properties, bool $isPostgres): void {
+	private function applyNestedPathFilters(IQueryBuilder $qb, array $nestedFilters, array $properties, bool $isPostgres, Schema $schema): void {
 		foreach ($nestedFilters as $filter) {
 			if (($properties[$filter['root']]['x-openregister-encrypted'] ?? false) === true) {
 				throw new EncryptedFieldFilterException(property: $filter['root']);
+			}
+
+			// A filter on a path inside an object property is an oracle on that
+			// property: one the caller may not read matches nothing.
+			if ($this->relatedRows->mayReadProperty(schema: $schema, property: $filter['root']) === false) {
+				$this->ignoredFilters[] = $filter['root'] . '.' . implode('.', $filter['path']);
+				$qb->andWhere('1 = 0');
+				continue;
 			}
 
 			$expression = $this->nestedPaths->expression(

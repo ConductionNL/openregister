@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
@@ -37,6 +38,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Query\RelatedRowExistsClause;
 use OCA\OpenRegister\Service\Query\RelatedRowFilter;
 use OCA\OpenRegister\Service\Query\RelatedRowFilterParser;
+use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -126,6 +128,7 @@ class ReferencedRowFilterTest extends TestCase {
 	public function testTheApplierAddsForwardBlocksWithTheReferencedSchemasOwnAccessPredicate(): void {
 		$schema = new Schema();
 		$schema->setId(7);
+		$schema->setProperties(['case' => ['type' => 'string']]);
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->expects($this->once())->method('findBySlug')->with('subsidieAanvraag', 2)->willReturn([$schema]);
 
@@ -152,13 +155,33 @@ class ReferencedRowFilterTest extends TestCase {
 		$applied = (new RelatedRowQueryApplier(
 			schemaMapper: $schemaMapper,
 			tableHandler: $tableHandler,
-			rbacHandler: $rbac,
 			db: $this->createMock(IDBConnection::class),
-			logger: new NullLogger()
-		))->apply(qb: $qb, query: $this->forwardQuery(), register: $register);
+			logger: new NullLogger(),
+			access: new RelatedRowAccess(rbac: $rbac, logger: new NullLogger())
+		))->apply(qb: $qb, query: $this->forwardQuery(), register: $register, organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]);
 
 		$this->assertSame(1, $applied);
 		$this->assertStringContainsString('rel0._uuid = t."subsidieaanvraag"', $sql[0]);
 		$this->assertStringContainsString("rel0._owner = 'alice'", $sql[0]);
+	}
+
+	public function testAColumnNameFollowsTheRuleThatNamesTheColumns(): void {
+		$sql = fn (string $property): string => (new RelatedRowExistsClause())->render(
+			filter: new RelatedRowFilter('caseProperty', 'case', [['field' => $property, 'operator' => 'eq', 'value' => 'x']]),
+			engine: RelatedRowExistsClause::ENGINE_POSTGRES,
+			table: 'oc_openregister_table_1_2',
+			outerAlias: 't',
+			innerAlias: 'rel0',
+			accessPredicate: 'TRUE',
+			parameterPrefix: 'rel0',
+			storage: RelatedRowExistsClause::STORAGE_COLUMNS
+		)['sql'];
+
+		$this->assertStringContainsString('rel0."due_date" = :rel0_c0', $sql('due-date'));
+		$this->assertStringContainsString('rel0."first_name" = :rel0_c0', $sql('first__name'));
+		$this->assertStringContainsString('rel0."is_active" = :rel0_c0', $sql('isActive_'));
+
+		// Capped at 64 characters, as MagicSearchHandler::sanitizeColumnName caps it.
+		$this->assertStringContainsString('rel0."' . str_repeat('a', 64) . '" = :rel0_c0', $sql(str_repeat('a', 70)));
 	}
 }

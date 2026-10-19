@@ -69,6 +69,8 @@ use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
+use OCA\OpenRegister\Service\Query\PropertyReadGuard;
+use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Support\QueryLimit;
@@ -611,12 +613,21 @@ class MagicMapper extends AbstractObjectMapper {
 		// Assembled by hand rather than resolved from the container, for the
 		// same reason the cache handler above is not: the container would walk
 		// MagicMapper → applier → MagicTableHandler → MagicMapper and recurse.
+		// The applier also answers the property read question for the search
+		// handler's nested-path filters: a filter that reaches through a
+		// reference and one on a path inside an object property are the same
+		// oracle on a field the caller may not read.
+		$relatedRowAccess = new RelatedRowAccess(
+			rbac: $this->rbacHandler,
+			logger: $this->logger,
+			guard: new PropertyReadGuard(container: $this->container, logger: $this->logger)
+		);
 		$relatedRowApplier = new RelatedRowQueryApplier(
 			schemaMapper: $this->schemaMapper,
 			tableHandler: $this->tableHandler,
-			rbacHandler: $this->rbacHandler,
 			db: $this->db,
-			logger: $this->logger
+			logger: $this->logger,
+			access: $relatedRowAccess
 		);
 
 		$this->searchHandler = new MagicSearchHandler(
@@ -1676,6 +1687,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * UNION ALL is faster but has limitations:
 	 * - All tables must exist
 	 * - No complex aggregations
+	 * - No related-row filters (`_related`, `_referenced`)
 	 * - Simpler query structure
 	 *
 	 * @param array $query Search query parameters.
@@ -1687,6 +1699,14 @@ class MagicMapper extends AbstractObjectMapper {
 		// this search returns rows only and facets are computed separately. The
 		// sequential fallback orders and pages like UNION, but runs one query per table.
 		if (isset($query['_aggregations']) === true) {
+			return false;
+		}
+
+		// 🔴 `_related` and `_referenced` are EXISTS subqueries that only the
+		// QueryBuilder path (the sequential one) builds. The raw-SQL UNION builder
+		// refuses them, which on this route would end in an uncaught exception
+		// (HTTP 500), so a query carrying either takes the sequential path.
+		if (array_key_exists('_related', $query) === true || array_key_exists('_referenced', $query) === true) {
 			return false;
 		}
 
@@ -7704,6 +7724,9 @@ class MagicMapper extends AbstractObjectMapper {
 	 *
 	 * @return list<int> The folder file ids.
 	 *
+	 * @throws RuntimeException When a table could not be read: a sum over the tables that could be read would
+	 *                           be too low and look measured, so the whole measurement fails (and is logged).
+	 *
 	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
 	 */
 	public function findFolderIdsByOrganisation(string $organisationUuid): array {
@@ -7711,6 +7734,7 @@ class MagicMapper extends AbstractObjectMapper {
 		$folderCol = 't.' . self::METADATA_PREFIX . 'folder';
 		$deletedCol = 't.' . self::METADATA_PREFIX . 'deleted';
 		$folderIds = [];
+		$failed    = [];
 
 		foreach (array_keys($this->discoverMagicTables()) as $fullTableName) {
 			$bareTableName = substr($fullTableName, strlen($this->getTablePrefix()));
@@ -7730,9 +7754,31 @@ class MagicMapper extends AbstractObjectMapper {
 
 				$result->closeCursor();
 			} catch (\Exception $e) {
-				continue;
-			}
+				// 🔴 NEVER SKIPPED IN SILENCE. A table that fails (a missing
+				// _folder/_organisation column, a lock, a timeout) drops its folders
+				// from the sum, and the caller would show a measured-looking number
+				// that is too low. The service contract is "a figure that cannot be
+				// measured is null, never 0", so this fails after the scan, naming
+				// every table it could not read.
+				$this->logger->warning(
+					message: '[MagicMapper] findFolderIdsByOrganisation: could not read a table',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'table' => $fullTableName,
+						'organisation' => $organisationUuid,
+						'error' => $e->getMessage(),
+					]
+				);
+				$failed[] = $fullTableName;
+			}//end try
 		}//end foreach
+
+		if ($failed !== []) {
+			throw new RuntimeException(
+				'The folders of organisation ' . $organisationUuid . ' could not be read from: ' . implode(', ', $failed)
+			);
+		}
 
 		return array_keys($folderIds);
 	}//end findFolderIdsByOrganisation()

@@ -209,8 +209,10 @@ class ViewerReachResolver {
 	 * Refuse a save whose alert names recipients this caller may not add.
 	 *
 	 * The view is judged as it will be saved: the stored view (or, on create,
-	 * just its owner) with the body's `isPublic` and `sharedWith` laid over it.
-	 * The stored alert's recipients are the ones not judged again.
+	 * just its owner) with the body's `isPublic` and `sharedWith` laid over it;
+	 * a caller replacing the whole view (PUT) lays over the `isPublic` the save
+	 * will write. The stored alert's recipients are not judged as additions, but
+	 * one the save itself stops reaching is refused.
 	 *
 	 * @param array<string, mixed> $view  The stored view, or `['owner' => <uid>]` on create.
 	 * @param ViewerReach          $reach The caller's reach.
@@ -223,13 +225,31 @@ class ViewerReachResolver {
 	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
 	 */
 	public function assertMayNameRecipients(array $view, ViewerReach $reach, array $data): void {
-		$previous = ($view['alert']['recipients'] ?? []);
+		$previous = array_values(array_filter((array)($view['alert']['recipients'] ?? []), 'is_string'));
+		$saved    = array_merge($view, array_intersect_key($data, ['isPublic' => true, 'sharedWith' => true]));
 		$refused  = $this->refusedRecipients(
-			view: array_merge($view, array_intersect_key($data, ['isPublic' => true, 'sharedWith' => true])),
+			view: $saved,
 			reach: $reach,
 			alert: ViewAlert::declaredIn(body: $data),
-			previous: array_values(array_filter((array)$previous, 'is_string'))
+			previous: $previous
 		);
+
+		// 🔴 A SAVE THAT NARROWS REACH RE-JUDGES THE RECIPIENTS ALREADY STORED.
+		// Stored recipients are exempt from the "may this caller add them" test,
+		// and an update with no `alert` key declares none, so un-publishing a
+		// view or removing a share left a recipient who could no longer read it.
+		// A stored recipient who read the view as stored but would not read it as
+		// saved is refused here, so the owner removes them in the same request
+		// rather than leaving them on an alert about a view they cannot open.
+		foreach ($previous as $recipient) {
+			if ($this->recipientReads(view: $view, recipient: $recipient) === true
+				&& $this->recipientReads(view: $saved, recipient: $recipient) === false
+			) {
+				$refused[] = $recipient;
+			}
+		}
+
+		$refused = array_values(array_unique($refused));
 		if ($refused !== []) {
 			throw new ViewAlertRecipientException(recipients: $refused);
 		}
@@ -287,8 +307,10 @@ class ViewerReachResolver {
 	 * @param string               $recipient The recipient.
 	 *
 	 * @return bool True when the view reaches every person the recipient names.
+	 *
+	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
 	 */
-	private function recipientReads(array $view, string $recipient): bool {
+	public function recipientReads(array $view, string $recipient): bool {
 		if (str_starts_with($recipient, ViewAlert::USER_PREFIX) === false) {
 			// A group reads the view when the view is shared with it or public.
 			return $this->shares->accessFor(view: $view, userId: '', userGroups: [$recipient]) !== null;

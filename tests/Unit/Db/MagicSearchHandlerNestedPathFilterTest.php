@@ -76,12 +76,16 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 	/**
 	 * The handler on a PostgreSQL connection double.
 	 *
+	 * @param bool $mayReadProperties Whether the caller may read the root property of a nested path.
+	 *
 	 * @return MagicSearchHandler
 	 */
-	private function handler(): MagicSearchHandler {
+	private function handler(bool $mayReadProperties = true): MagicSearchHandler {
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getDatabasePlatform')->willReturn($this->createMock(PostgreSQL120Platform::class));
 		$logger = $this->createMock(LoggerInterface::class);
+		$related = $this->createMock(RelatedRowQueryApplier::class);
+		$related->method('mayReadProperty')->willReturn($mayReadProperties);
 
 		return new MagicSearchHandler(
 			db: $db,
@@ -90,7 +94,7 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 			organizationHandler: $this->createMock(MagicOrganizationHandler::class),
 			schemaTypeConverter: new SchemaTypeConverter(),
 			dateTimeNormalizer: new DateTimeNormalizer($logger),
-			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
+			relatedRows: $related
 		);
 	}//end handler()
 
@@ -167,6 +171,32 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
 		return $method->invoke($this->handler(), $query, $schema, $connection, true);
 	}//end rawObject()
+
+	/**
+	 * A path into an object property the caller may not read matches nothing, on both paths.
+	 *
+	 * A filter on `dunning.currentStage` is an oracle on `dunning`; the rule that
+	 * withholds the property from a response has to withhold it from a filter.
+	 *
+	 * @return void
+	 */
+	public function testAPathIntoAnUnreadablePropertyMatchesNothing(): void {
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getProperties')->willReturn(self::PROPERTIES);
+		$this->captured = [];
+
+		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
+		$method->invoke($this->handler(mayReadProperties: false), $this->queryBuilder(), ['dunning.currentStage' => 2], $schema);
+		$this->assertSame(['1 = 0'], $this->captured);
+
+		$connection = $this->createMock(IDBConnection::class);
+		$connection->method('quote')->willReturnCallback(static fn ($v) => "'{$v}'");
+		$raw = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
+		$this->assertSame(
+			['1=0'],
+			$raw->invoke($this->handler(mayReadProperties: false), ['dunning' => ['currentStage' => 2]], $schema, $connection, true)
+		);
+	}//end testAPathIntoAnUnreadablePropertyMatchesNothing()
 
 	/**
 	 * The dotted key and the nested map the request layer rebuilds read the same path.
@@ -303,4 +333,24 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 			$nested
 		);
 	}//end testSplitCollectsEveryLeaf()
+	/**
+	 * A segment with a trailing newline is not a plain name and is refused.
+	 *
+	 * `$` matches before a final newline, so `a\n` passed the segment check and
+	 * reached the JSON path literal, where MariaDB rejects it with a 500.
+	 *
+	 * @return void
+	 */
+	public function testASegmentWithATrailingNewlineIsRefused(): void {
+		$filter = new NestedPathFilter();
+
+		foreach (["a\n", "currentStage\n", "\n", "a\r\n"] as $segment) {
+			$this->assertNull($filter->expression(column: 't.dunning', path: [$segment], isPostgres: true), json_encode($segment));
+			$this->assertNull($filter->expression(column: 't.dunning', path: ['ok', $segment], isPostgres: false), json_encode($segment));
+		}
+
+		$this->assertNotNull($filter->expression(column: 't.dunning', path: ['currentStage'], isPostgres: true));
+		$this->assertSame(['1 = 0'], $this->applyObject(["dunning.current\nStage" => 'a']));
+		$this->assertSame(['1 = 0'], $this->applyObject(['dunning' => ["currentStage\n" => 'a']]));
+	}//end testASegmentWithATrailingNewlineIsRefused()
 }//end class

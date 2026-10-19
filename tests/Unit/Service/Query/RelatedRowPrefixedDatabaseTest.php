@@ -32,11 +32,13 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Query;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
+use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -47,6 +49,9 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
  * @covers \OCA\OpenRegister\Service\Query\RelatedRowExistsClause
  * @uses \OCA\OpenRegister\Db\Register
+ * @uses \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
+ * @uses \OCA\OpenRegister\Service\Query\PropertyReadGuard
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilterParser
@@ -88,6 +93,7 @@ class RelatedRowPrefixedDatabaseTest extends TestCase {
 	private function clausesFor(array $query): array {
 		$schema = new Schema();
 		$schema->setId(2);
+		$schema->setProperties(['case' => ['type' => 'string']]);
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('findBySlug')->willReturn([$schema]);
 
@@ -118,10 +124,10 @@ class RelatedRowPrefixedDatabaseTest extends TestCase {
 		(new RelatedRowQueryApplier(
 			schemaMapper: $schemaMapper,
 			tableHandler: $tableHandler,
-			rbacHandler: $rbac,
 			db: $this->createMock(IDBConnection::class),
-			logger: new NullLogger()
-		))->apply(qb: $qb, query: $query, register: $register);
+			logger: new NullLogger(),
+			access: new RelatedRowAccess(rbac: $rbac, logger: new NullLogger())
+		))->apply(qb: $qb, query: $query, register: $register, organisationScopeFor: static fn (): array => ['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]);
 
 		return [$where, $parameters];
 	}

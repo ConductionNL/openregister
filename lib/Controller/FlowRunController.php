@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
+use DateTimeZone;
 use OCA\OpenRegister\Db\AuditFlowAttribution;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -254,7 +255,7 @@ class FlowRunController extends Controller {
 		}
 
 		if ($since === null) {
-			$since = new DateTime('-7 days');
+			$since = (new DateTime('-7 days'))->setTimezone(new DateTimeZone('UTC'));
 		}
 
 		$flowIds = array_slice($this->flowIdsParam(), 0, 200);
@@ -329,7 +330,11 @@ class FlowRunController extends Controller {
 		}
 
 		try {
-			return new DateTime(trim($raw));
+			// 🔴 NORMALISED TO UTC BEFORE IT IS BOUND. The mapper binds the moment
+			// with PARAM_DATETIME_MUTABLE, which formats the object's own wall
+			// clock without converting, and the `created` column is UTC:
+			// `12:00:00+02:00` was compared as 12:00:00, two hours off the instant.
+			return (new DateTime(trim($raw)))->setTimezone(new DateTimeZone('UTC'));
 		} catch (Throwable) {
 			return false;
 		}

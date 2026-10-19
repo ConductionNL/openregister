@@ -259,4 +259,54 @@ class ViewAlertRecipientsTest extends TestCase {
 		$this->assertSame(['alert'], $response->getData()['fields']);
 		$this->assertNull($this->written);
 	}
+
+	/**
+	 * 🔴 A PUT IS JUDGED AGAINST THE VIEW IT WILL SAVE, NOT THE ONE STORED.
+	 *
+	 * The body omits `isPublic`, which a PUT writes as false. Judged against the
+	 * stored public view, a stranger was admitted as a recipient of a view that
+	 * is private once saved.
+	 *
+	 * @return void
+	 */
+	public function testAPutThatOmitsIsPublicIsJudgedAsPrivate(): void {
+		$this->stored(isPublic: true);
+		$this->request->method('getParams')->willReturn(
+			['name' => 'Queue', 'query' => ['@self' => ['register' => 1]]] + $this->alertBody(['user:stranger'])
+		);
+
+		$response = $this->controllerAs('owner')->update('7');
+
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame(['user:stranger'], $response->getData()['recipients']);
+		$this->assertNull($this->written);
+	}
+
+	/**
+	 * The control: a PATCH that omits `isPublic` keeps the stored public view, so the same recipient is allowed.
+	 *
+	 * @return void
+	 */
+	public function testAPatchThatOmitsIsPublicKeepsTheStoredReach(): void {
+		$this->stored(isPublic: true);
+		$this->request->method('getParams')->willReturn($this->alertBody(['user:stranger']));
+
+		$this->assertSame(200, $this->controllerAs('owner')->patch('7')->getStatus());
+	}
+
+	/**
+	 * Un-publishing a view whose stored alert names a recipient reached only through it is refused.
+	 *
+	 * @return void
+	 */
+	public function testUnpublishingARecipientsOnlyWayInIsRefused(): void {
+		$this->stored(recipients: ['user:stranger'], isPublic: true);
+		$this->request->method('getParams')->willReturn(['isPublic' => false]);
+
+		$response = $this->controllerAs('owner')->patch('7');
+
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame(['user:stranger'], $response->getData()['recipients']);
+		$this->assertNull($this->written);
+	}
 }//end class

@@ -565,6 +565,45 @@ class FlowRunControllerTest extends TestCase {
 		$this->controller->index();
 	}
 
+	/**
+	 * A `since` with a UTC offset is bound as the UTC instant it names.
+	 *
+	 * `12:00:00+02:00` is 10:00:00Z; binding the object's own wall clock compared
+	 * it as 12:00:00, two hours off, on both the history and the summary.
+	 *
+	 * @return void
+	 */
+	public function testASinceWithAnOffsetIsBoundAsUtc(): void {
+		$this->params(['since' => '2026-10-19T12:00:00+02:00', 'flowIds' => ['flow-a']]);
+
+		$this->mapper->expects($this->once())
+			->method('findAllRuns')
+			->willReturnCallback(function (...$args): array {
+				$this->assertSame('2026-10-19 10:00:00', $args[6]->format('Y-m-d H:i:s'));
+				$this->assertSame('UTC', $args[6]->getTimezone()->getName());
+				return [];
+			});
+		$this->controller->index();
+	}//end testASinceWithAnOffsetIsBoundAsUtc()
+
+	/**
+	 * The same normalisation on the summary's `runsSince`.
+	 *
+	 * @return void
+	 */
+	public function testTheSummaryBindsAnOffsetSinceAsUtc(): void {
+		$this->params(['since' => '2026-10-19T12:00:00+02:00', 'flowIds' => 'flow-a']);
+		$this->flowOwnership->method('idsOwnedByCaller')->willReturn([]);
+
+		$this->mapper->expects($this->once())
+			->method('summarizeByFlow')
+			->willReturnCallback(function (array $flowIds, \DateTime $since): array {
+				$this->assertSame('2026-10-19 10:00:00', $since->format('Y-m-d H:i:s'));
+				return [];
+			});
+		$this->controller->summary();
+	}//end testTheSummaryBindsAnOffsetSinceAsUtc()
+
 	public function testResumeSignalsTheSuspendedRunWithTheRequestBody(): void {
 		$run = new FlowRun();
 		$run->setUuid('run-1');

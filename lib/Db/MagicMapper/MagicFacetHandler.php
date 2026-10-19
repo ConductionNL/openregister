@@ -433,6 +433,9 @@ class MagicFacetHandler {
 	 * @param array $query The search query with filters and facet config.
 	 *
 	 * @return array Merged facet results across all tables.
+	 *
+	 * @throws \OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException When the query carries `_related` or `_referenced`.
+	 *
 	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
 	 */
 	public function getSimpleFacetsUnion(array $tableConfigs, array $query): array {
@@ -441,6 +444,11 @@ class MagicFacetHandler {
 		if (empty($tableConfigs) === true) {
 			return [];
 		}
+
+		// A `_related`/`_referenced` filter cannot be honoured in these raw-SQL
+		// arms. Refuse HERE, before the per-facet queries, whose own catch blocks
+		// would turn the refusal into empty buckets with only a log line.
+		$this->searchHandler?->refuseRelatedRowFilters(query: $query);
 
 		// Extract facet configuration.
 		$facetConfig = $query['_facets'] ?? [];
