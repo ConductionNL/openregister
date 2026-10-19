@@ -114,7 +114,8 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 		$this->mapper = $this->createMock(MagicMapper::class);
 		$this->mapper->method('getTableNameForRegisterSchema')->willReturn('openregister_table_7_2');
 		$queryBuilder = $this->createMock(IQueryBuilder::class);
-		$queryBuilder->method('getTableName')->willReturnCallback(static fn (string $table): string => 'oc_' . $table);
+		// Like Nextcloud's own: the prefixed name comes back ALREADY quoted for the platform.
+		$queryBuilder->method('getTableName')->willReturnCallback(fn (string $table): string => $this->reported->quoteIdentifier('oc_' . $table));
 		$this->db->method('getQueryBuilder')->willReturn($queryBuilder);
 		$this->reported = new MySQLPlatform();
 		$this->db->method('getDatabasePlatform')->willReturnCallback(fn (): AbstractPlatform => $this->reported);
@@ -337,6 +338,7 @@ class ReferentialIntegrityKeyReferenceTest extends TestCase {
 		self::assertStringContainsString('`labels_1` = ?', $this->sql);
 		self::assertStringNotContainsString('"', $this->sql, 'No double-quoted identifier: MySQL reads it as a string.');
 		self::assertStringContainsString('FROM `oc_openregister_table_7_2`', $this->sql);
+		self::assertStringNotContainsString('``', $this->sql, 'The table must not be quoted twice: that names a table that does not exist and the lookup answers "no referrers".');
 		self::assertSame(['A1'], $params);
 	}//end testAScalarKeyIsComparedAsAColumnOnMySql()
 

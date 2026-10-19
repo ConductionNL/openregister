@@ -1327,15 +1327,18 @@ class ReferentialIntegrityService {
 		$platform = $this->db->getDatabasePlatform();
 
 		// The table with the instance's prefix, and the column the way the table
-		// was built (the schema's column map, collision suffixes included), both
+		// was built (the schema's column map, collision suffixes included).
+		// Nextcloud's QueryBuilder::getTableName() returns the prefixed table
+		// ALREADY quoted for the platform, so it is used as is: quoting it again
+		// doubled the quote characters, named a table that does not exist, and
+		// the lookup's catch turned that into "nothing references this row"
+		// (every CASCADE, RESTRICT and SET_NULL silently stopped). The column is
 		// quoted by the connection's own platform: a double-quoted identifier is a
 		// string literal to MySQL and MariaDB (no ANSI_QUOTES), so `"code" = ?`
 		// compared the text 'code' with the value, matched nothing and let the
 		// delete through. Null-safe via get_debug_type() (a mocked IDBConnection
 		// returns a bare platform double in unit tests).
-		$quotedTable = $platform->quoteIdentifier(
-			$this->db->getQueryBuilder()->getTableName($this->objectEntityMapper->getTableNameForRegisterSchema(register: $register, schema: $schema))
-		);
+		$quotedTable = $this->db->getQueryBuilder()->getTableName($this->objectEntityMapper->getTableNameForRegisterSchema(register: $register, schema: $schema));
 		$quotedCol = $platform->quoteIdentifier($this->columnOf(schema: $schema, propertyName: $propertyName));
 
 		// Build the array/scalar SQL variant selector before accessing the database.
