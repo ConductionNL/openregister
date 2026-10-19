@@ -652,6 +652,34 @@ class MagicMapperTest extends TestCase {
 	}//end testObjectDataPreparationForTable()
 
 	/**
+	 * `lastUserActivity` is carried from `@self` into its column, and stays
+	 * empty rather than defaulting to now: only a person's write sets it.
+	 *
+	 * @return void
+	 */
+	public function testLastUserActivityIsWrittenAsCarriedAndNeverDefaulted(): void {
+		$schema = new TestableSchema();
+		$schema->setId(42);
+		$schema->testProperties = ['name' => ['type' => 'string']];
+
+		$method = (new \ReflectionClass($this->magicMapper))->getMethod('prepareObjectDataForTable');
+
+		$stamped = $method->invoke(
+			$this->magicMapper,
+			['@self' => ['uuid' => 'u-1', 'lastUserActivity' => new \DateTime('2026-09-01 10:00:00', new \DateTimeZone('UTC'))], 'name' => 'x'],
+			$this->mockRegister,
+			$schema
+		);
+		$this->assertSame(expected: '2026-09-01 10:00:00', actual: $stamped['_last_user_activity']);
+		$this->assertNotNull(actual: $stamped['_updated']);
+
+		$never = $method->invoke($this->magicMapper, ['@self' => ['uuid' => 'u-2'], 'name' => 'x'], $this->mockRegister, $schema);
+		$this->assertArrayHasKey(key: '_last_user_activity', array: $never);
+		$this->assertNull(actual: $never['_last_user_activity'], message: 'a row no person wrote has no last user activity');
+		$this->assertNotNull(actual: $never['_updated'], message: 'while `updated` keeps defaulting to now');
+	}//end testLastUserActivityIsWrittenAsCarriedAndNeverDefaulted()
+
+	/**
 	 * A property the schema does not declare is dropped — and now SAYS SO.
 	 *
 	 * The loop in prepareObjectDataForTable is a whitelist by omission: it walks

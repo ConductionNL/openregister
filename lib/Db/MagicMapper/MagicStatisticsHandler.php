@@ -636,6 +636,7 @@ class MagicStatisticsHandler {
 						[
 							'created',
 							'updated',
+							'last_user_activity',
 							'expires',
 						],
 						true
