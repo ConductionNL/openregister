@@ -864,7 +864,10 @@ class ViewsController extends Controller {
 				);
 			}
 
-			$this->viewService->delete(id: $id, reach: $this->viewers->reachOf(userId: $userId));
+			// The session identity goes to the service, which refuses everybody
+			// who neither owns the view nor administers the instance.
+			$reach = $this->viewers->reachOf(userId: $userId);
+			$this->viewService->delete(id: $id, reach: $reach);
 
 			return new JSONResponse(
 				data: [
