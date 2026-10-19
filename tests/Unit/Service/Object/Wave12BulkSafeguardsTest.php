@@ -427,6 +427,58 @@ class Wave12BulkSafeguardsTest extends TestCase {
 	}//end testBulkSaveOverYourOwnDraftPasses()
 
 	/**
+	 * A decoy `@self.uuid` next to the victim draft's `id` is refused: the writer takes `id`, so the guard may not take the decoy.
+	 */
+	public function testDecoyUuidNextToVictimIdIsRefused(): void {
+		$this->mockUser('bob', isAdmin: false);
+		$schema = $this->newSchema(1);
+		$register = $this->newRegister(10);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(2);
+		$passed = $this->callApplyBulkSafeguards(
+			objects: [
+				['id' => '22222222-2222-2222-2222-222222222222', '@self' => ['uuid' => '99999999-9999-9999-9999-999999999999'], 'title' => 'overwritten'],
+				['@self' => ['id' => '22222222-2222-2222-2222-222222222222', 'uuid' => '99999999-9999-9999-9999-999999999999'], 'title' => 'overwritten too'],
+			],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertSame([], $passed);
+		$this->assertSame(2, $result['statistics']['invalid']);
+		$this->assertStringContainsString('more than one identity', $result['invalid'][0]['error']);
+	}//end testDecoyUuidNextToVictimIdIsRefused()
+
+	/**
+	 * The same identity in `id` and `@self` is one identity: the owner's own draft still passes, somebody else's is refused.
+	 */
+	public function testAgreeingIdentitiesAreOneIdentity(): void {
+		$this->mockUser('bob', isAdmin: false);
+		$schema = $this->newSchema(1);
+		$register = $this->newRegister(10);
+		$this->permissionHandler->method('hasPermission')->willReturn(true);
+		$this->storeDraft(owner: 'alice');
+
+		$result = $this->initResult(1);
+		$passed = $this->callApplyBulkSafeguards(
+			objects: [['id' => '22222222-2222-2222-2222-222222222222', '@self' => ['uuid' => '22222222-2222-2222-2222-222222222222'], 'title' => 'x']],
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_validation: false,
+			result: $result
+		);
+
+		$this->assertSame([], $passed);
+		$this->assertStringContainsString('Permission denied', $result['invalid'][0]['error']);
+	}//end testAgreeingIdentitiesAreOneIdentity()
+
+	/**
 	 * Store a draft of the given owner as the existing row of uuid 2222….
 	 */
 	private function storeDraft(string $owner): void {

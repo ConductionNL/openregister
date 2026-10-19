@@ -760,6 +760,21 @@ class SaveObjects {
 			// Step 1: strip dangerous @self fields for non-admins.
 			$sanitised = $this->stripSelfInjectionFields(object: $object, isAdmin: $isAdmin);
 
+			// A row naming two different identities is refused: the guard below
+			// resolves "which row is this" once, the writers resolve it with their
+			// own precedence (`id`, then `@self.id`; the mixed-schema writer reads
+			// `@self.id` only), so two candidates let the guard see a create while
+			// the writer overwrites another user's draft.
+			if ($this->rowIdentityIsAmbiguous(object: $sanitised) === true) {
+				$this->recordSafeguardRejection(
+					object: $sanitised,
+					reason: 'The row names more than one identity (id, @self.id, @self.uuid differ); send one.',
+					result: $result,
+					index: $rowIndex
+				);
+				continue;
+			}
+
 			// Resolve effective schema for this row (per-object schema wins
 			// for mixed-schema bulk).
 			$rowSchema = $this->resolveSafeguardRowSchema(
@@ -1029,6 +1044,58 @@ class SaveObjects {
 	}//end resolveSafeguardRowSchema()
 
 	/**
+	 * The identity candidates a row carries: `id`, `@self.id` and `@self.uuid`.
+	 *
+	 * Only non-empty strings count; the writers accept nothing else as an id.
+	 *
+	 * @param array $object Raw row data.
+	 *
+	 * @return string[] The distinct candidates.
+	 */
+	private function rowIdentityCandidates(array $object): array {
+		$self = [];
+		if (is_array($object['@self'] ?? null) === true) {
+			$self = $object['@self'];
+		}
+
+		$candidates = [];
+		foreach ([($object['id'] ?? null), ($self['id'] ?? null), ($self['uuid'] ?? null)] as $candidate) {
+			if (is_string($candidate) === true && trim($candidate) !== '') {
+				$candidates[$candidate] = $candidate;
+			}
+		}
+
+		return array_values($candidates);
+	}//end rowIdentityCandidates()
+
+	/**
+	 * The one identity of a row, shared by the guard, the prefetch and the writers.
+	 *
+	 * @param array $object Raw row data.
+	 *
+	 * @return string|null The identity, or null when the row names none (or names several: see rowIdentityIsAmbiguous()).
+	 */
+	private function rowIdentity(array $object): ?string {
+		$candidates = $this->rowIdentityCandidates(object: $object);
+		if (count($candidates) !== 1) {
+			return null;
+		}
+
+		return $candidates[0];
+	}//end rowIdentity()
+
+	/**
+	 * Whether a row names more than one distinct identity.
+	 *
+	 * @param array $object Raw row data.
+	 *
+	 * @return bool True when the guard and a writer could pick different rows.
+	 */
+	private function rowIdentityIsAmbiguous(array $object): bool {
+		return count($this->rowIdentityCandidates(object: $object)) > 1;
+	}//end rowIdentityIsAmbiguous()
+
+	/**
 	 * Resolve the CRUD action + existing entity for a bulk row.
 	 *
 	 * UPDATE = the row carries a UUID that matches an existing object in the
@@ -1050,8 +1117,8 @@ class SaveObjects {
 		?Register $rowRegister = null,
 		array $existingByUuid = []
 	): array {
-		$uuid = $object['@self']['uuid'] ?? $object['@self']['id'] ?? $object['id'] ?? null;
-		if ($uuid === null || $uuid === '' || is_string($uuid) === false) {
+		$uuid = $this->rowIdentity(object: $object);
+		if ($uuid === null) {
 			return [null, 'create', null];
 		}
 
@@ -1148,8 +1215,8 @@ class SaveObjects {
 		$groups = [];
 
 		foreach ($objects as $object) {
-			$uuid = $object['@self']['uuid'] ?? $object['@self']['id'] ?? $object['id'] ?? null;
-			if ($uuid === null || $uuid === '' || is_string($uuid) === false) {
+			$uuid = $this->rowIdentity(object: $object);
+			if ($uuid === null) {
 				continue;
 			}
 
