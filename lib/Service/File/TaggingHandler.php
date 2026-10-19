@@ -64,6 +64,13 @@ class TaggingHandler {
 	private const OBJECT_TAG_TYPE = 'openregister';
 
 	/**
+	 * Prefix of the internal tag that links a file to its object.
+	 *
+	 * @var string
+	 */
+	public const OBJECT_TAG_PREFIX = 'object:';
+
+	/**
 	 * Constructor for TaggingHandler.
 	 *
 	 * @param ISystemTagManager $systemTagManager System tag manager.
@@ -181,11 +188,15 @@ class TaggingHandler {
 				}
 			}
 
-			// Tag not found, create it.
+			// Tag not found, create it. The internal object link is bookkeeping:
+			// hidden from users and not assignable, so it stays out of the
+			// Files tag picker and of every user's tag list.
+			$userFacing = str_starts_with($tagName, self::OBJECT_TAG_PREFIX) === false;
+
 			return $this->systemTagManager->createTag(
 				tagName: $tagName,
-				userVisible: true,
-				userAssignable: true
+				userVisible: $userFacing,
+				userAssignable: $userFacing
 			);
 		} catch (TagAlreadyExistsException $e) {
 			// Tag exists, get it by searching again.
@@ -256,7 +267,7 @@ class TaggingHandler {
 			$identifier = $objectEntity->getUuid() ?? (string)$objectEntity->getId();
 		}
 
-		return 'object:' . $identifier;
+		return self::OBJECT_TAG_PREFIX . $identifier;
 	}//end generateObjectTag()
 
 	/**

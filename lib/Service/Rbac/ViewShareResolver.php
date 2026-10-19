@@ -376,6 +376,19 @@ class ViewShareResolver {
 	}//end shareFindings()
 
 	/**
+	 * The groups a view is shared with, in any mode.
+	 *
+	 * @param array<string, mixed> $view The view.
+	 *
+	 * @return array<int, string> The group ids.
+	 *
+	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
+	 */
+	public function shareGroups(array $view): array {
+		return array_values(array_unique(array_column($this->sharesOf(view: $view), 'group')));
+	}//end shareGroups()
+
+	/**
 	 * The share list of a view, normalised and with the unusable entries gone.
 	 *
 	 * @param array<string, mixed> $view The view.

@@ -11,6 +11,9 @@
  * SPDX-License-Identifier: EUPL-1.2
  */
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
@@ -156,6 +159,19 @@ class FlowEngineTest extends TestCase {
 			$this->assertIsInt($entry['durationMs']);
 		}
 	}//end testEachStepIsTracedInTheRunLog()
+
+	public function testEveryStepEntryCarriesWhenItStarted(): void {
+		$before = microtime(true);
+		$result = $this->runFlow($this->linearFlow(), new RecordingDispatcher(failOn: 'second'));
+
+		$this->assertCount(2, $result['log']);
+		foreach ($result['log'] as $entry) {
+			$this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}\+00:00$/', $entry['startedAt']);
+			$this->assertGreaterThanOrEqual((int)floor($before), (new \DateTimeImmutable($entry['startedAt']))->getTimestamp());
+		}
+
+		$this->assertLessThanOrEqual($result['log'][1]['startedAt'], $result['log'][0]['startedAt']);
+	}//end testEveryStepEntryCarriesWhenItStarted()
 
 	public function testItemsAreThreadedFromEachStepIntoTheNext(): void {
 		$dispatcher = new RecordingDispatcher();
@@ -401,6 +417,7 @@ class FlowEngineTest extends TestCase {
 		// Only 'second' ran — 'first' was served from the pin.
 		$this->assertSame(['second'], $dispatcher->dispatched);
 		$this->assertSame('pinned', $result['log'][0]['status']);
+		$this->assertArrayHasKey('startedAt', $result['log'][0]);
 		// The next step saw the pinned output, not a re-execution.
 		$this->assertTrue($dispatcher->seenItems['second'][0]['json']['pinned']);
 	}//end testAPinnedStepIsNotExecutedAndItsOutputIsUsed()

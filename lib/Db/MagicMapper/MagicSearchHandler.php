@@ -61,6 +61,7 @@ use OCA\OpenRegister\Service\Search\SearchTermNode;
 use OCA\OpenRegister\Service\Search\SearchTermParser;
 use OCA\OpenRegister\Service\Search\SearchTermSqlCompiler;
 use OCA\OpenRegister\Support\FilterParams;
+use OCA\OpenRegister\Support\NullFilter;
 use OCA\OpenRegister\Support\QueryLimit;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
@@ -212,6 +213,13 @@ class MagicSearchHandler {
 	private MagicMetadataColumn $columnRoles;
 
 	/**
+	 * Reads filters on a path inside an object property and writes their SQL.
+	 *
+	 * @var NestedPathFilter
+	 */
+	private NestedPathFilter $nestedPaths;
+
+	/**
 	 * Constructor for MagicSearchHandler
 	 *
 	 * @param IDBConnection $db Database connection for queries
@@ -242,6 +250,7 @@ class MagicSearchHandler {
 		$this->termParser = new SearchTermParser();
 		$this->termCompiler = new SearchTermSqlCompiler();
 		$this->columnRoles  = new MagicMetadataColumn();
+		$this->nestedPaths  = new NestedPathFilter();
 	}//end __construct()
 
 	/**
@@ -567,7 +576,7 @@ class MagicSearchHandler {
 	}//end buildFilteredQuery()
 
 	/**
-	 * Narrow the query by `_related` blocks, or refuse it.
+	 * Narrow the query by `_related` and `_referenced` blocks, or refuse it.
 	 *
 	 * 🔴 A REFUSAL HERE IS DELIBERATE AND MUST NOT BECOME A LOG LINE. Every
 	 * other filter on this path that cannot be honoured is recorded in
@@ -586,9 +595,10 @@ class MagicSearchHandler {
 	 * @throws InvalidArgumentException When a block names a schema that cannot be resolved.
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	private function applyRelatedRowFilters(IQueryBuilder $qb, array $query, ?int $registerId): void {
-		if (array_key_exists('_related', $query) === false) {
+		if (array_key_exists('_related', $query) === false && array_key_exists('_referenced', $query) === false) {
 			return;
 		}
 
@@ -1715,9 +1725,10 @@ class MagicSearchHandler {
 	 * @param mixed $value The raw operator value as the request layer delivered it.
 	 *
 	 * @return bool True when the caller asked for IS NULL.
+	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
 	 */
 	private function isNullOperatorAsksForNull(mixed $value): bool {
-		return filter_var($value, FILTER_VALIDATE_BOOLEAN) === true;
+		return NullFilter::isNullOperatorAsksForNull(value: $value);
 	}//end isNullOperatorAsksForNull()
 
 	/**
@@ -1747,6 +1758,25 @@ class MagicSearchHandler {
 		$conditions = [];
 		$reservedParams = $this->getReservedParams();
 		$properties = $schema->getProperties() ?? [];
+
+		[$query, $nestedFilters] = $this->nestedPaths->split(filters: $query, properties: $properties);
+		foreach ($nestedFilters as $filter) {
+			$expression = $this->nestedPaths->expression(
+				column: $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $filter['root']), isPostgres: $isPostgres),
+				path: $filter['path'],
+				isPostgres: $isPostgres
+			);
+			if ($expression === null) {
+				$conditions[] = '1=0';
+				continue;
+			}
+
+			$quote = static fn (string $value): string => (string)$connection->quote($value);
+			array_push(
+				$conditions,
+				...$this->nestedPaths->conditions(expression: $expression, value: $filter['value'], bind: $quote, isPostgres: $isPostgres)
+			);
+		}
 
 		foreach ($query as $key => $value) {
 			// Skip reserved params, underscore-prefixed params, and @ metadata params.
@@ -2778,6 +2808,9 @@ class MagicSearchHandler {
 
 		$isPostgres = $this->isPostgresPlatform();
 
+		[$filters, $nestedFilters] = $this->nestedPaths->split(filters: $filters, properties: $properties ?? []);
+		$this->applyNestedPathFilters(qb: $qb, nestedFilters: $nestedFilters, properties: $properties ?? [], isPostgres: $isPostgres);
+
 		foreach ($filters as $field => $value) {
 			// Check if this field exists as a column in the schema.
 			if (($properties[$field] ?? null) === null) {
@@ -3010,6 +3043,53 @@ class MagicSearchHandler {
 
 		$qb->andWhere($orConditions);
 	}//end applyJsonArrayFilter()
+
+	/**
+	 * Filter on fields inside object properties (`dunning.currentStage=2`), on the QueryBuilder path.
+	 *
+	 * A path the JSON column cannot be read at (a segment that is not a plain
+	 * name) matches nothing and is reported as an ignored filter, the way an
+	 * unknown property is.
+	 *
+	 * @param IQueryBuilder                                                  $qb            Query builder to modify.
+	 * @param list<array{root: string, path: list<string>, value: mixed}> $nestedFilters The path filters from NestedPathFilter::split().
+	 * @param array<string,mixed>                                            $properties    The schema's properties.
+	 * @param bool                                                           $isPostgres    Whether the platform is PostgreSQL.
+	 *
+	 * @return void
+	 *
+	 * @throws EncryptedFieldFilterException When the object property is encrypted.
+	 *
+	 * @spec openspec/changes/nested-property-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
+	 */
+	private function applyNestedPathFilters(IQueryBuilder $qb, array $nestedFilters, array $properties, bool $isPostgres): void {
+		foreach ($nestedFilters as $filter) {
+			if (($properties[$filter['root']]['x-openregister-encrypted'] ?? false) === true) {
+				throw new EncryptedFieldFilterException(property: $filter['root']);
+			}
+
+			$expression = $this->nestedPaths->expression(
+				column: 't.' . $this->sanitizeColumnName(name: $filter['root']),
+				path: $filter['path'],
+				isPostgres: $isPostgres
+			);
+			if ($expression === null) {
+				$this->ignoredFilters[] = $filter['root'] . '.' . implode('.', $filter['path']);
+				$qb->andWhere('1 = 0');
+				continue;
+			}
+
+			$conditions = $this->nestedPaths->conditions(
+				expression: $expression,
+				value: $filter['value'],
+				bind: static fn (string $value): string => (string)$qb->createNamedParameter($value),
+				isPostgres: $isPostgres
+			);
+			foreach ($conditions as $condition) {
+				$qb->andWhere($condition);
+			}
+		}
+	}//end applyNestedPathFilters()
 
 	/**
 	 * Apply filter for object columns (related objects)

@@ -181,7 +181,8 @@ class OrganisationCrudTest extends TestCase {
 			tenantLifecycleService: $this->createMock(TenantLifecycleService::class),
 			tenantUsageMapper: $this->createMock(TenantUsageMapper::class),
 			userSession: $this->userSession,
-			groupManager: $this->groupManager
+			groupManager: $this->groupManager,
+			usageService: $this->createMock(originalClassName: \OCA\OpenRegister\Service\OrganisationUsageService::class)
 		);
 	}
 

@@ -53,16 +53,18 @@ class RelatedRowQueryApplierTest extends TestCase {
 	/**
 	 * Build an applier whose schema lookup returns the given rows.
 	 *
-	 * @param array<int, Schema> $found What findBySlug returns.
+	 * @param array<int, Schema> $found       What findBySlug returns.
+	 * @param bool               $tableExists Whether the related schema's table exists.
 	 *
 	 * @return RelatedRowQueryApplier The applier.
 	 */
-	private function applierFinding(array $found): RelatedRowQueryApplier {
+	private function applierFinding(array $found, bool $tableExists=true): RelatedRowQueryApplier {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('findBySlug')->willReturn($found);
 
 		$tableHandler = $this->createMock(MagicTableHandler::class);
-		$tableHandler->method('getTableNameForRegisterSchema')->willReturn('oc_openregister_table_1_2');
+		$tableHandler->method('getTableNameForRegisterSchema')->willReturn('openregister_table_1_2');
+		$tableHandler->method('existsTableForRegisterSchema')->willReturn($tableExists);
 
 		$rbac = $this->createMock(MagicRbacHandler::class);
 		$rbac->method('buildRbacPredicateForAlias')->willReturn('rel0._owner = \'alice\'');
@@ -229,4 +231,41 @@ class RelatedRowQueryApplierTest extends TestCase {
 
 		$this->assertSame(1, $applied);
 	}//end testTheRegisterMayComeFromTheQueryItself()
+
+	/**
+	 * 🔴 A REFERENCED SCHEMA WITHOUT A TABLE MATCHES NOTHING, IT DOES NOT FAIL.
+	 *
+	 * A schema that has never stored an object has no magic table. Rendering
+	 * the subquery against it answered HTTP 500 (`relation does not exist`).
+	 * No row can exist there, so the block narrows to the empty set.
+	 *
+	 * @return void
+	 */
+	public function testAReferencedSchemaWithoutATableMatchesNothing(): void {
+		$conditions = [];
+		$qb = $this->createMock(originalClassName: IQueryBuilder::class);
+		$qb->method('createFunction')->willReturnArgument(0);
+		$qb->expects($this->never())->method('setParameter');
+		$qb->method('andWhere')->willReturnCallback(
+			function ($condition) use (&$conditions, $qb) {
+				$conditions[] = $condition;
+				return $qb;
+			}
+		);
+
+		$applied = $this->applierFinding(found: [$this->schema()], tableExists: false)->apply(
+			qb: $qb,
+			query: [
+				'_referenced' => [
+					'subsidieAanvraag' => [
+						'subsidieaanvraag' => ['case' => '9eab0293-7ce5-4bcf-b7aa-0ab79a1eab4f'],
+					],
+				],
+			],
+			register: $this->register()
+		);
+
+		$this->assertSame(expected: 1, actual: $applied);
+		$this->assertSame(expected: ['1 = 0'], actual: $conditions);
+	}//end testAReferencedSchemaWithoutATableMatchesNothing()
 }//end class

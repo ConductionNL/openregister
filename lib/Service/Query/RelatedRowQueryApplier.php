@@ -85,13 +85,25 @@ class RelatedRowQueryApplier {
 	 * @throws InvalidArgumentException When a block names a schema that cannot be resolved.
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function apply(IQueryBuilder $qb, array $query, Register $register, string $outerAlias = 't'): int {
-		if (array_key_exists(RelatedRowFilterParser::KEY, $query) === false) {
+		$filters = [];
+		if (array_key_exists(RelatedRowFilterParser::KEY, $query) === true) {
+			$filters = (new RelatedRowFilterParser())->parse($query);
+		}
+
+		if (array_key_exists(RelatedRowFilterParser::FORWARD_KEY, $query) === true) {
+			$filters = array_merge(
+				$filters,
+				(new RelatedRowFilterParser(key: RelatedRowFilterParser::FORWARD_KEY))->parse($query)
+			);
+		}
+
+		if ($filters === []) {
 			return 0;
 		}
 
-		$filters = (new RelatedRowFilterParser())->parse($query);
 		$clause  = new RelatedRowExistsClause();
 		$engine  = $this->engine();
 		$applied = 0;
@@ -100,10 +112,21 @@ class RelatedRowQueryApplier {
 			$alias   = sprintf('rel%d', $position);
 			$schema  = $this->resolveSchema(name: $filter->schema);
 			$relatedTable = $this->tableHandler->getTableNameForRegisterSchema(register: $register, schema: $schema);
+
+			// A schema that has never stored an object has no table yet, so no
+			// row can match. Same answer the list path gives for a missing table.
+			if ($this->tableHandler->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+				$qb->andWhere($qb->createFunction('1 = 0'));
+				$applied++;
+				continue;
+			}
+
 			$rendered = $clause->render(
 				filter: $filter,
 				engine: $engine,
-				table: $relatedTable,
+				// Raw SQL gets no automatic table prefix; Nextcloud's connection
+				// replaces `*PREFIX*` with the instance's (`oc_` by default).
+				table: '*PREFIX*'.$relatedTable,
 				outerAlias: $outerAlias,
 				innerAlias: $alias,
 				// 🔴 THE ACCESS PREDICATE FOR THE RELATED SCHEMA, NOT THE OUTER
