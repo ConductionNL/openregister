@@ -3453,9 +3453,12 @@ class ImportHandler {
 	 * A listed object with a stable `@self.slug` is a seed: shipped with the
 	 * app's register configuration and found again on every import by register,
 	 * schema and slug. A stored seed is updated when the shipped `@self.version`
-	 * is higher than the stored one; at the same or a lower version it is left
-	 * alone and counted as unchanged. An object the configuration does not list
-	 * is never looked at, so instance data is untouched.
+	 * is higher than the version the import last shipped it at, which
+	 * {@see SeedVersionLedger} remembers apart from the object (the stored
+	 * object's own version is bumped by every later edit, so it cannot be the
+	 * one compared); at the same or a lower version it is left alone and counted
+	 * as unchanged. An object the configuration does not list is never looked
+	 * at, so instance data is untouched.
 	 *
 	 * Throws on a failed save; the caller decides whether to retry or record it.
 	 *
