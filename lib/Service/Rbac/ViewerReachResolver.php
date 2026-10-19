@@ -307,8 +307,10 @@ class ViewerReachResolver {
 	 * @param string               $recipient The recipient.
 	 *
 	 * @return bool True when the view reaches every person the recipient names.
+	 *
+	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
 	 */
-	private function recipientReads(array $view, string $recipient): bool {
+	public function recipientReads(array $view, string $recipient): bool {
 		if (str_starts_with($recipient, ViewAlert::USER_PREFIX) === false) {
 			// A group reads the view when the view is shared with it or public.
 			return $this->shares->accessFor(view: $view, userId: '', userGroups: [$recipient]) !== null;

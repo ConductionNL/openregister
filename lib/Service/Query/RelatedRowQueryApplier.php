@@ -23,7 +23,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Query;
 
 use InvalidArgumentException;
-use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
@@ -32,7 +31,6 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * The one place a `_related` filter becomes SQL on a real query.
@@ -60,8 +58,8 @@ class RelatedRowQueryApplier {
 	 * @param MagicRbacHandler  $rbacHandler  Builds the access predicate for the related rows.
 	 * @param IDBConnection     $db           The connection, read for its platform.
 	 * @param LoggerInterface   $logger       The logger.
-	 * @param PropertyReadGuard|null $propertyGuard Decides whether the caller may read a property a condition names;
-	 *                                              defaults to one that fails closed on a governed schema.
+	 * @param RelatedRowAccess|null $access       The access rules beyond the row predicate (property read rule,
+	 *                                            organisation boundary); defaults to one that fails closed.
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
@@ -69,17 +67,31 @@ class RelatedRowQueryApplier {
 		private readonly MagicRbacHandler $rbacHandler,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
-		?PropertyReadGuard $propertyGuard = null,
+		?RelatedRowAccess $access = null,
 	) {
-		$this->propertyGuard = ($propertyGuard ?? new PropertyReadGuard(container: null, logger: $logger));
+		$this->access = ($access ?? new RelatedRowAccess(logger: $logger));
 	}//end __construct()
 
 	/**
-	 * Decides whether the caller may read a property a condition names.
+	 * The access rules beyond the related schema's row predicate.
 	 *
-	 * @var PropertyReadGuard
+	 * @var RelatedRowAccess
 	 */
-	private readonly PropertyReadGuard $propertyGuard;
+	private readonly RelatedRowAccess $access;
+
+	/**
+	 * Whether the caller may read a property, for a filter that names it (nested-path filters on the outer table).
+	 *
+	 * @param Schema $schema   The schema the property belongs to.
+	 * @param string $property The property name.
+	 *
+	 * @return bool False when it is withheld.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 */
+	public function mayReadProperty(Schema $schema, string $property): bool {
+		return $this->access->mayReadProperty(schema: $schema, property: $property);
+	}//end mayReadProperty()
 
 	/**
 	 * Narrow a query by every `_related` block it carries.
@@ -119,7 +131,7 @@ class RelatedRowQueryApplier {
 		}
 
 		$clause  = new RelatedRowExistsClause();
-		$engine  = $this->engine();
+		$engine  = $clause->engineFor(db: $this->db, logger: $this->logger);
 		$applied = 0;
 
 		foreach (array_values($filters) as $position => $filter) {
@@ -135,7 +147,7 @@ class RelatedRowQueryApplier {
 				continue;
 			}
 
-			$this->assertPropertiesReadable(filter: $filter, schema: $schema);
+			$this->access->assertReadable(filter: $filter, schema: $schema);
 
 			$rendered = $clause->render(
 				filter: $filter,
@@ -149,7 +161,7 @@ class RelatedRowQueryApplier {
 				// ONE. The two schemas have different authorization blocks, and
 				// reusing the outer query's predicate would decide who may read
 				// case properties by asking who may read cases.
-				accessPredicate: $this->accessPredicate(
+				accessPredicate: $this->access->predicate(
 					qb: $qb,
 					rbacPredicate: $this->rbacHandler->buildRbacPredicateForAlias(
 						schema: $schema,
@@ -174,117 +186,6 @@ class RelatedRowQueryApplier {
 
 		return $applied;
 	}//end apply()
-
-	/**
-	 * The related rows' access predicate: the RBAC row rule AND the organisation boundary.
-	 *
-	 * 🔴 THE ORGANISATION BOUNDARY IS A SEPARATE TERM FROM THE ROW RULE. The row
-	 * predicate carries no `_organisation` term (on a schema with no
-	 * authorization block it admits every row), so a subquery that stopped there
-	 * matched rows of another organisation: a caller who writes a foreign row's
-	 * uuid into their own object could probe that row's fields, and foreign rows
-	 * pointing at the caller's object satisfied `_related`. The outer list would
-	 * never return those rows, so the subquery must not consult them.
-	 *
-	 * The SCOPE is decided by the caller of the list path (one decision, shared
-	 * with the outer query); this only renders it for the related alias. A mode
-	 * it does not know matches nothing.
-	 *
-	 * @param IQueryBuilder                                  $qb            The query, which receives the organisation parameters.
-	 * @param string                                         $rbacPredicate The related schema's row predicate.
-	 * @param array{mode: string, uuids: array<int, string>} $scope         The decided organisation scope.
-	 * @param string                                         $alias         The related row's alias.
-	 *
-	 * @return string The combined predicate.
-	 *
-	 * @spec openspec/specs/rbac-scopes/spec.md
-	 */
-	private function accessPredicate(IQueryBuilder $qb, string $rbacPredicate, array $scope, string $alias): string {
-		$column = $alias . '._organisation';
-		$mode   = ($scope['mode'] ?? null);
-
-		if ($mode === MagicOrganizationHandler::SCOPE_ALL) {
-			return $rbacPredicate;
-		}
-
-		if ($mode === MagicOrganizationHandler::SCOPE_NULL_ONLY) {
-			return '(' . $rbacPredicate . ') AND ' . $column . ' IS NULL';
-		}
-
-		$uuids = array_values(array_filter(
-			($scope['uuids'] ?? []),
-			static fn ($uuid): bool => is_string($uuid) === true && $uuid !== ''
-		));
-		$scoped = [MagicOrganizationHandler::SCOPE_IN, MagicOrganizationHandler::SCOPE_IN_OR_NULL];
-		if (in_array($mode, $scoped, true) === false || $uuids === []) {
-			// SCOPE_NONE, an unknown mode, or "in these organisations" naming none.
-			return '(' . $rbacPredicate . ') AND 1 = 0';
-		}
-
-		$placeholders = [];
-		foreach ($uuids as $position => $uuid) {
-			$name           = sprintf('%s_org%d', $alias, $position);
-			$placeholders[] = ':' . $name;
-			$qb->setParameter($name, $uuid);
-		}
-
-		$term = $column . ' IN (' . implode(', ', $placeholders) . ')';
-		if ($mode === MagicOrganizationHandler::SCOPE_IN_OR_NULL) {
-			$term = '(' . $term . ' OR ' . $column . ' IS NULL)';
-		}
-
-		return '(' . $rbacPredicate . ') AND ' . $term;
-	}//end accessPredicate()
-
-	/**
-	 * Refuse a block that names a field that is not a readable property of the related schema.
-	 *
-	 * 🔴 TWO REFUSALS, ONE MESSAGE. A field must be a PROPERTY of the related
-	 * schema, not merely a well-formed name: a magic table also has metadata
-	 * columns (`_owner`, `_organisation`, `_authorization`, `_status`), and a
-	 * `gt`/`lt` on those discloses object-level sharing metadata of readable rows
-	 * by binary search, while an unknown name reached the database as an unknown
-	 * column (HTTP 500 instead of the 400 the parser answers elsewhere).
-	 *
-	 * 🔴 A CONDITION IS A BOOLEAN ORACLE ON THE FIELD IT NAMES. The related
-	 * schema's ROW predicate decides which rows may be consulted; it says
-	 * nothing about which of their fields. Without this a caller who cannot read
-	 * `salary` can still binary-search it with `gt`/`lt`. The refusal is worded
-	 * like an unknown property on purpose, so a refused field cannot be told
-	 * apart from one that does not exist.
-	 *
-	 * Covers every property of the related schema the SQL reads: each condition
-	 * field and, for `_related`, the foreign key the join compares (for
-	 * `_referenced` the foreign key is a property of the outer schema, which this
-	 * class is not given).
-	 *
-	 * @param RelatedRowFilter $filter The parsed block.
-	 * @param Schema           $schema The related schema.
-	 *
-	 * @return void
-	 *
-	 * @throws InvalidArgumentException When a named field is not a property of the schema, or is withheld from the caller.
-	 *
-	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
-	 */
-	private function assertPropertiesReadable(RelatedRowFilter $filter, Schema $schema): void {
-		$fields = array_column($filter->conditions, 'field');
-		if ($filter->direction !== RelatedRowFilter::DIRECTION_FORWARD) {
-			$fields[] = $filter->foreignKey;
-		}
-
-		$properties = $schema->getProperties();
-		foreach ($fields as $field) {
-			$field = (string)$field;
-			if (array_key_exists($field, $properties) === false
-				|| $this->propertyGuard->mayRead(schema: $schema, property: $field) === false
-			) {
-				throw new InvalidArgumentException(
-					sprintf('\'%s\' is not a property of schema \'%s\' that a related-row filter can match on.', $field, $filter->schema)
-				);
-			}
-		}
-	}//end assertPropertiesReadable()
 
 	/**
 	 * Resolve the schema a block names, or refuse the whole query.
@@ -330,35 +231,4 @@ class RelatedRowQueryApplier {
 			sprintf('There is no schema called \'%s\' to filter related rows on.', $name)
 		);
 	}//end resolveSchema()
-
-	/**
-	 * Which engine the SQL must be written for.
-	 *
-	 * Read off the LIVE CONNECTION rather than configured separately, because a
-	 * second source of truth for the engine is a second thing that can be wrong
-	 * about it, and being wrong would surface as a syntax error in production
-	 * and nowhere else.
-	 *
-	 * The detection matches `MagicRbacHandler::isPostgres()` deliberately,
-	 * including its fallback: when the platform cannot be read, both default to
-	 * MariaDB syntax. Two different guesses would put MariaDB JSON functions
-	 * and Postgres operators in the same statement.
-	 *
-	 * @return string The engine.
-	 */
-	private function engine(): string {
-		try {
-			$platform = $this->db->getDatabasePlatform();
-			if (stripos(get_debug_type($platform), 'PostgreSQL') !== false) {
-				return RelatedRowExistsClause::ENGINE_POSTGRES;
-			}
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				message: '[RelatedRowQueryApplier] Could not read the database platform; defaulting to MariaDB syntax',
-				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e->getMessage()]
-			);
-		}
-
-		return RelatedRowExistsClause::ENGINE_MARIADB;
-	}//end engine()
 }//end class

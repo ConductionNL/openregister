@@ -37,15 +37,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use DateTime;
-use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Service\Notification\EmailSender;
 use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
-use OCA\OpenRegister\Service\Rbac\ViewShareResolver;
+use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\L10N\IFactory;
 use OCP\Notification\IManager as INotificationManager;
@@ -98,7 +96,7 @@ class ViewAlertCrossedListener implements IEventListener {
 	 * @param IFactory $l10nFactory For each recipient's own language in an email.
 	 * @param IUserManager $userManager To read a recipient's language.
 	 * @param LoggerInterface $logger For recipients and channels nothing could deliver to.
-	 * @param IGroupManager $groupManager A recipient's groups, to re-check at send time that they may still read the view.
+	 * @param ViewerReachResolver $viewers Re-checks at send time that a recipient may still read the view.
 	 */
 	public function __construct(
 		private readonly NotificationRecipientResolver $recipients,
@@ -107,17 +105,9 @@ class ViewAlertCrossedListener implements IEventListener {
 		private readonly IFactory $l10nFactory,
 		private readonly IUserManager $userManager,
 		private readonly LoggerInterface $logger,
-		private readonly IGroupManager $groupManager,
+		private readonly ViewerReachResolver $viewers,
 	) {
-		$this->shares = new ViewShareResolver();
 	}//end __construct()
-
-	/**
-	 * Reads a view's own share block.
-	 *
-	 * @var ViewShareResolver
-	 */
-	private ViewShareResolver $shares;
 
 	/**
 	 * Deliver one crossing.
@@ -143,7 +133,7 @@ class ViewAlertCrossedListener implements IEventListener {
 			'threshold' => $alert->threshold,
 		];
 
-		$uids = $this->onlyThoseWhoMayRead(view: $view, uids: $this->resolve(viewId: $parameters['viewId'], alert: $alert));
+		$uids = $this->onlyThoseWhoMayRead(view: $view->jsonSerialize(), uids: $this->resolve(viewId: $parameters['viewId'], alert: $alert));
 		foreach ($alert->channels as $channel) {
 			if ($channel === self::CHANNEL_NOTIFICATION) {
 				$this->notifyAll(uids: $uids, parameters: $parameters);
@@ -176,19 +166,18 @@ class ViewAlertCrossedListener implements IEventListener {
 	 * or whoever the view's shares and `isPublic` reach). An unreadable
 	 * membership drops the recipient: not telling someone is the safe error.
 	 *
-	 * @param View               $view The view that crossed.
-	 * @param array<int, string> $uids The verified recipients.
+	 * @param array<string, mixed> $view The serialised view that crossed.
+	 * @param array<int, string>   $uids The verified recipients.
 	 *
 	 * @return array<int, string> The recipients who still read it.
 	 *
 	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
 	 */
-	private function onlyThoseWhoMayRead(View $view, array $uids): array {
-		$serialised = $view->jsonSerialize();
+	private function onlyThoseWhoMayRead(array $view, array $uids): array {
 		$readers    = [];
 		$dropped    = [];
 		foreach ($uids as $uid) {
-			if ($this->mayRead(view: $serialised, uid: $uid) === true) {
+			if ($this->viewers->recipientReads(view: $view, recipient: self::USER_PREFIX . $uid) === true) {
 				$readers[] = $uid;
 				continue;
 			}
@@ -199,44 +188,12 @@ class ViewAlertCrossedListener implements IEventListener {
 		if ($dropped !== []) {
 			$this->logger->warning(
 				'[ViewAlertCrossedListener] View {view} alert skipped recipients who may no longer read the view: {recipients}',
-				['view' => (string)$view->getUuid(), 'recipients' => implode(', ', $dropped)]
+				['view' => (string)($view['uuid'] ?? ''), 'recipients' => implode(', ', $dropped)]
 			);
 		}
 
 		return $readers;
 	}//end onlyThoseWhoMayRead()
-
-	/**
-	 * Whether one user may read the view now.
-	 *
-	 * @param array<string, mixed> $view The serialised view.
-	 * @param string               $uid  The recipient.
-	 *
-	 * @return bool
-	 */
-	private function mayRead(array $view, string $uid): bool {
-		try {
-			if ($this->groupManager->isAdmin($uid) === true) {
-				return true;
-			}
-
-			$user = $this->userManager->get($uid);
-			if ($user === null) {
-				return false;
-			}
-
-			$groups = $this->groupManager->getUserGroupIds($user);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'[ViewAlertCrossedListener] Could not read the groups of {uid}; not telling them: {error}',
-				['uid' => $uid, 'error' => $e->getMessage()]
-			);
-
-			return false;
-		}
-
-		return $this->shares->accessFor(view: $view, userId: $uid, userGroups: $groups) !== null;
-	}//end mayRead()
 
 	/**
 	 * The verified uids an alert names, with every name that resolved to nobody logged.

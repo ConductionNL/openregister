@@ -33,12 +33,14 @@ use OCA\OpenRegister\Event\ViewAlertCrossedEvent;
 use OCA\OpenRegister\Listener\ViewAlertCrossedListener;
 use OCA\OpenRegister\Service\Notification\EmailSender;
 use OCA\OpenRegister\Service\Notification\NotificationRecipientResolver;
+use OCA\OpenRegister\Service\Rbac\ViewerReachResolver;
 use OCA\OpenRegister\Service\View\ViewAlert;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IL10N;
 use OCP\IUser;
 use OCP\IUserManager;
+use OCP\IUserSession;
 use OCP\L10N\IFactory;
 use OCP\Mail\IMailer;
 use OCP\Mail\IMessage;
@@ -53,6 +55,7 @@ use Psr\Log\AbstractLogger;
  * @uses \OCA\OpenRegister\Event\ViewAlertCrossedEvent
  * @uses \OCA\OpenRegister\Service\Notification\EmailSender
  * @uses \OCA\OpenRegister\Service\Notification\NotificationRecipientResolver
+ * @uses \OCA\OpenRegister\Service\Rbac\ViewerReachResolver
  * @uses \OCA\OpenRegister\Service\Rbac\ViewShareResolver
  * @uses \OCA\OpenRegister\Service\View\ViewAlert
  */
@@ -125,8 +128,8 @@ class ViewAlertCrossedListenerTest extends TestCase {
 		$groupManager->method('groupExists')->willReturnCallback(static fn (string $gid): bool => $gid === 'teamleads');
 		$groupManager->method('get')->willReturnCallback(static fn (string $gid): ?IGroup => ($gid === 'teamleads' ? $group : null));
 		$groupManager->method('isAdmin')->willReturnCallback(static fn (string $uid): bool => $uid === 'admin');
-		$groupManager->method('getUserGroupIds')->willReturnCallback(
-			static fn (IUser $user): array => (in_array($user->getUID(), ['alice', 'bob'], true) === true ? ['teamleads'] : [])
+		$groupManager->method('isInGroup')->willReturnCallback(
+			static fn (string $uid, string $gid): bool => ($gid === 'teamleads' && in_array($uid, ['alice', 'bob'], true) === true)
 		);
 
 		$this->warnings = new \ArrayObject();
@@ -192,7 +195,7 @@ class ViewAlertCrossedListenerTest extends TestCase {
 			l10nFactory: $factory,
 			userManager: $userManager,
 			logger: $logger,
-			groupManager: $groupManager
+			viewers: new ViewerReachResolver(userSession: $this->createMock(IUserSession::class), groupManager: $groupManager, logger: $logger)
 		);
 	}//end listener()
 

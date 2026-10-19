@@ -35,7 +35,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -77,12 +76,16 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 	/**
 	 * The handler on a PostgreSQL connection double.
 	 *
+	 * @param bool $mayReadProperties Whether the caller may read the root property of a nested path.
+	 *
 	 * @return MagicSearchHandler
 	 */
-	private function handler(?PropertyReadGuard $guard = null): MagicSearchHandler {
+	private function handler(bool $mayReadProperties = true): MagicSearchHandler {
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getDatabasePlatform')->willReturn($this->createMock(PostgreSQL120Platform::class));
 		$logger = $this->createMock(LoggerInterface::class);
+		$related = $this->createMock(RelatedRowQueryApplier::class);
+		$related->method('mayReadProperty')->willReturn($mayReadProperties);
 
 		return new MagicSearchHandler(
 			db: $db,
@@ -91,8 +94,7 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 			organizationHandler: $this->createMock(MagicOrganizationHandler::class),
 			schemaTypeConverter: new SchemaTypeConverter(),
 			dateTimeNormalizer: new DateTimeNormalizer($logger),
-			relatedRows: $this->createMock(RelatedRowQueryApplier::class),
-			propertyGuard: $guard
+			relatedRows: $related
 		);
 	}//end handler()
 
@@ -171,18 +173,6 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 	}//end rawObject()
 
 	/**
-	 * A guard that withholds every property it is asked about.
-	 *
-	 * @return PropertyReadGuard
-	 */
-	private function denyingGuard(): PropertyReadGuard {
-		$guard = $this->createMock(PropertyReadGuard::class);
-		$guard->method('mayRead')->willReturn(false);
-
-		return $guard;
-	}//end denyingGuard()
-
-	/**
 	 * A path into an object property the caller may not read matches nothing, on both paths.
 	 *
 	 * A filter on `dunning.currentStage` is an oracle on `dunning`; the rule that
@@ -196,7 +186,7 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 		$this->captured = [];
 
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
-		$method->invoke($this->handler(guard: $this->denyingGuard()), $this->queryBuilder(), ['dunning.currentStage' => 2], $schema);
+		$method->invoke($this->handler(mayReadProperties: false), $this->queryBuilder(), ['dunning.currentStage' => 2], $schema);
 		$this->assertSame(['1 = 0'], $this->captured);
 
 		$connection = $this->createMock(IDBConnection::class);
@@ -204,7 +194,7 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 		$raw = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
 		$this->assertSame(
 			['1=0'],
-			$raw->invoke($this->handler(guard: $this->denyingGuard()), ['dunning' => ['currentStage' => 2]], $schema, $connection, true)
+			$raw->invoke($this->handler(mayReadProperties: false), ['dunning' => ['currentStage' => 2]], $schema, $connection, true)
 		);
 	}//end testAPathIntoAnUnreadablePropertyMatchesNothing()
 

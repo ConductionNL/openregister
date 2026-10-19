@@ -216,9 +216,8 @@ class ViewsController extends Controller {
 	/**
 	 * Refuse an update that changes fields this caller does not own.
 	 *
-	 * Answers a response to RETURN, or null when the update may proceed. The
-	 * refusal NAMES the fields, because the message a member needs is which
-	 * field was refused rather than that something was.
+	 * Answers a response to RETURN, or null when the update may proceed. The refusal
+	 * NAMES the fields, because a member needs to know which field was refused.
 	 *
 	 * Only fields whose VALUE changes are judged: the edit screen sends the
 	 * whole view. The caller resolves the view with requireReachableView().
@@ -226,7 +225,7 @@ class ViewsController extends Controller {
 	 * @param View $view The stored view.
 	 * @param string $userId The caller.
 	 * @param array<string, mixed> $data The request body.
-	 * @param bool $replacesView Whether the save replaces the view (PUT), which writes `isPublic` as false when the body omits it.
+	 * @param array<string, mixed>|null $savedAs The body as the save will write it, when that differs (PUT writes `isPublic` false when omitted).
 	 *
 	 * @return JSONResponse|null The refusal, or null when allowed.
 	 *
@@ -235,7 +234,7 @@ class ViewsController extends Controller {
 	 * @spec openspec/specs/saved-search-views/spec.md
 	 * @spec openspec/changes/view-alert-recipients/specs/saved-search-views/spec.md
 	 */
-	private function refuseForbiddenViewFields(View $view, string $userId, array $data, bool $replacesView=false): ?JSONResponse {
+	private function refuseForbiddenViewFields(View $view, string $userId, array $data, ?array $savedAs=null): ?JSONResponse {
 		// Only keys that name a view property are judged, so a `_limit` or
 		// routing key on the body cannot refuse an update a member may make.
 		$fields = array_intersect_key(
@@ -262,16 +261,7 @@ class ViewsController extends Controller {
 		);
 
 		if ($refused === []) {
-			// The recipients are judged against the view AS IT WILL BE SAVED. A
-			// PUT writes `isPublic` as false when the body omits it, so judging
-			// against the stored (possibly public) view admitted recipients a
-			// private view does not reach.
-			$judged = $data;
-			if ($replacesView === true) {
-				$judged['isPublic'] = ($data['isPublic'] ?? false);
-			}
-
-			$this->viewers->assertMayNameRecipients(view: $view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId), data: $judged);
+			$this->viewers->assertMayNameRecipients(view: $view->jsonSerialize(), reach: $this->viewers->reachOf(userId: $userId), data: ($savedAs ?? $data));
 			return null;
 		}
 
@@ -602,7 +592,7 @@ class ViewsController extends Controller {
 			// an administrator are unaffected: `mayAdminister()` answers true
 			// for both and the guard returns null.
 			$stored = $this->requireReachableView(id: $id, userId: $userId);
-			$refusal = $this->refuseForbiddenViewFields(view: $stored, userId: $userId, data: $data, replacesView: true);
+			$refusal = $this->refuseForbiddenViewFields(view: $stored, userId: $userId, data: $data, savedAs: ($data + ['isPublic' => false]));
 			if ($refusal !== null) {
 				return $refusal;
 			}

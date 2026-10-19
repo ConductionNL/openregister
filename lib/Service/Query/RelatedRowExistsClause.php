@@ -23,6 +23,9 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Query;
 
 use InvalidArgumentException;
+use OCP\IDBConnection;
+use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * One `EXISTS (...)` clause per related-row filter, per engine.
@@ -582,4 +585,40 @@ final class RelatedRowExistsClause {
 			sprintf('No related-row SQL for engine \'%s\'.', $engine)
 		);
 	}//end jsonField()
+
+	/**
+	 * Which engine the SQL must be written for.
+	 *
+	 * Read off the LIVE CONNECTION rather than configured separately, because a
+	 * second source of truth for the engine is a second thing that can be wrong
+	 * about it, and being wrong would surface as a syntax error in production
+	 * and nowhere else.
+	 *
+	 * The detection matches `MagicRbacHandler::isPostgres()` deliberately,
+	 * including its fallback: when the platform cannot be read, both default to
+	 * MariaDB syntax. Two different guesses would put MariaDB JSON functions
+	 * and Postgres operators in the same statement.
+	 *
+	 * @param IDBConnection   $db     The connection, read for its platform.
+	 * @param LoggerInterface $logger The logger.
+	 *
+	 * @return string The engine.
+	 *
+	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 */
+	public function engineFor(IDBConnection $db, LoggerInterface $logger): string {
+		try {
+			$platform = $db->getDatabasePlatform();
+			if (stripos(get_debug_type($platform), 'PostgreSQL') !== false) {
+				return RelatedRowExistsClause::ENGINE_POSTGRES;
+			}
+		} catch (Throwable $e) {
+			$logger->warning(
+				message: '[RelatedRowExistsClause] Could not read the database platform; defaulting to MariaDB syntax',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e->getMessage()]
+			);
+		}
+
+		return RelatedRowExistsClause::ENGINE_MARIADB;
+	}//end engineFor()
 }//end class

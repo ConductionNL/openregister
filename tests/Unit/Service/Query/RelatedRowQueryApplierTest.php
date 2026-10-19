@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Query\PropertyReadGuard;
+use OCA\OpenRegister\Service\Query\RelatedRowAccess;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -44,10 +45,12 @@ use Psr\Log\NullLogger;
  * `RelatedRowQueryApplier`.
  *
  * @covers \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
+ * @covers \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Service\Query\PropertyReadGuard
+ * @uses \OCA\OpenRegister\Service\Query\RelatedRowAccess
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowExistsClause
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilterParser
@@ -80,7 +83,7 @@ class RelatedRowQueryApplierTest extends TestCase {
 			rbacHandler: $rbac,
 			db: $this->createMock(IDBConnection::class),
 			logger: new NullLogger(),
-			propertyGuard: $guard
+			access: ($guard === null ? null : new RelatedRowAccess(logger: new NullLogger(), guard: $guard))
 		);
 	}//end applierFinding()
 

@@ -49,7 +49,6 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\LikeOperator;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\WatcherMapper;
-use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
@@ -221,13 +220,6 @@ class MagicSearchHandler {
 	private NestedPathFilter $nestedPaths;
 
 	/**
-	 * Decides whether the caller may read a property a filter names.
-	 *
-	 * @var PropertyReadGuard
-	 */
-	private readonly PropertyReadGuard $propertyGuard;
-
-	/**
 	 * Constructor for MagicSearchHandler
 	 *
 	 * @param IDBConnection $db Database connection for queries
@@ -243,9 +235,6 @@ class MagicSearchHandler {
 	 * @param MagicMetadataColumnHealer|null $metadataColumns Knows which metadata columns a table that could not
 	 *                                                        be healed still lacks, so the lifecycle predicates
 	 *                                                        leave them out
-	 * @param PropertyReadGuard|null $propertyGuard Decides whether the caller may read the root property of a
-	 *                                              nested-path filter; defaults to one that fails closed on a
-	 *                                              schema with property authorization
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
@@ -257,9 +246,7 @@ class MagicSearchHandler {
 		private readonly RelatedRowQueryApplier $relatedRows,
 		private readonly ?LanguageService $languageService = null,
 		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
-		?PropertyReadGuard $propertyGuard = null,
 	) {
-		$this->propertyGuard = ($propertyGuard ?? new PropertyReadGuard(container: null, logger: $logger));
 		$this->termParser = new SearchTermParser();
 		$this->termCompiler = new SearchTermSqlCompiler();
 		$this->columnRoles  = new MagicMetadataColumn();
@@ -640,6 +627,12 @@ class MagicSearchHandler {
 	/**
 	 * Refuse a query carrying `_related` or `_referenced` where it cannot be honoured.
 	 *
+	 * 🔴 REFUSE, DO NOT DROP. The related-row filters are written for the
+	 * QueryBuilder path (applyRelatedRowFilters). Underscore keys are skipped by
+	 * the raw-SQL builder, so a cross-table UNION search or UNION facet carrying
+	 * one answered the UNFILTERED set to a deliberately narrow question, and its
+	 * counts disagreed with the single-schema facet for the same query.
+	 *
 	 * @param array<mixed> $query The request query.
 	 *
 	 * @return void
@@ -676,6 +669,8 @@ class MagicSearchHandler {
 	 * @param int|null     $registerId The register the related table lives in.
 	 *
 	 * @return array{mode: string, uuids: array<int, string>} The decided scope.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) admitOrganisationless() is a pure transform of the decided scope.
 	 *
 	 * @spec openspec/specs/rbac-scopes/spec.md
 	 */
@@ -892,14 +887,8 @@ class MagicSearchHandler {
 		?int $registerId = null,
 		?string $tableName = null,
 	): array {
-		// 🔴 REFUSE, DO NOT DROP. The related-row filters are written for the
-		// QueryBuilder path (applyRelatedRowFilters). Underscore keys are skipped
-		// below, so a cross-table UNION search or UNION facet carrying one
-		// answered the UNFILTERED set to a deliberately narrow question, and its
-		// counts disagreed with the single-schema facet for the same query.
 		$this->refuseRelatedRowFilters(query: $query);
 
-		$conditions = [];
 		// Get connection for value quoting through QueryBuilder.
 		$qb = $this->db->getQueryBuilder();
 		$connection = $qb->getConnection();
@@ -915,7 +904,6 @@ class MagicSearchHandler {
 		$_rbac = $query['_rbac'] ?? true;
 
 		$conditions = array_merge(
-			$conditions,
 			$this->lifecycleConditionsSql(
 				query: $query, includeDeleted: $includeDeleted, schema: $schema,
 				missingColumns: $this->missingMetadataColumns(tableName: $tableName)
@@ -1871,7 +1859,7 @@ class MagicSearchHandler {
 		foreach ($nestedFilters as $filter) {
 			// A filter on a path inside an object property is an oracle on that
 			// property: one the caller may not read matches nothing.
-			if ($this->propertyGuard->mayRead(schema: $schema, property: $filter['root']) === false) {
+			if ($this->relatedRows->mayReadProperty(schema: $schema, property: $filter['root']) === false) {
 				$conditions[] = '1=0';
 				continue;
 			}
@@ -3186,7 +3174,7 @@ class MagicSearchHandler {
 
 			// A filter on a path inside an object property is an oracle on that
 			// property: one the caller may not read matches nothing.
-			if ($this->propertyGuard->mayRead(schema: $schema, property: $filter['root']) === false) {
+			if ($this->relatedRows->mayReadProperty(schema: $schema, property: $filter['root']) === false) {
 				$this->ignoredFilters[] = $filter['root'] . '.' . implode('.', $filter['path']);
 				$qb->andWhere('1 = 0');
 				continue;
