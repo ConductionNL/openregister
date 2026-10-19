@@ -597,23 +597,7 @@ class ObjectRelationsController extends Controller {
 			)
 		);
 
-		$reached = [(string)($graph['root'] ?? '') => true];
-		do {
-			$grew = false;
-			foreach ($edges as $edge) {
-				$from = (string)($edge['from'] ?? '');
-				$to = (string)($edge['to'] ?? '');
-				if (isset($reached[$from]) === true && isset($reached[$to]) === false) {
-					$reached[$to] = true;
-					$grew = true;
-				}
-
-				if (isset($reached[$to]) === true && isset($reached[$from]) === false) {
-					$reached[$from] = true;
-					$grew = true;
-				}
-			}
-		} while ($grew === true);
+		$reached = $this->reached(root: (string)($graph['root'] ?? ''), edges: $edges);
 
 		$graph['nodes'] = array_values(
 			array_filter(
@@ -632,6 +616,35 @@ class ObjectRelationsController extends Controller {
 
 		return $graph;
 	}//end reachableFromRoot()
+
+	/**
+	 * The uuids connected to the root through the given edges, either direction.
+	 *
+	 * @param string                           $root  The root uuid.
+	 * @param array<int, array<string, mixed>> $edges The edges that remain.
+	 *
+	 * @return array<string, true> The reached uuids.
+	 */
+	private function reached(string $root, array $edges): array {
+		$reached = [$root => true];
+		do {
+			$grew = false;
+			foreach ($edges as $edge) {
+				$from = (string)($edge['from'] ?? '');
+				$to = (string)($edge['to'] ?? '');
+				if (isset($reached[$from]) === isset($reached[$to])) {
+					continue;
+				}
+
+				$reached[$from] = true;
+				$reached[$to] = true;
+				$grew = true;
+			}
+		} while ($grew === true);
+
+		return $reached;
+	}//end reached()
+
 
 	/**
 	 * The ancestors and descendants of an object along its schema's parent property.
