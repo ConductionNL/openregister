@@ -51,6 +51,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
+use OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\LanguageService;
@@ -637,15 +638,15 @@ class MagicSearchHandler {
 	 *
 	 * @return void
 	 *
-	 * @throws InvalidArgumentException When the query carries either key.
+	 * @throws RelatedRowFilterNotSupportedException When the query carries either key.
 	 *
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
-	private function refuseRelatedRowFilters(array $query): void {
+	public function refuseRelatedRowFilters(array $query): void {
 		foreach (['_related', '_referenced'] as $key) {
 			if (array_key_exists($key, $query) === true) {
-				throw new InvalidArgumentException(
-					sprintf(
+				throw new RelatedRowFilterNotSupportedException(
+					message: sprintf(
 						'\'%s\' filters are not supported on a query across several schemas; narrow the query to one schema. '
 						. 'Answering without the filter would return rows it was meant to exclude.',
 						$key
@@ -873,7 +874,7 @@ class MagicSearchHandler {
 	 * @return string[] Array of SQL WHERE conditions (without leading AND/WHERE).
 	 *
 	 * @throws UnknownMetadataFieldException When a `@self` key names no metadata column.
-	 * @throws InvalidArgumentException When the query carries `_related` or `_referenced`, which this raw-SQL builder cannot honour.
+	 * @throws RelatedRowFilterNotSupportedException When the query carries `_related` or `_referenced`, which this raw-SQL builder cannot honour.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path

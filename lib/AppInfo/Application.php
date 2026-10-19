@@ -729,6 +729,12 @@ class Application extends App implements IBootstrap {
 		// driver-level 500 an unresolvable column name used to produce.
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\UnknownMetadataFieldMiddleware::class);
 
+		// Register the RelatedRowFilterMiddleware: maps
+		// RelatedRowFilterNotSupportedException — a `_related`/`_referenced`
+		// filter on a multi-schema facet route that cannot honour it — onto an
+		// HTTP 400 with the exception's message, not an uncaught 500.
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\RelatedRowFilterMiddleware::class);
+
 		// Register the MaintenanceModeMiddleware (admin-operations-console
 		// D-6): while maintenance mode holds, every controller but the
 		// operations console is refused with the administered message, so the

@@ -390,7 +390,7 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 			try {
 				$handler->buildWhereConditionsSql(query: [$key => ['caseProperty' => ['case' => ['value' => 'x']]]], schema: new Schema());
 				$this->fail('Expected a refusal for ' . $key);
-			} catch (\InvalidArgumentException $e) {
+			} catch (\OCA\OpenRegister\Exception\RelatedRowFilterNotSupportedException $e) {
 				$this->assertStringContainsString("'" . $key . "'", $e->getMessage());
 			}
 		}
