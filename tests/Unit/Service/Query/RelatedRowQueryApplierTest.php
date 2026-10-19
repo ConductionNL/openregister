@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicTableHandler;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -44,6 +45,7 @@ use Psr\Log\NullLogger;
  * @covers \OCA\OpenRegister\Service\Query\RelatedRowQueryApplier
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Query\PropertyReadGuard
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowExistsClause
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilter
  * @uses \OCA\OpenRegister\Service\Query\RelatedRowFilterParser
@@ -55,10 +57,11 @@ class RelatedRowQueryApplierTest extends TestCase {
 	 *
 	 * @param array<int, Schema> $found       What findBySlug returns.
 	 * @param bool               $tableExists Whether the related schema's table exists.
+	 * @param PropertyReadGuard|null $guard   The property read guard, when the test needs to decide it.
 	 *
 	 * @return RelatedRowQueryApplier The applier.
 	 */
-	private function applierFinding(array $found, bool $tableExists=true): RelatedRowQueryApplier {
+	private function applierFinding(array $found, bool $tableExists=true, ?PropertyReadGuard $guard=null): RelatedRowQueryApplier {
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 		$schemaMapper->method('findBySlug')->willReturn($found);
 
@@ -74,7 +77,8 @@ class RelatedRowQueryApplierTest extends TestCase {
 			tableHandler: $tableHandler,
 			rbacHandler: $rbac,
 			db: $this->createMock(IDBConnection::class),
-			logger: new NullLogger()
+			logger: new NullLogger(),
+			propertyGuard: $guard
 		);
 	}//end applierFinding()
 
@@ -268,4 +272,51 @@ class RelatedRowQueryApplierTest extends TestCase {
 		$this->assertSame(expected: 1, actual: $applied);
 		$this->assertSame(expected: ['1 = 0'], actual: $conditions);
 	}//end testAReferencedSchemaWithoutATableMatchesNothing()
+
+	/**
+	 * 🔴 A CONDITION ON A PROPERTY THE CALLER MAY NOT READ IS REFUSED.
+	 *
+	 * The related schema's row predicate says which rows may be consulted, not
+	 * which of their fields: `gt`/`lt` on a withheld `salary` is a binary search
+	 * for its value. The query ends, and nothing is added to it.
+	 *
+	 * @return void
+	 */
+	public function testAConditionOnAnUnreadablePropertyIsRefused(): void {
+		$guard = $this->createMock(PropertyReadGuard::class);
+		$guard->expects($this->atLeastOnce())->method('mayRead')->willReturn(false);
+
+		$qb = $this->createMock(IQueryBuilder::class);
+		$qb->expects($this->never())->method('andWhere');
+
+		$this->expectException(InvalidArgumentException::class);
+
+		$this->applierFinding(found: [$this->schema()], guard: $guard)->apply(
+			qb: $qb,
+			query: $this->relatedQuery(),
+			register: $this->register()
+		);
+	}//end testAConditionOnAnUnreadablePropertyIsRefused()
+
+	/**
+	 * The control: the same block with a readable property is applied.
+	 *
+	 * @return void
+	 */
+	public function testAConditionOnAReadablePropertyIsApplied(): void {
+		$guard = $this->createMock(PropertyReadGuard::class);
+		$guard->method('mayRead')->willReturn(true);
+
+		$qb = $this->createMock(IQueryBuilder::class);
+		$qb->method('createFunction')->willReturnArgument(0);
+		$qb->expects($this->once())->method('andWhere');
+
+		$applied = $this->applierFinding(found: [$this->schema()], guard: $guard)->apply(
+			qb: $qb,
+			query: $this->relatedQuery(),
+			register: $this->register()
+		);
+
+		$this->assertSame(1, $applied);
+	}//end testAConditionOnAReadablePropertyIsApplied()
 }//end class

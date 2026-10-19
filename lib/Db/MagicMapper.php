@@ -69,6 +69,7 @@ use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\Object\DraftStatusPolicy;
 use OCA\OpenRegister\Service\Object\ObjectEventGate;
+use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Support\QueryLimit;
@@ -611,12 +612,17 @@ class MagicMapper extends AbstractObjectMapper {
 		// Assembled by hand rather than resolved from the container, for the
 		// same reason the cache handler above is not: the container would walk
 		// MagicMapper → applier → MagicTableHandler → MagicMapper and recurse.
+		// One property read guard for both: a filter that reaches through a
+		// reference and a filter on a path inside an object property are the
+		// same oracle on a field the caller may not read.
+		$propertyReadGuard = new PropertyReadGuard(container: $this->container, logger: $this->logger);
 		$relatedRowApplier = new RelatedRowQueryApplier(
 			schemaMapper: $this->schemaMapper,
 			tableHandler: $this->tableHandler,
 			rbacHandler: $this->rbacHandler,
 			db: $this->db,
-			logger: $this->logger
+			logger: $this->logger,
+			propertyGuard: $propertyReadGuard
 		);
 
 		$this->searchHandler = new MagicSearchHandler(
@@ -630,7 +636,8 @@ class MagicMapper extends AbstractObjectMapper {
 			// The request's language state, so a translatable property sorts by
 			// the value the response shows (order-filters-and-notification-links).
 			languageService: $this->container->get(\OCA\OpenRegister\Service\LanguageService::class),
-			metadataColumns: $this->metadataColumnHealer
+			metadataColumns: $this->metadataColumnHealer,
+			propertyGuard: $propertyReadGuard
 		);
 
 		$this->bulkHandler = new MagicBulkHandler(

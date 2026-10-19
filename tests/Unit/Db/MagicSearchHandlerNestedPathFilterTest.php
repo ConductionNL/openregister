@@ -35,6 +35,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
+use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -78,7 +79,7 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 	 *
 	 * @return MagicSearchHandler
 	 */
-	private function handler(): MagicSearchHandler {
+	private function handler(?PropertyReadGuard $guard = null): MagicSearchHandler {
 		$db = $this->createMock(IDBConnection::class);
 		$db->method('getDatabasePlatform')->willReturn($this->createMock(PostgreSQL120Platform::class));
 		$logger = $this->createMock(LoggerInterface::class);
@@ -90,7 +91,8 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 			organizationHandler: $this->createMock(MagicOrganizationHandler::class),
 			schemaTypeConverter: new SchemaTypeConverter(),
 			dateTimeNormalizer: new DateTimeNormalizer($logger),
-			relatedRows: $this->createMock(RelatedRowQueryApplier::class)
+			relatedRows: $this->createMock(RelatedRowQueryApplier::class),
+			propertyGuard: $guard
 		);
 	}//end handler()
 
@@ -167,6 +169,44 @@ class MagicSearchHandlerNestedPathFilterTest extends TestCase {
 		$method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
 		return $method->invoke($this->handler(), $query, $schema, $connection, true);
 	}//end rawObject()
+
+	/**
+	 * A guard that withholds every property it is asked about.
+	 *
+	 * @return PropertyReadGuard
+	 */
+	private function denyingGuard(): PropertyReadGuard {
+		$guard = $this->createMock(PropertyReadGuard::class);
+		$guard->method('mayRead')->willReturn(false);
+
+		return $guard;
+	}//end denyingGuard()
+
+	/**
+	 * A path into an object property the caller may not read matches nothing, on both paths.
+	 *
+	 * A filter on `dunning.currentStage` is an oracle on `dunning`; the rule that
+	 * withholds the property from a response has to withhold it from a filter.
+	 *
+	 * @return void
+	 */
+	public function testAPathIntoAnUnreadablePropertyMatchesNothing(): void {
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getProperties')->willReturn(self::PROPERTIES);
+		$this->captured = [];
+
+		$method = new ReflectionMethod(MagicSearchHandler::class, 'applyObjectFilters');
+		$method->invoke($this->handler(guard: $this->denyingGuard()), $this->queryBuilder(), ['dunning.currentStage' => 2], $schema);
+		$this->assertSame(['1 = 0'], $this->captured);
+
+		$connection = $this->createMock(IDBConnection::class);
+		$connection->method('quote')->willReturnCallback(static fn ($v) => "'{$v}'");
+		$raw = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
+		$this->assertSame(
+			['1=0'],
+			$raw->invoke($this->handler(guard: $this->denyingGuard()), ['dunning' => ['currentStage' => 2]], $schema, $connection, true)
+		);
+	}//end testAPathIntoAnUnreadablePropertyMatchesNothing()
 
 	/**
 	 * The dotted key and the nested map the request layer rebuilds read the same path.

@@ -59,6 +59,8 @@ class RelatedRowQueryApplier {
 	 * @param MagicRbacHandler  $rbacHandler  Builds the access predicate for the related rows.
 	 * @param IDBConnection     $db           The connection, read for its platform.
 	 * @param LoggerInterface   $logger       The logger.
+	 * @param PropertyReadGuard|null $propertyGuard Decides whether the caller may read a property a condition names;
+	 *                                              defaults to one that fails closed on a governed schema.
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
@@ -66,8 +68,17 @@ class RelatedRowQueryApplier {
 		private readonly MagicRbacHandler $rbacHandler,
 		private readonly IDBConnection $db,
 		private readonly LoggerInterface $logger,
+		?PropertyReadGuard $propertyGuard = null,
 	) {
+		$this->propertyGuard = ($propertyGuard ?? new PropertyReadGuard(container: null, logger: $logger));
 	}//end __construct()
+
+	/**
+	 * Decides whether the caller may read a property a condition names.
+	 *
+	 * @var PropertyReadGuard
+	 */
+	private readonly PropertyReadGuard $propertyGuard;
 
 	/**
 	 * Narrow a query by every `_related` block it carries.
@@ -121,6 +132,8 @@ class RelatedRowQueryApplier {
 				continue;
 			}
 
+			$this->assertPropertiesReadable(filter: $filter, schema: $schema);
+
 			$rendered = $clause->render(
 				filter: $filter,
 				engine: $engine,
@@ -153,6 +166,45 @@ class RelatedRowQueryApplier {
 
 		return $applied;
 	}//end apply()
+
+	/**
+	 * Refuse a block that matches on a property the caller may not read.
+	 *
+	 * 🔴 A CONDITION IS A BOOLEAN ORACLE ON THE FIELD IT NAMES. The related
+	 * schema's ROW predicate decides which rows may be consulted; it says
+	 * nothing about which of their fields. Without this a caller who cannot read
+	 * `salary` can still binary-search it with `gt`/`lt`. The refusal is worded
+	 * like an unknown property on purpose, so a refused field cannot be told
+	 * apart from one that does not exist.
+	 *
+	 * Covers every property of the related schema the SQL reads: each condition
+	 * field and, for `_related`, the foreign key the join compares (for
+	 * `_referenced` the foreign key is a property of the outer schema, which this
+	 * class is not given).
+	 *
+	 * @param RelatedRowFilter $filter The parsed block.
+	 * @param Schema           $schema The related schema.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When a named property is withheld from the caller.
+	 *
+	 * @spec openspec/specs/row-field-level-security/spec.md#requirement-a-property-read-rule-holds-on-every-route-that-returns-its-value
+	 */
+	private function assertPropertiesReadable(RelatedRowFilter $filter, Schema $schema): void {
+		$fields = array_column($filter->conditions, 'field');
+		if ($filter->direction !== RelatedRowFilter::DIRECTION_FORWARD) {
+			$fields[] = $filter->foreignKey;
+		}
+
+		foreach ($fields as $field) {
+			if ($this->propertyGuard->mayRead(schema: $schema, property: (string)$field) === false) {
+				throw new InvalidArgumentException(
+					sprintf('\'%s\' is not a property of schema \'%s\' that a related-row filter can match on.', (string)$field, $filter->schema)
+				);
+			}
+		}
+	}//end assertPropertiesReadable()
 
 	/**
 	 * Resolve the schema a block names, or refuse the whole query.

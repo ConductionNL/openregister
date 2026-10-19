@@ -49,6 +49,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\LikeOperator;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\WatcherMapper;
+use OCA\OpenRegister\Service\Query\PropertyReadGuard;
 use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
@@ -220,6 +221,13 @@ class MagicSearchHandler {
 	private NestedPathFilter $nestedPaths;
 
 	/**
+	 * Decides whether the caller may read a property a filter names.
+	 *
+	 * @var PropertyReadGuard
+	 */
+	private readonly PropertyReadGuard $propertyGuard;
+
+	/**
 	 * Constructor for MagicSearchHandler
 	 *
 	 * @param IDBConnection $db Database connection for queries
@@ -235,6 +243,9 @@ class MagicSearchHandler {
 	 * @param MagicMetadataColumnHealer|null $metadataColumns Knows which metadata columns a table that could not
 	 *                                                        be healed still lacks, so the lifecycle predicates
 	 *                                                        leave them out
+	 * @param PropertyReadGuard|null $propertyGuard Decides whether the caller may read the root property of a
+	 *                                              nested-path filter; defaults to one that fails closed on a
+	 *                                              schema with property authorization
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
@@ -246,7 +257,9 @@ class MagicSearchHandler {
 		private readonly RelatedRowQueryApplier $relatedRows,
 		private readonly ?LanguageService $languageService = null,
 		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
+		?PropertyReadGuard $propertyGuard = null,
 	) {
+		$this->propertyGuard = ($propertyGuard ?? new PropertyReadGuard(container: null, logger: $logger));
 		$this->termParser = new SearchTermParser();
 		$this->termCompiler = new SearchTermSqlCompiler();
 		$this->columnRoles  = new MagicMetadataColumn();
@@ -1764,6 +1777,13 @@ class MagicSearchHandler {
 
 		[$query, $nestedFilters] = $this->nestedPaths->split(filters: $query, properties: $properties);
 		foreach ($nestedFilters as $filter) {
+			// A filter on a path inside an object property is an oracle on that
+			// property: one the caller may not read matches nothing.
+			if ($this->propertyGuard->mayRead(schema: $schema, property: $filter['root']) === false) {
+				$conditions[] = '1=0';
+				continue;
+			}
+
 			$expression = $this->nestedPaths->expression(
 				column: $this->quoteIdentifier(name: $this->sanitizeColumnName(name: $filter['root']), isPostgres: $isPostgres),
 				path: $filter['path'],
@@ -2812,7 +2832,7 @@ class MagicSearchHandler {
 		$isPostgres = $this->isPostgresPlatform();
 
 		[$filters, $nestedFilters] = $this->nestedPaths->split(filters: $filters, properties: $properties ?? []);
-		$this->applyNestedPathFilters(qb: $qb, nestedFilters: $nestedFilters, properties: $properties ?? [], isPostgres: $isPostgres);
+		$this->applyNestedPathFilters(qb: $qb, nestedFilters: $nestedFilters, properties: $properties ?? [], isPostgres: $isPostgres, schema: $schema);
 
 		foreach ($filters as $field => $value) {
 			// Check if this field exists as a column in the schema.
@@ -3058,6 +3078,7 @@ class MagicSearchHandler {
 	 * @param list<array{root: string, path: list<string>, value: mixed}> $nestedFilters The path filters from NestedPathFilter::split().
 	 * @param array<string,mixed>                                            $properties    The schema's properties.
 	 * @param bool                                                           $isPostgres    Whether the platform is PostgreSQL.
+	 * @param Schema                                                         $schema        The schema, for the property read rule.
 	 *
 	 * @return void
 	 *
@@ -3065,10 +3086,18 @@ class MagicSearchHandler {
 	 *
 	 * @spec openspec/changes/nested-property-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-name-a-field-inside-an-object-property
 	 */
-	private function applyNestedPathFilters(IQueryBuilder $qb, array $nestedFilters, array $properties, bool $isPostgres): void {
+	private function applyNestedPathFilters(IQueryBuilder $qb, array $nestedFilters, array $properties, bool $isPostgres, Schema $schema): void {
 		foreach ($nestedFilters as $filter) {
 			if (($properties[$filter['root']]['x-openregister-encrypted'] ?? false) === true) {
 				throw new EncryptedFieldFilterException(property: $filter['root']);
+			}
+
+			// A filter on a path inside an object property is an oracle on that
+			// property: one the caller may not read matches nothing.
+			if ($this->propertyGuard->mayRead(schema: $schema, property: $filter['root']) === false) {
+				$this->ignoredFilters[] = $filter['root'] . '.' . implode('.', $filter['path']);
+				$qb->andWhere('1 = 0');
+				continue;
 			}
 
 			$expression = $this->nestedPaths->expression(
