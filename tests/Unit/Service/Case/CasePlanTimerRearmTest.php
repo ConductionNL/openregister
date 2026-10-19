@@ -46,7 +46,10 @@ class CasePlanTimerRearmTest extends TestCase {
 
 	private UnarmedTimerMarkers $markers;
 
-	private string $stored = '';
+	/**
+	 * @var array<string, string>
+	 */
+	private array $stored = [];
 
 	/**
 	 * Fresh tables, an in-memory marker store and a clock core.
@@ -58,21 +61,8 @@ class CasePlanTimerRearmTest extends TestCase {
 		$this->core = $this->createMock(FlowTimerService::class);
 		$this->timerRows = $this->createMock(FlowTimerMapper::class);
 		$this->plans = $this->createMock(CasePlanService::class);
-		$this->stored = '';
-		$appConfig = $this->createMock(IAppConfig::class);
-		$appConfig->method('getValueString')->willReturnCallback(fn (): string => $this->stored);
-		$appConfig->method('setValueString')->willReturnCallback(
-			function (string $app, string $key, string $value): bool {
-				$this->stored = $value;
-
-				return true;
-			}
-		);
-		$appConfig->method('deleteKey')->willReturnCallback(
-			function (): void {
-				$this->stored = '';
-			}
-		);
+		$this->stored = [];
+		$appConfig = CaseFixtures::memoryAppConfig(case: $this, store: $this->stored);
 		$this->markers = new UnarmedTimerMarkers(appConfig: $appConfig);
 	}//end setUp()
 
@@ -246,9 +236,54 @@ class CasePlanTimerRearmTest extends TestCase {
 		$this->markers->add(itemUuid: 'item-a', now: new DateTimeImmutable('2026-10-02T10:00:00+00:00'));
 		$this->assertSame(['item-a' => '2026-10-01T10:00:00+00:00'], $this->markers->all());
 
-		$this->stored = 'not json';
-		$this->assertSame([], $this->markers->all());
-		$this->stored = '{"item-b":"2026-10-01T10:00:00+00:00","":"x","item-c":5}';
-		$this->assertSame(['item-b' => '2026-10-01T10:00:00+00:00'], $this->markers->all());
+		// Another key of the app, an empty marker and a bare prefix are not markers.
+		$this->stored['something_else'] = 'x';
+		$this->stored[UnarmedTimerMarkers::KEY_PREFIX . 'item-e'] = '';
+		$this->stored[UnarmedTimerMarkers::KEY_PREFIX] = 'y';
+		$this->assertSame(['item-a' => '2026-10-01T10:00:00+00:00'], $this->markers->all());
 	}//end testTheMarkerStoreKeepsTheFirstMomentAndToleratesGarbage()
+
+	/**
+	 * Every item has its own key, so clearing one marker never rewrites another and an unusable uuid is refused.
+	 *
+	 * @return void
+	 */
+	public function testEveryItemHasItsOwnKeyAndAnOverlongUuidIsRefused(): void {
+		$this->markers->add(itemUuid: 'item-a', now: new DateTimeImmutable('2026-10-01T10:00:00+00:00'));
+		$this->markers->add(itemUuid: 'item-b', now: new DateTimeImmutable('2026-10-02T10:00:00+00:00'));
+		$this->assertSame(
+			[UnarmedTimerMarkers::KEY_PREFIX . 'item-a', UnarmedTimerMarkers::KEY_PREFIX . 'item-b'],
+			array_keys($this->stored)
+		);
+
+		$this->markers->remove(itemUuid: 'item-a');
+		$this->assertSame(['item-b' => '2026-10-02T10:00:00+00:00'], $this->markers->all());
+		$this->markers->remove(itemUuid: '');
+
+		$this->assertFalse($this->markers->add(itemUuid: ''));
+		$this->assertFalse($this->markers->add(itemUuid: str_repeat('x', 60)));
+		$this->assertSame(['item-b'], array_keys($this->markers->all()));
+	}//end testEveryItemHasItsOwnKeyAndAnOverlongUuidIsRefused()
+
+	/**
+	 * An app config that throws never breaks the pass: nothing is marked, listed or cleared.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableAppConfigIsToleratedEverywhere(): void {
+		$config = $this->createMock(IAppConfig::class);
+		$config->method('getKeys')->willThrowException(new RuntimeException('db gone'));
+		$config->method('getValueString')->willThrowException(new RuntimeException('db gone'));
+		$config->method('deleteKey')->willThrowException(new RuntimeException('db gone'));
+		$markers = new UnarmedTimerMarkers(appConfig: $config);
+
+		$this->assertSame([], $markers->all());
+		$this->assertFalse($markers->add(itemUuid: 'item-a'));
+		$markers->remove(itemUuid: 'item-a');
+
+		$listing = $this->createMock(IAppConfig::class);
+		$listing->method('getKeys')->willReturn([UnarmedTimerMarkers::KEY_PREFIX . 'item-a']);
+		$listing->method('getValueString')->willThrowException(new RuntimeException('row vanished'));
+		$this->assertSame([], (new UnarmedTimerMarkers(appConfig: $listing))->all());
+	}//end testAnUnreadableAppConfigIsToleratedEverywhere()
 }//end class

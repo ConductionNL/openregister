@@ -49,6 +49,11 @@ class CasePlanTimerRearmJobTest extends TestCase {
 		self::assertSame(300, $this->job->getInterval());
 	}//end testRunsOnTheTimerSweepsInterval()
 
+	public function testTwoPassesNeverRunAtOnce(): void {
+		$property = new \ReflectionProperty(\OCP\BackgroundJob\Job::class, 'allowParallelRuns');
+		self::assertFalse($property->getValue($this->job));
+	}//end testTwoPassesNeverRunAtOnce()
+
 	public function testAPassThatDidWorkIsLoggedAndAQuietOneIsNot(): void {
 		$this->rearm->expects(self::exactly(2))->method('run')->willReturnOnConsecutiveCalls(
 			['armed' => 1, 'enforced' => 1, 'dropped' => 0, 'failed' => 2],

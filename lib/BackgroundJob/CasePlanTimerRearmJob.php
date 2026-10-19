@@ -63,6 +63,8 @@ class CasePlanTimerRearmJob extends TimedJob {
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: self::INTERVAL_SECONDS);
+		// Two overlapping passes would enforce one expired term twice and race on the same markers.
+		$this->setAllowParallelRuns(allow: false);
 
 	}//end __construct()
 

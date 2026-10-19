@@ -181,16 +181,8 @@ class CasePlanItemTimersTest extends TestCase {
 				$errors[] = [$message, $context];
 			}
 		);
-		$stored = '';
-		$appConfig = $this->createMock(\OCP\IAppConfig::class);
-		$appConfig->method('getValueString')->willReturnCallback(static function () use (&$stored): string {
-			return $stored;
-		});
-		$appConfig->method('setValueString')->willReturnCallback(static function (string $app, string $key, string $value) use (&$stored): bool {
-			$stored = $value;
-
-			return true;
-		});
+		$stored = [];
+		$appConfig = CaseFixtures::memoryAppConfig(case: $this, store: $stored);
 		$markers = new UnarmedTimerMarkers(appConfig: $appConfig);
 		$service = new CasePlanItemTimers(timers: $this->timers, logger: $logger, markers: $markers);
 
