@@ -638,6 +638,31 @@ class MagicSearchHandler {
 	}//end applyRelatedRowFilters()
 
 	/**
+	 * Refuse a query carrying `_related` or `_referenced` where it cannot be honoured.
+	 *
+	 * @param array<mixed> $query The request query.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the query carries either key.
+	 *
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
+	 */
+	private function refuseRelatedRowFilters(array $query): void {
+		foreach (['_related', '_referenced'] as $key) {
+			if (array_key_exists($key, $query) === true) {
+				throw new InvalidArgumentException(
+					sprintf(
+						'\'%s\' filters are not supported on a query across several schemas; narrow the query to one schema. '
+						. 'Answering without the filter would return rows it was meant to exclude.',
+						$key
+					)
+				);
+			}
+		}
+	}//end refuseRelatedRowFilters()
+
+	/**
 	 * The organisation scope a related-row subquery must apply to the related table.
 	 *
 	 * The SAME decision the list path takes for a table (`multitenancyApplies()`,
@@ -853,10 +878,12 @@ class MagicSearchHandler {
 	 * @return string[] Array of SQL WHERE conditions (without leading AND/WHERE).
 	 *
 	 * @throws UnknownMetadataFieldException When a `@self` key names no metadata column.
+	 * @throws InvalidArgumentException When the query carries `_related` or `_referenced`, which this raw-SQL builder cannot honour.
 	 *
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
 	 * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
 	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function buildWhereConditionsSql(
 		array $query,
@@ -865,6 +892,13 @@ class MagicSearchHandler {
 		?int $registerId = null,
 		?string $tableName = null,
 	): array {
+		// 🔴 REFUSE, DO NOT DROP. The related-row filters are written for the
+		// QueryBuilder path (applyRelatedRowFilters). Underscore keys are skipped
+		// below, so a cross-table UNION search or UNION facet carrying one
+		// answered the UNFILTERED set to a deliberately narrow question, and its
+		// counts disagreed with the single-schema facet for the same query.
+		$this->refuseRelatedRowFilters(query: $query);
+
 		$conditions = [];
 		// Get connection for value quoting through QueryBuilder.
 		$qb = $this->db->getQueryBuilder();

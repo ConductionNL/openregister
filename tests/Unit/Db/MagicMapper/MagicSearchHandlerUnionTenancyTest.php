@@ -374,4 +374,28 @@ final class MagicSearchHandlerUnionTenancyTest extends TestCase {
 		$held = $method->invoke($this->handler($scope, conditionalBypass: true, holdsGrants: true), [], new Schema(), 1);
 		$this->assertSame($scope, $held);
 	}//end testARelatedRowSubqueryWaivesTheBoundaryExactlyWhereTheListDoes()
+	/**
+	 * 🔴 THE UNION BUILDER REFUSES `_related` AND `_referenced` INSTEAD OF DROPPING THEM.
+	 *
+	 * Underscore keys are skipped there, so a cross-table search carrying one
+	 * answered the unfiltered set. The single-table path refuses with the same
+	 * exception type.
+	 *
+	 * @return void
+	 */
+	public function testTheUnionBuilderRefusesRelatedRowFilters(): void {
+		$handler = $this->handler(['mode' => MagicOrganizationHandler::SCOPE_ALL, 'uuids' => []]);
+
+		foreach (['_related', '_referenced'] as $key) {
+			try {
+				$handler->buildWhereConditionsSql(query: [$key => ['caseProperty' => ['case' => ['value' => 'x']]]], schema: new Schema());
+				$this->fail('Expected a refusal for ' . $key);
+			} catch (\InvalidArgumentException $e) {
+				$this->assertStringContainsString("'" . $key . "'", $e->getMessage());
+			}
+		}
+
+		// The control: without the keys the same builder answers.
+		$this->assertIsArray($handler->buildWhereConditionsSql(query: [], schema: new Schema()));
+	}//end testTheUnionBuilderRefusesRelatedRowFilters()
 }//end class
