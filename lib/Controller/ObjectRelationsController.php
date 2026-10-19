@@ -589,10 +589,8 @@ class ObjectRelationsController extends Controller {
 	 * @return array<string, mixed> The graph.
 	 */
 	private function reachableFromRoot(array $graph, array $refused): array {
-		/** @var array<int, array<string, mixed>> $allEdges */
-		$allEdges = is_array($graph['edges'] ?? null) === true ? $graph['edges'] : [];
-		/** @var array<int, array<string, mixed>> $allNodes */
-		$allNodes = is_array($graph['nodes'] ?? null) === true ? $graph['nodes'] : [];
+		$allEdges = $this->rowsIn(value: ($graph['edges'] ?? null));
+		$allNodes = $this->rowsIn(value: ($graph['nodes'] ?? null));
 
 		$edges = array_values(
 			array_filter(
@@ -621,6 +619,21 @@ class ObjectRelationsController extends Controller {
 
 		return $graph;
 	}//end reachableFromRoot()
+
+	/**
+	 * A graph list (its nodes or edges) as a list of rows; anything else is no rows.
+	 *
+	 * @param mixed $value The list as the graph holds it.
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 */
+	private function rowsIn(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return array_values(array_filter($value, static fn (mixed $row): bool => is_array($row) === true));
+	}//end rowsIn()
 
 	/**
 	 * The uuids connected to the root through the given edges, either direction.
