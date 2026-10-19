@@ -146,6 +146,28 @@ class DraftStatusPolicy {
 	}//end isLeaving()
 
 	/**
+	 * Whether this write is the one that moves the object out of draft, and forget it.
+	 *
+	 * The first write after the status resolved to leave draft carries the
+	 * status change, so only that write is conditional. A later write of the
+	 * same object in the same request (the file write of a file-bearing save,
+	 * an automatic transition, a created-event listener) finds the row already
+	 * active and must not be refused for it.
+	 *
+	 * @param string $uuid The object.
+	 *
+	 * @return bool True for the write that leaves draft.
+	 *
+	 * @spec openspec/changes/draft-creation-side-effects/specs/object-events/spec.md#requirement-creation-side-effects-must-be-held-for-a-draft-and-run-once-when-it-leaves-draft
+	 */
+	public static function consumeLeaving(string $uuid): bool {
+		$leaving = isset(self::$leaving[$uuid]) === true;
+		unset(self::$leaving[$uuid]);
+
+		return $leaving;
+	}//end consumeLeaving()
+
+	/**
 	 * The status a save stores, given what the entity holds and what `@self` asks.
 	 *
 	 * @param ObjectEntity         $entity   The object being saved (new when it has no id).

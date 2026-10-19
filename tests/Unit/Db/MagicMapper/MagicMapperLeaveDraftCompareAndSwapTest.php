@@ -130,6 +130,21 @@ class MagicMapperLeaveDraftCompareAndSwapTest extends TestCase {
 	}//end testTheLosingRequestIsRefused()
 
 	/**
+	 * A later write of the same object in the same request (the file write of a file-bearing save, an automatic
+	 * transition) is an ordinary update: the row is active by then, and a zero count is no refusal. Goes red when
+	 * the leaving flag is read without being consumed.
+	 */
+	public function testOnlyTheWriteThatLeavesDraftIsConditional(): void {
+		$this->promote();
+
+		$this->update($this->mapperChanging(changed: 1));
+		$this->where = [];
+		$this->update($this->mapperChanging(changed: 0));
+
+		$this->assertSame([['_uuid', 'uuid-1']], $this->where);
+	}//end testOnlyTheWriteThatLeavesDraftIsConditional()
+
+	/**
 	 * Let the policy allow and use one promotion of uuid-1, as the save of a form submit does.
 	 *
 	 * @return void

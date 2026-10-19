@@ -5320,7 +5320,9 @@ class MagicMapper extends AbstractObjectMapper {
 	 * A save that leaves draft writes its status conditionally: of two
 	 * requests that both read the object as a draft, the database lets one
 	 * change the row and the other changes nothing and is refused, so the
-	 * creation is announced once (DraftStatusPolicy::isLeaving()).
+	 * creation is announced once (DraftStatusPolicy::consumeLeaving()). Only that
+	 * first write is conditional: a later write of the same object in the same
+	 * request finds it active and is an ordinary update.
 	 *
 	 * @param string $uuid      The object UUID.
 	 * @param array  $data      The prepared column values.
@@ -5332,7 +5334,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @throws Exception If the update fails.
 	 */
 	private function updateExistingObject(string $uuid, array $data, string $tableName): void {
-		$leavingDraft = DraftStatusPolicy::isLeaving(uuid: $uuid);
+		$leavingDraft = DraftStatusPolicy::consumeLeaving(uuid: $uuid);
 		$onlyFromStatus = null;
 		if ($leavingDraft === true) {
 			$onlyFromStatus = ObjectEntity::STATUS_DRAFT;
