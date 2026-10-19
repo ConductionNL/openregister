@@ -327,17 +327,30 @@ class ExampleSetChanges {
 			}
 		}
 
-		foreach ((array) $entry['append'] as $append) {
-			$list = (array) ($this->paths->atPath(row: $row, path: $append['path'])['value'] ?? []);
-			$kept = array_values(array_filter($list, static fn ($item): bool => $item !== $append['value']));
-			$row  = $this->paths->withPath(row: $row, path: $append['path'], value: $kept);
-		}
-
+		$row = $this->withoutAppended(row: $row, appended: (array) $entry['append']);
 		$row = $this->paths->withJsonText(row: $row, fields: $fields);
 		$why = $this->store->update(register: (string) $entry['register'], schema: (string) $entry['schema'], id: (string) $entry['id'], data: $row);
 
 		return ['ok' => ($why === ''), 'left' => $left];
 	}//end revert()
+
+	/**
+	 * The row without the values a change appended, wherever their lists are now.
+	 *
+	 * @param array<string, mixed>              $row      The row.
+	 * @param array<int, array<string, mixed>>  $appended The appended values, each with its list `path` and `value`.
+	 *
+	 * @return array<string, mixed> The row.
+	 */
+	private function withoutAppended(array $row, array $appended): array {
+		foreach ($appended as $append) {
+			$list = (array) ($this->paths->atPath(row: $row, path: $append['path'])['value'] ?? []);
+			$kept = array_values(array_filter($list, static fn ($item): bool => $item !== $append['value']));
+			$row  = $this->paths->withPath(row: $row, path: $append['path'], value: $kept);
+		}
+
+		return $row;
+	}//end withoutAppended()
 
 	/**
 	 * An object as it is sent, with each field it keeps as JSON text encoded.

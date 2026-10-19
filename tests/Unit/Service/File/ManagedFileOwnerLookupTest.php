@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterFolderRecorder;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
+use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\Config\IUserMountCache;
 use OCP\Files\File;
@@ -37,10 +38,10 @@ use RuntimeException;
 /**
  * The object a managed file belongs to: "no object owns it" and "the lookup failed" are different answers.
  *
- * @covers \OCA\OpenRegister\Service\File\FolderManagementHandler::findObjectForFile
+ * @covers \OCA\OpenRegister\Service\File\ManagedFileOwnerLookup
  * @covers \OCA\OpenRegister\Service\File\FolderManagementHandler::getObjectForFile
  */
-class FolderManagementHandlerObjectForFileTest extends TestCase {
+class ManagedFileOwnerLookupTest extends TestCase {
 
 	/**
 	 * @var MagicMapper&MockObject
@@ -49,9 +50,12 @@ class FolderManagementHandlerObjectForFileTest extends TestCase {
 
 	private FolderManagementHandler $handler;
 
+	private ManagedFileOwnerLookup $lookup;
+
 	protected function setUp(): void {
 		parent::setUp();
 		$this->objects = $this->createMock(MagicMapper::class);
+		$this->lookup = new ManagedFileOwnerLookup($this->objects);
 		$this->handler = new FolderManagementHandler(
 			rootFolder: $this->createMock(IRootFolder::class),
 			objectEntityMapper: $this->objects,
@@ -106,7 +110,7 @@ class FolderManagementHandlerObjectForFileTest extends TestCase {
 		$object = $this->objectWithFolder(7);
 		$this->objects->method('findAcrossAllSources')->willReturn(['object' => $object]);
 
-		$this->assertSame($object, $this->handler->findObjectForFile(file: $this->fileIn('some-uuid', 7)));
+		$this->assertSame($object, $this->lookup->find(file: $this->fileIn('some-uuid', 7)));
 		$this->assertSame($object, $this->handler->getObjectForFile(file: $this->fileIn('some-uuid', 7)));
 	}//end testTheObjectWhoseFolderItIsIsFound()
 
@@ -120,23 +124,12 @@ class FolderManagementHandlerObjectForFileTest extends TestCase {
 			['object' => $this->objectWithFolder(9)],
 			['object' => null],
 		);
-		$this->assertNull($this->handler->findObjectForFile(file: $this->fileIn('some-uuid', 7)), 'another folder is recorded');
-		$this->assertNull($this->handler->findObjectForFile(file: $this->fileIn('some-uuid', 7)), 'no object came back');
+		$this->assertNull($this->lookup->find(file: $this->fileIn('some-uuid', 7)), 'another folder is recorded');
+		$this->assertNull($this->lookup->find(file: $this->fileIn('some-uuid', 7)), 'no object came back');
 
 		$missing = $this->createMock(MagicMapper::class);
 		$missing->method('findAcrossAllSources')->willThrowException(new DoesNotExistException('no such object'));
-		$handler = new FolderManagementHandler(
-			rootFolder: $this->createMock(IRootFolder::class),
-			objectEntityMapper: $missing,
-			registerMapper: $this->createMock(RegisterMapper::class),
-			userSession: $this->createMock(IUserSession::class),
-			groupManager: $this->createMock(IGroupManager::class),
-			logger: $this->createMock(LoggerInterface::class),
-			auditTrailMapper: $this->createMock(AuditTrailMapper::class),
-			mountCache: $this->createMock(IUserMountCache::class),
-			folderRecorder: $this->createMock(RegisterFolderRecorder::class)
-		);
-		$this->assertNull($handler->findObjectForFile(file: $this->fileIn('some-uuid', 7)));
+		$this->assertNull((new ManagedFileOwnerLookup($missing))->find(file: $this->fileIn('some-uuid', 7)));
 	}//end testAFileWithoutAnOwnerIsNullNotAnError()
 
 	/**
@@ -150,6 +143,6 @@ class FolderManagementHandlerObjectForFileTest extends TestCase {
 		$this->assertNull($this->handler->getObjectForFile(file: $this->fileIn('some-uuid', 7)));
 
 		$this->expectException(RuntimeException::class);
-		$this->handler->findObjectForFile(file: $this->fileIn('some-uuid', 7));
+		$this->lookup->find(file: $this->fileIn('some-uuid', 7));
 	}//end testAFailedLookupThrowsFromTheStrictReadAndIsSwallowedByTheLenientOne()
 }//end class

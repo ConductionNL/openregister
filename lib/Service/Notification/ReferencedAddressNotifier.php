@@ -367,7 +367,7 @@ class ReferencedAddressNotifier {
 
 		// System-side: the comparison is metadata, and a writer who cannot read the target schema (an anonymous
 		// form submit, a background job) must not silently turn the rule into one that sends nothing.
-		$expected = $this->refs->resolveSchemaReference(reference: trim($ref), systemSide: true);
+		$expected = $this->refs->resolveSchemaReference(reference: trim($ref), scope: RelationCascadeHandler::SYSTEM_SCOPE);
 		$actual = (string)($related->getSchema() ?? '');
 		if ($expected === null || $actual === '' || $expected !== $actual) {
 			$this->logger->debug(

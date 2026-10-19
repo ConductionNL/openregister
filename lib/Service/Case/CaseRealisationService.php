@@ -106,7 +106,7 @@ class CaseRealisationService {
 			// the identity the flow's schedule trigger declares (validated and delegation-checked at save time);
 			// a flow that declares none is refused as unattributed, loudly, rather than run as a label.
 			$user = null;
-			if (CasePlanService::isAccountActor(actor: $actor) === true) {
+			if ($this->isAccountActor(actor: $actor) === true) {
 				$user = $actor;
 			}
 
@@ -130,6 +130,27 @@ class CaseRealisationService {
 		$item->setRealisationKind(CaseItem::REALISATION_NONE);
 		$item->setRealisationUuid(null);
 	}//end realise()
+
+	/**
+	 * Whether an actor id names a Nextcloud account, as opposed to an audit label.
+	 *
+	 * Two kinds of label reach the plan engine: an in-process caller's `system:<app>` and the cascade's own
+	 * {@see CasePlanStateMachine::SYSTEM_ACTOR}. Neither is an account, so neither may become a run's user.
+	 *
+	 * @param string|null $actor The actor id.
+	 *
+	 * @return bool True when the id is an account uid.
+	 *
+	 * @spec openspec/specs/flow-cases/spec.md#requirement-in-process-callers-act-as-a-named-app
+	 */
+	public function isAccountActor(?string $actor): bool {
+		$id = trim((string)$actor);
+		if ($id === '' || $id === CasePlanStateMachine::SYSTEM_ACTOR) {
+			return false;
+		}
+
+		return str_starts_with($id, CasePlanService::SYSTEM_ACTOR_PREFIX) === false;
+	}//end isAccountActor()
 
 	/**
 	 * How a realisation ended, if it has: the outcome that drives the item.

@@ -14,7 +14,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Decision\ReviewPolicyResolver;
-use OCA\OpenRegister\Service\File\FolderManagementHandler;
+use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
@@ -78,19 +78,19 @@ class ReviewPolicyResolverTest extends TestCase {
 		$object->setRegister('3');
 		$object->setSchema('12');
 		$object->setUuid('doc-1');
-		$folders = $this->createMock(FolderManagementHandler::class);
+		$owners = $this->createMock(ManagedFileOwnerLookup::class);
 		if ($objectLookupFails === true) {
-			$folders->method('findObjectForFile')->willThrowException(new RuntimeException('database is gone'));
+			$owners->method('find')->willThrowException(new RuntimeException('database is gone'));
 		} else {
 			// File 99 belongs to `doc-1`; file 50 exists and belongs to no object.
-			$folders->method('findObjectForFile')->willReturnCallback(static fn ($node) => ($node === $file ? $object : null));
+			$owners->method('find')->willReturnCallback(static fn ($node) => ($node === $file ? $object : null));
 		}
 
 		return new ReviewPolicyResolver(
 			schemaMapper: $schemas,
 			fileSettings: new FileSettingsHandler(appConfig: $appConfig),
 			rootFolder: $root,
-			folders: $folders,
+			owners: $owners,
 			logger: $this->createMock(LoggerInterface::class)
 		);
 	}//end resolver()

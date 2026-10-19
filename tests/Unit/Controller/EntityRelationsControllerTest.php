@@ -34,7 +34,7 @@ use OCA\OpenRegister\Service\Decision\DecisionService;
 use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\Decision\RelationDecisionService;
 use OCA\OpenRegister\Service\Decision\ReviewPolicyResolver;
-use OCA\OpenRegister\Service\File\FolderManagementHandler;
+use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -136,7 +136,7 @@ class EntityRelationsControllerTest extends TestCase {
 				schemaMapper: $this->schemaMapper,
 				fileSettings: new FileSettingsHandler(appConfig: $this->createMock(IAppConfig::class)),
 				rootFolder: $this->rootFolder,
-				folders: $this->createMock(FolderManagementHandler::class),
+				owners: $this->createMock(ManagedFileOwnerLookup::class),
 				logger: $this->logger
 			),
 			db: $this->createMock(IDBConnection::class)

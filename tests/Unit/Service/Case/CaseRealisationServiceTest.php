@@ -240,11 +240,11 @@ class CaseRealisationServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testOnlyARealUidIsAnAccountActor(): void {
-		$this->assertTrue(CasePlanService::isAccountActor(actor: 'alice'));
-		$this->assertFalse(CasePlanService::isAccountActor(actor: 'system:dossiq'));
-		$this->assertFalse(CasePlanService::isAccountActor(actor: CasePlanStateMachine::SYSTEM_ACTOR));
-		$this->assertFalse(CasePlanService::isAccountActor(actor: ''));
-		$this->assertFalse(CasePlanService::isAccountActor(actor: null));
+		$this->assertTrue($this->service()->isAccountActor(actor: 'alice'));
+		$this->assertFalse($this->service()->isAccountActor(actor: 'system:dossiq'));
+		$this->assertFalse($this->service()->isAccountActor(actor: CasePlanStateMachine::SYSTEM_ACTOR));
+		$this->assertFalse($this->service()->isAccountActor(actor: ''));
+		$this->assertFalse($this->service()->isAccountActor(actor: null));
 	}//end testOnlyARealUidIsAnAccountActor()
 
 	/**

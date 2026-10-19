@@ -70,7 +70,7 @@ class RelationCascadeHandlerSchemaReferenceTest extends TestCase {
 		);
 
 		$this->assertSame('7', $handler->resolveSchemaReference(reference: '#/components/schemas/Supplier'));
-		$this->assertSame('7', $handler->resolveSchemaReference(reference: 'supplier', systemSide: true));
+		$this->assertSame('7', $handler->resolveSchemaReference(reference: 'supplier', scope: RelationCascadeHandler::SYSTEM_SCOPE));
 		$this->assertSame([[true, true], [false, false]], $seen);
 	}//end testASystemSideLookupDropsRbacAndTenancyOnlyWhenAsked()
 
@@ -96,7 +96,7 @@ class RelationCascadeHandlerSchemaReferenceTest extends TestCase {
 			new NullLogger()
 		);
 
-		$this->assertSame('12', $handler->resolveSchemaReference(reference: '12', systemSide: true));
+		$this->assertSame('12', $handler->resolveSchemaReference(reference: '12', scope: RelationCascadeHandler::SYSTEM_SCOPE));
 		$this->assertSame('12', $handler->resolveSchemaReference(reference: '12'));
 		$this->assertNull($handler->resolveSchemaReference(reference: ''));
 		$this->assertSame([[false, false], [true, true]], $seen);

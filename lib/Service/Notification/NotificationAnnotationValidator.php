@@ -975,25 +975,16 @@ final class NotificationAnnotationValidator {
 		}
 
 		if (count($segments) > 1 && in_array($segments[0], $propKeys, true) === true) {
-			$declared = ($properties[$segments[0]] ?? null);
-			$ref = null;
-			if (is_array($declared) === true) {
-				$ref = ($declared['$ref'] ?? null);
-			}
-
-			if (is_string($ref) === false || trim($ref) === '') {
-				$errors[] = [
-					'code' => 'notification-recipient-email-reference-has-no-ref',
-					'message' => sprintf(
-						'Notification "%s" recipient[%d] field "%s" goes through "%s", which declares no `$ref`: '
-						. 'the referenced object cannot be checked against a schema, so the rule would never send.',
-						$name,
-						$index,
-						$path,
-						$segments[0]
-					),
-				];
-			}
+			$errors = array_merge(
+				$errors,
+				$this->referenceWithoutRefErrors(
+					declared: ($properties[$segments[0]] ?? null),
+					path: $path,
+					first: $segments[0],
+					name: $name,
+					index: $index
+				)
+			);
 		}
 
 		if (count($segments) > (ReferencedAddressNotifier::MAX_HOPS + 1)) {
@@ -1022,6 +1013,40 @@ final class NotificationAnnotationValidator {
 
 		return $errors;
 	}//end emailRecipientErrors()
+
+	/**
+	 * The error for an e-mail path whose first segment goes through a reference that declares no `$ref`.
+	 *
+	 * @param mixed  $declared The property definition of the first segment.
+	 * @param string $path     The whole path, for the message.
+	 * @param string $first    The first segment.
+	 * @param string $name     The rule name, for messages.
+	 * @param int    $index    The entry's index, for messages.
+	 *
+	 * @return array<int, array{code: string, message: string}>
+	 */
+	private function referenceWithoutRefErrors(mixed $declared, string $path, string $first, string $name, int $index): array {
+		$ref = null;
+		if (is_array($declared) === true) {
+			$ref = ($declared['$ref'] ?? null);
+		}
+
+		if (is_string($ref) === true && trim($ref) !== '') {
+			return [];
+		}
+
+		return [[
+			'code' => 'notification-recipient-email-reference-has-no-ref',
+			'message' => sprintf(
+				'Notification "%s" recipient[%d] field "%s" goes through "%s", which declares no `$ref`: '
+				. 'the referenced object cannot be checked against a schema, so the rule would never send.',
+				$name,
+				$index,
+				$path,
+				$first
+			),
+		]];
+	}//end referenceWithoutRefErrors()
 
 	/**
 	 * Validate the optional `actions[]` array (foundation contract / ADR-031).

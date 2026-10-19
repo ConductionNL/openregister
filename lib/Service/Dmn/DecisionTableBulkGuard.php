@@ -89,14 +89,9 @@ class DecisionTableBulkGuard {
 			$uuid     = $this->uuidOf(row: $row, self: $self);
 			$problems = ($this->listener->problemsFor(schema: $schemaRef, register: $registerRef, data: $data, uuid: $uuid) ?? []);
 
-			$key = trim((string)($data['key'] ?? ''));
-			if ($key !== '') {
-				$other = ($claimed[$key] ?? null);
-				if ($other !== null && ($other !== $uuid || $uuid === '')) {
-					$problems[] = sprintf('the key "%s" is claimed by another row of the same save', $key);
-				}
-
-				$claimed[$key] = ($claimed[$key] ?? $uuid);
+			$clash = $this->claim(claimed: $claimed, key: trim((string)($data['key'] ?? '')), uuid: $uuid);
+			if ($clash !== null) {
+				$problems[] = $clash;
 			}
 
 			if ($problems !== []) {
@@ -106,6 +101,29 @@ class DecisionTableBulkGuard {
 
 		return $refused;
 	}//end refusals()
+
+	/**
+	 * Claim a key for a row, or say that an earlier row of the batch holds it.
+	 *
+	 * @param array<string, string> $claimed The keys claimed so far, with the uuid of the claiming row.
+	 * @param string                $key     The row's key.
+	 * @param string                $uuid    The row's uuid, '' for a new row.
+	 *
+	 * @return string|null The problem, or null when the key is free or the same row claims it again.
+	 */
+	private function claim(array &$claimed, string $key, string $uuid): ?string {
+		if ($key === '') {
+			return null;
+		}
+
+		$other = ($claimed[$key] ?? null);
+		$claimed[$key] = ($other ?? $uuid);
+		if ($other !== null && ($other !== $uuid || $uuid === '')) {
+			return sprintf('the key "%s" is claimed by another row of the same save', $key);
+		}
+
+		return null;
+	}//end claim()
 
 	/**
 	 * A register or schema value as the reference string the listener resolves.

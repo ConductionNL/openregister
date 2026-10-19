@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\Decision;
 
 use OCA\OpenRegister\Db\EntityRelation;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\File\FolderManagementHandler;
+use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCP\Files\IRootFolder;
 use Psr\Log\LoggerInterface;
@@ -54,14 +54,14 @@ class ReviewPolicyResolver {
 	 * @param SchemaMapper            $schemaMapper Reads the schema's declaration.
 	 * @param FileSettingsHandler     $fileSettings Holds the instance default.
 	 * @param IRootFolder             $rootFolder   Finds a relation's file.
-	 * @param FolderManagementHandler $folders      Finds the object a file belongs to.
+	 * @param ManagedFileOwnerLookup $owners        Finds the object a file belongs to.
 	 * @param LoggerInterface         $logger       Records a policy that could not be read.
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemaMapper,
 		private readonly FileSettingsHandler $fileSettings,
 		private readonly IRootFolder $rootFolder,
-		private readonly FolderManagementHandler $folders,
+		private readonly ManagedFileOwnerLookup $owners,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -151,7 +151,7 @@ class ReviewPolicyResolver {
 				return $subject;
 			}
 
-			$object = $this->folders->findObjectForFile(file: $node);
+			$object = $this->owners->find(file: $node);
 		} catch (Throwable $error) {
 			$this->logger->info(
 				message: '[ReviewPolicyResolver] The file\'s object could not be found; the decision stays with its decider.',

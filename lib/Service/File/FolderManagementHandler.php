@@ -856,7 +856,7 @@ class FolderManagementHandler {
 	 * that merely carries another object's name is not taken for its folder.
 	 *
 	 * Any failure reads as "no object": a caller that must tell an unowned
-	 * file from a lookup that failed uses {@see self::findObjectForFile()}.
+	 * file from a lookup that failed uses {@see ManagedFileOwnerLookup::find()}.
 	 *
 	 * @param Node $file The file.
 	 *
@@ -866,49 +866,11 @@ class FolderManagementHandler {
 	 */
 	public function getObjectForFile(Node $file): ?ObjectEntity {
 		try {
-			return $this->findObjectForFile(file: $file);
+			return (new ManagedFileOwnerLookup(objects: $this->objectEntityMapper))->find(file: $file);
 		} catch (\Throwable $e) {
 			return null;
 		}
 	}//end getObjectForFile()
-
-	/**
-	 * The object a managed file belongs to, throwing when the lookup itself fails.
-	 *
-	 * Null is only "no object owns this file" (no object of the folder's name, or one whose recorded folder is
-	 * another); a database or filesystem failure propagates, so a caller that fails closed can tell the two apart.
-	 *
-	 * @param Node $file The file.
-	 *
-	 * @return ObjectEntity|null The object, or null when no object owns the file.
-	 *
-	 * @throws \Throwable When the file's folder or the object lookup fails.
-	 *
-	 * @spec openspec/changes/object-files-follow-object-access/specs/file-actions/spec.md#requirement-reading-an-objects-files-follows-the-objects-read-rule-req-ofoa-002
-	 */
-	public function findObjectForFile(Node $file): ?ObjectEntity {
-		$parent = $file->getParent();
-		try {
-			$found = $this->objectEntityMapper->findAcrossAllSources(
-				identifier: $parent->getName(),
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-			return null;
-		}
-
-		$object = ($found['object'] ?? null);
-		if ($object instanceof ObjectEntity === false) {
-			return null;
-		}
-
-		if ((string)$object->getFolder() !== (string)$parent->getId()) {
-			return null;
-		}
-
-		return $object;
-	}//end findObjectForFile()
 
 	/**
 	 * Get node type from node (file or folder).
