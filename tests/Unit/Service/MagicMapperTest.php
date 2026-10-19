@@ -652,6 +652,32 @@ class MagicMapperTest extends TestCase {
 	}//end testObjectDataPreparationForTable()
 
 	/**
+	 * `schemaVersion`, as the entity serialises it under `@self`, reaches
+	 * `_schema_version` instead of being written as NULL on every save.
+	 *
+	 * @return void
+	 */
+	public function testSchemaVersionIsWrittenFromItsSerialisedName(): void {
+		$schema = new TestableSchema();
+		$schema->setId(42);
+		$schema->testProperties = ['name' => ['type' => 'string']];
+
+		$method = (new \ReflectionClass($this->magicMapper))->getMethod('prepareObjectDataForTable');
+
+		$entity = new \OCA\OpenRegister\Db\ObjectEntity();
+		$entity->setUuid('u-1');
+		$entity->setSchemaVersion('2.1.0');
+		$entity->setObject(['name' => 'x']);
+
+		$prepared = $method->invoke($this->magicMapper, $entity->jsonSerialize(), $this->mockRegister, $schema);
+		$this->assertSame(expected: '2.1.0', actual: $prepared['_schema_version']);
+
+		$snakeData = ['@self' => ['uuid' => 'u-2', 'schema_version' => '1.0.0'], 'name' => 'x'];
+		$snake = $method->invoke($this->magicMapper, $snakeData, $this->mockRegister, $schema);
+		$this->assertSame(expected: '1.0.0', actual: $snake['_schema_version']);
+	}//end testSchemaVersionIsWrittenFromItsSerialisedName()
+
+	/**
 	 * A property the schema does not declare is dropped — and now SAYS SO.
 	 *
 	 * The loop in prepareObjectDataForTable is a whitelist by omission: it walks
