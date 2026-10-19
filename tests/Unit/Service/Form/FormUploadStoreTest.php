@@ -228,4 +228,35 @@ class FormUploadStoreTest extends TestCase {
 		$this->assertTrue($folder->fileExists('fedcba9876543210fedcba9876543210.bin'), 'A young bytes file may still be in flight.');
 		$this->assertCount(3, $folder->files, 'The live token (bytes and record) and the young file stay.');
 	}//end testThePurgeDeletesAnOrphanedBytesFile()
+
+	/**
+	 * A token claimed for a draft is recognised for that draft, that property and that form only, until it expires, and the purge clears the record.
+	 */
+	public function testAClaimedTokenIsRecognisedForItsDraftOnly(): void {
+		$token = $this->store->issue(formId: 'form-1', property: 'bijlage', rule: ['type' => 'file', 'maxSize' => 1024], file: $this->upload('%PDF-1.7'))['token'];
+		$this->store->claim(tokens: [$token], draftId: 'draft-1');
+
+		$this->assertTrue($this->store->claimedBy(formId: 'form-1', token: $token, property: 'bijlage', draftId: 'draft-1'));
+		$this->assertFalse($this->store->claimedBy(formId: 'form-1', token: $token, property: 'bijlage', draftId: 'draft-2'));
+		$this->assertFalse($this->store->claimedBy(formId: 'form-1', token: $token, property: 'other', draftId: 'draft-1'));
+		$this->assertFalse($this->store->claimedBy(formId: 'form-2', token: $token, property: 'bijlage', draftId: 'draft-1'));
+		$this->assertFalse($this->store->claimedBy(formId: 'form-1', token: 'not-a-token', property: 'bijlage', draftId: 'draft-1'));
+		$this->assertFalse($this->store->claimedBy(formId: 'form-1', token: str_repeat('a', 32), property: 'bijlage', draftId: 'draft-1'));
+
+		$this->now += 86_401;
+		$this->assertFalse($this->store->claimedBy(formId: 'form-1', token: $token, property: 'bijlage', draftId: 'draft-1'));
+		$this->assertSame(1, $this->store->purge(), 'The expired record is removed.');
+		$this->assertSame(0, $this->store->purge());
+	}//end testAClaimedTokenIsRecognisedForItsDraftOnly()
+
+	/**
+	 * A final submit (no draft) leaves no record behind.
+	 */
+	public function testAFinalClaimLeavesNoRecord(): void {
+		$token = $this->store->issue(formId: 'form-1', property: 'bijlage', rule: ['type' => 'file', 'maxSize' => 1024], file: $this->upload('%PDF-1.7'))['token'];
+		$this->store->claim(tokens: [$token]);
+
+		$this->assertFalse($this->store->claimedBy(formId: 'form-1', token: $token, property: 'bijlage', draftId: 'draft-1'));
+		$this->assertSame(0, $this->store->purge());
+	}//end testAFinalClaimLeavesNoRecord()
 }//end class

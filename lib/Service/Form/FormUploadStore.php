@@ -62,6 +62,13 @@ class FormUploadStore {
 	public const TTL = 86400;
 
 	/**
+	 * The suffix of the record a token leaves when a draft claims it.
+	 *
+	 * @var string
+	 */
+	private const CLAIMED_SUFFIX = '.claimed';
+
+	/**
 	 * The size cap, in bytes, of a file property that declares none (20 MiB).
 	 *
 	 * The upload endpoint is a public page, so "no `maxSize`" must not mean
@@ -199,22 +206,77 @@ class FormUploadStore {
 	/**
 	 * Delete claimed tokens: their bytes now live on the destination object.
 	 *
-	 * @param array<int, string> $tokens The tokens.
+	 * A token claimed for a draft leaves a small record behind (which form,
+	 * which property, which draft, until when), so the next autosave or the
+	 * final submit that still carries the same token is recognised as the
+	 * draft's own and not refused as unknown (see claimedBy()).
+	 *
+	 * @param array<int, string> $tokens  The tokens.
+	 * @param string|null        $draftId The draft the files now sit on; null for a final submit, which leaves no record.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
 	 */
-	public function claim(array $tokens): void {
+	public function claim(array $tokens, ?string $draftId = null): void {
 		$folder = $this->folder(create: false);
 		if ($folder === null) {
 			return;
 		}
 
 		foreach ($tokens as $token) {
+			$meta = $this->meta(token: $token);
 			$this->deleteToken(folder: $folder, token: $token);
+			if ($draftId !== null && $meta !== null) {
+				$folder->newFile(
+					$token . self::CLAIMED_SUFFIX,
+					(string)json_encode(
+						[
+							'formId' => $meta['formId'],
+							'property' => $meta['property'],
+							'draftId' => $draftId,
+							'expiresAt' => $this->time->getTime() + self::TTL,
+						]
+					)
+				);
+			}
 		}
 	}//end claim()
+
+	/**
+	 * Whether a token was already claimed by THIS draft for THIS property of this form.
+	 *
+	 * Only that exact match counts: a token claimed by another draft, for
+	 * another property or form, expired, or never issued is not satisfied.
+	 *
+	 * @param string $formId   The form submitting it.
+	 * @param string $token    The token.
+	 * @param string $property The destination property the payload put it on.
+	 * @param string $draftId  The draft being saved or left.
+	 *
+	 * @return bool True when the draft already holds the file this token named.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-upload-tokens-must-hold-bytes-only-and-expire
+	 */
+	public function claimedBy(string $formId, string $token, string $property, string $draftId): bool {
+		if (preg_match('/^[a-f0-9]{32}$/', $token) !== 1) {
+			return false;
+		}
+
+		$folder = $this->folder(create: false);
+		if ($folder === null || $folder->fileExists($token . self::CLAIMED_SUFFIX) === false) {
+			return false;
+		}
+
+		$record = json_decode($folder->getFile($token . self::CLAIMED_SUFFIX)->getContent(), true);
+
+		return is_array($record) === true
+			&& ($record['formId'] ?? null) === $formId
+			&& ($record['property'] ?? null) === $property
+			&& ($record['draftId'] ?? null) === $draftId
+			&& is_int($record['expiresAt'] ?? null) === true
+			&& $record['expiresAt'] > $this->time->getTime();
+	}//end claimedBy()
 
 	/**
 	 * Delete every expired, unclaimed token, and the bytes of an upload whose record was never written.
@@ -244,6 +306,16 @@ class FormUploadStore {
 				$this->deleteToken(folder: $folder, token: $token);
 				$gone[$token] = true;
 				$deleted++;
+				continue;
+			}
+
+			if (str_ends_with($name, self::CLAIMED_SUFFIX) === true) {
+				$record = json_decode($file->getContent(), true);
+				if (is_array($record) === false || (int)($record['expiresAt'] ?? 0) <= $now) {
+					$file->delete();
+					$deleted++;
+				}
+
 				continue;
 			}
 

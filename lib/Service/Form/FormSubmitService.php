@@ -223,7 +223,7 @@ class FormSubmitService {
 			throw new FormSubmitRefusedException(message: $this->l10n->t('Please sign in to save this form and carry on later.'), status: 401);
 		}
 
-		$plans = $this->plan(writes: [array_merge($destination, ['mapping' => $mapping])], payload: $payload, scope: $scope);
+		$plans = $this->plan(writes: [array_merge($destination, ['mapping' => $mapping])], payload: $payload, scope: $scope, draftId: $draftId);
 		if ($draftId !== null) {
 			$plans[0]['object'] = array_merge($this->draftData(plan: $plans[0], draftId: $draftId, owner: $owner), $plans[0]['object']);
 		}
@@ -233,7 +233,10 @@ class FormSubmitService {
 
 		// The files now sit on the draft: the tokens are spent, as after a submit,
 		// so they cannot be redeemed again for another object or a later save.
-		$this->uploads->claim(tokens: array_merge(...array_map(static fn (array $plan): array => $plan['tokens'], $plans)));
+		$this->uploads->claim(
+			tokens: array_merge(...array_map(static fn (array $plan): array => $plan['tokens'], $plans)),
+			draftId: (string)$created[0]['object']->getUuid()
+		);
 
 		return ['id' => (string)$created[0]['object']->getUuid(), 'status' => ObjectEntity::STATUS_DRAFT];
 	}//end saveDraft()
@@ -313,10 +316,10 @@ class FormSubmitService {
 	 * @throws FormSubmitRefusedException 422, 403, 404 or 503.
 	 */
 	private function submitOnce(array $writes, array $payload, ?IUser $subject, string $scope, ?string $draftId, ?DraftOwner $owner): array {
-		$plans = $this->plan(writes: $writes, payload: $payload, scope: $scope);
+		$plans = $this->plan(writes: $writes, payload: $payload, scope: $scope, draftId: $draftId);
 		[$created, $receivedAt] = $this->writeOrPromote(plans: $plans, subject: $subject, draftId: $draftId, owner: $owner);
 
-		$this->uploads->claim(tokens: array_merge(...array_map(static fn (array $plan): array => $plan['tokens'], $plans)));
+		$this->uploads->claim(tokens: array_merge(...array_map(static fn (array $plan): array => $plan['tokens'], $plans)), draftId: $draftId);
 
 		return $this->answer(created: $created, receivedAt: $receivedAt);
 	}//end submitOnce()
@@ -527,12 +530,13 @@ class FormSubmitService {
 	 * @param array<int, array<string, mixed>> $writes  The writes.
 	 * @param array<string, mixed>             $payload The payload.
 	 * @param string                           $scope   The form id upload tokens belong to.
+	 * @param string|null                      $draftId The draft the payload is saved into, whose already claimed upload tokens count as satisfied.
 	 *
 	 * @return array<int, array<string, mixed>> The plans: as, named, register, schema, mapping, object, files, tokens.
 	 *
 	 * @throws FormSubmitRefusedException 404 when a destination does not exist; 422 for a bad upload token.
 	 */
-	private function plan(array $writes, array $payload, string $scope): array {
+	private function plan(array $writes, array $payload, string $scope, ?string $draftId = null): array {
 		$plans = [];
 		foreach (array_values($writes) as $index => $write) {
 			$writeName = trim((string)($write['as'] ?? ''));
@@ -546,12 +550,14 @@ class FormSubmitService {
 				$mapping = $write['mapping'];
 			}
 
-			[$object, $files, $tokens] = $this->mapPayload(mapping: $mapping, payload: $payload, scope: $scope);
+			[$object, $files, $tokens] = $this->mapPayload(mapping: $mapping, payload: $payload, scope: $scope, draftId: $draftId);
+			$schema = $this->schema(reference: $write['schema'] ?? null);
+			$object = $this->withoutNestedIdentity(object: $object, schema: $schema);
 			$plans[] = [
 				'as' => $writeName,
 				'named' => $named && count($writes) > 1,
 				'register' => $this->register(reference: $write['register'] ?? null),
-				'schema' => $this->schema(reference: $write['schema'] ?? null),
+				'schema' => $schema,
 				'mapping' => $mapping,
 				'object' => $object,
 				'files' => $files,
@@ -577,12 +583,13 @@ class FormSubmitService {
 	 * @param array<string, mixed>|null $mapping The mapping.
 	 * @param array<string, mixed>      $payload The payload.
 	 * @param string                    $scope   The form id upload tokens belong to.
+	 * @param string|null               $draftId The draft being saved or left; a token it already claimed is satisfied, not an error.
 	 *
 	 * @return array{0: array<string, mixed>, 1: array<string, array<string, mixed>>, 2: array<int, string>} Object, uploads, tokens.
 	 *
 	 * @throws FormSubmitRefusedException 422 for an unknown, expired or misdirected upload token.
 	 */
-	private function mapPayload(?array $mapping, array $payload, string $scope): array {
+	private function mapPayload(?array $mapping, array $payload, string $scope, ?string $draftId = null): array {
 		$object = [];
 		$files = [];
 		$tokens = [];
@@ -590,6 +597,14 @@ class FormSubmitService {
 			$token = $this->tokenOf(value: $value);
 			if ($token === null) {
 				$object[$property] = $value;
+				continue;
+			}
+
+			// A token this very draft already claimed (the autosave before this
+			// one, or the draft the final submit leaves) names a file the draft
+			// holds: the client resends the token, and the property is left as
+			// the draft stores it. A token claimed elsewhere stays unknown.
+			if ($draftId !== null && $this->uploads->claimedBy(formId: $scope, token: $token, property: $property, draftId: $draftId) === true) {
 				continue;
 			}
 
@@ -627,6 +642,64 @@ class FormSubmitService {
 
 		return [$object, $files, $tokens];
 	}//end mapPayload()
+
+	/**
+	 * The object without the identity keys of the nested objects its cascading properties carry.
+	 *
+	 * mapPayload() drops the top-level `id`, but a property that cascades (its
+	 * definition, or its `items`, has a `$ref` or an `inversedBy`) saves each
+	 * nested object through the cascade, which takes the nested `id` (or
+	 * `@self.id`) as the uuid of an existing object and updates it. A submitter
+	 * who names one would write over that object, so no nested identity under a
+	 * cascading property survives, however deep.
+	 *
+	 * @param array<string, mixed> $object The mapped object.
+	 * @param Schema               $schema Its destination schema.
+	 *
+	 * @return array<string, mixed> The object, safe to save.
+	 */
+	private function withoutNestedIdentity(array $object, Schema $schema): array {
+		foreach ((array)$schema->getProperties() as $name => $definition) {
+			if (is_array($definition) === false || array_key_exists((string)$name, $object) === false || is_array($object[$name]) === false) {
+				continue;
+			}
+
+			$items = [];
+			if (is_array($definition['items'] ?? null) === true) {
+				$items = $definition['items'];
+			}
+
+			$cascades = isset($definition['$ref']) === true || isset($definition['inversedBy']) === true
+				|| isset($items['$ref']) === true || isset($items['inversedBy']) === true;
+			if ($cascades === true) {
+				$object[$name] = $this->stripIdentity(value: $object[$name]);
+			}
+		}
+
+		return $object;
+	}//end withoutNestedIdentity()
+
+	/**
+	 * Remove `id` and `@self.id` from a value and from every array nested in it.
+	 *
+	 * @param array<mixed> $value A nested object, or a list of them.
+	 *
+	 * @return array<mixed> The value without identity keys.
+	 */
+	private function stripIdentity(array $value): array {
+		unset($value['id']);
+		if (is_array($value['@self'] ?? null) === true) {
+			unset($value['@self']['id']);
+		}
+
+		foreach ($value as $key => $nested) {
+			if (is_array($nested) === true) {
+				$value[$key] = $this->stripIdentity(value: $nested);
+			}
+		}
+
+		return $value;
+	}//end stripIdentity()
 
 	/**
 	 * Property => value: the mapped fields, or without a mapping the payload minus control keys, metadata and the object's `id` / `uuid`.
