@@ -178,17 +178,18 @@ class MacroActionResolver {
 	 * @param string       $flow   The bound flow's uuid.
 	 * @param string       $run    The run's uuid.
 	 * @param string|null  $userId The acting user.
+	 * @param array        $changes What the run changed (MacroRunChanges::fromLog()).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
 	 */
-	public function recordRun(ObjectEntity $object, string $action, string $flow, string $run, ?string $userId): void {
+	public function recordRun(ObjectEntity $object, string $action, string $flow, string $run, ?string $userId, array $changes = []): void {
 		try {
 			$this->auditTrail->createAuditTrailEntry(
 				object: $object,
 				action: 'action.macro',
-				context: ['declaredAction' => $action, 'flow' => $flow, 'run' => $run],
+				context: ['declaredAction' => $action, 'flow' => $flow, 'run' => $run, 'changes' => $changes],
 				actorId: $userId
 			);
 		} catch (\Throwable $e) {

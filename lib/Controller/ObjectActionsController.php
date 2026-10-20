@@ -41,6 +41,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
+use OCA\OpenRegister\Service\Flow\MacroRunChanges;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WriteCause;
@@ -303,7 +304,14 @@ class ObjectActionsController extends Controller {
 			];
 		}//end try
 
-		$this->macros->recordRun(object: $object, action: $action, flow: $binding->flow, run: (string)$run->getUuid(), userId: $userId);
+		$this->macros->recordRun(
+			object: $object,
+			action: $action,
+			flow: $binding->flow,
+			run: (string)$run->getUuid(),
+			userId: $userId,
+			changes: MacroRunChanges::fromLog(log: ($run->getLog() ?? []))
+		);
 
 		return [
 			'status' => Http::STATUS_OK,
