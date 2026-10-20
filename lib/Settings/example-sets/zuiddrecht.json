@@ -105,9 +105,9 @@
 				"gender": "V",
 				"birthDate": "1988-03-14",
 				"address": {
-					"street": "Parkstraat",
-					"number": 24,
-					"postcode": "3311AB",
+					"street": "Lindelaan",
+					"number": 14,
+					"postcode": "2999AA",
 					"city": "Zuiddrecht"
 				},
 				"$comment": "The example resident of the portal: portaliq's fragment writes her cases, messages and portal account. An instance that still has portaliq's old example-resident install runs `occ portaliq:example-resident:remove zuiddrecht` first."

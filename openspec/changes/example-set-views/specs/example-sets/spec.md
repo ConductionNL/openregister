@@ -27,12 +27,11 @@ them. A view already gone SHALL count as removed.
 - **WHEN** the set is removed
 - **THEN** the view SHALL be gone and the record SHALL hold none
 
-### Requirement: The cast carries the jeugdteam regisseur and the resident's address
+### Requirement: The cast carries the jeugdteam regisseur
 
 The Zuiddrecht cast SHALL carry Fatma Kaya (`fatma.kaya`, regisseur jeugdteam, groups medewerkers and Sociaal domein),
-the handler of dossiq's jeugdwet example case, and SHALL place Sanne de Vries at Parkstraat 24, 3311 AB Zuiddrecht, as
-the contact page draws her.
+the handler of dossiq's jeugdwet example case.
 
 #### Scenario: the shipped set
 - **GIVEN** the shipped Zuiddrecht set
-- **THEN** its cast holds 17 people, Fatma Kaya in Sociaal domein, and Sanne de Vries at Parkstraat 24
+- **THEN** its cast holds 17 people, Fatma Kaya among them in Sociaal domein

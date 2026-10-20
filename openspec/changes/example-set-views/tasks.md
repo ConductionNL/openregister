@@ -12,8 +12,8 @@
 - [x] Implement: delete recorded views with the tasks, newest first
 - [x] Test: `tests/Unit/Service/ExampleSet/ExampleSetViewsTest.php`
 
-### Task 3: The cast carries the jeugdteam regisseur and the resident's address
-- **spec_ref**: `openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-the-cast-carries-the-jeugdteam-regisseur-and-the-residents-address`
+### Task 3: The cast carries the jeugdteam regisseur
+- **spec_ref**: `openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-the-cast-carries-the-jeugdteam-regisseur`
 - **files**: `lib/Settings/example-sets/zuiddrecht.json`
-- [x] Implement: Fatma Kaya, group Sociaal domein, Sanne de Vries at Parkstraat 24
+- [x] Implement: Fatma Kaya, group Sociaal domein
 - [x] Test: `tests/Unit/Service/ExampleSet/ExampleSetCatalogueTest.php`

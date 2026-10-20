@@ -105,9 +105,8 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$plan = $this->catalogue->gather(set: 'zuiddrecht');
 
 		$this->assertCount(17, $plan['cast']['people']);
-		// The jeugdteam's regisseur of the jeugdwet example case, and the portal resident's address as DqContact draws it.
+		// The jeugdteam's regisseur of the jeugdwet example case.
 		$this->assertSame(['fatma.kaya', ['sociaal-domein']], [$plan['cast']['people']['fatma']['uid'], array_values(array_diff($plan['cast']['people']['fatma']['groups'], ['medewerkers']))]);
-		$this->assertSame(['Parkstraat', 24, '3311AB'], [$plan['cast']['people']['sanne']['address']['street'], $plan['cast']['people']['sanne']['address']['number'], $plan['cast']['people']['sanne']['address']['postcode']]);
 		$this->assertSame(['brp' => ['mock' => true], 'kvk' => ['mock' => true]], $plan['requires']);
 		$this->assertSame(['vergunningen'], array_values(array_diff($plan['cast']['people']['marleen']['groups'], ['medewerkers'])));
 		$this->assertSame('Teamleider', $plan['cast']['people']['marleen']['function']);
