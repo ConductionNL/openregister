@@ -273,7 +273,8 @@ class ExampleSetCatalogue {
 	 *               changes: array<int, array<string, mixed>>, groups: array<int, array<string, mixed>>,
 	 *               serviceAccounts: array<int, array{key: string, uid: string, displayName: string, groups: array<int, string>}>,
 	 *               appConfig: array<int, array{key: string, value: mixed, generate: bool}>,
-	 *               userPreferences: array<int, array{user: string, key: string, value: string}>}
+	 *               userPreferences: array<int, array{user: string, key: string, value: string}>,
+	 *               tasks: array<int, array{key: string, data: array<string, mixed>}>}
 	 *
 	 * @throws ExampleSetException When an object or change lacks a key, register or schema, or a key is used twice.
 	 */
@@ -291,8 +292,42 @@ class ExampleSetCatalogue {
 			'serviceAccounts' => $this->serviceAccounts(file: $file, declared: (array) ($fragment['serviceAccounts'] ?? [])),
 			'appConfig'       => $this->appConfig(app: $app, file: $file, declared: (array) ($fragment['appConfig'] ?? [])),
 			'userPreferences' => $this->userPreferences(app: $app, file: $file, declared: (array) ($fragment['userPreferences'] ?? [])),
+			'tasks'           => $this->tasks(file: $file, declared: (array) ($fragment['tasks'] ?? [])),
 		];
 	}//end fragment()
+
+	/**
+	 * The tasks of a fragment: a key each, unique in the fragment, and the task's fields.
+	 *
+	 * @param string            $file     The fragment file, for messages.
+	 * @param array<int, mixed> $declared The declared entries.
+	 *
+	 * @return array<int, array{key: string, data: array<string, mixed>}>
+	 *
+	 * @throws ExampleSetException When an entry lacks a key or fields, or a key is used twice.
+	 *
+	 * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
+	 */
+	private function tasks(string $file, array $declared): array {
+		$entries = [];
+		$seen    = [];
+		foreach ($declared as $index => $entry) {
+			$entry = (array) $entry;
+			$key   = ($entry['key'] ?? null);
+			if (is_string($key) === false || $key === '' || is_array($entry['data'] ?? null) === false) {
+				throw new ExampleSetException($file.': task '.$index.' needs a key and its fields (data).');
+			}
+
+			if (isset($seen[$key]) === true) {
+				throw new ExampleSetException($file.': task key "'.$key.'" is used twice.');
+			}
+
+			$seen[$key] = true;
+			$entries[]  = ['key' => $key, 'data' => $entry['data']];
+		}
+
+		return $entries;
+	}//end tasks()
 
 	/**
 	 * The service accounts of a fragment: a key and an account id each.

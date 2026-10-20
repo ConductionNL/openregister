@@ -224,9 +224,10 @@ class ExampleSetInstallCommand extends Command {
 			'changes'     => 'Change',
 			'appConfig'   => 'App config',
 			'userPreferences' => 'User preference',
+			'tasks'       => 'Task',
 		];
 		foreach ($parts as $part => $word) {
-			foreach ($report[$part] as $name => $outcome) {
+			foreach (($report[$part] ?? []) as $name => $outcome) {
 				$output->writeln($word.' '.$name.': '.self::word(outcome: $outcome));
 			}
 		}

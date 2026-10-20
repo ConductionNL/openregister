@@ -33,6 +33,11 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
+use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskState;
 use OCP\Config\IUserConfig;
 use OCA\OpenRegister\Service\FileService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -98,6 +103,12 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<int, int> File ids whose delete throws. */
 	protected array $undeletableFiles = [];
 
+	/** @var array<string, Task> The task engine's tasks, by uuid. */
+	protected array $engineTasks = [];
+
+	/** @var array<int, array{data: array<string, mixed>, actor: string|null}> Every task import, in order. */
+	protected array $taskImports = [];
+
 	/** @var string The instance's overwrite.cli.url. */
 	protected string $baseUrl = 'https://cloud.example.test/';
 
@@ -123,6 +134,8 @@ abstract class ExampleSetTestCase extends TestCase {
 		$container->method('get')->willReturnCallback(fn (string $id): object => match ($id) {
 			FileService::class        => $this->fileService(),
 			OrganisationMapper::class => $this->organisationMapper(),
+			TaskService::class        => $this->taskService(),
+			TaskMapper::class         => $this->taskMapper(),
 		});
 		$files     = new ExampleSetFiles(container: $container);
 		$setConfig = new ExampleSetAppConfig(appConfig: $this->appConfigOfApps(), random: $this->random());
@@ -178,7 +191,8 @@ abstract class ExampleSetTestCase extends TestCase {
 			changes: $changes,
 			files: $files,
 			appConfig: $setConfig,
-			userPreferences: $preferences
+			userPreferences: $preferences,
+			tasks: new ExampleSetTasks(container: $container)
 		);
 		$this->remover   = new ExampleSetRemover(
 			store: $this->store,
@@ -189,7 +203,8 @@ abstract class ExampleSetTestCase extends TestCase {
 			files: $files,
 			appConfig: $setConfig,
 			instance: $instance,
-			userPreferences: $preferences
+			userPreferences: $preferences,
+			tasks: new ExampleSetTasks(container: $container)
 		);
 	}
 
@@ -239,6 +254,53 @@ abstract class ExampleSetTestCase extends TestCase {
 			],
 			'objects'  => $objects,
 		];
+	}
+
+	/**
+	 * A task service whose trusted import puts a task in $engineTasks.
+	 *
+	 * @return TaskService
+	 */
+	private function taskService(): TaskService {
+		$service = $this->createMock(TaskService::class);
+		$service->method('import')->willReturnCallback(function (array $data, ?string $actor): Task {
+			$this->taskImports[] = ['data' => $data, 'actor' => $actor];
+			$state = TaskState::normalise(value: (string) ($data['state'] ?? Task::STATE_AVAILABLE))['state'];
+			$task  = new Task();
+			$task->setUuid('task-'.count($this->taskImports));
+			$task->setTaskKey((string) $data['key']);
+			$task->setTitle((string) $data['title']);
+			$task->setObjectUuid((string) $data['objectUuid']);
+			$task->setAssignee(isset($data['assignee']) === true ? (string) $data['assignee'] : null);
+			$task->setState($state);
+			$task->setIsTerminal(TaskState::isTerminal(state: $state));
+			$this->engineTasks[(string) $task->getUuid()] = $task;
+			return $task;
+		});
+
+		return $service;
+	}
+
+	/**
+	 * A task mapper over $engineTasks.
+	 *
+	 * @return TaskMapper
+	 */
+	private function taskMapper(): TaskMapper {
+		$mapper = $this->createMock(TaskMapper::class);
+		$mapper->method('findByUuid')->willReturnCallback(
+			fn (string $uuid): Task => ($this->engineTasks[$uuid] ?? throw new DoesNotExistException('no task '.$uuid))
+		);
+		$mapper->method('update')->willReturnCallback(function (Task $task): Task {
+			$this->engineTasks[(string) $task->getUuid()] = $task;
+			return $task;
+		});
+		$mapper->method('delete')->willReturnCallback(function (Task $task): Task {
+			unset($this->engineTasks[(string) $task->getUuid()]);
+			return $task;
+		});
+
+		return $mapper;
 	}
 
 	/**

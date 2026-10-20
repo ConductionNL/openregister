@@ -33,6 +33,8 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 /**
  * Removes an installed example set.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) The constructor takes one collaborator per part of a set, as the installer's does.
+ *
  * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-remove-deletes-exactly-what-the-install-made-req-exs-007
  */
 class ExampleSetRemover {
@@ -48,6 +50,7 @@ class ExampleSetRemover {
 	 * @param ExampleSetAppConfig $appConfig Restores the app config the set wrote.
 	 * @param ExampleSetInstance  $instance  Deletes the OpenRegister organisations the set created.
 	 * @param ExampleSetUserPreferences $userPreferences Restores the user preferences the set wrote.
+	 * @param ExampleSetTasks|null      $tasks           Deletes the tasks the set wrote; null leaves them.
 	 *
 	 * @return void
 	 */
@@ -61,6 +64,7 @@ class ExampleSetRemover {
 		private readonly ExampleSetAppConfig $appConfig,
 		private readonly ExampleSetInstance $instance,
 		private readonly ExampleSetUserPreferences $userPreferences,
+		private readonly ?ExampleSetTasks $tasks=null,
 	) {
 	}//end __construct()
 
@@ -86,6 +90,7 @@ class ExampleSetRemover {
 				'changes'           => 0,
 				'app config'        => 0,
 				'user preferences'  => 0,
+				'tasks'             => 0,
 				'memberships'       => 0,
 				'groups'            => 0,
 				'accounts'          => 0,
@@ -95,6 +100,9 @@ class ExampleSetRemover {
 			'left'      => [],
 			'failed'    => [],
 		];
+
+		// First: a task is on an object the set wrote, and goes before it.
+		$record = $this->deleteTasks(set: $set, record: $record, report: $report);
 
 		foreach (array_reverse($record['objects'], true) as $name => $held) {
 			if ($this->deleteFiles(set: $set, name: $name, objectId: (string) $held['id'], record: $record, report: $report) === false) {
@@ -275,6 +283,40 @@ class ExampleSetRemover {
 
 		return $record;
 	}//end restoreAppConfig()
+
+	/**
+	 * Delete the tasks the set wrote, newest first.
+	 *
+	 * @param string               $set    The set id.
+	 * @param array<string, mixed> $record The record.
+	 * @param array<string, mixed> $report The report; counts and failures.
+	 *
+	 * @return array<string, mixed> The record without the deleted tasks.
+	 *
+	 * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-remove-deletes-the-tasks-a-set-wrote
+	 */
+	private function deleteTasks(string $set, array $record, array &$report): array {
+		if ($this->tasks === null) {
+			foreach (array_keys($record['tasks']) as $name) {
+				$report['failed'][] = 'task '.$name.': this OpenRegister cannot delete tasks';
+			}
+
+			return $record;
+		}
+
+		foreach (array_reverse($record['tasks'], true) as $name => $entry) {
+			if ($this->tasks->revert(entry: $entry) === 'failed') {
+				$report['failed'][] = 'task '.$name;
+				continue;
+			}
+
+			unset($record['tasks'][$name]);
+			$report['removed']['tasks']++;
+			$this->record->write(set: $set, record: $record);
+		}
+
+		return $record;
+	}//end deleteTasks()
 
 	/**
 	 * Restore the user preferences the set wrote, newest first, while they still hold what the set wrote.
