@@ -70,6 +70,33 @@ final class MacroActionBinding {
 	}//end __construct()
 
 	/**
+	 * Whether the binding names a stored flow by uuid, rather than a flow its
+	 * schema declares by name (`x-openregister-flows`).
+	 *
+	 * @param string $flow The binding's `flow`.
+	 *
+	 * @return bool True for a uuid.
+	 *
+	 * @spec openspec/changes/macro-flow-by-name/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
+	 */
+	public static function namesUuid(string $flow): bool {
+		return preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $flow) === 1;
+	}//end namesUuid()
+
+	/**
+	 * This binding with its flow resolved to a stored flow's uuid.
+	 *
+	 * @param string $flowUuid The stored flow's uuid.
+	 *
+	 * @return self The resolved binding.
+	 *
+	 * @spec openspec/changes/macro-flow-by-name/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
+	 */
+	public function resolvedTo(string $flowUuid): self {
+		return new self(action: $this->action, flow: $flowUuid);
+	}//end resolvedTo()
+
+	/**
 	 * The macro bindings a schema configuration declares.
 	 *
 	 * Only well-formed bindings are returned. A malformed one is a REFUSAL, not
