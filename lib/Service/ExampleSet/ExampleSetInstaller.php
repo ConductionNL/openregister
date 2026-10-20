@@ -59,7 +59,7 @@ class ExampleSetInstaller {
 	 * @param ExampleSetFiles         $files         Attaches files to objects.
 	 * @param ExampleSetAppConfig     $appConfig     Writes a fragment's own app config.
 	 * @param ExampleSetUserPreferences $userPreferences Writes a fragment's own app's preferences of the set's accounts.
-	 * @param ExampleSetTasks|null      $tasks           Writes the tasks a fragment puts on its objects; null skips them.
+	 * @param ExampleSetEngineKinds|null $engineRows     Writes the tasks and saved views a fragment declares; null refuses them.
 	 * @return void
 	 */
 	public function __construct(
@@ -73,7 +73,7 @@ class ExampleSetInstaller {
 		private readonly ExampleSetFiles $files,
 		private readonly ExampleSetAppConfig $appConfig,
 		private readonly ExampleSetUserPreferences $userPreferences,
-		private readonly ?ExampleSetTasks $tasks=null,
+		private readonly ?ExampleSetEngineKinds $engineRows=null,
 	) {
 	}//end __construct()
 
@@ -145,7 +145,7 @@ class ExampleSetInstaller {
 				$this->checkChanges(fragment: $fragment, context: $context, checked: $changes, plannedUsers: $users),
 				$this->checkAppConfig(fragment: $fragment, context: $context),
 				$this->checkUserPreferences(fragment: $fragment, context: $context, users: $users),
-				$this->checkTasks(fragment: $fragment, context: $context, users: $users)
+				($this->engineRows ?? new ExampleSetEngineKinds())->check(fragment: $fragment, context: $context, users: $users, values: $this->values)
 			);
 		}//end foreach
 
@@ -179,6 +179,7 @@ class ExampleSetInstaller {
 			'appConfig'   => [],
 			'userPreferences' => [],
 			'tasks'       => [],
+			'views'       => [],
 			'files'       => 0,
 			'passwords'   => [],
 			'types'       => [],
@@ -362,7 +363,7 @@ class ExampleSetInstaller {
 		$report = $this->installAppConfig(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 
 		$report = $this->installUserPreferences(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
-		if ($this->tasks?->installFragment(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values) === true) {
+		if ($this->engineRows?->install(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values) === true) {
 			$this->record->write(set: (string) $plan['set'], record: $record);
 		}
 
@@ -803,46 +804,8 @@ class ExampleSetInstaller {
 			$report['lost'][] = 'user preference '.$name;
 		}
 
-		return $this->provenTasks(report: $report, record: $record);
+		return ($this->engineRows ?? new ExampleSetEngineKinds())->prove(report: $report, record: $record);
 	}//end provenParts()
-
-	/**
-	 * Read back the tasks the record holds.
-	 *
-	 * @param array<string, mixed> $report The report so far.
-	 * @param array<string, mixed> $record The record as written.
-	 *
-	 * @return array<string, mixed> The report with each task that is gone under `missing`.
-	 * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
-	 */
-	private function provenTasks(array $report, array $record): array {
-		foreach (array_keys(array_filter($record['tasks'], fn (array $entry): bool => $this->tasks?->lost(entry: $entry) === true)) as $name) {
-			$report['missing'][] = 'task '.$name;
-		}
-
-		return $report;
-	}//end provenTasks()
-
-	/**
-	 * Check the tasks of one fragment.
-	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<int, string>   $users    The account ids the set creates or adopts.
-	 *
-	 * @return array<int, string> Refusals; every task when this OpenRegister cannot write tasks.
-	 * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
-	 */
-	private function checkTasks(array $fragment, array $context, array $users): array {
-		if ($this->tasks === null) {
-			return array_map(
-				static fn (array $entry): string => $fragment['file'].': task "'.$entry['key'].'": this OpenRegister cannot write tasks',
-				($fragment['tasks'] ?? [])
-			);
-		}
-
-		return $this->tasks->checkFragment(fragment: $fragment, context: $context, users: $users, values: $this->values);
-	}//end checkTasks()
 
 	/**
 	 * Check the app config of one fragment: each key may be written and each value resolves.

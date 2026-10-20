@@ -47,7 +47,7 @@ use Throwable;
  *
  * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
  */
-class ExampleSetTasks {
+class ExampleSetTasks extends ExampleSetEngineRows {
 	/**
 	 * The task fields a fragment may set. Everything else a task carries comes
 	 * from the engine's own defaults.
@@ -79,6 +79,28 @@ class ExampleSetTasks {
 	}//end __construct()
 
 	/**
+	 * The fragment and record part tasks live in.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
+	 */
+	public function part(): string {
+		return 'tasks';
+	}//end part()
+
+	/**
+	 * The word for one task, in messages.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
+	 */
+	public function noun(): string {
+		return 'task';
+	}//end noun()
+
+	/**
 	 * Why a filled task cannot be written, or ''.
 	 *
 	 * @param array<string, mixed> $data  The filled task fields.
@@ -105,83 +127,6 @@ class ExampleSetTasks {
 	}//end refusal()
 
 	/**
-	 * Check the tasks of one fragment: each fills and passes refusal().
-	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<int, string>   $users    The account ids the set creates or adopts.
-	 * @param ExampleSetValues     $values   Fills placeholders.
-	 *
-	 * @return array<int, string> Refusals.
-	 *
-	 * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
-	 */
-	public function checkFragment(array $fragment, array $context, array $users, ExampleSetValues $values): array {
-		$refusals = [];
-		foreach (($fragment['tasks'] ?? []) as $entry) {
-			$gaps = [];
-			$data = (array) $values->fill(value: $entry['data'], context: $context, gaps: $gaps);
-			$why  = $this->refusal(data: $data, users: $users);
-			if ($gaps !== []) {
-				$why = 'cannot resolve '.implode(', ', array_unique($gaps));
-			}
-
-			if ($why !== '') {
-				$refusals[] = $fragment['file'].': task "'.$entry['key'].'": '.$why;
-			}
-		}
-
-		return $refusals;
-	}//end checkFragment()
-
-	/**
-	 * Write the tasks of one fragment that the record does not hold.
-	 *
-	 * @param array<string, mixed> $fragment The fragment.
-	 * @param array<string, mixed> $context  The context placeholders draw on.
-	 * @param array<string, mixed> $report   The report; gains `tasks` and `dropped`.
-	 * @param array<string, mixed> $record   The record; gains the tasks written.
-	 * @param ExampleSetValues     $values   Fills placeholders.
-	 *
-	 * @return bool Whether the record changed and is to be written.
-	 *
-	 * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
-	 */
-	public function installFragment(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
-		$changed = false;
-		foreach (($fragment['tasks'] ?? []) as $entry) {
-			$name = $fragment['app'].'/'.$entry['key'];
-			$report['tasks'][$name] = 'kept';
-			if (isset($record['tasks'][$name]) === true) {
-				continue;
-			}
-
-			$gaps = [];
-			$data = (array) $values->fill(value: $entry['data'], context: $context, gaps: $gaps);
-			$made = ['error' => $this->refusal(data: $data, users: array_keys($record['users'])), 'entry' => null];
-			if ($gaps !== []) {
-				$made['error'] = 'cannot resolve '.implode(', ', array_unique($gaps));
-			}
-
-			if ($made['error'] === '') {
-				$made = $this->apply(app: $fragment['app'], key: $entry['key'], data: $data);
-			}
-
-			if ($made['entry'] === null) {
-				$report['dropped'][]    = $fragment['file'].': task "'.$entry['key'].'": '.$made['error'];
-				$report['tasks'][$name] = 'failed';
-				continue;
-			}
-
-			$record['tasks'][$name] = $made['entry'];
-			$report['tasks'][$name] = 'created';
-			$changed = true;
-		}//end foreach
-
-		return $changed;
-	}//end installFragment()
-
-	/**
 	 * Write a task through the engine's trusted path.
 	 *
 	 * @param string               $app  The app that ships the fragment.
@@ -192,7 +137,7 @@ class ExampleSetTasks {
 	 *
 	 * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
 	 */
-	public function apply(string $app, string $key, array $data): array {
+	public function write(string $app, string $key, array $data): array {
 		$fields = array_diff_key($data, array_flip(['completedAt', 'completedBy']));
 		$fields['key']   = 'example-set:'.$app.'/'.$key;
 		$fields['appId'] = $app;
@@ -213,12 +158,12 @@ class ExampleSetTasks {
 		}
 
 		return ['error' => '', 'entry' => ['uuid' => (string) $task->getUuid()]];
-	}//end apply()
+	}//end write()
 
 	/**
 	 * Whether a written task is no longer in the engine.
 	 *
-	 * @param array<string, mixed> $entry A record entry from apply().
+	 * @param array<string, mixed> $entry A record entry from write().
 	 *
 	 * @return bool
 	 *
@@ -237,7 +182,7 @@ class ExampleSetTasks {
 	/**
 	 * Delete a task the set wrote.
 	 *
-	 * @param array<string, mixed> $entry A record entry from apply().
+	 * @param array<string, mixed> $entry A record entry from write().
 	 *
 	 * @return string `removed` (also when it was already gone) or `failed`.
 	 *
