@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\OrganisationUsageService;
+use OCA\OpenRegister\Service\Organisation\OrganisationLifecycleAuditor;
 use OCA\OpenRegister\Service\Rbac\GrantChangeAuditor;
 use OCA\OpenRegister\Service\Rbac\OrganisationSpecialRights;
 use OCA\OpenRegister\Service\TenantLifecycleService;
@@ -138,6 +139,7 @@ class OrganisationController extends Controller {
 	 * @param IGroupManager $groupManager Group manager for admin checks
 	 * @param OrganisationUsageService $usageService Measures an organisation's usage
 	 * @param GrantChangeAuditor|null $grantAuditor Records a change of who holds the special right `grant_manage`. Null only in legacy fixtures.
+	 * @param OrganisationLifecycleAuditor|null $lifecycleAuditor Records an edit of an organisation's details. Null only in legacy fixtures.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI constructor: each argument is a collaborator an endpoint uses.
 	 *
@@ -155,6 +157,7 @@ class OrganisationController extends Controller {
 		IGroupManager $groupManager,
 		private readonly OrganisationUsageService $usageService,
 		?GrantChangeAuditor $grantAuditor = null,
+		private readonly ?OrganisationLifecycleAuditor $lifecycleAuditor = null,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 		$this->grantAuditor = $grantAuditor;
@@ -749,6 +752,7 @@ class OrganisationController extends Controller {
 			}
 
 			// Apply field updates using extracted helper methods.
+			$detailsBefore = $this->auditedDetailsOf(organisation: $organisation);
 			$this->handleNameAndSlugUpdate(organisation: $organisation, data: $data);
 			$this->handleDescriptionUpdate(organisation: $organisation, data: $data);
 			$this->handleSlugUpdate(organisation: $organisation, data: $data);
@@ -767,6 +771,11 @@ class OrganisationController extends Controller {
 			}
 
 			$response = $this->saveAndReturnOrganisation(organisation: $organisation);
+			$this->lifecycleAuditor?->recordUpdate(
+				organisation: $organisation,
+				before: $detailsBefore,
+				after: $this->auditedDetailsOf(organisation: $organisation)
+			);
 
 			// Who holds the right to decide who reads a record is the one change
 			// here that must be on the trail, whoever made it.
@@ -784,6 +793,23 @@ class OrganisationController extends Controller {
 			return $this->handleUpdateError(uuid: $uuid, exception: $e);
 		}//end try
 	}//end update()
+
+	/**
+	 * The details of an organisation an edit is audited for.
+	 *
+	 * @param object $organisation Organisation entity.
+	 *
+	 * @return array<string, string|null> The name, description and slug.
+	 *
+	 * @spec openspec/changes/organisation-lifecycle-audit/specs/tenant-lifecycle/spec.md
+	 */
+	private function auditedDetailsOf(object $organisation): array {
+		return [
+			'name'        => $organisation->getName(),
+			'description' => $organisation->getDescription(),
+			'slug'        => $organisation->getSlug(),
+		];
+	}//end auditedDetailsOf()
 
 	/**
 	 * The groups that hold the special right `grant_manage` on an organisation's records.
