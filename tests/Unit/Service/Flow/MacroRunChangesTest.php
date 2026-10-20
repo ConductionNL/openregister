@@ -74,6 +74,20 @@ class MacroRunChangesTest extends TestCase {
 		$this->assertSame(['termijn opgeschort', 'send-mail'], array_column($changes, 'step'));
 	}//end testAStepIsNamedByItsNodesLabelWhenItHasOne()
 
+	public function testAnAppsLabelledStepCounts(): void {
+		$changes = MacroRunChanges::fromLog(
+			log: [
+				['transition' => 'suspend', 'type' => 'dossiq.suspendTerm', 'status' => 'completed'],
+				['transition' => 'route', 'type' => 'dossiq.other', 'status' => 'completed'],
+			],
+			nodes: [
+				['id' => 'suspend', 'type' => 'dossiq.suspendTerm', 'label' => 'termijn opgeschort'],
+				['id' => 'route', 'type' => 'dossiq.other'],
+			]
+		);
+		$this->assertSame([['step' => 'termijn opgeschort', 'kind' => 'step']], $changes);
+	}//end testAnAppsLabelledStepCounts()
+
 	public function testAnEmptyLogChangedNothing(): void {
 		$this->assertSame([], MacroRunChanges::fromLog(log: []));
 	}//end testAnEmptyLogChangedNothing()

@@ -8,7 +8,10 @@
  * sent") without a reader opening the run. Each completed step that wrote an
  * object, sent a message or created a task counts as one change, named by its
  * node's `label` when the flow's author gave one (written for people,
- * "termijn opgeschort"), else by the node's id. Steps that only
+ * "termijn opgeschort"), else by the node's id. A step of another app's
+ * node type counts when its author labelled it, as `step`: OpenRegister
+ * cannot tell what an app's node does, and the label says it is worth naming.
+ * Steps that only
  * read, route or reshape items change nothing and are left out.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
@@ -75,12 +78,16 @@ final class MacroRunChanges {
 				continue;
 			}
 
+			$node = (string)($entry['transition'] ?? '');
 			$kind = (self::KINDS[(string)($entry['type'] ?? '')] ?? null);
+			if ($kind === null && isset($labels[$node]) === true) {
+				$kind = 'step';
+			}
+
 			if ($kind === null) {
 				continue;
 			}
 
-			$node = (string)($entry['transition'] ?? '');
 			$changes[] = [
 				'step' => ($labels[$node] ?? $node),
 				'kind' => $kind,
