@@ -712,6 +712,10 @@ class OrganisationController extends Controller {
 	/**
 	 * Update organisation details
 	 *
+	 * Members read their organisation; only a Nextcloud administrator or the
+	 * organisation's own administrator (its owner) may change it. The role is
+	 * checked before anything is read from the request or written.
+	 *
 	 * @param string $uuid Organisation UUID.
 	 *
 	 * @NoAdminRequired
@@ -734,22 +738,18 @@ class OrganisationController extends Controller {
 				);
 			}
 
-			$organisation = $this->organisationMapper->findByUuid($uuid);
-			$data = $this->extractRequestData();
-			$grantManageBefore = $this->grantManageOf(organisation: $organisation);
-
-			// A member may edit the organisation; only its owner or an administrator
-			// may decide who manages the grants on its records.
-			if ($this->changesGrantManage(organisation: $organisation, data: $data) === true
-				&& $this->organisationService->isOrganisationAdmin($uuid) === false
-			) {
+			if ($this->organisationService->isOrganisationAdmin($uuid) === false) {
 				return new JSONResponse(
 					data: [
-						'error' => 'Only an administrator or the owner of this organisation may change the special right grant_manage',
+						'error' => 'Only an administrator or an administrator of this organisation may change it. Members can read it.',
 					],
 					statusCode: Http::STATUS_FORBIDDEN
 				);
 			}
+
+			$organisation = $this->organisationMapper->findByUuid($uuid);
+			$data = $this->extractRequestData();
+			$grantManageBefore = $this->grantManageOf(organisation: $organisation);
 
 			// Apply field updates using extracted helper methods.
 			$detailsBefore = $this->auditedDetailsOf(organisation: $organisation);
@@ -1155,31 +1155,6 @@ class OrganisationController extends Controller {
 			}
 		}
 	}//end applySimpleFieldUpdates()
-
-	/**
-	 * Whether a request would change who holds the special right `grant_manage`.
-	 *
-	 * The stored block is replaced as a whole, so a request that carries an
-	 * authorization block without the key takes the right away, and that counts.
-	 *
-	 * @param object $organisation Organisation entity.
-	 * @param array<string, mixed> $data Request data.
-	 *
-	 * @return bool True when the request names a different list than the stored one.
-	 *
-	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
-	 */
-	private function changesGrantManage(object $organisation, array $data): bool {
-		if (is_array($data['authorization'] ?? null) === false) {
-			return false;
-		}
-
-		$key = OrganisationSpecialRights::GRANT_MANAGE;
-		$stored = ($organisation->getAuthorization()[$key] ?? []);
-		$wanted = ($data['authorization'][$key] ?? []);
-
-		return $wanted !== $stored;
-	}//end changesGrantManage()
 
 	/**
 	 * Apply array field updates

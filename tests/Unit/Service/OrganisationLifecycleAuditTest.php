@@ -160,6 +160,7 @@ class OrganisationLifecycleAuditTest extends TestCase {
 		$organisation = $this->organisation('active');
 		$service = $this->createMock(OrganisationService::class);
 		$service->method('hasAccessToOrganisation')->willReturn(true);
+		$service->method('isOrganisationAdmin')->willReturn(true);
 		$this->organisations->method('findByUuid')->willReturn($organisation);
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn(['name' => 'Gemeente Waterland-Noord', 'description' => 'Gemeente']);
