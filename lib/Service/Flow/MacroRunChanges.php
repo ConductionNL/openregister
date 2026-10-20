@@ -64,7 +64,27 @@ final class MacroRunChanges {
 	 *
 	 * @spec openspec/changes/macro-run-changes/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
 	 */
-	public static function fromLog(array $log, array $nodes = []): array {
+	public function fromLog(array $log, array $nodes = []): array {
+		$labels  = $this->labelsOf(nodes: $nodes);
+		$changes = [];
+		foreach ($log as $entry) {
+			$change = $this->changeOf(entry: $entry, labels: $labels);
+			if ($change !== null) {
+				$changes[] = $change;
+			}
+		}
+
+		return $changes;
+	}//end fromLog()
+
+	/**
+	 * The labels the flow's author gave its nodes, by node id.
+	 *
+	 * @param array<int, mixed> $nodes The flow's nodes.
+	 *
+	 * @return array<string, string> Label by node id.
+	 */
+	private function labelsOf(array $nodes): array {
 		$labels = [];
 		foreach ($nodes as $node) {
 			if (is_array($node) === true && is_string($node['label'] ?? null) === true && $node['label'] !== '') {
@@ -72,28 +92,35 @@ final class MacroRunChanges {
 			}
 		}
 
-		$changes = [];
-		foreach ($log as $entry) {
-			if (is_array($entry) === false || ($entry['status'] ?? '') !== 'completed') {
-				continue;
-			}
+		return $labels;
+	}//end labelsOf()
 
-			$node = (string)($entry['transition'] ?? '');
-			$kind = (self::KINDS[(string)($entry['type'] ?? '')] ?? null);
-			if ($kind === null && isset($labels[$node]) === true) {
-				$kind = 'step';
-			}
-
-			if ($kind === null) {
-				continue;
-			}
-
-			$changes[] = [
-				'step' => ($labels[$node] ?? $node),
-				'kind' => $kind,
-			];
+	/**
+	 * The change one logged step made, or null when it changed nothing.
+	 *
+	 * @param mixed                 $entry  One entry of the run's log.
+	 * @param array<string, string> $labels Label by node id.
+	 *
+	 * @return array{step: string, kind: string}|null The change.
+	 */
+	private function changeOf(mixed $entry, array $labels): ?array {
+		if (is_array($entry) === false || ($entry['status'] ?? '') !== 'completed') {
+			return null;
 		}
 
-		return $changes;
-	}//end fromLog()
+		$node = (string)($entry['transition'] ?? '');
+		$kind = (self::KINDS[(string)($entry['type'] ?? '')] ?? null);
+		if ($kind === null && isset($labels[$node]) === true) {
+			$kind = 'step';
+		}
+
+		if ($kind === null) {
+			return null;
+		}
+
+		return [
+			'step' => ($labels[$node] ?? $node),
+			'kind' => $kind,
+		];
+	}//end changeOf()
 }//end class

@@ -41,7 +41,6 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
-use OCA\OpenRegister\Service\Flow\MacroRunChanges;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\WriteCause;
@@ -310,7 +309,7 @@ class ObjectActionsController extends Controller {
 			flow: $binding->flow,
 			run: (string)$run->getUuid(),
 			userId: $userId,
-			changes: MacroRunChanges::fromLog(log: ($run->getLog() ?? []), nodes: $this->macros->nodesOf(flowUuid: $binding->flow))
+			changes: $this->macros->changesOf(run: $run, flowUuid: $binding->flow)
 		);
 
 		return [

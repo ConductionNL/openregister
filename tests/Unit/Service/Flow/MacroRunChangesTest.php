@@ -48,12 +48,12 @@ class MacroRunChangesTest extends TestCase {
 				['step' => 'Termijn opgeschort', 'kind' => 'write'],
 				['step' => 'Bericht verstuurd', 'kind' => 'message'],
 			],
-			MacroRunChanges::fromLog(log: $this->log())
+			(new MacroRunChanges())->fromLog(log: $this->log())
 		);
 	}//end testCountsCompletedWritesMessagesAndTasksInOrder()
 
 	public function testATaskStepIsAChange(): void {
-		$changes = MacroRunChanges::fromLog(log: [
+		$changes = (new MacroRunChanges())->fromLog(log: [
 			['transition' => 'Taak Publiceren', 'type' => 'openregister.portal-task', 'status' => 'completed'],
 			['transition' => 'Melding', 'type' => 'openregister.send-notification', 'status' => 'completed'],
 		]);
@@ -61,7 +61,7 @@ class MacroRunChangesTest extends TestCase {
 	}//end testATaskStepIsAChange()
 
 	public function testAStepIsNamedByItsNodesLabelWhenItHasOne(): void {
-		$changes = MacroRunChanges::fromLog(
+		$changes = (new MacroRunChanges())->fromLog(
 			log: [
 				['transition' => 'set-term', 'type' => 'openregister.object-write', 'status' => 'completed'],
 				['transition' => 'send-mail', 'type' => 'openregister.send-email', 'status' => 'completed'],
@@ -75,7 +75,7 @@ class MacroRunChangesTest extends TestCase {
 	}//end testAStepIsNamedByItsNodesLabelWhenItHasOne()
 
 	public function testAnAppsLabelledStepCounts(): void {
-		$changes = MacroRunChanges::fromLog(
+		$changes = (new MacroRunChanges())->fromLog(
 			log: [
 				['transition' => 'suspend', 'type' => 'dossiq.suspendTerm', 'status' => 'completed'],
 				['transition' => 'route', 'type' => 'dossiq.other', 'status' => 'completed'],
@@ -89,7 +89,7 @@ class MacroRunChangesTest extends TestCase {
 	}//end testAnAppsLabelledStepCounts()
 
 	public function testAnEmptyLogChangedNothing(): void {
-		$this->assertSame([], MacroRunChanges::fromLog(log: []));
+		$this->assertSame([], (new MacroRunChanges())->fromLog(log: []));
 	}//end testAnEmptyLogChangedNothing()
 
 	public function testTheAuditEntryCarriesTheChanges(): void {
