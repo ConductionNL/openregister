@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow;
 
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
@@ -53,12 +54,14 @@ class MacroActionResolver {
 	 * @param FlowService      $flows      Reads the bound flow, for its `next` hint.
 	 * @param AuditTrailMapper $auditTrail Writes the entry that names the action and the run.
 	 * @param LoggerInterface  $logger     Diagnostics.
+	 * @param FlowMapper|null  $flowStore  Finds a flow a schema declares by name.
 	 */
 	public function __construct(
 		private readonly SchemaMapper $schemas,
 		private readonly FlowService $flows,
 		private readonly AuditTrailMapper $auditTrail,
 		private readonly LoggerInterface $logger,
+		private readonly ?FlowMapper $flowStore = null,
 	) {
 	}//end __construct()
 
@@ -79,12 +82,39 @@ class MacroActionResolver {
 	public function bindingFor(Schema $schema, string $action): ?MacroActionBinding {
 		foreach (MacroActionBinding::parse(configuration: ($schema->getConfiguration() ?? [])) as $binding) {
 			if ($binding->action === $action) {
-				return $binding;
+				return $this->resolveDeclared(schema: $schema, binding: $binding);
 			}
 		}
 
 		return null;
 	}//end bindingFor()
+
+	/**
+	 * A binding that names a flow its schema declares (`x-openregister-flows`)
+	 * by NAME, resolved to the stored flow the declaration became. A shipped
+	 * schema cannot carry the uuid: the import mints one per installation. A
+	 * name with no stored flow stays as it is, and running it is refused as an
+	 * unknown flow.
+	 *
+	 * @param Schema             $schema  The schema.
+	 * @param MacroActionBinding $binding The binding as declared.
+	 *
+	 * @return MacroActionBinding The binding, its flow a uuid when it could be resolved.
+	 *
+	 * @spec openspec/changes/macro-flow-by-name/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
+	 */
+	private function resolveDeclared(Schema $schema, MacroActionBinding $binding): MacroActionBinding {
+		if ($this->flowStore === null || MacroActionBinding::namesUuid(flow: $binding->flow) === true) {
+			return $binding;
+		}
+
+		$flow = $this->flowStore->findDeclared(name: $binding->flow, schemaSlug: (string)$schema->getSlug());
+		if ($flow === null || (string)$flow->getUuid() === '') {
+			return $binding;
+		}
+
+		return $binding->resolvedTo(flowUuid: (string)$flow->getUuid());
+	}//end resolveDeclared()
 
 	/**
 	 * The `next` hint the flow declares.
