@@ -109,6 +109,37 @@ class NotifierTest extends TestCase {
 		}
 	}
 
+	/**
+	 * The relink notification opens OpenRegister's own page at the user settings dialog, not Nextcloud's personal settings.
+	 */
+	public function testTheRelinkNotificationLinksToTheUserSettingsDialog(): void {
+		$notification = $this->createMock(INotification::class);
+		$notification->method('getApp')->willReturn('openregister');
+		$notification->method('getSubject')->willReturn('credential_relink_needed');
+		$notification->method('getSubjectParameters')->willReturn(['provider' => 'Exact']);
+		$notification->method('setParsedSubject')->willReturnSelf();
+		$notification->method('setParsedMessage')->willReturnSelf();
+		$notification->method('setIcon')->willReturnSelf();
+		$link = null;
+		$notification->method('setLink')->willReturnCallback(
+			function (string $value) use (&$link, $notification): INotification {
+				$link = $value;
+				return $notification;
+			}
+		);
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(static fn (string $text, array $args = []): string => vsprintf($text, $args));
+		$this->factory->method('get')->willReturn($l10n);
+		$this->urlGenerator->method('imagePath')->willReturn('/apps/openregister/img/app.svg');
+		$this->urlGenerator->method('linkToRouteAbsolute')
+			->with('openregister.dashboard.page')
+			->willReturn('https://example.com/apps/openregister/');
+
+		$this->notifier->prepare($notification, 'en');
+
+		$this->assertSame('https://example.com/apps/openregister/#user-settings', $link);
+	}//end testTheRelinkNotificationLinksToTheUserSettingsDialog()
+
 	public function testPrepareConfigurationUpdateWithoutConfigId(): void {
 		$notification = $this->createMock(INotification::class);
 		$notification->method('getApp')->willReturn('openregister');
@@ -688,6 +719,18 @@ class NotifierTest extends TestCase {
 
 		$this->assertSame('Overdue cases is at 23', $parsed[0]);
 		$this->assertSame('The view Overdue cases counts 23, at or above its threshold of 20.', $parsed[1]);
+	}
+
+	/**
+	 * An author whose form a schema change broke is told which form, which schema, and what to do.
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
+	 */
+	public function testPrepareFormUnpublished(): void {
+		$parsed = $this->renderSubject('form_unpublished', ['formTitle' => 'Melding openbare ruimte', 'schema' => 'ticket', 'count' => 2]);
+
+		$this->assertSame('Your form "Melding openbare ruimte" was taken offline', $parsed[0]);
+		$this->assertSame('A change to "ticket" left 2 problems in the form. Fix them and publish the form again.', $parsed[1]);
 	}
 
 	/**

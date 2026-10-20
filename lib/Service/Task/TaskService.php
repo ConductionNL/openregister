@@ -218,12 +218,17 @@ class TaskService {
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-may-only-be-created-on-an-object-its-creator-may-read
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	public function create(array $data, ?string $actor): Task {
 		// Located first, so the access guard below reads the subject from its
 		// own table instead of searching every magic table for it. A refusal
 		// reads the same either way: location says where, never whether.
 		$data = $this->locate(data: $data);
+
+		// Blocked is derived from blockedBy, for administrators too: nobody
+		// writes the state by hand (a-task-may-wait-on-another-task D-6).
+		(new TaskBlockerGuard(tasks: $this->tasks))->refuseHandWrittenState(data: $data);
 
 		if ($this->authorization->isAdministrator(uid: $actor) === false) {
 			// A task is an annotation ON an object, so it inherits that
@@ -252,7 +257,14 @@ class TaskService {
 			}
 		}
 
-		return $this->import(data: $data, actor: $actor);
+		// An ordinary caller may only name a blocker they may read; an
+		// administrator reads every task, so for them it could only pass.
+		$mayReadBlocker = null;
+		if ($this->authorization->isAdministrator(uid: $actor) === false) {
+			$mayReadBlocker = fn (Task $blocker): bool => $this->authorization->mayRead(task: $blocker, uid: $actor);
+		}
+
+		return $this->import(data: $data, actor: $actor, mayReadBlocker: $mayReadBlocker);
 	}//end create()
 
 	/**
@@ -263,6 +275,8 @@ class TaskService {
 	 *
 	 * @param array<string, mixed> $data The task fields, canonical or legacy.
 	 * @param string|null $actor The creating identity.
+	 * @param callable|null $mayReadBlocker Answers whether the creating caller may read a blocker; create() passes
+	 *                                      the caller's own rule for an ordinary user, a trusted caller passes none.
 	 *
 	 * @return Task The created task, with candidates indexed and creation audited.
 	 *
@@ -270,11 +284,13 @@ class TaskService {
 	 * @throws TaskAccessDeniedException Without an acting identity.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-one-lifecycle-with-every-legacy-value-mapped-onto-it
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
-	public function import(array $data, ?string $actor): Task {
+	public function import(array $data, ?string $actor, ?callable $mayReadBlocker = null): Task {
 		$data = $this->locate(data: $data);
 		$task = $this->builder->fromData(data: $data, actor: $actor);
 		$this->refuseUnrenderableForm(task: $task);
+		(new TaskBlockerGuard(tasks: $this->tasks))->assertDeclarable(task: $task, mayRead: $mayReadBlocker);
 		$this->authorizeOrRecord(verb: 'create', task: $task, actor: $actor);
 		$this->pending = [
 			'assignee' => null,

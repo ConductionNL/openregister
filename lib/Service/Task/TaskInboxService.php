@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\PortalTaskDelivery;
 use OCA\OpenRegister\Db\PortalTaskDeliveryMapper;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskInboxCriteria;
+use OCA\OpenRegister\Db\TaskBlockerMapper;
 use OCA\OpenRegister\Db\TaskMapper;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -83,6 +84,9 @@ class TaskInboxService {
 	 *                                         hand-built test services;
 	 *                                         absent, every subject is
 	 *                                         resolved by the cross-table search.
+	 * @param TaskBlockerMapper|null $blockers Answers which blockers are still
+	 *                                         open, for the derived `blocked`
+	 *                                         flag. Absent, no row is blocked.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -91,6 +95,7 @@ class TaskInboxService {
 		private readonly ?AbstractObjectMapper $objects = null,
 		private readonly ?PortalTaskDeliveryMapper $deliveries = null,
 		private readonly ?TaskSubjectLocator $locator = null,
+		private readonly ?TaskBlockerMapper $blockers = null,
 	) {
 
 	}//end __construct()
@@ -111,6 +116,7 @@ class TaskInboxService {
 	 * @return array{results: array<int, array<string, mixed>>, total: int, limit: int, offset: int} The page.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-the-inbox-answers-what-is-waiting-for-me-in-one-query
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
 	public function inbox(TaskInboxCriteria $criteria, int $limit = 25, int $offset = 0): array {
 		$limit = max(1, min($limit, 500));
@@ -128,11 +134,12 @@ class TaskInboxService {
 		$page = $this->tasks->findInbox(criteria: $criteria, limit: $limit, offset: $offset);
 		$total = $this->tasks->countInbox(criteria: $criteria);
 		$subjects = $this->subjectContexts(tasks: $page);
+		$openBlockers = $this->openBlockers(tasks: $page);
 
 		$now = $this->temporal->now();
 		$results = [];
 		foreach ($page as $task) {
-			$results[] = $this->row(task: $task, subjects: $subjects, now: $now);
+			$results[] = $this->row(task: $task, subjects: $subjects, now: $now, openBlockers: $openBlockers);
 		}
 
 		return [
@@ -151,13 +158,22 @@ class TaskInboxService {
 	 * @param Task $task The task.
 	 * @param array<string, array<string, mixed>> $subjects Subject context by object uuid.
 	 * @param \DateTimeInterface $now The clock instant for the projection.
+	 * @param array<int, string>|null $openBlockers The page's blocker uuids that
+	 *                                              are still open; null asks
+	 *                                              for this task's own.
 	 *
 	 * @return array<string, mixed> The row.
 	 *
 	 * @spec openspec/specs/flow-tasks/spec.md#requirement-a-task-is-a-first-class-record-not-a-flow-artefact
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
 	 */
-	public function row(Task $task, array $subjects, \DateTimeInterface $now): array {
+	public function row(Task $task, array $subjects, \DateTimeInterface $now, ?array $openBlockers = null): array {
 		$row = $task->jsonSerialize();
+
+		// Derived, never stored: blocked while the named blocker is open.
+		$blockedBy = (string)$task->getBlockedBy();
+		$openBlockers ??= $this->openBlockers(tasks: [$task]);
+		$row['blocked'] = ($blockedBy !== '' && in_array($blockedBy, $openBlockers, true) === true);
 
 		$subject = null;
 		$objectUuid = (string)$task->getObjectUuid();
@@ -252,6 +268,40 @@ class TaskInboxService {
 	public function enrich(Task $task): array {
 		return $this->row(task: $task, subjects: $this->subjectContexts(tasks: [$task]), now: $this->temporal->now());
 	}//end enrich()
+
+	/**
+	 * Which blockers of these tasks are still open, in ONE lookup.
+	 *
+	 * Never throws: a failed lookup reads as "not blocked", logged at debug,
+	 * because the inbox does not fail over a derived flag.
+	 *
+	 * @param array<int, Task> $tasks The page.
+	 *
+	 * @return array<int, string> The open blocker uuids.
+	 *
+	 * @spec openspec/changes/a-task-may-wait-on-another-task/specs/flow-tasks/spec.md#requirement-a-task-may-wait-on-another-task-and-waits-out-of-sight
+	 */
+	private function openBlockers(array $tasks): array {
+		$uuids = [];
+		foreach ($tasks as $task) {
+			$blockedBy = (string)$task->getBlockedBy();
+			if ($blockedBy !== '') {
+				$uuids[] = $blockedBy;
+			}
+		}
+
+		if ($uuids === [] || $this->blockers === null) {
+			return [];
+		}
+
+		try {
+			return $this->blockers->openBlockerUuids(uuids: array_values(array_unique($uuids)));
+		} catch (Throwable $failure) {
+			$this->logger->debug('[TaskInboxService] Could not read blocker state: ' . $failure->getMessage());
+
+			return [];
+		}
+	}//end openBlockers()
 
 	/**
 	 * Synthesize a display title for a titleless task — on read, never persisted.

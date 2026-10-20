@@ -27,7 +27,20 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Db\Decision;
+use OCA\OpenRegister\Db\DecisionMapper;
+use OCA\OpenRegister\Service\Decision\DecisionOwnership;
+use OCA\OpenRegister\Service\Decision\DecisionService;
+use OCA\OpenRegister\Service\Decision\DecisionVisibility;
+use OCA\OpenRegister\Service\Decision\RelationDecisionService;
+use OCA\OpenRegister\Service\Decision\ReviewPolicyResolver;
+use OCA\OpenRegister\Service\File\ManagedFileOwnerLookup;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
+use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
+use OCP\IDBConnection;
+use OCP\IGroupManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\Files\File;
@@ -79,6 +92,8 @@ class EntityRelationsControllerTest extends TestCase {
 
 	private IUser&MockObject $user;
 
+	private RelationDecisionService $relationDecisions;
+
 	protected function setUp(): void {
 		$this->request = $this->createMock(IRequest::class);
 		$this->mapper = $this->createMock(EntityRelationMapper::class);
@@ -93,6 +108,39 @@ class EntityRelationsControllerTest extends TestCase {
 		$this->user = $this->createMock(IUser::class);
 
 		$this->user->method('getUID')->willReturn('alice');
+
+		// The real decision path over the mocked relation mapper: an undecided
+		// relation records its first decision and links it.
+		$decisionMapper = $this->createMock(DecisionMapper::class);
+		$decisionMapper->method('insert')->willReturnCallback(
+			static function (Decision $decision): Decision {
+				$decision->setUuid('d-1');
+				return $decision;
+			}
+		);
+		$this->mapper->method('linkDecision')->willReturnCallback(
+			static function (EntityRelation $relation, string $decisionUuid): EntityRelation {
+				$relation->setDecisionUuid($decisionUuid);
+				return $relation;
+			}
+		);
+		$this->relationDecisions = new RelationDecisionService(
+			relationMapper: $this->mapper,
+			decisions: new DecisionService(decisionMapper: $decisionMapper),
+			ownership: new DecisionOwnership(
+				groupManager: $this->createMock(IGroupManager::class),
+				eventDispatcher: $this->createMock(IEventDispatcher::class),
+				logger: $this->logger
+			),
+			policies: new ReviewPolicyResolver(
+				schemaMapper: $this->schemaMapper,
+				fileSettings: new FileSettingsHandler(appConfig: $this->createMock(IAppConfig::class)),
+				rootFolder: $this->rootFolder,
+				owners: $this->createMock(ManagedFileOwnerLookup::class),
+				logger: $this->logger
+			),
+			db: $this->createMock(IDBConnection::class)
+		);
 	}//end setUp()
 
 	private function makeController(): EntityRelationsController {
@@ -107,9 +155,25 @@ class EntityRelationsControllerTest extends TestCase {
 			$this->schemaMapper,
 			$this->registerMapper,
 			$this->emailLinkMapper,
-			$this->logger
+			$this->logger,
+			$this->relationDecisions,
+			$this->visibleAsIs()
 		);
 	}//end makeController()
+
+	/**
+	 * A visibility filter that hides nothing: these tests are about the PATCH, HiddenDecisionTest about the mask.
+	 *
+	 * @return DecisionVisibility
+	 */
+	private function visibleAsIs(): DecisionVisibility {
+		$visibility = $this->createMock(DecisionVisibility::class);
+		$visibility->method('present')->willReturnCallback(
+			static fn (EntityRelation $relation, string $userId, ?array $serialised = null): array => ($serialised ?? $relation->jsonSerialize())
+		);
+
+		return $visibility;
+	}//end visibleAsIs()
 
 	public function testReturns401WhenNotAuthenticated(): void {
 		$this->userSession->method('getUser')->willReturn(null);
@@ -206,6 +270,7 @@ class EntityRelationsControllerTest extends TestCase {
 		$relation->setFileId(7);
 
 		$updatedRelation = new EntityRelation();
+		$updatedRelation->setId(42);
 		$updatedRelation->setFileId(7);
 		$updatedRelation->setBases(['uuid-a']);
 
@@ -244,6 +309,10 @@ class EntityRelationsControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 		$body = $response->getData();
 		$this->assertSame(['uuid-a'], $body['bases']);
+		// The decision is its own object, linked from the relation (decision 197).
+		$this->assertSame('d-1', $body['decision']);
+		$this->assertSame('alice', $body['decisionRecord']['decidedBy']);
+		$this->assertSame('redact', $body['decisionRecord']['verdict']);
 	}//end testReturns200OnSuccessfulPatch()
 
 	public function testReturns403WhenObjectBoundButHasPermissionDeniesUpdate(): void {
@@ -285,6 +354,7 @@ class EntityRelationsControllerTest extends TestCase {
 		$relation->setSchemaId('schema-uuid');
 
 		$updatedRelation = new EntityRelation();
+		$updatedRelation->setId(42);
 		$updatedRelation->setObjectId(99);
 		$updatedRelation->setBases(['uuid-a']);
 

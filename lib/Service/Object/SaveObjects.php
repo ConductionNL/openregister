@@ -71,6 +71,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Service\Dmn\DecisionTableBulkGuard;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IGroupManager;
@@ -189,6 +190,7 @@ class SaveObjects {
 	 *                                             wave-12 Fix 3 per-row JSON-Schema validation
 	 * @param IEventDispatcher|null $eventDispatcher Event dispatcher for object lifecycle events
 	 * @param AuditTrailMapper|null $auditTrailMapper Audit trail mapper for logging bulk changes
+	 * @param DecisionTableBulkGuard|null $decisionTables Applies the decision-table save rules to a bulk save
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
@@ -205,6 +207,7 @@ class SaveObjects {
 		private readonly ?ValidateObject $validateHandler = null,
 		private readonly ?IEventDispatcher $eventDispatcher = null,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
+		private readonly ?DecisionTableBulkGuard $decisionTables = null,
 	) {
 
 	}//end __construct()
@@ -368,6 +371,7 @@ class SaveObjects {
 		// Validation under `_validation: true` runs Opis per-row when
 		// requested. See `/tmp/wave11-or-engine-primitives.md` Section D.
 		$safeguardStart = microtime(true);
+		$objects = $this->refuseInvalidDecisionTables(objects: $objects, register: $register, schema: $schema, result: $result);
 		$objects = $this->applyBulkSafeguards(
 			objects: $objects,
 			register: $register,
@@ -760,6 +764,21 @@ class SaveObjects {
 			// Step 1: strip dangerous @self fields for non-admins.
 			$sanitised = $this->stripSelfInjectionFields(object: $object, isAdmin: $isAdmin);
 
+			// A row naming two different identities is refused: the guard below
+			// resolves "which row is this" once, the writers resolve it with their
+			// own precedence (`id`, then `@self.id`; the mixed-schema writer reads
+			// `@self.id` only), so two candidates let the guard see a create while
+			// the writer overwrites another user's draft.
+			if ($this->rowIdentityIsAmbiguous(object: $sanitised) === true) {
+				$this->recordSafeguardRejection(
+					object: $sanitised,
+					reason: 'The row names more than one identity (id, @self.id, @self.uuid differ); send one.',
+					result: $result,
+					index: $rowIndex
+				);
+				continue;
+			}
+
 			// Resolve effective schema for this row (per-object schema wins
 			// for mixed-schema bulk).
 			$rowSchema = $this->resolveSafeguardRowSchema(
@@ -801,6 +820,32 @@ class SaveObjects {
 				),
 				existingByUuid: $existingByUuid
 			);
+
+			// Step 2b: a draft is kept to its owner. Asked before the appendOnly
+			// gate, whose message would otherwise tell a non-owner that the uuid
+			// names an existing row. The existing row was found
+			// past the read RBAC, so without this a user who cannot read another
+			// user's draft could overwrite it by sending its uuid. The answer is
+			// the one a refused permission gives, so the draft's existence stays
+			// unannounced (same rule as ObjectService::refuseSomebodyElsesDraft).
+			// An administrator reads every draft, so is not kept from one.
+			if ($effectiveRbac === true && $existingEntity !== null) {
+				$draftKept = (new DraftCallerRule())->keptFromCaller(
+					object: $existingEntity,
+					schema: $rowSchema,
+					userId: $currentUser?->getUID(),
+					isAdmin: $isAdmin
+				);
+				if ($draftKept === true) {
+					$this->recordSafeguardRejection(
+						object: $sanitised,
+						reason: 'Permission denied for action ' . $action . ' on schema ' . $rowSchema->getSlug(),
+						result: $result,
+						index: $rowIndex
+					);
+					continue;
+				}
+			}
 
 			// Step 4: appendOnly UPDATE → reject.
 			if ($action === 'update' && $rowSchema->isAppendOnly() === true) {
@@ -1004,6 +1049,58 @@ class SaveObjects {
 	}//end resolveSafeguardRowSchema()
 
 	/**
+	 * The identity candidates a row carries: `id`, `@self.id` and `@self.uuid`.
+	 *
+	 * Only non-empty strings count; the writers accept nothing else as an id.
+	 *
+	 * @param array $object Raw row data.
+	 *
+	 * @return string[] The distinct candidates.
+	 */
+	private function rowIdentityCandidates(array $object): array {
+		$self = [];
+		if (is_array($object['@self'] ?? null) === true) {
+			$self = $object['@self'];
+		}
+
+		$candidates = [];
+		foreach ([($object['id'] ?? null), ($self['id'] ?? null), ($self['uuid'] ?? null)] as $candidate) {
+			if (is_string($candidate) === true && trim($candidate) !== '') {
+				$candidates[$candidate] = $candidate;
+			}
+		}
+
+		return array_values($candidates);
+	}//end rowIdentityCandidates()
+
+	/**
+	 * The one identity of a row, shared by the guard, the prefetch and the writers.
+	 *
+	 * @param array $object Raw row data.
+	 *
+	 * @return string|null The identity, or null when the row names none (or names several: see rowIdentityIsAmbiguous()).
+	 */
+	private function rowIdentity(array $object): ?string {
+		$candidates = $this->rowIdentityCandidates(object: $object);
+		if (count($candidates) !== 1) {
+			return null;
+		}
+
+		return $candidates[0];
+	}//end rowIdentity()
+
+	/**
+	 * Whether a row names more than one distinct identity.
+	 *
+	 * @param array $object Raw row data.
+	 *
+	 * @return bool True when the guard and a writer could pick different rows.
+	 */
+	private function rowIdentityIsAmbiguous(array $object): bool {
+		return count($this->rowIdentityCandidates(object: $object)) > 1;
+	}//end rowIdentityIsAmbiguous()
+
+	/**
 	 * Resolve the CRUD action + existing entity for a bulk row.
 	 *
 	 * UPDATE = the row carries a UUID that matches an existing object in the
@@ -1025,8 +1122,8 @@ class SaveObjects {
 		?Register $rowRegister = null,
 		array $existingByUuid = []
 	): array {
-		$uuid = $object['@self']['uuid'] ?? $object['@self']['id'] ?? $object['id'] ?? null;
-		if ($uuid === null || $uuid === '' || is_string($uuid) === false) {
+		$uuid = $this->rowIdentity(object: $object);
+		if ($uuid === null) {
 			return [null, 'create', null];
 		}
 
@@ -1123,8 +1220,8 @@ class SaveObjects {
 		$groups = [];
 
 		foreach ($objects as $object) {
-			$uuid = $object['@self']['uuid'] ?? $object['@self']['id'] ?? $object['id'] ?? null;
-			if ($uuid === null || $uuid === '' || is_string($uuid) === false) {
+			$uuid = $this->rowIdentity(object: $object);
+			if ($uuid === null) {
 				continue;
 			}
 
@@ -2029,7 +2126,7 @@ class SaveObjects {
 		// Created objects → ObjectCreatedEvent.
 		foreach ($createdEntities as $entity) {
 			try {
-				$this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $entity));
+				(new ObjectEventGate(events: $this->eventDispatcher))->created(object: $entity);
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					message: '[SaveObjects] Failed to dispatch ObjectCreatedEvent for bulk object',
@@ -2043,9 +2140,7 @@ class SaveObjects {
 		foreach ($updatedEntities as $pair) {
 			$entity = $pair['new'];
 			try {
-				$this->eventDispatcher->dispatchTyped(
-					new ObjectUpdatedEvent(newObject: $entity, oldObject: ($pair['old'] ?? $entity))
-				);
+				(new ObjectEventGate(events: $this->eventDispatcher))->updated(new: $entity, old: ($pair['old'] ?? $entity));
 			} catch (\Throwable $e) {
 				$this->logger->warning(
 					message: '[SaveObjects] Failed to dispatch ObjectUpdatedEvent for bulk object',
@@ -3258,4 +3353,41 @@ class SaveObjects {
 
 		return [];
 	}//end scanStringForRelation()
+
+	/**
+	 * Drop the decision-table rows the single save would have refused.
+	 *
+	 * The bulk writer dispatches no ObjectCreatingEvent, so the duplicate-key and executability checks of
+	 * DecisionTableValidationListener never ran for a bulk save. Runs before the other safeguards, on the caller's
+	 * own array positions, so a refusal names the row it is about.
+	 *
+	 * @param array<int|string, array<string, mixed>> $objects  The raw rows.
+	 * @param Register|string|int|null                $register Default register context.
+	 * @param Schema|string|int|null                  $schema   Default schema context.
+	 * @param array                                   $result   Result accumulator (mutated in place).
+	 *
+	 * @return array<int|string, array<string, mixed>> The rows that may go on.
+	 */
+	private function refuseInvalidDecisionTables(
+		array $objects,
+		Register|string|int|null $register,
+		Schema|string|int|null $schema,
+		array &$result
+	): array {
+		if ($this->decisionTables === null) {
+			return $objects;
+		}
+
+		foreach ($this->decisionTables->refusals(objects: $objects, register: $register, schema: $schema) as $position => $reason) {
+			$index = null;
+			if (is_int($position) === true) {
+				$index = $position;
+			}
+
+			$this->recordSafeguardRejection(object: $objects[$position], reason: $reason, result: $result, index: $index);
+			unset($objects[$position]);
+		}
+
+		return $objects;
+	}//end refuseInvalidDecisionTables()
 }//end class

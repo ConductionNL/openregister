@@ -25,9 +25,11 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Listener\GeneratedIdentifierListener;
+use OCA\OpenRegister\Service\Object\ObjectEventGate;
 use OCA\OpenRegister\Service\Schemas\GeneratedIdentifierDeclaration;
 use OCA\OpenRegister\Service\SequenceService;
 use OCP\EventDispatcher\Event;
+use OCP\EventDispatcher\IEventDispatcher;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -78,7 +80,9 @@ class GeneratedIdentifierListenerTest extends TestCase {
 		$this->listener = new GeneratedIdentifierListener(
 			$this->schemaMapper,
 			$this->sequences,
-			$this->createMock(originalClassName: LoggerInterface::class)
+			$this->createMock(originalClassName: LoggerInterface::class),
+			// The real gate: it decides what a draft is held from, here as after a write.
+			new ObjectEventGate($this->createMock(originalClassName: IEventDispatcher::class))
 		);
 
 	}//end setUp()
@@ -410,6 +414,118 @@ class GeneratedIdentifierListenerTest extends TestCase {
 		);
 
 	}//end testAnUpdateNeverTakesANumber()
+
+	/**
+	 * An object in a given status, carrying a body and a schema.
+	 *
+	 * @param string|null $status The stored status.
+	 * @param array<string, mixed> $body The object's data.
+	 *
+	 * @return ObjectEntity The object.
+	 */
+	private function objectIn(?string $status, array $body): ObjectEntity {
+		$object = $this->objectWith(body: $body);
+		$object->setStatus($status);
+
+		return $object;
+
+	}//end objectIn()
+
+	/**
+	 * A draft takes no number: not on its first save, and not on a later one (decision 201).
+	 *
+	 * @return void
+	 */
+	public function testADraftTakesNoNumber(): void {
+		$this->schemaWith(properties: ['identifier' => $this->declaredProperty()]);
+		$this->sequences->expects($this->never())->method('reserveNext');
+		$this->sequences->expects($this->never())->method('advanceTo');
+
+		$draft = $this->objectIn(status: 'draft', body: ['title' => 'Half typed']);
+		$this->listener->handle(new ObjectCreatingEvent($draft));
+
+		$this->assertArrayNotHasKey(key: 'identifier', array: $draft->getObject());
+
+		$later = $this->objectIn(status: 'draft', body: ['title' => 'Typed a little more']);
+		$this->listener->handle(new ObjectUpdatingEvent($later, $draft));
+
+		$this->assertArrayNotHasKey(key: 'identifier', array: $later->getObject());
+
+	}//end testADraftTakesNoNumber()
+
+	/**
+	 * The save that leaves draft issues the number, once, and keeps the rest of the body.
+	 *
+	 * @return void
+	 */
+	public function testLeavingDraftIssuesTheNumber(): void {
+		$this->schemaWith(properties: ['identifier' => $this->declaredProperty()]);
+		$this->sequences->expects($this->once())->method('reserveNext')->willReturn(7);
+
+		$draft = $this->objectIn(status: 'draft', body: ['title' => 'A case', 'identifier' => null]);
+		$active = $this->objectIn(status: 'active', body: ['title' => 'A case', 'identifier' => null]);
+		$event = new ObjectUpdatingEvent($active, $draft);
+
+		$this->listener->handle($event);
+
+		$this->assertFalse(condition: $event->isPropagationStopped());
+		$this->assertMatchesRegularExpression(
+			pattern: '/^Z-\d{4}-00007$/',
+			string: (string)($active->getObject()['identifier'] ?? '')
+		);
+		$this->assertSame(expected: 'A case', actual: ($active->getObject()['title'] ?? null));
+
+		// Control: from here on it is an ordinary object. Its next save takes
+		// no number, and its number is frozen.
+		$issued = $active->getObject()['identifier'];
+		$next = $this->objectIn(status: 'active', body: ['title' => 'A case', 'identifier' => 'Z-1999-00001']);
+		$refused = new ObjectUpdatingEvent($next, $active);
+		$this->listener->handle($refused);
+
+		$this->assertTrue(condition: $refused->isPropagationStopped());
+		$this->assertSame(expected: $issued, actual: ($refused->getErrors()['issued'] ?? null));
+
+	}//end testLeavingDraftIssuesTheNumber()
+
+	/**
+	 * A number the draft already carried is kept on leaving draft, and the counter moves past it, as on a create.
+	 *
+	 * @return void
+	 */
+	public function testLeavingDraftKeepsASuppliedNumber(): void {
+		$this->schemaWith(properties: ['identifier' => $this->declaredProperty()]);
+		$this->sequences->expects($this->never())->method('reserveNext');
+		$this->sequences->expects($this->once())->method('advanceTo');
+		$year = date(format: 'Y');
+
+		$draft = $this->objectIn(status: 'draft', body: ['identifier' => 'Z-' . $year . '-00042']);
+		$active = $this->objectIn(status: 'active', body: ['identifier' => 'Z-' . $year . '-00042']);
+
+		$this->listener->handle(new ObjectUpdatingEvent($active, $draft));
+
+		$this->assertSame(expected: 'Z-' . $year . '-00042', actual: $active->getObject()['identifier']);
+
+	}//end testLeavingDraftKeepsASuppliedNumber()
+
+	/**
+	 * When the counter is unavailable, the save that leaves draft is refused, as a create is.
+	 *
+	 * @return void
+	 */
+	public function testAnUnavailableCounterRefusesLeavingDraft(): void {
+		$this->schemaWith(properties: ['identifier' => $this->declaredProperty()]);
+		$this->sequences->method('reserveNext')->willThrowException(new \RuntimeException('counter down'));
+
+		$event = new ObjectUpdatingEvent(
+			$this->objectIn(status: 'active', body: ['title' => 'A case']),
+			$this->objectIn(status: 'draft', body: ['title' => 'A case'])
+		);
+		$this->listener->handle($event);
+
+		$this->assertTrue(condition: $event->isPropagationStopped());
+		$this->assertSame(expected: 'generated-identifier-unavailable', actual: ($event->getErrors()['code'] ?? null));
+
+	}//end testAnUnavailableCounterRefusesLeavingDraft()
 
 	/**
 	 * Some other event is not this listener's business.

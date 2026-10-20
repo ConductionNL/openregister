@@ -421,8 +421,35 @@ class RelatedRowExistsClauseTest extends TestCase {
 	public function testANonIdentifierColumnNameIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
 
-		$this->renderColumns([['field' => 'found"; DROP TABLE x --', 'operator' => 'eq', 'value' => '1']]);
+		// Leading digit: the column-naming rule keeps it, and it is not an identifier.
+		$this->renderColumns([['field' => '9lives', 'operator' => 'eq', 'value' => '1']]);
 	}//end testANonIdentifierColumnNameIsRefused()
+
+	/**
+	 * The injection payload is neutralised by the column-naming rule, so no quote or statement break reaches the SQL.
+	 *
+	 * @return void
+	 */
+	public function testAnInjectionPayloadNeverReachesTheSql(): void {
+		$sql = $this->renderColumns([['field' => 'found"; DROP TABLE x --', 'operator' => 'eq', 'value' => '1']])['sql'];
+
+		$this->assertStringContainsString('"found_drop_table_x"', $sql);
+		$this->assertStringNotContainsString('DROP', $sql);
+		$this->assertStringNotContainsString(';', $sql);
+	}//end testAnInjectionPayloadNeverReachesTheSql()
+
+	/**
+	 * The identifier check ends at the end of the string, not before a trailing newline.
+	 *
+	 * @return void
+	 */
+	public function testAnIdentifierWithATrailingNewlineIsRefused(): void {
+		$method = new \ReflectionMethod(RelatedRowExistsClause::class, 'quoteIdentifier');
+
+		$this->assertSame('"case_id"', $method->invoke($this->clause, 'case_id'));
+		$this->expectException(InvalidArgumentException::class);
+		$method->invoke($this->clause, "case_id\n");
+	}//end testAnIdentifierWithATrailingNewlineIsRefused()
 
 	/**
 	 * An unknown storage is refused rather than guessed.

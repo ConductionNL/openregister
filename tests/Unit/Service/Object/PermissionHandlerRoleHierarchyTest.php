@@ -347,15 +347,17 @@ class PermissionHandlerRoleHierarchyTest extends TestCase {
 			schema: $schema
 		);
 
-		// viewer wasn't assigned and ghost is unknown; nothing got
-		// added to the authorization map.
-		$this->assertArrayNotHasKey('read', $expanded);
+		// viewer wasn't assigned and ghost is unknown, so the block granted
+		// nobody anything. It comes back closed rather than empty: an empty
+		// block is "no authorization", which is open to every signed in account.
+		$this->assertSame(['read' => [], 'create' => [], 'update' => [], 'delete' => []], $expanded);
 		$this->assertArrayNotHasKey('roles', $expanded);
 	}//end testUnknownRoleAssignmentLoggedAndSkipped()
 
 	/**
 	 * Register without role definitions but a schema that references
-	 * roles logs a warning and returns the (rolesless) authorization.
+	 * roles logs a warning and returns a block that grants nobody, never the
+	 * empty block that reads as default-open.
 	 *
 	 * @return void
 	 */
@@ -375,5 +377,25 @@ class PermissionHandlerRoleHierarchyTest extends TestCase {
 		);
 
 		$this->assertArrayNotHasKey('roles', $expanded);
+		$this->assertSame(['read' => [], 'create' => [], 'update' => [], 'delete' => []], $expanded);
 	}//end testRegisterWithoutRoleDefinitionsLoggedAndSkipped()
+
+	/**
+	 * Direct rules beside an unresolvable roles block are kept as written.
+	 *
+	 * The block is already non-empty, so it already refuses an unlisted verb;
+	 * nothing is added to it.
+	 *
+	 * @return void
+	 */
+	public function testDirectRulesBesideUnresolvableRolesAreKept(): void {
+		$schema = $this->makeSchemaWithRegisterRoles([]);
+
+		$expanded = $this->handler->expandRoles(
+			authorization: ['roles' => ['viewer' => ['public']], 'read' => ['behandelaars']],
+			schema: $schema
+		);
+
+		$this->assertSame(['read' => ['behandelaars']], $expanded);
+	}//end testDirectRulesBesideUnresolvableRolesAreKept()
 }//end class

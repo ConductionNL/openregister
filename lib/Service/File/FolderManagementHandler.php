@@ -855,6 +855,9 @@ class FolderManagementHandler {
 	 * and the object records that folder's id. Both must agree, so a folder
 	 * that merely carries another object's name is not taken for its folder.
 	 *
+	 * Any failure reads as "no object": a caller that must tell an unowned
+	 * file from a lookup that failed uses {@see ManagedFileOwnerLookup::find()}.
+	 *
 	 * @param Node $file The file.
 	 *
 	 * @return ObjectEntity|null The object, or null when no object owns the file.
@@ -863,26 +866,10 @@ class FolderManagementHandler {
 	 */
 	public function getObjectForFile(Node $file): ?ObjectEntity {
 		try {
-			$parent = $file->getParent();
-			$found = $this->objectEntityMapper->findAcrossAllSources(
-				identifier: $parent->getName(),
-				_rbac: false,
-				_multitenancy: false
-			);
+			return (new ManagedFileOwnerLookup(objects: $this->objectEntityMapper))->find(file: $file);
 		} catch (\Throwable $e) {
 			return null;
 		}
-
-		$object = ($found['object'] ?? null);
-		if ($object instanceof ObjectEntity === false) {
-			return null;
-		}
-
-		if ((string)$object->getFolder() !== (string)$parent->getId()) {
-			return null;
-		}
-
-		return $object;
 	}//end getObjectForFile()
 
 	/**

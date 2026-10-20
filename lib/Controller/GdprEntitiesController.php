@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Service\Decision\DecisionVisibility;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -58,6 +59,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI: the tenth is the REQ-ROD-002 decision filter.
  */
 class GdprEntitiesController extends Controller {
 	/**
@@ -72,6 +74,7 @@ class GdprEntitiesController extends Controller {
 	 * @param IUserSession $userSession Current user (admin gate)
 	 * @param IGroupManager $groupManager Group manager (admin gate)
 	 * @param OrganisationService $organisationService Org-scoping helper
+	 * @param DecisionVisibility $decisionVisibility Masks another reviewer's hidden decision
 	 */
 	public function __construct(
 		string $appName,
@@ -83,6 +86,7 @@ class GdprEntitiesController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly OrganisationService $organisationService,
+		private readonly DecisionVisibility $decisionVisibility,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -239,7 +243,8 @@ class GdprEntitiesController extends Controller {
 	 */
 	public function show(int $id): JSONResponse {
 		try {
-			if ($this->userSession->getUser() === null) {
+			$user = $this->userSession->getUser();
+			if ($user === null) {
 				return $this->unauthorized();
 			}
 
@@ -268,7 +273,11 @@ class GdprEntitiesController extends Controller {
 				data: [
 					'success' => true,
 					'data' => $entity->jsonSerialize(),
-					'relations' => array_map(fn ($r) => $r->jsonSerialize(), $relations),
+					// REQ-ROD-002: another reviewer's decision is hidden under hideOthers.
+					'relations' => $this->decisionVisibility->presentAll(
+						relations: $relations,
+						userId: $user->getUID()
+					),
 				]
 			);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {

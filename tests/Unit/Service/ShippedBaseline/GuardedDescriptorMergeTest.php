@@ -25,6 +25,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ShippedBaseline;
 use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
 use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -405,4 +406,139 @@ class GuardedDescriptorMergeTest extends TestCase {
 			'a member the instance added to required is a local change'
 		);
 	}//end testAddingARequiredMemberIsAChange()
+
+	/**
+	 * The portaliq 0.96.0 to 0.97.0 upgrade, as the instance held it.
+	 *
+	 * @return array{baseline: array<string, mixed>, live: array<string, mixed>, incoming: array<string, mixed>}
+	 */
+	private function portaliqUpgrade(): array {
+		return [
+			// 0.96.0 shipped read only.
+			'baseline' => ['authorization' => ['read' => ['authenticated']]],
+			// The instance carried an export rule the file never shipped.
+			'live' => ['authorization' => ['read' => ['authenticated'], 'export' => ['authenticated']]],
+			// 0.97.0 closes both to the staff group.
+			'incoming' => ['authorization' => ['read' => ['portaliq-medewerkers'], 'export' => ['portaliq-medewerkers']]],
+		];
+	}//end portaliqUpgrade()
+
+	/**
+	 * 🔴 AN AUTHORIZATION BLOCK IS NEVER MERGED KEY BY KEY.
+	 *
+	 * Per key, the upgrade took `read` from the app and kept `export` from the
+	 * instance: staff-only reading, export for every signed-in account. That
+	 * policy was written by nobody. The block settles whole: both sides moved
+	 * it, so the instance's block stands and ONE conflict names the block.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testAnAuthorizationBlockIsNeverMergedKeyByKey(): void {
+		$case = $this->portaliqUpgrade();
+		$result = $this->merge->merge(baseline: $case['baseline'], live: $case['live'], incoming: $case['incoming']);
+
+		$this->assertEquals(
+			['read' => ['authenticated'], 'export' => ['authenticated']],
+			$result['merged']['authorization'],
+			'the block is the instance\'s, whole, never read from one side and export from the other'
+		);
+		$this->assertSame(['authorization'], array_column($result['conflicts'], 'path'));
+		$this->assertEquals(
+			['read' => ['portaliq-medewerkers'], 'export' => ['portaliq-medewerkers']],
+			$result['conflicts'][0]['shipped']
+		);
+		$this->assertSame(['read' => ['authenticated']], $result['baseline']['authorization'], 'the baseline stays, so the conflict is found again');
+	}//end testAnAuthorizationBlockIsNeverMergedKeyByKey()
+
+	/**
+	 * A decision on the block root takes the shipped policy whole, and says it replaced a local one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testADecisionOnTheBlockTakesTheShippedPolicyWhole(): void {
+		$case = $this->portaliqUpgrade();
+		$result = $this->merge->merge(
+			baseline: $case['baseline'],
+			live: $case['live'],
+			incoming: $case['incoming'],
+			decisions: ['authorization']
+		);
+
+		$this->assertEquals($case['incoming']['authorization'], $result['merged']['authorization']);
+		$this->assertSame([], $result['conflicts']);
+		$this->assertSame(['authorization'], $result['replacedLocal']);
+		$this->assertEquals($case['incoming']['authorization'], $result['baseline']['authorization']);
+	}//end testADecisionOnTheBlockTakesTheShippedPolicyWhole()
+
+	/**
+	 * A key the app dropped from a block it changed alone is dropped too: the block is the app's.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testAnUpstreamOnlyBlockChangeIsTakenWhole(): void {
+		$block = ['read' => ['authenticated'], 'export' => ['authenticated']];
+		$result = $this->merge->merge(
+			baseline: ['authorization' => $block],
+			live: ['authorization' => $block],
+			incoming: ['authorization' => ['read' => ['staff']]]
+		);
+
+		$this->assertSame(['read' => ['staff']], $result['merged']['authorization']);
+		$this->assertSame([], $result['conflicts']);
+		$this->assertSame([], $result['replacedLocal']);
+	}//end testAnUpstreamOnlyBlockChangeIsTakenWhole()
+
+	/**
+	 * A property's authorization is its own block, settled apart from the schema's.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testAPropertyAuthorizationIsItsOwnBlock(): void {
+		$property = static fn (array $auth): array => ['properties' => ['bsn' => ['type' => 'string', 'authorization' => $auth]]];
+
+		$result = $this->merge->merge(
+			baseline: $property(['read' => ['a']]),
+			live: $property(['read' => ['a'], 'update' => ['b']]),
+			incoming: $property(['read' => ['c'], 'update' => ['c']])
+		);
+
+		$this->assertEquals(['read' => ['a'], 'update' => ['b']], $result['merged']['properties']['bsn']['authorization']);
+		$this->assertSame(['properties.bsn.authorization'], array_column($result['conflicts'], 'path'));
+		$this->assertSame('string', $result['merged']['properties']['bsn']['type']);
+	}//end testAPropertyAuthorizationIsItsOwnBlock()
+
+	/**
+	 * Under an administrator's decision, a local block the shipped definition does not declare is kept, not dropped.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testADecisionKeepsALocalBlockTheShippedDefinitionLacks(): void {
+		$parts = new DescriptorParts();
+		$decision = new ShippedAuthorizationDecision();
+		$merge = new GuardedDescriptorMerge(parts: $parts, comparator: new DivergenceComparator(parts: $parts), decision: $decision);
+		$local = ['read' => ['staff'], 'update' => ['staff']];
+
+		$result = $decision->run(
+			via: 'import',
+			operation: static fn (): array => $merge->merge(
+				baseline: ['title' => 'T'],
+				live: ['title' => 'T', 'authorization' => $local],
+				incoming: ['title' => 'T2']
+			)
+		);
+
+		$this->assertSame('T2', $result['merged']['title']);
+		$this->assertEquals($local, $result['merged']['authorization']);
+		$this->assertSame([], $result['replacedLocal']);
+	}//end testADecisionKeepsALocalBlockTheShippedDefinitionLacks()
 }//end class

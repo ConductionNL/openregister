@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} неуспешни",
         "0 = unlimited": "0 = неограничено",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Потокът изпълнява поредица от стъпки, когато нещо се случи — обект се променя, график се задейства или го стартирате сами. Този списък показва потоците на всички приложения.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "Настроена е двойка ключове VAPID. Потребителите могат да включат известията в браузъра от личните си настройки; те се доставят дори когато разделът на браузъра е затворен.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "Настроена е двойка ключове VAPID. Потребителите могат да включат известията в браузъра от потребителските си настройки; те се доставят дори когато разделът на браузъра е затворен.",
         "A deactivation request is pending.": "Заявка за деактивиране е в очакване.",
         "AI Assistant": "AI асистент",
         "AI Chat": "AI чат",

@@ -43,7 +43,7 @@
         ", {failed} failed": ", {failed} fehlgeschlagen",
         "0 = unlimited": "0 = unbegrenzt",
         "A flow runs a series of steps when something happens — an object changes, a schedule fires, or you run it yourself. This list shows every app's flows.": "Ein Flow führt eine Reihe von Schritten aus, wenn etwas passiert — ein Objekt ändert sich, ein Zeitplan wird ausgelöst oder Sie führen ihn selbst aus. Diese Liste zeigt die Flows jeder App.",
-        "A VAPID keypair is configured. Users can opt in to browser notifications from their personal settings, which are delivered even when the browser tab is closed.": "Ein VAPID-Schlüsselpaar ist konfiguriert. Benutzer können Browser-Benachrichtigungen in ihren persönlichen Einstellungen aktivieren; diese werden auch dann zugestellt, wenn der Browser-Tab geschlossen ist.",
+        "A VAPID keypair is configured. Users can opt in to browser notifications from their user settings, which are delivered even when the browser tab is closed.": "Ein VAPID-Schlüsselpaar ist konfiguriert. Benutzer können Browser-Benachrichtigungen in ihren Benutzereinstellungen aktivieren; diese werden auch dann zugestellt, wenn der Browser-Tab geschlossen ist.",
         "A deactivation request is pending.": "Eine Deaktivierungsanfrage ist ausstehend.",
         "AI Assistant": "KI-Assistent",
         "AI Chat": "KI-Chat",

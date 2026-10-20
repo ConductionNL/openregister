@@ -54,6 +54,10 @@ use RuntimeException;
  * classifies the failure mode when something goes wrong. Per-provider
  * specifics (URL paths, payload shapes) live in the provider
  * implementations themselves. The router only provides the safe transport.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The transport meets the app
+ * manager, the container, the object service, the source entity, the fleet id
+ * resolver and the connector's call signature; each is one side of the join.
  */
 class ExternalIntegrationRouter {
 	use ConnectorRequestTrait;
@@ -263,6 +267,27 @@ class ExternalIntegrationRouter {
 			);
 		}//end try
 	}//end callWithMeta()
+
+	/**
+	 * The `configuration` array of the provider's connector source, so a
+	 * provider can ask only what its source allows.
+	 *
+	 * @param IntegrationProvider $provider The provider whose source to read.
+	 *
+	 * @return array<string,mixed> The source's `configuration` (possibly empty).
+	 *
+	 * @throws ProviderUnavailableException When the connector or the source is missing.
+	 *
+	 * @spec openspec/specs/integration-person-lookup/spec.md#requirement-a-call-may-be-recorded-without-its-bodies
+	 */
+	public function sourceConfiguration(IntegrationProvider $provider): array {
+		$this->assertProviderIsExternal(provider: $provider);
+		$this->assertOpenConnectorAvailable();
+
+		$source = $this->loadSource(sourceId: (string)$provider->getOpenConnectorSource(), providerId: $provider->getId());
+
+		return $this->readSourceConfiguration(source: $source);
+	}//end sourceConfiguration()
 
 	/**
 	 * Cheap "is the connector reachable at all" check.
@@ -639,14 +664,10 @@ class ExternalIntegrationRouter {
 	/**
 	 * Invoke the upstream call via OpenConnector's CallService.
 	 *
-	 * The CallService API has varied across OpenConnector versions;
-	 * this method tries the canonical method names and falls back to
-	 * an exception that the caller wraps as upstream-down.
-	 *
 	 * @param mixed $source Resolved source entity.
 	 * @param string $method HTTP method.
 	 * @param string $path Path relative to source base URL.
-	 * @param array<string,mixed> $options Call options (query / body / headers).
+	 * @param array<string,mixed> $options Call options (query / body / headers / withholdBodies).
 	 *
 	 * @return array<string,mixed> Decoded response body.
 	 *
@@ -654,36 +675,19 @@ class ExternalIntegrationRouter {
 	 *                           caller wraps this as ProviderUnavailableException.
 	 */
 	private function invoke($source, string $method, string $path, array $options): array {
-		$callService = $this->container->get($this->callServiceClass());
-		$options = $this->connectorOptions(options: $options);
-		$path = $this->connectorEndpoint(source: $source, path: $path);
+		$response = $this->dispatch(source: $source, method: $method, path: $path, options: $options);
 
-		if (method_exists($callService, 'call') === true) {
-			$response = $callService->call($source, $path, $method, $options);
-			$this->assertUpstreamOk(response: $response);
-			return $this->decodeResponse(response: $response);
-		}
-
-		if (method_exists($callService, 'request') === true) {
-			$response = $callService->request($source, $method, $path, $options);
-			$this->assertUpstreamOk(response: $response);
-			return $this->decodeResponse(response: $response);
-		}
-
-		throw new RuntimeException(
-			'The connector CallService does not expose a known call/request method.'
-		);
+		return $this->decodeResponse(response: $response);
 	}//end invoke()
 
 	/**
 	 * Invoke the upstream call like {@see invoke()} but return both the
-	 * decoded body and the extracted response metadata. Keeps the same
-	 * CallService method-name fallback + >= 400 status assertion.
+	 * decoded body and the extracted response metadata.
 	 *
 	 * @param mixed $source Resolved source entity.
 	 * @param string $method HTTP method.
 	 * @param string $path Path relative to source base URL.
-	 * @param array<string,mixed> $options Call options (query / body / headers).
+	 * @param array<string,mixed> $options Call options (query / body / headers / withholdBodies).
 	 *
 	 * @return array{body: array<string,mixed>, meta: array{status: int, durationMs: int, correlationId: ?string, headers: array<string,string>}}
 	 *
@@ -691,32 +695,77 @@ class ExternalIntegrationRouter {
 	 *                           wraps this as ProviderUnavailableException.
 	 */
 	private function invokeWithMeta($source, string $method, string $path, array $options): array {
+		$response = $this->dispatch(source: $source, method: $method, path: $path, options: $options);
+
+		return [
+			'body' => $this->decodeResponse(response: $response),
+			'meta' => $this->extractMeta(response: $response),
+		];
+	}//end invokeWithMeta()
+
+	/**
+	 * Hand the call to the connector's CallService and assert the upstream
+	 * status. The CallService API has varied across OpenConnector versions, so
+	 * this tries `call` and then `request`.
+	 *
+	 * With the `withholdBodies` option the connector records the call without
+	 * its request and response bodies. A connector whose `call` has no such
+	 * parameter is not called at all, and the call is refused with its own
+	 * cause (`connector-cannot-withhold-bodies`) before PHP gets the chance to
+	 * refuse the unknown named argument: that would read as an outage and be
+	 * logged at error level on every call of an older connector.
+	 *
+	 * @param mixed $source Resolved source entity.
+	 * @param string $method HTTP method.
+	 * @param string $path Path relative to source base URL.
+	 * @param array<string,mixed> $options Call options (query / body / headers / withholdBodies).
+	 *
+	 * @return mixed The raw CallService response.
+	 *
+	 * @throws \RuntimeException When CallService is unreachable.
+	 * @throws ProviderUnavailableException When bodies are to be withheld and the connector cannot.
+	 *
+	 * @spec openspec/specs/integration-person-lookup/spec.md#requirement-a-call-may-be-recorded-without-its-bodies
+	 */
+	private function dispatch($source, string $method, string $path, array $options) {
+		$withholdBodies = (($options['withholdBodies'] ?? false) === true);
+		unset($options['withholdBodies']);
+
 		$callService = $this->container->get($this->callServiceClass());
+		if ($withholdBodies === true && (new CallSignature())->accepts(service: $callService, method: 'call', name: 'withholdBodies') === false) {
+			$this->logger->info(
+				'[ExternalIntegrationRouter] The connector CallService cannot withhold bodies; the call is not made.'
+			);
+			throw new ProviderUnavailableException(
+				message: 'The connector cannot record a call without its bodies, so the call is not made.',
+				cause: ProviderUnavailableException::CAUSE_CONNECTOR_CANNOT_WITHHOLD_BODIES
+			);
+		}
+
 		$options = $this->connectorOptions(options: $options);
 		$path = $this->connectorEndpoint(source: $source, path: $path);
 
 		if (method_exists($callService, 'call') === true) {
-			$response = $callService->call($source, $path, $method, $options);
+			$named = [];
+			if ($withholdBodies === true) {
+				$named = ['withholdBodies' => true];
+			}
+
+			$response = $callService->call($source, $path, $method, $options, ...$named);
 			$this->assertUpstreamOk(response: $response);
-			return [
-				'body' => $this->decodeResponse(response: $response),
-				'meta' => $this->extractMeta(response: $response),
-			];
+			return $response;
 		}
 
-		if (method_exists($callService, 'request') === true) {
+		if (method_exists($callService, 'request') === true && $withholdBodies === false) {
 			$response = $callService->request($source, $method, $path, $options);
 			$this->assertUpstreamOk(response: $response);
-			return [
-				'body' => $this->decodeResponse(response: $response),
-				'meta' => $this->extractMeta(response: $response),
-			];
+			return $response;
 		}
 
 		throw new RuntimeException(
 			'The connector CallService does not expose a known call/request method.'
 		);
-	}//end invokeWithMeta()
+	}//end dispatch()
 
 	/**
 	 * Extract transport metadata from a CallService response (OpenConnector

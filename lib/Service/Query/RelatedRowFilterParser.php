@@ -63,6 +63,30 @@ class RelatedRowFilterParser {
 	public const KEY = '_related';
 
 	/**
+	 * The query key of the forward blocks: the object's own property references
+	 * a row of the named schema.
+	 *
+	 *     _referenced[subsidieAanvraag][subsidieaanvraag][case]=<case uuid>
+	 *
+	 * One block over the schema `subsidieAanvraag`, joined on the object's
+	 * `subsidieaanvraag` property, with one condition on the referenced row.
+	 * Same grammar, operators and numbered blocks as `_related`.
+	 */
+	public const FORWARD_KEY = '_referenced';
+
+	/**
+	 * Constructor.
+	 *
+	 * @param string $key KEY for inverse blocks, FORWARD_KEY for forward ones.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		private readonly string $key = self::KEY,
+	) {
+	}//end __construct()
+
+	/**
 	 * The operators a row condition may use.
 	 *
 	 * The same six the object query already accepts, spelled the same way, read
@@ -84,16 +108,17 @@ class RelatedRowFilterParser {
 	 * @throws InvalidArgumentException When a block is unusable.
 	 *
 	 * @spec openspec/changes/query-related-schema-rows/specs/zoeken-filteren/spec.md
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function parse(array $query): array {
-		$raw = ($query[self::KEY] ?? null);
+		$raw = ($query[$this->key] ?? null);
 		if ($raw === null) {
 			return [];
 		}
 
 		if (is_array($raw) === false || $raw === []) {
 			throw new InvalidArgumentException(
-				sprintf('%s must be an object of schema blocks, and it is not.', self::KEY)
+				sprintf('%s must be an object of schema blocks, and it is not.', $this->key)
 			);
 		}
 
@@ -104,7 +129,7 @@ class RelatedRowFilterParser {
 				throw new InvalidArgumentException(
 					sprintf(
 						'%s[%s] must name a foreign key and at least one condition.',
-						self::KEY,
+						$this->key,
 						(string)$schema
 					)
 				);
@@ -118,6 +143,21 @@ class RelatedRowFilterParser {
 
 		return $filters;
 	}//end parse()
+
+	/**
+	 * The direction the blocks under this parser's key run.
+	 *
+	 * @return string RelatedRowFilter::DIRECTION_FORWARD for `_referenced`, else inverse.
+	 *
+	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
+	 */
+	private function direction(): string {
+		if ($this->key === self::FORWARD_KEY) {
+			return RelatedRowFilter::DIRECTION_FORWARD;
+		}
+
+		return RelatedRowFilter::DIRECTION_INVERSE;
+	}//end direction()
 
 	/**
 	 * The filters one schema block declares, in the order written.
@@ -140,7 +180,7 @@ class RelatedRowFilterParser {
 				throw new InvalidArgumentException(
 					sprintf(
 						'%s[%s][%s] must carry at least one condition.',
-						self::KEY,
+						$this->key,
 						$schemaSlug,
 						(string)$foreignKey
 					)
@@ -153,8 +193,9 @@ class RelatedRowFilterParser {
 					foreignKey: $key,
 					conditions: $this->conditions(
 						raw: $conditions,
-						path: sprintf('%s[%s][%s]', self::KEY, $schemaSlug, $key)
-					)
+						path: sprintf('%s[%s][%s]', $this->key, $schemaSlug, $key)
+					),
+					direction: $this->direction()
 				);
 			}
 		}

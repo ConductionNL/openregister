@@ -441,6 +441,16 @@ class PermissionHandler {
 			return true;
 		}
 
+		// A draft answers to its owner only (decision 180). The read predicate
+		// of the list queries keeps it from everybody else, but a check that
+		// is handed the stored object (bulk save, bulk delete, the readable
+		// audit trail, a transition, a file) is a second door onto the same
+		// object and must say the same. Asked before the cache: an object
+		// that is not a draft costs one comparison.
+		if ($object !== null && $this->draftIsKeptFromCaller(object: $object, schema: $schema, userId: $userId) === true) {
+			return false;
+		}
+
 		// Build a per-request cache key. The object UUID (when present) is part
 		// of the key so conditional rules with `match` clauses are still
 		// re-evaluated per object — the cache only deduplicates repeated calls
@@ -491,6 +501,63 @@ class PermissionHandler {
 
 		return $verdict;
 	}//end hasPermission()
+
+	/**
+	 * Whether the object is a draft that its schema keeps from this caller, whatever the action.
+	 *
+	 * The one rule every explicit draft guard asks
+	 * (DraftStatusPolicy::keptFromCaller()): an administrator and a system
+	 * caller without a user (occ, cron, repair steps, a SystemOperationContext)
+	 * are not kept from a draft, the draft's owner is not, and everybody else is,
+	 * including an anonymous web caller. A schema that sets
+	 * `draftsVisible: true` shows its drafts to anyone who may read the
+	 * schema. This is NOT identical to the read predicate in one respect: the
+	 * list query (MagicRbacHandler) also admits the owning group's members and
+	 * the system user's rows outside its draft clause, while this rule knows the
+	 * draft's owner only. It is deliberately the stricter of the two for those
+	 * rows, so a group-owned draft that a list shows is still refused here.
+	 * Every verb is refused, not only `read`: somebody who cannot
+	 * read a draft cannot change, delete or read the history of it either.
+	 *
+	 * @param ObjectEntity $object The object the check is about.
+	 * @param Schema       $schema Its schema.
+	 * @param string|null  $userId The caller, null for the session user.
+	 *
+	 * @return bool True when the caller is refused every action on this object.
+	 *
+	 * @spec openspec/changes/draft-owner-activation-and-lifetime/specs/form-destination/spec.md#requirement-a-draft-must-not-be-changed-by-somebody-who-cannot-read-it
+	 */
+	private function draftIsKeptFromCaller(ObjectEntity $object, Schema $schema, ?string $userId): bool {
+		if ($object->isDraft() === false) {
+			return false;
+		}
+
+		$subject = ($userId ?? $this->userSession->getUser()?->getUID());
+		$isAdmin = false;
+		if ($subject !== null) {
+			$user = $this->userManager->get($subject);
+			$isAdmin = ($user !== null && in_array('admin', $this->groupManager->getUserGroupIds($user), true) === true);
+		}
+
+		return (new DraftCallerRule())->keptFromCaller(
+			object: $object,
+			schema: $schema,
+			userId: $subject,
+			isAdmin: $isAdmin,
+			commandLine: $this->isCommandLine()
+		);
+	}//end draftIsKeptFromCaller()
+
+	/**
+	 * Whether PHP runs on the command line. A seam, so a test can read as a web request.
+	 *
+	 * @return bool True under the CLI SAPI.
+	 *
+	 * @spec openspec/specs/rbac-scopes/spec.md
+	 */
+	protected function isCommandLine(): bool {
+		return PHP_SAPI === 'cli';
+	}//end isCommandLine()
 
 	/**
 	 * Dispatch the per-action telemetry event.
@@ -1829,6 +1896,11 @@ class PermissionHandler {
 
 		$activeOrganisation = $this->getActiveOrganisationForContext();
 
+		// An administrator reads every draft, so is not kept from one here
+		// (the same check hasPermission() and the read predicate make).
+		$callerIsAdmin = ($currentUser !== null
+			&& in_array('admin', $this->groupManager->getUserGroupIds($currentUser), true) === true);
+
 		// Get objects for permission checking.
 		//
 		// This must be the CROSS-TABLE lookup. `MagicMapper::findAll()` needs a
@@ -1861,6 +1933,20 @@ class PermissionHandler {
 				if ($objectSchema !== null) {
 					try {
 						$schema = $this->schemaMapper->find($objectSchema);
+
+						// Another user's draft is kept from this caller as on every
+						// other path: it is left out like an object that does not
+						// exist, so the delete does not announce it.
+						$draftKept = (new DraftCallerRule())->keptFromCaller(
+							object: $object,
+							schema: $schema,
+							userId: $userId,
+							isAdmin: $callerIsAdmin,
+							commandLine: $this->isCommandLine()
+						);
+						if ($draftKept === true) {
+							continue;
+						}
 
 						// Property-level RBAC (per-property authorization + writeOnly
 						// stripping) lives in PropertyRbacHandler on the read path; this
@@ -3540,7 +3626,7 @@ class PermissionHandler {
 					'schemaId' => $schema->getId(),
 				]
 			);
-			return $authorization;
+			return $this->grantNothingWhenEmpty(authorization: $authorization);
 		}
 
 		// Build the lookup map with role-hierarchy support. A role
@@ -3591,8 +3677,46 @@ class PermissionHandler {
 			}
 		}//end foreach
 
-		return $authorization;
+		return $this->grantNothingWhenEmpty(authorization: $authorization);
 	}//end expandRoles()
+
+	/**
+	 * A roles block that resolved to nothing grants nothing.
+	 *
+	 * 🔴 THE SAME DIRECTION AS {@see stripMcpScope()}, FOR THE SAME REASON. An
+	 * author who writes `roles` has opted the schema into authorization. When
+	 * none of those roles can be expanded (the register declares no role
+	 * definitions, or every name is unknown) the block used to come back as
+	 * `[]`, and `[]` is "no authorization configured", which is default-OPEN:
+	 * every signed in account could read, change and delete. Found live on
+	 * 2026-10-11, where a case schema declaring `roles` only, written so a
+	 * notification dispatcher could find who holds a role, left every case of
+	 * the register readable by a user in no group at all.
+	 *
+	 * Between a fail-safe and a fail-open reading of an ambiguous block the
+	 * block gets the fail-safe one: the canonical verbs are listed with nobody
+	 * in them. The block is non-empty, so an unlisted verb is refused as well,
+	 * and the administrator and owner bypasses still apply. A denial is loud
+	 * and fixed by declaring the roles; a grant is silent.
+	 *
+	 * @param array<string, mixed> $authorization The block after expansion.
+	 *
+	 * @return array<string, mixed> The block, or one granting nobody when it is empty.
+	 *
+	 * @spec openspec/changes/roles-block-that-resolves-to-nothing-grants-nothing/specs/rbac-scopes/spec.md
+	 */
+	private function grantNothingWhenEmpty(array $authorization): array {
+		if ($authorization !== []) {
+			return $authorization;
+		}
+
+		return [
+			'read' => [],
+			'create' => [],
+			'update' => [],
+			'delete' => [],
+		];
+	}//end grantNothingWhenEmpty()
 
 	/**
 	 * Flatten a role hierarchy into a `name => actions` map.

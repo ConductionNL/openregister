@@ -500,4 +500,19 @@ class EntityRelationMapperUpdateDecisionMetadataTest extends TestCase {
 
 		$this->assertTrue($result->getSkipAnonymization());
 	}//end testDispatchFailureDoesNotMaskUpdate()
+
+	/**
+	 * Linking a decision stores its uuid on the relation.
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-a-decision-is-its-own-object-req-dec-001
+	 */
+	public function testLinkDecisionStoresTheUuid(): void {
+		$relation = new EntityRelation();
+		$mapper = $this->mapperWithMockedUpdate();
+		$mapper->expects($this->once())->method('update')->with($this->identicalTo($relation));
+
+		$stored = $mapper->linkDecision(relation: $relation, decisionUuid: 'd-1');
+
+		$this->assertSame('d-1', $stored->getDecisionUuid());
+	}//end testLinkDecisionStoresTheUuid()
 }//end class

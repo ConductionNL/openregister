@@ -499,6 +499,111 @@ class FlowRunControllerTest extends TestCase {
 		$this->assertSame([], $controller->index()->getData()['results']);
 	}//end testTheHistoryReadReturnsNothingWithoutASession()
 
+	public function testTheSummaryIsScopedToTheCallerAndDefaultsToSevenDays(): void {
+		$this->params(['flowIds' => 'flow-a, flow-b,,flow-a']);
+		$this->flowOwnership->method('idsOwnedByCaller')->willReturn(['flow-a']);
+
+		$this->mapper->expects($this->once())
+			->method('summarizeByFlow')
+			->willReturnCallback(function (array $flowIds, \DateTime $since, ?string $requesterUid, array $ownedFlowIds): array {
+				$this->assertSame(['flow-a', 'flow-b'], $flowIds);
+				$this->assertSame('alice', $requesterUid);
+				$this->assertSame(['flow-a'], $ownedFlowIds);
+				$this->assertEqualsWithDelta((new \DateTime('-7 days'))->getTimestamp(), $since->getTimestamp(), 60);
+				return ['flow-a' => ['lastRun' => null, 'runsSince' => 3]];
+			});
+
+		$data = $this->controller->summary()->getData();
+
+		$this->assertSame(3, $data['results']->{'flow-a'}['runsSince']);
+	}
+
+	public function testTheSummaryReadsNothingWithoutASession(): void {
+		$this->params(['flowIds' => 'flow-a']);
+
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn(null);
+
+		$controller = new FlowRunController(
+			appName: 'openregister',
+			request: $this->request,
+			mapper: $this->mapper,
+			runner: $this->runner,
+			resolvers: $this->resolvers,
+			userSession: $session,
+			organisationService: $this->organisations,
+			guard: new FlowRunnableGuard(flows: $this->flows, access: $this->access),
+			flowOwnership: $this->flowOwnership
+		);
+
+		$this->mapper->expects($this->never())->method('summarizeByFlow');
+
+		$this->assertSame([], (array) $controller->summary()->getData()['results']);
+	}
+
+	public function testAnUnreadableSinceIsRefusedOnTheSummaryAndTheHistory(): void {
+		$this->params(['since' => 'not-a-date', 'flowIds' => 'flow-a']);
+
+		$this->mapper->expects($this->never())->method('summarizeByFlow');
+		$this->mapper->expects($this->never())->method('findAllRuns');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller->summary()->getStatus());
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller->index()->getStatus());
+	}
+
+	public function testTheHistoryNarrowsToSeveralFlowsAndASinceMoment(): void {
+		$this->params(['since' => '2026-10-12T00:00:00+00:00', 'flowIds' => ['flow-a', 'flow-b']]);
+
+		$this->mapper->expects($this->once())
+			->method('findAllRuns')
+			->willReturnCallback(function (...$args): array {
+				$this->assertSame('2026-10-12', $args[6]->format('Y-m-d'));
+				$this->assertSame(['flow-a', 'flow-b'], $args[7]);
+				return [];
+			});
+
+		$this->controller->index();
+	}
+
+	/**
+	 * A `since` with a UTC offset is bound as the UTC instant it names.
+	 *
+	 * `12:00:00+02:00` is 10:00:00Z; binding the object's own wall clock compared
+	 * it as 12:00:00, two hours off, on both the history and the summary.
+	 *
+	 * @return void
+	 */
+	public function testASinceWithAnOffsetIsBoundAsUtc(): void {
+		$this->params(['since' => '2026-10-19T12:00:00+02:00', 'flowIds' => ['flow-a']]);
+
+		$this->mapper->expects($this->once())
+			->method('findAllRuns')
+			->willReturnCallback(function (...$args): array {
+				$this->assertSame('2026-10-19 10:00:00', $args[6]->format('Y-m-d H:i:s'));
+				$this->assertSame('UTC', $args[6]->getTimezone()->getName());
+				return [];
+			});
+		$this->controller->index();
+	}//end testASinceWithAnOffsetIsBoundAsUtc()
+
+	/**
+	 * The same normalisation on the summary's `runsSince`.
+	 *
+	 * @return void
+	 */
+	public function testTheSummaryBindsAnOffsetSinceAsUtc(): void {
+		$this->params(['since' => '2026-10-19T12:00:00+02:00', 'flowIds' => 'flow-a']);
+		$this->flowOwnership->method('idsOwnedByCaller')->willReturn([]);
+
+		$this->mapper->expects($this->once())
+			->method('summarizeByFlow')
+			->willReturnCallback(function (array $flowIds, \DateTime $since): array {
+				$this->assertSame('2026-10-19 10:00:00', $since->format('Y-m-d H:i:s'));
+				return [];
+			});
+		$this->controller->summary();
+	}//end testTheSummaryBindsAnOffsetSinceAsUtc()
+
 	public function testResumeSignalsTheSuspendedRunWithTheRequestBody(): void {
 		$run = new FlowRun();
 		$run->setUuid('run-1');

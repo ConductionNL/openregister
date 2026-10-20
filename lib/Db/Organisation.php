@@ -250,7 +250,8 @@ class Organisation extends Entity implements JsonSerializable {
 	 *   "object_publish": [],
 	 *   "agent_use": [],
 	 *   "dashboard_view": [],
-	 *   "llm_use": []
+	 *   "llm_use": [],
+	 *   "grant_manage": []
 	 * }
 	 *
 	 * @var array|null Authorization rules as JSON structure
@@ -860,7 +861,8 @@ class Organisation extends Entity implements JsonSerializable {
 	 *     object_publish: array<never, never>,
 	 *     agent_use: array<never, never>,
 	 *     dashboard_view: array<never, never>,
-	 *     llm_use: array<never, never>
+	 *     llm_use: array<never, never>,
+	 *     grant_manage: array<never, never>
 	 * }
 	 */
 	private function getDefaultAuthorization(): array {
@@ -911,6 +913,8 @@ class Organisation extends Entity implements JsonSerializable {
 			'agent_use' => [],
 			'dashboard_view' => [],
 			'llm_use' => [],
+			// Enforced, unlike the four above: see Service\Rbac\OrganisationSpecialRights.
+			'grant_manage' => [],
 		];
 	}//end getDefaultAuthorization()
 
@@ -1013,9 +1017,9 @@ class Organisation extends Entity implements JsonSerializable {
 	 *         groups: null
 	 *     },
 	 *     usage: array{
-	 *         storage: 0,
-	 *         bandwidth: 0,
-	 *         requests: 0,
+	 *         storage: null,
+	 *         bandwidth: null,
+	 *         requests: null,
 	 *         users: int<0, max>,
 	 *         groups: int<0, max>
 	 *     },
@@ -1068,13 +1072,13 @@ class Organisation extends Entity implements JsonSerializable {
 				'groups' => null,
 				// To be set via admin configuration.
 			],
+			// Storage, bandwidth and requests are measured by
+			// OrganisationUsageService; the entity cannot measure them, so they
+			// are null here rather than a 0 that reads as "nothing used".
 			'usage' => [
-				'storage' => 0,
-				// To be calculated from actual usage.
-				'bandwidth' => 0,
-				// To be calculated from actual usage.
-				'requests' => 0,
-				// To be calculated from actual usage.
+				'storage' => null,
+				'bandwidth' => null,
+				'requests' => null,
 				'users' => count($users),
 				'groups' => count($groups),
 			],

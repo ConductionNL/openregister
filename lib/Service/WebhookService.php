@@ -48,6 +48,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * WebhookService handles webhook delivery and request interception
@@ -677,15 +678,34 @@ class WebhookService {
 		// latency a function of third-party uptime (async-webhook-delivery /
 		// ADR-009 Rule 5). WebhookDeliveryJob performs the same delivery + logging.
 		foreach ($webhooks as $webhook) {
-			$this->jobList->add(
-				WebhookDeliveryJob::class,
-				[
-					'webhook_id' => $webhook->getId(),
-					'event_name' => $eventName,
-					'payload' => $payload,
-					'attempt' => 1,
-				]
-			);
+			try {
+				$this->jobList->add(
+					WebhookDeliveryJob::class,
+					[
+						'webhook_id' => $webhook->getId(),
+						'event_name' => $eventName,
+						'payload' => $payload,
+						'attempt' => 1,
+					]
+				);
+			} catch (Throwable $e) {
+				// Nextcloud refuses a job argument over 4000 characters (32 and 33)
+				// or 32000 (34 and later), and the payload is the whole event. The
+				// refusal must not abort the webhooks after this one, nor surface
+				// as an exception in the listener (where it is only a log line);
+				// this delivery is lost, and the log says which one and why.
+				$this->logger->error(
+					message: '[WebhookService] A webhook delivery could not be enqueued and was not sent',
+					context: [
+						'file' => __FILE__,
+						'line' => __LINE__,
+						'webhook_id' => $webhook->getId(),
+						'event' => $eventName,
+						'payload_length' => strlen((string)json_encode($payload)),
+						'error' => $e->getMessage(),
+					]
+				);
+			}
 		}
 	}//end dispatchEvent()
 

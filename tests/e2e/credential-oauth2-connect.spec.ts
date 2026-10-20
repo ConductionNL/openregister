@@ -30,7 +30,7 @@
  * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-re-authorisation-overrides-the-same-credential
  * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-disconnecting-revokes-upstream-where-it-can-and-disables-locally
  * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-bluesky-is-its-own-client-and-mastodon-registers-per-instance
- * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-personal-settings
+ * @spec openspec/specs/credential-oauth2-connect/spec.md#requirement-a-person-can-connect-see-and-repair-a-connection-from-user-settings
  */
 import { expect, test } from '@playwright/test'
 
@@ -41,7 +41,9 @@ const AUTH = { username: ADMIN, password: PASSWORD }
 const METADATA_PATH = '/apps/openregister/oauth2/client-metadata.json'
 const CALLBACK_PATH = '/apps/openregister/oauth2/callback'
 const PROVIDERS_PATH = '/apps/openregister/api/credentials/providers'
-const SETTINGS_PATH = '/settings/user/additional'
+// The user settings dialog; App.vue opens it on this hash (no form in
+// Nextcloud's personal settings since 11 Oct 2026).
+const SETTINGS_PATH = '/apps/openregister/#user-settings'
 
 test.describe('OAuth2 client metadata', () => {
 	test('is public and identifies itself by its own URL', async ({

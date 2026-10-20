@@ -228,7 +228,7 @@ class TransitionEngineProviderTest extends TestCase {
 					'action' => 'afhandelen',
 					'to' => 'afgehandeld',
 					'inputs' => [
-						['field' => 'motivering', 'required' => 1, 'label' => 'ignored'],
+						['field' => 'motivering', 'required' => 1, 'colour' => 'ignored'],
 						['field' => '', 'required' => true],
 						['required' => true],
 						'not-an-array',
@@ -248,6 +248,58 @@ class TransitionEngineProviderTest extends TestCase {
 			$actions[0]['inputs']
 		);
 	}//end testInputsAreNormalisedThroughTheSharedContract()
+
+	/**
+	 * An input may say how to ask for its value: a `label` for the field and
+	 * `options` to pick from. Both come through; an option with no usable
+	 * value is dropped, one with no label is labelled by its value, and an
+	 * input that declares neither keeps the bare `{field, required}` shape.
+	 */
+	public function testAnInputCarriesItsLabelAndChoices(): void {
+		$this->wire($this->caseObject(), $this->providerAnnotation());
+		$this->provider(
+			[
+				[
+					'action' => 'afhandelen',
+					'to' => 'afgehandeld',
+					'inputs' => [
+						[
+							'field' => 'resultTypeId',
+							'required' => true,
+							'label' => ' Result ',
+							'options' => [
+								['value' => 'r-1', 'label' => 'Toegekend'],
+								['value' => 'r-2'],
+								['value' => '', 'label' => 'No value'],
+								['label' => 'Missing value'],
+								['value' => ['nested'], 'label' => 'Not text'],
+								'not-an-option',
+							],
+						],
+						['field' => 'comment', 'options' => 'not-a-list', 'label' => ''],
+					],
+				],
+			]
+		);
+
+		$actions = $this->engine->availableActions(self::CASE);
+
+		$this->assertSame(
+			[
+				[
+					'field' => 'resultTypeId',
+					'required' => true,
+					'label' => 'Result',
+					'options' => [
+						['value' => 'r-1', 'label' => 'Toegekend'],
+						['value' => 'r-2', 'label' => 'r-2'],
+					],
+				],
+				['field' => 'comment', 'required' => false],
+			],
+			$actions[0]['inputs']
+		);
+	}//end testAnInputCarriesItsLabelAndChoices()
 
 	/**
 	 * A `blocked` entry keeps both the flag and the reason: the widget draws

@@ -40,8 +40,10 @@ namespace OCA\OpenRegister\Service\Portal;
 use DateTime;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Exception\TaskCompleteViaAppException;
 use OCA\OpenRegister\Exception\TaskValidationException;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\Task\TaskBlockerGuard;
 use OCA\OpenRegister\Service\Task\TaskInboxService;
 use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskTemporalProjection;
@@ -73,6 +75,14 @@ class PortalTaskService {
 	 * @var string
 	 */
 	public const FILE_TAG_PREFIX = 'portal-task:';
+
+	/**
+	 * The task metadata key naming the app action that completes the task:
+	 * `{app, action}`. With it set, only that app completes the task here.
+	 *
+	 * @var string
+	 */
+	public const COMPLETE_VIA = 'completeVia';
 
 	/**
 	 * Constructor.
@@ -117,6 +127,10 @@ class PortalTaskService {
 		$contexts = $this->inbox->subjectContextsFor(tasks: $page);
 		$now = $this->temporal->now();
 
+		// The page was read with the open-blocker exclusion, so no row of it is
+		// blocked: saying so up front spares every row its own blocker query.
+		$openBlockers = [];
+
 		$results = [];
 		foreach ($page as $task) {
 			// Belt and braces over the WHERE clause: a row that is not this
@@ -125,7 +139,7 @@ class PortalTaskService {
 				continue;
 			}
 
-			$results[] = $this->inbox->row(task: $task, subjects: $contexts, now: $now);
+			$results[] = $this->inbox->row(task: $task, subjects: $contexts, now: $now, openBlockers: $openBlockers);
 		}
 
 		return [
@@ -144,9 +158,11 @@ class PortalTaskService {
 	 *
 	 * @return Task The task.
 	 *
-	 * @throws DoesNotExistException When absent, not external, or not this
-	 *                               subject's: all three read identically, so
-	 *                               a stranger learns nothing from the answer.
+	 * @throws DoesNotExistException When absent, not external, not this
+	 *                               subject's, or held back by an open blocker
+	 *                               (the list leaves it out too): all read
+	 *                               identically, so a stranger learns nothing
+	 *                               from the answer.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-delivery-rides-the-portal-contribution-surface-and-nothing-else
 	 */
@@ -154,12 +170,14 @@ class PortalTaskService {
 		$task = $this->tasks->get(uuid: $uuid);
 		if ((string)$task->getPerformerType() !== Task::PERFORMER_EXTERNAL
 			|| hash_equals($subject->partyReference(), (string)$task->getAssignee()) === false
+			|| (new TaskBlockerGuard(tasks: $this->mapper))->isHeldBack(task: $task) === true
 		) {
 			throw new DoesNotExistException('No such portal task.');
 		}
 
 		return $task;
 	}//end show()
+
 
 	/**
 	 * The row shape of one task for the portal, with delivery state and
@@ -190,14 +208,19 @@ class PortalTaskService {
 	 * @param array<int, array<string, mixed>> $files The uploads, each
 	 *                                                {name, type, size, tmp_name|content}.
 	 * @param string $outcome The outcome to record; defaults to `submitted`.
+	 * @param string $viaApp The app completing the task in-process, when it
+	 *                       is the app the task's `completeVia` names; empty
+	 *                       for the portal's own direct completion.
 	 *
 	 * @return Task The completed task.
 	 *
 	 * @throws \OCA\OpenRegister\Exception\TaskAccessDeniedException When the
 	 *         subject is not the matched party (audited before anything is stored).
 	 * @throws \OCA\OpenRegister\Exception\TaskConflictException When the task is terminal.
+	 * @throws TaskCompleteViaAppException When the task names an app action that
+	 *         completes it and the caller is not that app (nothing stored).
 	 * @throws TaskValidationException When an upload constraint is violated (nothing stored).
-	 * @throws DoesNotExistException When no such task exists.
+	 * @throws DoesNotExistException When no such task exists, or it waits on an open blocker.
 	 *
 	 * @spec openspec/changes/flow-portal-task/specs/flow-portal-task/spec.md#requirement-an-upload-completion-lands-as-a-file-attachment-on-the-case-object
 	 */
@@ -208,11 +231,27 @@ class PortalTaskService {
 		?string $comment = null,
 		array $files = [],
 		string $outcome = self::DEFAULT_OUTCOME,
+		string $viaApp = '',
 	): Task {
 		// 1. Authorize, and audit a denial, BEFORE any other step. A stranger
 		//    who knows the uuid must not get a validation message, let alone a
 		//    file on somebody else's case.
 		$task = $this->tasks->openFor(verb: 'complete', uuid: $uuid, actor: $subject->actor());
+
+		// 1a. A task the case holds back behind an open blocker is not on the
+		//     party's list, so it is not theirs to complete either. Asked after
+		//     the authorization, so only the matched party can tell it from a
+		//     task that does not exist, and before anything is stored.
+		(new TaskBlockerGuard(tasks: $this->mapper))->assertNotHeldBack(task: $task);
+
+		// 1b. A task that names the app action completing it is completed by
+		//     that app alone, so the app's own checks cannot be skipped by
+		//     calling this seam directly. Only the matched party gets here, so
+		//     the refusal tells nobody else that the task exists.
+		$via = $this->completeVia(task: $task);
+		if ($via !== null && $via['app'] !== $viaApp) {
+			throw new TaskCompleteViaAppException(app: $via['app'], action: $via['action']);
+		}
 
 		// 2. Validate against the constraints the node froze on the task.
 		//    Refused means nothing was stored and the task is still open.
@@ -239,6 +278,28 @@ class PortalTaskService {
 			evidence: $evidence
 		);
 	}//end complete()
+
+	/**
+	 * The app action a task names as the one that completes it, or null when
+	 * it names none or names it incompletely (an app without an action, or
+	 * the reverse, is ignored rather than locking the task).
+	 *
+	 * @param Task $task The task.
+	 *
+	 * @return array{app: string, action: string}|null The app and its action.
+	 *
+	 * @spec openspec/changes/a-portal-task-names-the-app-that-completes-it/specs/flow-portal-task/spec.md#requirement-a-task-may-name-the-app-action-that-completes-it
+	 */
+	public function completeVia(Task $task): ?array {
+		// A scalar casts to a list without `app` or `action`, so it reads as none.
+		$via = (array)(($task->getMetadata() ?? [])[self::COMPLETE_VIA] ?? []);
+		$route = ['app' => trim((string)($via['app'] ?? '')), 'action' => trim((string)($via['action'] ?? ''))];
+		if (in_array('', $route, true) === true) {
+			return null;
+		}
+
+		return $route;
+	}//end completeVia()
 
 	/**
 	 * Refuse a completion that violates the task's upload constraints,

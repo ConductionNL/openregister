@@ -64,6 +64,7 @@ use UnexpectedValueException;
  * @covers \OCA\OpenRegister\Exception\TaskConflictException
  * @uses \OCA\OpenRegister\Service\Task\TaskForm
  * @uses \OCA\OpenRegister\Service\Task\TaskSubjectAccessGuard
+ * @uses \OCA\OpenRegister\Service\Task\TaskBlockerGuard
  */
 class TaskServiceTest extends TestCase {
 

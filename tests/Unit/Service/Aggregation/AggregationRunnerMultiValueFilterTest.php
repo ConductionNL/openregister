@@ -39,6 +39,9 @@
 
 declare(strict_types=1);
 
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- arrange/act/assert PHPUnit conventions.
+// phpcs:disable CustomSniffs.Functions.NamedParameters.RequireNamedParameters -- PHPUnit assertion helpers use positional args.
+
 namespace Unit\Service\Aggregation;
 
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
@@ -183,6 +186,76 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 		$this->assertSame(['nl' => 3], $this->foldSingle($result['groups']));
 
 	}//end testNativeWrappedInOperatorStillCountsAnyOf()
+
+	// -----------------------------------------------------------------------
+	// "Empty" and "filled": the list endpoint's IS NULL syntax.
+	// -----------------------------------------------------------------------
+
+	/**
+	 * A queue: two unassigned rows, three assigned.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function queueDataset(): array {
+		return [
+			['status' => 'open',        'region' => null, 'amount' => 10],
+			['status' => 'open',        'region' => 'nl', 'amount' => 20],
+			['status' => 'in-progress', 'region' => null, 'amount' => 30],
+			['status' => 'closed',      'region' => 'be', 'amount' => 40],
+			['status' => 'closed',      'region' => 'be', 'amount' => 50],
+		];
+	}//end queueDataset()
+
+	public function testPhpFallbackCountsEmptyAndFilledFieldsInEverySpelling(): void {
+		$runner = $this->makePhpFallbackRunner(dataset: $this->queueDataset());
+		$count = fn (array $filter): mixed => $runner->runAdhoc(
+			register: $this->makeRegister(),
+			schema: $this->makeStatusSchema(),
+			query: AggregationQuery::create(metric: 'count', filter: $filter)
+		)['value'];
+
+		$this->assertSame(2, $count(['region' => 'IS NULL']), 'the literal text "IS NULL" matched nothing before');
+		$this->assertSame(2, $count(['region' => ['isnull' => 'true']]), 'the isnull operator was refused before');
+		$this->assertSame(3, $count(['region' => 'IS NOT NULL']));
+		$this->assertSame(3, $count(['region' => ['isnull' => 'false']]));
+		$this->assertSame(1, $count(['region' => 'IS NULL', 'status' => 'in-progress']));
+	}//end testPhpFallbackCountsEmptyAndFilledFieldsInEverySpelling()
+
+	public function testNativeGroupedCountOverEmptyFieldsEmitsIsNull(): void {
+		$runner = $this->makeNativeRunner(dataset: $this->queueDataset(), capturedSql: $captured);
+
+		$result = $runner->runAdhoc(
+			register: $this->makeRegister(),
+			schema: $this->makeStatusSchema(),
+			query: AggregationQuery::create(
+				metric: 'count',
+				filter: ['region' => 'IS NULL'],
+				groupBy: ['field' => 'status']
+			)
+		);
+
+		$this->assertSame('sqlite', $result['backend']);
+		$this->assertStringContainsString('"region" IS NULL', $captured['sql']);
+		$this->assertEquals(['open' => 1, 'in-progress' => 1], $this->foldSingle($result['groups']));
+	}//end testNativeGroupedCountOverEmptyFieldsEmitsIsNull()
+
+	public function testNativeGroupedCountWithTheIsnullOperatorEmitsIsNotNull(): void {
+		$runner = $this->makeNativeRunner(dataset: $this->queueDataset(), capturedSql: $captured);
+
+		$result = $runner->runAdhoc(
+			register: $this->makeRegister(),
+			schema: $this->makeStatusSchema(),
+			query: AggregationQuery::create(
+				metric: 'count',
+				filter: ['region' => ['isnull' => 'false']],
+				groupBy: ['field' => 'status']
+			)
+		);
+
+		$this->assertSame('sqlite', $result['backend'], 'isnull must stay on the native path, not bail');
+		$this->assertStringContainsString('"region" IS NOT NULL', $captured['sql']);
+		$this->assertEquals(['open' => 1, 'closed' => 2], $this->foldSingle($result['groups']));
+	}//end testNativeGroupedCountWithTheIsnullOperatorEmitsIsNotNull()
 
 	/**
 	 * Fold a single-field grouped result into a `key => value` map.
@@ -451,13 +524,13 @@ class AggregationRunnerMultiValueFilterTest extends TestCase {
 
 		$isTags = ($schema !== null && $schema->getSlug() === 'tagged-items');
 		if ($isTags === true) {
-			$pdo->exec('CREATE TABLE "oc_register_1_schema_x" ("_deleted" TEXT, "_archived" TEXT, "_organisation" TEXT, "id" INTEGER, "tags" TEXT)');
+			$pdo->exec('CREATE TABLE "oc_register_1_schema_x" ("_deleted" TEXT, "_archived" TEXT, "_status" TEXT, "_organisation" TEXT, "id" INTEGER, "tags" TEXT)');
 			$insert = $pdo->prepare('INSERT INTO "oc_register_1_schema_x" ("_deleted", "_organisation", "id", "tags") VALUES (NULL, ?, ?, ?)');
 			foreach ($dataset as $row) {
 				$insert->execute(['__no_active_org__', $row['id'], json_encode($row['tags'])]);
 			}
 		} else {
-			$pdo->exec('CREATE TABLE "oc_register_1_schema_x" ("_deleted" TEXT, "_archived" TEXT, "_organisation" TEXT, "status" TEXT, "region" TEXT, "amount" INTEGER)');
+			$pdo->exec('CREATE TABLE "oc_register_1_schema_x" ("_deleted" TEXT, "_archived" TEXT, "_status" TEXT, "_organisation" TEXT, "status" TEXT, "region" TEXT, "amount" INTEGER)');
 			$insert = $pdo->prepare('INSERT INTO "oc_register_1_schema_x" ("_deleted", "_organisation", "status", "region", "amount") VALUES (NULL, ?, ?, ?, ?)');
 			foreach ($dataset as $row) {
 				$insert->execute(['__no_active_org__', $row['status'], ($row['region'] ?? null), $row['amount']]);

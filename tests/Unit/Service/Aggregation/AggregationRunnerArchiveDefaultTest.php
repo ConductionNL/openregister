@@ -173,6 +173,68 @@ class AggregationRunnerArchiveDefaultTest extends TestCase {
 		$this->assertStringContainsString('_deleted IS NULL', (string)$captured['sql']);
 	}//end testTheSoftDeletePredicateIsStillThere()
 
+	/**
+	 * A count leaves drafts out like the list does: the clause is there for nobody, and with the caller's own drafts admitted for a signed-in user.
+	 *
+	 * @return void
+	 */
+	public function testTheCountAgreesWithTheListAboutDrafts(): void {
+		$this->wirePlatform(platform: $this->createMock(MySQLPlatform::class));
+		$captured = $this->captureSql();
+
+		$this->makeRunner()->runAdhoc(register: $this->makeRegister(), schema: $this->makeSchema(), query: $this->dayBucketQuery());
+		$this->assertStringContainsString("(_status IS NULL OR _status <> 'draft')", (string)$captured['sql']);
+		$this->assertStringNotContainsString('_owner = ?', (string)$captured['sql']);
+		// The first binding is the organisation's: no owner term for nobody.
+		$this->assertSame('__no_active_org__', $captured['bindings'][0]);
+	}//end testTheCountAgreesWithTheListAboutDrafts()
+
+	/**
+	 * A signed-in caller's own drafts stay in the count (the list shows them), through a binding; draftsListed: false drops them as the list does.
+	 *
+	 * @return void
+	 */
+	public function testTheCallersOwnDraftsFollowTheSchemasListSetting(): void {
+		$this->wirePlatform(platform: $this->createMock(MySQLPlatform::class));
+		$captured = $this->captureSql();
+		$user = $this->createMock(\OCP\IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$session = $this->createMock(IUserSession::class);
+		$session->method('getUser')->willReturn($user);
+
+		$this->makeRunner(session: $session)->runAdhoc(register: $this->makeRegister(), schema: $this->makeSchema(), query: $this->dayBucketQuery());
+		$this->assertStringContainsString("(_status IS NULL OR _status <> 'draft') OR _owner = ?", (string)$captured['sql']);
+		// The placeholders and the bindings stay in step: the draft clause comes before the organisation one.
+		$this->assertSame(['alice', '__no_active_org__'], array_slice($captured['bindings'], 0, 2));
+
+		$captured['sql'] = null;
+		$captured['bindings'] = [];
+		$schema = $this->makeSchema();
+		$schema->setConfiguration(['draftsListed' => false]);
+		$this->makeRunner(session: $session)->runAdhoc(register: $this->makeRegister(), schema: $schema, query: $this->dayBucketQuery());
+		$this->assertStringContainsString("_status <> 'draft'", (string)$captured['sql']);
+		$this->assertStringNotContainsString('_owner = ?', (string)$captured['sql']);
+		$this->assertNotContains('alice', $captured['bindings']);
+	}//end testTheCallersOwnDraftsFollowTheSchemasListSetting()
+
+	/**
+	 * A table that could not be given its `_status` column cannot hold a draft: the clause is left out.
+	 *
+	 * @return void
+	 */
+	public function testADegradedTableGetsNoDraftClause(): void {
+		$this->wirePlatform(platform: $this->createMock(MySQLPlatform::class));
+		$captured = $this->captureSql();
+		$healer = $this->createMock(\OCA\OpenRegister\Db\MagicMapper\MagicMetadataColumnHealer::class);
+		$healer->method('missingFor')->willReturn(['_status']);
+		$this->magicMapper->method('getMetadataColumnHealer')->willReturn($healer);
+
+		$this->makeRunner()->runAdhoc(register: $this->makeRegister(), schema: $this->makeSchema(), query: $this->dayBucketQuery());
+
+		$this->assertNotNull($captured['sql']);
+		$this->assertStringNotContainsString('_status', (string)$captured['sql']);
+	}//end testADegradedTableGetsNoDraftClause()
+
 	// -----------------------------------------------------------------------
 	// Helpers.
 	// -----------------------------------------------------------------------
@@ -203,10 +265,15 @@ class AggregationRunnerArchiveDefaultTest extends TestCase {
 	 * @return \ArrayObject<string, mixed> Mutable container with an `sql` key.
 	 */
 	private function captureSql(): \ArrayObject {
-		$captured = new \ArrayObject(['sql' => null]);
+		$captured = new \ArrayObject(['sql' => null, 'bindings' => []]);
 		$stmt = $this->createMock(IPreparedStatement::class);
 		$result = $this->createMock(IResult::class);
-		$stmt->method('execute')->willReturn($result);
+		$stmt->method('execute')->willReturnCallback(
+			function (?array $params = null) use ($result, $captured) {
+				$captured['bindings'] = ($params ?? []);
+				return $result;
+			}
+		);
 		$stmt->method('fetch')->willReturn(false);
 
 		$this->db->method('prepare')->willReturnCallback(
@@ -261,7 +328,7 @@ class AggregationRunnerArchiveDefaultTest extends TestCase {
 	 *
 	 * @return AggregationRunner The runner.
 	 */
-	private function makeRunner(): AggregationRunner {
+	private function makeRunner(?IUserSession $session = null): AggregationRunner {
 		return new AggregationRunner(
 			magicMapper: $this->magicMapper,
 			registerMapper: $this->registerMapper,
@@ -270,7 +337,7 @@ class AggregationRunnerArchiveDefaultTest extends TestCase {
 			db: $this->db,
 			cache: $this->cache,
 			permissionHandler: $this->permissionHandler,
-			userSession: $this->userSession,
+			userSession: ($session ?? $this->userSession),
 			organisationService: $this->organisationService,
 			organizationHandler: $this->orgHandlerScopedTo('__no_active_org__'),
 			translationHandler: $this->createMock(TranslationHandler::class),

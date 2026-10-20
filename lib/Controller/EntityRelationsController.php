@@ -47,6 +47,9 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Service\Decision\DecisionOwnedException;
+use OCA\OpenRegister\Service\Decision\DecisionVisibility;
+use OCA\OpenRegister\Service\Decision\RelationDecisionService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -76,6 +79,8 @@ class EntityRelationsController extends Controller {
 	 * @param RegisterMapper $registerMapper Register loader (for object lookup disambiguation).
 	 * @param EmailLinkMapper $emailLinkMapper EmailLink loader (for email-bound authz indirection).
 	 * @param LoggerInterface $logger Structured log sink.
+	 * @param RelationDecisionService $relationDecisions Takes the decision as its own object, under the ownership rule.
+	 * @param DecisionVisibility $decisionVisibility Masks a decision the caller may not see (REQ-ROD-002).
 	 */
 	public function __construct(
 		string $appName,
@@ -89,6 +94,8 @@ class EntityRelationsController extends Controller {
 		private readonly RegisterMapper $registerMapper,
 		private readonly EmailLinkMapper $emailLinkMapper,
 		private readonly LoggerInterface $logger,
+		private readonly RelationDecisionService $relationDecisions,
+		private readonly DecisionVisibility $decisionVisibility,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -96,14 +103,20 @@ class EntityRelationsController extends Controller {
 	/**
 	 * PATCH /api/entity-relations/{id}.
 	 *
-	 * Body: { bases?: ?array<string>, skipAnonymization?: bool } — any other
-	 * key triggers HTTP 400.
+	 * Body: { bases?: ?array<string>, skipAnonymization?: bool,
+	 * decisionNote?: ?string } — any other key triggers HTTP 400.
+	 *
+	 * The decision is recorded as its own object (decision 197) that the
+	 * relation links; under `decider` ownership a decision someone else took
+	 * answers 403 `decision-owned` naming who decided and when (REQ-ROD-001).
 	 *
 	 * @param int $id Relation row id.
 	 *
 	 * @return JSONResponse Updated relation (200) or a structured error.
 	 *
 	 * @NoAdminRequired
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/entity-relation-grondslagen/spec.md#requirement-a-reviewers-decision-is-changed-only-by-that-reviewer-or-a-supervisor-req-rod-001
 	 */
 	public function update(int $id): JSONResponse {
 		$user = $this->userSession->getUser();
@@ -162,11 +175,9 @@ class EntityRelationsController extends Controller {
 		unset($body['id'], $body['_route']);
 
 		try {
-			$relation = $this->entityRelationMapper->updateDecisionMetadata(
-				relation: $relation,
-				fields: $body,
-				actingUser: $user
-			);
+			$decided = $this->relationDecisions->decide(relation: $relation, body: $body, actor: $user);
+		} catch (DecisionOwnedException $e) {
+			return new JSONResponse(data: $e->getRefusal(), statusCode: Http::STATUS_FORBIDDEN);
 		} catch (CustomValidationException $e) {
 			return new JSONResponse(
 				data: ['error' => $e->getMessage(), 'details' => $e->getErrors()],
@@ -188,8 +199,14 @@ class EntityRelationsController extends Controller {
 			);
 		}//end try
 
+		$data = $decided['relation']->jsonSerialize();
+		$data['decisionRecord'] = $decided['decision']?->jsonSerialize();
+		// The caller just took this decision, so it is theirs to see; masked
+		// all the same so no relation leaves OpenRegister unfiltered.
+		$data = $this->decisionVisibility->present(relation: $decided['relation'], userId: $user->getUID(), serialised: $data);
+
 		return new JSONResponse(
-			data: $relation->jsonSerialize(),
+			data: $data,
 			statusCode: Http::STATUS_OK
 		);
 	}//end update()

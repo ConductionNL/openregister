@@ -230,6 +230,7 @@ class Notifier implements INotifier {
 			'object_ownership_changed' => $this->prepareOwnershipChanged(...),
 			'security_setting_changed' => $this->prepareSecuritySettingChanged(...),
 			'view_alert_crossed' => $this->prepareViewAlertCrossed(...),
+			'form_unpublished' => $this->prepareFormUnpublished(...),
 			default => null,
 		};
 
@@ -617,16 +618,14 @@ class Notifier implements INotifier {
 			$l->t(
 				'The connection to %s is no longer accepted by the provider, so anything using it has '
 				. 'stopped. This cannot be repaired automatically: open Connected accounts in your '
-				. 'personal settings and reconnect the account.',
+				. 'user settings and reconnect the account.',
 				[$provider]
 			)
 		);
 
+		// The connected accounts live in OpenRegister's own user settings dialog.
 		$notification->setLink(
-			$this->urlGenerator->linkToRouteAbsolute(
-				'settings.PersonalSettings.index',
-				['section' => 'additional']
-			)
+			$this->urlGenerator->linkToRouteAbsolute('openregister.dashboard.page') . '#user-settings'
 		);
 
 		$notification->setIcon(
@@ -926,4 +925,35 @@ class Notifier implements INotifier {
 
 		return $notification;
 	}//end prepareViewAlertCrossed()
+
+	/**
+	 * Render "your form was taken offline" for the author of a form a schema change broke.
+	 *
+	 * WITHOUT THIS CASE THE NOTIFICATION NEVER RENDERS: an unknown subject
+	 * throws out of prepare(), so the author would learn of the unpublish only
+	 * when a resident reports the form gone.
+	 *
+	 * @param INotification $notification The notification to prepare
+	 * @param mixed $l The localization instance
+	 *
+	 * @return INotification The prepared notification
+	 *
+	 * @spec openspec/changes/form-destination-validator/specs/form-destination/spec.md#requirement-saving-a-schema-must-re-check-the-forms-that-submit-into-it
+	 */
+	private function prepareFormUnpublished(INotification $notification, $l): INotification {
+		$parameters = $notification->getSubjectParameters();
+		$title = (string)($parameters['formTitle'] ?? '');
+		$schema = (string)($parameters['schema'] ?? '');
+		$count = (string)($parameters['count'] ?? '');
+
+		$notification->setParsedSubject($l->t('Your form "%1$s" was taken offline', [$title]));
+		$notification->setParsedMessage(
+			$l->t('A change to "%1$s" left %2$s problems in the form. Fix them and publish the form again.', [$schema, $count])
+		);
+		$notification->setIcon(
+			$this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+		);
+
+		return $notification;
+	}//end prepareFormUnpublished()
 }//end class

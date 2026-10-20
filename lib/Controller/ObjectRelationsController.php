@@ -35,15 +35,21 @@ namespace OCA\OpenRegister\Controller;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\ObjectRelation;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Service\Audit\PurposeGuard;
+use OCA\OpenRegister\Service\Audit\PurposeRefusedException;
 use OCA\OpenRegister\Service\Export\ExportGate;
 use OCA\OpenRegister\Service\Object\ObjectReadAccess;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Relation\ObjectRelationService;
+use OCA\OpenRegister\Service\Relation\ObjectTreeService;
 use OCA\OpenRegister\Service\Relation\RelationGraphService;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -53,6 +59,8 @@ use OCP\IRequest;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) A REST surface over the
  * relation row store, the graph walk and the object read it authorises against.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One action per route of the relation
+ * surface (rows, derive, graph, tree, export), each a short method that refuses first.
  *
  * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
  */
@@ -67,6 +75,11 @@ class ObjectRelationsController extends Controller {
 	 * @param ObjectService $objectService Reads and writes objects, with RBAC.
 	 * @param ExportGate $exportGate The export verb, checked before the graph leaves.
 	 * @param ObjectReadAccess $access Resolves an object under the caller's own RBAC.
+	 * @param ObjectTreeService $trees The bounded walk along a schema's parent property.
+	 * @param PurposeGuard $purposeGuard The doelbinding guard the object read runs, asked before a tree or a graph is answered.
+	 * @param RegisterMapper $registerMapper Resolves an object's register for that guard.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection; each dependency is named above.
 	 *
 	 * @spec openspec/changes/relation-types-with-inverses/specs/referential-integrity/spec.md
 	 */
@@ -78,6 +91,9 @@ class ObjectRelationsController extends Controller {
 		private readonly ObjectService $objectService,
 		private readonly ExportGate $exportGate,
 		private readonly ObjectReadAccess $access,
+		private readonly ObjectTreeService $trees,
+		private readonly PurposeGuard $purposeGuard,
+		private readonly RegisterMapper $registerMapper,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -474,14 +490,243 @@ class ObjectRelationsController extends Controller {
 			return $this->access->notReadable();
 		}
 
+		$refusal = $this->purposeRefusal(object: $object);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
 		return new JSONResponse(
-			data: $this->graphs->graph(
-				rootUuid: (string)$object->getUuid(),
-				depth: $this->depth(),
-				language: $this->language()
+			data: $this->withinPurpose(
+				graph: $this->graphs->graph(
+					rootUuid: (string)$object->getUuid(),
+					depth: $this->depth(),
+					language: $this->language()
+				)
 			)
 		);
 	}//end graph()
+
+	/**
+	 * The graph without the nodes of schemas whose purpose the caller did not name.
+	 *
+	 * The root's schema is checked before the walk; a node carries the title and
+	 * schema of a related object that may sit in another schema, so every schema
+	 * present in the answer passes the same guard. A refused node leaves the
+	 * answer with its edges, and so does everything that was only reachable
+	 * through it.
+	 *
+	 * @param array<string, mixed> $graph The graph the walk answered.
+	 *
+	 * @return array<string, mixed> The graph the caller may see.
+	 */
+	private function withinPurpose(array $graph): array {
+		$refused = [];
+		$decided = [];
+		foreach (($graph['nodes'] ?? []) as $node) {
+			if (($node['resolved'] ?? false) !== true || ($node['external'] ?? false) === true) {
+				continue;
+			}
+
+			$key = ((string)($node['register'] ?? '')).'/'.((string)($node['schema'] ?? ''));
+			if (isset($decided[$key]) === false) {
+				$decided[$key] = $this->purposeAdmits(registerId: $node['register'] ?? null, schemaId: $node['schema'] ?? null);
+			}
+
+			if ($decided[$key] === false) {
+				$refused[(string)($node['uuid'] ?? '')] = true;
+			}
+		}
+
+		if ($refused === []) {
+			return $graph;
+		}
+
+		return $this->reachableFromRoot(graph: $graph, refused: $refused);
+	}//end withinPurpose()
+
+	/**
+	 * Whether the doelbinding guard admits a read of the schema of one node.
+	 *
+	 * @param mixed $registerId The node's register id.
+	 * @param mixed $schemaId   The node's schema id.
+	 *
+	 * @return bool False when a purpose is needed and none is usable, or the schema does not resolve.
+	 */
+	private function purposeAdmits(mixed $registerId, mixed $schemaId): bool {
+		$schema = null;
+		if (is_scalar($schemaId) === true) {
+			$schema = $this->access->schemaById(schemaId: $schemaId);
+		}
+
+		$register = null;
+		if (is_scalar($registerId) === true && $registerId !== '') {
+			try {
+				$register = $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
+			} catch (\Throwable $e) {
+				$register = null;
+			}
+		}
+
+		if ($schema === null || $register === null) {
+			return false;
+		}
+
+		try {
+			$this->purposeGuard->enforce(register: $register, schema: $schema);
+		} catch (PurposeRefusedException $refusal) {
+			return false;
+		}
+
+		return true;
+	}//end purposeAdmits()
+
+	/**
+	 * The graph without the refused nodes, their edges and what hangs only on them.
+	 *
+	 * @param array<string, mixed> $graph   The graph.
+	 * @param array<string, true>  $refused The uuids of the refused nodes.
+	 *
+	 * @return array<string, mixed> The graph.
+	 */
+	private function reachableFromRoot(array $graph, array $refused): array {
+		$allEdges = $this->rowsIn(value: ($graph['edges'] ?? null));
+		$allNodes = $this->rowsIn(value: ($graph['nodes'] ?? null));
+
+		$edges = array_values(
+			array_filter(
+				$allEdges,
+				static fn (array $edge): bool => isset($refused[(string)($edge['from'] ?? '')]) === false
+					&& isset($refused[(string)($edge['to'] ?? '')]) === false
+			)
+		);
+
+		$reached = $this->reached(root: (string)($graph['root'] ?? ''), edges: $edges);
+
+		$graph['nodes'] = array_values(
+			array_filter(
+				$allNodes,
+				static fn (array $node): bool => isset($reached[(string)($node['uuid'] ?? '')]) === true
+					&& isset($refused[(string)($node['uuid'] ?? '')]) === false
+			)
+		);
+		$graph['edges'] = array_values(
+			array_filter(
+				$edges,
+				static fn (array $edge): bool => isset($reached[(string)($edge['from'] ?? '')]) === true
+					&& isset($reached[(string)($edge['to'] ?? '')]) === true
+			)
+		);
+
+		return $graph;
+	}//end reachableFromRoot()
+
+	/**
+	 * A graph list (its nodes or edges) as a list of rows; anything else is no rows.
+	 *
+	 * @param mixed $value The list as the graph holds it.
+	 *
+	 * @return array<int, array<string, mixed>> The rows.
+	 */
+	private function rowsIn(mixed $value): array {
+		if (is_array($value) === false) {
+			return [];
+		}
+
+		return array_values(array_filter($value, static fn (mixed $row): bool => is_array($row) === true));
+	}//end rowsIn()
+
+	/**
+	 * The uuids connected to the root through the given edges, either direction.
+	 *
+	 * @param string                           $root  The root uuid.
+	 * @param array<int, array<string, mixed>> $edges The edges that remain.
+	 *
+	 * @return array<string, true> The reached uuids.
+	 */
+	private function reached(string $root, array $edges): array {
+		$reached = [$root => true];
+		do {
+			$grew = false;
+			foreach ($edges as $edge) {
+				$from = (string)($edge['from'] ?? '');
+				$to = (string)($edge['to'] ?? '');
+				if (isset($reached[$from]) === isset($reached[$to])) {
+					continue;
+				}
+
+				$reached[$from] = true;
+				$reached[$to] = true;
+				$grew = true;
+			}
+		} while ($grew === true);
+
+		return $reached;
+	}//end reached()
+
+
+	/**
+	 * The ancestors and descendants of an object along its schema's parent property.
+	 *
+	 * Query: `direction` (descendants, ancestors or both; default descendants),
+	 * `depth` (default the schema's declared bound) and `fields` (comma-separated
+	 * properties copied onto each node). Every node passes the caller's RBAC.
+	 *
+	 * @param string $register The register slug or id.
+	 * @param string $schema The schema slug or id.
+	 * @param string $id The object's uuid.
+	 *
+	 * @return JSONResponse The tree.
+	 *
+	 * @spec openspec/changes/object-tree-read/specs/referential-integrity/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	#[UserRateLimit(limit: 60, period: 60)]
+	public function tree(string $register, string $schema, string $id): JSONResponse {
+		$object = $this->access->readable(register: $register, schema: $schema, id: $id);
+		if ($object === null) {
+			return $this->access->notReadable();
+		}
+
+		$refusal = $this->purposeRefusal(object: $object);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$direction = (string)$this->request->getParam('direction', ObjectTreeService::DIRECTION_DESCENDANTS);
+		$directions = [
+			ObjectTreeService::DIRECTION_DESCENDANTS,
+			ObjectTreeService::DIRECTION_ANCESTORS,
+			ObjectTreeService::DIRECTION_BOTH,
+		];
+		if (in_array($direction, $directions, true) === false) {
+			return new JSONResponse(
+				data: ['error' => 'direction must be one of: '.implode(', ', $directions)],
+				statusCode: 400
+			);
+		}
+
+		$depth = null;
+		if ($this->stringParam(name: 'depth') !== null) {
+			$depth = $this->depth();
+		}
+
+		$fields = array_values(
+			array_filter(
+				array_map('trim', explode(',', (string)$this->stringParam(name: 'fields'))),
+				static fn (string $field): bool => $field !== ''
+			)
+		);
+
+		return new JSONResponse(
+			data: $this->trees->tree(
+				root: $object,
+				direction: $direction,
+				depth: $depth,
+				fields: $fields
+			)
+		);
+	}//end tree()
 
 	/**
 	 * The same graph, as rows a spreadsheet opens.
@@ -502,6 +747,11 @@ class ObjectRelationsController extends Controller {
 			return $this->access->notReadable();
 		}
 
+		$purposeRefusal = $this->purposeRefusal(object: $object);
+		if ($purposeRefusal !== null) {
+			return $purposeRefusal;
+		}
+
 		// REQ-EXP-001: a relation graph as a CSV is the object's data leaving
 		// the instance, so it is an export and is checked against the export
 		// verb, not against the read the caller already passed above. A
@@ -517,16 +767,20 @@ class ObjectRelationsController extends Controller {
 			return $refusal;
 		}
 
+		// The CSV carries the titles and uuids of every node, so it is narrowed by
+		// the same doelbinding rule as the graph answer before its rows are written.
 		$uuid = (string)$object->getUuid();
-		$export = $this->graphs->export(
-			rootUuid: $uuid,
-			depth: $this->depth(),
-			language: $this->language()
+		$graph = $this->withinPurpose(
+			graph: $this->graphs->graph(
+				rootUuid: $uuid,
+				depth: $this->depth(),
+				language: $this->language()
+			)
 		);
 
 		$handle = fopen('php://temp', 'r+');
-		foreach ($export['rows'] as $row) {
-			fputcsv($handle, $row);
+		foreach ($this->graphs->rowsOf(graph: $graph) as $row) {
+			fputcsv($handle, $row, escape: '');
 		}
 
 		rewind($handle);
@@ -539,6 +793,58 @@ class ObjectRelationsController extends Controller {
 			contentType: 'text/csv'
 		);
 	}//end exportGraph()
+
+	/**
+	 * The refusal for a read that has to name a purpose and did not, or null.
+	 *
+	 * The doelbinding guard the object GET runs, asked after the read check so
+	 * a refusal never confirms an object the caller may not see. The names and
+	 * properties these routes answer for many objects at once are the same
+	 * data the object GET would refuse, and the accepted purpose is what puts
+	 * the read in the processing register. An object whose register or schema
+	 * does not resolve is answered as not readable: the rule cannot be applied.
+	 *
+	 * @param ObjectEntity $object The object the route answers for, already read under the caller's RBAC.
+	 *
+	 * @return JSONResponse|null The refusal, or null when the read may go on.
+	 *
+	 * @spec openspec/changes/audit-trail-shipped-and-purpose-bound/specs/verwerkingsregister-api/spec.md
+	 */
+	private function purposeRefusal(ObjectEntity $object): ?JSONResponse {
+		$schema = $this->access->schemaOf(object: $object);
+		$register = $this->registerOf(object: $object);
+		if ($schema === null || $register === null) {
+			return $this->access->notReadable();
+		}
+
+		try {
+			$this->purposeGuard->enforce(register: $register, schema: $schema);
+		} catch (PurposeRefusedException $refusal) {
+			return new JSONResponse(data: $refusal->toResponseBody(), statusCode: $refusal->getStatusCode());
+		}
+
+		return null;
+	}//end purposeRefusal()
+
+	/**
+	 * The register an object belongs to, or null when it does not resolve.
+	 *
+	 * @param ObjectEntity $object The object.
+	 *
+	 * @return Register|null The register.
+	 */
+	private function registerOf(ObjectEntity $object): ?Register {
+		$registerId = $object->getRegister();
+		if ($registerId === null || $registerId === '') {
+			return null;
+		}
+
+		try {
+			return $this->registerMapper->find($registerId, _rbac: false, _multitenancy: false);
+		} catch (\Throwable $e) {
+			return null;
+		}
+	}//end registerOf()
 
 	/**
 	 * The depth this request asks for.

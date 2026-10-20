@@ -28,6 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use DateTime;
+use DateTimeZone;
 use OCA\OpenRegister\Db\AuditFlowAttribution;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
@@ -142,12 +144,17 @@ class FlowRunController extends Controller {
 	/**
 	 * List runs, newest first, optionally filtered by flow and status.
 	 *
+	 * `flowIds` (comma separated) narrows to any of several flows and `since`
+	 * (ISO 8601) to runs created at or after that moment; an unreadable
+	 * `since` is a 400 rather than an unfiltered list.
+	 *
 	 * @return JSONResponse The runs plus the paging window.
 	 *
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
 	 * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -196,13 +203,20 @@ class FlowRunController extends Controller {
 			}
 		}
 
+		$since = $this->sinceParam();
+		if ($since === false) {
+			return $this->badSince();
+		}
+
 		$runs = $this->mapper->findAllRuns(
 			flowId: $flowFilter,
 			status: $statusFilter,
 			limit: $limit,
 			offset: $offset,
 			requesterUid: $requesterUid,
-			ownedFlowIds: $ownedFlowIds
+			ownedFlowIds: $ownedFlowIds,
+			since: $since,
+			flowIds: $this->flowIdsParam()
 		);
 
 		return new JSONResponse(
@@ -214,6 +228,131 @@ class FlowRunController extends Controller {
 		);
 
 	}//end index()
+
+	/**
+	 * Per flow: the newest run and the number of runs since a moment.
+	 *
+	 * The read behind a flow list's "last run" and "runs this week" columns, so
+	 * a list of flows does not page through every run to draw two cells.
+	 * `flowIds` (comma separated, at most 200) names the flows; `since`
+	 * (ISO 8601) defaults to seven days ago. Scoped exactly like `index()`: a
+	 * non-admin counts the runs they triggered plus the runs of flows they own,
+	 * so a summary never counts a run the history would hide.
+	 *
+	 * @return JSONResponse `{results: {flowId: {lastRun, runsSince}}, since}`.
+	 *
+	 * @NoAdminRequired
+	 * @NoCSRFRequired
+	 *
+	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function summary(): JSONResponse {
+		$since = $this->sinceParam();
+		if ($since === false) {
+			return $this->badSince();
+		}
+
+		if ($since === null) {
+			$since = (new DateTime('-7 days'))->setTimezone(new DateTimeZone('UTC'));
+		}
+
+		$flowIds = array_slice($this->flowIdsParam(), 0, 200);
+		$sinceText = $since->format(DateTime::ATOM);
+
+		$requesterUid = null;
+		$ownedFlowIds = [];
+		if ($this->isAdmin() === false) {
+			$requesterUid = $this->callerUid();
+			if ($requesterUid === null || $requesterUid === '') {
+				return new JSONResponse(['results' => (object) [], 'since' => $sinceText]);
+			}
+
+			$ownedFlowIds = $this->flowIdsOwnedByCaller();
+		}
+
+		$summary = $this->mapper->summarizeByFlow(
+			flowIds: $flowIds,
+			since: $since,
+			requesterUid: $requesterUid,
+			ownedFlowIds: $ownedFlowIds
+		);
+
+		return new JSONResponse(['results' => (object) $summary, 'since' => $sinceText]);
+	}//end summary()
+
+	/**
+	 * The `flowIds` request parameter as a list of non-empty ids.
+	 *
+	 * Accepts a comma-separated string or an array, so both `?flowIds=a,b` and
+	 * `?flowIds[]=a&flowIds[]=b` work.
+	 *
+	 * @return array<int, string> The flow ids, empty when none were given.
+	 *
+	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 */
+	private function flowIdsParam(): array {
+		$raw = $this->request->getParam('flowIds');
+		if (is_string($raw) === true) {
+			$raw = explode(',', $raw);
+		}
+
+		if (is_array($raw) === false) {
+			return [];
+		}
+
+		$ids = [];
+		foreach ($raw as $id) {
+			if (is_string($id) === true && trim($id) !== '') {
+				$ids[] = trim($id);
+			}
+		}
+
+		return array_values(array_unique($ids));
+	}//end flowIdsParam()
+
+	/**
+	 * The `since` request parameter as a moment.
+	 *
+	 * @return DateTime|false|null The moment, null when absent, false when unreadable.
+	 *
+	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 */
+	private function sinceParam(): DateTime|false|null {
+		$raw = $this->request->getParam('since');
+		if ($raw === null || (is_string($raw) === true && trim($raw) === '')) {
+			return null;
+		}
+
+		if (is_string($raw) === false) {
+			return false;
+		}
+
+		try {
+			// 🔴 NORMALISED TO UTC BEFORE IT IS BOUND. The mapper binds the moment
+			// with PARAM_DATETIME_MUTABLE, which formats the object's own wall
+			// clock without converting, and the `created` column is UTC:
+			// `12:00:00+02:00` was compared as 12:00:00, two hours off the instant.
+			return (new DateTime(trim($raw)))->setTimezone(new DateTimeZone('UTC'));
+		} catch (Throwable) {
+			return false;
+		}
+	}//end sinceParam()
+
+	/**
+	 * The 400 for a `since` that is not a date.
+	 *
+	 * @return JSONResponse The refusal naming the parameter.
+	 *
+	 * @spec openspec/changes/flow-run-summary/specs/flow-run-summary/spec.md
+	 */
+	private function badSince(): JSONResponse {
+		return new JSONResponse(
+			['error' => 'The since parameter must be an ISO 8601 date or date-time.'],
+			Http::STATUS_BAD_REQUEST
+		);
+	}//end badSince()
 
 	/**
 	 * The runs that are still going, for the caller's organisation.

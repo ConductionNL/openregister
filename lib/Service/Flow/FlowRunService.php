@@ -881,6 +881,13 @@ class FlowRunService {
 	 * the seam exists to close, silently: the wrong person's answer arrives
 	 * correctly formatted.
 	 *
+	 * Signals that arrive before the run wakes are merged, not replaced: a later
+	 * signal adds the keys the waiting one lacks. A key both carry with different
+	 * values is a conflict between two signallers: the answer already waiting
+	 * stands, the later value is refused and logged, so one signaller can never
+	 * overwrite what another delivered (and the two answers are never mixed
+	 * under one key).
+	 *
 	 * @param FlowRun $run The suspended run to wake.
 	 * @param array $payload What the signaller wants the run to know.
 	 *
@@ -896,7 +903,34 @@ class FlowRunService {
 			return null;
 		}
 
+		// Two listeners on one event may each signal the same suspended run.
+		// The signal still waiting is kept and the new payload adds the keys it
+		// lacks. A key both set to different values is refused for the later
+		// signal (the waiting answer stands, and the conflict is logged), so the
+		// stored answer never mixes two signallers' values under one key; a
+		// consumed signal is removed by persistResult(), so nothing left over
+		// from an earlier question can reach here.
 		$context = ($run->getContext() ?? []);
+		$waiting = ($context[self::SIGNAL_CONTEXT_KEY] ?? null);
+		if (is_array($waiting) === true) {
+			$conflicts = [];
+			foreach ($payload as $key => $value) {
+				if (array_key_exists($key, $waiting) === true && $waiting[$key] !== $value) {
+					$conflicts[] = $key;
+				}
+			}
+
+			if ($conflicts !== []) {
+				$this->logger->warning(
+					message: '[FlowRunService] A second signal on run ' . (string)$run->getUuid()
+						. ' carried a different value for a key already answered; the first answer stands.',
+					context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $run->getUuid(), 'keys' => $conflicts]
+				);
+			}
+
+			$payload = ($waiting + $payload);
+		}
+
 		$context[self::SIGNAL_CONTEXT_KEY] = $payload;
 
 		$run->setContext($context);
@@ -1051,19 +1085,23 @@ class FlowRunService {
 	 * @param array $flow The flow document (used only to resolve the published pin).
 	 * @param object $subject The subject object the node acts on.
 	 * @param string $nodeId The node to run.
+	 * @param array $config The caller's config, overlaid on the published step's config after
+	 *                      pinning (caller keys win). The pin replaces the graph's nodes, so
+	 *                      this is the only way a picker's choice reaches the node.
 	 *
 	 * @return FlowRun The updated run: COMPLETED with the node's output items,
 	 *                 or FAILED with the node's exception recorded. Never
 	 *                 SUSPENDED — see {@see failSuspendedNode()}.
 	 *
 	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#requirement-a-node-type-opts-in-to-direct-invocation
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#scenario-the-callers-config-reaches-the-node
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::fromSubject/normalise are
 	 * stateless value normalisers, the same ones execute() calls under the same
 	 * suppression reasoning already given there: injecting a factory to call
 	 * them would add a dependency without removing any coupling.
 	 */
-	public function executeNode(FlowRun $run, array $flow, object $subject, string $nodeId): FlowRun {
+	public function executeNode(FlowRun $run, array $flow, object $subject, string $nodeId, array $config = []): FlowRun {
 		if ($run->getStatus() !== FlowRun::STATUS_QUEUED) {
 			// Parked awaiting delegated-identity consent, or otherwise not
 			// ready to proceed — the same "do not double-act" rule execute()
@@ -1080,6 +1118,13 @@ class FlowRunService {
 		$step = $this->stepById(pinned: $pinned, nodeId: $nodeId);
 		if ($step === null) {
 			return $this->failMissingNode(run: $run, nodeId: $nodeId);
+		}
+
+		if ($config !== []) {
+			$step['config'] = array_merge(
+				(array)($step['config'] ?? []),
+				$this->callerConfigFor(stepType: (string)($step['type'] ?? ''), config: $config)
+			);
 		}
 
 		$run->setStatus(FlowRun::STATUS_RUNNING);
@@ -1126,6 +1171,54 @@ class FlowRunService {
 
 		return null;
 	}//end stepById()
+
+	/**
+	 * Keep only the caller's keys that the node declares it reads.
+	 *
+	 * The caller of a direct invocation may read the subject, which is not the
+	 * same as being the flow's author: a key the node's own vocabulary
+	 * ({@see IFlowNodeConfigKeys::configKeys()}, else the keys of its
+	 * {@see IFlowNodeConfigForm}) does not list is one the author never meant
+	 * to expose, so it never reaches the node. A node that declares neither
+	 * takes nothing from the caller (fail closed): the published step's own
+	 * config is all it runs with.
+	 *
+	 * @param string $stepType The published step's node type.
+	 * @param array $config The caller's config.
+	 *
+	 * @return array The caller's config limited to the node's declared keys.
+	 *
+	 * @spec openspec/changes/or-flow-run-node/specs/flow-run-node/spec.md#scenario-the-callers-config-reaches-the-node
+	 */
+	private function callerConfigFor(string $stepType, array $config): array {
+		try {
+			$node = $this->registry->get(type: $stepType);
+		} catch (Throwable) {
+			// The dispatcher refuses an unknown type itself; nothing of the caller's reaches it.
+			return [];
+		}
+
+		$declared = null;
+		if ($node instanceof IFlowNodeConfigKeys) {
+			$declared = array_map(static fn ($key): string => (string)$key, $node->configKeys());
+		} else if ($node instanceof IFlowNodeConfigForm) {
+			$declared = array_map(
+				static fn ($field): string => (string)(((array)$field)['key'] ?? ''),
+				$node->configForm()
+			);
+		}
+
+		if ($declared === null) {
+			$this->logger->warning(
+				message: '[FlowRunService] A direct-invoke caller sent config to a node that declares no config keys; it was ignored.',
+				context: ['file' => __FILE__, 'line' => __LINE__, 'type' => $stepType, 'keys' => array_keys($config)]
+			);
+
+			return [];
+		}
+
+		return array_intersect_key($config, array_flip($declared));
+	}//end callerConfigFor()
 
 	/**
 	 * Fail a run whose named node is not part of the graph it is pinned to.

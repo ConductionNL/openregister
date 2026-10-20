@@ -23,6 +23,26 @@ refused (404), even when the flow and node id otherwise resolve.
 - **THEN** only that node runs, against the given subject, and a `FlowRun`
   record is created scoped to it
 
+#### Scenario: The caller's config reaches the node
+
+- **GIVEN** a published node whose authored config is
+  `{templateId: "authored", folder: "Besluiten"}`
+- **WHEN** the caller runs it directly with `config: {templateId: "picked"}`
+- **THEN** the node executes with `{templateId: "picked", folder: "Besluiten"}`:
+  caller keys win, authored keys the caller did not send stay, and the
+  published version pin does not drop the caller's config
+
+#### Scenario: A caller key the node does not declare is dropped
+
+- **GIVEN** a published node that declares the config keys `templateId` and
+  `folder`
+- **WHEN** the caller runs it directly with
+  `config: {templateId: "picked", webhookUrl: "https://example.invalid/"}`
+- **THEN** the node executes with `{templateId: "picked", folder: "Besluiten"}`:
+  only keys the node declares (`configKeys()`, else the keys of its
+  `configForm()`) are taken from the caller, and a node that declares neither
+  takes nothing from the caller
+
 ### Requirement: Direct invocation is authorized against the subject object
 
 The endpoint MUST NOT authorize solely on the flow named-rights matrix

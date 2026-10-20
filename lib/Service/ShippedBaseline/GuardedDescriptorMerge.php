@@ -51,19 +51,66 @@ namespace OCA\OpenRegister\Service\ShippedBaseline;
 class GuardedDescriptorMerge {
 
 	/**
+	 * The authorization blocks, settled whole.
+	 *
+	 * @var AuthorizationBlocks
+	 */
+	private readonly AuthorizationBlocks $blocks;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param DescriptorParts      $parts      The flattener.
-	 * @param DivergenceComparator $comparator The four states.
+	 * @param DescriptorParts                   $parts      The flattener.
+	 * @param DivergenceComparator              $comparator The four states.
+	 * @param ShippedAuthorizationDecision|null $decision   An administrator's decision to take shipped
+	 *                                                      authorization, while one is in effect; none by default.
 	 */
 	public function __construct(
 		private readonly DescriptorParts $parts,
 		private readonly DivergenceComparator $comparator,
+		private readonly ?ShippedAuthorizationDecision $decision = null,
 	) {
+		$this->blocks = new AuthorizationBlocks(parts: $parts);
 	}//end __construct()
 
 	/**
+	 * Who decided to take shipped authorization, while a decision is in effect.
+	 *
+	 * @return string|null The source of the decision, or null.
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function decidedVia(): ?string {
+		return $this->decision?->via();
+	}//end decidedVia()
+
+	/**
+	 * Note, on the decision in effect, the blocks it replaced over a local change.
+	 *
+	 * @param string             $slug  The schema slug.
+	 * @param array<int, string> $roots The replaced block roots.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function noteReplaced(string $slug, array $roots): void {
+		$this->decision?->noteReplaced(slug: $slug, roots: $roots);
+	}//end noteReplaced()
+
+	/**
 	 * What to write, what was applied, what was preserved and what conflicts.
+	 *
+	 * 🔴 AN AUTHORIZATION BLOCK SETTLES AS ONE PART. The schema-level
+	 * `authorization` and each property's `authorization` are access policies,
+	 * and a policy is only meaningful whole. Merged per action key, the portaliq
+	 * 0.97.0 upgrade took `read: [portaliq-medewerkers]` from the app and kept
+	 * `export: [authenticated]` from the instance: a policy NEITHER side wrote,
+	 * under which an account that may not read a record may still export it.
+	 * So every key under one block takes the same side: the app's whole block
+	 * when only the app moved it, the instance's whole block when only the
+	 * instance did, and one conflict on the block's root path when both did or
+	 * when they moved different keys. A decision names that root path.
 	 *
 	 * @param array<string, mixed> $baseline  The definition the app shipped.
 	 * @param array<string, mixed> $live      The definition the instance runs.
@@ -75,10 +122,13 @@ class GuardedDescriptorMerge {
 	 *     applied: array<int, string>,
 	 *     preserved: array<int, string>,
 	 *     conflicts: array<int, array{path: string, shipped: mixed, live: mixed}>,
-	 *     baseline: array<string, mixed>
-	 * } The result.
+	 *     baseline: array<string, mixed>,
+	 *     replacedLocal: array<int, string>
+	 * } The result. `replacedLocal` names the authorization blocks a decision
+	 *   took from upstream over a value the instance had changed.
 	 *
 	 * @spec openspec/changes/local-changes-to-app-shipped-configuration/specs/schema-import/spec.md
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
 	 */
 	public function merge(array $baseline, array $live, array $incoming, array $decisions = []): array {
 		$states = $this->comparator->states(baseline: $baseline, live: $live, incoming: $incoming);
@@ -99,17 +149,36 @@ class GuardedDescriptorMerge {
 
 		$missing = $this->missingProperties(sources: $sources);
 
-		foreach ($states as $path => $state) {
-			$decided = in_array($path, $decisions, true);
-
-			// A shipped property the instance does not hold AT ALL never reached
-			// it (an earlier import whose write did not land it); it was not
-			// deleted here. Read as a local deletion it was kept absent, and
-			// reported as a conflict wherever the app also changed it, on every
-			// upgrade (learniq D11). It is taken from upstream.
+		// A shipped property the instance does not hold AT ALL never reached
+		// it (an earlier import whose write did not land it); it was not
+		// deleted here. Read as a local deletion it was kept absent, and
+		// reported as a conflict wherever the app also changed it, on every
+		// upgrade (learniq D11). It is taken from upstream.
+		foreach (array_keys($states) as $path) {
 			if (in_array($this->propertyOf(path: (string)$path), $missing, true) === true) {
-				$state = DivergenceComparator::UPSTREAM;
+				$states[$path] = DivergenceComparator::UPSTREAM;
 			}
+		}
+
+		// An administrator's re-import is the explicit decision REQ-LCA-003
+		// waits for, for every authorization block the shipped definition
+		// carries. A block only the instance holds is not decided: the app
+		// shipped nothing to take, so the local policy stays (and is
+		// reported) instead of the schema turning default-open.
+		if ($this->decidedVia() !== null) {
+			$decisions = array_values(array_unique(array_merge($decisions, $this->blocks->roots($incoming))));
+		}
+
+		$blocks = $this->blocks->settle(states: $states, decisions: $decisions);
+
+		foreach ($states as $path => $state) {
+			$root = $this->blocks->rootOf(path: (string)$path);
+			if ($root !== null && isset($blocks[$root]) === true) {
+				$this->foldBlockMember(acc: $acc, path: (string)$path, block: $blocks[$root], sources: $sources);
+				continue;
+			}
+
+			$decided = in_array($path, $decisions, true);
 
 			// A decided conflict is taken from upstream, and is the only way a
 			// conflicting part moves. The decision is the caller's; recording
@@ -129,14 +198,55 @@ class GuardedDescriptorMerge {
 			);
 		}//end foreach
 
+		$outcome = $this->blocks->outcome(blocks: $blocks, sources: $sources);
+
 		return [
 			'merged' => $this->parts->unflatten(parts: $acc['mergedParts']),
-			'applied' => $acc['applied'],
+			'applied' => array_merge($acc['applied'], $outcome['applied']),
 			'preserved' => $acc['preserved'],
-			'conflicts' => $acc['conflicts'],
+			'conflicts' => array_merge($acc['conflicts'], $outcome['conflicts']),
 			'baseline' => $this->parts->unflatten(parts: $acc['nextBaseline']),
+			'replacedLocal' => $outcome['replacedLocal'],
 		];
 	}//end merge()
+
+	/**
+	 * Fold one key of a settled authorization block.
+	 *
+	 * The conflict itself is reported once, on the block root, by merge().
+	 *
+	 * @param array<string, mixed>                     $acc     The running result, mutated in place.
+	 * @param string                                   $path    The key.
+	 * @param array{state: string, decided: bool, localMoved: bool} $block The block's settlement.
+	 * @param array<string, array<string|int, mixed>>  $sources The flattened definitions.
+	 *
+	 * @return void
+	 */
+	private function foldBlockMember(array &$acc, string $path, array $block, array $sources): void {
+		if ($block['state'] === DivergenceComparator::UPSTREAM) {
+			$this->foldUpstream(acc: $acc, path: $path, decided: true, sources: $sources);
+			if ($block['decided'] === false) {
+				$acc['applied'][] = $path;
+			}
+
+			return;
+		}
+
+		if ($block['state'] === DivergenceComparator::LOCAL) {
+			$this->foldLocal(acc: $acc, path: $path, sources: $sources);
+			return;
+		}
+
+		// BOTH: the instance's block stands whole, the baseline stays where it
+		// was so the conflict is found again on the next import.
+		if (array_key_exists($path, $sources['live']) === true) {
+			$acc['mergedParts'][$path] = $sources['live'][$path];
+		}
+
+		if (array_key_exists($path, $sources['baseline']) === true) {
+			$acc['nextBaseline'][$path] = $sources['baseline'][$path];
+		}
+	}//end foldBlockMember()
 
 	/**
 	 * The shipped properties the instance holds no part of.

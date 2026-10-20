@@ -26,6 +26,7 @@
 namespace OCA\OpenRegister\Service\Schemas;
 
 use Exception;
+use OCA\OpenRegister\Service\Object\ReferenceKey;
 use OCA\OpenRegister\Service\Search\PropertySearchProfile;
 
 /**
@@ -461,6 +462,20 @@ class PropertyValidatorHandler {
 	];
 
 	/**
+	 * The modifiers that take one value from a closed list, and that list.
+	 *
+	 * The save path refuses any other value, so the list is published with the
+	 * vocabulary. An app that ships `inputControl: textarea` learns at build
+	 * time what it otherwise learns from a schema refused at import.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
+	public const CLOSED_MODIFIER_VALUES = [
+		'matchType' => PropertySearchProfile::MATCH_TYPES,
+		'inputControl' => PropertySearchProfile::INPUT_CONTROLS,
+	];
+
+	/**
 	 * The keys that change how a property behaves rather than what it accepts.
 	 *
 	 * These are OpenRegister's own, they are valid on every type, and they are
@@ -494,6 +509,8 @@ class PropertyValidatorHandler {
 		'calculation' => ['value' => 'object', 'description' => 'Derive the value from other properties instead of asking for it.'],
 		'computed' => ['value' => 'string', 'description' => 'A Twig expression that derives the value.'],
 		'onDelete' => ['value' => 'string', 'description' => 'What happens to this object when the one it points at is deleted.'],
+		'referenceSchema' => ['value' => 'string', 'description' => 'The schema whose rows this value cites by a key, not a uuid.'],
+		'referenceKey' => ['value' => 'string', 'description' => 'The cited schema\'s property this value matches, e.g. code.'],
 		'cascade' => ['value' => 'boolean', 'description' => 'Save the referenced object along with this one.'],
 		'cascadeDelete' => ['value' => 'boolean', 'description' => 'Delete the referenced object along with this one.'],
 		'inversedBy' => ['value' => 'string', 'description' => 'The property on the other side of the relation.'],
@@ -953,9 +970,20 @@ class PropertyValidatorHandler {
 		if (($property['onDelete'] ?? null) !== null) {
 			// OnDelete is only valid on relation properties (those with $ref).
 			$hasRef = isset($property['$ref']) === true
-				|| (isset($property['items']['$ref']) === true);
+				|| (isset($property['items']['$ref']) === true)
+				|| isset($property['referenceSchema']) === true
+				|| (isset($property['items']['referenceSchema']) === true);
 			if ($hasRef === false) {
-				throw new Exception("'onDelete' at '$path' is only valid on relation properties with '\$ref'");
+				throw new Exception("'onDelete' at '$path' is only valid on relation properties with '\$ref' or 'referenceSchema'");
+			}
+
+			// A reference by key only refuses: the other actions rewrite or
+			// delete by uuid and would act on the wrong value. An empty
+			// referenceKey or the literal `uuid` is a plain uuid reference,
+			// read the way the delete reads it.
+			$referenceKey = (new ReferenceKey())->keyOf(property: $property);
+			if ($referenceKey !== null && strtoupper((string)$property['onDelete']) !== 'RESTRICT') {
+				throw new Exception("'referenceKey' at '$path' is only valid with onDelete RESTRICT");
 			}
 
 			$validActions = ['CASCADE', 'RESTRICT', 'SET_NULL', 'SET_DEFAULT', 'NO_ACTION'];
@@ -994,12 +1022,7 @@ class PropertyValidatorHandler {
 	 * @spec openspec/changes/search-quality-operators-and-facets/specs/zoeken-filteren/spec.md
 	 */
 	private function validateSearchProfile(array $property, string $path): void {
-		$declarations = [
-			'matchType' => PropertySearchProfile::MATCH_TYPES,
-			'inputControl' => PropertySearchProfile::INPUT_CONTROLS,
-		];
-
-		foreach ($declarations as $key => $allowed) {
+		foreach (self::CLOSED_MODIFIER_VALUES as $key => $allowed) {
 			$declared = ($property[$key] ?? null);
 			if ($declared === null) {
 				continue;

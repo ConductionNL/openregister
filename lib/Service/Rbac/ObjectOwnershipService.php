@@ -126,7 +126,8 @@ class ObjectOwnershipService {
 	 * @param IUserSession $userSession The acting user, which is where an owner comes from.
 	 * @param IUserManager $userManager Resolves a named new owner, and their display name.
 	 * @param IGroupManager $groupManager The caller's groups, and whether an owning group exists.
-	 * @param ObjectScopeResolver $scopeResolver The one definition of who is admitted unconditionally.
+	 * @param GrantManageGuard $grantManage Who may name a record's owning group: the owner, an administrator,
+	 *                                      or a holder of the special right `grant_manage`.
 	 * @param PermissionHandler $permissions The rules, for "may this caller edit this record".
 	 * @param ObjectOwnerWriter $ownerWriter The targeted write of the owner column.
 	 * @param ObjectAuthorizationWriter $authorizationWriter The targeted write of the authorization block.
@@ -136,6 +137,7 @@ class ObjectOwnershipService {
 	 * @param SchemaMapper $schemaMapper Resolves a child's schema.
 	 * @param INotificationManager $notificationManager Tells the previous owner.
 	 * @param LoggerInterface $logger Where a transfer is noted.
+	 * @param GrantChangeAuditor|null $grantAuditor Writes an audit-trail entry for a change of the owning group. Null only in legacy fixtures.
 	 *
 	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) Constructor injection; see the
 	 * coupling note on the class.
@@ -144,7 +146,7 @@ class ObjectOwnershipService {
 		private readonly IUserSession $userSession,
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
-		private readonly ObjectScopeResolver $scopeResolver,
+		private readonly GrantManageGuard $grantManage,
 		private readonly PermissionHandler $permissions,
 		private readonly ObjectOwnerWriter $ownerWriter,
 		private readonly ObjectAuthorizationWriter $authorizationWriter,
@@ -154,6 +156,7 @@ class ObjectOwnershipService {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly INotificationManager $notificationManager,
 		private readonly LoggerInterface $logger,
+		private readonly ?GrantChangeAuditor $grantAuditor = null,
 	) {
 	}//end __construct()
 
@@ -368,7 +371,7 @@ class ObjectOwnershipService {
 		ObjectEntity $object,
 		?string $group,
 	): array {
-		$this->requireOwnerOrAdmin(object: $object);
+		$this->requireMayNameOwnerGroup(object: $object, group: $group);
 
 		if ($group !== null && $group !== '' && $this->groupManager->groupExists($group) === false) {
 			throw new InvalidArgumentException('No such group: ' . $group);
@@ -377,6 +380,7 @@ class ObjectOwnershipService {
 		// Read-modify-write ONE key, exactly as the scope is written: an action
 		// override or a scope in the same block must survive this.
 		$block = ($object->getAuthorization() ?? []);
+		$before = $this->groupNameOf(value: ($block[ObjectScopeResolver::OWNER_GROUP_KEY] ?? null));
 
 		if ($group === null || $group === '') {
 			unset($block[ObjectScopeResolver::OWNER_GROUP_KEY]);
@@ -395,8 +399,29 @@ class ObjectOwnershipService {
 
 		$object->setAuthorization($block);
 
+		$this->grantAuditor?->recordOwnerGroup(
+			object: $object,
+			before: $before,
+			after: $this->groupNameOf(value: ($block[ObjectScopeResolver::OWNER_GROUP_KEY] ?? null))
+		);
+
 		return $block;
 	}//end setOwnerGroup()
+
+	/**
+	 * The group name an authorization block holds, or null for none.
+	 *
+	 * @param mixed $value The stored `ownerGroup` value.
+	 *
+	 * @return string|null The group id.
+	 */
+	private function groupNameOf(mixed $value): ?string {
+		if (is_string($value) === true && trim($value) !== '') {
+			return trim($value);
+		}
+
+		return null;
+	}//end groupNameOf()
 
 	/**
 	 * Move one record to a new owner, record it, announce it, and carry it down.
@@ -680,27 +705,47 @@ class ObjectOwnershipService {
 	}//end mayEdit()
 
 	/**
-	 * Require that the caller owns the record, or administers the instance.
+	 * Require that the caller may name the group that owns the record.
+	 *
+	 * The owner, the owning group and an administrator, as before. Beside them a
+	 * holder of the organisation's `grant_manage` special right on this record
+	 * ({@see GrantManageGuard}). The owning group reads and changes the
+	 * record, so a holder admitted by the special right alone may not name a
+	 * group it is in: the right decides who else is let in, never the holder.
 	 *
 	 * @param ObjectEntity $object The record.
+	 * @param string|null $group The group being named, or null to take it away.
 	 *
-	 * @throws NotAuthorizedException When the caller is neither.
+	 * @throws NotAuthorizedException When the caller may not.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/special-right-to-manage-grants/specs/object-ownership/spec.md
 	 */
-	private function requireOwnerOrAdmin(ObjectEntity $object): void {
-		if ($this->scopeResolver->admitsUnconditionally(
-			userId: $this->callerUid(),
-			userGroups: $this->callerGroups(),
-			objectOwner: $object->getOwner(),
-			authorization: $object->getAuthorization()
-		) === false
-		) {
+	private function requireMayNameOwnerGroup(ObjectEntity $object, ?string $group): void {
+		$uid = $this->callerUid();
+		$groups = $this->callerGroups();
+
+		$admittedAs = $this->grantManage->admittedAs(userId: $uid, userGroups: $groups, object: $object);
+		if ($admittedAs === null) {
 			throw new NotAuthorizedException(
 				message: 'Only the owner or an administrator may change who owns this record'
 			);
 		}
-	}//end requireOwnerOrAdmin()
+
+		if ($this->grantManage->letsItselfIn(
+			admittedAs: $admittedAs,
+			userId: $uid,
+			userGroups: $groups,
+			user: null,
+			group: $group
+		) === true
+		) {
+			throw new NotAuthorizedException(
+				message: 'The right to manage grants does not let its holder name its own group as the owner'
+			);
+		}
+	}//end requireMayNameOwnerGroup()
 
 	/**
 	 * Require that the caller administers the instance.

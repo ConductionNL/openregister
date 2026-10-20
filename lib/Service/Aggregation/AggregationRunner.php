@@ -50,12 +50,14 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotInRegisterException;
 use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Service\Object\DraftListLens;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RegisterScopedSchemaResolver;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
+use OCA\OpenRegister\Support\NullFilter;
 use OCP\IDBConnection;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -2117,53 +2119,70 @@ class AggregationRunner {
 	 * @return array<int, array<string, mixed>> Filtered rows.
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
+	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
 	 */
 	private function applyFilter(array $rows, array $filter): array {
 		$result = [];
 		foreach ($rows as $row) {
 			$keep = true;
 			foreach ($filter as $field => $criterion) {
-				$value = $row[$field] ?? null;
-
-				// Bare array criterion (a plain, non-associative list) is an
-				// implicit `in` — any-of match against the candidate list.
-				if (is_array($criterion) === true && array_is_list($criterion) === true) {
-					if ($this->valueMatchesAnyOf(rowValue: $value, candidates: $criterion) === false) {
-						$keep = false;
-						break;
-					}
-
-					continue;
+				if ($this->criterionMatches(value: ($row[$field] ?? null), criterion: $criterion) === false) {
+					$keep = false;
+					break;
 				}
-
-				if (is_array($criterion) === false) {
-					// Scalar equality. valueMatchesAnyOf() folds in the
-					// BUG-SVC-9 string-cast coercion (magic-table columns
-					// come back as strings while the criterion may be
-					// int/bool/float) AND the multi-value row-overlap test.
-					if ($this->valueMatchesAnyOf(rowValue: $value, candidates: [$criterion]) === false) {
-						$keep = false;
-						break;
-					}
-
-					continue;
-				}
-
-				foreach ($criterion as $op => $onValue) {
-					if ($this->checkOn(value: $value, op: (string)$op, onValue: $onValue) === false) {
-						$keep = false;
-						break 2;
-					}
-				}
-			}//end foreach
+			}
 
 			if ($keep === true) {
 				$result[] = $row;
 			}
-		}//end foreach
+		}
 
 		return $result;
 	}//end applyFilter()
+
+	/**
+	 * Whether one row value satisfies one filter criterion.
+	 *
+	 * @param mixed $value     The value extracted from the row.
+	 * @param mixed $criterion Scalar = eq, plain list = implicit `in`, assoc array = operator map,
+	 *                         or the list endpoint's `IS NULL` / `IS NOT NULL` / `{isnull: bool}`.
+	 *
+	 * @return bool True when the value matches.
+	 *
+	 * @spec openspec/specs/aggregation-api/spec.md
+	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+	 */
+	private function criterionMatches(mixed $value, mixed $criterion): bool {
+		// `IS NULL` / `IS NOT NULL` / `{isnull: bool}`, the list endpoint's
+		// spelling of "empty" and "filled". As a scalar it would otherwise be
+		// compared as the literal text.
+		$wantsNull = NullFilter::nullCheck(criterion: $criterion);
+		if ($wantsNull !== null) {
+			return ($value === null) === $wantsNull;
+		}
+
+		// Bare array criterion (a plain, non-associative list) is an
+		// implicit `in` — any-of match against the candidate list.
+		if (is_array($criterion) === true && array_is_list($criterion) === true) {
+			return $this->valueMatchesAnyOf(rowValue: $value, candidates: $criterion);
+		}
+
+		if (is_array($criterion) === false) {
+			// Scalar equality. valueMatchesAnyOf() folds in the
+			// BUG-SVC-9 string-cast coercion (magic-table columns
+			// come back as strings while the criterion may be
+			// int/bool/float) AND the multi-value row-overlap test.
+			return $this->valueMatchesAnyOf(rowValue: $value, candidates: [$criterion]);
+		}
+
+		foreach ($criterion as $op => $onValue) {
+			if ($this->checkOn(value: $value, op: (string)$op, onValue: $onValue) === false) {
+				return false;
+			}
+		}
+
+		return true;
+	}//end criterionMatches()
 
 	/**
 	 * Apply a single operator check.
@@ -2178,20 +2197,25 @@ class AggregationRunner {
 	 * multi-value row aren't part of this fix's scope.
 	 *
 	 * @param mixed $value The value extracted from the row.
-	 * @param string $op Operator name ('eq','ne','gt','gte','lt','lte','in','notIn').
+	 * @param string $op Operator name ('eq','ne','gt','gte','lt','lte','in','notIn','isnull').
 	 * @param mixed $onValue The operand value to compare against.
 	 *
 	 * @return bool True when the value satisfies the operator.
 	 *
-	 * @throws RuntimeException When the operator is not one of the eight implemented
+	 * @throws RuntimeException When the operator is not one of the nine implemented
 	 *                          spellings. It previously matched every row instead,
 	 *                          silently widening the filter.
 	 *
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity)
 	 *
 	 * @spec openspec/specs/aggregation-api/spec.md
+	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
 	 */
 	private function checkOn(mixed $value, string $op, mixed $onValue): bool {
+		if ($op === NullFilter::ISNULL_OPERATOR) {
+			return ($value === null) === NullFilter::isNullOperatorAsksForNull(value: $onValue);
+		}
+
 		if ($op === 'eq') {
 			return $this->valueMatchesAnyOf(rowValue: $value, candidates: [$onValue]);
 		}
@@ -2244,10 +2268,27 @@ class AggregationRunner {
 		// or rewritten.
 		throw new RuntimeException(
 			'Unsupported aggregation filter operator "' . $op . '". Supported: '
-			. 'eq, ne, gt, gte, lt, lte, in, notIn. An unknown operator used to match every '
+			. 'eq, ne, gt, gte, lt, lte, in, notIn, isnull. An unknown operator used to match every '
 			. 'row, which silently widened the filter instead of narrowing it.'
 		);
 	}//end checkOp()
+
+	/**
+	 * The SQL that asks for an empty or a filled column.
+	 *
+	 * @param bool $wantsNull True for an empty column.
+	 *
+	 * @return string ` IS NULL` or ` IS NOT NULL`.
+	 *
+	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
+	 */
+	private function nullPredicate(bool $wantsNull): string {
+		if ($wantsNull === true) {
+			return ' IS NULL';
+		}
+
+		return ' IS NOT NULL';
+	}//end nullPredicate()
 
 	/**
 	 * Test whether a row value matches any of the given candidates.
@@ -2405,6 +2446,7 @@ class AggregationRunner {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
 	 * @spec openspec/specs/aggregation-api/spec.md
+	 * @spec openspec/changes/aggregation-null-filters/specs/aggregation-api/spec.md
 	 */
 	private function tryNativeAggregation(
 		Register $register,
@@ -2493,11 +2535,12 @@ class AggregationRunner {
 		// {field: {notIn: [...]}}      → field NOT IN (?, ?, ?)
 		// {field: {gt|gte|lt|lte: x}}  → field > / >= / < / <= ?
 		// {field: {ne: x}}             → field <> ?
+		// {field: 'IS NULL'}, {field: {isnull: true}} → field IS NULL (and the NOT NULL forms)
 		// Reject anything else.
 		foreach ($filter as $value) {
 			if (is_array($value) === true && array_is_list($value) === false) {
 				foreach (array_keys($value) as $op) {
-					if (in_array((string)$op, ['in', 'notIn', 'gt', 'gte', 'lt', 'lte', 'ne'], true) === false) {
+					if (in_array((string)$op, ['in', 'notIn', 'gt', 'gte', 'lt', 'lte', 'ne', NullFilter::ISNULL_OPERATOR], true) === false) {
 						return null;
 					}
 				}
@@ -2554,6 +2597,34 @@ class AggregationRunner {
 			$whereParts[] = "(_archived IS NULL OR _archived = 'null'::jsonb)";
 		} else {
 			$whereParts[] = "(_archived IS NULL OR _archived = 'null' OR _archived = '')";
+		}
+
+		// Draft lens. A list hides drafts by default (and, for a schema with
+		// `draftsListed: false`, the caller's own as well); a count over the
+		// same rows has to agree with it, or a tile reads higher than the page
+		// under it. The clause is DraftListLens's own, for the mode a list with
+		// no query would use, and is left out of a table that could not be
+		// given its `_status` column (REQ-MTH-002).
+		$draftLens = new DraftListLens();
+		$statusMissing = in_array('_status', $this->magicMapper->getMetadataColumnHealer()->missingFor(tableName: $tableName), true);
+		if ($statusMissing === false) {
+			$draftOwner = $this->userSession->getUser()?->getUID();
+			$ownerBinding = null;
+			if ($draftOwner !== null && $draftOwner !== '') {
+				$ownerBinding = '?';
+			}
+
+			$draftPredicate = $draftLens->sql(
+				mode: $draftLens->modeFor(query: [], schema: $schema),
+				columnPrefix: '',
+				owner: $ownerBinding
+			);
+			if ($draftPredicate !== null) {
+				$whereParts[] = $draftPredicate;
+				if ($ownerBinding !== null && str_contains($draftPredicate, '?') === true) {
+					$bindings[] = $draftOwner;
+				}
+			}
 		}
 
 		// SECURITY: the organisation boundary. This fast path bypasses
@@ -2640,7 +2711,7 @@ class AggregationRunner {
 		// restriction (an admin); internal callers that already decided who
 		// may see the figure pass `rowRbac: false`.
 		if ($rowRbac === true) {
-			$rowPredicate = $this->magicMapper->rbacRowPredicateSql(schema: $schema, action: 'read');
+			$rowPredicate = $this->magicMapper->rbacRowPredicateSql(schema: $schema, action: 'read', register: $register);
 			if ($rowPredicate !== null) {
 				$whereParts[] = $rowPredicate;
 			}
@@ -2648,6 +2719,12 @@ class AggregationRunner {
 
 		foreach ($filter as $f => $v) {
 			$col = $this->sanitizeColumnName(name: (string)$f);
+
+			$wantsNull = NullFilter::nullCheck(criterion: $v);
+			if ($wantsNull !== null) {
+				$whereParts[] = $quote . $col . $quote . $this->nullPredicate(wantsNull: $wantsNull);
+				continue;
+			}
 
 			// Bare array value — implicit `in` (any-of), REQ-AGG-106 / #2027.
 			// A plain list (non-associative) is distinguished from an
@@ -2720,6 +2797,13 @@ class AggregationRunner {
 
 					continue;
 				}//end if
+
+				if ((string)$op === NullFilter::ISNULL_OPERATOR) {
+					$whereParts[] = $quote . $col . $quote . $this->nullPredicate(
+						wantsNull: NullFilter::isNullOperatorAsksForNull(value: $onValue)
+					);
+					continue;
+				}
 
 				$sqlOn = match ((string)$op) {
 					'gt' => '>',

@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\DraftCallerRule;
 use OCA\OpenRegister\Service\Relation\RelationTypeResolver;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -826,6 +827,7 @@ class RelationHandler {
 
 		$schemaCache = [];
 		$filtered = [];
+		$drafts = new DraftCallerRule();
 
 		foreach ($objects as $object) {
 			if (($object instanceof ObjectEntity) === false) {
@@ -854,6 +856,20 @@ class RelationHandler {
 			}
 
 			$schema = $schemaCache[$schemaId];
+
+			// Another user's draft is kept from this caller, as on every other
+			// path. The candidates come from a lookup that applied no access
+			// rule, so a draft the per-table query left out reaches this list
+			// through the fallback above; hasPermission() has no draft rule.
+			if ($drafts->keptFromCaller(
+				object: $object,
+				schema: $schema,
+				userId: $this->rbacHandler->getCurrentUserId(),
+				isAdmin: false
+			) === true
+			) {
+				continue;
+			}
 
 			// Build object data with metadata for condition evaluation.
 			$objectData = $object->getObject() ?? [];

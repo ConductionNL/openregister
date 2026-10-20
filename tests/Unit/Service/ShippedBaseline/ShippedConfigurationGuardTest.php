@@ -27,6 +27,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Service\ShippedBaseline\DescriptorParts;
 use OCA\OpenRegister\Service\ShippedBaseline\DivergenceComparator;
 use OCA\OpenRegister\Service\ShippedBaseline\GuardedDescriptorMerge;
+use OCA\OpenRegister\Service\ShippedBaseline\ShippedAuthorizationDecision;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedBaselineStore;
 use OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard;
 use OCP\IUser;
@@ -57,15 +58,21 @@ class ShippedConfigurationGuardTest extends TestCase {
 	 * A guard over an in-memory baseline store.
 	 *
 	 * @param array<string, mixed>|null $baseline The stored baseline definition, or null for none.
-	 * @param IUserSession|null         $session  The session.
+	 * @param IUserSession|null                 $session  The session.
+	 * @param ShippedAuthorizationDecision|null $decision The administrator's decision, when one is in effect.
+	 * @param bool                              $readFails Whether reading the baseline throws, so the guard cannot run.
 	 *
 	 * @return ShippedConfigurationGuard The guard.
 	 */
-	private function guard(?array $baseline, ?IUserSession $session = null): ShippedConfigurationGuard {
+	private function guard(?array $baseline, ?IUserSession $session = null, ?ShippedAuthorizationDecision $decision = null, bool $readFails = false): ShippedConfigurationGuard {
 		$store = $this->createMock(ShippedBaselineStore::class);
 		$store->method('schemaSubject')->willReturnCallback(
 			static fn (string $slug): string => ('schema:' . $slug)
 		);
+		if ($readFails === true) {
+			$store->method('read')->willThrowException(new \RuntimeException('baseline store down'));
+		}
+
 		$store->method('read')->willReturn(
 			($baseline === null ? null : [
 				'definition' => $baseline,
@@ -102,7 +109,7 @@ class ShippedConfigurationGuardTest extends TestCase {
 
 		return new ShippedConfigurationGuard(
 			baselines: $store,
-			merge: new GuardedDescriptorMerge(parts: $parts, comparator: $comparator),
+			merge: new GuardedDescriptorMerge(parts: $parts, comparator: $comparator, decision: $decision),
 			comparator: $comparator,
 			audit: $audit,
 			session: $session,
@@ -529,4 +536,105 @@ class ShippedConfigurationGuardTest extends TestCase {
 
 		$this->assertSame([['subject' => 'schema:zaak', 'definition' => $incoming]], $this->recorded);
 	}//end testByDefaultTheBaselineIsStillRecorded()
+
+	/**
+	 * 🔴 `occ ... --import` IS THE DECISION REQ-LCA-003 WAITS FOR.
+	 *
+	 * Under the administrator's re-import the file's authorization block is
+	 * written whole over the one the instance changed, and the replacement is
+	 * on the audit trail with what decided it. Outside it, the same import
+	 * keeps the instance's block and reports the conflict.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reimport-real-register-configuration/specs/register-descriptor-admin/spec.md
+	 */
+	public function testAnAdministratorsReimportTakesTheShippedAuthorization(): void {
+		$baseline = ['authorization' => ['read' => ['authenticated']]];
+		$live = ['authorization' => ['read' => ['authenticated'], 'export' => ['authenticated']]];
+		$incoming = ['authorization' => ['read' => ['portaliq-medewerkers'], 'export' => ['portaliq-medewerkers']]];
+
+		$unattended = $this->guard(baseline: $baseline)->guardSchemaUpdate(
+			slug: 'portalAccount',
+			live: $live,
+			incoming: $incoming,
+			app: 'portaliq',
+			appVersion: '0.97.0'
+		);
+		$this->assertEquals($live['authorization'], $unattended['definition']['authorization']);
+		$this->assertSame([], $this->actions);
+
+		$decision = new ShippedAuthorizationDecision();
+		$guard    = $this->guard(baseline: $baseline, decision: $decision);
+		$decided  = $decision->run(
+			via: 'occ openregister:descriptors:list --import',
+			operation: static fn (): array => $guard->guardSchemaUpdate(
+				slug: 'portalAccount',
+				live: $live,
+				incoming: $incoming,
+				app: 'portaliq',
+				appVersion: '0.97.0'
+			)
+		);
+
+		$this->assertEquals($incoming['authorization'], $decided['definition']['authorization']);
+		$this->assertSame([], $decided['conflicts']);
+		$this->assertSame([ShippedConfigurationGuard::ACTION_DECIDED], $this->actions);
+		$this->assertSame([['schema' => 'portalAccount', 'path' => 'authorization']], $decision->replaced());
+		$this->assertNull($decision->via(), 'the decision ends with the operation');
+	}//end testAnAdministratorsReimportTakesTheShippedAuthorization()
+
+	/**
+	 * A guard that cannot run still lets the upgrade finish, but never hands the instance's authorization to the shipped one.
+	 *
+	 * @return void
+	 */
+	public function testAGuardThatCannotRunKeepsTheInstanceAuthorization(): void {
+		$live = [
+			'title' => 'T',
+			'authorization' => ['read' => ['staff']],
+			'properties' => [
+				'bsn' => ['type' => 'string', 'authorization' => ['read' => ['staff']]],
+				'name' => ['type' => 'string'],
+			],
+		];
+		$incoming = [
+			'title' => 'T2',
+			'authorization' => ['read' => ['authenticated']],
+			'properties' => [
+				'bsn' => ['type' => 'string', 'authorization' => ['read' => ['authenticated']]],
+				'name' => ['type' => 'string', 'authorization' => ['read' => ['authenticated']]],
+				'added' => ['type' => 'string', 'authorization' => ['read' => ['shipped']]],
+			],
+		];
+
+		$result = $this->guard(baseline: null, readFails: true)->guardSchemaUpdate(slug: 'person', live: $live, incoming: $incoming, app: 'dossiq', appVersion: '1.3.0');
+
+		$this->assertFalse($result['guarded']);
+		$this->assertNull($result['baseline']);
+		$this->assertSame('T2', $result['definition']['title'], 'the rest of the upgrade still lands');
+		$this->assertSame(['read' => ['staff']], $result['definition']['authorization']);
+		$this->assertSame(['read' => ['staff']], $result['definition']['properties']['bsn']['authorization']);
+		$this->assertArrayNotHasKey('authorization', $result['definition']['properties']['name']);
+		$this->assertSame(['read' => ['shipped']], $result['definition']['properties']['added']['authorization'], 'a property the instance lacks brings its shipped block');
+	}//end testAGuardThatCannotRunKeepsTheInstanceAuthorization()
+
+	/**
+	 * An authorization block taken because only the app changed it is on the audit trail.
+	 *
+	 * @return void
+	 */
+	public function testAnAuthorizationBlockTakenFromTheAppIsAudited(): void {
+		$block = ['read' => ['authenticated']];
+		$result = $this->guard(baseline: ['authorization' => $block])->guardSchemaUpdate(
+			slug: 'portalAccount',
+			live: ['authorization' => $block],
+			incoming: ['authorization' => ['read' => ['portaliq-medewerkers']]],
+			app: 'portaliq',
+			appVersion: '0.98.0'
+		);
+
+		$this->assertSame(['read' => ['portaliq-medewerkers']], $result['definition']['authorization']);
+		$this->assertSame([ShippedConfigurationGuard::ACTION_DECIDED], $this->actions);
+	}//end testAnAuthorizationBlockTakenFromTheAppIsAudited()
 }//end class

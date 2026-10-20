@@ -51,6 +51,8 @@ use Twig\Loader\ArrayLoader;
  * @uses \OCA\OpenRegister\Db\ObjectEntity
  * @uses \OCA\OpenRegister\Db\Register
  * @uses \OCA\OpenRegister\Db\Schema
+ * @uses \OCA\OpenRegister\Service\Object\DraftStatusPolicy
+ * @uses \OCA\OpenRegister\Service\Object\ObjectVersionHandler
  */
 class SaveObjectArchiveGuardTest extends TestCase {
 

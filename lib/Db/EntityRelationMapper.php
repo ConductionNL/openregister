@@ -23,8 +23,10 @@ namespace OCA\OpenRegister\Db;
 use DateTime;
 use OCA\OpenRegister\Event\EntityRelationDecisionUpdatedEvent;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\DecisionConflictException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
+use OCP\DB\QueryBuilder\ICompositeExpression;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IDBConnection;
@@ -940,4 +942,68 @@ class EntityRelationMapper extends QBMapper {
 
 		$this->auditTrailMapper->insert($auditTrail);
 	}//end emitDecisionMetadataAuditEntry()
+
+	/**
+	 * Link a relation to its current decision object.
+	 *
+	 * The decision itself (who, when, verdict, note) is its own object in
+	 * `openregister_decisions` (decision 197); the relation only points at it.
+	 * The audit trail of the verdict stays with `updateDecisionMetadata()`.
+	 *
+	 * With `$guarded`, the link is a compare-and-swap: it is written only while
+	 * the stored link is still `$expectedUuid` (null: none), so two reviewers
+	 * taking a first decision at once cannot both link theirs.
+	 *
+	 * @param EntityRelation $relation     The relation.
+	 * @param string         $decisionUuid The decision's uuid.
+	 * @param string|null    $expectedUuid The link the caller read before deciding; only read when guarded.
+	 * @param bool           $guarded      Whether to write only while the stored link is still `$expectedUuid`.
+	 *
+	 * @return EntityRelation The stored relation.
+	 *
+	 * @throws DecisionConflictException When guarded and the stored link changed in the meantime.
+	 *
+	 * @spec openspec/changes/reviewer-owns-their-decisions/specs/decisions/spec.md#requirement-a-decision-is-its-own-object-req-dec-001
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The default keeps every unguarded caller unchanged; the guard is one
+	 * extra statement, not a second behaviour.
+	 */
+	public function linkDecision(
+		EntityRelation $relation,
+		string $decisionUuid,
+		?string $expectedUuid = null,
+		bool $guarded = false
+	): EntityRelation {
+		if ($guarded === true) {
+			$qb = $this->db->getQueryBuilder();
+			$qb->update($this->getTableName())
+				->set('decision_uuid', $qb->createNamedParameter($decisionUuid))
+				->where($qb->expr()->eq('id', $qb->createNamedParameter($relation->getId(), IQueryBuilder::PARAM_INT)));
+			$qb->andWhere($this->storedLinkIs(qb: $qb, expectedUuid: $expectedUuid));
+
+			if ($qb->executeStatement() === 0) {
+				throw new DecisionConflictException(message: 'The relation was decided by somebody else in the meantime.');
+			}
+		}
+
+		$relation->setDecisionUuid($decisionUuid);
+
+		return $this->update(entity: $relation);
+	}//end linkDecision()
+
+	/**
+	 * The condition "the stored decision link is still what the caller read".
+	 *
+	 * @param IQueryBuilder $qb           The query builder the condition is for.
+	 * @param string|null   $expectedUuid The link the caller read; null or empty means none.
+	 *
+	 * @return ICompositeExpression|string The condition for `andWhere()`.
+	 */
+	private function storedLinkIs(IQueryBuilder $qb, ?string $expectedUuid): ICompositeExpression|string {
+		if ($expectedUuid !== null && $expectedUuid !== '') {
+			return $qb->expr()->eq('decision_uuid', $qb->createNamedParameter($expectedUuid));
+		}
+
+		return $qb->expr()->orX($qb->expr()->isNull('decision_uuid'), $qb->expr()->eq('decision_uuid', $qb->createNamedParameter('')));
+	}//end storedLinkIs()
 }//end class
