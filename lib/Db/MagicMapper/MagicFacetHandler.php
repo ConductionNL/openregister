@@ -750,7 +750,7 @@ class MagicFacetHandler {
 			$labelMap = [];
 			$firstConfig = reset($tableConfigs);
 			if ($isMetadata === false
-				&& $this->holdsObjectReferences(schema: $firstConfig['schema'], column: $field) === false
+				&& $this->anyHoldsObjectReferences(tableConfigs: $tableConfigs, column: $field) === false
 			) {
 				$uuidsToResolve = [];
 			}
@@ -1490,7 +1490,7 @@ class MagicFacetHandler {
 	 *
 	 * @return bool False when the property declares a referenceType.
 	 *
-	 * @spec exclude performance guard on facet label resolution; labels for object references are unchanged
+	 * @spec exclude facet label performance guard; object-reference labels unchanged, a UUID-shaped integration id is labelled in full
 	 */
 	private function holdsObjectReferences(Schema $schema, string $column): bool {
 		foreach ($schema->getProperties() ?? [] as $name => $property) {
@@ -1504,6 +1504,30 @@ class MagicFacetHandler {
 
 		return true;
 	}//end holdsObjectReferences()
+
+	/**
+	 * Whether any table of a union facet can hold object references in a column.
+	 *
+	 * Two schemas in one union can share a column name with a different meaning,
+	 * so the name lookup is skipped only when every schema declares a
+	 * referenceType for it; one schema holding object references keeps it.
+	 *
+	 * @param array<int, array{schema: Schema}> $tableConfigs The union's table configurations.
+	 * @param string                            $column       The column name as the facet queries it.
+	 *
+	 * @return bool False only when every schema declares a referenceType for the column.
+	 *
+	 * @spec exclude performance guard on facet label resolution, the multi-schema form of holdsObjectReferences()
+	 */
+	private function anyHoldsObjectReferences(array $tableConfigs, string $column): bool {
+		foreach ($tableConfigs as $config) {
+			if ($this->holdsObjectReferences(schema: $config['schema'], column: $column) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end anyHoldsObjectReferences()
 
 	/**
 	 * Pick the label for one terms bucket.

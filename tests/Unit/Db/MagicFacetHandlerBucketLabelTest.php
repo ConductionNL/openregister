@@ -189,4 +189,113 @@ class MagicFacetHandlerBucketLabelTest extends TestCase {
 			array_column($facet['buckets'], 'label', 'key')
 		);
 	}//end testIntegrationReferencesAreNotLookedUpAsObjects()
+
+	/**
+	 * Run getTermsFacetUnion() over the given rows, one table per property set.
+	 *
+	 * @param array<int, array<string, mixed>>     $rows         The union rows the database returns.
+	 * @param CacheHandler                         $cacheHandler The name resolver.
+	 * @param string                               $column       The faceted column.
+	 * @param array<int, array<string, array>>     $propertySets One schema's property definitions per table.
+	 *
+	 * @return array<string, mixed> The facet result.
+	 */
+	private function unionFacetOver(
+		array $rows,
+		CacheHandler $cacheHandler,
+		string $column,
+		array $propertySets,
+	): array {
+		$db = $this->createMock(IDBConnection::class);
+		$db->method('getDatabasePlatform')->willReturn($this->createMock(PostgreSQLPlatform::class));
+
+		$rows[] = false;
+		$db->method('prepare')->willReturnCallback(
+			function (string $sql) use ($column, $rows): IPreparedStatement {
+				$statement = $this->createMock(IPreparedStatement::class);
+				$statement->method('execute')->willReturn($this->createMock(IResult::class));
+				if (str_contains($sql, 'information_schema') === true) {
+					$statement->method('fetch')->willReturnOnConsecutiveCalls(['col' => $column], false);
+					return $statement;
+				}
+
+				$statement->method('fetch')->willReturnOnConsecutiveCalls(...$rows);
+				return $statement;
+			}
+		);
+
+		$handler = new MagicFacetHandler(
+			db: $db,
+			logger: $this->createMock(LoggerInterface::class),
+			cacheHandler: $cacheHandler
+		);
+
+		$tableConfigs = [];
+		foreach ($propertySets as $index => $properties) {
+			$schema = $this->createMock(Schema::class);
+			$schema->method('getProperties')->willReturn($properties);
+			$tableConfigs[] = [
+				'tableName' => 'openregister_table_1_'.($index + 2),
+				'schema' => $schema,
+				'register' => $this->createMock(Register::class),
+			];
+		}
+
+		$method = new ReflectionMethod(MagicFacetHandler::class, 'getTermsFacetUnion');
+		$method->setAccessible(true);
+
+		return $method->invoke($handler, $tableConfigs, $column, [], $tableConfigs[0]['schema'], false);
+	}//end unionFacetOver()
+
+	/**
+	 * On the multi-schema union path a referenceType property is not looked up
+	 * as object names either.
+	 *
+	 * @return void
+	 */
+	public function testUnionIntegrationReferencesAreNotLookedUpAsObjects(): void {
+		$cacheHandler = $this->createMock(CacheHandler::class);
+		$cacheHandler->expects($this->never())->method('getMultipleObjectNames');
+
+		$facet = $this->unionFacetOver(
+			[
+				['facet_value' => self::DANGLING_A, 'doc_count' => 2],
+				['facet_value' => 'behandelaars', 'doc_count' => 4],
+			],
+			$cacheHandler,
+			'assigned_group',
+			[['assignedGroup' => ['type' => 'string', 'referenceType' => 'nextcloud-group']]]
+		);
+
+		$this->assertEquals(
+			[self::DANGLING_A => self::DANGLING_A, 'behandelaars' => 'behandelaars'],
+			array_column($facet['buckets'], 'label', 'key')
+		);
+	}//end testUnionIntegrationReferencesAreNotLookedUpAsObjects()
+
+	/**
+	 * When one schema of the union holds object references in the column, the
+	 * name lookup still runs, even if the first schema declares a referenceType.
+	 *
+	 * @return void
+	 */
+	public function testUnionKeepsTheLookupWhenAnySchemaHoldsObjectReferences(): void {
+		$cacheHandler = $this->createMock(CacheHandler::class);
+		$cacheHandler->expects($this->once())
+			->method('getMultipleObjectNames')
+			->with([self::KNOWN])
+			->willReturn([self::KNOWN => 'Ontvangen']);
+
+		$facet = $this->unionFacetOver(
+			[['facet_value' => self::KNOWN, 'doc_count' => 3]],
+			$cacheHandler,
+			'assigned_group',
+			[
+				['assignedGroup' => ['type' => 'string', 'referenceType' => 'nextcloud-group']],
+				['assignedGroup' => ['type' => 'string', 'format' => 'uuid', '$ref' => 'group']],
+			]
+		);
+
+		$this->assertSame('Ontvangen', array_column($facet['buckets'], 'label', 'key')[self::KNOWN]);
+	}//end testUnionKeepsTheLookupWhenAnySchemaHoldsObjectReferences()
 }//end class
