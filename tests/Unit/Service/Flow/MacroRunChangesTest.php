@@ -60,6 +60,20 @@ class MacroRunChangesTest extends TestCase {
 		$this->assertSame(['task', 'message'], array_column($changes, 'kind'));
 	}//end testATaskStepIsAChange()
 
+	public function testAStepIsNamedByItsNodesLabelWhenItHasOne(): void {
+		$changes = MacroRunChanges::fromLog(
+			log: [
+				['transition' => 'set-term', 'type' => 'openregister.object-write', 'status' => 'completed'],
+				['transition' => 'send-mail', 'type' => 'openregister.send-email', 'status' => 'completed'],
+			],
+			nodes: [
+				['id' => 'set-term', 'type' => 'openregister.object-write', 'label' => 'termijn opgeschort'],
+				['id' => 'send-mail', 'type' => 'openregister.send-email'],
+			]
+		);
+		$this->assertSame(['termijn opgeschort', 'send-mail'], array_column($changes, 'step'));
+	}//end testAStepIsNamedByItsNodesLabelWhenItHasOne()
+
 	public function testAnEmptyLogChangedNothing(): void {
 		$this->assertSame([], MacroRunChanges::fromLog(log: []));
 	}//end testAnEmptyLogChangedNothing()

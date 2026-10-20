@@ -87,6 +87,23 @@ class MacroActionResolver {
 	}//end bindingFor()
 
 	/**
+	 * The nodes of a flow, or none when it cannot be read.
+	 *
+	 * @param string $flowUuid The flow.
+	 *
+	 * @return array<int, mixed> The nodes.
+	 *
+	 * @spec openspec/changes/macro-run-changes/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
+	 */
+	public function nodesOf(string $flowUuid): array {
+		try {
+			return ($this->flows->find(uuid: $flowUuid)->getNodes() ?? []);
+		} catch (\Throwable) {
+			return [];
+		}
+	}//end nodesOf()
+
+	/**
 	 * The `next` hint the flow declares.
 	 *
 	 * @param string $flowUuid The flow.

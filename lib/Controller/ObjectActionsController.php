@@ -310,7 +310,7 @@ class ObjectActionsController extends Controller {
 			flow: $binding->flow,
 			run: (string)$run->getUuid(),
 			userId: $userId,
-			changes: MacroRunChanges::fromLog(log: ($run->getLog() ?? []))
+			changes: MacroRunChanges::fromLog(log: ($run->getLog() ?? []), nodes: $this->macros->nodesOf(flowUuid: $binding->flow))
 		);
 
 		return [
