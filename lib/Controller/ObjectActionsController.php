@@ -35,11 +35,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\BulkJobRefusedException;
 use OCA\OpenRegister\Exception\LifecycleProviderException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Flow\FlowNextHint;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
@@ -81,6 +85,7 @@ class ObjectActionsController extends Controller {
 	 * @param ObjectActionList        $list        Lists the actions.
 	 * @param ObjectActionRunner      $runner      Runs one action on one object.
 	 * @param ObjectActionHistory     $history     Reads the runs recorded on an object.
+	 * @param ObjectActionBulk        $bulk        Hands a large selection to a bulk job.
 	 */
 	public function __construct(
 		string $appName,
@@ -91,6 +96,7 @@ class ObjectActionsController extends Controller {
 		private readonly ObjectActionList $list,
 		private readonly ObjectActionRunner $runner,
 		private readonly ObjectActionHistory $history,
+		private readonly ObjectActionBulk $bulk,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -266,10 +272,7 @@ class ObjectActionsController extends Controller {
 
 		$ids = array_values(array_unique(array_map('strval', $ids)));
 		if (count($ids) > self::SELECTION_LIMIT) {
-			return new JSONResponse(
-				['error' => sprintf('A selection holds at most %d objects; this one holds %d.', self::SELECTION_LIMIT, count($ids))],
-				Http::STATUS_BAD_REQUEST
-			);
+			return $this->startJob(schema: $selectionSchema, register: $register, schemaRef: $schema, action: $action, ids: $ids, inputs: $inputs);
 		}
 
 		$results = array_map(
@@ -287,6 +290,39 @@ class ObjectActionsController extends Controller {
 			]
 		);
 	}//end invokeOnSelection()
+
+	/**
+	 * Hand a selection above the limit to a previewed bulk job.
+	 *
+	 * @param Schema               $schema    The selection's schema.
+	 * @param string               $register  The register as the caller named it.
+	 * @param string               $schemaRef The schema as the caller named it.
+	 * @param string               $action    The action key.
+	 * @param list<string>         $ids       The selection.
+	 * @param array<string, mixed> $inputs    The inputs.
+	 *
+	 * @return JSONResponse 202 with the job and the link to commit it.
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) One argument per part of the request being handed over.
+	 */
+	private function startJob(Schema $schema, string $register, string $schemaRef, string $action, array $ids, array $inputs): JSONResponse {
+		try {
+			$job = $this->bulk->start(schema: $schema, register: $register, schemaRef: $schemaRef, action: $action, ids: $ids, inputs: $inputs);
+		} catch (BulkJobRefusedException $e) {
+			return new JSONResponse(['error' => $e->getMessage(), 'reason' => $e->getReason()], Http::STATUS_UNPROCESSABLE_ENTITY);
+		} catch (InvalidArgumentException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+		}
+
+		return new JSONResponse(
+			[
+				'action' => $action,
+				'job' => $job->jsonSerialize(),
+				'links' => ['commit' => '/api/bulk-jobs/' . $job->getId() . '/commit'],
+			],
+			Http::STATUS_ACCEPTED
+		);
+	}//end startJob()
 
 	/**
 	 * Run the action on one selected object and summarise the outcome.

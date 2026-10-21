@@ -136,9 +136,45 @@ class ObjectActionRunner {
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
 	 */
 	public function run(ObjectEntity $object, Schema $schema, string $key, array $given, array $subject): array {
+		$checked = $this->check(object: $object, schema: $schema, key: $key, given: $given);
+		if ($checked['refusal'] !== null) {
+			return $checked['refusal'];
+		}
+
+		$definition = $checked['definition'];
+		if ($definition->kind === ObjectActionDefinition::KIND_TRANSITION) {
+			return $this->runTransition(object: $object, definition: $definition, inputs: $checked['inputs']);
+		}
+
+		return $this->runFlow(object: $object, schema: $schema, definition: $definition, inputs: $checked['inputs'], subject: $subject);
+	}//end run()
+
+	/**
+	 * Steps 1 to 4 of a run, without running: resolve, right, `when`, inputs.
+	 *
+	 * The run itself and a bulk job's preview ask exactly this, so a
+	 * rehearsal never promises what the run would refuse.
+	 *
+	 * @param ObjectEntity         $object The subject.
+	 * @param Schema               $schema Its schema.
+	 * @param string               $key    The action key.
+	 * @param array<string, mixed> $given  The inputs the caller sent.
+	 *
+	 * @return array{refusal: array{status: int, body: array<string, mixed>}|null, definition: ObjectActionDefinition|null, inputs: array<string, mixed>}
+	 *         The refusal, or the action and its inputs with defaults resolved.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-running-an-action-validates-inputs-checks-the-right-and-the-precondition-then-executes-its-body
+	 */
+	public function check(ObjectEntity $object, Schema $schema, string $key, array $given): array {
+		$refused = static fn (int $status, array $body): array => [
+			'refusal' => ['status' => $status, 'body' => $body],
+			'definition' => null,
+			'inputs' => [],
+		];
+
 		$definition = $this->resolve(schema: $schema, object: $object, key: $key);
 		if ($definition === null) {
-			return $this->answer(status: Http::STATUS_NOT_FOUND, body: ['error' => sprintf('No action "%s" runs on this object.', $key)]);
+			return $refused(Http::STATUS_NOT_FOUND, ['error' => sprintf('No action "%s" runs on this object.', $key)]);
 		}
 
 		$right = $key;
@@ -147,31 +183,27 @@ class ObjectActionRunner {
 		}
 
 		if ($this->gate->may(schema: $schema, right: $right, object: $object) === false) {
-			return $this->answer(status: Http::STATUS_FORBIDDEN, body: ['error' => sprintf('You may not perform "%s" on this object.', $key)]);
+			return $refused(Http::STATUS_FORBIDDEN, ['error' => sprintf('You may not perform "%s" on this object.', $key)]);
 		}
 
 		$inputs = $this->inputs->withDefaults(schema: $definition->inputs, given: $given, object: $object, userId: $this->gate->userId());
 		if ($this->gate->whenHolds(definition: $definition, object: $object, inputs: $inputs) === false) {
-			return $this->answer(
-				status: Http::STATUS_CONFLICT,
-				body: ['error' => self::PRECONDITION_UNMET, 'message' => $this->gate->reason(definition: $definition), 'action' => $key]
+			return $refused(
+				Http::STATUS_CONFLICT,
+				['error' => self::PRECONDITION_UNMET, 'message' => $this->gate->reason(definition: $definition), 'action' => $key]
 			);
 		}
 
 		$errors = $this->inputErrors(definition: $definition, inputs: $inputs);
 		if ($errors !== []) {
-			return $this->answer(
-				status: Http::STATUS_UNPROCESSABLE_ENTITY,
-				body: ['error' => 'invalid-inputs', 'message' => 'The inputs do not fit this action.', 'errors' => $errors, 'action' => $key]
+			return $refused(
+				Http::STATUS_UNPROCESSABLE_ENTITY,
+				['error' => 'invalid-inputs', 'message' => 'The inputs do not fit this action.', 'errors' => $errors, 'action' => $key]
 			);
 		}
 
-		if ($definition->kind === ObjectActionDefinition::KIND_TRANSITION) {
-			return $this->runTransition(object: $object, definition: $definition, inputs: $inputs);
-		}
-
-		return $this->runFlow(object: $object, schema: $schema, definition: $definition, inputs: $inputs, subject: $subject);
-	}//end run()
+		return ['refusal' => null, 'definition' => $definition, 'inputs' => $inputs];
+	}//end check()
 
 	/**
 	 * Input errors, skipping a transition that declares no input schema of its own.
