@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
+use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -42,7 +43,7 @@ use OCP\WorkflowEngine\IManager;
 /**
  * A pass-through node whose outgoing edges carry the routing conditions.
  */
-class SwitchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy {
+class SwitchNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonomy, IFlowSideEffectFree {
 	/**
 	 * Constructor.
 	 *
