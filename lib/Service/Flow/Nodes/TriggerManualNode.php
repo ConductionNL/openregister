@@ -36,6 +36,7 @@ use OCA\OpenRegister\Service\Flow\FlowNextHint;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
+use OCA\OpenRegister\Service\Flow\IFlowSideEffectFree;
 use OCA\OpenRegister\Service\Flow\IFlowTriggerNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -45,7 +46,7 @@ use UnexpectedValueException;
 /**
  * Starts the flow when someone runs it.
  */
-class TriggerManualNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerNode, IFlowNodeTaxonomy {
+class TriggerManualNode implements IFlowNode, IFlowNodeConfigKeys, IFlowTriggerNode, IFlowNodeTaxonomy, IFlowSideEffectFree {
 	/**
 	 * Constructor.
 	 *

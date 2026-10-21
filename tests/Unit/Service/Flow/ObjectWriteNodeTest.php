@@ -1694,4 +1694,29 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->assertCount(1, $allSkipped);
 	}
 
+
+	/**
+	 * A dry-run asks the step what it would write and writes nothing.
+	 *
+	 * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 *
+	 * @return void
+	 */
+	public function testPreviewNamesTheFieldsItWouldSetAndWritesNothing(): void {
+		$this->objects->expects($this->never())->method('saveObject');
+
+		$preview = $this->node->preview(
+			items: [FlowItems::item(json: ['id' => 'o1'])],
+			config: ['register' => 'dossiq', 'schema' => 'case', 'operation' => 'update', 'fields' => ['status' => 'closed', 'closedBy' => '{{ user }}']],
+			context: []
+		);
+
+		self::assertSame(
+			[
+				'summary' => 'update an object in dossiq / case',
+				'changes' => [['field' => 'status', 'value' => 'closed'], ['field' => 'closedBy', 'value' => '{{ user }}']],
+			],
+			$preview
+		);
+	}//end testPreviewNamesTheFieldsItWouldSetAndWritesNothing()
 }//end class
