@@ -281,6 +281,22 @@
 				"function": "Woo-coordinator"
 			},
 			{
+				"key": "anouk",
+				"uid": "anouk.bakker",
+				"displayName": "Anouk Bakker",
+				"givenName": "Anouk",
+				"prefix": "",
+				"familyName": "Bakker",
+				"email": "anouk.bakker@zuiddrecht.example",
+				"role": "employee",
+				"department": "Juridische zaken",
+				"groups": [
+					"medewerkers",
+					"juridische-zaken"
+				],
+				"function": "Juridisch adviseur Woo"
+			},
+			{
 				"key": "marleen",
 				"uid": "marleen.postma",
 				"displayName": "Marleen Postma",

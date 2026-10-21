@@ -1,0 +1,2 @@
+- [x] T01 ExampleSetTasks accepts `checklist` and refuses a malformed one at check time
+- [x] T02 PHPUnit: a task is written with its checklist; the four faulty forms are refused

@@ -262,6 +262,7 @@ class ExampleSetInstallerTest extends ExampleSetTestCase {
 				'user preferences' => 0,
 				'tasks'            => 0,
 				'views'            => 0,
+				'watchers'         => 0,
 				'memberships'      => 2,
 				'groups'           => 1,
 				'accounts'         => 2,

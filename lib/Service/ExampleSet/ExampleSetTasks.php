@@ -64,7 +64,11 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 		'completedAt',
 		'completedBy',
 		'kind',
+		'performerType',
+		'uploadRules',
+		'checklist',
 	];
+
 
 	/**
 	 * Constructor.
@@ -114,8 +118,10 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 		$reasons = [
 			$this->fieldsRefusal(data: $data),
 			$this->peopleRefusal(data: $data, users: $users),
+			ExampleSetExternalTask::refusal(data: $data),
 			$this->stateRefusal(data: $data),
 			$this->datesRefusal(data: $data),
+			$this->checklistRefusal(data: $data),
 		];
 		foreach ($reasons as $why) {
 			if ($why !== '') {
@@ -138,11 +144,14 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	 * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
 	 */
 	public function write(string $app, string $key, array $data): array {
-		$fields = array_diff_key($data, array_flip(['completedAt', 'completedBy']));
+		$fields = array_diff_key($data, array_flip(['completedAt', 'completedBy', 'uploadRules']));
 		$fields['key']   = 'example-set:'.$app.'/'.$key;
 		$fields['appId'] = $app;
+		$fields += ExampleSetExternalTask::metadata(data: $data);
+
 		$actor = (string) ($data['completedBy'] ?? $data['assignee'] ?? '');
-		if ($actor === '') {
+		if ($actor === '' || ExampleSetExternalTask::isExternal(data: $data) === true) {
+			// A party is not an account: the app that ships the set raises its task.
 			$actor = $app;
 		}
 
@@ -237,7 +246,13 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	 * @return string
 	 */
 	private function peopleRefusal(array $data, array $users): string {
-		foreach (['assignee', 'completedBy'] as $field) {
+		$fields = ['assignee', 'completedBy'];
+		if (ExampleSetExternalTask::isExternal(data: $data) === true) {
+			// A party is checked by externalRefusal(), never against the set's accounts.
+			$fields = ['completedBy'];
+		}
+
+		foreach ($fields as $field) {
 			$uid = (string) ($data[$field] ?? '');
 			if ($uid !== '' && in_array($uid, $users, true) === false) {
 				return $field.' "'.$uid.'" is not an account the set creates or adopts';
@@ -280,6 +295,50 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 
 		return '';
 	}//end datesRefusal()
+
+	/**
+	 * A checklist that is not a list of items with a unique id and a label.
+	 *
+	 * @param array<string, mixed> $data The filled task fields.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/example-set-task-checklist/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-checklist
+	 */
+	private function checklistRefusal(array $data): string {
+		if (array_key_exists('checklist', $data) === false) {
+			return '';
+		}
+
+		if (is_array($data['checklist']) === false || array_is_list($data['checklist']) === false) {
+			return 'checklist must be a list of items';
+		}
+
+		$ids = [];
+		foreach ($data['checklist'] as $item) {
+			if (is_array($item) === false) {
+				return 'every checklist item needs an id and a label';
+			}
+
+			$id    = ($item['id'] ?? null);
+			$label = ($item['label'] ?? null);
+			if (is_string($id) === false || trim($id) === '' || is_string($label) === false || trim($label) === '') {
+				return 'every checklist item needs an id and a label';
+			}
+
+			if (isset($item['checked']) === true && is_bool($item['checked']) === false) {
+				return 'checklist item "'.$id.'": checked is true or false';
+			}
+
+			if (in_array($id, $ids, true) === true) {
+				return 'checklist item id "'.$id.'" is used twice';
+			}
+
+			$ids[] = $id;
+		}
+
+		return '';
+	}//end checklistRefusal()
 
 	/**
 	 * A date or date-time value as a moment, or null.

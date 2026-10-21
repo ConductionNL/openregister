@@ -855,6 +855,8 @@ return [
         // for the tenants it exists for. The authorisation that matters is the
         // organisation scoping and per-flow guard inside FlowService.
         ['name' => 'flow#run',     'url' => '/api/flows/{id}/run', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        // Try a flow against an object without effect (flow-dry-run): the `flow.update` right.
+        ['name' => 'flowDryRun#dryRun', 'url' => '/api/flows/{id}/dry-run', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // BPMN 2.0 interchange. Export is read-guarded and import is
         // flow.create-guarded, both inside the controller; the auth posture is
         // declared there with #[NoAdminRequired] and no CSRF exemption, because

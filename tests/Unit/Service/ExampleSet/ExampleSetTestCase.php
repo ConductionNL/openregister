@@ -35,6 +35,9 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers;
+use OCA\OpenRegister\Db\Watcher;
+use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds;
 use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Db\ViewMapper;
@@ -114,6 +117,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<int, array{data: array<string, mixed>, actor: string|null}> Every task import, in order. */
 	protected array $taskImports = [];
 
+	/** @var array<string, Watcher> The follows, by `<user> <object uuid>`. */
+	protected array $follows = [];
+
 	/** @var array<string, View> The saved views, by uuid. */
 	protected array $savedViews = [];
 
@@ -146,6 +152,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			TaskMapper::class         => $this->taskMapper(),
 			ViewService::class        => $this->viewService(),
 			ViewMapper::class         => $this->viewMapper(),
+			WatcherMapper::class      => $this->watcherMapper(),
 		});
 		$files     = new ExampleSetFiles(container: $container);
 		$setConfig = new ExampleSetAppConfig(appConfig: $this->appConfigOfApps(), random: $this->random());
@@ -202,7 +209,11 @@ abstract class ExampleSetTestCase extends TestCase {
 			files: $files,
 			appConfig: $setConfig,
 			userPreferences: $preferences,
-			engineRows: new ExampleSetEngineKinds(tasks: new ExampleSetTasks(container: $container), views: new ExampleSetViews(container: $container))
+			engineRows: new ExampleSetEngineKinds(
+				tasks: new ExampleSetTasks(container: $container),
+				views: new ExampleSetViews(container: $container),
+				watchers: new ExampleSetWatchers(container: $container)
+			)
 		);
 		$this->remover   = new ExampleSetRemover(
 			store: $this->store,
@@ -214,7 +225,11 @@ abstract class ExampleSetTestCase extends TestCase {
 			appConfig: $setConfig,
 			instance: $instance,
 			userPreferences: $preferences,
-			engineRows: new ExampleSetEngineKinds(tasks: new ExampleSetTasks(container: $container), views: new ExampleSetViews(container: $container))
+			engineRows: new ExampleSetEngineKinds(
+				tasks: new ExampleSetTasks(container: $container),
+				views: new ExampleSetViews(container: $container),
+				watchers: new ExampleSetWatchers(container: $container)
+			)
 		);
 	}
 
@@ -350,6 +365,35 @@ abstract class ExampleSetTestCase extends TestCase {
 		$mapper->method('delete')->willReturnCallback(function (View $view): View {
 			unset($this->savedViews[(string) $view->getUuid()]);
 			return $view;
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * A watcher mapper over $follows, keyed `<user> <object uuid>`.
+	 *
+	 * @return WatcherMapper
+	 */
+	private function watcherMapper(): WatcherMapper {
+		$mapper = $this->createMock(WatcherMapper::class);
+		$mapper->method('subscribe')->willReturnCallback(
+			function (string $userId, string $objectUuid, ?string $register = null, ?string $schema = null, ?bool $notify = null): Watcher {
+				$watcher = new Watcher();
+				$watcher->setUserId($userId);
+				$watcher->setObjectUuid($objectUuid);
+				$watcher->setRegister($register);
+				$watcher->setSchema($schema);
+				$watcher->setNotify($notify ?? true);
+				$this->follows[$userId.' '.$objectUuid] = $watcher;
+				return $watcher;
+			}
+		);
+		$mapper->method('findOne')->willReturnCallback(fn (string $userId, string $objectUuid): ?Watcher => ($this->follows[$userId.' '.$objectUuid] ?? null));
+		$mapper->method('unsubscribe')->willReturnCallback(function (string $userId, string $objectUuid): bool {
+			$had = isset($this->follows[$userId.' '.$objectUuid]);
+			unset($this->follows[$userId.' '.$objectUuid]);
+			return $had;
 		});
 
 		return $mapper;
