@@ -114,10 +114,10 @@ final class MacroActionBinding {
 	public static function parse(array $configuration): array {
 		$bindings = [];
 		foreach (self::declarations(configuration: $configuration) as $action => $definition) {
-			$macro = ($definition['macro'] ?? false);
+			$macro = ($definition['macro'] ?? null);
 			$flow = ($definition['flow'] ?? null);
 
-			if ($macro !== true || is_string($flow) === false || trim($flow) === '') {
+			if ($macro === false || is_string($flow) === false || trim($flow) === '') {
 				continue;
 			}
 
@@ -235,10 +235,10 @@ final class MacroActionBinding {
 			$refusals[] = sprintf('Action "%s": "macro" is true but no "flow" is named.', $action);
 		}
 
-		// The mirror: a flow nothing will ever run. Saved quietly, it reads as
-		// a bound macro to anyone looking at the schema afterwards.
-		if ($hasFlow === true && $isMacro === false) {
-			$refusals[] = sprintf('Action "%s": "flow" is named but "macro" is not true.', $action);
+		// A named flow is the action's body on its own (object-actions D-1);
+		// only an explicit `macro: false` beside it contradicts itself.
+		if ($hasFlow === true && ($definition['macro'] ?? null) === false) {
+			$refusals[] = sprintf('Action "%s": "flow" is named but "macro" is false.', $action);
 		}
 
 		return $refusals;
