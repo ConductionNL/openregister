@@ -34,4 +34,13 @@ the handler of dossiq's jeugdwet example case.
 
 #### Scenario: the shipped set
 - **GIVEN** the shipped Zuiddrecht set
-- **THEN** its cast holds 17 people, Fatma Kaya among them in Sociaal domein
+- **THEN** its cast holds Fatma Kaya in Sociaal domein
+
+### Requirement: The cast carries the handler the dossiq boards draw
+
+The Zuiddrecht cast SHALL carry Pieter Jansen (`pieter`, behandelaar, groups medewerkers and Vergunningen), the handler
+dossiq's boards draw as the reader, so a fragment can give him a saved view of his own.
+
+#### Scenario: the shipped set
+- **GIVEN** the shipped Zuiddrecht set
+- **THEN** its cast holds 18 people, Pieter Jansen among them in Vergunningen with the account id `pieter`

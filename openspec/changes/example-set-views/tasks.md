@@ -17,3 +17,9 @@
 - **files**: `lib/Settings/example-sets/zuiddrecht.json`
 - [x] Implement: Fatma Kaya, group Sociaal domein
 - [x] Test: `tests/Unit/Service/ExampleSet/ExampleSetCatalogueTest.php`
+
+### Task 4: The cast carries the handler the dossiq boards draw
+- **spec_ref**: `openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-the-cast-carries-the-handler-the-dossiq-boards-draw`
+- **files**: `lib/Settings/example-sets/zuiddrecht.json`
+- [x] Implement: Pieter Jansen, account id `pieter`, group Vergunningen
+- [x] Test: `tests/Unit/Service/ExampleSet/ExampleSetCatalogueTest.php`
