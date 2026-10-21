@@ -139,6 +139,6 @@ class ObjectActionDefinitions {
 			}
 		}
 
-		return $register->getConfiguration();
+		return ($register->getConfiguration() ?? []);
 	}//end registerConfiguration()
 }//end class
