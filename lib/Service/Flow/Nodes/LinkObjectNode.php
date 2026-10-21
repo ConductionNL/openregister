@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\Handoff\HandoffService;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\WriteCause;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -57,7 +58,7 @@ use UnexpectedValueException;
  * Creates a related object, or runs a declared handoff, per item.
  *
  * @SuppressWarnings(PHPMD.StaticAccess) FlowValueTemplate::render() and FlowItems::item() are the
- *   stateless renderer and item builder every node uses.
+ *   stateless renderer and item builder every node uses; WriteCause::asLookup() marks a lookup.
  *
  * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-two-built-in-nodes-cover-transitions-and-linked-objects
  */
@@ -286,7 +287,8 @@ class LinkObjectNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeTaxonom
 	 */
 	private function writeRelation(array $json, string $relation, string $uuid): void {
 		$subject = $this->subjectOf(json: $json);
-		$source = $this->objects->find(id: $subject['uuid']);
+		// A lookup to write back to, not a person opening the object.
+		$source = WriteCause::asLookup(fn () => $this->objects->find(id: $subject['uuid']));
 		if ($source === null) {
 			throw new RuntimeException($this->l10n->t('The object to link to no longer exists.'));
 		}
