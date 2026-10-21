@@ -223,20 +223,20 @@ class ObjectActionsControllerTest extends TestCase {
 	}//end testAnActionWithNoBindingRunsNothing()
 
 	/**
-	 * A declaration that names a flow without `macro: true` is not a binding.
+	 * A declaration that names a flow beside `macro: false` is not a binding.
 	 *
 	 * @return void
 	 */
-	public function testAFlowWithoutMacroTrueIsNotInvokable(): void {
+	public function testAFlowWithMacroFalseIsNotInvokable(): void {
 		$this->objects->method('find')->willReturn($this->object());
-		$this->schemas->method('find')->willReturn($this->schema(['flow' => 'flow-1']));
+		$this->schemas->method('find')->willReturn($this->schema(['macro' => false, 'flow' => 'flow-1']));
 		$this->permissions->method('hasPermission')->willReturn(true);
 		$this->flows->expects($this->never())->method('run');
 
 		$response = $this->controller->invoke('zaken', 'zaak', 'obj-1', 'close-and-notify');
 
 		$this->assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
-	}//end testAFlowWithoutMacroTrueIsNotInvokable()
+	}//end testAFlowWithMacroFalseIsNotInvokable()
 
 	/**
 	 * A missing object is a 404 before any permission is consulted.

@@ -49,6 +49,8 @@ use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\Flow\MacroActionBinding;
 use OCA\OpenRegister\Service\Flow\MacroActionValidator;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Hinge\HingeAnnotationValidator;
@@ -260,6 +262,7 @@ class SchemaMapper extends QBMapper {
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
 	 * @param LoggerInterface $logger Structured logger (R07: surfaces unknown annotation keys).
 	 * @param MacroActionValidator|null $macroActions Verifies the flows macro actions bind to.
+	 * @param ObjectActionValidator|null $objectActions Verifies every declared action, macro bindings included.
 	 *
 	 * @return void
 	 */
@@ -278,6 +281,7 @@ class SchemaMapper extends QBMapper {
 		// only the three questions about the flow itself are skipped, which the
 		// save says out loud rather than passing over in silence.
 		private readonly ?MacroActionValidator $macroActions = null,
+		private readonly ?ObjectActionValidator $objectActions = null,
 	) {
 		// Initialize parent mapper with table name and entity class.
 		parent::__construct(db: $db, tableName: 'openregister_schemas', entityClass: Schema::class);
@@ -1364,12 +1368,27 @@ class SchemaMapper extends QBMapper {
 	 *
 	 * @return void
 	 *
-	 * @throws InvalidArgumentException When a macro binding cannot run.
+	 * @throws InvalidArgumentException When a macro binding cannot run or a declared action is malformed.
 	 *
 	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/declared-actions/spec.md#requirement-a-declared-action-may-carry-inputs-a-precondition-surfaces-and-one-body
 	 */
 	private function validateMacroActions(Schema $schema): void {
 		$configuration = ($schema->getConfiguration() ?? []);
+
+		if ($this->objectActions !== null) {
+			$refusals = $this->objectActions->refusals(schema: $schema);
+			if ($refusals !== []) {
+				throw new InvalidArgumentException(implode(' ', $refusals));
+			}
+
+			return;
+		}
+
+		$refusals = ObjectActionDefinition::refusals(configuration: $configuration, authorization: ($schema->getAuthorization() ?? []));
+		if ($refusals !== []) {
+			throw new InvalidArgumentException(implode(' ', $refusals));
+		}
 
 		if ($this->macroActions === null) {
 			// No validator wired: the shape is still checked, and the save says
