@@ -82,16 +82,23 @@ return [
 
         // Object-scoped integration sub-resource dispatch —
         // pluggable-integration-registry task 4.2 / tasks.md#task-19.
-        // A declared action bound to a manual flow: one click, several changes,
-        // and a hint about where the handler goes next. The action's own right
-        // authorises it; the flow adds no second permission model (ADR-023).
+        // A declared action run with {inputs}: a transition, a bound flow or inline
+        // steps, and a hint about where the handler goes next. The action's own
+        // right authorises it; the body adds no second permission model (ADR-023).
+        // The actions the caller may run on this object: declared ones and the
+        // lifecycle's transitions in one list, each with availability and reason.
+        ['name' => 'objectActions#index', 'url' => '/api/objects/{register}/{schema}/{id}/actions', 'verb' => 'GET',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectActions#invoke', 'url' => '/api/objects/{register}/{schema}/{id}/actions/{action}', 'verb' => 'POST',
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'action' => '[^/]+']],
-        // The same macro on a selection: one run per object, reported per object.
+        // The same action on a selection: one run per object, reported per object.
         // Its own prefix, because `/api/objects/{register}/{schema}/...` with four
         // segments would be read as an object id by the routes above.
         ['name' => 'objectActions#invokeOnSelection', 'url' => '/api/object-actions/{register}/{schema}/{action}', 'verb' => 'POST',
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'action' => '[^/]+']],
+        // The actions offered on a selection (the `bulk` surface).
+        ['name' => 'objectActions#selection', 'url' => '/api/object-actions/{register}/{schema}', 'verb' => 'GET',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
         ['name' => 'objectIntegrations#index',   'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
         ['name' => 'objectIntegrations#show',    'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
         ['name' => 'objectIntegrations#create',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
