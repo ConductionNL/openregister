@@ -48,7 +48,6 @@ use OCA\OpenRegister\Service\Consent\ConsentDeclarationException;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkAnnotationValidator;
 use OCA\OpenRegister\Service\ExternalLink\ExternalLinkResolver;
 use OCA\OpenRegister\Service\Flow\MacroActionBinding;
-use OCA\OpenRegister\Service\Flow\MacroActionValidator;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
@@ -261,8 +260,7 @@ class SchemaMapper extends QBMapper {
 	 * @param IGroupManager $groupManager Group manager for RBAC checks
 	 * @param IAppConfig $appConfig App configuration for multitenancy settings
 	 * @param LoggerInterface $logger Structured logger (R07: surfaces unknown annotation keys).
-	 * @param MacroActionValidator|null $macroActions Verifies the flows macro actions bind to.
-	 * @param ObjectActionValidator|null $objectActions Verifies every declared action, macro bindings included.
+	 * @param ObjectActionValidator|null $objectActions Verifies every declared action, the flows macros bind to included.
 	 *
 	 * @return void
 	 */
@@ -278,9 +276,9 @@ class SchemaMapper extends QBMapper {
 		// LAST AND NULLABLE so every existing construction of this mapper keeps
 		// working. Nextcloud's container always supplies it; null happens only
 		// in a hand-built test, and then the SHAPE refusals below still fire —
-		// only the three questions about the flow itself are skipped, which the
-		// save says out loud rather than passing over in silence.
-		private readonly ?MacroActionValidator $macroActions = null,
+		// only the questions about other records (the bound flow, the step
+		// nodes, the saver) are skipped, which the save says out loud rather
+		// than passing over in silence.
 		private readonly ?ObjectActionValidator $objectActions = null,
 	) {
 		// Initialize parent mapper with table name and entity class.
@@ -1385,31 +1383,24 @@ class SchemaMapper extends QBMapper {
 			return;
 		}
 
-		$refusals = ObjectActionDefinition::refusals(configuration: $configuration, authorization: ($schema->getAuthorization() ?? []));
+		// No validator wired: the shape is still checked, and the save says
+		// which half did not run rather than reporting a clean pass.
+		$refusals = array_merge(
+			ObjectActionDefinition::refusals(configuration: $configuration, authorization: ($schema->getAuthorization() ?? [])),
+			MacroActionBinding::refusals(configuration: $configuration)
+		);
 		if ($refusals !== []) {
 			throw new InvalidArgumentException(implode(' ', $refusals));
 		}
 
-		if ($this->macroActions === null) {
-			// No validator wired: the shape is still checked, and the save says
-			// which half did not run rather than reporting a clean pass.
-			$refusals = MacroActionBinding::refusals(configuration: $configuration);
-			if ($refusals !== []) {
-				throw new InvalidArgumentException(implode(' ', $refusals));
-			}
-
-			if (MacroActionBinding::parse(configuration: $configuration) !== []) {
-				$this->logger->warning(
-					'[SchemaMapper] Macro bindings saved without verifying their flows: no validator is wired'
-				);
-			}
-
-			return;
-		}
-
-		$refusals = $this->macroActions->refusals(configuration: $configuration);
-		if ($refusals !== []) {
-			throw new InvalidArgumentException(implode(' ', $refusals));
+		$runnable = array_filter(
+			ObjectActionDefinition::parse(configuration: $configuration),
+			static fn (ObjectActionDefinition $definition): bool => $definition->isRunnable()
+		);
+		if ($runnable !== []) {
+			$this->logger->warning(
+				'[SchemaMapper] Declared actions saved without verifying their flows: no validator is wired'
+			);
 		}
 	}//end validateMacroActions()
 
