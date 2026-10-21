@@ -16,11 +16,13 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectActionsController;
+use OCA\OpenRegister\Db\BulkJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
@@ -43,6 +45,8 @@ class ObjectActionsControllerTest extends TestCase {
 
 	private ObjectActionHistory&MockObject $history;
 
+	private ObjectActionBulk&MockObject $bulk;
+
 	private IRequest&MockObject $request;
 
 	private ObjectActionsController $controller;
@@ -55,6 +59,7 @@ class ObjectActionsControllerTest extends TestCase {
 		$this->list = $this->createMock(ObjectActionList::class);
 		$this->runner = $this->createMock(ObjectActionRunner::class);
 		$this->history = $this->createMock(ObjectActionHistory::class);
+		$this->bulk = $this->createMock(ObjectActionBulk::class);
 		$this->request = $this->createMock(IRequest::class);
 
 		$this->controller = new ObjectActionsController(
@@ -65,7 +70,8 @@ class ObjectActionsControllerTest extends TestCase {
 			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
 			$this->list,
 			$this->runner,
-			$this->history
+			$this->history,
+			$this->bulk
 		);
 	}//end setUp()
 
@@ -201,6 +207,25 @@ class ObjectActionsControllerTest extends TestCase {
 		$this->assertSame(['results' => [['action' => 'hold']]], $this->controller->history('r', 'ticket', 'obj-1')->getData());
 		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller->history('r', 'ticket', 'obj-1')->getStatus());
 	}//end testTheHistoryAnswersTheRunsAndNeedsRead()
+
+	public function testASelectionOf250BecomesAPreviewedJob(): void {
+		$ids = array_map(static fn (int $n): string => 't-' . $n, range(1, 250));
+		$this->params(['ids' => $ids, 'inputs' => []]);
+		$this->macros->method('loadSchema')->willReturn($this->schema());
+		$job = new BulkJob();
+		$job->setId(42);
+		$job->setTotal(250);
+		$this->bulk->expects($this->once())->method('start')
+			->with($this->anything(), 'r', 'ticket', 'assign-to-me', $ids, [])
+			->willReturn($job);
+		$this->runner->expects($this->never())->method('run');
+
+		$response = $this->controller->invokeOnSelection('r', 'ticket', 'assign-to-me');
+
+		$this->assertSame(Http::STATUS_ACCEPTED, $response->getStatus());
+		$this->assertSame(250, $response->getData()['job']['total']);
+		$this->assertSame('/api/bulk-jobs/42/commit', $response->getData()['links']['commit']);
+	}//end testASelectionOf250BecomesAPreviewedJob()
 
 	public function testTheSelectionListComesFromTheSchemaNamed(): void {
 		$this->macros->method('loadSchema')->with('ticket')->willReturn($this->schema());
