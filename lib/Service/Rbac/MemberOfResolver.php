@@ -116,7 +116,7 @@ class MemberOfResolver {
 			return null;
 		}
 
-		if ($userId === null || $userId === '') {
+		if ((string)$userId === '') {
 			return [];
 		}
 
@@ -129,12 +129,46 @@ class MemberOfResolver {
 	}//end valuesFor()
 
 	/**
+	 * Replace `$memberOf` in an operator object with `$in` over the caller's set.
+	 *
+	 * The SQL emitters and OperatorEvaluator already handle `$in`, including the
+	 * empty list, so whoever resolves through this reads one set. A sibling `$in`
+	 * is intersected with the set; other siblings are resolved by the caller's
+	 * own resolver and still apply.
+	 *
+	 * @param array<string, mixed> $operators      The operator object holding `$memberOf`.
+	 * @param string|null          $userId         The current user, or null when nobody is signed in.
+	 * @param callable             $resolveSibling Resolves the dynamic tokens of a sibling operand.
+	 *
+	 * @return array<string, mixed>|null The operators with `$in`, or null (deny) when unresolvable.
+	 *
+	 * @spec openspec/changes/access-follows-membership/specs/rbac-scopes/spec.md#requirement-a-match-can-admit-by-the-callers-membership-records
+	 */
+	public function resolveOperators(array $operators, ?string $userId, callable $resolveSibling): ?array {
+		$set = $this->valuesFor(operand: ($operators[self::OPERATOR] ?? null), userId: $userId);
+		if ($set === null) {
+			return null;
+		}
+
+		unset($operators[self::OPERATOR]);
+		$resolved = array_map($resolveSibling, $operators);
+
+		$sibling = ($resolved['$in'] ?? $set);
+		if (is_array($sibling) === false || array_is_list($sibling) === false) {
+			return null;
+		}
+
+		$resolved['$in'] = array_values(array_intersect($set, $sibling));
+
+		return $resolved;
+	}//end resolveOperators()
+
+	/**
 	 * Check the operand and fill in its defaults.
 	 *
 	 * @param mixed $operand The `$memberOf` operand.
 	 *
-	 * @return array{schema: string, register: string, property: string, match: string, where: array<string, mixed>, current: array{from: string, until: string}|null}|null
-	 *         The operand, or null when it is malformed.
+	 * @return array<string, mixed>|null The operand, or null when it is malformed.
 	 */
 	private function normalise(mixed $operand): ?array {
 		if (is_array($operand) === false || array_is_list($operand) === true) {
@@ -144,30 +178,11 @@ class MemberOfResolver {
 		$schema   = trim((string)($operand['schema'] ?? ''));
 		$property = trim((string)($operand['property'] ?? ''));
 		$match    = trim((string)($operand['match'] ?? self::DEFAULT_MATCH));
-		$where    = ($operand['where'] ?? []);
-		$current  = ($operand['current'] ?? null);
-		if ($schema === '' || $property === '' || $match === '' || is_array($where) === false) {
+		$where    = $this->normaliseWhere(where: ($operand['where'] ?? []));
+		$current  = $this->normaliseWindow(current: ($operand['current'] ?? null));
+		if ($schema === '' || $property === '' || $match === '' || $where === null || $current === false) {
 			return null;
 		}
-
-		if ($where !== [] && array_is_list($where) === true) {
-			return null;
-		}
-
-		foreach ($where as $condition) {
-			if (is_array($condition) === true && array_key_exists(self::OPERATOR, $condition) === true) {
-				return null;
-			}
-		}
-
-		if ($current !== null) {
-			$current = $this->normaliseWindow(current: $current);
-			if ($current === null) {
-				return null;
-			}
-		}
-
-		ksort($where);
 
 		return [
 			'schema'   => $schema,
@@ -180,21 +195,46 @@ class MemberOfResolver {
 	}//end normalise()
 
 	/**
-	 * Check the validity window: at least one of `from` and `until` names a field.
+	 * Check the `where` filters: a map of field to literal or operator object, without `$memberOf`.
 	 *
-	 * @param mixed $current The operand's `current`.
+	 * @param mixed $where The operand's `where`.
 	 *
-	 * @return array{from: string, until: string}|null The window, or null when it is malformed.
+	 * @return array<string, mixed>|null The filters sorted by field, or null when they are malformed.
 	 */
-	private function normaliseWindow(mixed $current): ?array {
-		if (is_array($current) === false) {
+	private function normaliseWhere(mixed $where): ?array {
+		if (is_array($where) === false || ($where !== [] && array_is_list($where) === true)) {
 			return null;
 		}
 
-		$from  = trim((string)($current['from'] ?? ''));
-		$until = trim((string)($current['until'] ?? ''));
-		if ($from === '' && $until === '') {
+		foreach ($where as $condition) {
+			if (is_array($condition) === true && array_key_exists(self::OPERATOR, $condition) === true) {
+				return null;
+			}
+		}
+
+		ksort($where);
+
+		return $where;
+	}//end normaliseWhere()
+
+	/**
+	 * Check the validity window: absent, or at least one of `from` and `until` names a field.
+	 *
+	 * @param mixed $current The operand's `current`.
+	 *
+	 * @return array{from: string, until: string}|false|null The window, null when there is none, false when it is malformed.
+	 */
+	private function normaliseWindow(mixed $current): array|false|null {
+		if ($current === null) {
 			return null;
+		}
+
+		// A scalar casts to a list without `from` or `until`, so it is malformed too.
+		$current = (array)$current;
+		$from    = trim((string)($current['from'] ?? ''));
+		$until   = trim((string)($current['until'] ?? ''));
+		if ($from . $until === '') {
+			return false;
 		}
 
 		return ['from' => $from, 'until' => $until];
@@ -214,7 +254,7 @@ class MemberOfResolver {
 
 			$registerId = $spec['register'];
 			if ($registerId === '') {
-				$registerId = (string)($this->registers->getFirstRegisterWithSchema((int)$schema->getId()) ?? '');
+				$registerId = (string)$this->registers->getFirstRegisterWithSchema((int)$schema->getId());
 			}
 
 			if ($registerId === '') {
@@ -244,6 +284,22 @@ class MemberOfResolver {
 			return [];
 		}
 
+		return $this->setFrom(rows: $rows, spec: $spec, userId: $userId);
+	}//end read()
+
+	/**
+	 * The set over the rows that belong to the caller and pass the filters and window.
+	 *
+	 * @param array<int, mixed> $rows   The rows the search returned.
+	 * @param array             $spec   The normalised operand.
+	 * @param string            $userId The current user.
+	 *
+	 * @return string[] The set.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) DepartmentMatrixPersonValues::collect() is the one pure reader of a
+	 *      user's values off rows that re-checks the user match; calling it keeps the two readers identical.
+	 */
+	private function setFrom(array $rows, array $spec, string $userId): array {
 		if (count($rows) >= self::ROW_LIMIT) {
 			$this->logger->warning(
 				message: '[MemberOfResolver] The caller has more membership rows than are read; the set is truncated',
@@ -269,7 +325,7 @@ class MemberOfResolver {
 			match: $spec['match'],
 			userId: $userId
 		);
-	}//end read()
+	}//end setFrom()
 
 	/**
 	 * Whether a membership row passes the operand's filters and window.
