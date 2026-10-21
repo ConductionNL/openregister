@@ -136,6 +136,34 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 		$this->assertSame(expected: 'alpha', actual: $import['actor'], message: 'the app raises the task, not the party');
 	}
 
+	/**
+	 * A task's checklist reaches the engine as it is declared, ticked items included.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-task-checklist/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-checklist
+	 */
+	public function testATaskIsWrittenWithItsChecklist(): void {
+		$checklist = [
+			['id' => 'datum', 'label' => 'Datum afstemmen', 'checked' => true],
+			['id' => 'zaal', 'label' => 'Zaal reserveren', 'checked' => false],
+		];
+		$this->caseWithTasks(tasks: [
+			['key' => 'hoorzitting', 'data' => [
+				'title' => 'Hoorzitting inplannen', 'objectUuid' => '{{object:case-1.id}}', 'priority' => 'high',
+				'checklist' => $checklist,
+			]],
+		]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$this->assertSame(expected: $checklist, actual: $this->taskImports[0]['data']['checklist']);
+		$this->assertSame(expected: 'high', actual: $this->taskImports[0]['data']['priority']);
+	}
+
 	public function testATaskThatDisappearedIsReportedMissing(): void {
 		$this->caseWithTasks([['key' => 't', 'data' => ['title' => 'Taak', 'objectUuid' => '{{object:case-1.id}}']]]);
 		$plan = $this->catalogue->gather(set: 'demo');
@@ -189,6 +217,16 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 			'upload rules on an internal task' => [
 				['title' => 'T', 'objectUuid' => $on, 'uploadRules' => ['maxFiles' => 1]],
 				'external task only',
+			],
+			'a checklist that is not a list' => [['title' => 'T', 'objectUuid' => $on, 'checklist' => 'bel de commissie'], 'checklist must be a list'],
+			'a checklist item without a label' => [['title' => 'T', 'objectUuid' => $on, 'checklist' => [['id' => 'a']]], 'an id and a label'],
+			'a checklist item id used twice' => [
+				['title' => 'T', 'objectUuid' => $on, 'checklist' => [['id' => 'a', 'label' => 'A'], ['id' => 'a', 'label' => 'B']]],
+				'id "a" is used twice',
+			],
+			'a checklist item checked as text' => [
+				['title' => 'T', 'objectUuid' => $on, 'checklist' => [['id' => 'a', 'label' => 'A', 'checked' => 'yes']]],
+				'checked is true or false',
 			],
 			'an unknown upload rule' => [
 				['title' => 'T', 'objectUuid' => $on, 'performerType' => 'external', 'assignee' => 'party:x', 'uploadRules' => ['virusScan' => true]],
