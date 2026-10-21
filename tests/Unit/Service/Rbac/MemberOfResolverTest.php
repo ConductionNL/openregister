@@ -344,6 +344,67 @@ class MemberOfResolverTest extends TestCase {
 	}//end testTheSetIsReadOncePerCallerAndOperand()
 
 	/**
+	 * `$memberOf` becomes `$in` over the set; siblings are resolved by the caller and still apply.
+	 *
+	 * @return void
+	 */
+	public function testResolveOperatorsTurnsMemberOfIntoIn(): void {
+		$this->searchAnswers(
+			[
+				$this->row(['userId' => 'anna', 'administrationId' => 'adm-1']),
+				$this->row(['userId' => 'anna', 'administrationId' => 'adm-2']),
+			]
+		);
+		$resolver = $this->resolver();
+		$sibling = static fn (mixed $value): mixed => ($value === '$userId') ? 'anna' : $value;
+
+		$this->assertSame(
+			['$in' => ['adm-1', 'adm-2']],
+			$resolver->resolveOperators(operators: ['$memberOf' => self::OPERAND], userId: 'anna', resolveSibling: $sibling)
+		);
+		$this->assertSame(
+			['$in' => ['adm-2']],
+			$resolver->resolveOperators(
+				operators: ['$memberOf' => self::OPERAND, '$in' => ['adm-2', 'adm-9']],
+				userId: 'anna',
+				resolveSibling: $sibling
+			),
+			'a sibling $in narrows the set'
+		);
+		$this->assertSame(
+			['$ne' => 'anna', '$in' => ['adm-1', 'adm-2']],
+			$resolver->resolveOperators(
+				operators: ['$memberOf' => self::OPERAND, '$ne' => '$userId'],
+				userId: 'anna',
+				resolveSibling: $sibling
+			),
+			'another sibling is resolved and kept'
+		);
+	}//end testResolveOperatorsTurnsMemberOfIntoIn()
+
+	/**
+	 * An unresolvable operand or a sibling `$in` that is not a list resolves to null (deny).
+	 *
+	 * @return void
+	 */
+	public function testResolveOperatorsDeniesWhatItCannotResolve(): void {
+		$this->searchAnswers([$this->row(['userId' => 'anna', 'administrationId' => 'adm-1'])]);
+		$resolver = $this->resolver();
+		$sibling = static fn (mixed $value): mixed => $value;
+
+		$this->assertNull($resolver->resolveOperators(operators: ['$memberOf' => ['schema' => '']], userId: 'anna', resolveSibling: $sibling));
+		$this->assertNull($resolver->resolveOperators(operators: ['$memberOf' => null], userId: 'anna', resolveSibling: $sibling));
+		$this->assertNull(
+			$resolver->resolveOperators(operators: ['$memberOf' => self::OPERAND, '$in' => 'adm-1'], userId: 'anna', resolveSibling: $sibling)
+		);
+		$this->assertSame(
+			['$in' => []],
+			$resolver->resolveOperators(operators: ['$memberOf' => self::OPERAND], userId: null, resolveSibling: $sibling),
+			'nobody signed in is a member of nothing'
+		);
+	}//end testResolveOperatorsDeniesWhatItCannotResolve()
+
+	/**
 	 * The read is capped, and the cap can only hide rows.
 	 *
 	 * @return void
