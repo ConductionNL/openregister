@@ -17,6 +17,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ExampleSet;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetExternalTask
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetInstaller
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetCatalogue
@@ -105,6 +106,36 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 		$this->assertSame([], $this->store->ids(register: 'cases', schema: 'case'));
 	}
 
+	/**
+	 * An external task reaches the engine addressed to its party, with its
+	 * upload rules as metadata.upload, raised by the fragment's app.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-external-party-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-resident-a-portal-task
+	 */
+	public function testAnExternalTaskIsWrittenForItsPartyWithItsUploadRules(): void {
+		$this->caseWithTasks(tasks: [
+			['key' => 'id-kopie', 'data' => [
+				'title' => 'Stuur een kopie van uw ID-bewijs', 'objectUuid' => '{{object:case-1.id}}',
+				'performerType' => 'external', 'assignee' => 'party:{{cast:sanne.uid}}', 'dueAt' => '{{date:7}}',
+				'uploadRules' => ['required' => true, 'maxFiles' => 2],
+			]],
+		]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$import = $this->taskImports[0];
+		$this->assertSame(expected: 'external', actual: $import['data']['performerType']);
+		$this->assertSame(expected: 'party:sanne.devries', actual: $import['data']['assignee']);
+		$this->assertSame(expected: ['upload' => ['required' => true, 'maxFiles' => 2]], actual: $import['data']['metadata']);
+		$this->assertArrayNotHasKey(key: 'uploadRules', array: $import['data']);
+		$this->assertSame(expected: 'alpha', actual: $import['actor'], message: 'the app raises the task, not the party');
+	}
+
 	public function testATaskThatDisappearedIsReportedMissing(): void {
 		$this->caseWithTasks([['key' => 't', 'data' => ['title' => 'Taak', 'objectUuid' => '{{object:case-1.id}}']]]);
 		$plan = $this->catalogue->gather(set: 'demo');
@@ -147,6 +178,22 @@ class ExampleSetTasksTest extends ExampleSetTestCase {
 			'not a date'       => [['title' => 'T', 'objectUuid' => $on, 'dueAt' => 'soon'], 'dueAt "soon" is not a date'],
 			'another field'    => [['title' => 'T', 'objectUuid' => $on, 'requester' => 'x'], 'field "requester"'],
 			'an unknown object' => [['title' => 'T', 'objectUuid' => '{{object:nope.id}}'], 'cannot resolve'],
+			'an external task for an account' => [
+				['title' => 'T', 'objectUuid' => $on, 'performerType' => 'external', 'assignee' => '{{cast:sanne.uid}}'],
+				'assigned to a party',
+			],
+			'an external task marked done' => [
+				['title' => 'T', 'objectUuid' => $on, 'performerType' => 'external', 'assignee' => 'party:x', 'completedBy' => '{{cast:esra.uid}}'],
+				'completed by its party',
+			],
+			'upload rules on an internal task' => [
+				['title' => 'T', 'objectUuid' => $on, 'uploadRules' => ['maxFiles' => 1]],
+				'external task only',
+			],
+			'an unknown upload rule' => [
+				['title' => 'T', 'objectUuid' => $on, 'performerType' => 'external', 'assignee' => 'party:x', 'uploadRules' => ['virusScan' => true]],
+				'upload rule "virusScan"',
+			],
 		];
 	}
 
