@@ -41,6 +41,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Flow\FlowNextHint;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
 use OCA\OpenRegister\Service\ObjectService;
@@ -79,6 +80,7 @@ class ObjectActionsController extends Controller {
 	 * @param ObjectActionDefinitions $definitions The schema's actions, for the selection surface rule.
 	 * @param ObjectActionList        $list        Lists the actions.
 	 * @param ObjectActionRunner      $runner      Runs one action on one object.
+	 * @param ObjectActionHistory     $history     Reads the runs recorded on an object.
 	 */
 	public function __construct(
 		string $appName,
@@ -88,6 +90,7 @@ class ObjectActionsController extends Controller {
 		private readonly ObjectActionDefinitions $definitions,
 		private readonly ObjectActionList $list,
 		private readonly ObjectActionRunner $runner,
+		private readonly ObjectActionHistory $history,
 	) {
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
@@ -128,6 +131,39 @@ class ObjectActionsController extends Controller {
 			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_GATEWAY);
 		}
 	}//end index()
+
+	/**
+	 * The runs of actions on one object, newest first.
+	 *
+	 * @param string $register The register slug or id.
+	 * @param string $schema   The schema slug or id.
+	 * @param string $id       The object's id, uuid or slug.
+	 *
+	 * @return JSONResponse `{results: [...]}`.
+	 *
+	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register and $schema are route segments; the object names its own.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-every-run-is-audited-once-and-the-objects-action-history-can-be-read
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function history(string $register, string $schema, string $id): JSONResponse {
+		$object = $this->findObject(id: $id);
+		$subjectSchema = null;
+		if ($object !== null) {
+			$subjectSchema = $this->macros->loadSchema(schema: (string)$object->getSchema());
+		}
+
+		if ($object === null || $subjectSchema === null) {
+			return new JSONResponse(['error' => 'No such object'], Http::STATUS_NOT_FOUND);
+		}
+
+		try {
+			return new JSONResponse(['results' => $this->history->forObject(object: $object, schema: $subjectSchema)]);
+		} catch (NotAuthorizedException $e) {
+			return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+		}
+	}//end history()
 
 	/**
 	 * The actions offered on a selection of a schema's objects.

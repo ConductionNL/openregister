@@ -89,6 +89,9 @@ return [
         // lifecycle's transitions in one list, each with availability and reason.
         ['name' => 'objectActions#index', 'url' => '/api/objects/{register}/{schema}/{id}/actions', 'verb' => 'GET',
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        // The runs of actions on this object, `action.run` and the older `action.macro`, newest first.
+        ['name' => 'objectActions#history', 'url' => '/api/objects/{register}/{schema}/{id}/actions/history', 'verb' => 'GET',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectActions#invoke', 'url' => '/api/objects/{register}/{schema}/{id}/actions/{action}', 'verb' => 'POST',
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'action' => '[^/]+']],
         // The same action on a selection: one run per object, reported per object.

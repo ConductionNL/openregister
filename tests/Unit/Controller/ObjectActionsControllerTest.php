@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionRunner;
 use OCA\OpenRegister\Service\ObjectService;
@@ -40,6 +41,8 @@ class ObjectActionsControllerTest extends TestCase {
 
 	private ObjectActionRunner&MockObject $runner;
 
+	private ObjectActionHistory&MockObject $history;
+
 	private IRequest&MockObject $request;
 
 	private ObjectActionsController $controller;
@@ -51,6 +54,7 @@ class ObjectActionsControllerTest extends TestCase {
 		$this->macros = $this->createMock(MacroActionResolver::class);
 		$this->list = $this->createMock(ObjectActionList::class);
 		$this->runner = $this->createMock(ObjectActionRunner::class);
+		$this->history = $this->createMock(ObjectActionHistory::class);
 		$this->request = $this->createMock(IRequest::class);
 
 		$this->controller = new ObjectActionsController(
@@ -60,7 +64,8 @@ class ObjectActionsControllerTest extends TestCase {
 			$this->macros,
 			new ObjectActionDefinitions($this->createMock(RegisterMapper::class)),
 			$this->list,
-			$this->runner
+			$this->runner,
+			$this->history
 		);
 	}//end setUp()
 
@@ -184,6 +189,18 @@ class ObjectActionsControllerTest extends TestCase {
 		$this->assertSame(['succeeded' => 1, 'failed' => 1], $data['summary']);
 		$this->assertSame('list', $data['next']);
 	}//end testASelectionRunsEachObjectThroughTheSinglePath()
+
+	public function testTheHistoryAnswersTheRunsAndNeedsRead(): void {
+		$this->objects->method('find')->willReturn($this->object());
+		$this->macros->method('loadSchema')->willReturn($this->schema());
+		$this->history->method('forObject')->willReturnOnConsecutiveCalls(
+			[['action' => 'hold']],
+			$this->throwException(new NotAuthorizedException('no'))
+		);
+
+		$this->assertSame(['results' => [['action' => 'hold']]], $this->controller->history('r', 'ticket', 'obj-1')->getData());
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller->history('r', 'ticket', 'obj-1')->getStatus());
+	}//end testTheHistoryAnswersTheRunsAndNeedsRead()
 
 	public function testTheSelectionListComesFromTheSchemaNamed(): void {
 		$this->macros->method('loadSchema')->with('ticket')->willReturn($this->schema());
