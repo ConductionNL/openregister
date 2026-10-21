@@ -240,11 +240,12 @@ final class ObjectActionShape {
 	private static function modeRefusals(string $key, ?string $kind, array $definition): array {
 		$refusals = [];
 		$mode = ($definition['mode'] ?? 'sync');
+		$writeOnly = ObjectActionInputSchema::anyProperty(inputs: ($definition['inputs'] ?? null), test: ObjectActionInputSchema::isWriteOnly(...));
 		if (in_array($mode, ObjectActionDefinition::MODES, true) === false) {
 			$refusals[] = sprintf('Action "%s": "mode" must be "sync" or "async".', $key);
 		} else if ($mode === 'async' && $kind === ObjectActionDefinition::KIND_TRANSITION) {
 			$refusals[] = sprintf('Action "%s": a transition is one write and always runs sync.', $key);
-		} else if ($mode === 'async' && ObjectActionInputSchema::anyProperty(inputs: ($definition['inputs'] ?? null), test: ObjectActionInputSchema::isWriteOnly(...)) === true) {
+		} else if ($mode === 'async' && $writeOnly === true) {
 			$refusals[] = sprintf('Action "%s": a writeOnly input is never stored, so the action cannot run async.', $key);
 		}
 

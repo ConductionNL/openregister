@@ -7,6 +7,7 @@
  * the person who presses the button:
  *
  * - the shape of every declaration ({@see ObjectActionDefinition::refusals()});
+ * - the nodes inline `steps` name ({@see ObjectActionStepsFlow});
  * - the flow a `flow` body binds to ({@see MacroActionValidator});
  * - who may declare `elevate`: an administrator, or the system during an
  *   import that runs without a session.
@@ -50,11 +51,13 @@ class ObjectActionValidator {
 	 * @param MacroActionValidator $macros       Verifies the flows `flow` bodies bind to.
 	 * @param IUserSession         $userSession  The saver.
 	 * @param IGroupManager        $groupManager Whether the saver is an administrator.
+	 * @param ObjectActionStepsFlow|null $steps  Checks inline steps against the node registry.
 	 */
 	public function __construct(
 		private readonly MacroActionValidator $macros,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
+		private readonly ?ObjectActionStepsFlow $steps = null,
 	) {
 	}//end __construct()
 
@@ -79,6 +82,11 @@ class ObjectActionValidator {
 		}
 
 		$refusals = $this->elevationRefusals(configuration: $configuration);
+		if ($refusals !== []) {
+			return $refusals;
+		}
+
+		$refusals = ($this->steps?->refusals(configuration: $configuration) ?? []);
 		if ($refusals !== []) {
 			return $refusals;
 		}

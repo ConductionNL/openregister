@@ -13,6 +13,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\ObjectAction;
 
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Flow\MacroActionValidator;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionValidator;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -113,6 +114,18 @@ class ObjectActionValidatorTest extends TestCase {
 
 		$this->assertCount(1, $this->validator()->refusals($schema));
 	}//end testAShapeRefusalStopsBeforeTheFlowLookup()
+
+	public function testStepRefusalsComeBeforeTheFlowLookup(): void {
+		$schema = new Schema();
+		$schema->setConfiguration(['x-openregister-action' => ['x' => ['steps' => [['type' => 'openregister.user-task']]]]]);
+		$steps = $this->createMock(ObjectActionStepsFlow::class);
+		$steps->expects($this->once())->method('refusals')->willReturn(['Action "x": step 1 branches.']);
+		$this->macros->expects($this->never())->method('refusals');
+
+		$validator = new ObjectActionValidator($this->macros, $this->session, $this->groups, $steps);
+
+		$this->assertSame(['Action "x": step 1 branches.'], $validator->refusals($schema));
+	}//end testStepRefusalsComeBeforeTheFlowLookup()
 
 	public function testTheBoundFlowIsStillVerified(): void {
 		$schema = new Schema();
