@@ -108,7 +108,13 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->apps['openregister'] = dirname(__DIR__, 4);
 		$plan = $this->catalogue->gather(set: 'zuiddrecht');
 
-		$this->assertCount(17, $plan['cast']['people']);
+		$this->assertCount(expectedCount: 18, haystack: $plan['cast']['people']);
+		// The handler the dossiq boards draw as "u", who owns a saved view.
+		$pieter = $plan['cast']['people']['pieter'];
+		$this->assertSame(
+			expected: ['pieter', 'Pieter Jansen', ['vergunningen']],
+			actual: [$pieter['uid'], $pieter['displayName'], array_values(array_diff($pieter['groups'], ['medewerkers']))]
+		);
 		// The jeugdteam's regisseur of the jeugdwet example case.
 		$this->assertSame(['fatma.kaya', ['sociaal-domein']], [$plan['cast']['people']['fatma']['uid'], array_values(array_diff($plan['cast']['people']['fatma']['groups'], ['medewerkers']))]);
 		$this->assertSame(['brp' => ['mock' => true], 'kvk' => ['mock' => true]], $plan['requires']);

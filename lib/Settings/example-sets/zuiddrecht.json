@@ -297,6 +297,22 @@
 				"function": "Teamleider"
 			},
 			{
+				"key": "pieter",
+				"uid": "pieter",
+				"displayName": "Pieter Jansen",
+				"givenName": "Pieter",
+				"prefix": "",
+				"familyName": "Jansen",
+				"email": "pieter.jansen@zuiddrecht.example",
+				"role": "employee",
+				"department": "Vergunningen",
+				"groups": [
+					"medewerkers",
+					"vergunningen"
+				],
+				"function": "Behandelaar"
+			},
+			{
 				"key": "fatma",
 				"uid": "fatma.kaya",
 				"displayName": "Fatma Kaya",
