@@ -34,6 +34,11 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds;
+use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Service\ViewService;
 use OCA\OpenRegister\Db\Task;
 use OCA\OpenRegister\Db\TaskMapper;
 use OCA\OpenRegister\Service\Task\TaskService;
@@ -109,6 +114,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<int, array{data: array<string, mixed>, actor: string|null}> Every task import, in order. */
 	protected array $taskImports = [];
 
+	/** @var array<string, View> The saved views, by uuid. */
+	protected array $savedViews = [];
+
 	/** @var string The instance's overwrite.cli.url. */
 	protected string $baseUrl = 'https://cloud.example.test/';
 
@@ -136,6 +144,8 @@ abstract class ExampleSetTestCase extends TestCase {
 			OrganisationMapper::class => $this->organisationMapper(),
 			TaskService::class        => $this->taskService(),
 			TaskMapper::class         => $this->taskMapper(),
+			ViewService::class        => $this->viewService(),
+			ViewMapper::class         => $this->viewMapper(),
 		});
 		$files     = new ExampleSetFiles(container: $container);
 		$setConfig = new ExampleSetAppConfig(appConfig: $this->appConfigOfApps(), random: $this->random());
@@ -192,7 +202,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			files: $files,
 			appConfig: $setConfig,
 			userPreferences: $preferences,
-			tasks: new ExampleSetTasks(container: $container)
+			engineRows: new ExampleSetEngineKinds(tasks: new ExampleSetTasks(container: $container), views: new ExampleSetViews(container: $container))
 		);
 		$this->remover   = new ExampleSetRemover(
 			store: $this->store,
@@ -204,7 +214,7 @@ abstract class ExampleSetTestCase extends TestCase {
 			appConfig: $setConfig,
 			instance: $instance,
 			userPreferences: $preferences,
-			tasks: new ExampleSetTasks(container: $container)
+			engineRows: new ExampleSetEngineKinds(tasks: new ExampleSetTasks(container: $container), views: new ExampleSetViews(container: $container))
 		);
 	}
 
@@ -298,6 +308,48 @@ abstract class ExampleSetTestCase extends TestCase {
 		$mapper->method('delete')->willReturnCallback(function (Task $task): Task {
 			unset($this->engineTasks[(string) $task->getUuid()]);
 			return $task;
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * A view service whose create puts a view in $savedViews.
+	 *
+	 * @return ViewService
+	 */
+	private function viewService(): ViewService {
+		$service = $this->createMock(ViewService::class);
+		$service->method('create')->willReturnCallback(
+			function (string $name, string $description, string $owner, bool $isPublic, bool $isDefault, array $query, ?array $presentation = null, ?array $sharedWith = null, ?array $alert = null): View {
+				$view = new View();
+				$view->setUuid('view-'.(count($this->savedViews) + 1));
+				$view->setName($name);
+				$view->setOwner($owner);
+				$view->setIsPublic($isPublic);
+				$view->setQuery($query);
+				$view->setAlert($alert);
+				$this->savedViews[(string) $view->getUuid()] = $view;
+				return $view;
+			}
+		);
+
+		return $service;
+	}
+
+	/**
+	 * A view mapper over $savedViews.
+	 *
+	 * @return ViewMapper
+	 */
+	private function viewMapper(): ViewMapper {
+		$mapper = $this->createMock(ViewMapper::class);
+		$mapper->method('find')->willReturnCallback(
+			fn ($id): View => ($this->savedViews[(string) $id] ?? throw new DoesNotExistException('no view '.$id))
+		);
+		$mapper->method('delete')->willReturnCallback(function (View $view): View {
+			unset($this->savedViews[(string) $view->getUuid()]);
+			return $view;
 		});
 
 		return $mapper;

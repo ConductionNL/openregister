@@ -84,6 +84,11 @@
 				"key": "functioneel-beheer",
 				"gid": "zuiddrecht-functioneel-beheer",
 				"displayName": "Functioneel beheer"
+			},
+			{
+				"key": "sociaal-domein",
+				"gid": "zuiddrecht-sociaal-domein",
+				"displayName": "Sociaal domein"
 			}
 		],
 		"people": [
@@ -290,6 +295,22 @@
 					"vergunningen"
 				],
 				"function": "Teamleider"
+			},
+			{
+				"key": "fatma",
+				"uid": "fatma.kaya",
+				"displayName": "Fatma Kaya",
+				"givenName": "Fatma",
+				"prefix": "",
+				"familyName": "Kaya",
+				"email": "fatma.kaya@zuiddrecht.example",
+				"role": "employee",
+				"department": "Jeugdteam",
+				"groups": [
+					"medewerkers",
+					"sociaal-domein"
+				],
+				"function": "Regisseur jeugdteam"
 			},
 			{
 				"key": "ilse",

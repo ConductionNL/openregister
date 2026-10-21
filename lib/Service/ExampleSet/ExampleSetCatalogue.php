@@ -274,7 +274,8 @@ class ExampleSetCatalogue {
 	 *               serviceAccounts: array<int, array{key: string, uid: string, displayName: string, groups: array<int, string>}>,
 	 *               appConfig: array<int, array{key: string, value: mixed, generate: bool}>,
 	 *               userPreferences: array<int, array{user: string, key: string, value: string}>,
-	 *               tasks: array<int, array{key: string, data: array<string, mixed>}>}
+	 *               tasks: array<int, array{key: string, data: array<string, mixed>}>,
+	 *               views: array<int, array{key: string, data: array<string, mixed>}>}
 	 *
 	 * @throws ExampleSetException When an object or change lacks a key, register or schema, or a key is used twice.
 	 */
@@ -292,34 +293,37 @@ class ExampleSetCatalogue {
 			'serviceAccounts' => $this->serviceAccounts(file: $file, declared: (array) ($fragment['serviceAccounts'] ?? [])),
 			'appConfig'       => $this->appConfig(app: $app, file: $file, declared: (array) ($fragment['appConfig'] ?? [])),
 			'userPreferences' => $this->userPreferences(app: $app, file: $file, declared: (array) ($fragment['userPreferences'] ?? [])),
-			'tasks'           => $this->tasks(file: $file, declared: (array) ($fragment['tasks'] ?? [])),
+			'tasks'           => $this->keyedRows(file: $file, declared: (array) ($fragment['tasks'] ?? []), noun: 'task'),
+			'views'           => $this->keyedRows(file: $file, declared: (array) ($fragment['views'] ?? []), noun: 'view'),
 		];
 	}//end fragment()
 
 	/**
-	 * The tasks of a fragment: a key each, unique in the fragment, and the task's fields.
+	 * The tasks or views of a fragment: a key each, unique in the fragment, and the row's fields.
 	 *
 	 * @param string            $file     The fragment file, for messages.
 	 * @param array<int, mixed> $declared The declared entries.
+	 * @param string            $noun     `task` or `view`, for messages.
 	 *
 	 * @return array<int, array{key: string, data: array<string, mixed>}>
 	 *
 	 * @throws ExampleSetException When an entry lacks a key or fields, or a key is used twice.
 	 *
 	 * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
+	 * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
 	 */
-	private function tasks(string $file, array $declared): array {
+	private function keyedRows(string $file, array $declared, string $noun): array {
 		$entries = [];
 		$seen    = [];
 		foreach ($declared as $index => $entry) {
 			$entry = (array) $entry;
 			$key   = ($entry['key'] ?? null);
 			if (is_string($key) === false || $key === '' || is_array($entry['data'] ?? null) === false) {
-				throw new ExampleSetException($file.': task '.$index.' needs a key and its fields (data).');
+				throw new ExampleSetException($file.': '.$noun.' '.$index.' needs a key and its fields (data).');
 			}
 
 			if (isset($seen[$key]) === true) {
-				throw new ExampleSetException($file.': task key "'.$key.'" is used twice.');
+				throw new ExampleSetException($file.': '.$noun.' key "'.$key.'" is used twice.');
 			}
 
 			$seen[$key] = true;
@@ -327,7 +331,7 @@ class ExampleSetCatalogue {
 		}
 
 		return $entries;
-	}//end tasks()
+	}//end keyedRows()
 
 	/**
 	 * The service accounts of a fragment: a key and an account id each.
