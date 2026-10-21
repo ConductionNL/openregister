@@ -50,6 +50,7 @@ use ReflectionClass;
  * attributes no coverage leaves 54 new methods reading as untested, which is
  * indistinguishable from not having written it.
  *
+ * @covers \OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode
  * @covers \OCA\OpenRegister\Service\Flow\Nodes\EndNode
@@ -104,6 +105,7 @@ final class FlowNodeDeclaredTaxonomyTest extends TestCase {
 			// half is "Ask a person".
 			'UserTaskNode' => ['userTask', 'human'],
 			'PortalTaskNode' => ['userTask', 'human'],
+			'ActionInputsNode' => ['scriptTask', 'logic'],
 			'AwaitSignalNode' => ['receiveTask', 'human'],
 
 			// Objects. Calling the register is a serviceTask; that it is OUR

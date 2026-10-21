@@ -113,6 +113,52 @@ class FlowDefinitionBuilder {
 	}//end graph()
 
 	/**
+	 * Lower an action's inline `steps` into a flow document.
+	 *
+	 * A straight line: a manual trigger, the action-inputs step that makes
+	 * `{{inputs.x}}` readable, the steps in declared order, and an end node
+	 * carrying `next`. The result is an ordinary flow document, so it runs on
+	 * the one engine and leaves an ordinary run behind (ADR-065).
+	 *
+	 * @param list<array<string, mixed>> $steps The declared steps: `{id?, type, config?, label?}`.
+	 * @param string|null                $next  The action's `next` hint.
+	 *
+	 * @return array{nodes: list<array<string, mixed>>, edges: list<array<string, string>>} The flow document.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-inline-steps-are-a-straight-line-lowered-to-the-one-flow-engine
+	 */
+	public function lowerSteps(array $steps, ?string $next = null): array {
+		$nodes = [
+			['id' => 'trigger', 'type' => FlowNextHint::MANUAL_TRIGGER, 'config' => []],
+			['id' => 'inputs', 'type' => 'openregister.action-inputs', 'config' => []],
+		];
+		foreach (array_values($steps) as $index => $step) {
+			$nodes[] = array_merge(
+				[
+					'id' => 'step-' . ($index + 1) . '-' . (string)($step['id'] ?? ''),
+					'type' => (string)($step['type'] ?? ''),
+					'config' => (array)($step['config'] ?? []),
+				],
+				array_intersect_key($step, ['label' => true])
+			);
+		}
+
+		$nodes[] = [
+			'id' => 'end',
+			'type' => FlowNextHint::END_NODE,
+			'config' => array_filter(['next' => $next], static fn (?string $hint): bool => $hint !== null),
+		];
+
+		$edges = array_map(
+			static fn (array $from, array $to): array => ['id' => $from['id'] . '>' . $to['id'], 'from' => $from['id'], 'to' => $to['id']],
+			array_slice($nodes, 0, -1),
+			array_slice($nodes, 1)
+		);
+
+		return ['nodes' => $nodes, 'edges' => $edges];
+	}//end lowerSteps()
+
+	/**
 	 * Build a Definition from a stored flow document.
 	 *
 	 * The document is user data and is therefore treated as hostile: every
