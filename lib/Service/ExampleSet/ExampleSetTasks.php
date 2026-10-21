@@ -64,7 +64,10 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 		'completedAt',
 		'completedBy',
 		'kind',
+		'performerType',
+		'uploadRules',
 	];
+
 
 	/**
 	 * Constructor.
@@ -114,6 +117,7 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 		$reasons = [
 			$this->fieldsRefusal(data: $data),
 			$this->peopleRefusal(data: $data, users: $users),
+			ExampleSetExternalTask::refusal(data: $data),
 			$this->stateRefusal(data: $data),
 			$this->datesRefusal(data: $data),
 		];
@@ -138,11 +142,14 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	 * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
 	 */
 	public function write(string $app, string $key, array $data): array {
-		$fields = array_diff_key($data, array_flip(['completedAt', 'completedBy']));
+		$fields = array_diff_key($data, array_flip(['completedAt', 'completedBy', 'uploadRules']));
 		$fields['key']   = 'example-set:'.$app.'/'.$key;
 		$fields['appId'] = $app;
+		$fields += ExampleSetExternalTask::metadata(data: $data);
+
 		$actor = (string) ($data['completedBy'] ?? $data['assignee'] ?? '');
-		if ($actor === '') {
+		if ($actor === '' || ExampleSetExternalTask::isExternal(data: $data) === true) {
+			// A party is not an account: the app that ships the set raises its task.
 			$actor = $app;
 		}
 
@@ -237,7 +244,13 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 	 * @return string
 	 */
 	private function peopleRefusal(array $data, array $users): string {
-		foreach (['assignee', 'completedBy'] as $field) {
+		$fields = ['assignee', 'completedBy'];
+		if (ExampleSetExternalTask::isExternal(data: $data) === true) {
+			// A party is checked by externalRefusal(), never against the set's accounts.
+			$fields = ['completedBy'];
+		}
+
+		foreach ($fields as $field) {
 			$uid = (string) ($data[$field] ?? '');
 			if ($uid !== '' && in_array($uid, $users, true) === false) {
 				return $field.' "'.$uid.'" is not an account the set creates or adopts';
