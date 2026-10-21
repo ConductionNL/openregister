@@ -89,6 +89,11 @@
 				"key": "sociaal-domein",
 				"gid": "zuiddrecht-sociaal-domein",
 				"displayName": "Sociaal domein"
+			},
+			{
+				"key": "mobiliteit-en-verkeer",
+				"gid": "zuiddrecht-mobiliteit-en-verkeer",
+				"displayName": "Mobiliteit en verkeer"
 			}
 		],
 		"people": [
@@ -420,6 +425,22 @@
 					"functioneel-beheer"
 				],
 				"function": "CISO"
+			},
+			{
+				"key": "lars",
+				"uid": "lars.dekoning",
+				"displayName": "Lars de Koning",
+				"givenName": "Lars",
+				"prefix": "de",
+				"familyName": "Koning",
+				"email": "lars.dekoning@zuiddrecht.example",
+				"role": "employee",
+				"department": "Mobiliteit en verkeer",
+				"groups": [
+					"medewerkers",
+					"mobiliteit-en-verkeer"
+				],
+				"function": "Beleidsadviseur verkeer"
 			}
 		],
 		"organisations": [
