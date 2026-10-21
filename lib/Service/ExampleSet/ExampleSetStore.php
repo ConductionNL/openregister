@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -105,6 +106,13 @@ class ExampleSetStore {
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-check-validates-every-object-against-its-real-schema-without-writing-req-exs-004
 	 */
 	public function validate(string $register, string $schema, array $data, array $plannedUsers=[]): array {
+		// A draft declaration is the object's state, not its data (example-set-draft-objects).
+		$draft = (new ExampleSetDraft())->split(data: $data);
+		if ($draft['refusal'] !== '') {
+			return [$draft['refusal']];
+		}
+
+		$data     = $draft['data'];
 		$schemaId = $this->schemaId(register: $register, schema: $schema);
 		if ($schemaId === null) {
 			return ['this instance has no schema "'.$schema.'" in a register "'.$register.'"'];
@@ -313,8 +321,21 @@ class ExampleSetStore {
 			return ['id' => '', 'error' => 'OpenRegister\'s object service is not available'];
 		}
 
+		$draft = (new ExampleSetDraft())->split(data: $data);
+		if ($draft['refusal'] !== '') {
+			return ['id' => '', 'error' => $draft['refusal']];
+		}
+
+		$data  = $draft['data'];
+		$owner = null;
+		if ($draft['owner'] !== null) {
+			// Written as a saved portal form is: in status draft, for its scoped owner.
+			$data['@self'] = ['status' => ObjectEntity::STATUS_DRAFT];
+			$owner         = $draft['owner']->value();
+		}
+
 		try {
-			$saved = $service->saveObject(object: $data, register: $register, schema: $schema, _rbac: false, _multitenancy: false);
+			$saved = $service->saveObject(object: $data, register: $register, schema: $schema, _rbac: false, _multitenancy: false, _owner: $owner);
 		} catch (Throwable $e) {
 			return ['id' => '', 'error' => $e->getMessage()];
 		}

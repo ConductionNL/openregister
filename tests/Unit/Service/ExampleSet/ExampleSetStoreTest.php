@@ -35,6 +35,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetStore
+ * @covers \OCA\OpenRegister\Service\ExampleSet\ExampleSetDraft
+ * @uses \OCA\OpenRegister\Service\Object\DraftOwner
  */
 class ExampleSetStoreTest extends TestCase {
 	/**
@@ -191,5 +193,77 @@ class ExampleSetStoreTest extends TestCase {
 		$this->assertSame(['row' => null, 'error' => ''], $store->read(register: 'r', schema: 's', id: 'null'));
 		$this->assertSame(['row' => null, 'error' => 'db down'], $store->read(register: 'r', schema: 's', id: 'broken'));
 		$this->assertNull($store->get(register: 'r', schema: 's', id: 'broken'));
+	}
+
+	/**
+	 * A draft declaration writes the object in status draft for its scoped
+	 * owner, and never reaches the schema validator.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-draft-objects/specs/example-sets/spec.md#requirement-an-object-may-be-a-draft-of-a-portal-subject
+	 */
+	public function testADraftIsWrittenInStatusDraftForItsScopedOwner(): void {
+		$objects = $this->createMock(originalClassName: ObjectService::class);
+		$objects->method('setRegister')->willReturnSelf();
+		$objects->method('setSchema')->willReturnSelf();
+		$objects->method('getSchema')->willReturn(42);
+		$saved = $this->createMock(originalClassName: ObjectEntity::class);
+		$saved->method('jsonSerialize')->willReturn(['@self' => ['id' => 'draft-1']]);
+		$sent = [];
+		$objects->expects($this->once())
+			->method('saveObject')
+			->willReturnCallback(function () use (&$sent, $saved): ObjectEntity {
+				// The fifteenth parameter of saveObject is the explicit owner.
+				$args = func_get_args();
+				$sent = ['object' => $args[0], 'owner' => ($args[14] ?? null)];
+				return $saved;
+			});
+
+		$validator = $this->createMock(originalClassName: ValidateObject::class);
+		$validator->expects($this->once())
+			->method('validateObjectWithPlannedUsers')
+			->with(['title' => 'Verlichting'], 42, $this->anything(), [])
+			->willReturn(new ValidationResult(null));
+
+		$container = $this->createMock(originalClassName: ContainerInterface::class);
+		$container->method('get')->willReturnCallback(static fn (string $id): object => match ($id) {
+			ObjectService::class  => $objects,
+			ValidateObject::class => $validator,
+		});
+		$store = new ExampleSetStore(container: $container, logger: $this->createMock(originalClassName: LoggerInterface::class));
+		$data  = ['title' => 'Verlichting', '@self' => ['status' => 'draft', 'owner' => 'portal:sanne.devries']];
+
+		$this->assertSame(expected: [], actual: $store->validate(register: 'dossiq', schema: 'case', data: $data));
+		$this->assertSame(expected: ['id' => 'draft-1', 'error' => ''], actual: $store->create(register: 'dossiq', schema: 'case', data: $data));
+		$this->assertSame(expected: ['title' => 'Verlichting', '@self' => ['status' => 'draft']], actual: $sent['object']);
+		$this->assertSame(expected: 'portal:sanne.devries', actual: $sent['owner']);
+	}
+
+	/**
+	 * Only a draft for a scoped owner may be declared.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-draft-objects/specs/example-sets/spec.md#requirement-an-object-may-be-a-draft-of-a-portal-subject
+	 */
+	public function testAFaultyDraftDeclarationIsRefusedAndNothingIsWritten(): void {
+		$objects = $this->createMock(originalClassName: ObjectService::class);
+		$objects->expects($this->never())->method('saveObject');
+		$store = $this->storeOver(objects: $objects);
+
+		$cases = [
+			'@self status may only be "draft"'  => ['status' => 'published'],
+			'status and owner only'             => ['status' => 'draft', 'owner' => 'portal:x', 'locked' => true],
+			'is "<scope>:<reference>"'          => ['status' => 'draft', 'owner' => 'sanne'],
+			'draft owner "Portal:x"'            => ['status' => 'draft', 'owner' => 'Portal:x'],
+		];
+		foreach ($cases as $reason => $self) {
+			$refusal = $store->validate(register: 'dossiq', schema: 'case', data: ['title' => 'T', '@self' => $self]);
+			$this->assertCount(expectedCount: 1, haystack: $refusal);
+			$this->assertStringContainsString(needle: $reason, haystack: $refusal[0]);
+			$created = $store->create(register: 'dossiq', schema: 'case', data: ['title' => 'T', '@self' => $self]);
+			$this->assertStringContainsString(needle: $reason, haystack: $created['error']);
+		}
 	}
 }
