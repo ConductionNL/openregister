@@ -303,7 +303,14 @@ class ObjectActionsController extends Controller {
 			];
 		}//end try
 
-		$this->macros->recordRun(object: $object, action: $action, flow: $binding->flow, run: (string)$run->getUuid(), userId: $userId);
+		$this->macros->recordRun(
+			object: $object,
+			action: $action,
+			flow: $binding->flow,
+			run: (string)$run->getUuid(),
+			userId: $userId,
+			changes: $this->macros->changesOf(run: $run, flowUuid: $binding->flow)
+		);
 
 		return [
 			'status' => Http::STATUS_OK,

@@ -302,7 +302,7 @@ class ObjectActionsControllerTest extends TestCase {
 		$this->audit->expects($this->once())->method('createAuditTrailEntry')->with(
 			$this->isInstanceOf(ObjectEntity::class),
 			'action.macro',
-			['declaredAction' => 'close-and-notify', 'flow' => 'flow-1', 'run' => 'run-9'],
+			['declaredAction' => 'close-and-notify', 'flow' => 'flow-1', 'run' => 'run-9', 'changes' => []],
 			'anna'
 		);
 

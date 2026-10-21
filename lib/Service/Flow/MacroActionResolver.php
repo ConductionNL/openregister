@@ -90,6 +90,37 @@ class MacroActionResolver {
 	}//end bindingFor()
 
 	/**
+	 * What a finished macro run changed, for its audit entry.
+	 *
+	 * @param FlowRun $run      The run.
+	 * @param string  $flowUuid The flow it ran.
+	 *
+	 * @return array<int, array{step: string, kind: string}> The changes.
+	 *
+	 * @spec openspec/changes/macro-run-changes/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
+	 */
+	public function changesOf(FlowRun $run, string $flowUuid): array {
+		return (new MacroRunChanges())->fromLog(log: ($run->getLog() ?? []), nodes: $this->nodesOf(flowUuid: $flowUuid));
+	}//end changesOf()
+
+	/**
+	 * The nodes of a flow, or none when it cannot be read.
+	 *
+	 * @param string $flowUuid The flow.
+	 *
+	 * @return array<int, mixed> The nodes.
+	 *
+	 * @spec openspec/changes/macro-run-changes/specs/declared-actions/spec.md#requirement-a-macro-runs-audit-entry-lists-the-changes-it-made
+	 */
+	public function nodesOf(string $flowUuid): array {
+		try {
+			return ($this->flows->find(uuid: $flowUuid)->getNodes() ?? []);
+		} catch (\Throwable) {
+			return [];
+		}
+	}//end nodesOf()
+
+	/**
 	 * A binding that names a flow its schema declares (`x-openregister-flows`)
 	 * by NAME, resolved to the stored flow the declaration became. A shipped
 	 * schema cannot carry the uuid: the import mints one per installation. A
@@ -208,17 +239,18 @@ class MacroActionResolver {
 	 * @param string       $flow   The bound flow's uuid.
 	 * @param string       $run    The run's uuid.
 	 * @param string|null  $userId The acting user.
+	 * @param array        $changes What the run changed (MacroRunChanges::fromLog()).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/macro-flows-with-next-item/specs/declared-actions/spec.md#requirement-a-declared-action-may-run-a-manual-flow-as-a-macro
 	 */
-	public function recordRun(ObjectEntity $object, string $action, string $flow, string $run, ?string $userId): void {
+	public function recordRun(ObjectEntity $object, string $action, string $flow, string $run, ?string $userId, array $changes = []): void {
 		try {
 			$this->auditTrail->createAuditTrailEntry(
 				object: $object,
 				action: 'action.macro',
-				context: ['declaredAction' => $action, 'flow' => $flow, 'run' => $run],
+				context: ['declaredAction' => $action, 'flow' => $flow, 'run' => $run, 'changes' => $changes],
 				actorId: $userId
 			);
 		} catch (\Throwable $e) {
