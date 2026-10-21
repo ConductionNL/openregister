@@ -135,17 +135,41 @@ class MacroActionResolver {
 	 * @spec openspec/changes/macro-flow-by-name/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
 	 */
 	private function resolveDeclared(Schema $schema, MacroActionBinding $binding): MacroActionBinding {
-		if ($this->flowStore === null || MacroActionBinding::namesUuid(flow: $binding->flow) === true) {
+		if (MacroActionBinding::namesUuid(flow: $binding->flow) === true) {
 			return $binding;
 		}
 
-		$flow = $this->flowStore->findDeclared(name: $binding->flow, schemaSlug: (string)$schema->getSlug());
-		if ($flow === null || (string)$flow->getUuid() === '') {
+		$uuid = $this->declaredFlowUuid(schema: $schema, name: $binding->flow);
+		if ($uuid === null) {
 			return $binding;
 		}
 
-		return $binding->resolvedTo(flowUuid: (string)$flow->getUuid());
+		return $binding->resolvedTo(flowUuid: $uuid);
 	}//end resolveDeclared()
+
+	/**
+	 * The uuid of the stored flow a schema's `x-openregister-flows` declaration
+	 * of this name became, or null when none is stored.
+	 *
+	 * @param Schema $schema The declaring schema.
+	 * @param string $name   The declared flow's name.
+	 *
+	 * @return string|null The uuid.
+	 *
+	 * @spec openspec/changes/macro-flow-by-name/specs/declared-actions/spec.md#requirement-a-macro-can-name-a-flow-its-schema-declares
+	 */
+	public function declaredFlowUuid(Schema $schema, string $name): ?string {
+		if ($this->flowStore === null) {
+			return null;
+		}
+
+		$flow = $this->flowStore->findDeclared(name: $name, schemaSlug: (string)$schema->getSlug());
+		if ($flow === null || (string)$flow->getUuid() === '') {
+			return null;
+		}
+
+		return (string)$flow->getUuid();
+	}//end declaredFlowUuid()
 
 	/**
 	 * The `next` hint the flow declares.

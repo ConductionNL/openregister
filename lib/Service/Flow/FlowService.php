@@ -734,6 +734,48 @@ class FlowService {
 	}//end run()
 
 	/**
+	 * Run a flow on behalf of a declared action whose right the caller already holds.
+	 *
+	 * For the system-held flow inline `steps` are lowered to
+	 * ({@see \OCA\OpenRegister\Service\ObjectAction\ObjectActionStepsFlow}).
+	 * That flow has no owner and belongs to no person, so the owner check in
+	 * {@see assertRunnable()} would refuse everyone: the action's own right on
+	 * the subject, checked by the caller before this, is the authorisation
+	 * (ADR-023). The run still executes as the acting user, so every write
+	 * inside it is checked against their rights.
+	 *
+	 * @param string               $uuid    The flow uuid.
+	 * @param array<string, mixed> $subject `{uuid, register, schema}` of the object.
+	 * @param array<string, mixed> $context Run-level metadata.
+	 * @param boolean              $sync    Execute inline and return the finished run.
+	 *
+	 * @return FlowRun The queued run, or the finished run when $sync is true.
+	 *
+	 * @throws DoesNotExistException When no such flow exists.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) As run(): $sync chooses who advances the run.
+	 *
+	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-inline-steps-are-a-straight-line-lowered-to-the-one-flow-engine
+	 */
+	public function runForAction(string $uuid, array $subject, array $context, bool $sync): FlowRun {
+		$flow = $this->mapper->findByUuid($uuid);
+
+		$run = $this->runner->queue(
+			flowId: (string)$flow->getUuid(),
+			subject: $subject,
+			trigger: Flow::TRIGGER_MANUAL,
+			context: $context,
+			user: $this->caller->actingUser()
+		);
+
+		if ($sync === false) {
+			return $run;
+		}
+
+		return $this->advancer->advance(run: $run, rethrow: true);
+	}//end runForAction()
+
+	/**
 	 * Mint a v4 uuid.
 	 *
 	 * @return string The uuid.
