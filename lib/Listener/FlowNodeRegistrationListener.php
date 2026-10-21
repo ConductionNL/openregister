@@ -29,6 +29,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Service\Flow\Nodes\ActionInputsNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LinkObjectNode;
+use OCA\OpenRegister\Service\Flow\Nodes\TransitionNode;
 use OCA\OpenRegister\Service\Flow\Nodes\AwaitSignalNode;
 use OCA\OpenRegister\Service\Flow\Nodes\DecisionTableNode;
 use OCA\OpenRegister\Service\Flow\Nodes\EndNode;
@@ -101,6 +103,8 @@ class FlowNodeRegistrationListener implements IEventListener {
 	 * @param CaseOpenNode $caseOpen The built-in "Open a case" node.
 	 * @param CaseAdvanceNode $caseAdvance The built-in "Advance a case" node.
 	 * @param ActionInputsNode $actionInputs The built-in step that makes an action's inputs readable.
+	 * @param TransitionNode $transition The built-in "Lifecycle transition" node.
+	 * @param LinkObjectNode $linkObject The built-in "Create or link an object" node.
 	 */
 	public function __construct(
 		private readonly SetFieldsNode $setFields,
@@ -133,6 +137,8 @@ class FlowNodeRegistrationListener implements IEventListener {
 		private readonly CaseOpenNode $caseOpen,
 		private readonly CaseAdvanceNode $caseAdvance,
 		private readonly ActionInputsNode $actionInputs,
+		private readonly TransitionNode $transition,
+		private readonly LinkObjectNode $linkObject,
 	) {
 
 	}//end __construct()
@@ -164,6 +170,8 @@ class FlowNodeRegistrationListener implements IEventListener {
 		$event->registerNode(node: $this->subFlow);
 		$event->registerNode(node: $this->router);
 		$event->registerNode(node: $this->objectWrite);
+		$event->registerNode(node: $this->transition);
+		$event->registerNode(node: $this->linkObject);
 		$event->registerNode(node: $this->objectRead);
 		$event->registerNode(node: $this->flowState);
 		$event->registerNode(node: $this->map);
