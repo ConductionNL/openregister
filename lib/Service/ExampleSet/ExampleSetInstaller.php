@@ -180,6 +180,7 @@ class ExampleSetInstaller {
 			'userPreferences' => [],
 			'tasks'       => [],
 			'views'       => [],
+			'watchers'    => [],
 			'files'       => 0,
 			'passwords'   => [],
 			'types'       => [],

@@ -108,7 +108,7 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->apps['openregister'] = dirname(__DIR__, 4);
 		$plan = $this->catalogue->gather(set: 'zuiddrecht');
 
-		$this->assertCount(expectedCount: 18, haystack: $plan['cast']['people']);
+		$this->assertCount(expectedCount: 19, haystack: $plan['cast']['people']);
 		// The handler the dossiq boards draw as "u", who owns a saved view.
 		$pieter = $plan['cast']['people']['pieter'];
 		$this->assertSame(
