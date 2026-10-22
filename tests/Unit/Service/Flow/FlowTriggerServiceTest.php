@@ -243,6 +243,44 @@ class FlowTriggerServiceTest extends TestCase {
 	}//end testAnUnresolvableSubjectLeavesTheSyncRunToTheWorker()
 
 	/**
+	 * `object.deleted` is the one event whose subject can never be
+	 * re-resolved — the object is already gone. A `sync` flow wired to it must
+	 * still run INLINE, from the snapshot `FlowTriggerListener` recorded as
+	 * `payload`, rather than silently falling through to the worker and
+	 * breaking `sync`'s one guarantee (it runs inside the triggering call) for
+	 * this trigger only.
+	 */
+	public function testADeletedSubjectWithASnapshotStillRunsInlineFromThePayload(): void {
+		$locator = $this->createMock(FlowLocator::class);
+		$locator->method('flowsForTrigger')->willReturn(['sync-1']);
+		$locator->method('resolveFlow')->willReturn(['id' => 'sync-1', 'executionMode' => 'sync']);
+		$locator->method('resolveSubject')->willReturn(null);
+
+		$run = new FlowRun();
+		$run->setUuid('run-sync-3');
+		$run->setContext(['payload' => ['uuid' => 'gone', 'kenmerk' => 'K-1']]);
+
+		$seen = null;
+		$runner = $this->createMock(FlowRunService::class);
+		$runner->method('queue')->willReturn($run);
+		$runner->expects($this->once())->method('execute')->willReturnCallback(
+			function () use (&$seen, $run): FlowRun {
+				$seen = func_get_args();
+				return $run;
+			}
+		);
+
+		$service = new FlowTriggerService($locator, $runner, new \Psr\Log\NullLogger());
+
+		$this->assertSame(
+			1,
+			$service->fire(event: 'object.deleted', subject: ['uuid' => 'gone', 'register' => 'woo', 'schema' => 'convenanten'])
+		);
+		// execute(run, flow, subject, seedItems): the seed carries the snapshot.
+		$this->assertSame('K-1', $seen[3][0]['json']['kenmerk']);
+	}//end testADeletedSubjectWithASnapshotStillRunsInlineFromThePayload()
+
+	/**
 	 * A trigger runs inside a user's save; a failure to queue must be swallowed,
 	 * A trigger runs inside a user's save; a failure to queue must be swallowed,
 	 * never thrown into that action.

@@ -187,9 +187,15 @@ class FlowTriggerService {
 			return;
 		}
 
-		// Mirrors the worker's seeding rule: a run with a subject carries the
+		// Mirrors the worker's seeding rule ({@see FlowRunAdvancer::advance()},
+		// which this must not drift from): a run with a subject carries the
 		// object, a subjectless one (a file, a user) is seeded from the payload
-		// its trigger recorded on the context.
+		// its trigger recorded on the context. A deleted subject with a
+		// snapshot under `payload` takes the same seeded path rather than
+		// falling through to the worker — `object.deleted` can never re-resolve
+		// by design, so returning here for that case would silently turn a
+		// `sync` flow's one guarantee (it runs inside the triggering call) into
+		// an async one, for this trigger only.
 		$seed = null;
 		$object = null;
 		$uuid = trim((string)($subject['uuid'] ?? ''));
@@ -200,7 +206,7 @@ class FlowTriggerService {
 				(string)($subject['schema'] ?? '')
 			);
 
-			if ($object === null) {
+			if ($object === null && (array)(($run->getContext() ?? [])['payload'] ?? []) === []) {
 				return;
 			}
 		}
