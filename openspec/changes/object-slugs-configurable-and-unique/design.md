@@ -80,7 +80,7 @@ new uuid waits for the slug.
   (`findAcrossAllMagicTables`). A slug is unique per register + schema by design, so a
   lookup without both cannot be unique, and it keeps its current behaviour.
 - The HTML 404 page for an unknown slug that was seen in the reproduction.
-- Re-slugging on restore of a soft-deleted object beyond the collision check: a restored object keeps its slug unless another live object holds it by then (D4a).
+- Re-slugging on restore of a soft-deleted object beyond the collision check: a restored object keeps its slug unless another live object holds it by then (see Risks).
 - Slugs of objects stored by an external `objectSource` provider.
 
 ## Decisions
