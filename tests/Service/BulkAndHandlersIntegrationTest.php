@@ -349,6 +349,14 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 		$bulkData = $bulkStored->getObject();
 		$nonBulkData = $nonBulkStored->getObject();
 
+		// Concrete expected values, not just bulk-vs-non-bulk equality: a
+		// regression shared by both paths (e.g. in DateTimeNormalizer itself)
+		// would pass an equality-only check. +02:00 converts to UTC for the
+		// date-time; the date keeps its given wall-clock day, read back bare
+		// (no time component) at this API boundary.
+		$this->assertSame('2026-10-13T13:50:03+00:00', $bulkData['occurredAt']);
+		$this->assertSame('2026-10-20', $bulkData['validUntil']);
+
 		$this->assertSame(
 			$nonBulkData['occurredAt'],
 			$bulkData['occurredAt'],

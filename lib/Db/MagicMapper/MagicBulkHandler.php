@@ -184,7 +184,6 @@ class MagicBulkHandler {
 				value: $createdValue,
 				default: $now->format('Y-m-d H:i:s')
 			);
-
 			$preparedObject['_updated'] = $now->format('Y-m-d H:i:s');
 			$preparedObject = $this->withExpiry(prepared: $preparedObject, object: $object, selfData: $selfData);
 
@@ -213,7 +212,6 @@ class MagicBulkHandler {
 			// Map ALL object properties to columns (camelCase → snake_case).
 			// Properties can be at top level OR in 'object' key (structured format).
 			$propertySource = $object['object'] ?? $object;
-			$schemaProperties = $schema->getProperties();
 			foreach ($propertySource as $propertyName => $value) {
 				// A declared property that would write a metadata column is skipped
 				// with the undeclared `_` keys and `@self`: the metadata columns were
@@ -231,39 +229,8 @@ class MagicBulkHandler {
 				// 3. Empty strings are semantically equivalent to NULL for most use cases.
 				$value = match ($value) { '' => null, default => $value };
 
-				// SCHEMA-AWARE date/date-time NORMALIZATION, same as the
-				// non-bulk path (MagicMapper::prepareObjectDataForTable()). Without
-				// this, a `date-time` property given as an ISO-8601-with-offset
-				// string (e.g. "2026-10-13T14:50:03+00:00" — DateTime::ATOM, the
-				// convention every caller of ObjectService::saveObjects() uses)
-				// reaches MySQL's DATETIME column unconverted and fails outright
-				// (SQLSTATE[22007]). `date` and `date-time` are NOT the same: a
-				// date-time names an instant, so its offset must be applied before
-				// storing; a `date` names a calendar DAY with no instant, and
-				// converting it through a timezone can move it to a different day
-				// (see DateTimeNormalizer::formatDateForDatabase()'s own docblock).
-				// Both `format: date` and `format: date-time` map to the SAME
-				// `datetime` column type (MagicMapper::mapStringProperty()), so a
-				// calendar date is intentionally stored "Y-m-d H:i:s"-shaped too —
-				// that is not a defect to fix here, it is the established, shared
-				// column shape both paths must keep matching.
-				//
-				// Delegates both string AND DateTimeInterface input to
-				// DateTimeNormalizer::formatForDatabase()/formatDateForDatabase()
-				// rather than hand-rolling the DateTimeInterface case: both methods
-				// already go through normalize(), which accepts a DateTimeInterface
-				// directly (never re-zoning it, so formatDateForDatabase()'s "keep
-				// the given wall-clock" guarantee holds) — a second, manual
-				// implementation of that same contract would drift from it the
-				// first time either method's internals changed.
-				$propertyFormat = ($schemaProperties[$propertyName]['format'] ?? null);
-				if (in_array($propertyFormat, ['date-time', 'date'], true) === true && $value !== null) {
-					if ($value instanceof \DateTimeInterface === true || is_string($value) === true) {
-						$value = ($propertyFormat === 'date')
-							? $this->dateTimeNormalizer->formatDateForDatabase($value)
-							: $this->dateTimeNormalizer->formatForDatabase($value);
-					}
-				}
+				// Date/date-time normalization, matching the non-bulk path — see normalizeDateProperty().
+				$value = $this->normalizeDateProperty(value: $value, propertyFormat: ($schema->getProperties()[$propertyName]['format'] ?? null));
 
 				// Convert complex values for database storage.
 				$preparedObject[$columnName] = match (true) { is_array($value), is_object($value) => json_encode($value), default => $value };
@@ -1038,6 +1005,33 @@ class MagicBulkHandler {
 		$formatted = $this->dateTimeNormalizer->formatForDatabase($value);
 		return $formatted ?? $default;
 	}//end formatDateTimeForDatabase()
+
+	/**
+	 * Normalise a date/date-time property, matching the non-bulk path
+	 * (MagicMapper::prepareObjectDataForTable()). Shares one `datetime` column
+	 * for both formats; see DateTimeNormalizer::formatForDatabase()/
+	 * formatDateForDatabase() for the offset-handling difference. Anything else
+	 * passes through unchanged.
+	 *
+	 * @param mixed $value The raw property value.
+	 * @param string|null $propertyFormat The schema property's `format`, if any.
+	 *
+	 * @return mixed The normalised value, or $value unchanged when not applicable.
+	 */
+	private function normalizeDateProperty(mixed $value, ?string $propertyFormat): mixed {
+		if (in_array($propertyFormat, ['date-time', 'date'], true) === false || $value === null) {
+			return $value;
+		}
+
+		if ($value instanceof \DateTimeInterface === false && is_string($value) === false) {
+			return $value;
+		}
+
+		return match ($propertyFormat) {
+			'date' => $this->dateTimeNormalizer->formatDateForDatabase($value),
+			default => $this->dateTimeNormalizer->formatForDatabase($value),
+		};
+	}//end normalizeDateProperty()
 
 	/**
 	 * Hard-delete every row of a register+schema table whose `_expires` has passed.

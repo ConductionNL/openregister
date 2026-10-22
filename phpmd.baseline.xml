@@ -121,6 +121,7 @@
   <violation rule="PHPMD\Rule\Design\TooManyFields" file="lib/Db/MagicMapper.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Db/MagicMapper.php"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Db/MagicMapper.php"/>
+  <violation rule="PHPMD\Rule\Design\LongClass" file="lib/Db/MagicMapper/MagicBulkHandler.php"/>
   <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/Db/MagicMapper/MagicRbacHandler.php" method="hasPermission"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Db/MagicMapper/MagicRbacHandler.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/Db/MagicMapper/MagicSearchHandler.php"/>
