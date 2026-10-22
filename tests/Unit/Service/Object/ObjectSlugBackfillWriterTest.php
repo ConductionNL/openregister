@@ -159,6 +159,31 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		$this->assertSame([], $this->infos);
 	}//end testASmallRunLogsNoChangeList()
 
+	public function testAStepThatTakesTheSlugOfASkippedHolderIsNotWritten(): void {
+		// Review finding r2routes-f3: B vacates `wanted` and its write is skipped (the row
+		// changed); A must not be handed `wanted`, or two objects would hold it.
+		$plan = [
+			['uuid' => 'uuid-b', 'old' => 'wanted', 'new' => 'moved'],
+			['uuid' => 'uuid-a', 'old' => 'old-a', 'new' => 'wanted'],
+			['uuid' => 'uuid-c', 'old' => null, 'new' => 'free'],
+		];
+		$written = [];
+		$this->magicMapper->method('updateSlugColumn')->willReturnCallback(
+			function (Register $r, Schema $s, string $uuid, ?string $slug) use (&$written): int {
+				$written[] = $uuid;
+				return (($uuid === 'uuid-b') ? 0 : 1);
+			}
+		);
+
+		$skipped = $this->writer->write($plan, $this->register, $this->schema, 'reslug', ['skipped' => 0]);
+
+		$this->assertSame(['uuid-b', 'uuid-c'], $written, 'A is never written');
+		$this->assertSame(2, $skipped);
+		$this->assertCount(1, $this->audits);
+		$this->assertSame([['uuid' => 'uuid-c', 'old' => null, 'new' => 'free']], $this->audits[0]['changes']);
+		$this->assertSame(2, $this->audits[0]['summary']['skipped']);
+	}//end testAStepThatTakesTheSlugOfASkippedHolderIsNotWritten()
+
 	public function testAFailingFirstChunkWritesNoEntryAndEvictsNothing(): void {
 		$this->magicMapper->method('updateSlugColumn')->willThrowException(new RuntimeException('down'));
 		$this->cacheHandler->expects($this->never())->method('invalidateForObjectChange');

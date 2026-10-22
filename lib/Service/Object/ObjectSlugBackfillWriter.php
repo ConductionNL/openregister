@@ -70,7 +70,9 @@ class ObjectSlugBackfillWriter {
 	 * record the run in the audit trail (one entry when at least one slug changed).
 	 *
 	 * Each write only applies when the row still holds the slug the plan was
-	 * made against; a row a normal save changed meanwhile is skipped and logged.
+	 * made against; a row a normal save changed meanwhile is skipped and logged,
+	 * and so is every later step that wanted the slug that row still holds. The
+	 * plan lists a row that vacates a slug before the row that takes it.
 	 * A chunk that fails is rolled back, the chunks before it stay written and
 	 * the audit entry lists exactly those.
 	 *
@@ -91,9 +93,10 @@ class ObjectSlugBackfillWriter {
 		$skipped = 0;
 		$applied = [];
 		$failure = null;
+		$stillHeld = [];
 		try {
 			foreach (array_chunk($plan, self::WRITE_CHUNK) as $chunk) {
-				$this->writeChunk(chunk: $chunk, register: $register, schema: $schema, applied: $applied, skipped: $skipped);
+				$this->writeChunk(chunk: $chunk, register: $register, schema: $schema, applied: $applied, skipped: $skipped, stillHeld: $stillHeld);
 			}
 		} catch (Throwable $e) {
 			$failure = $e;
@@ -122,16 +125,39 @@ class ObjectSlugBackfillWriter {
 	 * @param Schema   $schema   The schema.
 	 * @param array    $applied  Steps that were written, by reference.
 	 * @param int      $skipped  Steps skipped because the row changed, by reference.
+	 * @param array    $stillHeld slug => uuid of a skipped step that still holds it, by reference.
 	 *
 	 * @return void
 	 *
 	 * @throws Throwable When a write fails (the chunk is rolled back first).
 	 */
-	private function writeChunk(array $chunk, Register $register, Schema $schema, array &$applied, int &$skipped): void {
+	private function writeChunk(array $chunk, Register $register, Schema $schema, array &$applied, int &$skipped, array &$stillHeld): void {
 		$written = [];
 		$this->db->beginTransaction();
 		try {
 			foreach ($chunk as $step) {
+				// A step that takes a slug whose holder was not moved would put two
+				// objects on it: skip it too, and keep what it would have vacated reserved.
+				if ($step['new'] !== null && isset($stillHeld[$step['new']]) === true) {
+					$skipped++;
+					if ($step['old'] !== null) {
+						$stillHeld[$step['old']] = $step['uuid'];
+					}
+
+					$this->logger->warning(
+						sprintf(
+							'[ObjectSlug] Backfill skipped object %s in register %s / schema %s: slug "%s" is still held by object %s, whose write was skipped',
+							$step['uuid'],
+							(string)$register->getSlug(),
+							(string)$schema->getSlug(),
+							$step['new'],
+							$stillHeld[$step['new']]
+						),
+						['app' => 'openregister', 'path' => 'backfill', 'objectUuid' => $step['uuid']]
+					);
+					continue;
+				}
+
 				$updated = $this->magicMapper->updateSlugColumn(
 					register: $register,
 					schema: $schema,
@@ -145,6 +171,10 @@ class ObjectSlugBackfillWriter {
 				}
 
 				$skipped++;
+				if ($step['old'] !== null) {
+					$stillHeld[$step['old']] = $step['uuid'];
+				}
+
 				$this->logger->warning(
 					sprintf(
 						'[ObjectSlug] Backfill skipped object %s in register %s / schema %s: its slug changed while the backfill ran',

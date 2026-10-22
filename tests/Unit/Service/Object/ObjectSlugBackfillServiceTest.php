@@ -285,9 +285,10 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$this->assertStringContainsString('keeps its slug "old-a"', $this->warnings[0]);
 	}
 
-	public function testReslugDoesNotHandOutASlugThatAnotherObjectStillHolds(): void {
-		// A wants the slug B holds today; B moves away to its own new slug. A must not
-		// take it in the same plan while B still carries it, but a later pass places A.
+	public function testReslugWritesTheRowThatVacatesASlugBeforeTheRowThatTakesIt(): void {
+		// Review finding r2routes-f3: A wants the slug B holds today; B moves away to its
+		// own new slug. B's write must come first, so no moment (and no failed or skipped
+		// write) leaves both objects on `wanted`.
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
 		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
 			$this->page([
@@ -301,12 +302,30 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 
 		$this->assertSame(
 			[
-				['uuid' => self::UUID_A, 'old' => 'old-a', 'new' => 'wanted'],
 				['uuid' => self::UUID_B, 'old' => 'wanted', 'new' => 'moved'],
+				['uuid' => self::UUID_A, 'old' => 'old-a', 'new' => 'wanted'],
 			],
 			$result['plan']
 		);
 		$this->assertSame([], $result['kept']);
+	}
+
+	public function testReslugOrdersAChainOfTakersAfterTheirHolders(): void {
+		// A wants B's slug, B wants C's, C moves out: C, then B, then A.
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
+			$this->page([
+				$this->row(1, self::UUID_A, 'Bee', 'old-a', '2020-01-01 00:00:00'),
+				$this->row(2, self::UUID_B, 'Cee', 'bee', '2021-01-01 00:00:00'),
+				$this->row(3, self::UUID_C, 'Elsewhere', 'cee', '2022-01-01 00:00:00'),
+			]),
+			$this->page([])
+		);
+
+		$result = $this->service->run($this->register, $this->schema(), reslug: true, dryRun: true);
+
+		$this->assertSame([self::UUID_C, self::UUID_B, self::UUID_A], array_column($result['plan'], 'uuid'));
+		$this->assertSame([[self::UUID_C, 'elsewhere'], [self::UUID_B, 'cee'], [self::UUID_A, 'bee']], array_map(static fn (array $s): array => [$s['uuid'], $s['new']], $result['plan']));
 	}
 
 	public function testARunWritesOneAuditEntryWithTheOldAndNewSlugs(): void {

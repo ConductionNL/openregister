@@ -301,7 +301,7 @@ class ObjectSlugBackfillService {
 	 * @param bool     $log      Log collisions (false on a dry run).
 	 * @param array    $kept     Objects that keep their slug because of a collision, by reference.
 	 *
-	 * @return list<array{uuid: string, old: ?string, new: ?string}> Only the rows whose slug changes.
+	 * @return list<array{uuid: string, old: ?string, new: ?string}> Only the rows whose slug changes, in write order (holders before takers).
 	 */
 	private function planReslug(array $rows, Register $register, Schema $schema, array &$summary, bool $log, array &$kept): array {
 		$current = [];
@@ -333,8 +333,70 @@ class ObjectSlugBackfillService {
 			$this->reportUnplaced(row: $row, register: $register, schema: $schema, taken: $taken, summary: $summary, log: $log, kept: $kept);
 		}
 
-		return $plan;
+		return $this->vacatingFirst(plan: $plan);
 	}//end planReslug()
+
+	/**
+	 * Order a plan so a row that vacates a slug is written before the row that takes it.
+	 *
+	 * The slug has no unique index, so writing the taker first would leave two
+	 * objects on one slug until the holder moves, and for good when the holder's
+	 * write is skipped or fails. Rows that depend on nothing keep their order
+	 * (oldest first); the sort is linear in the plan.
+	 *
+	 * @param list<array{uuid: string, old: ?string, new: ?string}> $plan The steps in row order.
+	 *
+	 * @return list<array{uuid: string, old: ?string, new: ?string}> The same steps, holders before takers.
+	 */
+	private function vacatingFirst(array $plan): array {
+		$holdersOf = [];
+		foreach ($plan as $index => $step) {
+			if ($step['old'] !== null) {
+				$holdersOf[$step['old']][] = $index;
+			}
+		}
+
+		$waiting = [];
+		$dependents = [];
+		foreach ($plan as $index => $step) {
+			foreach ($holdersOf[(string)$step['new']] ?? [] as $holder) {
+				if ($holder !== $index) {
+					$waiting[$index] = (($waiting[$index] ?? 0) + 1);
+					$dependents[$holder][] = $index;
+				}
+			}
+		}
+
+		$queue = [];
+		foreach (array_keys($plan) as $index) {
+			if (isset($waiting[$index]) === false) {
+				$queue[] = $index;
+			}
+		}
+
+		$ordered = [];
+		$done = [];
+		for ($head = 0; $head < count($queue); $head++) {
+			$index = $queue[$head];
+			$ordered[] = $plan[$index];
+			$done[$index] = true;
+			foreach ($dependents[$index] ?? [] as $dependent) {
+				$waiting[$dependent]--;
+				if ($waiting[$dependent] === 0) {
+					$queue[] = $dependent;
+				}
+			}
+		}
+
+		// The walk never builds a cycle; should one appear, keep its steps in row order.
+		foreach ($plan as $index => $step) {
+			if (isset($done[$index]) === false) {
+				$ordered[] = $step;
+			}
+		}
+
+		return $ordered;
+	}//end vacatingFirst()
 
 	/**
 	 * Count and report a row that wanted a slug it could not get.
