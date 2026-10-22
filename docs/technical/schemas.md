@@ -36,6 +36,36 @@ Metadata fields are configured in the schema's `configuration` object:
 | `objectSummaryField` | The property to use for short summary | Used in cards, listings |
 | `objectImageField` | The property to use for object image | Used for thumbnails, previews, social sharing |
 | `objectSlugField` | The property to use for URL-friendly slug | Used in URLs, permalinks |
+| `objectSlugSuffix` | `true` appends a UTC date-time suffix to a slug that is already taken | Default `false` |
+
+### Object slugs
+
+Setting `objectSlugField` switches on managed slugs for the schema. The field takes
+the same dot paths and templates as `objectNameField`; the value is slugified
+(lower case, `a-z0-9` and hyphens).
+
+- **Unique per register and schema.** A slug another live object of the same
+  register and schema holds is not written: the new object is saved without a slug
+  and a warning in `nextcloud.log` names the register, the schema, the slug and both
+  objects. With `objectSlugSuffix: true` the object gets `<slug>-<YYYYMMDDHHMMSS>`
+  (UTC) instead.
+- **Frozen once set.** A later save never changes a slug, also when the source field
+  changes. A slug sent by a client (`@self.slug`) follows the same rules; a different
+  slug sent for an object that already has one is ignored and logged.
+- **A freed slug moves on.** When the holder is deleted, the next save of an object
+  that wanted the slug gives it to that object.
+- **Lookups.** `GET /api/objects/{register}/{schema}/{slug}` resolves the slug. A
+  slug that more than one object holds (possible only for duplicates created before
+  this rule) answers `409` with `"error": "ambiguous-identifier"`; the matching uuids
+  go to the log.
+- **Existing objects** get their slugs from
+  `occ openregister:backfill-slugs <register> <schema>` (oldest first; existing
+  duplicates are reported, not changed). After switching the slug field, run it with
+  `--reslug` to rewrite the slugs from the new field. Use `--dry-run` to see the plan
+  first.
+
+A schema without `objectSlugField` keeps the old behaviour: no slug unless a client
+sends one, and no uniqueness check.
 
 ### Object Image Field Configuration
 

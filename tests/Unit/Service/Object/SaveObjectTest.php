@@ -646,31 +646,10 @@ class SaveObjectTest extends TestCase {
 	// createSlug (private)
 	// =========================================================================
 
-	public function testCreateSlugBasic(): void {
-		$result = $this->invokePrivateMethod('createSlug', ['Hello World']);
-		$this->assertSame('hello-world', $result);
-	}
 
-	public function testCreateSlugWithSpecialChars(): void {
-		$result = $this->invokePrivateMethod('createSlug', ['Hello! @World# $2024']);
-		$this->assertSame('hello-world-2024', $result);
-	}
 
-	public function testCreateSlugTrimsHyphens(): void {
-		$result = $this->invokePrivateMethod('createSlug', ['--Hello World--']);
-		$this->assertSame('hello-world', $result);
-	}
 
-	public function testCreateSlugLimitsLength(): void {
-		$longText = str_repeat('a', 60);
-		$result = $this->invokePrivateMethod('createSlug', [$longText]);
-		$this->assertLessThanOrEqual(50, strlen($result));
-	}
 
-	public function testCreateSlugWithNumbers(): void {
-		$result = $this->invokePrivateMethod('createSlug', ['Product 123']);
-		$this->assertSame('product-123', $result);
-	}
 
 	// =========================================================================
 	// isEffectivelyEmptyObject (private)
@@ -1345,43 +1324,9 @@ class SaveObjectTest extends TestCase {
 	// generateSlug (private)
 	// =========================================================================
 
-	public function testGenerateSlugWithSlugField(): void {
-		$schema = $this->createMockSchema(1, 'test', ['objectSlugField' => 'name']);
-		$data = ['name' => 'My Product'];
 
-		$result = $this->invokePrivateMethod('generateSlug', [$data, $schema]);
 
-		$this->assertNotNull($result);
-		$this->assertStringStartsWith('my-product-', $result);
-	}
 
-	public function testGenerateSlugWithNoSlugField(): void {
-		$schema = $this->createMockSchema(1, 'test', []);
-		$data = ['name' => 'Test'];
-
-		$result = $this->invokePrivateMethod('generateSlug', [$data, $schema]);
-
-		$this->assertNull($result);
-	}
-
-	public function testGenerateSlugWithMissingFieldValue(): void {
-		$schema = $this->createMockSchema(1, 'test', ['objectSlugField' => 'title']);
-		$data = ['name' => 'Test'];
-
-		$result = $this->invokePrivateMethod('generateSlug', [$data, $schema]);
-
-		$this->assertNull($result);
-	}
-
-	public function testGenerateSlugWithNestedField(): void {
-		$schema = $this->createMockSchema(1, 'test', ['objectSlugField' => 'meta.title']);
-		$data = ['meta' => ['title' => 'Nested Title']];
-
-		$result = $this->invokePrivateMethod('generateSlug', [$data, $schema]);
-
-		$this->assertNotNull($result);
-		$this->assertStringStartsWith('nested-title-', $result);
-	}
 
 	// =========================================================================
 	// resolveSchemaReference (private) — tests schema reference resolution
@@ -1521,23 +1466,13 @@ class SaveObjectTest extends TestCase {
 	// setSelfMetadata (private)
 	// =========================================================================
 
-	public function testSetSelfMetadataSetsSlugFromSelfData(): void {
+	public function testSetSelfMetadataLeavesTheSlugToObjectSlugHandler(): void {
+		// ObjectSlugHandler::applyOnSave() decides the slug after hydration (#4037).
 		$entity = new ObjectEntity();
-		$selfData = ['slug' => 'my-slug'];
 
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+		$this->invokePrivateMethod('setSelfMetadata', [$entity, ['slug' => 'my-slug'], ['slug' => 'data-slug']]);
 
-		$this->assertSame('my-slug', $entity->getSlug());
-	}
-
-	public function testSetSelfMetadataSetsSlugFromData(): void {
-		$entity = new ObjectEntity();
-		$selfData = [];
-		$data = ['slug' => 'data-slug'];
-
-		$this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData, $data]);
-
-		$this->assertSame('data-slug', $entity->getSlug());
+		$this->assertNull($entity->getSlug());
 	}
 
 	public function testSetSelfMetadataSetsPublishedDate(): void {
@@ -2470,7 +2405,7 @@ class SaveObjectTest extends TestCase {
 		$this->assertSame($data, $result);
 	}
 
-	public function testSetDefaultValuesGeneratesSlug(): void {
+	public function testSetDefaultValuesAddsNoSlugToTheData(): void {
 		$schemaObject = new \stdClass();
 		$schemaObject->properties = [
 			'name' => ['type' => 'string'],
@@ -2489,8 +2424,8 @@ class SaveObjectTest extends TestCase {
 		$data = ['name' => 'My Object'];
 		$result = $this->invokePrivateMethod('setDefaultValues', [$entity, $schema, $data]);
 
-		$this->assertArrayHasKey('slug', $result);
-		$this->assertStringStartsWith('my-object-', $result['slug']);
+		// The slug is entity metadata decided by ObjectSlugHandler, never data (#4037).
+		$this->assertArrayNotHasKey('slug', $result);
 	}
 
 	public function testSetDefaultValuesSkipsSlugWhenAlreadyPresent(): void {
@@ -4557,15 +4492,6 @@ class SaveObjectTest extends TestCase {
 	// generateSlug — empty value returns null
 	// =========================================================================
 
-	public function testGenerateSlugWithEmptyFieldValue(): void {
-		$schema = $this->createMockSchema(1, 'test', ['objectSlugField' => 'name']);
-		// Field exists but is empty string.
-		$data = ['name' => ''];
-
-		$result = $this->invokePrivateMethod('generateSlug', [$data, $schema]);
-
-		$this->assertNull($result);
-	}
 
 	// =========================================================================
 	// preCacheParentName — no name from hydration and no fallback

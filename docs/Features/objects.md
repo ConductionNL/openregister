@@ -1283,10 +1283,10 @@ sequenceDiagram
     
     Note over SaveObject: 3. Set Defaults
     SaveObject->>SaveObject: setDefaultValues()
-    SaveObject->>SaveObject: generateSlug()
     
     Note over SaveObject: 4. Hydrate Metadata
     SaveObject->>SaveObject: hydrateObjectMetadata()
+    SaveObject->>SaveObject: ObjectSlugHandler::applyOnSave()
     
     Note over SaveObject: 5. Track Relations
     SaveObject->>SaveObject: scanForRelations()

@@ -65,8 +65,8 @@ Acceptance criteria:
 
 ## 8. Tests
 
-- [ ] 8.1 Unit tests, one per spec requirement: `ObjectSlugHandlerTest`, `Schema` config keys, `MagicMapper` slug queries and ambiguity log, `MagicBulkHandler` upsert clause and explicit `null`, `ObjectsController::show()` 409, `ObjectSlugBackfillService`; rewrite or drop the tests of removed methods (`SaveObjectAdditionalTest`, `SaveObjectDeepTest`, `BulkAndHandlersIntegrationTest`)
-- [ ] 8.2 BC1–BC6, one test each, plus an integration test replaying the reproduction table on a real magic table (single + bulk)
+- [x] 8.1 Unit tests, one per spec requirement: `ObjectSlugHandlerTest`, `Schema` config keys, `MagicMapper` slug queries and ambiguity log, `MagicBulkHandler` upsert clause and explicit `null`, `ObjectsController::show()` 409, `ObjectSlugBackfillService`; rewrite or drop the tests of removed methods (`SaveObjectAdditionalTest`, `SaveObjectDeepTest`, `BulkAndHandlersIntegrationTest`)
+- [~] 8.2 BC1–BC6, one test each, plus an integration test replaying the reproduction table on a real magic table (single + bulk)
 
 Acceptance criteria:
 - Every assertion checks the resulting slug value and the uuid that holds it, not only that the call succeeded.
@@ -74,8 +74,8 @@ Acceptance criteria:
 
 ## 9. Spec tags, docs and verification
 
-- [ ] 9.1 `@spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-…` tags on every new or changed method (handler, `SaveObject`, `SaveObjects`, `MagicBulkHandler`, `MagicMapper`, `ObjectsController::show()`, `Schema::validateConfigurationArray()`, backfill service + command)
-- [ ] 9.2 Update `docs/technical/schemas.md` and `docs/Features/objects.md` (slug field, suffix, freeze, uniqueness, backfill) and add GW1–GW4 to `CHANGELOG.md` under Unreleased
+- [x] 9.1 `@spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-…` tags on every new or changed method (handler, `SaveObject`, `SaveObjects`, `MagicBulkHandler`, `MagicMapper`, `ObjectsController::show()`, `Schema::validateConfigurationArray()`, backfill service + command)
+- [x] 9.2 Update `docs/technical/schemas.md` and `docs/Features/objects.md` (slug field, suffix, freeze, uniqueness, backfill) and add GW1–GW4 to `CHANGELOG.md` under Unreleased
 - [ ] 9.3 Rerun the reproduction on the NC 35 rig and record the side-by-side result; smoke-test OpenCatalogi and Softwarecatalog for regressions
 
 Acceptance criteria:
