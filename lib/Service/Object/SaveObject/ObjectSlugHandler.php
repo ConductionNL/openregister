@@ -328,6 +328,7 @@ class ObjectSlugHandler {
 	 * @param string   $objectUuid The object being decided.
 	 * @param callable $holderOf   fn(string $slug): ?string — uuid holding $slug, other than this object.
 	 * @param string   $path       single | bulk | backfill (log context).
+	 * @param bool     $log        Log a collision (false for a backfill dry run).
 	 *
 	 * @return string|null The slug to write, or null when the object stays without one.
 	 *
@@ -340,6 +341,7 @@ class ObjectSlugHandler {
 		string $objectUuid,
 		callable $holderOf,
 		string $path,
+		bool $log=true,
 	): ?string {
 		$holder = $holderOf($candidate);
 		if ($holder === null) {
@@ -352,6 +354,10 @@ class ObjectSlugHandler {
 			if ($holderOf($suffixed) === null) {
 				return $suffixed;
 			}
+		}
+
+		if ($log === false) {
+			return null;
 		}
 
 		$this->logCollision(
@@ -407,9 +413,14 @@ class ObjectSlugHandler {
 			$alsoTaken = sprintf(' (suffixed "%s" also taken)', $suffixed);
 		}
 
+		$outcome = 'was saved without a slug';
+		if ($path === 'backfill') {
+			$outcome = 'gets no slug from the backfill';
+		}
+
 		$this->logger->warning(
 			message: sprintf(
-				'[ObjectSlug] Slug "%s" is already held by object %s in register %s (%s) / schema %s (%s); object %s was saved without a slug%s',
+				'[ObjectSlug] Slug "%s" is already held by object %s in register %s (%s) / schema %s (%s); object %s ' . $outcome . '%s',
 				$slug,
 				$holderUuid,
 				(string)$register->getSlug(),

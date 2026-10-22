@@ -6785,6 +6785,40 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end findDuplicateSlugs()
 
 	/**
+	 * Every slug held by a live object in a register+schema table, with its holders.
+	 *
+	 * Only `_uuid` and `_slug` are read, so this stays cheap on large tables.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return array<string, list<string>> Slug => holder uuids.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 */
+	public function findAllSlugs(Register $register, Schema $schema): array {
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+			return [];
+		}
+
+		$slugCol = self::METADATA_PREFIX . 'slug';
+		$qb = $this->db->getQueryBuilder();
+		$qb->select(self::METADATA_PREFIX . 'uuid', $slugCol)
+			->from($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
+			->where($qb->expr()->isNotNull($slugCol))
+			->andWhere($qb->expr()->neq($slugCol, $qb->createNamedParameter('')))
+			->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
+		$result = $qb->executeQuery();
+		$slugs = [];
+		while (($row = $result->fetch()) !== false) {
+			$slugs[(string)$row[$slugCol]][] = (string)$row[self::METADATA_PREFIX . 'uuid'];
+		}
+
+		$result->closeCursor();
+		return $slugs;
+	}//end findAllSlugs()
+
+	/**
 	 * Page over the live rows of a register+schema table for the slug backfill.
 	 *
 	 * Oldest first by `_id` (insertion order), keyset-paginated on `_id`. Returns

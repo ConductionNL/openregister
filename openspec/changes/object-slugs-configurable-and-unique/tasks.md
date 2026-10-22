@@ -46,8 +46,8 @@ Acceptance criteria:
 
 ## 6. Backfill command
 
-- [ ] 6.1 `ObjectSlugBackfillService` (`lib/Service/Object/ObjectSlugBackfillService.php`) + `MagicMapper::updateSlugColumn()`: duplicate report, default mode fills only empty slugs oldest first, no version bump / audit entry / event, cache eviction
-- [ ] 6.2 `BackfillObjectSlugsCommand` (`openregister:backfill-slugs <register> <schema> [--reslug] [--dry-run]`), registered in `appinfo/info.xml`: `--reslug` recomputes all slugs from the current source field (empty source keeps its slug, one transaction), `--dry-run` prints the plan and writes nothing, exit 1 on unresolved input or a schema without `objectSlugField`
+- [x] 6.1 `ObjectSlugBackfillService` (`lib/Service/Object/ObjectSlugBackfillService.php`) + `MagicMapper::updateSlugColumn()`: duplicate report, default mode fills only empty slugs oldest first, no version bump / audit entry / event, cache eviction
+- [x] 6.2 `BackfillObjectSlugsCommand` (`openregister:backfill-slugs <register> <schema> [--reslug] [--dry-run]`), registered in `appinfo/info.xml`: `--reslug` recomputes all slugs from the current source field (empty source keeps its slug, one transaction), `--dry-run` prints the plan and writes nothing, exit 1 on unresolved input or a schema without `objectSlugField`
 
 Acceptance criteria:
 - A second run in the same mode reports zero changes.
