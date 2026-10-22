@@ -181,6 +181,18 @@ class ObjectActionsControllerTest extends TestCase {
 		$this->assertStringContainsString('"publish"', $response->getData()['error']);
 	}//end testAnActionNotOfferedOnBulkIsRefusedForASelection()
 
+	public function testASchemaWhoseDeclarationsCannotBeReadIsNotOfferedOnASelection(): void {
+		$this->params(['ids' => ['a']]);
+		$broken = $this->createMock(Schema::class);
+		$broken->method('getConfiguration')->willThrowException(new \RuntimeException('unreadable configuration'));
+		$this->macros->method('loadSchema')->willReturn($broken);
+		$this->runner->expects($this->never())->method('run');
+
+		$response = $this->controller->invokeOnSelection('r', 'ticket', 'assign-to-me');
+
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+	}//end testASchemaWhoseDeclarationsCannotBeReadIsNotOfferedOnASelection()
+
 	public function testASelectionRunsEachObjectThroughTheSinglePath(): void {
 		$this->params(['ids' => ['a', 'b', 'a'], 'inputs' => []]);
 		$this->macros->method('loadSchema')->willReturn($this->schema());
