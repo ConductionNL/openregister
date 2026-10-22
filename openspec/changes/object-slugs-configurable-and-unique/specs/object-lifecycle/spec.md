@@ -243,13 +243,26 @@ object (ADR-009).
 
 ### Requirement: A slug lookup that matches more than one object in a register and schema MUST be refused as ambiguous
 
-A lookup by identifier within one register and schema MUST throw
-`MultipleObjectsReturnedException` when the identifier matches more than one live row
-(`MagicMapper::findInRegisterSchemaTable()`), and MUST NOT return either object. Before throwing, it MUST log a warning naming the register, the schema,
-the identifier and the uuids of the matching rows. `ObjectsController::show()` MUST
-answer such a lookup with HTTP 409 and a JSON body that says the identifier is
-ambiguous. The body MUST NOT list the matching uuids. Lookups by uuid and by numeric id
-are not affected.
+A lookup by identifier within one register and schema matches the object's numeric id,
+uuid, slug or uri. When it matches more than one live row
+(`MagicMapper::findInRegisterSchemaTable()`) and no single row is matched by its id or
+uuid, it MUST throw `MultipleObjectsReturnedException` and MUST NOT return either
+object. Before throwing, it MUST log a warning naming the register, the schema,
+the identifier and the uuids of the matching rows. The answer to such a lookup MUST be
+HTTP 409 with a JSON body that says the identifier is ambiguous, on every route that
+resolves an object identifier through `ObjectService::find()` or `findSilent()`
+(show, update, patch, destroy, canDelete, lock, unlock, move, the presence routes,
+downloadFiles, referencedBy, geoFeatures, referenceOptions and the other `{id}` routes
+of `ObjectsController`), each keeping its other error codes. The body MUST NOT list the
+matching uuids.
+
+An exact match on the object's numeric `_id` or `_uuid` MUST win over a slug match: a
+slug that equals another object's id (`2024`) or uuid does not make that object
+unreachable. A numeric identifier is read as the integer the query matches it by, so
+`007` is the object with id 7. Only when no single row is matched by its id or uuid,
+because several rows hold the slug, is the identifier ambiguous. The lookup reads at
+most 50 rows, rows matched by id or uuid first and the rest in id order, and a result cut
+by that limit stays ambiguous.
 
 #### Scenario: Pre-existing duplicate slug answers 409
 - **GIVEN** objects A and B in the same register and schema both hold slug `hello-world` from before this change
@@ -257,6 +270,26 @@ are not affected.
 - **THEN** the response MUST be HTTP 409 with a JSON body naming the identifier as ambiguous
 - **AND** neither object MUST be returned
 - **AND** one warning MUST be logged naming the register, the schema, `hello-world` and the uuids of A and B
+
+#### Scenario: A numeric slug does not mask the object with that id
+- **GIVEN** object A holds slug `2024` and object B has numeric id 2024
+- **WHEN** `GET /api/objects/{register}/{schema}/2024` is requested
+- **THEN** the response MUST be HTTP 200 with object B
+
+#### Scenario: A uuid-shaped slug does not mask the object with that uuid
+- **GIVEN** object A holds a slug equal to the uuid of object B
+- **WHEN** `GET /api/objects/{register}/{schema}/<that uuid>` is requested
+- **THEN** the response MUST be HTTP 200 with object B
+
+#### Scenario: A zero-padded number is the id
+- **GIVEN** object A holds slug `007` and object B has numeric id 7
+- **WHEN** `GET /api/objects/{register}/{schema}/007` is requested
+- **THEN** the response MUST be HTTP 200 with object B
+
+#### Scenario: Several slug holders stay ambiguous, also beyond the row limit
+- **GIVEN** 60 objects hold slug `hello-world` and none has that id or uuid
+- **WHEN** the slug is requested on any route that resolves an identifier, such as `GET .../hello-world/files/download` or `POST .../hello-world/move`
+- **THEN** the response MUST be HTTP 409 and MUST NOT name any uuid
 
 #### Scenario: A unique slug still resolves
 - **GIVEN** only object A holds slug `hello-world` in its register and schema

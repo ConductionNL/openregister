@@ -247,17 +247,23 @@ forbids touching them). It would also turn GW2's "save without a slug" into a 50
 concurrency. The rule is enforced in the pipeline. The backfill and the 409 lookup make
 any leftover duplicate visible.
 
-### D10 — Ambiguity check stays in `findInRegisterSchemaTable()`; `show()` maps it to 409
+### D10 — Ambiguity check stays in `findInRegisterSchemaTable()`; the routes map it to 409
 
 `findInRegisterSchemaTable()` already detects the second row. It now reads `_uuid` from
 both rows, logs the ambiguous-lookup warning (D7), and throws
 `MultipleObjectsReturnedException` with a message that names the identifier but no
-uuids. `ObjectsController::show()` adds a `catch (MultipleObjectsReturnedException)` that
+uuids. `ObjectsController::show()` and every other `{id}` route that resolves the identifier through
+`ObjectService::find()` or `findSilent()` add a `catch (MultipleObjectsReturnedException)` that
 answers `409` with the ADR-050 error envelope `{"message": "Identifier \"<identifier>\" matches more than one object in this register and schema", "error": "ambiguous-identifier"}`.
 Other controllers that use `HandlesExceptionsTrait` already map the exception to 409.
 `ObjectService::find()` only catches `DoesNotExistException`, so it passes the exception
 through, and its uuid-only cross-schema retry is unaffected. Uuid and numeric-id lookups
-cannot be ambiguous within one table (BC3).
+cannot be ambiguous within one table (BC3), but one query matches id, uuid, slug and uri
+together, so a slug can equal another object's id or uuid: the row matched by its `_id` or
+`_uuid` wins over rows matched by a slug, and the identifier is ambiguous only when no
+single row is. The query orders those rows first and reads at most 50 (`ORDER BY` a CASE on
+the id/uuid match, then `_id`), so the pick never depends on which rows a cut-off kept; a
+numeric identifier is cast to an integer the same way in the query and in the pick (`007` is id 7).
 
 *Alternative rejected:* checking in `ObjectService` (the plan's ~6321). The service does
 not see the rows, so it would need a second query. The mapper already holds both rows.
