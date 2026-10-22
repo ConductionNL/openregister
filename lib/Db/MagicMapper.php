@@ -248,6 +248,11 @@ class MagicMapper extends AbstractObjectMapper {
 	private const MAGIC_TABLE_SCAN_CHUNK_SIZE = 100;
 
 	/**
+	 * Rows the identifier lookup reads at most (key matches first, then id order).
+	 */
+	private const IDENTIFIER_MATCH_LIMIT = 50;
+
+	/**
 	 * Request-scoped memo for {@see checkTableExistsInDatabase()}.
 	 *
 	 * Whether a magic table exists changes only when a register/schema pair is
@@ -6524,14 +6529,26 @@ class MagicMapper extends AbstractObjectMapper {
 		$uuidCol = 't.' . self::METADATA_PREFIX . 'uuid';
 		$slugCol = 't.' . self::METADATA_PREFIX . 'slug';
 		$uriCol = 't.' . self::METADATA_PREFIX . 'uri';
+		$idNamed = $qb->createNamedParameter($idParam, IQueryBuilder::PARAM_INT);
+		$uuidNamed = $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR);
 		$qb->where(
 			$qb->expr()->orX(
-				$qb->expr()->eq($idCol, $qb->createNamedParameter($idParam, IQueryBuilder::PARAM_INT)),
-				$qb->expr()->eq($uuidCol, $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
+				$qb->expr()->eq($idCol, $idNamed),
+				$qb->expr()->eq($uuidCol, $uuidNamed),
 				$qb->expr()->eq($slugCol, $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR)),
 				$qb->expr()->eq($uriCol, $qb->createNamedParameter($identifier, IQueryBuilder::PARAM_STR))
 			)
 		);
+
+		// The row matched by its id or uuid sorts first, so the precedence pick below
+		// sees it whatever the cap cuts off; the rest is in id order, so the same data
+		// always gives the same answer.
+		$qb->addOrderBy(
+			$qb->createFunction(sprintf('CASE WHEN %s = %s OR %s = %s THEN 0 ELSE 1 END', $idCol, $idNamed, $uuidCol, $uuidNamed)),
+			'ASC'
+		);
+		$qb->addOrderBy($idCol, 'ASC');
+		$qb->setMaxResults(self::IDENTIFIER_MATCH_LIMIT);
 
 		// Exclude deleted objects by default (unless includeDeleted is true).
 		if ($includeDeleted === false) {
@@ -6563,16 +6580,20 @@ class MagicMapper extends AbstractObjectMapper {
 		try {
 			$result = $qb->executeQuery();
 			$rows = [];
-			$fetched = 0;
-			while ($fetched < 50 && ($candidate = $result->fetch()) !== false) {
+			while (($candidate = $result->fetch()) !== false) {
 				$rows[] = $candidate;
-				$fetched++;
 			}
+
+			$result->closeCursor();
 
 			if ($rows === []) {
 				throw new DoesNotExistException('Object not found in magic table');
 			}
 
+			// At most IDENTIFIER_MATCH_LIMIT rows come back, key matches first. More than
+			// one row, whatever is cut off, is still ambiguous unless a key match singles
+			// one out: a cut never turns several rows into a single pick.
+			//
 			// Several rows can match one identifier only through a slug, because the
 			// id and uuid are unique. A row matched by its id or uuid wins over rows
 			// matched by a slug that happens to look the same (a numeric slug "2024"
@@ -6655,7 +6676,11 @@ class MagicMapper extends AbstractObjectMapper {
 
 		$byKey = [];
 		foreach ($rows as $row) {
-			$isId = (string)($row[self::METADATA_PREFIX . 'id'] ?? '') === (string)$identifier;
+			// The same reading of the identifier as the query's id condition: any numeric
+			// identifier is cast to an integer, so `007` is the object with id 7.
+			$isId = is_numeric($identifier) === true
+				&& isset($row[self::METADATA_PREFIX . 'id']) === true
+				&& (int)$row[self::METADATA_PREFIX . 'id'] === (int)$identifier;
 			$isUuid = strcasecmp((string)($row[self::METADATA_PREFIX . 'uuid'] ?? ''), (string)$identifier) === 0;
 			if ($isId === true || $isUuid === true) {
 				$byKey[] = $row;
