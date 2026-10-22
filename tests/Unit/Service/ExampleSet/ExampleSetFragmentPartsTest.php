@@ -96,6 +96,35 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$this->assertSame([], $this->store->ids(register: 'pub', schema: 'publication'));
 	}
 
+	/**
+	 * Files declared after an object was written are attached on the next install, once.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-files-on-kept-objects/specs/example-sets/spec.md#requirement-a-later-install-attaches-the-files-an-object-gained
+	 */
+	public function testFilesDeclaredLaterAreAttachedToTheKeptObjectOnce(): void {
+		$object = ['key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['title' => 'Besluit']];
+		$this->alpha(fragment: ['objects' => [$object]]);
+		$this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+		$objectId = $this->store->ids(register: 'pub', schema: 'publication')[0];
+		$this->assertSame(expected: [], actual: array_values($this->files[$objectId] ?? []));
+
+		$object['files'] = [['path' => 'demo/pub-1/01-besluit.pdf', 'title' => 'Besluit']];
+		$this->alpha(fragment: ['objects' => [$object]]);
+		$plan   = $this->catalogue->gather(set: 'demo');
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$this->assertSame(expected: 1, actual: $report['files']);
+		$ids = $this->store->ids(register: 'pub', schema: 'publication');
+		$this->assertSame(expected: [$objectId], actual: $ids, message: 'the object is kept, not written again');
+		$this->assertCount(expectedCount: 1, haystack: $this->files[$objectId]);
+
+		$this->installer->install(plan: $plan, today: $this->today());
+		$this->assertCount(expectedCount: 1, haystack: $this->files[$objectId], message: 'a third install attaches nothing');
+	}//end testFilesDeclaredLaterAreAttachedToTheKeptObjectOnce()
+
 	public function testAFileThatIsNotThereRefusesTheCheck(): void {
 		$this->alpha(['objects' => [[
 			'key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['title' => 'Besluit'],

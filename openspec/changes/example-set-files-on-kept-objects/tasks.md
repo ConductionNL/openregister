@@ -1,0 +1,2 @@
+- [x] T01 ExampleSetInstaller attaches the declared files of a kept object the record holds no files for
+- [x] T02 PHPUnit: files declared after the object are attached on the next install, once
