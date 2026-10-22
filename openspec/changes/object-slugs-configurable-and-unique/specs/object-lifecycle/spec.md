@@ -76,7 +76,11 @@ slug is taken, the object MUST be saved without a slug, the save MUST succeed, a
 warning MUST be logged that names the register, the schema, the slug, the uuid of the
 object saved without it and the uuid of the object holding it. The same slug MAY exist
 in a different schema or a different register. A soft-deleted object MUST NOT hold its
-slug for this check.
+slug for this check. The same rules MUST apply when a soft-deleted object is restored
+and when a configuration's seed data creates an object: a slug another live object holds
+by then MUST NOT be written, so the object is restored (or seeded) without a slug, or
+with the suffixed slug when `objectSlugSuffix` is `true`, and the collision warning
+MUST be logged.
 
 #### Scenario: Second object with the same source value is saved without a slug
 - **GIVEN** a schema with `objectSlugField: "title"` and `objectSlugSuffix` absent
@@ -97,6 +101,14 @@ slug for this check.
 - **GIVEN** object A holding slug `hello-world` has been soft-deleted
 - **WHEN** object B with `title: "Hello World"` is created in the same register and schema
 - **THEN** B's `@self.slug` MUST be `hello-world`
+
+#### Scenario: Restoring an object whose slug was handed on
+- **GIVEN** object A held slug `hello-world` and was soft-deleted
+- **AND** object B with `title: "Hello World"` was then saved and took `hello-world`
+- **WHEN** A is restored
+- **THEN** A MUST be live again without a slug (with `hello-world-<YYYYMMDDHHMMSS>` when `objectSlugSuffix` is `true`)
+- **AND** B MUST still hold `hello-world`, as the only live holder
+- **AND** one warning MUST be logged naming the register, the schema, the slug, A's uuid and B's uuid
 
 ### Requirement: `objectSlugSuffix` MUST append a UTC date-time suffix to a colliding slug
 

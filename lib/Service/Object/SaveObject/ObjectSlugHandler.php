@@ -227,6 +227,42 @@ class ObjectSlugHandler {
 	}//end applyOnSave()
 
 	/**
+	 * The slug a soft-deleted object gets back when it is restored.
+	 *
+	 * A slug freed by a delete goes to the next object that wants it, so the
+	 * old holder may find it taken on restore. In that case it is restored
+	 * with the suffixed slug when `objectSlugSuffix` is on and without a slug
+	 * otherwise (it then re-enters the normal save flow), and the collision is
+	 * logged. A schema without `objectSlugField` is left alone.
+	 *
+	 * @param ObjectEntity $entity   The object being restored.
+	 * @param Register     $register Its register.
+	 * @param Schema       $schema   Its schema.
+	 *
+	 * @return string|null The slug to store; the entity's own slug when nothing changes.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 */
+	public function slugForRestore(ObjectEntity $entity, Register $register, Schema $schema): ?string {
+		$slug = $entity->getSlug();
+		if ($slug === null || $slug === '' || $this->isManaged(schema: $schema) === false) {
+			return $slug;
+		}
+
+		$uuid = (string)$entity->getUuid();
+		return $this->decide(
+			candidate: $slug,
+			register: $register,
+			schema: $schema,
+			objectUuid: $uuid,
+			holderOf: function (string $wanted) use ($register, $schema, $uuid): ?string {
+				return ($this->magicMapper->findSlugHolders(register: $register, schema: $schema, slug: $wanted, excludeUuid: $uuid)[0] ?? null);
+			},
+			path: 'restore'
+		);
+	}//end slugForRestore()
+
+	/**
 	 * Decide the slugs of one register+schema group of a bulk save, in batch order.
 	 *
 	 * The caller normalises its rows to `['uuid' => ?string, 'clientSlug' =>
@@ -459,7 +495,7 @@ class ObjectSlugHandler {
 	 * @param string      $holderUuid Who holds it.
 	 * @param string      $objectUuid Who wanted it.
 	 * @param string|null $suffixed   The suffixed slug that was also taken, if tried.
-	 * @param string      $path       single | bulk | backfill.
+	 * @param string      $path       single | bulk | backfill | restore.
 	 *
 	 * @return void
 	 *
@@ -482,6 +518,10 @@ class ObjectSlugHandler {
 		$outcome = 'was saved without a slug';
 		if ($path === 'backfill') {
 			$outcome = 'gets no slug from the backfill';
+		}
+
+		if ($path === 'restore') {
+			$outcome = 'was restored without a slug';
 		}
 
 		$this->logger->warning(

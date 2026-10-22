@@ -80,7 +80,7 @@ new uuid waits for the slug.
   (`findAcrossAllMagicTables`). A slug is unique per register + schema by design, so a
   lookup without both cannot be unique, and it keeps its current behaviour.
 - The HTML 404 page for an unknown slug that was seen in the reproduction.
-- Re-slugging on restore of a soft-deleted object. See Risks.
+- Re-slugging on restore of a soft-deleted object beyond the collision check: a restored object keeps its slug unless another live object holds it by then (D4a).
 - Slugs of objects stored by an external `objectSource` provider.
 
 ## Decisions
@@ -367,9 +367,13 @@ schema opts in with plain configuration keys, like `objectNameField`.
   hold the slug. Mitigation: rare (needs the same title in the same register + schema
   within milliseconds). The 409 lookup and the backfill duplicate report make it visible.
   An index is ruled out by D9.
-- **[Restore] Restoring a soft-deleted object whose slug was taken in the meantime**
-  brings back a duplicate. The restore path is not part of the save pipeline. Mitigation:
-  surfaced by the 409 lookup and the backfill report; follow-up if it occurs in practice.
+- **[Restore] Restoring a soft-deleted object whose slug was taken in the meantime.**
+  `MagicMapper::restoreObject()` is not part of the save pipeline, so it calls
+  `ObjectSlugHandler::slugForRestore()` (resolved lazily through the container, as
+  MagicMapper needs it to exist first): a taken slug is replaced by the suffixed one when
+  `objectSlugSuffix` is on and cleared otherwise, in the same UPDATE that clears
+  `_deleted`, with the usual collision warning. The seed import (`ImportHandler`) goes
+  through `ObjectSlugHandler::applyOnSave()` for the same reason.
 - **[Re-import with new uuid] A reset-sync creates a new object while the old one still
   holds the slug** → the new object waits without a slug until the old one is deleted,
   then gets it on its next save or by the backfill (issue plan Q8, working assumption).

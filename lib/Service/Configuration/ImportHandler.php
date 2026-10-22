@@ -355,6 +355,7 @@ class ImportHandler {
 		private readonly ?\OCA\OpenRegister\Service\ShippedBaseline\ShippedConfigurationGuard $shippedGuard = null,
 		private readonly ?AppImportJobRecorder $importJobRecorder = null,
 		private readonly ?SchemaImportInstaller $schemaInstaller = null,
+		private readonly ?\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler $slugHandler = null,
 	) {
 		$this->schemaMapper = $schemaMapper;
 		$this->registerMapper = $registerMapper;
@@ -5836,9 +5837,6 @@ class ImportHandler {
 					$uuid = $objectData['uuid'] ?? \Symfony\Component\Uid\Uuid::v4()->toRfc4122();
 					$objectEntity->setUuid($uuid);
 
-					// Set the slug for future idempotency checks.
-					$objectEntity->setSlug($objectSlug);
-
 					// Set schema reference - use resolved external schema if available.
 					$objectEntity->setSchema($objectSchema->getId());
 
@@ -5852,6 +5850,22 @@ class ImportHandler {
 					$objectEntity->setObject(
 						$this->withoutSeedMetadataKeys(objectData: $objectData, schema: $objectSchema)
 					);
+
+					// Set the slug for future idempotency checks. A schema with managed
+					// slugs decides it through the one slug handler, so a seed cannot
+					// take a slug another live object holds (#4037).
+					if ($this->slugHandler === null) {
+						$objectEntity->setSlug($objectSlug);
+					}
+
+					if ($this->slugHandler !== null) {
+						$this->slugHandler->applyOnSave(
+							entity: $objectEntity,
+							schema: $objectSchema,
+							originalSlug: null,
+							clientSlug: (string)$objectSlug
+						);
+					}
 
 					// Set timestamps.
 					$now = new DateTime();

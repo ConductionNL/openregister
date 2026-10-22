@@ -55,7 +55,9 @@ the same dot paths and templates as `objectNameField`; the value is slugified
   exception is `occ openregister:backfill-slugs --reslug`, which an administrator runs
   explicitly and which rewrites slugs; links built on the old slugs stop working.
 - **A freed slug moves on.** When the holder is deleted, the next save of an object
-  that wanted the slug gives it to that object.
+  that wanted the slug gives it to that object. If the old holder is restored after
+  that, it comes back without a slug (with the suffixed slug when `objectSlugSuffix`
+  is on) and a warning names both objects; seed data objects follow the same rule.
 - **Lookups.** `GET /api/objects/{register}/{schema}/{slug}` resolves the slug. A
   slug that more than one object holds (possible only for duplicates created before
   this rule) answers `409` with `"error": "ambiguous-identifier"`; the matching uuids

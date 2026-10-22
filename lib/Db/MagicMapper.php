@@ -87,6 +87,7 @@ use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -11208,6 +11209,14 @@ class MagicMapper extends AbstractObjectMapper {
 
 		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
+		// The slug it held may have been given to another object since the delete
+		// (#4037). Resolved lazily: the handler needs this mapper.
+		$restoredSlug = $this->container->get(ObjectSlugHandler::class)->slugForRestore(
+			entity: $entity,
+			register: $register,
+			schema: $schema
+		);
+
 		// Clear the soft-delete marker directly on the owning magic table.
 		// A native UPDATE avoids the Entity-layer array->null serialisation
 		// quirk for JSON columns.
@@ -11220,6 +11229,16 @@ class MagicMapper extends AbstractObjectMapper {
 					$qb->createNamedParameter($entity->getUuid())
 				)
 			);
+		if ($restoredSlug !== $entity->getSlug()) {
+			$slugType = \PDO::PARAM_STR;
+			if ($restoredSlug === null) {
+				$slugType = \PDO::PARAM_NULL;
+			}
+
+			$qb->set(self::METADATA_PREFIX . 'slug', $qb->createNamedParameter($restoredSlug, $slugType));
+			$entity->setSlug($restoredSlug);
+		}
+
 		$qb->executeStatement();
 
 		$entity->setDeleted(null);

@@ -39,6 +39,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Configuration\ImportHandler;
 use OCA\OpenRegister\Service\Configuration\UploadHandler;
+use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IAppConfig;
@@ -136,14 +139,69 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	}//end testTheLookupStillUsesTheSeedUuid()
 
 	/**
+	 * Review finding save-f5: a seed on a schema with managed slugs goes through
+	 * the slug handler, so it cannot take a slug another live object holds.
+	 */
+	public function testASeedCannotTakeASlugAnotherLiveObjectHolds(): void {
+		$schema = $this->makeSchema(['naam' => ['type' => 'string']]);
+		$schema->setConfiguration(['objectSlugField' => 'naam']);
+
+		$lookups = [];
+		$this->importSeed($schema, $lookups, ['other-uuid']);
+
+		$this->assertCount(1, $this->inserted);
+		$this->assertNull($this->inserted[0]->getSlug(), 'the seed is imported without the slug another object holds');
+	}//end testASeedCannotTakeASlugAnotherLiveObjectHolds()
+
+	/**
+	 * A seed whose slug is free keeps it, managed or not.
+	 */
+	public function testASeedKeepsAFreeSlugOnAManagedSchema(): void {
+		$schema = $this->makeSchema(['naam' => ['type' => 'string']]);
+		$schema->setConfiguration(['objectSlugField' => 'naam']);
+
+		$lookups = [];
+		$this->importSeed($schema, $lookups, []);
+
+		$this->assertSame('school-de-linde', $this->inserted[0]->getSlug());
+	}//end testASeedKeepsAFreeSlugOnAManagedSchema()
+
+	/**
+	 * A real slug handler over a mapper that reports the given holders, or none.
+	 *
+	 * @param MagicMapper                    $routing        The routing mapper mock.
+	 * @param RegisterMapper                 $registerMapper The register mapper.
+	 * @param array<int, string>|null        $holders        Holders of any slug; null = no handler.
+	 *
+	 * @return ObjectSlugHandler|null The handler.
+	 */
+	private function slugHandlerFor(MagicMapper $routing, RegisterMapper $registerMapper, ?array $holders): ?ObjectSlugHandler {
+		if ($holders === null) {
+			return null;
+		}
+
+		$routing->method('findSlugHolders')->willReturn($holders);
+		return new ObjectSlugHandler(
+			magicMapper: $routing,
+			hydrator: new MetadataHydrationHandler(
+				logger: $this->createMock(LoggerInterface::class),
+				cacheHandler: $this->createMock(CacheHandler::class)
+			),
+			registerMapper: $registerMapper,
+			logger: $this->createMock(LoggerInterface::class)
+		);
+	}//end slugHandlerFor()
+
+	/**
 	 * Run the real importSeedData() for one seed object of the given schema.
 	 *
-	 * @param Schema             $schema  The target schema.
-	 * @param array<int, string> $lookups Filled with every identifier find() received.
+	 * @param Schema                  $schema      The target schema.
+	 * @param array<int, string>      $lookups     Filled with every identifier find() received.
+	 * @param array<int, string>|null $slugHolders Live holders of any slug (null = no slug handler wired).
 	 *
 	 * @return void
 	 */
-	private function importSeed(Schema $schema, array &$lookups = []): void {
+	private function importSeed(Schema $schema, array &$lookups = [], ?array $slugHolders = null): void {
 		$register = new Register();
 		$register->setSlug('learniq');
 		$register->setSchemas([(int)$schema->getId()]);
@@ -182,7 +240,8 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 			logger:              $this->createMock(LoggerInterface::class),
 			appDataPath:         '/tmp',
 			uploadHandler:       $this->createMock(UploadHandler::class),
-			objectService:       $this->createMock(ObjectService::class)
+			objectService:       $this->createMock(ObjectService::class),
+			slugHandler:         $this->slugHandlerFor(routing: $routing, registerMapper: $registerMapper, holders: $slugHolders)
 		);
 		$handler->setObjectMapper($routing);
 
