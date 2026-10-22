@@ -61,6 +61,11 @@
 				"displayName": "Juridische zaken"
 			},
 			{
+				"key": "woo-en-informatie",
+				"gid": "zuiddrecht-woo-en-informatie",
+				"displayName": "Woo en informatie"
+			},
+			{
 				"key": "communicatie",
 				"gid": "zuiddrecht-communicatie",
 				"displayName": "Communicatie"
@@ -276,7 +281,8 @@
 				"department": "Juridische zaken",
 				"groups": [
 					"medewerkers",
-					"juridische-zaken"
+					"juridische-zaken",
+					"woo-en-informatie"
 				],
 				"function": "Woo-coordinator"
 			},
@@ -289,12 +295,12 @@
 				"familyName": "Bakker",
 				"email": "anouk.bakker@zuiddrecht.example",
 				"role": "employee",
-				"department": "Juridische zaken",
+				"department": "Woo en informatie",
 				"groups": [
 					"medewerkers",
-					"juridische-zaken"
+					"woo-en-informatie"
 				],
-				"function": "Juridisch adviseur Woo"
+				"function": "Teamleider"
 			},
 			{
 				"key": "marleen",
@@ -324,7 +330,8 @@
 				"department": "Vergunningen",
 				"groups": [
 					"medewerkers",
-					"vergunningen"
+					"vergunningen",
+					"woo-en-informatie"
 				],
 				"function": "Behandelaar"
 			},

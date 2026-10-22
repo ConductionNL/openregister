@@ -112,7 +112,7 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		// The handler the dossiq boards draw as "u", who owns a saved view.
 		$pieter = $plan['cast']['people']['pieter'];
 		$this->assertSame(
-			expected: ['pieter', 'Pieter Jansen', ['vergunningen']],
+			expected: ['pieter', 'Pieter Jansen', ['vergunningen', 'woo-en-informatie']],
 			actual: [$pieter['uid'], $pieter['displayName'], array_values(array_diff($pieter['groups'], ['medewerkers']))]
 		);
 		// The jeugdteam's regisseur of the jeugdwet example case.
@@ -120,6 +120,10 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->assertSame(['brp' => ['mock' => true], 'kvk' => ['mock' => true]], $plan['requires']);
 		$this->assertSame(['vergunningen'], array_values(array_diff($plan['cast']['people']['marleen']['groups'], ['medewerkers'])));
 		$this->assertSame('Teamleider', $plan['cast']['people']['marleen']['function']);
+		// The Woo team the dossiq boards name, led by Anouk Bakker.
+		$woo = array_keys(array_filter($plan['cast']['people'], static fn (array $p): bool => in_array('woo-en-informatie', ($p['groups'] ?? []), true)));
+		$this->assertSame(expected: ['thomas', 'anouk', 'pieter'], actual: $woo);
+		$this->assertSame(expected: ['Teamleider', 'Woo en informatie'], actual: [$plan['cast']['people']['anouk']['function'], $plan['cast']['people']['anouk']['department']]);
 		$this->assertNotContains('admin', array_column($plan['cast']['groups'], 'gid'));
 		$this->assertNotContains('noor', array_keys(array_filter($plan['cast']['people'], static fn (array $p): bool => in_array('admin', ($p['groups'] ?? []), true))));
 		$apps = json_decode((string) file_get_contents(dirname(__DIR__, 4).'/lib/Settings/example-sets/zuiddrecht.json'), true)['apps'];
