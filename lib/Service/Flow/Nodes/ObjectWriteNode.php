@@ -1066,6 +1066,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		$writes = 0;
 		$created = 0;
 		$updated = 0;
+		$deleted = 0;
 		$out = [];
 		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
 		$payloadFrom = trim((string)($config['payloadFrom'] ?? ''));
@@ -1093,6 +1094,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 					config: $config,
 					writes: $writes
 				);
+				$deleted += $this->confirmedDelete(item: $out[array_key_last($out)], config: $config);
 				continue;
 			}
 
@@ -1142,7 +1144,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			);
 		}//end foreach
 
-		$this->reportItemCounts(context: $context, created: $created, updated: $updated, writes: $writes, operation: $operation);
+		$this->reportItemCounts(context: $context, created: $created, updated: $updated, deleted: $deleted);
 		return $out;
 	}//end writeItems()
 
@@ -1404,27 +1406,18 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * Report writeItems()'s created/updated/deleted tally. Split out only to
 	 * keep writeItems() itself under the project's method-length threshold.
 	 *
-	 * OP_DELETE never touches $created/$updated (it `continue`s before
-	 * reaching them), so for a delete batch $writes already IS the deleted
-	 * count — executeDelete() only increments it when deleteObject() reports
-	 * an actual removal (returns true), never on an onNoMatch=skip and never
-	 * on a delete the service reports as failed (returns false). No separate
-	 * counter is threaded through the loop.
+	 * $deleted is not $writes: every delete attempt counts towards the cap,
+	 * but only a delete the service confirms counts as deleted
+	 * ({@see confirmedDelete()}).
 	 *
 	 * @param array $context The run context.
 	 * @param int $created Items created.
 	 * @param int $updated Items updated.
-	 * @param int $writes Writes performed (== deleted count, for OP_DELETE).
-	 * @param string $operation The resolved operation.
+	 * @param int $deleted Deletes the service confirmed.
 	 *
 	 * @return void
 	 */
-	private function reportItemCounts(array $context, int $created, int $updated, int $writes, string $operation): void {
-		$deleted = 0;
-		if ($operation === self::OP_DELETE) {
-			$deleted = $writes;
-		}
-
+	private function reportItemCounts(array $context, int $created, int $updated, int $deleted): void {
 		$this->writeReport(
 			context: $context,
 			report: [
@@ -1434,6 +1427,34 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			]
 		);
 	}//end reportItemCounts()
+
+	/**
+	 * Whether an item {@see executeDelete()} returned records a confirmed
+	 * delete: 1 when its written record says `deleted: true`, else 0.
+	 *
+	 * Only ever called on executeDelete()'s own output, where the `deleted`
+	 * flag is always the node's (it overwrites the record, or the `output`
+	 * key, on every branch), so an incoming `deleted` field from upstream can
+	 * never be counted here.
+	 *
+	 * @param array $item The output item.
+	 * @param array $config The step configuration; `output` is read from it.
+	 *
+	 * @return int 1 for a confirmed delete, 0 otherwise.
+	 */
+	private function confirmedDelete(array $item, array $config): int {
+		$record = (array)($item[FlowItems::JSON] ?? []);
+		$key = trim((string)($config['output'] ?? ''));
+		if ($key !== '') {
+			$record = (array)($record[$key] ?? []);
+		}
+
+		if (($record['deleted'] ?? null) === true) {
+			return 1;
+		}
+
+		return 0;
+	}//end confirmedDelete()
 
 	/**
 	 * Report writeBulk()'s saved/updated/unchanged tally from the raw
@@ -1520,11 +1541,12 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	/**
 	 * Perform one guarded delete and build its output item.
 	 *
-	 * `deleteObject()` reports a delete it caught an exception on as `false`
-	 * rather than throwing, so its result is what says whether anything was
-	 * removed. Only a real removal counts as a write (towards the cap and the
-	 * `deleted` tally); a failed one stays in the run as an item marked
-	 * `deleted: false`, like a skipped one.
+	 * Every delete ATTEMPT counts as a write towards the cap: a delete the
+	 * service reports as failed may already have cascaded into child deletes
+	 * before failing. Only a delete the service confirms (`deleteObject()`
+	 * returns true; it returns false for an exception it caught) is marked
+	 * `deleted: true` on the output item and counted in the `deleted` tally;
+	 * a failed one stays in the run marked `deleted: false`, like a skip.
 	 *
 	 * @param array $item The input item (`json` and `binary`).
 	 * @param int $index The input item's index, for provenance.
@@ -1602,7 +1624,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		// acting user and the register / schema scope confining the lookup to
 		// one magic table. No `_retentionSweep`; see `permanenceOf()` for why
 		// the soft delete is the default and what opts out of it. Its result
-		// decides `$writes` and `deleted`; see the method docblock.
+		// decides `deleted`, not `$writes`; see the method docblock.
 		$deleted = $this->objects->deleteObject(
 			uuid: $uuid,
 			register: $register,
@@ -1610,9 +1632,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			currentUser: $owner,
 			permanent: $this->permanenceOf(config: $config)
 		);
-		if ($deleted === true) {
-			$writes++;
-		}
+		$writes++;
 
 		// Through `outputJson()`, exactly like every non-delete write. Without
 		// it a delete was the one operation that could not carry its incoming

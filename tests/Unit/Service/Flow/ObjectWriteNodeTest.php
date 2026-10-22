@@ -1236,6 +1236,43 @@ class ObjectWriteNodeTest extends TestCase {
 
 	}//end testDeletesCountAgainstTheCapToo()
 
+	/**
+	 * A delete the service reports as failed still counts towards the cap.
+	 *
+	 * `deleteObject()` can cascade into child deletes before it fails and
+	 * returns false, so a failed attempt may already have written. The cap
+	 * bounds attempts, not confirmed deletes, or a batch of failing deletes
+	 * would run past `maxWrites` without limit.
+	 *
+	 * @return void
+	 */
+	public function testFailedDeletesStillCountAgainstTheCap(): void {
+		$this->tableOf(table: [['uuid' => 'u-1', 'data' => ['sourceId' => 'r1']]]);
+
+		$attempts = 0;
+		$this->objects->method('deleteObject')->willReturnCallback(
+			static function () use (&$attempts): bool {
+				$attempts++;
+
+				return false;
+			}
+		);
+
+		$records = array_fill(start_index: 0, count: 20, value: ['retiredId' => 'r1']);
+
+		$this->expectException(exception: RuntimeException::class);
+		try {
+			$this->node->execute(
+				$this->items(records: $records),
+				$this->deleteConfig(overrides: ['maxWrites' => 5]),
+				$this->registerContext
+			);
+		} finally {
+			$this->assertSame(expected: 5, actual: $attempts, message: 'the sixth attempt is refused, failed or not');
+		}
+
+	}//end testFailedDeletesStillCountAgainstTheCap()
+
 	public function testTheInstanceDefaultAppliesWhenNoCapIsConfigured(): void {
 		$seenDefault = null;
 
