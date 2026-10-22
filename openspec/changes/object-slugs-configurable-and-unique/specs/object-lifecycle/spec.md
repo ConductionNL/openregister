@@ -290,7 +290,7 @@ the objects whose slug it changed as uuid, old slug and new slug, so a `--reslug
 reconstructable. The entry lists at most the first 1,000 changes and carries the total
 (`changesTotal`) and `truncated`; the full list of a larger run MUST be written to the log.
 The entry is hash-chained and cannot be redacted afterwards, so it MUST copy nothing but uuid,
-old slug and new slug. A run that changes nothing, and a dry run, MUST NOT write an entry (the console summary still reports it). When the entry cannot be inserted, the run logs an error line with the changes instead, and the slugs already written stay.
+old slug and new slug. A run that changes nothing, and a dry run, MUST NOT write an entry (the console summary still reports it). When the entry cannot be inserted, the run logs an error line with the changes instead, and the slugs already written stay. In `--reslug` the writes MUST be ordered so a row that vacates a slug is written before the row that takes it, and a write whose target slug is still held by a row whose own write was skipped MUST be skipped too, so a run never leaves two objects on one slug.
 
 #### Scenario: Default mode fills only empty slugs
 - **GIVEN** a schema with `objectSlugField: "title"` holding object A with slug `a-title` and object B without a slug and `title: "B Title"`
