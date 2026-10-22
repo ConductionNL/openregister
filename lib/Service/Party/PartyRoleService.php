@@ -137,6 +137,45 @@ class PartyRoleService {
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
 	 */
 	public function addParty(string $objectUuid, int $registerId, int|string|null $schemaId, array $payload): ContactLink {
+		return $this->linkParty(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, payload: $payload, linkedBy: null);
+	}//end addParty()
+
+	/**
+	 * Give a party a role on an object outside a request, recording a named linker.
+	 *
+	 * The trusted path an example set writes through: `occ` has no signed-in
+	 * user, so the caller names who links. The same kind and role checks run.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 * @param int $registerId The register id.
+	 * @param int|string|null $schemaId The object's schema id.
+	 * @param array<string, mixed> $payload `partyUuid`, `role`, `validFrom`, `validUntil`, `note`, `primary`.
+	 * @param string $linkedBy Who links the party, such as the app that ships an example set.
+	 *
+	 * @return ContactLink The link as stored.
+	 *
+	 * @throws Exception 400 for an undeclared kind or role, 404 for an unknown party.
+	 *
+	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 */
+	public function importParty(string $objectUuid, int $registerId, int|string|null $schemaId, array $payload, string $linkedBy): ContactLink {
+		return $this->linkParty(objectUuid: $objectUuid, registerId: $registerId, schemaId: $schemaId, payload: $payload, linkedBy: $linkedBy);
+	}//end importParty()
+
+	/**
+	 * Link the party after the kind and role checks, as the signed-in user or the named linker.
+	 *
+	 * @param string $objectUuid The object uuid.
+	 * @param int $registerId The register id.
+	 * @param int|string|null $schemaId The object's schema id.
+	 * @param array<string, mixed> $payload The link fields.
+	 * @param string|null $linkedBy The linker when nobody is signed in.
+	 *
+	 * @return ContactLink The link as stored.
+	 *
+	 * @throws Exception 400 for an undeclared kind or role, 404 for an unknown party.
+	 */
+	private function linkParty(string $objectUuid, int $registerId, int|string|null $schemaId, array $payload, ?string $linkedBy): ContactLink {
 		$partyUuid = trim((string)($payload['partyUuid'] ?? ''));
 		if ($partyUuid === '') {
 			throw new Exception('partyUuid is required', 400);
@@ -150,7 +189,8 @@ class PartyRoleService {
 			registerId: $registerId,
 			schemaId: self::intOrNull(value: $schemaId),
 			partyUuid: $partyUuid,
-			role: $role
+			role: $role,
+			linkedBy: $linkedBy
 		);
 
 		$link = $this->applyPeriodAndNote(link: $link, payload: $payload);
@@ -161,7 +201,7 @@ class PartyRoleService {
 		$this->events->linked(link: $link);
 
 		return $link;
-	}//end addParty()
+	}//end linkParty()
 
 	/**
 	 * Take a party off an object: every role, or the one named.
