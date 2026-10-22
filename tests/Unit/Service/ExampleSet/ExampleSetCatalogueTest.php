@@ -108,7 +108,9 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->apps['openregister'] = dirname(__DIR__, 4);
 		$plan = $this->catalogue->gather(set: 'zuiddrecht');
 
-		$this->assertCount(expectedCount: 24, haystack: $plan['cast']['people']);
+		$this->assertCount(expectedCount: 25, haystack: $plan['cast']['people']);
+		// Buurtvereniging Oost and its chair, whom DqOrganisatie draws.
+		$this->assertSame(expected: 'buurtoost', actual: $plan['cast']['people']['marja']['organisation']);
 		// The parties on the Lindelaan Woo case: Van Wijk's representative and the residents' association.
 		$this->assertSame(expected: 'vanwijk', actual: $plan['cast']['people']['jvanwijk']['organisation']);
 		// The contacts and companies the dossiq list and new-case boards name, and the second tenant with its contact.

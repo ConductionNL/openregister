@@ -302,6 +302,26 @@
 				"organisation": "vanwijk"
 			},
 			{
+				"key": "marja",
+				"uid": "marja.verbeek",
+				"displayName": "Marja Verbeek",
+				"givenName": "Marja",
+				"prefix": "",
+				"familyName": "Verbeek",
+				"email": "marja.verbeek@zuiddrecht.example",
+				"role": "business-contact",
+				"bsn": "999994153",
+				"gender": "V",
+				"birthDate": "1963-11-30",
+				"address": {
+					"street": "Oosthavenweg",
+					"number": 14,
+					"postcode": "2999AJ",
+					"city": "Zuiddrecht"
+				},
+				"organisation": "buurtoost"
+			},
+			{
 				"key": "daan",
 				"uid": "daan.verbeek",
 				"displayName": "Daan Verbeek",
@@ -650,6 +670,27 @@
 				},
 				"registeredOn": "2012-06-01",
 				"employees": 0
+			},
+			{
+				"key": "buurtoost",
+				"name": "Buurtvereniging Oost",
+				"kvk": "00001007",
+				"vestigingsnummer": "000000001007",
+				"legalForm": "Vereniging",
+				"contact": "marja",
+				"email": "bestuur.buurtoost@zuiddrecht.example",
+				"address": {
+					"street": "Oosthavenweg",
+					"number": 12,
+					"postcode": "2999AJ",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "94993",
+					"description": "Bewonersverenigingen en buurtcomités"
+				},
+				"registeredOn": "1998-03-12",
+				"employees": 0
 			}
 		],
 		"openregisterOrganisations": [
@@ -980,6 +1021,37 @@
 					"huisnummer": "{{cast:jvanwijk.address.number}}",
 					"postcode": "{{cast:jvanwijk.address.postcode}}",
 					"woonplaats": "{{cast:jvanwijk.address.city}}",
+					"functieAdres": "W"
+				},
+				"gemeenteVanInschrijving": "Zuiddrecht",
+				"gemeenteVanInschrijvingCode": "9999",
+				"datumInschrijvingInGemeente": "2010-01-01",
+				"partners": [],
+				"ouders": [],
+				"kinderen": []
+			}
+		},
+		{
+			"key": "brp-marja",
+			"register": "brp",
+			"schema": "ingeschreven-persoon",
+			"data": {
+				"burgerservicenummer": "{{cast:marja.bsn}}",
+				"voornamen": "{{cast:marja.givenName}}",
+				"voorletters": "M.",
+				"geslachtsnaam": "{{cast:marja.familyName}}",
+				"aanduidingNaamgebruik": "E",
+				"geslachtsaanduiding": "{{cast:marja.gender}}",
+				"geboortedatum": "{{cast:marja.birthDate}}",
+				"geboorteland": "Nederland",
+				"geboortelandCode": "6030",
+				"nationaliteit": "Nederlandse",
+				"nationaliteitCode": "0001",
+				"verblijfplaats": {
+					"straat": "{{cast:marja.address.street}}",
+					"huisnummer": "{{cast:marja.address.number}}",
+					"postcode": "{{cast:marja.address.postcode}}",
+					"woonplaats": "{{cast:marja.address.city}}",
 					"functieAdres": "W"
 				},
 				"gemeenteVanInschrijving": "Zuiddrecht",
@@ -1387,6 +1459,73 @@
 					{
 						"sbiCode": "{{cast:bewonerslindelaan.sbi.code}}",
 						"sbiOmschrijving": "{{cast:bewonerslindelaan.sbi.description}}",
+						"indHoofdactiviteit": "Ja"
+					}
+				]
+			}
+		},
+		{
+			"key": "kvk-buurtoost",
+			"register": "kvk",
+			"schema": "maatschappelijke-activiteit",
+			"data": {
+				"kvkNummer": "{{cast:buurtoost.kvk}}",
+				"naam": "{{cast:buurtoost.name}}",
+				"handelsnamen": [
+					{
+						"naam": "{{cast:buurtoost.name}}",
+						"volgorde": 0
+					}
+				],
+				"rechtsvorm": "{{cast:buurtoost.legalForm}}",
+				"uitgebreideRechtsvorm": "{{cast:buurtoost.legalForm}}",
+				"formeleRegistratiedatum": "{{cast:buurtoost.registeredOn}}",
+				"materieleRegistratie": {
+					"datumAanvang": "{{cast:buurtoost.registeredOn}}"
+				},
+				"totaalWerkzamePersonen": "{{cast:buurtoost.employees}}",
+				"sbiActiviteiten": [
+					{
+						"sbiCode": "{{cast:buurtoost.sbi.code}}",
+						"sbiOmschrijving": "{{cast:buurtoost.sbi.description}}",
+						"indHoofdactiviteit": "Ja"
+					}
+				],
+				"indNonMailing": "Nee",
+				"actief": true
+			}
+		},
+		{
+			"key": "vestiging-buurtoost",
+			"register": "kvk",
+			"schema": "vestiging",
+			"data": {
+				"vestigingsnummer": "{{cast:buurtoost.vestigingsnummer}}",
+				"kvkNummer": "{{cast:buurtoost.kvk}}",
+				"eersteHandelsnaam": "{{cast:buurtoost.name}}",
+				"indHoofdvestiging": "Ja",
+				"indCommercieleVestiging": "Ja",
+				"totaalWerkzamePersonen": "{{cast:buurtoost.employees}}",
+				"adressen": [
+					{
+						"type": "bezoekadres",
+						"straatnaam": "{{cast:buurtoost.address.street}}",
+						"huisnummer": "{{cast:buurtoost.address.number}}",
+						"postcode": "{{cast:buurtoost.address.postcode}}",
+						"plaats": "{{cast:buurtoost.address.city}}",
+						"land": "Nederland"
+					}
+				],
+				"handelsnamen": [
+					{
+						"naam": "{{cast:buurtoost.name}}",
+						"volgorde": 0
+					}
+				],
+				"sbiActiviteiten": [
+					{
+						"sbiCode": "{{cast:buurtoost.sbi.code}}",
+						"sbiOmschrijving": "{{cast:buurtoost.sbi.description}}",
 						"indHoofdactiviteit": "Ja"
 					}
 				]
