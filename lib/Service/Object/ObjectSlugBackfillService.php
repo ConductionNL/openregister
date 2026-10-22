@@ -31,11 +31,9 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
-use OCA\OpenRegister\Exception\SlugBackfillWriteException;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
-use SplMinHeap;
 
 /**
  * Plans and applies a slug backfill for one register+schema table.
@@ -108,7 +106,7 @@ class ObjectSlugBackfillService {
 	 * } What was found and what was (or would be) written.
 	 *
 	 * @throws InvalidArgumentException When the schema has no `objectSlugField`.
-	 * @throws SlugBackfillWriteException When a write chunk fails (earlier chunks stay written).
+	 * @throws \OCA\OpenRegister\Exception\SlugBackfillWriteException When a write chunk fails (earlier chunks stay written).
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 *
@@ -314,7 +312,14 @@ class ObjectSlugBackfillService {
 			}
 		}
 
-		$this->walkReslug(rows: $rows, register: $register, schema: $schema, current: $current, taken: $taken);
+		(new ObjectSlugReslugWalk())->run(
+			rows: $rows,
+			step: function (array $row) use ($register, $schema, &$current, &$taken): array {
+				$own = $current[$row['uuid']];
+				$moved = $this->moveRow(row: $row, register: $register, schema: $schema, current: $current, taken: $taken);
+				return ['moved' => $moved, 'own' => $own];
+			}
+		);
 
 		$plan = [];
 		foreach ($rows as $row) {
@@ -329,155 +334,9 @@ class ObjectSlugBackfillService {
 			$this->reportUnplaced(row: $row, register: $register, schema: $schema, taken: $taken, summary: $summary, log: $log, kept: $kept);
 		}
 
-		return $this->vacatingFirst(plan: $plan);
+		return (new ObjectSlugReslugWalk())->holdersFirst(plan: $plan);
 	}//end planReslug()
 
-	/**
-	 * Order a plan so a row that vacates a slug is written before the row that takes it.
-	 *
-	 * The slug has no unique index, so writing the taker first would leave two
-	 * objects on one slug until the holder moves, and for good when the holder's
-	 * write is skipped or fails. Rows that depend on nothing keep their order
-	 * (oldest first); the sort is linear in the plan.
-	 *
-	 * @param list<array{uuid: string, old: ?string, new: ?string}> $plan The steps in row order.
-	 *
-	 * @return list<array{uuid: string, old: ?string, new: ?string}> The same steps, holders before takers.
-	 */
-	private function vacatingFirst(array $plan): array {
-		$holdersOf = [];
-		foreach ($plan as $index => $step) {
-			if ($step['old'] !== null) {
-				$holdersOf[$step['old']][] = $index;
-			}
-		}
-
-		$waiting = [];
-		$dependents = [];
-		foreach ($plan as $index => $step) {
-			foreach ($holdersOf[(string)$step['new']] ?? [] as $holder) {
-				if ($holder !== $index) {
-					$waiting[$index] = (($waiting[$index] ?? 0) + 1);
-					$dependents[$holder][] = $index;
-				}
-			}
-		}
-
-		$queue = [];
-		foreach (array_keys($plan) as $index) {
-			if (isset($waiting[$index]) === false) {
-				$queue[] = $index;
-			}
-		}
-
-		$ordered = [];
-		$done = [];
-		for ($head = 0; $head < count($queue); $head++) {
-			$index = $queue[$head];
-			$ordered[] = $plan[$index];
-			$done[$index] = true;
-			foreach ($dependents[$index] ?? [] as $dependent) {
-				$waiting[$dependent]--;
-				if ($waiting[$dependent] === 0) {
-					$queue[] = $dependent;
-				}
-			}
-		}
-
-		// The walk never builds a cycle; should one appear, keep its steps in row order.
-		foreach ($plan as $index => $step) {
-			if (isset($done[$index]) === false) {
-				$ordered[] = $step;
-			}
-		}
-
-		return $ordered;
-	}//end vacatingFirst()
-
-	/**
-	 * Walk the rows until none can move, re-trying a row only when a slug it waits on was vacated.
-	 *
-	 * Same outcome as walking all rows, oldest first, in repeated passes until a
-	 * pass moves nothing, without the repeated scans: a row that did not move
-	 * can only start to move once the holder of its wanted slug (or of the slug
-	 * it keeps) moves away, so it waits on those slugs. A woken row that lies
-	 * after the row that just moved is tried in the same pass, an earlier one in
-	 * the next pass, as the full scan would. The cost is proportional to the
-	 * number of moves plus the number of rows, times log of the rows, instead of
-	 * rows times passes (a chain of N rows that each want the next one's slug
-	 * took N passes over N rows).
-	 *
-	 * @param list<array{id: int, uuid: string, slug: string|null, created: string|null, candidate: string|null}> $rows All live rows, oldest first.
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param array    $current  uuid => slug the object holds right now, by reference.
-	 * @param array    $taken    slug => uuids holding it right now, by reference.
-	 *
-	 * @return void
-	 */
-	private function walkReslug(array $rows, Register $register, Schema $schema, array &$current, array &$taken): void {
-		$pass = new SplMinHeap();
-		$queued = [];
-		foreach (array_keys($rows) as $index) {
-			$pass->insert($index);
-			$queued[$index] = true;
-		}
-
-		$waiting = [];
-		$next = [];
-		while ($pass->isEmpty() === false || $next !== []) {
-			if ($pass->isEmpty() === true) {
-				foreach (array_keys($next) as $index) {
-					$pass->insert($index);
-					$queued[$index] = true;
-				}
-
-				$next = [];
-			}
-
-			$index = $pass->extract();
-			unset($queued[$index]);
-			$row = $rows[$index];
-			$vacated = $current[$row['uuid']];
-			if ($this->moveRow(row: $row, register: $register, schema: $schema, current: $current, taken: $taken) === false) {
-				$this->waitOn(slugs: [$row['candidate'], $vacated], index: $index, waiting: $waiting);
-				continue;
-			}
-
-			// The row left `$vacated`: wake the rows that wait on it. It may sit on a
-			// suffixed variant, and then waits for its own candidate to be vacated.
-			$this->waitOn(slugs: [$row['candidate']], index: $index, waiting: $waiting);
-			foreach ($waiting[(string)$vacated] ?? [] as $woken) {
-				if ($woken > $index && isset($queued[$woken]) === false) {
-					$pass->insert($woken);
-					$queued[$woken] = true;
-				}
-
-				if ($woken <= $index && isset($queued[$woken]) === false) {
-					$next[$woken] = true;
-				}
-			}
-
-			unset($waiting[(string)$vacated]);
-		}//end while
-	}//end walkReslug()
-
-	/**
-	 * Register a row as waiting for the holder of each given slug to move away.
-	 *
-	 * @param list<string|null>        $slugs   The slugs; null entries are ignored.
-	 * @param int                      $index   The row.
-	 * @param array<string, list<int>> $waiting slug => rows waiting on it, by reference.
-	 *
-	 * @return void
-	 */
-	private function waitOn(array $slugs, int $index, array &$waiting): void {
-		foreach ($slugs as $slug) {
-			if ($slug !== null) {
-				$waiting[$slug][] = $index;
-			}
-		}
-	}//end waitOn()
 
 	/**
 	 * Count and report a row that wanted a slug it could not get.

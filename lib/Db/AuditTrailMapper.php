@@ -3495,8 +3495,9 @@ class AuditTrailMapper extends QBMapper {
 			$listed[] = ['uuid' => ($change['uuid'] ?? null), 'old' => ($change['old'] ?? null), 'new' => ($change['new'] ?? null)];
 		}
 
-		$result = ['mode' => $mode, 'summary' => $summary, 'changes' => $listed, 'changesTotal' => $total, 'truncated' => ($total > self::SLUG_BACKFILL_MAX_CHANGES)];
-		if ($total > self::SLUG_BACKFILL_MAX_CHANGES) {
+		$truncated = ($total > self::SLUG_BACKFILL_MAX_CHANGES);
+		$result = ['mode' => $mode, 'summary' => $summary, 'changes' => $listed, 'changesTotal' => $total, 'truncated' => $truncated];
+		if ($truncated === true) {
 			$result['note'] = sprintf(
 				'Only the first %d of %d changes are listed here; the full list is in the Nextcloud log (lines starting "[ObjectSlug] Slug backfill changes").',
 				self::SLUG_BACKFILL_MAX_CHANGES,

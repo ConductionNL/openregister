@@ -28,7 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Command;
 
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\SlugBackfillWriteException;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillService;
@@ -88,7 +90,8 @@ class BackfillObjectSlugsCommand extends Command {
 				. 'links, bookmarks and external references that use an old slug stop working. '
 				. 'An object whose new slug another object already holds keeps its current slug (with '
 				. 'objectSlugSuffix it gets the suffixed slug) and is reported as kept. A run that is not a '
-				. 'dry run and changes at least one slug writes one audit-trail entry listing the old and new slug of the changed objects (the first 1,000; the log has the rest). '
+				. 'dry run and changes at least one slug writes one audit-trail entry listing the old and new '
+				. 'slug of the changed objects (the first 1,000; the log has the rest). '
 				. 'Run with --dry-run first'
 			)
 			->addOption('dry-run', null, InputOption::VALUE_NONE, 'Print the plan without writing anything');
@@ -137,18 +140,8 @@ class BackfillObjectSlugsCommand extends Command {
 			return Command::FAILURE;
 		}
 
-		try {
-			$result = $this->backfill->run(register: $register, schema: $schema, reslug: $reslug, dryRun: $dryRun);
-		} catch (\InvalidArgumentException $e) {
-			$output->writeln('<error>' . $e->getMessage() . '</error>');
-			return Command::FAILURE;
-		} catch (SlugBackfillWriteException $e) {
-			// The chunks before the failing one stay written, are audited and evicted.
-			$output->writeln('<error>' . $e->getMessage() . '</error>');
-			$output->writeln(sprintf('<error>applied=%d skipped=%d; run the command again to continue, it only touches what is left</error>', $e->getApplied(), $e->getSkipped()));
-			return Command::FAILURE;
-		} catch (Throwable $e) {
-			$output->writeln('<error>The slug backfill failed: ' . $e->getMessage() . '</error>');
+		$result = $this->runOrReport(register: $register, schema: $schema, reslug: $reslug, dryRun: $dryRun, output: $output);
+		if ($result === null) {
 			return Command::FAILURE;
 		}
 
@@ -202,4 +195,39 @@ class BackfillObjectSlugsCommand extends Command {
 
 		return Command::SUCCESS;
 	}//end execute()
+
+	/**
+	 * Run the backfill; print the reason and answer null when it cannot finish.
+	 *
+	 * @param Register        $register The register.
+	 * @param Schema          $schema   The schema.
+	 * @param bool            $reslug   Whether to rewrite existing slugs.
+	 * @param bool            $dryRun   Whether to write nothing.
+	 * @param OutputInterface $output   Console output stream.
+	 *
+	 * @return array|null The result of the run, or null after an error was printed.
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `reslug` and `dryRun` are the two documented command options.
+	 */
+	private function runOrReport(Register $register, Schema $schema, bool $reslug, bool $dryRun, OutputInterface $output): ?array {
+		try {
+			return $this->backfill->run(register: $register, schema: $schema, reslug: $reslug, dryRun: $dryRun);
+		} catch (\InvalidArgumentException $e) {
+			$output->writeln('<error>' . $e->getMessage() . '</error>');
+		} catch (SlugBackfillWriteException $e) {
+			// The chunks before the failing one stay written, are audited and evicted.
+			$output->writeln('<error>' . $e->getMessage() . '</error>');
+			$output->writeln(
+				sprintf(
+					'<error>applied=%d skipped=%d; run the command again to continue, it only touches what is left</error>',
+					$e->getApplied(),
+					$e->getSkipped()
+				)
+			);
+		} catch (Throwable $e) {
+			$output->writeln('<error>The slug backfill failed: ' . $e->getMessage() . '</error>');
+		}
+
+		return null;
+	}//end runOrReport()
 }//end class

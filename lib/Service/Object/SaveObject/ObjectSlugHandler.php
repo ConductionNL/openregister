@@ -82,6 +82,13 @@ class ObjectSlugHandler {
 	private ObjectSlugBatch $batch;
 
 	/**
+	 * Reads a client-sent slug.
+	 *
+	 * @var ObjectSlugClientValue
+	 */
+	private ObjectSlugClientValue $clientValue;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param MagicMapper              $magicMapper    Slug queries on the magic tables.
@@ -98,6 +105,7 @@ class ObjectSlugHandler {
 		private readonly ?ITimeFactory $timeFactory=null,
 	) {
 		$this->log = new ObjectSlugLog(logger: $logger);
+		$this->clientValue = new ObjectSlugClientValue(hydrator: $hydrator);
 		$this->batch = new ObjectSlugBatch(handler: $this, magicMapper: $magicMapper, log: $this->log);
 	}//end __construct()
 
@@ -131,7 +139,7 @@ class ObjectSlugHandler {
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-an-object-slug-must-come-only-from-the-configured-slug-field-and-must-not-be-written-into-the-object-data
 	 */
 	public function candidate(array $objectData, Schema $schema, ?string $clientSlug): ?string {
-		$normalised = $this->normaliseClientSlug(clientSlug: $clientSlug);
+		$normalised = $this->clientValue->normalise(clientSlug: $clientSlug);
 		if ($normalised !== null) {
 			// Normalised like a generated slug, so `Hello` and `hello` are one slug
 			// in both the single and the bulk path and the value fits the column.
@@ -146,32 +154,10 @@ class ObjectSlugHandler {
 	}//end candidate()
 
 	/**
-	 * A client slug as `candidate()` would store it.
-	 *
-	 * @param string|null $clientSlug `@self.slug` or top-level `slug` as sent.
-	 *
-	 * @return string|null The slugified, column-width slug; null when nothing was sent
-	 *                     or the value slugifies to nothing (it then counts as not sent).
-	 */
-	public function normaliseClientSlug(?string $clientSlug): ?string {
-		if ($clientSlug === null || trim($clientSlug) === '') {
-			return null;
-		}
-
-		$normalised = $this->hydrator->createSlug(text: trim($clientSlug));
-		if ($normalised === '') {
-			return null;
-		}
-
-		return substr($normalised, 0, self::MAX_LENGTH);
-	}//end normaliseClientSlug()
-
-	/**
 	 * Whether a client slug asks for something other than the stored slug.
 	 *
-	 * Compared after the same normalisation `candidate()` applies, so re-sending
-	 * the slug the object was created with (in another case or format) is not a
-	 * change request.
+	 * Compared after the normalisation `candidate()` applies, so re-sending the slug
+	 * the object was created with (in another case or format) is not a change request.
 	 *
 	 * @param string|null $clientSlug `@self.slug` or top-level `slug` as sent.
 	 * @param string      $stored     The stored slug.
@@ -179,12 +165,7 @@ class ObjectSlugHandler {
 	 * @return bool True when the client asked for a different slug.
 	 */
 	public function differsFromStored(?string $clientSlug, string $stored): bool {
-		if ($clientSlug === null || $clientSlug === '' || $clientSlug === $stored) {
-			return false;
-		}
-
-		$normalised = $this->normaliseClientSlug(clientSlug: $clientSlug);
-		return $normalised !== null && $normalised !== $stored;
+		return $this->clientValue->differsFromStored(clientSlug: $clientSlug, stored: $stored);
 	}//end differsFromStored()
 
 	/**
