@@ -108,7 +108,7 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->apps['openregister'] = dirname(__DIR__, 4);
 		$plan = $this->catalogue->gather(set: 'zuiddrecht');
 
-		$this->assertCount(expectedCount: 19, haystack: $plan['cast']['people']);
+		$this->assertCount(expectedCount: 20, haystack: $plan['cast']['people']);
 		// The handler the dossiq boards draw as "u", who owns a saved view.
 		$pieter = $plan['cast']['people']['pieter'];
 		$this->assertSame(
@@ -118,6 +118,11 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		// The jeugdteam's regisseur of the jeugdwet example case.
 		$this->assertSame(['fatma.kaya', ['sociaal-domein']], [$plan['cast']['people']['fatma']['uid'], array_values(array_diff($plan['cast']['people']['fatma']['groups'], ['medewerkers']))]);
 		$this->assertSame(['brp' => ['mock' => true], 'kvk' => ['mock' => true]], $plan['requires']);
+		// The colleague at Mobiliteit en verkeer the dossiq case boards ask for the Lindelaan documents.
+		$this->assertSame(
+			expected: ['lars.dekoning', 'Lars de Koning', ['mobiliteit-en-verkeer']],
+			actual: [$plan['cast']['people']['lars']['uid'], $plan['cast']['people']['lars']['displayName'], array_values(array_diff($plan['cast']['people']['lars']['groups'], ['medewerkers']))]
+		);
 		$this->assertSame(['vergunningen'], array_values(array_diff($plan['cast']['people']['marleen']['groups'], ['medewerkers'])));
 		$this->assertSame('Teamleider', $plan['cast']['people']['marleen']['function']);
 		// The Woo team the dossiq boards name, led by Anouk Bakker.
