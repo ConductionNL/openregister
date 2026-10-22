@@ -121,7 +121,7 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 			ExampleSetExternalTask::refusal(data: $data),
 			$this->stateRefusal(data: $data),
 			$this->datesRefusal(data: $data),
-			$this->checklistRefusal(data: $data),
+			ExampleSetTaskChecklist::refusal(data: $data),
 		];
 		foreach ($reasons as $why) {
 			if ($why !== '') {
@@ -295,50 +295,6 @@ class ExampleSetTasks extends ExampleSetEngineRows {
 
 		return '';
 	}//end datesRefusal()
-
-	/**
-	 * A checklist that is not a list of items with a unique id and a label.
-	 *
-	 * @param array<string, mixed> $data The filled task fields.
-	 *
-	 * @return string
-	 *
-	 * @spec openspec/changes/example-set-task-checklist/specs/example-sets/spec.md#requirement-a-fragment-may-give-a-task-its-checklist
-	 */
-	private function checklistRefusal(array $data): string {
-		if (array_key_exists('checklist', $data) === false) {
-			return '';
-		}
-
-		if (is_array($data['checklist']) === false || array_is_list($data['checklist']) === false) {
-			return 'checklist must be a list of items';
-		}
-
-		$ids = [];
-		foreach ($data['checklist'] as $item) {
-			if (is_array($item) === false) {
-				return 'every checklist item needs an id and a label';
-			}
-
-			$id    = ($item['id'] ?? null);
-			$label = ($item['label'] ?? null);
-			if (is_string($id) === false || trim($id) === '' || is_string($label) === false || trim($label) === '') {
-				return 'every checklist item needs an id and a label';
-			}
-
-			if (isset($item['checked']) === true && is_bool($item['checked']) === false) {
-				return 'checklist item "'.$id.'": checked is true or false';
-			}
-
-			if (in_array($id, $ids, true) === true) {
-				return 'checklist item id "'.$id.'" is used twice';
-			}
-
-			$ids[] = $id;
-		}
-
-		return '';
-	}//end checklistRefusal()
 
 	/**
 	 * A date or date-time value as a moment, or null.
