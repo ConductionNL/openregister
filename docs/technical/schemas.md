@@ -62,10 +62,12 @@ the same dot paths and templates as `objectNameField`; the value is slugified
   go to the log.
 - **Existing objects** get their slugs from
   `occ openregister:backfill-slugs <register> <schema>` (oldest first; existing
-  slugs and duplicates are reported, not changed). After switching the slug field, run
-  it with `--reslug` to rewrite the slugs from the new field. `--reslug` is the only
-  way a set slug changes: links, bookmarks and external references that use an old
-  slug stop working. Use `--dry-run` to see the plan first.
+  slugs are left alone, duplicates are reported, not changed). After switching the slug
+  field, run it with `--reslug` to rewrite the slugs from the new field. `--reslug` is
+  the only way a set slug changes: links, bookmarks and external references that use an
+  old slug stop working. A new slug that another object already holds is not written;
+  without `objectSlugSuffix` that object is left without a slug. Use `--dry-run` to see
+  the plan first.
 
 A schema without `objectSlugField` keeps the old behaviour: no slug unless a client
 sends one, and no uniqueness check.
