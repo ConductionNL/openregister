@@ -123,6 +123,24 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		return ['id' => $id, 'uuid' => $uuid, 'slug' => $slug, 'created' => $created, 'object' => ['title' => $title]];
 	}//end row()
 
+	/**
+	 * A page as findSlugBackfillPage() returns it.
+	 *
+	 * @param list<array> $rows    The convertible rows.
+	 * @param int|null    $fetched Rows the query returned (default: count of $rows).
+	 * @param int|null    $lastId  `_id` of the last row read (default: id of the last row).
+	 *
+	 * @return array{rows: list<array>, fetched: int, lastId: int} The page.
+	 */
+	private function page(array $rows, ?int $fetched=null, ?int $lastId=null): array {
+		$last = 0;
+		if ($rows !== []) {
+			$last = (int)end($rows)['id'];
+		}
+
+		return ['rows' => $rows, 'fetched' => ($fetched ?? count($rows)), 'lastId' => ($lastId ?? $last)];
+	}//end page()
+
 	public function testASchemaWithoutSlugFieldIsRefused(): void {
 		$this->expectException(InvalidArgumentException::class);
 
@@ -133,8 +151,8 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
 		$this->magicMapper->method('findAllSlugs')->willReturn(['bulk-item' => [self::UUID_C]]);
 		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
-			[$this->row(1, self::UUID_A, 'Hello World'), $this->row(2, self::UUID_B, 'Bulk Item')],
-			[]
+			$this->page([$this->row(1, self::UUID_A, 'Hello World'), $this->row(2, self::UUID_B, 'Bulk Item')]),
+			$this->page([])
 		);
 
 		$result = $this->service->run($this->register, $this->schema());
@@ -148,7 +166,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 	public function testASecondRunChangesNothing(): void {
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
 		$this->magicMapper->method('findAllSlugs')->willReturn(['hello-world' => [self::UUID_A]]);
-		$this->magicMapper->method('findSlugBackfillPage')->willReturn([]);
+		$this->magicMapper->method('findSlugBackfillPage')->willReturn($this->page([]));
 
 		$result = $this->service->run($this->register, $this->schema());
 
@@ -159,7 +177,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 	public function testExistingDuplicatesAreReportedAndLeftAlone(): void {
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn(['my-own' => [self::UUID_A, self::UUID_B]]);
 		$this->magicMapper->method('findAllSlugs')->willReturn(['my-own' => [self::UUID_A, self::UUID_B]]);
-		$this->magicMapper->method('findSlugBackfillPage')->willReturn([]);
+		$this->magicMapper->method('findSlugBackfillPage')->willReturn($this->page([]));
 
 		$result = $this->service->run($this->register, $this->schema());
 
@@ -172,12 +190,12 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 	public function testReslugRecomputesFromTheSourceAndResolvesADuplicateOldestFirst(): void {
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn(['bulk-item' => [self::UUID_A, self::UUID_B]]);
 		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
-			[
+			$this->page([
 				$this->row(1, self::UUID_A, 'Bulk Item', 'bulk-item'),
 				$this->row(2, self::UUID_B, 'Bulk Item', 'bulk-item'),
 				$this->row(3, self::UUID_C, 'Renamed Title', 'old-title'),
-			],
-			[]
+			]),
+			$this->page([])
 		);
 
 		$result = $this->service->run($this->register, $this->schema(), reslug: true);
@@ -190,11 +208,11 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 	public function testReslugKeepsTheSlugOfAnObjectWithAnEmptySource(): void {
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
 		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
-			[
+			$this->page([
 				$this->row(1, self::UUID_A, '', 'kept'),
 				$this->row(2, self::UUID_B, 'Kept', null),
-			],
-			[]
+			]),
+			$this->page([])
 		);
 
 		$this->service->run($this->register, $this->schema(), reslug: true);
@@ -208,11 +226,11 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		// objects carry a suffix stamped on an earlier run.
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
 		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
-			[
+			$this->page([
 				$this->row(1, self::UUID_A, 'Same', 'same'),
 				$this->row(2, self::UUID_B, 'Same', 'same-20250101000000'),
-			],
-			[]
+			]),
+			$this->page([])
 		);
 
 		$result = $this->service->run(
@@ -229,11 +247,11 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
 		$this->magicMapper->method('findAllSlugs')->willReturn([]);
 		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
-			[
+			$this->page([
 				$this->row(1, self::UUID_A, 'Same', null, '2026-05-01 00:00:00'),
 				$this->row(2, self::UUID_B, 'Same', null, '2024-01-01 00:00:00'),
-			],
-			[]
+			]),
+			$this->page([])
 		);
 
 		$this->service->run($this->register, $this->schema());
@@ -247,8 +265,8 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$magicMapper->method('findDuplicateSlugs')->willReturn([]);
 		$magicMapper->method('findAllSlugs')->willReturn([]);
 		$magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
-			[$this->row(1, self::UUID_A, 'Hello World')],
-			[]
+			$this->page([$this->row(1, self::UUID_A, 'Hello World')]),
+			$this->page([])
 		);
 		$expectedSeen = 'unset';
 		$magicMapper->method('updateSlugColumn')->willReturnCallback(
@@ -287,8 +305,8 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
 		$this->magicMapper->method('findAllSlugs')->willReturn(['bulk-item' => [self::UUID_C]]);
 		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
-			[$this->row(1, self::UUID_A, 'Hello World'), $this->row(2, self::UUID_B, 'Bulk Item')],
-			[]
+			$this->page([$this->row(1, self::UUID_A, 'Hello World'), $this->row(2, self::UUID_B, 'Bulk Item')]),
+			$this->page([])
 		);
 
 		$result = $this->service->run($this->register, $this->schema(), dryRun: true);
@@ -296,5 +314,29 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$this->assertSame([], $this->writes);
 		$this->assertSame([], $this->warnings);
 		$this->assertSame([['uuid' => self::UUID_A, 'old' => null, 'new' => 'hello-world']], $result['plan']);
+	}
+
+	public function testAFullPageWithAnUnconvertibleRowDoesNotEndTheScan(): void {
+		// Page 1: 500 rows fetched, one of them (id 500) could not be converted, so only
+		// 499 come back. Page 2 must still be read, from the last _id scanned.
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$this->magicMapper->method('findAllSlugs')->willReturn([]);
+		$afterIds = [];
+		$pages = [
+			$this->page([$this->row(1, self::UUID_A, 'First Row')], 500, 500),
+			$this->page([$this->row(501, self::UUID_B, 'Second Page Row')]),
+		];
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnCallback(
+			function (Register $r, Schema $s, int $afterId) use (&$afterIds, &$pages): array {
+				$afterIds[] = $afterId;
+				return array_shift($pages) ?? $this->page([]);
+			}
+		);
+
+		$result = $this->service->run($this->register, $this->schema());
+
+		$this->assertSame([0, 500], $afterIds, 'the cursor advances past the unconvertible row');
+		$this->assertSame([[self::UUID_A, 'first-row'], [self::UUID_B, 'second-page-row']], $this->writes);
+		$this->assertSame(2, $result['summary']['scanned']);
 	}
 }//end class

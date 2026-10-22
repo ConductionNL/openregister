@@ -161,14 +161,14 @@ class ObjectSlugBackfillService {
 		$rows = [];
 		$afterId = 0;
 		do {
-			$page = $this->magicMapper->findSlugBackfillPage(
+			$result = $this->magicMapper->findSlugBackfillPage(
 				register: $register,
 				schema: $schema,
 				afterId: $afterId,
 				pageSize: self::PAGE_SIZE,
 				onlyEmpty: $onlyEmpty
 			);
-			foreach ($page as $row) {
+			foreach ($result['rows'] as $row) {
 				$rows[] = [
 					'id' => $row['id'],
 					'uuid' => $row['uuid'],
@@ -176,9 +176,13 @@ class ObjectSlugBackfillService {
 					'created' => $row['created'] ?? null,
 					'candidate' => $this->slugHandler->candidate(objectData: $row['object'], schema: $schema, clientSlug: null),
 				];
-				$afterId = $row['id'];
 			}
-		} while (count($page) === self::PAGE_SIZE);
+
+			// Page on the rows the database returned, not on the convertible ones: a
+			// row that could not be converted must not end the scan early. The cursor
+			// moves past it too.
+			$afterId = $result['lastId'];
+		} while ($result['fetched'] === self::PAGE_SIZE);
 
 		// Oldest first as the spec says: `_created`, then `_id`. A row without
 		// `_created` sorts after the dated ones, by `_id`.

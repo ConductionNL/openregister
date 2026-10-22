@@ -6830,13 +6830,22 @@ class MagicMapper extends AbstractObjectMapper {
 	 * the stored slug, `_created` for the oldest-first ordering the caller applies,
 	 * and the business data the slug is built from.
 	 *
+	 * A row that cannot be converted into an object is left out of `rows` and
+	 * logged with its uuid, but still counts in `fetched` and moves `lastId`: the
+	 * caller pages on what the database returned, so one unreadable row neither
+	 * ends the scan early nor is read again.
+	 *
 	 * @param Register $register   The register.
 	 * @param Schema   $schema     The schema.
 	 * @param int      $afterId    Last `_id` of the previous page (0 for the first).
 	 * @param int      $pageSize   Rows per page.
 	 * @param bool     $onlyEmpty  Only rows without a slug.
 	 *
-	 * @return list<array{id: int, uuid: string, slug: string|null, created: string|null, object: array}>
+	 * @return array{
+	 *     rows: list<array{id: int, uuid: string, slug: string|null, created: string|null, object: array}>,
+	 *     fetched: int,
+	 *     lastId: int
+	 * } The convertible rows, how many rows the query returned, and the `_id` of the last one (`$afterId` when none).
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
@@ -6848,7 +6857,7 @@ class MagicMapper extends AbstractObjectMapper {
 		bool $onlyEmpty,
 	): array {
 		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
-			return [];
+			return ['rows' => [], 'fetched' => 0, 'lastId' => $afterId];
 		}
 
 		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
@@ -6872,9 +6881,21 @@ class MagicMapper extends AbstractObjectMapper {
 
 		$result = $qb->executeQuery();
 		$page = [];
+		$fetched = 0;
+		$lastId = $afterId;
 		while (($row = $result->fetch()) !== false) {
+			$fetched++;
+			$lastId = (int)$row[$idCol];
 			$entity = $this->convertRowToObjectEntity(row: $row, _register: $register, _schema: $schema);
 			if ($entity === null) {
+				$this->logger->warning(
+					sprintf(
+						'[ObjectSlug] Backfill skipped object %s in table %s: the row could not be converted into an object',
+						(string)($row[self::METADATA_PREFIX . 'uuid'] ?? '?'),
+						$tableName
+					),
+					['app' => 'openregister', 'path' => 'backfill']
+				);
 				continue;
 			}
 
@@ -6900,7 +6921,7 @@ class MagicMapper extends AbstractObjectMapper {
 		}
 
 		$result->closeCursor();
-		return $page;
+		return ['rows' => $page, 'fetched' => $fetched, 'lastId' => $lastId];
 	}//end findSlugBackfillPage()
 
 	/**
