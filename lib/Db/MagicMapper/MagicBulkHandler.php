@@ -141,6 +141,8 @@ class MagicBulkHandler {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Bulk preparation requires handling multiple data type scenarios
 	 *
 	 * @spec openspec/changes/underscore-properties-and-config-paths/specs/magic-table-reads/spec.md#requirement-a-property-whose-name-starts-with-an-underscore-is-read-as-a-property-req-mtr-001
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
 	 */
 	private function prepareObjectsForDynamicTable(array $objects, Register $register, Schema $schema): array {
 		$prepared = [];
@@ -192,7 +194,7 @@ class MagicBulkHandler {
 				prepared: $preparedObject,
 				selfData: $selfData,
 				object: $object,
-				managedSlug: $this->hasManagedSlugs(schema: $schema)
+				managedSlug: MagicBulkUpsertSql::hasManagedSlugs(schema: $schema)
 			);
 
 			$preparedObject['_version'] = $this->versionHandler->initialVersionFor(candidate: ($selfData['version'] ?? $object['version'] ?? null));
@@ -259,42 +261,21 @@ class MagicBulkHandler {
 	 * @return array<string, mixed> The row with the display columns set.
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `managedSlug` is a fact about the schema, carried to the one column that varies on it.
+	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
 	 */
-	private function withDisplayColumns(
-		array $prepared,
-		array $selfData,
-		array $object,
-		bool $managedSlug=false,
-	): array {
+	private function withDisplayColumns(array $prepared, array $selfData, array $object, bool $managedSlug=false): array {
 		$prepared['_name'] = $selfData['name'] ?? $object['name'] ?? null;
 		$prepared['_description'] = $selfData['description'] ?? $object['description'] ?? null;
 		$prepared['_summary'] = $selfData['summary'] ?? $object['summary'] ?? null;
 		$prepared['_image'] = $selfData['image'] ?? $object['image'] ?? null;
-		$prepared['_slug'] = $selfData['slug'] ?? $object['slug'] ?? null;
-		if ($managedSlug === true && array_key_exists('slug', $selfData) === true) {
-			// The slug decision is final, including an explicit null: falling
-			// back to a top-level `slug` property would undo a collision (#4037).
-			$prepared['_slug'] = $selfData['slug'];
-		}
+		$prepared['_slug'] = MagicBulkUpsertSql::rowSlug(selfData: $selfData, object: $object, managedSlug: $managedSlug);
 
 		$prepared['_uri'] = $selfData['uri'] ?? $object['uri'] ?? null;
 
 		return $prepared;
 	}//end withDisplayColumns()
-
-	/**
-	 * Whether a schema has opted into managed object slugs (`objectSlugField`).
-	 *
-	 * Mirrors ObjectSlugHandler::isManaged(); the bulk writer only needs the fact.
-	 *
-	 * @param Schema $schema The schema.
-	 *
-	 * @return bool True when `objectSlugField` is a non-empty string.
-	 */
-	private function hasManagedSlugs(Schema $schema): bool {
-		$field = ($schema->getConfiguration() ?? [])['objectSlugField'] ?? null;
-		return is_string($field) === true && trim($field) !== '';
-	}//end hasManagedSlugs()
 
 	/**
 	 * Copy an object's expiry into the prepared row's `_expires` column, when it has one.
@@ -483,6 +464,8 @@ class MagicBulkHandler {
 	 * reads only the uuid, and this is how that reaches the query. Inverting it
 	 * into two methods would duplicate the whole chunk path to vary one column
 	 * list.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
 	 */
 	public function bulkUpsert(
 		array $objects,
@@ -524,7 +507,7 @@ class MagicBulkHandler {
 					tableName: $tableName,
 					chunkNumber: ($chunkIndex + 1),
 					needsPreUpdateState: $needsPreUpdateState,
-					freezeSlug: $this->hasManagedSlugs(schema: $schema)
+					freezeSlug: MagicBulkUpsertSql::hasManagedSlugs(schema: $schema)
 				);
 
 				$this->db->commit();
@@ -579,6 +562,8 @@ class MagicBulkHandler {
 	 * the caller, carried to the one statement that varies on it.
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) MagicBulkUpsertSql is a stateless helper of pure functions.
 	 */
 	private function executeUpsertChunk(
 		array $chunk,
@@ -828,33 +813,12 @@ class MagicBulkHandler {
 				continue;
 			}
 
-			if ($column === '_updated') {
-				// Always update the updated timestamp.
-				$updateClauses[] = '`_updated` = NOW()';
-				if ($isPostgres === true) {
-					$updateClauses[count($updateClauses) - 1] = '"_updated" = NOW()';
-				}
-
-				continue;
-			}
-
-			if ($column === '_slug' && $freezeSlug === true) {
-				// A stored slug is frozen (#4037): the slug decision already
-				// keeps it, and this guard also covers a row whose slug was
-				// written between that decision and this upsert.
-				$updateClauses[] = '`_slug` = COALESCE(NULLIF(`_slug`, \'\'), VALUES(`_slug`))';
-				if ($isPostgres === true) {
-					$updateClauses[count($updateClauses) - 1] = "\"_slug\" = COALESCE(NULLIF(\"{$fullTableName}\".\"_slug\", ''), EXCLUDED.\"_slug\")";
-				}
-
-				continue;
-			}
-
-			// Update all other columns.
-			$updateClauses[] = "`{$column}` = VALUES(`{$column}`)";
-			if ($isPostgres === true) {
-				$updateClauses[count($updateClauses) - 1] = "\"{$column}\" = EXCLUDED.\"{$column}\"";
-			}
+			$updateClauses[] = MagicBulkUpsertSql::updateClause(
+				column: $column,
+				isPostgres: $isPostgres,
+				fullTableName: $fullTableName,
+				freezeSlug: $freezeSlug
+			);
 		}//end foreach
 
 		$sql .= implode(', ', $updateClauses);
