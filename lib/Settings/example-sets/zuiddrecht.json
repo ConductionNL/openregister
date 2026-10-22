@@ -107,6 +107,7 @@
 				"uid": "sanne.devries",
 				"displayName": "Sanne de Vries",
 				"givenName": "Sanne",
+				"firstNames": "Sanne Johanna",
 				"prefix": "de",
 				"familyName": "Vries",
 				"email": "sanne.devries@zuiddrecht.example",
@@ -715,7 +716,7 @@
 			"schema": "ingeschreven-persoon",
 			"data": {
 				"burgerservicenummer": "{{cast:sanne.bsn}}",
-				"voornamen": "{{cast:sanne.givenName}}",
+				"voornamen": "{{cast:sanne.firstNames}}",
 				"voorletters": "S.",
 				"geslachtsnaam": "{{cast:sanne.familyName}}",
 				"aanduidingNaamgebruik": "E",

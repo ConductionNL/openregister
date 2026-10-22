@@ -119,6 +119,13 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 			actual: [$plan['cast']['people']['pieterbos']['displayName'], $plan['cast']['people']['henkvisser']['displayName'], $plan['cast']['people']['marieke']['displayName']]
 		);
 		$this->assertSame(expected: 'Beukenlaan', actual: $plan['cast']['people']['henkvisser']['address']['street']);
+		// Sanne's first names as the BRP holds them, which DqContact, PqKlant and PqBriefOpstellen draw
+		// ("Sanne Johanna"); her given name stays "Sanne", the name the portal greets her by, and her
+		// initials stay "S.", which the case lists draw as "S. de Vries".
+		$sanne = $plan['cast']['people']['sanne'];
+		$this->assertSame(expected: ['Sanne Johanna', 'Sanne'], actual: [$sanne['firstNames'], $sanne['givenName']]);
+		$brp = array_column($plan['fragments'][0]['objects'], 'data', 'key')['brp-sanne'];
+		$this->assertSame(expected: ['{{cast:sanne.firstNames}}', 'S.'], actual: [$brp['voornamen'], $brp['voorletters']]);
 		// The handler the dossiq boards draw as "u", who owns a saved view.
 		$pieter = $plan['cast']['people']['pieter'];
 		$this->assertSame(
