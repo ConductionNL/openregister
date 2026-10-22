@@ -890,6 +890,43 @@ class ObjectWriteNodeTest extends TestCase {
 		);
 	}//end testADeleteBatchReportsItsDeletedCount()
 
+	/**
+	 * A delete the service reports as failed is not counted as deleted.
+	 *
+	 * `deleteObject()` catches an exception inside the delete and returns
+	 * `false` instead of throwing. The node used to discard that result and
+	 * count the item anyway, so the run log said "deleted 1" for an object
+	 * that was still there. Pins that the tally and the output item both
+	 * follow the service's answer.
+	 *
+	 * @return void
+	 */
+	public function testADeleteTheServiceReportsAsFailedIsNotCountedAsDeleted(): void {
+		$this->tableOf([['uuid' => 'u-kept', 'data' => ['sourceId' => 'r1']]]);
+		$this->objects->expects($this->once())->method('deleteObject')->willReturn(false);
+
+		$report = new FlowStepReport();
+
+		$out = $this->node->execute(
+			$this->items([['retiredId' => 'r1']]),
+			$this->deleteConfig(),
+			$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
+		);
+
+		$this->assertFalse($out[0]['json']['deleted'], 'the output item must not claim a removal that failed');
+		$this->assertSame(
+			[
+				'write' => [
+					'created' => ['count' => 0],
+					'updated' => ['count' => 0],
+					'deleted' => ['count' => 0],
+				],
+			],
+			$report->take()
+		);
+
+	}//end testADeleteTheServiceReportsAsFailedIsNotCountedAsDeleted()
+
 	public function testADeleteMatchingNothingErrorsByDefault(): void {
 		$this->tableOf([]);
 		$this->objects->expects($this->never())->method('deleteObject');

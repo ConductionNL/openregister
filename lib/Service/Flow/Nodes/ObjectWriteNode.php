@@ -1405,8 +1405,10 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * OP_DELETE never touches $created/$updated (it `continue`s before
 	 * reaching them), so for a delete batch $writes already IS the deleted
-	 * count — executeDelete() only increments it on an actual delete, never
-	 * on an onNoMatch=skip. No separate counter is threaded through the loop.
+	 * count — executeDelete() only increments it when deleteObject() reports
+	 * an actual removal (returns true), never on an onNoMatch=skip and never
+	 * on a delete the service reports as failed (returns false). No separate
+	 * counter is threaded through the loop.
 	 *
 	 * @param array $context The run context.
 	 * @param int $created Items created.
@@ -1593,14 +1595,22 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		// acting user and the register / schema scope confining the lookup to
 		// one magic table. No `_retentionSweep`; see `permanenceOf()` for why
 		// the soft delete is the default and what opts out of it.
-		$this->objects->deleteObject(
+		//
+		// The service reports a delete it caught an exception on as `false`
+		// rather than throwing, so the result is what says whether anything
+		// was removed. Only a real removal counts as a write (and towards the
+		// cap and the `deleted` tally); a failed one stays in the run as an
+		// item marked `deleted: false`, like a skipped one.
+		$deleted = $this->objects->deleteObject(
 			uuid: $uuid,
 			register: $register,
 			schema: $schema,
 			currentUser: $owner,
 			permanent: $this->permanenceOf(config: $config)
 		);
-		$writes++;
+		if ($deleted === true) {
+			$writes++;
+		}
 
 		// Through `outputJson()`, exactly like every non-delete write. Without
 		// it a delete was the one operation that could not carry its incoming
@@ -1617,7 +1627,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 					'uuid' => $uuid,
 					'register' => $this->identifierOf(register: $register),
 					'schema' => $this->labelOf(schema: $schema),
-					'deleted' => true,
+					'deleted' => $deleted,
 				],
 				config: $config
 			),
