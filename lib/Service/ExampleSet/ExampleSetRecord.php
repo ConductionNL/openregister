@@ -61,6 +61,8 @@ class ExampleSetRecord {
 		'tasks'         => [],
 		'views'         => [],
 		'watchers'      => [],
+		'notes'         => [],
+		'readStates'    => [],
 	];
 
 	/**
@@ -118,6 +120,8 @@ class ExampleSetRecord {
 		$record['tasks']         = array_filter((array) ($decoded['tasks'] ?? []), 'is_array');
 		$record['views']         = array_filter((array) ($decoded['views'] ?? []), 'is_array');
 		$record['watchers']      = array_filter((array) ($decoded['watchers'] ?? []), 'is_array');
+		$record['notes']         = array_filter((array) ($decoded['notes'] ?? []), 'is_array');
+		$record['readStates']    = array_filter((array) ($decoded['readStates'] ?? []), 'is_array');
 
 		return $record;
 	}//end read()

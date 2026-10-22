@@ -36,6 +36,13 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates;
+use OCA\OpenRegister\Db\ObjectReadState;
+use OCA\OpenRegister\Db\ObjectReadStateMapper;
+use OCP\Comments\IComment;
+use OCP\Comments\ICommentsManager;
+use OCP\Comments\NotFoundException as CommentNotFoundException;
 use OCA\OpenRegister\Db\Watcher;
 use OCA\OpenRegister\Db\WatcherMapper;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds;
@@ -120,6 +127,12 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<string, Watcher> The follows, by `<user> <object uuid>`. */
 	protected array $follows = [];
 
+	/** @var array<string, array{user: string, object: string, message: string, createdAt: \DateTime|null}> The notes, by comment id. */
+	protected array $notes = [];
+
+	/** @var array<string, \DateTime> The read states, by `<user> <object uuid>`: when the object was seen. */
+	protected array $readStates = [];
+
 	/** @var array<string, View> The saved views, by uuid. */
 	protected array $savedViews = [];
 
@@ -153,6 +166,8 @@ abstract class ExampleSetTestCase extends TestCase {
 			ViewService::class        => $this->viewService(),
 			ViewMapper::class         => $this->viewMapper(),
 			WatcherMapper::class      => $this->watcherMapper(),
+			ICommentsManager::class   => $this->commentsManager(),
+			ObjectReadStateMapper::class => $this->readStateMapper(),
 		});
 		$files     = new ExampleSetFiles(container: $container);
 		$setConfig = new ExampleSetAppConfig(appConfig: $this->appConfigOfApps(), random: $this->random());
@@ -212,7 +227,9 @@ abstract class ExampleSetTestCase extends TestCase {
 			engineRows: new ExampleSetEngineKinds(
 				tasks: new ExampleSetTasks(container: $container),
 				views: new ExampleSetViews(container: $container),
-				watchers: new ExampleSetWatchers(container: $container)
+				watchers: new ExampleSetWatchers(container: $container),
+				notes: new ExampleSetNotes(container: $container),
+				readStates: new ExampleSetReadStates(container: $container)
 			)
 		);
 		$this->remover   = new ExampleSetRemover(
@@ -228,7 +245,9 @@ abstract class ExampleSetTestCase extends TestCase {
 			engineRows: new ExampleSetEngineKinds(
 				tasks: new ExampleSetTasks(container: $container),
 				views: new ExampleSetViews(container: $container),
-				watchers: new ExampleSetWatchers(container: $container)
+				watchers: new ExampleSetWatchers(container: $container),
+				notes: new ExampleSetNotes(container: $container),
+				readStates: new ExampleSetReadStates(container: $container)
 			)
 		);
 	}
@@ -365,6 +384,78 @@ abstract class ExampleSetTestCase extends TestCase {
 		$mapper->method('delete')->willReturnCallback(function (View $view): View {
 			unset($this->savedViews[(string) $view->getUuid()]);
 			return $view;
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * A comments manager over $notes, keyed by comment id.
+	 *
+	 * @return ICommentsManager
+	 */
+	private function commentsManager(): ICommentsManager {
+		$pending = [];
+		$manager = $this->createMock(ICommentsManager::class);
+		$manager->method('create')->willReturnCallback(function (string $actorType, string $actorId, string $objectType, string $objectId) use (&$pending): IComment {
+			$state   = new \ArrayObject(['user' => $actorId, 'object' => $objectId, 'message' => '', 'createdAt' => null, 'id' => '']);
+			$comment = $this->createMock(IComment::class);
+			$comment->method('setMessage')->willReturnCallback(function (string $message) use ($state, $comment): IComment {
+				$state['message'] = $message;
+				return $comment;
+			});
+			$comment->method('setVerb')->willReturn($comment);
+			$comment->method('setCreationDateTime')->willReturnCallback(function (\DateTime $at) use ($state, $comment): IComment {
+				$state['createdAt'] = $at;
+				return $comment;
+			});
+			$comment->method('getId')->willReturnCallback(fn (): string => (string) $state['id']);
+			$pending[spl_object_id($comment)] = $state;
+			return $comment;
+		});
+		$manager->method('save')->willReturnCallback(function (IComment $comment) use (&$pending): bool {
+			$state       = $pending[spl_object_id($comment)];
+			$state['id'] = (string) (count($this->notes) + 100);
+			$this->notes[$state['id']] = ['user' => $state['user'], 'object' => $state['object'], 'message' => $state['message'], 'createdAt' => $state['createdAt']];
+			return true;
+		});
+		$manager->method('get')->willReturnCallback(function (string $id): IComment {
+			if (isset($this->notes[$id]) === false) {
+				throw new CommentNotFoundException();
+			}
+
+			return $this->createMock(IComment::class);
+		});
+		$manager->method('delete')->willReturnCallback(function (string $id): bool {
+			if (isset($this->notes[$id]) === false) {
+				throw new CommentNotFoundException();
+			}
+
+			unset($this->notes[$id]);
+			return true;
+		});
+
+		return $manager;
+	}
+
+	/**
+	 * A read-state mapper over $readStates, keyed `<user> <object uuid>`.
+	 *
+	 * @return ObjectReadStateMapper
+	 */
+	private function readStateMapper(): ObjectReadStateMapper {
+		$mapper = $this->createMock(ObjectReadStateMapper::class);
+		$mapper->method('markSeen')->willReturnCallback(
+			function (string $userId, string $objectUuid, ?string $register = null, ?string $schema = null, ?array $subSeen = null, ?\DateTime $seenAt = null): ObjectReadState {
+				$this->readStates[$userId.' '.$objectUuid] = ($seenAt ?? new \DateTime());
+				return new ObjectReadState();
+			}
+		);
+		$mapper->method('findOne')->willReturnCallback(fn (string $userId, string $objectUuid): ?ObjectReadState => (isset($this->readStates[$userId.' '.$objectUuid]) === true ? new ObjectReadState() : null));
+		$mapper->method('markUnread')->willReturnCallback(function (string $userId, string $objectUuid): bool {
+			$had = isset($this->readStates[$userId.' '.$objectUuid]);
+			unset($this->readStates[$userId.' '.$objectUuid]);
+			return $had;
 		});
 
 		return $mapper;
