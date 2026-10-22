@@ -1469,14 +1469,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @param array $config The step configuration.
 	 *
 	 * @return array The outgoing json.
-	 *
-	 * Protected rather than private solely so a test can override it on a
-	 * partial mock, to prove the writeReport() ordering contract: this is the
-	 * last step inside both writeItems()'s and writeBulk()'s per-item work
-	 * before an output item is complete, so a failure here is the most
-	 * direct way to pin "no report when output processing fails".
 	 */
-	protected function outputJson(array $incoming, array $written, array $config): array {
+	private function outputJson(array $incoming, array $written, array $config): array {
 		$key = trim((string)($config['output'] ?? ''));
 		if ($key === '') {
 			return $written;

@@ -1736,52 +1736,33 @@ class ObjectWriteNodeTest extends TestCase {
 	 * Regression coverage for the writeReport() ordering contract (review
 	 * feedback on #4772): if output processing throws after the bulk write
 	 * already succeeded, no report is written — a report describes a
-	 * COMPLETED node execution, not "objects were persisted". outputJson()
-	 * is `protected` (see its own docblock) purely so this test can force
-	 * that failure on a partial mock: every other step inside the bulk
-	 * output loop is pure array manipulation with no real-world failure
-	 * path of its own.
+	 * COMPLETED node execution, not "objects were persisted".
+	 *
+	 * Reaches the real failure through the public `execute()` surface rather
+	 * than mocking a step of the node under test, specifically to avoid
+	 * widening any method's visibility for testability alone: `outputJson()`
+	 * casts `config.output` with `(string)`, and PHP's own string-conversion
+	 * rule turns a non-stringable OBJECT there into a real, uncatchable-by-
+	 * the-node `\Error` — a genuine failure inside the real output-processing
+	 * code, not a stand-in for one.
 	 *
 	 * @return void
 	 */
 	public function testNoReportIsWrittenWhenBulkOutputProcessingFails(): void {
-		$registers = $this->createMock(RegisterMapper::class);
-		$registers->method('find')->willReturn($this->register);
-
-		$schemas = $this->createMock(SchemaMapper::class);
-		$schemas->method('findBySlugInIds')->willReturn($this->schema);
-		$schemas->method('find')->willReturn($this->schema);
-
-		$l10n = $this->createMock(IL10N::class);
-		$l10n->method('t')->willReturnCallback(
-			static function (string $text, array $parameters = []): string {
-				if ($parameters === []) {
-					return $text;
-				}
-
-				return vsprintf(str_replace(['%s', '%1$s', '%2$s'], ['%s', '%1$s', '%2$s'], $text), $parameters);
-			}
-		);
-
-		$urls = $this->createMock(IURLGenerator::class);
-
-		$node = $this->getMockBuilder(ObjectWriteNode::class)
-			->setConstructorArgs([$this->objects, $registers, $schemas, $this->userManager, $this->appConfig, $l10n, $urls])
-			->onlyMethods(['outputJson'])
-			->getMock();
-		$node->method('outputJson')->willThrowException(new RuntimeException('boom'));
-
 		$this->objects->method('saveObjects')->willReturn($this->bulkResult());
 
 		$report = new FlowStepReport();
 
-		$this->expectException(RuntimeException::class);
-		$this->expectExceptionMessage('boom');
+		$this->expectException(\Error::class);
+		$this->expectExceptionMessage('could not be converted to string');
 
 		try {
-			$node->execute(
+			$this->node->execute(
 				$this->items([['title' => 'a']]),
-				$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
+				// `output` is normally a string key name; an object here has
+				// no business meaning — it exists purely to make outputJson()'s
+				// `(string)` cast fail with a real PHP `\Error`.
+				$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}'], 'output' => new \stdClass()]),
 				$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
 			);
 		} finally {
