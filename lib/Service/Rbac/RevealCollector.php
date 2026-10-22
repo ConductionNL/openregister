@@ -175,6 +175,10 @@ class RevealCollector {
 	 *
 	 * @return void
 	 *
+	 * @orphaned-write-capability exclude D-3 of sensitive-field-reveal-audit: no trusted
+	 *   internal run (export job, retention sweep) reports its reveals yet; the caller
+	 *   lands with that run-level hook.
+	 *
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
 	 */
 	public function recordProcess(string $process, string $runId, int $revealed): void {
