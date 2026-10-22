@@ -64,7 +64,7 @@ the same dot paths and templates as `objectNameField`; the value is slugified
   resolves an object identifier; the matching uuids go to the log. An exact match on an
   object's id or uuid wins over a slug that happens to look the same (a slug `2024` next to
   the object with id 2024, a slug equal to another object's uuid), and a numeric identifier
-  is read as an integer (`007` is id 7); only when no single row is matched by its id or
+  is an id only when it is a canonical integer (`2024`; `007` is a slug, not id 7); only when no single row is matched by its id or
   uuid is the identifier ambiguous.
 - **Existing objects** get their slugs from
   `occ openregister:backfill-slugs <register> <schema>` (oldest first; existing

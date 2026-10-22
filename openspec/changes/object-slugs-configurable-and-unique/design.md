@@ -263,7 +263,7 @@ together, so a slug can equal another object's id or uuid: the row matched by it
 `_uuid` wins over rows matched by a slug, and the identifier is ambiguous only when no
 single row is. The query orders those rows first and reads at most 50 (`ORDER BY` a CASE on
 the id/uuid match, then `_id`), so the pick never depends on which rows a cut-off kept; a
-numeric identifier is cast to an integer the same way in the query and in the pick (`007` is id 7).
+identifier counts as an id only when it is a canonical non-negative integer, the same rule in the query and in the pick (`007` is a slug, not id 7).
 
 *Alternative rejected:* checking in `ObjectService` (the plan's ~6321). The service does
 not see the rows, so it would need a second query. The mapper already holds both rows.

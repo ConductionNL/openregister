@@ -6520,10 +6520,7 @@ class MagicMapper extends AbstractObjectMapper {
 		$qb->select('*')->from($tableName, 't');
 
 		// Build identifier conditions (ID, UUID, slug, or URI).
-		$idParam = -1;
-		if (is_numeric($identifier) === true) {
-			$idParam = (int)$identifier;
-		}
+		$idParam = ($this->identifierAsId(identifier: $identifier) ?? -1);
 
 		$idCol = 't.' . self::METADATA_PREFIX . 'id';
 		$uuidCol = 't.' . self::METADATA_PREFIX . 'uuid';
@@ -6656,6 +6653,26 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end findInRegisterSchemaTable()
 
 	/**
+	 * The object id an identifier names, when it is a canonical non-negative integer.
+	 *
+	 * `2024` is an id; `007`, `7.0`, `1e3` and `7 ` are not, they can only be a slug
+	 * (or uuid or uri). The query's id condition and the precedence pick both use this,
+	 * so a non-canonical number never reaches an id and never beats an exact slug match.
+	 *
+	 * @param string|int $identifier The identifier the caller sent.
+	 *
+	 * @return int|null The id, or null when the identifier is not a canonical integer.
+	 */
+	private function identifierAsId(string|int $identifier): ?int {
+		$text = (string)$identifier;
+		if (ctype_digit($text) === false || (string)(int)$text !== $text) {
+			return null;
+		}
+
+		return (int)$text;
+	}//end identifierAsId()
+
+	/**
 	 * Pick the row an identifier means among the rows it matched.
 	 *
 	 * One row is the answer. Several rows: the one whose `_id` or `_uuid` is the
@@ -6676,11 +6693,11 @@ class MagicMapper extends AbstractObjectMapper {
 
 		$byKey = [];
 		foreach ($rows as $row) {
-			// The same reading of the identifier as the query's id condition: any numeric
-			// identifier is cast to an integer, so `007` is the object with id 7.
-			$isId = is_numeric($identifier) === true
+			// The same reading of the identifier as the query's id condition.
+			$idParam = $this->identifierAsId(identifier: $identifier);
+			$isId = $idParam !== null
 				&& isset($row[self::METADATA_PREFIX . 'id']) === true
-				&& (int)$row[self::METADATA_PREFIX . 'id'] === (int)$identifier;
+				&& (int)$row[self::METADATA_PREFIX . 'id'] === $idParam;
 			$isUuid = strcasecmp((string)($row[self::METADATA_PREFIX . 'uuid'] ?? ''), (string)$identifier) === 0;
 			if ($isId === true || $isUuid === true) {
 				$byKey[] = $row;

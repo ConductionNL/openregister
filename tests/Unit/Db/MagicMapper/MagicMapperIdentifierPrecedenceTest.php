@@ -63,12 +63,15 @@ class MagicMapperIdentifierPrecedenceTest extends TestCase {
 		$this->assertSame($byUuid, $this->pick([$bySlug, $byUuid], $uuid));
 	}
 
-	public function testAZeroPaddedIdentifierIsTheIdTheQueryMatchedItBy(): void {
-		// Review finding r2routes-f8: the query casts `007` to id 7; the picker reads it the same way.
-		$bySlug = $this->row(3, 'aaaa', '007');
+	public function testOnlyACanonicalIntegerIsAnId(): void {
+		// Review finding pp-f2: `007`, `7.0`, `1e1` and `7 ` are slugs, never the object with id 7 or 10.
 		$byId = $this->row(7, 'bbbb', 'other');
+		$bySlug = $this->row(3, 'aaaa', '007');
+		foreach (['007', '7.0', '1e1', '7 '] as $identifier) {
+			$this->assertNull($this->pick([$bySlug, $byId], $identifier), $identifier);
+		}
 
-		$this->assertSame($byId, $this->pick([$bySlug, $byId], '007'));
+		$this->assertSame($byId, $this->pick([$bySlug, $byId], '7'));
 	}
 
 	public function testTwoSlugHoldersAreAmbiguous(): void {

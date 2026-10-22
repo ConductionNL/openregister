@@ -258,8 +258,9 @@ matching uuids.
 
 An exact match on the object's numeric `_id` or `_uuid` MUST win over a slug match: a
 slug that equals another object's id (`2024`) or uuid does not make that object
-unreachable. A numeric identifier is read as the integer the query matches it by, so
-`007` is the object with id 7. Only when no single row is matched by its id or uuid,
+unreachable. Only a canonical non-negative integer (digits only, no leading zero, such as `2024`)
+is an object id; `007`, `7.0`, `1e3` and `7 ` are never read as an id, so they can only
+match a slug, uuid or uri. Only when no single row is matched by its id or uuid,
 because several rows hold the slug, is the identifier ambiguous. The lookup reads at
 most 50 rows, rows matched by id or uuid first and the rest in id order, and a result cut
 by that limit stays ambiguous.
@@ -281,10 +282,11 @@ by that limit stays ambiguous.
 - **WHEN** `GET /api/objects/{register}/{schema}/<that uuid>` is requested
 - **THEN** the response MUST be HTTP 200 with object B
 
-#### Scenario: A zero-padded number is the id
+#### Scenario: A zero-padded number is a slug, not an id
 - **GIVEN** object A holds slug `007` and object B has numeric id 7
 - **WHEN** `GET /api/objects/{register}/{schema}/007` is requested
-- **THEN** the response MUST be HTTP 200 with object B
+- **THEN** the response MUST be HTTP 200 with object A
+- **AND** `GET .../7` MUST return object B
 
 #### Scenario: Several slug holders stay ambiguous, also beyond the row limit
 - **GIVEN** 60 objects hold slug `hello-world` and none has that id or uuid

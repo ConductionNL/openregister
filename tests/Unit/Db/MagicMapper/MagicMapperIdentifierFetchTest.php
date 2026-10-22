@@ -57,6 +57,9 @@ class MagicMapperIdentifierFetchTest extends TestCase {
 	/** @var list<array<string, mixed>> Rows handed to the conversion. */
 	private array $converted = [];
 
+	/** @var list<int> The values bound to the id condition. */
+	private array $idParams = [];
+
 	private int $identifierId = 0;
 
 	private string $identifierText = '';
@@ -147,7 +150,11 @@ class MagicMapperIdentifierFetchTest extends TestCase {
 			}
 		);
 		$qb->method('createNamedParameter')->willReturnCallback(
-			static function ($value, $type = null): string {
+			function ($value, $type = null): string {
+				if ($type === IQueryBuilder::PARAM_INT) {
+					$this->idParams[] = $value;
+				}
+
 				return ':p' . (is_scalar($value) ? $value : '');
 			}
 		);
@@ -261,13 +268,22 @@ class MagicMapperIdentifierFetchTest extends TestCase {
 		$this->find('hello');
 	}//end testMoreThanFiftySlugHoldersStayAmbiguous()
 
-	public function testAZeroPaddedIdentifierIsTheObjectWithThatIdNotAmbiguous(): void {
-		// Review finding r2routes-f8: `007` reaches id 7 through the query's integer cast,
-		// and a slug `007` next to it must not make the lookup ambiguous.
-		$this->matching = [['_id' => 3, '_uuid' => 'uuid-3', '_slug' => '007'], ['_id' => 7, '_uuid' => 'uuid-7', '_slug' => 'other']];
+	public function testAZeroPaddedIdentifierIsASlugNotAnId(): void {
+		// Review finding pp-f2: `007` is not the canonical integer 7. The id condition is bound to
+		// -1 (it matches nothing), so the object with slug `007` is the answer.
+		$this->matching = [['_id' => 3, '_uuid' => 'uuid-3', '_slug' => '007']];
 
 		$entity = $this->find('007');
 
-		$this->assertSame('uuid-7', $entity->getUuid());
-	}//end testAZeroPaddedIdentifierIsTheObjectWithThatIdNotAmbiguous()
+		$this->assertSame('uuid-3', $entity->getUuid());
+		$this->assertSame([-1], $this->idParams);
+	}//end testAZeroPaddedIdentifierIsASlugNotAnId()
+
+	public function testACanonicalIntegerIsBoundAsTheId(): void {
+		$this->matching = [['_id' => 7, '_uuid' => 'uuid-7', '_slug' => 'x']];
+
+		$this->find('7');
+
+		$this->assertSame([7], $this->idParams);
+	}//end testACanonicalIntegerIsBoundAsTheId()
 }//end class
