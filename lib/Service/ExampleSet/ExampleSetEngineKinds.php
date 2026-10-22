@@ -166,6 +166,11 @@ class ExampleSetEngineKinds {
 	 * @return array<string, array{0: ExampleSetEngineRows|null, 1: string}>
 	 */
 	private function kinds(): array {
-		return ['tasks' => [$this->tasks, 'task'], 'views' => [$this->views, 'view'], 'watchers' => [$this->watchers, 'watcher'], 'parties' => [$this->parties, 'party']];
+		return [
+			'tasks'    => [$this->tasks, 'task'],
+			'views'    => [$this->views, 'view'],
+			'watchers' => [$this->watchers, 'watcher'],
+			'parties'  => [$this->parties, 'party'],
+		];
 	}//end kinds()
 }//end class
