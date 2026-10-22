@@ -3413,6 +3413,58 @@ class AuditTrailMapper extends QBMapper {
 	}//end createExportEntry()
 
 	/**
+	 * Create one immutable, hash-chained audit record for a slug backfill run.
+	 *
+	 * The backfill (`occ openregister:backfill-slugs`, with or without
+	 * `--reslug`) writes the slug column directly: no per-object version and no
+	 * per-object audit row. This single entry per run keeps the change
+	 * reconstructable: it lists every object whose slug changed with the old and
+	 * the new value. Hangs on the register and schema, not on an object, like
+	 * {@see createExportEntry()}.
+	 *
+	 * @param string $mode `fill` or `reslug`.
+	 * @param list<array{uuid: string, old: ?string, new: ?string}> $changes Every slug the run wrote.
+	 * @param array<string, mixed> $summary The run's counters.
+	 * @param int|null $register Register id.
+	 * @param int|null $schema Schema id.
+	 *
+	 * @return AuditTrail The persisted, hash-chained entry.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is the standard Symfony UID pattern, as createExportEntry.
+	 */
+	public function createSlugBackfillEntry(
+		string $mode,
+		array $changes,
+		array $summary,
+		?int $register = null,
+		?int $schema = null,
+	): AuditTrail {
+		$userId = 'system';
+		$userName = 'System';
+		$user = $this->userSession->getUser();
+		if ($user !== null) {
+			$userId = $user->getUID();
+			$userName = $user->getDisplayName();
+		}
+
+		$auditTrail = new AuditTrail();
+		$auditTrail->setUuid((string)Uuid::v4());
+		$auditTrail->setAction('slug.backfill.' . $mode);
+		// `changed` is NOT NULL and QBMapper writes only the fields a setter touched.
+		$auditTrail->setChanged([]);
+		$auditTrail->setRegister($register);
+		$auditTrail->setSchema($schema);
+		$auditTrail->setResultSummary(['mode' => $mode, 'summary' => $summary, 'changes' => $changes]);
+		$auditTrail->setUser($userId);
+		$auditTrail->setUserName($userName);
+		$auditTrail->setCreated(new DateTime());
+
+		return $this->insertHashChained(auditTrail: $auditTrail);
+	}//end createSlugBackfillEntry()
+
+	/**
 	 * The objects one user read most recently, newest first.
 	 *
 	 * One row per object: the latest `read` entry this user has on the audit

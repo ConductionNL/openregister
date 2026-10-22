@@ -256,12 +256,21 @@ slug to every live object that has none, oldest object first (by `_created`, the
 change an object that already holds a slug. With `--reslug` it MUST recompute the slug
 of every live object from the current source field, oldest object first, so an
 administrator can follow up a switch of `objectSlugField`. An object whose source field
-is empty keeps its current slug. In both modes it MUST report every slug that more than
+is empty keeps its current slug. An object whose recomputed slug another live object
+already holds MUST keep its current slug too (with `objectSlugSuffix` on it gets the
+suffixed slug instead), and the console, the plan and a log warning MUST report it as
+kept because of a collision; the run MUST NOT hand an object a slug that another object
+still carries. In both modes it MUST report every slug that more than
 one live object holds before the run, as a log warning and a console line naming the
 slug and the uuids. In default mode it MUST leave those duplicates unchanged. With
 `--dry-run` it MUST report what it would change without writing. The command MUST be
 idempotent: a second run in the same mode changes nothing. It writes the slug column
-directly. It does not bump the object version and does not dispatch object events.
+directly, in transactions of at most 500 rows. It does not bump the object version, does
+not write a per-object audit-trail entry and does not dispatch object events. Instead,
+every run that is not a dry run MUST write exactly one audit-trail entry
+(`slug.backfill.fill` or `slug.backfill.reslug`, on the register and schema) that lists
+every object whose slug it changed as uuid, old slug and new slug, so a `--reslug` stays
+reconstructable.
 
 #### Scenario: Default mode fills only empty slugs
 - **GIVEN** a schema with `objectSlugField: "title"` holding object A with slug `a-title` and object B without a slug and `title: "B Title"`
@@ -285,6 +294,21 @@ directly. It does not bump the object version and does not dispatch object event
 - **AND** object A with `kenmerk: "K-1"`, `title: "Hello World"` and slug `k-1`
 - **WHEN** `occ openregister:backfill-slugs <register> <schema> --reslug` runs
 - **THEN** A's slug MUST be `hello-world`
+
+#### Scenario: Reslug keeps the slug of an object whose new slug is taken
+- **GIVEN** objects A (older) and B in one register and schema, both with `title: "Foo"`, B holding the slug `foo` and A holding `old-a`
+- **AND** `objectSlugSuffix` is off
+- **WHEN** `occ openregister:backfill-slugs <register> <schema> --reslug` runs
+- **THEN** B MUST still hold `foo` and A MUST still hold `old-a`
+- **AND** the plan MUST NOT list B, and the console and a log warning MUST name A as kept because of a collision with B
+- **AND** a second run MUST change nothing
+
+#### Scenario: A run leaves one audit-trail entry
+- **GIVEN** a `--reslug` run that changes the slugs of objects A and B
+- **WHEN** the run finishes
+- **THEN** exactly one audit-trail entry MUST exist for it, listing A and B with old and new slug
+- **AND** no object's version MUST have changed
+- **AND** a `--dry-run` MUST write no entry
 
 #### Scenario: Dry run writes nothing
 - **GIVEN** an object without a slug in a schema with `objectSlugField`

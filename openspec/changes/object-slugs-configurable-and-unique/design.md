@@ -280,18 +280,24 @@ occ openregister:backfill-slugs <register> <schema> [--reslug] [--dry-run]
   `ObjectSlugHandler::candidate()`, then the uniqueness and suffix rules against an
   in-memory set of all live slugs in the table, loaded once and updated as slugs are
   assigned.
-- **`--reslug`:** computes the target slug of every live row oldest first. A row whose
-  source is empty keeps its current slug, and that slug stays reserved. The first row
-  that wants a slug gets it. Later rows get the suffix or no slug, logged as collisions.
-  The computed plan is written in one transaction.
+- **`--reslug`:** computes the target slug of every live row oldest first. Every stored
+  slug stays reserved for its holder until the holder moves, so no object is given a
+  slug another object still carries. A row whose source is empty keeps its slug. A row
+  whose new slug is held by another object keeps its current slug (reported as kept
+  because of a collision) or, with the suffix on, gets the suffixed slug. The walk
+  repeats until nothing moves, so an object waiting for another to vacate a slug is
+  placed in a later pass and a second run finds nothing to do. The plan is written in
+  transactions of 500 rows.
 - **`--dry-run`:** prints the plan (`<uuid>: "<old>" -> "<new>"`) and writes nothing.
 - **Writes:** `MagicMapper::updateSlugColumn(Register, Schema, string $uuid, ?string $slug)`
   issues `UPDATE <table> SET _slug = ? WHERE _uuid = ?` and evicts the object from the
-  object cache. It does not bump `_version`, write an audit-trail entry or dispatch an
-  object event, the same as `openregister:backfill-system-owner`. The slug is derived
-  metadata, and a few thousand events from one maintenance run would fan out to every
-  listener.
-- **Summary line:** `scanned=<n> assigned=<n> changed=<n> collisions=<n> unchanged=<n> duplicates=<n>`.
+  object cache. It does not bump `_version`, write a per-object audit-trail entry or
+  dispatch an object event, the same as `openregister:backfill-system-owner`. The slug is
+  derived metadata, and a few thousand events from one maintenance run would fan out to
+  every listener. Because it replaces a business-visible identifier, every non-dry run
+  writes one audit-trail entry (`AuditTrailMapper::createSlugBackfillEntry`) with the
+  old to new list of that run.
+- **Summary line:** `scanned=<n> assigned=<n> changed=<n> collisions=<n> kept=<n> unchanged=<n> duplicates=<n> skipped=<n>`.
 - **Idempotent:** default mode only selects empty slugs, and in `--reslug` a second run
   computes the same plan, which is all "unchanged".
 

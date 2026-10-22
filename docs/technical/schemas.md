@@ -65,9 +65,13 @@ the same dot paths and templates as `objectNameField`; the value is slugified
   slugs are left alone, duplicates are reported, not changed). After switching the slug
   field, run it with `--reslug` to rewrite the slugs from the new field. `--reslug` is
   the only way a set slug changes: links, bookmarks and external references that use an
-  old slug stop working. A new slug that another object already holds is not written;
-  without `objectSlugSuffix` that object is left without a slug. Use `--dry-run` to see
-  the plan first.
+  old slug stop working. An object whose new slug another object already holds
+  keeps its current slug (reported as kept because of a collision; with
+  `objectSlugSuffix` it gets the suffixed slug). The backfill writes the slug column
+  directly: no per-object version or audit entry and no object events, but every run
+  that is not a dry run writes one audit-trail entry (`slug.backfill.fill` or
+  `slug.backfill.reslug`) listing each changed object with its old and new slug. Use
+  `--dry-run` to see the plan first.
 
 A schema without `objectSlugField` keeps the old behaviour: no slug unless a client
 sends one, and no uniqueness check.

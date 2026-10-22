@@ -73,6 +73,7 @@ class BackfillObjectSlugsCommand extends Command {
 			->setDescription(
 				'Fill missing object slugs of one register and schema from the schema\'s objectSlugField; '
 				. 'by default existing slugs are left alone and duplicates are reported, not changed. '
+				. 'No per-object version or event is written; one audit-trail entry per run lists the changes. '
 				. 'With --reslug existing slugs ARE rewritten, and links built on the old slugs stop working.'
 			)
 			->addArgument('register', InputArgument::REQUIRED, 'Register (id, uuid or slug)')
@@ -84,8 +85,10 @@ class BackfillObjectSlugsCommand extends Command {
 				'Recompute every slug from the current objectSlugField (after switching the field); '
 				. 'objects with an empty source keep their slug. This is the only way a set slug changes: '
 				. 'links, bookmarks and external references that use an old slug stop working. '
-				. 'A new slug that another object already holds is not written: without objectSlugSuffix '
-				. 'the object loses its slug. Run with --dry-run first'
+				. 'An object whose new slug another object already holds keeps its current slug (with '
+				. 'objectSlugSuffix it gets the suffixed slug) and is reported as kept. Every run that is not a '
+				. 'dry run writes one audit-trail entry listing the old and new slug of each changed object. '
+				. 'Run with --dry-run first'
 			)
 			->addOption('dry-run', null, InputOption::VALUE_NONE, 'Print the plan without writing anything');
 	}//end configure()
@@ -155,6 +158,18 @@ class BackfillObjectSlugsCommand extends Command {
 			);
 		}
 
+		foreach ($result['kept'] as $kept) {
+			$output->writeln(
+				sprintf(
+					'<comment>kept %s: "%s" (wanted "%s", held by %s)</comment>',
+					$kept['uuid'],
+					$kept['slug'],
+					$kept['wanted'],
+					$kept['holder']
+				)
+			);
+		}
+
 		$summary = $result['summary'];
 		$dryRunNote = '';
 		if ($dryRun === true) {
@@ -163,11 +178,12 @@ class BackfillObjectSlugsCommand extends Command {
 
 		$output->writeln(
 			sprintf(
-				'<info>scanned=%d assigned=%d changed=%d collisions=%d unchanged=%d duplicates=%d skipped=%d%s</info>',
+				'<info>scanned=%d assigned=%d changed=%d collisions=%d kept=%d unchanged=%d duplicates=%d skipped=%d%s</info>',
 				$summary['scanned'],
 				$summary['assigned'],
 				$summary['changed'],
 				$summary['collisions'],
+				$summary['kept'],
 				$summary['unchanged'],
 				$summary['duplicates'],
 				$summary['skipped'],

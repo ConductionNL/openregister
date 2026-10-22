@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 
 use InvalidArgumentException;
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -42,12 +44,17 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 	/** @var list<array{string, ?string}> Slug writes as [uuid, slug]. */
 	private array $writes = [];
 
+	/** @var list<array> Audit entries as the arguments of createSlugBackfillEntry. */
+	private array $audits = [];
+
 	/** @var list<string> Logged warnings. */
 	private array $warnings = [];
 
 	private Register $register;
 
 	private ObjectSlugBackfillService $service;
+
+	private AuditTrailMapper $auditTrailMapper;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -83,14 +90,32 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			logger: $logger
 		);
 
+		$this->auditTrailMapper = $this->auditMapper();
 		$this->service = new ObjectSlugBackfillService(
 			magicMapper: $this->magicMapper,
 			slugHandler: $slugHandler,
 			cacheHandler: $this->createMock(CacheHandler::class),
 			db: $this->createMock(IDBConnection::class),
+			auditTrail: $this->auditTrailMapper,
 			logger: $logger
 		);
 	}//end setUp()
+
+	/**
+	 * An audit mapper that records the entries a run writes.
+	 *
+	 * @return AuditTrailMapper&MockObject The mapper.
+	 */
+	private function auditMapper(): AuditTrailMapper {
+		$mapper = $this->createMock(AuditTrailMapper::class);
+		$mapper->method('createSlugBackfillEntry')->willReturnCallback(
+			function (string $mode, array $changes, array $summary, ?int $register=null, ?int $schema=null): AuditTrail {
+				$this->audits[] = ['mode' => $mode, 'changes' => $changes, 'register' => $register, 'schema' => $schema];
+				return new AuditTrail();
+			}
+		);
+		return $mapper;
+	}//end auditMapper()
 
 	/**
 	 * A schema that builds slugs from `title`.
@@ -163,15 +188,198 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$this->assertStringContainsString('gets no slug from the backfill', $this->warnings[0]);
 	}
 
-	public function testASecondRunChangesNothing(): void {
-		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
-		$this->magicMapper->method('findAllSlugs')->willReturn(['hello-world' => [self::UUID_A]]);
-		$this->magicMapper->method('findSlugBackfillPage')->willReturn($this->page([]));
+	/**
+	 * Rows as the next run reads them: the plan of the previous run applied.
+	 *
+	 * @param list<array> $rows The rows the previous run read.
+	 * @param array       $plan The plan that run returned.
+	 *
+	 * @return list<array> The rows after the writes.
+	 */
+	private function applyPlan(array $rows, array $plan): array {
+		$new = [];
+		foreach ($plan as $step) {
+			$new[$step['uuid']] = $step['new'];
+		}
 
-		$result = $this->service->run($this->register, $this->schema());
+		foreach ($rows as $index => $row) {
+			if (array_key_exists($row['uuid'], $new) === true) {
+				$rows[$index]['slug'] = $new[$row['uuid']];
+			}
+		}
+
+		return $rows;
+	}//end applyPlan()
+
+	public function testASecondFillRunChangesNothing(): void {
+		$rows = [$this->row(1, self::UUID_A, 'Hello World'), $this->row(2, self::UUID_B, 'Hello World'), $this->row(3, self::UUID_C, 'Other')];
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$taken = [];
+		$this->magicMapper->method('findAllSlugs')->willReturnCallback(
+			function () use (&$taken): array {
+				return $taken;
+			}
+		);
+		$served = $rows;
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnCallback(
+			function (Register $r, Schema $s, int $afterId, int $pageSize, bool $onlyEmpty) use (&$served): array {
+				$empty = array_values(array_filter($served, static fn (array $row): bool => $row['slug'] === null));
+				return $this->page(($afterId === 0) ? $empty : []);
+			}
+		);
+
+		$first = $this->service->run($this->register, $this->schema());
+		$this->assertSame(2, $first['summary']['assigned'], 'run 1 assigns hello-world and other');
+		$served = $this->applyPlan($rows, $first['plan']);
+		$taken = ['hello-world' => [self::UUID_A], 'other' => [self::UUID_C]];
+
+		$second = $this->service->run($this->register, $this->schema());
+
+		$this->assertSame([], $second['plan']);
+		$this->assertSame(0, $second['summary']['assigned']);
+		$this->assertCount(2, $this->writes, 'run 2 wrote nothing more');
+	}
+
+	public function testASecondReslugRunChangesNothing(): void {
+		$rows = [
+			$this->row(1, self::UUID_A, 'Foo', 'old-a', '2020-01-01 00:00:00'),
+			$this->row(2, self::UUID_B, 'Foo', 'foo', '2021-01-01 00:00:00'),
+			$this->row(3, self::UUID_C, 'Renamed Title', 'old-title', '2022-01-01 00:00:00'),
+		];
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$served = $rows;
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnCallback(
+			function (Register $r, Schema $s, int $afterId) use (&$served): array {
+				return $this->page(($afterId === 0) ? $served : []);
+			}
+		);
+
+		$first = $this->service->run($this->register, $this->schema(), reslug: true);
+		$this->assertSame([['uuid' => self::UUID_C, 'old' => 'old-title', 'new' => 'renamed-title']], $first['plan']);
+		$served = $this->applyPlan($rows, $first['plan']);
+
+		$second = $this->service->run($this->register, $this->schema(), reslug: true);
+
+		$this->assertSame([], $second['plan']);
+		$this->assertSame(0, $second['summary']['changed']);
+		$this->assertCount(1, $this->writes, 'run 2 wrote nothing more');
+	}
+
+	public function testReslugKeepsTheCurrentSlugWhenTheNewOneIsHeldAndSaysSo(): void {
+		// Review finding backfill-f4: A (older, slug old-a) now wants "foo", B holds "foo".
+		// A keeps old-a, B keeps foo; nobody loses a slug and none is handed out twice.
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
+			$this->page([
+				$this->row(1, self::UUID_A, 'Foo', 'old-a', '2020-01-01 00:00:00'),
+				$this->row(2, self::UUID_B, 'Foo', 'foo', '2021-01-01 00:00:00'),
+			]),
+			$this->page([])
+		);
+
+		$result = $this->service->run($this->register, $this->schema(), reslug: true);
 
 		$this->assertSame([], $this->writes);
-		$this->assertSame(0, $result['summary']['scanned']);
+		$this->assertSame([['uuid' => self::UUID_A, 'slug' => 'old-a', 'wanted' => 'foo', 'holder' => self::UUID_B]], $result['kept']);
+		$this->assertSame(1, $result['summary']['kept']);
+		$this->assertStringContainsString('keeps its slug "old-a"', $this->warnings[0]);
+	}
+
+	public function testReslugDoesNotHandOutASlugThatAnotherObjectStillHolds(): void {
+		// A wants the slug B holds today; B moves away to its own new slug. A must not
+		// take it in the same plan while B still carries it, but a later pass places A.
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
+			$this->page([
+				$this->row(1, self::UUID_A, 'Wanted', 'old-a', '2020-01-01 00:00:00'),
+				$this->row(2, self::UUID_B, 'Moved', 'wanted', '2021-01-01 00:00:00'),
+			]),
+			$this->page([])
+		);
+
+		$result = $this->service->run($this->register, $this->schema(), reslug: true);
+
+		$this->assertSame(
+			[
+				['uuid' => self::UUID_A, 'old' => 'old-a', 'new' => 'wanted'],
+				['uuid' => self::UUID_B, 'old' => 'wanted', 'new' => 'moved'],
+			],
+			$result['plan']
+		);
+		$this->assertSame([], $result['kept']);
+	}
+
+	public function testARunWritesOneAuditEntryWithTheOldAndNewSlugs(): void {
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
+			$this->page([
+				$this->row(1, self::UUID_A, 'Hello', 'k-1'),
+				$this->row(2, self::UUID_B, 'World', 'k-2'),
+			]),
+			$this->page([])
+		);
+
+		$this->service->run($this->register, $this->schema(), reslug: true);
+
+		$this->assertCount(1, $this->audits);
+		$this->assertSame('reslug', $this->audits[0]['mode']);
+		$this->assertSame(
+			[
+				['uuid' => self::UUID_A, 'old' => 'k-1', 'new' => 'hello'],
+				['uuid' => self::UUID_B, 'old' => 'k-2', 'new' => 'world'],
+			],
+			$this->audits[0]['changes']
+		);
+		$this->assertSame(7, $this->audits[0]['register']);
+		$this->assertSame(11, $this->audits[0]['schema']);
+	}
+
+	public function testADryRunWritesNoAuditEntry(): void {
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$this->magicMapper->method('findAllSlugs')->willReturn([]);
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
+			$this->page([$this->row(1, self::UUID_A, 'Hello')]),
+			$this->page([])
+		);
+
+		$this->service->run($this->register, $this->schema(), dryRun: true);
+
+		$this->assertSame([], $this->audits);
+	}
+
+	public function testAnAppliedWriteIsAuditedButASkippedOneIsNot(): void {
+		$magicMapper = $this->createMock(MagicMapper::class);
+		$magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$magicMapper->method('findAllSlugs')->willReturn([]);
+		$magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
+			$this->page([$this->row(1, self::UUID_A, 'Hello'), $this->row(2, self::UUID_B, 'World')]),
+			$this->page([])
+		);
+		$magicMapper->method('updateSlugColumn')->willReturnCallback(
+			static fn (Register $r, Schema $s, string $uuid): int => (($uuid === self::UUID_A) ? 1 : 0)
+		);
+		$logger = $this->createMock(LoggerInterface::class);
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$service = new ObjectSlugBackfillService(
+			magicMapper: $magicMapper,
+			slugHandler: new ObjectSlugHandler(
+				magicMapper: $magicMapper,
+				hydrator: new MetadataHydrationHandler(
+					logger: $this->createMock(LoggerInterface::class),
+					cacheHandler: $this->createMock(CacheHandler::class)
+				),
+				registerMapper: $registerMapper,
+				logger: $logger
+			),
+			cacheHandler: $this->createMock(CacheHandler::class),
+			db: $this->createMock(IDBConnection::class),
+			auditTrail: $this->auditMapper(),
+			logger: $logger
+		);
+
+		$service->run($this->register, $this->schema());
+
+		$this->assertSame([['uuid' => self::UUID_A, 'old' => null, 'new' => 'hello']], $this->audits[0]['changes']);
 	}
 
 	public function testExistingDuplicatesAreReportedAndLeftAlone(): void {
@@ -187,7 +395,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$this->assertStringContainsString(self::UUID_A . ', ' . self::UUID_B, $this->warnings[0]);
 	}
 
-	public function testReslugRecomputesFromTheSourceAndResolvesADuplicateOldestFirst(): void {
+	public function testReslugRecomputesFromTheSourceAndLeavesAnExistingDuplicateAlone(): void {
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn(['bulk-item' => [self::UUID_A, self::UUID_B]]);
 		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
 			$this->page([
@@ -200,9 +408,10 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 
 		$result = $this->service->run($this->register, $this->schema(), reslug: true);
 
-		$this->assertSame([[self::UUID_B, null], [self::UUID_C, 'renamed-title']], $this->writes);
-		$this->assertSame(2, $result['summary']['changed']);
-		$this->assertSame(1, $result['summary']['unchanged']);
+		// Both duplicates hold the slug they want, so neither moves; they stay reported by the duplicate report.
+		$this->assertSame([[self::UUID_C, 'renamed-title']], $this->writes);
+		$this->assertSame(1, $result['summary']['changed']);
+		$this->assertSame(2, $result['summary']['unchanged']);
 	}
 
 	public function testReslugKeepsTheSlugOfAnObjectWithAnEmptySource(): void {
@@ -292,6 +501,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 			slugHandler: $slugHandler,
 			cacheHandler: $this->createMock(CacheHandler::class),
 			db: $this->createMock(IDBConnection::class),
+			auditTrail: $this->auditMapper(),
 			logger: $logger
 		);
 
