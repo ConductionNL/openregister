@@ -6563,8 +6563,10 @@ class MagicMapper extends AbstractObjectMapper {
 		try {
 			$result = $qb->executeQuery();
 			$rows = [];
-			while (count($rows) < 50 && ($candidate = $result->fetch()) !== false) {
+			$fetched = 0;
+			while ($fetched < 50 && ($candidate = $result->fetch()) !== false) {
 				$rows[] = $candidate;
+				$fetched++;
 			}
 
 			if ($rows === []) {
@@ -6742,8 +6744,8 @@ class MagicMapper extends AbstractObjectMapper {
 		$uuidCol = self::METADATA_PREFIX . 'uuid';
 		$slugCol = self::METADATA_PREFIX . 'slug';
 		$queries = [
-			'holders' => [$slugCol, array_values(array_unique(array_filter($slugs, static fn ($s) => $s !== null && $s !== '')))],
-			'stored' => [$uuidCol, array_values(array_unique(array_filter($uuids, static fn ($u) => $u !== null && $u !== '')))],
+			'holders' => [$slugCol, array_values(array_unique(array_filter($slugs, static fn ($wanted) => $wanted !== null && $wanted !== '')))],
+			'stored' => [$uuidCol, array_values(array_unique(array_filter($uuids, static fn ($uuid) => $uuid !== null && $uuid !== '')))],
 		];
 		foreach ($queries as $kind => [$column, $values]) {
 			foreach (array_chunk($values, 1000) as $chunk) {

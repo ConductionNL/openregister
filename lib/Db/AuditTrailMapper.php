@@ -71,6 +71,8 @@ use Throwable;
  * @SuppressWarnings(PHPMD.TooManyMethods) The class already carried TooManyPublicMethods
  *   for the same reason: this is the one place an audit row is written, and every entry
  *   point that writes one has to go through it or the hash chain has a second author.
+ * @SuppressWarnings(PHPMD.ExcessivePublicCount) Same reason: the slug backfill's run entry
+ *   (createSlugBackfillEntry) is one more entry point that must seal into the hash chain here.
  */
 class AuditTrailMapper extends QBMapper {
 
