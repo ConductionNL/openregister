@@ -42,6 +42,8 @@ class ExampleSetEngineKinds {
 	 * @param ExampleSetViews|null $views Writes the saved views a fragment declares; null refuses them.
 	 * @param ExampleSetWatchers|null $watchers Writes the follows a fragment declares; null refuses them.
 	 * @param ExampleSetParties|null $parties Writes the party links a fragment declares; null refuses them.
+	 * @param ExampleSetNotes|null $notes Writes the notes a fragment leaves on its objects; null refuses them.
+	 * @param ExampleSetReadStates|null $readStates Writes the objects a fragment's accounts opened; null refuses them.
 	 *
 	 * @return void
 	 */
@@ -50,6 +52,8 @@ class ExampleSetEngineKinds {
 		private readonly ?ExampleSetViews $views=null,
 		private readonly ?ExampleSetWatchers $watchers=null,
 		private readonly ?ExampleSetParties $parties=null,
+		private readonly ?ExampleSetNotes $notes=null,
+		private readonly ?ExampleSetReadStates $readStates=null,
 	) {
 	}//end __construct()
 
@@ -167,10 +171,12 @@ class ExampleSetEngineKinds {
 	 */
 	private function kinds(): array {
 		return [
-			'tasks'    => [$this->tasks, 'task'],
-			'views'    => [$this->views, 'view'],
-			'watchers' => [$this->watchers, 'watcher'],
-			'parties'  => [$this->parties, 'party'],
+			'tasks'      => [$this->tasks, 'task'],
+			'views'      => [$this->views, 'view'],
+			'watchers'   => [$this->watchers, 'watcher'],
+			'parties'    => [$this->parties, 'party'],
+			'notes'      => [$this->notes, 'note'],
+			'readStates' => [$this->readStates, 'read state'],
 		];
 	}//end kinds()
 }//end class

@@ -94,6 +94,8 @@ class ExampleSetRemover {
 				'views'             => 0,
 				'watchers'          => 0,
 				'parties'           => 0,
+				'notes'             => 0,
+				'readStates'        => 0,
 				'memberships'       => 0,
 				'groups'            => 0,
 				'accounts'          => 0,

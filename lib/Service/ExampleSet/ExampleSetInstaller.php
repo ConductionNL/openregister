@@ -182,6 +182,8 @@ class ExampleSetInstaller {
 			'views'       => [],
 			'watchers'    => [],
 			'parties'     => [],
+			'notes'       => [],
+			'readStates'  => [],
 			'files'       => 0,
 			'passwords'   => [],
 			'types'       => [],
