@@ -78,6 +78,8 @@ class ObjectSlugReslugWalk {
 	 *                                                  one row and says whether it moved and which slug it held before.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function run(array $rows, callable $step): void {
 		$this->pass = new SplMinHeap();
@@ -114,6 +116,8 @@ class ObjectSlugReslugWalk {
 	 * @param list<array{uuid: string, old: ?string, new: ?string}> $plan The steps in row order.
 	 *
 	 * @return list<array{uuid: string, old: ?string, new: ?string}> The same steps, holders before takers.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function holdersFirst(array $plan): array {
 		return (new ObjectSlugPlanOrder())->order(plan: $plan);

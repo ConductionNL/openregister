@@ -42,6 +42,8 @@ class ObjectSlugPlanOrder {
 	 * @param list<array{uuid: string, old: ?string, new: ?string}> $plan The steps in row order.
 	 *
 	 * @return list<array{uuid: string, old: ?string, new: ?string}> The same steps, holders before takers.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function order(array $plan): array {
 		$waiting = $this->waitingCounts(plan: $plan);

@@ -163,6 +163,8 @@ class ObjectSlugHandler {
 	 * @param string      $stored     The stored slug.
 	 *
 	 * @return bool True when the client asked for a different slug.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-client-supplied-slug-must-follow-the-same-uniqueness-and-freeze-rules
 	 */
 	public function differsFromStored(?string $clientSlug, string $stored): bool {
 		return $this->clientValue->differsFromStored(clientSlug: $clientSlug, stored: $stored);
