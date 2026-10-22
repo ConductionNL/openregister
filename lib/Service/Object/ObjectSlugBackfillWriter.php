@@ -256,12 +256,28 @@ class ObjectSlugBackfillWriter {
 					(string)$register->getId(),
 					(string)$schema->getId(),
 					$e->getMessage(),
-					(json_encode($applied, JSON_INVALID_UTF8_SUBSTITUTE) ?: '[unencodable]')
+					$this->encodeChanges(changes: $applied)
 				),
 				context: ['app' => 'openregister', 'path' => 'backfill']
 			);
 		}
 	}//end recordAudit()
+
+	/**
+	 * A change list as JSON for a log line; invalid UTF-8 in a slug is replaced, not fatal.
+	 *
+	 * @param array $changes The changes.
+	 *
+	 * @return string The JSON, or a marker when it cannot be encoded.
+	 */
+	private function encodeChanges(array $changes): string {
+		$json = json_encode($changes, JSON_INVALID_UTF8_SUBSTITUTE);
+		if ($json === false) {
+			return '[unencodable]';
+		}
+
+		return $json;
+	}//end encodeChanges()
 
 	/**
 	 * Put the full change list in the log when the audit entry cannot hold it.
@@ -289,7 +305,7 @@ class ObjectSlugBackfillWriter {
 					(string)$schema->getId(),
 					($index + 1),
 					count($parts),
-					(json_encode($part, JSON_INVALID_UTF8_SUBSTITUTE) ?: '[unencodable]')
+					$this->encodeChanges(changes: $part)
 				),
 				context: ['app' => 'openregister', 'path' => 'backfill']
 			);

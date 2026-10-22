@@ -48,6 +48,10 @@ use Psr\Log\LoggerInterface;
  * run in the same mode a second time changes nothing.
  *
  * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The plan, the reporting of what could not be
+ *   placed (collision, kept, blocked by a cycle) and the counters belong to one run; the write
+ *   order, the walk and the audit are already in their own classes.
  */
 class ObjectSlugBackfillService {
 
@@ -321,12 +325,7 @@ class ObjectSlugBackfillService {
 			}
 		);
 
-		$moves = [];
-		foreach ($rows as $row) {
-			if ($current[$row['uuid']] !== $row['slug']) {
-				$moves[] = ['uuid' => $row['uuid'], 'old' => $row['slug'], 'new' => $current[$row['uuid']]];
-			}
-		}
+		$moves = $this->movesOf(rows: $rows, current: $current);
 
 		// With the suffix on, two rows can end up wanting each other's slug (A a to b, B b to a).
 		// No write order is safe for a cycle, so its rows, and the rows waiting on them, keep
@@ -334,7 +333,7 @@ class ObjectSlugBackfillService {
 		$ordered = (new ObjectSlugReslugWalk())->holdersFirst(plan: $moves);
 		$blocked = [];
 		foreach ($ordered['blocked'] as $step) {
-			$blocked[$step['uuid']] = $this->heldBy(moves: $moves, slug: (string)$step['new'], uuid: $step['uuid']);
+			$blocked[$step['uuid']] = $step['holder'];
 		}
 
 		foreach ($rows as $row) {
@@ -357,23 +356,23 @@ class ObjectSlugBackfillService {
 	}//end planReslug()
 
 	/**
-	 * The uuid of the row that moves away from a slug, other than the asking row.
+	 * The rows whose slug the walk changed, as plan steps in row order.
 	 *
-	 * @param list<array{uuid: string, old: ?string, new: ?string}> $moves The moves of the walk.
-	 * @param string                                                $slug  The slug.
-	 * @param string                                                $uuid  The asking row.
+	 * @param list<array{id: int, uuid: string, slug: string|null, created: string|null, candidate: string|null}> $rows    All live rows.
+	 * @param array<string, string|null>                                                                          $current uuid => slug after the walk.
 	 *
-	 * @return string The holder, or `?`.
+	 * @return list<array{uuid: string, old: ?string, new: ?string}> The steps.
 	 */
-	private function heldBy(array $moves, string $slug, string $uuid): string {
-		foreach ($moves as $move) {
-			if ($move['old'] === $slug && $move['uuid'] !== $uuid) {
-				return $move['uuid'];
+	private function movesOf(array $rows, array $current): array {
+		$moves = [];
+		foreach ($rows as $row) {
+			if ($current[$row['uuid']] !== $row['slug']) {
+				$moves[] = ['uuid' => $row['uuid'], 'old' => $row['slug'], 'new' => $current[$row['uuid']]];
 			}
 		}
 
-		return '?';
-	}//end heldBy()
+		return $moves;
+	}//end movesOf()
 
 	/**
 	 * Count and report a row whose move is part of, or waits on, a cycle.

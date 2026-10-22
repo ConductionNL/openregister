@@ -5387,7 +5387,8 @@ class ImportHandler {
 	 */
 	private function findSuffixedSeed(string $objectSlug, Schema $schema, Register $register): ?ObjectEntity {
 		$suffixOn = ((($schema->getConfiguration() ?? [])['objectSlugSuffix'] ?? false) === true);
-		if ($this->slugHandler === null || $this->routingMapper === null || $suffixOn === false || $this->slugHandler->isManaged(schema: $schema) === false) {
+		$managed = ($this->slugHandler !== null && $this->slugHandler->isManaged(schema: $schema) === true);
+		if ($managed === false || $this->routingMapper === null || $suffixOn === false) {
 			return null;
 		}
 

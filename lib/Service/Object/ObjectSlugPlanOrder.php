@@ -41,7 +41,7 @@ class ObjectSlugPlanOrder {
 	 *
 	 * @param list<array{uuid: string, old: ?string, new: ?string}> $plan The steps in row order.
 	 *
-	 * @return array{ordered: list<array{uuid: string, old: ?string, new: ?string}>, blocked: list<array{uuid: string, old: ?string, new: ?string}>}
+	 * @return array{ordered: list<array<string, mixed>>, blocked: list<array<string, mixed>>}
 	 *     The steps that can be written, holders before takers, and the steps that cannot: those in a cycle
 	 *     (A takes B's slug while B takes A's, which the suffix can produce) and those waiting on one.
 	 *
@@ -77,15 +77,36 @@ class ObjectSlugPlanOrder {
 		// A cycle has no first write: whichever member went first would put two objects on
 		// one slug until the other follows, and for good if that write is skipped or fails.
 		// Its members, and every step waiting on one, are handed back unwritten.
+		return ['ordered' => $ordered, 'blocked' => $this->blockedSteps(plan: $plan, done: $done)];
+	}//end order()
+
+	/**
+	 * The steps that were never written, each with the uuid of the row holding the slug it wants.
+	 *
+	 * @param list<array{uuid: string, old: ?string, new: ?string}> $plan The steps.
+	 * @param array<int, true>                                      $done Indexes of the steps that were ordered.
+	 *
+	 * @return list<array{uuid: string, old: ?string, new: ?string, holder: string}> The blocked steps.
+	 */
+	private function blockedSteps(array $plan, array $done): array {
+		$holdersOf = $this->holdersOf(plan: $plan);
 		$blocked = [];
 		foreach ($plan as $index => $step) {
-			if (isset($done[$index]) === false) {
-				$blocked[] = $step;
+			if (isset($done[$index]) === true) {
+				continue;
 			}
+
+			$holder = ($holdersOf[(string)$step['new']][0] ?? $index);
+			$step['holder'] = $plan[$holder]['uuid'];
+			if ($holder === $index) {
+				$step['holder'] = '?';
+			}
+
+			$blocked[] = $step;
 		}
 
-		return ['ordered' => $ordered, 'blocked' => $blocked];
-	}//end order()
+		return $blocked;
+	}//end blockedSteps()
 
 	/**
 	 * Step index => number of other steps that hold the slug it wants to take.

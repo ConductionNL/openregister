@@ -115,7 +115,7 @@ class ObjectSlugReslugWalk {
 	 *
 	 * @param list<array{uuid: string, old: ?string, new: ?string}> $plan The steps in row order.
 	 *
-	 * @return array{ordered: list<array{uuid: string, old: ?string, new: ?string}>, blocked: list<array{uuid: string, old: ?string, new: ?string}>}
+	 * @return array{ordered: list<array<string, mixed>>, blocked: list<array<string, mixed>>}
 	 *     The writable steps, holders before takers, and the steps in or behind a cycle.
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
