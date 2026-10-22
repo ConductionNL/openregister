@@ -1811,6 +1811,9 @@ class ObjectWriteNodeTest extends TestCase {
 	 * "no report on failure" (review feedback — the only prior bulk-report
 	 * test covered the failure path, so the counts themselves were unpinned).
 	 *
+	 * The three buckets have distinct sizes (3 / 2 / 1) so that reading any
+	 * one bucket from another's key fails the assertion.
+	 *
 	 * @return void
 	 */
 	public function testABulkWriteReportsItsSavedUpdatedAndUnchangedCounts(): void {
@@ -1820,12 +1823,14 @@ class ObjectWriteNodeTest extends TestCase {
 					'saved' => [
 						['@self' => ['uuid' => 'a'], 'title' => 'a'],
 						['@self' => ['uuid' => 'b'], 'title' => 'b'],
-					],
-					'updated' => [
 						['@self' => ['uuid' => 'c'], 'title' => 'c'],
 					],
-					'unchanged' => [
+					'updated' => [
 						['@self' => ['uuid' => 'd'], 'title' => 'd'],
+						['@self' => ['uuid' => 'e'], 'title' => 'e'],
+					],
+					'unchanged' => [
+						['@self' => ['uuid' => 'f'], 'title' => 'f'],
 					],
 				]
 			)
@@ -1834,7 +1839,16 @@ class ObjectWriteNodeTest extends TestCase {
 		$report = new FlowStepReport();
 
 		$this->node->execute(
-			$this->items([['title' => 'a'], ['title' => 'b'], ['title' => 'c'], ['title' => 'd']]),
+			$this->items(
+				[
+					['title' => 'a'],
+					['title' => 'b'],
+					['title' => 'c'],
+					['title' => 'd'],
+					['title' => 'e'],
+					['title' => 'f'],
+				]
+			),
 			$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
 			$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
 		);
@@ -1842,8 +1856,8 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->assertSame(
 			[
 				'write' => [
-					'created' => ['count' => 2],
-					'updated' => ['count' => 1],
+					'created' => ['count' => 3],
+					'updated' => ['count' => 2],
 					'unchanged' => ['count' => 1],
 				],
 			],
