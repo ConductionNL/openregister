@@ -165,7 +165,13 @@ class ObjectSlugBackfillService {
 		}
 
 		if ($dryRun === false) {
-			$summary['skipped'] = $this->writer->write(plan: $plan, register: $register, schema: $schema, mode: $this->writer->modeName(reslug: $reslug), summary: $summary);
+			$summary['skipped'] = $this->writer->write(
+				plan: $plan,
+				register: $register,
+				schema: $schema,
+				mode: $this->writer->modeName(reslug: $reslug),
+				summary: $summary
+			);
 		}
 
 		return ['duplicates' => $duplicates, 'plan' => $plan, 'kept' => $kept, 'summary' => $summary];

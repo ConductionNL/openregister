@@ -348,7 +348,8 @@ class ObjectSlugHandler {
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `log` is false only for the backfill dry run and the reslug planning walk, which must decide without writing a warning.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `log` is false only for the backfill dry run
+	 *   and the reslug planning walk, which must decide without writing a warning.
 	 */
 	public function decide(
 		string $candidate,

@@ -337,6 +337,8 @@ class ImportHandler {
 	 *        records the jobs that created objects; null imports untagged, as before.
 	 * @param ?SchemaImportInstaller $schemaInstaller Installs a schema's flows and webhooks when an
 	 *        import fired no SchemaUpdatedEvent; null leaves an unchanged re-import installing nothing.
+	 * @param ?\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler $slugHandler Decides the slug of a seed
+	 *        object so it cannot take a slug another live object holds; null sets the seed slug as sent.
 	 */
 	public function __construct(
 		SchemaMapper $schemaMapper,
