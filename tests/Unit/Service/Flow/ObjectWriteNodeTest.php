@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -694,6 +695,43 @@ class ObjectWriteNodeTest extends TestCase {
 		);
 
 	}//end testUpsertPatchesWhenAMatchExists()
+
+	/**
+	 * Regression coverage: the per-item write path used to perform the create
+	 * or update and tell them apart internally (`$matched === null`) without
+	 * ever reporting the split, so a flow run's log carried no way to know how
+	 * many objects were created versus updated.
+	 */
+	public function testAnUpsertBatchReportsItsCreatedAndUpdatedCounts(): void {
+		$this->tableOf([['uuid' => 'u-1', 'data' => ['sourceId' => 'y', 'title' => 'Alpha']]]);
+		$this->objects->method('saveObject')->willReturn($this->entity('u-2', []));
+		$this->objects->method('patchObject')->willReturn($this->entity('u-1', ['sourceId' => 'y']));
+
+		$report = new FlowStepReport();
+
+		$this->node->execute(
+			$this->items([['id' => 'x'], ['id' => 'y']]),
+			$this->config(
+				[
+					'operation' => 'upsert',
+					'fields' => ['sourceId' => '{{id}}'],
+					'match' => [['property' => 'sourceId', 'value' => '{{id}}']],
+				]
+			),
+			$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
+		);
+
+		$this->assertSame(
+			[
+				'write' => [
+					'created' => ['count' => 1],
+					'updated' => ['count' => 1],
+				],
+			],
+			$report->take()
+		);
+
+	}//end testAnUpsertBatchReportsItsCreatedAndUpdatedCounts()
 
 	public function testAnUpdateGoesThroughPatchObjectSoUnmappedFieldsSurvive(): void {
 		$this->tableOf([['uuid' => 'u-1', 'data' => ['sourceId' => 'x', 'title' => 'Alpha']]]);

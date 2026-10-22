@@ -129,6 +129,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -878,7 +879,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 					pairs: $pairs,
 					fields: $fields,
 					onMissing: $onMissing,
-					cap: $cap
+					cap: $cap,
+					context: $context
 				)
 			);
 
@@ -908,7 +910,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				onMissing: $onMissing,
 				onConflict: $onConflict,
 				replace: $replace,
-				cap: $cap
+				cap: $cap,
+				context: $context
 			)
 		);
 
@@ -1057,8 +1060,11 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		string $onConflict,
 		bool $replace,
 		?int $cap,
+		array $context,
 	): array {
 		$writes = 0;
+		$created = 0;
+		$updated = 0;
 		$out = [];
 
 		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
@@ -1123,6 +1129,11 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				onConflict: $onConflict
 			);
 			$writes++;
+			if ($matched === null) {
+				$created++;
+			} else {
+				$updated++;
+			}
 
 			$out[] = FlowItems::item(
 				json: $this->outputJson(
@@ -1134,6 +1145,14 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				fromItemIndex: (int)$index
 			);
 		}//end foreach
+
+		$this->writeReport(
+			context: $context,
+			report: [
+				'created' => ['count' => $created],
+				'updated' => ['count' => $updated],
+			]
+		);
 
 		return $out;
 	}//end writeItems()
@@ -1182,6 +1201,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		array $fields,
 		string $onMissing,
 		int $cap,
+		array $context,
 	): array {
 		if (count($items) > $cap) {
 			throw new RuntimeException(
@@ -1224,6 +1244,15 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 
 		$this->guardBulkFailures(result: $result);
 		$written = $this->indexBulkResults(result: $result);
+
+		$this->writeReport(
+			context: $context,
+			report: [
+				'created' => ['count' => count((array)($result['saved'] ?? []))],
+				'updated' => ['count' => count((array)($result['updated'] ?? []))],
+				'unchanged' => ['count' => count((array)($result['unchanged'] ?? []))],
+			]
+		);
 
 		$out = [];
 		$position = 0;
@@ -1356,6 +1385,27 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		);
 
 	}//end guardBulkFailures()
+
+	/**
+	 * Write this hop's created/updated tally onto the run log, via the
+	 * context's report handle.
+	 *
+	 * Silently a no-op when the handle is absent — a run from before this
+	 * handle existed, or a caller that never wired one.
+	 *
+	 * @param array $context The run context.
+	 * @param array $report The summary, keyed per {@see FlowStepReport::put()}.
+	 *
+	 * @return void
+	 */
+	private function writeReport(array $context, array $report): void {
+		$handle = ($context[FlowStepReport::CONTEXT_KEY] ?? null);
+		if (($handle instanceof FlowStepReport) === false) {
+			return;
+		}
+
+		$handle->put(key: 'write', value: $report);
+	}//end writeReport()
 
 	/**
 	 * Index the bulk result's serialised rows by uuid.
