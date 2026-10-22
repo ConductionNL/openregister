@@ -2199,6 +2199,7 @@ return [
 		['name' => 'task#index', 'url' => '/api/flow-tasks', 'verb' => 'GET'],
 		['name' => 'task#create', 'url' => '/api/flow-tasks', 'verb' => 'POST'],
 		['name' => 'task#show', 'url' => '/api/flow-tasks/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#edit', 'url' => '/api/flow-tasks/{uuid}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#audit', 'url' => '/api/flow-tasks/{uuid}/audit', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#offer', 'url' => '/api/flow-tasks/{uuid}/offer', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#claim', 'url' => '/api/flow-tasks/{uuid}/claim', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
