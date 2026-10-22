@@ -2,7 +2,7 @@
 
 ## 1. Schema configuration (save + import)
 
-- [ ] 1.1 Add `objectSlugField` to `$stringFields` and `objectSlugSuffix` to `$boolFields` in `Schema::validateConfigurationArray()` (`lib/Db/Schema.php`), and document both in the `setConfiguration()` docblock
+- [x] 1.1 Add `objectSlugField` to `$stringFields` and `objectSlugSuffix` to `$boolFields` in `Schema::validateConfigurationArray()` (`lib/Db/Schema.php`), and document both in the `setConfiguration()` docblock
 
 Acceptance criteria:
 - Both keys survive a schema save through the API and a configuration import.
@@ -10,12 +10,12 @@ Acceptance criteria:
 
 ## 2. One slug decision for single save
 
-- [ ] 2.1 Add `ObjectSlugHandler` (`lib/Service/Object/SaveObject/ObjectSlugHandler.php`) with `candidate()`, `applyOnSave()` and `applyToBatch()`, plus `MagicMapper::findSlugHolders()` / `findSlugState()` (live rows, no access filter, chunked `IN`)
-- [ ] 2.2 Wire uniqueness + collision into `SaveObject`: call `applyOnSave()` after `hydrateObjectMetadata()` in `prepareObjectForCreation()` and `prepareObjectForUpdate()`; collision saves without a slug and logs the D7 warning naming register, schema, slug and both uuids
-- [ ] 2.3 Freeze: capture `$originalSlug` before `setSelfMetadata()` in `prepareObjectForUpdate()`; a stored non-empty slug is never overwritten; remove `setSlug()` from `setSelfMetadata()` and from `MetadataHydrationHandler::hydrateObjectMetadata()`
-- [ ] 2.4 Freed-slug reuse: an object without a slug gets its candidate on every save when the slug is free, with no action on delete; soft-deleted rows do not hold a slug
-- [ ] 2.5 `objectSlugSuffix`: on collision write `<base>-<YYYYMMDDHHMMSS>` (UTC via `ITimeFactory`, base cut to fit 255), recheck once, else no slug + warning
-- [ ] 2.6 Client slug: `@self.slug` / `slug` first as candidate, same uniqueness/freeze/suffix rules, "ignored, frozen" warning; legacy branch unchanged for schemas without `objectSlugField`
+- [x] 2.1 Add `ObjectSlugHandler` (`lib/Service/Object/SaveObject/ObjectSlugHandler.php`) with `candidate()`, `applyOnSave()` and `decideBatch()` (the bulk caller normalises its two row shapes), plus `MagicMapper::findSlugHolders()` / `findSlugState()` (live rows, no access filter, chunked `IN`)
+- [x] 2.2 Wire uniqueness + collision into `SaveObject`: call `applyOnSave()` after `hydrateObjectMetadata()` in `prepareObjectForCreation()` and `prepareObjectForUpdate()`; collision saves without a slug and logs the D7 warning naming register, schema, slug and both uuids
+- [x] 2.3 Freeze: capture `$originalSlug` before `setSelfMetadata()` in `prepareObjectForUpdate()`; a stored non-empty slug is never overwritten; remove `setSlug()` from `setSelfMetadata()` and from `MetadataHydrationHandler::hydrateObjectMetadata()`
+- [x] 2.4 Freed-slug reuse: an object without a slug gets its candidate on every save when the slug is free, with no action on delete; soft-deleted rows do not hold a slug
+- [x] 2.5 `objectSlugSuffix`: on collision write `<base>-<YYYYMMDDHHMMSS>` (UTC via `ITimeFactory`, base cut to fit 255), recheck once, else no slug + warning
+- [x] 2.6 Client slug: `@self.slug` / `slug` first as candidate, same uniqueness/freeze/suffix rules, "ignored, frozen" warning; legacy branch unchanged for schemas without `objectSlugField`
 
 Acceptance criteria:
 - The reproduction table in the proposal ends as: A `hello-world`, B `null` + warning, A keeps `hello-world` after the rename, GET `…/hello-world` returns A.
@@ -23,7 +23,7 @@ Acceptance criteria:
 
 ## 3. Clean-up of the dead slug paths
 
-- [ ] 3.1 Stop `SaveObject::setDefaultValues()` from adding `slug` to the data; remove `SaveObject::generateSlug()` / `createSlug()` and `MetadataHydrationHandler::generateSlug()`; update the "SLUG GENERATION DOES NOT LIVE HERE" comments in `MetadataHandler.php` and `DataManipulationHandler.php` to name `ObjectSlugHandler`
+- [x] 3.1 Stop `SaveObject::setDefaultValues()` from adding `slug` to the data; remove `SaveObject::generateSlug()` / `createSlug()` and `MetadataHydrationHandler::generateSlug()`; update the "SLUG GENERATION DOES NOT LIVE HERE" comments in `MetadataHandler.php` and `DataManipulationHandler.php` to name `ObjectSlugHandler`
 
 Acceptance criteria:
 - No `slug` key in object data and no `@self.relations.slug`; no "Discarding … slug" warning on save.
@@ -31,7 +31,7 @@ Acceptance criteria:
 
 ## 4. Bulk parity
 
-- [ ] 4.1 Run `applyToBatch()` per register+schema group in `SaveObjects::saveObjects()` between preparation and chunk processing; stop copying the slug in `applyHydratedMetadata()`; make `MagicBulkHandler::withDisplayColumns()` honour an explicit `null`; add the `COALESCE(NULLIF(_slug,''), …)` upsert guard for schemas with `objectSlugField` (PostgreSQL + MySQL)
+- [x] 4.1 Run `applyToBatch()` per register+schema group in `SaveObjects::saveObjects()` between preparation and chunk processing; stop copying the slug in `applyHydratedMetadata()`; make `MagicBulkHandler::withDisplayColumns()` honour an explicit `null`; add the `COALESCE(NULLIF(_slug,''), …)` upsert guard for schemas with `objectSlugField` (PostgreSQL + MySQL)
 
 Acceptance criteria:
 - 2 × "Bulk Item" in one batch: first `bulk-item`, second `null` + one warning.
@@ -39,7 +39,7 @@ Acceptance criteria:
 
 ## 5. Ambiguous lookup
 
-- [ ] 5.1 In `MagicMapper::findInRegisterSchemaTable()` read `_uuid` of both matching rows, log the ambiguous-lookup warning, throw `MultipleObjectsReturnedException` without uuids in the message; catch it in `ObjectsController::show()` and answer 409 JSON
+- [x] 5.1 In `MagicMapper::findInRegisterSchemaTable()` read `_uuid` of both matching rows, log the ambiguous-lookup warning, throw `MultipleObjectsReturnedException` without uuids in the message; catch it in `ObjectsController::show()` and answer 409 JSON
 
 Acceptance criteria:
 - A duplicated slug answers 409 JSON (not an HTML 500); uuid and numeric-id lookups unchanged.

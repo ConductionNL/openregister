@@ -236,6 +236,86 @@ class SaveObjects {
 	}//end loadSchemaWithCache()
 
 	/**
+	 * Decide the object slugs of a prepared batch, one register+schema group at a time.
+	 *
+	 * Prepared rows come in two shapes: the flat selfData shape of the single-
+	 * schema fast path (metadata at the top, business data under `object`) and
+	 * the `@self` shape of the mixed-schema path. Both are normalised for
+	 * ObjectSlugHandler::decideBatch() and the decision is written back as
+	 * `slug`, explicitly null when there is none. Schemas without
+	 * `objectSlugField` are left exactly as they are (BC1).
+	 *
+	 * @param array $objects The prepared rows, by reference.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
+	 */
+	private function applyObjectSlugs(array &$objects): void {
+		$slugHandler = $this->saveHandler->getSlugHandler();
+
+		$groups = [];
+		foreach ($objects as $index => $object) {
+			$self = $object['@self'] ?? $object;
+			$registerId = $self['register'] ?? null;
+			$schemaId = $self['schema'] ?? null;
+			if ($registerId === null || $schemaId === null) {
+				continue;
+			}
+
+			$groups[$registerId . '|' . $schemaId][] = $index;
+		}
+
+		foreach ($groups as $key => $indexes) {
+			[$registerId, $schemaId] = explode('|', (string)$key, 2);
+			try {
+				$schema = $this->loadSchemaWithCache(schemaId: $schemaId);
+				if ($slugHandler->isManaged(schema: $schema) === false) {
+					continue;
+				}
+
+				$register = $this->registerMapper->find(id: $registerId, _rbac: false, _multitenancy: false);
+			} catch (Exception $e) {
+				$this->logger->warning(
+					'[ObjectSlug] Could not resolve register ' . $registerId . ' / schema ' . $schemaId . ' for the bulk slug check: ' . $e->getMessage(),
+					['app' => 'openregister']
+				);
+				continue;
+			}
+
+			$rows = [];
+			foreach ($indexes as $index) {
+				$object = $objects[$index];
+				$isSelfShape = isset($object['@self']) === true && is_array($object['@self']) === true;
+				$self = $isSelfShape === true ? $object['@self'] : $object;
+				$data = $object['object'] ?? [];
+				if ($isSelfShape === true) {
+					$data = $object;
+					unset($data['@self']);
+				}
+
+				$clientSlug = $self['slug'] ?? $data['slug'] ?? null;
+				$uuid = $self['uuid'] ?? $self['id'] ?? null;
+				$rows[$index] = [
+					'uuid' => is_string($uuid) === true ? $uuid : null,
+					'clientSlug' => (is_string($clientSlug) === true && $clientSlug !== '') ? $clientSlug : null,
+					'data' => is_array($data) === true ? $data : [],
+				];
+			}
+
+			$decisions = $slugHandler->decideBatch(rows: $rows, register: $register, schema: $schema);
+			foreach ($decisions as $index => $slug) {
+				if (isset($objects[$index]['@self']) === true && is_array($objects[$index]['@self']) === true) {
+					$objects[$index]['@self']['slug'] = $slug;
+					continue;
+				}
+
+				$objects[$index]['slug'] = $slug;
+			}
+		}//end foreach
+	}//end applyObjectSlugs()
+
+	/**
 	 * Get comprehensive schema analysis from cache or generate new analysis
 	 *
 	 * @param Schema $schema Schema to analyze
@@ -453,6 +533,10 @@ class SaveObjects {
 			];
 			return $result;
 		}
+
+		// Decide object slugs per register+schema group, in batch order, before
+		// anything is written: the same rules as a single save (#4037).
+		$this->applyObjectSlugs(objects: $processedObjects);
 
 		// Update statistics to reflect actual processed objects.
 		$result['statistics']['totalProcessed'] = count($processedObjects);

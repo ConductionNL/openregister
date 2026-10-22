@@ -74,6 +74,7 @@ use OCA\OpenRegister\Service\WriteCause;
 use OCA\OpenRegister\Support\FilterParams;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\AppFramework\Db\MultipleObjectsReturnedException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -2930,6 +2931,7 @@ class ObjectsController extends Controller {
 	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object retrieval with slug resolution + access checks requires branching
 	 *
 	 * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
 	 */
 	#[UserRateLimit(limit: 600, period: 60)]
 	#[AnonRateLimit(limit: 120, period: 60)]
@@ -3164,6 +3166,19 @@ class ObjectsController extends Controller {
 			// still denying access. Previously this exception escaped the
 			// handler and surfaced as an HTTP 500.
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+		} catch (MultipleObjectsReturnedException $exception) {
+			// A slug held by more than one object in this register and schema
+			// (#4037). Existing duplicates are kept on purpose (BC2), so this is
+			// a state the caller can act on — ask by uuid — not a server fault;
+			// 409, as HandlesExceptionsTrait maps the same exception. The mapper
+			// logged both uuids; the response names none of them.
+			return new JSONResponse(
+				data: [
+					'message' => sprintf('Identifier "%s" matches more than one object in this register and schema', $id),
+					'error' => 'ambiguous-identifier',
+				],
+				statusCode: Http::STATUS_CONFLICT
+			);
 		}//end try
 	}//end show()
 

@@ -4,7 +4,8 @@
  * OpenRegister MetadataHydrationHandler
  *
  * Handler for extracting and hydrating object metadata.
- * Handles name, description, summary, image extraction, and slug generation.
+ * Handles name, description, summary and image extraction, and the slugify routine
+ * ObjectSlugHandler uses (the slug itself is decided there, #4037).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -36,7 +37,7 @@ use Psr\Log\LoggerInterface;
  * Handles object metadata extraction and hydration including:
  * - Name extraction from configured field paths
  * - Description and summary extraction
- * - Slug generation from configured sources
+ * - The slugify routine (createSlug) for ObjectSlugHandler
  * - Twig-like template processing for metadata (regex-based, not full Twig)
  * - Pipe-based fallback syntax for field chains
  *
@@ -76,7 +77,7 @@ class MetadataHydrationHandler {
 	/**
 	 * Hydrates simple object metadata from schema configuration.
 	 *
-	 * This method extracts simple metadata fields (name, description, summary, slug)
+	 * This method extracts simple metadata fields (name, description, summary)
 	 * from the object data based on schema configuration.
 	 *
 	 * NOTE: Image field handling is kept in SaveObject due to complex file operations.
@@ -176,17 +177,9 @@ class MetadataHydrationHandler {
 			$entity->setSummary(trim($summary));
 		}
 
-		// Slug field mapping.
-		if (($config['objectSlugField'] ?? null) !== null) {
-			$slug = $this->extractMetadataValue(data: $businessData, fieldPath: $config['objectSlugField']);
-			if ($slug !== null && trim($slug) !== '') {
-				// Generate URL-friendly slug.
-				$generatedSlug = $this->createSlugFromValue(value: trim($slug));
-				if ($generatedSlug !== null) {
-					$entity->setSlug($generatedSlug);
-				}
-			}
-		}
+		// The slug is not hydrated here: this method also runs where no write
+		// follows (name pre-caching) and on bulk temp entities that do not know
+		// the stored slug. ObjectSlugHandler decides it (#4037).
 	}//end hydrateObjectMetadata()
 
 	/**
@@ -789,65 +782,6 @@ class MetadataHydrationHandler {
 		// Use the existing createSlug method for consistency.
 		return $this->createSlug(text: trim(string: $value));
 	}//end createSlugFromValue()
-
-	/**
-	 * Generates a slug for an object based on schema configuration.
-	 *
-	 * The slug generation follows this priority:
-	 * 1. Schema's slugFrom configuration (field path)
-	 * 2. Schema's titleField configuration
-	 * 3. Object's "name" field
-	 * 4. Object's "title" field
-	 * 5. Schema name as fallback
-	 *
-	 * @param array $data The object data.
-	 * @param Schema $schema The schema configuration.
-	 *
-	 * @return string|null The generated slug or null.
-	 *
-	 * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple fallback paths for slug source determination
-	 * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple nested conditional paths for evaluating different field options
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function generateSlug(array $data, Schema $schema): ?string {
-		$properties = $schema->getProperties();
-		$slugSource = null;
-
-		// 1. Check for explicit slugFrom configuration.
-		if (isset($properties['_slugFrom']) === true && is_string($properties['_slugFrom']) === true) {
-			$slugSource = $this->getValueFromPath(data: $data, path: $properties['_slugFrom']);
-		}
-
-		// 2. Check for titleField configuration.
-		if ($slugSource === null && isset($properties['_titleField']) === true) {
-			$slugSource = $this->getValueFromPath(data: $data, path: $properties['_titleField']);
-		}
-
-		// 3. Try common name fields.
-		if ($slugSource === null) {
-			$commonFields = ['name', 'title', 'label', 'slug'];
-			foreach ($commonFields as $field) {
-				$value = $this->getValueFromPath(data: $data, path: $field);
-				if ($value !== null && is_string($value) === true) {
-					$slugSource = $value;
-					break;
-				}
-			}
-		}
-
-		// 4. Fallback to schema name.
-		if ($slugSource === null) {
-			$slugSource = $schema->getTitle() ?? $schema->getName();
-		}
-
-		// Generate slug from source.
-		if (is_string($slugSource) === true && empty($slugSource) === false) {
-			return $this->createSlug(text: $slugSource);
-		}
-
-		return null;
-	}//end generateSlug()
 
 	/**
 	 * Creates a URL-friendly slug from text.

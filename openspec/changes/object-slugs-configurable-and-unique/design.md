@@ -250,7 +250,7 @@ any leftover duplicate visible.
 both rows, logs the ambiguous-lookup warning (D7), and throws
 `MultipleObjectsReturnedException` with a message that names the identifier but no
 uuids. `ObjectsController::show()` adds a `catch (MultipleObjectsReturnedException)` that
-answers `409` with `{"error": "Ambiguous identifier", "message": "<identifier> matches more than one object in this register and schema"}`.
+answers `409` with the ADR-050 error envelope `{"message": "Identifier \"<identifier>\" matches more than one object in this register and schema", "error": "ambiguous-identifier"}`.
 Other controllers that use `HandlesExceptionsTrait` already map the exception to 409.
 `ObjectService::find()` only catches `DoesNotExistException`, so it passes the exception
 through, and its uuid-only cross-schema retry is unaffected. Uuid and numeric-id lookups

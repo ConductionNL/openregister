@@ -191,7 +191,8 @@ class MagicBulkHandler {
 			$preparedObject = $this->withDisplayColumns(
 				prepared: $preparedObject,
 				selfData: $selfData,
-				object: $object
+				object: $object,
+				managedSlug: $this->hasManagedSlugs(schema: $schema)
 			);
 
 			$preparedObject['_version'] = $this->versionHandler->initialVersionFor(candidate: ($selfData['version'] ?? $object['version'] ?? null));
@@ -257,16 +258,41 @@ class MagicBulkHandler {
 	 *
 	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
-	private function withDisplayColumns(array $prepared, array $selfData, array $object): array {
+	private function withDisplayColumns(
+		array $prepared,
+		array $selfData,
+		array $object,
+		bool $managedSlug=false,
+	): array {
 		$prepared['_name'] = $selfData['name'] ?? $object['name'] ?? null;
 		$prepared['_description'] = $selfData['description'] ?? $object['description'] ?? null;
 		$prepared['_summary'] = $selfData['summary'] ?? $object['summary'] ?? null;
 		$prepared['_image'] = $selfData['image'] ?? $object['image'] ?? null;
 		$prepared['_slug'] = $selfData['slug'] ?? $object['slug'] ?? null;
+		if ($managedSlug === true && array_key_exists('slug', $selfData) === true) {
+			// The slug decision is final, including an explicit null: falling
+			// back to a top-level `slug` property would undo a collision (#4037).
+			$prepared['_slug'] = $selfData['slug'];
+		}
+
 		$prepared['_uri'] = $selfData['uri'] ?? $object['uri'] ?? null;
 
 		return $prepared;
 	}//end withDisplayColumns()
+
+	/**
+	 * Whether a schema has opted into managed object slugs (`objectSlugField`).
+	 *
+	 * Mirrors ObjectSlugHandler::isManaged(); the bulk writer only needs the fact.
+	 *
+	 * @param Schema $schema The schema.
+	 *
+	 * @return bool True when `objectSlugField` is a non-empty string.
+	 */
+	private function hasManagedSlugs(Schema $schema): bool {
+		$field = ($schema->getConfiguration() ?? [])['objectSlugField'] ?? null;
+		return is_string($field) === true && trim($field) !== '';
+	}//end hasManagedSlugs()
 
 	/**
 	 * Copy an object's expiry into the prepared row's `_expires` column, when it has one.
@@ -495,7 +521,8 @@ class MagicBulkHandler {
 					chunk: $chunk,
 					tableName: $tableName,
 					chunkNumber: ($chunkIndex + 1),
-					needsPreUpdateState: $needsPreUpdateState
+					needsPreUpdateState: $needsPreUpdateState,
+					freezeSlug: $this->hasManagedSlugs(schema: $schema)
 				);
 
 				$this->db->commit();
@@ -546,12 +573,15 @@ class MagicBulkHandler {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) See bulkUpsert(): a fact about
 	 * the caller, carried to the one statement that varies on it.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	private function executeUpsertChunk(
 		array $chunk,
 		string $tableName,
 		int $chunkNumber,
 		bool $needsPreUpdateState = true,
+		bool $freezeSlug = false,
 	): array {
 		if ($chunk === []) {
 			return [];
@@ -799,6 +829,18 @@ class MagicBulkHandler {
 				$updateClauses[] = '`_updated` = NOW()';
 				if ($isPostgres === true) {
 					$updateClauses[count($updateClauses) - 1] = '"_updated" = NOW()';
+				}
+
+				continue;
+			}
+
+			if ($column === '_slug' && $freezeSlug === true) {
+				// A stored slug is frozen (#4037): the slug decision already
+				// keeps it, and this guard also covers a row whose slug was
+				// written between that decision and this upsert.
+				$updateClauses[] = '`_slug` = COALESCE(NULLIF(`_slug`, \'\'), VALUES(`_slug`))';
+				if ($isPostgres === true) {
+					$updateClauses[count($updateClauses) - 1] = "\"_slug\" = COALESCE(NULLIF(\"{$fullTableName}\".\"_slug\", ''), EXCLUDED.\"_slug\")";
 				}
 
 				continue;
