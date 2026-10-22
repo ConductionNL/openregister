@@ -1288,14 +1288,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			);
 		}//end foreach
 
-		// Placed after output processing, not right after saveObjects(): a
-		// FlowStepReport describes a COMPLETED node execution, the same
-		// contract writeItems() already keeps (its own report sits after its
-		// per-item loop, persistence and output construction together). An
-		// exception in the output loop above propagates out of this method
-		// and the step never reaches "completed", so no report is written for
-		// a step that did not finish — matching the single-item path exactly,
-		// even though the database writes above would already be durable.
+		// Placed after output processing, not right after saveObjects() —
+		// see the SEMANTICS note on writeReport() for why.
 		$this->writeReport(
 			context: $context,
 			report: [
@@ -1475,8 +1469,14 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @param array $config The step configuration.
 	 *
 	 * @return array The outgoing json.
+	 *
+	 * Protected rather than private solely so a test can override it on a
+	 * partial mock, to prove the writeReport() ordering contract: this is the
+	 * last step inside both writeItems()'s and writeBulk()'s per-item work
+	 * before an output item is complete, so a failure here is the most
+	 * direct way to pin "no report when output processing fails".
 	 */
-	private function outputJson(array $incoming, array $written, array $config): array {
+	protected function outputJson(array $incoming, array $written, array $config): array {
 		$key = trim((string)($config['output'] ?? ''));
 		if ($key === '') {
 			return $written;

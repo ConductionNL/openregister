@@ -1732,6 +1732,62 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->assertCount(1, $allSkipped);
 	}
 
+	/**
+	 * Regression coverage for the writeReport() ordering contract (review
+	 * feedback on #4772): if output processing throws after the bulk write
+	 * already succeeded, no report is written — a report describes a
+	 * COMPLETED node execution, not "objects were persisted". outputJson()
+	 * is `protected` (see its own docblock) purely so this test can force
+	 * that failure on a partial mock: every other step inside the bulk
+	 * output loop is pure array manipulation with no real-world failure
+	 * path of its own.
+	 *
+	 * @return void
+	 */
+	public function testNoReportIsWrittenWhenBulkOutputProcessingFails(): void {
+		$registers = $this->createMock(RegisterMapper::class);
+		$registers->method('find')->willReturn($this->register);
+
+		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas->method('findBySlugInIds')->willReturn($this->schema);
+		$schemas->method('find')->willReturn($this->schema);
+
+		$l10n = $this->createMock(IL10N::class);
+		$l10n->method('t')->willReturnCallback(
+			static function (string $text, array $parameters = []): string {
+				if ($parameters === []) {
+					return $text;
+				}
+
+				return vsprintf(str_replace(['%s', '%1$s', '%2$s'], ['%s', '%1$s', '%2$s'], $text), $parameters);
+			}
+		);
+
+		$urls = $this->createMock(IURLGenerator::class);
+
+		$node = $this->getMockBuilder(ObjectWriteNode::class)
+			->setConstructorArgs([$this->objects, $registers, $schemas, $this->userManager, $this->appConfig, $l10n, $urls])
+			->onlyMethods(['outputJson'])
+			->getMock();
+		$node->method('outputJson')->willThrowException(new RuntimeException('boom'));
+
+		$this->objects->method('saveObjects')->willReturn($this->bulkResult());
+
+		$report = new FlowStepReport();
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('boom');
+
+		try {
+			$node->execute(
+				$this->items([['title' => 'a']]),
+				$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
+				$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
+			);
+		} finally {
+			$this->assertSame([], $report->take(), 'no report is written for a step that did not finish');
+		}
+	}//end testNoReportIsWrittenWhenBulkOutputProcessingFails()
 
 	/**
 	 * A dry-run asks the step what it would write and writes nothing.
