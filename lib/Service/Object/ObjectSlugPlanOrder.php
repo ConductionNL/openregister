@@ -41,7 +41,9 @@ class ObjectSlugPlanOrder {
 	 *
 	 * @param list<array{uuid: string, old: ?string, new: ?string}> $plan The steps in row order.
 	 *
-	 * @return list<array{uuid: string, old: ?string, new: ?string}> The same steps, holders before takers.
+	 * @return array{ordered: list<array{uuid: string, old: ?string, new: ?string}>, blocked: list<array{uuid: string, old: ?string, new: ?string}>}
+	 *     The steps that can be written, holders before takers, and the steps that cannot: those in a cycle
+	 *     (A takes B's slug while B takes A's, which the suffix can produce) and those waiting on one.
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
@@ -72,14 +74,17 @@ class ObjectSlugPlanOrder {
 			}
 		}
 
-		// The reslug walk never builds a cycle; should one appear, keep its steps in row order.
+		// A cycle has no first write: whichever member went first would put two objects on
+		// one slug until the other follows, and for good if that write is skipped or fails.
+		// Its members, and every step waiting on one, are handed back unwritten.
+		$blocked = [];
 		foreach ($plan as $index => $step) {
 			if (isset($done[$index]) === false) {
-				$ordered[] = $step;
+				$blocked[] = $step;
 			}
 		}
 
-		return $ordered;
+		return ['ordered' => $ordered, 'blocked' => $blocked];
 	}//end order()
 
 	/**

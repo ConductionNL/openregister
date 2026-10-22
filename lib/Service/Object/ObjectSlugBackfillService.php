@@ -321,21 +321,86 @@ class ObjectSlugBackfillService {
 			}
 		);
 
-		$plan = [];
+		$moves = [];
+		foreach ($rows as $row) {
+			if ($current[$row['uuid']] !== $row['slug']) {
+				$moves[] = ['uuid' => $row['uuid'], 'old' => $row['slug'], 'new' => $current[$row['uuid']]];
+			}
+		}
+
+		// With the suffix on, two rows can end up wanting each other's slug (A a to b, B b to a).
+		// No write order is safe for a cycle, so its rows, and the rows waiting on them, keep
+		// their slug and are reported as kept.
+		$ordered = (new ObjectSlugReslugWalk())->holdersFirst(plan: $moves);
+		$blocked = [];
+		foreach ($ordered['blocked'] as $step) {
+			$blocked[$step['uuid']] = $this->heldBy(moves: $moves, slug: (string)$step['new'], uuid: $step['uuid']);
+		}
+
 		foreach ($rows as $row) {
 			$uuid = $row['uuid'];
-			if ($current[$uuid] !== $row['slug']) {
-				$plan[] = ['uuid' => $uuid, 'old' => $row['slug'], 'new' => $current[$uuid]];
+			if ($current[$uuid] !== $row['slug'] && isset($blocked[$uuid]) === false) {
 				$summary['changed']++;
 				continue;
 			}
 
 			$summary['unchanged']++;
+			if (isset($blocked[$uuid]) === true) {
+				$this->reportBlocked(row: $row, holder: $blocked[$uuid], register: $register, schema: $schema, summary: $summary, log: $log, kept: $kept);
+				continue;
+			}
+
 			$this->reportUnplaced(row: $row, register: $register, schema: $schema, taken: $taken, summary: $summary, log: $log, kept: $kept);
 		}
 
-		return (new ObjectSlugReslugWalk())->holdersFirst(plan: $plan);
+		return $ordered['ordered'];
 	}//end planReslug()
+
+	/**
+	 * The uuid of the row that moves away from a slug, other than the asking row.
+	 *
+	 * @param list<array{uuid: string, old: ?string, new: ?string}> $moves The moves of the walk.
+	 * @param string                                                $slug  The slug.
+	 * @param string                                                $uuid  The asking row.
+	 *
+	 * @return string The holder, or `?`.
+	 */
+	private function heldBy(array $moves, string $slug, string $uuid): string {
+		foreach ($moves as $move) {
+			if ($move['old'] === $slug && $move['uuid'] !== $uuid) {
+				return $move['uuid'];
+			}
+		}
+
+		return '?';
+	}//end heldBy()
+
+	/**
+	 * Count and report a row whose move is part of, or waits on, a cycle.
+	 *
+	 * @param array    $row      The row, which keeps its slug.
+	 * @param string   $holder   The uuid of the row that holds the slug it wanted.
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 * @param array    $summary  Counters, by reference.
+	 * @param bool     $log      Log it (false on a dry run).
+	 * @param array    $kept     Objects that keep their slug because of a collision, by reference.
+	 *
+	 * @return void
+	 *
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `log` is false only for the dry run.
+	 */
+	private function reportBlocked(array $row, string $holder, Register $register, Schema $schema, array &$summary, bool $log, array &$kept): void {
+		$summary['collisions']++;
+		if ($row['slug'] !== null) {
+			$summary['kept']++;
+			$kept[] = ['uuid' => $row['uuid'], 'slug' => $row['slug'], 'wanted' => (string)$row['candidate'], 'holder' => $holder];
+		}
+
+		if ($log === true) {
+			$this->logUnplaced(row: $row, register: $register, schema: $schema, holder: $holder);
+		}
+	}//end reportBlocked()
 
 
 	/**

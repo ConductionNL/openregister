@@ -375,6 +375,72 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$this->assertLessThan(4 * $total, $countingHandler->decisions, 'linear work, not rows times passes');
 	}
 
+	/**
+	 * Reslug a ring: row i holds slug `s<i>` and wants the slug of the next row.
+	 *
+	 * @param int  $size   Rows in the ring.
+	 * @param bool $suffix Whether objectSlugSuffix is on.
+	 *
+	 * @return array The result of a dry run.
+	 */
+	private function reslugRing(int $size, bool $suffix): array {
+		$uuids = [self::UUID_A, self::UUID_B, self::UUID_C];
+		$rows = [];
+		for ($i = 0; $i < $size; $i++) {
+			$wanted = 's' . (($i + 1) % $size);
+			$rows[] = $this->row($i + 1, $uuids[$i], $wanted, 's' . $i, sprintf('2020-01-0%d 00:00:00', $i + 1));
+		}
+
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls($this->page($rows), $this->page([]));
+
+		return $this->service->run($this->register, $this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => $suffix]), reslug: true, dryRun: true);
+	}//end reslugRing()
+
+	/**
+	 * @return array<string, array{0: int, 1: bool}> Ring size and suffix switch.
+	 */
+	public static function rings(): array {
+		return [
+			'swap, suffix on' => [2, true],
+			'three-ring, suffix on' => [3, true],
+			'swap, suffix off' => [2, false],
+			'three-ring, suffix off' => [3, false],
+		];
+	}//end rings()
+
+	/**
+	 * Review finding pp-f1: no write order is safe for a cycle, so none of its rows is written.
+	 *
+	 * @dataProvider rings
+	 */
+	public function testARingOfRowsWantingEachOthersSlugsIsKeptNotWritten(int $size, bool $suffix): void {
+		$result = $this->reslugRing($size, $suffix);
+
+		$this->assertSame([], $result['plan'], 'no step of a cycle is planned, so none can be written first');
+		$this->assertSame(0, $result['summary']['changed']);
+		$this->assertSame($size, $result['summary']['unchanged']);
+		$this->assertSame($size, $result['summary']['kept']);
+		$this->assertCount($size, $result['kept']);
+	}//end testARingOfRowsWantingEachOthersSlugsIsKeptNotWritten()
+
+	public function testAnUnrelatedRowStillMovesBesideARing(): void {
+		// The swap (suffix on) is kept; the unrelated row beside it is still written.
+		$rows = [
+			$this->row(1, self::UUID_A, 's1', 's0', '2020-01-01 00:00:00'),
+			$this->row(2, self::UUID_B, 's0', 's1', '2020-01-02 00:00:00'),
+			$this->row(3, self::UUID_C, 'Free Row', 'old-c', '2020-01-03 00:00:00'),
+		];
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls($this->page($rows), $this->page([]));
+
+		$result = $this->service->run($this->register, $this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => true]), reslug: true, dryRun: true);
+
+		$this->assertSame([['uuid' => self::UUID_C, 'old' => 'old-c', 'new' => 'free-row']], $result['plan'], 'the unrelated row still moves');
+		$this->assertSame(1, $result['summary']['changed']);
+		$this->assertSame(2, $result['summary']['kept']);
+	}//end testAnUnrelatedRowStillMovesBesideARing()
+
 	public function testARunWritesOneAuditEntryWithTheOldAndNewSlugs(): void {
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
 		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
