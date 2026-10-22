@@ -277,6 +277,26 @@
 				"organisation": "visserbouw"
 			},
 			{
+				"key": "jvanwijk",
+				"uid": "jeroen.vanwijk",
+				"displayName": "J. van Wijk",
+				"givenName": "Jeroen",
+				"prefix": "van",
+				"familyName": "Wijk",
+				"email": "jeroen.vanwijk@zuiddrecht.example",
+				"role": "business-contact",
+				"bsn": "999994141",
+				"gender": "M",
+				"birthDate": "1971-04-09",
+				"address": {
+					"street": "Molenweg",
+					"number": 30,
+					"postcode": "2999BD",
+					"city": "Zuiddrecht"
+				},
+				"organisation": "vanwijk"
+			},
+			{
 				"key": "daan",
 				"uid": "daan.verbeek",
 				"displayName": "Daan Verbeek",
@@ -601,7 +621,28 @@
 					"description": "Algemene burgerlijke en utiliteitsbouw"
 				},
 				"registeredOn": "2004-10-18",
-				"employees": 47
+				"employees": 47,
+				"contact": "jvanwijk"
+			},
+			{
+				"key": "bewonerslindelaan",
+				"name": "Bewonersvereniging Lindelaan",
+				"kvk": "00001006",
+				"vestigingsnummer": "000000001006",
+				"legalForm": "Vereniging",
+				"email": "bestuur.lindelaan@zuiddrecht.example",
+				"address": {
+					"street": "Lindelaan",
+					"number": 2,
+					"postcode": "2999AC",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "94993",
+					"description": "Bewonersverenigingen en buurtcomités"
+				},
+				"registeredOn": "2012-06-01",
+				"employees": 0
 			}
 		],
 		"openregisterOrganisations": [
@@ -901,6 +942,37 @@
 					"huisnummer": "{{cast:henkvisser.address.number}}",
 					"postcode": "{{cast:henkvisser.address.postcode}}",
 					"woonplaats": "{{cast:henkvisser.address.city}}",
+					"functieAdres": "W"
+				},
+				"gemeenteVanInschrijving": "Zuiddrecht",
+				"gemeenteVanInschrijvingCode": "9999",
+				"datumInschrijvingInGemeente": "2010-01-01",
+				"partners": [],
+				"ouders": [],
+				"kinderen": []
+			}
+		},
+		{
+			"key": "brp-jvanwijk",
+			"register": "brp",
+			"schema": "ingeschreven-persoon",
+			"data": {
+				"burgerservicenummer": "{{cast:jvanwijk.bsn}}",
+				"voornamen": "{{cast:jvanwijk.givenName}}",
+				"voorletters": "J.",
+				"geslachtsnaam": "{{cast:jvanwijk.familyName}}",
+				"aanduidingNaamgebruik": "E",
+				"geslachtsaanduiding": "{{cast:jvanwijk.gender}}",
+				"geboortedatum": "{{cast:jvanwijk.birthDate}}",
+				"geboorteland": "Nederland",
+				"geboortelandCode": "6030",
+				"nationaliteit": "Nederlandse",
+				"nationaliteitCode": "0001",
+				"verblijfplaats": {
+					"straat": "{{cast:jvanwijk.address.street}}",
+					"huisnummer": "{{cast:jvanwijk.address.number}}",
+					"postcode": "{{cast:jvanwijk.address.postcode}}",
+					"woonplaats": "{{cast:jvanwijk.address.city}}",
 					"functieAdres": "W"
 				},
 				"gemeenteVanInschrijving": "Zuiddrecht",
@@ -1241,6 +1313,73 @@
 					{
 						"sbiCode": "{{cast:vanwijk.sbi.code}}",
 						"sbiOmschrijving": "{{cast:vanwijk.sbi.description}}",
+						"indHoofdactiviteit": "Ja"
+					}
+				]
+			}
+		},
+		{
+			"key": "kvk-bewonerslindelaan",
+			"register": "kvk",
+			"schema": "maatschappelijke-activiteit",
+			"data": {
+				"kvkNummer": "{{cast:bewonerslindelaan.kvk}}",
+				"naam": "{{cast:bewonerslindelaan.name}}",
+				"handelsnamen": [
+					{
+						"naam": "{{cast:bewonerslindelaan.name}}",
+						"volgorde": 0
+					}
+				],
+				"rechtsvorm": "{{cast:bewonerslindelaan.legalForm}}",
+				"uitgebreideRechtsvorm": "{{cast:bewonerslindelaan.legalForm}}",
+				"formeleRegistratiedatum": "{{cast:bewonerslindelaan.registeredOn}}",
+				"materieleRegistratie": {
+					"datumAanvang": "{{cast:bewonerslindelaan.registeredOn}}"
+				},
+				"totaalWerkzamePersonen": "{{cast:bewonerslindelaan.employees}}",
+				"sbiActiviteiten": [
+					{
+						"sbiCode": "{{cast:bewonerslindelaan.sbi.code}}",
+						"sbiOmschrijving": "{{cast:bewonerslindelaan.sbi.description}}",
+						"indHoofdactiviteit": "Ja"
+					}
+				],
+				"indNonMailing": "Nee",
+				"actief": true
+			}
+		},
+		{
+			"key": "vestiging-bewonerslindelaan",
+			"register": "kvk",
+			"schema": "vestiging",
+			"data": {
+				"vestigingsnummer": "{{cast:bewonerslindelaan.vestigingsnummer}}",
+				"kvkNummer": "{{cast:bewonerslindelaan.kvk}}",
+				"eersteHandelsnaam": "{{cast:bewonerslindelaan.name}}",
+				"indHoofdvestiging": "Ja",
+				"indCommercieleVestiging": "Ja",
+				"totaalWerkzamePersonen": "{{cast:bewonerslindelaan.employees}}",
+				"adressen": [
+					{
+						"type": "bezoekadres",
+						"straatnaam": "{{cast:bewonerslindelaan.address.street}}",
+						"huisnummer": "{{cast:bewonerslindelaan.address.number}}",
+						"postcode": "{{cast:bewonerslindelaan.address.postcode}}",
+						"plaats": "{{cast:bewonerslindelaan.address.city}}",
+						"land": "Nederland"
+					}
+				],
+				"handelsnamen": [
+					{
+						"naam": "{{cast:bewonerslindelaan.name}}",
+						"volgorde": 0
+					}
+				],
+				"sbiActiviteiten": [
+					{
+						"sbiCode": "{{cast:bewonerslindelaan.sbi.code}}",
+						"sbiOmschrijving": "{{cast:bewonerslindelaan.sbi.description}}",
 						"indHoofdactiviteit": "Ja"
 					}
 				]
