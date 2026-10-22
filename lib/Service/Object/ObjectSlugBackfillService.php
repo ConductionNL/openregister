@@ -83,7 +83,7 @@ class ObjectSlugBackfillService {
 	 * @return array{
 	 *     duplicates: array<string, list<string>>,
 	 *     plan: list<array{uuid: string, old: ?string, new: ?string}>,
-	 *     summary: array{scanned: int, assigned: int, changed: int, collisions: int, unchanged: int, duplicates: int}
+	 *     summary: array{scanned: int, assigned: int, changed: int, collisions: int, unchanged: int, duplicates: int, skipped: int}
 	 * } What was found and what was (or would be) written.
 	 *
 	 * @throws InvalidArgumentException When the schema has no `objectSlugField`.
@@ -126,6 +126,7 @@ class ObjectSlugBackfillService {
 			'collisions' => 0,
 			'unchanged' => 0,
 			'duplicates' => count($duplicates),
+			'skipped' => 0,
 		];
 
 		if ($reslug === true) {
@@ -135,20 +136,24 @@ class ObjectSlugBackfillService {
 		}
 
 		if ($dryRun === false && $plan !== []) {
-			$this->write(plan: $plan, register: $register, schema: $schema);
+			$summary['skipped'] = $this->write(plan: $plan, register: $register, schema: $schema);
 		}
 
 		return ['duplicates' => $duplicates, 'plan' => $plan, 'summary' => $summary];
 	}//end run()
 
 	/**
-	 * Read every row the run looks at, oldest first.
+	 * Read every row the run looks at, oldest first (`_created`, then `_id`).
+	 *
+	 * The candidate is computed while each page is read and only the small
+	 * {id, uuid, slug, created, candidate} tuple is kept, so a large table does
+	 * not hold every object body in memory.
 	 *
 	 * @param Register $register  The register.
 	 * @param Schema   $schema    The schema.
 	 * @param bool     $onlyEmpty Only rows without a slug.
 	 *
-	 * @return list<array{id: int, uuid: string, slug: string|null, object: array}>
+	 * @return list<array{id: int, uuid: string, slug: string|null, created: string|null, candidate: string|null}>
 	 */
 	private function loadRows(Register $register, Schema $schema, bool $onlyEmpty): array {
 		$rows = [];
@@ -162,10 +167,24 @@ class ObjectSlugBackfillService {
 				onlyEmpty: $onlyEmpty
 			);
 			foreach ($page as $row) {
-				$rows[] = $row;
+				$rows[] = [
+					'id' => $row['id'],
+					'uuid' => $row['uuid'],
+					'slug' => $row['slug'],
+					'created' => $row['created'] ?? null,
+					'candidate' => $this->slugHandler->candidate(objectData: $row['object'], schema: $schema, clientSlug: null),
+				];
 				$afterId = $row['id'];
 			}
 		} while (count($page) === self::PAGE_SIZE);
+
+		// Oldest first as the spec says: `_created`, then `_id`. A row without
+		// `_created` sorts after the dated ones, by `_id`.
+		usort(
+			$rows,
+			static fn (array $a, array $b): int => [($a['created'] === null ? 1 : 0), (string)$a['created'], $a['id']]
+				<=> [($b['created'] === null ? 1 : 0), (string)$b['created'], $b['id']]
+		);
 
 		return $rows;
 	}//end loadRows()
@@ -173,7 +192,7 @@ class ObjectSlugBackfillService {
 	/**
 	 * Default mode: give objects without a slug their candidate when it is free.
 	 *
-	 * @param list<array{id: int, uuid: string, slug: string|null, object: array}> $rows Rows without a slug.
+	 * @param list<array{id: int, uuid: string, slug: string|null, created: string|null, candidate: string|null}> $rows Rows without a slug.
 	 * @param Register $register The register.
 	 * @param Schema   $schema   The schema.
 	 * @param array    $summary  Counters, by reference.
@@ -185,7 +204,7 @@ class ObjectSlugBackfillService {
 		$taken = $this->magicMapper->findAllSlugs(register: $register, schema: $schema);
 		$plan = [];
 		foreach ($rows as $row) {
-			$candidate = $this->slugHandler->candidate(objectData: $row['object'], schema: $schema, clientSlug: null);
+			$candidate = $row['candidate'];
 			if ($candidate === null) {
 				$summary['unchanged']++;
 				continue;
@@ -229,7 +248,7 @@ class ObjectSlugBackfillService {
 	 * reserved. The others are decided oldest first; a later object that wants
 	 * a slug already given out gets the suffix or no slug (logged).
 	 *
-	 * @param list<array{id: int, uuid: string, slug: string|null, object: array}> $rows All live rows.
+	 * @param list<array{id: int, uuid: string, slug: string|null, created: string|null, candidate: string|null}> $rows All live rows.
 	 * @param Register $register The register.
 	 * @param Schema   $schema   The schema.
 	 * @param array    $summary  Counters, by reference.
@@ -238,10 +257,11 @@ class ObjectSlugBackfillService {
 	 * @return list<array{uuid: string, old: ?string, new: ?string}> Only the rows whose slug changes.
 	 */
 	private function planReslug(array $rows, Register $register, Schema $schema, array &$summary, bool $log): array {
+		$suffixOn = ((($schema->getConfiguration() ?? [])['objectSlugSuffix'] ?? false) === true);
 		$candidates = [];
 		$taken = [];
 		foreach ($rows as $index => $row) {
-			$candidates[$index] = $this->slugHandler->candidate(objectData: $row['object'], schema: $schema, clientSlug: null);
+			$candidates[$index] = $row['candidate'];
 			if ($candidates[$index] === null && $row['slug'] !== null) {
 				$taken[$row['slug']][] = $row['uuid'];
 			}
@@ -256,23 +276,38 @@ class ObjectSlugBackfillService {
 			}
 
 			$uuid = $row['uuid'];
-			$slug = $this->slugHandler->decide(
-				candidate: $candidate,
-				register: $register,
-				schema: $schema,
-				objectUuid: $uuid,
-				holderOf: static function (string $wanted) use (&$taken, $uuid): ?string {
-					foreach ($taken[$wanted] ?? [] as $holder) {
-						if ($holder !== $uuid) {
-							return $holder;
-						}
+			$holderOf = static function (string $wanted) use (&$taken, $uuid): ?string {
+				foreach ($taken[$wanted] ?? [] as $holder) {
+					if ($holder !== $uuid) {
+						return $holder;
 					}
+				}
 
-					return null;
-				},
-				path: 'backfill',
-				log: $log
-			);
+				return null;
+			};
+
+			// Idempotence with the suffix on: an object that already carries a
+			// suffixed variant of its taken candidate keeps it, instead of getting
+			// a fresh stamp on every run.
+			$keepSuffixed = $suffixOn === true
+				&& $row['slug'] !== null
+				&& $this->slugHandler->isSuffixOf(slug: $row['slug'], candidate: $candidate) === true
+				&& $holderOf($candidate) !== null
+				&& $holderOf($row['slug']) === null;
+			if ($keepSuffixed === true) {
+				$slug = $row['slug'];
+			} else {
+				$slug = $this->slugHandler->decide(
+					candidate: $candidate,
+					register: $register,
+					schema: $schema,
+					objectUuid: $uuid,
+					holderOf: $holderOf,
+					path: 'backfill',
+					log: $log
+				);
+			}
+
 			if ($slug === null) {
 				$summary['collisions']++;
 			} else {
@@ -294,24 +329,41 @@ class ObjectSlugBackfillService {
 	/**
 	 * Write a plan in one transaction and evict the schema's cached objects.
 	 *
+	 * Each write only applies when the row still holds the slug the plan was
+	 * made against; a row a normal save changed meanwhile is skipped and logged.
+	 *
 	 * @param list<array{uuid: string, old: ?string, new: ?string}> $plan The planned writes.
 	 * @param Register $register The register.
 	 * @param Schema   $schema   The schema.
 	 *
-	 * @return void
+	 * @return int The number of planned writes skipped because the row changed.
 	 *
 	 * @throws Throwable When a write fails (the transaction is rolled back first).
 	 */
-	private function write(array $plan, Register $register, Schema $schema): void {
+	private function write(array $plan, Register $register, Schema $schema): int {
+		$skipped = 0;
 		$this->db->beginTransaction();
 		try {
 			foreach ($plan as $step) {
-				$this->magicMapper->updateSlugColumn(
+				$updated = $this->magicMapper->updateSlugColumn(
 					register: $register,
 					schema: $schema,
 					uuid: $step['uuid'],
-					slug: $step['new']
+					slug: $step['new'],
+					expected: $step['old']
 				);
+				if ($updated === 0) {
+					$skipped++;
+					$this->logger->warning(
+						sprintf(
+							'[ObjectSlug] Backfill skipped object %s in register %s / schema %s: its slug changed while the backfill ran',
+							$step['uuid'],
+							(string)$register->getSlug(),
+							(string)$schema->getSlug()
+						),
+						['app' => 'openregister', 'path' => 'backfill', 'objectUuid' => $step['uuid']]
+					);
+				}
 			}
 
 			$this->db->commit();
@@ -326,5 +378,7 @@ class ObjectSlugBackfillService {
 			registerId: (int)$register->getId(),
 			schemaId: (int)$schema->getId()
 		);
+
+		return $skipped;
 	}//end write()
 }//end class

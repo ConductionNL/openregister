@@ -114,12 +114,13 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 	 * @param int         $id    The row id.
 	 * @param string      $uuid  The uuid.
 	 * @param string      $title The source value.
-	 * @param string|null $slug  The stored slug.
+	 * @param string|null $slug    The stored slug.
+	 * @param string|null $created The `_created` value.
 	 *
 	 * @return array The row.
 	 */
-	private function row(int $id, string $uuid, string $title, ?string $slug=null): array {
-		return ['id' => $id, 'uuid' => $uuid, 'slug' => $slug, 'object' => ['title' => $title]];
+	private function row(int $id, string $uuid, string $title, ?string $slug=null, ?string $created=null): array {
+		return ['id' => $id, 'uuid' => $uuid, 'slug' => $slug, 'created' => $created, 'object' => ['title' => $title]];
 	}//end row()
 
 	public function testASchemaWithoutSlugFieldIsRefused(): void {
@@ -200,6 +201,86 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 
 		// A keeps "kept" and reserves it, so B (whose source slugifies to "kept") collides.
 		$this->assertSame([], $this->writes);
+	}
+
+	public function testReslugWithSuffixKeepsAnExistingSuffixedSlug(): void {
+		// Review finding: a second --reslug run must change nothing, also when
+		// objects carry a suffix stamped on an earlier run.
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
+			[
+				$this->row(1, self::UUID_A, 'Same', 'same'),
+				$this->row(2, self::UUID_B, 'Same', 'same-20250101000000'),
+			],
+			[]
+		);
+
+		$result = $this->service->run(
+			$this->register,
+			$this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => true]),
+			reslug: true
+		);
+
+		$this->assertSame([], $this->writes);
+		$this->assertSame(0, $result['summary']['changed']);
+	}
+
+	public function testOldestByCreatedWinsEvenWithAHigherId(): void {
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$this->magicMapper->method('findAllSlugs')->willReturn([]);
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
+			[
+				$this->row(1, self::UUID_A, 'Same', null, '2026-05-01 00:00:00'),
+				$this->row(2, self::UUID_B, 'Same', null, '2024-01-01 00:00:00'),
+			],
+			[]
+		);
+
+		$this->service->run($this->register, $this->schema());
+
+		// B was created first (an imported historical object), so B gets the slug.
+		$this->assertSame([[self::UUID_B, 'same']], $this->writes);
+	}
+
+	public function testARowChangedDuringTheRunIsSkippedNotOverwritten(): void {
+		$magicMapper = $this->createMock(MagicMapper::class);
+		$magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$magicMapper->method('findAllSlugs')->willReturn([]);
+		$magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
+			[$this->row(1, self::UUID_A, 'Hello World')],
+			[]
+		);
+		$expectedSeen = 'unset';
+		$magicMapper->method('updateSlugColumn')->willReturnCallback(
+			function (Register $r, Schema $s, string $uuid, ?string $slug, ?string $expected = null) use (&$expectedSeen): int {
+				$expectedSeen = $expected;
+				return 0;
+			}
+		);
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper->method('find')->willReturn($this->register);
+		$logger = $this->createMock(LoggerInterface::class);
+		$slugHandler = new ObjectSlugHandler(
+			magicMapper: $magicMapper,
+			hydrator: new MetadataHydrationHandler(
+				logger: $this->createMock(LoggerInterface::class),
+				cacheHandler: $this->createMock(CacheHandler::class)
+			),
+			registerMapper: $registerMapper,
+			logger: $logger
+		);
+		$service = new ObjectSlugBackfillService(
+			magicMapper: $magicMapper,
+			slugHandler: $slugHandler,
+			cacheHandler: $this->createMock(CacheHandler::class),
+			db: $this->createMock(IDBConnection::class),
+			logger: $logger
+		);
+
+		$result = $service->run($this->register, $this->schema());
+
+		$this->assertNull($expectedSeen, 'the write must be conditional on the row still having no slug');
+		$this->assertSame(1, $result['summary']['skipped']);
 	}
 
 	public function testADryRunWritesAndLogsNothingButReturnsThePlan(): void {

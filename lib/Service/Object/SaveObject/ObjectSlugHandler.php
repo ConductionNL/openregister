@@ -241,7 +241,12 @@ class ObjectSlugHandler {
 			return [];
 		}
 
+		$suffixOn = ((($schema->getConfiguration() ?? [])['objectSlugSuffix'] ?? false) === true);
+		// One stamp for the whole batch, so the suffixed slugs queried below are
+		// exactly the ones decide() would write.
+		$stamp = $this->stamp();
 		$candidates = [];
+		$suffixed = [];
 		$uuids = [];
 		foreach ($rows as $index => $row) {
 			$candidates[$index] = $this->candidate(
@@ -249,15 +254,21 @@ class ObjectSlugHandler {
 				schema: $schema,
 				clientSlug: $row['clientSlug']
 			);
+			if ($suffixOn === true && $candidates[$index] !== null) {
+				$suffixed[$index] = $this->withSuffix(slug: $candidates[$index], stamp: $stamp);
+			}
+
 			if ($row['uuid'] !== null && $row['uuid'] !== '') {
 				$uuids[$index] = $row['uuid'];
 			}
 		}
 
+		// Suffixed variants go into the same query: the single path checks a
+		// suffixed slug against the database too (D5, BC6).
 		$state = $this->magicMapper->findSlugState(
 			register: $register,
 			schema: $schema,
-			slugs: array_values(array_filter($candidates)),
+			slugs: array_values(array_unique(array_merge(array_filter($candidates), array_values($suffixed)))),
 			uuids: array_values($uuids)
 		);
 		$holders = $state['holders'];
@@ -307,12 +318,17 @@ class ObjectSlugHandler {
 				schema: $schema,
 				objectUuid: (string)($uuid ?? '?'),
 				holderOf: $holderOf,
-				path: 'bulk'
+				path: 'bulk',
+				suffixed: $suffixed[$index] ?? null
 			);
 			$decisions[$index] = $decided;
 			if ($decided !== null) {
-				// Later rows of this batch see the slug as taken.
+				// Later rows of this batch see the slug as taken, and a later row
+				// for the same object finds it frozen, as consecutive single saves would.
 				$holders[$decided][] = (string)($uuid ?? ('batch-' . $index));
+				if ($uuid !== null) {
+					$stored[$uuid] = $decided;
+				}
 			}
 		}//end foreach
 
@@ -329,6 +345,7 @@ class ObjectSlugHandler {
 	 * @param callable $holderOf   fn(string $slug): ?string — uuid holding $slug, other than this object.
 	 * @param string   $path       single | bulk | backfill (log context).
 	 * @param bool     $log        Log a collision (false for a backfill dry run).
+	 * @param string|null $suffixed The suffixed slug to try, when the caller already computed it.
 	 *
 	 * @return string|null The slug to write, or null when the object stays without one.
 	 *
@@ -342,18 +359,20 @@ class ObjectSlugHandler {
 		callable $holderOf,
 		string $path,
 		bool $log=true,
+		?string $suffixed=null,
 	): ?string {
 		$holder = $holderOf($candidate);
 		if ($holder === null) {
 			return $candidate;
 		}
 
-		$suffixed = null;
 		if ((($schema->getConfiguration() ?? [])['objectSlugSuffix'] ?? false) === true) {
-			$suffixed = $this->withSuffix(slug: $candidate);
+			$suffixed ??= $this->withSuffix(slug: $candidate);
 			if ($holderOf($suffixed) === null) {
 				return $suffixed;
 			}
+		} else {
+			$suffixed = null;
 		}
 
 		if ($log === false) {
@@ -375,16 +394,47 @@ class ObjectSlugHandler {
 	/**
 	 * Append `-YYYYMMDDHHMMSS` (UTC), cutting the base so the result fits the column.
 	 *
-	 * @param string $slug The taken slug.
+	 * @param string      $slug  The taken slug.
+	 * @param string|null $stamp A `YmdHis` stamp to use instead of now.
 	 *
 	 * @return string The suffixed slug.
 	 */
-	public function withSuffix(string $slug): string {
-		$now = $this->timeFactory?->now() ?? new DateTimeImmutable('now');
-		$stamp = $now->setTimezone(new DateTimeZone('UTC'))->format('YmdHis');
-		$base = rtrim(substr($slug, 0, self::MAX_LENGTH - self::SUFFIX_LENGTH), '-');
-		return $base . '-' . $stamp;
+	public function withSuffix(string $slug, ?string $stamp=null): string {
+		return $this->suffixBase(slug: $slug) . '-' . ($stamp ?? $this->stamp());
 	}//end withSuffix()
+
+	/**
+	 * Whether a slug is a suffixed variant of a candidate (`<base>-<14 digits>`).
+	 *
+	 * @param string $slug      The stored slug.
+	 * @param string $candidate The unsuffixed candidate.
+	 *
+	 * @return bool True when $slug is $candidate with a date-time suffix.
+	 */
+	public function isSuffixOf(string $slug, string $candidate): bool {
+		return preg_match('/^' . preg_quote($this->suffixBase(slug: $candidate), '/') . '-\d{14}$/', $slug) === 1;
+	}//end isSuffixOf()
+
+	/**
+	 * The current UTC time as a `YmdHis` stamp.
+	 *
+	 * @return string The stamp.
+	 */
+	private function stamp(): string {
+		$now = $this->timeFactory?->now() ?? new DateTimeImmutable('now');
+		return $now->setTimezone(new DateTimeZone('UTC'))->format('YmdHis');
+	}//end stamp()
+
+	/**
+	 * The part of a slug a suffix is appended to, cut so the result fits the column.
+	 *
+	 * @param string $slug The slug.
+	 *
+	 * @return string The base.
+	 */
+	private function suffixBase(string $slug): string {
+		return rtrim(substr($slug, 0, self::MAX_LENGTH - self::SUFFIX_LENGTH), '-');
+	}//end suffixBase()
 
 	/**
 	 * Log a collision: the object was saved without a slug.

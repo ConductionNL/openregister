@@ -314,6 +314,50 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->assertSame([0 => 'bulk-item'], $decisions);
 	}
 
+	public function testBatchChecksTheSuffixedSlugAgainstTheDatabaseToo(): void {
+		// Review finding: the suffixed variant must be in the one prefetch, or a
+		// suffixed slug stored by an earlier call in the same second is reused.
+		$askedFor = [];
+		$this->magicMapper->method('findSlugState')->willReturnCallback(
+			function (Register $r, Schema $s, array $slugs) use (&$askedFor): array {
+				$askedFor = $slugs;
+				return [
+					'holders' => ['same' => [self::UUID_A], 'same-20261022120000' => [self::UUID_C]],
+					'stored' => [],
+				];
+			}
+		);
+		$rows = [0 => ['uuid' => self::UUID_B, 'clientSlug' => null, 'data' => ['title' => 'Same']]];
+
+		$decisions = $this->handler->decideBatch(
+			$rows,
+			$this->register,
+			$this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => true])
+		);
+
+		$this->assertContains('same-20261022120000', $askedFor);
+		$this->assertSame([0 => null], $decisions);
+		$this->assertStringContainsString('also taken', $this->warnings[0]);
+	}
+
+	public function testBatchFreezesTheFirstDecisionForARepeatedUuid(): void {
+		$this->magicMapper->method('findSlugState')->willReturn(['holders' => [], 'stored' => []]);
+		$rows = [
+			0 => ['uuid' => self::UUID_A, 'clientSlug' => null, 'data' => ['title' => 'Alpha']],
+			1 => ['uuid' => self::UUID_A, 'clientSlug' => null, 'data' => ['title' => 'Beta']],
+		];
+
+		$decisions = $this->handler->decideBatch($rows, $this->register, $this->schema(['objectSlugField' => 'title']));
+
+		$this->assertSame([0 => 'alpha', 1 => 'alpha'], $decisions);
+	}
+
+	public function testIsSuffixOfRecognisesOnlyADateTimeSuffix(): void {
+		$this->assertTrue($this->handler->isSuffixOf('hello-world-20261022120000', 'hello-world'));
+		$this->assertFalse($this->handler->isSuffixOf('hello-world-2026', 'hello-world'));
+		$this->assertFalse($this->handler->isSuffixOf('hello-world', 'hello-world'));
+	}
+
 	public function testBatchLeavesASchemaWithoutSlugFieldAlone(): void {
 		$this->magicMapper->expects($this->never())->method('findSlugState');
 

@@ -97,7 +97,15 @@ class BackfillObjectSlugsCommand extends Command {
 
 		try {
 			$register = $this->registerMapper->find((string)$input->getArgument('register'), _rbac: false, _multitenancy: false);
-			$schema = $this->schemaMapper->find((string)$input->getArgument('schema'), _rbac: false, _multitenancy: false);
+			$schemaArg = (string)$input->getArgument('schema');
+			// A schema slug can be shared by several schemas (other organisations,
+			// other apps); resolve it among the register's own schemas first.
+			$schema = null;
+			if (is_numeric($schemaArg) === false) {
+				$schema = $this->schemaMapper->findBySlugInIds(slug: $schemaArg, schemaIds: $register->getSchemas() ?? []);
+			}
+
+			$schema ??= $this->schemaMapper->find($schemaArg, _rbac: false, _multitenancy: false);
 		} catch (Throwable $e) {
 			$output->writeln('<error>Register or schema not found: ' . $e->getMessage() . '</error>');
 			return Command::FAILURE;
@@ -140,13 +148,14 @@ class BackfillObjectSlugsCommand extends Command {
 		$summary = $result['summary'];
 		$output->writeln(
 			sprintf(
-				'<info>scanned=%d assigned=%d changed=%d collisions=%d unchanged=%d duplicates=%d%s</info>',
+				'<info>scanned=%d assigned=%d changed=%d collisions=%d unchanged=%d duplicates=%d skipped=%d%s</info>',
 				$summary['scanned'],
 				$summary['assigned'],
 				$summary['changed'],
 				$summary['collisions'],
 				$summary['unchanged'],
 				$summary['duplicates'],
+				$summary['skipped'],
 				$dryRun === true ? ' (dry run — nothing written)' : ''
 			)
 		);

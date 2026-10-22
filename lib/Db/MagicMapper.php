@@ -6821,8 +6821,9 @@ class MagicMapper extends AbstractObjectMapper {
 	/**
 	 * Page over the live rows of a register+schema table for the slug backfill.
 	 *
-	 * Oldest first by `_id` (insertion order), keyset-paginated on `_id`. Returns
-	 * the uuid, the stored slug and the business data the slug is built from.
+	 * Keyset-paginated on `_id` (stable while the run writes). Returns the uuid,
+	 * the stored slug, `_created` for the oldest-first ordering the caller applies,
+	 * and the business data the slug is built from.
 	 *
 	 * @param Register $register   The register.
 	 * @param Schema   $schema     The schema.
@@ -6830,7 +6831,7 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param int      $pageSize   Rows per page.
 	 * @param bool     $onlyEmpty  Only rows without a slug.
 	 *
-	 * @return list<array{id: int, uuid: string, slug: string|null, object: array}>
+	 * @return list<array{id: int, uuid: string, slug: string|null, created: string|null, object: array}>
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
@@ -6873,10 +6874,12 @@ class MagicMapper extends AbstractObjectMapper {
 			}
 
 			$slug = $row[$slugCol] ?? null;
+			$created = $row[self::METADATA_PREFIX . 'created'] ?? null;
 			$page[] = [
 				'id' => (int)$row[$idCol],
 				'uuid' => (string)$row[self::METADATA_PREFIX . 'uuid'],
 				'slug' => ($slug === null || $slug === '') ? null : (string)$slug,
+				'created' => $created === null ? null : (string)$created,
 				'object' => $entity->getObject() ?? [],
 			];
 		}
@@ -6891,20 +6894,42 @@ class MagicMapper extends AbstractObjectMapper {
 	 * No version bump, audit-trail entry or object event: the slug is derived
 	 * metadata, the same as openregister:backfill-system-owner (design D11).
 	 *
+	 * Only when the row still holds $expected (null/empty when it had no slug), so
+	 * a save that changed the slug while the backfill was planning is not undone.
+	 *
 	 * @param Register    $register The register.
 	 * @param Schema      $schema   The schema.
 	 * @param string      $uuid     The object.
 	 * @param string|null $slug     The new slug, null to clear.
+	 * @param string|null $expected The slug the plan was made against.
 	 *
-	 * @return int Rows updated.
+	 * @return int Rows updated: 0 when the row changed in the meantime.
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
-	public function updateSlugColumn(Register $register, Schema $schema, string $uuid, ?string $slug): int {
+	public function updateSlugColumn(
+		Register $register,
+		Schema $schema,
+		string $uuid,
+		?string $slug,
+		?string $expected=null,
+	): int {
+		$slugCol = self::METADATA_PREFIX . 'slug';
 		$qb = $this->db->getQueryBuilder();
 		$qb->update($this->getTableNameForRegisterSchema(register: $register, schema: $schema))
-			->set(self::METADATA_PREFIX . 'slug', $qb->createNamedParameter($slug))
+			->set($slugCol, $qb->createNamedParameter($slug))
 			->where($qb->expr()->eq(self::METADATA_PREFIX . 'uuid', $qb->createNamedParameter($uuid)));
+		if ($expected === null || $expected === '') {
+			$qb->andWhere(
+				$qb->expr()->orX(
+					$qb->expr()->isNull($slugCol),
+					$qb->expr()->eq($slugCol, $qb->createNamedParameter(''))
+				)
+			);
+		} else {
+			$qb->andWhere($qb->expr()->eq($slugCol, $qb->createNamedParameter($expected)));
+		}
+
 		return $qb->executeStatement();
 	}//end updateSlugColumn()
 

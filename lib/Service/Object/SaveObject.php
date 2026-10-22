@@ -3810,7 +3810,8 @@ class SaveObject {
 			existingObject: $preparedObject,
 			folderId: $folderId,
 			silent: $silent,
-			oldObject: $oldObject
+			oldObject: $oldObject,
+			slugDecided: true
 		);
 
 		// Record the verdict AFTER the write, so a cascade descendant saved
@@ -4394,6 +4395,7 @@ class SaveObject {
 	 * @param array $selfData The @self metadata.
 	 * @param int|null $folderId The folder ID to set on the object.
 	 * @param IUser|null $currentUser Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
+	 * @param bool $decideSlug False on a second prepare of the same save, which keeps the slug decided by the first (#4037).
 	 *
 	 * @return ObjectEntity The prepared object entity.
 	 *
@@ -4408,6 +4410,7 @@ class SaveObject {
 		array $selfData,
 		?int $folderId,
 		?IUser $currentUser = null,
+		bool $decideSlug = true,
 	): ObjectEntity {
 		// The slug stored before this save decides the freeze (#4037).
 		$originalSlug = $existingObject->getSlug();
@@ -4520,12 +4523,14 @@ class SaveObject {
 		$this->hydrateObjectMetadata(entity: $existingObject, schema: $schema);
 
 		// Decide the slug: a stored one is frozen (#4037).
-		$this->slugHandler->applyOnSave(
-			entity: $existingObject,
-			schema: $schema,
-			originalSlug: $originalSlug,
-			clientSlug: $this->clientSlug(selfData: $selfData, data: $data)
-		);
+		if ($decideSlug === true) {
+			$this->slugHandler->applyOnSave(
+				entity: $existingObject,
+				schema: $schema,
+				originalSlug: $originalSlug,
+				clientSlug: $this->clientSlug(selfData: $selfData, data: $data)
+			);
+		}
 
 		// Extract Nc* property references and populate linked entity metadata columns.
 		$this->linkedEntityHandler->extractAndPopulate($existingObject, $schema, $preparedData);
@@ -6241,6 +6246,8 @@ class SaveObject {
 	 * @param int|null $folderId The folder ID to set on the object (optional).
 	 * @param bool $silent Whether to skip audit trail creation and events (default: false).
 	 * @param ObjectEntity|null $oldObject The original object before changes (optional).
+	 * @param bool $slugDecided True when the caller already prepared the entity and
+	 *                          decided its slug against the stored one (#4037).
 	 *
 	 * @return ObjectEntity The updated object entity.
 	 *
@@ -6261,6 +6268,7 @@ class SaveObject {
 		?int $folderId = null,
 		bool $silent = false,
 		?ObjectEntity $oldObject = null,
+		bool $slugDecided = false,
 	): ObjectEntity {
 
 		// Use provided oldObject or clone the existing object for audit trail.
@@ -6294,12 +6302,16 @@ class SaveObject {
 		$schemaId = $schema->getId();
 
 		// Prepare the object for update using the new structure.
+		// A second prepare must not decide the slug again: the entity already
+		// carries the decision made against the stored slug, and `@self` is gone
+		// from $data here, so a re-decision would see neither (#4037).
 		$preparedObject = $this->prepareObjectForUpdate(
 			existingObject: $existingObject,
 			schema: $schema,
 			data: $data,
 			selfData: $selfData,
-			folderId: $folderId
+			folderId: $folderId,
+			decideSlug: ($slugDecided === false)
 		);
 
 		// Recalculate the archive action date if a source property changed.
