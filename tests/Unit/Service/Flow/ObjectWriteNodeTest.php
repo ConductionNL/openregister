@@ -726,6 +726,7 @@ class ObjectWriteNodeTest extends TestCase {
 				'write' => [
 					'created' => ['count' => 1],
 					'updated' => ['count' => 1],
+					'deleted' => ['count' => 0],
 				],
 			],
 			$report->take()
@@ -853,6 +854,41 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->assertTrue($out[0]['json']['deleted']);
 
 	}//end testADeleteRemovesExactlyTheMatchedObjectThroughTheOrdinaryPath()
+
+	/**
+	 * Review feedback on #4772: a delete batch took the OP_DELETE branch
+	 * before writeItems()'s $created/$updated counters, so a run that
+	 * deleted N objects logged "created 0, updated 0" with no sign anything
+	 * happened at all. Pins that a delete batch now reports its own count.
+	 */
+	public function testADeleteBatchReportsItsDeletedCount(): void {
+		$this->tableOf(
+			[
+				['uuid' => 'u-gone-1', 'data' => ['sourceId' => 'r1']],
+				['uuid' => 'u-gone-2', 'data' => ['sourceId' => 'r2']],
+			]
+		);
+		$this->objects->method('deleteObject')->willReturn(true);
+
+		$report = new FlowStepReport();
+
+		$this->node->execute(
+			$this->items([['retiredId' => 'r1'], ['retiredId' => 'r2']]),
+			$this->deleteConfig(),
+			$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
+		);
+
+		$this->assertSame(
+			[
+				'write' => [
+					'created' => ['count' => 0],
+					'updated' => ['count' => 0],
+					'deleted' => ['count' => 2],
+				],
+			],
+			$report->take()
+		);
+	}//end testADeleteBatchReportsItsDeletedCount()
 
 	public function testADeleteMatchingNothingErrorsByDefault(): void {
 		$this->tableOf([]);
@@ -1731,6 +1767,52 @@ class ObjectWriteNodeTest extends TestCase {
 		);
 		$this->assertCount(1, $allSkipped);
 	}
+
+	/**
+	 * The positive case of the PR's headline bug fix: a successful bulk write
+	 * reports the server's actual saved/updated/unchanged counts, not just
+	 * "no report on failure" (review feedback — the only prior bulk-report
+	 * test covered the failure path, so the counts themselves were unpinned).
+	 *
+	 * @return void
+	 */
+	public function testABulkWriteReportsItsSavedUpdatedAndUnchangedCounts(): void {
+		$this->objects->method('saveObjects')->willReturn(
+			$this->bulkResult(
+				[
+					'saved' => [
+						['@self' => ['uuid' => 'a'], 'title' => 'a'],
+						['@self' => ['uuid' => 'b'], 'title' => 'b'],
+					],
+					'updated' => [
+						['@self' => ['uuid' => 'c'], 'title' => 'c'],
+					],
+					'unchanged' => [
+						['@self' => ['uuid' => 'd'], 'title' => 'd'],
+					],
+				]
+			)
+		);
+
+		$report = new FlowStepReport();
+
+		$this->node->execute(
+			$this->items([['title' => 'a'], ['title' => 'b'], ['title' => 'c'], ['title' => 'd']]),
+			$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
+		);
+
+		$this->assertSame(
+			[
+				'write' => [
+					'created' => ['count' => 2],
+					'updated' => ['count' => 1],
+					'unchanged' => ['count' => 1],
+				],
+			],
+			$report->take()
+		);
+	}//end testABulkWriteReportsItsSavedUpdatedAndUnchangedCounts()
 
 	/**
 	 * Regression coverage for the writeReport() ordering contract (review

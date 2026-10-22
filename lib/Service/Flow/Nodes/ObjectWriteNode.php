@@ -1036,6 +1036,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @param string $onConflict The conflict policy.
 	 * @param bool $replace Whether the write replaces.
 	 * @param int|null $cap The write cap.
+	 * @param array $context The run context.
 	 *
 	 * @return array One output item per input item.
 	 *
@@ -1065,6 +1066,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		$writes = 0;
 		$created = 0;
 		$updated = 0;
+		$deleted = 0;
 		$out = [];
 
 		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
@@ -1096,7 +1098,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 					owner: $owner,
 					cap: $cap,
 					config: $config,
-					writes: $writes
+					writes: $writes,
+					deleted: $deleted
 				);
 				continue;
 			}
@@ -1151,6 +1154,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			report: [
 				'created' => ['count' => $created],
 				'updated' => ['count' => $updated],
+				'deleted' => ['count' => $deleted],
 			]
 		);
 
@@ -1181,6 +1185,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @param array $fields The configured fields.
 	 * @param string $onMissing The missing-field policy.
 	 * @param int $cap The write cap.
+	 * @param array $context The run context.
 	 *
 	 * @return array One output item per input item.
 	 *
@@ -1493,6 +1498,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @param int $cap The step's write cap.
 	 * @param array $config The step configuration; `onNoMatch` and `output` are read from it.
 	 * @param int $writes Writes performed so far; incremented by reference.
+	 * @param int $deleted Objects actually deleted so far; incremented by reference.
 	 *
 	 * @return array The output item.
 	 *
@@ -1508,6 +1514,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		int $cap,
 		array $config,
 		int &$writes,
+		int &$deleted,
 	): array {
 		// Read from the config rather than taken as an eleventh parameter. The
 		// caller resolves it exactly this way; passing both it and the config
@@ -1568,6 +1575,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			permanent: $this->permanenceOf(config: $config)
 		);
 		$writes++;
+		$deleted++;
 
 		// Through `outputJson()`, exactly like every non-delete write. Without
 		// it a delete was the one operation that could not carry its incoming
