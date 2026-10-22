@@ -2828,6 +2828,8 @@ class ObjectsController extends Controller {
 			if ($stored !== null) {
 				$record = $stored->getObject();
 			}
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $id);
 		} catch (\Throwable $e) {
 			$this->logger?->debug(
 				message: '[ObjectsController] No stored record for a reference-options read; using the draft alone',
@@ -3178,7 +3180,12 @@ class ObjectsController extends Controller {
 	 * caller can act on, by asking with the uuid, and not a server fault: 409,
 	 * as HandlesExceptionsTrait maps the same exception. The mapper logged the
 	 * uuids; the response names none of them. Every route that resolves an
-	 * identifier answers through here.
+	 * identifier through `ObjectService::find()` or `findSilent()` answers through here:
+	 * show, update, patch, postPatch, destroy, canDelete, contracts, uses, used, logs
+	 * (administrators), lock, unlock, move, the presence routes, downloadFiles,
+	 * referencedBy, geoFeatures and referenceOptions. The cross-table lookup behind
+	 * `merge` takes the first hit and raises nothing, and the history a non-administrator
+	 * reads is resolved by `ObjectReadAccess`, which answers 404 for any failure.
 	 *
 	 * @param string $id The identifier as the caller sent it.
 	 *
@@ -5408,7 +5415,12 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
 		}
 
-		$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+		try {
+			$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $id);
+		}
+
 		if ($object === null) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		}
@@ -5516,7 +5528,12 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
 		}
 
-		$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+		try {
+			$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $id);
+		}
+
 		if ($object === null) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		}
@@ -5566,7 +5583,12 @@ class ObjectsController extends Controller {
 		// A departure by somebody who was not there pushes nothing: there is no
 		// change to tell anybody about, and a page unmounting twice is ordinary.
 		if ($left === true) {
-			$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+			try {
+				$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+			} catch (MultipleObjectsReturnedException $e) {
+				return $this->ambiguousIdentifierResponse(id: $id);
+			}
+
 			if ($object !== null) {
 				$this->container->get(\OCA\OpenRegister\Listener\NotifyPushListener::class)
 					->pushPresence(object: $object, present: $service->present(objectUuid: $id));
@@ -5632,7 +5654,13 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: ['error' => 'Not authenticated'], statusCode: 401);
 		}
 
-		if ($this->presenceObject(register: $register, schema: $schema, id: $id) === null) {
+		try {
+			$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $id);
+		}
+
+		if ($object === null) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 		}
 
@@ -5672,6 +5700,9 @@ class ObjectsController extends Controller {
 	 * @param string $id       The object.
 	 *
 	 * @return ObjectEntity|null The object, or null when it cannot be read.
+	 *
+	 * @throws MultipleObjectsReturnedException When the identifier matches more than one object.
+	 *
 	 * @spec openspec/changes/recently-opened-means-opened/specs/object-interactions/spec.md#requirement-only-a-person-opening-an-object-counts-as-recently-opened
 	 */
 	private function presenceObject(string $register, string $schema, string $id): ?ObjectEntity {
@@ -5679,6 +5710,9 @@ class ObjectsController extends Controller {
 			$this->objectService->setRegister(register: $register);
 			$this->objectService->setSchema(schema: $schema);
 			$found = WriteCause::asLookup(fn () => $this->objectService->find($id));
+		} catch (MultipleObjectsReturnedException $e) {
+			// Not "cannot be read": the caller can act on it, by asking with the uuid.
+			throw $e;
 		} catch (\Throwable $e) {
 			return null;
 		}
@@ -6333,6 +6367,8 @@ class ObjectsController extends Controller {
 			);
 		} catch (DoesNotExistException $exception) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		} catch (MultipleObjectsReturnedException $exception) {
+			return $this->ambiguousIdentifierResponse(id: $id);
 		} catch (\Exception $exception) {
 			return new JSONResponse(
 				data: [
@@ -7031,6 +7067,8 @@ class ObjectsController extends Controller {
 				_multitenancy: $rbac,
 				_render: false
 			));
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $id);
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
 		}
@@ -7096,6 +7134,8 @@ class ObjectsController extends Controller {
 				_multitenancy: $rbac,
 				_render: false
 			));
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $id);
 		} catch (\Exception $e) {
 			return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_NOT_FOUND);
 		}

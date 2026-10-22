@@ -36,7 +36,10 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Deletion\DeletionWindowService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\Hinge\InheritedGeoCollector;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\PresenceService;
+use OCA\OpenRegister\Service\Hinge\ReferencedByService;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -68,7 +71,12 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn(['title' => 'x']);
 		$container = $this->createMock(ContainerInterface::class);
-		$container->method('get')->willReturn($this->createMock(MagicMapper::class));
+		$presence = $this->createMock(PresenceService::class);
+		$presence->method('depart')->willReturn(true);
+		$presence->method('present')->willReturn([]);
+		$container->method('get')->willReturnCallback(
+			fn (string $id) => ($id === PresenceService::class) ? $presence : $this->createMock(MagicMapper::class)
+		);
 
 		return new ObjectsController(
 			'openregister',
@@ -142,7 +150,8 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 	}
 
 	/**
-	 * Every route that resolves an identifier answers the same 409 (review finding bulk-f2).
+	 * Every route that resolves an identifier through ObjectService::find() answers the same 409
+	 * (review findings bulk-f2 and r2routes-f5).
 	 *
 	 * @return array<string, array{0: string}> The route names.
 	 */
@@ -159,6 +168,13 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 			'contracts' => ['contracts'],
 			'uses' => ['uses'],
 			'used' => ['used'],
+			'downloadFiles' => ['downloadFiles'],
+			'referencedBy' => ['referencedBy'],
+			'geoFeatures' => ['geoFeatures'],
+			'move' => ['move'],
+			'presenceBeat' => ['presenceBeat'],
+			'presenceDepart' => ['presenceDepart'],
+			'presenceList' => ['presenceList'],
 		];
 	}//end identifierRoutes()
 
@@ -181,6 +197,14 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 			'contracts' => $controller->contracts('hello-world', 'zaken', 'persoon', $objectService),
 			'uses' => $controller->uses('hello-world', 'zaken', 'persoon', $objectService),
 			'used' => $controller->used('hello-world', 'zaken', 'persoon', $objectService),
+			// Review finding r2routes-f5: the routes that used to answer 500 or 404.
+			'downloadFiles' => $controller->downloadFiles('hello-world', 'zaken', 'persoon', $objectService),
+			'referencedBy' => $controller->referencedBy('hello-world', 'zaken', 'persoon', $objectService, $this->createMock(ReferencedByService::class)),
+			'geoFeatures' => $controller->geoFeatures('hello-world', 'zaken', 'persoon', $objectService, $this->createMock(InheritedGeoCollector::class)),
+			'move' => $controller->move('zaken', 'persoon', 'hello-world'),
+			'presenceBeat' => $controller->presenceBeat('zaken', 'persoon', 'hello-world'),
+			'presenceDepart' => $controller->presenceDepart('zaken', 'persoon', 'hello-world'),
+			'presenceList' => $controller->presenceList('zaken', 'persoon', 'hello-world'),
 		};
 
 		$this->assertAmbiguous($response);
