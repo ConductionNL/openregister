@@ -40,6 +40,8 @@ use Throwable;
 
 /**
  * `occ openregister:backfill-slugs <register> <schema> [--reslug] [--dry-run]`.
+ *
+ * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
  */
 class BackfillObjectSlugsCommand extends Command {
 	/**
@@ -150,6 +152,11 @@ class BackfillObjectSlugsCommand extends Command {
 		}
 
 		$summary = $result['summary'];
+		$dryRunNote = '';
+		if ($dryRun === true) {
+			$dryRunNote = ' (dry run — nothing written)';
+		}
+
 		$output->writeln(
 			sprintf(
 				'<info>scanned=%d assigned=%d changed=%d collisions=%d unchanged=%d duplicates=%d skipped=%d%s</info>',
@@ -160,7 +167,7 @@ class BackfillObjectSlugsCommand extends Command {
 				$summary['unchanged'],
 				$summary['duplicates'],
 				$summary['skipped'],
-				$dryRun === true ? ' (dry run — nothing written)' : ''
+				$dryRunNote
 			)
 		);
 

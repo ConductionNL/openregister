@@ -6716,7 +6716,12 @@ class MagicMapper extends AbstractObjectMapper {
 						continue;
 					}
 
-					$state['stored'][(string)$row[$uuidCol]] = ($rowSlug === null || $rowSlug === '') ? null : (string)$rowSlug;
+					$storedSlug = null;
+					if ($rowSlug !== null && $rowSlug !== '') {
+						$storedSlug = (string)$rowSlug;
+					}
+
+					$state['stored'][(string)$row[$uuidCol]] = $storedSlug;
 				}
 
 				$result->closeCursor();
@@ -6874,12 +6879,22 @@ class MagicMapper extends AbstractObjectMapper {
 			}
 
 			$slug = $row[$slugCol] ?? null;
+			$rowSlug = null;
+			if ($slug !== null && $slug !== '') {
+				$rowSlug = (string)$slug;
+			}
+
 			$created = $row[self::METADATA_PREFIX . 'created'] ?? null;
+			$rowCreated = null;
+			if ($created !== null) {
+				$rowCreated = (string)$created;
+			}
+
 			$page[] = [
 				'id' => (int)$row[$idCol],
 				'uuid' => (string)$row[self::METADATA_PREFIX . 'uuid'],
-				'slug' => ($slug === null || $slug === '') ? null : (string)$slug,
-				'created' => $created === null ? null : (string)$created,
+				'slug' => $rowSlug,
+				'created' => $rowCreated,
 				'object' => $entity->getObject() ?? [],
 			];
 		}

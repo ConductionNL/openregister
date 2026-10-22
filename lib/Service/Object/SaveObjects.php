@@ -275,9 +275,15 @@ class SaveObjects {
 		Register|string|int|null $register=null,
 		Schema|string|int|null $schema=null,
 	): void {
-		$slugHandler = $this->saveHandler->getSlugHandler();
-		$callerRegisterId = $register instanceof Register ? $register->getId() : $register;
-		$callerSchemaId = $schema instanceof Schema ? $schema->getId() : $schema;
+		$callerRegisterId = $register;
+		if ($register instanceof Register) {
+			$callerRegisterId = $register->getId();
+		}
+
+		$callerSchemaId = $schema;
+		if ($schema instanceof Schema) {
+			$callerSchemaId = $schema->getId();
+		}
 
 		$groups = [];
 		foreach ($objects as $index => $object) {
@@ -298,13 +304,23 @@ class SaveObjects {
 
 		foreach ($groups as $key => $indexes) {
 			[$registerId, $schemaId] = explode('|', (string)$key, 2);
+			$groupRegister = null;
+			if ($register instanceof Register && (string)$register->getId() === $registerId) {
+				$groupRegister = $register;
+			}
+
+			$groupSchema = null;
+			if ($schema instanceof Schema && (string)$schema->getId() === $schemaId) {
+				$groupSchema = $schema;
+			}
+
 			$this->decideSlugGroup(
 				objects: $objects,
 				indexes: $indexes,
 				registerId: $registerId,
 				schemaId: $schemaId,
-				register: ($register instanceof Register && (string)$register->getId() === $registerId) ? $register : null,
-				schema: ($schema instanceof Schema && (string)$schema->getId() === $schemaId) ? $schema : null
+				register: $groupRegister,
+				schema: $groupSchema
 			);
 		}
 
@@ -359,7 +375,8 @@ class SaveObjects {
 			// Fail closed: without the table there is no uniqueness check, so no
 			// client slug is written unchecked.
 			$this->logger->warning(
-				'[ObjectSlug] Could not resolve register ' . $registerId . ' for the bulk slug check; the rows of schema ' . $schemaId . ' are saved without a slug: ' . $e->getMessage(),
+				'[ObjectSlug] Could not resolve register ' . $registerId . ' for the bulk slug check; '
+				. 'the rows of schema ' . $schemaId . ' are saved without a slug: ' . $e->getMessage(),
 				['app' => 'openregister']
 			);
 			foreach ($indexes as $index) {
@@ -373,7 +390,11 @@ class SaveObjects {
 		foreach ($indexes as $index) {
 			$object = $objects[$index];
 			$isSelfShape = isset($object['@self']) === true && is_array($object['@self']) === true;
-			$self = $isSelfShape === true ? $object['@self'] : $object;
+			$self = $object;
+			if ($isSelfShape === true) {
+				$self = $object['@self'];
+			}
+
 			$data = $object['object'] ?? [];
 			if ($isSelfShape === true) {
 				$data = $object;
@@ -382,10 +403,25 @@ class SaveObjects {
 
 			$clientSlug = $self['slug'] ?? $self[self::CLIENT_SLUG_KEY] ?? $data['slug'] ?? null;
 			$uuid = $self['uuid'] ?? $self['id'] ?? null;
+			$rowUuid = null;
+			if (is_string($uuid) === true) {
+				$rowUuid = $uuid;
+			}
+
+			$rowClientSlug = null;
+			if (is_string($clientSlug) === true && $clientSlug !== '') {
+				$rowClientSlug = $clientSlug;
+			}
+
+			$rowData = [];
+			if (is_array($data) === true) {
+				$rowData = $data;
+			}
+
 			$rows[$index] = [
-				'uuid' => is_string($uuid) === true ? $uuid : null,
-				'clientSlug' => (is_string($clientSlug) === true && $clientSlug !== '') ? $clientSlug : null,
-				'data' => is_array($data) === true ? $data : [],
+				'uuid' => $rowUuid,
+				'clientSlug' => $rowClientSlug,
+				'data' => $rowData,
 			];
 		}
 
@@ -1844,8 +1880,8 @@ class SaveObjects {
 		// NO ERROR SUPPRESSION: Let single-schema preparation errors bubble up immediately!
 		$selfData = $object['@self'] ?? [];
 
-		// extractBusinessData() below drops an undeclared top-level `slug`; keep it
-		// for the slug decision, which removes this key again (#4037).
+		// The call to extractBusinessData() below drops an undeclared top-level
+		// `slug`. Keep it for the slug decision, which removes this key again (#4037).
 		if (isset($selfData['slug']) === false && is_string($object['slug'] ?? null) === true && $object['slug'] !== '') {
 			$selfData[self::CLIENT_SLUG_KEY] = $object['slug'];
 		}

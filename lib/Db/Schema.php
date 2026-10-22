@@ -2893,7 +2893,17 @@ class Schema extends Entity implements JsonSerializable {
 		// caller's own drafts out of the schema's lists by default.
 		// `objectSlugSuffix` (#4037) is read by ObjectSlugHandler: true appends a
 		// UTC date-time suffix to a colliding slug.
-		$boolFields = ['allowFiles', 'autoPublish', 'defaultAutoShare', 'exportable', 'staging', 'additionalProperties', 'draftsVisible', 'draftsListed', 'objectSlugSuffix'];
+		$boolFields = [
+			'allowFiles',
+			'autoPublish',
+			'defaultAutoShare',
+			'exportable',
+			'staging',
+			'additionalProperties',
+			'draftsVisible',
+			'draftsListed',
+			'objectSlugSuffix',
+		];
 		// `implements` + `x-schema-org` carry the cross-app semantic-type
 		// markers (ADR-048); they must round-trip through the configuration
 		// column so SemanticTypeResolver can discover the schema. Their IRI

@@ -253,6 +253,8 @@ class MagicBulkHandler {
 	 * @param array<string, mixed> $prepared The row being built.
 	 * @param array<string, mixed> $selfData The object's `@self` metadata.
 	 * @param array<string, mixed> $object The raw object payload.
+	 * @param bool $managedSlug Whether the schema opted into managed slugs; only
+	 *                          then is a slug carried onto the row.
 	 *
 	 * @return array<string, mixed> The row with the display columns set.
 	 *
@@ -560,6 +562,8 @@ class MagicBulkHandler {
 	 * @param bool $needsPreUpdateState Whether anything downstream will read the
 	 *                                  pre-update rows. False narrows the fetch
 	 *                                  to the uuid. See the SuppressWarnings note.
+	 * @param bool $freezeSlug Whether the schema has managed slugs, so the upsert
+	 *                         keeps a stored `_slug` instead of overwriting it.
 	 *
 	 * @return array Array of complete objects with object_status
 	 *

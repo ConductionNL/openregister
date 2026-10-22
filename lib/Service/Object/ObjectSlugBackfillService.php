@@ -184,8 +184,8 @@ class ObjectSlugBackfillService {
 		// `_created` sorts after the dated ones, by `_id`.
 		usort(
 			$rows,
-			static fn (array $a, array $b): int => [($a['created'] === null ? 1 : 0), (string)$a['created'], $a['id']]
-				<=> [($b['created'] === null ? 1 : 0), (string)$b['created'], $b['id']]
+			static fn (array $a, array $b): int => [(int)($a['created'] === null), (string)$a['created'], $a['id']]
+				<=> [(int)($b['created'] === null), (string)$b['created'], $b['id']]
 		);
 
 		return $rows;

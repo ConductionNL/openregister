@@ -140,7 +140,11 @@ class ObjectSlugHandler {
 		}
 
 		$slug = $this->hydrator->createSlug(text: trim($value));
-		return $slug === '' ? null : substr($slug, 0, self::MAX_LENGTH);
+		if ($slug === '') {
+			return null;
+		}
+
+		return substr($slug, 0, self::MAX_LENGTH);
 	}//end candidate()
 
 	/**
@@ -279,7 +283,11 @@ class ObjectSlugHandler {
 		$decisions = [];
 		foreach ($rows as $index => $row) {
 			$uuid = $uuids[$index] ?? null;
-			$storedSlug = ($uuid !== null) ? ($stored[$uuid] ?? null) : null;
+			$storedSlug = null;
+			if ($uuid !== null) {
+				$storedSlug = ($stored[$uuid] ?? null);
+			}
+
 			$clientSlug = $row['clientSlug'];
 
 			if ($storedSlug !== null) {
