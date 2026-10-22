@@ -188,7 +188,12 @@ pass the same rules: it is written only when the object has no slug yet, it is s
 to the uniqueness check and to `objectSlugSuffix`, and a collision leaves the object
 without a slug and logs the collision warning. A client-supplied slug that differs from
 an existing frozen slug MUST be ignored and logged as a warning; the save MUST NOT fail.
-The value is stored as sent and is not slugified.
+The value MUST be normalised exactly like a generated slug (lower case, `a-z0-9` and hyphens, at most 255 characters), so `Hello` and `hello` are one slug; a client slug that normalises to nothing MUST be treated as not sent. Single and bulk save MUST compare slugs case-insensitively, so a collation that matches `Hello` to a stored `hello` cannot let both be written.
+
+#### Scenario: A client slug that differs only in case collides in a bulk save
+- **GIVEN** a schema with `objectSlugField: "title"` and object A holding `hello`
+- **WHEN** a bulk save contains a new object with `@self.slug: "Hello"`
+- **THEN** the new object MUST be saved without a slug and the collision warning MUST name A
 
 #### Scenario: A free client slug is accepted on a new object
 - **GIVEN** a schema with `objectSlugField: "title"` and no object holding `my-own-slug`

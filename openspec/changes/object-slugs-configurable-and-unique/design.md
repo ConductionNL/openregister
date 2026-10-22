@@ -134,8 +134,11 @@ object.
 
 ### D3 — Candidate: client slug first, else `objectSlugField`; one slugify routine
 
-`candidate()` returns the client slug (`@self.slug`, else top-level `slug`) as sent when
-it is non-empty. Otherwise it reads `objectSlugField` through
+`candidate()` returns the client slug (`@self.slug`, else top-level `slug`) when it is
+non-empty, normalised with the same `createSlug()` routine and cut to 255 characters (a
+slug that normalises to nothing counts as not sent), so `Hello` and `hello` are one slug
+and the bulk check, which keys its holders case-folded, agrees with the single check that
+compares in SQL. Otherwise it reads `objectSlugField` through
 `MetadataHydrationHandler::extractMetadataValue()`, which supports dot paths and the
 template syntax the other `object*Field` keys use, and slugifies the result with
 `MetadataHydrationHandler::createSlug()`. That routine is the one that produced every

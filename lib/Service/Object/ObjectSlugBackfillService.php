@@ -34,7 +34,6 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * Plans and applies a slug backfill for one register+schema table.
@@ -58,10 +57,11 @@ class ObjectSlugBackfillService {
 	private const PAGE_SIZE = 500;
 
 	/**
-	 * Rows per write transaction, so a large table does not hold its row locks
-	 * for the whole write and one failure does not roll back every row.
+	 * Writes a plan, evicts the cache and records the audit entry.
+	 *
+	 * @var ObjectSlugBackfillWriter
 	 */
-	private const WRITE_CHUNK = 500;
+	private ObjectSlugBackfillWriter $writer;
 
 	/**
 	 * Constructor.
@@ -76,11 +76,18 @@ class ObjectSlugBackfillService {
 	public function __construct(
 		private readonly MagicMapper $magicMapper,
 		private readonly ObjectSlugHandler $slugHandler,
-		private readonly CacheHandler $cacheHandler,
-		private readonly IDBConnection $db,
-		private readonly AuditTrailMapper $auditTrail,
+		CacheHandler $cacheHandler,
+		IDBConnection $db,
+		AuditTrailMapper $auditTrail,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->writer = new ObjectSlugBackfillWriter(
+			magicMapper: $magicMapper,
+			cacheHandler: $cacheHandler,
+			db: $db,
+			auditTrail: $auditTrail,
+			logger: $logger
+		);
 	}//end __construct()
 
 	/**
@@ -158,7 +165,7 @@ class ObjectSlugBackfillService {
 		}
 
 		if ($dryRun === false) {
-			$summary['skipped'] = $this->write(plan: $plan, register: $register, schema: $schema, mode: $this->modeName(reslug: $reslug), summary: $summary);
+			$summary['skipped'] = $this->writer->write(plan: $plan, register: $register, schema: $schema, mode: $this->writer->modeName(reslug: $reslug), summary: $summary);
 		}
 
 		return ['duplicates' => $duplicates, 'plan' => $plan, 'kept' => $kept, 'summary' => $summary];
@@ -315,31 +322,48 @@ class ObjectSlugBackfillService {
 			}
 
 			$summary['unchanged']++;
-			$candidate = $row['candidate'];
-			if ($candidate === null || $current[$uuid] === $candidate) {
-				continue;
-			}
-
-			// A suffixed variant from an earlier run is the settled outcome, not a new collision.
-			$holder = $this->holderOther(taken: $taken, slug: $candidate, uuid: $uuid);
-			if ($holder === null || ($row['slug'] !== null && $this->slugHandler->isSuffixOf(slug: $row['slug'], candidate: $candidate) === true)) {
-				continue;
-			}
-
-			// Wanted a slug it could not get: it keeps what it has, or stays without.
-			$summary['collisions']++;
-			if ($row['slug'] !== null) {
-				$summary['kept']++;
-				$kept[] = ['uuid' => $uuid, 'slug' => $row['slug'], 'wanted' => $candidate, 'holder' => $holder];
-			}
-
-			if ($log === true) {
-				$this->logUnplaced(row: $row, register: $register, schema: $schema, holder: $holder);
-			}
-		}//end foreach
+			$this->reportUnplaced(row: $row, register: $register, schema: $schema, taken: $taken, summary: $summary, log: $log, kept: $kept);
+		}
 
 		return $plan;
 	}//end planReslug()
+
+	/**
+	 * Count and report a row that wanted a slug it could not get.
+	 *
+	 * @param array    $row      The row, unchanged by the walk.
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 * @param array    $taken    slug => holders at the end of the walk.
+	 * @param array    $summary  Counters, by reference.
+	 * @param bool     $log      Log it (false on a dry run).
+	 * @param array    $kept     Objects that keep their slug because of a collision, by reference.
+	 *
+	 * @return void
+	 */
+	private function reportUnplaced(array $row, Register $register, Schema $schema, array $taken, array &$summary, bool $log, array &$kept): void {
+		$candidate = $row['candidate'];
+		if ($candidate === null || $row['slug'] === $candidate) {
+			return;
+		}
+
+		// A suffixed variant from an earlier run is the settled outcome, not a new collision.
+		$holder = $this->holderOther(taken: $taken, slug: $candidate, uuid: $row['uuid']);
+		if ($holder === null || ($row['slug'] !== null && $this->slugHandler->isSuffixOf(slug: $row['slug'], candidate: $candidate) === true)) {
+			return;
+		}
+
+		// Wanted a slug it could not get: it keeps what it has, or stays without.
+		$summary['collisions']++;
+		if ($row['slug'] !== null) {
+			$summary['kept']++;
+			$kept[] = ['uuid' => $row['uuid'], 'slug' => $row['slug'], 'wanted' => $candidate, 'holder' => $holder];
+		}
+
+		if ($log === true) {
+			$this->logUnplaced(row: $row, register: $register, schema: $schema, holder: $holder);
+		}
+	}//end reportUnplaced()
 
 	/**
 	 * Log a row that wanted a slug another object holds.
@@ -396,16 +420,7 @@ class ObjectSlugBackfillService {
 
 		$holderOf = fn (string $wanted): ?string => $this->holderOther(taken: $taken, slug: $wanted, uuid: $uuid);
 
-		// Idempotence with the suffix on: an object that already carries a
-		// suffixed variant of its taken candidate keeps it, instead of getting
-		// a fresh stamp on every run.
-		$suffixOn = ((($schema->getConfiguration() ?? [])['objectSlugSuffix'] ?? false) === true);
-		if ($suffixOn === true
-			&& $own !== null
-			&& $this->slugHandler->isSuffixOf(slug: $own, candidate: $candidate) === true
-			&& $holderOf($candidate) !== null
-			&& $holderOf($own) === null
-		) {
+		if ($this->keepsSuffixedSlug(schema: $schema, own: $own, candidate: $candidate, holderOf: $holderOf) === true) {
 			return false;
 		}
 
@@ -432,6 +447,27 @@ class ObjectSlugBackfillService {
 	}//end moveRow()
 
 	/**
+	 * Idempotence with the suffix on: an object that already carries a suffixed
+	 * variant of its taken candidate keeps it, instead of getting a fresh stamp
+	 * on every run.
+	 *
+	 * @param Schema      $schema    The schema.
+	 * @param string|null $own       The slug the object holds now.
+	 * @param string      $candidate The slug it wants.
+	 * @param callable    $holderOf  fn(string $slug): ?string, the other holder.
+	 *
+	 * @return bool True when the object keeps its suffixed slug.
+	 */
+	private function keepsSuffixedSlug(Schema $schema, ?string $own, string $candidate, callable $holderOf): bool {
+		$suffixOn = ((($schema->getConfiguration() ?? [])['objectSlugSuffix'] ?? false) === true);
+		return $suffixOn === true
+			&& $own !== null
+			&& $this->slugHandler->isSuffixOf(slug: $own, candidate: $candidate) === true
+			&& $holderOf($candidate) !== null
+			&& $holderOf($own) === null;
+	}//end keepsSuffixedSlug()
+
+	/**
 	 * The uuid of an object other than `$uuid` that holds `$slug`.
 	 *
 	 * @param array<string, list<string>> $taken slug => holders.
@@ -449,152 +485,4 @@ class ObjectSlugBackfillService {
 
 		return null;
 	}//end holderOther()
-
-	/**
-	 * The audit action suffix of a run.
-	 *
-	 * @param bool $reslug Whether the run was a `--reslug`.
-	 *
-	 * @return string `reslug` or `fill`.
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Maps the command option to a name.
-	 */
-	private function modeName(bool $reslug): string {
-		if ($reslug === true) {
-			return 'reslug';
-		}
-
-		return 'fill';
-	}//end modeName()
-
-	/**
-	 * Write a plan in chunked transactions, evict the schema's cached objects and
-	 * record the run in the audit trail.
-	 *
-	 * Each write only applies when the row still holds the slug the plan was
-	 * made against; a row a normal save changed meanwhile is skipped and logged.
-	 * A chunk that fails is rolled back, the chunks before it stay written and
-	 * the audit entry lists exactly those.
-	 *
-	 * @param list<array{uuid: string, old: ?string, new: ?string}> $plan The planned writes.
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param string   $mode     `fill` or `reslug`.
-	 * @param array    $summary  The run's counters (copied into the audit entry).
-	 *
-	 * @return int The number of planned writes skipped because the row changed.
-	 *
-	 * @throws Throwable When a write fails (that chunk is rolled back first).
-	 */
-	private function write(array $plan, Register $register, Schema $schema, string $mode, array $summary): int {
-		$skipped = 0;
-		$applied = [];
-		try {
-			foreach (array_chunk($plan, self::WRITE_CHUNK) as $chunk) {
-				$this->writeChunk(chunk: $chunk, register: $register, schema: $schema, applied: $applied, skipped: $skipped);
-			}
-		} finally {
-			// Written even when a chunk failed: the entry must list what changed.
-			$this->recordAudit(applied: $applied, register: $register, schema: $schema, mode: $mode, summary: ($summary + ['skipped' => $skipped]));
-		}
-
-		if ($plan !== []) {
-			$this->cacheHandler->invalidateForObjectChange(
-				object: null,
-				operation: 'bulk_update',
-				registerId: (int)$register->getId(),
-				schemaId: (int)$schema->getId()
-			);
-		}
-
-		return $skipped;
-	}//end write()
-
-	/**
-	 * Write one chunk of the plan in one transaction.
-	 *
-	 * @param list<array{uuid: string, old: ?string, new: ?string}> $chunk    The chunk.
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param array    $applied  Steps that were written, by reference.
-	 * @param int      $skipped  Steps skipped because the row changed, by reference.
-	 *
-	 * @return void
-	 *
-	 * @throws Throwable When a write fails (the chunk is rolled back first).
-	 */
-	private function writeChunk(array $chunk, Register $register, Schema $schema, array &$applied, int &$skipped): void {
-		$written = [];
-		$this->db->beginTransaction();
-		try {
-			foreach ($chunk as $step) {
-				$updated = $this->magicMapper->updateSlugColumn(
-					register: $register,
-					schema: $schema,
-					uuid: $step['uuid'],
-					slug: $step['new'],
-					expected: $step['old']
-				);
-				if ($updated > 0) {
-					$written[] = $step;
-					continue;
-				}
-
-				$skipped++;
-				$this->logger->warning(
-					sprintf(
-						'[ObjectSlug] Backfill skipped object %s in register %s / schema %s: its slug changed while the backfill ran',
-						$step['uuid'],
-						(string)$register->getSlug(),
-						(string)$schema->getSlug()
-					),
-					['app' => 'openregister', 'path' => 'backfill', 'objectUuid' => $step['uuid']]
-				);
-			}
-
-			$this->db->commit();
-		} catch (Throwable $e) {
-			$this->db->rollBack();
-			throw $e;
-		}
-
-		array_push($applied, ...$written);
-	}//end writeChunk()
-
-	/**
-	 * One audit-trail entry for the run, with the old to new list.
-	 *
-	 * A failure to write the entry is logged with the full list, so the change
-	 * stays reconstructable, and does not undo the slugs already written.
-	 *
-	 * @param list<array{uuid: string, old: ?string, new: ?string}> $applied The writes that were applied.
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param string   $mode     `fill` or `reslug`.
-	 * @param array    $summary  The run's counters.
-	 *
-	 * @return void
-	 */
-	private function recordAudit(array $applied, Register $register, Schema $schema, string $mode, array $summary): void {
-		try {
-			$this->auditTrail->createSlugBackfillEntry(
-				mode: $mode,
-				changes: $applied,
-				summary: $summary,
-				register: (int)$register->getId(),
-				schema: (int)$schema->getId()
-			);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				message: sprintf(
-					'[ObjectSlug] Could not write the audit entry of the slug backfill (register %s, schema %s): %s; changes: %s',
-					(string)$register->getId(),
-					(string)$schema->getId(),
-					$e->getMessage(),
-					json_encode($applied)
-				),
-				context: ['app' => 'openregister', 'path' => 'backfill']
-			);
-		}
-	}//end recordAudit()
 }//end class

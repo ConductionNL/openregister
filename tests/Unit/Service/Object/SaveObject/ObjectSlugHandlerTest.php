@@ -242,13 +242,109 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->assertStringContainsString('Ignored client slug "other"', $this->warnings[0]);
 	}
 
-	public function testAClientSlugIsTheCandidateAsSent(): void {
+	public function testAClientSlugIsTheCandidateNormalisedLikeAGeneratedOne(): void {
 		$this->magicMapper->method('findSlugHolders')->willReturn([]);
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World']);
 
 		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), null, 'Zaak_2026-0042');
 
-		$this->assertSame('Zaak_2026-0042', $entity->getSlug());
+		$this->assertSame('zaak-2026-0042', $entity->getSlug());
+	}
+
+	public function testAClientSlugIsCutToTheColumnWidth(): void {
+		// Review finding save-f7: an overlong client slug must not reach the 255-wide column.
+		$this->magicMapper->method('findSlugHolders')->willReturn([]);
+		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World']);
+
+		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), null, str_repeat('a', 300));
+
+		$this->assertSame(str_repeat('a', 255), $entity->getSlug());
+	}
+
+	public function testAClientSlugThatSlugifiesToNothingFallsBackToTheSourceField(): void {
+		$this->magicMapper->method('findSlugHolders')->willReturn([]);
+		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World']);
+
+		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), null, '!!!');
+
+		$this->assertSame('hello-world', $entity->getSlug());
+	}
+
+	public function testAnUnresolvableRegisterDropsTheSlugAndSaysSo(): void {
+		// Review finding save-f7: fail closed, but not silently.
+		$this->magicMapper->expects($this->never())->method('findSlugHolders');
+		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World']);
+		$entity->setRegister(null);
+
+		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), null, 'my-slug');
+
+		$this->assertNull($entity->getSlug());
+		$this->assertCount(1, $this->warnings);
+		$this->assertStringContainsString('register did not resolve', $this->warnings[0]);
+		$this->assertStringContainsString('my-slug', $this->warnings[0]);
+	}
+
+	public function testBatchSeesACollisionWhenTheClientSlugDiffersOnlyInCase(): void {
+		// Review finding bulk-f3: stored `hello`, bulk client slug `Hello`.
+		$this->magicMapper->method('findSlugState')->willReturn(['holders' => ['hello' => [self::UUID_C]], 'stored' => []]);
+		$rows = [0 => ['uuid' => self::UUID_A, 'clientSlug' => 'Hello', 'data' => ['title' => 'Other']]];
+
+		$decisions = $this->handler->decideBatch($rows, $this->register, $this->schema(['objectSlugField' => 'title']));
+
+		$this->assertSame([0 => null], $decisions);
+		$this->assertStringContainsString(self::UUID_C, $this->warnings[0]);
+	}
+
+	public function testBatchComparesTheHoldersTheDatabaseReturnsCaseFolded(): void {
+		// A case-insensitive collation returns the stored spelling for the queried slug.
+		$this->magicMapper->method('findSlugState')->willReturn(['holders' => ['Hello' => [self::UUID_C]], 'stored' => []]);
+		$rows = [0 => ['uuid' => self::UUID_A, 'clientSlug' => null, 'data' => ['title' => 'Hello']]];
+
+		$decisions = $this->handler->decideBatch($rows, $this->register, $this->schema(['objectSlugField' => 'title']));
+
+		$this->assertSame([0 => null], $decisions);
+	}
+
+	public function testBatchSecondRowWithTheSameSlugInOtherCaseCollides(): void {
+		$this->magicMapper->method('findSlugState')->willReturn(['holders' => [], 'stored' => []]);
+		$rows = [
+			0 => ['uuid' => self::UUID_A, 'clientSlug' => 'Same', 'data' => []],
+			1 => ['uuid' => self::UUID_B, 'clientSlug' => 'SAME', 'data' => []],
+		];
+
+		$decisions = $this->handler->decideBatch($rows, $this->register, $this->schema(['objectSlugField' => 'title']));
+
+		$this->assertSame([0 => 'same', 1 => null], $decisions);
+	}
+
+	public function testRestoreKeepsTheSlugWhenNobodyHoldsIt(): void {
+		$this->magicMapper->method('findSlugHolders')->willReturn([]);
+		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'hello-world');
+
+		$slug = $this->handler->slugForRestore($entity, $this->register, $this->schema(['objectSlugField' => 'title']));
+
+		$this->assertSame('hello-world', $slug);
+		$this->assertSame([], $this->warnings);
+	}
+
+	public function testRestoreDropsTheSlugAnotherLiveObjectNowHolds(): void {
+		$this->magicMapper->method('findSlugHolders')->willReturn([self::UUID_B]);
+		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'hello-world');
+
+		$slug = $this->handler->slugForRestore($entity, $this->register, $this->schema(['objectSlugField' => 'title']));
+
+		$this->assertNull($slug);
+		$this->assertCount(1, $this->warnings);
+		$this->assertStringContainsString('was restored without a slug', $this->warnings[0]);
+		$this->assertStringContainsString(self::UUID_A, $this->warnings[0]);
+		$this->assertStringContainsString(self::UUID_B, $this->warnings[0]);
+	}
+
+	public function testRestoreLeavesAnUnmanagedSchemaAlone(): void {
+		$this->magicMapper->expects($this->never())->method('findSlugHolders');
+		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'hello-world');
+
+		$this->assertSame('hello-world', $this->handler->slugForRestore($entity, $this->register, $this->schema([])));
 	}
 
 	public function testAnEmptySourceFieldGivesNoSlug(): void {
