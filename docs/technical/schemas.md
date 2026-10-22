@@ -71,8 +71,8 @@ the same dot paths and templates as `objectNameField`; the value is slugified
   keeps its current slug (reported as kept because of a collision; with
   `objectSlugSuffix` it gets the suffixed slug). The backfill writes the slug column
   directly: no per-object version or audit entry and no object events, but every run
-  that is not a dry run writes one audit-trail entry (`slug.backfill.fill` or
-  `slug.backfill.reslug`) listing each changed object with its old and new slug. Use
+  that is not a dry run and changes at least one slug writes one audit-trail entry (`slug.backfill.fill` or
+  `slug.backfill.reslug`) listing each changed object with its old and new slug (a run that changes nothing writes none). Use
   `--dry-run` to see the plan first.
 
 A schema without `objectSlugField` keeps the old behaviour: no slug unless a client

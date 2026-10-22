@@ -347,6 +347,20 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$this->assertSame([], $this->audits);
 	}
 
+	public function testARunThatChangesNothingWritesNoAuditEntry(): void {
+		// Review finding r2routes-f9: nothing changed, nothing to record in the hash chain.
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
+			$this->page([$this->row(1, self::UUID_A, 'Hello', 'hello')]),
+			$this->page([])
+		);
+
+		$result = $this->service->run($this->register, $this->schema(), reslug: true);
+
+		$this->assertSame([], $result['plan']);
+		$this->assertSame([], $this->audits);
+	}
+
 	public function testAnAppliedWriteIsAuditedButASkippedOneIsNot(): void {
 		$magicMapper = $this->createMock(MagicMapper::class);
 		$magicMapper->method('findDuplicateSlugs')->willReturn([]);

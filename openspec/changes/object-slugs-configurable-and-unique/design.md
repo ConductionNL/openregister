@@ -297,9 +297,9 @@ occ openregister:backfill-slugs <register> <schema> [--reslug] [--dry-run]
   object cache. It does not bump `_version`, write a per-object audit-trail entry or
   dispatch an object event, the same as `openregister:backfill-system-owner`. The slug is
   derived metadata, and a few thousand events from one maintenance run would fan out to
-  every listener. Because it replaces a business-visible identifier, every non-dry run
-  writes one audit-trail entry (`AuditTrailMapper::createSlugBackfillEntry`) with the
-  old to new list of that run.
+  every listener. Because it replaces a business-visible identifier, every non-dry run that
+  changes a slug writes one audit-trail entry (`AuditTrailMapper::createSlugBackfillEntry`)
+  with the old to new list of that run; a run that changes nothing writes none.
 - **Summary line:** `scanned=<n> assigned=<n> changed=<n> collisions=<n> kept=<n> unchanged=<n> duplicates=<n> skipped=<n>`.
 - **Idempotent:** default mode only selects empty slugs, and in `--reslug` a second run
   computes the same plan, which is all "unchanged".

@@ -284,10 +284,10 @@ slug and the uuids. In default mode it MUST leave those duplicates unchanged. Wi
 idempotent: a second run in the same mode changes nothing. It writes the slug column
 directly, in transactions of at most 500 rows. It does not bump the object version, does
 not write a per-object audit-trail entry and does not dispatch object events. Instead,
-every run that is not a dry run MUST write exactly one audit-trail entry
+every run that is not a dry run and changes at least one slug MUST write one audit-trail entry
 (`slug.backfill.fill` or `slug.backfill.reslug`, on the register and schema) that lists
 every object whose slug it changed as uuid, old slug and new slug, so a `--reslug` stays
-reconstructable.
+reconstructable. A run that changes nothing, and a dry run, MUST NOT write an entry (the console summary still reports it). When the entry cannot be inserted, the run logs an error line with the changes instead, and the slugs already written stay.
 
 #### Scenario: Default mode fills only empty slugs
 - **GIVEN** a schema with `objectSlugField: "title"` holding object A with slug `a-title` and object B without a slug and `title: "B Title"`
@@ -326,6 +326,11 @@ reconstructable.
 - **THEN** exactly one audit-trail entry MUST exist for it, listing A and B with old and new slug
 - **AND** no object's version MUST have changed
 - **AND** a `--dry-run` MUST write no entry
+
+#### Scenario: A run that changes nothing writes no audit-trail entry
+- **GIVEN** a `--reslug` run after which every object already holds the slug it wants
+- **WHEN** the run finishes
+- **THEN** no audit-trail entry MUST be written
 
 #### Scenario: Dry run writes nothing
 - **GIVEN** an object without a slug in a schema with `objectSlugField`

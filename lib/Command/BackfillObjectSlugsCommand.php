@@ -73,7 +73,7 @@ class BackfillObjectSlugsCommand extends Command {
 			->setDescription(
 				'Fill missing object slugs of one register and schema from the schema\'s objectSlugField; '
 				. 'by default existing slugs are left alone and duplicates are reported, not changed. '
-				. 'No per-object version or event is written; one audit-trail entry per run lists the changes. '
+				. 'No per-object version or event is written; a run that changes slugs writes one audit-trail entry that lists them. '
 				. 'With --reslug existing slugs ARE rewritten, and links built on the old slugs stop working.'
 			)
 			->addArgument('register', InputArgument::REQUIRED, 'Register (id, uuid or slug)')
@@ -86,8 +86,8 @@ class BackfillObjectSlugsCommand extends Command {
 				. 'objects with an empty source keep their slug. This is the only way a set slug changes: '
 				. 'links, bookmarks and external references that use an old slug stop working. '
 				. 'An object whose new slug another object already holds keeps its current slug (with '
-				. 'objectSlugSuffix it gets the suffixed slug) and is reported as kept. Every run that is not a '
-				. 'dry run writes one audit-trail entry listing the old and new slug of each changed object. '
+				. 'objectSlugSuffix it gets the suffixed slug) and is reported as kept. A run that is not a '
+				. 'dry run and changes at least one slug writes one audit-trail entry listing the old and new slug of the changed objects. '
 				. 'Run with --dry-run first'
 			)
 			->addOption('dry-run', null, InputOption::VALUE_NONE, 'Print the plan without writing anything');

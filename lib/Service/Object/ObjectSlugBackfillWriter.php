@@ -52,7 +52,7 @@ class ObjectSlugBackfillWriter {
 	 * @param MagicMapper      $magicMapper  Writes the slug column.
 	 * @param CacheHandler     $cacheHandler Object cache, evicted after writing.
 	 * @param IDBConnection    $db           Wraps each chunk in a transaction.
-	 * @param AuditTrailMapper $auditTrail   Records the one audit entry of a run.
+	 * @param AuditTrailMapper $auditTrail   Records the audit entry of a run that changed slugs.
 	 * @param LoggerInterface  $logger       Receives the skipped-row warnings.
 	 */
 	public function __construct(
@@ -66,7 +66,7 @@ class ObjectSlugBackfillWriter {
 
 	/**
 	 * Write a plan in chunked transactions, evict the schema's cached objects and
-	 * record the run in the audit trail.
+	 * record the run in the audit trail (one entry when at least one slug changed).
 	 *
 	 * Each write only applies when the row still holds the slug the plan was
 	 * made against; a row a normal save changed meanwhile is skipped and logged.
@@ -93,8 +93,11 @@ class ObjectSlugBackfillWriter {
 				$this->writeChunk(chunk: $chunk, register: $register, schema: $schema, applied: $applied, skipped: $skipped);
 			}
 		} finally {
-			// Written even when a chunk failed: the entry must list what changed.
-			$this->recordAudit(applied: $applied, register: $register, schema: $schema, mode: $mode, summary: array_merge($summary, ['skipped' => $skipped]));
+			// Written even when a chunk failed: the entry must list what changed. A run
+			// that changed nothing leaves no entry (the console summary still says so).
+			if ($applied !== []) {
+				$this->recordAudit(applied: $applied, register: $register, schema: $schema, mode: $mode, summary: array_merge($summary, ['skipped' => $skipped]));
+			}
 		}
 
 		if ($plan !== []) {

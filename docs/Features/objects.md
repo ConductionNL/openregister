@@ -91,7 +91,7 @@ Objects support standard CRUD operations:
 
 OpenRegister provides comprehensive version control capabilities:
 
-- Every change creates a new version with full audit trail. The one exception is `occ openregister:backfill-slugs`, which writes the slug column without a per-object version and records one audit-trail entry per run, with the old and new slug of every object it changed
+- Every change creates a new version with full audit trail. The one exception is `occ openregister:backfill-slugs`, which writes the slug column without a per-object version and records one audit-trail entry per run that changed slugs, with the old and new slug of every object it changed
 - Changes are tracked at the field level
 - Previous versions can be viewed and compared
 - Objects can be reverted to any historical version

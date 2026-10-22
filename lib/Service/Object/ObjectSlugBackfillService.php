@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
  * source is empty keeps its slug, which stays reserved, and so does an object
  * whose new slug another object already holds. Writes go straight to the slug
  * column: no per-object version bump, audit-trail entry or object event (design
- * D11); instead one audit-trail entry per run lists every old to new slug. A
+ * D11); instead a run that changes at least one slug writes one audit-trail entry with the old to new slugs. A
  * run in the same mode a second time changes nothing.
  *
  * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
@@ -70,7 +70,7 @@ class ObjectSlugBackfillService {
 	 * @param ObjectSlugHandler $slugHandler  Candidate, suffix and collision rules.
 	 * @param CacheHandler      $cacheHandler Object cache, evicted after writing.
 	 * @param IDBConnection     $db           Wraps each chunk of a write in a transaction.
-	 * @param AuditTrailMapper  $auditTrail   Records the one audit entry of a run.
+	 * @param AuditTrailMapper  $auditTrail   Records the audit entry of a run that changed slugs.
 	 * @param LoggerInterface   $logger       Receives the duplicate warnings.
 	 */
 	public function __construct(
