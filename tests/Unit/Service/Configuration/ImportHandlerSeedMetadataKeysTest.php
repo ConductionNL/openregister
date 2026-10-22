@@ -62,6 +62,12 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 
 	private const SEED_UUID = '5f0c6d0e-2b1a-4c7e-9a43-0d1f6c2b8e11';
 
+	/** @var string|null When set, only this slug is held (so its suffixed variant is free). */
+	private ?string $onlyHeldSlug = null;
+
+	/** @var list<string> Warnings the slug handler logged. */
+	private array $slugWarnings = [];
+
 	/** @var array<int, ObjectEntity> Every entity handed to the routing mapper's insert(). */
 	private array $inserted = [];
 
@@ -167,6 +173,24 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	}//end testASeedKeepsAFreeSlugOnAManagedSchema()
 
 	/**
+	 * Review finding r2save-f4: a seed that takes the suffixed slug says so.
+	 */
+	public function testASeedThatTakesTheSuffixedSlugLogsTheCollision(): void {
+		$schema = $this->makeSchema(['naam' => ['type' => 'string']]);
+		$schema->setConfiguration(['objectSlugField' => 'naam', 'objectSlugSuffix' => true]);
+		$this->onlyHeldSlug = 'school-de-linde';
+
+		$lookups = [];
+		$this->importSeed($schema, $lookups, ['other-uuid']);
+
+		$this->assertCount(1, $this->inserted);
+		$this->assertMatchesRegularExpression('/^school-de-linde-\d{14}$/', (string)$this->inserted[0]->getSlug());
+		$this->assertCount(1, $this->slugWarnings);
+		$this->assertStringContainsString('other-uuid', $this->slugWarnings[0]);
+		$this->assertStringContainsString('got the suffixed slug', $this->slugWarnings[0]);
+	}//end testASeedThatTakesTheSuffixedSlugLogsTheCollision()
+
+	/**
 	 * Review finding r2save-f3: a uuid-less seed is looked up by the slug it was
 	 * stored under, so importing it twice yields one object.
 	 */
@@ -196,7 +220,9 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 			return null;
 		}
 
-		$routing->method('findSlugHolders')->willReturn($holders);
+		$routing->method('findSlugHolders')->willReturnCallback(
+			fn ($register, $schema, string $slug): array => ($this->onlyHeldSlug === null || $this->onlyHeldSlug === $slug) ? $holders : []
+		);
 		return new ObjectSlugHandler(
 			magicMapper: $routing,
 			hydrator: new MetadataHydrationHandler(
@@ -204,9 +230,24 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 				cacheHandler: $this->createMock(CacheHandler::class)
 			),
 			registerMapper: $registerMapper,
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->slugLogger()
 		);
 	}//end slugHandlerFor()
+
+	/**
+	 * A logger that collects the slug warnings in $this->slugWarnings.
+	 *
+	 * @return LoggerInterface The logger.
+	 */
+	private function slugLogger(): LoggerInterface {
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->method('warning')->willReturnCallback(
+			function ($message): void {
+				$this->slugWarnings[] = (string)$message;
+			}
+		);
+		return $logger;
+	}//end slugLogger()
 
 	/**
 	 * Run the real importSeedData() for one seed object of the given schema.

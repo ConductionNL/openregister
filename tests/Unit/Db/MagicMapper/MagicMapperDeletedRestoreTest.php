@@ -520,6 +520,13 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 	}
 
 	public function testRestoreWithTheSuffixedSlugWhenSuffixIsOn(): void {
+		// Review finding r2save-f4: the object changes its public slug, so it is logged.
+		$warnings = [];
+		$this->logger->method('warning')->willReturnCallback(
+			function ($message) use (&$warnings): void {
+				$warnings[] = (string)$message;
+			}
+		);
 		$setColumns = [];
 		$params = [];
 
@@ -532,6 +539,11 @@ class MagicMapperDeletedRestoreTest extends TestCase {
 
 		$this->assertMatchesRegularExpression('/^hello-world-\d{14}$/', (string)$restored->getSlug());
 		$this->assertContains('_slug', $setColumns);
+		$this->assertCount(1, $warnings);
+		$this->assertStringContainsString('hello-world', $warnings[0]);
+		$this->assertStringContainsString('other-uuid', $warnings[0]);
+		$this->assertStringContainsString('restored-uuid', $warnings[0]);
+		$this->assertStringContainsString('got the suffixed slug "' . $restored->getSlug() . '"', $warnings[0]);
 	}
 
 	public function testRestoreKeepsTheSlugWhenNobodyHoldsItOrTheSchemaIsNotManaged(): void {

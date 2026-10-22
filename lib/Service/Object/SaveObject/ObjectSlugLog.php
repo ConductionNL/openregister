@@ -55,7 +55,7 @@ class ObjectSlugLog {
 	 * @param string      $holderUuid Who holds it.
 	 * @param string      $objectUuid Who wanted it.
 	 * @param string|null $suffixed   The suffixed slug that was also taken, if tried.
-	 * @param string      $path       single | bulk | backfill | restore.
+	 * @param string      $path       single | bulk | backfill | restore | seed.
 	 *
 	 * @return void
 	 *
@@ -78,6 +78,7 @@ class ObjectSlugLog {
 		$outcome = match ($path) {
 			'backfill' => 'gets no slug from the backfill',
 			'restore' => 'was restored without a slug',
+			'seed' => 'was seeded without a slug',
 			default => 'was saved without a slug',
 		};
 
@@ -100,6 +101,55 @@ class ObjectSlugLog {
 			]
 		);
 	}//end collision()
+
+	/**
+	 * Log a restore or seed import that took the suffixed slug because the wanted one is held.
+	 *
+	 * The object silently changes its public slug there, so unlike a plain save it is
+	 * always said.
+	 *
+	 * @param Register $register   The register.
+	 * @param Schema   $schema     The schema.
+	 * @param string   $slug       The wanted slug.
+	 * @param string   $holderUuid Who holds it.
+	 * @param string   $objectUuid Who wanted it.
+	 * @param string   $suffixed   The suffixed slug the object gets.
+	 * @param string   $path       restore | seed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
+	 */
+	public function suffixedInstead(
+		Register $register,
+		Schema $schema,
+		string $slug,
+		string $holderUuid,
+		string $objectUuid,
+		string $suffixed,
+		string $path,
+	): void {
+		$this->logger->warning(
+			message: sprintf(
+				'[ObjectSlug] Slug "%s" is already held by object %s in register %s (%s) / schema %s (%s); object %s got the suffixed slug "%s" instead (%s)',
+				$slug,
+				$holderUuid,
+				(string)$register->getSlug(),
+				(string)$register->getId(),
+				(string)$schema->getSlug(),
+				(string)$schema->getId(),
+				$objectUuid,
+				$suffixed,
+				$path
+			),
+			context: $this->context(register: $register, schema: $schema, path: $path) + [
+				'slug' => $slug,
+				'objectUuid' => $objectUuid,
+				'holderUuid' => $holderUuid,
+				'suffixedSlug' => $suffixed,
+			]
+		);
+	}//end suffixedInstead()
 
 	/**
 	 * Log a `--reslug` object that keeps its slug because the slug it now wants is held.
@@ -216,7 +266,7 @@ class ObjectSlugLog {
 	 *
 	 * @param Register|null $register The register.
 	 * @param Schema        $schema   The schema.
-	 * @param string        $path     single | bulk | backfill | restore | lookup.
+	 * @param string        $path     single | bulk | backfill | restore | seed | lookup.
 	 *
 	 * @return array<string, mixed>
 	 */

@@ -5896,7 +5896,8 @@ class ImportHandler {
 							entity: $objectEntity,
 							schema: $objectSchema,
 							originalSlug: null,
-							clientSlug: (string)$objectSlug
+							clientSlug: (string)$objectSlug,
+							path: 'seed'
 						);
 					}
 

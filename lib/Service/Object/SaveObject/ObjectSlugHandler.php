@@ -225,6 +225,7 @@ class ObjectSlugHandler {
 	 * @param Schema       $schema       Its schema.
 	 * @param string|null  $originalSlug The slug stored before this save (null on create).
 	 * @param string|null  $clientSlug   `@self.slug` or top-level `slug` as sent.
+	 * @param string       $path         `single`, or `seed` for a seed-data import (log context).
 	 *
 	 * @return void
 	 *
@@ -237,6 +238,7 @@ class ObjectSlugHandler {
 		Schema $schema,
 		?string $originalSlug,
 		?string $clientSlug,
+		string $path='single',
 	): void {
 		// Legacy branch (D8): a schema that did not opt in keeps today's
 		// behaviour exactly: a client slug overwrites, nothing else happens.
@@ -280,7 +282,7 @@ class ObjectSlugHandler {
 				holderOf: function (string $slug) use ($register, $schema, $uuid): ?string {
 					return ($this->magicMapper->findSlugHolders(register: $register, schema: $schema, slug: $slug, excludeUuid: $uuid)[0] ?? null);
 				},
-				path: 'single'
+				path: $path
 			)
 		);
 	}//end applyOnSave()
@@ -380,7 +382,7 @@ class ObjectSlugHandler {
 	 * @param Schema   $schema     The schema (suffix switch, log line).
 	 * @param string   $objectUuid The object being decided.
 	 * @param callable $holderOf   fn(string $slug): ?string — uuid holding $slug, other than this object.
-	 * @param string   $path       single | bulk | backfill (log context).
+	 * @param string   $path       single | bulk | backfill | restore | seed (log context; restore and seed always log a suffixed outcome).
 	 * @param bool     $log        Log a collision (false for a backfill dry run).
 	 * @param string|null $suffixed The suffixed slug to try, when the caller already computed it.
 	 *
@@ -411,6 +413,18 @@ class ObjectSlugHandler {
 		if ($suffixOn === true) {
 			$tried = ($suffixed ?? $this->withSuffix(slug: $candidate));
 			if ($holderOf($tried) === null) {
+				if ($log === true && in_array($path, ['restore', 'seed'], true) === true) {
+					$this->log->suffixedInstead(
+						register: $register,
+						schema: $schema,
+						slug: $candidate,
+						holderUuid: $holder,
+						objectUuid: $objectUuid,
+						suffixed: $tried,
+						path: $path
+					);
+				}
+
 				return $tried;
 			}
 		}
