@@ -227,6 +227,7 @@ class ExampleSetInstallCommand extends Command {
 			'tasks'       => 'Task',
 			'views'       => 'View',
 			'watchers'    => 'Watcher',
+			'parties'     => 'Party',
 		];
 		foreach ($parts as $part => $word) {
 			foreach (($report[$part] ?? []) as $name => $outcome) {

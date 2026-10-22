@@ -1,3 +1,3 @@
-- [ ] T01 PartyRoleService::importParty: the trusted path that records a named actor as the linker
-- [ ] T02 ExampleSetParties: check, write, prove and unlink the parties a fragment declares; wired through the engine kinds, catalogue, record, installer, remover and the install command
-- [ ] T03 PHPUnit for each
+- [x] T01 PartyRoleService::importParty: the trusted path that records a named actor as the linker
+- [x] T02 ExampleSetParties: check, write, prove and unlink the parties a fragment declares; wired through the engine kinds, catalogue, record, installer, remover and the install command
+- [x] T03 PHPUnit for each
