@@ -51,22 +51,26 @@ use Psr\Log\LoggerInterface;
 
 class ObjectsControllerAmbiguousSlugTest extends TestCase {
 
-	public function testADuplicatedSlugAnswers409WithoutNamingTheObjects(): void {
-		$objectService = $this->createMock(ObjectService::class);
-		$objectService->method('getRegister')->willReturn(7);
-		$objectService->method('getSchema')->willReturn(4);
-		$objectService->method('find')->willThrowException(
-			new MultipleObjectsReturnedException('Identifier "hello-world" matches more than one object in this register and schema')
-		);
-
+	/**
+	 * A controller over an ObjectService whose identifier lookups raise the ambiguity.
+	 *
+	 * @param ObjectService $objectService The service the controller uses.
+	 * @param bool          $admin         Whether the session user is an admin.
+	 *
+	 * @return ObjectsController The controller.
+	 */
+	private function controller(ObjectService $objectService, bool $admin = true): ObjectsController {
+		$user = $this->createMock(IUser::class);
 		$userSession = $this->createMock(IUserSession::class);
-		$userSession->method('getUser')->willReturn($this->createMock(IUser::class));
+		$userSession->method('getUser')->willReturn($user);
+		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager->method('getUserGroupIds')->willReturn(($admin === true) ? ['admin'] : []);
 		$request = $this->createMock(IRequest::class);
-		$request->method('getParams')->willReturn([]);
+		$request->method('getParams')->willReturn(['title' => 'x']);
 		$container = $this->createMock(ContainerInterface::class);
 		$container->method('get')->willReturn($this->createMock(MagicMapper::class));
 
-		$controller = new ObjectsController(
+		return new ObjectsController(
 			'openregister',
 			$request,
 			$this->createMock(IAppConfig::class),
@@ -77,16 +81,49 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 			$this->createMock(AuditTrailMapper::class),
 			$objectService,
 			$userSession,
-			$this->createMock(IGroupManager::class),
+			$groupManager,
 			$this->createMock(ExportService::class),
 			$this->createMock(ImportService::class),
 			$this->createMock(WebhookService::class),
 			$this->createMock(LoggerInterface::class),
 			windowService: $this->createMock(DeletionWindowService::class)
 		);
+	}//end controller()
 
-		$response = $controller->show('hello-world', 'zaken', 'persoon', $objectService);
+	/**
+	 * An ObjectService whose every identifier lookup finds the slug twice.
+	 *
+	 * @return ObjectService&\PHPUnit\Framework\MockObject\MockObject The service.
+	 */
+	private function ambiguousService(): ObjectService {
+		$ambiguous = new MultipleObjectsReturnedException('Identifier "hello-world" matches more than one object in this register and schema');
+		$register = new \OCA\OpenRegister\Db\Register();
+		$register->setId(7);
+		$schema = new \OCA\OpenRegister\Db\Schema();
+		$schema->setId(4);
 
+		$objectService = $this->createMock(ObjectService::class);
+		$objectService->method('getRegister')->willReturn(7);
+		$objectService->method('getSchema')->willReturn(4);
+		$objectService->method('find')->willThrowException($ambiguous);
+		$objectService->method('findSilent')->willThrowException($ambiguous);
+		$objectService->method('deleteObject')->willThrowException($ambiguous);
+		$objectService->method('lockObject')->willThrowException($ambiguous);
+		$objectService->method('unlockObject')->willThrowException($ambiguous);
+		$objectService->method('getObjectContracts')->willThrowException($ambiguous);
+		$objectService->method('getObjectUses')->willThrowException($ambiguous);
+		$objectService->method('getObjectUsedBy')->willThrowException($ambiguous);
+		return $objectService;
+	}//end ambiguousService()
+
+	/**
+	 * Assert the 409 body: names the identifier, none of the objects.
+	 *
+	 * @param \OCP\AppFramework\Http\JSONResponse $response The response.
+	 *
+	 * @return void
+	 */
+	private function assertAmbiguous($response): void {
 		$this->assertSame(409, $response->getStatus());
 		$this->assertSame('ambiguous-identifier', $response->getData()['error']);
 		$this->assertStringContainsString('"hello-world"', $response->getData()['message']);
@@ -94,5 +131,58 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 			'/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/',
 			json_encode($response->getData())
 		);
+	}//end assertAmbiguous()
+
+	public function testADuplicatedSlugAnswers409WithoutNamingTheObjects(): void {
+		$objectService = $this->ambiguousService();
+
+		$response = $this->controller($objectService)->show('hello-world', 'zaken', 'persoon', $objectService);
+
+		$this->assertAmbiguous($response);
+	}
+
+	/**
+	 * Every route that resolves an identifier answers the same 409 (review finding bulk-f2).
+	 *
+	 * @return array<string, array{0: string}> The route names.
+	 */
+	public static function identifierRoutes(): array {
+		return [
+			'update' => ['update'],
+			'patch' => ['patch'],
+			'postPatch' => ['postPatch'],
+			'destroy' => ['destroy'],
+			'canDelete' => ['canDelete'],
+			'lock' => ['lock'],
+			'unlock' => ['unlock'],
+			'logs' => ['logs'],
+			'contracts' => ['contracts'],
+			'uses' => ['uses'],
+			'used' => ['used'],
+		];
+	}//end identifierRoutes()
+
+	/**
+	 * @dataProvider identifierRoutes
+	 */
+	public function testEveryIdentifierRouteAnswers409ForADuplicatedSlug(string $route): void {
+		$objectService = $this->ambiguousService();
+		$controller = $this->controller($objectService);
+
+		$response = match ($route) {
+			'update' => $controller->update('zaken', 'persoon', 'hello-world', $objectService),
+			'patch' => $controller->patch('zaken', 'persoon', 'hello-world', $objectService),
+			'postPatch' => $controller->postPatch('zaken', 'persoon', 'hello-world', $objectService),
+			'destroy' => $controller->destroy('hello-world', 'zaken', 'persoon', $objectService),
+			'canDelete' => $controller->canDelete('hello-world', 'zaken', 'persoon', $objectService),
+			'lock' => $controller->lock('zaken', 'persoon', 'hello-world'),
+			'unlock' => $controller->unlock('zaken', 'persoon', 'hello-world'),
+			'logs' => $controller->logs('hello-world', 'zaken', 'persoon', $objectService),
+			'contracts' => $controller->contracts('hello-world', 'zaken', 'persoon', $objectService),
+			'uses' => $controller->uses('hello-world', 'zaken', 'persoon', $objectService),
+			'used' => $controller->used('hello-world', 'zaken', 'persoon', $objectService),
+		};
+
+		$this->assertAmbiguous($response);
 	}
 }//end class

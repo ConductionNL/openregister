@@ -3167,20 +3167,34 @@ class ObjectsController extends Controller {
 			// handler and surfaced as an HTTP 500.
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
 		} catch (MultipleObjectsReturnedException $exception) {
-			// A slug held by more than one object in this register and schema
-			// (#4037). Existing duplicates are kept on purpose (BC2), so this is
-			// a state the caller can act on — ask by uuid — not a server fault;
-			// 409, as HandlesExceptionsTrait maps the same exception. The mapper
-			// logged both uuids; the response names none of them.
-			return new JSONResponse(
-				data: [
-					'message' => sprintf('Identifier "%s" matches more than one object in this register and schema', $id),
-					'error' => 'ambiguous-identifier',
-				],
-				statusCode: Http::STATUS_CONFLICT
-			);
+			return $this->ambiguousIdentifierResponse(id: $id);
 		}//end try
 	}//end show()
+
+	/**
+	 * The 409 answer for an identifier that matches more than one object (#4037).
+	 *
+	 * Existing duplicates are kept on purpose (BC2), so this is a state the
+	 * caller can act on, by asking with the uuid, and not a server fault: 409,
+	 * as HandlesExceptionsTrait maps the same exception. The mapper logged the
+	 * uuids; the response names none of them. Every route that resolves an
+	 * identifier answers through here.
+	 *
+	 * @param string $id The identifier as the caller sent it.
+	 *
+	 * @return JSONResponse The 409 response.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 */
+	private function ambiguousIdentifierResponse(string $id): JSONResponse {
+		return new JSONResponse(
+			data: [
+				'message' => sprintf('Identifier "%s" matches more than one object in this register and schema', $id),
+				'error' => 'ambiguous-identifier',
+			],
+			statusCode: Http::STATUS_CONFLICT
+		);
+	}//end ambiguousIdentifierResponse()
 
 	/**
 	 * Add the actions this caller may take on the record being returned.
@@ -3806,6 +3820,8 @@ class ObjectsController extends Controller {
 		} catch (NotAuthorizedException $exception) {
 			// Handle RBAC permission errors specifically.
 			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
+		} catch (MultipleObjectsReturnedException $exception) {
+			return $this->ambiguousIdentifierResponse(id: $id);
 		} catch (\Exception $exception) {
 			// Log unexpected exceptions for debugging.
 			$this->logger->error(
@@ -3998,6 +4014,8 @@ class ObjectsController extends Controller {
 					// Always disable multitenancy for internal read.
 					_multitenancy: false
 				);
+			} catch (MultipleObjectsReturnedException $e) {
+				return $this->ambiguousIdentifierResponse(id: $id);
 			} catch (\Exception $e) {
 				// If we can't find the object, return 404.
 				$this->logger->warning(
@@ -4223,6 +4241,8 @@ class ObjectsController extends Controller {
 					_rbac: false,
 					_multitenancy: false
 				);
+			} catch (MultipleObjectsReturnedException $e) {
+				return $this->ambiguousIdentifierResponse(id: $id);
 			} catch (\Exception $e) {
 				return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
 			}
@@ -4411,6 +4431,8 @@ class ObjectsController extends Controller {
 		} catch (DoesNotExistException $exception) {
 			// Absent objects (native or external) are a uniform 404.
 			return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+		} catch (MultipleObjectsReturnedException $exception) {
+			return $this->ambiguousIdentifierResponse(id: $id);
 		} catch (\Exception $exception) {
 			// Handle all exceptions (including RBAC permission errors and object not found).
 			// Sanitized external-write failures carry their own 4xx status
@@ -4489,6 +4511,8 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: $analysis->toArray(), statusCode: 200);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $exception) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		} catch (MultipleObjectsReturnedException $exception) {
+			return $this->ambiguousIdentifierResponse(id: $id);
 		} catch (\Exception $exception) {
 			return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
 		}//end try
@@ -4562,7 +4586,11 @@ class ObjectsController extends Controller {
 		];
 
 		// Use ObjectService delegation to handler.
-		$result = $objectService->getObjectContracts(objectId: $id, filters: $filters);
+		try {
+			$result = $objectService->getObjectContracts(objectId: $id, filters: $filters);
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $id);
+		}
 
 		// Stamp resourceUrls (deep-links) before paginating.
 		$result = $this->stampObjectUrls(result: $result);
@@ -4703,12 +4731,16 @@ class ObjectsController extends Controller {
 		unset($searchQuery['id'], $searchQuery['_route']);
 
 		// Use ObjectService delegation to handler.
-		$result = $objectService->getObjectUses(
-			objectId: $id,
-			query: $searchQuery,
-			_rbac: true,
-			_multitenancy: true
-		);
+		try {
+			$result = $objectService->getObjectUses(
+				objectId: $id,
+				query: $searchQuery,
+				_rbac: true,
+				_multitenancy: true
+			);
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $id);
+		}
 
 		// Stamp resourceUrls (deep-links) and return the result from ObjectService.
 		return new JSONResponse(data: $this->stampObjectUrls(result: $result));
@@ -4759,12 +4791,16 @@ class ObjectsController extends Controller {
 		unset($searchQuery['id'], $searchQuery['_route']);
 
 		// Use ObjectService delegation to handler.
-		$result = $objectService->getObjectUsedBy(
-			objectId: $id,
-			query: $searchQuery,
-			_rbac: true,
-			_multitenancy: true
-		);
+		try {
+			$result = $objectService->getObjectUsedBy(
+				objectId: $id,
+				query: $searchQuery,
+				_rbac: true,
+				_multitenancy: true
+			);
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $id);
+		}
 
 		// Stamp resourceUrls (deep-links) and return the result from ObjectService.
 		return new JSONResponse(data: $this->stampObjectUrls(result: $result));
@@ -4817,6 +4853,8 @@ class ObjectsController extends Controller {
 			if ($object === null) {
 				return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
 			}
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $id);
 		} catch (Exception $e) {
 			return new JSONResponse(data: ['message' => 'Object not found'], statusCode: 404);
 		}
@@ -4986,6 +5024,8 @@ class ObjectsController extends Controller {
 			return new JSONResponse(data: array_merge($lockResult, ['locked' => $held]));
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $id);
 		} catch (\Throwable $e) {
 			// SEC-CTRL-7: do not leak internal exception detail on 500.
 			return $this->errorResponse(e: $e);
@@ -5026,6 +5066,8 @@ class ObjectsController extends Controller {
 			$released = $this->objectService->unlockObject($id);
 		} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
 			return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+		} catch (MultipleObjectsReturnedException $e) {
+			return $this->ambiguousIdentifierResponse(id: $id);
 		} catch (\Exception $e) {
 			$message = $e->getMessage();
 			if (str_contains($message, 'does not have permission to unlock') === true) {

@@ -6562,18 +6562,26 @@ class MagicMapper extends AbstractObjectMapper {
 
 		try {
 			$result = $qb->executeQuery();
-			$row = $result->fetch();
+			$rows = [];
+			while (count($rows) < 50 && ($candidate = $result->fetch()) !== false) {
+				$rows[] = $candidate;
+			}
 
-			if ($row === false) {
+			if ($rows === []) {
 				throw new DoesNotExistException('Object not found in magic table');
 			}
 
-			// Check for multiple results. Only a slug can match two rows of one
-			// table (ids and uuids are unique), so this is a duplicated slug: log
-			// both holders for the administrator, keep them out of the message,
-			// which can reach an API caller (#4037).
-			$second = $result->fetch();
-			if ($second !== false) {
+			// Several rows can match one identifier only through a slug, because the
+			// id and uuid are unique. A row matched by its id or uuid wins over rows
+			// matched by a slug that happens to look the same (a numeric slug "2024"
+			// next to the object with id 2024); only when that does not single out
+			// one row is the identifier ambiguous. Log both holders for the
+			// administrator, keep them out of the message, which can reach an API
+			// caller (#4037).
+			$row = $this->rowForIdentifier(rows: $rows, identifier: $identifier);
+			if ($row === null) {
+				$second = $rows[1];
+				$row = $rows[0];
 				$this->logger->warning(
 					message: sprintf(
 						'[ObjectSlug] Identifier "%s" is ambiguous in register %s (%s) / schema %s (%s): matches objects %s, %s',
@@ -6591,7 +6599,7 @@ class MagicMapper extends AbstractObjectMapper {
 						'registerId' => $register->getId(),
 						'schemaId' => $schema->getId(),
 						'slug' => (string)$identifier,
-						'uuids' => [$row[self::METADATA_PREFIX . 'uuid'] ?? null, $second[self::METADATA_PREFIX . 'uuid'] ?? null],
+						'uuids' => array_map(static fn (array $match) => ($match[self::METADATA_PREFIX . 'uuid'] ?? null), $rows),
 					]
 				);
 				throw new MultipleObjectsReturnedException(
@@ -6623,6 +6631,41 @@ class MagicMapper extends AbstractObjectMapper {
 			throw new DoesNotExistException($e->getMessage());
 		}//end try
 	}//end findInRegisterSchemaTable()
+
+	/**
+	 * Pick the row an identifier means among the rows it matched.
+	 *
+	 * One row is the answer. Several rows: the one whose `_id` or `_uuid` is the
+	 * identifier, when exactly one is; otherwise none (the identifier is
+	 * ambiguous).
+	 *
+	 * @param list<array<string, mixed>> $rows       The matched rows, at least one.
+	 * @param string|int                 $identifier The identifier the caller sent.
+	 *
+	 * @return array<string, mixed>|null The row, or null when the identifier is ambiguous.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-a-slug-lookup-that-matches-more-than-one-object-in-a-register-and-schema-must-be-refused-as-ambiguous
+	 */
+	private function rowForIdentifier(array $rows, string|int $identifier): ?array {
+		if (count($rows) === 1) {
+			return $rows[0];
+		}
+
+		$byKey = [];
+		foreach ($rows as $row) {
+			$isId = (string)($row[self::METADATA_PREFIX . 'id'] ?? '') === (string)$identifier;
+			$isUuid = strcasecmp((string)($row[self::METADATA_PREFIX . 'uuid'] ?? ''), (string)$identifier) === 0;
+			if ($isId === true || $isUuid === true) {
+				$byKey[] = $row;
+			}
+		}
+
+		if (count($byKey) === 1) {
+			return $byKey[0];
+		}
+
+		return null;
+	}//end rowForIdentifier()
 
 	/**
 	 * Return the uuids of live objects that hold a slug in one register+schema table.
