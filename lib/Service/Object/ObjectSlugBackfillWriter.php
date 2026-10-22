@@ -256,7 +256,7 @@ class ObjectSlugBackfillWriter {
 					(string)$register->getId(),
 					(string)$schema->getId(),
 					$e->getMessage(),
-					json_encode($applied)
+					(json_encode($applied, JSON_INVALID_UTF8_SUBSTITUTE) ?: '[unencodable]')
 				),
 				context: ['app' => 'openregister', 'path' => 'backfill']
 			);
@@ -289,7 +289,7 @@ class ObjectSlugBackfillWriter {
 					(string)$schema->getId(),
 					($index + 1),
 					count($parts),
-					json_encode($part)
+					(json_encode($part, JSON_INVALID_UTF8_SUBSTITUTE) ?: '[unencodable]')
 				),
 				context: ['app' => 'openregister', 'path' => 'backfill']
 			);

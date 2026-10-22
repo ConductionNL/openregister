@@ -76,7 +76,7 @@ the same dot paths and templates as `objectNameField`; the value is slugified
   `objectSlugSuffix` it gets the suffixed slug). The backfill writes the slug column
   directly: no per-object version or audit entry and no object events, but every run
   that is not a dry run and changes at least one slug writes one audit-trail entry (`slug.backfill.fill` or
-  `slug.backfill.reslug`) listing the changed objects with their old and new slug (a run that changes nothing writes none). The entry lists the first 1,000 changes and the total; the full list of a larger run is in the Nextcloud log. The slugs come from `objectSlugField`, which can be a name: they are copied into the audit trail, which is hash-chained and cannot be redacted afterwards (for an erasure request, the log lines age out with the log rotation). Use
+  `slug.backfill.reslug`) listing the changed objects with their old and new slug (a run that changes nothing writes none). The entry lists the first 1,000 changes and the total; the full old-to-new list of a larger run is written to the Nextcloud log at info level (lines starting `[ObjectSlug] Slug backfill changes`, in parts of 1,000). The slugs come from `objectSlugField`, which can be a name: they are copied into the audit trail, which is hash-chained and cannot be redacted afterwards (for an erasure request, the log lines age out with the log rotation). Use
   `--dry-run` to see the plan first.
 
 A schema without `objectSlugField` keeps the old behaviour: no slug unless a client

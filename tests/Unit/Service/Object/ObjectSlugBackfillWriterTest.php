@@ -151,6 +151,19 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		$this->assertStringContainsString('slug-2500', $this->infos[2]);
 	}//end testARunOverTheEntryCapLogsTheFullListInParts()
 
+	public function testAnInvalidUtf8SlugStillLogsTheChangeList(): void {
+		// Review finding pp-f4: a plain json_encode() returns false for it and the list would be lost.
+		$plan = $this->plan(1001);
+		$plan[0]['old'] = "bad-\xB1-slug";
+		$this->magicMapper->method('updateSlugColumn')->willReturn(1);
+
+		$this->writer->write($plan, $this->register, $this->schema, 'reslug', ['skipped' => 0]);
+
+		$this->assertCount(2, $this->infos);
+		$this->assertStringContainsString('part 1 of 2', $this->infos[0]);
+		$this->assertStringContainsString('slug-1', $this->infos[0]);
+	}//end testAnInvalidUtf8SlugStillLogsTheChangeList()
+
 	public function testASmallRunLogsNoChangeList(): void {
 		$this->magicMapper->method('updateSlugColumn')->willReturn(1);
 

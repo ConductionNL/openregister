@@ -3182,8 +3182,8 @@ class ObjectsController extends Controller {
 	 * uuids; the response names none of them. Every route that resolves an
 	 * identifier through `ObjectService::find()` or `findSilent()` answers through here:
 	 * show, update, patch, postPatch, destroy, canDelete, contracts, uses, used, logs
-	 * (administrators), lock, unlock, move, the presence routes, downloadFiles,
-	 * referencedBy, geoFeatures and referenceOptions. The cross-table lookup behind
+	 * (administrators), lock, unlock, move, presenceBeat and presenceList, downloadFiles,
+	 * referencedBy, geoFeatures and referenceOptions; presenceDepart stays 200, its departure is already done. The cross-table lookup behind
 	 * `merge` takes the first hit and raises nothing, and the history a non-administrator
 	 * reads is resolved by `ObjectReadAccess`, which answers 404 for any failure.
 	 *
@@ -5583,10 +5583,12 @@ class ObjectsController extends Controller {
 		// A departure by somebody who was not there pushes nothing: there is no
 		// change to tell anybody about, and a page unmounting twice is ordinary.
 		if ($left === true) {
+			// The departure above is already done and keyed by the identifier as sent, so an
+			// ambiguous identifier only means there is no object to push to: the answer stays 200.
 			try {
 				$object = $this->presenceObject(register: $register, schema: $schema, id: $id);
 			} catch (MultipleObjectsReturnedException $e) {
-				return $this->ambiguousIdentifierResponse(id: $id);
+				$object = null;
 			}
 
 			if ($object !== null) {

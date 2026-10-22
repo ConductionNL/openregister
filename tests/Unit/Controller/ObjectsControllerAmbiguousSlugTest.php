@@ -141,6 +141,16 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 		);
 	}//end assertAmbiguous()
 
+	public function testDepartingFromAnAmbiguousIdentifierStillAnswers200WithoutAPush(): void {
+		// Review finding pp-f3: the departure is done before the object is looked up for the push.
+		$objectService = $this->ambiguousService();
+
+		$response = $this->controller($objectService)->presenceDepart('zaken', 'persoon', 'hello-world');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(['present' => []], $response->getData());
+	}
+
 	public function testADuplicatedSlugAnswers409WithoutNamingTheObjects(): void {
 		$objectService = $this->ambiguousService();
 
@@ -173,7 +183,6 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 			'geoFeatures' => ['geoFeatures'],
 			'move' => ['move'],
 			'presenceBeat' => ['presenceBeat'],
-			'presenceDepart' => ['presenceDepart'],
 			'presenceList' => ['presenceList'],
 		];
 	}//end identifierRoutes()
@@ -203,7 +212,6 @@ class ObjectsControllerAmbiguousSlugTest extends TestCase {
 			'geoFeatures' => $controller->geoFeatures('hello-world', 'zaken', 'persoon', $objectService, $this->createMock(InheritedGeoCollector::class)),
 			'move' => $controller->move('zaken', 'persoon', 'hello-world'),
 			'presenceBeat' => $controller->presenceBeat('zaken', 'persoon', 'hello-world'),
-			'presenceDepart' => $controller->presenceDepart('zaken', 'persoon', 'hello-world'),
 			'presenceList' => $controller->presenceList('zaken', 'persoon', 'hello-world'),
 		};
 
