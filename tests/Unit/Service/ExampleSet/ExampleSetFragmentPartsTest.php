@@ -338,6 +338,53 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$this->assertSame([], $this->organisations);
 	}
 
+	/**
+	 * A declared organisation is created with its quota and the cast members who belong to it, and still goes on remove.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-organisation-quota-and-members/specs/example-sets/spec.md#requirement-a-cast-organisation-may-declare-its-quota-and-its-members
+	 */
+	public function testAnOrganisationIsCreatedWithItsQuotaAndMembers(): void {
+		$file = $this->castFile();
+		$file['cast']['openregisterOrganisations'] = [[
+			'key' => 'gemeente', 'name' => 'Gemeente Demo', 'slug' => 'demo',
+			'quota' => ['storage' => 107374182400, 'requests' => 5000], 'members' => ['sanne'],
+		]];
+		$this->app(app: 'openregister', fragment: $file);
+		$this->alpha(fragment: ['objects' => [['key' => 'pub-1', 'register' => 'pub', 'schema' => 'publication', 'data' => ['organization' => '{{organisation:demo}}']]]]);
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$organisation = array_values($this->organisations)[0];
+		$this->assertSame(expected: 107374182400, actual: $organisation->getStorageQuota());
+		$this->assertSame(expected: 5000, actual: $organisation->getRequestQuota());
+		$this->assertSame(expected: ['sanne.devries'], actual: $organisation->getUserIds());
+
+		$removed = $this->remover->remove(set: 'demo');
+		$this->assertSame(expected: 1, actual: $removed['removed']['organisations'], message: 'its members are the set\'s own accounts');
+	}//end testAnOrganisationIsCreatedWithItsQuotaAndMembers()
+
+	/**
+	 * A quota that is not a whole number, or a member the cast does not hold, refuses the set.
+	 *
+	 * @return void
+	 */
+	public function testAFaultyQuotaOrMemberRefusesTheSet(): void {
+		foreach ([['quota' => ['storage' => 'veel']], ['members' => ['nobody']], ['quota' => ['seats' => 3]]] as $extra) {
+			$file = $this->castFile();
+			$file['cast']['openregisterOrganisations'] = [['key' => 'gemeente', 'name' => 'Gemeente Demo', 'slug' => 'demo'] + $extra];
+			$this->app(app: 'openregister', fragment: $file);
+			try {
+				$this->catalogue->gather(set: 'demo');
+				$this->fail(message: 'refused: '.json_encode($extra));
+			} catch (ExampleSetException $e) {
+				$this->assertStringContainsString(needle: 'OpenRegister organisation', haystack: $e->getMessage());
+			}
+		}
+	}//end testAFaultyQuotaOrMemberRefusesTheSet()
+
 	public function testEveryCastMemberHasAStableContactsUid(): void {
 		$plan = $this->catalogue->gather(set: 'demo');
 
