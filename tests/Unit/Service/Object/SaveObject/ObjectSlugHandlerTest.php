@@ -242,6 +242,36 @@ class ObjectSlugHandlerTest extends TestCase {
 		$this->assertStringContainsString('Ignored client slug "other"', $this->warnings[0]);
 	}
 
+	public function testReSendingTheStoredSlugInAnotherFormatOnAFrozenObjectLogsNothing(): void {
+		// Review finding r2save-f2: created with `Zaak_2026-0042`, stored `zaak-2026-0042`.
+		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World'], 'zaak-2026-0042');
+
+		$this->handler->applyOnSave($entity, $this->schema(['objectSlugField' => 'title']), 'zaak-2026-0042', 'Zaak_2026-0042');
+
+		$this->assertSame('zaak-2026-0042', $entity->getSlug());
+		$this->assertSame([], $this->warnings);
+	}
+
+	public function testReSendingTheStoredSlugInAnotherFormatInABatchLogsNothing(): void {
+		$this->magicMapper->method('findSlugState')->willReturn(['holders' => ['zaak-2026-0042' => [self::UUID_A]], 'stored' => [self::UUID_A => 'zaak-2026-0042']]);
+		$rows = [0 => ['uuid' => self::UUID_A, 'clientSlug' => 'Zaak_2026-0042', 'data' => ['title' => 'Other']]];
+
+		$decisions = $this->handler->decideBatch($rows, $this->register, $this->schema(['objectSlugField' => 'title']));
+
+		$this->assertSame([0 => 'zaak-2026-0042'], $decisions);
+		$this->assertSame([], $this->warnings);
+	}
+
+	public function testADifferingClientSlugInABatchStillWarnsOnAFrozenObject(): void {
+		$this->magicMapper->method('findSlugState')->willReturn(['holders' => ['zaak-2026-0042' => [self::UUID_A]], 'stored' => [self::UUID_A => 'zaak-2026-0042']]);
+		$rows = [0 => ['uuid' => self::UUID_A, 'clientSlug' => 'Other_Slug', 'data' => ['title' => 'Other']]];
+
+		$this->handler->decideBatch($rows, $this->register, $this->schema(['objectSlugField' => 'title']));
+
+		$this->assertCount(1, $this->warnings);
+		$this->assertStringContainsString('Ignored client slug "Other_Slug"', $this->warnings[0]);
+	}
+
 	public function testAClientSlugIsTheCandidateNormalisedLikeAGeneratedOne(): void {
 		$this->magicMapper->method('findSlugHolders')->willReturn([]);
 		$entity = $this->entity(self::UUID_A, ['title' => 'Hello World']);

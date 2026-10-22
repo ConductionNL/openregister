@@ -210,7 +210,7 @@ class ObjectSlugBatch {
 
 		$storedSlug = $stored[$uuid];
 		$clientSlug = $row['clientSlug'];
-		if ($clientSlug !== null && $clientSlug !== '' && $clientSlug !== $storedSlug) {
+		if ($this->handler->differsFromStored(clientSlug: $clientSlug, stored: $storedSlug) === true) {
 			$this->log->ignoredClientSlug(
 				register: $register,
 				schema: $schema,

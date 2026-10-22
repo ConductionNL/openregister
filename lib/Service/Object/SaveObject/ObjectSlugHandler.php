@@ -131,13 +131,11 @@ class ObjectSlugHandler {
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-an-object-slug-must-come-only-from-the-configured-slug-field-and-must-not-be-written-into-the-object-data
 	 */
 	public function candidate(array $objectData, Schema $schema, ?string $clientSlug): ?string {
-		if ($clientSlug !== null && trim($clientSlug) !== '') {
+		$normalised = $this->normaliseClientSlug(clientSlug: $clientSlug);
+		if ($normalised !== null) {
 			// Normalised like a generated slug, so `Hello` and `hello` are one slug
 			// in both the single and the bulk path and the value fits the column.
-			$normalised = $this->hydrator->createSlug(text: trim($clientSlug));
-			if ($normalised !== '') {
-				return substr($normalised, 0, self::MAX_LENGTH);
-			}
+			return $normalised;
 		}
 
 		if ($this->isManaged(schema: $schema) === false) {
@@ -146,6 +144,48 @@ class ObjectSlugHandler {
 
 		return $this->sourceCandidate(objectData: $objectData, schema: $schema);
 	}//end candidate()
+
+	/**
+	 * A client slug as `candidate()` would store it.
+	 *
+	 * @param string|null $clientSlug `@self.slug` or top-level `slug` as sent.
+	 *
+	 * @return string|null The slugified, column-width slug; null when nothing was sent
+	 *                     or the value slugifies to nothing (it then counts as not sent).
+	 */
+	public function normaliseClientSlug(?string $clientSlug): ?string {
+		if ($clientSlug === null || trim($clientSlug) === '') {
+			return null;
+		}
+
+		$normalised = $this->hydrator->createSlug(text: trim($clientSlug));
+		if ($normalised === '') {
+			return null;
+		}
+
+		return substr($normalised, 0, self::MAX_LENGTH);
+	}//end normaliseClientSlug()
+
+	/**
+	 * Whether a client slug asks for something other than the stored slug.
+	 *
+	 * Compared after the same normalisation `candidate()` applies, so re-sending
+	 * the slug the object was created with (in another case or format) is not a
+	 * change request.
+	 *
+	 * @param string|null $clientSlug `@self.slug` or top-level `slug` as sent.
+	 * @param string      $stored     The stored slug.
+	 *
+	 * @return bool True when the client asked for a different slug.
+	 */
+	public function differsFromStored(?string $clientSlug, string $stored): bool {
+		if ($clientSlug === null || $clientSlug === '' || $clientSlug === $stored) {
+			return false;
+		}
+
+		$normalised = $this->normaliseClientSlug(clientSlug: $clientSlug);
+		return $normalised !== null && $normalised !== $stored;
+	}//end differsFromStored()
 
 	/**
 	 * The candidate built from the schema's `objectSlugField`.
@@ -258,7 +298,7 @@ class ObjectSlugHandler {
 	 */
 	private function keepFrozen(ObjectEntity $entity, Schema $schema, ?Register $register, string $originalSlug, ?string $clientSlug): void {
 		$entity->setSlug($originalSlug);
-		if ($clientSlug === null || $clientSlug === '' || $clientSlug === $originalSlug) {
+		if ($this->differsFromStored(clientSlug: $clientSlug, stored: $originalSlug) === false) {
 			return;
 		}
 
