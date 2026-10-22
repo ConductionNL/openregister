@@ -51,7 +51,9 @@ the same dot paths and templates as `objectNameField`; the value is slugified
   (UTC) instead.
 - **Frozen once set.** A later save never changes a slug, also when the source field
   changes. A slug sent by a client (`@self.slug`) follows the same rules; a different
-  slug sent for an object that already has one is ignored and logged.
+  slug sent for an object that already has one is ignored and logged. The one
+  exception is `occ openregister:backfill-slugs --reslug`, which an administrator runs
+  explicitly and which rewrites slugs; links built on the old slugs stop working.
 - **A freed slug moves on.** When the holder is deleted, the next save of an object
   that wanted the slug gives it to that object.
 - **Lookups.** `GET /api/objects/{register}/{schema}/{slug}` resolves the slug. A
@@ -60,9 +62,10 @@ the same dot paths and templates as `objectNameField`; the value is slugified
   go to the log.
 - **Existing objects** get their slugs from
   `occ openregister:backfill-slugs <register> <schema>` (oldest first; existing
-  duplicates are reported, not changed). After switching the slug field, run it with
-  `--reslug` to rewrite the slugs from the new field. Use `--dry-run` to see the plan
-  first.
+  slugs and duplicates are reported, not changed). After switching the slug field, run
+  it with `--reslug` to rewrite the slugs from the new field. `--reslug` is the only
+  way a set slug changes: links, bookmarks and external references that use an old
+  slug stop working. Use `--dry-run` to see the plan first.
 
 A schema without `objectSlugField` keeps the old behaviour: no slug unless a client
 sends one, and no uniqueness check.

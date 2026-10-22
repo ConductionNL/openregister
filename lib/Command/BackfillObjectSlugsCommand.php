@@ -72,7 +72,8 @@ class BackfillObjectSlugsCommand extends Command {
 		$this->setName(name: 'openregister:backfill-slugs')
 			->setDescription(
 				'Fill missing object slugs of one register and schema from the schema\'s objectSlugField; '
-				. 'existing slugs and duplicates are reported, not changed.'
+				. 'by default existing slugs and duplicates are reported, not changed. '
+				. 'With --reslug existing slugs ARE rewritten, and links built on the old slugs stop working.'
 			)
 			->addArgument('register', InputArgument::REQUIRED, 'Register (id, uuid or slug)')
 			->addArgument('schema', InputArgument::REQUIRED, 'Schema in that register (id, uuid or slug)')
@@ -81,7 +82,9 @@ class BackfillObjectSlugsCommand extends Command {
 				null,
 				InputOption::VALUE_NONE,
 				'Recompute every slug from the current objectSlugField (after switching the field); '
-				. 'objects with an empty source keep their slug'
+				. 'objects with an empty source keep their slug. This is the only way a set slug changes: '
+				. 'links, bookmarks and external references that use an old slug stop working. '
+				. 'Run with --dry-run first'
 			)
 			->addOption('dry-run', null, InputOption::VALUE_NONE, 'Print the plan without writing anything');
 	}//end configure()
