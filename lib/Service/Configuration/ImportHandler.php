@@ -5373,6 +5373,54 @@ class ImportHandler {
 	}//end importSeedData()
 
 	/**
+	 * A uuid-less seed object stored under a suffixed slug (`<slug>-<14 digits>`), if there is one.
+	 *
+	 * On a schema with `objectSlugSuffix`, a first import whose slug was held by another object
+	 * stored the seed under the suffixed slug; the plain slug lookup does not find it, and
+	 * the next import would copy it again.
+	 *
+	 * @param string   $objectSlug The seed's slug, else its title.
+	 * @param Schema   $schema     The schema the seed is imported into.
+	 * @param Register $register   The register it is imported into.
+	 *
+	 * @return ObjectEntity|null The object, or null when none is stored under a suffixed variant.
+	 */
+	private function findSuffixedSeed(string $objectSlug, Schema $schema, Register $register): ?ObjectEntity {
+		$suffixOn = ((($schema->getConfiguration() ?? [])['objectSlugSuffix'] ?? false) === true);
+		if ($this->slugHandler === null || $this->routingMapper === null || $suffixOn === false || $this->slugHandler->isManaged(schema: $schema) === false) {
+			return null;
+		}
+
+		$candidate = $this->slugHandler->candidate(objectData: [], schema: $schema, clientSlug: $objectSlug);
+		if ($candidate === null) {
+			return null;
+		}
+
+		// `<base>-` of a suffixed variant, the base being cut to fit the column.
+		$prefix = substr($this->slugHandler->withSuffix(slug: $candidate, stamp: '00000000000000'), 0, -14);
+		foreach ($this->routingMapper->findSlugsByPrefix(register: $register, schema: $schema, prefix: $prefix) as $match) {
+			if ($this->slugHandler->isSuffixOf(slug: $match['slug'], candidate: $candidate) === false) {
+				continue;
+			}
+
+			try {
+				return $this->routingMapper->find(
+					identifier: $match['uuid'],
+					register: $register,
+					schema: $schema,
+					includeDeleted: false,
+					_rbac: false,
+					_multitenancy: false
+				);
+			} catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+				continue;
+			}
+		}
+
+		return null;
+	}//end findSuffixedSeed()
+
+	/**
 	 * The slug to look a uuid-less seed object up by.
 	 *
 	 * A schema with managed slugs stores the normalised slug, so the raw seed
@@ -5845,6 +5893,10 @@ class ImportHandler {
 						);
 						continue;
 					}//end try
+
+					if ($existingObject === null && isset($objectData['uuid']) === false && $objectRegister !== null) {
+						$existingObject = $this->findSuffixedSeed(objectSlug: (string)$objectSlug, schema: $objectSchema, register: $objectRegister);
+					}
 
 					if ($existingObject !== null) {
 						// Object already exists - skip creation to prevent duplication.

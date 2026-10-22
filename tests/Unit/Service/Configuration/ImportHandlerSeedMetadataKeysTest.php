@@ -191,6 +191,22 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	}//end testASeedThatTakesTheSuffixedSlugLogsTheCollision()
 
 	/**
+	 * Review finding pp-f5: a first import that lost the slug to another object stored the seed
+	 * under the suffixed slug; the next import finds it there instead of copying it again.
+	 */
+	public function testAUuidLessSeedStoredUnderASuffixedSlugIsNotCopiedAgain(): void {
+		$schema = $this->makeSchema(['naam' => ['type' => 'string'], 'title' => ['type' => 'string']]);
+		$schema->setConfiguration(['objectSlugField' => 'naam', 'objectSlugSuffix' => true]);
+		$this->onlyHeldSlug = 'school-de-linde';
+
+		$lookups = [];
+		$this->importSeed($schema, $lookups, ['other-uuid'], ['title' => 'School De Linde', 'naam' => 'De Linde'], 2);
+
+		$this->assertCount(1, $this->inserted, 'the second import finds the suffixed copy');
+		$this->assertMatchesRegularExpression('/^school-de-linde-\d{14}$/', (string)$this->inserted[0]->getSlug());
+	}//end testAUuidLessSeedStoredUnderASuffixedSlugIsNotCopiedAgain()
+
+	/**
 	 * Review finding r2save-f3: a uuid-less seed is looked up by the slug it was
 	 * stored under, so importing it twice yields one object.
 	 */
@@ -281,6 +297,18 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 				}
 
 				throw new DoesNotExistException('not found');
+			}
+		);
+		$routing->method('findSlugsByPrefix')->willReturnCallback(
+			function ($register, $schema, string $prefix): array {
+				$matches = [];
+				foreach ($this->inserted as $entity) {
+					if (str_starts_with((string)$entity->getSlug(), $prefix) === true) {
+						$matches[] = ['slug' => (string)$entity->getSlug(), 'uuid' => (string)$entity->getUuid()];
+					}
+				}
+
+				return $matches;
 			}
 		);
 		$routing->method('insert')->willReturnCallback(

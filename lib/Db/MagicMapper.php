@@ -6712,6 +6712,43 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end rowForIdentifier()
 
 	/**
+	 * The live objects whose slug starts with a prefix, as slug => uuid pairs.
+	 *
+	 * For the seed import to find an object stored under a suffixed slug (`<slug>-<14 digits>`);
+	 * the caller keeps the rows that really are a suffixed variant. No RBAC or multitenancy
+	 * filter, as for every slug uniqueness query.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 * @param string   $prefix   The slug prefix, taken literally.
+	 * @param int      $limit    Most rows to return.
+	 *
+	 * @return list<array{slug: string, uuid: string}> The matches.
+	 */
+	public function findSlugsByPrefix(Register $register, Schema $schema, string $prefix, int $limit=50): array {
+		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
+			return [];
+		}
+
+		$tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+		$qb = $this->db->getQueryBuilder();
+		$qb->select(self::METADATA_PREFIX . 'slug', self::METADATA_PREFIX . 'uuid')
+			->from($tableName)
+			->where($qb->expr()->like(self::METADATA_PREFIX . 'slug', $qb->createNamedParameter($this->db->escapeLikeParameter($prefix) . '%')))
+			->andWhere($qb->expr()->isNull(self::METADATA_PREFIX . 'deleted'))
+			->orderBy(self::METADATA_PREFIX . 'id', 'ASC')
+			->setMaxResults($limit);
+		$result = $qb->executeQuery();
+		$matches = [];
+		while (($row = $result->fetch()) !== false) {
+			$matches[] = ['slug' => (string)$row[self::METADATA_PREFIX . 'slug'], 'uuid' => (string)$row[self::METADATA_PREFIX . 'uuid']];
+		}
+
+		$result->closeCursor();
+		return $matches;
+	}//end findSlugsByPrefix()
+
+	/**
 	 * Return the uuids of live objects that hold a slug in one register+schema table.
 	 *
 	 * No RBAC or multitenancy filter: uniqueness is a property of the data, so a
