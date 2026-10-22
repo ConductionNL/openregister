@@ -41,6 +41,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use DateTime;
+use DateTimeImmutable;
+use DateTimeZone;
 use Exception;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -213,6 +215,7 @@ class MagicBulkHandler {
 			// Map ALL object properties to columns (camelCase → snake_case).
 			// Properties can be at top level OR in 'object' key (structured format).
 			$propertySource = $object['object'] ?? $object;
+			$schemaProperties = $schema->getProperties();
 			foreach ($propertySource as $propertyName => $value) {
 				// A declared property that would write a metadata column is skipped
 				// with the undeclared `_` keys and `@self`: the metadata columns were
@@ -229,6 +232,33 @@ class MagicBulkHandler {
 				// 2. Column types might differ from schema (e.g., table created with old schema)
 				// 3. Empty strings are semantically equivalent to NULL for most use cases.
 				$value = match ($value) { '' => null, default => $value };
+
+				// 🔴 SCHEMA-AWARE date/date-time NORMALIZATION, same as the
+				// non-bulk path (MagicMapper::prepareObjectDataForTable()). Without
+				// this, a `date-time` property given as an ISO-8601-with-offset
+				// string (e.g. "2026-10-13T14:50:03+00:00" — DateTime::ATOM, the
+				// convention every caller of ObjectService::saveObjects() uses)
+				// reaches MySQL's DATETIME column unconverted and fails outright
+				// (SQLSTATE[22007]). `date` and `date-time` are NOT the same: a
+				// date-time names an instant, so its offset must be applied before
+				// storing; a `date` names a calendar DAY with no instant, and
+				// converting it through a timezone can move it to a different day.
+				$propertyFormat = ($schemaProperties[$propertyName]['format'] ?? null);
+				if (in_array($propertyFormat, ['date-time', 'date'], true) === true && $value !== null) {
+					$isCalendarDate = ($propertyFormat === 'date');
+					if ($value instanceof \DateTimeInterface) {
+						$moment = DateTimeImmutable::createFromInterface($value);
+						if ($isCalendarDate === false) {
+							$moment = $moment->setTimezone(new DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE));
+						}
+
+						$value = $moment->format(DateTimeNormalizer::DATABASE_FORMAT);
+					} elseif (is_string($value) === true) {
+						$value = $isCalendarDate
+							? $this->dateTimeNormalizer->formatDateForDatabase($value)
+							: $this->dateTimeNormalizer->formatForDatabase($value);
+					}
+				}
 
 				// Convert complex values for database storage.
 				$preparedObject[$columnName] = match (true) { is_array($value), is_object($value) => json_encode($value), default => $value };
