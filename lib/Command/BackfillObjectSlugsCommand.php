@@ -88,7 +88,7 @@ class BackfillObjectSlugsCommand extends Command {
 				. 'links, bookmarks and external references that use an old slug stop working. '
 				. 'An object whose new slug another object already holds keeps its current slug (with '
 				. 'objectSlugSuffix it gets the suffixed slug) and is reported as kept. A run that is not a '
-				. 'dry run and changes at least one slug writes one audit-trail entry listing the old and new slug of the changed objects. '
+				. 'dry run and changes at least one slug writes one audit-trail entry listing the old and new slug of the changed objects (the first 1,000; the log has the rest). '
 				. 'Run with --dry-run first'
 			)
 			->addOption('dry-run', null, InputOption::VALUE_NONE, 'Print the plan without writing anything');

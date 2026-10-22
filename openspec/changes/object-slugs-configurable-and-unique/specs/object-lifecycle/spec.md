@@ -286,8 +286,11 @@ directly, in transactions of at most 500 rows. It does not bump the object versi
 not write a per-object audit-trail entry and does not dispatch object events. Instead,
 every run that is not a dry run and changes at least one slug MUST write one audit-trail entry
 (`slug.backfill.fill` or `slug.backfill.reslug`, on the register and schema) that lists
-every object whose slug it changed as uuid, old slug and new slug, so a `--reslug` stays
-reconstructable. A run that changes nothing, and a dry run, MUST NOT write an entry (the console summary still reports it). When the entry cannot be inserted, the run logs an error line with the changes instead, and the slugs already written stay.
+the objects whose slug it changed as uuid, old slug and new slug, so a `--reslug` stays
+reconstructable. The entry lists at most the first 1,000 changes and carries the total
+(`changesTotal`) and `truncated`; the full list of a larger run MUST be written to the log.
+The entry is hash-chained and cannot be redacted afterwards, so it MUST copy nothing but uuid,
+old slug and new slug. A run that changes nothing, and a dry run, MUST NOT write an entry (the console summary still reports it). When the entry cannot be inserted, the run logs an error line with the changes instead, and the slugs already written stay.
 
 #### Scenario: Default mode fills only empty slugs
 - **GIVEN** a schema with `objectSlugField: "title"` holding object A with slug `a-title` and object B without a slug and `title: "B Title"`
@@ -326,6 +329,12 @@ reconstructable. A run that changes nothing, and a dry run, MUST NOT write an en
 - **THEN** exactly one audit-trail entry MUST exist for it, listing A and B with old and new slug
 - **AND** no object's version MUST have changed
 - **AND** a `--dry-run` MUST write no entry
+
+#### Scenario: A large run keeps the entry bounded
+- **GIVEN** a `--reslug` run that changes 2,500 slugs
+- **WHEN** the run finishes
+- **THEN** the audit-trail entry MUST list 1,000 changes, carry `changesTotal` 2500 and `truncated` true
+- **AND** the full list MUST be in the log, in parts of at most 1,000
 
 #### Scenario: A run that changes nothing writes no audit-trail entry
 - **GIVEN** a `--reslug` run after which every object already holds the slug it wants

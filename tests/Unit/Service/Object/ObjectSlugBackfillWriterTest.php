@@ -50,6 +50,12 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 
 	private ObjectSlugBackfillWriter $writer;
 
+	/** @var LoggerInterface&MockObject */
+	private LoggerInterface $logger;
+
+	/** @var list<string> Info lines logged. */
+	private array $infos = [];
+
 	protected function setUp(): void {
 		parent::setUp();
 
@@ -71,12 +77,19 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 			}
 		);
 
+		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->logger->method('info')->willReturnCallback(
+			function ($message): void {
+				$this->infos[] = (string)$message;
+			}
+		);
+
 		$this->writer = new ObjectSlugBackfillWriter(
 			magicMapper: $this->magicMapper,
 			cacheHandler: $this->cacheHandler,
 			db: $this->db,
 			auditTrail: $auditTrail,
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->logger
 		);
 	}//end setUp()
 
@@ -126,6 +139,25 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		$this->assertCount(1, $this->audits);
 		$this->assertCount(500, $this->audits[0]['changes'], 'the entry lists chunk 1 only');
 	}//end testAFailingSecondChunkKeepsTheFirstAuditsItAndEvictsTheCache()
+
+	public function testARunOverTheEntryCapLogsTheFullListInParts(): void {
+		// Review finding r2routes-f6: the entry holds the first 1,000; the log holds all 2,500.
+		$this->magicMapper->method('updateSlugColumn')->willReturn(1);
+
+		$this->writer->write($this->plan(2500), $this->register, $this->schema, 'reslug', ['skipped' => 0]);
+
+		$this->assertCount(3, $this->infos);
+		$this->assertStringContainsString('part 3 of 3', $this->infos[2]);
+		$this->assertStringContainsString('slug-2500', $this->infos[2]);
+	}//end testARunOverTheEntryCapLogsTheFullListInParts()
+
+	public function testASmallRunLogsNoChangeList(): void {
+		$this->magicMapper->method('updateSlugColumn')->willReturn(1);
+
+		$this->writer->write($this->plan(5), $this->register, $this->schema, 'fill', ['skipped' => 0]);
+
+		$this->assertSame([], $this->infos);
+	}//end testASmallRunLogsNoChangeList()
 
 	public function testAFailingFirstChunkWritesNoEntryAndEvictsNothing(): void {
 		$this->magicMapper->method('updateSlugColumn')->willThrowException(new RuntimeException('down'));

@@ -196,7 +196,7 @@ class ObjectSlugBackfillWriter {
 	}//end evictCache()
 
 	/**
-	 * One audit-trail entry for the run, with the old to new list.
+	 * One audit-trail entry for the run, with the old to new list (capped, see logLargeRun()).
 	 *
 	 * A failure to write the entry is logged with the full list, so the change
 	 * stays reconstructable, and does not undo the slugs already written.
@@ -210,6 +210,7 @@ class ObjectSlugBackfillWriter {
 	 * @return void
 	 */
 	private function recordAudit(array $applied, Register $register, Schema $schema, string $mode, array $summary): void {
+		$this->logLargeRun(applied: $applied, register: $register, schema: $schema);
 		try {
 			$this->auditTrail->createSlugBackfillEntry(
 				mode: $mode,
@@ -231,6 +232,39 @@ class ObjectSlugBackfillWriter {
 			);
 		}
 	}//end recordAudit()
+
+	/**
+	 * Put the full change list in the log when the audit entry cannot hold it.
+	 *
+	 * The entry lists the first {@see AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES}
+	 * changes; the rest of a large run is reconstructable from these lines.
+	 *
+	 * @param list<array{uuid: string, old: ?string, new: ?string}> $applied  The writes that were applied.
+	 * @param Register                                              $register The register.
+	 * @param Schema                                                $schema   The schema.
+	 *
+	 * @return void
+	 */
+	private function logLargeRun(array $applied, Register $register, Schema $schema): void {
+		if (count($applied) <= AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES) {
+			return;
+		}
+
+		$parts = array_chunk($applied, AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES);
+		foreach ($parts as $index => $part) {
+			$this->logger->info(
+				message: sprintf(
+					'[ObjectSlug] Slug backfill changes (register %s, schema %s, part %d of %d): %s',
+					(string)$register->getId(),
+					(string)$schema->getId(),
+					($index + 1),
+					count($parts),
+					json_encode($part)
+				),
+				context: ['app' => 'openregister', 'path' => 'backfill']
+			);
+		}
+	}//end logLargeRun()
 
 	/**
 	 * The audit action suffix of a run.
