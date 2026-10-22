@@ -50,7 +50,7 @@ the same dot paths and templates as `objectNameField`; the value is slugified
   objects. With `objectSlugSuffix: true` the object gets `<slug>-<YYYYMMDDHHMMSS>`
   (UTC) instead.
 - **Frozen once set.** A later save never changes a slug, also when the source field
-  changes. A slug sent by a client (`@self.slug`) is normalised like a generated one (lower case, `a-z0-9` and hyphens, at most 255 characters) and follows the same rules; a different
+  changes. A slug sent by a client (`@self.slug`) is normalised like a generated one (lower case, spaces and `_` become `-`, every other character outside `a-z0-9` and `-`, dots included, is dropped, at most 255 characters; `Zaak_2026-0042` is stored as `zaak-2026-0042`, and a value that normalises to nothing counts as not sent) and follows the same rules; a different
   slug sent for an object that already has one is ignored and logged. The one
   exception is `occ openregister:backfill-slugs --reslug`, which an administrator runs
   explicitly and which rewrites slugs; links built on the old slugs stop working.

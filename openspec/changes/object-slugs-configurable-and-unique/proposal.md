@@ -46,7 +46,8 @@ Three defects cause this:
   source field is renamed. Only an object without a slug gets one at save time, so an
   object that lost a collision gets the slug on its next save once the holder is gone.
 - **Client-supplied slugs** (`@self.slug` / `slug`) stay allowed for integrations and
-  follow the same uniqueness and freeze rules.
+  follow the same uniqueness and freeze rules; they are slugified like a generated slug
+  (`Zaak_2026-0042` is stored as `zaak-2026-0042`, a value that slugifies to nothing counts as not sent).
 - **Bulk parity:** `SaveObjects` applies exactly the same rules as a single save,
   including two objects in the same batch with the same source value.
 - **Ambiguous lookup is an error:** a slug lookup inside one register + schema that
