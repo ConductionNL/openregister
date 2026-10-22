@@ -209,7 +209,7 @@ class FlowTriggerService {
 				(string)($subject['schema'] ?? '')
 			);
 
-			if ($object === null && $this->hasDeletedSubjectSnapshot($run) === false) {
+			if ($object === null && $run->hasDeletedSubjectSnapshot() === false) {
 				return;
 			}
 		}
@@ -225,27 +225,4 @@ class FlowTriggerService {
 		$this->runner->execute(run: $run, flow: $flow, subject: $object, seedItems: $seed);
 
 	}//end runInline()
-
-	/**
-	 * Whether a run's unresolved subject should fall back to its payload
-	 * snapshot instead of returning (leaving it for the worker).
-	 *
-	 * Restricted to the `object.deleted` trigger, same rationale as
-	 * {@see \OCA\OpenRegister\Service\Flow\FlowRunAdvancer::hasDeletedSubjectSnapshot()},
-	 * which this must not drift from: `object.deleted` is the one lifecycle
-	 * event whose subject can never be re-resolved by design. Every other
-	 * trigger's unresolved subject is a genuine resolution failure.
-	 *
-	 * @param FlowRun $run The run.
-	 *
-	 * @return boolean True when the run's trigger is `object.deleted` and its
-	 *                  context carries a payload snapshot.
-	 */
-	private function hasDeletedSubjectSnapshot(FlowRun $run): bool {
-		if ($run->getTrigger() !== 'object.deleted') {
-			return false;
-		}
-
-		return array_key_exists('payload', (array)($run->getContext() ?? []));
-	}//end hasDeletedSubjectSnapshot()
 }//end class

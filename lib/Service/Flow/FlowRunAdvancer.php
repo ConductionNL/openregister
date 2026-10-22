@@ -133,7 +133,7 @@ class FlowRunAdvancer {
 				// is a genuine resolution failure (e.g. a sub-flow fan-out child
 				// queued against an object that gets deleted before it runs) and
 				// must still fail rather than silently run on stale data.
-				if ($subject === null && $this->hasDeletedSubjectSnapshot($run) === false) {
+				if ($subject === null && $run->hasDeletedSubjectSnapshot() === false) {
 					$run->setStatus(FlowRun::STATUS_FAILED);
 					$run->setError(sprintf('Subject "%s" no longer exists.', $run->getSubjectUuid()));
 					$this->mapper->update($run);
@@ -226,7 +226,7 @@ class FlowRunAdvancer {
 			// deleted subject with a snapshot under `payload` is not a
 			// resolution failure, it is the one lifecycle event that can never
 			// re-resolve by design.
-			if ($subject === null && $this->hasDeletedSubjectSnapshot($run) === false) {
+			if ($subject === null && $run->hasDeletedSubjectSnapshot() === false) {
 				$run->setStatus(FlowRun::STATUS_FAILED);
 				$run->setError(sprintf('Subject "%s" no longer exists.', $run->getSubjectUuid()));
 
@@ -244,35 +244,5 @@ class FlowRunAdvancer {
 			budget: $budget
 		);
 	}//end advanceStream()
-
-	/**
-	 * Whether a run's unresolved subject should fall back to its payload
-	 * snapshot instead of failing.
-	 *
-	 * Restricted to the `object.deleted` trigger: it is the one lifecycle
-	 * event whose subject can never be re-resolved by design, since the
-	 * object is already gone by the time any run reaches it. Every other
-	 * trigger's unresolved subject is a genuine resolution failure — a
-	 * sub-flow fan-out child queued against an object that is deleted before
-	 * the queued run executes, for instance, must still fail rather than
-	 * silently continue on stale data.
-	 *
-	 * Checks for the `payload` key's presence rather than a non-empty value:
-	 * once scoped to `object.deleted`, a key that is merely present but
-	 * technically empty is still a deliberate snapshot from
-	 * {@see \OCA\OpenRegister\Listener\FlowTriggerListener}, not an absent one.
-	 *
-	 * @param FlowRun $run The run.
-	 *
-	 * @return boolean True when the run's trigger is `object.deleted` and its
-	 *                  context carries a payload snapshot.
-	 */
-	private function hasDeletedSubjectSnapshot(FlowRun $run): bool {
-		if ($run->getTrigger() !== 'object.deleted') {
-			return false;
-		}
-
-		return array_key_exists('payload', (array)($run->getContext() ?? []));
-	}//end hasDeletedSubjectSnapshot()
 
 }//end class
