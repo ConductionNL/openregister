@@ -258,6 +258,7 @@ class FlowTriggerServiceTest extends TestCase {
 
 		$run = new FlowRun();
 		$run->setUuid('run-sync-3');
+		$run->setTrigger('object.deleted');
 		$run->setContext(['payload' => ['uuid' => 'gone', 'kenmerk' => 'K-1']]);
 
 		$seen = null;
@@ -279,6 +280,37 @@ class FlowTriggerServiceTest extends TestCase {
 		// execute(run, flow, subject, seedItems): the seed carries the snapshot.
 		$this->assertSame('K-1', $seen[3][0]['json']['kenmerk']);
 	}//end testADeletedSubjectWithASnapshotStillRunsInlineFromThePayload()
+
+	/**
+	 * The payload fallback is scoped to `object.deleted` specifically, not to
+	 * "any trigger with an unresolved subject and a payload". A sub-flow
+	 * fire-and-forget child, for instance, queues with both a real subject
+	 * and a payload snapshot; on another trigger, an unresolved subject is a
+	 * genuine resolution failure and must still fall through to the worker's
+	 * ordinary (failing) handling rather than run inline on stale data.
+	 */
+	public function testAnUnresolvableSubjectWithAPayloadOnAnotherTriggerStillLeavesItToTheWorker(): void {
+		$locator = $this->createMock(FlowLocator::class);
+		$locator->method('flowsForTrigger')->willReturn(['sync-1']);
+		$locator->method('resolveFlow')->willReturn(['id' => 'sync-1', 'executionMode' => 'sync']);
+		$locator->method('resolveSubject')->willReturn(null);
+
+		$run = new FlowRun();
+		$run->setUuid('run-sync-4');
+		$run->setTrigger('object.updated');
+		$run->setContext(['payload' => ['uuid' => 'gone', 'kenmerk' => 'K-1']]);
+
+		$runner = $this->createMock(FlowRunService::class);
+		$runner->method('queue')->willReturn($run);
+		$runner->expects($this->never())->method('execute');
+
+		$service = new FlowTriggerService($locator, $runner, new \Psr\Log\NullLogger());
+
+		$this->assertSame(
+			1,
+			$service->fire(event: 'object.updated', subject: ['uuid' => 'gone', 'register' => 'woo', 'schema' => 'convenanten'])
+		);
+	}//end testAnUnresolvableSubjectWithAPayloadOnAnotherTriggerStillLeavesItToTheWorker()
 
 	/**
 	 * A trigger runs inside a user's save; a failure to queue must be swallowed,

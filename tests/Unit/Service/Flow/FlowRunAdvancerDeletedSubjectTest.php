@@ -59,8 +59,9 @@ class FlowRunAdvancerDeletedSubjectTest extends TestCase {
 
 	/**
 	 * @param array $context The run's context, e.g. `['payload' => [...]]`.
+	 * @param string $trigger The run's trigger event id.
 	 */
-	private function runWithDeletedSubject(array $context): FlowRun {
+	private function runWithDeletedSubject(array $context, string $trigger = 'object.deleted'): FlowRun {
 		$run = new FlowRun();
 		$run->setUuid('run-1');
 		$run->setFlowId('f1');
@@ -68,6 +69,7 @@ class FlowRunAdvancerDeletedSubjectTest extends TestCase {
 		$run->setSubjectRegister('woo');
 		$run->setSubjectSchema('convenanten');
 		$run->setContext($context);
+		$run->setTrigger($trigger);
 
 		return $run;
 	}
@@ -89,6 +91,27 @@ class FlowRunAdvancerDeletedSubjectTest extends TestCase {
 
 	public function testAnUnresolvableSubjectWithNoPayloadStillFails(): void {
 		$run = $this->runWithDeletedSubject([]);
+		$this->resolvers->method('resolveSubject')->willReturn(null);
+
+		$this->runner->expects($this->never())->method('execute');
+		$this->mapper->expects($this->once())->method('update')->willReturnArgument(0);
+
+		$this->advancer->advance($run);
+
+		$this->assertSame(FlowRun::STATUS_FAILED, $run->getStatus());
+		$this->assertStringContainsString('no longer exists', (string)$run->getError());
+	}
+
+	/**
+	 * The fallback is scoped to `object.deleted` specifically — not to "any
+	 * trigger with an unresolved subject and a payload". A sub-flow
+	 * fire-and-forget child, for instance, queues with both a real subject
+	 * AND a payload snapshot (its parent's current item); if its target is
+	 * deleted before the queued run executes, that IS a genuine resolution
+	 * failure and must still fail, not silently continue on stale data.
+	 */
+	public function testAnUnresolvableSubjectWithAPayloadOnAnotherTriggerStillFails(): void {
+		$run = $this->runWithDeletedSubject(['payload' => ['uuid' => 'gone-1']], trigger: 'object.updated');
 		$this->resolvers->method('resolveSubject')->willReturn(null);
 
 		$this->runner->expects($this->never())->method('execute');
