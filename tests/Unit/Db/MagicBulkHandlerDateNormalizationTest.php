@@ -122,12 +122,70 @@ class MagicBulkHandlerDateNormalizationTest extends TestCase {
 		// offset is dropped, not applied: the wall-clock date survives as
 		// given rather than shifting to 2026-10-21 (what a date-time's
 		// timezone conversion would do to this same value).
+		//
+		// The "Y-m-d H:i:s" shape (not bare "Y-m-d") is intentional, not a
+		// leftover time component to strip: `format: date` and `format:
+		// date-time` map to the SAME `datetime` column
+		// (MagicMapper::mapStringProperty()), and DateTimeNormalizer::
+		// formatDateForDatabase()'s own docblock documents this exact
+		// representation for a calendar day. Confirmed identical to the
+		// non-bulk path (MagicMapper::prepareObjectDataForTable()), which
+		// stores a `date` property through the same normalizer method.
 		$row = $this->prepare(
 			['uuid' => 'u-3', 'dueDate' => '2026-10-20T23:30:00-05:00'],
 			['dueDate' => ['type' => 'string', 'format' => 'date']]
 		);
 
 		$this->assertSame('2026-10-20 23:30:00', $row['due_date']);
+	}
+
+	/**
+	 * Direct parity check against DateTimeNormalizer itself: the bulk path
+	 * delegates to it rather than reimplementing any part of its contract
+	 * (review feedback on #4773), so a bulk-prepared date/date-time value
+	 * must be byte-for-byte what calling the normalizer directly produces —
+	 * for both a string and a DateTimeInterface input.
+	 */
+	public function testBulkOutputMatchesDateTimeNormalizerCalledDirectly(): void {
+		$normalizer = new DateTimeNormalizer($this->createMock(LoggerInterface::class));
+
+		$dateTimeString = '2026-10-13T15:50:03+02:00';
+		$dateString = '2026-10-20T23:30:00-05:00';
+		$dateTimeObject = new DateTimeImmutable('2026-10-13 14:50:03', new DateTimeZone('UTC'));
+
+		$row = $this->prepare(
+			[
+				'uuid' => 'u-7',
+				'sourceLastChecked' => $dateTimeString,
+				'dueDate' => $dateString,
+				'reopenedAt' => $dateTimeObject,
+			],
+			[
+				'sourceLastChecked' => ['type' => 'string', 'format' => 'date-time'],
+				'dueDate' => ['type' => 'string', 'format' => 'date'],
+				'reopenedAt' => ['type' => 'string', 'format' => 'date-time'],
+			]
+		);
+
+		$this->assertSame($normalizer->formatForDatabase($dateTimeString), $row['source_last_checked']);
+		$this->assertSame($normalizer->formatDateForDatabase($dateString), $row['due_date']);
+		$this->assertSame($normalizer->formatForDatabase($dateTimeObject), $row['reopened_at']);
+	}
+
+	/**
+	 * A value that is neither a string nor a DateTimeInterface (a schema
+	 * violation — a date/date-time property given, say, an integer) is left
+	 * untouched rather than coerced or dropped, same as before this method's
+	 * DateTimeInterface branch was folded into one delegation to the
+	 * normalizer (review feedback on #4773).
+	 */
+	public function testANonStringNonDateTimeValueOnADatePropertyIsLeftUntouched(): void {
+		$row = $this->prepare(
+			['uuid' => 'u-8', 'sourceLastChecked' => 42],
+			['sourceLastChecked' => ['type' => 'string', 'format' => 'date-time']]
+		);
+
+		$this->assertSame(42, $row['source_last_checked']);
 	}
 
 	public function testADateTimeInterfaceValueIsAlsoNormalized(): void {

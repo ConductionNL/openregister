@@ -41,8 +41,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db\MagicMapper;
 
 use DateTime;
-use DateTimeImmutable;
-use DateTimeZone;
 use Exception;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
@@ -233,7 +231,7 @@ class MagicBulkHandler {
 				// 3. Empty strings are semantically equivalent to NULL for most use cases.
 				$value = match ($value) { '' => null, default => $value };
 
-				// 🔴 SCHEMA-AWARE date/date-time NORMALIZATION, same as the
+				// SCHEMA-AWARE date/date-time NORMALIZATION, same as the
 				// non-bulk path (MagicMapper::prepareObjectDataForTable()). Without
 				// this, a `date-time` property given as an ISO-8601-with-offset
 				// string (e.g. "2026-10-13T14:50:03+00:00" — DateTime::ATOM, the
@@ -242,19 +240,26 @@ class MagicBulkHandler {
 				// (SQLSTATE[22007]). `date` and `date-time` are NOT the same: a
 				// date-time names an instant, so its offset must be applied before
 				// storing; a `date` names a calendar DAY with no instant, and
-				// converting it through a timezone can move it to a different day.
+				// converting it through a timezone can move it to a different day
+				// (see DateTimeNormalizer::formatDateForDatabase()'s own docblock).
+				// Both `format: date` and `format: date-time` map to the SAME
+				// `datetime` column type (MagicMapper::mapStringProperty()), so a
+				// calendar date is intentionally stored "Y-m-d H:i:s"-shaped too —
+				// that is not a defect to fix here, it is the established, shared
+				// column shape both paths must keep matching.
+				//
+				// Delegates both string AND DateTimeInterface input to
+				// DateTimeNormalizer::formatForDatabase()/formatDateForDatabase()
+				// rather than hand-rolling the DateTimeInterface case: both methods
+				// already go through normalize(), which accepts a DateTimeInterface
+				// directly (never re-zoning it, so formatDateForDatabase()'s "keep
+				// the given wall-clock" guarantee holds) — a second, manual
+				// implementation of that same contract would drift from it the
+				// first time either method's internals changed.
 				$propertyFormat = ($schemaProperties[$propertyName]['format'] ?? null);
 				if (in_array($propertyFormat, ['date-time', 'date'], true) === true && $value !== null) {
-					$isCalendarDate = ($propertyFormat === 'date');
-					if ($value instanceof \DateTimeInterface) {
-						$moment = DateTimeImmutable::createFromInterface($value);
-						if ($isCalendarDate === false) {
-							$moment = $moment->setTimezone(new DateTimeZone(DateTimeNormalizer::DATABASE_TIMEZONE));
-						}
-
-						$value = $moment->format(DateTimeNormalizer::DATABASE_FORMAT);
-					} elseif (is_string($value) === true) {
-						$value = $isCalendarDate
+					if ($value instanceof \DateTimeInterface === true || is_string($value) === true) {
+						$value = ($propertyFormat === 'date')
 							? $this->dateTimeNormalizer->formatDateForDatabase($value)
 							: $this->dateTimeNormalizer->formatForDatabase($value);
 					}
