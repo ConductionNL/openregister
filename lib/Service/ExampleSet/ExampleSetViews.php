@@ -45,7 +45,12 @@ class ExampleSetViews extends ExampleSetEngineRows {
 	/**
 	 * The view fields a fragment may set.
 	 */
-	public const FIELDS = ['name', 'description', 'owner', 'isPublic', 'query', 'presentation', 'alert'];
+	public const FIELDS = ['name', 'description', 'owner', 'isPublic', 'query', 'presentation', 'alert', 'sharedWith'];
+
+	/**
+	 * The modes a share may carry: read (may use) and write (may update).
+	 */
+	public const SHARE_MODES = ['read', 'write'];
 
 	/**
 	 * Constructor.
@@ -112,8 +117,46 @@ class ExampleSetViews extends ExampleSetEngineRows {
 			}
 		}
 
-		return '';
+		return $this->shareRefusal(shares: ($data['sharedWith'] ?? []), users: $users);
 	}//end refusal()
+
+	/**
+	 * Why a view's shares cannot be written, or ''.
+	 *
+	 * A share names one user or one group and a mode. A user must be an
+	 * account the set creates or adopts, as an owner must.
+	 *
+	 * @param mixed              $shares The declared shares.
+	 * @param array<int, string> $users  The account ids the set creates or adopts.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 */
+	private function shareRefusal(mixed $shares, array $users): string {
+		if (is_array($shares) === false || array_is_list($shares) === false) {
+			return 'sharedWith must be a list';
+		}
+
+		foreach ($shares as $share) {
+			$user  = (string) (((array) $share)['user'] ?? '');
+			$group = (string) (((array) $share)['group'] ?? '');
+			if (($user === '') === ($group === '')) {
+				return 'a share names one user or one group';
+			}
+
+			if ($user !== '' && in_array($user, $users, true) === false) {
+				return 'share to "'.$user.'" is not an account the set creates or adopts';
+			}
+
+			$mode = (string) (((array) $share)['mode'] ?? 'read');
+			if (in_array($mode, self::SHARE_MODES, true) === false) {
+				return 'share mode "'.$mode.'" is not one of '.implode(', ', self::SHARE_MODES);
+			}
+		}
+
+		return '';
+	}//end shareRefusal()
 
 	/**
 	 * Write a view through the view service.
@@ -146,6 +189,7 @@ class ExampleSetViews extends ExampleSetEngineRows {
 				isDefault: false,
 				query: (array) ($data['query'] ?? []),
 				presentation: $presentation,
+				sharedWith: $this->shares(declared: ($data['sharedWith'] ?? [])),
 				alert: $alert,
 			);
 		} catch (Throwable $e) {
@@ -154,6 +198,27 @@ class ExampleSetViews extends ExampleSetEngineRows {
 
 		return ['error' => '', 'entry' => ['uuid' => (string) $view->getUuid()]];
 	}//end write()
+
+	/**
+	 * The declared shares as the view stores them: `{user|group, mode}`.
+	 *
+	 * @param array<int, array<string, mixed>> $declared The checked shares.
+	 *
+	 * @return array<int, array<string, string>>
+	 */
+	private function shares(array $declared): array {
+		$out = [];
+		foreach ($declared as $share) {
+			$target = 'group';
+			if (isset($share['user']) === true) {
+				$target = 'user';
+			}
+
+			$out[]  = [$target => (string) $share[$target], 'mode' => (string) ($share['mode'] ?? 'read')];
+		}
+
+		return $out;
+	}//end shares()
 
 	/**
 	 * Whether a written view is no longer there.

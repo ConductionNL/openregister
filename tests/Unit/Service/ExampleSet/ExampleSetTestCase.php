@@ -358,6 +358,7 @@ abstract class ExampleSetTestCase extends TestCase {
 				$view->setIsPublic($isPublic);
 				$view->setQuery($query);
 				$view->setAlert($alert);
+				$view->setSharedWith($sharedWith ?? []);
 				$this->savedViews[(string) $view->getUuid()] = $view;
 				return $view;
 			}
