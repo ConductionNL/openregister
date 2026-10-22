@@ -1520,6 +1520,12 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	/**
 	 * Perform one guarded delete and build its output item.
 	 *
+	 * `deleteObject()` reports a delete it caught an exception on as `false`
+	 * rather than throwing, so its result is what says whether anything was
+	 * removed. Only a real removal counts as a write (towards the cap and the
+	 * `deleted` tally); a failed one stays in the run as an item marked
+	 * `deleted: false`, like a skipped one.
+	 *
 	 * @param array $item The input item (`json` and `binary`).
 	 * @param int $index The input item's index, for provenance.
 	 * @param array $pairs The composite match pairs.
@@ -1595,13 +1601,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		// Guard 4: the ordinary delete path, with the run owner as the explicit
 		// acting user and the register / schema scope confining the lookup to
 		// one magic table. No `_retentionSweep`; see `permanenceOf()` for why
-		// the soft delete is the default and what opts out of it.
-		//
-		// The service reports a delete it caught an exception on as `false`
-		// rather than throwing, so the result is what says whether anything
-		// was removed. Only a real removal counts as a write (and towards the
-		// cap and the `deleted` tally); a failed one stays in the run as an
-		// item marked `deleted: false`, like a skipped one.
+		// the soft delete is the default and what opts out of it. Its result
+		// decides `$writes` and `deleted`; see the method docblock.
 		$deleted = $this->objects->deleteObject(
 			uuid: $uuid,
 			register: $register,

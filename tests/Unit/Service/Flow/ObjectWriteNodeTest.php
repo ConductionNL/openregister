@@ -902,27 +902,30 @@ class ObjectWriteNodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testADeleteTheServiceReportsAsFailedIsNotCountedAsDeleted(): void {
-		$this->tableOf([['uuid' => 'u-kept', 'data' => ['sourceId' => 'r1']]]);
+		$this->tableOf(table: [['uuid' => 'u-kept', 'data' => ['sourceId' => 'r1']]]);
 		$this->objects->expects($this->once())->method('deleteObject')->willReturn(false);
 
 		$report = new FlowStepReport();
 
 		$out = $this->node->execute(
-			$this->items([['retiredId' => 'r1']]),
+			$this->items(records: [['retiredId' => 'r1']]),
 			$this->deleteConfig(),
 			$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
 		);
 
-		$this->assertFalse($out[0]['json']['deleted'], 'the output item must not claim a removal that failed');
+		$this->assertFalse(
+			condition: $out[0]['json']['deleted'],
+			message: 'the output item must not claim a removal that failed'
+		);
 		$this->assertSame(
-			[
+			expected: [
 				'write' => [
 					'created' => ['count' => 0],
 					'updated' => ['count' => 0],
 					'deleted' => ['count' => 0],
 				],
 			],
-			$report->take()
+			actual: $report->take()
 		);
 
 	}//end testADeleteTheServiceReportsAsFailedIsNotCountedAsDeleted()
