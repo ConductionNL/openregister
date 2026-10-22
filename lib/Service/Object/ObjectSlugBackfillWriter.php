@@ -29,6 +29,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\SlugBackfillWriteException;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -81,32 +82,33 @@ class ObjectSlugBackfillWriter {
 	 *
 	 * @return int The number of planned writes skipped because the row changed.
 	 *
-	 * @throws Throwable When a write fails (that chunk is rolled back first).
+	 * @throws SlugBackfillWriteException When a write fails (that chunk is rolled back first; the
+	 *                                     earlier chunks are audited and evicted before it is thrown).
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function write(array $plan, Register $register, Schema $schema, string $mode, array $summary): int {
 		$skipped = 0;
 		$applied = [];
+		$failure = null;
 		try {
 			foreach (array_chunk($plan, self::WRITE_CHUNK) as $chunk) {
 				$this->writeChunk(chunk: $chunk, register: $register, schema: $schema, applied: $applied, skipped: $skipped);
 			}
-		} finally {
-			// Written even when a chunk failed: the entry must list what changed. A run
-			// that changed nothing leaves no entry (the console summary still says so).
-			if ($applied !== []) {
-				$this->recordAudit(applied: $applied, register: $register, schema: $schema, mode: $mode, summary: array_merge($summary, ['skipped' => $skipped]));
-			}
+		} catch (Throwable $e) {
+			$failure = $e;
 		}
 
-		if ($plan !== []) {
-			$this->cacheHandler->invalidateForObjectChange(
-				object: null,
-				operation: 'bulk_update',
-				registerId: (int)$register->getId(),
-				schemaId: (int)$schema->getId()
-			);
+		// Also after a failed chunk: what the earlier chunks wrote is real, so the
+		// entry must list it and the cache must not keep serving the old slugs. A run
+		// that changed nothing leaves no entry (the console summary still says so).
+		if ($applied !== []) {
+			$this->recordAudit(applied: $applied, register: $register, schema: $schema, mode: $mode, summary: array_merge($summary, ['skipped' => $skipped]));
+			$this->evictCache(register: $register, schema: $schema);
+		}
+
+		if ($failure !== null) {
+			throw new SlugBackfillWriteException(applied: count($applied), skipped: $skipped, previous: $failure);
 		}
 
 		return $skipped;
@@ -162,6 +164,36 @@ class ObjectSlugBackfillWriter {
 
 		array_push($applied, ...$written);
 	}//end writeChunk()
+
+	/**
+	 * Evict the schema's cached objects; a failure is logged, not thrown, so it
+	 * cannot hide the run's own outcome.
+	 *
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 *
+	 * @return void
+	 */
+	private function evictCache(Register $register, Schema $schema): void {
+		try {
+			$this->cacheHandler->invalidateForObjectChange(
+				object: null,
+				operation: 'bulk_update',
+				registerId: (int)$register->getId(),
+				schemaId: (int)$schema->getId()
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				message: sprintf(
+					'[ObjectSlug] Could not evict the cache after the slug backfill (register %s, schema %s): %s',
+					(string)$register->getId(),
+					(string)$schema->getId(),
+					$e->getMessage()
+				),
+				context: ['app' => 'openregister', 'path' => 'backfill']
+			);
+		}
+	}//end evictCache()
 
 	/**
 	 * One audit-trail entry for the run, with the old to new list.

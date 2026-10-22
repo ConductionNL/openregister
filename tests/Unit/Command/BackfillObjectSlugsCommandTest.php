@@ -159,6 +159,40 @@ class BackfillObjectSlugsCommandTest extends TestCase {
 		$this->assertSame(0, $exit);
 	}
 
+	public function testAFailingWriteChunkExitsNonZeroWithTheAppliedCount(): void {
+		// Review finding r2routes-f2: 501 rows are two chunks; the second one fails.
+		$rows = [];
+		for ($i = 1; $i <= 501; $i++) {
+			$rows[] = ['id' => $i, 'uuid' => sprintf('00000000-0000-0000-0000-%012d', $i), 'slug' => null, 'created' => null, 'object' => ['title' => 'Row ' . $i]];
+		}
+
+		$this->schemaMapper->method('findBySlugInIds')->willReturn($this->schema());
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$this->magicMapper->method('findAllSlugs')->willReturn([]);
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
+			['rows' => $rows, 'fetched' => 501, 'lastId' => 501],
+			['rows' => [], 'fetched' => 0, 'lastId' => 501]
+		);
+		$calls = 0;
+		$this->magicMapper->method('updateSlugColumn')->willReturnCallback(
+			function () use (&$calls): int {
+				$calls++;
+				if ($calls === 501) {
+					throw new RuntimeException('deadlock');
+				}
+
+				return 1;
+			}
+		);
+
+		$tester = $this->tester();
+		$exit = $tester->execute(['register' => 'woo', 'schema' => 'convenanten']);
+
+		$this->assertSame(1, $exit);
+		$this->assertStringContainsString('deadlock', $tester->getDisplay());
+		$this->assertStringContainsString('applied=500', $tester->getDisplay());
+	}
+
 	public function testADryRunPrintsThePlanAndWritesNothing(): void {
 		$this->schemaMapper->method('findBySlugInIds')->willReturn($this->schema());
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);

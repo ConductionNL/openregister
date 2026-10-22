@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\SlugBackfillWriteException;
 use OCA\OpenRegister\Service\Object\ObjectSlugBackfillService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -99,8 +100,8 @@ class BackfillObjectSlugsCommand extends Command {
 	 * @param InputInterface  $input  Console input.
 	 * @param OutputInterface $output Console output stream.
 	 *
-	 * @return int 0 on success (also when duplicates were reported), 1 on unresolved input
-	 *             or a schema without objectSlugField.
+	 * @return int 0 on success (also when duplicates were reported), 1 on unresolved input,
+	 *             a schema without objectSlugField or a failing write (the applied count is printed).
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
@@ -140,6 +141,14 @@ class BackfillObjectSlugsCommand extends Command {
 			$result = $this->backfill->run(register: $register, schema: $schema, reslug: $reslug, dryRun: $dryRun);
 		} catch (\InvalidArgumentException $e) {
 			$output->writeln('<error>' . $e->getMessage() . '</error>');
+			return Command::FAILURE;
+		} catch (SlugBackfillWriteException $e) {
+			// The chunks before the failing one stay written, are audited and evicted.
+			$output->writeln('<error>' . $e->getMessage() . '</error>');
+			$output->writeln(sprintf('<error>applied=%d skipped=%d; run the command again to continue, it only touches what is left</error>', $e->getApplied(), $e->getSkipped()));
+			return Command::FAILURE;
+		} catch (Throwable $e) {
+			$output->writeln('<error>The slug backfill failed: ' . $e->getMessage() . '</error>');
 			return Command::FAILURE;
 		}
 

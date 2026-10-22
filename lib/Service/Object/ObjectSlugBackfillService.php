@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\SlugBackfillWriteException;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
@@ -106,6 +107,7 @@ class ObjectSlugBackfillService {
 	 * } What was found and what was (or would be) written.
 	 *
 	 * @throws InvalidArgumentException When the schema has no `objectSlugField`.
+	 * @throws SlugBackfillWriteException When a write chunk fails (earlier chunks stay written).
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 *
