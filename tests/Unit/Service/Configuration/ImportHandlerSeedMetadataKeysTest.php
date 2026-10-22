@@ -167,6 +167,22 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	}//end testASeedKeepsAFreeSlugOnAManagedSchema()
 
 	/**
+	 * Review finding r2save-f3: a uuid-less seed is looked up by the slug it was
+	 * stored under, so importing it twice yields one object.
+	 */
+	public function testAUuidLessSeedWithACapitalisedTitleIsImportedOnce(): void {
+		$schema = $this->makeSchema(['naam' => ['type' => 'string'], 'title' => ['type' => 'string']]);
+		$schema->setConfiguration(['objectSlugField' => 'naam']);
+
+		$lookups = [];
+		$this->importSeed($schema, $lookups, [], ['title' => 'School De Linde', 'naam' => 'De Linde'], 2);
+
+		$this->assertCount(1, $this->inserted, 'the second import finds the first object');
+		$this->assertSame('school-de-linde', $this->inserted[0]->getSlug());
+		$this->assertSame(['school-de-linde', 'school-de-linde'], $lookups, 'the lookup uses the stored form');
+	}//end testAUuidLessSeedWithACapitalisedTitleIsImportedOnce()
+
+	/**
 	 * A real slug handler over a mapper that reports the given holders, or none.
 	 *
 	 * @param MagicMapper                    $routing        The routing mapper mock.
@@ -198,10 +214,12 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 	 * @param Schema                  $schema      The target schema.
 	 * @param array<int, string>      $lookups     Filled with every identifier find() received.
 	 * @param array<int, string>|null $slugHolders Live holders of any slug (null = no slug handler wired).
+	 * @param array|null              $seed        The seed object (default: a seed with uuid and slug).
+	 * @param int                     $runs        How many times the same import runs.
 	 *
 	 * @return void
 	 */
-	private function importSeed(Schema $schema, array &$lookups = [], ?array $slugHolders = null): void {
+	private function importSeed(Schema $schema, array &$lookups = [], ?array $slugHolders = null, ?array $seed = null, int $runs = 1): void {
 		$register = new Register();
 		$register->setSlug('learniq');
 		$register->setSchemas([(int)$schema->getId()]);
@@ -212,8 +230,15 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 
 		$routing = $this->createMock(MagicMapper::class);
 		$routing->method('find')->willReturnCallback(
-			static function ($identifier) use (&$lookups) {
+			function ($identifier) use (&$lookups) {
 				$lookups[] = (string)$identifier;
+				// Behave like a table: an earlier insert is found by its uuid or stored slug.
+				foreach ($this->inserted as $entity) {
+					if ($entity->getUuid() === (string)$identifier || $entity->getSlug() === (string)$identifier) {
+						return $entity;
+					}
+				}
+
 				throw new DoesNotExistException('not found');
 			}
 		);
@@ -258,7 +283,7 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 				'seedData' => [
 					'objects' => [
 						'school' => [
-							['uuid' => self::SEED_UUID, 'slug' => 'school-de-linde', 'naam' => 'De Linde'],
+							($seed ?? ['uuid' => self::SEED_UUID, 'slug' => 'school-de-linde', 'naam' => 'De Linde']),
 						],
 					],
 				],
@@ -267,7 +292,9 @@ class ImportHandlerSeedMetadataKeysTest extends TestCase {
 
 		$result = ['objects' => []];
 		$method = $ref->getMethod('importSeedData');
-		$method->invokeArgs($handler, [$configData, 'admin', 'learniq', $configuration, &$result]);
+		for ($run = 0; $run < $runs; $run++) {
+			$method->invokeArgs($handler, [$configData, 'admin', 'learniq', $configuration, &$result]);
+		}
 	}//end importSeed()
 
 	/**

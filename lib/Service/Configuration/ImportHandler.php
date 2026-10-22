@@ -5373,6 +5373,33 @@ class ImportHandler {
 	}//end importSeedData()
 
 	/**
+	 * The slug to look a uuid-less seed object up by.
+	 *
+	 * A schema with managed slugs stores the normalised slug, so the raw seed
+	 * slug or title (`School De Linde`) would never find the object it created
+	 * on the previous import; the lookup uses the same candidate the save does.
+	 *
+	 * @param array  $objectData The seed object.
+	 * @param string $objectSlug The seed's slug, else its title.
+	 * @param Schema $schema     The schema the seed is imported into.
+	 *
+	 * @return string The slug to look up.
+	 */
+	private function seedLookupSlug(array $objectData, string $objectSlug, Schema $schema): string {
+		if ($this->slugHandler === null || $this->slugHandler->isManaged(schema: $schema) === false) {
+			return $objectSlug;
+		}
+
+		$candidate = $this->slugHandler->candidate(
+			objectData: $this->withoutSeedMetadataKeys(objectData: $objectData, schema: $schema),
+			schema: $schema,
+			clientSlug: $objectSlug
+		);
+
+		return ($candidate ?? $objectSlug);
+	}//end seedLookupSlug()
+
+	/**
 	 * Remove the seed format's top-level `uuid` and `slug` from an object's data.
 	 *
 	 * A seed object carries its uuid and slug at the top level; the importer
@@ -5779,7 +5806,11 @@ class ImportHandler {
 					// IDEMPOTENCY CHECK: Check if object already exists by slug or uuid.
 					// This prevents duplicate data when configuration is run multiple times.
 					$existingObject = null;
-					$lookupIdentifier = $objectData['uuid'] ?? $objectSlug;
+					$lookupIdentifier = $objectData['uuid'] ?? $this->seedLookupSlug(
+						objectData: $objectData,
+						objectSlug: (string)$objectSlug,
+						schema: $objectSchema
+					);
 
 					try {
 						// Try to find existing object using MagicMapper.
