@@ -1245,15 +1245,6 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		$this->guardBulkFailures(result: $result);
 		$written = $this->indexBulkResults(result: $result);
 
-		$this->writeReport(
-			context: $context,
-			report: [
-				'created' => ['count' => count((array)($result['saved'] ?? []))],
-				'updated' => ['count' => count((array)($result['updated'] ?? []))],
-				'unchanged' => ['count' => count((array)($result['unchanged'] ?? []))],
-			]
-		);
-
 		$out = [];
 		$position = 0;
 		foreach ($items as $index => $item) {
@@ -1296,6 +1287,23 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				fromItemIndex: (int)$index
 			);
 		}//end foreach
+
+		// Placed after output processing, not right after saveObjects(): a
+		// FlowStepReport describes a COMPLETED node execution, the same
+		// contract writeItems() already keeps (its own report sits after its
+		// per-item loop, persistence and output construction together). An
+		// exception in the output loop above propagates out of this method
+		// and the step never reaches "completed", so no report is written for
+		// a step that did not finish — matching the single-item path exactly,
+		// even though the database writes above would already be durable.
+		$this->writeReport(
+			context: $context,
+			report: [
+				'created' => ['count' => count((array)($result['saved'] ?? []))],
+				'updated' => ['count' => count((array)($result['updated'] ?? []))],
+				'unchanged' => ['count' => count((array)($result['unchanged'] ?? []))],
+			]
+		);
 
 		return $out;
 	}//end writeBulk()
@@ -1392,6 +1400,17 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 *
 	 * Silently a no-op when the handle is absent — a run from before this
 	 * handle existed, or a caller that never wired one.
+	 *
+	 * SEMANTICS: this reports a COMPLETED node execution, not "objects
+	 * persisted so far". Both call sites ({@see writeItems()}, {@see
+	 * writeBulk()}) call this only after every item this hop will touch has
+	 * been both written AND turned into an output item — never between the
+	 * two. An exception anywhere in that work propagates out of the node
+	 * instead of reaching this call, so a step that fails never gets a
+	 * report, even though {@see writeBulk()}'s database writes before the
+	 * exception would already be durable. Keep any future write path to this
+	 * same placement, or the report starts answering a different question
+	 * depending on which path produced it.
 	 *
 	 * @param array $context The run context.
 	 * @param array $report The summary, keyed per {@see FlowStepReport::put()}.
