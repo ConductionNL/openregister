@@ -94,7 +94,7 @@ class ObjectSlugBackfillWriter {
 			}
 		} finally {
 			// Written even when a chunk failed: the entry must list what changed.
-			$this->recordAudit(applied: $applied, register: $register, schema: $schema, mode: $mode, summary: ($summary + ['skipped' => $skipped]));
+			$this->recordAudit(applied: $applied, register: $register, schema: $schema, mode: $mode, summary: array_merge($summary, ['skipped' => $skipped]));
 		}
 
 		if ($plan !== []) {

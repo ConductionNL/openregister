@@ -110,7 +110,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$mapper = $this->createMock(AuditTrailMapper::class);
 		$mapper->method('createSlugBackfillEntry')->willReturnCallback(
 			function (string $mode, array $changes, array $summary, ?int $register=null, ?int $schema=null): AuditTrail {
-				$this->audits[] = ['mode' => $mode, 'changes' => $changes, 'register' => $register, 'schema' => $schema];
+				$this->audits[] = ['mode' => $mode, 'changes' => $changes, 'summary' => $summary, 'register' => $register, 'schema' => $schema];
 				return new AuditTrail();
 			}
 		);
@@ -380,6 +380,8 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$service->run($this->register, $this->schema());
 
 		$this->assertSame([['uuid' => self::UUID_A, 'old' => null, 'new' => 'hello']], $this->audits[0]['changes']);
+		// Review finding r2routes-f1: the entry carries the real skipped count, not the planning-time 0.
+		$this->assertSame(1, $this->audits[0]['summary']['skipped']);
 	}
 
 	public function testExistingDuplicatesAreReportedAndLeftAlone(): void {
