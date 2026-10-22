@@ -643,15 +643,6 @@ class SaveObjectTest extends TestCase {
 	}
 
 	// =========================================================================
-	// createSlug (private)
-	// =========================================================================
-
-
-
-
-
-
-	// =========================================================================
 	// isEffectivelyEmptyObject (private)
 	// =========================================================================
 
@@ -1319,14 +1310,6 @@ class SaveObjectTest extends TestCase {
 		$this->assertNull($resolvedRegister);
 		$this->assertNull($registerId);
 	}
-
-	// =========================================================================
-	// generateSlug (private)
-	// =========================================================================
-
-
-
-
 
 	// =========================================================================
 	// resolveSchemaReference (private) — tests schema reference resolution
@@ -4487,11 +4470,6 @@ class SaveObjectTest extends TestCase {
 
 		$this->assertNull($result);
 	}
-
-	// =========================================================================
-	// generateSlug — empty value returns null
-	// =========================================================================
-
 
 	// =========================================================================
 	// preCacheParentName — no name from hydration and no fallback

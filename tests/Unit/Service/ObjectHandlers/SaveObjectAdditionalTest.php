@@ -514,14 +514,6 @@ class SaveObjectAdditionalTest extends TestCase {
 	// generateSlug() + createSlug() were removed (#4037); slug decisions are
 	// covered by ObjectSlugHandlerTest.
 
-
-
-
-
-
-
-
-
 	// =================================================================
 	// shouldApplyDefault() tests
 	// =================================================================

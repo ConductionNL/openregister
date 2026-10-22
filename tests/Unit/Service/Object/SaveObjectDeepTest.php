@@ -613,16 +613,7 @@ class SaveObjectDeepTest extends TestCase {
 		$this->assertNull($result);
 	}
 
-
-
-
-
-
 	// createSlug() / generateSlug() were removed (#4037); see ObjectSlugHandlerTest.
-
-
-
-
 
 	// ── getValueFromPath tests ──────────────────────────────────────────
 
