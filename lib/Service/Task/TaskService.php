@@ -157,6 +157,8 @@ class TaskService {
 	 *                                         not. Nullable for hand-built
 	 *                                         test services; absent, tasks are
 	 *                                         written as given.
+	 * @param TaskEdit|null $editor Validates and applies an edit of a
+	 *                              task's own fields; absent, a plain one.
 	 */
 	public function __construct(
 		private readonly TaskMapper $tasks,
@@ -173,6 +175,7 @@ class TaskService {
 		private readonly ?TaskSequenceDecisionGuard $sequenceGuard = null,
 		private readonly ?TaskSubjectAccessGuard $subjects = null,
 		private readonly ?TaskSubjectLocator $locator = null,
+		private readonly ?TaskEdit $editor = null,
 	) {
 
 	}//end __construct()
@@ -406,6 +409,46 @@ class TaskService {
 			}
 		);
 	}//end offer()
+
+	/**
+	 * Edit a task's own fields: title, description, due date, priority.
+	 *
+	 * Authorization runs first (the assignee, a pool member or an
+	 * administrator; a denial is audited and writes nothing), then the
+	 * values are validated, then the change and its audit entry are written
+	 * in one transaction. An edit that changes nothing writes nothing.
+	 *
+	 * @param string $uuid The task uuid.
+	 * @param array<string, mixed> $changes The new values by field.
+	 * @param string|null $actor The editing identity.
+	 *
+	 * @return Task The task as it now stands.
+	 *
+	 * @throws TaskValidationException When a field is unknown or invalid.
+	 *
+	 * @spec openspec/changes/flow-task-edit/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
+	 */
+	public function edit(string $uuid, array $changes, ?string $actor): Task {
+		$task = $this->openTaskFor(verb: 'edit', uuid: $uuid, actor: $actor);
+		$changed = ($this->editor ?? new TaskEdit())->apply(task: $task, changes: $changes);
+		if ($changed === []) {
+			return $task;
+		}
+
+		return $this->transactional(
+			mutation: function () use ($task, $changed, $actor): Task {
+				$persisted = $this->persistOpen(task: $task);
+				$this->appendAudit(
+					task: $persisted,
+					action: 'edit',
+					actor: $actor,
+					reason: sprintf('Changed: %s.', implode(', ', $changed))
+				);
+
+				return $persisted;
+			}
+		);
+	}//end edit()
 
 	/**
 	 * Claim: assign IF still unassigned — the database decides the race.
