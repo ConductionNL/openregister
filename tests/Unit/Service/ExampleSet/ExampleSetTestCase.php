@@ -36,6 +36,12 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetParties;
+use OCA\OpenRegister\Service\Party\PartyRoleService;
+use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Db\ContactLink;
+use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates;
 use OCA\OpenRegister\Db\ObjectReadState;
@@ -124,6 +130,9 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<int, array{data: array<string, mixed>, actor: string|null}> Every task import, in order. */
 	protected array $taskImports = [];
 
+	/** @var array<string, array<string, mixed>> The party links, by `<object> <party> <role>`, with what was imported. */
+	protected array $partyLinks = [];
+
 	/** @var array<string, Watcher> The follows, by `<user> <object uuid>`. */
 	protected array $follows = [];
 
@@ -166,6 +175,9 @@ abstract class ExampleSetTestCase extends TestCase {
 			ViewService::class        => $this->viewService(),
 			ViewMapper::class         => $this->viewMapper(),
 			WatcherMapper::class      => $this->watcherMapper(),
+			PartyRoleService::class   => $this->partyRoles(),
+			PartyService::class       => $this->partyService(),
+			ContactLinkMapper::class  => $this->contactLinks(),
 			ICommentsManager::class   => $this->commentsManager(),
 			ObjectReadStateMapper::class => $this->readStateMapper(),
 		});
@@ -228,6 +240,7 @@ abstract class ExampleSetTestCase extends TestCase {
 				tasks: new ExampleSetTasks(container: $container),
 				views: new ExampleSetViews(container: $container),
 				watchers: new ExampleSetWatchers(container: $container),
+				parties: new ExampleSetParties(container: $container),
 				notes: new ExampleSetNotes(container: $container),
 				readStates: new ExampleSetReadStates(container: $container)
 			)
@@ -246,6 +259,7 @@ abstract class ExampleSetTestCase extends TestCase {
 				tasks: new ExampleSetTasks(container: $container),
 				views: new ExampleSetViews(container: $container),
 				watchers: new ExampleSetWatchers(container: $container),
+				parties: new ExampleSetParties(container: $container),
 				notes: new ExampleSetNotes(container: $container),
 				readStates: new ExampleSetReadStates(container: $container)
 			)
@@ -488,6 +502,76 @@ abstract class ExampleSetTestCase extends TestCase {
 		});
 
 		return $mapper;
+	}
+
+	/**
+	 * A party role service whose trusted import puts a link in $partyLinks.
+	 *
+	 * @return PartyRoleService
+	 */
+	private function partyRoles(): PartyRoleService {
+		$roles = $this->createMock(PartyRoleService::class);
+		$roles->method('importParty')->willReturnCallback(
+			function (string $objectUuid, int $registerId, int|string|null $schemaId, array $payload, string $linkedBy): ContactLink {
+				if (str_starts_with((string) $payload['partyUuid'], 'not-a-party') === true) {
+					throw new \Exception('Object "'.$payload['partyUuid'].'" is not a party', 400);
+				}
+
+				$this->partyLinks[$objectUuid.' '.$payload['partyUuid'].' '.$payload['role']] = ['payload' => $payload, 'linkedBy' => $linkedBy, 'registerId' => $registerId];
+				return new ContactLink();
+			}
+		);
+		$roles->method('removeParty')->willReturnCallback(function (string $objectUuid, string $partyUuid, ?string $role = null): int {
+			unset($this->partyLinks[$objectUuid.' '.$partyUuid.' '.$role]);
+			return 1;
+		});
+
+		return $roles;
+	}
+
+	/**
+	 * A party service that finds every object the store holds.
+	 *
+	 * @return PartyService
+	 */
+	private function partyService(): PartyService {
+		$parties = $this->createMock(PartyService::class);
+		$parties->method('find')->willReturnCallback(function (string $partyUuid): ?ObjectEntity {
+			if (str_starts_with($partyUuid, 'missing') === true) {
+				return null;
+			}
+
+			$object = new ObjectEntity();
+			$object->setUuid($partyUuid);
+			$object->setRegister('7');
+			$object->setSchema('9');
+			return $object;
+		});
+
+		return $parties;
+	}
+
+	/**
+	 * A link mapper over $partyLinks.
+	 *
+	 * @return ContactLinkMapper
+	 */
+	private function contactLinks(): ContactLinkMapper {
+		$links = $this->createMock(ContactLinkMapper::class);
+		$links->method('findByObjectContactAndRole')->willReturnCallback(
+			function (string $objectUuid, string $contactUid, ?string $role): ?ContactLink {
+				foreach (array_keys($this->partyLinks) as $key) {
+					[$object, $party, $linkRole] = explode(' ', $key, 3);
+					if ($object === $objectUuid && ContactLink::partyUid(partyUuid: $party) === $contactUid && $linkRole === $role) {
+						return new ContactLink();
+					}
+				}
+
+				return null;
+			}
+		);
+
+		return $links;
 	}
 
 	/**

@@ -415,6 +415,41 @@ class TaskControllerTest extends TestCase {
 	}//end testADeniedVerbIs403WhenTheCallerMayReadTheTask()
 
 	/**
+	 * PATCH /api/flow-tasks/{uuid}: the body goes to the service as the
+	 * changes, without the route bookkeeping, and the row comes back.
+	 *
+	 * @return void
+	 */
+	public function testEditPassesTheBodyAsTheChanges(): void {
+		$this->tasks->expects($this->once())->method('edit')
+			->with(uuid: 't-1', changes: ['title' => 'x'], actor: 'alice')
+			->willReturn($this->task());
+
+		$response = $this->controller->edit(uuid: 't-1');
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(['uuid' => 't-1', 'row' => true], $response->getData());
+	}//end testEditPassesTheBodyAsTheChanges()
+
+	/**
+	 * An edit by someone who may read the task but not work it is 403, and
+	 * one that cannot be stored is 400.
+	 *
+	 * @return void
+	 */
+	public function testARefusedEditIs403AndAnInvalidOne400(): void {
+		$this->tasks->method('get')->willReturn($this->task());
+		$this->authorization->method('mayRead')->willReturn(true);
+		$this->tasks->method('edit')->willReturnOnConsecutiveCalls(
+			$this->throwException(new TaskAccessDeniedException("Verb 'edit' denied: not a member of the task's candidate pool.")),
+			$this->throwException(new TaskValidationException("Field 'title' may not be emptied."))
+		);
+
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller->edit(uuid: 't-1')->getStatus());
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $this->controller->edit(uuid: 't-1')->getStatus());
+	}//end testARefusedEditIs403AndAnInvalidOne400()
+
+	/**
 	 * A conflict is 409 carrying the message (the current state, per spec).
 	 *
 	 * @return void

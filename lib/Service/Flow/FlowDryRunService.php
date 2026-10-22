@@ -80,16 +80,18 @@ class FlowDryRunService {
 			throw new DoesNotExistException('No such flow');
 		}
 
+		// A lookup, not a person opening the object: no audit-trail row, so the
+		// object does not land in anyone's recent list.
 		$object = $this->objects->find(
-			$objectId,
-			[],
-			false,
-			$register,
-			$schema,
-			true,
-			true,
-			true,
-			false
+			id: $objectId,
+			_extend: [],
+			files: false,
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_multitenancy: true,
+			_render: true,
+			_audit: false
 		);
 		if ($object instanceof ObjectEntity === false) {
 			throw new DoesNotExistException('No such object');

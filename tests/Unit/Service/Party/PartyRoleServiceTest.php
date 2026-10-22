@@ -208,6 +208,37 @@ class PartyRoleServiceTest extends TestCase {
 	}//end testTwoGemachtigdenOnOneCase()
 
 	/**
+	 * The trusted path passes the named linker to the writer, with the period and note,
+	 * and the API path passes none, so a request can never name its own linker.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
+	 */
+	public function testImportNamesTheLinkerAndAddDoesNot(): void {
+		$linkers = [];
+		$this->writer->method('write')->willReturnCallback(
+			function (string $objectUuid, int $registerId, ?int $schemaId, string $partyUuid, ?string $role, ?string $linkedBy = null) use (&$linkers): ContactLink {
+				$linkers[] = $linkedBy;
+				return $this->storedLink(partyUuid: $partyUuid, role: (string) $role);
+			}
+		);
+
+		$link = $this->service->importParty(
+			objectUuid: 'case-1',
+			registerId: 3,
+			schemaId: null,
+			payload: ['partyUuid' => 'party-a', 'role' => 'gemachtigde', 'validUntil' => '2026-12-31', 'note' => 'Awb 2:1'],
+			linkedBy: 'dossiq'
+		);
+		$this->service->addParty(objectUuid: 'case-1', registerId: 3, schemaId: null, payload: ['partyUuid' => 'party-b', 'role' => 'gemachtigde', 'linkedBy' => 'spoofed']);
+
+		$this->assertSame(expected: ['dossiq', null], actual: $linkers);
+		$this->assertSame(expected: '2026-12-31', actual: $link->getValidUntil()?->format('Y-m-d'));
+		$this->assertSame(expected: 'Awb 2:1', actual: $link->getNote());
+	}//end testImportNamesTheLinkerAndAddDoesNot()
+
+	/**
 	 * A party of a kind the schema does not accept is refused, and the
 	 * message names the kind.
 	 *

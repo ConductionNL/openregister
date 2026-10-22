@@ -227,6 +227,7 @@ class ExampleSetInstallCommand extends Command {
 			'tasks'       => 'Task',
 			'views'       => 'View',
 			'watchers'    => 'Watcher',
+			'parties'     => 'Party',
 			'notes'       => 'Note',
 			'readStates'  => 'Read state',
 		];

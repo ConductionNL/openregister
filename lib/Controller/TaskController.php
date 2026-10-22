@@ -580,6 +580,28 @@ class TaskController extends Controller {
 	}//end cancel()
 
 	/**
+	 * Edit a task's own fields: title, description, due date, priority.
+	 *
+	 * The body is the change. Who may edit (the assignee, a pool member or
+	 * an administrator) is decided in the service before anything is
+	 * written; an unknown or invalid field is a 400.
+	 *
+	 * @param string $uuid The task uuid.
+	 *
+	 * @return JSONResponse The task as it now stands, or a named refusal.
+	 *
+	 * @spec openspec/changes/flow-task-edit/specs/flow-tasks/spec.md#requirement-a-task-s-own-fields-can-be-edited-by-the-people-working-it
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function edit(string $uuid): JSONResponse {
+		return $this->respondWith(
+			verb: fn (): Task => $this->tasks->edit(uuid: $uuid, changes: $this->body(), actor: $this->uid()),
+			uuid: $uuid
+		);
+	}//end edit()
+
+	/**
 	 * Check or uncheck one checklist item, addressed by id.
 	 *
 	 * @param string $uuid The task uuid.
