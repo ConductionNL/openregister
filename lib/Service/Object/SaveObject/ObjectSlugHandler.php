@@ -93,6 +93,8 @@ class ObjectSlugHandler {
 	 * @param Schema $schema The schema.
 	 *
 	 * @return bool True when `objectSlugField` is a non-empty string.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-schema-configuration-must-accept-and-persist-the-object-slug-keys
 	 */
 	public function isManaged(Schema $schema): bool {
 		$field = ($schema->getConfiguration() ?? [])['objectSlugField'] ?? null;
@@ -398,6 +400,8 @@ class ObjectSlugHandler {
 	 * @param string|null $stamp A `YmdHis` stamp to use instead of now.
 	 *
 	 * @return string The suffixed slug.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
 	 */
 	public function withSuffix(string $slug, ?string $stamp=null): string {
 		return $this->suffixBase(slug: $slug) . '-' . ($stamp ?? $this->stamp());
@@ -410,6 +414,8 @@ class ObjectSlugHandler {
 	 * @param string $candidate The unsuffixed candidate.
 	 *
 	 * @return bool True when $slug is $candidate with a date-time suffix.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
 	 */
 	public function isSuffixOf(string $slug, string $candidate): bool {
 		return preg_match('/^' . preg_quote($this->suffixBase(slug: $candidate), '/') . '-\d{14}$/', $slug) === 1;
@@ -448,6 +454,8 @@ class ObjectSlugHandler {
 	 * @param string      $path       single | bulk | backfill.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-object-slugs-must-be-unique-within-a-register-and-schema-and-a-colliding-slug-must-not-be-written
 	 */
 	public function logCollision(
 		Register $register,

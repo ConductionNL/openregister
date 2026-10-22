@@ -4561,6 +4561,8 @@ class SaveObject {
 	 * The slug handler this save pipeline uses, so the bulk path shares one instance.
 	 *
 	 * @return ObjectSlugHandler The handler.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-bulk-save-must-apply-the-same-slug-rules-as-a-single-save
 	 */
 	public function getSlugHandler(): ObjectSlugHandler {
 		return $this->slugHandler;

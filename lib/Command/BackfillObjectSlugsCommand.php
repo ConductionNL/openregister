@@ -63,6 +63,8 @@ class BackfillObjectSlugsCommand extends Command {
 	 * Define command name, arguments and options.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	protected function configure(): void {
 		$this->setName(name: 'openregister:backfill-slugs')
@@ -90,6 +92,8 @@ class BackfillObjectSlugsCommand extends Command {
 	 *
 	 * @return int 0 on success (also when duplicates were reported), 1 on unresolved input
 	 *             or a schema without objectSlugField.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$reslug = (bool)$input->getOption('reslug');

@@ -87,6 +87,8 @@ class ObjectSlugBackfillService {
 	 * } What was found and what was (or would be) written.
 	 *
 	 * @throws InvalidArgumentException When the schema has no `objectSlugField`.
+	 *
+	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	public function run(Register $register, Schema $schema, bool $reslug=false, bool $dryRun=false): array {
 		if ($this->slugHandler->isManaged(schema: $schema) === false) {
