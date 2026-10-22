@@ -243,6 +243,45 @@
 				"organisation": "vandam"
 			},
 			{
+				"key": "pieterbos",
+				"uid": "pieter.bos",
+				"displayName": "Pieter Bos",
+				"givenName": "Pieter",
+				"prefix": "",
+				"familyName": "Bos",
+				"email": "pieter.bos@zuiddrecht.example",
+				"role": "resident",
+				"bsn": "999994104",
+				"gender": "M",
+				"birthDate": "1979-08-21",
+				"address": {
+					"street": "Havenstraat",
+					"number": 22,
+					"postcode": "2999AF",
+					"city": "Zuiddrecht"
+				}
+			},
+			{
+				"key": "henkvisser",
+				"uid": "henk.visser",
+				"displayName": "Henk Visser",
+				"givenName": "Henk",
+				"prefix": "",
+				"familyName": "Visser",
+				"email": "henk.visser@zuiddrecht.example",
+				"role": "business-contact",
+				"bsn": "999994116",
+				"gender": "M",
+				"birthDate": "1968-02-11",
+				"address": {
+					"street": "Beukenlaan",
+					"number": 3,
+					"postcode": "2999AG",
+					"city": "Zuiddrecht"
+				},
+				"organisation": "visserbouw"
+			},
+			{
 				"key": "daan",
 				"uid": "daan.verbeek",
 				"displayName": "Daan Verbeek",
@@ -448,6 +487,22 @@
 					"mobiliteit-en-verkeer"
 				],
 				"function": "Beleidsadviseur verkeer"
+			},
+			{
+				"key": "marieke",
+				"uid": "marieke.visser",
+				"displayName": "Marieke Visser",
+				"givenName": "Marieke",
+				"prefix": "",
+				"familyName": "Visser",
+				"email": "marieke.visser@zuiddrecht.example",
+				"role": "employee",
+				"department": "Functioneel beheer",
+				"groups": [
+					"medewerkers",
+					"functioneel-beheer"
+				],
+				"function": "Applicatiebeheerder Gemeente Waterland"
 			}
 		],
 		"organisations": [
@@ -513,6 +568,47 @@
 				},
 				"registeredOn": "2001-02-15",
 				"employees": 9
+			},
+			{
+				"key": "visserbouw",
+				"name": "Visser Bouw B.V.",
+				"kvk": "00001004",
+				"vestigingsnummer": "000000001004",
+				"legalForm": "Besloten Vennootschap",
+				"contact": "henkvisser",
+				"email": "info.visserbouw@zuiddrecht.example",
+				"address": {
+					"street": "Industrieweg",
+					"number": 20,
+					"postcode": "2999BC",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "41200",
+					"description": "Algemene burgerlijke en utiliteitsbouw"
+				},
+				"registeredOn": "1998-05-04",
+				"employees": 31
+			},
+			{
+				"key": "vanwijk",
+				"name": "Aannemersbedrijf Van Wijk B.V.",
+				"kvk": "00001005",
+				"vestigingsnummer": "000000001005",
+				"legalForm": "Besloten Vennootschap",
+				"email": "info.vanwijk@zuiddrecht.example",
+				"address": {
+					"street": "Molenweg",
+					"number": 30,
+					"postcode": "2999BD",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "41200",
+					"description": "Algemene burgerlijke en utiliteitsbouw"
+				},
+				"registeredOn": "2004-10-18",
+				"employees": 47
 			}
 		],
 		"openregisterOrganisations": [
@@ -521,6 +617,12 @@
 				"name": "Gemeente Zuiddrecht",
 				"slug": "zuiddrecht",
 				"description": "De voorbeeldgemeente van de Zuiddrecht demo. Alles van deze organisatie is demo-inhoud."
+			},
+			{
+				"key": "waterland",
+				"name": "Gemeente Waterland",
+				"slug": "waterland",
+				"description": "Een tweede voorbeeldgemeente, zodat de tenantpagina's van de Zuiddrecht demo meer dan één organisatie tonen."
 			}
 		]
 	},
@@ -755,6 +857,68 @@
 			}
 		},
 		{
+			"key": "brp-pieterbos",
+			"register": "brp",
+			"schema": "ingeschreven-persoon",
+			"data": {
+				"burgerservicenummer": "{{cast:pieterbos.bsn}}",
+				"voornamen": "{{cast:pieterbos.givenName}}",
+				"voorletters": "P.",
+				"geslachtsnaam": "{{cast:pieterbos.familyName}}",
+				"aanduidingNaamgebruik": "E",
+				"geslachtsaanduiding": "{{cast:pieterbos.gender}}",
+				"geboortedatum": "{{cast:pieterbos.birthDate}}",
+				"geboorteland": "Nederland",
+				"geboortelandCode": "6030",
+				"nationaliteit": "Nederlandse",
+				"nationaliteitCode": "0001",
+				"verblijfplaats": {
+					"straat": "{{cast:pieterbos.address.street}}",
+					"huisnummer": "{{cast:pieterbos.address.number}}",
+					"postcode": "{{cast:pieterbos.address.postcode}}",
+					"woonplaats": "{{cast:pieterbos.address.city}}",
+					"functieAdres": "W"
+				},
+				"gemeenteVanInschrijving": "Zuiddrecht",
+				"gemeenteVanInschrijvingCode": "9999",
+				"datumInschrijvingInGemeente": "2010-01-01",
+				"partners": [],
+				"ouders": [],
+				"kinderen": []
+			}
+		},
+		{
+			"key": "brp-henkvisser",
+			"register": "brp",
+			"schema": "ingeschreven-persoon",
+			"data": {
+				"burgerservicenummer": "{{cast:henkvisser.bsn}}",
+				"voornamen": "{{cast:henkvisser.givenName}}",
+				"voorletters": "H.",
+				"geslachtsnaam": "{{cast:henkvisser.familyName}}",
+				"aanduidingNaamgebruik": "E",
+				"geslachtsaanduiding": "{{cast:henkvisser.gender}}",
+				"geboortedatum": "{{cast:henkvisser.birthDate}}",
+				"geboorteland": "Nederland",
+				"geboortelandCode": "6030",
+				"nationaliteit": "Nederlandse",
+				"nationaliteitCode": "0001",
+				"verblijfplaats": {
+					"straat": "{{cast:henkvisser.address.street}}",
+					"huisnummer": "{{cast:henkvisser.address.number}}",
+					"postcode": "{{cast:henkvisser.address.postcode}}",
+					"woonplaats": "{{cast:henkvisser.address.city}}",
+					"functieAdres": "W"
+				},
+				"gemeenteVanInschrijving": "Zuiddrecht",
+				"gemeenteVanInschrijvingCode": "9999",
+				"datumInschrijvingInGemeente": "2010-01-01",
+				"partners": [],
+				"ouders": [],
+				"kinderen": []
+			}
+		},
+		{
 			"key": "kvk-slagerij",
 			"register": "kvk",
 			"schema": "maatschappelijke-activiteit",
@@ -950,6 +1114,140 @@
 					{
 						"sbiCode": "{{cast:vandam.sbi.code}}",
 						"sbiOmschrijving": "{{cast:vandam.sbi.description}}",
+						"indHoofdactiviteit": "Ja"
+					}
+				]
+			}
+		},
+		{
+			"key": "kvk-visserbouw",
+			"register": "kvk",
+			"schema": "maatschappelijke-activiteit",
+			"data": {
+				"kvkNummer": "{{cast:visserbouw.kvk}}",
+				"naam": "{{cast:visserbouw.name}}",
+				"handelsnamen": [
+					{
+						"naam": "{{cast:visserbouw.name}}",
+						"volgorde": 0
+					}
+				],
+				"rechtsvorm": "{{cast:visserbouw.legalForm}}",
+				"uitgebreideRechtsvorm": "{{cast:visserbouw.legalForm}}",
+				"formeleRegistratiedatum": "{{cast:visserbouw.registeredOn}}",
+				"materieleRegistratie": {
+					"datumAanvang": "{{cast:visserbouw.registeredOn}}"
+				},
+				"totaalWerkzamePersonen": "{{cast:visserbouw.employees}}",
+				"sbiActiviteiten": [
+					{
+						"sbiCode": "{{cast:visserbouw.sbi.code}}",
+						"sbiOmschrijving": "{{cast:visserbouw.sbi.description}}",
+						"indHoofdactiviteit": "Ja"
+					}
+				],
+				"indNonMailing": "Nee",
+				"actief": true
+			}
+		},
+		{
+			"key": "vestiging-visserbouw",
+			"register": "kvk",
+			"schema": "vestiging",
+			"data": {
+				"vestigingsnummer": "{{cast:visserbouw.vestigingsnummer}}",
+				"kvkNummer": "{{cast:visserbouw.kvk}}",
+				"eersteHandelsnaam": "{{cast:visserbouw.name}}",
+				"indHoofdvestiging": "Ja",
+				"indCommercieleVestiging": "Ja",
+				"totaalWerkzamePersonen": "{{cast:visserbouw.employees}}",
+				"adressen": [
+					{
+						"type": "bezoekadres",
+						"straatnaam": "{{cast:visserbouw.address.street}}",
+						"huisnummer": "{{cast:visserbouw.address.number}}",
+						"postcode": "{{cast:visserbouw.address.postcode}}",
+						"plaats": "{{cast:visserbouw.address.city}}",
+						"land": "Nederland"
+					}
+				],
+				"handelsnamen": [
+					{
+						"naam": "{{cast:visserbouw.name}}",
+						"volgorde": 0
+					}
+				],
+				"sbiActiviteiten": [
+					{
+						"sbiCode": "{{cast:visserbouw.sbi.code}}",
+						"sbiOmschrijving": "{{cast:visserbouw.sbi.description}}",
+						"indHoofdactiviteit": "Ja"
+					}
+				]
+			}
+		},
+		{
+			"key": "kvk-vanwijk",
+			"register": "kvk",
+			"schema": "maatschappelijke-activiteit",
+			"data": {
+				"kvkNummer": "{{cast:vanwijk.kvk}}",
+				"naam": "{{cast:vanwijk.name}}",
+				"handelsnamen": [
+					{
+						"naam": "{{cast:vanwijk.name}}",
+						"volgorde": 0
+					}
+				],
+				"rechtsvorm": "{{cast:vanwijk.legalForm}}",
+				"uitgebreideRechtsvorm": "{{cast:vanwijk.legalForm}}",
+				"formeleRegistratiedatum": "{{cast:vanwijk.registeredOn}}",
+				"materieleRegistratie": {
+					"datumAanvang": "{{cast:vanwijk.registeredOn}}"
+				},
+				"totaalWerkzamePersonen": "{{cast:vanwijk.employees}}",
+				"sbiActiviteiten": [
+					{
+						"sbiCode": "{{cast:vanwijk.sbi.code}}",
+						"sbiOmschrijving": "{{cast:vanwijk.sbi.description}}",
+						"indHoofdactiviteit": "Ja"
+					}
+				],
+				"indNonMailing": "Nee",
+				"actief": true
+			}
+		},
+		{
+			"key": "vestiging-vanwijk",
+			"register": "kvk",
+			"schema": "vestiging",
+			"data": {
+				"vestigingsnummer": "{{cast:vanwijk.vestigingsnummer}}",
+				"kvkNummer": "{{cast:vanwijk.kvk}}",
+				"eersteHandelsnaam": "{{cast:vanwijk.name}}",
+				"indHoofdvestiging": "Ja",
+				"indCommercieleVestiging": "Ja",
+				"totaalWerkzamePersonen": "{{cast:vanwijk.employees}}",
+				"adressen": [
+					{
+						"type": "bezoekadres",
+						"straatnaam": "{{cast:vanwijk.address.street}}",
+						"huisnummer": "{{cast:vanwijk.address.number}}",
+						"postcode": "{{cast:vanwijk.address.postcode}}",
+						"plaats": "{{cast:vanwijk.address.city}}",
+						"land": "Nederland"
+					}
+				],
+				"handelsnamen": [
+					{
+						"naam": "{{cast:vanwijk.name}}",
+						"volgorde": 0
+					}
+				],
+				"sbiActiviteiten": [
+					{
+						"sbiCode": "{{cast:vanwijk.sbi.code}}",
+						"sbiOmschrijving": "{{cast:vanwijk.sbi.description}}",
 						"indHoofdactiviteit": "Ja"
 					}
 				]
