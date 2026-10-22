@@ -1368,8 +1368,9 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	}//end guardBulkFailures()
 
 	/**
-	 * Write this hop's created/updated tally onto the run log, via the
-	 * context's report handle.
+	 * Write this hop's write tally onto the run log, via the context's
+	 * report handle: created/updated/deleted from {@see writeItems()},
+	 * created/updated/unchanged from {@see writeBulk()}.
 	 *
 	 * Silently a no-op when the handle is absent — a run from before this
 	 * handle existed, or a caller that never wired one.
