@@ -328,6 +328,53 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$this->assertSame([[self::UUID_C, 'elsewhere'], [self::UUID_B, 'cee'], [self::UUID_A, 'bee']], array_map(static fn (array $s): array => [$s['uuid'], $s['new']], $result['plan']));
 	}
 
+	public function testAReverseChainOfTwoThousandRowsIsPlannedInLinearWork(): void {
+		// Review finding r2routes-f10: row i holds `s<i>` and wants the slug of row i+1; only
+		// the last one moves freely. A full re-scan per pass took one move per pass (2,000
+		// passes over 2,000 rows, about two million decisions).
+		$total = 2000;
+		$rows = [];
+		for ($i = 1; $i <= $total; $i++) {
+			$wanted = ($i === $total) ? 'End' : 's' . ($i + 1);
+			$rows[] = $this->row($i, sprintf('00000000-0000-0000-0000-%012d', $i), $wanted, 's' . $i, sprintf('2020-01-01 00:%02d:%02d', intdiv($i, 60), ($i % 60)));
+		}
+
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls($this->page($rows, 2000 - 1), $this->page([]));
+		$decisions = 0;
+		$countingHandler = new class (
+			$this->magicMapper,
+			new MetadataHydrationHandler(logger: $this->createMock(LoggerInterface::class), cacheHandler: $this->createMock(CacheHandler::class)),
+			$this->createMock(RegisterMapper::class),
+			$this->createMock(LoggerInterface::class),
+			$decisions
+		) extends ObjectSlugHandler {
+			public function __construct(MagicMapper $m, MetadataHydrationHandler $h, RegisterMapper $r, LoggerInterface $l, public int &$decisions) {
+				parent::__construct(magicMapper: $m, hydrator: $h, registerMapper: $r, logger: $l);
+			}
+
+			public function decide(string $candidate, Register $register, Schema $schema, string $objectUuid, callable $holderOf, string $path, bool $log=true, ?string $suffixed=null): ?string {
+				$this->decisions++;
+				return parent::decide($candidate, $register, $schema, $objectUuid, $holderOf, $path, $log, $suffixed);
+			}
+		};
+		$service = new ObjectSlugBackfillService(
+			magicMapper: $this->magicMapper,
+			slugHandler: $countingHandler,
+			cacheHandler: $this->createMock(CacheHandler::class),
+			db: $this->createMock(IDBConnection::class),
+			auditTrail: $this->auditTrailMapper,
+			logger: $this->createMock(LoggerInterface::class)
+		);
+
+		$result = $service->run($this->register, $this->schema(), reslug: true, dryRun: true);
+
+		$this->assertCount($total, $result['plan']);
+		$this->assertSame('end', $result['plan'][0]['new'], 'the free row moves first, its taker after it');
+		$this->assertSame('s2000', $result['plan'][1]['new']);
+		$this->assertLessThan(4 * $total, $countingHandler->decisions, 'linear work, not rows times passes');
+	}
+
 	public function testARunWritesOneAuditEntryWithTheOldAndNewSlugs(): void {
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
 		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(

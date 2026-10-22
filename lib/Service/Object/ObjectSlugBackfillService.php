@@ -35,6 +35,7 @@ use OCA\OpenRegister\Exception\SlugBackfillWriteException;
 use OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
+use SplMinHeap;
 
 /**
  * Plans and applies a slug backfill for one register+schema table.
@@ -313,12 +314,7 @@ class ObjectSlugBackfillService {
 			}
 		}
 
-		do {
-			$moved = false;
-			foreach ($rows as $row) {
-				$moved = ($this->moveRow(row: $row, register: $register, schema: $schema, current: $current, taken: $taken) || $moved);
-			}
-		} while ($moved === true);
+		$this->walkReslug(rows: $rows, register: $register, schema: $schema, current: $current, taken: $taken);
 
 		$plan = [];
 		foreach ($rows as $row) {
@@ -397,6 +393,91 @@ class ObjectSlugBackfillService {
 
 		return $ordered;
 	}//end vacatingFirst()
+
+	/**
+	 * Walk the rows until none can move, re-trying a row only when a slug it waits on was vacated.
+	 *
+	 * Same outcome as walking all rows, oldest first, in repeated passes until a
+	 * pass moves nothing, without the repeated scans: a row that did not move
+	 * can only start to move once the holder of its wanted slug (or of the slug
+	 * it keeps) moves away, so it waits on those slugs. A woken row that lies
+	 * after the row that just moved is tried in the same pass, an earlier one in
+	 * the next pass, as the full scan would. The cost is proportional to the
+	 * number of moves plus the number of rows, times log of the rows, instead of
+	 * rows times passes (a chain of N rows that each want the next one's slug
+	 * took N passes over N rows).
+	 *
+	 * @param list<array{id: int, uuid: string, slug: string|null, created: string|null, candidate: string|null}> $rows All live rows, oldest first.
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
+	 * @param array    $current  uuid => slug the object holds right now, by reference.
+	 * @param array    $taken    slug => uuids holding it right now, by reference.
+	 *
+	 * @return void
+	 */
+	private function walkReslug(array $rows, Register $register, Schema $schema, array &$current, array &$taken): void {
+		$pass = new SplMinHeap();
+		$queued = [];
+		foreach (array_keys($rows) as $index) {
+			$pass->insert($index);
+			$queued[$index] = true;
+		}
+
+		$waiting = [];
+		$next = [];
+		while ($pass->isEmpty() === false || $next !== []) {
+			if ($pass->isEmpty() === true) {
+				foreach (array_keys($next) as $index) {
+					$pass->insert($index);
+					$queued[$index] = true;
+				}
+
+				$next = [];
+			}
+
+			$index = $pass->extract();
+			unset($queued[$index]);
+			$row = $rows[$index];
+			$vacated = $current[$row['uuid']];
+			if ($this->moveRow(row: $row, register: $register, schema: $schema, current: $current, taken: $taken) === false) {
+				$this->waitOn(slugs: [$row['candidate'], $vacated], index: $index, waiting: $waiting);
+				continue;
+			}
+
+			// The row left `$vacated`: wake the rows that wait on it. It may sit on a
+			// suffixed variant, and then waits for its own candidate to be vacated.
+			$this->waitOn(slugs: [$row['candidate']], index: $index, waiting: $waiting);
+			foreach ($waiting[(string)$vacated] ?? [] as $woken) {
+				if ($woken > $index && isset($queued[$woken]) === false) {
+					$pass->insert($woken);
+					$queued[$woken] = true;
+				}
+
+				if ($woken <= $index && isset($queued[$woken]) === false) {
+					$next[$woken] = true;
+				}
+			}
+
+			unset($waiting[(string)$vacated]);
+		}//end while
+	}//end walkReslug()
+
+	/**
+	 * Register a row as waiting for the holder of each given slug to move away.
+	 *
+	 * @param list<string|null>        $slugs   The slugs; null entries are ignored.
+	 * @param int                      $index   The row.
+	 * @param array<string, list<int>> $waiting slug => rows waiting on it, by reference.
+	 *
+	 * @return void
+	 */
+	private function waitOn(array $slugs, int $index, array &$waiting): void {
+		foreach ($slugs as $slug) {
+			if ($slug !== null) {
+				$waiting[$slug][] = $index;
+			}
+		}
+	}//end waitOn()
 
 	/**
 	 * Count and report a row that wanted a slug it could not get.
