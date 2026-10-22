@@ -31,7 +31,6 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
-use OCA\OpenRegister\Service\WriteCause;
 use OCP\AppFramework\Db\DoesNotExistException;
 
 /**
@@ -81,19 +80,19 @@ class FlowDryRunService {
 			throw new DoesNotExistException('No such flow');
 		}
 
-		// A dry run reads the object to try the flow; nobody opens it, so it
-		// is a lookup and stays out of the caller's recently-opened list.
-		$object = WriteCause::asLookup(fn () => $this->objects->find(
-			$objectId,
-			[],
-			false,
-			$register,
-			$schema,
-			true,
-			true,
-			true,
-			false
-		));
+		// A lookup, not a person opening the object: no audit-trail row, so the
+		// object does not land in anyone's recent list.
+		$object = $this->objects->find(
+			id: $objectId,
+			_extend: [],
+			files: false,
+			register: $register,
+			schema: $schema,
+			_rbac: true,
+			_multitenancy: true,
+			_render: true,
+			_audit: false
+		);
 		if ($object instanceof ObjectEntity === false) {
 			throw new DoesNotExistException('No such object');
 		}
