@@ -615,21 +615,6 @@ class SaveObjectDeepTest extends TestCase {
 
 	// createSlug() / generateSlug() were removed (#4037); see ObjectSlugHandlerTest.
 
-	// ── getValueFromPath tests ──────────────────────────────────────────
-
-	public function testGetValueFromPathNested(): void {
-		$data = ['contact' => ['email' => 'test@test.nl']];
-		$this->assertSame('test@test.nl', $this->invokePrivateMethod('getValueFromPath', [$data, 'contact.email']));
-	}
-
-	public function testGetValueFromPathMissing(): void {
-		$this->assertNull($this->invokePrivateMethod('getValueFromPath', [['name' => 'test'], 'missing.path']));
-	}
-
-	public function testGetValueFromPathConvertsToString(): void {
-		$this->assertSame('42', $this->invokePrivateMethod('getValueFromPath', [['count' => 42], 'count']));
-	}
-
 	// ── isEffectivelyEmptyObject tests ──────────────────────────────────
 
 	public function testIsEffectivelyEmptyObjectEmpty(): void {

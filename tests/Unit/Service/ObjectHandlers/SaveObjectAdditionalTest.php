@@ -8,8 +8,7 @@
  * isAuditTrailsEnabled, removeQueryParameters,
  * resolveRegisterReference, sanitizeEmptyStringsForObjectProperties,
  * shouldApplyDefault, resolveDefaultTemplateValue, applyAlwaysDefaults,
- * applyPropertyDefaults, hydrateObjectMetadata branches, setSelfMetadata,
- * and getValueFromPath.
+ * applyPropertyDefaults, hydrateObjectMetadata branches and setSelfMetadata.
  *
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Service\ObjectHandlers
@@ -744,33 +743,6 @@ class SaveObjectAdditionalTest extends TestCase {
 		$data = ['status' => ''];
 		$result = $this->saveObject->applyPropertyDefaults($this->mockSchema, $data);
 		$this->assertSame('active', $result['status']);
-	}
-
-	// =================================================================
-	// getValueFromPath() tests
-	// =================================================================
-
-	public function testGetValueFromPathSimple(): void {
-		$result = $this->invokePrivate('getValueFromPath', [['name' => 'Test'], 'name']);
-		$this->assertSame('Test', $result);
-	}
-
-	public function testGetValueFromPathNested(): void {
-		$result = $this->invokePrivate('getValueFromPath', [
-			['contact' => ['email' => 'test@test.com']],
-			'contact.email',
-		]);
-		$this->assertSame('test@test.com', $result);
-	}
-
-	public function testGetValueFromPathReturnsNullForMissingKey(): void {
-		$result = $this->invokePrivate('getValueFromPath', [['name' => 'Test'], 'missing']);
-		$this->assertNull($result);
-	}
-
-	public function testGetValueFromPathConvertIntToString(): void {
-		$result = $this->invokePrivate('getValueFromPath', [['count' => 42], 'count']);
-		$this->assertSame('42', $result);
 	}
 
 	// =================================================================

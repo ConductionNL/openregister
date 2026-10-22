@@ -762,28 +762,6 @@ class MetadataHydrationHandler {
 	}//end extractUuidFromValue()
 
 	/**
-	 * Creates a URL-friendly slug from a metadata value.
-	 *
-	 * This method is different from the generateSlug method as it works with
-	 * already extracted metadata values rather than generating defaults.
-	 * It creates a slug without adding timestamps to avoid conflicts with schema-based slugs.
-	 *
-	 * @param string $value The value to convert to a slug.
-	 *
-	 * @return string|null The generated slug or null if value is empty.
-	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
-	 */
-	public function createSlugFromValue(string $value): ?string {
-		if (empty($value) === true || trim($value) === '') {
-			return null;
-		}
-
-		// Use the existing createSlug method for consistency.
-		return $this->createSlug(text: trim(string: $value));
-	}//end createSlugFromValue()
-
-	/**
 	 * Creates a URL-friendly slug from text.
 	 *
 	 * Conversion steps:

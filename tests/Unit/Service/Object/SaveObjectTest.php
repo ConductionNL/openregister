@@ -601,48 +601,6 @@ class SaveObjectTest extends TestCase {
 	}
 
 	// =========================================================================
-	// getValueFromPath (private)
-	// =========================================================================
-
-	public function testGetValueFromPathSimple(): void {
-		$result = $this->invokePrivateMethod('getValueFromPath', [['name' => 'Test'], 'name']);
-		$this->assertSame('Test', $result);
-	}
-
-	public function testGetValueFromPathNested(): void {
-		$data = ['contact' => ['email' => 'test@example.com']];
-		$result = $this->invokePrivateMethod('getValueFromPath', [$data, 'contact.email']);
-		$this->assertSame('test@example.com', $result);
-	}
-
-	public function testGetValueFromPathDeeplyNested(): void {
-		$data = ['level1' => ['level2' => ['level3' => 'deep']]];
-		$result = $this->invokePrivateMethod('getValueFromPath', [$data, 'level1.level2.level3']);
-		$this->assertSame('deep', $result);
-	}
-
-	public function testGetValueFromPathReturnsNullForMissingKey(): void {
-		$result = $this->invokePrivateMethod('getValueFromPath', [['name' => 'Test'], 'missing']);
-		$this->assertNull($result);
-	}
-
-	public function testGetValueFromPathReturnsNullForMissingNestedKey(): void {
-		$data = ['contact' => ['name' => 'Test']];
-		$result = $this->invokePrivateMethod('getValueFromPath', [$data, 'contact.email']);
-		$this->assertNull($result);
-	}
-
-	public function testGetValueFromPathConvertsIntToString(): void {
-		$result = $this->invokePrivateMethod('getValueFromPath', [['count' => 42], 'count']);
-		$this->assertSame('42', $result);
-	}
-
-	public function testGetValueFromPathReturnsNullForNull(): void {
-		$result = $this->invokePrivateMethod('getValueFromPath', [['name' => null], 'name']);
-		$this->assertNull($result);
-	}
-
-	// =========================================================================
 	// isEffectivelyEmptyObject (private)
 	// =========================================================================
 

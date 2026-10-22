@@ -1474,36 +1474,6 @@ class SaveObject {
 	 */
 
 	/**
-	 * Get value from nested array using dot notation path
-	 *
-	 * @param array $data The data array to search
-	 * @param string $path The dot notation path (e.g., 'user.profile.name')
-	 *
-	 * @return mixed The value at the path or null if not found
-	 *
-	 * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-	 */
-	private function getValueFromPath(array $data, string $path) {
-		$keys = explode('.', $path);
-		$current = $data;
-
-		foreach ($keys as $key) {
-			if (is_array($current) === false || array_key_exists($key, $current) === false) {
-				return null;
-			}
-
-			$current = $current[$key];
-		}
-
-		// Convert to string if it's not null and not already a string.
-		if ($current !== null && is_string($current) === false) {
-			$current = (string)$current;
-		}
-
-		return $current;
-	}//end getValueFromPath()
-
-	/**
 	 * Set default values and constant values for properties based on the schema.
 	 *
 	 * This method now supports different default value behaviors:

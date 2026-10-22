@@ -473,12 +473,6 @@ class BulkAndHandlersIntegrationTest extends TestCase {
 		$this->assertEquals('trimmed', $this->metadataHandler->createSlug('--trimmed--'));
 	}
 
-	public function testCreateSlugFromValue(): void {
-		$this->assertEquals('hello-world', $this->metadataHandler->createSlugFromValue('Hello World'));
-		$this->assertNull($this->metadataHandler->createSlugFromValue(''));
-		$this->assertNull($this->metadataHandler->createSlugFromValue('   '));
-	}
-
 	public function testHydrateObjectMetadataWithConfiguredFields(): void {
 		$entity = new ObjectEntity();
 		$entity->setObject([
