@@ -162,7 +162,11 @@ class ExampleSetCatalogue {
 			'timezone'  => (string) ($castFile['timezone'] ?? 'UTC'),
 			'cast'      => $this->cast(cast: $castFile['cast'], file: $castFile['@file'], set: $set),
 			'requires'  => $this->requiredRegisters(declared: (array) ($castFile['requires'] ?? []), file: $castFile['@file']),
-			'organisations' => $this->organisationEntities(declared: (array) ($castFile['cast']['openregisterOrganisations'] ?? []), file: $castFile['@file']),
+			'organisations' => $this->organisationEntities(
+				declared: (array) ($castFile['cast']['openregisterOrganisations'] ?? []),
+				file: $castFile['@file'],
+				people: (array) ($castFile['cast']['people'] ?? [])
+			),
 			'fragments' => [],
 			'skipped'   => $ordered['skipped'],
 		];
@@ -469,16 +473,26 @@ class ExampleSetCatalogue {
 	}//end requiredRegisters()
 
 	/**
-	 * The OpenRegister organisations the cast needs, each with a key, a name and a slug.
+	 * The OpenRegister organisations the cast declares, each with its quota and its members' accounts.
 	 *
-	 * @param array<int, mixed> $declared The declared organisations.
-	 * @param string            $file     The cast file, for messages.
+	 * @param array<int, mixed>  $declared The declared organisations.
+	 * @param string             $file     The cast file, for messages.
+	 * @param array<int, mixed>  $people   The cast's people, to turn member keys into accounts.
 	 *
-	 * @return array<int, array{key: string, name: string, slug: string, description: string}>
+	 * @return array<int, array{key: string, name: string, slug: string, description: string, quota: array<string, int>, members: array<int, string>}>
 	 *
-	 * @throws ExampleSetException When one lacks a key, a name or a slug.
+	 * @throws ExampleSetException When an organisation lacks a key, name or slug, names a quota that is not a whole number,
+	 *                             or a member the cast does not hold.
+	 *
+	 * @spec openspec/changes/example-set-organisation-quota-and-members/specs/example-sets/spec.md#requirement-a-cast-organisation-may-declare-its-quota-and-its-members
 	 */
-	private function organisationEntities(array $declared, string $file): array {
+	private function organisationEntities(array $declared, string $file, array $people=[]): array {
+		$accounts = [];
+		foreach ($people as $person) {
+			$person = (array) $person;
+			$accounts[(string) ($person['key'] ?? '')] = (string) ($person['uid'] ?? '');
+		}
+
 		$organisations = [];
 		foreach ($declared as $index => $organisation) {
 			$organisation = (array) $organisation;
@@ -491,11 +505,69 @@ class ExampleSetCatalogue {
 				'name'        => (string) $organisation['name'],
 				'slug'        => (string) $organisation['slug'],
 				'description' => (string) ($organisation['description'] ?? ''),
+				'quota'       => $this->organisationQuota(declared: ($organisation['quota'] ?? []), file: $file, slug: (string) $organisation['slug']),
+				'members'     => $this->organisationMembers(
+					declared: ($organisation['members'] ?? []),
+					accounts: $accounts,
+					file: $file,
+					slug: (string) $organisation['slug']
+				),
 			];
 		}
 
 		return $organisations;
 	}//end organisationEntities()
+
+	/**
+	 * An organisation's declared quota: storage (bytes), requests and bandwidth, each a whole number.
+	 *
+	 * @param mixed  $declared The declared quota.
+	 * @param string $file     The cast file, for messages.
+	 * @param string $slug     The organisation's slug, for messages.
+	 *
+	 * @return array<string, int>
+	 *
+	 * @throws ExampleSetException When a key is unknown or a value is not a whole number.
+	 */
+	private function organisationQuota(mixed $declared, string $file, string $slug): array {
+		$quota = [];
+		foreach ((array) $declared as $key => $value) {
+			if (in_array($key, ['storage', 'requests', 'bandwidth'], true) === false || is_int($value) === false || $value < 0) {
+				throw new ExampleSetException(
+					$file.': OpenRegister organisation "'.$slug.'": quota "'.$key.'" must be storage, requests or bandwidth with a whole number.'
+				);
+			}
+
+			$quota[$key] = $value;
+		}
+
+		return $quota;
+	}//end organisationQuota()
+
+	/**
+	 * The accounts of an organisation's declared members, which are cast people's keys.
+	 *
+	 * @param mixed                 $declared The declared member keys.
+	 * @param array<string, string> $accounts Each cast person's account, by key.
+	 * @param string                $file     The cast file, for messages.
+	 * @param string                $slug     The organisation's slug, for messages.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @throws ExampleSetException When a member is not a cast person with an account.
+	 */
+	private function organisationMembers(mixed $declared, array $accounts, string $file, string $slug): array {
+		$members = [];
+		foreach ((array) $declared as $key) {
+			if (($accounts[(string) $key] ?? '') === '') {
+				throw new ExampleSetException($file.': OpenRegister organisation "'.$slug.'": member "'.$key.'" is not a cast person with an account.');
+			}
+
+			$members[] = $accounts[(string) $key];
+		}
+
+		return $members;
+	}//end organisationMembers()
 
 	/**
 	 * The objects or changes of a fragment, each checked for its parts and a key of its own.

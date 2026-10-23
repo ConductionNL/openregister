@@ -704,7 +704,15 @@
 				"key": "waterland",
 				"name": "Gemeente Waterland",
 				"slug": "waterland",
-				"description": "Een tweede voorbeeldgemeente, zodat de tenantpagina's van de Zuiddrecht demo meer dan één organisatie tonen."
+				"description": "Een tweede voorbeeldgemeente, zodat de tenantpagina's van de Zuiddrecht demo meer dan één organisatie tonen.",
+				"quota": {
+					"storage": 107374182400,
+					"requests": 5000
+				},
+				"members": [
+					"marieke",
+					"pieter"
+				]
 			}
 		]
 	},

@@ -139,6 +139,10 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$woo = array_keys(array_filter($plan['cast']['people'], static fn (array $p): bool => in_array('woo-en-informatie', ($p['groups'] ?? []), true)));
 		$this->assertSame(expected: ['thomas', 'anouk', 'pieter'], actual: $woo);
 		$this->assertSame(expected: ['Teamleider', 'Woo en informatie'], actual: [$plan['cast']['people']['anouk']['function'], $plan['cast']['people']['anouk']['department']]);
+		// Gemeente Waterland, the second tenant: its quota, its administrator and Pieter, who reads it on DqTenant.
+		$waterland = array_values(array_filter($plan['organisations'], static fn (array $o): bool => $o['slug'] === 'waterland'))[0];
+		$this->assertSame(expected: ['marieke.visser', 'pieter'], actual: $waterland['members']);
+		$this->assertSame(expected: 107374182400, actual: $waterland['quota']['storage']);
 		$this->assertNotContains('admin', array_column($plan['cast']['groups'], 'gid'));
 		$this->assertNotContains('noor', array_keys(array_filter($plan['cast']['people'], static fn (array $p): bool => in_array('admin', ($p['groups'] ?? []), true))));
 		$apps = json_decode((string) file_get_contents(dirname(__DIR__, 4).'/lib/Settings/example-sets/zuiddrecht.json'), true)['apps'];
