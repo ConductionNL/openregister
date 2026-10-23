@@ -410,6 +410,38 @@ class MagicStatisticsHandler {
 	}//end getStatistics()
 
 	/**
+	 * Count the objects in each register-schema table, one count query per table.
+	 *
+	 * A table that cannot be read counts as 0, as in getStatistics().
+	 *
+	 * @param array<int, array{registerId: int, schemaId: int}> $pairs The pairs to count.
+	 *
+	 * @return array<string, int> Map of "registerId:schemaId" => object count.
+	 *
+	 * @spec openspec/changes/dashboard-stats-one-pass/specs/built-in-dashboards/spec.md#requirement-the-registers-with-schemas-rollup-must-read-each-table-and-the-audit-trail-at-most-once
+	 */
+	public function countObjectsPerPair(array $pairs): array {
+		$counts = [];
+		foreach ($pairs as $pair) {
+			$registerId = (int)$pair['registerId'];
+			$schemaId = (int)$pair['schemaId'];
+			$key = $registerId . ':' . $schemaId;
+			$counts[$key] = 0;
+			try {
+				$counts[$key] = $this->countObjectsInRegisterSchemaTable(
+					query: [],
+					register: $this->findRegisterCached(registerId: $registerId),
+					schema: $this->findSchemaCached(schemaId: $schemaId)
+				);
+			} catch (\Exception $e) {
+				// A table that cannot be queried counts as empty.
+			}
+		}
+
+		return $counts;
+	}//end countObjectsPerPair()
+
+	/**
 	 * Get object statistics grouped by schema for multiple schemas.
 	 *
 	 * Returns per-schema statistics using one count query per register-schema pair,

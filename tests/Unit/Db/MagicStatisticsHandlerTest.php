@@ -270,4 +270,38 @@ class MagicStatisticsHandlerTest extends TestCase {
 		$this->assertSame('1.2.0', $entity->getSchemaVersion(), 'a snake_case metadata column reaches its camelCase attribute');
 		$this->assertArrayNotHasKey('_meta', $entity->getObject());
 	}//end testAnUnknownMetadataColumnIsSkippedAndTheRowConverts()
-}//end class
+
+	/**
+	 * Each pair is counted once, keyed "registerId:schemaId"; a table that cannot be read counts as 0.
+	 */
+	public function testCountObjectsPerPairCountsEachTableOnce(): void {
+		$this->registerMapper->method('find')->willReturnCallback(fn ($id) => $this->makeRegister((int)$id));
+		$this->schemaMapper->method('find')->willReturnCallback(
+			function ($id) {
+				if ((int)$id === 99) {
+					throw new \Exception('schema gone');
+				}
+
+				return $this->makeSchema([], (int)$id);
+			}
+		);
+		$calls = 0;
+		$this->handler->setCountCallback(
+			function (array $query, Register $register, Schema $schema) use (&$calls): int {
+				$calls++;
+				return $register->getId() * 100 + $schema->getId();
+			}
+		);
+
+		$counts = $this->handler->countObjectsPerPair(
+			[
+				['registerId' => 1, 'schemaId' => 10],
+				['registerId' => 2, 'schemaId' => 20],
+				['registerId' => 3, 'schemaId' => 99],
+			]
+		);
+
+		$this->assertSame(['1:10' => 110, '2:20' => 220, '3:99' => 0], $counts);
+		$this->assertSame(2, $calls);
+	}
+}

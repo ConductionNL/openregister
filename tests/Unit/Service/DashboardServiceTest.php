@@ -6,6 +6,7 @@ use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailStatistics;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -34,6 +35,7 @@ class DashboardServiceTest extends TestCase {
 	 * @var WebhookLogMapper&MockObject
 	 */
 	private WebhookLogMapper $webhookLogMapper;
+	private AuditTrailStatistics $auditTrailStatistics;
 
 	/**
 	 * @var RegisterMapper&MockObject
@@ -56,6 +58,7 @@ class DashboardServiceTest extends TestCase {
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->webhookLogMapper = $this->createMock(WebhookLogMapper::class);
+		$this->auditTrailStatistics = $this->createMock(AuditTrailStatistics::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
@@ -66,7 +69,8 @@ class DashboardServiceTest extends TestCase {
 			$this->webhookLogMapper,
 			$this->registerMapper,
 			$this->schemaMapper,
-			$this->logger
+			$this->logger,
+			$this->auditTrailStatistics
 		);
 	}
 
@@ -642,9 +646,9 @@ class DashboardServiceTest extends TestCase {
 			->method('getSchemasByRegisterId')
 			->willReturn([]);
 
-		// objectMapper.getStatistics throws, triggering the catch in getStats.
+		// Listing the tables throws, triggering the catch in getStats.
 		$this->objectMapper
-			->method('getStatistics')
+			->method('getAllRegisterSchemaPairs')
 			->willThrowException(new Exception('stats error'));
 
 		$result = $this->service->getRegistersWithSchemas();
@@ -1213,9 +1217,9 @@ class DashboardServiceTest extends TestCase {
 			->method('getSchemasByRegisterId')
 			->willReturn([]);
 
-		// Make getStatistics throw on objectMapper to trigger catch block.
+		// Make listing the tables throw to trigger the catch block.
 		$this->objectMapper
-			->method('getStatistics')
+			->method('getAllRegisterSchemaPairs')
 			->willThrowException(new Exception('Stats error'));
 
 		$result = $this->service->getRegistersWithSchemas();
@@ -1254,5 +1258,65 @@ class DashboardServiceTest extends TestCase {
 
 		// webhookLogs total should default to 0 via ?? operator.
 		$this->assertSame(0, $result[0]['stats']['webhookLogs']['total']);
+	}
+
+	// ========== one pass over the tables and the audit trail ==========
+
+	/**
+	 * The rollup counts each table once and groups the audit trail once, however many
+	 * registers, schemas and the orphaned row read them, and the sums add up per scope.
+	 *
+	 * @return void
+	 */
+	public function testRegistersWithSchemasReadsEachTableAndTheAuditTrailOnce(): void {
+		$register = $this->createRegisterEntity(1, 'Register');
+		$this->registerMapper->method('findAll')->willReturn([$register]);
+		$this->registerMapper->method('getSchemasByRegisterId')->willReturn(
+			[$this->createSchemaEntity(10, 'A'), $this->createSchemaEntity(11, 'B')]
+		);
+		// Table 9:99 belongs to no register: it is orphaned.
+		$this->objectMapper->method('getAllRegisterSchemaPairs')->willReturn(
+			[
+				['registerId' => 1, 'schemaId' => 10],
+				['registerId' => 1, 'schemaId' => 11],
+				['registerId' => 9, 'schemaId' => 99],
+			]
+		);
+		$counted = [];
+		$this->objectMapper->expects($this->atLeastOnce())->method('countObjectsPerPair')->willReturnCallback(
+			function (array $pairs) use (&$counted): array {
+				$counts = [];
+				foreach ($pairs as $pair) {
+					$key = $pair['registerId'] . ':' . $pair['schemaId'];
+					$counted[] = $key;
+					$counts[$key] = ['1:10' => 3, '1:11' => 4, '9:99' => 5][$key];
+				}
+
+				return $counts;
+			}
+		);
+		$this->auditTrailStatistics->expects($this->once())->method('groupedByRegisterSchema')->willReturn(
+			[
+				['register' => '1', 'schema' => '10', 'total' => 6, 'size' => 60],
+				['register' => '1', 'schema' => '11', 'total' => 7, 'size' => 70],
+				['register' => null, 'schema' => null, 'total' => 8, 'size' => 80],
+			]
+		);
+		$this->auditTrailMapper->expects($this->never())->method('getStatistics');
+		$this->webhookLogMapper->expects($this->once())->method('getStatistics')->willReturn(['total' => 2]);
+
+		$result = $this->service->getRegistersWithSchemas();
+
+		$this->assertSame(['1:10', '1:11', '9:99'], array_values(array_unique($counted)));
+		$this->assertCount(3, $counted, 'each table is counted once');
+		$this->assertSame(12, $result[0]['stats']['objects']['total']);
+		$this->assertSame(21, $result[0]['stats']['logs']['total']);
+		$this->assertSame(7, $result[1]['stats']['objects']['total']);
+		$this->assertSame(13, $result[1]['stats']['logs']['total']);
+		$this->assertSame(3, $result[1]['schemas'][0]['stats']['objects']['total']);
+		$this->assertSame(70, $result[1]['schemas'][1]['stats']['logs']['size']);
+		$this->assertSame('orphaned', $result[2]['id']);
+		$this->assertSame(5, $result[2]['stats']['objects']['total']);
+		$this->assertSame(8, $result[2]['stats']['logs']['total']);
 	}
 }

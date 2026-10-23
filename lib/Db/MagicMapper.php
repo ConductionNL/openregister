@@ -11166,6 +11166,19 @@ class MagicMapper extends AbstractObjectMapper {
 	}//end getStatistics()
 
 	/**
+	 * Count the objects in each register-schema table, one count query per table.
+	 *
+	 * @param array<int, array{registerId: int, schemaId: int}> $pairs The pairs to count.
+	 *
+	 * @return array<string, int> Map of "registerId:schemaId" => object count.
+	 *
+	 * @spec openspec/changes/dashboard-stats-one-pass/specs/built-in-dashboards/spec.md#requirement-the-registers-with-schemas-rollup-must-read-each-table-and-the-audit-trail-at-most-once
+	 */
+	public function countObjectsPerPair(array $pairs): array {
+		return $this->statisticsHandler->countObjectsPerPair(pairs: $pairs);
+	}//end countObjectsPerPair()
+
+	/**
 	 * Get object statistics grouped by schema for multiple schemas.
 	 *
 	 * Returns per-schema statistics using one count query per register-schema pair,

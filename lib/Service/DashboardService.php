@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrailStatistics;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -110,6 +111,15 @@ class DashboardService {
 	 */
 	private readonly SchemaMapper $schemaMapper;
 
+	/** @var array<string, int> Object count per "registerId:schemaId", counted once per request. */
+	private array $objectCounts = [];
+
+	/** @var array<int, array{register: string|null, schema: string|null, total: int, size: int}>|null Audit groups, read once. */
+	private ?array $auditGroups = null;
+
+	/** @var array<string, mixed>|null Webhook log statistics, read once per request. */
+	private ?array $webhookLogStats = null;
+
 	/**
 	 * Constructor for DashboardService
 	 *
@@ -121,6 +131,7 @@ class DashboardService {
 	 * @param RegisterMapper $registerMapper Register mapper for register operations
 	 * @param SchemaMapper $schemaMapper Schema mapper for schema operations
 	 * @param LoggerInterface $logger Logger instance for error tracking
+	 * @param AuditTrailStatistics $auditTrailStatistics Grouped audit trail aggregates
 	 *
 	 * @return void
 	 */
@@ -131,6 +142,7 @@ class DashboardService {
 		RegisterMapper $registerMapper,
 		SchemaMapper $schemaMapper,
 		LoggerInterface $logger,
+		private readonly AuditTrailStatistics $auditTrailStatistics,
 	) {
 		// Store dependencies for use in service methods.
 		$this->objectMapper = $objectMapper;
@@ -153,14 +165,14 @@ class DashboardService {
 	 */
 	private function getStats(?int $registerId = null, ?int $schemaId = null): array {
 		try {
-			// Get object statistics.
-			$objectStats = $this->objectMapper->getStatistics(registerId: $registerId, schemaId: $schemaId);
-
-			// Get audit trail statistics.
-			$logStats = $this->auditTrailMapper->getStatistics(registerId: $registerId, schemaId: $schemaId);
-
-			// Get webhook log statistics (0 = all webhooks).
-			$webhookLogStats = $this->webhookLogMapper->getStatistics(webhookId: 0);
+			$inScope = fn (int $register, int $schema): bool => ($registerId === null || $register === $registerId)
+				&& ($schemaId === null || $schema === $schemaId);
+			$objectStats = $this->objectStatsFor(include: $inScope);
+			$logStats = $this->auditStatsFor(
+				include: fn (?string $register, ?string $schema): bool => ($registerId === null || $register === (string)$registerId)
+					&& ($schemaId === null || $schema === (string)$schemaId)
+			);
+			$webhookLogStats = $this->webhookLogStats ??= $this->webhookLogMapper->getStatistics(webhookId: 0);
 
 			return [
 				'objects' => [
@@ -213,6 +225,79 @@ class DashboardService {
 	}//end getStats()
 
 	/**
+	 * Object totals over the register-schema tables the filter includes.
+	 *
+	 * Each table is counted once per request: the totals, each register, each schema and the
+	 * orphaned row all read the same counts.
+	 *
+	 * @param callable(int, int): bool $include Whether a table (register id, schema id) counts.
+	 *
+	 * @return array{total: int, size: int, invalid: int, deleted: int, locked: int} The object statistics.
+	 *
+	 * @spec openspec/changes/dashboard-stats-one-pass/specs/built-in-dashboards/spec.md#requirement-the-registers-with-schemas-rollup-must-read-each-table-and-the-audit-trail-at-most-once
+	 */
+	private function objectStatsFor(callable $include): array {
+		$pairs = array_values(
+			array_filter(
+				$this->objectMapper->getAllRegisterSchemaPairs(),
+				fn (array $pair): bool => $include((int)$pair['registerId'], (int)$pair['schemaId'])
+			)
+		);
+		$missing = array_values(
+			array_filter(
+				$pairs,
+				fn (array $pair): bool => isset($this->objectCounts[(int)$pair['registerId'] . ':' . (int)$pair['schemaId']]) === false
+			)
+		);
+		if ($missing !== []) {
+			$this->objectCounts = $this->objectMapper->countObjectsPerPair(pairs: $missing) + $this->objectCounts;
+		}
+
+		$total = 0;
+		foreach ($pairs as $pair) {
+			$total += $this->objectCounts[(int)$pair['registerId'] . ':' . (int)$pair['schemaId']] ?? 0;
+		}
+
+		return [
+			'total' => $total,
+			'size' => 0,
+			'invalid' => 0,
+			'deleted' => 0,
+			'locked' => 0,
+		];
+	}//end objectStatsFor()
+
+	/**
+	 * Audit trail totals over the register-schema combinations the filter includes.
+	 *
+	 * The audit trail is aggregated once per request, grouped by register and schema; every
+	 * statistic is a sum over those groups.
+	 *
+	 * @param callable(string|null, string|null): bool $include Whether a combination (register, schema as stored) counts.
+	 *
+	 * @return array{total: int, size: int} The audit trail statistics.
+	 *
+	 * @spec openspec/changes/dashboard-stats-one-pass/specs/built-in-dashboards/spec.md#requirement-the-registers-with-schemas-rollup-must-read-each-table-and-the-audit-trail-at-most-once
+	 */
+	private function auditStatsFor(callable $include): array {
+		$this->auditGroups ??= $this->auditTrailStatistics->groupedByRegisterSchema();
+
+		$total = 0;
+		$size = 0;
+		foreach ($this->auditGroups as $group) {
+			if ($include($group['register'], $group['schema']) === true) {
+				$total += $group['total'];
+				$size += $group['size'];
+			}
+		}
+
+		return [
+			'total' => $total,
+			'size' => $size,
+		];
+	}//end auditStatsFor()
+
+	/**
 	 * Get statistics for orphaned items
 	 *
 	 * @return array Statistics for orphaned objects, logs, and files.
@@ -234,14 +319,19 @@ class DashboardService {
 				}
 			}
 
-			// Get orphaned object statistics by excluding all valid combinations.
-			$objectStats = $this->objectMapper->getStatistics(registerId: null, schemaId: null, exclude: $validCombinations);
+			// An orphan is any table or audit row whose register-schema combination is not a valid one.
+			$valid = [];
+			foreach ($validCombinations as $combination) {
+				$valid[$combination['register'] . ':' . $combination['schema']] = true;
+			}
 
-			// Get orphaned audit trail statistics using the same exclusions.
-			$auditStats = $this->auditTrailMapper->getStatistics(
-				registerId: null,
-				schemaId: null,
-				exclude: $validCombinations
+			$objectStats = $this->objectStatsFor(
+				include: fn (int $register, int $schema): bool => isset($valid[$register . ':' . $schema]) === false
+			);
+			$auditStats = $this->auditStatsFor(
+				include: fn (?string $register, ?string $schema): bool => $register === null
+					|| $schema === null
+					|| isset($valid[$register . ':' . $schema]) === false
 			);
 
 			return [
