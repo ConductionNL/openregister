@@ -136,7 +136,7 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 		$this->functions = [];
 		$handler = $this->handler(userId: 'alice');
 		$queryBuilder = (new ReflectionClass(MagicSearchHandler::class))->getProperty('db')->getValue($handler)->getQueryBuilder();
-		$apply->invoke($handler, $queryBuilder, false, MagicSearchHandler::ARCHIVED_EXCLUDE, [], $quiet);
+		$apply->invoke($handler, $queryBuilder, MagicSearchHandler::DELETED_EXCLUDE, MagicSearchHandler::ARCHIVED_EXCLUDE, [], $quiet);
 		$this->assertSame(["(t._status IS NULL OR t._status <> 'draft')"], $this->functions);
 	}//end testASchemaKeepsOwnDraftsOutOnBothPaths()
 
@@ -174,7 +174,7 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 			$this->functions = [];
 			$handler = $this->handler(userId: $userId);
 			$queryBuilder = (new ReflectionClass(MagicSearchHandler::class))->getProperty('db')->getValue($handler)->getQueryBuilder();
-			$apply->invoke($handler, $queryBuilder, false, MagicSearchHandler::ARCHIVED_EXCLUDE, $query);
+			$apply->invoke($handler, $queryBuilder, MagicSearchHandler::DELETED_EXCLUDE, MagicSearchHandler::ARCHIVED_EXCLUDE, $query);
 
 			$this->assertSame([$expected], $this->functions);
 		}
@@ -182,7 +182,7 @@ final class MagicSearchHandlerDraftLensTest extends TestCase {
 		$this->functions = [];
 		$handler = $this->handler(userId: 'alice');
 		$queryBuilder = (new ReflectionClass(MagicSearchHandler::class))->getProperty('db')->getValue($handler)->getQueryBuilder();
-		$apply->invoke($handler, $queryBuilder, false, MagicSearchHandler::ARCHIVED_EXCLUDE, ['_drafts' => 'any']);
+		$apply->invoke($handler, $queryBuilder, MagicSearchHandler::DELETED_EXCLUDE, MagicSearchHandler::ARCHIVED_EXCLUDE, ['_drafts' => 'any']);
 		$this->assertSame([], $this->functions);
 	}//end testTheSingleTablePathCarriesTheSameLens()
 

@@ -1870,10 +1870,14 @@ class MagicFacetHandler {
 		string $tableName,
 		?Schema $schema = null,
 	): void {
-		// Exclude deleted objects by default.
-		$includeDeleted = $baseQuery['_includeDeleted'] ?? false;
-		if ($includeDeleted === false) {
-			$queryBuilder->andWhere($queryBuilder->expr()->isNull(self::METADATA_PREFIX . 'deleted'));
+		// The deleted lens, spelled once in MagicSearchHandler so the facets
+		// count the rows the list shows.
+		$deleted = MagicSearchHandler::deletedConditionSql(
+			mode: MagicSearchHandler::resolveDeletedMode(query: $baseQuery),
+			columnPrefix: ''
+		);
+		if ($deleted !== null) {
+			$queryBuilder->andWhere($queryBuilder->createFunction($deleted));
 		}
 
 		// Apply metadata filters from @self.
@@ -1966,6 +1970,7 @@ class MagicFacetHandler {
 			'_schema',
 			'_schemas',
 			'_includeDeleted',
+			'_deleted',
 			'_empty',
 			'@self',
 		];
