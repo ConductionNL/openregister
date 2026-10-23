@@ -120,7 +120,20 @@ class FlowRunAdvancer {
 					(string)$run->getSubjectSchema()
 				);
 
-				if ($subject === null) {
+				// 🔴 A DELETED SUBJECT IS NOT A RESOLUTION FAILURE WHEN A
+				// SNAPSHOT RODE ALONG. `object.deleted` is the one lifecycle
+				// event whose subject can NEVER be re-resolved — the object is
+				// already gone by the time any run, inline or queued, reaches
+				// it, by definition. `FlowTriggerListener` hands such a run the
+				// object's last-known state under `payload` for exactly this
+				// case. Failing here regardless would make every
+				// `object.deleted` trigger fail on every firing, unconditionally
+				// — not a sometimes-bug, a structural one. Scoped to that one
+				// trigger deliberately: every OTHER trigger's unresolved subject
+				// is a genuine resolution failure (e.g. a sub-flow fan-out child
+				// queued against an object that gets deleted before it runs) and
+				// must still fail rather than silently run on stale data.
+				if ($subject === null && $run->hasDeletedSubjectSnapshot() === false) {
 					$run->setStatus(FlowRun::STATUS_FAILED);
 					$run->setError(sprintf('Subject "%s" no longer exists.', $run->getSubjectUuid()));
 					$this->mapper->update($run);
@@ -134,7 +147,9 @@ class FlowRunAdvancer {
 			// its payload instead of an object: a non-object trigger (a file, a
 			// user) puts what it is about under `payload` on the run context, and
 			// that becomes the first item, so the flow reads a file's path or a
-			// user's id exactly as it would an object's fields.
+			// user's id exactly as it would an object's fields. A subject that
+			// named an object but could not be re-resolved (a deletion) takes the
+			// same path, on the same payload slot.
 			$seed = null;
 			if ($subject === null) {
 				$subject = new stdClass();
@@ -207,7 +222,11 @@ class FlowRunAdvancer {
 				(string)$run->getSubjectSchema()
 			);
 
-			if ($subject === null) {
+			// Same fallback as {@see self::advance()}, scoped the same way: a
+			// deleted subject with a snapshot under `payload` is not a
+			// resolution failure, it is the one lifecycle event that can never
+			// re-resolve by design.
+			if ($subject === null && $run->hasDeletedSubjectSnapshot() === false) {
 				$run->setStatus(FlowRun::STATUS_FAILED);
 				$run->setError(sprintf('Subject "%s" no longer exists.', $run->getSubjectUuid()));
 
