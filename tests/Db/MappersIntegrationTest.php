@@ -31,7 +31,9 @@ use OCA\OpenRegister\Db\Webhook;
 use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
+use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\Files\Folder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -891,6 +893,40 @@ class MappersIntegrationTest extends TestCase {
 		// Object has no folder set, so it will try UUID lookup in filecache.
 		$files = $this->fileMapper->getFilesForObject($object);
 		$this->assertIsArray($files);
+	}
+
+	/**
+	 * getFilesForObject() resolves purely by the object's folder/uuid
+	 * (lib/Db/FileMapper.php:555), with no schema lookup anywhere in that
+	 * path. createTestSchema() is a generic, non-publication schema
+	 * (name/status only) -- a real file attached to this object's folder must
+	 * come back exactly as it would for a publication, since nothing in
+	 * retrieval is publication-specific. Regression coverage for
+	 * opencatalogi#1991's CatalogObjectDetail Attachments widget, which relies
+	 * on that being true for every schema it serves.
+	 */
+	public function testFileMapperGetFilesForObjectReturnsARealAttachedFileRegardlessOfSchema(): void {
+		$object = $this->createTestObject();
+
+		// Same fallback as PrivateScopeParityIntegrationTest::objectFolderAsOwner():
+		// folder resolution depends on FolderManagementHandler's OpenRegister
+		// system account being wired, which some environments (including this
+		// suite's) do not fully bootstrap outside a real request.
+		try {
+			$folder = \OC::$server->get(FolderManagementHandler::class)->getObjectFolder($object);
+		} catch (\Throwable $e) {
+			$folder = null;
+		}
+
+		if (($folder instanceof Folder) === false) {
+			$this->markTestSkipped('could not resolve the object folder');
+		}
+
+		$folder->newFile('attachment.txt', 'contents');
+
+		$files = $this->fileMapper->getFilesForObject($object);
+
+		$this->assertNotEmpty($files, 'a real file attached to the object must come back');
 	}
 
 	public function testFileMapperDepublishFile(): void {
