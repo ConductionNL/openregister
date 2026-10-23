@@ -373,8 +373,8 @@ class ObjectSlugHandler {
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-objectslugsuffix-must-append-a-utc-date-time-suffix-to-a-colliding-slug
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `log` is false only for the backfill dry run
-	 *   and the reslug planning walk, which must decide without writing a warning.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `log` is false only for the backfill dry run,
+	 *   which must decide without writing a warning.
 	 */
 	public function decide(
 		string $candidate,
@@ -512,38 +512,6 @@ class ObjectSlugHandler {
 			path: $path
 		);
 	}//end logCollision()
-
-	/**
-	 * Log a `--reslug` object that keeps its slug because the slug it now wants is held.
-	 *
-	 * @param Register $register   The register.
-	 * @param Schema   $schema     The schema.
-	 * @param string   $wanted     The slug the object now wants.
-	 * @param string   $kept       The slug it keeps.
-	 * @param string   $holderUuid Who holds the wanted slug.
-	 * @param string   $objectUuid The object.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
-	 */
-	public function logKeptSlug(
-		Register $register,
-		Schema $schema,
-		string $wanted,
-		string $kept,
-		string $holderUuid,
-		string $objectUuid,
-	): void {
-		$this->log->keptSlug(
-			register: $register,
-			schema: $schema,
-			wanted: $wanted,
-			kept: $kept,
-			holderUuid: $holderUuid,
-			objectUuid: $objectUuid
-		);
-	}//end logKeptSlug()
 
 	/**
 	 * Resolve the register of an entity, once per request.

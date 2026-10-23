@@ -3,9 +3,8 @@
 /**
  * OpenRegister ObjectSlugBackfillService
  *
- * Fills object slugs for existing objects of one register and schema, or
- * recomputes them after the slug field was switched (#4037). Behind
- * `occ openregister:backfill-slugs`.
+ * Fills object slugs for the existing objects of one register and schema
+ * that have none yet (#4037). Behind `occ openregister:backfill-slugs`.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -38,20 +37,15 @@ use Psr\Log\LoggerInterface;
 /**
  * Plans and applies a slug backfill for one register+schema table.
  *
- * Default mode only touches objects without a slug, oldest first; a stored
- * slug and every existing duplicate stay as they are (BC2). `reslug` recomputes
- * every live object's slug from the current source field; an object whose
- * source is empty keeps its slug, which stays reserved, and so does an object
- * whose new slug another object already holds. Writes go straight to the slug
- * column: no per-object version bump, audit-trail entry or object event (design
- * D11); instead a run that changes at least one slug writes one audit-trail entry with the old to new slugs. A
- * run in the same mode a second time changes nothing.
+ * The run only touches objects without a slug, oldest first; a stored slug
+ * and every existing duplicate stay as they are (BC2). A set slug never
+ * changes, also not after `objectSlugField` was switched: the backfill has no
+ * rewrite mode (Robert Zondervan, 2026-10-23). Writes go straight to the slug
+ * column: no per-object version bump, audit-trail entry or object event
+ * (design D11); instead a run that changes at least one slug writes one
+ * audit-trail entry with the old to new slugs. A second run changes nothing.
  *
  * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
- *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The plan, the reporting of what could not be
- *   placed (collision, kept, blocked by a cycle) and the counters belong to one run; the write
- *   order, the walk and the audit are already in their own classes.
  */
 class ObjectSlugBackfillService {
 
@@ -99,14 +93,12 @@ class ObjectSlugBackfillService {
 	 *
 	 * @param Register $register The register.
 	 * @param Schema   $schema   The schema; must set `objectSlugField`.
-	 * @param bool     $reslug   Recompute every slug instead of filling empty ones.
 	 * @param bool     $dryRun   Plan only, write nothing.
 	 *
 	 * @return array{
 	 *     duplicates: array<string, list<string>>,
 	 *     plan: list<array{uuid: string, old: ?string, new: ?string}>,
-	 *     kept: list<array{uuid: string, slug: string, wanted: string, holder: string}>,
-	 *     summary: array{scanned: int, assigned: int, changed: int, collisions: int, kept: int, unchanged: int, duplicates: int, skipped: int}
+	 *     summary: array{scanned: int, assigned: int, collisions: int, unchanged: int, duplicates: int, skipped: int}
 	 * } What was found and what was (or would be) written.
 	 *
 	 * @throws InvalidArgumentException When the schema has no `objectSlugField`.
@@ -114,9 +106,9 @@ class ObjectSlugBackfillService {
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `reslug` and `dryRun` are the two documented command options.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `dryRun` is the documented command option.
 	 */
-	public function run(Register $register, Schema $schema, bool $reslug=false, bool $dryRun=false): array {
+	public function run(Register $register, Schema $schema, bool $dryRun=false): array {
 		if ($this->slugHandler->isManaged(schema: $schema) === false) {
 			throw new InvalidArgumentException(
 				sprintf('Schema %s has no objectSlugField; there is nothing to backfill', (string)($schema->getSlug() ?? $schema->getId()))
@@ -146,56 +138,38 @@ class ObjectSlugBackfillService {
 			);
 		}
 
-		$rows = $this->loadRows(register: $register, schema: $schema, onlyEmpty: ($reslug === false));
+		$rows = $this->loadRows(register: $register, schema: $schema);
 		$summary = [
 			'scanned' => count($rows),
 			'assigned' => 0,
-			'changed' => 0,
 			'collisions' => 0,
-			'kept' => 0,
 			'unchanged' => 0,
 			'duplicates' => count($duplicates),
 			'skipped' => 0,
 		];
 
-		$kept = [];
-		$log = ($dryRun === false);
-		$plan = [];
-		if ($reslug === false) {
-			$plan = $this->planFill(rows: $rows, register: $register, schema: $schema, summary: $summary, log: $log);
-		}
-
-		if ($reslug === true) {
-			$plan = $this->planReslug(rows: $rows, register: $register, schema: $schema, summary: $summary, log: $log, kept: $kept);
-		}
+		$plan = $this->planFill(rows: $rows, register: $register, schema: $schema, summary: $summary, log: ($dryRun === false));
 
 		if ($dryRun === false) {
-			$summary['skipped'] = $this->writer->write(
-				plan: $plan,
-				register: $register,
-				schema: $schema,
-				mode: $this->writer->modeName(reslug: $reslug),
-				summary: $summary
-			);
+			$summary['skipped'] = $this->writer->write(plan: $plan, register: $register, schema: $schema, summary: $summary);
 		}
 
-		return ['duplicates' => $duplicates, 'plan' => $plan, 'kept' => $kept, 'summary' => $summary];
+		return ['duplicates' => $duplicates, 'plan' => $plan, 'summary' => $summary];
 	}//end run()
 
 	/**
-	 * Read every row the run looks at, oldest first (`_created`, then `_id`).
+	 * Read every live row without a slug, oldest first (`_created`, then `_id`).
 	 *
 	 * The candidate is computed while each page is read and only the small
 	 * {id, uuid, slug, created, candidate} tuple is kept, so a large table does
 	 * not hold every object body in memory.
 	 *
-	 * @param Register $register  The register.
-	 * @param Schema   $schema    The schema.
-	 * @param bool     $onlyEmpty Only rows without a slug.
+	 * @param Register $register The register.
+	 * @param Schema   $schema   The schema.
 	 *
 	 * @return list<array{id: int, uuid: string, slug: string|null, created: string|null, candidate: string|null}>
 	 */
-	private function loadRows(Register $register, Schema $schema, bool $onlyEmpty): array {
+	private function loadRows(Register $register, Schema $schema): array {
 		$rows = [];
 		$afterId = 0;
 		do {
@@ -203,8 +177,7 @@ class ObjectSlugBackfillService {
 				register: $register,
 				schema: $schema,
 				afterId: $afterId,
-				pageSize: self::PAGE_SIZE,
-				onlyEmpty: $onlyEmpty
+				pageSize: self::PAGE_SIZE
 			);
 			foreach ($result['rows'] as $row) {
 				$rows[] = [
@@ -234,7 +207,7 @@ class ObjectSlugBackfillService {
 	}//end loadRows()
 
 	/**
-	 * Default mode: give objects without a slug their candidate when it is free.
+	 * Give objects without a slug their candidate when it is free.
 	 *
 	 * @param list<array{id: int, uuid: string, slug: string|null, created: string|null, candidate: string|null}> $rows Rows without a slug.
 	 * @param Register $register The register.
@@ -284,279 +257,4 @@ class ObjectSlugBackfillService {
 
 		return $plan;
 	}//end planFill()
-
-	/**
-	 * `--reslug`: recompute every live object's slug from the current source field.
-	 *
-	 * Every stored slug is reserved for its holder until that holder moves to a
-	 * new one, so no object is given a slug another object still carries. An
-	 * object whose source is empty, and an object whose new slug is held by
-	 * another object, keeps its current slug (the latter is reported as kept
-	 * because of a collision; with `objectSlugSuffix` it gets the suffixed slug
-	 * instead). The rows are walked oldest first, repeatedly, until a pass
-	 * moves nothing: an object that has to wait for another one to vacate its
-	 * slug is placed in a later pass, so a second run finds nothing to do.
-	 *
-	 * @param list<array{id: int, uuid: string, slug: string|null, created: string|null, candidate: string|null}> $rows All live rows.
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param array    $summary  Counters, by reference.
-	 * @param bool     $log      Log collisions (false on a dry run).
-	 * @param array    $kept     Objects that keep their slug because of a collision, by reference.
-	 *
-	 * @return list<array{uuid: string, old: ?string, new: ?string}> Only the rows whose slug changes, in write order (holders before takers).
-	 */
-	private function planReslug(array $rows, Register $register, Schema $schema, array &$summary, bool $log, array &$kept): array {
-		$current = [];
-		$taken = [];
-		foreach ($rows as $row) {
-			$current[$row['uuid']] = $row['slug'];
-			if ($row['slug'] !== null) {
-				$taken[$row['slug']][] = $row['uuid'];
-			}
-		}
-
-		(new ObjectSlugReslugWalk())->run(
-			rows: $rows,
-			step: function (array $row) use ($register, $schema, &$current, &$taken): array {
-				$own = $current[$row['uuid']];
-				$moved = $this->moveRow(row: $row, register: $register, schema: $schema, current: $current, taken: $taken);
-				return ['moved' => $moved, 'own' => $own];
-			}
-		);
-
-		$moves = $this->movesOf(rows: $rows, current: $current);
-
-		// With the suffix on, two rows can end up wanting each other's slug (A a to b, B b to a).
-		// No write order is safe for a cycle, so its rows, and the rows waiting on them, keep
-		// their slug and are reported as kept.
-		$ordered = (new ObjectSlugReslugWalk())->holdersFirst(plan: $moves);
-		$blocked = [];
-		foreach ($ordered['blocked'] as $step) {
-			$blocked[$step['uuid']] = $step['holder'];
-		}
-
-		foreach ($rows as $row) {
-			$uuid = $row['uuid'];
-			if ($current[$uuid] !== $row['slug'] && isset($blocked[$uuid]) === false) {
-				$summary['changed']++;
-				continue;
-			}
-
-			$summary['unchanged']++;
-			if (isset($blocked[$uuid]) === true) {
-				$this->reportBlocked(row: $row, holder: $blocked[$uuid], register: $register, schema: $schema, summary: $summary, log: $log, kept: $kept);
-				continue;
-			}
-
-			$this->reportUnplaced(row: $row, register: $register, schema: $schema, taken: $taken, summary: $summary, log: $log, kept: $kept);
-		}
-
-		return $ordered['ordered'];
-	}//end planReslug()
-
-	/**
-	 * The rows whose slug the walk changed, as plan steps in row order.
-	 *
-	 * @param list<array{id: int, uuid: string, slug: string|null, created: string|null, candidate: string|null}> $rows    All live rows.
-	 * @param array<string, string|null>                                                                          $current uuid => slug after the walk.
-	 *
-	 * @return list<array{uuid: string, old: ?string, new: ?string}> The steps.
-	 */
-	private function movesOf(array $rows, array $current): array {
-		$moves = [];
-		foreach ($rows as $row) {
-			if ($current[$row['uuid']] !== $row['slug']) {
-				$moves[] = ['uuid' => $row['uuid'], 'old' => $row['slug'], 'new' => $current[$row['uuid']]];
-			}
-		}
-
-		return $moves;
-	}//end movesOf()
-
-	/**
-	 * Count and report a row whose move is part of, or waits on, a cycle.
-	 *
-	 * @param array    $row      The row, which keeps its slug.
-	 * @param string   $holder   The uuid of the row that holds the slug it wanted.
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param array    $summary  Counters, by reference.
-	 * @param bool     $log      Log it (false on a dry run).
-	 * @param array    $kept     Objects that keep their slug because of a collision, by reference.
-	 *
-	 * @return void
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `log` is false only for the dry run.
-	 */
-	private function reportBlocked(array $row, string $holder, Register $register, Schema $schema, array &$summary, bool $log, array &$kept): void {
-		$summary['collisions']++;
-		if ($row['slug'] !== null) {
-			$summary['kept']++;
-			$kept[] = ['uuid' => $row['uuid'], 'slug' => $row['slug'], 'wanted' => (string)$row['candidate'], 'holder' => $holder];
-		}
-
-		if ($log === true) {
-			$this->logUnplaced(row: $row, register: $register, schema: $schema, holder: $holder);
-		}
-	}//end reportBlocked()
-
-
-	/**
-	 * Count and report a row that wanted a slug it could not get.
-	 *
-	 * @param array    $row      The row, unchanged by the walk.
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param array    $taken    slug => holders at the end of the walk.
-	 * @param array    $summary  Counters, by reference.
-	 * @param bool     $log      Log it (false on a dry run).
-	 * @param array    $kept     Objects that keep their slug because of a collision, by reference.
-	 *
-	 * @return void
-	 */
-	private function reportUnplaced(array $row, Register $register, Schema $schema, array $taken, array &$summary, bool $log, array &$kept): void {
-		$candidate = $row['candidate'];
-		if ($candidate === null || $row['slug'] === $candidate) {
-			return;
-		}
-
-		// A suffixed variant from an earlier run is the settled outcome, not a new collision.
-		$holder = $this->holderOther(taken: $taken, slug: $candidate, uuid: $row['uuid']);
-		if ($holder === null || ($row['slug'] !== null && $this->slugHandler->isSuffixOf(slug: $row['slug'], candidate: $candidate) === true)) {
-			return;
-		}
-
-		// Wanted a slug it could not get: it keeps what it has, or stays without.
-		$summary['collisions']++;
-		if ($row['slug'] !== null) {
-			$summary['kept']++;
-			$kept[] = ['uuid' => $row['uuid'], 'slug' => $row['slug'], 'wanted' => $candidate, 'holder' => $holder];
-		}
-
-		if ($log === true) {
-			$this->logUnplaced(row: $row, register: $register, schema: $schema, holder: $holder);
-		}
-	}//end reportUnplaced()
-
-	/**
-	 * Log a row that wanted a slug another object holds.
-	 *
-	 * @param array    $row      The row (its `candidate` is the wanted slug).
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param string   $holder   The uuid that holds the wanted slug.
-	 *
-	 * @return void
-	 */
-	private function logUnplaced(array $row, Register $register, Schema $schema, string $holder): void {
-		if ($row['slug'] === null) {
-			$this->slugHandler->logCollision(
-				register: $register,
-				schema: $schema,
-				slug: (string)$row['candidate'],
-				holderUuid: $holder,
-				objectUuid: $row['uuid'],
-				suffixed: null,
-				path: 'backfill'
-			);
-			return;
-		}
-
-		$this->slugHandler->logKeptSlug(
-			register: $register,
-			schema: $schema,
-			wanted: (string)$row['candidate'],
-			kept: $row['slug'],
-			holderUuid: $holder,
-			objectUuid: $row['uuid']
-		);
-	}//end logUnplaced()
-
-	/**
-	 * One step of the reslug walk: try to give a row the slug it wants.
-	 *
-	 * @param array    $row      The row.
-	 * @param Register $register The register.
-	 * @param Schema   $schema   The schema.
-	 * @param array    $current  uuid => slug the object holds right now, by reference.
-	 * @param array    $taken    slug => uuids holding it right now, by reference.
-	 *
-	 * @return bool True when the row moved to another slug.
-	 */
-	private function moveRow(array $row, Register $register, Schema $schema, array &$current, array &$taken): bool {
-		$candidate = $row['candidate'];
-		$uuid = $row['uuid'];
-		$own = $current[$uuid];
-		if ($candidate === null || $own === $candidate) {
-			return false;
-		}
-
-		$holderOf = fn (string $wanted): ?string => $this->holderOther(taken: $taken, slug: $wanted, uuid: $uuid);
-
-		if ($this->keepsSuffixedSlug(schema: $schema, own: $own, candidate: $candidate, holderOf: $holderOf) === true) {
-			return false;
-		}
-
-		$slug = $this->slugHandler->decide(
-			candidate: $candidate,
-			register: $register,
-			schema: $schema,
-			objectUuid: $uuid,
-			holderOf: $holderOf,
-			path: 'backfill',
-			log: false
-		);
-		if ($slug === null || $slug === $own) {
-			return false;
-		}
-
-		if ($own !== null) {
-			$taken[$own] = array_values(array_diff($taken[$own], [$uuid]));
-		}
-
-		$taken[$slug][] = $uuid;
-		$current[$uuid] = $slug;
-		return true;
-	}//end moveRow()
-
-	/**
-	 * Idempotence with the suffix on: an object that already carries a suffixed
-	 * variant of its taken candidate keeps it, instead of getting a fresh stamp
-	 * on every run.
-	 *
-	 * @param Schema      $schema    The schema.
-	 * @param string|null $own       The slug the object holds now.
-	 * @param string      $candidate The slug it wants.
-	 * @param callable    $holderOf  fn(string $slug): ?string, the other holder.
-	 *
-	 * @return bool True when the object keeps its suffixed slug.
-	 */
-	private function keepsSuffixedSlug(Schema $schema, ?string $own, string $candidate, callable $holderOf): bool {
-		$suffixOn = ((($schema->getConfiguration() ?? [])['objectSlugSuffix'] ?? false) === true);
-		return $suffixOn === true
-			&& $own !== null
-			&& $this->slugHandler->isSuffixOf(slug: $own, candidate: $candidate) === true
-			&& $holderOf($candidate) !== null
-			&& $holderOf($own) === null;
-	}//end keepsSuffixedSlug()
-
-	/**
-	 * The uuid of an object other than `$uuid` that holds `$slug`.
-	 *
-	 * @param array<string, list<string>> $taken slug => holders.
-	 * @param string                      $slug  The slug.
-	 * @param string                      $uuid  The asking object.
-	 *
-	 * @return string|null The other holder, or null when the slug is free for $uuid.
-	 */
-	private function holderOther(array $taken, string $slug, string $uuid): ?string {
-		foreach ($taken[$slug] ?? [] as $holder) {
-			if ($holder !== $uuid) {
-				return $holder;
-			}
-		}
-
-		return null;
-	}//end holderOther()
 }//end class

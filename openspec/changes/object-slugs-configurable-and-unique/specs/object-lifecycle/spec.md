@@ -142,8 +142,9 @@ Without `objectSlugSuffix: true` no suffix is ever appended, so slugs are reprod
 A save MUST keep the slug of an object that already holds a non-empty slug, for a
 schema with `objectSlugField`, whatever the payload contains: a changed source field, a
 different client-supplied slug, or a payload without any slug. Only an object without a
-slug gets one at save time. The slug of an existing object changes only through the
-backfill command in `--reslug` mode.
+slug gets one at save time. A set slug never changes afterwards, also not when
+`objectSlugField` is switched: the switch applies to objects that have no slug yet, and
+the backfill command has no rewrite mode (Robert Zondervan, 2026-10-23).
 
 #### Scenario: Renaming the source field keeps the slug
 - **GIVEN** a schema with `objectSlugField: "title"` and object A holding slug `hello-world`
@@ -243,8 +244,8 @@ object (ADR-009).
 
 ### Requirement: A slug lookup that matches more than one object in a register and schema MUST be refused as ambiguous
 
-A lookup by identifier within one register and schema matches the object's numeric id,
-uuid, slug or uri. When it matches more than one live row
+A lookup by identifier within one register and schema MUST match the object's numeric
+id, uuid, slug or uri. When it matches more than one live row
 (`MagicMapper::findInRegisterSchemaTable()`) and no single row is matched by its id or
 uuid, it MUST throw `MultipleObjectsReturnedException` and MUST NOT return either
 object. Before throwing, it MUST log a warning naming the register, the schema,
@@ -302,32 +303,29 @@ by that limit stays ambiguous.
 
 OpenRegister MUST provide `occ openregister:backfill-slugs <register> <schema>`, where
 each argument accepts an id, uuid or slug. The command MUST refuse, with a non-zero exit
-code and a message, a schema without `objectSlugField`. In default mode it MUST give a
-slug to every live object that has none, oldest object first (by `_created`, then
-`_id`), applying the same candidate, uniqueness and suffix rules as a save. It MUST NOT
-change an object that already holds a slug. With `--reslug` it MUST recompute the slug
-of every live object from the current source field, oldest object first, so an
-administrator can follow up a switch of `objectSlugField`. An object whose source field
-is empty keeps its current slug. An object whose recomputed slug another live object
-already holds MUST keep its current slug too (with `objectSlugSuffix` on it gets the
-suffixed slug instead), and the console, the plan and a log warning MUST report it as
-kept because of a collision; the run MUST NOT hand an object a slug that another object
-still carries. In both modes it MUST report every slug that more than
-one live object holds before the run, as a log warning and a console line naming the
-slug and the uuids. In default mode it MUST leave those duplicates unchanged. With
-`--dry-run` it MUST report what it would change without writing. The command MUST be
-idempotent: a second run in the same mode changes nothing. It writes the slug column
-directly, in transactions of at most 500 rows. It does not bump the object version, does
-not write a per-object audit-trail entry and does not dispatch object events. Instead,
-every run that is not a dry run and changes at least one slug MUST write one audit-trail entry
-(`slug.backfill.fill` or `slug.backfill.reslug`, on the register and schema) that lists
-the objects whose slug it changed as uuid, old slug and new slug, so a `--reslug` stays
-reconstructable. The entry lists at most the first 1,000 changes and carries the total
-(`changesTotal`) and `truncated`; the full list of a larger run MUST be written to the log.
-The entry is hash-chained and cannot be redacted afterwards, so it MUST copy nothing but uuid,
-old slug and new slug. A run that changes nothing, and a dry run, MUST NOT write an entry (the console summary still reports it). When the entry cannot be inserted, the run logs an error line with the changes instead, and the slugs already written stay. In `--reslug` the writes MUST be ordered so a row that vacates a slug is written before the row that takes it, and a write whose target slug is still held by a row whose own write was skipped MUST be skipped too, so a run never leaves two objects on one slug.
+code and a message, a schema without `objectSlugField`. It MUST give a slug to every
+live object that has none, oldest object first (by `_created`, then `_id`), applying
+the same candidate, uniqueness and suffix rules as a save. It MUST NOT change an object
+that already holds a slug, also not after `objectSlugField` was switched: the command
+has no option that rewrites set slugs (Robert Zondervan, 2026-10-23). It MUST report
+every slug that more than one live object holds before the run, as a log warning and a
+console line naming the slug and the uuids, and MUST leave those duplicates unchanged.
+With `--dry-run` it MUST report what it would change without writing. The command MUST
+be idempotent: a second run changes nothing. It writes the slug column directly, in
+transactions of at most 500 rows, and each write applies only when the row still has no
+slug (a row a save gave a slug meanwhile is skipped and logged). It does not bump the
+object version, does not write a per-object audit-trail entry and does not dispatch
+object events. Instead, every run that is not a dry run and changes at least one slug
+MUST write one audit-trail entry (`slug.backfill.fill`, on the register and schema)
+that lists the objects whose slug it set as uuid, old slug (null) and new slug. The
+entry lists at most the first 1,000 changes and carries the total (`changesTotal`) and
+`truncated`; the full list of a larger run MUST be written to the log. The entry is
+hash-chained and cannot be redacted afterwards, so it MUST copy nothing but uuid, old
+slug and new slug. A run that changes nothing, and a dry run, MUST NOT write an entry
+(the console summary still reports it). When the entry cannot be inserted, the run logs
+an error line with the changes instead, and the slugs already written stay.
 
-#### Scenario: Default mode fills only empty slugs
+#### Scenario: The backfill fills only empty slugs
 - **GIVEN** a schema with `objectSlugField: "title"` holding object A with slug `a-title` and object B without a slug and `title: "B Title"`
 - **WHEN** `occ openregister:backfill-slugs <register> <schema>` runs
 - **THEN** B's slug MUST be `b-title`
@@ -335,44 +333,38 @@ old slug and new slug. A run that changes nothing, and a dry run, MUST NOT write
 
 #### Scenario: Second run changes nothing
 - **GIVEN** the backfill has run once on a register and schema
-- **WHEN** it runs again in the same mode
-- **THEN** it MUST report zero changed objects
+- **WHEN** it runs again
+- **THEN** it MUST report zero assigned objects
 
 #### Scenario: Existing duplicates are logged, not changed
 - **GIVEN** objects A and B in the same register and schema both hold slug `hello-world`
-- **WHEN** the backfill runs in default mode
+- **WHEN** the backfill runs
 - **THEN** both MUST still hold `hello-world`
 - **AND** the output and the log MUST name `hello-world` with the uuids of A and B
 
-#### Scenario: Reslug follows a switched slug field
+#### Scenario: A switched slug field leaves set slugs alone
 - **GIVEN** a schema whose `objectSlugField` was switched from `kenmerk` to `title`
-- **AND** object A with `kenmerk: "K-1"`, `title: "Hello World"` and slug `k-1`
-- **WHEN** `occ openregister:backfill-slugs <register> <schema> --reslug` runs
-- **THEN** A's slug MUST be `hello-world`
-
-#### Scenario: Reslug keeps the slug of an object whose new slug is taken
-- **GIVEN** objects A (older) and B in one register and schema, both with `title: "Foo"`, B holding the slug `foo` and A holding `old-a`
-- **AND** `objectSlugSuffix` is off
-- **WHEN** `occ openregister:backfill-slugs <register> <schema> --reslug` runs
-- **THEN** B MUST still hold `foo` and A MUST still hold `old-a`
-- **AND** the plan MUST NOT list B, and the console and a log warning MUST name A as kept because of a collision with B
-- **AND** a second run MUST change nothing
+- **AND** object A with `kenmerk: "K-1"`, `title: "Hello World"` and slug `k-1`, and object B with `title: "Second"` and no slug
+- **WHEN** `occ openregister:backfill-slugs <register> <schema>` runs
+- **THEN** A's slug MUST still be `k-1`
+- **AND** B's slug MUST be `second`
+- **AND** the command MUST NOT offer an option that rewrites A's slug
 
 #### Scenario: A run leaves one audit-trail entry
-- **GIVEN** a `--reslug` run that changes the slugs of objects A and B
+- **GIVEN** a run that gives objects A and B their first slug
 - **WHEN** the run finishes
 - **THEN** exactly one audit-trail entry MUST exist for it, listing A and B with old and new slug
 - **AND** no object's version MUST have changed
 - **AND** a `--dry-run` MUST write no entry
 
 #### Scenario: A large run keeps the entry bounded
-- **GIVEN** a `--reslug` run that changes 2,500 slugs
+- **GIVEN** a run that assigns 2,500 slugs
 - **WHEN** the run finishes
 - **THEN** the audit-trail entry MUST list 1,000 changes, carry `changesTotal` 2500 and `truncated` true
 - **AND** the full list MUST be in the log, in parts of at most 1,000
 
 #### Scenario: A run that changes nothing writes no audit-trail entry
-- **GIVEN** a `--reslug` run after which every object already holds the slug it wants
+- **GIVEN** a run in which every object without a slug wants a slug that is taken
 - **WHEN** the run finishes
 - **THEN** no audit-trail entry MUST be written
 

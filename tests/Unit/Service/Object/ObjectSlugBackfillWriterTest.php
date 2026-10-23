@@ -128,7 +128,7 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		$this->cacheHandler->expects($this->once())->method('invalidateForObjectChange');
 
 		try {
-			$this->writer->write($this->plan(600), $this->register, $this->schema, 'fill', ['changed' => 600, 'skipped' => 0]);
+			$this->writer->write($this->plan(600), $this->register, $this->schema, ['assigned' => 600, 'skipped' => 0]);
 			$this->fail('the failing chunk must reach the caller');
 		} catch (SlugBackfillWriteException $e) {
 			$this->assertSame(500, $e->getApplied());
@@ -144,7 +144,7 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		// Review finding r2routes-f6: the entry holds the first 1,000; the log holds all 2,500.
 		$this->magicMapper->method('updateSlugColumn')->willReturn(1);
 
-		$this->writer->write($this->plan(2500), $this->register, $this->schema, 'reslug', ['skipped' => 0]);
+		$this->writer->write($this->plan(2500), $this->register, $this->schema, ['skipped' => 0]);
 
 		$this->assertCount(3, $this->infos);
 		$this->assertStringContainsString('part 3 of 3', $this->infos[2]);
@@ -157,7 +157,7 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 		$plan[0]['old'] = "bad-\xB1-slug";
 		$this->magicMapper->method('updateSlugColumn')->willReturn(1);
 
-		$this->writer->write($plan, $this->register, $this->schema, 'reslug', ['skipped' => 0]);
+		$this->writer->write($plan, $this->register, $this->schema, ['skipped' => 0]);
 
 		$this->assertCount(2, $this->infos);
 		$this->assertStringContainsString('part 1 of 2', $this->infos[0]);
@@ -167,42 +167,17 @@ class ObjectSlugBackfillWriterTest extends TestCase {
 	public function testASmallRunLogsNoChangeList(): void {
 		$this->magicMapper->method('updateSlugColumn')->willReturn(1);
 
-		$this->writer->write($this->plan(5), $this->register, $this->schema, 'fill', ['skipped' => 0]);
+		$this->writer->write($this->plan(5), $this->register, $this->schema, ['skipped' => 0]);
 
 		$this->assertSame([], $this->infos);
 	}//end testASmallRunLogsNoChangeList()
-
-	public function testAStepThatTakesTheSlugOfASkippedHolderIsNotWritten(): void {
-		// Review finding r2routes-f3: B vacates `wanted` and its write is skipped (the row
-		// changed); A must not be handed `wanted`, or two objects would hold it.
-		$plan = [
-			['uuid' => 'uuid-b', 'old' => 'wanted', 'new' => 'moved'],
-			['uuid' => 'uuid-a', 'old' => 'old-a', 'new' => 'wanted'],
-			['uuid' => 'uuid-c', 'old' => null, 'new' => 'free'],
-		];
-		$written = [];
-		$this->magicMapper->method('updateSlugColumn')->willReturnCallback(
-			function (Register $r, Schema $s, string $uuid, ?string $slug) use (&$written): int {
-				$written[] = $uuid;
-				return (($uuid === 'uuid-b') ? 0 : 1);
-			}
-		);
-
-		$skipped = $this->writer->write($plan, $this->register, $this->schema, 'reslug', ['skipped' => 0]);
-
-		$this->assertSame(['uuid-b', 'uuid-c'], $written, 'A is never written');
-		$this->assertSame(2, $skipped);
-		$this->assertCount(1, $this->audits);
-		$this->assertSame([['uuid' => 'uuid-c', 'old' => null, 'new' => 'free']], $this->audits[0]['changes']);
-		$this->assertSame(2, $this->audits[0]['summary']['skipped']);
-	}//end testAStepThatTakesTheSlugOfASkippedHolderIsNotWritten()
 
 	public function testAFailingFirstChunkWritesNoEntryAndEvictsNothing(): void {
 		$this->magicMapper->method('updateSlugColumn')->willThrowException(new RuntimeException('down'));
 		$this->cacheHandler->expects($this->never())->method('invalidateForObjectChange');
 
 		try {
-			$this->writer->write($this->plan(3), $this->register, $this->schema, 'fill', ['skipped' => 0]);
+			$this->writer->write($this->plan(3), $this->register, $this->schema, ['skipped' => 0]);
 			$this->fail('the failing chunk must reach the caller');
 		} catch (SlugBackfillWriteException $e) {
 			$this->assertSame(0, $e->getApplied());

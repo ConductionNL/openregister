@@ -54,8 +54,8 @@ Three defects cause this:
   matches more than one object (pre-existing duplicates) answers HTTP 409 with a JSON
   body, and logs both uuids. It no longer surfaces as an HTML 500.
 - **`occ openregister:backfill-slugs <register> <schema>`:** fills missing slugs for
-  existing objects, idempotent. `--reslug` rewrites existing slugs from the current
-  source field after an administrator switches the slug field. `--dry-run` reports
+  existing objects, idempotent. A set slug is never rewritten, also not after the slug
+  field is switched (Robert Zondervan, 2026-10-23: no rewrite flag). `--dry-run` reports
   without writing. Existing duplicates are logged and never silently changed.
 - **Schema editor:** the configuration tab gets an "Object slug field" dropdown over the
   schema's properties and an "Append a date-time suffix on collision" switch.

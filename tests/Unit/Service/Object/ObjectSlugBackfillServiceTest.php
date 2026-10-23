@@ -30,7 +30,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * Tests for the slug backfill: fill, reslug, dry run, duplicates.
+ * Tests for the slug backfill: fill, dry run, duplicates, audit.
  */
 class ObjectSlugBackfillServiceTest extends TestCase {
 
@@ -222,7 +222,7 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		);
 		$served = $rows;
 		$this->magicMapper->method('findSlugBackfillPage')->willReturnCallback(
-			function (Register $r, Schema $s, int $afterId, int $pageSize, bool $onlyEmpty) use (&$served): array {
+			function (Register $r, Schema $s, int $afterId) use (&$served): array {
 				$empty = array_values(array_filter($served, static fn (array $row): bool => $row['slug'] === null));
 				return $this->page(($afterId === 0) ? $empty : []);
 			}
@@ -240,225 +240,25 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$this->assertCount(2, $this->writes, 'run 2 wrote nothing more');
 	}
 
-	public function testASecondReslugRunChangesNothing(): void {
-		$rows = [
-			$this->row(1, self::UUID_A, 'Foo', 'old-a', '2020-01-01 00:00:00'),
-			$this->row(2, self::UUID_B, 'Foo', 'foo', '2021-01-01 00:00:00'),
-			$this->row(3, self::UUID_C, 'Renamed Title', 'old-title', '2022-01-01 00:00:00'),
-		];
-		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
-		$served = $rows;
-		$this->magicMapper->method('findSlugBackfillPage')->willReturnCallback(
-			function (Register $r, Schema $s, int $afterId) use (&$served): array {
-				return $this->page(($afterId === 0) ? $served : []);
-			}
-		);
-
-		$first = $this->service->run($this->register, $this->schema(), reslug: true);
-		$this->assertSame([['uuid' => self::UUID_C, 'old' => 'old-title', 'new' => 'renamed-title']], $first['plan']);
-		$served = $this->applyPlan($rows, $first['plan']);
-
-		$second = $this->service->run($this->register, $this->schema(), reslug: true);
-
-		$this->assertSame([], $second['plan']);
-		$this->assertSame(0, $second['summary']['changed']);
-		$this->assertCount(1, $this->writes, 'run 2 wrote nothing more');
-	}
-
-	public function testReslugKeepsTheCurrentSlugWhenTheNewOneIsHeldAndSaysSo(): void {
-		// Review finding backfill-f4: A (older, slug old-a) now wants "foo", B holds "foo".
-		// A keeps old-a, B keeps foo; nobody loses a slug and none is handed out twice.
-		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
-		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
-			$this->page([
-				$this->row(1, self::UUID_A, 'Foo', 'old-a', '2020-01-01 00:00:00'),
-				$this->row(2, self::UUID_B, 'Foo', 'foo', '2021-01-01 00:00:00'),
-			]),
-			$this->page([])
-		);
-
-		$result = $this->service->run($this->register, $this->schema(), reslug: true);
-
-		$this->assertSame([], $this->writes);
-		$this->assertSame([['uuid' => self::UUID_A, 'slug' => 'old-a', 'wanted' => 'foo', 'holder' => self::UUID_B]], $result['kept']);
-		$this->assertSame(1, $result['summary']['kept']);
-		$this->assertStringContainsString('keeps its slug "old-a"', $this->warnings[0]);
-	}
-
-	public function testReslugWritesTheRowThatVacatesASlugBeforeTheRowThatTakesIt(): void {
-		// Review finding r2routes-f3: A wants the slug B holds today; B moves away to its
-		// own new slug. B's write must come first, so no moment (and no failed or skipped
-		// write) leaves both objects on `wanted`.
-		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
-		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
-			$this->page([
-				$this->row(1, self::UUID_A, 'Wanted', 'old-a', '2020-01-01 00:00:00'),
-				$this->row(2, self::UUID_B, 'Moved', 'wanted', '2021-01-01 00:00:00'),
-			]),
-			$this->page([])
-		);
-
-		$result = $this->service->run($this->register, $this->schema(), reslug: true);
-
-		$this->assertSame(
-			[
-				['uuid' => self::UUID_B, 'old' => 'wanted', 'new' => 'moved'],
-				['uuid' => self::UUID_A, 'old' => 'old-a', 'new' => 'wanted'],
-			],
-			$result['plan']
-		);
-		$this->assertSame([], $result['kept']);
-	}
-
-	public function testReslugOrdersAChainOfTakersAfterTheirHolders(): void {
-		// A wants B's slug, B wants C's, C moves out: C, then B, then A.
-		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
-		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
-			$this->page([
-				$this->row(1, self::UUID_A, 'Bee', 'old-a', '2020-01-01 00:00:00'),
-				$this->row(2, self::UUID_B, 'Cee', 'bee', '2021-01-01 00:00:00'),
-				$this->row(3, self::UUID_C, 'Elsewhere', 'cee', '2022-01-01 00:00:00'),
-			]),
-			$this->page([])
-		);
-
-		$result = $this->service->run($this->register, $this->schema(), reslug: true, dryRun: true);
-
-		$this->assertSame([self::UUID_C, self::UUID_B, self::UUID_A], array_column($result['plan'], 'uuid'));
-		$this->assertSame([[self::UUID_C, 'elsewhere'], [self::UUID_B, 'cee'], [self::UUID_A, 'bee']], array_map(static fn (array $s): array => [$s['uuid'], $s['new']], $result['plan']));
-	}
-
-	public function testAReverseChainOfTwoThousandRowsIsPlannedInLinearWork(): void {
-		// Review finding r2routes-f10: row i holds `s<i>` and wants the slug of row i+1; only
-		// the last one moves freely. A full re-scan per pass took one move per pass (2,000
-		// passes over 2,000 rows, about two million decisions).
-		$total = 2000;
-		$rows = [];
-		for ($i = 1; $i <= $total; $i++) {
-			$wanted = ($i === $total) ? 'End' : 's' . ($i + 1);
-			$rows[] = $this->row($i, sprintf('00000000-0000-0000-0000-%012d', $i), $wanted, 's' . $i, sprintf('2020-01-01 00:%02d:%02d', intdiv($i, 60), ($i % 60)));
-		}
-
-		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
-		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls($this->page($rows, 2000 - 1), $this->page([]));
-		$decisions = 0;
-		$countingHandler = new class (
-			$this->magicMapper,
-			new MetadataHydrationHandler(logger: $this->createMock(LoggerInterface::class), cacheHandler: $this->createMock(CacheHandler::class)),
-			$this->createMock(RegisterMapper::class),
-			$this->createMock(LoggerInterface::class),
-			$decisions
-		) extends ObjectSlugHandler {
-			public function __construct(MagicMapper $m, MetadataHydrationHandler $h, RegisterMapper $r, LoggerInterface $l, public int &$decisions) {
-				parent::__construct(magicMapper: $m, hydrator: $h, registerMapper: $r, logger: $l);
-			}
-
-			public function decide(string $candidate, Register $register, Schema $schema, string $objectUuid, callable $holderOf, string $path, bool $log=true, ?string $suffixed=null): ?string {
-				$this->decisions++;
-				return parent::decide($candidate, $register, $schema, $objectUuid, $holderOf, $path, $log, $suffixed);
-			}
-		};
-		$service = new ObjectSlugBackfillService(
-			magicMapper: $this->magicMapper,
-			slugHandler: $countingHandler,
-			cacheHandler: $this->createMock(CacheHandler::class),
-			db: $this->createMock(IDBConnection::class),
-			auditTrail: $this->auditTrailMapper,
-			logger: $this->createMock(LoggerInterface::class)
-		);
-
-		$result = $service->run($this->register, $this->schema(), reslug: true, dryRun: true);
-
-		$this->assertCount($total, $result['plan']);
-		$this->assertSame('end', $result['plan'][0]['new'], 'the free row moves first, its taker after it');
-		$this->assertSame('s2000', $result['plan'][1]['new']);
-		$this->assertLessThan(4 * $total, $countingHandler->decisions, 'linear work, not rows times passes');
-	}
-
-	/**
-	 * Reslug a ring: row i holds slug `s<i>` and wants the slug of the next row.
-	 *
-	 * @param int  $size   Rows in the ring.
-	 * @param bool $suffix Whether objectSlugSuffix is on.
-	 *
-	 * @return array The result of a dry run.
-	 */
-	private function reslugRing(int $size, bool $suffix): array {
-		$uuids = [self::UUID_A, self::UUID_B, self::UUID_C];
-		$rows = [];
-		for ($i = 0; $i < $size; $i++) {
-			$wanted = 's' . (($i + 1) % $size);
-			$rows[] = $this->row($i + 1, $uuids[$i], $wanted, 's' . $i, sprintf('2020-01-0%d 00:00:00', $i + 1));
-		}
-
-		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
-		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls($this->page($rows), $this->page([]));
-
-		return $this->service->run($this->register, $this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => $suffix]), reslug: true, dryRun: true);
-	}//end reslugRing()
-
-	/**
-	 * @return array<string, array{0: int, 1: bool}> Ring size and suffix switch.
-	 */
-	public static function rings(): array {
-		return [
-			'swap, suffix on' => [2, true],
-			'three-ring, suffix on' => [3, true],
-			'swap, suffix off' => [2, false],
-			'three-ring, suffix off' => [3, false],
-		];
-	}//end rings()
-
-	/**
-	 * Review finding pp-f1: no write order is safe for a cycle, so none of its rows is written.
-	 *
-	 * @dataProvider rings
-	 */
-	public function testARingOfRowsWantingEachOthersSlugsIsKeptNotWritten(int $size, bool $suffix): void {
-		$result = $this->reslugRing($size, $suffix);
-
-		$this->assertSame([], $result['plan'], 'no step of a cycle is planned, so none can be written first');
-		$this->assertSame(0, $result['summary']['changed']);
-		$this->assertSame($size, $result['summary']['unchanged']);
-		$this->assertSame($size, $result['summary']['kept']);
-		$this->assertCount($size, $result['kept']);
-	}//end testARingOfRowsWantingEachOthersSlugsIsKeptNotWritten()
-
-	public function testAnUnrelatedRowStillMovesBesideARing(): void {
-		// The swap (suffix on) is kept; the unrelated row beside it is still written.
-		$rows = [
-			$this->row(1, self::UUID_A, 's1', 's0', '2020-01-01 00:00:00'),
-			$this->row(2, self::UUID_B, 's0', 's1', '2020-01-02 00:00:00'),
-			$this->row(3, self::UUID_C, 'Free Row', 'old-c', '2020-01-03 00:00:00'),
-		];
-		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
-		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls($this->page($rows), $this->page([]));
-
-		$result = $this->service->run($this->register, $this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => true]), reslug: true, dryRun: true);
-
-		$this->assertSame([['uuid' => self::UUID_C, 'old' => 'old-c', 'new' => 'free-row']], $result['plan'], 'the unrelated row still moves');
-		$this->assertSame(1, $result['summary']['changed']);
-		$this->assertSame(2, $result['summary']['kept']);
-	}//end testAnUnrelatedRowStillMovesBesideARing()
-
 	public function testARunWritesOneAuditEntryWithTheOldAndNewSlugs(): void {
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$this->magicMapper->method('findAllSlugs')->willReturn([]);
 		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
 			$this->page([
-				$this->row(1, self::UUID_A, 'Hello', 'k-1'),
-				$this->row(2, self::UUID_B, 'World', 'k-2'),
+				$this->row(1, self::UUID_A, 'Hello'),
+				$this->row(2, self::UUID_B, 'World'),
 			]),
 			$this->page([])
 		);
 
-		$this->service->run($this->register, $this->schema(), reslug: true);
+		$this->service->run($this->register, $this->schema());
 
 		$this->assertCount(1, $this->audits);
-		$this->assertSame('reslug', $this->audits[0]['mode']);
+		$this->assertSame('fill', $this->audits[0]['mode']);
 		$this->assertSame(
 			[
-				['uuid' => self::UUID_A, 'old' => 'k-1', 'new' => 'hello'],
-				['uuid' => self::UUID_B, 'old' => 'k-2', 'new' => 'world'],
+				['uuid' => self::UUID_A, 'old' => null, 'new' => 'hello'],
+				['uuid' => self::UUID_B, 'old' => null, 'new' => 'world'],
 			],
 			$this->audits[0]['changes']
 		);
@@ -481,13 +281,15 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 
 	public function testARunThatChangesNothingWritesNoAuditEntry(): void {
 		// Review finding r2routes-f9: nothing changed, nothing to record in the hash chain.
+		// The only row without a slug wants one that is taken, so the plan is empty.
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
+		$this->magicMapper->method('findAllSlugs')->willReturn(['hello' => [self::UUID_B]]);
 		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
-			$this->page([$this->row(1, self::UUID_A, 'Hello', 'hello')]),
+			$this->page([$this->row(1, self::UUID_A, 'Hello')]),
 			$this->page([])
 		);
 
-		$result = $this->service->run($this->register, $this->schema(), reslug: true);
+		$result = $this->service->run($this->register, $this->schema());
 
 		$this->assertSame([], $result['plan']);
 		$this->assertSame([], $this->audits);
@@ -543,61 +345,22 @@ class ObjectSlugBackfillServiceTest extends TestCase {
 		$this->assertStringContainsString(self::UUID_A . ', ' . self::UUID_B, $this->warnings[0]);
 	}
 
-	public function testReslugRecomputesFromTheSourceAndLeavesAnExistingDuplicateAlone(): void {
-		$this->magicMapper->method('findDuplicateSlugs')->willReturn(['bulk-item' => [self::UUID_A, self::UUID_B]]);
-		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
-			$this->page([
-				$this->row(1, self::UUID_A, 'Bulk Item', 'bulk-item'),
-				$this->row(2, self::UUID_B, 'Bulk Item', 'bulk-item'),
-				$this->row(3, self::UUID_C, 'Renamed Title', 'old-title'),
-			]),
-			$this->page([])
-		);
-
-		$result = $this->service->run($this->register, $this->schema(), reslug: true);
-
-		// Both duplicates hold the slug they want, so neither moves; they stay reported by the duplicate report.
-		$this->assertSame([[self::UUID_C, 'renamed-title']], $this->writes);
-		$this->assertSame(1, $result['summary']['changed']);
-		$this->assertSame(2, $result['summary']['unchanged']);
-	}
-
-	public function testReslugKeepsTheSlugOfAnObjectWithAnEmptySource(): void {
+	public function testASwitchedSlugFieldLeavesSetSlugsAlone(): void {
+		// Robert Zondervan (2026-10-23): no rewrite flag. After switching the slug field,
+		// only objects without a slug are read; a set slug is never recomputed.
 		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
-		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
-			$this->page([
-				$this->row(1, self::UUID_A, '', 'kept'),
-				$this->row(2, self::UUID_B, 'Kept', null),
-			]),
-			$this->page([])
+		$this->magicMapper->method('findAllSlugs')->willReturn(['k-1' => [self::UUID_A]]);
+		$pages = [$this->page([$this->row(2, self::UUID_B, 'Hello World')]), $this->page([])];
+		$this->magicMapper->method('findSlugBackfillPage')->willReturnCallback(
+			function () use (&$pages): array {
+				return array_shift($pages) ?? $this->page([]);
+			}
 		);
 
-		$this->service->run($this->register, $this->schema(), reslug: true);
+		$result = $this->service->run($this->register, $this->schema());
 
-		// A keeps "kept" and reserves it, so B (whose source slugifies to "kept") collides.
-		$this->assertSame([], $this->writes);
-	}
-
-	public function testReslugWithSuffixKeepsAnExistingSuffixedSlug(): void {
-		// Review finding: a second --reslug run must change nothing, also when
-		// objects carry a suffix stamped on an earlier run.
-		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
-		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
-			$this->page([
-				$this->row(1, self::UUID_A, 'Same', 'same'),
-				$this->row(2, self::UUID_B, 'Same', 'same-20250101000000'),
-			]),
-			$this->page([])
-		);
-
-		$result = $this->service->run(
-			$this->register,
-			$this->schema(['objectSlugField' => 'title', 'objectSlugSuffix' => true]),
-			reslug: true
-		);
-
-		$this->assertSame([], $this->writes);
-		$this->assertSame(0, $result['summary']['changed']);
+		$this->assertSame([[self::UUID_B, 'hello-world']], $this->writes, 'only the object without a slug is written');
+		$this->assertSame(['scanned' => 1, 'assigned' => 1, 'collisions' => 0, 'unchanged' => 0, 'duplicates' => 0, 'skipped' => 0], $result['summary']);
 	}
 
 	public function testOldestByCreatedWinsEvenWithAHigherId(): void {

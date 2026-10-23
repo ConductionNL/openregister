@@ -6964,7 +6964,6 @@ class MagicMapper extends AbstractObjectMapper {
 	 * @param Schema   $schema     The schema.
 	 * @param int      $afterId    Last `_id` of the previous page (0 for the first).
 	 * @param int      $pageSize   Rows per page.
-	 * @param bool     $onlyEmpty  Only rows without a slug.
 	 *
 	 * @return array{
 	 *     rows: list<array{id: int, uuid: string, slug: string|null, created: string|null, object: array}>,
@@ -6979,7 +6978,6 @@ class MagicMapper extends AbstractObjectMapper {
 		Schema $schema,
 		int $afterId,
 		int $pageSize,
-		bool $onlyEmpty,
 	): array {
 		if ($this->existsTableForRegisterSchema(register: $register, schema: $schema) === false) {
 			return ['rows' => [], 'fetched' => 0, 'lastId' => $afterId];
@@ -6995,14 +6993,13 @@ class MagicMapper extends AbstractObjectMapper {
 			->andWhere($qb->expr()->isNull('t.' . self::METADATA_PREFIX . 'deleted'))
 			->orderBy('t.' . $idCol, 'ASC')
 			->setMaxResults($pageSize);
-		if ($onlyEmpty === true) {
-			$qb->andWhere(
-				$qb->expr()->orX(
-					$qb->expr()->isNull('t.' . $slugCol),
-					$qb->expr()->eq('t.' . $slugCol, $qb->createNamedParameter(''))
-				)
-			);
-		}
+		// Only rows without a slug: a set slug is never rewritten by the backfill.
+		$qb->andWhere(
+			$qb->expr()->orX(
+				$qb->expr()->isNull('t.' . $slugCol),
+				$qb->expr()->eq('t.' . $slugCol, $qb->createNamedParameter(''))
+			)
+		);
 
 		$result = $qb->executeQuery();
 		$page = [];

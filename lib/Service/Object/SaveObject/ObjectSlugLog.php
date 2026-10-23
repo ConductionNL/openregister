@@ -152,49 +152,6 @@ class ObjectSlugLog {
 	}//end suffixedInstead()
 
 	/**
-	 * Log a `--reslug` object that keeps its slug because the slug it now wants is held.
-	 *
-	 * @param Register $register   The register.
-	 * @param Schema   $schema     The schema.
-	 * @param string   $wanted     The slug the object now wants.
-	 * @param string   $kept       The slug it keeps.
-	 * @param string   $holderUuid Who holds the wanted slug.
-	 * @param string   $objectUuid The object.
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
-	 */
-	public function keptSlug(
-		Register $register,
-		Schema $schema,
-		string $wanted,
-		string $kept,
-		string $holderUuid,
-		string $objectUuid,
-	): void {
-		$this->logger->warning(
-			message: sprintf(
-				'[ObjectSlug] Slug "%s" is already held by object %s in register %s (%s) / schema %s (%s); object %s keeps its slug "%s"',
-				$wanted,
-				$holderUuid,
-				(string)$register->getSlug(),
-				(string)$register->getId(),
-				(string)$schema->getSlug(),
-				(string)$schema->getId(),
-				$objectUuid,
-				$kept
-			),
-			context: $this->context(register: $register, schema: $schema, path: 'backfill') + [
-				'slug' => $wanted,
-				'objectUuid' => $objectUuid,
-				'holderUuid' => $holderUuid,
-				'keptSlug' => $kept,
-			]
-		);
-	}//end keptSlug()
-
-	/**
 	 * Log a client slug that was ignored because the object's slug is frozen.
 	 *
 	 * @param Register|null $register   The register.

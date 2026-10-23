@@ -195,8 +195,10 @@ class BackfillObjectSlugsCommandTest extends TestCase {
 
 	public function testADryRunPrintsThePlanAndWritesNothing(): void {
 		$this->schemaMapper->method('findBySlugInIds')->willReturn($this->schema());
-		$this->magicMapper->method('findDuplicateSlugs')->willReturn([]);
-		$this->magicMapper->method('findAllSlugs')->willReturn([]);
+		$uuidB = '00000000-0000-0000-0000-00000000000b';
+		$uuidC = '00000000-0000-0000-0000-00000000000c';
+		$this->magicMapper->method('findDuplicateSlugs')->willReturn(['dup' => [$uuidB, $uuidC]]);
+		$this->magicMapper->method('findAllSlugs')->willReturn(['dup' => [$uuidB, $uuidC]]);
 		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
 			['rows' => [['id' => 1, 'uuid' => self::UUID_A, 'slug' => null, 'created' => null, 'object' => ['title' => 'Hello World']]], 'fetched' => 1, 'lastId' => 1],
 			['rows' => [], 'fetched' => 0, 'lastId' => 1]
@@ -208,29 +210,17 @@ class BackfillObjectSlugsCommandTest extends TestCase {
 		$exit = $tester->execute(['register' => 'woo', 'schema' => 'convenanten', '--dry-run' => true]);
 
 		$this->assertSame(0, $exit);
-		$this->assertStringContainsString(self::UUID_A . ': "" -> "hello-world"', $tester->getDisplay());
-		$this->assertStringContainsString('dry run', $tester->getDisplay());
-	}
-
-	public function testAReslugPrintsAKeptObjectAndTheDuplicateLine(): void {
-		$uuidB = '00000000-0000-0000-0000-00000000000b';
-		$this->schemaMapper->method('findBySlugInIds')->willReturn($this->schema());
-		$this->magicMapper->method('findDuplicateSlugs')->willReturn(['dup' => [self::UUID_A, $uuidB]]);
-		$this->magicMapper->method('findSlugBackfillPage')->willReturnOnConsecutiveCalls(
-			['rows' => [
-				['id' => 1, 'uuid' => self::UUID_A, 'slug' => 'old-a', 'created' => '2020-01-01 00:00:00', 'object' => ['title' => 'Foo']],
-				['id' => 2, 'uuid' => $uuidB, 'slug' => 'foo', 'created' => '2021-01-01 00:00:00', 'object' => ['title' => 'Foo']],
-			], 'fetched' => 2, 'lastId' => 2],
-			['rows' => [], 'fetched' => 0, 'lastId' => 2]
-		);
-
-		$tester = $this->tester();
-		$exit = $tester->execute(['register' => 'woo', 'schema' => 'convenanten', '--reslug' => true, '--dry-run' => true]);
-
-		$this->assertSame(0, $exit);
 		$display = $tester->getDisplay();
-		$this->assertStringContainsString('duplicate "dup": ' . self::UUID_A . ', ' . $uuidB, $display);
-		$this->assertStringContainsString('kept ' . self::UUID_A . ': "old-a" (wanted "foo", held by ' . $uuidB . ')', $display);
-		$this->assertStringContainsString('kept=1', $display);
+		$this->assertStringContainsString('duplicate "dup": ' . $uuidB . ', ' . $uuidC, $display);
+		$this->assertStringContainsString(self::UUID_A . ': "" -> "hello-world"', $display);
+		$this->assertStringContainsString('scanned=1 assigned=1 collisions=0 unchanged=0 duplicates=1 skipped=0 (dry run', $display);
 	}
+
+	public function testTheCommandHasNoRewriteOption(): void {
+		// Robert Zondervan (2026-10-23): only empty slugs are filled; there is no flag that rewrites set slugs.
+		$command = new BackfillObjectSlugsCommand($this->registerMapper, $this->schemaMapper, $this->createMock(ObjectSlugBackfillService::class));
+
+		$this->assertSame(['dry-run'], array_keys($command->getDefinition()->getOptions()));
+	}
+
 }//end class

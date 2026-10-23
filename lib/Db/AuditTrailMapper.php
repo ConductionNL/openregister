@@ -3422,14 +3422,13 @@ class AuditTrailMapper extends QBMapper {
 	/**
 	 * Create one immutable, hash-chained audit record for a slug backfill run.
 	 *
-	 * The backfill (`occ openregister:backfill-slugs`, with or without
-	 * `--reslug`) writes the slug column directly: no per-object version and no
+	 * The backfill (`occ openregister:backfill-slugs`) writes the slug column directly: no per-object version and no
 	 * per-object audit row. This single entry per run keeps the change
 	 * reconstructable: it lists the objects whose slug changed with the old and
 	 * the new value (bounded, see slugBackfillResultSummary()). Hangs on the register and schema, not on an object, like
 	 * {@see createExportEntry()}.
 	 *
-	 * @param string $mode `fill` or `reslug`.
+	 * @param string $mode The run mode, `fill` (the only one: a set slug is never rewritten).
 	 * @param list<array{uuid: string, old: ?string, new: ?string}> $changes Every slug the run wrote (the entry keeps the first 1,000).
 	 * @param array<string, mixed> $summary The run's counters.
 	 * @param int|null $register Register id.
@@ -3480,7 +3479,7 @@ class AuditTrailMapper extends QBMapper {
 	 * uuid, old and new slug, next to the total count; the caller logs the full
 	 * list.
 	 *
-	 * @param string $mode    `fill` or `reslug`.
+	 * @param string $mode    The run mode, `fill`.
 	 * @param array  $changes Every slug the run wrote.
 	 * @param array  $summary The run's counters.
 	 *

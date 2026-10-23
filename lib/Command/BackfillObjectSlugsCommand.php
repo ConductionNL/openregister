@@ -3,9 +3,8 @@
 /**
  * OpenRegister backfill-slugs command
  *
- * Fills object slugs for the existing objects of one register and schema,
- * or recomputes them after the slug field was switched (#4037). Idempotent:
- * a second run in the same mode changes nothing.
+ * Fills object slugs for the existing objects of one register and schema
+ * that have none yet (#4037). Idempotent: a second run changes nothing.
  *
  * @category Command
  * @package  OCA\OpenRegister\Command
@@ -42,7 +41,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
 
 /**
- * `occ openregister:backfill-slugs <register> <schema> [--reslug] [--dry-run]`.
+ * `occ openregister:backfill-slugs <register> <schema> [--dry-run]`.
  *
  * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
  */
@@ -75,25 +74,12 @@ class BackfillObjectSlugsCommand extends Command {
 		$this->setName(name: 'openregister:backfill-slugs')
 			->setDescription(
 				'Fill missing object slugs of one register and schema from the schema\'s objectSlugField; '
-				. 'by default existing slugs are left alone and duplicates are reported, not changed. '
+				. 'existing slugs are never changed (also not after switching the slug field) and duplicates are reported, not changed. '
 				. 'No per-object version or event is written; a run that changes slugs writes one audit-trail entry that lists them. '
-				. 'With --reslug existing slugs ARE rewritten, and links built on the old slugs stop working.'
+				. 'Run with --dry-run first'
 			)
 			->addArgument('register', InputArgument::REQUIRED, 'Register (id, uuid or slug)')
 			->addArgument('schema', InputArgument::REQUIRED, 'Schema in that register (id, uuid or slug)')
-			->addOption(
-				'reslug',
-				null,
-				InputOption::VALUE_NONE,
-				'Recompute every slug from the current objectSlugField (after switching the field); '
-				. 'objects with an empty source keep their slug. This is the only way a set slug changes: '
-				. 'links, bookmarks and external references that use an old slug stop working. '
-				. 'An object whose new slug another object already holds keeps its current slug (with '
-				. 'objectSlugSuffix it gets the suffixed slug) and is reported as kept. A run that is not a '
-				. 'dry run and changes at least one slug writes one audit-trail entry listing the old and new '
-				. 'slug of the changed objects (the first 1,000; the log has the rest). '
-				. 'Run with --dry-run first'
-			)
 			->addOption('dry-run', null, InputOption::VALUE_NONE, 'Print the plan without writing anything');
 	}//end configure()
 
@@ -109,7 +95,6 @@ class BackfillObjectSlugsCommand extends Command {
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$reslug = (bool)$input->getOption('reslug');
 		$dryRun = (bool)$input->getOption('dry-run');
 
 		try {
@@ -140,7 +125,7 @@ class BackfillObjectSlugsCommand extends Command {
 			return Command::FAILURE;
 		}
 
-		$result = $this->runOrReport(register: $register, schema: $schema, reslug: $reslug, dryRun: $dryRun, output: $output);
+		$result = $this->runOrReport(register: $register, schema: $schema, dryRun: $dryRun, output: $output);
 		if ($result === null) {
 			return Command::FAILURE;
 		}
@@ -160,18 +145,6 @@ class BackfillObjectSlugsCommand extends Command {
 			);
 		}
 
-		foreach ($result['kept'] as $kept) {
-			$output->writeln(
-				sprintf(
-					'<comment>kept %s: "%s" (wanted "%s", held by %s)</comment>',
-					$kept['uuid'],
-					$kept['slug'],
-					$kept['wanted'],
-					$kept['holder']
-				)
-			);
-		}
-
 		$summary = $result['summary'];
 		$dryRunNote = '';
 		if ($dryRun === true) {
@@ -180,12 +153,10 @@ class BackfillObjectSlugsCommand extends Command {
 
 		$output->writeln(
 			sprintf(
-				'<info>scanned=%d assigned=%d changed=%d collisions=%d kept=%d unchanged=%d duplicates=%d skipped=%d%s</info>',
+				'<info>scanned=%d assigned=%d collisions=%d unchanged=%d duplicates=%d skipped=%d%s</info>',
 				$summary['scanned'],
 				$summary['assigned'],
-				$summary['changed'],
 				$summary['collisions'],
-				$summary['kept'],
 				$summary['unchanged'],
 				$summary['duplicates'],
 				$summary['skipped'],
@@ -201,17 +172,16 @@ class BackfillObjectSlugsCommand extends Command {
 	 *
 	 * @param Register        $register The register.
 	 * @param Schema          $schema   The schema.
-	 * @param bool            $reslug   Whether to rewrite existing slugs.
 	 * @param bool            $dryRun   Whether to write nothing.
 	 * @param OutputInterface $output   Console output stream.
 	 *
 	 * @return array|null The result of the run, or null after an error was printed.
 	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `reslug` and `dryRun` are the two documented command options.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) `dryRun` is the documented command option.
 	 */
-	private function runOrReport(Register $register, Schema $schema, bool $reslug, bool $dryRun, OutputInterface $output): ?array {
+	private function runOrReport(Register $register, Schema $schema, bool $dryRun, OutputInterface $output): ?array {
 		try {
-			return $this->backfill->run(register: $register, schema: $schema, reslug: $reslug, dryRun: $dryRun);
+			return $this->backfill->run(register: $register, schema: $schema, dryRun: $dryRun);
 		} catch (\InvalidArgumentException $e) {
 			$output->writeln('<error>' . $e->getMessage() . '</error>');
 		} catch (SlugBackfillWriteException $e) {

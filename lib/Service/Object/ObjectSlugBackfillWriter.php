@@ -48,6 +48,11 @@ class ObjectSlugBackfillWriter {
 	private const WRITE_CHUNK = 500;
 
 	/**
+	 * The audit action suffix of a run: the backfill only fills empty slugs.
+	 */
+	public const MODE = 'fill';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param MagicMapper      $magicMapper  Writes the slug column.
@@ -69,17 +74,14 @@ class ObjectSlugBackfillWriter {
 	 * Write a plan in chunked transactions, evict the schema's cached objects and
 	 * record the run in the audit trail (one entry when at least one slug changed).
 	 *
-	 * Each write only applies when the row still holds the slug the plan was
-	 * made against; a row a normal save changed meanwhile is skipped and logged,
-	 * and so is every later step that wanted the slug that row still holds. The
-	 * plan lists a row that vacates a slug before the row that takes it.
-	 * A chunk that fails is rolled back, the chunks before it stay written and
-	 * the audit entry lists exactly those.
+	 * Each write only applies when the row still has no slug, as the plan was
+	 * made against; a row a normal save gave a slug meanwhile is skipped and
+	 * logged. A chunk that fails is rolled back, the chunks before it stay
+	 * written and the audit entry lists exactly those.
 	 *
 	 * @param list<array{uuid: string, old: ?string, new: ?string}> $plan The planned writes.
 	 * @param Register $register The register.
 	 * @param Schema   $schema   The schema.
-	 * @param string   $mode     `fill` or `reslug`.
 	 * @param array    $summary  The run's counters (copied into the audit entry).
 	 *
 	 * @return int The number of planned writes skipped because the row changed.
@@ -89,14 +91,13 @@ class ObjectSlugBackfillWriter {
 	 *
 	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
 	 */
-	public function write(array $plan, Register $register, Schema $schema, string $mode, array $summary): int {
+	public function write(array $plan, Register $register, Schema $schema, array $summary): int {
 		$skipped = 0;
 		$applied = [];
 		$failure = null;
-		$stillHeld = [];
 		try {
 			foreach (array_chunk($plan, self::WRITE_CHUNK) as $chunk) {
-				$this->writeChunk(chunk: $chunk, register: $register, schema: $schema, applied: $applied, skipped: $skipped, stillHeld: $stillHeld);
+				$this->writeChunk(chunk: $chunk, register: $register, schema: $schema, applied: $applied, skipped: $skipped);
 			}
 		} catch (Throwable $e) {
 			$failure = $e;
@@ -106,7 +107,7 @@ class ObjectSlugBackfillWriter {
 		// entry must list it and the cache must not keep serving the old slugs. A run
 		// that changed nothing leaves no entry (the console summary still says so).
 		if ($applied !== []) {
-			$this->recordAudit(applied: $applied, register: $register, schema: $schema, mode: $mode, summary: array_merge($summary, ['skipped' => $skipped]));
+			$this->recordAudit(applied: $applied, register: $register, schema: $schema, summary: array_merge($summary, ['skipped' => $skipped]));
 			$this->evictCache(register: $register, schema: $schema);
 		}
 
@@ -125,39 +126,16 @@ class ObjectSlugBackfillWriter {
 	 * @param Schema   $schema   The schema.
 	 * @param array    $applied  Steps that were written, by reference.
 	 * @param int      $skipped  Steps skipped because the row changed, by reference.
-	 * @param array    $stillHeld slug => uuid of a skipped step that still holds it, by reference.
 	 *
 	 * @return void
 	 *
 	 * @throws Throwable When a write fails (the chunk is rolled back first).
 	 */
-	private function writeChunk(array $chunk, Register $register, Schema $schema, array &$applied, int &$skipped, array &$stillHeld): void {
+	private function writeChunk(array $chunk, Register $register, Schema $schema, array &$applied, int &$skipped): void {
 		$written = [];
 		$this->db->beginTransaction();
 		try {
 			foreach ($chunk as $step) {
-				// A step that takes a slug whose holder was not moved would put two
-				// objects on it: skip it too, and keep what it would have vacated reserved.
-				if ($step['new'] !== null && isset($stillHeld[$step['new']]) === true) {
-					$skipped++;
-					if ($step['old'] !== null) {
-						$stillHeld[$step['old']] = $step['uuid'];
-					}
-
-					$this->logger->warning(
-						sprintf(
-							'[ObjectSlug] Backfill skipped object %s in register %s / schema %s: slug "%s" is still held by object %s, whose write was skipped',
-							$step['uuid'],
-							(string)$register->getSlug(),
-							(string)$schema->getSlug(),
-							$step['new'],
-							$stillHeld[$step['new']]
-						),
-						['app' => 'openregister', 'path' => 'backfill', 'objectUuid' => $step['uuid']]
-					);
-					continue;
-				}
-
 				$updated = $this->magicMapper->updateSlugColumn(
 					register: $register,
 					schema: $schema,
@@ -171,10 +149,6 @@ class ObjectSlugBackfillWriter {
 				}
 
 				$skipped++;
-				if ($step['old'] !== null) {
-					$stillHeld[$step['old']] = $step['uuid'];
-				}
-
 				$this->logger->warning(
 					sprintf(
 						'[ObjectSlug] Backfill skipped object %s in register %s / schema %s: its slug changed while the backfill ran',
@@ -234,16 +208,15 @@ class ObjectSlugBackfillWriter {
 	 * @param list<array{uuid: string, old: ?string, new: ?string}> $applied The writes that were applied.
 	 * @param Register $register The register.
 	 * @param Schema   $schema   The schema.
-	 * @param string   $mode     `fill` or `reslug`.
 	 * @param array    $summary  The run's counters.
 	 *
 	 * @return void
 	 */
-	private function recordAudit(array $applied, Register $register, Schema $schema, string $mode, array $summary): void {
+	private function recordAudit(array $applied, Register $register, Schema $schema, array $summary): void {
 		$this->logLargeRun(applied: $applied, register: $register, schema: $schema);
 		try {
 			$this->auditTrail->createSlugBackfillEntry(
-				mode: $mode,
+				mode: self::MODE,
 				changes: $applied,
 				summary: $summary,
 				register: (int)$register->getId(),
@@ -311,23 +284,4 @@ class ObjectSlugBackfillWriter {
 			);
 		}
 	}//end logLargeRun()
-
-	/**
-	 * The audit action suffix of a run.
-	 *
-	 * @param bool $reslug Whether the run was a `--reslug`.
-	 *
-	 * @return string `reslug` or `fill`.
-	 *
-	 * @spec openspec/changes/object-slugs-configurable-and-unique/specs/object-lifecycle/spec.md#requirement-occ-openregisterbackfill-slugs-must-fill-missing-slugs-idempotently-and-must-not-silently-change-duplicates
-	 *
-	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Maps the command option to a name.
-	 */
-	public function modeName(bool $reslug): string {
-		if ($reslug === true) {
-			return 'reslug';
-		}
-
-		return 'fill';
-	}//end modeName()
 }//end class

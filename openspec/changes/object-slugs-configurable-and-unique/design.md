@@ -53,10 +53,11 @@ control to that tab from its own `src/`.
 Decisions taken outside this document and treated as fixed: Robert Zondervan
 (2026-10-19): uniqueness per register + schema, OpenCatalogi #1592 guards catalogue
 scope; a slug is frozen at rename; the slug source is configurable per schema. Remco
-Damhuis (2026-10-22): a backfill for existing objects. Working assumptions, pending
-Robert's answer (issue plan Q5–Q8): an ambiguous lookup is an error, the backfill has a
-default mode and `--reslug`, client slugs follow the same rules, and a re-import with a
-new uuid waits for the slug.
+Damhuis (2026-10-22): a backfill for existing objects. Robert Zondervan (2026-10-23,
+issue plan Q5–Q7): an ambiguous lookup is an error; the backfill only fills empty slugs
+and gets no rewrite flag, so a switch of `objectSlugField` applies to objects without a
+slug only; client slugs follow the same rules and never overwrite a set slug. Working
+assumption, pending Robert's answer (Q8): a re-import with a new uuid waits for the slug.
 
 ## Goals / Non-Goals
 
@@ -271,7 +272,7 @@ not see the rows, so it would need a second query. The mapper already holds both
 ### D11 — `occ openregister:backfill-slugs`
 
 ```
-occ openregister:backfill-slugs <register> <schema> [--reslug] [--dry-run]
+occ openregister:backfill-slugs <register> <schema> [--dry-run]
 ```
 
 - `<register>`, `<schema>`: id, uuid or slug. The schema must be in the register.
@@ -282,21 +283,18 @@ occ openregister:backfill-slugs <register> <schema> [--reslug] [--dry-run]
   so it can be unit-tested.
 - **Duplicate report first:** one query
   `SELECT _slug, _uuid … WHERE _deleted IS NULL AND _slug IN (SELECT _slug … GROUP BY _slug HAVING COUNT(*) > 1)`.
-  Each duplicate goes out as a console line and as a backfill-duplicate warning (D7). In
-  default mode these rows are not touched.
-- **Default mode:** pages over live rows with an empty slug, oldest first
+  Each duplicate goes out as a console line and as a backfill-duplicate warning (D7).
+  These rows are not touched.
+- **Fill:** pages over live rows with an empty slug, oldest first
   (`_created`, then `_id`, keyset pagination, 500 rows a page). Each row gets
   `ObjectSlugHandler::candidate()`, then the uniqueness and suffix rules against an
   in-memory set of all live slugs in the table, loaded once and updated as slugs are
-  assigned.
-- **`--reslug`:** computes the target slug of every live row oldest first. Every stored
-  slug stays reserved for its holder until the holder moves, so no object is given a
-  slug another object still carries. A row whose source is empty keeps its slug. A row
-  whose new slug is held by another object keeps its current slug (reported as kept
-  because of a collision) or, with the suffix on, gets the suffixed slug. The walk
-  repeats until nothing moves, so an object waiting for another to vacate a slug is
-  placed in a later pass and a second run finds nothing to do. The plan is written in
-  transactions of 500 rows.
+  assigned. The plan is written in transactions of 500 rows; each write applies only
+  when the row still has no slug.
+- **No rewrite mode.** Robert Zondervan (2026-10-23): "alleen lege vullen en niet de
+  vlag voor backfill toevoegen". A set slug is never recomputed, also not after
+  `objectSlugField` was switched; the switch applies to objects without a slug. An
+  earlier `--reslug` option was built and removed on that decision.
 - **`--dry-run`:** prints the plan (`<uuid>: "<old>" -> "<new>"`) and writes nothing.
 - **Writes:** `MagicMapper::updateSlugColumn(Register, Schema, string $uuid, ?string $slug)`
   issues `UPDATE <table> SET _slug = ? WHERE _uuid = ?` and evicts the object from the
@@ -308,9 +306,8 @@ occ openregister:backfill-slugs <register> <schema> [--reslug] [--dry-run]
   with the old to new list of that run (the first 1,000 changes plus the total, the full list
   in the log; the entry is immutable, so it copies only uuid and the two slugs); a run that
   changes nothing writes none.
-- **Summary line:** `scanned=<n> assigned=<n> changed=<n> collisions=<n> kept=<n> unchanged=<n> duplicates=<n> skipped=<n>`.
-- **Idempotent:** default mode only selects empty slugs, and in `--reslug` a second run
-  computes the same plan, which is all "unchanged".
+- **Summary line:** `scanned=<n> assigned=<n> collisions=<n> unchanged=<n> duplicates=<n> skipped=<n>`.
+- **Idempotent:** the run only selects empty slugs, so a second run finds nothing.
 
 *Alternative rejected:* a repair step on `occ upgrade`. That writes data without an
 operator choosing the register, and BC2 forbids that.
@@ -351,7 +348,8 @@ configuration defaults in `src/store/modules/schema.js` (~363). An empty
 Deliberate behaviour changes, only for schemas that set `objectSlugField`, recorded in
 `CHANGELOG.md`:
 
-- GW1: a rename no longer changes the slug. Use `--reslug`.
+- GW1: a rename no longer changes the slug, and neither does a switch of
+  `objectSlugField` for objects that already hold one (no rewrite mode).
 - GW2: a collision leaves the new object without a slug.
 - GW3: a duplicated slug answers 409 on lookup instead of an unhandled error.
 - GW4: the `-<time()>` suffix that never took effect becomes the opt-in
@@ -427,9 +425,9 @@ without error (BC4).
   `null`. `findInRegisterSchemaTable()` logs both uuids and throws.
 - **Unit `ObjectsController::show()`:** `MultipleObjectsReturnedException` → 409 JSON
   without uuids.
-- **Unit `ObjectSlugBackfillService`:** default fill, idempotent second run, duplicates
-  reported and untouched, `--reslug` after a field switch, `--reslug` with an empty
-  source, `--dry-run` writes nothing, refusal without `objectSlugField`.
+- **Unit `ObjectSlugBackfillService`:** fill, idempotent second run, duplicates
+  reported and untouched, a switched field leaves set slugs alone, `--dry-run` writes
+  nothing, refusal without `objectSlugField`.
 - **Integration (`tests/Service/…IntegrationTest.php`, real database):** the reproduction
   table from the proposal, end to end on a magic table: create A/B, rename A, GET by slug,
   bulk 2 × "Bulk Item". Plus BC1–BC6, one test each.

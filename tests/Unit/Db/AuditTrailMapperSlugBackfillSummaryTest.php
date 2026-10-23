@@ -46,14 +46,14 @@ class AuditTrailMapperSlugBackfillSummaryTest extends TestCase {
 
 	public function testALargeRunStaysUnderTheCapAndCarriesTheTotal(): void {
 		// Review finding r2routes-f6: 2,500 changes.
-		$result = $this->mapper->slugBackfillResultSummary('reslug', $this->changes(2500), ['changed' => 2500]);
+		$result = $this->mapper->slugBackfillResultSummary('fill', $this->changes(2500), ['assigned' => 2500]);
 
 		$this->assertCount(AuditTrailMapper::SLUG_BACKFILL_MAX_CHANGES, $result['changes']);
 		$this->assertSame(2500, $result['changesTotal']);
 		$this->assertTrue($result['truncated']);
 		$this->assertStringContainsString('first 1000 of 2500', $result['note']);
 		$this->assertSame(['uuid' => 'uuid-1', 'old' => 'old-1', 'new' => 'new-1'], $result['changes'][0], 'only uuid, old and new are copied');
-		$this->assertSame(['changed' => 2500], $result['summary']);
+		$this->assertSame(['assigned' => 2500], $result['summary']);
 	}//end testALargeRunStaysUnderTheCapAndCarriesTheTotal()
 
 	public function testASmallRunIsListedInFull(): void {
