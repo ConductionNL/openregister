@@ -94,6 +94,7 @@ class SecuritySettingRegistry {
 		'@flow_oversight_enabled' => ['label' => 'Oversight of automated flows', 'default' => true, 'secret' => false, 'type' => 'bool'],
 		'@flow_kill_switch' => ['label' => 'Emergency stop for automated flows', 'default' => false, 'secret' => false, 'type' => 'bool'],
 		'@' . AuditSink::CONFIG_PATH => ['label' => 'Audit trail file location', 'default' => '', 'secret' => false, 'type' => 'string'],
+		'@' . ReadEventVisibility::CONFIG_KEY => ['label' => 'Who sees who read a record', 'default' => '[]', 'secret' => false, 'type' => 'string'],
 	];
 
 	/**

@@ -35,6 +35,7 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-history-of-one-object-is-readable-by-whoever-may-read-that-object
+ * @spec openspec/changes/audit-read-events-visible-to/specs/audit-trail-immutable/spec.md#requirement-read-entries-are-shown-only-to-the-groups-named-for-them
  */
 
 declare(strict_types=1);
@@ -73,6 +74,7 @@ class ObjectHistoryForReaders {
 	 * @param HistoryEntryRedactor $redactor        Removes what the reader may not see from each entry.
 	 * @param RegisterMapper      $registerMapper   Resolves the register for the doelbinding guard.
 	 * @param PurposeGuard        $purposeGuard     The doelbinding guard the object GET runs.
+	 * @param ReadEventVisibility $readEvents       Whether this reader may see who read the object.
 	 */
 	public function __construct(
 		private readonly ObjectReadAccess $access,
@@ -80,6 +82,7 @@ class ObjectHistoryForReaders {
 		private readonly HistoryEntryRedactor $redactor,
 		private readonly RegisterMapper $registerMapper,
 		private readonly PurposeGuard $purposeGuard,
+		private readonly ReadEventVisibility $readEvents,
 	) {
 	}//end __construct()
 
@@ -96,8 +99,8 @@ class ObjectHistoryForReaders {
 	 * @param string $id       The object id from the path.
 	 * @param array  $params   limit, offset, page, filters, sort and search, as the controller extracts them.
 	 *
-	 * @return array{results: array<int, array>, total: int, page: int|null, pages: float, limit: int, offset: int|null}|null
-	 *     The page, or null when the object is not readable for this caller.
+	 * @return array{results: array<int, array>, total: int, page: int|null, pages: float, limit: int, offset: int|null, readEventsVisible: bool}|null
+	 *     The page, with whether read entries are shown to this caller, or null when the object is not readable for this caller.
 	 *
 	 * @throws PurposeRefusedException When the schema asks for a purpose and none usable was named.
 	 *
@@ -138,7 +141,14 @@ class ObjectHistoryForReaders {
 
 		$entries = $this->redactor->redact(rows: $rows, schema: $schemaEntity, object: $object);
 
-		return $this->paged(entries: $entries, params: $params);
+		// Who read the object is shown only to the groups named for it, and
+		// dropped before paging so the totals count what the reader is given.
+		$entries = $this->readEvents->filter(entries: $entries);
+
+		return array_merge(
+			$this->paged(entries: $entries, params: $params),
+			['readEventsVisible' => $this->readEvents->maySeeReadEvents()]
+		);
 	}//end page()
 
 	/**

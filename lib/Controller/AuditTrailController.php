@@ -626,7 +626,7 @@ class AuditTrailController extends Controller {
 				config: $params
 			);
 
-			// Return paginated results.
+			// Return paginated results. An administrator always sees read entries.
 			return new JSONResponse(
 				data: [
 					'results' => $logs,
@@ -635,6 +635,7 @@ class AuditTrailController extends Controller {
 					'pages' => ceil($total / $params['limit']),
 					'limit' => $params['limit'],
 					'offset' => $params['offset'],
+					'readEventsVisible' => true,
 				]
 			);
 		} catch (\InvalidArgumentException $e) {
