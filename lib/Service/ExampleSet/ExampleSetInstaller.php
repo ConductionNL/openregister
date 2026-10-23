@@ -184,6 +184,7 @@ class ExampleSetInstaller {
 			'parties'     => [],
 			'notes'       => [],
 			'readStates'  => [],
+			'flows'       => [],
 			'files'       => 0,
 			'passwords'   => [],
 			'types'       => [],
