@@ -95,6 +95,31 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 		$this->assertSame([], $this->savedViews);
 	}
 
+	/**
+	 * A view can be shared with the set's own groups and accounts, as board
+	 * DqFilterDelen draws Pieter's "Wacht op inwoner" shared with Woo en
+	 * informatie (may use) and Anouk Bakker (may update).
+	 *
+	 * @return void
+	 */
+	public function testAViewIsWrittenWithItsShares(): void {
+		$view = $this->savedSearch();
+		$view['data']['sharedWith'] = [
+			['group' => '{{cast:staff.gid}}', 'mode' => 'read'],
+			['user' => '{{cast:sanne.uid}}', 'mode' => 'write'],
+		];
+		$this->withViews(views: [$view]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+		$this->installer->install(plan: $plan, today: $this->today());
+
+		$this->assertSame(
+			expected: [['group' => 'demo-staff', 'mode' => 'read'], ['user' => 'sanne.devries', 'mode' => 'write']],
+			actual: $this->savedViews['view-1']->getSharedWith()
+		);
+	}//end testAViewIsWrittenWithItsShares()
+
 	public function testAViewThatDisappearedIsReportedMissing(): void {
 		$this->withViews([$this->savedSearch()]);
 		$plan = $this->catalogue->gather(set: 'demo');
@@ -131,6 +156,19 @@ class ExampleSetViewsTest extends ExampleSetTestCase {
 			'a stranger'    => [['name' => 'V', 'owner' => 'somebody.else'], 'owner "somebody.else"'],
 			'another field' => [['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'favoredBy' => []], 'field "favoredBy"'],
 			'a bad query'   => [['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'query' => 'Lindelaan'], 'query must be an object'],
+			'shares not a list' => [['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'sharedWith' => 'staff'], 'sharedWith must be a list'],
+			'a share to a stranger' => [
+				['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'sharedWith' => [['user' => 'somebody.else', 'mode' => 'read']]],
+				'share to "somebody.else"',
+			],
+			'a share without a target' => [
+				['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'sharedWith' => [['mode' => 'read']]],
+				'a share names one user or one group',
+			],
+			'a share with a bad mode' => [
+				['name' => 'V', 'owner' => '{{cast:esra.uid}}', 'sharedWith' => [['group' => 'demo-staff', 'mode' => 'admin']]],
+				'mode "admin"',
+			],
 		];
 	}
 }//end class
