@@ -59,6 +59,10 @@ use Throwable;
  * itself depends on all of them.
  * @SuppressWarnings(PHPMD.ExcessiveParameterList) Every constructor parameter is
  * an injected collaborator; Nextcloud's container wires them by type.
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) delete() and deleteStored() are
+ * one cascade with and without the caller check; an example set removing the
+ * flow it wrote has no caller to check. Moving the cascade out would split one
+ * flow's delete over two classes.
  *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
