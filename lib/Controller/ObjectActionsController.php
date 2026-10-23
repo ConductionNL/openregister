@@ -44,6 +44,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Flow\FlowNextHint;
 use OCA\OpenRegister\Service\Flow\MacroActionResolver;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionBulk;
+use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinition;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionDefinitions;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionHistory;
 use OCA\OpenRegister\Service\ObjectAction\ObjectActionList;
@@ -179,6 +180,11 @@ class ObjectActionsController extends Controller {
 	 *
 	 * @return JSONResponse `{actions: [...]}`.
 	 *
+	 * @no-admin-idor-exempt Takes no object id: it lists the schema's bulk actions.
+	 *   ObjectActionList::forSelection() keeps an entry only when ObjectActionGate::may()
+	 *   grants the caller its right at schema level with RBAC on; each object is
+	 *   checked again when the action runs on it.
+	 *
 	 * @spec openspec/changes/object-actions-declared-and-run/specs/object-actions/spec.md#requirement-selections-run-per-object-and-large-selections-become-a-bulk-job
 	 */
 	#[NoAdminRequired]
@@ -263,7 +269,7 @@ class ObjectActionsController extends Controller {
 		$selectionSchema = $this->macros->loadSchema(schema: $schema);
 		$definition = null;
 		if ($selectionSchema !== null) {
-			$definition = $this->definitions->find(schema: $selectionSchema, key: $action, register: $register);
+			$definition = $this->findDefinition(schema: $selectionSchema, action: $action, register: $register);
 		}
 
 		if ($definition === null || $definition->isRunnable() === false || $definition->offersBulk() === false) {
@@ -365,6 +371,27 @@ class ObjectActionsController extends Controller {
 
 		return ['id' => $id, 'status' => 'failed', 'reason' => (string)($one['body']['message'] ?? ($one['body']['error'] ?? 'refused'))];
 	}//end runOnSelected()
+
+	/**
+	 * The schema's declaration of an action, or null when it cannot be read.
+	 *
+	 * A declaration that cannot be resolved reads as "not offered", the same
+	 * answer findObject() and loadSchema() give, so a broken schema
+	 * configuration is a 400 on the selection and never a 500.
+	 *
+	 * @param Schema $schema   The selection's schema.
+	 * @param string $action   The action key.
+	 * @param string $register The register as the caller named it.
+	 *
+	 * @return ObjectActionDefinition|null The declaration.
+	 */
+	private function findDefinition(Schema $schema, string $action, string $register): ?ObjectActionDefinition {
+		try {
+			return $this->definitions->find(schema: $schema, key: $action, register: $register);
+		} catch (\Throwable) {
+			return null;
+		}
+	}//end findDefinition()
 
 	/**
 	 * The object, or null when there is none the caller can reach.
