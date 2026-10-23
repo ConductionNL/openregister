@@ -44,6 +44,13 @@ use OCA\OpenRegister\Db\ContactLinkMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows;
+use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Service\OrganisationService;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\ObjectReadState;
 use OCA\OpenRegister\Db\ObjectReadStateMapper;
 use OCP\Comments\IComment;
@@ -61,7 +68,6 @@ use OCA\OpenRegister\Service\Task\TaskService;
 use OCA\OpenRegister\Service\Task\TaskState;
 use OCP\Config\IUserConfig;
 use OCA\OpenRegister\Service\FileService;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
 use OCP\IConfig;
 use OCP\Security\ISecureRandom;
@@ -142,6 +148,12 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<string, \DateTime> The read states, by `<user> <object uuid>`: when the object was seen. */
 	protected array $readStates = [];
 
+	/** @var array<string, Flow> The stored flows, by uuid. */
+	protected array $flows = [];
+
+	/** @var array<int, string> The uuids of the flows published, in order. */
+	protected array $publishedFlows = [];
+
 	/** @var array<string, View> The saved views, by uuid. */
 	protected array $savedViews = [];
 
@@ -180,6 +192,10 @@ abstract class ExampleSetTestCase extends TestCase {
 			ContactLinkMapper::class  => $this->contactLinks(),
 			ICommentsManager::class   => $this->commentsManager(),
 			ObjectReadStateMapper::class => $this->readStateMapper(),
+			FlowMapper::class         => $this->flowMapper(),
+			FlowVersionService::class => $this->flowVersions(),
+			FlowService::class        => $this->flowService(),
+			OrganisationService::class => $this->organisationService(),
 		});
 		$files     = new ExampleSetFiles(container: $container);
 		$setConfig = new ExampleSetAppConfig(appConfig: $this->appConfigOfApps(), random: $this->random());
@@ -242,7 +258,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				watchers: new ExampleSetWatchers(container: $container),
 				parties: new ExampleSetParties(container: $container),
 				notes: new ExampleSetNotes(container: $container),
-				readStates: new ExampleSetReadStates(container: $container)
+				readStates: new ExampleSetReadStates(container: $container),
+				flows: new ExampleSetFlows(container: $container)
 			)
 		);
 		$this->remover   = new ExampleSetRemover(
@@ -261,7 +278,8 @@ abstract class ExampleSetTestCase extends TestCase {
 				watchers: new ExampleSetWatchers(container: $container),
 				parties: new ExampleSetParties(container: $container),
 				notes: new ExampleSetNotes(container: $container),
-				readStates: new ExampleSetReadStates(container: $container)
+				readStates: new ExampleSetReadStates(container: $container),
+				flows: new ExampleSetFlows(container: $container)
 			)
 		);
 	}
@@ -402,6 +420,70 @@ abstract class ExampleSetTestCase extends TestCase {
 		});
 
 		return $mapper;
+	}
+
+	/**
+	 * A flow mapper over $flows, keyed by uuid.
+	 *
+	 * @return FlowMapper
+	 */
+	private function flowMapper(): FlowMapper {
+		$mapper = $this->createMock(FlowMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (Flow $flow): Flow {
+			$this->flows[(string) $flow->getUuid()] = $flow;
+			return $flow;
+		});
+		$mapper->method('findByUuid')->willReturnCallback(function (string $uuid): Flow {
+			if (isset($this->flows[$uuid]) === false) {
+				throw new DoesNotExistException('No such flow');
+			}
+
+			return $this->flows[$uuid];
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * A version service that records which flows it published.
+	 *
+	 * @return FlowVersionService
+	 */
+	private function flowVersions(): FlowVersionService {
+		$versions = $this->createMock(FlowVersionService::class);
+		$versions->method('publish')->willReturnCallback(function (Flow $flow) {
+			$this->publishedFlows[] = (string) $flow->getUuid();
+			$flow->setLifecycleStatus('published');
+			return $this->createMock(\OCA\OpenRegister\Db\FlowVersion::class);
+		});
+
+		return $versions;
+	}
+
+	/**
+	 * A flow service whose deleteStored() drops the flow from $flows.
+	 *
+	 * @return FlowService
+	 */
+	private function flowService(): FlowService {
+		$service = $this->createMock(FlowService::class);
+		$service->method('deleteStored')->willReturnCallback(function (Flow $flow): void {
+			unset($this->flows[(string) $flow->getUuid()]);
+		});
+
+		return $service;
+	}
+
+	/**
+	 * An organisation service that puts new entities in org-1.
+	 *
+	 * @return OrganisationService
+	 */
+	private function organisationService(): OrganisationService {
+		$service = $this->createMock(OrganisationService::class);
+		$service->method('getOrganisationForNewEntity')->willReturn('org-1');
+
+		return $service;
 	}
 
 	/**

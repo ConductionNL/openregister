@@ -44,6 +44,7 @@ class ExampleSetEngineKinds {
 	 * @param ExampleSetParties|null $parties Writes the party links a fragment declares; null refuses them.
 	 * @param ExampleSetNotes|null $notes Writes the notes a fragment leaves on its objects; null refuses them.
 	 * @param ExampleSetReadStates|null $readStates Writes the objects a fragment's accounts opened; null refuses them.
+	 * @param ExampleSetFlows|null $flows Writes the flows a fragment ships; null refuses them.
 	 *
 	 * @return void
 	 */
@@ -54,6 +55,7 @@ class ExampleSetEngineKinds {
 		private readonly ?ExampleSetParties $parties=null,
 		private readonly ?ExampleSetNotes $notes=null,
 		private readonly ?ExampleSetReadStates $readStates=null,
+		private readonly ?ExampleSetFlows $flows=null,
 	) {
 	}//end __construct()
 
@@ -177,6 +179,7 @@ class ExampleSetEngineKinds {
 			'parties'    => [$this->parties, 'party'],
 			'notes'      => [$this->notes, 'note'],
 			'readStates' => [$this->readStates, 'read state'],
+			'flows'      => [$this->flows, 'flow'],
 		];
 	}//end kinds()
 }//end class
