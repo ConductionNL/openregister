@@ -1,0 +1,19 @@
+# Tasks: rbac-matrix-app-rows-and-file-verbs
+
+## 1. Matrix rows
+
+- [ ] 1.1 `DepartmentMatrixCompiler`: `where` copied into `match`, merge per (action, group, where); empty `$in` in `where` drops the row; PHPUnit
+- [ ] 1.2 `until` on a row through `GrantConstraints::reaches()`; PHPUnit
+- [ ] 1.3 `DepartmentMatrixValidator`: refuse undeclared `where` keys and non-scalar values; PHPUnit
+- [ ] 1.4 User source `{groups: true}` in `valuesFromGroups()`; PHPUnit
+
+## 2. Rows from an app
+
+- [ ] 2.1 `MatrixRowsRequestedEvent` and dispatch in `PermissionHandler::compileDepartmentMatrix()`, cached per request and schema; listener failure contributes nothing
+- [ ] 2.2 Access tests on the PHP and the SQL list path, asserted equal (design, access tests 1 to 4)
+
+## 3. File verbs
+
+- [ ] 3.1 `readFiles`, `addFiles`, `deleteFiles` in `DepartmentMatrixCompiler::ACTIONS` and `PermissionCatalogue`
+- [ ] 3.2 `ObjectFileAccess` per design D-4, opt-in when the block names a file verb; the route walk test (1.6 of object-files-follow-object-access) asserts the verb per route
+- [ ] 3.3 Access tests through `FilesController` (design, access test 5)
