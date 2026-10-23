@@ -152,6 +152,9 @@ class ExampleSetInstance {
 			$organisation->setStorageQuota($quota['storage'] ?? null);
 			$organisation->setRequestQuota($quota['requests'] ?? null);
 			$organisation->setBandwidthQuota($quota['bandwidth'] ?? null);
+			$organisation->setUserQuota($quota['users'] ?? null);
+			$organisation->setObjectQuota($quota['objects'] ?? null);
+			$organisation->setObjectQuotaSchema($quota['objectsSchema'] ?? null);
 			foreach (($declared['members'] ?? []) as $member) {
 				$organisation->addUser($member);
 			}

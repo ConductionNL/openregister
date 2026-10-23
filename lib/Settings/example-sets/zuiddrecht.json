@@ -708,7 +708,10 @@
 				"description": "Een tweede voorbeeldgemeente, zodat de tenantpagina's van de Zuiddrecht demo meer dan één organisatie tonen.",
 				"quota": {
 					"storage": 107374182400,
-					"requests": 5000
+					"requests": 5000,
+					"users": 50,
+					"objects": 5000,
+					"objectsSchema": "case"
 				},
 				"members": [
 					"marieke",

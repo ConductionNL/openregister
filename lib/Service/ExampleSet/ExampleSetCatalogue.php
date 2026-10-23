@@ -519,22 +519,30 @@ class ExampleSetCatalogue {
 	}//end organisationEntities()
 
 	/**
-	 * An organisation's declared quota: storage (bytes), requests and bandwidth, each a whole number.
+	 * An organisation's declared quota: storage (bytes), requests, bandwidth,
+	 * users and objects, each a whole number, and objectsSchema, the slug of the
+	 * schema the object quota counts.
 	 *
 	 * @param mixed  $declared The declared quota.
 	 * @param string $file     The cast file, for messages.
 	 * @param string $slug     The organisation's slug, for messages.
 	 *
-	 * @return array<string, int>
+	 * @return array<string, int|string>
 	 *
 	 * @throws ExampleSetException When a key is unknown or a value is not a whole number.
 	 */
 	private function organisationQuota(mixed $declared, string $file, string $slug): array {
 		$quota = [];
 		foreach ((array) $declared as $key => $value) {
-			if (in_array($key, ['storage', 'requests', 'bandwidth'], true) === false || is_int($value) === false || $value < 0) {
+			if ($key === 'objectsSchema' && is_string($value) === true && $value !== '') {
+				$quota[$key] = $value;
+				continue;
+			}
+
+			if (in_array($key, ['storage', 'requests', 'bandwidth', 'users', 'objects'], true) === false || is_int($value) === false || $value < 0) {
 				throw new ExampleSetException(
-					$file.': OpenRegister organisation "'.$slug.'": quota "'.$key.'" must be storage, requests or bandwidth with a whole number.'
+					$file.': OpenRegister organisation "'.$slug.'": quota "'.$key.'" must be storage, requests, bandwidth, users or objects'
+					.' with a whole number, or objectsSchema with a schema slug.'
 				);
 			}
 

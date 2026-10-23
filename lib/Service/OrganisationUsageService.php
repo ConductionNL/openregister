@@ -30,6 +30,7 @@ use Exception;
 use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Organisation;
+use OCA\OpenRegister\Db\SchemaMapper;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -42,14 +43,16 @@ class OrganisationUsageService {
 	/**
 	 * Constructor.
 	 *
-	 * @param MagicMapper     $magicMapper Reads the folders of the organisation's objects.
-	 * @param FileMapper      $fileMapper  Sums file cache sizes.
-	 * @param LoggerInterface $logger      Logger.
+	 * @param MagicMapper     $magicMapper  Reads the folders of the organisation's objects.
+	 * @param FileMapper      $fileMapper   Sums file cache sizes.
+	 * @param LoggerInterface $logger       Logger.
+	 * @param SchemaMapper    $schemaMapper Resolves the schema slug an object quota counts.
 	 */
 	public function __construct(
 		private readonly MagicMapper $magicMapper,
 		private readonly FileMapper $fileMapper,
 		private readonly LoggerInterface $logger,
+		private readonly SchemaMapper $schemaMapper,
 	) {
 	}//end __construct()
 
@@ -64,18 +67,24 @@ class OrganisationUsageService {
 	 *   and only with APCu; null otherwise.
 	 * - `bandwidth`: null. The middleware counts JSON response bodies only,
 	 *   which is not the organisation's bandwidth.
+	 * - `objects`: the organisation's live objects of the schema its object
+	 *   quota names (every schema when it names none), counted only for an
+	 *   organisation with an object quota; null otherwise or when they could
+	 *   not be counted.
 	 *
 	 * @param Organisation $organisation The organisation.
 	 *
-	 * @return array{storage: int|null, bandwidth: null, requests: int|null, users: int, groups: int}
+	 * @return array{storage: int|null, bandwidth: null, requests: int|null, objects: int|null, users: int, groups: int}
 	 *
 	 * @spec openspec/changes/organisation-usage-measured/specs/organisation-usage-measured/spec.md
+	 * @spec openspec/changes/organisation-user-and-object-quota/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
 	 */
 	public function measure(Organisation $organisation): array {
 		return [
 			'storage' => $this->measureStorage(organisation: $organisation),
 			'bandwidth' => null,
 			'requests' => $this->measureRequests(organisation: $organisation),
+			'objects' => $this->measureObjects(organisation: $organisation),
 			'users' => count($organisation->getUserIds()),
 			'groups' => count($organisation->getGroups()),
 		];
@@ -107,6 +116,43 @@ class OrganisationUsageService {
 			return null;
 		}
 	}//end measureStorage()
+
+	/**
+	 * The organisation's live objects of the schema its object quota names.
+	 *
+	 * @param Organisation $organisation The organisation.
+	 *
+	 * @return int|null The count, or null without an object quota or when it could not be counted.
+	 *
+	 * @spec openspec/changes/organisation-user-and-object-quota/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 */
+	private function measureObjects(Organisation $organisation): ?int {
+		$uuid = $organisation->getUuid();
+		if ($uuid === null || $uuid === '' || $organisation->getObjectQuota() === null) {
+			return null;
+		}
+
+		try {
+			$schemaIds = [];
+			$slug      = (string) ($organisation->getObjectQuotaSchema() ?? '');
+			if ($slug !== '') {
+				$ids = ($this->schemaMapper->findIdsBySlugs(slugs: [$slug])[strtolower($slug)] ?? []);
+				if ($ids === []) {
+					return 0;
+				}
+
+				$schemaIds = array_map('intval', $ids);
+			}
+
+			return $this->magicMapper->countObjectsByOrganisation(organisationUuid: $uuid, schemaIds: $schemaIds);
+		} catch (Exception $e) {
+			$this->logger->warning(
+				message: '[OrganisationUsageService] Could not count objects',
+				context: ['uuid' => $uuid, 'error' => $e->getMessage()]
+			);
+			return null;
+		}
+	}//end measureObjects()
 
 	/**
 	 * The requests counted for the organisation this hour.
