@@ -50,7 +50,7 @@ class Version1Date20261023090000 extends SimpleMigrationStep {
 	 * @param Closure              $schemaClosure Returns the schema wrapper.
 	 * @param array<string, mixed> $options       Migration options.
 	 *
-	 * @return ISchemaWrapper|null The schema, or null when nothing changed.
+	 * @return ISchemaWrapper|null The schema.
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter) The signature is Nextcloud's.
 	 *
@@ -63,27 +63,20 @@ class Version1Date20261023090000 extends SimpleMigrationStep {
 
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE) === false) {
-			return null;
+			return $schema;
 		}
 
-		$table   = $schema->getTable(self::TABLE);
-		$changed = false;
+		$table = $schema->getTable(self::TABLE);
 		foreach (['user_quota', 'object_quota'] as $column) {
 			if ($table->hasColumn($column) === false) {
 				$table->addColumn($column, Types::BIGINT, ['notnull' => false, 'default' => null]);
-				$changed = true;
 			}
 		}
 
 		if ($table->hasColumn('object_quota_schema') === false) {
 			$table->addColumn('object_quota_schema', Types::STRING, ['notnull' => false, 'length' => 255, 'default' => null]);
-			$changed = true;
 		}
 
-		if ($changed === true) {
-			return $schema;
-		}
-
-		return null;
+		return $schema;
 	}//end changeSchema()
 }//end class
