@@ -114,9 +114,6 @@ class DashboardService {
 	/** @var array<string, int> Object count per "registerId:schemaId", counted once per request. */
 	private array $objectCounts = [];
 
-	/** @var array<int, array{register: string|null, schema: string|null, total: int, size: int}>|null Audit groups, read once. */
-	private ?array $auditGroups = null;
-
 	/** @var array<string, mixed>|null Webhook log statistics, read once per request. */
 	private ?array $webhookLogStats = null;
 
@@ -168,7 +165,7 @@ class DashboardService {
 			$inScope = fn (int $register, int $schema): bool => ($registerId === null || $register === $registerId)
 				&& ($schemaId === null || $schema === $schemaId);
 			$objectStats = $this->objectStatsFor(include: $inScope);
-			$logStats = $this->auditStatsFor(
+			$logStats = $this->auditTrailStatistics->sumFor(
 				include: fn (?string $register, ?string $schema): bool => ($registerId === null || $register === (string)$registerId)
 					&& ($schemaId === null || $schema === (string)$schemaId)
 			);
@@ -255,30 +252,6 @@ class DashboardService {
 	}//end objectStatsFor()
 
 	/**
-	 * Audit trail totals over the combinations the filter includes, from one grouped read per request.
-	 *
-	 * @param callable(string|null, string|null): bool $include Whether a combination (register, schema as stored) counts.
-	 *
-	 * @return array{total: int, size: int} The audit trail statistics.
-	 *
-	 * @spec openspec/changes/dashboard-stats-one-pass/specs/built-in-dashboards/spec.md#requirement-the-registers-with-schemas-rollup-must-read-each-table-and-the-audit-trail-at-most-once
-	 */
-	private function auditStatsFor(callable $include): array {
-		$this->auditGroups ??= $this->auditTrailStatistics->groupedByRegisterSchema();
-
-		$total = 0;
-		$size = 0;
-		foreach ($this->auditGroups as $group) {
-			if ($include($group['register'], $group['schema']) === true) {
-				$total += $group['total'];
-				$size += $group['size'];
-			}
-		}
-
-		return ['total' => $total, 'size' => $size];
-	}//end auditStatsFor()
-
-	/**
 	 * Get statistics for orphaned items
 	 *
 	 * @return array Statistics for orphaned objects, logs, and files.
@@ -309,7 +282,7 @@ class DashboardService {
 			$objectStats = $this->objectStatsFor(
 				include: fn (int $register, int $schema): bool => isset($valid[$register . ':' . $schema]) === false
 			);
-			$auditStats = $this->auditStatsFor(
+			$auditStats = $this->auditTrailStatistics->sumFor(
 				include: fn (?string $register, ?string $schema): bool => $register === null
 					|| $schema === null
 					|| isset($valid[$register . ':' . $schema]) === false

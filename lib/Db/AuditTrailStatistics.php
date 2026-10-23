@@ -31,6 +31,13 @@ use OCP\IDBConnection;
  */
 class AuditTrailStatistics {
 	/**
+	 * The grouped aggregate, read once per request.
+	 *
+	 * @var array<int, array{register: string|null, schema: string|null, total: int, size: int}>|null
+	 */
+	private ?array $groups = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IDBConnection $db The database connection.
@@ -72,6 +79,32 @@ class AuditTrailStatistics {
 
 		return $rows;
 	}//end groupedByRegisterSchema()
+
+	/**
+	 * Audit trail count and size over the combinations the filter includes.
+	 *
+	 * The grouped aggregate is read once per instance (one request); every call sums over it.
+	 *
+	 * @param callable(string|null, string|null): bool $include Whether a combination (register, schema as stored) counts.
+	 *
+	 * @return array{total: int, size: int} The audit trail statistics.
+	 *
+	 * @spec openspec/changes/dashboard-stats-one-pass/specs/built-in-dashboards/spec.md#requirement-the-registers-with-schemas-rollup-must-read-each-table-and-the-audit-trail-at-most-once
+	 */
+	public function sumFor(callable $include): array {
+		$this->groups ??= $this->groupedByRegisterSchema();
+
+		$total = 0;
+		$size = 0;
+		foreach ($this->groups as $group) {
+			if ($include($group['register'], $group['schema']) === true) {
+				$total += $group['total'];
+				$size += $group['size'];
+			}
+		}
+
+		return ['total' => $total, 'size' => $size];
+	}//end sumFor()
 
 	/**
 	 * A stored register or schema id as a string, or null when none is stored.

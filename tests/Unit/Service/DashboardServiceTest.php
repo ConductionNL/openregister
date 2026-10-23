@@ -58,7 +58,7 @@ class DashboardServiceTest extends TestCase {
 		$this->objectMapper = $this->createMock(MagicMapper::class);
 		$this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
 		$this->webhookLogMapper = $this->createMock(WebhookLogMapper::class);
-		$this->auditTrailStatistics = $this->createMock(AuditTrailStatistics::class);
+		$this->auditTrailStatistics = $this->createPartialMock(AuditTrailStatistics::class, ['groupedByRegisterSchema']);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
 		$this->schemaMapper = $this->createMock(SchemaMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
