@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
  * reorder every enum and every other local list. So the stored definition is
  * kept as it is and only the leaf at the path is replaced or removed.
  *
- * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 class ShippedBaselineResetService {
 
@@ -70,7 +70,7 @@ class ShippedBaselineResetService {
 	 * @return array{applicable: bool, reason: string, schema: string, schemaId: int|null, path: string, from: mixed, to: mixed}
 	 *         The preview.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function preview(string|int $schema, string $path): array {
 		$path = trim($path);
@@ -106,7 +106,7 @@ class ShippedBaselineResetService {
 	 * @return array{applied: bool, reason: string, schema: string, schemaId: int|null, path: string, from: mixed, to: mixed}
 	 *         The outcome.
 	 *
-	 * @spec openspec/changes/shipped-baseline-reset-is-reachable/specs/schema-import/spec.md
+	 * @spec openspec/specs/schema-import/spec.md
 	 */
 	public function reset(string|int $schema, string $path): array {
 		$path = trim($path);

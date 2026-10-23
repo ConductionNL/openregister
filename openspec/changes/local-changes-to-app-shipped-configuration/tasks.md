@@ -52,7 +52,7 @@
 - [x] 4.1a `previewReset()` and `resetToBaseline()`: the preview writes
       nothing, and the act REFUSES without a session, so no repair step or
       unattended path can perform one.
-- [x] 4.1b (done in change `shipped-baseline-reset-is-reachable`: occ command, admin routes, one-part write) The route and controller, and the write of the reset definition
+- [x] 4.1b (done in change `shipped-baseline-reset-is-reachable`, archived as `archive/2026-10-05-shipped-baseline-reset-is-reachable`: occ command, admin routes, one-part write) The route and controller, and the write of the reset definition
       back through `SchemaMapper`. The service returns the definition; nothing
       calls it over HTTP yet.
 
