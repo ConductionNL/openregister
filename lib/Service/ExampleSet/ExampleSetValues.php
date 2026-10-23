@@ -7,6 +7,7 @@
  * - `{{cast:key.path}}` a field of a cast person, organisation or group;
  * - `{{date:n}}` and `{{datetime:n HH:MM}}` a day n days from the install day;
  * - `{{object:key.path}}` a field of an object declared earlier in the same fragment;
+ * - `{{view:key.uuid}}` the uuid of a saved view the same fragment declares (user preferences only);
  * - `{{lookup:name}}` the id a lookup by business key found;
  * - `{{account:key.field}}` a field of a service account a fragment declares;
  * - `{{organisation:slug-or-name}}` the uuid of an OpenRegister organisation;
@@ -117,6 +118,35 @@ class ExampleSetValues {
 	}//end fill()
 
 	/**
+	 * The views a fragment declares, by key, for `{{view:key.uuid}}`: as the record holds them after the install
+	 * wrote them, or with a stand-in uuid for the check (`$record` null), since none is written yet.
+	 *
+	 * @param array<string, mixed>      $fragment The fragment.
+	 * @param array<string, mixed>|null $record   The set's record, or null for the check.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 *
+	 * @spec openspec/changes/example-set-view-placeholder/specs/example-sets/spec.md#requirement-a-preference-may-quote-a-view-of-its-fragment
+	 */
+	public function viewsOf(array $fragment, ?array $record): array {
+		$views = [];
+		foreach (($fragment['views'] ?? []) as $view) {
+			$key = (string) $view['key'];
+			if ($record === null) {
+				$views[$key] = ['uuid' => 'example-set-stand-in:view:'.$key];
+				continue;
+			}
+
+			$written = ($record['views'][$fragment['app'].'/'.$key] ?? null);
+			if (is_array($written) === true) {
+				$views[$key] = $written;
+			}
+		}
+
+		return $views;
+	}//end viewsOf()
+
+	/**
 	 * A found value as text inside a longer string; a value that is no scalar is a gap.
 	 *
 	 * @param string             $placeholder The placeholder as written.
@@ -159,6 +189,7 @@ class ExampleSetValues {
 		return match ($kind) {
 			'cast'   => $this->pathIn(entries: (array) ($context['cast'] ?? []), reference: $rest),
 			'object' => $this->objectField(objects: (array) ($context['objects'] ?? []), reference: $rest),
+			'view'   => $this->pathIn(entries: (array) ($context['views'] ?? []), reference: $rest),
 			'lookup' => $this->present(value: ($context['lookups'][$rest] ?? null)),
 			'account' => $this->pathIn(entries: (array) ($context['accounts'] ?? []), reference: $rest),
 			'organisation' => $this->present(value: ($context['organisations'][$rest] ?? null)),

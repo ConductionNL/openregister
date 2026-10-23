@@ -144,7 +144,11 @@ class ExampleSetInstaller {
 				$refusals,
 				$this->checkChanges(fragment: $fragment, context: $context, checked: $changes, plannedUsers: $users),
 				$this->checkAppConfig(fragment: $fragment, context: $context),
-				$this->checkUserPreferences(fragment: $fragment, context: $context, users: $users),
+				$this->checkUserPreferences(
+					fragment: $fragment,
+					context: ($context + ['views' => $this->values->viewsOf(fragment: $fragment, record: null)]),
+					users: $users
+				),
 				($this->engineRows ?? new ExampleSetEngineKinds())->check(fragment: $fragment, context: $context, users: $users, values: $this->values)
 			);
 		}//end foreach
@@ -378,10 +382,13 @@ class ExampleSetInstaller {
 
 		$report = $this->installAppConfig(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 
-		$report = $this->installUserPreferences(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 		if ($this->engineRows?->install(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values) === true) {
 			$this->record->write(set: (string) $plan['set'], record: $record);
 		}
+
+		// After the views, so a preference can quote one (`{{view:key.uuid}}`).
+		$context['views'] = $this->values->viewsOf(fragment: $fragment, record: $record);
+		$report           = $this->installUserPreferences(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 
 		return $report;
 	}//end installFragment()
