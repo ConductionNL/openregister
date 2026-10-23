@@ -2,10 +2,10 @@
 
 ## 1. Matrix rows
 
-- [ ] 1.1 `DepartmentMatrixCompiler`: `where` copied into `match`, merge per (action, group, where); empty `$in` in `where` drops the row; PHPUnit
-- [ ] 1.2 `until` on a row through `GrantConstraints::reaches()`; PHPUnit
-- [ ] 1.3 `DepartmentMatrixValidator`: refuse undeclared `where` keys and non-scalar values; PHPUnit
-- [ ] 1.4 User source `{groups: true}` in `valuesFromGroups()`; PHPUnit
+- [x] 1.1 `DepartmentMatrixCompiler`: `where` copied into `match`, merge per (action, group, where); empty `$in` in `where` drops the row; `MatrixRowWhere` reads it for compiler and validator alike; PHPUnit (DepartmentMatrixRowConditionsTest, MatrixRowConditionsBothPathsTest)
+- [x] 1.2 `until` on a row through `GrantConstraints::reaches()`; PHPUnit
+- [x] 1.3 `DepartmentMatrixValidator`: refuse undeclared `where` keys and non-scalar values; PHPUnit
+- [x] 1.4 User source `{groups: true}` in `valuesFromGroups()`; PHPUnit
 
 ## 2. Rows from an app
 

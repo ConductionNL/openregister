@@ -78,7 +78,10 @@ class DepartmentMatrixValidator {
 		}
 
 		$findings = array_merge($findings, $this->validateUserSource(source: ($matrix['userSource'] ?? null)));
-		$findings = array_merge($findings, $this->validateRows(rows: ($matrix['rows'] ?? null)));
+		$findings = array_merge(
+			$findings,
+			$this->validateRows(rows: ($matrix['rows'] ?? null), properties: $properties, field: $field)
+		);
 
 		return $findings;
 	}//end validate()
@@ -100,15 +103,16 @@ class DepartmentMatrixValidator {
 			];
 		}
 
+		$hasGroups = (($source['groups'] ?? false) === true);
 		$hasPrefix = (trim((string)($source['groupPrefix'] ?? '')) !== '');
 		$hasSchema = (trim((string)($source['schema'] ?? '')) !== ''
 			&& trim((string)($source['property'] ?? '')) !== '');
 
-		if ($hasPrefix === false && $hasSchema === false) {
+		if ($hasGroups === false && $hasPrefix === false && $hasSchema === false) {
 			return [
 				[
 					'code' => 'matrix.bad-user-source',
-					'message' => 'userSource must declare either a groupPrefix or a schema and property pair.',
+					'message' => 'userSource must declare groups: true, a groupPrefix, or a schema and property pair.',
 				],
 			];
 		}
@@ -119,11 +123,13 @@ class DepartmentMatrixValidator {
 	/**
 	 * Findings for the rows.
 	 *
-	 * @param mixed $rows The declared rows.
+	 * @param mixed                $rows       The declared rows.
+	 * @param array<string, mixed> $properties The schema's properties, which a `where` key must name.
+	 * @param string               $field      The matrix field, which a `where` may not repeat.
 	 *
 	 * @return array<int, array{code: string, message: string}> The findings.
 	 */
-	private function validateRows(mixed $rows): array {
+	private function validateRows(mixed $rows, array $properties, string $field): array {
 		if (is_array($rows) === false || count($rows) === 0) {
 			return [['code' => 'matrix.no-rows', 'message' => 'A matrix must declare at least one row.']];
 		}
@@ -131,6 +137,12 @@ class DepartmentMatrixValidator {
 		$findings = [];
 		foreach ($rows as $index => $row) {
 			$findings = array_merge($findings, $this->rowFindings(row: $row, index: $index));
+			if (is_array($row) === true) {
+				$findings = array_merge(
+					$findings,
+					$this->whereFindings(row: $row, index: $index, properties: $properties, field: $field)
+				);
+			}
 		}//end foreach
 
 		return $findings;
@@ -189,5 +201,82 @@ class DepartmentMatrixValidator {
 
 		return $findings;
 	}//end rowFindings()
+
+	/**
+	 * Findings for one row's `where` and `until`.
+	 *
+	 * The compiler drops a row it cannot read; refusing it here is what tells
+	 * the administrator, before a row they wrote quietly grants nothing.
+	 *
+	 * @param array<string, mixed> $row        The row.
+	 * @param string|integer       $index      Which row it is.
+	 * @param array<string, mixed> $properties The schema's properties.
+	 * @param string               $field      The matrix field.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings.
+	 *
+	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 */
+	private function whereFindings(array $row, string|int $index, array $properties, string $field): array {
+		$name = 'Row ' . (string)$index;
+		$findings = [];
+
+		$until = ($row[GrantConstraints::UNTIL_KEY] ?? null);
+		if ($until !== null && (is_string($until) === false || strtotime($until) === false)) {
+			$findings[] = ['code' => 'matrix.bad-until', 'message' => $name . ' has an end that is not a date.'];
+		}
+
+		$where = ($row['where'] ?? []);
+		if (is_array($where) === false || ($where !== [] && array_is_list($where) === true)) {
+			$findings[] = ['code' => 'matrix.bad-where', 'message' => $name . ': where must be an object.'];
+			return $findings;
+		}
+
+		foreach ($where as $key => $value) {
+			$finding = $this->whereKeyFinding(name: $name, key: (string)$key, value: $value, properties: $properties, field: $field);
+			if ($finding !== null) {
+				$findings[] = $finding;
+			}
+		}
+
+		return $findings;
+	}//end whereFindings()
+
+	/**
+	 * The finding for one `where` condition, or null when it reads.
+	 *
+	 * @param string               $name       The row, as messages name it.
+	 * @param string               $key        The property the condition is on.
+	 * @param mixed                $value      The condition.
+	 * @param array<string, mixed> $properties The schema's properties.
+	 * @param string               $field      The matrix field.
+	 *
+	 * @return array{code: string, message: string}|null The finding.
+	 */
+	private function whereKeyFinding(string $name, string $key, mixed $value, array $properties, string $field): ?array {
+		if ($key === $field) {
+			return [
+				'code' => 'matrix.where-repeats-field',
+				'message' => $name . ': where repeats the matrix field "' . $key . '".',
+			];
+		}
+
+		if (array_key_exists($key, $properties) === false) {
+			return [
+				'code' => 'matrix.where-unknown-field',
+				'message' => $name . ': where names "' . $key . '", which is not a property of this schema.',
+			];
+		}
+
+		if ((new MatrixRowWhere())->condition(value: $value) === null) {
+			return [
+				'code' => 'matrix.bad-where-value',
+				'message' => $name . ': the condition on "' . $key
+					. '" must be a value, a non-empty list of values or {$in: [...]}.',
+			];
+		}
+
+		return null;
+	}//end whereKeyFinding()
 
 }//end class
