@@ -36,6 +36,51 @@ Metadata fields are configured in the schema's `configuration` object:
 | `objectSummaryField` | The property to use for short summary | Used in cards, listings |
 | `objectImageField` | The property to use for object image | Used for thumbnails, previews, social sharing |
 | `objectSlugField` | The property to use for URL-friendly slug | Used in URLs, permalinks |
+| `objectSlugSuffix` | `true` appends a UTC date-time suffix to a slug that is already taken | Default `false` |
+
+### Object slugs
+
+Setting `objectSlugField` switches on managed slugs for the schema. The field takes
+the same dot paths and templates as `objectNameField`; the value is slugified
+(lower case, `a-z0-9` and hyphens).
+
+- **Unique per register and schema.** A slug another live object of the same
+  register and schema holds is not written: the new object is saved without a slug
+  and a warning in `nextcloud.log` names the register, the schema, the slug and both
+  objects. With `objectSlugSuffix: true` the object gets `<slug>-<YYYYMMDDHHMMSS>`
+  (UTC) instead.
+- **Frozen once set.** A later save never changes a slug, also when the source field
+  changes. A slug sent by a client (`@self.slug`) is normalised like a generated one (lower case, spaces and `_` become `-`, every other character outside `a-z0-9` and `-`, dots included, is dropped, at most 255 characters; `Zaak_2026-0042` is stored as `zaak-2026-0042`, and a value that normalises to nothing counts as not sent) and follows the same rules; a different
+  slug sent for an object that already has one is ignored and logged. There is no
+  exception: switching `objectSlugField` applies to objects without a slug, and the
+  backfill command has no option that rewrites set slugs.
+- **A freed slug moves on.** When the holder is deleted, the next save of an object
+  that wanted the slug gives it to that object. If the old holder is restored after
+  that, it comes back without a slug (with the suffixed slug when `objectSlugSuffix`
+  is on) and a warning names both objects; seed data objects follow the same rule.
+- **Lookups.** `GET /api/objects/{register}/{schema}/{slug}` resolves the slug. A
+  slug that more than one object holds (possible only for duplicates created before
+  this rule) answers `409` with `"error": "ambiguous-identifier"` on the object routes
+  and the relations route; the matching uuids go to the log. The audit-trail, files and
+  uses/used sub-routes do not resolve a slug within the register and schema: use the
+  object's uuid there. An exact match on an
+  object's id or uuid wins over a slug that happens to look the same (a slug `2024` next to
+  the object with id 2024, a slug equal to another object's uuid), and a numeric identifier
+  is an id only when it is a canonical integer (`2024`; `007` is a slug, not id 7); only when no single row is matched by its id or
+  uuid is the identifier ambiguous.
+- **Existing objects** get their slugs from
+  `occ openregister:backfill-slugs <register> <schema>` (oldest first; existing
+  slugs are left alone, duplicates are reported, not changed). After switching the slug
+  field, run it again: objects that still have no slug get one from the new field,
+  objects that already hold a slug keep it, so links, bookmarks and external references
+  keep working. The backfill writes the slug column
+  directly: no per-object version or audit entry and no object events, but every run
+  that is not a dry run and changes at least one slug writes one audit-trail entry (`slug.backfill.fill`)
+  listing the objects that got a slug (a run that changes nothing writes none). The entry lists the first 1,000 changes and the total; the full old-to-new list of a larger run is written to the Nextcloud log at info level (lines starting `[ObjectSlug] Slug backfill changes`, in parts of 1,000). The slugs come from `objectSlugField`, which can be a name: they are copied into the audit trail, which is hash-chained and cannot be redacted afterwards (for an erasure request, the log lines age out with the log rotation). Use
+  `--dry-run` to see the plan first.
+
+A schema without `objectSlugField` keeps the old behaviour: no slug unless a client
+sends one, and no uniqueness check.
 
 ### Object Image Field Configuration
 

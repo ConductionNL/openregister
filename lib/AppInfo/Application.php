@@ -1386,6 +1386,16 @@ class Application extends App implements IBootstrap {
 			$logger->warning('[Application] SchemaImportInstaller unavailable for ImportHandler: ' . $e->getMessage());
 		}
 
+		// Decides the slug of a seed object, so a seed cannot take a slug another
+		// live object holds (#4037). Resolved like the guard: without it a seed
+		// slug is set as before.
+		$slugHandler = null;
+		try {
+			$slugHandler = $container->get(\OCA\OpenRegister\Service\Object\SaveObject\ObjectSlugHandler::class);
+		} catch (\Throwable $e) {
+			$logger->warning('[Application] ObjectSlugHandler unavailable for ImportHandler: ' . $e->getMessage());
+		}
+
 		$importHandler = new ConfigurationImportHandler(
 			schemaMapper: $container->get(SchemaMapper::class),
 			registerMapper: $container->get(RegisterMapper::class),
@@ -1400,7 +1410,8 @@ class Application extends App implements IBootstrap {
 			objectService: $container->get(ObjectService::class),
 			shippedGuard: $shippedGuard,
 			importJobRecorder: $importJobRecorder,
-			schemaInstaller: $schemaInstaller
+			schemaInstaller: $schemaInstaller,
+			slugHandler: $slugHandler
 		);
 
 		// Inject MagicMapper for pre-creating magic mapper tables before seed
