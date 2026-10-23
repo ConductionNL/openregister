@@ -129,6 +129,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
@@ -878,7 +879,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 					pairs: $pairs,
 					fields: $fields,
 					onMissing: $onMissing,
-					cap: $cap
+					cap: $cap,
+					context: $context
 				)
 			);
 
@@ -908,7 +910,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				onMissing: $onMissing,
 				onConflict: $onConflict,
 				replace: $replace,
-				cap: $cap
+				cap: $cap,
+				context: $context
 			)
 		);
 
@@ -1033,6 +1036,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @param string $onConflict The conflict policy.
 	 * @param bool $replace Whether the write replaces.
 	 * @param int|null $cap The write cap.
+	 * @param array $context The run context.
 	 *
 	 * @return array One output item per input item.
 	 *
@@ -1057,10 +1061,12 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		string $onConflict,
 		bool $replace,
 		?int $cap,
+		array $context,
 	): array {
 		$writes = 0;
+		$created = 0;
+		$updated = 0;
 		$out = [];
-
 		$skipWhen = trim((string)($config['skipWhen'] ?? ''));
 		$payloadFrom = trim((string)($config['payloadFrom'] ?? ''));
 
@@ -1068,13 +1074,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			$json = (array)($item[FlowItems::JSON] ?? []);
 			$binary = (array)($item[FlowItems::BINARY] ?? []);
 
-			// PASS THROUGH, DO NOT DROP. An item the author marked as
-			// already-current is emitted unchanged and costs no write and no
-			// cap. It must still be EMITTED: `openregister.filter` would
-			// remove it, and a synchronisation's sweep decides what to delete
-			// from the target ids its items carry — so dropping an unchanged
-			// item is what makes the next sweep delete the very object that
-			// was fine.
+			// PASS THROUGH, DO NOT DROP: an already-current item costs no write
+			// but must still be EMITTED, or a sync's sweep deletes the object it names.
 			if ($skipWhen !== '' && $this->isSkipped(path: $skipWhen, json: $json) === true) {
 				$out[] = FlowItems::item(json: $json, binary: $binary, fromItemIndex: (int)$index);
 				continue;
@@ -1123,6 +1124,12 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				onConflict: $onConflict
 			);
 			$writes++;
+			if ($matched === null) {
+				$created++;
+			}
+			if ($matched !== null) {
+				$updated++;
+			}
 
 			$out[] = FlowItems::item(
 				json: $this->outputJson(
@@ -1135,6 +1142,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			);
 		}//end foreach
 
+		$this->reportItemCounts(context: $context, created: $created, updated: $updated, writes: $writes, operation: $operation);
 		return $out;
 	}//end writeItems()
 
@@ -1162,6 +1170,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	 * @param array $fields The configured fields.
 	 * @param string $onMissing The missing-field policy.
 	 * @param int $cap The write cap.
+	 * @param array $context The run context.
 	 *
 	 * @return array One output item per input item.
 	 *
@@ -1182,6 +1191,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		array $fields,
 		string $onMissing,
 		int $cap,
+		array $context,
 	): array {
 		if (count($items) > $cap) {
 			throw new RuntimeException(
@@ -1191,7 +1201,6 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 				)
 			);
 		}
-
 		$plan = $this->planBulkRows(
 			items: $items,
 			config: $config,
@@ -1251,7 +1260,6 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			}
 
 			$position++;
-
 			unset($json['@self'], $json['id']);
 			$json['uuid'] = $id;
 			$json['register'] = $this->identifierOf(register: $register);
@@ -1268,6 +1276,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 			);
 		}//end foreach
 
+		// Placed after output processing — see the SEMANTICS note on writeReport().
+		$this->reportBulkCounts(context: $context, result: $result);
 		return $out;
 	}//end writeBulk()
 
@@ -1356,6 +1366,92 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 		);
 
 	}//end guardBulkFailures()
+
+	/**
+	 * Write this hop's created/updated tally onto the run log, via the
+	 * context's report handle.
+	 *
+	 * Silently a no-op when the handle is absent — a run from before this
+	 * handle existed, or a caller that never wired one.
+	 *
+	 * SEMANTICS: this reports a COMPLETED node execution, not "objects
+	 * persisted so far". Both call sites ({@see writeItems()}, {@see
+	 * writeBulk()}) call this only after every item this hop will touch has
+	 * been both written AND turned into an output item — never between the
+	 * two. An exception anywhere in that work propagates out of the node
+	 * instead of reaching this call, so a step that fails never gets a
+	 * report, even though {@see writeBulk()}'s database writes before the
+	 * exception would already be durable. Keep any future write path to this
+	 * same placement, or the report starts answering a different question
+	 * depending on which path produced it.
+	 *
+	 * @param array $context The run context.
+	 * @param array $report The summary, keyed per {@see FlowStepReport::put()}.
+	 *
+	 * @return void
+	 */
+	private function writeReport(array $context, array $report): void {
+		$handle = ($context[FlowStepReport::CONTEXT_KEY] ?? null);
+		if (($handle instanceof FlowStepReport) === false) {
+			return;
+		}
+
+		$handle->put(key: 'write', value: $report);
+	}//end writeReport()
+
+	/**
+	 * Report writeItems()'s created/updated/deleted tally. Split out only to
+	 * keep writeItems() itself under the project's method-length threshold.
+	 *
+	 * OP_DELETE never touches $created/$updated (it `continue`s before
+	 * reaching them), so for a delete batch $writes already IS the deleted
+	 * count — executeDelete() only increments it on an actual delete, never
+	 * on an onNoMatch=skip. No separate counter is threaded through the loop.
+	 *
+	 * @param array $context The run context.
+	 * @param int $created Items created.
+	 * @param int $updated Items updated.
+	 * @param int $writes Writes performed (== deleted count, for OP_DELETE).
+	 * @param string $operation The resolved operation.
+	 *
+	 * @return void
+	 */
+	private function reportItemCounts(array $context, int $created, int $updated, int $writes, string $operation): void {
+		$deleted = 0;
+		if ($operation === self::OP_DELETE) {
+			$deleted = $writes;
+		}
+
+		$this->writeReport(
+			context: $context,
+			report: [
+				'created' => ['count' => $created],
+				'updated' => ['count' => $updated],
+				'deleted' => ['count' => $deleted],
+			]
+		);
+	}//end reportItemCounts()
+
+	/**
+	 * Report writeBulk()'s saved/updated/unchanged tally from the raw
+	 * `saveObjects()` result. Split out only to keep writeBulk() itself under
+	 * the project's method-length threshold.
+	 *
+	 * @param array $context The run context.
+	 * @param array $result The bulk save result.
+	 *
+	 * @return void
+	 */
+	private function reportBulkCounts(array $context, array $result): void {
+		$this->writeReport(
+			context: $context,
+			report: [
+				'created' => ['count' => count((array)($result['saved'] ?? []))],
+				'updated' => ['count' => count((array)($result['updated'] ?? []))],
+				'unchanged' => ['count' => count((array)($result['unchanged'] ?? []))],
+			]
+		);
+	}//end reportBulkCounts()
 
 	/**
 	 * Index the bulk result's serialised rows by uuid.

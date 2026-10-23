@@ -15,6 +15,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowStepReport;
 use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -695,6 +696,44 @@ class ObjectWriteNodeTest extends TestCase {
 
 	}//end testUpsertPatchesWhenAMatchExists()
 
+	/**
+	 * Regression coverage: the per-item write path used to perform the create
+	 * or update and tell them apart internally (`$matched === null`) without
+	 * ever reporting the split, so a flow run's log carried no way to know how
+	 * many objects were created versus updated.
+	 */
+	public function testAnUpsertBatchReportsItsCreatedAndUpdatedCounts(): void {
+		$this->tableOf([['uuid' => 'u-1', 'data' => ['sourceId' => 'y', 'title' => 'Alpha']]]);
+		$this->objects->method('saveObject')->willReturn($this->entity('u-2', []));
+		$this->objects->method('patchObject')->willReturn($this->entity('u-1', ['sourceId' => 'y']));
+
+		$report = new FlowStepReport();
+
+		$this->node->execute(
+			$this->items([['id' => 'x'], ['id' => 'y']]),
+			$this->config(
+				[
+					'operation' => 'upsert',
+					'fields' => ['sourceId' => '{{id}}'],
+					'match' => [['property' => 'sourceId', 'value' => '{{id}}']],
+				]
+			),
+			$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
+		);
+
+		$this->assertSame(
+			[
+				'write' => [
+					'created' => ['count' => 1],
+					'updated' => ['count' => 1],
+					'deleted' => ['count' => 0],
+				],
+			],
+			$report->take()
+		);
+
+	}//end testAnUpsertBatchReportsItsCreatedAndUpdatedCounts()
+
 	public function testAnUpdateGoesThroughPatchObjectSoUnmappedFieldsSurvive(): void {
 		$this->tableOf([['uuid' => 'u-1', 'data' => ['sourceId' => 'x', 'title' => 'Alpha']]]);
 
@@ -815,6 +854,41 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->assertTrue($out[0]['json']['deleted']);
 
 	}//end testADeleteRemovesExactlyTheMatchedObjectThroughTheOrdinaryPath()
+
+	/**
+	 * Review feedback on #4772: a delete batch took the OP_DELETE branch
+	 * before writeItems()'s $created/$updated counters, so a run that
+	 * deleted N objects logged "created 0, updated 0" with no sign anything
+	 * happened at all. Pins that a delete batch now reports its own count.
+	 */
+	public function testADeleteBatchReportsItsDeletedCount(): void {
+		$this->tableOf(
+			[
+				['uuid' => 'u-gone-1', 'data' => ['sourceId' => 'r1']],
+				['uuid' => 'u-gone-2', 'data' => ['sourceId' => 'r2']],
+			]
+		);
+		$this->objects->method('deleteObject')->willReturn(true);
+
+		$report = new FlowStepReport();
+
+		$this->node->execute(
+			$this->items([['retiredId' => 'r1'], ['retiredId' => 'r2']]),
+			$this->deleteConfig(),
+			$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
+		);
+
+		$this->assertSame(
+			[
+				'write' => [
+					'created' => ['count' => 0],
+					'updated' => ['count' => 0],
+					'deleted' => ['count' => 2],
+				],
+			],
+			$report->take()
+		);
+	}//end testADeleteBatchReportsItsDeletedCount()
 
 	public function testADeleteMatchingNothingErrorsByDefault(): void {
 		$this->tableOf([]);
@@ -1694,6 +1768,89 @@ class ObjectWriteNodeTest extends TestCase {
 		$this->assertCount(1, $allSkipped);
 	}
 
+	/**
+	 * The positive case of the PR's headline bug fix: a successful bulk write
+	 * reports the server's actual saved/updated/unchanged counts, not just
+	 * "no report on failure" (review feedback — the only prior bulk-report
+	 * test covered the failure path, so the counts themselves were unpinned).
+	 *
+	 * @return void
+	 */
+	public function testABulkWriteReportsItsSavedUpdatedAndUnchangedCounts(): void {
+		$this->objects->method('saveObjects')->willReturn(
+			$this->bulkResult(
+				[
+					'saved' => [
+						['@self' => ['uuid' => 'a'], 'title' => 'a'],
+						['@self' => ['uuid' => 'b'], 'title' => 'b'],
+					],
+					'updated' => [
+						['@self' => ['uuid' => 'c'], 'title' => 'c'],
+					],
+					'unchanged' => [
+						['@self' => ['uuid' => 'd'], 'title' => 'd'],
+					],
+				]
+			)
+		);
+
+		$report = new FlowStepReport();
+
+		$this->node->execute(
+			$this->items([['title' => 'a'], ['title' => 'b'], ['title' => 'c'], ['title' => 'd']]),
+			$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}']]),
+			$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
+		);
+
+		$this->assertSame(
+			[
+				'write' => [
+					'created' => ['count' => 2],
+					'updated' => ['count' => 1],
+					'unchanged' => ['count' => 1],
+				],
+			],
+			$report->take()
+		);
+	}//end testABulkWriteReportsItsSavedUpdatedAndUnchangedCounts()
+
+	/**
+	 * Regression coverage for the writeReport() ordering contract (review
+	 * feedback on #4772): if output processing throws after the bulk write
+	 * already succeeded, no report is written — a report describes a
+	 * COMPLETED node execution, not "objects were persisted".
+	 *
+	 * Reaches the real failure through the public `execute()` surface rather
+	 * than mocking a step of the node under test, specifically to avoid
+	 * widening any method's visibility for testability alone: `outputJson()`
+	 * casts `config.output` with `(string)`, and PHP's own string-conversion
+	 * rule turns a non-stringable OBJECT there into a real, uncatchable-by-
+	 * the-node `\Error` — a genuine failure inside the real output-processing
+	 * code, not a stand-in for one.
+	 *
+	 * @return void
+	 */
+	public function testNoReportIsWrittenWhenBulkOutputProcessingFails(): void {
+		$this->objects->method('saveObjects')->willReturn($this->bulkResult());
+
+		$report = new FlowStepReport();
+
+		$this->expectException(\Error::class);
+		$this->expectExceptionMessage('could not be converted to string');
+
+		try {
+			$this->node->execute(
+				$this->items([['title' => 'a']]),
+				// `output` is normally a string key name; an object here has
+				// no business meaning — it exists purely to make outputJson()'s
+				// `(string)` cast fail with a real PHP `\Error`.
+				$this->config(['bulk' => true, 'fields' => ['title' => '{{title}}'], 'output' => new \stdClass()]),
+				$this->registerContext + [FlowStepReport::CONTEXT_KEY => $report]
+			);
+		} finally {
+			$this->assertSame([], $report->take(), 'no report is written for a step that did not finish');
+		}
+	}//end testNoReportIsWrittenWhenBulkOutputProcessingFails()
 
 	/**
 	 * A dry-run asks the step what it would write and writes nothing.
