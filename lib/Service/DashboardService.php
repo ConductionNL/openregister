@@ -225,10 +225,7 @@ class DashboardService {
 	}//end getStats()
 
 	/**
-	 * Object totals over the register-schema tables the filter includes.
-	 *
-	 * Each table is counted once per request: the totals, each register, each schema and the
-	 * orphaned row all read the same counts.
+	 * Object totals over the tables the filter includes; each table is counted once per request.
 	 *
 	 * @param callable(int, int): bool $include Whether a table (register id, schema id) counts.
 	 *
@@ -237,41 +234,28 @@ class DashboardService {
 	 * @spec openspec/changes/dashboard-stats-one-pass/specs/built-in-dashboards/spec.md#requirement-the-registers-with-schemas-rollup-must-read-each-table-and-the-audit-trail-at-most-once
 	 */
 	private function objectStatsFor(callable $include): array {
+		$key = fn (array $pair): string => (int)$pair['registerId'] . ':' . (int)$pair['schemaId'];
 		$pairs = array_values(
 			array_filter(
 				$this->objectMapper->getAllRegisterSchemaPairs(),
 				fn (array $pair): bool => $include((int)$pair['registerId'], (int)$pair['schemaId'])
 			)
 		);
-		$missing = array_values(
-			array_filter(
-				$pairs,
-				fn (array $pair): bool => isset($this->objectCounts[(int)$pair['registerId'] . ':' . (int)$pair['schemaId']]) === false
-			)
-		);
+		$missing = array_values(array_filter($pairs, fn (array $pair): bool => isset($this->objectCounts[$key($pair)]) === false));
 		if ($missing !== []) {
 			$this->objectCounts = $this->objectMapper->countObjectsPerPair(pairs: $missing) + $this->objectCounts;
 		}
 
 		$total = 0;
 		foreach ($pairs as $pair) {
-			$total += $this->objectCounts[(int)$pair['registerId'] . ':' . (int)$pair['schemaId']] ?? 0;
+			$total += $this->objectCounts[$key($pair)] ?? 0;
 		}
 
-		return [
-			'total' => $total,
-			'size' => 0,
-			'invalid' => 0,
-			'deleted' => 0,
-			'locked' => 0,
-		];
+		return ['total' => $total, 'size' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0];
 	}//end objectStatsFor()
 
 	/**
-	 * Audit trail totals over the register-schema combinations the filter includes.
-	 *
-	 * The audit trail is aggregated once per request, grouped by register and schema; every
-	 * statistic is a sum over those groups.
+	 * Audit trail totals over the combinations the filter includes, from one grouped read per request.
 	 *
 	 * @param callable(string|null, string|null): bool $include Whether a combination (register, schema as stored) counts.
 	 *
@@ -291,10 +275,7 @@ class DashboardService {
 			}
 		}
 
-		return [
-			'total' => $total,
-			'size' => $size,
-		];
+		return ['total' => $total, 'size' => $size];
 	}//end auditStatsFor()
 
 	/**
