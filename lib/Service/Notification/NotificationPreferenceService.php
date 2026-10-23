@@ -46,6 +46,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Notification;
 
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IConfig;
 use OCP\IGroupManager;
@@ -708,6 +709,49 @@ class NotificationPreferenceService {
 	}//end applyLayer()
 
 	/**
+	 * One schema per owning app and slug, the highest version.
+	 *
+	 * A preference is keyed by the schema slug, so two rows with one slug (an
+	 * older version an import left behind) could only list every rule twice.
+	 * The highest version wins, then the highest id; another app's schema with
+	 * the same slug stays its own row.
+	 *
+	 * @param iterable<Schema> $schemas The schemas.
+	 *
+	 * @return array<int, Schema> The schemas to list.
+	 *
+	 * @spec openspec/changes/notification-preferences-one-row-per-slug/specs/notificatie-engine/spec.md#requirement-the-preference-list-names-each-rule-once
+	 */
+	private function onePerSlug(iterable $schemas): array {
+		$kept = [];
+		foreach ($schemas as $schema) {
+			$key = (string)($schema->getApplication() ?? '').'|'.(string)($schema->getSlug() ?? $schema->getId());
+			if (isset($kept[$key]) === false || $this->isNewer(schema: $schema, than: $kept[$key]) === true) {
+				$kept[$key] = $schema;
+			}
+		}
+
+		return array_values($kept);
+	}//end onePerSlug()
+
+	/**
+	 * Whether a schema row is a later version of another with its slug.
+	 *
+	 * @param Schema $schema The candidate.
+	 * @param Schema $than   The row kept so far.
+	 *
+	 * @return bool
+	 */
+	private function isNewer(Schema $schema, Schema $than): bool {
+		$order = version_compare((string)($schema->getVersion() ?? '0'), (string)($than->getVersion() ?? '0'));
+		if ($order !== 0) {
+			return $order > 0;
+		}
+
+		return (int)$schema->getId() > (int)$than->getId();
+	}//end isNewer()
+
+	/**
 	 * Enumerate the EFFECTIVE notifications for a user: every notification
 	 * declared by the user's accessible schemas, merged with that user's
 	 * overrides, each tagged with its `source`.
@@ -740,7 +784,7 @@ class NotificationPreferenceService {
 			return [];
 		}
 
-		foreach ($schemas as $schema) {
+		foreach ($this->onePerSlug(schemas: $schemas) as $schema) {
 			$config = ($schema->getConfiguration() ?? []);
 			$notifications = ($config['x-openregister-notifications'] ?? null);
 			if (is_array($notifications) === false) {
