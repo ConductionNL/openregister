@@ -1,0 +1,181 @@
+{
+	"_note": "archival-overview-page (board openregister/OrArchivering). The archiving work on one page: destruction lists with their approval, the records under a legal hold, the e-Depot transfers and the selection list in force. Every widget reads GET /api/archival/overview; approve, reject and draw-up call the archival endpoints. Not drawn: the board's Download button (no export of the overview exists) and Import on the selection list card (an import takes a file and has no dialog yet).",
+	"pages": [
+		{
+			"id": "archival",
+			"route": "/archival",
+			"type": "dashboard",
+			"title": "Archiving",
+			"config": {
+				"description": "Destroy, retain and transfer according to the selection list",
+				"allowEdit": false,
+				"showActionsMenu": false,
+				"showWidgetActions": false,
+				"headerActions": [
+					{
+						"id": "draw-up-destruction-list",
+						"label": "Create destruction list",
+						"icon": "Plus",
+						"variant": "primary",
+						"type": "api-call",
+						"method": "POST",
+						"url": "/apps/openregister/api/archival/destruction-lists/draw-up",
+						"confirm": true,
+						"successMessage": "Destruction list created"
+					}
+				],
+				"widgets": [
+					{
+						"id": "archival-tabs",
+						"title": "Archiving",
+						"type": "tabs",
+						"showTitle": false,
+						"content": {
+							"showActions": false,
+							"tabs": [
+								{ "id": "destruction-lists", "widgetIds": ["held-off-lists", "destruction-lists"], "label": "Destruction lists" },
+								{ "id": "legal-holds", "widgetId": "legal-holds", "label": "Legal holds" },
+								{ "id": "transfers", "widgetId": "transfers", "label": "Transfer to e-Depot" },
+								{ "id": "selection-list", "widgetId": "selection-list-versions", "label": "Selection list" }
+							]
+						}
+					},
+					{
+						"id": "held-off-lists",
+						"title": "Legal holds",
+						"type": "banner",
+						"content": {
+							"variant": "info",
+							"text": "{value} records are under a legal hold and were left off the list.",
+							"visibleWhen": {
+								"endpoint": "/apps/openregister/api/archival/overview",
+								"field": "heldOffLists",
+								"op": "gt",
+								"value": 0
+							}
+						}
+					},
+					{
+						"id": "destruction-lists",
+						"title": "Destruction lists",
+						"type": "record-list",
+						"content": {
+							"endpointSource": { "url": "/apps/openregister/api/archival/overview", "responsePath": "destructionLists" },
+							"presentation": "table",
+							"limit": 50,
+							"columns": [
+								{ "label": "List", "value": "{title}", "sub": "{summary}" },
+								{ "label": "Drawn up by", "value": "{createdByName}" },
+								{ "label": "Status", "value": "{statusLabel}", "tone": { "field": "status", "map": { "in_review": "warning", "awaiting_second_approval": "warning", "approved": "info", "rejected": "error", "completed": "success" }, "default": "default" } }
+							],
+							"rowActionsLabel": "Actions for this destruction list",
+							"rowActions": [
+								{ "label": "Approve", "endpoint": "/apps/openregister/api/archival/destruction-lists/{uuid}/approve", "visibleWhen": { "field": "status", "op": "in", "value": ["in_review", "awaiting_second_approval"] } },
+								{ "label": "Reject", "endpoint": "/apps/openregister/api/archival/destruction-lists/{uuid}/reject", "visibleWhen": { "field": "status", "op": "in", "value": ["in_review", "awaiting_second_approval"] } }
+							],
+							"emptyText": "No destruction list has been drawn up yet",
+							"errorText": "The destruction lists could not be read"
+						}
+					},
+					{
+						"id": "legal-holds",
+						"title": "Legal holds",
+						"type": "record-list",
+						"content": {
+							"endpointSource": { "url": "/apps/openregister/api/archival/overview", "responsePath": "legalHolds" },
+							"presentation": "table",
+							"limit": 200,
+							"columns": [
+								{ "label": "Record", "value": "{title}", "sub": "{reason}" },
+								{ "label": "Placed by", "value": "{placedByName}" },
+								{ "label": "Since", "value": "{placedDate|date}" }
+							],
+							"emptyText": "No record is under a legal hold",
+							"errorText": "The legal holds could not be read"
+						}
+					},
+					{
+						"id": "transfers",
+						"title": "Transfer to e-Depot",
+						"type": "record-list",
+						"content": {
+							"endpointSource": { "url": "/apps/openregister/api/archival/overview", "responsePath": "transfers" },
+							"presentation": "table",
+							"limit": 50,
+							"columns": [
+								{ "label": "Transfer", "value": "{createdAt|date}", "sub": "{packageFormat}" },
+								{ "label": "Records", "value": "{recordCount}", "align": "end" },
+								{ "label": "Status", "value": "{statusLabel}", "tone": { "field": "status", "map": { "in_review": "warning", "approved": "info", "in_progress": "info", "completed": "success", "partially_failed": "error", "failed": "error", "rejected": "error" }, "default": "default" } }
+							],
+							"rowActionsLabel": "Actions for this transfer",
+							"rowActions": [
+								{ "label": "Approve", "endpoint": "/apps/openregister/api/transfers/{uuid}/approve", "visibleWhen": { "field": "status", "value": "in_review" } },
+								{ "label": "Reject", "endpoint": "/apps/openregister/api/transfers/{uuid}/reject", "visibleWhen": { "field": "status", "value": "in_review" } }
+							],
+							"emptyText": "Nothing has been transferred to the e-Depot yet",
+							"errorText": "The transfers could not be read"
+						}
+					},
+					{
+						"id": "selection-list-versions",
+						"title": "Selection list",
+						"type": "record-list",
+						"content": {
+							"endpointSource": { "url": "/apps/openregister/api/archival/overview", "responsePath": "selectionListVersions" },
+							"presentation": "table",
+							"columns": [
+								{ "label": "Version", "value": "{version}" },
+								{ "label": "Categories", "value": "{categoryCount}", "align": "end" },
+								{ "label": "Status", "value": "{statusLabel}", "tone": { "field": "active", "map": { "true": "success" }, "default": "default" } }
+							],
+							"emptyText": "No selection list has been imported",
+							"errorText": "The selection lists could not be read"
+						}
+					},
+					{
+						"id": "edepot-facts",
+						"title": "e-Depot",
+						"type": "facts",
+						"content": {
+							"endpointSource": { "url": "/apps/openregister/api/archival/overview", "responsePath": "edepot" },
+							"fields": [
+								{ "label": "Last transfer", "parts": [{ "path": "lastTransferAt", "format": "date" }, "lastTransferRecords"] },
+								{ "label": "Package", "path": "packageFormat" },
+								{ "label": "Last failure", "parts": ["lastFailure", { "path": "lastFailureAt", "format": "date" }] }
+							],
+							"emptyText": "Nothing has been transferred to the e-Depot yet"
+						}
+					},
+					{
+						"id": "selection-list-facts",
+						"title": "Selection list",
+						"type": "facts",
+						"content": {
+							"endpointSource": { "url": "/apps/openregister/api/archival/overview", "responsePath": "selectionList" },
+							"fields": [
+								{ "as": "title", "path": "version" },
+								{ "as": "pill", "path": "statusLabel", "variant": "success" },
+								{ "as": "line", "parts": ["categories"] }
+							],
+							"emptyText": "No selection list is in force"
+						}
+					}
+				],
+				"layout": [
+					{ "id": "archival-1", "widgetId": "archival-tabs", "gridX": 0, "gridY": 0, "gridWidth": 8, "gridHeight": 8 },
+					{ "id": "archival-2", "widgetId": "edepot-facts", "gridX": 8, "gridY": 0, "gridWidth": 4, "gridHeight": 4 },
+					{ "id": "archival-3", "widgetId": "selection-list-facts", "gridX": 8, "gridY": 4, "gridWidth": 4, "gridHeight": 3 }
+				]
+			}
+		}
+	],
+	"menu": [
+		{
+			"id": "Archival",
+			"label": "Archiving",
+			"icon": "Gavel",
+			"route": "archival",
+			"order": 101
+		}
+	]
+}
