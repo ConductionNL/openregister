@@ -88,7 +88,7 @@ class ConditionMatcherMemberOfTest extends TestCase {
 			}
 		);
 
-		return new MemberOfResolver($schemas, $registers, $objects, new OperatorEvaluator(new NullLogger()), new NullLogger());
+		return new MemberOfResolver($schemas, $registers, $this->containerGiving($objects), new OperatorEvaluator(new NullLogger()), new NullLogger());
 	}//end resolver()
 
 	/**
@@ -235,4 +235,19 @@ class ConditionMatcherMemberOfTest extends TestCase {
 		$this->assertNull($matcher->resolveDynamicValue(['$memberOf' => self::OPERAND]));
 		$this->assertFalse($matcher->objectMatchesConditions(['administrationId' => 'adm-1'], self::MATCH));
 	}//end testWithoutAResolverTheRuleAdmitsNobody()
+
+	/**
+	 * A container that hands out the given MagicMapper, as the real one does on first read.
+	 *
+	 * @param MagicMapper $objects The mapper to hand out.
+	 *
+	 * @return ContainerInterface
+	 */
+	private function containerGiving(MagicMapper $objects): ContainerInterface {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			static fn (string $id): mixed => ($id === MagicMapper::class) ? $objects : null
+		);
+		return $container;
+	}//end containerGiving()
 }//end class
