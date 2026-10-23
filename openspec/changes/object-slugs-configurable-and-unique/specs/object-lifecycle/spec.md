@@ -254,8 +254,10 @@ HTTP 409 with a JSON body that says the identifier is ambiguous, on every route 
 resolves an object identifier through `ObjectService::find()` or `findSilent()`
 (show, update, patch, destroy, canDelete, lock, unlock, move, the presence routes,
 downloadFiles, referencedBy, geoFeatures, referenceOptions and the other `{id}` routes
-of `ObjectsController`), each keeping its other error codes. The body MUST NOT list the
-matching uuids.
+of `ObjectsController`, and the relations route of `RelationsController`), each keeping
+its other error codes. The body MUST NOT list the matching uuids. The audit-trail, files
+and uses/used sub-routes do not resolve the identifier through these lookups and are out
+of scope of this requirement.
 
 An exact match on the object's numeric `_id` or `_uuid` MUST win over a slug match: a
 slug that equals another object's id (`2024`) or uuid does not make that object
