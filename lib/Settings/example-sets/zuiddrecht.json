@@ -1539,6 +1539,24 @@
 					}
 				]
 			}
+		},
+		{
+			"key": "dsar-erasure-former-pupil",
+			"register": "data-subject-requests",
+			"schema": "dataSubjectRequest",
+			"data": {
+				"subjectId": "po-oud-leerling-4h1",
+				"subjectType": "former pupil",
+				"jurisdiction": "NL",
+				"type": "erasure",
+				"status": "in-progress",
+				"receivedAt": "{{datetime:-35 09:00}}",
+				"dueAt": "{{datetime:11 23:59}}",
+				"handler": "{{cast:pieter.uid}}",
+				"notes": "Verwijderverzoek per brief van een ouder voor een oud-leerling, uitgeschreven in juli. Leerlingdossier en foto's uit het portaal verwijderen; de wettelijke bewaarplicht van de leerlingadministratie blijft staan.",
+				"dpiaRequired": false,
+				"escalationTier": "on-track"
+			}
 		}
 	]
 }
