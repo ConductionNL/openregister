@@ -77,7 +77,7 @@
     "apexcharts": "^7.1.0",
     "css-loader": "^7.1.5",
     "dexie": "^4.4.6",
-    "dompurify": "^3.4.15",
+    "dompurify": "^3.4.17",
     "gridstack": "^13.2.0",
     "marked": "^18.1.1",
     "path-browserify": "^1.0.1",
