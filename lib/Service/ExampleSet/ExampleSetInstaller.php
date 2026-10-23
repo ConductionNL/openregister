@@ -317,6 +317,18 @@ class ExampleSetInstaller {
 			$kept = $held['row'];
 			if ($kept !== null) {
 				$report['types'][$type]['kept']++;
+				if (isset($record['files'][$name]) === false) {
+					// Files declared after the object was written are attached now, once.
+					$report = $this->attachFiles(
+						plan: $plan,
+						fragment: $fragment,
+						object: $object,
+						objectId: (string) $record['objects'][$name]['id'],
+						report: $report,
+						record: $record
+					);
+				}
+
 				$objects[$object['key']] = $this->refreshReferences(
 					plan: $plan,
 					fragment: $fragment,
