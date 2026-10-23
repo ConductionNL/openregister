@@ -1870,12 +1870,10 @@ class MagicFacetHandler {
 		string $tableName,
 		?Schema $schema = null,
 	): void {
-		// The deleted lens, spelled once in MagicSearchHandler so the facets
+		// The deleted lens, spelled once in DeletedLens so the facets
 		// count the rows the list shows.
-		$deleted = MagicSearchHandler::deletedConditionSql(
-			mode: MagicSearchHandler::resolveDeletedMode(query: $baseQuery),
-			columnPrefix: ''
-		);
+		$lens = new DeletedLens();
+		$deleted = $lens->condition(mode: $lens->mode(query: $baseQuery), columnPrefix: '');
 		if ($deleted !== null) {
 			$queryBuilder->andWhere($queryBuilder->createFunction($deleted));
 		}

@@ -23,11 +23,11 @@ use OCA\OpenRegister\Service\Query\RelatedRowQueryApplier;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
+use OCA\OpenRegister\Db\MagicMapper\DeletedLens;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
-use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use PHPUnit\Framework\TestCase;
@@ -36,6 +36,7 @@ use ReflectionClass;
 
 /**
  * @covers \OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler
+ * @covers \OCA\OpenRegister\Db\MagicMapper\DeletedLens
  * @uses \OCA\OpenRegister\Db\Schema
  * @uses \OCA\OpenRegister\Db\MagicMapper\NestedPathFilter
  * @uses \OCA\OpenRegister\Service\Object\DraftListLens
@@ -54,7 +55,7 @@ final class MagicSearchHandlerDeletedLensTest extends TestCase {
 	 * @dataProvider modes
 	 */
 	public function testTheQueryNamesItsMode(array $query, string $expected): void {
-		$this->assertSame($expected, MagicSearchHandler::resolveDeletedMode(query: $query));
+		$this->assertSame($expected, (new DeletedLens())->mode(query: $query));
 	}//end testTheQueryNamesItsMode()
 
 	/**
@@ -64,18 +65,18 @@ final class MagicSearchHandlerDeletedLensTest extends TestCase {
 	 */
 	public static function modes(): array {
 		return [
-			'nobody asked' => [['_limit' => 20], MagicSearchHandler::DELETED_EXCLUDE],
-			'true as a string' => [['_deleted' => 'true'], MagicSearchHandler::DELETED_ONLY],
-			'true as a boolean' => [['_deleted' => true], MagicSearchHandler::DELETED_ONLY],
-			'true as a digit' => [['_deleted' => '1'], MagicSearchHandler::DELETED_ONLY],
-			'any' => [['_deleted' => 'any'], MagicSearchHandler::DELETED_ANY],
-			'ANY' => [['_deleted' => 'ANY'], MagicSearchHandler::DELETED_ANY],
-			'explicit false' => [['_deleted' => 'false'], MagicSearchHandler::DELETED_EXCLUDE],
-			'a typo' => [['_deleted' => 'yes please'], MagicSearchHandler::DELETED_EXCLUDE],
-			'empty' => [['_deleted' => ''], MagicSearchHandler::DELETED_EXCLUDE],
-			'the older spelling of both' => [['_includeDeleted' => 'true'], MagicSearchHandler::DELETED_ANY],
-			'the older spelling, false' => [['_includeDeleted' => 'false'], MagicSearchHandler::DELETED_EXCLUDE],
-			'the lens wins over the older spelling' => [['_deleted' => 'true', '_includeDeleted' => 'true'], MagicSearchHandler::DELETED_ONLY],
+			'nobody asked' => [['_limit' => 20], DeletedLens::EXCLUDE],
+			'true as a string' => [['_deleted' => 'true'], DeletedLens::ONLY],
+			'true as a boolean' => [['_deleted' => true], DeletedLens::ONLY],
+			'true as a digit' => [['_deleted' => '1'], DeletedLens::ONLY],
+			'any' => [['_deleted' => 'any'], DeletedLens::ANY],
+			'ANY' => [['_deleted' => 'ANY'], DeletedLens::ANY],
+			'explicit false' => [['_deleted' => 'false'], DeletedLens::EXCLUDE],
+			'a typo' => [['_deleted' => 'yes please'], DeletedLens::EXCLUDE],
+			'empty' => [['_deleted' => ''], DeletedLens::EXCLUDE],
+			'the older spelling of both' => [['_includeDeleted' => 'true'], DeletedLens::ANY],
+			'the older spelling, false' => [['_includeDeleted' => 'false'], DeletedLens::EXCLUDE],
+			'the lens wins over the older spelling' => [['_deleted' => 'true', '_includeDeleted' => 'true'], DeletedLens::ONLY],
 		];
 	}//end modes()
 
@@ -162,16 +163,12 @@ final class MagicSearchHandlerDeletedLensTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheSingleTablePathCarriesTheLens(): void {
-		$this->assertSame('t._deleted IS NULL', MagicSearchHandler::deletedConditionSql(mode: MagicSearchHandler::DELETED_EXCLUDE, columnPrefix: 't.'));
-		$this->assertSame('t._deleted IS NOT NULL', MagicSearchHandler::deletedConditionSql(mode: MagicSearchHandler::DELETED_ONLY, columnPrefix: 't.'));
-		$this->assertNull(MagicSearchHandler::deletedConditionSql(mode: MagicSearchHandler::DELETED_ANY, columnPrefix: 't.'));
+		$this->assertSame('t._deleted IS NULL', (new DeletedLens())->condition(mode: DeletedLens::EXCLUDE, columnPrefix: 't.'));
+		$this->assertSame('t._deleted IS NOT NULL', (new DeletedLens())->condition(mode: DeletedLens::ONLY, columnPrefix: 't.'));
+		$this->assertNull((new DeletedLens())->condition(mode: DeletedLens::ANY, columnPrefix: 't.'));
 
 		$added = [];
-		$expr = $this->createMock(originalClassName: IExpressionBuilder::class);
-		$expr->method('isNull')->willReturnCallback(static fn (string $column): string => $column.' IS NULL');
-		$expr->method('isNotNull')->willReturnCallback(static fn (string $column): string => $column.' IS NOT NULL');
 		$qb = $this->createMock(originalClassName: IQueryBuilder::class);
-		$qb->method('expr')->willReturn($expr);
 		$qb->method('createFunction')->willReturnCallback(static fn (string $sql): string => $sql);
 		$qb->method('andWhere')->willReturnCallback(
 			function (...$where) use (&$added, $qb) {
@@ -181,7 +178,7 @@ final class MagicSearchHandlerDeletedLensTest extends TestCase {
 		);
 		$method = (new ReflectionClass(objectOrClass: MagicSearchHandler::class))->getMethod('applyBasicFilters');
 		$method->setAccessible(true);
-		$method->invoke($this->handlerWithDb(), $qb, MagicSearchHandler::DELETED_ONLY, MagicSearchHandler::ARCHIVED_ANY, [], null, []);
+		$method->invoke($this->handlerWithDb(), $qb, DeletedLens::ONLY, MagicSearchHandler::ARCHIVED_ANY, [], null, []);
 
 		$this->assertContains('t._deleted IS NOT NULL', $added);
 		$this->assertNotContains('t._deleted IS NULL', $added);

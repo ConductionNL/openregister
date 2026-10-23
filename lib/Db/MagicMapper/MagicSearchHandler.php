@@ -120,28 +120,6 @@ class MagicSearchHandler {
 	public const ARCHIVED_ANY = 'any';
 
 	/**
-	 * The working set: soft-deleted rows are left out. The default.
-	 *
-	 * @var string
-	 */
-	public const DELETED_EXCLUDE = 'exclude';
-
-	/**
-	 * The deleted lens: soft-deleted rows and nothing else.
-	 *
-	 * @var string
-	 */
-	public const DELETED_ONLY = 'only';
-
-	/**
-	 * Both at once. The literal is the parameter value callers send
-	 * (`_deleted=any`), and what the older `_includeDeleted=true` means.
-	 *
-	 * @var string
-	 */
-	public const DELETED_ANY = 'any';
-
-	/**
 	 * Metadata columns every magic table carries.
 	 *
 	 * Mirrors MagicMapper::getMetadataColumns(); kept as a literal here so a
@@ -553,7 +531,7 @@ class MagicSearchHandler {
 		// Apply basic filters (deleted, archived).
 		$this->applyBasicFilters(
 			qb: $queryBuilder,
-			deletedMode: self::resolveDeletedMode(query: $query),
+			deletedMode: (new DeletedLens())->mode(query: $query),
 			archivedMode: $this->resolveArchivedMode(query: $query),
 			query: $query,
 			schema: $schema,
@@ -1045,7 +1023,8 @@ class MagicSearchHandler {
 	private function lifecycleConditionsSql(array $query, ?Schema $schema = null, array $missingColumns = []): array {
 		$conditions = [];
 
-		$deleted = self::deletedConditionSql(mode: self::resolveDeletedMode(query: $query), columnPrefix: '');
+		$lens = new DeletedLens();
+		$deleted = $lens->condition(mode: $lens->mode(query: $query), columnPrefix: '');
 		if ($deleted !== null) {
 			$conditions[] = $deleted;
 		}
@@ -1126,31 +1105,6 @@ class MagicSearchHandler {
 
 		return $columnPrefix.'_archived IS NULL';
 	}//end archivedConditionSql()
-
-	/**
-	 * The deleted predicate, or null when it puts no condition on the list.
-	 *
-	 * The one spelling both query paths use, so the single-table path and the
-	 * UNION path cannot answer the same lens differently.
-	 *
-	 * @param string $mode         One of the DELETED_* constants.
-	 * @param string $columnPrefix The table alias with its dot, or empty.
-	 *
-	 * @return string|null The predicate, without a leading AND.
-	 *
-	 * @spec openspec/changes/object-deleted-lens/specs/object-lifecycle/spec.md
-	 */
-	public static function deletedConditionSql(string $mode, string $columnPrefix): ?string {
-		if ($mode === self::DELETED_ANY) {
-			return null;
-		}
-
-		if ($mode === self::DELETED_ONLY) {
-			return $columnPrefix.'_deleted IS NOT NULL';
-		}
-
-		return $columnPrefix.'_deleted IS NULL';
-	}//end deletedConditionSql()
 
 	/**
 	 * The draft predicate (decision 201), or null when it puts no condition on the list.
@@ -2557,7 +2511,7 @@ class MagicSearchHandler {
 	 * Apply basic filters like deleted status
 	 *
 	 * @param IQueryBuilder $qb Query builder to modify
-	 * @param string $deletedMode Which deleted lens to apply, one of the DELETED_* constants
+	 * @param string $deletedMode Which deleted lens to apply, one of the DeletedLens constants
 	 * @param string $archivedMode Which archive lens to apply, one of the ARCHIVED_* constants
 	 * @param array<string, mixed> $query The search query, for the draft lens (`_drafts`, decision 201)
 	 * @param Schema|null $schema The schema being listed, for its draft list default (`draftsListed`)
@@ -2570,19 +2524,15 @@ class MagicSearchHandler {
 	 */
 	private function applyBasicFilters(
 		IQueryBuilder $qb,
-		string $deletedMode = self::DELETED_EXCLUDE,
+		string $deletedMode = DeletedLens::EXCLUDE,
 		string $archivedMode = self::ARCHIVED_EXCLUDE,
 		array $query = [],
 		?Schema $schema = null,
 		array $missingColumns = [],
 	): void {
-		// The same lens as deletedConditionSql(), through the expression builder.
-		if ($deletedMode === self::DELETED_EXCLUDE) {
-			$qb->andWhere($qb->expr()->isNull('t._deleted'));
-		}
-
-		if ($deletedMode === self::DELETED_ONLY) {
-			$qb->andWhere($qb->expr()->isNotNull('t._deleted'));
+		$deleted = (new DeletedLens())->condition(mode: $deletedMode, columnPrefix: 't.');
+		if ($deleted !== null) {
+			$qb->andWhere($qb->createFunction($deleted));
 		}
 
 		// Handle the archive filter. Exclusion is the DEFAULT rather than a
@@ -2658,42 +2608,6 @@ class MagicSearchHandler {
 
 		return self::ARCHIVED_EXCLUDE;
 	}//end resolveArchivedMode()
-
-	/**
-	 * Which deleted lens a query asks for.
-	 *
-	 * `_deleted` absent or false is the working set, `_deleted=true` is the
-	 * soft-deleted rows alone and `_deleted=any` is both. Without `_deleted`,
-	 * the older `_includeDeleted=true` still means both. Anything else reads as
-	 * the working set, so an unknown value never widens a list.
-	 *
-	 * @param array<string, mixed> $query The search query.
-	 *
-	 * @return string One of the DELETED_* constants.
-	 *
-	 * @spec openspec/changes/object-deleted-lens/specs/object-lifecycle/spec.md
-	 */
-	public static function resolveDeletedMode(array $query): string {
-		if (array_key_exists('_deleted', $query) === false) {
-			if (filter_var($query['_includeDeleted'] ?? false, FILTER_VALIDATE_BOOLEAN) === true) {
-				return self::DELETED_ANY;
-			}
-
-			return self::DELETED_EXCLUDE;
-		}
-
-		$raw = $query['_deleted'];
-
-		if (is_string($raw) === true && strtolower(trim($raw)) === self::DELETED_ANY) {
-			return self::DELETED_ANY;
-		}
-
-		if (filter_var($raw, FILTER_VALIDATE_BOOLEAN) === true) {
-			return self::DELETED_ONLY;
-		}
-
-		return self::DELETED_EXCLUDE;
-	}//end resolveDeletedMode()
 
 	/**
 	 * Check if a mixed value represents an explicit boolean true
