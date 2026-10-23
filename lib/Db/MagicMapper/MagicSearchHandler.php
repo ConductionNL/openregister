@@ -575,8 +575,61 @@ class MagicSearchHandler {
 			registerId: ($registerId ?? $this->registerIdFromQuery(query: $query))
 		);
 
+		// Narrow by one element of an array property (`_element`).
+		$this->applyArrayElementFilters(qb: $queryBuilder, query: $query, schema: $schema);
+
 		return $queryBuilder;
 	}//end buildFilteredQuery()
+
+	/**
+	 * Narrow the query by `_element` blocks: an object matches when one element
+	 * of the named array property carries every field of a block.
+	 *
+	 * A block on a property the schema does not declare as an array, or one
+	 * the caller may not read, matches nothing and is reported as an ignored
+	 * filter, the way an unknown nested path is. An encrypted property refuses.
+	 *
+	 * @param IQueryBuilder $qb     The query being built.
+	 * @param array<mixed>  $query  The request query.
+	 * @param Schema        $schema The schema of the table.
+	 *
+	 * @return void
+	 *
+	 * @throws EncryptedFieldFilterException When the array property is encrypted.
+	 *
+	 * @spec openspec/changes/array-element-filters/specs/zoeken-filteren/spec.md#requirement-a-filter-can-match-one-element-of-an-array-property
+	 */
+	private function applyArrayElementFilters(IQueryBuilder $qb, array $query, Schema $schema): void {
+		$elements   = new ArrayElementFilter();
+		$properties = ($schema->getProperties() ?? []);
+		$isPostgres = $this->isPostgresPlatform();
+		foreach ($elements->blocks(query: $query) as $block) {
+			$root = $block['root'];
+			if (($properties[$root]['x-openregister-encrypted'] ?? false) === true) {
+				throw new EncryptedFieldFilterException(property: $root);
+			}
+
+			$condition = null;
+			if (($properties[$root]['type'] ?? null) === 'array'
+				&& $this->relatedRows->mayReadProperty(schema: $schema, property: $root) === true
+			) {
+				$condition = $elements->condition(
+					column: 't.'.$this->sanitizeColumnName(name: $root),
+					fields: $block['fields'],
+					bind: static fn (string $value): string => (string)$qb->createNamedParameter($value),
+					isPostgres: $isPostgres
+				);
+			}
+
+			if ($condition === null) {
+				$this->ignoredFilters[] = ArrayElementFilter::KEY.'['.$root.']';
+				$qb->andWhere('1 = 0');
+				continue;
+			}
+
+			$qb->andWhere($condition);
+		}//end foreach
+	}//end applyArrayElementFilters()
 
 	/**
 	 * Narrow the query by `_related` and `_referenced` blocks, or refuse it.
@@ -628,7 +681,7 @@ class MagicSearchHandler {
 	}//end applyRelatedRowFilters()
 
 	/**
-	 * Refuse a query carrying `_related` or `_referenced` where it cannot be honoured.
+	 * Refuse a query carrying `_related`, `_referenced` or `_element` where it cannot be honoured.
 	 *
 	 * 🔴 REFUSE, DO NOT DROP. The related-row filters are written for the
 	 * QueryBuilder path (applyRelatedRowFilters). Underscore keys are skipped by
@@ -645,7 +698,7 @@ class MagicSearchHandler {
 	 * @spec openspec/changes/query-referenced-schema-rows/specs/zoeken-filteren/spec.md
 	 */
 	public function refuseRelatedRowFilters(array $query): void {
-		foreach (['_related', '_referenced'] as $key) {
+		foreach (['_related', '_referenced', ArrayElementFilter::KEY] as $key) {
 			if (array_key_exists($key, $query) === true) {
 				throw new RelatedRowFilterNotSupportedException(
 					message: sprintf(
