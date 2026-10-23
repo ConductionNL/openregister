@@ -327,7 +327,7 @@ class TaskController extends Controller {
 
 		return new JSONResponse(
 			array_merge(
-				$this->inbox->row(task: $task, subjects: [], now: $this->temporal->now()),
+				$this->inbox->enrich(task: $task),
 				$this->forms->describe(task: $task)
 			)
 		);
@@ -651,7 +651,7 @@ class TaskController extends Controller {
 			$task = $verb();
 
 			return new JSONResponse(
-				$this->inbox->row(task: $task, subjects: [], now: $this->temporal->now()),
+				$this->inbox->enrich(task: $task),
 				$successStatus
 			);
 		} catch (TaskFormRefusedException $refused) {
