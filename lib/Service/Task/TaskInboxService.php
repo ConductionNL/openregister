@@ -445,6 +445,32 @@ class TaskInboxService {
 			'register' => ($self['register'] ?? ($serialised['register'] ?? null)),
 			'schema' => ($self['schema'] ?? ($serialised['schema'] ?? null)),
 			'title' => ($self['name'] ?? ($serialised['name'] ?? ($serialised['title'] ?? null))),
+			'identifier' => $this->subjectIdentifier(serialised: $serialised),
 		];
 	}//end contextRow()
+
+	/**
+	 * The subject's own human number, such as a case number ("2026-0074"):
+	 * its `identifier` property when that is a non-empty string or number,
+	 * else null. A list shows it beside the subject's title.
+	 *
+	 * @param array<string, mixed> $serialised The object's serialised form.
+	 *
+	 * @return string|null The identifier, or null when the object has none.
+	 *
+	 * @spec openspec/changes/task-subject-identifier/specs/flow-tasks/spec.md#requirement-the-task-subject-context-carries-the-subjects-identifier
+	 */
+	private function subjectIdentifier(array $serialised): ?string {
+		$identifier = ($serialised['identifier'] ?? null);
+		if (is_string($identifier) === false && is_int($identifier) === false) {
+			return null;
+		}
+
+		$identifier = trim((string)$identifier);
+		if ($identifier === '') {
+			return null;
+		}
+
+		return $identifier;
+	}//end subjectIdentifier()
 }//end class
