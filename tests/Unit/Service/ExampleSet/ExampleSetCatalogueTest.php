@@ -156,6 +156,9 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$woo = array_keys(array_filter($plan['cast']['people'], static fn (array $p): bool => in_array('woo-en-informatie', ($p['groups'] ?? []), true)));
 		$this->assertSame(expected: ['thomas', 'anouk', 'pieter'], actual: $woo);
 		$this->assertSame(expected: ['Teamleider', 'Woo en informatie'], actual: [$plan['cast']['people']['anouk']['function'], $plan['cast']['people']['anouk']['department']]);
+		// The ketenpartner DqZaakSamenwerken shares a case with: an organisation of type partner.
+		$partner = array_values(array_filter($plan['organisations'], static fn (array $o): bool => $o['slug'] === 'odzhz'))[0];
+		$this->assertSame(expected: ['Omgevingsdienst Zuid-Holland Zuid', 'partner'], actual: [$partner['name'], $partner['type']]);
 		// Gemeente Waterland, the second tenant: its quota, its administrator and Pieter, who reads it on DqTenant.
 		$waterland = array_values(array_filter($plan['organisations'], static fn (array $o): bool => $o['slug'] === 'waterland'))[0];
 		$this->assertSame(expected: ['marieke.visser', 'pieter'], actual: $waterland['members']);

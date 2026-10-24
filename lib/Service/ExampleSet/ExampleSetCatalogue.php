@@ -506,6 +506,8 @@ class ExampleSetCatalogue {
 				'name'        => (string) $organisation['name'],
 				'slug'        => (string) $organisation['slug'],
 				'description' => (string) ($organisation['description'] ?? ''),
+				'type'        => (string) ($organisation['type'] ?? ''),
+				'contactEmail' => (string) ($organisation['contactEmail'] ?? ''),
 				'quota'       => $this->organisationQuota(declared: ($organisation['quota'] ?? []), file: $file, slug: (string) $organisation['slug']),
 				'members'     => $this->organisationMembers(
 					declared: ($organisation['members'] ?? []),

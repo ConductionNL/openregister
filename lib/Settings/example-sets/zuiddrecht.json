@@ -924,6 +924,14 @@
 					"marieke",
 					"pieter"
 				]
+			},
+			{
+				"key": "odzhz",
+				"name": "Omgevingsdienst Zuid-Holland Zuid",
+				"slug": "odzhz",
+				"type": "partner",
+				"contactEmail": "info@odzhz.example",
+				"description": "De omgevingsdienst waarmee Zuiddrecht toezicht en handhaving deelt: de ketenpartner in het deelvenster van een zaak."
 			}
 		]
 	},
