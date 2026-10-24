@@ -304,6 +304,40 @@ class ExampleSetFragmentPartsTest extends ExampleSetTestCase {
 		$this->assertSame([], $this->config);
 	}
 
+	/**
+	 * A value the store keeps in another form is still kept: a moment stored in UTC, and an empty text stored as
+	 * null (:8080, 24 Oct: six decidiq agendaPublishedAt changes and three opencatalogi status messages reported as
+	 * written but not kept).
+	 *
+	 * @return void
+	 */
+	public function testAValueStoredInAnotherFormIsNotReportedLost(): void {
+		$this->store->storedAs['cases case'] = [
+			'publishedAt' => static fn (mixed $v): string => (new \DateTimeImmutable((string) $v))->setTimezone(new \DateTimeZone('UTC'))->format('c'),
+			'message'     => static function (mixed $v): mixed {
+				if ($v === '') {
+					return null;
+				}
+
+				return $v;
+			},
+		];
+		$this->alpha(fragment: [
+			'objects' => [['key' => 'case-1', 'register' => 'cases', 'schema' => 'case', 'data' => ['title' => 'Zaak', 'message' => '']]],
+			'changes' => [
+				[
+					'key' => 'case-1-published', 'register' => 'cases', 'schema' => 'case', 'object' => 'case-1',
+					'set' => ['publishedAt' => '{{datetime:-3@tue 09:00}}'],
+				],
+			],
+		]);
+
+		$report = $this->installer->install(plan: $this->catalogue->gather(set: 'demo'), today: $this->today());
+
+		$this->assertSame(expected: [], actual: $report['lost']);
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+	}
+
 	public function testAChangeToAnObjectNotWrittenEarlierIsRefused(): void {
 		$this->alpha(['changes' => [['key' => 'c', 'register' => 'cases', 'schema' => 'case', 'object' => 'nope', 'set' => ['x' => 1]]]]);
 

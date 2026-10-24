@@ -38,6 +38,9 @@ class FakeExampleSetStore extends ExampleSetStore {
 	/** @var array<string, array<int, string>> Field names a schema silently drops, by "register schema". */
 	public array $droppedFields = [];
 
+	/** @var array<string, array<string, \Closure(mixed): mixed>> How a schema stores a field (a datetime in UTC, '' as null), by "register schema", then field. */
+	public array $storedAs = [];
+
 	/** @var array<string, array<int, string>> Fields a schema keeps as text (`string or null`), by "register schema". */
 	public array $textFields = [];
 
@@ -213,7 +216,7 @@ class FakeExampleSetStore extends ExampleSetStore {
 			unset($data[$field]);
 		}
 
-		return ['id' => $this->seed(register: $register, schema: $schema, data: $data), 'error' => ''];
+		return ['id' => $this->seed(register: $register, schema: $schema, data: $this->asStored(type: $register.' '.$schema, data: $data)), 'error' => ''];
 	}
 
 	/** @var int Number of updates. */
@@ -231,9 +234,27 @@ class FakeExampleSetStore extends ExampleSetStore {
 
 		$this->updates++;
 		unset($data['@self'], $data['id']);
-		$this->rows[$register.' '.$schema][$id] = (['id' => $id] + $data);
+		$this->rows[$register.' '.$schema][$id] = (['id' => $id] + $this->asStored(type: $register.' '.$schema, data: $data));
 
 		return '';
+	}
+
+	/**
+	 * The data as the schema stores it, per $storedAs.
+	 *
+	 * @param string               $type "register schema".
+	 * @param array<string, mixed> $data The data sent.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function asStored(string $type, array $data): array {
+		foreach (($this->storedAs[$type] ?? []) as $field => $store) {
+			if (array_key_exists($field, $data) === true) {
+				$data[$field] = $store($data[$field]);
+			}
+		}
+
+		return $data;
 	}
 
 	/** @var array<int, string> Ids under an active legal hold. */
