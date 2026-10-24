@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Sharing;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Db\AccessLink;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -345,6 +346,8 @@ class AccessLinkReader {
 	 * @return array<string, mixed> The readable properties.
 	 *
 	 * @spec openspec/changes/access-by-link-not-by-account/specs/public-access-links/spec.md#requirement-a-link-never-sees-past-the-objects-own-rules-req-abl-004
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	private function filteredProperties(ObjectEntity $object): array {
 		$data = $object->getObject();
@@ -364,7 +367,8 @@ class AccessLinkReader {
 			return [];
 		}
 
-		return $this->properties->filterReadableProperties(schema: $schema, object: $data);
+		// A link never reveals an explicit-reveal value: it reads masked.
+		return ExplicitReveal::maskAll(schema: $schema, object: $this->properties->filterReadableProperties(schema: $schema, object: $data));
 	}//end filteredProperties()
 
 	/**

@@ -46,6 +46,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
@@ -164,7 +165,9 @@ class PropertyRbacHandler {
 		// An author who wants a role spared says so with `groups`.
 		$object = $this->stripStateHiddenProperties(schema: $schema, object: $object);
 
-		// If user is admin, return object as-is (writeOnly already stripped above).
+		// An admin skips the group read rules (writeOnly and state rules were
+		// applied above). Explicit-reveal masking is not done here: the
+		// ExplicitRevealMasker applies it on the render routes, admins included.
 		if ($this->isAdmin() === true) {
 			return $object;
 		}
@@ -232,9 +235,13 @@ class PropertyRbacHandler {
 	 * @return void
 	 *
 	 * @spec openspec/changes/sensitive-field-reveal-audit/specs/row-field-level-security/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ExplicitReveal's rules are pure functions.
 	 */
 	private function recordReveal(Schema $schema, string $property, mixed $authorization, array $object): void {
-		if ($this->reveals === null || is_array($authorization) === false) {
+		// An explicit-reveal property is masked unless granted, and the
+		// ExplicitRevealMasker records the granted reveal itself.
+		if ($this->reveals === null || is_array($authorization) === false || ExplicitReveal::isExplicit(definition: $authorization) === true) {
 			return;
 		}
 
