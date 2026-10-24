@@ -204,4 +204,14 @@ final class MagicSearchHandlerDeletedLensTest extends TestCase {
 		$this->assertSame('2028-10-13T18:29:41+00:00', $marker['purgeDate']);
 		$this->assertStringStartsWith('2026-10-14T18:29:41', $legacy['deleted']);
 	}//end testADeletedRowKeepsItsMarker()
+
+	/**
+	 * Consumers detect the lens by `MagicSearchHandler::DELETED_ONLY`.
+	 *
+	 * @return void
+	 */
+	public function testTheLensIsDiscoverableOnTheSearchHandler(): void {
+		$this->assertTrue(defined('OCA\\OpenRegister\\Db\\MagicMapper\\MagicSearchHandler::DELETED_ONLY'));
+		$this->assertSame(DeletedLens::ONLY, MagicSearchHandler::DELETED_ONLY);
+	}//end testTheLensIsDiscoverableOnTheSearchHandler()
 }//end class

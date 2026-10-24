@@ -120,6 +120,14 @@ class MagicSearchHandler {
 	public const ARCHIVED_ANY = 'any';
 
 	/**
+	 * The deleted lens alone, for a consumer that checks whether this
+	 * OpenRegister offers `_deleted` (dossiq's Deleted cases page does).
+	 *
+	 * @var string
+	 */
+	public const DELETED_ONLY = DeletedLens::ONLY;
+
+	/**
 	 * Metadata columns every magic table carries.
 	 *
 	 * Mirrors MagicMapper::getMetadataColumns(); kept as a literal here so a
