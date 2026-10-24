@@ -1702,11 +1702,13 @@ class MagicMapper extends AbstractObjectMapper {
 			return false;
 		}
 
-		// 🔴 `_related` and `_referenced` are EXISTS subqueries that only the
+		// 🔴 `_related`, `_referenced` and `_element` are EXISTS subqueries that only the
 		// QueryBuilder path (the sequential one) builds. The raw-SQL UNION builder
 		// refuses them, which on this route would end in an uncaught exception
 		// (HTTP 500), so a query carrying either takes the sequential path.
-		if (array_key_exists('_related', $query) === true || array_key_exists('_referenced', $query) === true) {
+		if (array_key_exists('_related', $query) === true || array_key_exists('_referenced', $query) === true
+			|| array_key_exists('_element', $query) === true
+		) {
 			return false;
 		}
 
