@@ -158,4 +158,22 @@ class DepartmentMatrixRowConditionsTest extends TestCase {
 		$this->assertSame(['matrix.bad-where'], $codes($base + ['where' => ['s1']]));
 		$this->assertSame(['matrix.bad-until'], $codes($base + ['until' => 'someday']));
 	}//end testTheValidatorReadsWhereAndUntil()
+
+	/**
+	 * A matrix naming a provider may declare no rows; an empty provider is refused.
+	 *
+	 * @return void
+	 */
+	public function testRowsFromStandsInForDeclaredRows(): void {
+		$validator = new DepartmentMatrixValidator();
+		$codes = static fn (array $matrix): array => array_column(
+			$validator->validate(properties: ['assignedGroup' => []], authorization: ['matrix' => $matrix]),
+			'code'
+		);
+		$base = ['field' => 'assignedGroup', 'userSource' => ['groups' => true]];
+
+		$this->assertSame([], $codes($base + ['rowsFrom' => 'app.rights']));
+		$this->assertSame(['matrix.no-rows'], $codes($base));
+		$this->assertContains('matrix.bad-rows-from', $codes($base + ['rowsFrom' => ' ']));
+	}//end testRowsFromStandsInForDeclaredRows()
 }//end class

@@ -10,7 +10,7 @@
 ## 2. Rows from an app
 
 - [x] 2.1 `MatrixRowsRequestedEvent` and dispatch in `PermissionHandler::compileDepartmentMatrix()`, cached per request and schema; listener failure contributes nothing
-- [x] 2.2 Access tests on the PHP and the SQL list path, asserted equal (design, access tests 1 to 4) (MatrixRowsFromAppsBothPathsTest; phpmd: validate() CC 11, split pending)
+- [x] 2.2 Access tests on the PHP and the SQL list path, asserted equal (design, access tests 1 to 4) (MatrixRowsFromAppsBothPathsTest)
 
 ## 3. File verbs
 

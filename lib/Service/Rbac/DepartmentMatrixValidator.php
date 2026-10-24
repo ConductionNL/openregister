@@ -110,6 +110,27 @@ class DepartmentMatrixValidator {
 		}
 
 		$findings = array_merge($findings, $this->validateUserSource(source: ($matrix['userSource'] ?? null)));
+
+		return array_merge(
+			$findings,
+			$this->rowsFindings(matrix: $matrix, properties: $properties, field: $field)
+		);
+	}//end validate()
+
+	/**
+	 * Findings for `rowsFrom` and the declared rows.
+	 *
+	 * A matrix that names a provider may declare no rows of its own: its rows
+	 * arrive at check time.
+	 *
+	 * @param array<string, mixed> $matrix     The matrix.
+	 * @param array<string, mixed> $properties The schema's properties.
+	 * @param string               $field      The matrix field.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings.
+	 */
+	private function rowsFindings(array $matrix, array $properties, string $field): array {
+		$findings = [];
 		$rowsFrom = ($matrix[self::ROWS_FROM_KEY] ?? null);
 		if ($rowsFrom !== null && (is_string($rowsFrom) === false || trim($rowsFrom) === '')) {
 			$findings[] = ['code' => 'matrix.bad-rows-from', 'message' => 'rowsFrom must name a provider.'];
@@ -120,13 +141,11 @@ class DepartmentMatrixValidator {
 			return $findings;
 		}
 
-		$findings = array_merge(
+		return array_merge(
 			$findings,
 			$this->validateRows(rows: $rows, properties: $properties, field: $field)
 		);
-
-		return $findings;
-	}//end validate()
+	}//end rowsFindings()
 
 	/**
 	 * Findings for the user source.
