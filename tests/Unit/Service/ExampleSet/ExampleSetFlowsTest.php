@@ -91,6 +91,64 @@ class ExampleSetFlowsTest extends ExampleSetTestCase {
 	}//end testAFlowIsWrittenOnceSwitchedOffAndPublishedAndTakenAwayOnRemove()
 
 	/**
+	 * A change quotes a flow of its fragment by `{{flow:key.uuid}}`: the flow is
+	 * written before the changes, so a type can list the flows a handler may
+	 * start; a stand-in passes the check.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-flow-placeholder/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
+	 */
+	public function testAChangeQuotesAFlowOfItsFragment(): void {
+		$this->store->offer(register: 'cases', schema: 'caseType');
+		$this->app(app: 'alpha', fragment: [
+			'objects' => [['key' => 'woo', 'register' => 'cases', 'schema' => 'caseType', 'data' => ['title' => 'Woo-verzoek']]],
+			'flows'   => [['key' => 'zienswijze', 'data' => self::flow(extra: ['name' => 'Zienswijze derde vragen'])]],
+			'changes' => [[
+				'key'    => 'woo-startbaar',
+				'register' => 'cases',
+				'schema' => 'caseType',
+				'object' => 'woo',
+				'set'    => ['startableFlows' => ['{{flow:zienswijze.uuid}}']],
+			]],
+		]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$flow = array_values($this->flows)[0];
+		$type = $this->store->find(register: 'cases', schema: 'caseType', filters: [])[0];
+		$this->assertSame(expected: [$flow->getUuid()], actual: $type['startableFlows']);
+	}//end testAChangeQuotesAFlowOfItsFragment()
+
+	/**
+	 * A change quoting a flow its fragment does not declare is refused at check time.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-flow-placeholder/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
+	 */
+	public function testAChangeQuotingAnUnknownFlowIsRefused(): void {
+		$this->store->offer(register: 'cases', schema: 'caseType');
+		$this->app(app: 'alpha', fragment: [
+			'objects' => [['key' => 'woo', 'register' => 'cases', 'schema' => 'caseType', 'data' => ['title' => 'Woo-verzoek']]],
+			'changes' => [[
+				'key'      => 'c',
+				'register' => 'cases',
+				'schema'   => 'caseType',
+				'object'   => 'woo',
+				'set'      => ['startableFlows' => ['{{flow:nope.uuid}}']],
+			]],
+		]);
+
+		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$this->assertCount(expectedCount: 1, haystack: $refusals);
+		$this->assertStringContainsString(needle: 'cannot resolve', haystack: $refusals[0]);
+	}//end testAChangeQuotingAnUnknownFlowIsRefused()
+
+	/**
 	 * A flow that says not to be published stays a draft; one that
 	 * disappeared is reported missing.
 	 *

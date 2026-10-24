@@ -105,6 +105,11 @@ class ExampleSetEngineKinds {
 	public function install(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
 		$changed = false;
 		foreach ($this->kinds() as $part => [$rows]) {
+			// The flows are written earlier, by installFlows(), so a change may quote one.
+			if ($part === 'flows') {
+				continue;
+			}
+
 			if ($rows?->installFragment(fragment: $fragment, context: $context, report: $report, record: $record, values: $values) === true) {
 				$changed = true;
 			}
@@ -117,6 +122,24 @@ class ExampleSetEngineKinds {
 
 		return $changed;
 	}//end install()
+
+	/**
+	 * Write the flows of one fragment that the record does not hold, before its changes, so a change may quote
+	 * one (`{{flow:key.uuid}}`).
+	 *
+	 * @param array<string, mixed> $fragment The fragment.
+	 * @param array<string, mixed> $context  The context placeholders draw on.
+	 * @param array<string, mixed> $report   The report; gains `flows`.
+	 * @param array<string, mixed> $record   The record; gains the flows written.
+	 * @param ExampleSetValues     $values   Fills placeholders.
+	 *
+	 * @return bool Whether the record changed and is to be written.
+	 *
+	 * @spec openspec/changes/example-set-flow-placeholder/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
+	 */
+	public function installFlows(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
+		return $this->flows?->installFragment(fragment: $fragment, context: $context, report: $report, record: $record, values: $values) === true;
+	}//end installFlows()
 
 	/**
 	 * Read back the tasks and views the record holds.

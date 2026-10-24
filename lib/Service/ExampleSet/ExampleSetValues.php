@@ -9,6 +9,7 @@
  * - `{{object:key.path}}` a field of an object declared earlier in the same fragment;
  * - `{{view:key.uuid}}` the uuid of a saved view the same fragment declares (user preferences only);
  * - `{{task:key.uuid}}` the uuid of a task the same fragment declares (the parts written after its tasks: notes, read states);
+ * - `{{flow:key.uuid}}` the uuid of a flow the same fragment declares (changes and the engine parts, all written after its flows);
  * - `{{lookup:name}}` the id a lookup by business key found;
  * - `{{account:key.field}}` a field of a service account a fragment declares;
  * - `{{organisation:slug-or-name}}` the uuid of an OpenRegister organisation;
@@ -159,22 +160,51 @@ class ExampleSetValues {
 	 * @spec openspec/changes/example-set-task-placeholder/specs/example-sets/spec.md#requirement-a-note-or-read-state-may-quote-a-task-of-its-fragment
 	 */
 	public function tasksOf(array $fragment, ?array $record): array {
-		$tasks = [];
-		foreach (($fragment['tasks'] ?? []) as $task) {
-			$key = (string) $task['key'];
+		return $this->writtenRowsOf(fragment: $fragment, part: 'tasks', noun: 'task', record: $record);
+	}//end tasksOf()
+
+	/**
+	 * The flows a fragment declares, by key, for `{{flow:key.uuid}}`: as the record holds them after the install
+	 * wrote them, or with a stand-in uuid for the check (`$record` null), since none is written yet.
+	 *
+	 * @param array<string, mixed>      $fragment The fragment.
+	 * @param array<string, mixed>|null $record   The set's record, or null for the check.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 *
+	 * @spec openspec/changes/example-set-flow-placeholder/specs/example-sets/spec.md#requirement-a-change-may-quote-a-flow-of-its-fragment
+	 */
+	public function flowsOf(array $fragment, ?array $record): array {
+		return $this->writtenRowsOf(fragment: $fragment, part: 'flows', noun: 'flow', record: $record);
+	}//end flowsOf()
+
+	/**
+	 * The rows of one engine part a fragment declares, by key: as the record holds them, or stand-ins for the check.
+	 *
+	 * @param array<string, mixed>      $fragment The fragment.
+	 * @param string                    $part     The fragment part, such as `tasks`.
+	 * @param string                    $noun     The word for one row in a stand-in uuid.
+	 * @param array<string, mixed>|null $record   The set's record, or null for the check.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	private function writtenRowsOf(array $fragment, string $part, string $noun, ?array $record): array {
+		$rows = [];
+		foreach (($fragment[$part] ?? []) as $row) {
+			$key = (string) $row['key'];
 			if ($record === null) {
-				$tasks[$key] = ['uuid' => 'example-set-stand-in:task:'.$key];
+				$rows[$key] = ['uuid' => 'example-set-stand-in:'.$noun.':'.$key];
 				continue;
 			}
 
-			$written = ($record['tasks'][$fragment['app'].'/'.$key] ?? null);
+			$written = ($record[$part][$fragment['app'].'/'.$key] ?? null);
 			if (is_array($written) === true) {
-				$tasks[$key] = $written;
+				$rows[$key] = $written;
 			}
 		}
 
-		return $tasks;
-	}//end tasksOf()
+		return $rows;
+	}//end writtenRowsOf()
 
 	/**
 	 * A found value as text inside a longer string; a value that is no scalar is a gap.
@@ -221,6 +251,7 @@ class ExampleSetValues {
 			'object' => $this->objectField(objects: (array) ($context['objects'] ?? []), reference: $rest),
 			'view'   => $this->pathIn(entries: (array) ($context['views'] ?? []), reference: $rest),
 			'task'   => $this->pathIn(entries: (array) ($context['tasks'] ?? []), reference: $rest),
+			'flow'   => $this->pathIn(entries: (array) ($context['flows'] ?? []), reference: $rest),
 			'lookup' => $this->present(value: ($context['lookups'][$rest] ?? null)),
 			'account' => $this->pathIn(entries: (array) ($context['accounts'] ?? []), reference: $rest),
 			'organisation' => $this->present(value: ($context['organisations'][$rest] ?? null)),
