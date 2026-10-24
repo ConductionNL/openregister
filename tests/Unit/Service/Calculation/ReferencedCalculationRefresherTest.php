@@ -70,11 +70,12 @@ class ReferencedCalculationRefresherTest extends TestCase {
 	/**
 	 * A refresher over a register with the two schemas and one case of the type.
 	 *
-	 * @param ObjectService $service The object service the re-saves go through.
+	 * @param ObjectService    $service The object service the re-saves go through.
+	 * @param MagicMapper|null $rows    The referrer lookup, a fresh mock when null.
 	 *
 	 * @return ReferencedCalculationRefresher
 	 */
-	private function refresher(ObjectService $service): ReferencedCalculationRefresher {
+	private function refresher(ObjectService $service, ?MagicMapper $rows=null): ReferencedCalculationRefresher {
 		$register = new Register();
 		$register->setId(7);
 		$register->setSchemas([1, 2]);
@@ -99,7 +100,7 @@ class ReferencedCalculationRefresherTest extends TestCase {
 		$case->setSchema('2');
 		$case->setObject(['title' => 'Zaak', 'caseType' => 'type-1']);
 
-		$rows = $this->createMock(originalClassName: MagicMapper::class);
+		$rows ??= $this->createMock(originalClassName: MagicMapper::class);
 		$rows->method('findAllInRegisterSchemaTable')->willReturnCallback(
 			callback: static function (mixed ...$args) use ($case): array {
 				if (in_array(['caseType' => 'type-1'], $args, true) === true) {
@@ -167,6 +168,26 @@ class ReferencedCalculationRefresherTest extends TestCase {
 
 		$this->assertSame(expected: 0, actual: $saved);
 	}//end testAChangeNoCalculationReadsReSavesNothing()
+
+	/**
+	 * The guard: when no materialised `@ref` reads the changed field, no
+	 * referring object is even looked up, let alone saved.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadChangeLooksNothingUp(): void {
+		$service = $this->createMock(originalClassName: ObjectService::class);
+		$service->expects($this->never())->method('saveObject');
+		$rows = $this->createMock(originalClassName: MagicMapper::class);
+		$rows->expects($this->never())->method('findAllInRegisterSchemaTable');
+
+		$saved = $this->refresher(service: $service, rows: $rows)->refresh(
+			updated: self::caseType(data: ['title' => 'Woo-verzoek']),
+			old: self::caseType(data: ['title' => 'Woo'])
+		);
+
+		$this->assertSame(expected: 0, actual: $saved);
+	}//end testAnUnreadChangeLooksNothingUp()
 
 	/**
 	 * The dependency names the pointing field and the fields read through it.

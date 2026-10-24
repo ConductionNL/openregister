@@ -119,7 +119,10 @@ class ReferencedCalculationRefresher {
 			return 0;
 		}
 
-		$changed = $this->changedFields(new: ($updated->getObject() ?? []), old: $old?->getObject());
+		// The guard: nothing is read or written unless a materialised `@ref`
+		// in this register reads a field of this schema that changed.
+		$read    = $this->readFields(dependents: $this->dependentsOf(register: $register, target: $target));
+		$changed = array_values(array_intersect($read, $this->changedFields(new: ($updated->getObject() ?? []), old: $old?->getObject())));
 		if ($changed === []) {
 			return 0;
 		}
@@ -131,6 +134,22 @@ class ReferencedCalculationRefresher {
 			self::$depth--;
 		}
 	}//end refresh()
+
+	/**
+	 * Every field of the target schema some dependent reads.
+	 *
+	 * @param array<int, array{schema: Schema, field: string, reads: array<int, string>}> $dependents The dependents.
+	 *
+	 * @return array<int, string>
+	 */
+	private function readFields(array $dependents): array {
+		$read = [];
+		foreach ($dependents as $dependent) {
+			$read = [...$read, ...$dependent['reads']];
+		}
+
+		return array_values(array_unique($read));
+	}//end readFields()
 
 	/**
 	 * Re-save, per schema of the register, the objects that point at the updated object and read a changed field.
