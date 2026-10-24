@@ -60,6 +60,7 @@ class ExampleSetInstaller {
 	 * @param ExampleSetAppConfig     $appConfig     Writes a fragment's own app config.
 	 * @param ExampleSetUserPreferences $userPreferences Writes a fragment's own app's preferences of the set's accounts.
 	 * @param ExampleSetEngineKinds|null $engineRows     Writes the tasks and saved views a fragment declares; null refuses them.
+	 * @param ExampleSetRewriter         $rewriter       Rewrites a kept object on `--refresh`.
 	 * @return void
 	 */
 	public function __construct(
@@ -74,6 +75,7 @@ class ExampleSetInstaller {
 		private readonly ExampleSetAppConfig $appConfig,
 		private readonly ExampleSetUserPreferences $userPreferences,
 		private readonly ?ExampleSetEngineKinds $engineRows=null,
+		private readonly ExampleSetRewriter $rewriter=new ExampleSetRewriter(),
 	) {
 	}//end __construct()
 
@@ -322,26 +324,23 @@ class ExampleSetInstaller {
 			$kept = $held['row'];
 			if ($kept !== null) {
 				$report['types'][$type]['kept']++;
+				// Files declared after the object was written are attached now, once.
 				if (isset($record['files'][$name]) === false) {
-					// Files declared after the object was written are attached now, once.
-					$report = $this->attachFiles(
-						plan: $plan,
-						fragment: $fragment,
-						object: $object,
-						objectId: (string) $record['objects'][$name]['id'],
-						report: $report,
-						record: $record
-					);
+					$heldId = (string) $record['objects'][$name]['id'];
+					$report = $this->attachFiles(plan: $plan, fragment: $fragment, object: $object, objectId: $heldId, report: $report, record: $record);
 				}
 
-				$objects[$object['key']] = $this->refreshReferences(
+				$context = (['objects' => $objects] + $base);
+				$objects[$object['key']] = $this->rewriter->keep(
 					plan: $plan,
-					fragment: $fragment,
-					object: $object,
-					row: $kept,
-					context: (['objects' => $objects] + $base),
+					run: ['store' => $this->store, 'fragment' => $fragment, 'object' => $object, 'row' => $kept],
+					resolve: fn (): array => $this->resolve(object: $object, context: $context, planned: []),
+					references: function () use ($plan, $fragment, $object, $kept, $context, &$report, &$record): array {
+						$args = ['plan' => $plan, 'fragment' => $fragment, 'object' => $object, 'row' => $kept, 'context' => $context];
+						return $this->refreshReferences(...$args, report: $report, record: $record);
+					},
 					report: $report,
-					record: $record
+					written: $written
 				);
 				continue;
 			}

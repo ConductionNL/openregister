@@ -93,6 +93,13 @@ class ExampleSetInstallCommand extends Command {
 				description: 'An existing account id the set may use although it did not create it; remove leaves it in place'
 			)
 			->addOption(
+				name: 'refresh',
+				shortcut: null,
+				mode: InputOption::VALUE_NONE,
+				description: 'Rewrite every object the set declares and already holds to its current values '
+					.'(dates against today, cast, lookups); objects the set did not write are left alone'
+			)
+			->addOption(
 				name: 'password-from-env',
 				shortcut: null,
 				mode: InputOption::VALUE_NONE,
@@ -138,7 +145,8 @@ class ExampleSetInstallCommand extends Command {
 			}
 		}
 
-		$report = $this->installer->install(plan: $plan, adopt: $adopt, password: $password);
+		$plan['refresh'] = ($input->getOption('refresh') === true);
+		$report          = $this->installer->install(plan: $plan, adopt: $adopt, password: $password);
 		if ($report['refusals'] !== []) {
 			$this->printRefusals(refusals: $report['refusals'], output: $output);
 			$output->writeln('<error>The set was refused, so none of its accounts, groups or objects was written.</error>');
@@ -266,16 +274,34 @@ class ExampleSetInstallCommand extends Command {
 		foreach ($types as $type => $counts) {
 			$output->writeln(
 				sprintf(
-					'%s: %d declared, %d created, %d already there, %d found afterwards',
+					'%s: %d declared, %d created, %d already there%s, %d found afterwards',
 					$type,
 					$counts['declared'],
 					$counts['created'],
 					$counts['kept'],
+					$this->refreshedNote(counts: $counts),
 					$counts['arrived']
 				)
 			);
 		}
 	}//end printTypes()
+
+	/**
+	 * " (n refreshed)" after a `--refresh`, nothing otherwise.
+	 *
+	 * @param array<string, int> $counts The counts of one type.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 */
+	private function refreshedNote(array $counts): string {
+		if (isset($counts['refreshed']) === false) {
+			return '';
+		}
+
+		return sprintf(' (%d refreshed)', $counts['refreshed']);
+	}//end refreshedNote()
 
 	/**
 	 * Print what was left as it is, and what is not written, not there or not kept.
