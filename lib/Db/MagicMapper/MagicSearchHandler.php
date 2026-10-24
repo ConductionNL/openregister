@@ -120,6 +120,14 @@ class MagicSearchHandler {
 	public const ARCHIVED_ANY = 'any';
 
 	/**
+	 * The deleted lens alone, for a consumer that checks whether this
+	 * OpenRegister offers `_deleted` (dossiq's Deleted cases page does).
+	 *
+	 * @var string
+	 */
+	public const DELETED_ONLY = DeletedLens::ONLY;
+
+	/**
 	 * Metadata columns every magic table carries.
 	 *
 	 * Mirrors MagicMapper::getMetadataColumns(); kept as a literal here so a
@@ -514,11 +522,6 @@ class MagicSearchHandler {
 	 */
 	public function buildFilteredQuery(array $query, Schema $schema, string $tableName, ?int $registerId = null): IQueryBuilder {
 		// Extract options from query (prefixed with _).
-		// Coerce to bool: query-string params arrive as strings (e.g.
-		// "_includeDeleted=true" → "true"). applyBasicFilters() is bool-typed
-		// under strict_types, so passing the raw string raised a TypeError →
-		// HTTP 500 on any list call with _includeDeleted=true.
-		$includeDeleted = filter_var($query['_includeDeleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 		$_rbac = $query['_rbac'] ?? true;
 		$_multitenancy = $query['_multitenancy'] ?? true;
 
@@ -536,7 +539,7 @@ class MagicSearchHandler {
 		// Apply basic filters (deleted, archived).
 		$this->applyBasicFilters(
 			qb: $queryBuilder,
-			includeDeleted: $includeDeleted,
+			deletedMode: (new DeletedLens())->mode(query: $query),
 			archivedMode: $this->resolveArchivedMode(query: $query),
 			query: $query,
 			schema: $schema,
@@ -953,15 +956,11 @@ class MagicSearchHandler {
 
 		// Extract options from query.
 		$search = $query['_search'] ?? null;
-		// Coerce to bool: query-string "true"/"false" must not be compared by
-		// identity against the boolean false (a non-empty string is never
-		// === false, which would silently flip the deleted filter).
-		$includeDeleted = filter_var($query['_includeDeleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 		$_rbac = $query['_rbac'] ?? true;
 
 		$conditions = array_merge(
 			$this->lifecycleConditionsSql(
-				query: $query, includeDeleted: $includeDeleted, schema: $schema,
+				query: $query, schema: $schema,
 				missingColumns: $this->missingMetadataColumns(tableName: $tableName)
 			),
 			$this->boundaryConditionsSql(
@@ -1073,8 +1072,7 @@ class MagicSearchHandler {
 	 * rows is the dangerous direction, and an archived record surfacing in a
 	 * working list is that failure with a record attached.
 	 *
-	 * @param array       $query          The query parameters.
-	 * @param boolean     $includeDeleted Whether deleted rows were asked for.
+	 * @param array       $query          The query parameters, for the deleted, archive and draft lenses.
 	 * @param Schema|null $schema         The schema being listed, for its draft list default (`draftsListed`).
 	 * @param string[]    $missingColumns Metadata columns this table could not be given.
 	 *
@@ -1083,11 +1081,13 @@ class MagicSearchHandler {
 	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
 	 * @spec openspec/changes/magic-table-metadata-self-healing/specs/object-lifecycle/spec.md#requirement-a-table-that-cannot-be-healed-degrades-quietly-req-mth-002
 	 */
-	private function lifecycleConditionsSql(array $query, bool $includeDeleted, ?Schema $schema = null, array $missingColumns = []): array {
+	private function lifecycleConditionsSql(array $query, ?Schema $schema = null, array $missingColumns = []): array {
 		$conditions = [];
 
-		if ($includeDeleted === false) {
-			$conditions[] = '_deleted IS NULL';
+		$lens = new DeletedLens();
+		$deleted = $lens->condition(mode: $lens->mode(query: $query), columnPrefix: '');
+		if ($deleted !== null) {
+			$conditions[] = $deleted;
 		}
 
 		$archivedMode = $this->resolveArchivedMode(query: $query);
@@ -2552,6 +2552,7 @@ class MagicSearchHandler {
 			'_recentLens',
 			'_count',
 			'_includeDeleted',
+			'_deleted',
 			'_archived',
 			DraftListLens::PARAMETER,
 			'_relations_contains',
@@ -2571,7 +2572,7 @@ class MagicSearchHandler {
 	 * Apply basic filters like deleted status
 	 *
 	 * @param IQueryBuilder $qb Query builder to modify
-	 * @param bool $includeDeleted Whether to include deleted objects
+	 * @param string $deletedMode Which deleted lens to apply, one of the DeletedLens constants
 	 * @param string $archivedMode Which archive lens to apply, one of the ARCHIVED_* constants
 	 * @param array<string, mixed> $query The search query, for the draft lens (`_drafts`, decision 201)
 	 * @param Schema|null $schema The schema being listed, for its draft list default (`draftsListed`)
@@ -2584,15 +2585,15 @@ class MagicSearchHandler {
 	 */
 	private function applyBasicFilters(
 		IQueryBuilder $qb,
-		bool $includeDeleted,
+		string $deletedMode = DeletedLens::EXCLUDE,
 		string $archivedMode = self::ARCHIVED_EXCLUDE,
 		array $query = [],
 		?Schema $schema = null,
 		array $missingColumns = [],
 	): void {
-		// Handle deleted filter.
-		if ($includeDeleted === false) {
-			$qb->andWhere($qb->expr()->isNull('t._deleted'));
+		$deleted = (new DeletedLens())->condition(mode: $deletedMode, columnPrefix: 't.');
+		if ($deleted !== null) {
+			$qb->andWhere($qb->createFunction($deleted));
 		}
 
 		// Handle the archive filter. Exclusion is the DEFAULT rather than a
@@ -4592,14 +4593,7 @@ class MagicSearchHandler {
 			}
 
 			if (($metadataData['deleted'] ?? null) !== null) {
-				// Convert deleted timestamp to array format expected by setDeleted.
-				$deletedDateTime = new DateTime($metadataData['deleted']);
-				$objectEntity->setDeleted(
-					[
-						'deleted' => $deletedDateTime->format('c'),
-						'deletedBy' => $metadataData['deletedBy'] ?? null,
-					]
-				);
+				$objectEntity->setDeleted($this->deletedMarker(raw: $metadataData['deleted']));
 			}
 
 			// Set relevance score if present (from fuzzy search).
@@ -4745,6 +4739,33 @@ class MagicSearchHandler {
 			return null;
 		}//end try
 	}//end convertRowToObjectEntity()
+
+	/**
+	 * The `_deleted` column as the marker `ObjectEntity::setDeleted()` takes.
+	 *
+	 * The column is JSON (deletedAt, deletedBy, purgeDate, the window); a row
+	 * written before it was JSON holds a bare timestamp. Reading the JSON as a
+	 * timestamp threw, and the row was dropped from every list that asked for
+	 * deleted rows.
+	 *
+	 * @param mixed $raw The column value.
+	 *
+	 * @return array<string, mixed> The marker.
+	 *
+	 * @spec openspec/changes/object-deleted-lens/specs/object-lifecycle/spec.md
+	 */
+	private function deletedMarker(mixed $raw): array {
+		if (is_array($raw) === true) {
+			return $raw;
+		}
+
+		$decoded = json_decode((string)$raw, true);
+		if (is_array($decoded) === true) {
+			return $decoded;
+		}
+
+		return ['deleted' => (new DateTime((string)$raw))->format('c')];
+	}//end deletedMarker()
 
 	/**
 	 * Whether the active database platform is PostgreSQL.
