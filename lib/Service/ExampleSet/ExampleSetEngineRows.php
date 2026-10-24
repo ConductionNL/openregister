@@ -38,6 +38,11 @@ namespace OCA\OpenRegister\Service\ExampleSet;
  */
 abstract class ExampleSetEngineRows {
 	/**
+	 * The parts `--refresh` writes again: a saved view, a task, a note and a read state carry values that age.
+	 */
+	public const REFRESHED = ['views', 'tasks', 'notes', 'readStates'];
+
+	/**
 	 * The fragment part and record part this kind lives in (`tasks`, `views`).
 	 *
 	 * @return string
@@ -148,10 +153,14 @@ abstract class ExampleSetEngineRows {
 	public function installFragment(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
 		$part    = $this->part();
 		$changed = false;
+		$refresh = (($context['refresh'] ?? false) === true && in_array($part, self::REFRESHED, true) === true);
 		foreach (($fragment[$part] ?? []) as $entry) {
 			$name = $fragment['app'].'/'.$entry['key'];
 			$report[$part][$name] = 'kept';
-			if (isset($record[$part][$name]) === true) {
+			$held    = isset($record[$part][$name]);
+			$earlier = ($record[$part][$name] ?? []);
+			$where   = $fragment['file'].': '.$this->noun().' "'.$entry['key'].'"';
+			if ($held === true && $this->writesAgain(refresh: $refresh, entry: $earlier, where: $where, report: $report) === false) {
 				continue;
 			}
 
@@ -173,10 +182,36 @@ abstract class ExampleSetEngineRows {
 			}
 
 			$record[$part][$name] = $made['entry'];
-			$report[$part][$name] = 'created';
+			$report[$part][$name] = ['created', 'refreshed'][(int) $held];
 			$changed = true;
 		}//end foreach
 
 		return $changed;
 	}//end installFragment()
+
+	/**
+	 * Whether a row an earlier run wrote is written again: only on `--refresh`, after the old row is taken away; false
+	 * (and named under `dropped`) when it could not be taken away, so the old row stays and is not written twice.
+	 *
+	 * @param bool                 $refresh Whether this run refreshes this part.
+	 * @param array<string, mixed> $entry  The record entry of the row.
+	 * @param string               $where  The fragment file and the row, for the report.
+	 * @param array<string, mixed> $report The report.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 */
+	private function writesAgain(bool $refresh, array $entry, string $where, array &$report): bool {
+		if ($refresh === false) {
+			return false;
+		}
+
+		if ($this->revert(entry: $entry) === 'failed') {
+			$report['dropped'][] = $where.': not refreshed, the earlier one could not be taken away';
+			return false;
+		}
+
+		return true;
+	}//end writesAgain()
 }//end class
