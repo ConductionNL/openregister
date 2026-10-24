@@ -61,6 +61,11 @@
 				"displayName": "Juridische zaken"
 			},
 			{
+				"key": "juridische-zaken-sociaal-domein",
+				"gid": "zuiddrecht-juridische-zaken-sociaal-domein",
+				"displayName": "Juridische zaken sociaal domein"
+			},
+			{
 				"key": "woo-en-informatie",
 				"gid": "zuiddrecht-woo-en-informatie",
 				"displayName": "Woo en informatie"
@@ -387,6 +392,120 @@
 					"woo-en-informatie"
 				],
 				"function": "Woo-coordinator"
+			},
+			{
+				"key": "marloes",
+				"uid": "marloes.bakker",
+				"displayName": "Marloes Bakker",
+				"givenName": "Marloes",
+				"prefix": "",
+				"familyName": "Bakker",
+				"email": "marloes.bakker@zuiddrecht.example",
+				"role": "employee",
+				"department": "Juridische zaken",
+				"groups": [
+					"medewerkers",
+					"juridische-zaken"
+				],
+				"function": "Jurist bezwaar en beroep"
+			},
+			{
+				"key": "joost",
+				"uid": "joost.vanleeuwen",
+				"displayName": "Joost van Leeuwen",
+				"givenName": "Joost",
+				"prefix": "van",
+				"familyName": "Leeuwen",
+				"email": "joost.vanleeuwen@zuiddrecht.example",
+				"role": "employee",
+				"department": "Juridische zaken",
+				"groups": [
+					"medewerkers",
+					"juridische-zaken"
+				],
+				"function": "Jurist Woo-advies"
+			},
+			{
+				"key": "ingrid",
+				"uid": "ingrid.mulder",
+				"displayName": "Ingrid Mulder",
+				"givenName": "Ingrid",
+				"prefix": "",
+				"familyName": "Mulder",
+				"email": "ingrid.mulder@zuiddrecht.example",
+				"role": "employee",
+				"department": "Juridische zaken",
+				"groups": [
+					"medewerkers",
+					"juridische-zaken",
+					"juridische-zaken-sociaal-domein"
+				],
+				"function": "Juridisch adviseur"
+			},
+			{
+				"key": "ruud",
+				"uid": "ruud.hendriks",
+				"displayName": "Ruud Hendriks",
+				"givenName": "Ruud",
+				"prefix": "",
+				"familyName": "Hendriks",
+				"email": "ruud.hendriks@zuiddrecht.example",
+				"role": "employee",
+				"department": "Juridische zaken",
+				"groups": [
+					"medewerkers",
+					"juridische-zaken"
+				],
+				"function": "Secretaris bezwaarcommissie"
+			},
+			{
+				"key": "yara",
+				"uid": "yara.smits",
+				"displayName": "Yara Smits",
+				"givenName": "Yara",
+				"prefix": "",
+				"familyName": "Smits",
+				"email": "yara.smits@zuiddrecht.example",
+				"role": "employee",
+				"department": "Juridische zaken",
+				"groups": [
+					"medewerkers",
+					"juridische-zaken",
+					"juridische-zaken-sociaal-domein"
+				],
+				"function": "Juridisch medewerker"
+			},
+			{
+				"key": "hanneke",
+				"uid": "hanneke.deboer",
+				"displayName": "Hanneke de Boer",
+				"givenName": "Hanneke",
+				"prefix": "de",
+				"familyName": "Boer",
+				"email": "hanneke.deboer@zuiddrecht.example",
+				"role": "employee",
+				"department": "Juridische zaken",
+				"groups": [
+					"medewerkers",
+					"juridische-zaken-sociaal-domein"
+				],
+				"function": "Jurist Wmo"
+			},
+			{
+				"key": "tom",
+				"uid": "tom.visscher",
+				"displayName": "Tom Visscher",
+				"givenName": "Tom",
+				"prefix": "",
+				"familyName": "Visscher",
+				"email": "tom.visscher@zuiddrecht.example",
+				"role": "employee",
+				"department": "Juridische zaken",
+				"groups": [
+					"medewerkers",
+					"juridische-zaken-sociaal-domein"
+				],
+				"function": "Jurist jeugd"
 			},
 			{
 				"key": "anouk",
