@@ -8,6 +8,7 @@
  * - `{{date:n}}` and `{{datetime:n HH:MM}}` a day n days from the install day;
  * - `{{object:key.path}}` a field of an object declared earlier in the same fragment;
  * - `{{view:key.uuid}}` the uuid of a saved view the same fragment declares (user preferences only);
+ * - `{{task:key.uuid}}` the uuid of a task the same fragment declares (the parts written after its tasks: notes, read states);
  * - `{{lookup:name}}` the id a lookup by business key found;
  * - `{{account:key.field}}` a field of a service account a fragment declares;
  * - `{{organisation:slug-or-name}}` the uuid of an OpenRegister organisation;
@@ -147,6 +148,35 @@ class ExampleSetValues {
 	}//end viewsOf()
 
 	/**
+	 * The tasks a fragment declares, by key, for `{{task:key.uuid}}`: as the record holds them after the install
+	 * wrote them, or with a stand-in uuid for the check (`$record` null), since none is written yet.
+	 *
+	 * @param array<string, mixed>      $fragment The fragment.
+	 * @param array<string, mixed>|null $record   The set's record, or null for the check.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 *
+	 * @spec openspec/changes/example-set-task-placeholder/specs/example-sets/spec.md#requirement-a-note-or-read-state-may-quote-a-task-of-its-fragment
+	 */
+	public function tasksOf(array $fragment, ?array $record): array {
+		$tasks = [];
+		foreach (($fragment['tasks'] ?? []) as $task) {
+			$key = (string) $task['key'];
+			if ($record === null) {
+				$tasks[$key] = ['uuid' => 'example-set-stand-in:task:'.$key];
+				continue;
+			}
+
+			$written = ($record['tasks'][$fragment['app'].'/'.$key] ?? null);
+			if (is_array($written) === true) {
+				$tasks[$key] = $written;
+			}
+		}
+
+		return $tasks;
+	}//end tasksOf()
+
+	/**
 	 * A found value as text inside a longer string; a value that is no scalar is a gap.
 	 *
 	 * @param string             $placeholder The placeholder as written.
@@ -190,6 +220,7 @@ class ExampleSetValues {
 			'cast'   => $this->pathIn(entries: (array) ($context['cast'] ?? []), reference: $rest),
 			'object' => $this->objectField(objects: (array) ($context['objects'] ?? []), reference: $rest),
 			'view'   => $this->pathIn(entries: (array) ($context['views'] ?? []), reference: $rest),
+			'task'   => $this->pathIn(entries: (array) ($context['tasks'] ?? []), reference: $rest),
 			'lookup' => $this->present(value: ($context['lookups'][$rest] ?? null)),
 			'account' => $this->pathIn(entries: (array) ($context['accounts'] ?? []), reference: $rest),
 			'organisation' => $this->present(value: ($context['organisations'][$rest] ?? null)),

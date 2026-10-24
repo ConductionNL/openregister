@@ -104,6 +104,52 @@ class ExampleSetNotesAndReadStatesTest extends ExampleSetTestCase {
 	}//end testANoteAndAReadStateAreWrittenOnceAtTheirMomentAndTakenAwayOnRemove()
 
 	/**
+	 * A note quotes a task of its fragment by `{{task:key.uuid}}`: a stand-in
+	 * passes the check, and the install writes the note on the task written.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-task-placeholder/specs/example-sets/spec.md#requirement-a-note-or-read-state-may-quote-a-task-of-its-fragment
+	 */
+	public function testANoteQuotesATaskOfItsFragment(): void {
+		$this->app(app: 'alpha', fragment: [
+			'objects' => [['key' => 'case-1', 'register' => 'cases', 'schema' => 'case', 'data' => ['title' => 'Zaak']]],
+			'tasks'   => [['key' => 'hoorzitting', 'data' => [
+				'title' => 'Hoorzitting inplannen', 'objectUuid' => '{{object:case-1.id}}', 'state' => 'active', 'assignee' => '{{cast:esra.uid}}',
+			]]],
+			'notes'   => [['key' => 'esra-noteert-taak', 'data' => [
+				'user'      => '{{cast:esra.uid}}',
+				'objectUuid' => '{{task:hoorzitting.uuid}}',
+				'message'   => 'Zaal vastgelegd.',
+				'createdAt' => '{{datetime:0 11:15}}',
+			]]],
+		]);
+		$plan = $this->catalogue->gather(set: 'demo');
+
+		$this->assertSame(expected: [], actual: $this->installer->check(plan: $plan, today: $this->today())['refusals']);
+
+		$report = $this->installer->install(plan: $plan, today: $this->today());
+		$this->assertTrue(condition: $report['ok'], message: (string) json_encode($report));
+		$task = array_values($this->engineTasks)[0];
+		$this->assertSame(expected: $task->getUuid(), actual: array_values($this->notes)[0]['object']);
+	}//end testANoteQuotesATaskOfItsFragment()
+
+	/**
+	 * A note quoting a task its fragment does not declare is refused at check time.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-task-placeholder/specs/example-sets/spec.md#requirement-a-note-or-read-state-may-quote-a-task-of-its-fragment
+	 */
+	public function testANoteQuotingAnUnknownTaskIsRefused(): void {
+		$this->caseWith(notes: [['key' => 'n', 'data' => ['user' => '{{cast:esra.uid}}', 'objectUuid' => '{{task:nope.uuid}}', 'message' => 'x']]]);
+
+		$refusals = $this->installer->check(plan: $this->catalogue->gather(set: 'demo'), today: $this->today())['refusals'];
+		$this->assertCount(expectedCount: 1, haystack: $refusals);
+		$this->assertStringContainsString(needle: 'cannot resolve', haystack: $refusals[0]);
+	}//end testANoteQuotingAnUnknownTaskIsRefused()
+
+	/**
 	 * A note or read state that disappeared is reported missing.
 	 *
 	 * @return void
