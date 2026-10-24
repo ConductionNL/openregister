@@ -131,10 +131,11 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->assertSame(expected: ['Sanne Johanna', 'Sanne'], actual: [$sanne['firstNames'], $sanne['givenName']]);
 		$brp = array_column($plan['fragments'][0]['objects'], 'data', 'key')['brp-sanne'];
 		$this->assertSame(expected: ['{{cast:sanne.firstNames}}', 'S.'], actual: [$brp['voornamen'], $brp['voorletters']]);
-		// The handler the dossiq boards draw as "u", who owns a saved view.
+		// The handler the dossiq boards draw as "u", who owns a saved view; his one team is Woo en informatie, so the
+		// team queue (DqTeamwachtrij) is that team's.
 		$pieter = $plan['cast']['people']['pieter'];
 		$this->assertSame(
-			expected: ['pieter', 'Pieter Jansen', ['vergunningen', 'woo-en-informatie']],
+			expected: ['pieter', 'Pieter Jansen', ['woo-en-informatie']],
 			actual: [$pieter['uid'], $pieter['displayName'], array_values(array_diff($pieter['groups'], ['medewerkers']))]
 		);
 		// The jeugdteam's regisseur of the jeugdwet example case.
