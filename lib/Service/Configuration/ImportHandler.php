@@ -1827,7 +1827,7 @@ class ImportHandler {
 		?string $version,
 	): ?Schema {
 		if ($registerSchemaIds !== null) {
-			return $this->resolveSchemaWithinRegisterScope(data: $data, registerSchemaIds: $registerSchemaIds);
+			return $this->resolveSchemaWithinRegisterScope(data: $data, registerSchemaIds: $registerSchemaIds, appId: $appId);
 		}
 
 		if ($appId !== null && $appId !== '') {
@@ -1843,15 +1843,27 @@ class ImportHandler {
 	 * `SchemaMapper::findBySlugInIds()`. A same-slug schema owned elsewhere is
 	 * only logged for visibility — it is never reused.
 	 *
-	 * @param array $data The schema data (MUST carry a non-empty `slug`).
-	 * @param array $registerSchemaIds Pre-import schema ids of the target register(s).
+	 * Outside that set, the importing app's OWN row with this slug that no
+	 * register lists is adopted rather than forked: an import that stopped
+	 * after creating its schemas and before linking them leaves such a row,
+	 * and scoping to the register's list alone made every later import create
+	 * a twin (dossiq, 29 Sep: 17 slugs twice).
+	 *
+	 * @param array       $data              The schema data (MUST carry a non-empty `slug`).
+	 * @param array       $registerSchemaIds Pre-import schema ids of the target register(s).
+	 * @param string|null $appId             The importing application id, or null.
 	 *
 	 * @return Schema|null The schema already in scope, or null (create a new one).
 	 */
-	private function resolveSchemaWithinRegisterScope(array $data, array $registerSchemaIds): ?Schema {
+	private function resolveSchemaWithinRegisterScope(array $data, array $registerSchemaIds, ?string $appId=null): ?Schema {
 		$existingSchema = $this->schemaMapper->findBySlugInIds(slug: $data['slug'], schemaIds: $registerSchemaIds);
 		if ($existingSchema !== null) {
 			return $existingSchema;
+		}
+
+		$orphan = $this->findOwnUnlinkedSchema(slug: (string)$data['slug'], appId: $appId);
+		if ($orphan !== null) {
+			return $orphan;
 		}
 
 		// Visibility only: a same-slug row exists but is not (yet) in the
@@ -1876,6 +1888,47 @@ class ImportHandler {
 
 		return null;
 	}//end resolveSchemaWithinRegisterScope()
+
+	/**
+	 * The importing app's own schema row with this slug that no register
+	 * lists, the highest version when there are several; null without one or
+	 * without an app id.
+	 *
+	 * @param string      $slug  The schema slug.
+	 * @param string|null $appId The importing application id.
+	 *
+	 * @return Schema|null The row to adopt, or null.
+	 *
+	 * @spec openspec/changes/import-adopts-own-unlinked-schema/specs/schema-import/spec.md#requirement-an-import-adopts-its-apps-own-unlinked-schema
+	 */
+	private function findOwnUnlinkedSchema(string $slug, ?string $appId): ?Schema {
+		if ($appId === null || $appId === '' || $slug === '') {
+			return null;
+		}
+
+		try {
+			$candidates = $this->schemaMapper->findBySlug(slug: $slug, limit: 50, _rbac: false);
+		} catch (\Throwable $e) {
+			return null;
+		}
+
+		$best = null;
+		foreach ($candidates as $candidate) {
+			if ($candidate->getApplication() !== $appId || $candidate->getSlug() !== $slug) {
+				continue;
+			}
+
+			if ($this->registerMapper->getAllRegisterIdsWithSchema((int)$candidate->getId()) !== []) {
+				continue;
+			}
+
+			if ($best === null || version_compare((string)($candidate->getVersion() ?? '0'), (string)($best->getVersion() ?? '0')) > 0) {
+				$best = $candidate;
+			}
+		}
+
+		return $best;
+	}//end findOwnUnlinkedSchema()
 
 	/**
 	 * Application-scoped fallback: resolve via
