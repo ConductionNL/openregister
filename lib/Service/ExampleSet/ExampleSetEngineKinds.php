@@ -73,6 +73,7 @@ class ExampleSetEngineKinds {
 	 */
 	public function check(array $fragment, array $context, array $users, ExampleSetValues $values): array {
 		$refusals = [];
+		$context['tasks'] = $values->tasksOf(fragment: $fragment, record: null);
 		foreach ($this->kinds() as $part => [$rows, $noun]) {
 			if ($rows === null) {
 				foreach (($fragment[$part] ?? []) as $entry) {
@@ -103,9 +104,14 @@ class ExampleSetEngineKinds {
 	 */
 	public function install(array $fragment, array $context, array &$report, array &$record, ExampleSetValues $values): bool {
 		$changed = false;
-		foreach ($this->kinds() as [$rows]) {
+		foreach ($this->kinds() as $part => [$rows]) {
 			if ($rows?->installFragment(fragment: $fragment, context: $context, report: $report, record: $record, values: $values) === true) {
 				$changed = true;
+			}
+
+			// The parts after the tasks may quote one (`{{task:key.uuid}}`).
+			if ($part === 'tasks') {
+				$context['tasks'] = $values->tasksOf(fragment: $fragment, record: $record);
 			}
 		}
 
