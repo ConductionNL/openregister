@@ -176,4 +176,18 @@ class DepartmentMatrixRowConditionsTest extends TestCase {
 		$this->assertSame(['matrix.no-rows'], $codes($base));
 		$this->assertContains('matrix.bad-rows-from', $codes($base + ['rowsFrom' => ' ']));
 	}//end testRowsFromStandsInForDeclaredRows()
+
+	/**
+	 * A row may grant the file verbs; they compile like any other action.
+	 *
+	 * @return void
+	 */
+	public function testFileVerbsCompile(): void {
+		$compiled = (new DepartmentMatrixCompiler())->compile(
+			matrix: $this->matrix([['value' => 'team-a', 'group' => 'g', 'actions' => ['readFiles', 'addFiles', 'deleteFiles']]]),
+			ownValues: []
+		);
+
+		$this->assertSame(['readFiles', 'addFiles', 'deleteFiles'], array_keys($compiled));
+	}//end testFileVerbsCompile()
 }//end class
