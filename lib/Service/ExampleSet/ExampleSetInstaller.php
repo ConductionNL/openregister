@@ -139,7 +139,7 @@ class ExampleSetInstaller {
 				$objects[$object['key']] = ($kept ?? $standIn);
 			}//end foreach
 
-			$context  = (['objects' => $objects] + $base);
+			$context  = (['objects' => $objects, 'flows' => $this->values->flowsOf(fragment: $fragment, record: null)] + $base);
 			$refusals = array_merge(
 				$refusals,
 				$this->checkChanges(fragment: $fragment, context: $context, checked: $changes, plannedUsers: $users),
@@ -379,7 +379,14 @@ class ExampleSetInstaller {
 		}//end foreach
 
 		$context = (['objects' => $objects] + $base);
-		$report  = $this->installChanges(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
+
+		// Before the changes, so a change can quote a flow (`{{flow:key.uuid}}`).
+		if ($this->engineRows?->installFlows(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values) === true) {
+			$this->record->write(set: (string) $plan['set'], record: $record);
+		}
+
+		$context['flows'] = $this->values->flowsOf(fragment: $fragment, record: $record);
+		$report           = $this->installChanges(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 
 		$report = $this->installAppConfig(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 
