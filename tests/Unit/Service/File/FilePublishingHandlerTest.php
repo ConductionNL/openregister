@@ -19,6 +19,7 @@ use OCA\OpenRegister\Db\FileMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\File\FilePublishingHandler;
+use OCA\OpenRegister\Service\File\FileRestrictionGuard;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\Party\PartyIndicatorGuard;
 use OCP\Files\File;
@@ -77,7 +78,12 @@ class FilePublishingHandlerTest extends TestCase {
 		// close the cycle FileService is already set through a setter to avoid.
 		$this->partyIndicators = $this->createMock(PartyIndicatorGuard::class);
 		$this->container = $this->createMock(IServerContainer::class);
-		$this->container->method('get')->willReturn($this->partyIndicators);
+		$restrictions = $this->createMock(FileRestrictionGuard::class);
+		$restrictions->method('readableNodes')->willReturnArgument(0);
+		$partyIndicators = $this->partyIndicators;
+		$this->container->method('get')->willReturnCallback(
+			static fn (string $id): object => $id === FileRestrictionGuard::class ? $restrictions : $partyIndicators
+		);
 
 		$this->handler = new FilePublishingHandler(
 			$this->objectEntityMapper,
