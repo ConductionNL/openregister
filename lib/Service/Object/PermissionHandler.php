@@ -197,6 +197,10 @@ class PermissionHandler {
 		// other, which is two answers to "what kind of verb is this" and
 		// exactly the divergence the catalogue exists to end (row 13.40).
 		'assign',
+		// The file verbs, canonical on this path for the same reason.
+		'readFiles',
+		'addFiles',
+		'deleteFiles',
 	];
 
 	/**
@@ -238,6 +242,8 @@ class PermissionHandler {
 		'update',
 		'delete',
 		'destroy',
+		'addFiles',
+		'deleteFiles',
 	];
 
 	/**

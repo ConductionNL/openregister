@@ -271,6 +271,7 @@ class FilesController extends Controller {
 	 * @param string $id The object UUID or identifier.
 	 * @param bool $allowAnonymous When false (default) anonymous callers are denied; read-only published-file endpoints pass true.
 	 * @param bool $change True (default) for an action that changes files, which needs update on the object.
+	 * @param string $fileVerb The file verb a change needs when the schema names file verbs: addFiles (default) or deleteFiles.
 	 *
 	 * @return void
 	 *
@@ -288,6 +289,7 @@ class FilesController extends Controller {
 		string $id,
 		bool $allowAnonymous = false,
 		bool $change = true,
+		string $fileVerb = ObjectFileAccess::ADD_FILES,
 	): void {
 		// Anonymous callers are denied by default. Published-file READ
 		// endpoints (e.g. preview) pass $allowAnonymous=true to keep their
@@ -308,7 +310,7 @@ class FilesController extends Controller {
 		// update (403 for a reader who may not update).
 		if ($this->objectFileAccess !== null) {
 			if ($change === true) {
-				$object = $this->objectFileAccess->changeable(register: $register, schema: $schema, id: $id);
+				$object = $this->objectFileAccess->changeable(register: $register, schema: $schema, id: $id, verb: $fileVerb);
 				// REQ-OAS-007: a frozen or archived object's files do not
 				// change either. Asked after the access rule, so a caller
 				// without access still gets 404/403 and learns nothing of the state.
@@ -1457,7 +1459,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC before deleting files.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileVerb: ObjectFileAccess::DELETE_FILES);
 
 			$this->objectService->setObject($id);
 
@@ -1953,7 +1955,7 @@ class FilesController extends Controller {
 
 		try {
 			// ADR-005 / gate-7: enforce object-level RBAC on the source object.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileVerb: ObjectFileAccess::DELETE_FILES);
 
 			$this->objectService->setObject($id);
 			$sourceObject = $this->objectService->getObject();
@@ -2312,8 +2314,16 @@ class FilesController extends Controller {
 		$this->setObjectContext(register: $register, schema: $schema);
 
 		try {
+			$data = $this->request->getParams();
+			$action = $data['action'] ?? '';
+
 			// ADR-005 / gate-7: enforce object-level RBAC before batch mutation.
-			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+			$fileVerb = ObjectFileAccess::ADD_FILES;
+			if ($action === 'delete') {
+				$fileVerb = ObjectFileAccess::DELETE_FILES;
+			}
+
+			$this->ensureObjectAccess(register: $register, schema: $schema, id: $id, fileVerb: $fileVerb);
 
 			$this->objectService->setObject($id);
 			$object = $this->objectService->getObject();
@@ -2321,8 +2331,6 @@ class FilesController extends Controller {
 				return new JSONResponse(data: ['error' => $this->translate(text: 'Object not found')], statusCode: 404);
 			}
 
-			$data = $this->request->getParams();
-			$action = $data['action'] ?? '';
 			$fileIds = $data['fileIds'] ?? [];
 			$params = $data;
 
@@ -2737,7 +2745,7 @@ class FilesController extends Controller {
 			file: $file,
 			editorUid: $user->getUID(),
 			displayName: $user->getDisplayName(),
-			canWrite: $this->objectFileAccess->mayUpdate(object: $object)
+			canWrite: $this->objectFileAccess->mayChangeFiles(object: $object)
 		);
 	}//end openOfficeSession()
 

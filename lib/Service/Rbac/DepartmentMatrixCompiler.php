@@ -81,11 +81,12 @@ class DepartmentMatrixCompiler {
 	 * The canonical five plus `handle`, which is not canonical and is resolved
 	 * by the existing custom-verb voting. A verb outside this set is refused at
 	 * save rather than dropped: a row granting `handel` would compile to
-	 * nothing and read, in the grid, as a right somebody has.
+	 * nothing and read, in the grid, as a right somebody has. The three file
+	 * verbs grant what may be done with the object's files.
 	 *
 	 * @var string[]
 	 */
-	public const ACTIONS = ['read', 'create', 'update', 'delete', 'share', 'handle'];
+	public const ACTIONS = ['read', 'create', 'update', 'delete', 'share', 'handle', 'readFiles', 'addFiles', 'deleteFiles'];
 
 	/**
 	 * The verb `handle` falls back to when no voter claims it.

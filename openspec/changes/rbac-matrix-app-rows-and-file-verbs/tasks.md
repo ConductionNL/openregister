@@ -14,6 +14,6 @@
 
 ## 3. File verbs
 
-- [ ] 3.1 `readFiles`, `addFiles`, `deleteFiles` in `DepartmentMatrixCompiler::ACTIONS` and `PermissionCatalogue`
-- [ ] 3.2 `ObjectFileAccess` per design D-4, opt-in when the block names a file verb; the route walk test (1.6 of object-files-follow-object-access) asserts the verb per route
-- [ ] 3.3 Access tests through `FilesController` (design, access test 5)
+- [x] 3.1 `readFiles`, `addFiles`, `deleteFiles` in `DepartmentMatrixCompiler::ACTIONS` and `PermissionCatalogue`
+- [x] 3.2 `ObjectFileAccess` per design D-4, opt-in when the block names a file verb; the route walk test (1.6 of object-files-follow-object-access) asserts the verb per route
+- [x] 3.3 Access tests through `FilesController` (design, access test 5): FilesControllerFileVerbsTest
