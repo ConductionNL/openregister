@@ -108,7 +108,7 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->apps['openregister'] = dirname(__DIR__, 4);
 		$plan = $this->catalogue->gather(set: 'zuiddrecht');
 
-		$this->assertCount(expectedCount: 25, haystack: $plan['cast']['people']);
+		$this->assertCount(expectedCount: 26, haystack: $plan['cast']['people']);
 		// Buurtvereniging Oost and its chair, whom DqOrganisatie draws.
 		$this->assertSame(expected: 'buurtoost', actual: $plan['cast']['people']['marja']['organisation']);
 		// The parties on the Lindelaan Woo case: Van Wijk's representative and the residents' association.
@@ -140,6 +140,11 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 			expected: ['lars.dekoning', 'Lars de Koning', ['mobiliteit-en-verkeer']],
 			actual: [$plan['cast']['people']['lars']['uid'], $plan['cast']['people']['lars']['displayName'], array_values(array_diff($plan['cast']['people']['lars']['groups'], ['medewerkers']))]
 		);
+		// Buurtvereniging Oost's secretary, a contact person with no BSN and no account (dossiq DqOrganisatie).
+		$kees = $plan['cast']['people']['keesdewit'];
+		$this->assertSame(expected: ['Kees de Wit', 'buurtoost', 'kees.dewit@zuiddrecht.example'], actual: [$kees['displayName'], $kees['organisation'], $kees['email']]);
+		$this->assertArrayNotHasKey(key: 'bsn', array: $kees);
+		$this->assertArrayNotHasKey(key: 'uid', array: $kees);
 		$this->assertSame(['vergunningen'], array_values(array_diff($plan['cast']['people']['marleen']['groups'], ['medewerkers'])));
 		$this->assertSame('Teamleider', $plan['cast']['people']['marleen']['function']);
 		// The Woo team the dossiq boards name, led by Anouk Bakker.

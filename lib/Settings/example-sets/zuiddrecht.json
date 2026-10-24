@@ -323,6 +323,23 @@
 				"organisation": "buurtoost"
 			},
 			{
+				"key": "keesdewit",
+				"displayName": "Kees de Wit",
+				"givenName": "Kees",
+				"prefix": "de",
+				"familyName": "Wit",
+				"email": "kees.dewit@zuiddrecht.example",
+				"role": "business-contact",
+				"address": {
+					"street": "Oosthavenweg",
+					"number": 31,
+					"postcode": "2999AJ",
+					"city": "Zuiddrecht"
+				},
+				"organisation": "buurtoost",
+				"$comment": "Buurtvereniging Oost's secretary. A contact person with no BSN (he gave only a name and an address) and no account: he never signs in."
+			},
+			{
 				"key": "daan",
 				"uid": "daan.verbeek",
 				"displayName": "Daan Verbeek",
