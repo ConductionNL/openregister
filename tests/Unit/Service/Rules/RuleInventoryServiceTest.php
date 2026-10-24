@@ -310,7 +310,7 @@ class RuleInventoryServiceTest extends TestCase {
 							'id' => 'trigger',
 							'type' => 'openregister.trigger-object',
 							'config' => [
-								'event' => 'updated',
+								'event' => 'object.updated',
 								'register' => 'zaken',
 								'schema' => 'bezwaar',
 								'scope' => ['property' => 'caseType', 'value' => 'b'],
