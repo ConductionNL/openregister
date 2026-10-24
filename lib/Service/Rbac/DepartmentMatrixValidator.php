@@ -42,6 +42,38 @@ namespace OCA\OpenRegister\Service\Rbac;
 class DepartmentMatrixValidator {
 
 	/**
+	 * The matrix key naming the provider of rows an app adds at check time.
+	 *
+	 * @var string
+	 */
+	public const ROWS_FROM_KEY = 'rowsFrom';
+
+	/**
+	 * Findings for one row, as the compiler will read it.
+	 *
+	 * Used for rows an app adds at check time, which never pass a schema save.
+	 *
+	 * @param mixed                $row        The row.
+	 * @param array<string, mixed> $properties The schema's properties.
+	 * @param string               $field      The matrix field.
+	 *
+	 * @return array<int, array{code: string, message: string}> The findings; empty when the row reads.
+	 *
+	 * @spec openspec/changes/rbac-matrix-app-rows-and-file-verbs/specs/rbac-scopes/spec.md
+	 */
+	public function findingsForRow(mixed $row, array $properties, string $field): array {
+		$findings = $this->rowFindings(row: $row, index: 0);
+		if (is_array($row) === true) {
+			$findings = array_merge(
+				$findings,
+				$this->whereFindings(row: $row, index: 0, properties: $properties, field: $field)
+			);
+		}
+
+		return $findings;
+	}//end findingsForRow()
+
+	/**
 	 * Findings for a matrix declared on a schema.
 	 *
 	 * @param array<string, mixed> $properties The schema's properties.
@@ -78,9 +110,19 @@ class DepartmentMatrixValidator {
 		}
 
 		$findings = array_merge($findings, $this->validateUserSource(source: ($matrix['userSource'] ?? null)));
+		$rowsFrom = ($matrix[self::ROWS_FROM_KEY] ?? null);
+		if ($rowsFrom !== null && (is_string($rowsFrom) === false || trim($rowsFrom) === '')) {
+			$findings[] = ['code' => 'matrix.bad-rows-from', 'message' => 'rowsFrom must name a provider.'];
+		}
+
+		$rows = ($matrix['rows'] ?? null);
+		if ($rowsFrom !== null && ($rows === null || $rows === [])) {
+			return $findings;
+		}
+
 		$findings = array_merge(
 			$findings,
-			$this->validateRows(rows: ($matrix['rows'] ?? null), properties: $properties, field: $field)
+			$this->validateRows(rows: $rows, properties: $properties, field: $field)
 		);
 
 		return $findings;

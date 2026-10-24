@@ -155,7 +155,7 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 	 *
 	 * @return array{0: PermissionHandler, 1: MagicRbacHandler}
 	 */
-	public function handlers(string $uid): array {
+	public function handlers(string $uid, ?\OCP\EventDispatcher\IEventDispatcher $dispatcher = null): array {
 		[$session, $groups, $users] = $this->identity(uid: $uid);
 
 		$appConfig = $this->createMock(IAppConfig::class);
@@ -187,7 +187,8 @@ class MatrixRowConditionsBothPathsTest extends TestCase {
 			$matcher,
 			$appConfig,
 			new NullLogger(),
-			$container
+			$container,
+			$dispatcher
 		);
 
 		$container->method('get')->willReturnCallback(
