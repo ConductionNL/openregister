@@ -114,12 +114,12 @@ class Version1Date20261024120000 extends SimpleMigrationStep {
 
 		$schema = $schemaClosure();
 		if ($schema->hasTable(self::TABLE) === false || $this->collisions > 0) {
-			return null;
+			return $schema;
 		}
 
 		$table = $schema->getTable(self::TABLE);
 		if ($table->hasColumn('task_key') === false || $table->hasIndex(self::INDEX) === true) {
-			return null;
+			return $schema;
 		}
 
 		$table->addUniqueIndex(['task_key'], self::INDEX);
