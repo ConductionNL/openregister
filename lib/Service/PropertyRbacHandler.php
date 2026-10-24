@@ -46,6 +46,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service;
 
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRuleResolver;
 use OCA\OpenRegister\Service\Lifecycle\StateFieldRules;
@@ -74,6 +75,8 @@ class PropertyRbacHandler {
 	 * @param RevealCollector|null $reveals Records which governed properties were revealed to the caller.
 	 *                                      Nullable and last so no construction site shifts; absent, nothing
 	 *                                      is recorded and the verdict is unchanged
+	 * @param ExplicitReveal|null $explicitReveal Masks explicit-reveal properties on the objects API.
+	 *                                            Nullable and last for the same reason; absent, nothing is masked
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
@@ -82,6 +85,7 @@ class PropertyRbacHandler {
 		private readonly LoggerInterface $logger,
 		private readonly StateFieldRuleResolver $stateFieldRules,
 		private readonly ?RevealCollector $reveals = null,
+		private readonly ?ExplicitReveal $explicitReveal = null,
 	) {
 	}//end __construct()
 
@@ -164,6 +168,10 @@ class PropertyRbacHandler {
 		// An author who wants a role spared says so with `groups`.
 		$object = $this->stripStateHiddenProperties(schema: $schema, object: $object);
 
+		// An explicit-reveal property reads as its mask on the objects API
+		// until `_reveal` names it, for an administrator too.
+		[$object, $masked] = $this->maskExplicitReveals(schema: $schema, object: $object);
+
 		// If user is admin, return object as-is (writeOnly already stripped above).
 		if ($this->isAdmin() === true) {
 			return $object;
@@ -182,6 +190,11 @@ class PropertyRbacHandler {
 		foreach (array_keys($propertiesWithAuth) as $propertyName) {
 			// Only filter if the property exists in the object.
 			if (array_key_exists($propertyName, $object) === false) {
+				continue;
+			}
+
+			// A masked value is not a reveal: nothing to record.
+			if (isset($masked[$propertyName]) === true) {
 				continue;
 			}
 
@@ -214,6 +227,52 @@ class PropertyRbacHandler {
 
 		return $object;
 	}//end filterReadableProperties()
+
+	/**
+	 * Mask the explicit-reveal properties the caller may read, unless the
+	 * request asks to see them; record the ones it asks to see.
+	 *
+	 * A property the caller may not read is left alone: the read filter strips
+	 * it. Only active on the objects API ({@see ExplicitReveal::open()}).
+	 *
+	 * @param Schema $schema The schema being read.
+	 * @param array<string, mixed> $object The object being read.
+	 *
+	 * @return array{0: array<string, mixed>, 1: array<string, true>} The object and the masked property names.
+	 *
+	 * @spec openspec/changes/property-explicit-reveal/specs/row-field-level-security/spec.md
+	 */
+	private function maskExplicitReveals(Schema $schema, array $object): array {
+		if ($this->explicitReveal === null || $this->explicitReveal->isActive() === false) {
+			return [$object, []];
+		}
+
+		$rules = $schema->getPropertiesWithAuthorization();
+		$masked = [];
+		foreach ($this->explicitReveal->explicitProperties(schema: $schema) as $name) {
+			if (array_key_exists($name, $object) === false || $object[$name] === null || $object[$name] === '') {
+				continue;
+			}
+
+			$readable = $this->isAdmin() === true || $this->canReadProperty(schema: $schema, property: $name, object: $object) === true;
+			if ($readable === false) {
+				continue;
+			}
+
+			if ($this->explicitReveal->isRequested(property: $name) === true) {
+				if ($this->isAdmin() === true) {
+					$this->recordReveal(schema: $schema, property: $name, authorization: ($rules[$name] ?? null), object: $object);
+				}
+
+				continue;
+			}
+
+			$object[$name] = $this->explicitReveal->mask(value: $object[$name]);
+			$masked[$name] = true;
+		}
+
+		return [$object, $masked];
+	}//end maskExplicitReveals()
 
 	/**
 	 * Record a reveal, when the property asked for one.

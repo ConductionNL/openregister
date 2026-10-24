@@ -583,6 +583,15 @@ class Application extends App implements IBootstrap {
 			}
 		);
 
+		// Shared for the same reason: the middleware opens masking on the
+		// instance the render path reads (property-explicit-reveal).
+		$context->registerService(
+			\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class,
+			static function () {
+				return new \OCA\OpenRegister\Service\Rbac\ExplicitReveal();
+			}
+		);
+
 		// Register request-scoped LanguageService as a singleton (shared per request).
 		$context->registerService(
 			LanguageService::class,
@@ -685,6 +694,10 @@ class Application extends App implements IBootstrap {
 		// path was going to collect has been collected by then, and a
 		// middleware that flushed earlier would write a shorter trail than the
 		// request actually produced.
+		// Masks explicit-reveal properties on the objects API, revealing only
+		// what `_reveal` names (property-explicit-reveal).
+		$context->registerMiddleware(\OCA\OpenRegister\Middleware\ExplicitRevealMiddleware::class);
+
 		$context->registerMiddleware(\OCA\OpenRegister\Middleware\RevealAuditMiddleware::class);
 
 		// Register the RateLimitMiddleware to wire SecurityService brute-force
