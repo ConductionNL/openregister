@@ -108,7 +108,7 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->apps['openregister'] = dirname(__DIR__, 4);
 		$plan = $this->catalogue->gather(set: 'zuiddrecht');
 
-		$this->assertCount(expectedCount: 33, haystack: $plan['cast']['people']);
+		$this->assertCount(expectedCount: 36, haystack: $plan['cast']['people']);
 		// DqOverdragen's team picker: Juridische zaken with six members, Juridische zaken sociaal domein with four.
 		$members = static fn (string $group): int => count(
 			array_filter($plan['cast']['people'], static fn (array $person): bool => in_array($group, ($person['groups'] ?? []), true))

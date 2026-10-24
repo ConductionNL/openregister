@@ -29,6 +29,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\ExampleSet;
 
+use DateTimeImmutable;
+use DateTimeZone;
+
 /**
  * The accounts, groups and memberships of an example set.
  *
@@ -46,14 +49,16 @@ class ExampleSetPeople {
 	/**
 	 * Constructor.
 	 *
-	 * @param ExampleSetAccounts $accounts Nextcloud accounts and groups.
-	 * @param ExampleSetRecord   $record   What an install made.
+	 * @param ExampleSetAccounts      $accounts Nextcloud accounts and groups.
+	 * @param ExampleSetRecord        $record   What an install made.
+	 * @param ExampleSetProfiles|null $profiles Writes function, role, absence and status; null leaves them out.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ExampleSetAccounts $accounts,
 		private readonly ExampleSetRecord $record,
+		private readonly ?ExampleSetProfiles $profiles=null,
 	) {
 	}//end __construct()
 
@@ -80,6 +85,7 @@ class ExampleSetPeople {
 			}
 
 			$report = $this->installUser(set: $set, person: $person, adopt: $adopt, password: $password, report: $report, record: $record);
+			$report = $this->installProfile(plan: $plan, person: $person, report: $report, record: $record);
 		}
 
 		foreach ($this->serviceAccounts(plan: $plan) as $account) {
@@ -201,6 +207,34 @@ class ExampleSetPeople {
 
 		return $report;
 	}//end installUser()
+
+	/**
+	 * Write the function, role, absence and status of an account the set created, at every install.
+	 *
+	 * An account the set adopted or found is someone else's, so its profile is left alone.
+	 *
+	 * @param array<string, mixed> $plan   The plan.
+	 * @param array<string, mixed> $person The cast person.
+	 * @param array<string, mixed> $report The report; a part that could not be written goes under `dropped`.
+	 * @param array<string, mixed> $record The record.
+	 *
+	 * @return array<string, mixed> The report.
+	 *
+	 * @spec openspec/changes/example-set-staff-profiles/specs/example-sets/spec.md#requirement-a-cast-person-may-carry-a-function-a-role-an-absence-and-a-status
+	 */
+	private function installProfile(array $plan, array $person, array $report, array $record): array {
+		$uid = (string) $person['uid'];
+		if ($this->profiles === null || ($record['users'][$uid] ?? null) !== 'created') {
+			return $report;
+		}
+
+		$today = new DateTimeImmutable('today', new DateTimeZone((string) ($plan['timezone'] ?? 'UTC')));
+		foreach ($this->profiles->apply(uid: $uid, profile: $this->profiles->fromPerson(person: $person, today: $today)) as $reason) {
+			$report['dropped'][] = $reason;
+		}
+
+		return $report;
+	}//end installProfile()
 
 	/**
 	 * One service account: kept, adopted or created with a password nobody ever sees.
