@@ -3360,6 +3360,10 @@ class Application extends App implements IBootstrap {
 		// still be refused.
 		$context->registerEventListener(ObjectUpdatedEvent::class, WorkingCalendarChangedListener::class);
 
+		// A materialised calculation that reads `@ref.<name>.<field>` is refreshed
+		// on the objects that point at an updated object when that field changed.
+		$context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\ReferencedCalculationListener::class);
+
 		// Approval-chains declarative wiring — see x-openregister-approval-chains.
 		// The annotation is validated at schema save; the gate compiles it into
 		// a task template on demand and blocks any lifecycle transition it
