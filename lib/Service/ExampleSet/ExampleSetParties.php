@@ -33,7 +33,6 @@ namespace OCA\OpenRegister\Service\ExampleSet;
 use DateTime;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
-use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use Psr\Container\ContainerInterface;
@@ -114,9 +113,9 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	/**
 	 * Link the party to the object through the party model's trusted path.
 	 *
-	 * Runs as the system, as every other example-set read and write does: an
-	 * occ install has no user, and the object and party lookups refuse
-	 * "Anonymous", which PartyService::find answers as "no such object".
+	 * The object is found without RBAC, as every other example-set read is: an
+	 * occ install has no user, and a schema that refuses "Anonymous" would
+	 * otherwise read as "no such object".
 	 *
 	 * @param string               $app  The app that ships the fragment, recorded as the linker.
 	 * @param string               $key  The link's key in the fragment (unused).
@@ -127,20 +126,8 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	 * @spec openspec/changes/example-set-parties/specs/example-sets/spec.md#requirement-a-fragment-may-put-parties-on-its-objects
 	 */
 	public function write(string $app, string $key, array $data): array {
-		return $this->objects()->runAsSystem(fn (): array => $this->link(app: $app, data: $data));
-	}//end write()
-
-	/**
-	 * Link the party to the object; see write().
-	 *
-	 * @param string               $app  The app that ships the fragment, recorded as the linker.
-	 * @param array<string, mixed> $data The filled link fields.
-	 *
-	 * @return array{error: string, entry: array{objectUuid: string, partyUuid: string, role: string}|null} The record entry, or why the write failed.
-	 */
-	private function link(string $app, array $data): array {
 		$objectUuid = (string) $data['objectUuid'];
-		$object     = $this->parties()->find(partyUuid: $objectUuid);
+		$object     = $this->parties()->findUnscoped(uuid: $objectUuid);
 		if ($object === null) {
 			return ['error' => 'no object "'.$objectUuid.'" to put the party on', 'entry' => null];
 		}
@@ -158,7 +145,7 @@ class ExampleSetParties extends ExampleSetEngineRows {
 		}
 
 		return ['error' => '', 'entry' => ['objectUuid' => $objectUuid, 'partyUuid' => (string) $data['partyUuid'], 'role' => (string) $data['role']]];
-	}//end link()
+	}//end write()
 
 	/**
 	 * Whether a written party link is no longer there.
@@ -248,15 +235,6 @@ class ExampleSetParties extends ExampleSetEngineRows {
 	private function parties(): PartyService {
 		return $this->container->get(PartyService::class);
 	}//end parties()
-
-	/**
-	 * The object service, for its system context.
-	 *
-	 * @return ObjectService
-	 */
-	private function objects(): ObjectService {
-		return $this->container->get(ObjectService::class);
-	}//end objects()
 
 	/**
 	 * The party link mapper.

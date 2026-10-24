@@ -11,7 +11,7 @@ The check SHALL refuse:
 - a row without an object, a party or a role;
 - a `validFrom` or `validUntil` that is not a date.
 
-Install SHALL link the party to the object in that role through the party model, with the fragment's app as the linker, and SHALL record the link. It SHALL find the object and the party as the system, as every other example-set read does, so an install without a signed-in user (`occ`) links a party on an object whose schema refuses anonymous reads. A later install SHALL report a recorded link that is gone as missing. Remove SHALL unlink the parties the record holds, and only those.
+Install SHALL link the party to the object in that role through the party model, with the fragment's app as the linker, and SHALL record the link. It SHALL find the object and the party without RBAC, as every other example-set read does, and without elevating to the system principal, so an install without a signed-in user (`occ`) links a party on an object whose schema refuses anonymous reads. A later install SHALL report a recorded link that is gone as missing. Remove SHALL unlink the parties the record holds, and only those.
 
 #### Scenario: An occ install on a case anonymous users may not read
 - **GIVEN** a fragment declares a party on a case whose schema refuses "Anonymous"

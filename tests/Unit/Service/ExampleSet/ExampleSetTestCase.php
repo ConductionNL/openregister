@@ -37,7 +37,6 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetParties;
-use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Party\PartyRoleService;
 use OCA\OpenRegister\Service\Party\PartyService;
 use OCA\OpenRegister\Db\ContactLink;
@@ -140,16 +139,6 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<string, array<string, mixed>> The party links, by `<object> <party> <role>`, with what was imported. */
 	protected array $partyLinks = [];
 
-	/**
-	 * Whether the code under test runs as the system (ObjectService::runAsSystem).
-	 *
-	 * An occ install has no user, and OpenRegister refuses an object read by
-	 * "Anonymous"; the party service fake answers only in system context.
-	 *
-	 * @var bool
-	 */
-	protected bool $asSystem = false;
-
 	/** @var array<string, Watcher> The follows, by `<user> <object uuid>`. */
 	protected array $follows = [];
 
@@ -207,7 +196,6 @@ abstract class ExampleSetTestCase extends TestCase {
 			FlowVersionService::class => $this->flowVersions(),
 			FlowService::class        => $this->flowService(),
 			OrganisationService::class => $this->organisationService(),
-			ObjectService::class      => $this->systemObjectService(),
 		});
 		$files     = new ExampleSetFiles(container: $container);
 		$setConfig = new ExampleSetAppConfig(appConfig: $this->appConfigOfApps(), random: $this->random());
@@ -625,41 +613,22 @@ abstract class ExampleSetTestCase extends TestCase {
 	}
 
 	/**
-	 * An object service whose runAsSystem runs the operation in system context.
-	 *
-	 * @return ObjectService
-	 */
-	private function systemObjectService(): ObjectService {
-		$objects = $this->createMock(originalClassName: ObjectService::class);
-		$objects->method('runAsSystem')->willReturnCallback(function (callable $operation): mixed {
-			$previous       = $this->asSystem;
-			$this->asSystem = true;
-			try {
-				return $operation();
-			} finally {
-				$this->asSystem = $previous;
-			}
-		});
-
-		return $objects;
-	}
-
-	/**
-	 * A party service that finds every object the store holds, in system
-	 * context only: like PartyService::find, a read OpenRegister refuses
-	 * (an anonymous occ run) answers null.
+	 * A party service as an occ install meets it: `find` reads with RBAC and
+	 * no user, which a schema refusing "Anonymous" answers with null;
+	 * `findUnscoped` finds every object.
 	 *
 	 * @return PartyService
 	 */
 	private function partyService(): PartyService {
 		$parties = $this->createMock(PartyService::class);
-		$parties->method('find')->willReturnCallback(function (string $partyUuid): ?ObjectEntity {
-			if ($this->asSystem === false || str_starts_with($partyUuid, 'missing') === true) {
+		$parties->method('find')->willReturn(null);
+		$parties->method('findUnscoped')->willReturnCallback(function (string $uuid): ?ObjectEntity {
+			if (str_starts_with($uuid, 'missing') === true) {
 				return null;
 			}
 
 			$object = new ObjectEntity();
-			$object->setUuid($partyUuid);
+			$object->setUuid($uuid);
 			$object->setRegister('7');
 			$object->setSchema('9');
 			return $object;
