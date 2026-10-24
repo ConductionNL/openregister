@@ -148,6 +148,15 @@ class ExampleSetInstance {
 			$organisation->setName($declared['name']);
 			$organisation->setSlug($declared['slug']);
 			$organisation->setDescription($declared['description']);
+			// A partner (ketenpartner) is an organisation of type partner; empty keeps the default.
+			if (($declared['type'] ?? '') !== '') {
+				$organisation->setType($declared['type']);
+			}
+
+			if (($declared['contactEmail'] ?? '') !== '') {
+				$organisation->setContactEmail($declared['contactEmail']);
+			}
+
 			$quota = ($declared['quota'] ?? []);
 			$organisation->setStorageQuota($quota['storage'] ?? null);
 			$organisation->setRequestQuota($quota['requests'] ?? null);
