@@ -82,16 +82,26 @@ return [
 
         // Object-scoped integration sub-resource dispatch —
         // pluggable-integration-registry task 4.2 / tasks.md#task-19.
-        // A declared action bound to a manual flow: one click, several changes,
-        // and a hint about where the handler goes next. The action's own right
-        // authorises it; the flow adds no second permission model (ADR-023).
+        // A declared action run with {inputs}: a transition, a bound flow or inline
+        // steps, and a hint about where the handler goes next. The action's own
+        // right authorises it; the body adds no second permission model (ADR-023).
+        // The actions the caller may run on this object: declared ones and the
+        // lifecycle's transitions in one list, each with availability and reason.
+        ['name' => 'objectActions#index', 'url' => '/api/objects/{register}/{schema}/{id}/actions', 'verb' => 'GET',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        // The runs of actions on this object, `action.run` and the older `action.macro`, newest first.
+        ['name' => 'objectActions#history', 'url' => '/api/objects/{register}/{schema}/{id}/actions/history', 'verb' => 'GET',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'objectActions#invoke', 'url' => '/api/objects/{register}/{schema}/{id}/actions/{action}', 'verb' => 'POST',
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'action' => '[^/]+']],
-        // The same macro on a selection: one run per object, reported per object.
+        // The same action on a selection: one run per object, reported per object.
         // Its own prefix, because `/api/objects/{register}/{schema}/...` with four
         // segments would be read as an object id by the routes above.
         ['name' => 'objectActions#invokeOnSelection', 'url' => '/api/object-actions/{register}/{schema}/{action}', 'verb' => 'POST',
             'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'action' => '[^/]+']],
+        // The actions offered on a selection (the `bulk` surface).
+        ['name' => 'objectActions#selection', 'url' => '/api/object-actions/{register}/{schema}', 'verb' => 'GET',
+            'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+']],
         ['name' => 'objectIntegrations#index',   'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
         ['name' => 'objectIntegrations#show',    'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
         ['name' => 'objectIntegrations#create',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
@@ -845,6 +855,8 @@ return [
         // for the tenants it exists for. The authorisation that matters is the
         // organisation scoping and per-flow guard inside FlowService.
         ['name' => 'flow#run',     'url' => '/api/flows/{id}/run', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        // Try a flow against an object without effect (flow-dry-run): the `flow.update` right.
+        ['name' => 'flowDryRun#dryRun', 'url' => '/api/flows/{id}/dry-run', 'verb' => 'POST', 'requirements' => ['id' => '[^/]+']],
         // BPMN 2.0 interchange. Export is read-guarded and import is
         // flow.create-guarded, both inside the controller; the auth posture is
         // declared there with #[NoAdminRequired] and no CSRF exemption, because
@@ -2106,6 +2118,7 @@ return [
 		['name' => 'selectielijst#import', 'url' => '/api/archival/selectielijst/import', 'verb' => 'POST'],
 		['name' => 'selectielijst#versions', 'url' => '/api/archival/selectielijst/versions', 'verb' => 'GET'],
 		['name' => 'selectielijst#diff', 'url' => '/api/archival/selectielijst/diff', 'verb' => 'GET'],
+		['name' => 'selectielijstReference#resolve', 'url' => '/api/archival/selectielijst/resolve', 'verb' => 'GET'],
 
 		// e-Depot transfer settings.
 		['name' => 'Settings\EdepotSettings#getEdepotSettings', 'url' => '/api/settings/edepot', 'verb' => 'GET'],
@@ -2187,6 +2200,7 @@ return [
 		['name' => 'task#index', 'url' => '/api/flow-tasks', 'verb' => 'GET'],
 		['name' => 'task#create', 'url' => '/api/flow-tasks', 'verb' => 'POST'],
 		['name' => 'task#show', 'url' => '/api/flow-tasks/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'task#edit', 'url' => '/api/flow-tasks/{uuid}', 'verb' => 'PATCH', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#audit', 'url' => '/api/flow-tasks/{uuid}/audit', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#offer', 'url' => '/api/flow-tasks/{uuid}/offer', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'task#claim', 'url' => '/api/flow-tasks/{uuid}/claim', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],

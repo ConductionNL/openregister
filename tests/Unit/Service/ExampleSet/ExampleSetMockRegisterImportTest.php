@@ -66,6 +66,10 @@ use Psr\Log\LoggerInterface;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
  * @uses \OCA\OpenRegister\Service\RegisterDescriptorService
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
  */
 class ExampleSetMockRegisterImportTest extends ExampleSetTestCase {
 	/** @var array<string, string> Registers on the fake instance, slug to version. */

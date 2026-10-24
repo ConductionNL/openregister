@@ -45,6 +45,7 @@ class ExampleSetChanges {
 	 * @param ExampleSetStore  $store  Register access.
 	 * @param ExampleSetValues $values Fills placeholders.
 	 * @param ExampleSetPaths  $paths  Reads and writes values at dot paths.
+	 * @param ExampleSetProof  $proof  Tells whether a value read back is the value written.
 	 *
 	 * @return void
 	 */
@@ -52,6 +53,7 @@ class ExampleSetChanges {
 		private readonly ExampleSetStore $store,
 		private readonly ExampleSetValues $values,
 		private readonly ExampleSetPaths $paths=new ExampleSetPaths(),
+		private readonly ExampleSetProof $proof=new ExampleSetProof(),
 	) {
 	}//end __construct()
 
@@ -260,7 +262,7 @@ class ExampleSetChanges {
 		$lost = [];
 		foreach ($entry['set'] as $set) {
 			$held = $this->paths->atPath(row: $row, path: $set['path']);
-			if ($held['found'] === false || $held['value'] !== $set['new']) {
+			if ($this->stillHolds(held: $held, written: $set['new']) === false) {
 				$lost[] = $set['path'];
 			}
 		}
@@ -273,6 +275,19 @@ class ExampleSetChanges {
 
 		return $lost;
 	}//end lost()
+
+	/**
+	 * Whether a path still holds what a change wrote, in whatever form the
+	 * store keeps it (a moment in UTC, an empty text as null).
+	 *
+	 * @param array{found: bool, value: mixed} $held    The path as read back.
+	 * @param mixed                            $written The value the change wrote.
+	 *
+	 * @return bool
+	 */
+	private function stillHolds(array $held, mixed $written): bool {
+		return $held['found'] === true && $this->proof->lostPaths(declared: $written, stored: $held['value']) === [];
+	}//end stillHolds()
 
 	/**
 	 * Put back what a change replaced and take out what it appended, while the object still holds what the change wrote.
@@ -305,7 +320,7 @@ class ExampleSetChanges {
 		$left   = [];
 		foreach (array_reverse((array) $entry['set']) as $set) {
 			$held = $this->paths->atPath(row: $row, path: $set['path']);
-			if ($held['found'] === false || $held['value'] !== $set['new']) {
+			if ($this->stillHolds(held: $held, written: $set['new']) === false) {
 				$left[] = (string) $set['path'];
 				continue;
 			}

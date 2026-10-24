@@ -39,6 +39,10 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetValues;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
  */
 class ExampleSetCatalogueTest extends ExampleSetTestCase {
 	public function testGathersEnabledAppsInOrderAndNamesTheAbsentOnes(): void {
@@ -104,10 +108,63 @@ class ExampleSetCatalogueTest extends ExampleSetTestCase {
 		$this->apps['openregister'] = dirname(__DIR__, 4);
 		$plan = $this->catalogue->gather(set: 'zuiddrecht');
 
-		$this->assertCount(16, $plan['cast']['people']);
+		$this->assertCount(expectedCount: 36, haystack: $plan['cast']['people']);
+		// DqOverdragen's team picker: Juridische zaken with six members, Juridische zaken sociaal domein with four.
+		$members = static fn (string $group): int => count(
+			array_filter($plan['cast']['people'], static fn (array $person): bool => in_array($group, ($person['groups'] ?? []), true))
+		);
+		$this->assertSame(expected: [6, 4], actual: [$members('juridische-zaken'), $members('juridische-zaken-sociaal-domein')]);
+		// Buurtvereniging Oost and its chair, whom DqOrganisatie draws.
+		$this->assertSame(expected: 'buurtoost', actual: $plan['cast']['people']['marja']['organisation']);
+		// The parties on the Lindelaan Woo case: Van Wijk's representative and the residents' association.
+		$this->assertSame(expected: 'vanwijk', actual: $plan['cast']['people']['jvanwijk']['organisation']);
+		// The contacts and companies the dossiq list and new-case boards name, and the second tenant with its contact.
+		$this->assertSame(
+			expected: ['Pieter Bos', 'Henk Visser', 'Marieke Visser'],
+			actual: [$plan['cast']['people']['pieterbos']['displayName'], $plan['cast']['people']['henkvisser']['displayName'], $plan['cast']['people']['marieke']['displayName']]
+		);
+		$this->assertSame(expected: 'Beukenlaan', actual: $plan['cast']['people']['henkvisser']['address']['street']);
+		// Sanne's first names as the BRP holds them, which DqContact, PqKlant and PqBriefOpstellen draw
+		// ("Sanne Johanna"); her given name stays "Sanne", the name the portal greets her by, and her
+		// initials stay "S.", which the case lists draw as "S. de Vries".
+		$sanne = $plan['cast']['people']['sanne'];
+		$this->assertSame(expected: ['Sanne Johanna', 'Sanne'], actual: [$sanne['firstNames'], $sanne['givenName']]);
+		$brp = array_column($plan['fragments'][0]['objects'], 'data', 'key')['brp-sanne'];
+		$this->assertSame(expected: ['{{cast:sanne.firstNames}}', 'S.'], actual: [$brp['voornamen'], $brp['voorletters']]);
+		// The handler the dossiq boards draw as "u", who owns a saved view.
+		$pieter = $plan['cast']['people']['pieter'];
+		$this->assertSame(
+			expected: ['pieter', 'Pieter Jansen', ['vergunningen', 'woo-en-informatie']],
+			actual: [$pieter['uid'], $pieter['displayName'], array_values(array_diff($pieter['groups'], ['medewerkers']))]
+		);
+		// The jeugdteam's regisseur of the jeugdwet example case.
+		$this->assertSame(['fatma.kaya', ['sociaal-domein']], [$plan['cast']['people']['fatma']['uid'], array_values(array_diff($plan['cast']['people']['fatma']['groups'], ['medewerkers']))]);
 		$this->assertSame(['brp' => ['mock' => true], 'kvk' => ['mock' => true]], $plan['requires']);
+		// The colleague at Mobiliteit en verkeer the dossiq case boards ask for the Lindelaan documents.
+		$this->assertSame(
+			expected: ['lars.dekoning', 'Lars de Koning', ['mobiliteit-en-verkeer']],
+			actual: [$plan['cast']['people']['lars']['uid'], $plan['cast']['people']['lars']['displayName'], array_values(array_diff($plan['cast']['people']['lars']['groups'], ['medewerkers']))]
+		);
+		// Buurtvereniging Oost's secretary, a contact person with no BSN and no account (dossiq DqOrganisatie).
+		$kees = $plan['cast']['people']['keesdewit'];
+		$this->assertSame(expected: ['Kees de Wit', 'buurtoost', 'kees.dewit@zuiddrecht.example'], actual: [$kees['displayName'], $kees['organisation'], $kees['email']]);
+		$this->assertArrayNotHasKey(key: 'bsn', array: $kees);
+		$this->assertArrayNotHasKey(key: 'uid', array: $kees);
 		$this->assertSame(['vergunningen'], array_values(array_diff($plan['cast']['people']['marleen']['groups'], ['medewerkers'])));
 		$this->assertSame('Teamleider', $plan['cast']['people']['marleen']['function']);
+		// The Woo team the dossiq boards name, led by Anouk Bakker.
+		$woo = array_keys(array_filter($plan['cast']['people'], static fn (array $p): bool => in_array('woo-en-informatie', ($p['groups'] ?? []), true)));
+		$this->assertSame(expected: ['thomas', 'anouk', 'pieter'], actual: $woo);
+		$this->assertSame(expected: ['Teamleider', 'Woo en informatie'], actual: [$plan['cast']['people']['anouk']['function'], $plan['cast']['people']['anouk']['department']]);
+		// The ketenpartner DqZaakSamenwerken shares a case with: an organisation of type partner.
+		$partner = array_values(array_filter($plan['organisations'], static fn (array $o): bool => $o['slug'] === 'odzhz'))[0];
+		$this->assertSame(expected: ['Omgevingsdienst Zuid-Holland Zuid', 'partner'], actual: [$partner['name'], $partner['type']]);
+		// Gemeente Waterland, the second tenant: its quota, its administrator and Pieter, who reads it on DqTenant.
+		$waterland = array_values(array_filter($plan['organisations'], static fn (array $o): bool => $o['slug'] === 'waterland'))[0];
+		$this->assertSame(expected: ['marieke.visser', 'pieter'], actual: $waterland['members']);
+		$this->assertSame(expected: 107374182400, actual: $waterland['quota']['storage']);
+		// DqTenant's quota: 5,000 cases and 50 users.
+		$this->assertSame(expected: [5000, 'case', 50], actual: [$waterland['quota']['objects'], $waterland['quota']['objectsSchema'], $waterland['quota']['users']]);
 		$this->assertNotContains('admin', array_column($plan['cast']['groups'], 'gid'));
 		$this->assertNotContains('noor', array_keys(array_filter($plan['cast']['people'], static fn (array $p): bool => in_array('admin', ($p['groups'] ?? []), true))));
 		$apps = json_decode((string) file_get_contents(dirname(__DIR__, 4).'/lib/Settings/example-sets/zuiddrecht.json'), true)['apps'];

@@ -52,6 +52,8 @@ class OrganisationControllerTest extends TestCase {
 
 		$this->request = $this->createMock(IRequest::class);
 		$this->organisationService = $this->createMock(OrganisationService::class);
+		// The update tests edit as an administrator of the organisation; a member is refused (OrganisationUpdateRoleTest).
+		$this->organisationService->method('isOrganisationAdmin')->willReturn(true);
 		$this->organisationMapper = $this->createMock(OrganisationMapper::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->userSession = $this->createMock(IUserSession::class);

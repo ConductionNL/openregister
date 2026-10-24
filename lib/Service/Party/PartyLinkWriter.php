@@ -67,15 +67,25 @@ class PartyLinkWriter {
 	 * @param int|null $schemaId The object's schema id.
 	 * @param string $partyUuid The party object's uuid.
 	 * @param string|null $role The role.
+	 * @param string|null $linkedBy Who links it when nobody is signed in, such as an example set's app; the signed-in user wins.
+	 *
+	 * A trusted import (nobody signed in, a linker named) finds the party
+	 * without RBAC, as PartyRoleService accepted it; a signed-in caller finds
+	 * it with their own rights.
 	 *
 	 * @return ContactLink The link as stored.
 	 *
-	 * @throws Exception 404 when no party has that uuid, 400 when the object is not a party, 401 when nobody is signed in.
+	 * @throws Exception 404 when no party has that uuid, 400 when the object is not a party, 401 when nobody is signed in and no linker is named.
 	 *
 	 * @spec openspec/changes/party-roles-beyond-the-requester/specs/party-model/spec.md#requirement-a-party-holds-a-typed-role-on-an-object-for-a-period-req-prm-001
+	 * @spec openspec/changes/example-set-install-agrees-with-the-store/specs/example-sets/spec.md
 	 */
-	public function write(string $objectUuid, int $registerId, ?int $schemaId, string $partyUuid, ?string $role): ContactLink {
-		$party = $this->parties->find(partyUuid: $partyUuid);
+	public function write(string $objectUuid, int $registerId, ?int $schemaId, string $partyUuid, ?string $role, ?string $linkedBy = null): ContactLink {
+		$signedIn = $this->session->getUser();
+		$party    = match ($signedIn === null && $linkedBy !== null) {
+			true  => $this->parties->findUnscoped(uuid: $partyUuid),
+			false => $this->parties->find(partyUuid: $partyUuid),
+		};
 		if ($party === null) {
 			throw new Exception('Party not found', 404);
 		}
@@ -85,8 +95,8 @@ class PartyLinkWriter {
 			throw new Exception('Object "' . $partyUuid . '" is not a party: its schema declares no party model', 400);
 		}
 
-		$linker = $this->session->getUser();
-		if ($linker === null) {
+		$linker = ($signedIn?->getUID() ?? $linkedBy);
+		if ($linker === null || $linker === '') {
 			throw new Exception('No user logged in', 401);
 		}
 
@@ -107,7 +117,7 @@ class PartyLinkWriter {
 		$link->setDisplayName($this->displayNameOf(party: $party, definition: $definition));
 		$link->setEmail($this->primaryEmailOf(party: $party, definition: $definition));
 		$link->setRole($role);
-		$link->setLinkedBy($linker->getUID());
+		$link->setLinkedBy($linker);
 		$link->setLinkedAt(new DateTime());
 		if ($isNew === true) {
 			return $this->links->insert($link);

@@ -59,7 +59,8 @@ class ExampleSetInstaller {
 	 * @param ExampleSetFiles         $files         Attaches files to objects.
 	 * @param ExampleSetAppConfig     $appConfig     Writes a fragment's own app config.
 	 * @param ExampleSetUserPreferences $userPreferences Writes a fragment's own app's preferences of the set's accounts.
-	 *
+	 * @param ExampleSetEngineKinds|null $engineRows     Writes the tasks and saved views a fragment declares; null refuses them.
+	 * @param ExampleSetRewriter         $rewriter       Rewrites a kept object on `--refresh`.
 	 * @return void
 	 */
 	public function __construct(
@@ -73,6 +74,8 @@ class ExampleSetInstaller {
 		private readonly ExampleSetFiles $files,
 		private readonly ExampleSetAppConfig $appConfig,
 		private readonly ExampleSetUserPreferences $userPreferences,
+		private readonly ?ExampleSetEngineKinds $engineRows=null,
+		private readonly ExampleSetRewriter $rewriter=new ExampleSetRewriter(),
 	) {
 	}//end __construct()
 
@@ -138,12 +141,17 @@ class ExampleSetInstaller {
 				$objects[$object['key']] = ($kept ?? $standIn);
 			}//end foreach
 
-			$context  = (['objects' => $objects] + $base);
+			$context  = (['objects' => $objects, 'flows' => $this->values->flowsOf(fragment: $fragment, record: null)] + $base);
 			$refusals = array_merge(
 				$refusals,
 				$this->checkChanges(fragment: $fragment, context: $context, checked: $changes, plannedUsers: $users),
 				$this->checkAppConfig(fragment: $fragment, context: $context),
-				$this->checkUserPreferences(fragment: $fragment, context: $context, users: $users)
+				$this->checkUserPreferences(
+					fragment: $fragment,
+					context: ($context + ['views' => $this->values->viewsOf(fragment: $fragment, record: null)]),
+					users: $users
+				),
+				($this->engineRows ?? new ExampleSetEngineKinds())->check(fragment: $fragment, context: $context, users: $users, values: $this->values)
 			);
 		}//end foreach
 
@@ -176,6 +184,13 @@ class ExampleSetInstaller {
 			'changes'     => [],
 			'appConfig'   => [],
 			'userPreferences' => [],
+			'tasks'       => [],
+			'views'       => [],
+			'watchers'    => [],
+			'parties'     => [],
+			'notes'       => [],
+			'readStates'  => [],
+			'flows'       => [],
 			'files'       => 0,
 			'passwords'   => [],
 			'types'       => [],
@@ -309,14 +324,23 @@ class ExampleSetInstaller {
 			$kept = $held['row'];
 			if ($kept !== null) {
 				$report['types'][$type]['kept']++;
-				$objects[$object['key']] = $this->refreshReferences(
+				// Files declared after the object was written are attached now, once.
+				if (isset($record['files'][$name]) === false) {
+					$heldId = (string) $record['objects'][$name]['id'];
+					$report = $this->attachFiles(plan: $plan, fragment: $fragment, object: $object, objectId: $heldId, report: $report, record: $record);
+				}
+
+				$context = (['objects' => $objects] + $base);
+				$objects[$object['key']] = $this->rewriter->keep(
 					plan: $plan,
-					fragment: $fragment,
-					object: $object,
-					row: $kept,
-					context: (['objects' => $objects] + $base),
+					run: ['store' => $this->store, 'fragment' => $fragment, 'object' => $object, 'row' => $kept],
+					resolve: fn (): array => $this->resolve(object: $object, context: $context, planned: []),
+					references: function () use ($plan, $fragment, $object, $kept, $context, &$report, &$record): array {
+						$args = ['plan' => $plan, 'fragment' => $fragment, 'object' => $object, 'row' => $kept, 'context' => $context];
+						return $this->refreshReferences(...$args, report: $report, record: $record);
+					},
 					report: $report,
-					record: $record
+					written: $written
 				);
 				continue;
 			}
@@ -354,11 +378,28 @@ class ExampleSetInstaller {
 		}//end foreach
 
 		$context = (['objects' => $objects] + $base);
-		$report  = $this->installChanges(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
+
+		// Before the changes, so a change can quote a flow (`{{flow:key.uuid}}`).
+		if ($this->engineRows?->installFlows(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values) === true) {
+			$this->record->write(set: (string) $plan['set'], record: $record);
+		}
+
+		$context['flows'] = $this->values->flowsOf(fragment: $fragment, record: $record);
+		$report           = $this->installChanges(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 
 		$report = $this->installAppConfig(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 
-		return $this->installUserPreferences(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
+		$context['refresh'] = (($plan['refresh'] ?? false) === true);
+
+		if ($this->engineRows?->install(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values) === true) {
+			$this->record->write(set: (string) $plan['set'], record: $record);
+		}
+
+		// After the views, so a preference can quote one (`{{view:key.uuid}}`).
+		$context['views'] = $this->values->viewsOf(fragment: $fragment, record: $record);
+		$report           = $this->installUserPreferences(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
+
+		return $report;
 	}//end installFragment()
 
 	/**
@@ -795,7 +836,7 @@ class ExampleSetInstaller {
 			$report['lost'][] = 'user preference '.$name;
 		}
 
-		return $report;
+		return ($this->engineRows ?? new ExampleSetEngineKinds())->prove(report: $report, record: $record);
 	}//end provenParts()
 
 	/**

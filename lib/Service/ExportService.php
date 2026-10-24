@@ -861,6 +861,14 @@ class ExportService {
 			$multitenancy = filter_var($filters['multi'], FILTER_VALIDATE_BOOLEAN);
 		}
 
+		// `_ids` (a list or a comma-separated string) narrows the export to the
+		// selected objects; RBAC and multitenancy still apply to each.
+		$selected = implode(',', array_map('strval', (array) ($filters['_ids'] ?? [])));
+		$selectedIds = array_values(array_filter(array_map('trim', explode(',', $selected)), static fn (string $id): bool => $id !== ''));
+		if ($selectedIds === []) {
+			$selectedIds = null;
+		}
+
 		// Use ObjectService::searchObjects directly with proper RBAC and multi-tenancy filtering.
 		// Set a very high limit to get all objects (export needs all data).
 		// The export's own keys come first, so no property filter can replace them.
@@ -878,10 +886,11 @@ class ExportService {
 			// Apply RBAC filtering.
 			_multitenancy: $multitenancy,
 			// Apply multi-tenancy filtering (respects explicit _multi parameter).
-			ids: null,
+			ids: $selectedIds,
 			uses: null
 		);
 	}//end fetchObjectsForExport()
+
 
 	/**
 	 * Identify which header columns are name-companion columns (prefixed with _).

@@ -61,6 +61,16 @@
 				"displayName": "Juridische zaken"
 			},
 			{
+				"key": "juridische-zaken-sociaal-domein",
+				"gid": "zuiddrecht-juridische-zaken-sociaal-domein",
+				"displayName": "Juridische zaken sociaal domein"
+			},
+			{
+				"key": "woo-en-informatie",
+				"gid": "zuiddrecht-woo-en-informatie",
+				"displayName": "Woo en informatie"
+			},
+			{
 				"key": "communicatie",
 				"gid": "zuiddrecht-communicatie",
 				"displayName": "Communicatie"
@@ -84,6 +94,16 @@
 				"key": "functioneel-beheer",
 				"gid": "zuiddrecht-functioneel-beheer",
 				"displayName": "Functioneel beheer"
+			},
+			{
+				"key": "sociaal-domein",
+				"gid": "zuiddrecht-sociaal-domein",
+				"displayName": "Sociaal domein"
+			},
+			{
+				"key": "mobiliteit-en-verkeer",
+				"gid": "zuiddrecht-mobiliteit-en-verkeer",
+				"displayName": "Mobiliteit en verkeer"
 			}
 		],
 		"people": [
@@ -92,6 +112,7 @@
 				"uid": "sanne.devries",
 				"displayName": "Sanne de Vries",
 				"givenName": "Sanne",
+				"firstNames": "Sanne Johanna",
 				"prefix": "de",
 				"familyName": "Vries",
 				"email": "sanne.devries@zuiddrecht.example",
@@ -228,6 +249,102 @@
 				"organisation": "vandam"
 			},
 			{
+				"key": "pieterbos",
+				"uid": "pieter.bos",
+				"displayName": "Pieter Bos",
+				"givenName": "Pieter",
+				"prefix": "",
+				"familyName": "Bos",
+				"email": "pieter.bos@zuiddrecht.example",
+				"role": "resident",
+				"bsn": "999994104",
+				"gender": "M",
+				"birthDate": "1979-08-21",
+				"address": {
+					"street": "Havenstraat",
+					"number": 22,
+					"postcode": "2999AF",
+					"city": "Zuiddrecht"
+				}
+			},
+			{
+				"key": "henkvisser",
+				"uid": "henk.visser",
+				"displayName": "Henk Visser",
+				"givenName": "Henk",
+				"prefix": "",
+				"familyName": "Visser",
+				"email": "henk.visser@zuiddrecht.example",
+				"role": "business-contact",
+				"bsn": "999994116",
+				"gender": "M",
+				"birthDate": "1968-02-11",
+				"address": {
+					"street": "Beukenlaan",
+					"number": 3,
+					"postcode": "2999AG",
+					"city": "Zuiddrecht"
+				},
+				"organisation": "visserbouw"
+			},
+			{
+				"key": "jvanwijk",
+				"uid": "jeroen.vanwijk",
+				"displayName": "J. van Wijk",
+				"givenName": "Jeroen",
+				"prefix": "van",
+				"familyName": "Wijk",
+				"email": "jeroen.vanwijk@zuiddrecht.example",
+				"role": "business-contact",
+				"bsn": "999994141",
+				"gender": "M",
+				"birthDate": "1971-04-09",
+				"address": {
+					"street": "Molenweg",
+					"number": 30,
+					"postcode": "2999BD",
+					"city": "Zuiddrecht"
+				},
+				"organisation": "vanwijk"
+			},
+			{
+				"key": "marja",
+				"uid": "marja.verbeek",
+				"displayName": "Marja Verbeek",
+				"givenName": "Marja",
+				"prefix": "",
+				"familyName": "Verbeek",
+				"email": "marja.verbeek@zuiddrecht.example",
+				"role": "business-contact",
+				"bsn": "999994153",
+				"gender": "V",
+				"birthDate": "1963-11-30",
+				"address": {
+					"street": "Oosthavenweg",
+					"number": 14,
+					"postcode": "2999AJ",
+					"city": "Zuiddrecht"
+				},
+				"organisation": "buurtoost"
+			},
+			{
+				"key": "keesdewit",
+				"displayName": "Kees de Wit",
+				"givenName": "Kees",
+				"prefix": "de",
+				"familyName": "Wit",
+				"email": "kees.dewit@zuiddrecht.example",
+				"role": "business-contact",
+				"address": {
+					"street": "Oosthavenweg",
+					"number": 31,
+					"postcode": "2999AJ",
+					"city": "Zuiddrecht"
+				},
+				"organisation": "buurtoost",
+				"$comment": "Buurtvereniging Oost's secretary. A contact person with no BSN (he gave only a name and an address) and no account: he never signs in."
+			},
+			{
 				"key": "daan",
 				"uid": "daan.verbeek",
 				"displayName": "Daan Verbeek",
@@ -271,9 +388,140 @@
 				"department": "Juridische zaken",
 				"groups": [
 					"medewerkers",
-					"juridische-zaken"
+					"juridische-zaken",
+					"woo-en-informatie"
 				],
 				"function": "Woo-coordinator"
+			},
+			{
+				"key": "marloes",
+				"uid": "marloes.bakker",
+				"displayName": "Marloes Bakker",
+				"givenName": "Marloes",
+				"prefix": "",
+				"familyName": "Bakker",
+				"email": "marloes.bakker@zuiddrecht.example",
+				"role": "employee",
+				"department": "Juridische zaken",
+				"groups": [
+					"medewerkers",
+					"juridische-zaken"
+				],
+				"function": "Jurist bezwaar en beroep"
+			},
+			{
+				"key": "joost",
+				"uid": "joost.vanleeuwen",
+				"displayName": "Joost van Leeuwen",
+				"givenName": "Joost",
+				"prefix": "van",
+				"familyName": "Leeuwen",
+				"email": "joost.vanleeuwen@zuiddrecht.example",
+				"role": "employee",
+				"department": "Juridische zaken",
+				"groups": [
+					"medewerkers",
+					"juridische-zaken"
+				],
+				"function": "Jurist Woo-advies"
+			},
+			{
+				"key": "ingrid",
+				"uid": "ingrid.mulder",
+				"displayName": "Ingrid Mulder",
+				"givenName": "Ingrid",
+				"prefix": "",
+				"familyName": "Mulder",
+				"email": "ingrid.mulder@zuiddrecht.example",
+				"role": "employee",
+				"department": "Juridische zaken",
+				"groups": [
+					"medewerkers",
+					"juridische-zaken",
+					"juridische-zaken-sociaal-domein"
+				],
+				"function": "Juridisch adviseur"
+			},
+			{
+				"key": "ruud",
+				"uid": "ruud.hendriks",
+				"displayName": "Ruud Hendriks",
+				"givenName": "Ruud",
+				"prefix": "",
+				"familyName": "Hendriks",
+				"email": "ruud.hendriks@zuiddrecht.example",
+				"role": "employee",
+				"department": "Juridische zaken",
+				"groups": [
+					"medewerkers",
+					"juridische-zaken"
+				],
+				"function": "Secretaris bezwaarcommissie"
+			},
+			{
+				"key": "yara",
+				"uid": "yara.smits",
+				"displayName": "Yara Smits",
+				"givenName": "Yara",
+				"prefix": "",
+				"familyName": "Smits",
+				"email": "yara.smits@zuiddrecht.example",
+				"role": "employee",
+				"department": "Juridische zaken",
+				"groups": [
+					"medewerkers",
+					"juridische-zaken",
+					"juridische-zaken-sociaal-domein"
+				],
+				"function": "Juridisch medewerker"
+			},
+			{
+				"key": "hanneke",
+				"uid": "hanneke.deboer",
+				"displayName": "Hanneke de Boer",
+				"givenName": "Hanneke",
+				"prefix": "de",
+				"familyName": "Boer",
+				"email": "hanneke.deboer@zuiddrecht.example",
+				"role": "employee",
+				"department": "Juridische zaken",
+				"groups": [
+					"medewerkers",
+					"juridische-zaken-sociaal-domein"
+				],
+				"function": "Jurist Wmo"
+			},
+			{
+				"key": "tom",
+				"uid": "tom.visscher",
+				"displayName": "Tom Visscher",
+				"givenName": "Tom",
+				"prefix": "",
+				"familyName": "Visscher",
+				"email": "tom.visscher@zuiddrecht.example",
+				"role": "employee",
+				"department": "Juridische zaken",
+				"groups": [
+					"medewerkers",
+					"juridische-zaken-sociaal-domein"
+				],
+				"function": "Jurist jeugd"
+			},
+			{
+				"key": "anouk",
+				"uid": "anouk.bakker",
+				"displayName": "Anouk Bakker",
+				"givenName": "Anouk",
+				"prefix": "",
+				"familyName": "Bakker",
+				"email": "anouk.bakker@zuiddrecht.example",
+				"role": "employee",
+				"department": "Woo en informatie",
+				"groups": [
+					"medewerkers",
+					"woo-en-informatie"
+				],
+				"function": "Teamleider"
 			},
 			{
 				"key": "marleen",
@@ -289,7 +537,111 @@
 					"medewerkers",
 					"vergunningen"
 				],
-				"function": "Teamleider"
+				"function": "Teamleider",
+				"roles": [
+					"Vergunningverlener",
+					"teamleider"
+				]
+			},
+			{
+				"key": "jamal",
+				"uid": "jamal.ouali",
+				"displayName": "Jamal Ouali",
+				"givenName": "Jamal",
+				"prefix": "",
+				"familyName": "Ouali",
+				"email": "jamal.ouali@zuiddrecht.example",
+				"role": "employee",
+				"department": "Vergunningen",
+				"groups": [
+					"medewerkers",
+					"vergunningen"
+				],
+				"function": "Toezichthouder, gedetacheerd",
+				"roles": [
+					"Toezichthouder"
+				],
+				"status": {
+					"status": "away",
+					"message": "Buiten"
+				}
+			},
+			{
+				"key": "sannebakker",
+				"uid": "sanne.bakker",
+				"displayName": "Sanne Bakker",
+				"givenName": "Sanne",
+				"prefix": "",
+				"familyName": "Bakker",
+				"email": "sanne.bakker@zuiddrecht.example",
+				"role": "employee",
+				"department": "Vergunningen",
+				"groups": [
+					"medewerkers",
+					"vergunningen"
+				],
+				"function": "Vergunningverlener",
+				"roles": [
+					"Vergunningverlener"
+				],
+				"absence": {
+					"fromDay": -2,
+					"untilDay": 7,
+					"status": "Verlof",
+					"message": "Terug op maandag."
+				}
+			},
+			{
+				"key": "mehmet",
+				"uid": "mehmet.yildiz",
+				"displayName": "Mehmet Yıldız",
+				"givenName": "Mehmet",
+				"prefix": "",
+				"familyName": "Yıldız",
+				"email": "mehmet.yildiz@zuiddrecht.example",
+				"role": "employee",
+				"department": "Vergunningen",
+				"groups": [
+					"medewerkers",
+					"vergunningen"
+				],
+				"function": "Intaker",
+				"roles": [
+					"Intaker"
+				]
+			},
+			{
+				"key": "pieter",
+				"uid": "pieter",
+				"displayName": "Pieter Jansen",
+				"givenName": "Pieter",
+				"prefix": "",
+				"familyName": "Jansen",
+				"email": "pieter.jansen@zuiddrecht.example",
+				"role": "employee",
+				"department": "Vergunningen",
+				"groups": [
+					"medewerkers",
+					"vergunningen",
+					"woo-en-informatie"
+				],
+				"function": "Woo-coördinator"
+			},
+			{
+				"key": "fatma",
+				"uid": "fatma.kaya",
+				"displayName": "Fatma Kaya",
+				"givenName": "Fatma",
+				"prefix": "",
+				"familyName": "Kaya",
+				"email": "fatma.kaya@zuiddrecht.example",
+				"role": "employee",
+				"department": "Jeugdteam",
+				"groups": [
+					"medewerkers",
+					"sociaal-domein"
+				],
+				"function": "Regisseur jeugdteam"
 			},
 			{
 				"key": "ilse",
@@ -367,6 +719,38 @@
 					"functioneel-beheer"
 				],
 				"function": "CISO"
+			},
+			{
+				"key": "lars",
+				"uid": "lars.dekoning",
+				"displayName": "Lars de Koning",
+				"givenName": "Lars",
+				"prefix": "de",
+				"familyName": "Koning",
+				"email": "lars.dekoning@zuiddrecht.example",
+				"role": "employee",
+				"department": "Mobiliteit en verkeer",
+				"groups": [
+					"medewerkers",
+					"mobiliteit-en-verkeer"
+				],
+				"function": "Beleidsadviseur verkeer"
+			},
+			{
+				"key": "marieke",
+				"uid": "marieke.visser",
+				"displayName": "Marieke Visser",
+				"givenName": "Marieke",
+				"prefix": "",
+				"familyName": "Visser",
+				"email": "marieke.visser@zuiddrecht.example",
+				"role": "employee",
+				"department": "Functioneel beheer",
+				"groups": [
+					"medewerkers",
+					"functioneel-beheer"
+				],
+				"function": "Applicatiebeheerder Gemeente Waterland"
 			}
 		],
 		"organisations": [
@@ -432,6 +816,89 @@
 				},
 				"registeredOn": "2001-02-15",
 				"employees": 9
+			},
+			{
+				"key": "visserbouw",
+				"name": "Visser Bouw B.V.",
+				"kvk": "00001004",
+				"vestigingsnummer": "000000001004",
+				"legalForm": "Besloten Vennootschap",
+				"contact": "henkvisser",
+				"email": "info.visserbouw@zuiddrecht.example",
+				"address": {
+					"street": "Industrieweg",
+					"number": 20,
+					"postcode": "2999BC",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "41200",
+					"description": "Algemene burgerlijke en utiliteitsbouw"
+				},
+				"registeredOn": "1998-05-04",
+				"employees": 31
+			},
+			{
+				"key": "vanwijk",
+				"name": "Aannemersbedrijf Van Wijk B.V.",
+				"kvk": "00001005",
+				"vestigingsnummer": "000000001005",
+				"legalForm": "Besloten Vennootschap",
+				"email": "info.vanwijk@zuiddrecht.example",
+				"address": {
+					"street": "Molenweg",
+					"number": 30,
+					"postcode": "2999BD",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "41200",
+					"description": "Algemene burgerlijke en utiliteitsbouw"
+				},
+				"registeredOn": "2004-10-18",
+				"employees": 47,
+				"contact": "jvanwijk"
+			},
+			{
+				"key": "bewonerslindelaan",
+				"name": "Bewonersvereniging Lindelaan",
+				"kvk": "00001006",
+				"vestigingsnummer": "000000001006",
+				"legalForm": "Vereniging",
+				"email": "bestuur.lindelaan@zuiddrecht.example",
+				"address": {
+					"street": "Lindelaan",
+					"number": 2,
+					"postcode": "2999AC",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "94993",
+					"description": "Bewonersverenigingen en buurtcomités"
+				},
+				"registeredOn": "2012-06-01",
+				"employees": 0
+			},
+			{
+				"key": "buurtoost",
+				"name": "Buurtvereniging Oost",
+				"kvk": "00001007",
+				"vestigingsnummer": "000000001007",
+				"legalForm": "Vereniging",
+				"contact": "marja",
+				"email": "bestuur.buurtoost@zuiddrecht.example",
+				"address": {
+					"street": "Oosthavenweg",
+					"number": 12,
+					"postcode": "2999AJ",
+					"city": "Zuiddrecht"
+				},
+				"sbi": {
+					"code": "94993",
+					"description": "Bewonersverenigingen en buurtcomités"
+				},
+				"registeredOn": "1998-03-12",
+				"employees": 0
 			}
 		],
 		"openregisterOrganisations": [
@@ -440,6 +907,31 @@
 				"name": "Gemeente Zuiddrecht",
 				"slug": "zuiddrecht",
 				"description": "De voorbeeldgemeente van de Zuiddrecht demo. Alles van deze organisatie is demo-inhoud."
+			},
+			{
+				"key": "waterland",
+				"name": "Gemeente Waterland",
+				"slug": "waterland",
+				"description": "Een tweede voorbeeldgemeente, zodat de tenantpagina's van de Zuiddrecht demo meer dan één organisatie tonen.",
+				"quota": {
+					"storage": 107374182400,
+					"requests": 5000,
+					"users": 50,
+					"objects": 5000,
+					"objectsSchema": "case"
+				},
+				"members": [
+					"marieke",
+					"pieter"
+				]
+			},
+			{
+				"key": "odzhz",
+				"name": "Omgevingsdienst Zuid-Holland Zuid",
+				"slug": "odzhz",
+				"type": "partner",
+				"contactEmail": "info@odzhz.example",
+				"description": "De omgevingsdienst waarmee Zuiddrecht toezicht en handhaving deelt: de ketenpartner in het deelvenster van een zaak."
 			}
 		]
 	},
@@ -450,7 +942,7 @@
 			"schema": "ingeschreven-persoon",
 			"data": {
 				"burgerservicenummer": "{{cast:sanne.bsn}}",
-				"voornamen": "{{cast:sanne.givenName}}",
+				"voornamen": "{{cast:sanne.firstNames}}",
 				"voorletters": "S.",
 				"geslachtsnaam": "{{cast:sanne.familyName}}",
 				"aanduidingNaamgebruik": "E",
@@ -674,6 +1166,130 @@
 			}
 		},
 		{
+			"key": "brp-pieterbos",
+			"register": "brp",
+			"schema": "ingeschreven-persoon",
+			"data": {
+				"burgerservicenummer": "{{cast:pieterbos.bsn}}",
+				"voornamen": "{{cast:pieterbos.givenName}}",
+				"voorletters": "P.",
+				"geslachtsnaam": "{{cast:pieterbos.familyName}}",
+				"aanduidingNaamgebruik": "E",
+				"geslachtsaanduiding": "{{cast:pieterbos.gender}}",
+				"geboortedatum": "{{cast:pieterbos.birthDate}}",
+				"geboorteland": "Nederland",
+				"geboortelandCode": "6030",
+				"nationaliteit": "Nederlandse",
+				"nationaliteitCode": "0001",
+				"verblijfplaats": {
+					"straat": "{{cast:pieterbos.address.street}}",
+					"huisnummer": "{{cast:pieterbos.address.number}}",
+					"postcode": "{{cast:pieterbos.address.postcode}}",
+					"woonplaats": "{{cast:pieterbos.address.city}}",
+					"functieAdres": "W"
+				},
+				"gemeenteVanInschrijving": "Zuiddrecht",
+				"gemeenteVanInschrijvingCode": "9999",
+				"datumInschrijvingInGemeente": "2010-01-01",
+				"partners": [],
+				"ouders": [],
+				"kinderen": []
+			}
+		},
+		{
+			"key": "brp-henkvisser",
+			"register": "brp",
+			"schema": "ingeschreven-persoon",
+			"data": {
+				"burgerservicenummer": "{{cast:henkvisser.bsn}}",
+				"voornamen": "{{cast:henkvisser.givenName}}",
+				"voorletters": "H.",
+				"geslachtsnaam": "{{cast:henkvisser.familyName}}",
+				"aanduidingNaamgebruik": "E",
+				"geslachtsaanduiding": "{{cast:henkvisser.gender}}",
+				"geboortedatum": "{{cast:henkvisser.birthDate}}",
+				"geboorteland": "Nederland",
+				"geboortelandCode": "6030",
+				"nationaliteit": "Nederlandse",
+				"nationaliteitCode": "0001",
+				"verblijfplaats": {
+					"straat": "{{cast:henkvisser.address.street}}",
+					"huisnummer": "{{cast:henkvisser.address.number}}",
+					"postcode": "{{cast:henkvisser.address.postcode}}",
+					"woonplaats": "{{cast:henkvisser.address.city}}",
+					"functieAdres": "W"
+				},
+				"gemeenteVanInschrijving": "Zuiddrecht",
+				"gemeenteVanInschrijvingCode": "9999",
+				"datumInschrijvingInGemeente": "2010-01-01",
+				"partners": [],
+				"ouders": [],
+				"kinderen": []
+			}
+		},
+		{
+			"key": "brp-jvanwijk",
+			"register": "brp",
+			"schema": "ingeschreven-persoon",
+			"data": {
+				"burgerservicenummer": "{{cast:jvanwijk.bsn}}",
+				"voornamen": "{{cast:jvanwijk.givenName}}",
+				"voorletters": "J.",
+				"geslachtsnaam": "{{cast:jvanwijk.familyName}}",
+				"aanduidingNaamgebruik": "E",
+				"geslachtsaanduiding": "{{cast:jvanwijk.gender}}",
+				"geboortedatum": "{{cast:jvanwijk.birthDate}}",
+				"geboorteland": "Nederland",
+				"geboortelandCode": "6030",
+				"nationaliteit": "Nederlandse",
+				"nationaliteitCode": "0001",
+				"verblijfplaats": {
+					"straat": "{{cast:jvanwijk.address.street}}",
+					"huisnummer": "{{cast:jvanwijk.address.number}}",
+					"postcode": "{{cast:jvanwijk.address.postcode}}",
+					"woonplaats": "{{cast:jvanwijk.address.city}}",
+					"functieAdres": "W"
+				},
+				"gemeenteVanInschrijving": "Zuiddrecht",
+				"gemeenteVanInschrijvingCode": "9999",
+				"datumInschrijvingInGemeente": "2010-01-01",
+				"partners": [],
+				"ouders": [],
+				"kinderen": []
+			}
+		},
+		{
+			"key": "brp-marja",
+			"register": "brp",
+			"schema": "ingeschreven-persoon",
+			"data": {
+				"burgerservicenummer": "{{cast:marja.bsn}}",
+				"voornamen": "{{cast:marja.givenName}}",
+				"voorletters": "M.",
+				"geslachtsnaam": "{{cast:marja.familyName}}",
+				"aanduidingNaamgebruik": "E",
+				"geslachtsaanduiding": "{{cast:marja.gender}}",
+				"geboortedatum": "{{cast:marja.birthDate}}",
+				"geboorteland": "Nederland",
+				"geboortelandCode": "6030",
+				"nationaliteit": "Nederlandse",
+				"nationaliteitCode": "0001",
+				"verblijfplaats": {
+					"straat": "{{cast:marja.address.street}}",
+					"huisnummer": "{{cast:marja.address.number}}",
+					"postcode": "{{cast:marja.address.postcode}}",
+					"woonplaats": "{{cast:marja.address.city}}",
+					"functieAdres": "W"
+				},
+				"gemeenteVanInschrijving": "Zuiddrecht",
+				"gemeenteVanInschrijvingCode": "9999",
+				"datumInschrijvingInGemeente": "2010-01-01",
+				"partners": [],
+				"ouders": [],
+				"kinderen": []
+			}
+		},
+		{
 			"key": "kvk-slagerij",
 			"register": "kvk",
 			"schema": "maatschappelijke-activiteit",
@@ -872,6 +1488,292 @@
 						"indHoofdactiviteit": "Ja"
 					}
 				]
+			}
+		},
+		{
+			"key": "kvk-visserbouw",
+			"register": "kvk",
+			"schema": "maatschappelijke-activiteit",
+			"data": {
+				"kvkNummer": "{{cast:visserbouw.kvk}}",
+				"naam": "{{cast:visserbouw.name}}",
+				"handelsnamen": [
+					{
+						"naam": "{{cast:visserbouw.name}}",
+						"volgorde": 0
+					}
+				],
+				"rechtsvorm": "{{cast:visserbouw.legalForm}}",
+				"uitgebreideRechtsvorm": "{{cast:visserbouw.legalForm}}",
+				"formeleRegistratiedatum": "{{cast:visserbouw.registeredOn}}",
+				"materieleRegistratie": {
+					"datumAanvang": "{{cast:visserbouw.registeredOn}}"
+				},
+				"totaalWerkzamePersonen": "{{cast:visserbouw.employees}}",
+				"sbiActiviteiten": [
+					{
+						"sbiCode": "{{cast:visserbouw.sbi.code}}",
+						"sbiOmschrijving": "{{cast:visserbouw.sbi.description}}",
+						"indHoofdactiviteit": "Ja"
+					}
+				],
+				"indNonMailing": "Nee",
+				"actief": true
+			}
+		},
+		{
+			"key": "vestiging-visserbouw",
+			"register": "kvk",
+			"schema": "vestiging",
+			"data": {
+				"vestigingsnummer": "{{cast:visserbouw.vestigingsnummer}}",
+				"kvkNummer": "{{cast:visserbouw.kvk}}",
+				"eersteHandelsnaam": "{{cast:visserbouw.name}}",
+				"indHoofdvestiging": "Ja",
+				"indCommercieleVestiging": "Ja",
+				"totaalWerkzamePersonen": "{{cast:visserbouw.employees}}",
+				"adressen": [
+					{
+						"type": "bezoekadres",
+						"straatnaam": "{{cast:visserbouw.address.street}}",
+						"huisnummer": "{{cast:visserbouw.address.number}}",
+						"postcode": "{{cast:visserbouw.address.postcode}}",
+						"plaats": "{{cast:visserbouw.address.city}}",
+						"land": "Nederland"
+					}
+				],
+				"handelsnamen": [
+					{
+						"naam": "{{cast:visserbouw.name}}",
+						"volgorde": 0
+					}
+				],
+				"sbiActiviteiten": [
+					{
+						"sbiCode": "{{cast:visserbouw.sbi.code}}",
+						"sbiOmschrijving": "{{cast:visserbouw.sbi.description}}",
+						"indHoofdactiviteit": "Ja"
+					}
+				]
+			}
+		},
+		{
+			"key": "kvk-vanwijk",
+			"register": "kvk",
+			"schema": "maatschappelijke-activiteit",
+			"data": {
+				"kvkNummer": "{{cast:vanwijk.kvk}}",
+				"naam": "{{cast:vanwijk.name}}",
+				"handelsnamen": [
+					{
+						"naam": "{{cast:vanwijk.name}}",
+						"volgorde": 0
+					}
+				],
+				"rechtsvorm": "{{cast:vanwijk.legalForm}}",
+				"uitgebreideRechtsvorm": "{{cast:vanwijk.legalForm}}",
+				"formeleRegistratiedatum": "{{cast:vanwijk.registeredOn}}",
+				"materieleRegistratie": {
+					"datumAanvang": "{{cast:vanwijk.registeredOn}}"
+				},
+				"totaalWerkzamePersonen": "{{cast:vanwijk.employees}}",
+				"sbiActiviteiten": [
+					{
+						"sbiCode": "{{cast:vanwijk.sbi.code}}",
+						"sbiOmschrijving": "{{cast:vanwijk.sbi.description}}",
+						"indHoofdactiviteit": "Ja"
+					}
+				],
+				"indNonMailing": "Nee",
+				"actief": true
+			}
+		},
+		{
+			"key": "vestiging-vanwijk",
+			"register": "kvk",
+			"schema": "vestiging",
+			"data": {
+				"vestigingsnummer": "{{cast:vanwijk.vestigingsnummer}}",
+				"kvkNummer": "{{cast:vanwijk.kvk}}",
+				"eersteHandelsnaam": "{{cast:vanwijk.name}}",
+				"indHoofdvestiging": "Ja",
+				"indCommercieleVestiging": "Ja",
+				"totaalWerkzamePersonen": "{{cast:vanwijk.employees}}",
+				"adressen": [
+					{
+						"type": "bezoekadres",
+						"straatnaam": "{{cast:vanwijk.address.street}}",
+						"huisnummer": "{{cast:vanwijk.address.number}}",
+						"postcode": "{{cast:vanwijk.address.postcode}}",
+						"plaats": "{{cast:vanwijk.address.city}}",
+						"land": "Nederland"
+					}
+				],
+				"handelsnamen": [
+					{
+						"naam": "{{cast:vanwijk.name}}",
+						"volgorde": 0
+					}
+				],
+				"sbiActiviteiten": [
+					{
+						"sbiCode": "{{cast:vanwijk.sbi.code}}",
+						"sbiOmschrijving": "{{cast:vanwijk.sbi.description}}",
+						"indHoofdactiviteit": "Ja"
+					}
+				]
+			}
+		},
+		{
+			"key": "kvk-bewonerslindelaan",
+			"register": "kvk",
+			"schema": "maatschappelijke-activiteit",
+			"data": {
+				"kvkNummer": "{{cast:bewonerslindelaan.kvk}}",
+				"naam": "{{cast:bewonerslindelaan.name}}",
+				"handelsnamen": [
+					{
+						"naam": "{{cast:bewonerslindelaan.name}}",
+						"volgorde": 0
+					}
+				],
+				"rechtsvorm": "{{cast:bewonerslindelaan.legalForm}}",
+				"uitgebreideRechtsvorm": "{{cast:bewonerslindelaan.legalForm}}",
+				"formeleRegistratiedatum": "{{cast:bewonerslindelaan.registeredOn}}",
+				"materieleRegistratie": {
+					"datumAanvang": "{{cast:bewonerslindelaan.registeredOn}}"
+				},
+				"totaalWerkzamePersonen": "{{cast:bewonerslindelaan.employees}}",
+				"sbiActiviteiten": [
+					{
+						"sbiCode": "{{cast:bewonerslindelaan.sbi.code}}",
+						"sbiOmschrijving": "{{cast:bewonerslindelaan.sbi.description}}",
+						"indHoofdactiviteit": "Ja"
+					}
+				],
+				"indNonMailing": "Nee",
+				"actief": true
+			}
+		},
+		{
+			"key": "vestiging-bewonerslindelaan",
+			"register": "kvk",
+			"schema": "vestiging",
+			"data": {
+				"vestigingsnummer": "{{cast:bewonerslindelaan.vestigingsnummer}}",
+				"kvkNummer": "{{cast:bewonerslindelaan.kvk}}",
+				"eersteHandelsnaam": "{{cast:bewonerslindelaan.name}}",
+				"indHoofdvestiging": "Ja",
+				"indCommercieleVestiging": "Ja",
+				"totaalWerkzamePersonen": "{{cast:bewonerslindelaan.employees}}",
+				"adressen": [
+					{
+						"type": "bezoekadres",
+						"straatnaam": "{{cast:bewonerslindelaan.address.street}}",
+						"huisnummer": "{{cast:bewonerslindelaan.address.number}}",
+						"postcode": "{{cast:bewonerslindelaan.address.postcode}}",
+						"plaats": "{{cast:bewonerslindelaan.address.city}}",
+						"land": "Nederland"
+					}
+				],
+				"handelsnamen": [
+					{
+						"naam": "{{cast:bewonerslindelaan.name}}",
+						"volgorde": 0
+					}
+				],
+				"sbiActiviteiten": [
+					{
+						"sbiCode": "{{cast:bewonerslindelaan.sbi.code}}",
+						"sbiOmschrijving": "{{cast:bewonerslindelaan.sbi.description}}",
+						"indHoofdactiviteit": "Ja"
+					}
+				]
+			}
+		},
+		{
+			"key": "kvk-buurtoost",
+			"register": "kvk",
+			"schema": "maatschappelijke-activiteit",
+			"data": {
+				"kvkNummer": "{{cast:buurtoost.kvk}}",
+				"naam": "{{cast:buurtoost.name}}",
+				"handelsnamen": [
+					{
+						"naam": "{{cast:buurtoost.name}}",
+						"volgorde": 0
+					}
+				],
+				"rechtsvorm": "{{cast:buurtoost.legalForm}}",
+				"uitgebreideRechtsvorm": "{{cast:buurtoost.legalForm}}",
+				"formeleRegistratiedatum": "{{cast:buurtoost.registeredOn}}",
+				"materieleRegistratie": {
+					"datumAanvang": "{{cast:buurtoost.registeredOn}}"
+				},
+				"totaalWerkzamePersonen": "{{cast:buurtoost.employees}}",
+				"sbiActiviteiten": [
+					{
+						"sbiCode": "{{cast:buurtoost.sbi.code}}",
+						"sbiOmschrijving": "{{cast:buurtoost.sbi.description}}",
+						"indHoofdactiviteit": "Ja"
+					}
+				],
+				"indNonMailing": "Nee",
+				"actief": true
+			}
+		},
+		{
+			"key": "vestiging-buurtoost",
+			"register": "kvk",
+			"schema": "vestiging",
+			"data": {
+				"vestigingsnummer": "{{cast:buurtoost.vestigingsnummer}}",
+				"kvkNummer": "{{cast:buurtoost.kvk}}",
+				"eersteHandelsnaam": "{{cast:buurtoost.name}}",
+				"indHoofdvestiging": "Ja",
+				"indCommercieleVestiging": "Ja",
+				"totaalWerkzamePersonen": "{{cast:buurtoost.employees}}",
+				"adressen": [
+					{
+						"type": "bezoekadres",
+						"straatnaam": "{{cast:buurtoost.address.street}}",
+						"huisnummer": "{{cast:buurtoost.address.number}}",
+						"postcode": "{{cast:buurtoost.address.postcode}}",
+						"plaats": "{{cast:buurtoost.address.city}}",
+						"land": "Nederland"
+					}
+				],
+				"handelsnamen": [
+					{
+						"naam": "{{cast:buurtoost.name}}",
+						"volgorde": 0
+					}
+				],
+				"sbiActiviteiten": [
+					{
+						"sbiCode": "{{cast:buurtoost.sbi.code}}",
+						"sbiOmschrijving": "{{cast:buurtoost.sbi.description}}",
+						"indHoofdactiviteit": "Ja"
+					}
+				]
+			}
+		},
+		{
+			"key": "dsar-erasure-former-pupil",
+			"register": "data-subject-requests",
+			"schema": "dataSubjectRequest",
+			"data": {
+				"subjectId": "po-oud-leerling-4h1",
+				"subjectType": "former pupil",
+				"jurisdiction": "NL",
+				"type": "erasure",
+				"status": "in-progress",
+				"receivedAt": "{{datetime:-35 09:00}}",
+				"dueAt": "{{datetime:11 23:59}}",
+				"handler": "{{cast:pieter.uid}}",
+				"notes": "Verwijderverzoek per brief van een ouder voor een oud-leerling, uitgeschreven in juli. Leerlingdossier en foto's uit het portaal verwijderen; de wettelijke bewaarplicht van de leerlingadministratie blijft staan.",
+				"dpiaRequired": false,
+				"escalationTier": "on-track"
 			}
 		}
 	]

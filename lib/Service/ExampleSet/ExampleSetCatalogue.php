@@ -162,7 +162,11 @@ class ExampleSetCatalogue {
 			'timezone'  => (string) ($castFile['timezone'] ?? 'UTC'),
 			'cast'      => $this->cast(cast: $castFile['cast'], file: $castFile['@file'], set: $set),
 			'requires'  => $this->requiredRegisters(declared: (array) ($castFile['requires'] ?? []), file: $castFile['@file']),
-			'organisations' => $this->organisationEntities(declared: (array) ($castFile['cast']['openregisterOrganisations'] ?? []), file: $castFile['@file']),
+			'organisations' => $this->organisationEntities(
+				declared: (array) ($castFile['cast']['openregisterOrganisations'] ?? []),
+				file: $castFile['@file'],
+				people: (array) ($castFile['cast']['people'] ?? [])
+			),
 			'fragments' => [],
 			'skipped'   => $ordered['skipped'],
 		];
@@ -273,7 +277,9 @@ class ExampleSetCatalogue {
 	 *               changes: array<int, array<string, mixed>>, groups: array<int, array<string, mixed>>,
 	 *               serviceAccounts: array<int, array{key: string, uid: string, displayName: string, groups: array<int, string>}>,
 	 *               appConfig: array<int, array{key: string, value: mixed, generate: bool}>,
-	 *               userPreferences: array<int, array{user: string, key: string, value: string}>}
+	 *               userPreferences: array<int, array{user: string, key: string, value: string}>,
+	 *               tasks: array<int, array{key: string, data: array<string, mixed>}>,
+	 *               views: array<int, array{key: string, data: array<string, mixed>}>}
 	 *
 	 * @throws ExampleSetException When an object or change lacks a key, register or schema, or a key is used twice.
 	 */
@@ -291,8 +297,50 @@ class ExampleSetCatalogue {
 			'serviceAccounts' => $this->serviceAccounts(file: $file, declared: (array) ($fragment['serviceAccounts'] ?? [])),
 			'appConfig'       => $this->appConfig(app: $app, file: $file, declared: (array) ($fragment['appConfig'] ?? [])),
 			'userPreferences' => $this->userPreferences(app: $app, file: $file, declared: (array) ($fragment['userPreferences'] ?? [])),
+			'tasks'           => $this->keyedRows(file: $file, declared: (array) ($fragment['tasks'] ?? []), noun: 'task'),
+			'views'           => $this->keyedRows(file: $file, declared: (array) ($fragment['views'] ?? []), noun: 'view'),
+			'watchers'        => $this->keyedRows(file: $file, declared: (array) ($fragment['watchers'] ?? []), noun: 'watcher'),
+			'parties'         => $this->keyedRows(file: $file, declared: (array) ($fragment['parties'] ?? []), noun: 'party'),
+			'notes'           => $this->keyedRows(file: $file, declared: (array) ($fragment['notes'] ?? []), noun: 'note'),
+			'readStates'      => $this->keyedRows(file: $file, declared: (array) ($fragment['readStates'] ?? []), noun: 'read state'),
+			'flows'           => $this->keyedRows(file: $file, declared: (array) ($fragment['flows'] ?? []), noun: 'flow'),
 		];
 	}//end fragment()
+
+	/**
+	 * The tasks or views of a fragment: a key each, unique in the fragment, and the row's fields.
+	 *
+	 * @param string            $file     The fragment file, for messages.
+	 * @param array<int, mixed> $declared The declared entries.
+	 * @param string            $noun     `task` or `view`, for messages.
+	 *
+	 * @return array<int, array{key: string, data: array<string, mixed>}>
+	 *
+	 * @throws ExampleSetException When an entry lacks a key or fields, or a key is used twice.
+	 *
+	 * @spec openspec/changes/example-set-tasks/specs/example-sets/spec.md#requirement-a-fragment-may-put-tasks-on-its-objects
+	 * @spec openspec/changes/example-set-views/specs/example-sets/spec.md#requirement-a-fragment-may-declare-saved-views-for-the-sets-own-accounts
+	 */
+	private function keyedRows(string $file, array $declared, string $noun): array {
+		$entries = [];
+		$seen    = [];
+		foreach ($declared as $index => $entry) {
+			$entry = (array) $entry;
+			$key   = ($entry['key'] ?? null);
+			if (is_string($key) === false || $key === '' || is_array($entry['data'] ?? null) === false) {
+				throw new ExampleSetException($file.': '.$noun.' '.$index.' needs a key and its fields (data).');
+			}
+
+			if (isset($seen[$key]) === true) {
+				throw new ExampleSetException($file.': '.$noun.' key "'.$key.'" is used twice.');
+			}
+
+			$seen[$key] = true;
+			$entries[]  = ['key' => $key, 'data' => $entry['data']];
+		}
+
+		return $entries;
+	}//end keyedRows()
 
 	/**
 	 * The service accounts of a fragment: a key and an account id each.
@@ -426,16 +474,26 @@ class ExampleSetCatalogue {
 	}//end requiredRegisters()
 
 	/**
-	 * The OpenRegister organisations the cast needs, each with a key, a name and a slug.
+	 * The OpenRegister organisations the cast declares, each with its quota and its members' accounts.
 	 *
-	 * @param array<int, mixed> $declared The declared organisations.
-	 * @param string            $file     The cast file, for messages.
+	 * @param array<int, mixed>  $declared The declared organisations.
+	 * @param string             $file     The cast file, for messages.
+	 * @param array<int, mixed>  $people   The cast's people, to turn member keys into accounts.
 	 *
-	 * @return array<int, array{key: string, name: string, slug: string, description: string}>
+	 * @return array<int, array{key: string, name: string, slug: string, description: string, quota: array<string, int>, members: array<int, string>}>
 	 *
-	 * @throws ExampleSetException When one lacks a key, a name or a slug.
+	 * @throws ExampleSetException When an organisation lacks a key, name or slug, names a quota that is not a whole number,
+	 *                             or a member the cast does not hold.
+	 *
+	 * @spec openspec/changes/example-set-organisation-quota-and-members/specs/example-sets/spec.md#requirement-a-cast-organisation-may-declare-its-quota-and-its-members
 	 */
-	private function organisationEntities(array $declared, string $file): array {
+	private function organisationEntities(array $declared, string $file, array $people=[]): array {
+		$accounts = [];
+		foreach ($people as $person) {
+			$person = (array) $person;
+			$accounts[(string) ($person['key'] ?? '')] = (string) ($person['uid'] ?? '');
+		}
+
 		$organisations = [];
 		foreach ($declared as $index => $organisation) {
 			$organisation = (array) $organisation;
@@ -448,11 +506,79 @@ class ExampleSetCatalogue {
 				'name'        => (string) $organisation['name'],
 				'slug'        => (string) $organisation['slug'],
 				'description' => (string) ($organisation['description'] ?? ''),
+				'type'        => (string) ($organisation['type'] ?? ''),
+				'contactEmail' => (string) ($organisation['contactEmail'] ?? ''),
+				'quota'       => $this->organisationQuota(declared: ($organisation['quota'] ?? []), file: $file, slug: (string) $organisation['slug']),
+				'members'     => $this->organisationMembers(
+					declared: ($organisation['members'] ?? []),
+					accounts: $accounts,
+					file: $file,
+					slug: (string) $organisation['slug']
+				),
 			];
 		}
 
 		return $organisations;
 	}//end organisationEntities()
+
+	/**
+	 * An organisation's declared quota: storage (bytes), requests, bandwidth,
+	 * users and objects, each a whole number, and objectsSchema, the slug of the
+	 * schema the object quota counts.
+	 *
+	 * @param mixed  $declared The declared quota.
+	 * @param string $file     The cast file, for messages.
+	 * @param string $slug     The organisation's slug, for messages.
+	 *
+	 * @return array<string, int|string>
+	 *
+	 * @throws ExampleSetException When a key is unknown or a value is not a whole number.
+	 */
+	private function organisationQuota(mixed $declared, string $file, string $slug): array {
+		$quota = [];
+		foreach ((array) $declared as $key => $value) {
+			if ($key === 'objectsSchema' && is_string($value) === true && $value !== '') {
+				$quota[$key] = $value;
+				continue;
+			}
+
+			if (in_array($key, ['storage', 'requests', 'bandwidth', 'users', 'objects'], true) === false || is_int($value) === false || $value < 0) {
+				throw new ExampleSetException(
+					$file.': OpenRegister organisation "'.$slug.'": quota "'.$key.'" must be storage, requests, bandwidth, users or objects'
+					.' with a whole number, or objectsSchema with a schema slug.'
+				);
+			}
+
+			$quota[$key] = $value;
+		}
+
+		return $quota;
+	}//end organisationQuota()
+
+	/**
+	 * The accounts of an organisation's declared members, which are cast people's keys.
+	 *
+	 * @param mixed                 $declared The declared member keys.
+	 * @param array<string, string> $accounts Each cast person's account, by key.
+	 * @param string                $file     The cast file, for messages.
+	 * @param string                $slug     The organisation's slug, for messages.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @throws ExampleSetException When a member is not a cast person with an account.
+	 */
+	private function organisationMembers(mixed $declared, array $accounts, string $file, string $slug): array {
+		$members = [];
+		foreach ((array) $declared as $key) {
+			if (($accounts[(string) $key] ?? '') === '') {
+				throw new ExampleSetException($file.': OpenRegister organisation "'.$slug.'": member "'.$key.'" is not a cast person with an account.');
+			}
+
+			$members[] = $accounts[(string) $key];
+		}
+
+		return $members;
+	}//end organisationMembers()
 
 	/**
 	 * The objects or changes of a fragment, each checked for its parts and a key of its own.

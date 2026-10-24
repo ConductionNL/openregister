@@ -33,9 +33,41 @@ use OCA\OpenRegister\Service\ExampleSet\ExampleSetChanges;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetFiles;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetInstance;
 use OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetViews;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetWatchers;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetParties;
+use OCA\OpenRegister\Service\Party\PartyRoleService;
+use OCA\OpenRegister\Service\Party\PartyService;
+use OCA\OpenRegister\Db\ContactLink;
+use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetNotes;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetReadStates;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetFlows;
+use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Flow\FlowVersionService;
+use OCA\OpenRegister\Service\OrganisationService;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\Db\ObjectReadState;
+use OCA\OpenRegister\Db\ObjectReadStateMapper;
+use OCP\Comments\IComment;
+use OCP\Comments\ICommentsManager;
+use OCP\Comments\NotFoundException as CommentNotFoundException;
+use OCA\OpenRegister\Db\Watcher;
+use OCA\OpenRegister\Db\WatcherMapper;
+use OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds;
+use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Db\Task;
+use OCA\OpenRegister\Db\TaskMapper;
+use OCA\OpenRegister\Service\Task\TaskService;
+use OCA\OpenRegister\Service\Task\TaskState;
 use OCP\Config\IUserConfig;
 use OCA\OpenRegister\Service\FileService;
-use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\File;
 use OCP\IConfig;
 use OCP\Security\ISecureRandom;
@@ -98,6 +130,33 @@ abstract class ExampleSetTestCase extends TestCase {
 	/** @var array<int, int> File ids whose delete throws. */
 	protected array $undeletableFiles = [];
 
+	/** @var array<string, Task> The task engine's tasks, by uuid. */
+	protected array $engineTasks = [];
+
+	/** @var array<int, array{data: array<string, mixed>, actor: string|null}> Every task import, in order. */
+	protected array $taskImports = [];
+
+	/** @var array<string, array<string, mixed>> The party links, by `<object> <party> <role>`, with what was imported. */
+	protected array $partyLinks = [];
+
+	/** @var array<string, Watcher> The follows, by `<user> <object uuid>`. */
+	protected array $follows = [];
+
+	/** @var array<string, array{user: string, object: string, message: string, createdAt: \DateTime|null}> The notes, by comment id. */
+	protected array $notes = [];
+
+	/** @var array<string, \DateTime> The read states, by `<user> <object uuid>`: when the object was seen. */
+	protected array $readStates = [];
+
+	/** @var array<string, Flow> The stored flows, by uuid. */
+	protected array $flows = [];
+
+	/** @var array<int, string> The uuids of the flows published, in order. */
+	protected array $publishedFlows = [];
+
+	/** @var array<string, View> The saved views, by uuid. */
+	protected array $savedViews = [];
+
 	/** @var string The instance's overwrite.cli.url. */
 	protected string $baseUrl = 'https://cloud.example.test/';
 
@@ -123,6 +182,20 @@ abstract class ExampleSetTestCase extends TestCase {
 		$container->method('get')->willReturnCallback(fn (string $id): object => match ($id) {
 			FileService::class        => $this->fileService(),
 			OrganisationMapper::class => $this->organisationMapper(),
+			TaskService::class        => $this->taskService(),
+			TaskMapper::class         => $this->taskMapper(),
+			ViewService::class        => $this->viewService(),
+			ViewMapper::class         => $this->viewMapper(),
+			WatcherMapper::class      => $this->watcherMapper(),
+			PartyRoleService::class   => $this->partyRoles(),
+			PartyService::class       => $this->partyService(),
+			ContactLinkMapper::class  => $this->contactLinks(),
+			ICommentsManager::class   => $this->commentsManager(),
+			ObjectReadStateMapper::class => $this->readStateMapper(),
+			FlowMapper::class         => $this->flowMapper(),
+			FlowVersionService::class => $this->flowVersions(),
+			FlowService::class        => $this->flowService(),
+			OrganisationService::class => $this->organisationService(),
 		});
 		$files     = new ExampleSetFiles(container: $container);
 		$setConfig = new ExampleSetAppConfig(appConfig: $this->appConfigOfApps(), random: $this->random());
@@ -178,7 +251,16 @@ abstract class ExampleSetTestCase extends TestCase {
 			changes: $changes,
 			files: $files,
 			appConfig: $setConfig,
-			userPreferences: $preferences
+			userPreferences: $preferences,
+			engineRows: new ExampleSetEngineKinds(
+				tasks: new ExampleSetTasks(container: $container),
+				views: new ExampleSetViews(container: $container),
+				watchers: new ExampleSetWatchers(container: $container),
+				parties: new ExampleSetParties(container: $container),
+				notes: new ExampleSetNotes(container: $container),
+				readStates: new ExampleSetReadStates(container: $container),
+				flows: new ExampleSetFlows(container: $container)
+			)
 		);
 		$this->remover   = new ExampleSetRemover(
 			store: $this->store,
@@ -189,7 +271,16 @@ abstract class ExampleSetTestCase extends TestCase {
 			files: $files,
 			appConfig: $setConfig,
 			instance: $instance,
-			userPreferences: $preferences
+			userPreferences: $preferences,
+			engineRows: new ExampleSetEngineKinds(
+				tasks: new ExampleSetTasks(container: $container),
+				views: new ExampleSetViews(container: $container),
+				watchers: new ExampleSetWatchers(container: $container),
+				parties: new ExampleSetParties(container: $container),
+				notes: new ExampleSetNotes(container: $container),
+				readStates: new ExampleSetReadStates(container: $container),
+				flows: new ExampleSetFlows(container: $container)
+			)
 		);
 	}
 
@@ -239,6 +330,334 @@ abstract class ExampleSetTestCase extends TestCase {
 			],
 			'objects'  => $objects,
 		];
+	}
+
+	/**
+	 * A task service whose trusted import puts a task in $engineTasks.
+	 *
+	 * @return TaskService
+	 */
+	private function taskService(): TaskService {
+		$service = $this->createMock(TaskService::class);
+		$service->method('import')->willReturnCallback(function (array $data, ?string $actor): Task {
+			$this->taskImports[] = ['data' => $data, 'actor' => $actor];
+			$state = TaskState::normalise(value: (string) ($data['state'] ?? Task::STATE_AVAILABLE))['state'];
+			$task  = new Task();
+			$task->setUuid('task-'.count($this->taskImports));
+			$task->setTaskKey((string) $data['key']);
+			$task->setTitle((string) $data['title']);
+			$task->setObjectUuid((string) $data['objectUuid']);
+			$task->setAssignee(isset($data['assignee']) === true ? (string) $data['assignee'] : null);
+			$task->setState($state);
+			$task->setIsTerminal(TaskState::isTerminal(state: $state));
+			$this->engineTasks[(string) $task->getUuid()] = $task;
+			return $task;
+		});
+
+		return $service;
+	}
+
+	/**
+	 * A task mapper over $engineTasks.
+	 *
+	 * @return TaskMapper
+	 */
+	private function taskMapper(): TaskMapper {
+		$mapper = $this->createMock(TaskMapper::class);
+		$mapper->method('findByUuid')->willReturnCallback(
+			fn (string $uuid): Task => ($this->engineTasks[$uuid] ?? throw new DoesNotExistException('no task '.$uuid))
+		);
+		$mapper->method('update')->willReturnCallback(function (Task $task): Task {
+			$this->engineTasks[(string) $task->getUuid()] = $task;
+			return $task;
+		});
+		$mapper->method('delete')->willReturnCallback(function (Task $task): Task {
+			unset($this->engineTasks[(string) $task->getUuid()]);
+			return $task;
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * A view service whose create puts a view in $savedViews.
+	 *
+	 * @return ViewService
+	 */
+	private function viewService(): ViewService {
+		$service = $this->createMock(ViewService::class);
+		$service->method('create')->willReturnCallback(
+			function (string $name, string $description, string $owner, bool $isPublic, bool $isDefault, array $query, ?array $presentation = null, ?array $sharedWith = null, ?array $alert = null): View {
+				$view = new View();
+				$view->setUuid('view-'.(count($this->savedViews) + 1));
+				$view->setName($name);
+				$view->setOwner($owner);
+				$view->setIsPublic($isPublic);
+				$view->setQuery($query);
+				$view->setAlert($alert);
+				$view->setSharedWith($sharedWith ?? []);
+				$this->savedViews[(string) $view->getUuid()] = $view;
+				return $view;
+			}
+		);
+
+		return $service;
+	}
+
+	/**
+	 * A view mapper over $savedViews.
+	 *
+	 * @return ViewMapper
+	 */
+	private function viewMapper(): ViewMapper {
+		$mapper = $this->createMock(ViewMapper::class);
+		$mapper->method('find')->willReturnCallback(
+			fn ($id): View => ($this->savedViews[(string) $id] ?? throw new DoesNotExistException('no view '.$id))
+		);
+		$mapper->method('delete')->willReturnCallback(function (View $view): View {
+			unset($this->savedViews[(string) $view->getUuid()]);
+			return $view;
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * A flow mapper over $flows, keyed by uuid.
+	 *
+	 * @return FlowMapper
+	 */
+	private function flowMapper(): FlowMapper {
+		$mapper = $this->createMock(FlowMapper::class);
+		$mapper->method('insert')->willReturnCallback(function (Flow $flow): Flow {
+			$this->flows[(string) $flow->getUuid()] = $flow;
+			return $flow;
+		});
+		$mapper->method('findByUuid')->willReturnCallback(function (string $uuid): Flow {
+			if (isset($this->flows[$uuid]) === false) {
+				throw new DoesNotExistException('No such flow');
+			}
+
+			return $this->flows[$uuid];
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * A version service that records which flows it published.
+	 *
+	 * @return FlowVersionService
+	 */
+	private function flowVersions(): FlowVersionService {
+		$versions = $this->createMock(FlowVersionService::class);
+		$versions->method('publish')->willReturnCallback(function (Flow $flow) {
+			$this->publishedFlows[] = (string) $flow->getUuid();
+			$flow->setLifecycleStatus('published');
+			return $this->createMock(\OCA\OpenRegister\Db\FlowVersion::class);
+		});
+
+		return $versions;
+	}
+
+	/**
+	 * A flow service whose deleteStored() drops the flow from $flows.
+	 *
+	 * @return FlowService
+	 */
+	private function flowService(): FlowService {
+		$service = $this->createMock(FlowService::class);
+		$service->method('deleteStored')->willReturnCallback(function (Flow $flow): void {
+			unset($this->flows[(string) $flow->getUuid()]);
+		});
+
+		return $service;
+	}
+
+	/**
+	 * An organisation service that puts new entities in org-1.
+	 *
+	 * @return OrganisationService
+	 */
+	private function organisationService(): OrganisationService {
+		$service = $this->createMock(OrganisationService::class);
+		$service->method('getOrganisationForNewEntity')->willReturn('org-1');
+
+		return $service;
+	}
+
+	/**
+	 * A comments manager over $notes, keyed by comment id.
+	 *
+	 * @return ICommentsManager
+	 */
+	private function commentsManager(): ICommentsManager {
+		$pending = [];
+		$manager = $this->createMock(ICommentsManager::class);
+		$manager->method('create')->willReturnCallback(function (string $actorType, string $actorId, string $objectType, string $objectId) use (&$pending): IComment {
+			$state   = new \ArrayObject(['user' => $actorId, 'object' => $objectId, 'message' => '', 'createdAt' => null, 'id' => '']);
+			$comment = $this->createMock(IComment::class);
+			$comment->method('setMessage')->willReturnCallback(function (string $message) use ($state, $comment): IComment {
+				$state['message'] = $message;
+				return $comment;
+			});
+			$comment->method('setVerb')->willReturn($comment);
+			$comment->method('setCreationDateTime')->willReturnCallback(function (\DateTime $at) use ($state, $comment): IComment {
+				$state['createdAt'] = $at;
+				return $comment;
+			});
+			$comment->method('getId')->willReturnCallback(fn (): string => (string) $state['id']);
+			$pending[spl_object_id($comment)] = $state;
+			return $comment;
+		});
+		$manager->method('save')->willReturnCallback(function (IComment $comment) use (&$pending): bool {
+			$state       = $pending[spl_object_id($comment)];
+			$state['id'] = (string) (count($this->notes) + 100);
+			$this->notes[$state['id']] = ['user' => $state['user'], 'object' => $state['object'], 'message' => $state['message'], 'createdAt' => $state['createdAt']];
+			return true;
+		});
+		$manager->method('get')->willReturnCallback(function (string $id): IComment {
+			if (isset($this->notes[$id]) === false) {
+				throw new CommentNotFoundException();
+			}
+
+			return $this->createMock(IComment::class);
+		});
+		$manager->method('delete')->willReturnCallback(function (string $id): bool {
+			if (isset($this->notes[$id]) === false) {
+				throw new CommentNotFoundException();
+			}
+
+			unset($this->notes[$id]);
+			return true;
+		});
+
+		return $manager;
+	}
+
+	/**
+	 * A read-state mapper over $readStates, keyed `<user> <object uuid>`.
+	 *
+	 * @return ObjectReadStateMapper
+	 */
+	private function readStateMapper(): ObjectReadStateMapper {
+		$mapper = $this->createMock(ObjectReadStateMapper::class);
+		$mapper->method('markSeen')->willReturnCallback(
+			function (string $userId, string $objectUuid, ?string $register = null, ?string $schema = null, ?array $subSeen = null, ?\DateTime $seenAt = null): ObjectReadState {
+				$this->readStates[$userId.' '.$objectUuid] = ($seenAt ?? new \DateTime());
+				return new ObjectReadState();
+			}
+		);
+		$mapper->method('findOne')->willReturnCallback(fn (string $userId, string $objectUuid): ?ObjectReadState => (isset($this->readStates[$userId.' '.$objectUuid]) === true ? new ObjectReadState() : null));
+		$mapper->method('markUnread')->willReturnCallback(function (string $userId, string $objectUuid): bool {
+			$had = isset($this->readStates[$userId.' '.$objectUuid]);
+			unset($this->readStates[$userId.' '.$objectUuid]);
+			return $had;
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * A watcher mapper over $follows, keyed `<user> <object uuid>`.
+	 *
+	 * @return WatcherMapper
+	 */
+	private function watcherMapper(): WatcherMapper {
+		$mapper = $this->createMock(WatcherMapper::class);
+		$mapper->method('subscribe')->willReturnCallback(
+			function (string $userId, string $objectUuid, ?string $register = null, ?string $schema = null, ?bool $notify = null): Watcher {
+				$watcher = new Watcher();
+				$watcher->setUserId($userId);
+				$watcher->setObjectUuid($objectUuid);
+				$watcher->setRegister($register);
+				$watcher->setSchema($schema);
+				$watcher->setNotify($notify ?? true);
+				$this->follows[$userId.' '.$objectUuid] = $watcher;
+				return $watcher;
+			}
+		);
+		$mapper->method('findOne')->willReturnCallback(fn (string $userId, string $objectUuid): ?Watcher => ($this->follows[$userId.' '.$objectUuid] ?? null));
+		$mapper->method('unsubscribe')->willReturnCallback(function (string $userId, string $objectUuid): bool {
+			$had = isset($this->follows[$userId.' '.$objectUuid]);
+			unset($this->follows[$userId.' '.$objectUuid]);
+			return $had;
+		});
+
+		return $mapper;
+	}
+
+	/**
+	 * A party role service whose trusted import puts a link in $partyLinks.
+	 *
+	 * @return PartyRoleService
+	 */
+	private function partyRoles(): PartyRoleService {
+		$roles = $this->createMock(PartyRoleService::class);
+		$roles->method('importParty')->willReturnCallback(
+			function (string $objectUuid, int $registerId, int|string|null $schemaId, array $payload, string $linkedBy): ContactLink {
+				if (str_starts_with((string) $payload['partyUuid'], 'not-a-party') === true) {
+					throw new \Exception('Object "'.$payload['partyUuid'].'" is not a party', 400);
+				}
+
+				$this->partyLinks[$objectUuid.' '.$payload['partyUuid'].' '.$payload['role']] = ['payload' => $payload, 'linkedBy' => $linkedBy, 'registerId' => $registerId];
+				return new ContactLink();
+			}
+		);
+		$roles->method('removeParty')->willReturnCallback(function (string $objectUuid, string $partyUuid, ?string $role = null): int {
+			unset($this->partyLinks[$objectUuid.' '.$partyUuid.' '.$role]);
+			return 1;
+		});
+
+		return $roles;
+	}
+
+	/**
+	 * A party service as an occ install meets it: `find` reads with RBAC and
+	 * no user, which a schema refusing "Anonymous" answers with null;
+	 * `findUnscoped` finds every object.
+	 *
+	 * @return PartyService
+	 */
+	private function partyService(): PartyService {
+		$parties = $this->createMock(PartyService::class);
+		$parties->method('find')->willReturn(null);
+		$parties->method('findUnscoped')->willReturnCallback(function (string $uuid): ?ObjectEntity {
+			if (str_starts_with($uuid, 'missing') === true) {
+				return null;
+			}
+
+			$object = new ObjectEntity();
+			$object->setUuid($uuid);
+			$object->setRegister('7');
+			$object->setSchema('9');
+			return $object;
+		});
+
+		return $parties;
+	}
+
+	/**
+	 * A link mapper over $partyLinks.
+	 *
+	 * @return ContactLinkMapper
+	 */
+	private function contactLinks(): ContactLinkMapper {
+		$links = $this->createMock(ContactLinkMapper::class);
+		$links->method('findByObjectContactAndRole')->willReturnCallback(
+			function (string $objectUuid, string $contactUid, ?string $role): ?ContactLink {
+				foreach (array_keys($this->partyLinks) as $key) {
+					[$object, $party, $linkRole] = explode(' ', $key, 3);
+					if ($object === $objectUuid && ContactLink::partyUid(partyUuid: $party) === $contactUid && $linkRole === $role) {
+						return new ContactLink();
+					}
+				}
+
+				return null;
+			}
+		);
+
+		return $links;
 	}
 
 	/**

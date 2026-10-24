@@ -132,6 +132,7 @@ use OCA\OpenRegister\Service\Flow\FlowRunSubjectRecorder;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigForm;
 use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
+use OCA\OpenRegister\Service\Flow\IFlowNodePreview;
 use OCA\OpenRegister\Service\Flow\IFlowNodeTaxonomy;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -154,7 +155,7 @@ use UnexpectedValueException;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One branch per named configuration key and one per operation; collapsing it hides the guards.
  * @SuppressWarnings(PHPMD.TooManyMethods)           One small, named method per guard and per operation; merging them would bury the delete guards.
  */
-class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy {
+class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfigForm, IFlowNodeTaxonomy, IFlowNodePreview {
 
 	/**
 	 * Insert a new object; never look for an existing one.
@@ -440,6 +441,35 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys, IFlowNodeConfig
 	public function isAvailableForScope(int $scope): bool {
 		return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
 	}//end isAvailableForScope()
+
+	/**
+	 * What this write would do, without writing (flow dry-run).
+	 *
+	 * The operation, where it would write, and the fields it would set as the
+	 * step configures them.
+	 *
+	 * @param array $items The input items.
+	 * @param array $config The step configuration.
+	 * @param array $context Run-level metadata.
+	 *
+	 * @return array `summary` and `changes` (`[{field, value}]`).
+	 *
+	 * @spec openspec/changes/flow-dry-run/specs/flow-engine/spec.md#requirement-a-node-can-say-what-it-would-do
+	 */
+	public function preview(array $items, array $config, array $context): array {
+		$operation = trim((string)($config['operation'] ?? 'create'));
+		$where = trim((string)($config['register'] ?? '') . ' / ' . (string)($config['schema'] ?? ''), ' /');
+
+		$changes = [];
+		foreach ((array)($config['fields'] ?? []) as $field => $value) {
+			$changes[] = ['field' => (string)$field, 'value' => $value];
+		}
+
+		return [
+			'summary' => sprintf('%s an object in %s', $operation, $where),
+			'changes' => $changes,
+		];
+	}//end preview()
 
 	/**
 	 * The config vocabulary of an object-write step, across all four operations.

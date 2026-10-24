@@ -201,6 +201,49 @@ class TaskInboxServiceTest extends TestCase {
 	}//end testATitlelessTaskGetsADisplayTitleAndStaysTitleless()
 
 	/**
+	 * The subject context carries the subject's own human number (`identifier`,
+	 * "2026-0074") when the object has one, so a task list can show the case
+	 * number under the case title; an object without one reads null.
+	 *
+	 * @return void
+	 */
+	public function testSubjectContextCarriesTheSubjectsIdentifier(): void {
+		$objects = $this->createMock(originalClassName: AbstractObjectMapper::class);
+		$objects->method('findMultiple')->willReturnCallback(
+			function (array $ids): array {
+				$case = new ObjectEntity();
+				$case->setUuid('obj-1');
+				$case->setName('Bezwaar parkeerboete Havenstraat');
+				$case->setRegister('dossiq');
+				$case->setSchema('case');
+				$case->setObject(['identifier' => '2026-0074', 'title' => 'Bezwaar parkeerboete Havenstraat']);
+				$plain = new ObjectEntity();
+				$plain->setUuid('obj-2');
+				$plain->setName('Note');
+				$plain->setObject(['identifier' => ['not' => 'a number']]);
+
+				return [$case, $plain];
+			}
+		);
+		$inbox = new TaskInboxService(tasks: $this->tasks, temporal: new TaskTemporalProjection(), logger: new NullLogger(), objects: $objects);
+
+		$first = new Task();
+		$first->setUuid('t-1');
+		$first->setObjectUuid('obj-1');
+		$second = new Task();
+		$second->setUuid('t-2');
+		$second->setObjectUuid('obj-2');
+		$this->tasks->method('findInbox')->willReturn([$first, $second]);
+		$this->tasks->method('countInbox')->willReturn(2);
+
+		$result = $inbox->inbox(criteria: new TaskInboxCriteria(uid: 'alice'));
+
+		$this->assertSame(expected: '2026-0074', actual: $result['results'][0]['subject']['identifier']);
+		$this->assertSame(expected: 'Bezwaar parkeerboete Havenstraat', actual: $result['results'][0]['subject']['title']);
+		$this->assertNull(actual: $result['results'][1]['subject']['identifier']);
+	}//end testSubjectContextCarriesTheSubjectsIdentifier()
+
+	/**
 	 * Subject context is resolved in ONE batch for the page and attached to
 	 * each row by object uuid; a task whose object is unknown gets null.
 	 *

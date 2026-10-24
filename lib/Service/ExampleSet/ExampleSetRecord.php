@@ -58,6 +58,13 @@ class ExampleSetRecord {
 		'appConfig'   => [],
 		'userPreferences' => [],
 		'organisations' => [],
+		'tasks'         => [],
+		'views'         => [],
+		'watchers'      => [],
+		'parties'       => [],
+		'notes'         => [],
+		'readStates'    => [],
+		'flows'         => [],
 	];
 
 	/**
@@ -85,7 +92,8 @@ class ExampleSetRecord {
 	 *               `files` maps `<app>/<key>` to the files attached to that object; `appConfig` maps `<app>/<key>` to
 	 *               what was written and what it replaced (never a sensitive value); `userPreferences` maps
 	 *               `<app>/<uid>/<key>` to what was written for that account and what it replaced; `organisations` lists the uuids
-	 *               of the OpenRegister organisations the set created.
+	 *               of the OpenRegister organisations the set created; `tasks` and `views` map `<app>/<key>` to the
+	 *               uuid of the engine task or saved view the set wrote.
 	 *
 	 * @spec openspec/changes/example-sets/specs/example-sets/spec.md#requirement-a-second-install-writes-nothing-req-exs-005
 	 */
@@ -111,6 +119,13 @@ class ExampleSetRecord {
 		$record['appConfig']   = array_filter((array) ($decoded['appConfig'] ?? []), 'is_array');
 		$record['userPreferences'] = array_filter((array) ($decoded['userPreferences'] ?? []), 'is_array');
 		$record['organisations'] = array_values(array_filter((array) ($decoded['organisations'] ?? []), 'is_string'));
+		$record['tasks']         = array_filter((array) ($decoded['tasks'] ?? []), 'is_array');
+		$record['views']         = array_filter((array) ($decoded['views'] ?? []), 'is_array');
+		$record['watchers']      = array_filter((array) ($decoded['watchers'] ?? []), 'is_array');
+		$record['parties']       = array_filter((array) ($decoded['parties'] ?? []), 'is_array');
+		$record['notes']         = array_filter((array) ($decoded['notes'] ?? []), 'is_array');
+		$record['readStates']    = array_filter((array) ($decoded['readStates'] ?? []), 'is_array');
+		$record['flows']         = array_filter((array) ($decoded['flows'] ?? []), 'is_array');
 
 		return $record;
 	}//end read()

@@ -3,9 +3,10 @@
 /**
  * Who may change the special right `grant_manage` on an organisation.
  *
- * A member may edit their organisation. The list of who manages the grants on
- * its records is the one part a member may not touch: a member who could add
- * their own group to it would decide who reads every record.
+ * Only an administrator or the organisation's owner may change an organisation
+ * at all, so a member cannot touch the list of who manages the grants on its
+ * records: a member who could add their own group to it would decide who reads
+ * every record. The owner edits the rest of the block as before.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Controller
@@ -116,8 +117,8 @@ class OrganisationGrantManageGuardTest extends TestCase {
 		];
 	}//end changes()
 
-	public function testAMemberStillEditsTheRestOfTheBlock(): void {
-		$this->organisationService->method('isOrganisationAdmin')->willReturn(false);
+	public function testTheOwnerStillEditsTheRestOfTheBlock(): void {
+		$this->organisationService->method('isOrganisationAdmin')->willReturn(true);
 		$this->request->method('getParams')->willReturn(
 			['authorization' => ['grant_manage' => ['records-service'], 'object_publish' => ['editors']]]
 		);
@@ -126,7 +127,7 @@ class OrganisationGrantManageGuardTest extends TestCase {
 
 		$this->assertNotSame(403, $response->getStatus());
 		$this->assertSame(['editors'], $this->organisation->getAuthorization()['object_publish']);
-	}//end testAMemberStillEditsTheRestOfTheBlock()
+	}//end testTheOwnerStillEditsTheRestOfTheBlock()
 
 	public function testAChangeOfWhoHoldsTheRightIsRecordedOnTheTrail(): void {
 		$this->organisationService->method('isOrganisationAdmin')->willReturn(true);

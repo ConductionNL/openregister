@@ -1702,11 +1702,13 @@ class MagicMapper extends AbstractObjectMapper {
 			return false;
 		}
 
-		// 🔴 `_related` and `_referenced` are EXISTS subqueries that only the
+		// 🔴 `_related`, `_referenced` and `_element` are EXISTS subqueries that only the
 		// QueryBuilder path (the sequential one) builds. The raw-SQL UNION builder
 		// refuses them, which on this route would end in an uncaught exception
 		// (HTTP 500), so a query carrying either takes the sequential path.
-		if (array_key_exists('_related', $query) === true || array_key_exists('_referenced', $query) === true) {
+		if (array_key_exists('_related', $query) === true || array_key_exists('_referenced', $query) === true
+			|| array_key_exists('_element', $query) === true
+		) {
 			return false;
 		}
 
@@ -7782,6 +7784,61 @@ class MagicMapper extends AbstractObjectMapper {
 
 		return array_keys($folderIds);
 	}//end findFolderIdsByOrganisation()
+
+	/**
+	 * Count an organisation's live objects across the magic tables, of the
+	 * given schemas only when ids are given.
+	 *
+	 * A table that cannot be read fails the count after the scan, naming the
+	 * tables, so a caller never shows a figure that is too low.
+	 *
+	 * @param string          $organisationUuid The organisation.
+	 * @param array<int, int> $schemaIds        The schemas to count; empty counts every schema.
+	 *
+	 * @return int The number of live objects.
+	 *
+	 * @throws RuntimeException When a table could not be read.
+	 *
+	 * @spec openspec/changes/organisation-user-and-object-quota/specs/organisation-quota/spec.md#requirement-an-organisation-quota-limits-its-users-and-its-objects
+	 */
+	public function countObjectsByOrganisation(string $organisationUuid, array $schemaIds=[]): int {
+		$organisationCol = 't.'.self::METADATA_PREFIX.'organisation';
+		$deletedCol      = 't.'.self::METADATA_PREFIX.'deleted';
+		$count           = 0;
+		$failed          = [];
+
+		foreach ($this->discoverMagicTables() as $fullTableName => $table) {
+			if ($schemaIds !== [] && in_array($table['schemaId'], $schemaIds, true) === false) {
+				continue;
+			}
+
+			$bareTableName = substr($fullTableName, strlen($this->getTablePrefix()));
+			try {
+				$qb = $this->db->getQueryBuilder();
+				$qb->select($qb->func()->count('*', 'n'))
+					->from($bareTableName, 't')
+					->where($qb->expr()->eq($organisationCol, $qb->createNamedParameter($organisationUuid)))
+					->andWhere($qb->expr()->isNull($deletedCol));
+				$result = $qb->executeQuery();
+				$count += (int) $result->fetchOne();
+				$result->closeCursor();
+			} catch (\Exception $e) {
+				$this->logger->warning(
+					message: '[MagicMapper] countObjectsByOrganisation: could not read a table',
+					context: ['table' => $fullTableName, 'organisation' => $organisationUuid, 'error' => $e->getMessage()]
+				);
+				$failed[] = $fullTableName;
+			}
+		}//end foreach
+
+		if ($failed !== []) {
+			throw new RuntimeException(
+				'The objects of organisation '.$organisationUuid.' could not be counted in: '.implode(', ', $failed)
+			);
+		}
+
+		return $count;
+	}//end countObjectsByOrganisation()
 
 	/**
 	 * Count all soft-deleted objects across ALL magic tables.

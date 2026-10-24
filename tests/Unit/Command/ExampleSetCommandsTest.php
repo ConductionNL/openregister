@@ -46,6 +46,10 @@ use Symfony\Component\Console\Tester\CommandTester;
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetRemover
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetUserPreferences
  * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetValues
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineKinds
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetEngineRows
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetTasks
+ * @uses \OCA\OpenRegister\Service\ExampleSet\ExampleSetViews
  */
 class ExampleSetCommandsTest extends ExampleSetTestCase {
 	protected function setUp(): void {
@@ -80,6 +84,21 @@ class ExampleSetCommandsTest extends ExampleSetTestCase {
 		$this->assertSame(0, $tester->execute(['set' => 'demo']));
 		$this->assertStringNotContainsString('generated-', $tester->getDisplay());
 		$this->assertStringContainsString('Account sanne.devries: already there', $tester->getDisplay());
+	}
+
+	/**
+	 * `--refresh` rewrites the objects the set holds and says how many.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/example-set-refresh/specs/example-sets/spec.md#requirement-a-refresh-rewrites-every-object-the-set-declares
+	 */
+	public function testRefreshRewritesWhatTheSetHolds(): void {
+		$tester = $this->install();
+		$this->assertSame(0, $tester->execute(['set' => 'demo']));
+
+		$this->assertSame(0, $tester->execute(['set' => 'demo', '--refresh' => true]));
+		$this->assertStringContainsString('brp person: 1 declared, 0 created, 1 already there (1 refreshed), 1 found afterwards', $tester->getDisplay());
 	}
 
 	public function testAnUnknownSetExitsOne(): void {
