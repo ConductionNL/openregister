@@ -95,7 +95,8 @@ class ExampleSetProof {
 	}//end structured()
 
 	/**
-	 * Whether two leaf values are the same value.
+	 * Whether two leaf values are the same value: equal numbers, one moment in
+	 * two offsets, and an empty text the store keeps as null count as the same.
 	 *
 	 * @param mixed $declared What was sent.
 	 * @param mixed $stored   What was read back.
@@ -103,7 +104,7 @@ class ExampleSetProof {
 	 * @return bool
 	 */
 	private function sameValue(mixed $declared, mixed $stored): bool {
-		if ($declared === $stored) {
+		if ($declared === $stored || ($declared === '' && $stored === null)) {
 			return true;
 		}
 
@@ -111,6 +112,18 @@ class ExampleSetProof {
 			return (float) $declared === (float) $stored;
 		}
 
+		return $this->sameMoment(declared: $declared, stored: $stored);
+	}//end sameValue()
+
+	/**
+	 * Whether two values are one moment, whatever offset each is written in.
+	 *
+	 * @param mixed $declared What was sent.
+	 * @param mixed $stored   What was read back.
+	 *
+	 * @return bool
+	 */
+	private function sameMoment(mixed $declared, mixed $stored): bool {
 		if (is_string($declared) === false || is_string($stored) === false || preg_match('/^\d{4}-\d{2}-\d{2}T/', $declared) !== 1) {
 			return false;
 		}
@@ -118,5 +131,5 @@ class ExampleSetProof {
 		$left = strtotime($declared);
 
 		return $left !== false && $left === strtotime($stored);
-	}//end sameValue()
+	}//end sameMoment()
 }//end class

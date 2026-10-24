@@ -613,19 +613,22 @@ abstract class ExampleSetTestCase extends TestCase {
 	}
 
 	/**
-	 * A party service that finds every object the store holds.
+	 * A party service as an occ install meets it: `find` reads with RBAC and
+	 * no user, which a schema refusing "Anonymous" answers with null;
+	 * `findUnscoped` finds every object.
 	 *
 	 * @return PartyService
 	 */
 	private function partyService(): PartyService {
 		$parties = $this->createMock(PartyService::class);
-		$parties->method('find')->willReturnCallback(function (string $partyUuid): ?ObjectEntity {
-			if (str_starts_with($partyUuid, 'missing') === true) {
+		$parties->method('find')->willReturn(null);
+		$parties->method('findUnscoped')->willReturnCallback(function (string $uuid): ?ObjectEntity {
+			if (str_starts_with($uuid, 'missing') === true) {
 				return null;
 			}
 
 			$object = new ObjectEntity();
-			$object->setUuid($partyUuid);
+			$object->setUuid($uuid);
 			$object->setRegister('7');
 			$object->setSchema('9');
 			return $object;
