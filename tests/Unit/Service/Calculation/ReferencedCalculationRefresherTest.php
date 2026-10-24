@@ -1,0 +1,185 @@
+<?php
+
+/**
+ * A change to a referenced object refreshes the materialised values that read
+ * the changed field: a case type that starts listing flows re-saves its cases,
+ * so their `hasStartableFlows` follows.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @spec openspec/changes/rematerialise-on-referenced-change/specs/computed-fields/spec.md#requirement-a-referenced-change-refreshes-the-materialised-values-that-read-it
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Tests\Unit\Service\Calculation;
+
+use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher;
+use OCA\OpenRegister\Service\ObjectService;
+use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
+use Psr\Log\NullLogger;
+
+/**
+ * @covers \OCA\OpenRegister\Service\Calculation\ReferencedCalculationRefresher
+ */
+class ReferencedCalculationRefresherTest extends TestCase {
+
+	/**
+	 * The case type schema.
+	 *
+	 * @return Schema
+	 */
+	private static function caseTypeSchema(): Schema {
+		$schema = new Schema();
+		$schema->setId(1);
+		$schema->setSlug('caseType');
+		return $schema;
+	}//end caseTypeSchema()
+
+	/**
+	 * The case schema, reading `@ref.caseType.startableFlows` in a materialised calculation.
+	 *
+	 * @return Schema
+	 */
+	private static function caseSchema(): Schema {
+		$schema = new Schema();
+		$schema->setId(2);
+		$schema->setSlug('case');
+		$schema->setConfiguration([
+			'x-openregister-references'   => [
+				'caseType' => ['schema' => 'caseType', 'mode' => 'relatedObject', 'field' => 'caseType'],
+			],
+			'x-openregister-calculations' => [
+				'hasStartableFlows' => [
+					'materialise' => true,
+					'expression'  => ['ne' => [['prop' => '@ref.caseType.startableFlows'], null]],
+				],
+			],
+		]);
+		return $schema;
+	}//end caseSchema()
+
+	/**
+	 * A refresher over a register with the two schemas and one case of the type.
+	 *
+	 * @param ObjectService $service The object service the re-saves go through.
+	 *
+	 * @return ReferencedCalculationRefresher
+	 */
+	private function refresher(ObjectService $service): ReferencedCalculationRefresher {
+		$register = new Register();
+		$register->setId(7);
+		$register->setSchemas([1, 2]);
+
+		$registers = $this->createMock(originalClassName: RegisterMapper::class);
+		$registers->method('find')->willReturn(value: $register);
+
+		$schemas = $this->createMock(originalClassName: SchemaMapper::class);
+		$schemas->method('find')->willReturnCallback(
+			callback: static function (string|int $id): Schema {
+				if ((string) $id === '2') {
+					return self::caseSchema();
+				}
+
+				return self::caseTypeSchema();
+			}
+		);
+
+		$case = new ObjectEntity();
+		$case->setUuid('case-1');
+		$case->setRegister('7');
+		$case->setSchema('2');
+		$case->setObject(['title' => 'Zaak', 'caseType' => 'type-1']);
+
+		$rows = $this->createMock(originalClassName: MagicMapper::class);
+		$rows->method('findAllInRegisterSchemaTable')->willReturnCallback(
+			callback: static function (mixed ...$args) use ($case): array {
+				if (in_array(['caseType' => 'type-1'], $args, true) === true) {
+					return [$case];
+				}
+
+				return [];
+			}
+		);
+
+		$container = $this->createMock(originalClassName: ContainerInterface::class);
+		$container->method('get')->willReturn(value: $service);
+
+		return new ReferencedCalculationRefresher(registers: $registers, schemas: $schemas, rows: $rows, container: $container, logger: new NullLogger());
+	}//end refresher()
+
+	/**
+	 * A case type version.
+	 *
+	 * @param array<string, mixed> $data Its data.
+	 *
+	 * @return ObjectEntity
+	 */
+	private static function caseType(array $data): ObjectEntity {
+		$type = new ObjectEntity();
+		$type->setUuid('type-1');
+		$type->setRegister('7');
+		$type->setSchema('1');
+		$type->setObject($data);
+		return $type;
+	}//end caseType()
+
+	/**
+	 * The case type starts listing flows: its case is re-saved.
+	 *
+	 * @return void
+	 */
+	public function testAChangedReadFieldReSavesTheReferringObjects(): void {
+		$service = $this->createMock(originalClassName: ObjectService::class);
+		$service->expects($this->once())->method('saveObject')->with(
+			$this->callback(callback: static fn (array $object): bool => ($object['caseType'] ?? null) === 'type-1')
+		);
+
+		$saved = $this->refresher(service: $service)->refresh(
+			updated: self::caseType(data: ['title' => 'Woo', 'startableFlows' => ['flow-1']]),
+			old: self::caseType(data: ['title' => 'Woo'])
+		);
+
+		$this->assertSame(expected: 1, actual: $saved);
+	}//end testAChangedReadFieldReSavesTheReferringObjects()
+
+	/**
+	 * A change to a field no calculation reads re-saves nothing.
+	 *
+	 * @return void
+	 */
+	public function testAChangeNoCalculationReadsReSavesNothing(): void {
+		$service = $this->createMock(originalClassName: ObjectService::class);
+		$service->expects($this->never())->method('saveObject');
+
+		$saved = $this->refresher(service: $service)->refresh(
+			updated: self::caseType(data: ['title' => 'Woo-verzoek', 'startableFlows' => ['flow-1']]),
+			old: self::caseType(data: ['title' => 'Woo', 'startableFlows' => ['flow-1']])
+		);
+
+		$this->assertSame(expected: 0, actual: $saved);
+	}//end testAChangeNoCalculationReadsReSavesNothing()
+
+	/**
+	 * The dependency names the pointing field and the fields read through it.
+	 *
+	 * @return void
+	 */
+	public function testTheDependencyNamesThePointingFieldAndTheFieldsRead(): void {
+		$refresher = $this->refresher(service: $this->createMock(originalClassName: ObjectService::class));
+
+		$this->assertSame(
+			expected: ['caseType' => ['startableFlows']],
+			actual: $refresher->dependencies(schema: self::caseSchema(), target: self::caseTypeSchema())
+		);
+		$this->assertSame(expected: [], actual: $refresher->dependencies(schema: self::caseTypeSchema(), target: self::caseSchema()));
+	}//end testTheDependencyNamesThePointingFieldAndTheFieldsRead()
+}//end class
