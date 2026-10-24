@@ -1060,6 +1060,27 @@ class TaskService {
 	}//end get()
 
 	/**
+	 * Every task carrying this external key, terminal ones included.
+	 *
+	 * A task added once per thing is looked up by its key before it is added
+	 * again; a completed or cancelled one still counts as added.
+	 *
+	 * @param string $key The external key.
+	 *
+	 * @return array<int, Task> The tasks; empty for a blank key.
+	 *
+	 * @spec openspec/changes/task-find-by-key/specs/flow-tasks/spec.md
+	 */
+	public function findByKey(string $key): array {
+		$key = trim($key);
+		if ($key === '') {
+			return [];
+		}
+
+		return $this->tasks->findByKey(key: $key);
+	}//end findByKey()
+
+	/**
 	 * Resolve, authorize and audit a verb's task WITHOUT running the verb.
 	 *
 	 * For a caller that must do work between the authorization and the
