@@ -389,6 +389,8 @@ class ExampleSetInstaller {
 
 		$report = $this->installAppConfig(plan: $plan, fragment: $fragment, context: $context, report: $report, record: $record);
 
+		$context['refresh'] = (($plan['refresh'] ?? false) === true);
+
 		if ($this->engineRows?->install(fragment: $fragment, context: $context, report: $report, record: $record, values: $this->values) === true) {
 			$this->record->write(set: (string) $plan['set'], record: $record);
 		}

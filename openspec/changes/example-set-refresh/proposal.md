@@ -15,5 +15,6 @@ EXSET counted 37 stale fields on 26 objects on :8080. Today the only fix is `exa
 - Declared fields go over the stored row. A field the declaration does not name stays as it is.
 - Objects the set did not write are never touched, and nothing is deleted, so delete guards are not involved.
 - The report counts the objects it rewrote per type ("1 already there (1 refreshed)"), and the proof checks them like newly created objects.
+- The saved views, tasks, notes and read states the set declares are written again too. The earlier row is taken away first; if it cannot be, the old row stays and is named under `dropped`. Watchers, parties and flows are not refreshed.
 - Without `--refresh`, nothing changes.
 - The rewrite lives in `ExampleSetRewriter`; the install path passes the plan's `refresh` flag to it.
