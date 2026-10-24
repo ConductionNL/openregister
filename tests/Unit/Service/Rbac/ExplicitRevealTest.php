@@ -1,8 +1,8 @@
 <?php
 
 /**
- * An explicit-reveal property reads as its mask on the objects API until the
- * request names it, and a write that sends the mask back keeps the value.
+ * An explicit-reveal property leaves masked on every route, for admins too,
+ * and is shown only to the single-object read that grants it.
  *
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Service\Rbac
@@ -23,24 +23,40 @@ declare(strict_types=1);
 
 namespace Unit\Service\Rbac;
 
+use OCA\OpenRegister\Db\AuditTrail;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\ExplicitRevealQueryException;
+use OCA\OpenRegister\Service\Audit\HistoryEntryRedactor;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Mcp\McpResourcesService;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
+use OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker;
 use OCA\OpenRegister\Service\Rbac\RevealCollector;
+use OCA\OpenRegister\Service\Search\PropertySearchProfile;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Tests\Support\BuildsStateFieldRuleResolver;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use ReflectionClass;
 
 /**
  * @covers \OCA\OpenRegister\Service\Rbac\ExplicitReveal
+ * @covers \OCA\OpenRegister\Service\Rbac\ExplicitRevealMasker
  * @covers \OCA\OpenRegister\Service\PropertyRbacHandler
  */
 class ExplicitRevealTest extends TestCase {
 	use BuildsStateFieldRuleResolver;
+
+	private const BSN = '123457609';
+
+	private const MASK = '*****7609';
 
 	/**
 	 * A person schema whose BSN is read-restricted, audited and explicit-reveal.
@@ -63,33 +79,48 @@ class ExplicitRevealTest extends TestCase {
 	}//end schema()
 
 	/**
-	 * A handler for a caller in these groups, over this masking state.
+	 * The read rule for a caller in these groups.
 	 *
-	 * @param array<int, string> $groups   The caller's groups.
-	 * @param ExplicitReveal     $reveal   The request's masking state.
-	 * @param RevealCollector    $reveals  The reveal collector.
+	 * @param array<int, string> $groups  The caller's groups.
+	 * @param RevealCollector    $reveals The reveal collector.
 	 *
-	 * @return PropertyRbacHandler The handler.
+	 * @return array{0: PropertyRbacHandler, 1: IUserSession} The handler and the session.
 	 */
-	private function handler(array $groups, ExplicitReveal $reveal, RevealCollector $reveals): PropertyRbacHandler {
+	private function rules(array $groups, RevealCollector $reveals): array {
 		$user = $this->createMock(IUser::class);
 		$user->method('getUID')->willReturn('pieter');
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 		$groupManager = $this->createMock(IGroupManager::class);
 		$groupManager->method('getUserGroupIds')->willReturn($groups);
-		$groupManager->method('isAdmin')->willReturn(false);
+		$groupManager->method('isAdmin')->willReturn(in_array('admin', $groups, true));
 
-		return new PropertyRbacHandler(
+		$handler = new PropertyRbacHandler(
 			$session,
 			$groupManager,
 			$this->createMock(ConditionMatcher::class),
 			$this->createMock(LoggerInterface::class),
 			self::stateFieldRuleResolver($session, $groupManager),
-			$reveals,
-			$reveal
+			$reveals
 		);
-	}//end handler()
+
+		return [$handler, $session];
+	}//end rules()
+
+	/**
+	 * A masker for a caller in these groups.
+	 *
+	 * @param array<int, string> $groups  The caller's groups.
+	 * @param ExplicitReveal     $reveal  The grants.
+	 * @param RevealCollector    $reveals The reveal collector.
+	 *
+	 * @return ExplicitRevealMasker The masker.
+	 */
+	private function masker(array $groups, ExplicitReveal $reveal, RevealCollector $reveals): ExplicitRevealMasker {
+		[$handler, $session] = $this->rules(groups: $groups, reveals: $reveals);
+
+		return new ExplicitRevealMasker($reveal, $handler, $session, $this->createMock(LoggerInterface::class), $reveals);
+	}//end masker()
 
 	/**
 	 * The mask keeps the last four characters.
@@ -97,95 +128,196 @@ class ExplicitRevealTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheMaskKeepsTheLastFour(): void {
-		$this->assertSame('*****7609', (new ExplicitReveal())->mask(value: '123457609'));
-		$this->assertSame('', (new ExplicitReveal())->mask(value: ''));
+		$this->assertSame(self::MASK, ExplicitReveal::mask(value: self::BSN));
+		$this->assertSame('', ExplicitReveal::mask(value: ''));
 	}//end testTheMaskKeepsTheLastFour()
 
 	/**
-	 * On the objects API the reader with read rights gets the mask, and no reveal is recorded.
+	 * A read without a grant gets the mask and records nothing, admins included.
 	 *
 	 * @return void
 	 */
-	public function testAMaskedReadShowsTheMaskAndRecordsNothing(): void {
+	public function testAnUngrantedReadIsMaskedForAdminsToo(): void {
+		foreach ([['sensitive'], ['admin']] as $groups) {
+			$reveals = new RevealCollector();
+			[$out, $masked] = $this->masker($groups, new ExplicitReveal(), $reveals)->maskObject(
+				schema: $this->schema(),
+				object: ['id' => 'p-1', 'citizenServiceNumber' => self::BSN]
+			);
+
+			$this->assertSame(self::MASK, $out['citizenServiceNumber']);
+			$this->assertSame(['citizenServiceNumber'], $masked);
+			$this->assertSame(0, $reveals->count());
+		}
+	}//end testAnUngrantedReadIsMaskedForAdminsToo()
+
+	/**
+	 * The granted read of that object sees the value and is recorded, admins included;
+	 * another object in the same request stays masked.
+	 *
+	 * @return void
+	 */
+	public function testAGrantRevealsThatObjectOnlyAndIsRecorded(): void {
+		foreach ([['sensitive'], ['admin']] as $groups) {
+			$reveal = new ExplicitReveal();
+			$reveal->grantFor(objectId: 'p-1', reveal: 'citizenServiceNumber');
+			$reveals = new RevealCollector();
+			$masker = $this->masker($groups, $reveal, $reveals);
+
+			[$own] = $masker->maskObject(schema: $this->schema(), object: ['id' => 'p-1', 'citizenServiceNumber' => self::BSN]);
+			[$other] = $masker->maskObject(schema: $this->schema(), object: ['id' => 'p-2', 'citizenServiceNumber' => '999990000']);
+
+			$this->assertSame(self::BSN, $own['citizenServiceNumber']);
+			$this->assertSame('*****0000', $other['citizenServiceNumber']);
+			$this->assertSame(1, $reveals->count());
+		}
+	}//end testAGrantRevealsThatObjectOnlyAndIsRecorded()
+
+	/**
+	 * A grant gives nothing to a reader without read rights: the check runs first.
+	 *
+	 * @return void
+	 */
+	public function testAGrantWithoutReadRightsStaysMasked(): void {
 		$reveal = new ExplicitReveal();
-		$reveal->open();
+		$reveal->grantFor(objectId: 'p-1', reveal: 'citizenServiceNumber');
 		$reveals = new RevealCollector();
 
-		$out = $this->handler(['sensitive'], $reveal, $reveals)->filterReadableProperties(
+		[$out] = $this->masker(['frontdesk'], $reveal, $reveals)->maskObject(
 			schema: $this->schema(),
-			object: ['id' => 'p-1', 'displayName' => 'Sanne de Vries', 'citizenServiceNumber' => '123457609']
+			object: ['id' => 'p-1', 'citizenServiceNumber' => self::BSN]
 		);
 
-		$this->assertSame('*****7609', $out['citizenServiceNumber']);
+		$this->assertSame(self::MASK, $out['citizenServiceNumber']);
 		$this->assertSame(0, $reveals->count());
-	}//end testAMaskedReadShowsTheMaskAndRecordsNothing()
+	}//end testAGrantWithoutReadRightsStaysMasked()
 
 	/**
-	 * A read that names the property gets the value, and the reveal is recorded.
+	 * Trusted server code and a system operation see the value.
 	 *
 	 * @return void
 	 */
-	public function testANamedReadRevealsAndRecords(): void {
+	public function testTrustedCodeIsNotMasked(): void {
 		$reveal = new ExplicitReveal();
-		$reveal->open(reveal: 'citizenServiceNumber');
-		$reveals = new RevealCollector();
+		$masker = $this->masker(['sensitive'], $reveal, new RevealCollector());
+		$object = ['id' => 'p-1', 'citizenServiceNumber' => self::BSN];
 
-		$out = $this->handler(['sensitive'], $reveal, $reveals)->filterReadableProperties(
-			schema: $this->schema(),
-			object: ['id' => 'p-1', 'citizenServiceNumber' => '123457609']
-		);
+		[$trusted] = $reveal->trustedDuring(fn () => $masker->maskObject(schema: $this->schema(), object: $object));
+		[$system] = SystemOperationContext::run(fn () => $masker->maskObject(schema: $this->schema(), object: $object));
 
-		$this->assertSame('123457609', $out['citizenServiceNumber']);
-		$this->assertSame(1, $reveals->count());
-	}//end testANamedReadRevealsAndRecords()
+		$this->assertSame(self::BSN, $trusted['citizenServiceNumber']);
+		$this->assertSame(self::BSN, $system['citizenServiceNumber']);
+	}//end testTrustedCodeIsNotMasked()
 
 	/**
-	 * Naming the property gives nothing to a reader without read rights: the
-	 * permission check runs before the reveal.
+	 * The read filter records no reveal of an explicit-reveal property: the masker owns that.
 	 *
 	 * @return void
 	 */
-	public function testNamingItGivesNothingWithoutReadRights(): void {
-		$reveal = new ExplicitReveal();
-		$reveal->open(reveal: 'citizenServiceNumber');
+	public function testTheReadFilterRecordsNoExplicitReveal(): void {
 		$reveals = new RevealCollector();
+		[$handler] = $this->rules(groups: ['sensitive'], reveals: $reveals);
 
-		$out = $this->handler(['frontdesk'], $reveal, $reveals)->filterReadableProperties(
-			schema: $this->schema(),
-			object: ['id' => 'p-1', 'citizenServiceNumber' => '123457609']
-		);
+		$handler->filterReadableProperties(schema: $this->schema(), object: ['id' => 'p-1', 'citizenServiceNumber' => self::BSN]);
 
-		$this->assertArrayNotHasKey('citizenServiceNumber', $out);
 		$this->assertSame(0, $reveals->count());
-	}//end testNamingItGivesNothingWithoutReadRights()
+	}//end testTheReadFilterRecordsNoExplicitReveal()
 
 	/**
-	 * Off the objects API (an app's server code) nothing is masked.
+	 * Filtering or sorting on it is refused; trusted code may filter.
 	 *
 	 * @return void
 	 */
-	public function testServerReadsAreNotMasked(): void {
-		$out = $this->handler(['sensitive'], new ExplicitReveal(), new RevealCollector())->filterReadableProperties(
-			schema: $this->schema(),
-			object: ['id' => 'p-1', 'citizenServiceNumber' => '123457609']
-		);
-
-		$this->assertSame('123457609', $out['citizenServiceNumber']);
-	}//end testServerReadsAreNotMasked()
-
-	/**
-	 * An update that sends the mask back keeps the stored value; a new value is written.
-	 *
-	 * @return void
-	 */
-	public function testAnUpdateSendingTheMaskKeepsTheValue(): void {
+	public function testFilterAndSortOnItAreRefused(): void {
 		$reveal = new ExplicitReveal();
-		$stored = ['citizenServiceNumber' => '123457609'];
+		foreach ([['citizenServiceNumber' => self::BSN], ['_order' => ['citizenServiceNumber' => 'asc']], ['_order' => '{"citizenServiceNumber":"desc"}']] as $query) {
+			try {
+				$reveal->refuseOracleQuery(query: $query, schema: $this->schema());
+				$this->fail('refused: ' . json_encode($query));
+			} catch (ExplicitRevealQueryException $refused) {
+				$this->assertStringContainsString('citizenServiceNumber', $refused->getMessage());
+			}
+		}
 
-		$kept = $reveal->restoreMasked(schema: $this->schema(), incoming: ['citizenServiceNumber' => '*****7609'], stored: $stored);
-		$this->assertSame('123457609', $kept['citizenServiceNumber']);
+		$reveal->refuseOracleQuery(query: ['displayName' => 'Sanne', '_order' => ['displayName' => 'asc']], schema: $this->schema());
+		$reveal->trustedDuring(fn () => $reveal->refuseOracleQuery(query: ['citizenServiceNumber' => self::BSN], schema: $this->schema()));
+		$this->addToAssertionCount(1);
+	}//end testFilterAndSortOnItAreRefused()
 
-		$changed = $reveal->restoreMasked(schema: $this->schema(), incoming: ['citizenServiceNumber' => '999990000'], stored: $stored);
-		$this->assertSame('999990000', $changed['citizenServiceNumber']);
-	}//end testAnUpdateSendingTheMaskKeepsTheValue()
+	/**
+	 * It takes no part in free-text search.
+	 *
+	 * @return void
+	 */
+	public function testItIsNotMatchedByFreeText(): void {
+		$properties = $this->schema()->getProperties();
+
+		$this->assertFalse(PropertySearchProfile::participatesInFreeText(property: $properties['citizenServiceNumber']));
+		$this->assertTrue(PropertySearchProfile::participatesInFreeText(property: $properties['displayName']));
+	}//end testItIsNotMatchedByFreeText()
+
+	/**
+	 * A history entry shows it masked, old and new, and withholds its `@self` copies.
+	 *
+	 * @return void
+	 */
+	public function testHistoryShowsItMasked(): void {
+		$properties = $this->createMock(PropertyRbacHandler::class);
+		$properties->method('filterReadableProperties')->willReturnArgument(1);
+		$properties->method('stripWriteOnlyProperties')->willReturnArgument(1);
+
+		$schema = $this->schema();
+		$schema->setConfiguration(['objectNameField' => 'citizenServiceNumber']);
+		$entry = new AuditTrail();
+		$entry->setChanged([
+			'citizenServiceNumber' => ['old' => '999990000', 'new' => self::BSN],
+			'@self' => ['new' => ['name' => self::BSN]],
+		]);
+		$object = new ObjectEntity();
+		$object->setObject(['citizenServiceNumber' => self::BSN]);
+
+		$rows = (new HistoryEntryRedactor($properties))->redact(rows: [$entry], schema: $schema, object: $object);
+
+		$this->assertSame(['old' => '*****0000', 'new' => self::MASK], $rows[0]['changed']['citizenServiceNumber']);
+		$this->assertNull($rows[0]['changed']['@self']['new']['name']);
+	}//end testHistoryShowsItMasked()
+
+	/**
+	 * An MCP resource read shows it masked.
+	 *
+	 * @return void
+	 */
+	public function testAnMcpResourceReadsItMasked(): void {
+		$object = new ObjectEntity();
+		$object->setUuid('p-1');
+		$object->setObject(['citizenServiceNumber' => self::BSN]);
+		$objects = $this->createMock(ObjectService::class);
+		$objects->method('find')->willReturn($object);
+		$schemas = $this->createMock(SchemaMapper::class);
+		$schemas->method('find')->willReturn($this->schema());
+
+		$service = (new ReflectionClass(McpResourcesService::class))->newInstanceWithoutConstructor();
+		$reflection = new ReflectionClass($service);
+		foreach (['schemaMapper' => $schemas, 'objectService' => $objects] as $name => $value) {
+			$property = $reflection->getProperty($name);
+			$property->setValue($service, $value);
+		}
+
+		$method = $reflection->getMethod('readObjects');
+		$read = $method->invoke($service, 1, 7, 'p-1');
+
+		$this->assertSame(self::MASK, $read['citizenServiceNumber']);
+	}//end testAnMcpResourceReadsItMasked()
+
+	/**
+	 * A write that sends the mask back keeps the stored value; a new value is written.
+	 *
+	 * @return void
+	 */
+	public function testAWriteSendingTheMaskKeepsTheValue(): void {
+		$stored = ['citizenServiceNumber' => self::BSN];
+
+		$this->assertSame(self::BSN, ExplicitReveal::restoreMasked(schema: $this->schema(), incoming: ['citizenServiceNumber' => self::MASK], stored: $stored)['citizenServiceNumber']);
+		$this->assertSame('999990000', ExplicitReveal::restoreMasked(schema: $this->schema(), incoming: ['citizenServiceNumber' => '999990000'], stored: $stored)['citizenServiceNumber']);
+	}//end testAWriteSendingTheMaskKeepsTheValue()
 }//end class

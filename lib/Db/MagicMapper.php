@@ -641,7 +641,10 @@ class MagicMapper extends AbstractObjectMapper {
 			// The request's language state, so a translatable property sorts by
 			// the value the response shows (order-filters-and-notification-links).
 			languageService: $this->container->get(\OCA\OpenRegister\Service\LanguageService::class),
-			metadataColumns: $this->metadataColumnHealer
+			metadataColumns: $this->metadataColumnHealer,
+			// The request's reveal state: filtering or sorting on an explicit-reveal
+			// property is refused unless the code is trusted (property-explicit-reveal).
+			explicitReveal: $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class)
 		);
 
 		$this->bulkHandler = new MagicBulkHandler(

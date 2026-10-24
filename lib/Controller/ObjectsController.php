@@ -2960,6 +2960,13 @@ class ObjectsController extends Controller {
 		// Get request parameters for filtering and searching.
 		$requestParams = $this->request->getParams();
 
+		// `_reveal` is honoured on this single-object read only, and only for this
+		// object: an extended or listed object stays masked (property-explicit-reveal).
+		$explicitReveal = $this->container->get(\OCA\OpenRegister\Service\Rbac\ExplicitReveal::class);
+		if ($explicitReveal instanceof \OCA\OpenRegister\Service\Rbac\ExplicitReveal) {
+			$explicitReveal->grantFor(objectId: $id, reveal: (string)($requestParams['_reveal'] ?? ''));
+		}
+
 		// Extract parameters for rendering.
 		$extend = ($requestParams['extend'] ?? $requestParams['_extend'] ?? null);
 		$filter = ($requestParams['filter'] ?? $requestParams['_filter'] ?? null);

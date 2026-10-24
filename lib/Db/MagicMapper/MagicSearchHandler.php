@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
+use OCA\OpenRegister\Service\Rbac\ExplicitReveal;
 use DateTime;
 use Exception;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -246,6 +247,10 @@ class MagicSearchHandler {
 	 * @param MagicMetadataColumnHealer|null $metadataColumns Knows which metadata columns a table that could not
 	 *                                                        be healed still lacks, so the lifecycle predicates
 	 *                                                        leave them out
+	 * @param ExplicitReveal|null $explicitReveal The request's reveal state; a filter or sort on an explicit-reveal
+	 *                                            property is refused unless the code is trusted
+	 *
+	 * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
@@ -257,6 +262,7 @@ class MagicSearchHandler {
 		private readonly RelatedRowQueryApplier $relatedRows,
 		private readonly ?LanguageService $languageService = null,
 		private readonly ?MagicMetadataColumnHealer $metadataColumns = null,
+		private readonly ?ExplicitReveal $explicitReveal = null,
 	) {
 		$this->termParser = new SearchTermParser();
 		$this->termCompiler = new SearchTermSqlCompiler();
@@ -521,6 +527,9 @@ class MagicSearchHandler {
 	 * @return IQueryBuilder QueryBuilder with all filters applied.
 	 */
 	public function buildFilteredQuery(array $query, Schema $schema, string $tableName, ?int $registerId = null): IQueryBuilder {
+		// A filter or sort on a value that is only shown masked would read it without the reveal.
+		$this->explicitReveal?->refuseOracleQuery(query: $query, schema: $schema);
+
 		// Extract options from query (prefixed with _).
 		$_rbac = $query['_rbac'] ?? true;
 		$_multitenancy = $query['_multitenancy'] ?? true;
@@ -947,6 +956,7 @@ class MagicSearchHandler {
 		?string $tableName = null,
 	): array {
 		$this->refuseRelatedRowFilters(query: $query);
+		$this->explicitReveal?->refuseOracleQuery(query: $query, schema: $schema);
 
 		// Get connection for value quoting through QueryBuilder.
 		$qb = $this->db->getQueryBuilder();

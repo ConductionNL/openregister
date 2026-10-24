@@ -2527,8 +2527,7 @@ class ObjectService implements ObjectServiceInterface
      */
     private function restoreMaskedReveals(array $object, ?string $uuid): array
     {
-        $reveal = new ExplicitReveal();
-        if ($uuid === null || $this->currentSchema === null || $reveal->explicitProperties(schema: $this->currentSchema) === []) {
+        if ($uuid === null || $this->currentSchema === null || ExplicitReveal::explicitProperties(schema: $this->currentSchema) === []) {
             return $object;
         }
 
@@ -2544,7 +2543,7 @@ class ObjectService implements ObjectServiceInterface
             return $object;
         }
 
-        return $reveal->restoreMasked(schema: $this->currentSchema, incoming: $object, stored: ($existing->getObject() ?? []));
+        return ExplicitReveal::restoreMasked(schema: $this->currentSchema, incoming: $object, stored: ($existing->getObject() ?? []));
     }//end restoreMaskedReveals()
 
     /**
